@@ -1,0 +1,68 @@
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1776,11 +1776,54 @@
+     d3d8_vsh_set_constant(first_reg, data, count);
+ }
+ 
++/* A cached program may be drawn with several layouts in one frame (including
++ * the temporary sixteen-float4 immediate layout). Replay must retain those
++ * changes, not use whichever declaration the final guest draw left behind. */
++typedef struct {
++    DWORD handle;
++    int count;
++    D3D8VshInput inputs[NV2A_VS_MAX_INPUTS];
++} dq_declaration;
++
++static void op_vsh_declaration(const void *arg)
++{
++    const dq_declaration *p = (const dq_declaration *)arg;
++    host_vsh_set_declaration(p->handle, p->inputs, p->count);
++}
++
++static void retain_declaration(DWORD handle, const D3D8VshInput *inputs, int count)
++{
++    dq_declaration p;
++    memset(&p, 0, sizeof p);
++    p.handle = handle;
++    p.count = count;
++    if (count)
++        memcpy(p.inputs, inputs, (size_t)count * sizeof *inputs);
++    hle_d3d8_interp_op(op_vsh_declaration, &p, sizeof p);
++}
++
++static void snapshot_declarations(void)
++{
++    int i;
++    for (i = 0; i < NV2A_VS_MAX_SLOTS; i++) {
++        DWORD handle;
++        const D3D8VshInput *inputs;
++        int count;
++        if (d3d8_vsh_get_slot(i, &handle, NULL, NULL, &inputs, &count))
++            retain_declaration(handle, inputs, count);
++    }
++}
++
+ HRESULT host_vsh_set_declaration(DWORD handle, const D3D8VshInput *inputs, int count)
+ {
+-    if (g_cap)
+-        rec_vs_declaration(handle, inputs, count);
+-    return d3d8_vsh_set_declaration(handle, inputs, count);
++    HRESULT hr = d3d8_vsh_set_declaration(handle, inputs, count);
++    if (SUCCEEDED(hr)) {
++        if (hle_d3d8_interp_rec)
++            retain_declaration(handle, inputs, count);
++        if (g_cap)
++            rec_vs_declaration(handle, inputs, count);
++    }
++    return hr;
+ }
+ 
+ void host_vsh_set_screenspace(const float scale[4], const float offset[4])
+@@ -1910,6 +1953,7 @@
+ 
+     if (!dev || !hle_d3d8_interp_rec)
+         return;
++    snapshot_declarations();
+     {
+         dq_constants p;
+         p.first = 0;

@@ -1,4 +1,9 @@
 * text=auto
+.gitattributes text eol=lf
+AGENTS.md text eol=lf
+*.command text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
 *.patch text eol=lf -whitespace
 *.cmd text eol=crlf
 *.ps1 text eol=crlf

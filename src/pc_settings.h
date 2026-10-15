@@ -1,6 +1,10 @@
 #ifndef TSFP_PC_SETTINGS_H
 #define TSFP_PC_SETTINGS_H
+#ifdef _WIN32
 #include <windows.h>
+#else
+typedef void *HWND;
+#endif
 #include <stddef.h>
 #define PC_ACTION_COUNT 24
 #define PC_BINDING_SLOTS 4

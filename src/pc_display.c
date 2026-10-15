@@ -5,6 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+#include <SDL3/SDL.h>
+#include "config_files.h"
+#define ULONGLONG Uint64
+#define GetTickCount64 SDL_GetTicks
+#endif
 
 static PcDisplayMode current;
 static int initialized;
@@ -62,6 +68,7 @@ static void add_mode(PcDisplayMode *out,int *count,int cap,unsigned w,unsigned h
 
 int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
 {
+#ifdef _WIN32
     MONITORINFOEXA monitor; DEVMODEA dm; int count=0; DWORD i;
     if(capacity<=0) return 0;
     memset(&monitor,0,sizeof monitor); monitor.cbSize=sizeof monitor;
@@ -81,6 +88,20 @@ int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
         if(dm.dmPelsHeight>=1080 && dm.dmBitsPerPel>=24)
             add_mode(out,&count,capacity,dm.dmPelsWidth,dm.dmPelsHeight);
     }
+#else
+    int count=0,n=0;
+    if(capacity<=0)return 0;
+    SDL_DisplayID display=window?SDL_GetDisplayForWindow((SDL_Window *)window):SDL_GetPrimaryDisplay();
+    const SDL_DisplayMode *desktop=SDL_GetDesktopDisplayMode(display);
+    if(desktop)add_mode(out,&count,capacity,desktop->w,desktop->h);
+    add_mode(out,&count,capacity,1280,720);
+    add_mode(out,&count,capacity,1920,1080);
+    add_mode(out,&count,capacity,2560,1440);
+    add_mode(out,&count,capacity,3840,2160);
+    SDL_DisplayMode **modes=SDL_GetFullscreenDisplayModes(display,&n);
+    for(int i=0;modes&&i<n;i++)add_mode(out,&count,capacity,modes[i]->w,modes[i]->h);
+    SDL_free(modes);
+#endif
     init(); add_mode(out,&count,capacity,current.width,current.height);
     return count;
 }
@@ -108,6 +129,13 @@ int pc_display_preview(PcDisplayMode mode)
 
 int pc_display_save(void)
 {
+#ifndef _WIN32
+    char text[128];init();
+    snprintf(text,sizeof text,"TSFP_DISPLAY_V1 %u %u\n",current.width,current.height);
+    int ok=tsfp_config_write(path,text,0);
+    if(ok)preview_deadline=0;
+    return ok;
+#else
     char temp[32768]; FILE *f; int ok;
     init();
     if(snprintf(temp,sizeof temp,"%s.tmp",path)<0 || strlen(path)+5>=sizeof temp) return 0;
@@ -119,6 +147,7 @@ int pc_display_save(void)
     if(!ok) DeleteFileA(temp);
     if(ok) { preview_deadline=0; fprintf(stderr,"[PC-DISPLAY] Saved %ux%u\n",current.width,current.height); }
     return ok;
+#endif
 }
 
 void pc_display_scene_size(unsigned gw,unsigned gh,unsigned *w,unsigned *h)

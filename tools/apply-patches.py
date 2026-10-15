@@ -14,7 +14,10 @@ import tempfile
 
 def git(tree, *args):
     return subprocess.run(
-        ['git', '-C', str(tree), *map(str, args)],
+        # Upstream stores some sources as CRLF. Match context whitespace on
+        # every host while retaining it in the output; non-whitespace edits
+        # still conflict. Do not depend on a developer's global Git settings.
+        ['git', '-C', str(tree), '-c', 'apply.ignoreWhitespace=change', *map(str, args)],
         capture_output=True, encoding='utf-8', errors='replace',
     )
 
@@ -22,6 +25,22 @@ def git(tree, *args):
 def apply_patches(runtime, patch_dir):
     runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
     patches = sorted(patch_dir.glob('*.patch'))
+    # These existing network patches target the original title CMake context.
+    # Apply them before native boot inserts platform guards at that location;
+    # retain the established order of all other patches and unwind in reverse.
+    native_boot = patch_dir / 'zz-mac-native-boot.patch'
+    if native_boot in patches:
+        for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+            network = patch_dir / name
+            if network in patches:
+                patches.remove(network)
+                patches.insert(patches.index(native_boot), network)
+    def context_options(patch):
+        # Native boot wraps the SDK library block; networking adds a separate
+        # guarded block immediately before it. Require its unchanged adjacent
+        # context line, rather than the older two lines across that insertion.
+        # Removed/added code must still match; all other patches keep full context.
+        return ['-C1'] if patch == native_boot and (patch_dir / 'zz-pc-network.patch') in patches else []
     names = set()
     for patch in patches:
         for line in patch.read_text(encoding='utf-8').splitlines():
@@ -42,18 +61,20 @@ def apply_patches(runtime, patch_dir):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
         for patch in reversed(patches):
-            if git(stage, 'apply', '--reverse', '--check', patch).returncode == 0:
-                result = git(stage, 'apply', '--reverse', patch)
+            options = context_options(patch)
+            if git(stage, 'apply', *options, '--reverse', '--check', patch).returncode == 0:
+                result = git(stage, 'apply', *options, '--reverse', patch)
                 if result.returncode:
                     raise RuntimeError(f'{patch.name}: {result.stderr}')
         for patch in patches:
-            result = git(stage, 'apply', '--check', patch)
+            options = context_options(patch)
+            result = git(stage, 'apply', *options, '--check', patch)
             if result.returncode:
                 raise RuntimeError(
                     f'{patch.name} conflicts with the runtime checkout. '
                     f'No runtime files were changed.\n{result.stderr}'
                 )
-            result = git(stage, 'apply', patch)
+            result = git(stage, 'apply', *options, patch)
             if result.returncode:
                 raise RuntimeError(f'{patch.name}: {result.stderr}')
         changed = [name for name in sorted(names)

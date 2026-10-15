@@ -1,6 +1,10 @@
 #ifndef TSFP_PC_DEBUG_H
 #define TSFP_PC_DEBUG_H
+#ifdef _WIN32
 #include <windows.h>
+#else
+typedef void *HWND;
+#endif
 #include <stddef.h>
 
 #define PC_DEBUG_COMMAND 0x7e21

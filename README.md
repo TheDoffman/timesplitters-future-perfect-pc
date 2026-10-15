@@ -2,8 +2,9 @@
 
 Target: the original Xbox US release, title ID `45410066`, XDK 5849.
 This workspace uses static recompilation: translate the original x86 executable
-into C and link it to a native Windows runtime. This does not recover the original
-C/C++ source. A build is an experimental port until gameplay has been verified.
+into C and link it to a native Windows or Apple Silicon Mac runtime. This does
+not recover the original C/C++ source. A build is an experimental port until
+gameplay has been verified.
 
 ## Download and play
 
@@ -27,6 +28,235 @@ To produce the same public package after building:
 
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
+
+## Sharing fixes between Windows and Mac
+
+Both builds apply the complete `patches/` stack to the same pinned runtime and
+use the same generated game code and binding parser. Put common behavior in
+shared source, with OS-specific event handling and rendering in adapters; the
+tracked `AGENTS.md` makes this the rule for every device.
+
+The portable input model in `src/pc_input.c` is compiled by both builds. Its
+movement normalization now runs on both platforms, so fixes to diagonal speed
+use one implementation. The Mac SDL input regression checks the actual binding
+path, while Windows retains its PC input integration tests. Native build
+manifests include shared source hashes as well as Mac adapter hashes.
+
+This does not make Windows-only features automatically available on Mac:
+Debug settings, advanced graphics effects and release packaging still need Mac
+adaptation. Native Mac now shares the camera input model and button-prompt
+formatter, but the graphics backends remain separate. Record and test adapter
+work before claiming a feature works on both platforms.
+
+New Windows PC features can be completed on PC first. Before completing a PC
+feature, add or update its entry in [the Mac port backlog](MAC_PORT_BACKLOG.md)
+with its behavior, source references, remaining Mac adaptation and acceptance
+checks. Mac implementation happens in a later requested porting task; queued Mac
+work does not block PC completion. Shared changes must still preserve existing
+Mac functionality. Agents follow `AGENTS.md` and the pull-request checklist to
+maintain this list; there is no automatic feature detector or CI enforcement.
+Record measured validation in `STATUS.md` and link it from the backlog.
+
+A change must reach the other checkout through Git and be rebuilt there. Keep
+this chat's changes on `mac-port`; do not automatically merge it into `main` or
+replace another device's uncommitted work. See `STATUS.md` for measured coverage.
+
+## Native Apple Silicon setup (experimental)
+
+Native work stays on **mac-port**. The Mac now builds an ARM64 Mach-O executable
+from the verified game data and the same pinned runtime and Python dependencies
+used on Windows. It executes the translated Xbox entry point, initializes the
+kernel and graphics device, loads assets, and displays the game's **1–4 player
+selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
+port: keyboard-driven menus now reach visible first-level gameplay. Basic
+movement, mouse aiming, firing and pause/resume have been checked. Full-level
+completion and rendering fidelity are not yet validated.
+Double-click **Play-Native-Mac.command** to try the native build without a time
+limit. It uses your normal `private/saves` and preserves existing controls and
+PC display settings. Native runtime settings stay under `private/native-settings`.
+Use `./Play-Native-Mac.command --check` for a read-only prerequisite check.
+
+Keep one verified extraction in `private/game`, containing `default.xbe`, `pak`
+and `xmv`. Transfer it once from the Windows checkout or extract your supported
+US Xbox ISO with the pinned upstream `tools.xiso`; preserve any existing copy.
+Git does not transfer these ignored game files.
+
+From the project root, use Python 3.12 or newer, Xcode command-line tools, and
+an installed OpenSSL development library. The tested Mac has Apple Clang 21,
+OpenSSL 3.6.3, and pinned SDL 3.4.16 built from its upstream submodule. No system
+SDL installation is used. The script does not upgrade system dependencies.
+
+```sh
+# First native setup and generation; reuses the existing private/game.
+python3 tools/build-native-mac.py --setup --generate --test
+
+# Subsequent source changes.
+.venv/bin/python tools/build-native-mac.py --test
+
+# Bounded native execution, with isolated saves and configuration.
+.venv/bin/python tools/test-native-mac.py --seconds 120 --capture
+
+# Frame timing without screenshot readback (navigate using isolated test input).
+.venv/bin/python tools/test-native-mac.py --seconds 150 --test-keys --profile-frames
+# Select a known gameplay window, excluding menus/loading and the opening animation.
+.venv/bin/python tools/native_frame_stats.py logs/native-frame-times.csv --start 120 --end 145
+```
+
+Output stays in `build/macos`. `BUILD.json` records the source and runtime
+revision, source/patch hashes, executable hash, compiler, Python packages and
+linked libraries. Native changes to the upstream runtime are reproduced by
+`patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
+`patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
+`patches/zzzzzz-interpolation-layouts.patch` and
+`patches/zzzzzzz-shared-input-model.patch`, applied
+after the shared feature patches. Mac renderer source stays in `src/native`;
+Windows and the inherited Linux graphics backends retain their own sources.
+Never edit generated game C. Regenerate when wrapper declarations change.
+
+The native probe requires an ARM64 binary and the supported XBE hash. It strips
+stale runtime overrides, uses `private/test-saves/native-mac`, isolates both
+upstream and PC settings, bounds duration/log size, and records
+`logs/native-boot-summary.json`. A successful probe means guest frames continued
+until its time limit. The default is 15 seconds; an explicit `--seconds` accepts
+up to 1800 seconds for sustained testing, with the same 8 MiB log limit.
+An intentional early stop is recorded as `process_exit`, not a passed timed probe.
+It separately reports sampled host presents/GL errors;
+menu recognition still requires reviewing the captures. `--capture` retains two
+rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
+Selected visual evidence includes `private/captures/native-mac/first-native-menu.png`
+and `private/captures/native-mac/menu-navigation.png`. Test
+partition images are sparse, then recycled with validated paths; profiles,
+configuration and logs remain. Native CTest uses `build/macos/path-tests` and
+recycles its partition images after the pass as well.
+
+`--profile-frames` records CPU wall-clock intervals between completed host
+presents and time spent in swap, capped at 20,000 rows (under 2 MiB). It adds
+no GPU readback. The CSV and whole-run statistics are diagnostic data; loading
+screens and menus must be excluded before describing gameplay FPS. These are
+host-present timings, not measurements of monitor scanout. Compare the same
+scene and build settings, and state whether `--capture` was enabled.
+
+Native Mac defaults to an **up-to-120 FPS** display target: the game still
+simulates at 60 Hz, while the renderer draws intermediate frames using blended
+camera/object transforms. GPU vertex shaders and optimized native game code
+provide the extra rendering time. Menus, cinematics, scene cuts and expensive
+frames can fall back to fewer display frames. This is experimental interpolation,
+not 120 simulation updates, and is not a guarantee for every level or Mac.
+
+Use `./Play-Native-Mac.command --fps 60` for the original presentation rate, or
+`--fps 120` to explicitly select the new target for that launch. These options
+do not rewrite saved settings. To retain 60 as a preference, put `frame_interp = 1`
+in `private/native-settings/runtime.conf`; `frame_interp = 2` selects 120.
+The Mac path clamps interpolation to 2x. A custom `frame_cap` is preserved;
+use `frame_cap = 60` with interpolation, or the `--fps 120` override. Do not raise
+`RECOMP_VBLANK_HZ`: that changes the console clock and can change game speed.
+
+The isolated test runner also accepts `--fps 60` / `--fps 120`. Profile rows label
+each present as `guest` or `interpolated`, and the statistics report both rates.
+For motion evidence, `--capture-interpolation` enables a request file at
+`private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
+to replace exactly two BMPs (`interpolation-guest.bmp` and
+`interpolation-midpoint.bmp`) in the normal native capture directory. This GPU
+readback is for visual validation; keep it outside measured performance windows.
+
+The native implementation includes a reserved 4 GiB **virtual address range**
+(not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64
+register-access fault handler, sparse Xbox partition devices, and an SDL PCM
+output backend. Unknown faulting instructions stop with diagnostics. SDL audio
+submission has been observed, but output fidelity/latency and human hardware
+playtesting have not been validated. Keyboard and mouse OS-event delivery has
+been checked with automation. Audio position uses the existing wall-clock fallback.
+
+The native renderer uses shared HLE state/texture/vertex hooks, GPU NV2A vertex
+programs with the portable interpreter as fallback, and register combiners with
+four 2D texture inputs. `--test` checks actual GPU pixels for topology, font
+alpha/blending, distinct texture stages/coordinates, GPU/CPU vertex agreement,
+scissors, screen copies, image surfaces, readback, offscreen state/orientation,
+interpolation and worker-thread context handoff, alongside three platform suites.
+These tests use no game data or saves. Advanced texture modes, cube/volume
+resources, movies and full rendering fidelity remain incomplete. Complete
+gameplay and save/load still need validation.
+
+Native controls use the same JSON bindings as Windows. Focus the game window:
+
+- Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
+- **Click inside the game** to capture the pointer, then move the mouse to look
+  around. This first click is consumed; subsequent left clicks fire. Relative
+  mouse counts now update camera angles directly using the shared PC model,
+  including zoom sensitivity and pitch limits; they no longer emulate a stick.
+- **Escape** pauses and releases the mouse. After resuming, click to capture
+  again. **F1** also toggles relative mouse capture
+  (use Fn+F1 if macOS reserves the function key for brightness).
+- **WASD** moves; left mouse fires; right mouse activates the right-stick action;
+  **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
+- The first unassigned SDL controller also shares player 1. Explicit controllers
+  assigned to other players are reserved. Physical controller play is unverified;
+  SDL virtual-controller mapping/hotplug has regression coverage.
+
+Formatted menu/HUD hints use the current keyboard/mouse bindings and switch to
+controller icons on deliberate controller activity. Text baked into artwork or
+plain tutorial text is unchanged.
+
+**Mac settings:** press **F2** (Fn+F2 if needed), or choose **Game Settings →
+Keyboard, Mouse & Graphics…** in the Mac menu bar. The Keyboard & Mouse tab edits
+up to four bindings per action, sensitivity and vertical inversion. Save applies
+that tab immediately and backs up the controls file; Cancel discards unsaved edits.
+The Graphics tab selects the render resolution and fullscreen. **F11** toggles
+fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
+is a session setting. The original in-game Settings/Options menu also includes
+**Display settings**, with a 15-second resolution preview and automatic rollback.
+
+Higher resolutions render the scene at the selected size, preserve the original
+menu proportions and widen the gameplay camera. Screen-space HUD draws retain
+their proportions. Larger targets cost GPU time, so 120 presentations per second
+remains a target, not a guarantee. Four 2D texture inputs, projected/linear
+texture coordinates, scissor clipping and 32-bit screen copies are implemented. Advanced texture modes, cube/volume
+textures and movies remain incomplete; this is not complete Windows graphics parity.
+
+To use the same compiled DDS texture pack as Windows for one Mac launch:
+
+```sh
+./Play-Native-Mac.command --texture-pack private/texture-remaster/pack
+```
+
+Both adapters share content keys, full-mip BC1/BC2/BC3 validation, aspect checks
+and a 512 MiB replacement residency limit. Missing, malformed or over-budget
+replacements use original textures. This does not create artwork or increase the
+6 GiB pack budget. Native texture replacement is verified with synthetic GPU
+fixtures; the complete remaster pack has not been visually verified on Mac.
+
+Mouse enabled/sensitivity/invert settings are read from the shared controls file
+at startup and updated live when saved in Mac Settings. Mouse look uses direct
+camera angles, independent of the controller turn-speed curve. With
+`invert_y: false`, moving the mouse up looks up.
+Losing focus releases keys, buttons and mouse capture and neutralizes
+controller input. The bounded probe uses its own copy of controls under
+`private/test-saves/native-mac`; edit only that copy for experiments. No personal
+configuration is used by this test command. `--test` additionally checks native
+key press/release, focus loss, mouse settings, click-to-capture without firing,
+pointer release and SDL controller sharing.
+
+For automated menu checks, add `--test-keys` and append SDL scancode names such as
+`+Return` and `-Return` on separate lines to the isolated `test-keys.txt`, with a
+short hold between writes. This optional path feeds SDL events through the same
+binding reader; it does not establish physical keyboard/controller testing.
+Native test input can append `+Return` / `-Return`, `motion 20 -10`, or
+`button 1 1` / `button 1 0` to the isolated runner's `test-keys.txt` when
+`--test-keys` is enabled. Use F1 or a capture click before motion. These inject
+synthetic SDL events; they do not validate physical mouse or macOS event delivery.
+`focus 1` / `focus 0` simulate focus changes within this test path without
+changing normal interactive focus handling.
+
+For a single bounded renderer trace, add `--trace-render` and write `1` to the
+isolated `trace-render.txt`. The next frame logs up to 2,000 draw/clear samples;
+normal play has tracing disabled. Interactive launch logs are capped at 4 MiB
+per stream and reused on the next launch.
+
+Portable patch, launcher and test-isolation checks:
+
+```sh
+.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
+```
 
 ## Local workflow
 

@@ -1,6 +1,10 @@
 #ifndef TSFP_PC_CONTROLS_H
 #define TSFP_PC_CONTROLS_H
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include "platform/win32_compat.h"
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #include "pc_input.h"

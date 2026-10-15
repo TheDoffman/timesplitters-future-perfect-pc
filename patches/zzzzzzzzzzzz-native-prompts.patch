@@ -1,0 +1,67 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -54,7 +54,8 @@
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c"
+                                       "${TSFP_NATIVE_DIR}/../pc_input.c"
+                                       "${TSFP_NATIVE_DIR}/config_files.c"
+-                                      "${TSFP_NATIVE_DIR}/settings_macos.m")
++                                      "${TSFP_NATIVE_DIR}/settings_macos.m"
++                                      "${TSFP_NATIVE_DIR}/../pc_prompts.c")
+     enable_language(OBJC)
+     set_source_files_properties("${TSFP_NATIVE_DIR}/settings_macos.m" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+     target_link_libraries(xbox_input PUBLIC "-framework Cocoa")
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -21,6 +21,7 @@
+ #include "recomp_pad.h"
+ #ifdef TSFP_NATIVE_INPUT
+ #include "input_sdl.h"
++#include "pc_prompts.h"
+ #include "platform/win32_compat.h"
+ #include "pc_input.h"
+ #include <pthread.h>
+@@ -975,6 +976,7 @@
+                 have_pad=1;auto_pad=slot;break;
+             }
+         if(have_pad)defaults_for(&pad_defaults,1);
++        pc_prompts_controller(&pad,have_pad);
+     }
+ #endif
+ 
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -223,5 +223,5 @@
+     set_source_files_properties("${TSFP_NATIVE_DIR}/../pc_display_menu.c" PROPERTIES
+         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
+     target_include_directories(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/..")
+-    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_DISPLAY)
+-endif()
++    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_DISPLAY TSFP_NATIVE_PROMPTS)
++endif()
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -116,13 +116,13 @@
+ 
+ /* Shared text sizing and rendering: translate controller prompt tokens
+  * before either pass so alignment, wrapping, and displayed text agree. */
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+ #include "pc_prompt_guest.inc"
+ #endif
+ extern void sub_0003FCF0_gen(void);
+ void sub_0003FCF0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+     pc_prompt_guest(sub_0003FCF0_gen,3,4);
+ #else
+     sub_0003FCF0_gen();
+@@ -131,7 +131,7 @@
+ extern void sub_00040FA0_gen(void);
+ void sub_00040FA0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+     pc_prompt_guest(sub_00040FA0_gen,4,6);
+ #else
+     sub_00040FA0_gen();

@@ -1,6 +1,10 @@
 #ifndef TSFP_PC_DISPLAY_H
 #define TSFP_PC_DISPLAY_H
+#ifdef _WIN32
 #include <windows.h>
+#else
+typedef void *HWND;
+#endif
 typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
 /* Called on the guest/render thread. Zero dimensions retain the legacy mode. */
 PcDisplayMode pc_display_current(void);

@@ -3,6 +3,7 @@
 #endif
 #include "pc_controls.h"
 #include "pc_input.h"
+#include "pc_camera.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
 #include "texture_mode.h"
@@ -340,28 +341,12 @@ int pc_controls_key_down(int key)
     return down;
 }
 
-static int readable(uintptr_t address, size_t bytes)
-{
-    MEMORY_BASIC_INFORMATION m;
-    if (!VirtualQuery((const void *)address, &m, sizeof m) || m.State != MEM_COMMIT ||
-        (m.Protect & (PAGE_GUARD | PAGE_NOACCESS))) return 0;
-    return address + bytes >= address && address + bytes <= (uintptr_t)m.BaseAddress + m.RegionSize;
-}
-
 void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t memory_offset)
 {
     float *yaw, *pitch, fov, old_yaw, old_pitch;
-    uintptr_t p = (uintptr_t)player + memory_offset;
-    uintptr_t f = (uintptr_t)fov_object + memory_offset;
     int changed;
     if (InterlockedCompareExchange(&editing, 0, 0)) return;
-    if (!player || !fov_object || !readable(p, 0x108) || !readable(f + 0x384, 4)) return;
-    /* Player slot/port zero only. These fields and globals are verified
-       against this workspace's US XBE; no GameCube addresses are used. */
-    if (*(const uint32_t *)p != 0) return;
-    yaw = (float *)(p + 0x100); pitch = (float *)(p + 0x104);
-    fov = *(const float *)(f + 0x384);
-    if (!isfinite(fov) || fov < 1 || fov > 120) return;
+    if (!pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) return;
     old_yaw = *yaw; old_pitch = *pitch;
     AcquireSRWLockExclusive(&lock);
     replay_tick();

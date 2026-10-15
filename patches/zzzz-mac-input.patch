@@ -1,0 +1,145 @@
+diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -19,6 +19,10 @@
+  */
+ #include "input_bindings.h"
+ #include "recomp_pad.h"
++#ifdef TSFP_NATIVE_INPUT
++#include "input_sdl.h"
++#include <pthread.h>
++#endif
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
+ #endif
+@@ -525,6 +529,29 @@
+     return p + 1;
+ }
+ 
++#ifdef TSFP_NATIVE_INPUT
++static const char *parse_native_mouse(const char *p)
++{
++    int enabled=1, invert=0;
++    double sensitivity=0.10;
++    char key[48];
++    p=ws(p+1);
++    while(*p && *p!='}') {
++        p=jstring(p,key,sizeof key);
++        if(!p || *(p=ws(p))!=':')return NULL;
++        p=ws(p+1);
++        if(!strcmp(key,"enabled"))enabled=strncmp(p,"false",5)!=0;
++        if(!strcmp(key,"invert_y"))invert=strncmp(p,"true",4)==0;
++        if(!strcmp(key,"sensitivity"))sensitivity=strtod(p,NULL);
++        p=jskip(p);if(!p)return NULL;
++        p=ws(p);if(*p==',')p=ws(p+1);
++    }
++    if(*p!='}')return NULL;
++    tsfp_native_mouse_config(enabled,sensitivity,invert);
++    return p+1;
++}
++#endif
++
+ static int parse_config(const char *text)
+ {
+     const char *p = ws(text);
+@@ -542,6 +569,11 @@
+         if (*p != ':')
+             return 0;
+         p = ws(p + 1);
++#ifdef TSFP_NATIVE_INPUT
++        if(!strcmp(key,"mouse") && *p=='{') {
++            p=parse_native_mouse(p);if(!p)return 0;
++        } else
++#endif
+         if (strcmp(key, "pad_api") == 0 && *p == '"') {
+             char api[16];
+             p = jstring(p, api, sizeof api);
+@@ -706,6 +738,9 @@
+ {
+ #ifdef TSFP_PC_CONTROLS
+     InitOnceExecuteOnce(&g_pc_bindings_once, bindings_load_once, NULL, NULL);
++#elif defined(TSFP_NATIVE_INPUT)
++    static pthread_once_t once=PTHREAD_ONCE_INIT;
++    pthread_once(&once,bindings_load);
+ #else
+     bindings_load();
+ #endif
+@@ -790,6 +825,8 @@
+     if (!g_key_state[vk])
+         g_key_state[vk] = (GetAsyncKeyState(vk) & 0x8000) ? 2 : 1;
+     return g_key_state[vk] == 2;
++#elif defined(TSFP_NATIVE_INPUT)
++    return tsfp_native_key_down(vk);
+ #else
+     return 0;           /* no keyboard source off Windows yet */
+ #endif
+@@ -886,7 +923,7 @@
+     RecompPadState pad;
+     int have_pad = 0, i;
+     int axis[4] = { 0, 0, 0, 0 };
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     Controller pad_defaults;
+     unsigned reserved_pads = 0;
+     int auto_pad = -1;
+@@ -907,6 +944,9 @@
+ #endif
+     if (c->device == DEV_NONE)
+         return 0;
++#ifdef TSFP_NATIVE_INPUT
++    if(!tsfp_native_input_focused())return 1;
++#endif
+     memset(&kc, 0, sizeof kc);
+     key_cache_tick();
+     memset(&pad, 0, sizeof pad);
+@@ -921,6 +961,18 @@
+ #endif
+     if (c->device == DEV_PAD)
+         have_pad = recomp_pad_read(c->pad, &pad);
++#ifdef TSFP_NATIVE_INPUT
++    if(port==0 && c->device==DEV_KEYBOARD) {
++        for(int other=1;other<PORTS;other++)
++            if(g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0)
++                reserved_pads |= 1u<<g_ctl[other].pad;
++        for(int slot=0;slot<RECOMP_PAD_SLOTS;slot++)
++            if(!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
++                have_pad=1;auto_pad=slot;break;
++            }
++        if(have_pad)defaults_for(&pad_defaults,1);
++    }
++#endif
+ 
+ #ifdef TSFP_PC_CONTROLS
+     if (port == 0 && pc_controls_accept_pad()) {
+@@ -943,7 +995,7 @@
+ 
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+         if (auto_pad>=0) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+                 int m=source_magnitude(&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
+@@ -990,6 +1042,9 @@
+ #ifdef TSFP_PC_CONTROLS
+     pc_input_normalize_movement(&out->sThumbLX, &out->sThumbLY);
+ #endif
++#ifdef TSFP_NATIVE_INPUT
++    if(port==0 && c->device==DEV_KEYBOARD)tsfp_native_mouse_sample(out);
++#endif
+     return 1;
+ }
+ 
+diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -48,3 +48,9 @@
+     target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_debug.c")
+     target_link_libraries(xbox_input PUBLIC shell32)
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c")
++    target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}")
++    target_compile_definitions(xbox_input PRIVATE TSFP_NATIVE_INPUT)
++endif()

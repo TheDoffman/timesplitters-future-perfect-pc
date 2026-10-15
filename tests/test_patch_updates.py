@@ -1,6 +1,7 @@
 """Exercise real runtime patches on small source-only checkout fixtures."""
 from pathlib import Path
 import importlib.util
+import shutil
 import subprocess
 import sys
 
@@ -46,9 +47,10 @@ def test_fresh_checkout_and_repeated_build(checkout):
 
 
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
-    # The user's state: controls/debug/prompts applied, display/textures missing.
+    # Historical state: controls/debug/prompts applied before display/textures
+    # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch'):
+        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
@@ -65,6 +67,32 @@ def test_already_integrated_controls_and_display(checkout):
     apply(checkout, 'pc-display.patch')
     assert installer.apply_patches(checkout, PATCHES)
     assert installer.apply_patches(checkout, PATCHES) == []
+
+
+def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
+    old_patches = tmp_path / 'mac-only-patches'
+    old_patches.mkdir()
+    for patch in PATCHES.glob('*.patch'):
+        if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+            shutil.copyfile(patch, old_patches / patch.name)
+    assert installer.apply_patches(checkout, old_patches)
+    assert installer.apply_patches(checkout, PATCHES)
+    cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
+    assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
+    assert installer.apply_patches(checkout, PATCHES) == []
+
+
+def test_native_boot_source_conflict_preserves_all_files(checkout):
+    installer.apply_patches(checkout, PATCHES)
+    cmake = checkout / 'titles/futureperfect/CMakeLists.txt'
+    content = cmake.read_bytes()
+    assert b'list(APPEND GAME_SOURCES src/main.c)' in content
+    cmake.write_bytes(content.replace(b'list(APPEND GAME_SOURCES src/main.c)',
+                                     b'list(APPEND GAME_SOURCES custom_main.c)'))
+    before = snapshot(checkout)
+    with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
+        installer.apply_patches(checkout, PATCHES)
+    assert snapshot(checkout) == before
 
 
 def test_conflict_preserves_every_runtime_file(checkout):

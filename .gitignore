@@ -11,6 +11,7 @@
 *.pak
 *.c2n
 __pycache__/
+.DS_Store
 xbox_kernel.log
 /config/pc-controls.json.bak
 /config/*.tmp

@@ -1,0 +1,33 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -50,7 +50,10 @@
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c")
++    # Compile the same portable input model used by the Windows adapter.
++    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c"
++                                      "${TSFP_NATIVE_DIR}/../pc_input.c")
++    target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/..")
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}")
+     target_compile_definitions(xbox_input PRIVATE TSFP_NATIVE_INPUT)
+ endif()
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -21,6 +21,7 @@
+ #include "recomp_pad.h"
+ #ifdef TSFP_NATIVE_INPUT
+ #include "input_sdl.h"
++#include "pc_input.h"
+ #include <pthread.h>
+ #endif
+ #ifdef TSFP_PC_CONTROLS
+@@ -1039,7 +1040,7 @@
+         default:      out->sThumbRY = (SHORT)v; break;
+         }
+     }
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     pc_input_normalize_movement(&out->sThumbLX, &out->sThumbLY);
+ #endif
+ #ifdef TSFP_NATIVE_INPUT

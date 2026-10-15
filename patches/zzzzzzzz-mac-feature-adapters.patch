@@ -1,0 +1,165 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -21,6 +21,7 @@
+ #include "recomp_pad.h"
+ #ifdef TSFP_NATIVE_INPUT
+ #include "input_sdl.h"
++#include "platform/win32_compat.h"
+ #include "pc_input.h"
+ #include <pthread.h>
+ #endif
+@@ -168,7 +169,7 @@
+ static char g_path[520];
+ static int g_have_path;
+ static int g_ready;
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+ static SRWLOCK g_pc_bindings_lock = SRWLOCK_INIT;
+ static INIT_ONCE g_pc_bindings_once = INIT_ONCE_STATIC_INIT;
+ #endif
+@@ -726,7 +727,7 @@
+     fflush(stderr);
+ }
+ 
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+ static BOOL CALLBACK bindings_load_once(PINIT_ONCE once, PVOID parameter, PVOID *context)
+ {
+     (void)once; (void)parameter; (void)context;
+@@ -737,7 +738,7 @@
+ 
+ void recomp_bindings_init(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     InitOnceExecuteOnce(&g_pc_bindings_once, bindings_load_once, NULL, NULL);
+ #elif defined(TSFP_NATIVE_INPUT)
+     static pthread_once_t once=PTHREAD_ONCE_INIT;
+@@ -759,7 +760,7 @@
+     return port < PORTS ? g_ctl[port].label : "nothing";
+ }
+ 
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+ #include "pc_bindings.inc"
+ #endif
+ 
+@@ -917,7 +918,7 @@
+ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+ {
+     Controller *c;
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     Controller snapshot;
+ #endif
+     KeyCache kc;
+@@ -937,7 +938,7 @@
+     if (port >= PORTS)
+         return 0;
+     c = &g_ctl[port];
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     AcquireSRWLockShared(&g_pc_bindings_lock);
+     snapshot = *c;
+     ReleaseSRWLockShared(&g_pc_bindings_lock);
+@@ -951,7 +952,7 @@
+     memset(&kc, 0, sizeof kc);
+     key_cache_tick();
+     memset(&pad, 0, sizeof pad);
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     AcquireSRWLockShared(&g_pc_bindings_lock);
+     if (port == 0 && c->device == DEV_KEYBOARD) {
+         for (int other=1;other<PORTS;other++)
+@@ -964,9 +965,11 @@
+         have_pad = recomp_pad_read(c->pad, &pad);
+ #ifdef TSFP_NATIVE_INPUT
+     if(port==0 && c->device==DEV_KEYBOARD) {
++        AcquireSRWLockShared(&g_pc_bindings_lock);
+         for(int other=1;other<PORTS;other++)
+             if(g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0)
+                 reserved_pads |= 1u<<g_ctl[other].pad;
++        ReleaseSRWLockShared(&g_pc_bindings_lock);
+         for(int slot=0;slot<RECOMP_PAD_SLOTS;slot++)
+             if(!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
+                 have_pad=1;auto_pad=slot;break;
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -52,7 +52,12 @@
+ if(APPLE AND TSFP_NATIVE_DIR)
+     # Compile the same portable input model used by the Windows adapter.
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c"
+-                                      "${TSFP_NATIVE_DIR}/../pc_input.c")
++                                      "${TSFP_NATIVE_DIR}/../pc_input.c"
++                                      "${TSFP_NATIVE_DIR}/config_files.c"
++                                      "${TSFP_NATIVE_DIR}/settings_macos.m")
++    enable_language(OBJC)
++    set_source_files_properties("${TSFP_NATIVE_DIR}/settings_macos.m" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++    target_link_libraries(xbox_input PUBLIC "-framework Cocoa")
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/..")
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}")
+     target_compile_definitions(xbox_input PRIVATE TSFP_NATIVE_INPUT)
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -110,3 +110,8 @@
+     set_source_files_properties(d3d8_resources.c PROPERTIES COMPILE_DEFINITIONS TSFP_FORMAT_ONLY)
+     target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}")
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/../pc_display.c")
++    target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/..")
++endif()
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -217,3 +217,11 @@
+     target_link_libraries(tsfp_native_paths_test PRIVATE xboxrecomp)
+     add_test(NAME native_paths COMMAND tsfp_native_paths_test "${CMAKE_BINARY_DIR}/path-tests")
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../pc_display_menu.c")
++    set_source_files_properties("${TSFP_NATIVE_DIR}/../pc_display_menu.c" PROPERTIES
++        INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
++    target_include_directories(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/..")
++    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_DISPLAY)
++endif()
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -25,6 +25,9 @@
+ #include <string.h>   /* strcmp: RECOMP_ICALL_FATAL */
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
++#include "pc_display_menu.h"
++#endif
++#ifdef TSFP_NATIVE_DISPLAY
+ #include "pc_display_menu.h"
+ #endif
+ 
+@@ -227,7 +230,7 @@
+ extern void sub_000C77C0_gen(void);
+ void sub_000C77C0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_display_camera(sub_000C77C0_gen);
+ #else
+     sub_000C77C0_gen();
+@@ -237,7 +240,7 @@
+ extern void sub_00079D60_gen(void);
+ void sub_00079D60(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     pc_display_menu_button(sub_00079D60_gen);
+ #else
+     sub_00079D60_gen();
+@@ -246,7 +249,7 @@
+ 
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
+ {
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+     recomp_func_t display_callback=pc_display_menu_lookup(xbox_va);
+     if(display_callback) return display_callback;
+ #endif

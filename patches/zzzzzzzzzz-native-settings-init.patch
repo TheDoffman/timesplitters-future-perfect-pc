@@ -1,0 +1,20 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -727,7 +727,7 @@
+     fflush(stderr);
+ }
+ 
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++#ifdef TSFP_PC_CONTROLS
+ static BOOL CALLBACK bindings_load_once(PINIT_ONCE once, PVOID parameter, PVOID *context)
+ {
+     (void)once; (void)parameter; (void)context;
+@@ -738,7 +738,7 @@
+ 
+ void recomp_bindings_init(void)
+ {
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++#ifdef TSFP_PC_CONTROLS
+     InitOnceExecuteOnce(&g_pc_bindings_once, bindings_load_once, NULL, NULL);
+ #elif defined(TSFP_NATIVE_INPUT)
+     static pthread_once_t once=PTHREAD_ONCE_INIT;

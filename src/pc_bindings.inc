@@ -2,6 +2,13 @@
    and initialization rather than maintaining a second binding vocabulary. */
 #include "pc_settings.h"
 #include <math.h>
+#ifdef TSFP_NATIVE_INPUT
+#include "settings_macos.h"
+#include "config_files.h"
+#include "pc_debug.h"
+enum { VK_XBUTTON1=5, VK_XBUTTON2=6, VK_F9=0x78, VK_F10=0x79, VK_F11=0x7a,
+       VK_F23=0x86, VK_F24=0x87, VK_LWIN=0x5b, VK_RWIN=0x5c };
+#endif
 _Static_assert(CONTROL_COUNT == PC_ACTION_COUNT, "PC settings action order must match runtime controls");
 
 const char *const pc_action_labels[PC_ACTION_COUNT] = {
@@ -40,9 +47,13 @@ void pc_settings_key_name(int key, char *out, size_t bytes)
     case VK_F24: name = "Wheel down"; break;
     }
     if (name) { snprintf(out, bytes, "%s", name); return; }
+#ifdef TSFP_NATIVE_INPUT
+    tsfp_native_key_name(key,out,bytes);
+#else
     if (!GetKeyNameTextA((LONG)(MapVirtualKeyA((UINT)key, MAPVK_VK_TO_VSC) << 16) |
         ((key >= VK_PRIOR && key <= VK_DELETE) ? (1L << 24) : 0), out, (int)bytes))
         snprintf(out, bytes, "Key %d", key);
+#endif
 }
 
 int pc_settings_conflict(const PcSettings *s, int action, int key)
@@ -59,7 +70,7 @@ int pc_settings_read(PcSettings *s, char *error, size_t bytes)
     int i,j;
     recomp_bindings_init();
     memset(s, 0, sizeof *s);
-    if (!g_have_path) { snprintf(error, bytes, "No PC controls configuration was loaded. Start the game with Play.cmd."); return 0; }
+    if (!g_have_path) { snprintf(error, bytes, "No PC controls configuration was loaded. Start the game with its launcher."); return 0; }
     AcquireSRWLockShared(&g_pc_bindings_lock);
     if (g_ctl[0].device != DEV_KEYBOARD) {
         ReleaseSRWLockShared(&g_pc_bindings_lock);
@@ -154,6 +165,9 @@ static int pc_replace_member(char **text, const char *object, const char *name, 
 
 static int pc_write_config(const char *text)
 {
+#ifdef TSFP_NATIVE_INPUT
+    return tsfp_config_write(g_path,text,1);
+#else
     char temp[600], backup[600];
     FILE *f;
     int ok;
@@ -172,6 +186,7 @@ static int pc_write_config(const char *text)
         DWORD error=GetLastError(); DeleteFileA(temp); SetLastError(error); return 0;
     }
     return 1;
+#endif
 }
 
 static int pc_debug_bool(const char *object, const char *name)
@@ -204,7 +219,7 @@ int pc_debug_config_save(const PcDebugOptions *s, char *error, size_t bytes)
     const char *debug;
     int ok=0;
     recomp_bindings_init();
-    if (!g_have_path) { snprintf(error,bytes,"No settings file is loaded. Start the game with Play.cmd."); return 0; }
+    if (!g_have_path) { snprintf(error,bytes,"No settings file is loaded. Start the game with its launcher."); return 0; }
     text=read_file(g_path);
     if (!text) goto failure;
     debug=pc_member(text,"debug",NULL);
@@ -220,7 +235,7 @@ int pc_debug_config_save(const PcDebugOptions *s, char *error, size_t bytes)
     ok=1;
 failure:
     free(text);
-    if (!ok) snprintf(error,bytes,"Could not safely save debug settings (Windows error %lu). Active settings were kept.",GetLastError());
+    if (!ok) snprintf(error,bytes,"Could not safely save debug settings (system error %lu). Active settings were kept.",(unsigned long)GetLastError());
     return ok;
 }
 
@@ -242,7 +257,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
         for (j=0;j<PC_BINDING_SLOTS;j++) {
             int key=s->keys[i][j];
             if (key<0 || key>255 || key==VK_F1 || key==VK_F2 || key==VK_F12 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN) {
-                snprintf(error,bytes,"A binding uses an invalid key, a Windows key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
+                snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
             }
             if (key) { used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",first?"":",",key); first=0; }
         }
@@ -275,6 +290,6 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     free(text); return 1;
 failure:
     free(text);
-    snprintf(error,bytes,"Could not safely save the controls file (Windows error %lu). Your active bindings were kept.",GetLastError());
+    snprintf(error,bytes,"Could not safely save the controls file (system error %lu). Your active bindings were kept.",(unsigned long)GetLastError());
     return 0;
 }

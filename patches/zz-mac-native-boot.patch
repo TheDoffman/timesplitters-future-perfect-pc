@@ -1,0 +1,929 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -77,10 +77,16 @@
+     add_library(xbox_d3d8 STATIC
+         d3d8_gl.c
+     )
+-    find_package(PkgConfig REQUIRED)
+-    pkg_check_modules(EPOXY REQUIRED epoxy)
+-    target_include_directories(xbox_d3d8 PRIVATE ${EPOXY_INCLUDE_DIRS})
+-    target_link_libraries(xbox_d3d8 PUBLIC platform SDL3::SDL3 ${EPOXY_LIBRARIES})
++    target_link_libraries(xbox_d3d8 PUBLIC platform SDL3::SDL3)
++    if(APPLE)
++        find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)
++        target_link_libraries(xbox_d3d8 PUBLIC ${OPENGL_FRAMEWORK})
++    else()
++        find_package(PkgConfig REQUIRED)
++        pkg_check_modules(EPOXY REQUIRED epoxy)
++        target_include_directories(xbox_d3d8 PRIVATE ${EPOXY_INCLUDE_DIRS})
++        target_link_libraries(xbox_d3d8 PUBLIC ${EPOXY_LIBRARIES})
++    endif()
+ endif()
+ 
+ target_include_directories(xbox_d3d8 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+--- a/src/d3d/d3d8_gl.c
++++ b/src/d3d/d3d8_gl.c
+@@ -25,7 +25,12 @@
+ #include "d3d8_fvf.h"
+ 
+ #include <SDL3/SDL.h>
++#ifdef __APPLE__
++#define GL_SILENCE_DEPRECATION
++#include <OpenGL/gl3.h>
++#else
+ #include <epoxy/gl.h>
++#endif
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -29,6 +29,7 @@
+     hle_xmv.c
+     hle_xmv_play.c
+     input_model.c
++    input_host.c
+ )
+ 
+ # Host backends. XAudio2 and XInput exist only on Windows. A POSIX host needs
+@@ -39,8 +40,11 @@
+ if(WIN32)
+     target_sources(xbox_hle PRIVATE
+         audio_output_xaudio2.cpp
+-        input_host.c
+     )
++endif()
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/audio_sdl.c")
++    target_link_libraries(xbox_hle PRIVATE SDL3::SDL3)
+ endif()
+ target_include_directories(xbox_hle PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ target_link_libraries(xbox_hle PUBLIC xbox_config)
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -70,6 +70,8 @@
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
+ #endif
++
++static unsigned long g_shadow_swaps; /* Guest frame counter, all hosts. */
+ 
+ #ifdef _WIN32
+ #include "d3d8_xbox.h"
+@@ -135,7 +137,7 @@
+ static DWORD              g_shadow_swap_thread;
+ static int                g_shadow_thread_notes;
+ static unsigned long      g_shadow_clears;
+-static unsigned long      g_shadow_swaps;
++
+ /* The video overlay's state, from EnableOverlay and UpdateOverlay. */
+ static int                g_overlay_enabled, g_overlay_updated;
+ /* Where the playing movie's surface keeps its texels (hle_xmv_play.c), and
+@@ -1863,6 +1865,9 @@
+      * exists. */
+     mirror_gpu_time_fence();
+     HLE_CALL_ORIGINAL(Direct3D_CreateDevice);
++#ifndef _WIN32
++    fprintf(stderr, "[NATIVE-GUEST] graphics initialization returned 0x%08X\n", g_eax);
++#endif
+     mirror_swap_throttle();
+ #ifdef _WIN32
+     g_in_create_device = 0;
+@@ -1973,6 +1978,7 @@
+  */
+ /* The overlay's line, and whether it is shown: kept here so an in-between
+  * frame (hle_d3d8_interp.c) carries the same line as the frames around it. */
++#ifdef _WIN32
+ static int  g_overlay_shown;
+ static char g_overlay_line[96];
+ 
+@@ -2075,6 +2081,8 @@
+     if (enabled)
+         d3d8_overlay_draw(line);
+ }
++
++#endif /* Windows overlay and hotkeys */
+ 
+ /* HRESULT D3DDevice_Swap(DWORD Flags)                                       */
+ #ifdef _WIN32
+@@ -2271,6 +2279,11 @@
+         xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
+         HLE_CALL_ORIGINAL(D3DDevice_Swap);
++#ifndef _WIN32
++        g_shadow_swaps++;
++        if (g_shadow_swaps == 1 || g_shadow_swaps % 300 == 0)
++            fprintf(stderr, "[NATIVE-GUEST] completed frame %lu (host rendering not connected)\n", g_shadow_swaps);
++#endif
+         QueryPerformanceCounter(&t2);
+         g_swap_gate_ticks += t1.QuadPart - t0.QuadPart;
+         g_swap_body_ticks += t2.QuadPart - t1.QuadPart;
+@@ -2851,8 +2864,8 @@
+         if (slot >= 0 && slot == g_shadow_vs_slot)
+             g_shadow_vs_kind = kind;
+     }
+-#endif
+-}
++}
++#endif
+ 
+ /* void D3DDevice_LoadVertexShaderProgram(const DWORD *pFunction, DWORD Address)
+  * Xbox-only: copy a compiled program (the same X_VSH_SHADER_HEADER form
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1406,7 +1406,11 @@
+  * hle_d3d8.c uses it for RECOMP_HLE_D3D8_SKIP_FULLSCREEN. */
+ int hle_d3d8_stage0_is_framebuffer(void)
+ {
++#ifdef _WIN32
+     return g_stage0_framebuffer;
++#else
++    return 0; /* No host framebuffer sampling on the POSIX renderer yet. */
++#endif
+ }
+ 
+ HLE_ORIGINAL(D3DDevice_SetPalette);
+--- a/src/hle/input_host.c
++++ b/src/hle/input_host.c
+@@ -24,7 +24,7 @@
+ #include "input_bindings.h"
+ 
+ #define WIN32_LEAN_AND_MEAN
+-#include <windows.h>
++#include "platform/xbox_winnt.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -3002,8 +3002,10 @@
+         HANDLE hires = CreateWaitableTimerExW(NULL, NULL,
+                                               0x00000002 /* CREATE_WAITABLE_TIMER_HIGH_RESOLUTION */,
+                                               TIMER_ALL_ACCESS);
++#ifdef _WIN32
+         if (!hires && vblank_clock_wait_us() >= 0)
+             timeBeginPeriod(1);
++#endif
+ 
+         for (;;) {
+             long long now;
+@@ -3628,7 +3630,8 @@
+         uint32_t _e = g_eax ? xbox_LastFileError() : 0u;
+         /* What was asked, as well as what came back: a failure on an existing
+          * file is a bug only if the disposition should have opened it. */
+-        if (g_eax)
++        if (g_eax) {
++#ifdef _WIN32
+             fprintf(stderr, "  [FILE] -> 0x%08X FAILED (win32 err=%u%s; access 0x%08X "
+                             "share %u disposition %u options 0x%X)\n",
+                     g_eax, _e,
+@@ -3638,6 +3641,12 @@
+                   : _e == 80u ? " ERROR_FILE_EXISTS"
+                   : _e == 183u ? " ERROR_ALREADY_EXISTS" : "",
+                     access, share, disposition, options);
++#else
++            fprintf(stderr, "  [FILE] -> 0x%08X FAILED (POSIX errno=%u; access 0x%08X "
++                            "share %u disposition %u options 0x%X)\n",
++                    g_eax, _e, access, share, disposition, options);
++#endif
++        }
+         else
+             fprintf(stderr, "  [FILE] -> 0x%08X\n", g_eax);
+     }
+--- a/src/kernel/kernel_file.c
++++ b/src/kernel/kernel_file.c
+@@ -27,6 +27,8 @@
+ #include <sys/statvfs.h>
+ #include <dirent.h>
+ #include <fnmatch.h>
++#include <wchar.h>
++#include <stdlib.h>
+ #endif
+ 
+ /* Get the ANSI path from OBJECT_ATTRIBUTES (platform-independent). */
+@@ -790,6 +792,11 @@
+ 
+ /* ======================================================================== */
+ #else /* !_WIN32 */
++static XBOX_THREAD_LOCAL uint32_t s_last_file_error;
++static XBOX_THREAD_LOCAL wchar_t s_last_host_path[MAX_PATH];
++uint32_t xbox_LastFileError(void) { return s_last_file_error; }
++const wchar_t *xbox_LastHostPath(void) { return s_last_host_path; }
++
+ /* ====================  POSIX backend  =================================== */
+ /* ======================================================================== */
+ 
+@@ -857,17 +864,46 @@
+     ULONG CreateDisposition, ULONG CreateOptions)
+ {
+     char host_path[MAX_PATH];
++    s_last_file_error = 0;
++    s_last_host_path[0] = 0;
+     (void)AllocationSize; (void)FileAttributes; (void)ShareAccess;
+ 
+     if (!FileHandle || !ObjectAttributes)
+         return STATUS_INVALID_PARAMETER;
+ 
+     const char* xbox_path = get_xbox_path(ObjectAttributes);
+-    if (!xbox_path || !xbox_translate_path(xbox_path, host_path, MAX_PATH)) {
++    BOOL translated = FALSE;
++    if (xbox_path && ObjectAttributes->RootDirectory && xbox_path[0] != '\\' &&
++        xbox_path[0] != '/' && !(xbox_path[0] && xbox_path[1] == ':')) {
++        const char *parent = w32_handle_path(ObjectAttributes->RootDirectory);
++        if (parent) {
++            int n = snprintf(host_path, sizeof host_path, "%s/%s", parent, xbox_path);
++            translated = n >= 0 && n < (int)sizeof host_path;
++            xbox_path_normalize(host_path);
++        }
++    } else if (xbox_path) {
++        translated = xbox_translate_path(xbox_path, host_path, MAX_PATH);
++    }
++    if (!translated) {
+         xbox_log(XBOX_LOG_ERROR, XBOX_LOG_FILE, "NtCreateFile: path translation failed");
+         return STATUS_OBJECT_PATH_NOT_FOUND;
+     }
+ 
++    struct stat attrs;
++    if (stat(host_path, &attrs) == 0) {
++        if ((CreateOptions & XBOX_FILE_DIRECTORY_FILE) && S_ISREG(attrs.st_mode)) {
++            /* A partition device opened for a volume query needs its parent. */
++            const char *leaf = strrchr(host_path, '/');
++            if (leaf && strncmp(leaf + 1, "Partition", 9) == 0 && strlen(leaf + 1) == 14 &&
++                leaf[10] >= '0' && leaf[10] <= '5' && strcmp(leaf + 11, ".img") == 0)
++                host_path[leaf - host_path] = 0;
++        } else if (S_ISDIR(attrs.st_mode)) {
++            CreateOptions |= XBOX_FILE_DIRECTORY_FILE;
++        }
++    }
++    if (mbstowcs(s_last_host_path, host_path, MAX_PATH) == (size_t)-1)
++        s_last_host_path[0] = 0;
++    s_last_host_path[MAX_PATH - 1] = 0;
+     int fd;
+     if (CreateOptions & XBOX_FILE_DIRECTORY_FILE) {
+         if (CreateDisposition == XBOX_FILE_CREATE || CreateDisposition == XBOX_FILE_OPEN_IF)
+@@ -879,6 +915,8 @@
+ 
+     if (fd < 0) {
+         int e = errno;
++        s_last_file_error = (uint32_t)e;
++        fprintf(stderr, "[POSIX-FILE] open %s failed: %s (errno %d)\n", host_path, strerror(e), e);
+         XBOX_TRACE(XBOX_LOG_FILE, "NtCreateFile FAILED: %s (errno=%d)", host_path, e);
+         if (IoStatusBlock) {
+             IoStatusBlock->Status = STATUS_OBJECT_NAME_NOT_FOUND;
+--- a/src/kernel/kernel_path.c
++++ b/src/kernel/kernel_path.c
+@@ -535,6 +535,7 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <errno.h>
++#include <fcntl.h>
+ 
+ static char s_game_dir[MAX_PATH];
+ static char s_save_dir[MAX_PATH];
+@@ -567,6 +568,57 @@
+     }
+     if (mkdir(tmp, 0755) != 0 && errno != EEXIST)
+         xbox_log(XBOX_LOG_WARN, XBOX_LOG_PATH, "mkdir %s: %s", tmp, strerror(errno));
++}
++
++/* Same retail disk geometry as the Windows path. Files are sparse and live
++ * strictly under the configured save directory. Existing data is preserved. */
++static void posix_partition_images(void)
++{
++    static const uint32_t sectors[6] = {0, 0x465400, 0xFA000, 0x177000, 0x177000, 0x177000};
++    static const struct { const char *name; uint32_t start, size; } parts[] = {
++        {"XBOX_PART_X", 0x400, 0x177000}, {"XBOX_PART_Y", 0x177400, 0x177000},
++        {"XBOX_PART_Z", 0x2EE400, 0x177000}, {"XBOX_PART_C", 0x465400, 0xFA000},
++        {"XBOX_PART_E", 0x55F400, 0x465400}
++    };
++    mkdir_p(s_save_dir);
++    for (unsigned p = 0; p < 6; p++) {
++        char path[MAX_PATH];
++        if (snprintf(path, sizeof path, "%s/Partition%u.img", s_save_dir, p) >= (int)sizeof path) continue;
++        int fd = open(path, O_CREAT | O_EXCL | O_RDWR, 0600);
++        if (fd < 0) {
++            if (errno != EEXIST) fprintf(stderr, "[PATH] Cannot create %s: %s\n", path, strerror(errno));
++            continue;
++        }
++        int ok;
++        if (p) {
++            ok = ftruncate(fd, (off_t)sectors[p] * 512) == 0;
++        } else {
++            unsigned char sector[512] = {0};
++            memcpy(sector, "****PARTINFO****", 16);
++            for (unsigned i = 0; i < 5; i++) {
++                unsigned char *e = sector + 48 + i * 32;
++                memset(e, ' ', 16); memcpy(e, parts[i].name, strlen(parts[i].name));
++                uint32_t fields[4] = {0x80000000u, parts[i].start, parts[i].size, 0};
++                /* Xbox and Apple Silicon are little endian; spell out the disk format. */
++                for (unsigned f = 0; f < 4; f++) for (unsigned b = 0; b < 4; b++)
++                    e[16 + f * 4 + b] = (unsigned char)(fields[f] >> (b * 8));
++            }
++            ok = pwrite(fd, sector, sizeof sector, 0x800) == sizeof sector;
++        }
++        if (!ok) fprintf(stderr, "[PATH] Could not initialize %s: %s\n", path, strerror(errno));
++        close(fd);
++    }
++}
++
++static BOOL posix_partition_path(const char *guest, char *out, DWORD capacity)
++{
++    int n = match_prefix(guest, "\\Device\\Harddisk0\\Partition");
++    if (!n || guest[n] < '0' || guest[n] > '5') return FALSE;
++    const char *rest = guest + n + 1;
++    if (*rest == '\\' || *rest == '/') rest++;
++    if (*rest) return FALSE;
++    int written = snprintf(out, capacity, "%s/Partition%c.img", s_save_dir, guest[n]);
++    return written >= 0 && (DWORD)written < capacity;
+ }
+ 
+ void xbox_path_init(const char* game_dir, const char* save_dir)
+@@ -613,6 +665,7 @@
+     strip_trailing_slash(s_game_dir);
+     strip_trailing_slash(s_save_dir);
+ 
++    posix_partition_images();
+     s_initialized = TRUE;
+     xbox_log(XBOX_LOG_INFO, XBOX_LOG_PATH, "Path init: game=%s, save=%s",
+              s_game_dir, s_save_dir);
+@@ -639,6 +692,8 @@
+         if (resolve_symlink(xbox_path, linked, sizeof(linked)))
+             return xbox_translate_path(linked, host_path_buf, buf_size);
+     }
++
++    if (posix_partition_path(xbox_path, host_path_buf, buf_size)) return TRUE;
+ 
+     for (int i = 0; i < PATH_RULE_COUNT; i++) {
+         skip = match_path_rule(xbox_path, s_rules[i].prefix);
+--- a/src/kernel/recomp_fps.c
++++ b/src/kernel/recomp_fps.c
+@@ -1,3 +1,4 @@
++#include <stdint.h>
+ /**
+  * Frame rate, measured at the one place every configuration shares.
+  *
+--- a/src/kernel/recomp_sample.c
++++ b/src/kernel/recomp_sample.c
+@@ -1,3 +1,4 @@
++#include <stddef.h>
+ /**
+  * A sampling profiler for the whole process, by thread and by native symbol.
+  *
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -817,6 +817,7 @@
+  * logical processor's EfficiencyClass (higher is faster); the pick is the
+  * highest-numbered processor of the highest class, which also keeps the
+  * guest off CPU 0. */
++#ifdef _WIN32
+ typedef BOOL (WINAPI *GetSystemCpuSetInformation_t)(PVOID, ULONG, PULONG, HANDLE, ULONG);
+ 
+ static DWORD_PTR fastest_core_mask(DWORD_PTR proc)
+@@ -890,9 +891,12 @@
+     return mask;
+ }
+ 
++#endif /* _WIN32: CPU affinity is optional, not a macOS correctness primitive. */
++
+ void xbox_GuestLiftedEnter(void)
+ {
+     LONG n;
++#ifdef _WIN32
+     {
+         static RECOMP_TLS int pinned;
+         if (!pinned) {
+@@ -902,6 +906,7 @@
+                 SetThreadAffinityMask(GetCurrentThread(), m);
+         }
+     }
++#endif
+     park_enter();
+     if (!xbox_GuestConcurrencyOn())
+         return;
+@@ -2025,6 +2030,13 @@
+      * addresses upward until we find a free region.
+      */
+     {
++#ifdef __APPLE__
++        void *arena = w32_guest_arena_reserve((SIZE_T)0x100000000ull);
++        if (arena)
++            g_memory_base = MapViewOfFileEx(g_mapping_handle, FILE_MAP_ALL_ACCESS,
++                                            0, 0, g_memory_size, arena);
++        if (!g_memory_base) w32_guest_arena_release();
++#else
+         static const uintptr_t try_bases[] = {
+             XBOX_BASE_ADDRESS,      /* 0x00010000 - original Xbox address */
+             0x00800000,             /* 8 MB - above typical PEB/TEB region */
+@@ -2034,7 +2046,7 @@
+             0,                      /* sentinel - let OS choose */
+         };
+ 
+-        for (int i = 0; try_bases[i] != 0 || i == 0; i++) {
++        for (size_t i = 0; i < sizeof(try_bases) / sizeof(try_bases[0]); i++) {
+             LPVOID hint = try_bases[i] ? (LPVOID)try_bases[i] : NULL;
+             g_memory_base = MapViewOfFileEx(
+                 g_mapping_handle,
+@@ -2053,6 +2065,7 @@
+                 break;
+             }
+         }
++    #endif
+     }
+ 
+     if (!g_memory_base) {
+@@ -2564,12 +2577,16 @@
+      */
+     {
+         uintptr_t nv2a_native = XBOX_NV2A_BASE + g_memory_offset;
++#ifdef __APPLE__
++        g_nv2a_memory = w32_guest_mmio_map((LPVOID)nv2a_native, XBOX_NV2A_SIZE);
++#else
+         g_nv2a_memory = VirtualAlloc(
+             (LPVOID)nv2a_native,
+             XBOX_NV2A_SIZE,
+             MEM_RESERVE | MEM_COMMIT,
+             PAGE_READWRITE
+         );
++#endif
+         /* The pushbuffer survey rides on the same poll, so either
+          * variable arms it. */
+         s_nv2a_trace = getenv("RECOMP_NV2A_TRACE") != NULL
+@@ -2637,12 +2654,16 @@
+      */
+     {
+         uintptr_t mcpx_native = XBOX_MCPX_BASE + g_memory_offset;
++#ifdef __APPLE__
++        g_mcpx_memory = w32_guest_mmio_map((LPVOID)mcpx_native, XBOX_MCPX_SIZE);
++#else
+         g_mcpx_memory = VirtualAlloc(
+             (LPVOID)mcpx_native,
+             XBOX_MCPX_SIZE,
+             MEM_RESERVE | MEM_COMMIT,
+             PAGE_READWRITE
+         );
++#endif
+         g_mcpx_regs = g_mcpx_memory;
+         if (g_mcpx_memory) {
+             /* AC'97 codec ready.
+@@ -3054,6 +3075,9 @@
+         CloseHandle(g_mapping_handle);
+         g_mapping_handle = NULL;
+     }
++#ifdef __APPLE__
++    w32_guest_arena_release();
++#endif
+     fprintf(stderr, "xbox_MemoryLayoutShutdown: released\n");
+ }
+ 
+--- a/src/platform/win32_compat.c
++++ b/src/platform/win32_compat.c
+@@ -247,7 +247,7 @@
+ /* ===================================================================== */
+ 
+ typedef enum { K_EVENT, K_SEM, K_MUTEX, K_THREAD, K_TIMER, K_HEAP,
+-               K_FILEMAP, K_FILE } w32_kind;
++               K_FILEMAP, K_FILE, K_WAITABLE_TIMER } w32_kind;
+ 
+ #define W32_MAX_APC 16
+ 
+@@ -291,6 +291,11 @@
+     WAITORTIMERCALLBACK timer_cb;
+     PVOID           timer_param;
+ 
++    /* Waitable timer, protected by lock; no per-timer helper thread. */
++    int             armed;
++    uint64_t        deadline_ns;
++    uint64_t        period_ns;
++
+     /* file mapping / fd-backed file handle */
+     int             fd;
+     SIZE_T          map_size;
+@@ -421,6 +426,25 @@
+     return run;
+ }
+ 
++static uint64_t monotonic_ns(void)
++{
++    struct timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return (uint64_t)ts.tv_sec * 1000000000ull + ts.tv_nsec;
++}
++
++/* Called with the object's lock held. Periodic signals coalesce, as on Win32. */
++static void timer_update(w32_object *o, uint64_t now)
++{
++    if (o->armed && now >= o->deadline_ns) {
++        o->signaled = 1;
++        if (o->period_ns)
++            o->deadline_ns += ((now - o->deadline_ns) / o->period_ns + 1) * o->period_ns;
++        else
++            o->armed = 0;
++    }
++}
++
+ /*
+  * Wait on a single object. The object lock must NOT be held.
+  * Returns WAIT_OBJECT_0 / WAIT_TIMEOUT.
+@@ -430,6 +454,7 @@
+     struct timespec ts;
+     int timed = (ms != INFINITE);
+     if (timed) deadline_from_ms(ms, &ts);
++    uint64_t wait_end = timed ? monotonic_ns() + (uint64_t)ms * 1000000ull : UINT64_MAX;
+ 
+     pthread_mutex_lock(&o->lock);
+     DWORD result = WAIT_OBJECT_0;
+@@ -437,6 +462,10 @@
+     for (;;) {
+         int ready = 0;
+         switch (o->kind) {
++        case K_WAITABLE_TIMER:
++            timer_update(o, monotonic_ns());
++            ready = o->signaled;
++            break;
+         case K_EVENT:  ready = o->signaled; break;
+         case K_THREAD: ready = o->exited;   break;
+         case K_SEM:    ready = (o->sem_count > 0); break;
+@@ -447,6 +476,28 @@
+         }
+         if (ready) break;
+ 
++        if (o->kind == K_WAITABLE_TIMER) {
++            uint64_t now = monotonic_ns();
++            if (timed && now >= wait_end) { result = WAIT_TIMEOUT; break; }
++            uint64_t end = o->armed && o->deadline_ns < wait_end ? o->deadline_ns : wait_end;
++            if (end == UINT64_MAX) {
++                pthread_cond_wait(&o->cond, &o->lock);
++            } else {
++                uint64_t ns = end > now ? end - now : 0;
++                struct timespec delay = {(time_t)(ns / 1000000000ull), (long)(ns % 1000000000ull)};
++#ifdef __APPLE__
++                pthread_cond_timedwait_relative_np(&o->cond, &o->lock, &delay);
++#else
++                struct timespec absolute;
++                clock_gettime(CLOCK_REALTIME, &absolute);
++                absolute.tv_sec += delay.tv_sec;
++                absolute.tv_nsec += delay.tv_nsec;
++                if (absolute.tv_nsec >= 1000000000L) { absolute.tv_sec++; absolute.tv_nsec -= 1000000000L; }
++                pthread_cond_timedwait(&o->cond, &o->lock, &absolute);
++#endif
++            }
++            continue; /* Recheck the signal and both deadlines after every wake. */
++        }
+         int rc = timed ? pthread_cond_timedwait(&o->cond, &o->lock, &ts)
+                        : pthread_cond_wait(&o->cond, &o->lock);
+         if (rc == ETIMEDOUT) { result = WAIT_TIMEOUT; break; }
+@@ -454,6 +505,7 @@
+ 
+     if (result == WAIT_OBJECT_0) {
+         switch (o->kind) {
++        case K_WAITABLE_TIMER:
+         case K_EVENT: if (!o->manual_reset) o->signaled = 0; break;
+         case K_SEM:   o->sem_count--; break;
+         case K_MUTEX: o->mtx_owner = GetCurrentThreadId(); o->mtx_recursion++; break;
+@@ -538,21 +590,64 @@
+     return CreateEventA(sa, manualReset, initialState, NULL);
+ }
+ 
+-/* A waitable timer that is never armed is never signalled, which is exactly an
+- * event nobody sets. That is the whole of what the kernel bridge needs: it
+- * creates one for NtCreateTimer and cancels it for NtCancelTimer, and nothing
+- * calls SetWaitableTimer. */
++HANDLE CreateWaitableTimerExW(LPSECURITY_ATTRIBUTES sa, LPCWSTR name, DWORD flags, DWORD access)
++{
++    (void)sa; (void)access;
++    if (name || (flags & ~3u)) { SetLastError(ERROR_INVALID_PARAMETER); return NULL; }
++    w32_object *o = obj_alloc(K_WAITABLE_TIMER);
++    o->manual_reset = (flags & CREATE_WAITABLE_TIMER_MANUAL_RESET) != 0;
++    return (HANDLE)o;
++}
++
+ HANDLE CreateWaitableTimerW(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, LPCWSTR name)
+ {
+-    (void)name;
+-    return CreateEventA(sa, manualReset, FALSE, NULL);
+-}
+-
+-/* On Windows, cancelling a timer leaves its signal state alone. */
++    return CreateWaitableTimerExW(sa, name, manualReset ? 1u : 0u, TIMER_ALL_ACCESS);
++}
++
++BOOL SetWaitableTimer(HANDLE h, const LARGE_INTEGER *due, LONG period,
++                      PTIMERAPCROUTINE callback, LPVOID arg, BOOL resume)
++{
++    (void)arg;
++    w32_object *o = (w32_object *)h;
++    if (!o || o->kind != K_WAITABLE_TIMER || !due || period < 0 || callback || resume) {
++        SetLastError(ERROR_INVALID_PARAMETER); return FALSE;
++    }
++    uint64_t delay;
++    if (due->QuadPart < 0) {
++        /* Avoid signed overflow on INT64_MIN and reject nanosecond overflow. */
++        uint64_t ticks = (uint64_t)(-(due->QuadPart + 1)) + 1;
++        if (ticks > UINT64_MAX / 100u) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
++        delay = ticks * 100u;
++    } else {
++        FILETIME ft;
++        GetSystemTimeAsFileTime(&ft);
++        uint64_t now = ((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
++        uint64_t ticks = (uint64_t)due->QuadPart > now ? (uint64_t)due->QuadPart - now : 0;
++        if (ticks > UINT64_MAX / 100u) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
++        delay = ticks * 100u;
++    }
++    uint64_t now = monotonic_ns();
++    if (delay > UINT64_MAX - now) { SetLastError(ERROR_INVALID_PARAMETER); return FALSE; }
++    pthread_mutex_lock(&o->lock);
++    o->deadline_ns = now + delay;
++    o->period_ns = (uint64_t)period * 1000000ull;
++    o->signaled = 0;
++    o->armed = 1;
++    pthread_cond_broadcast(&o->cond);
++    pthread_mutex_unlock(&o->lock);
++    return TRUE;
++}
++
+ BOOL CancelWaitableTimer(HANDLE h)
+ {
+     w32_object *o = (w32_object *)h;
+-    return (o && o->kind == K_EVENT) ? TRUE : FALSE;
++    if (!o || o->kind != K_WAITABLE_TIMER) return FALSE;
++    pthread_mutex_lock(&o->lock);
++    timer_update(o, monotonic_ns());
++    o->armed = 0; /* Cancellation preserves an already-signalled timer. */
++    pthread_cond_broadcast(&o->cond);
++    pthread_mutex_unlock(&o->lock);
++    return TRUE;
+ }
+ 
+ BOOL SetEvent(HANDLE h)
+@@ -985,10 +1080,91 @@
+     }
+ }
+ 
++#ifdef __APPLE__
++typedef struct { uintptr_t base; size_t size; } arena_view;
++static void mmio_aliases_release(void);
++static uintptr_t s_arena;
++static size_t s_arena_size;
++static arena_view s_arena_views[512];
++static pthread_mutex_t s_arena_lock = PTHREAD_MUTEX_INITIALIZER;
++
++static int arena_contains(const void *address, size_t size)
++{
++    uintptr_t a = (uintptr_t)address;
++    return s_arena && a >= s_arena && size <= s_arena_size && a - s_arena <= s_arena_size - size;
++}
++
++LPVOID w32_guest_arena_reserve(SIZE_T size)
++{
++    pthread_mutex_lock(&s_arena_lock);
++    if (s_arena) { pthread_mutex_unlock(&s_arena_lock); return NULL; }
++    void *p = mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++    if (p != MAP_FAILED) { s_arena = (uintptr_t)p; s_arena_size = size; }
++    pthread_mutex_unlock(&s_arena_lock);
++    return p == MAP_FAILED ? NULL : p;
++}
++
++BOOL w32_guest_arena_release(void)
++{
++    mmio_aliases_release();
++    pthread_mutex_lock(&s_arena_lock);
++    int ok = !s_arena || munmap((void *)s_arena, s_arena_size) == 0;
++    if (ok) { s_arena = 0; s_arena_size = 0; memset(s_arena_views, 0, sizeof s_arena_views); }
++    pthread_mutex_unlock(&s_arena_lock);
++    return ok;
++}
++
++static void *arena_map(void *address, size_t size, int prot, int flags, int fd, off_t offset)
++{
++    size_t page = (size_t)getpagesize();
++    uintptr_t a = (uintptr_t)address;
++    if (!size || size > SIZE_MAX - (page - 1) || a % page) return NULL;
++    size = (size + page - 1) & ~(page - 1);
++    pthread_mutex_lock(&s_arena_lock);
++    int slot = -1;
++    if (!arena_contains(address, size)) goto fail;
++    for (int i = 0; i < 512; i++) {
++        arena_view v = s_arena_views[i];
++        if (!v.base) { slot = i; continue; }
++        if (a < v.base + v.size && v.base < a + size) goto fail;
++    }
++    if (slot < 0) goto fail;
++    void *p = mmap(address, size, prot, flags | MAP_FIXED, fd, offset);
++    if (p == MAP_FAILED) goto fail;
++    s_arena_views[slot] = (arena_view){a, size};
++    pthread_mutex_unlock(&s_arena_lock);
++    return p;
++fail:
++    pthread_mutex_unlock(&s_arena_lock);
++    SetLastError(ERROR_INVALID_ADDRESS);
++    return NULL;
++}
++
++static BOOL arena_unmap(const void *address)
++{
++    pthread_mutex_lock(&s_arena_lock);
++    for (int i = 0; i < 512; i++) {
++        arena_view *v = &s_arena_views[i];
++        if (v->base != (uintptr_t)address) continue;
++        void *p = mmap((void *)v->base, v->size, PROT_NONE,
++                       MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++        if (p != MAP_FAILED) memset(v, 0, sizeof *v);
++        pthread_mutex_unlock(&s_arena_lock);
++        return p != MAP_FAILED;
++    }
++    pthread_mutex_unlock(&s_arena_lock);
++    return FALSE;
++}
++#endif
++
+ LPVOID VirtualAlloc(LPVOID address, SIZE_T size, DWORD allocationType, DWORD protect)
+ {
+     int prot  = prot_from_page(protect);
+     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
++#ifdef __APPLE__
++    if (arena_contains(address, size) && (allocationType & MEM_RESERVE))
++        return arena_map(address, size, prot, flags, -1, 0);
++#endif
+ 
+     /* MEM_COMMIT on a region already reserved by a prior VirtualAlloc:
+      * just adjust protection. */
+@@ -1024,6 +1200,9 @@
+ BOOL VirtualFree(LPVOID address, SIZE_T size, DWORD freeType)
+ {
+     if (freeType & MEM_RELEASE) {
++#ifdef __APPLE__
++        if (arena_contains(address, size)) return arena_unmap(address);
++#endif
+         /* Win32 MEM_RELEASE passes size 0; we can't know the length, so this
+          * path is only safe when callers pass the real size. */
+         if (size == 0) return TRUE;
+@@ -1501,6 +1680,13 @@
+     if (baseAddr) flags |= MAP_FIXED_NOREPLACE;
+ #endif
+ 
++#ifdef __APPLE__
++    if (arena_contains(baseAddr, len)) {
++        void *owned = arena_map(baseAddr, len, prot, MAP_SHARED, o->fd, off);
++        if (owned) view_register(owned, len);
++        return owned;
++    }
++#endif
+     void *p = mmap(baseAddr, len, prot, flags, o->fd, off);
+     if (p == MAP_FAILED) { SetLastError(ERROR_NOT_ENOUGH_MEMORY); return NULL; }
+     if (baseAddr && p != baseAddr) {
+@@ -1524,8 +1710,52 @@
+ {
+     size_t len = view_take(baseAddr);
+     if (len == 0) return FALSE;
++#ifdef __APPLE__
++    if (arena_contains(baseAddr, len)) return arena_unmap(baseAddr);
++#endif
+     return munmap((void *)baseAddr, len) == 0;
+ }
++
++#ifdef __APPLE__
++/* MMIO guest pages can stay protected while handlers write through an alias.
++ * Setup precedes guest threads. Lookup is read-only and signal-handler safe. */
++static struct { uintptr_t guest; size_t size; void *alias; } s_mmio_aliases[2];
++static void mmio_aliases_release(void)
++{
++    for (unsigned i = 0; i < 2; i++) {
++        if (s_mmio_aliases[i].alias) UnmapViewOfFile(s_mmio_aliases[i].alias);
++        if (s_mmio_aliases[i].guest) UnmapViewOfFile((void *)s_mmio_aliases[i].guest);
++        memset(&s_mmio_aliases[i], 0, sizeof s_mmio_aliases[i]);
++    }
++}
++LPVOID w32_guest_mmio_map(LPVOID address, SIZE_T size)
++{
++    unsigned slot;
++    for (slot = 0; slot < 2 && s_mmio_aliases[slot].guest; slot++) {}
++    if (slot == 2 || size > UINT32_MAX) return NULL;
++    HANDLE h = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, (DWORD)size, NULL);
++    if (!h) return NULL;
++    void *guest = MapViewOfFileEx(h, FILE_MAP_ALL_ACCESS, 0, 0, size, address);
++    void *alias = guest ? MapViewOfFile(h, FILE_MAP_ALL_ACCESS, 0, 0, size) : NULL;
++    CloseHandle(h);
++    if (!alias) { if (guest) UnmapViewOfFile(guest); return NULL; }
++    s_mmio_aliases[slot].guest = (uintptr_t)guest;
++    s_mmio_aliases[slot].size = size;
++    s_mmio_aliases[slot].alias = alias;
++    return guest;
++}
++LPVOID w32_guest_mmio_alias(LPCVOID address, SIZE_T size)
++{
++    uintptr_t a = (uintptr_t)address;
++    for (unsigned i = 0; i < 2; i++) {
++        uintptr_t g = s_mmio_aliases[i].guest;
++        size_t n = s_mmio_aliases[i].size;
++        if (g && a >= g && size <= n && a - g <= n - size)
++            return (uint8_t *)s_mmio_aliases[i].alias + (a - g);
++    }
++    return NULL;
++}
++#endif
+ 
+ /* ===================================================================== */
+ /* VirtualQuery                                                           */
+--- a/src/platform/win32_compat.h
++++ b/src/platform/win32_compat.h
+@@ -131,10 +131,15 @@
+ HANDLE CreateEventW(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCWSTR name);
+ BOOL   SetEvent(HANDLE h);
+ 
+-/* Waitable timers, as far as the kernel bridge uses them: created for
+- * NtCreateTimer and cancelled for NtCancelTimer, never armed. There is
+- * deliberately no SetWaitableTimer, so a future caller fails to build here
+- * instead of getting a timer that silently never fires. */
++/* Waitable timers use monotonic deadlines for relative waits. APC callbacks
++ * and wake-from-suspend are explicitly unsupported on this host. */
++#define TIMER_ALL_ACCESS 0x001F0003u
++#define CREATE_WAITABLE_TIMER_MANUAL_RESET 0x00000001u
++#define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x00000002u
++typedef VOID (WINAPI *PTIMERAPCROUTINE)(LPVOID, DWORD, DWORD);
++HANDLE CreateWaitableTimerExW(LPSECURITY_ATTRIBUTES sa, LPCWSTR name, DWORD flags, DWORD access);
++BOOL SetWaitableTimer(HANDLE h, const LARGE_INTEGER *due, LONG period,
++                      PTIMERAPCROUTINE callback, LPVOID arg, BOOL resume);
+ HANDLE CreateWaitableTimerW(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, LPCWSTR name);
+ BOOL   CancelWaitableTimer(HANDLE h);
+ BOOL   ResetEvent(HANDLE h);
+@@ -505,6 +510,15 @@
+ BOOL   UnmapViewOfFile(LPCVOID baseAddr);
+ #define CreateFileMapping CreateFileMappingA
+ 
++#ifdef __APPLE__
++/* Own one address-space reservation; fixed maps may replace only unused pages
++ * within it. This never overwrites unrelated host allocations. */
++LPVOID w32_guest_arena_reserve(SIZE_T size);
++BOOL w32_guest_arena_release(void);
++LPVOID w32_guest_mmio_map(LPVOID address, SIZE_T size);
++LPVOID w32_guest_mmio_alias(LPCVOID address, SIZE_T size);
++#endif
++
+ /* ---- Aligned allocation ---------------------------------------------- */
+ void *_aligned_malloc(SIZE_T size, SIZE_T alignment);
+ void  _aligned_free(void *ptr);
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -83,12 +83,19 @@
+ 
+ # Core game sources
+ set(GAME_SOURCES
+-    src/main.c
+     src/recomp_manual.c
+     # Add game-specific sources here, e.g.:
+     # src/asset_loader.c
+     # src/custom_renderer.c
+ )
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    list(APPEND GAME_SOURCES "${TSFP_NATIVE_DIR}/main.c" "${TSFP_NATIVE_DIR}/mmio.c")
++elseif(WIN32)
++    list(APPEND GAME_SOURCES src/main.c)
++else()
++    message(FATAL_ERROR "This title needs TSFP_NATIVE_DIR on macOS, or a Windows host")
++endif()
+ 
+ # The recomp pipeline also generates a dispatch header and function declarations.
+ # These are included by the generated .c files:
+@@ -117,6 +124,7 @@
+ )
+ 
+ # Windows SDK libraries needed at link time
++if(WIN32)
+ target_link_libraries(${PROJECT_NAME} PRIVATE
+     d3d11
+     dxgi
+@@ -127,6 +135,7 @@
+     # function's symbol, i.e. to the guest function that faulted.
+     dbghelp
+ )
++endif()
+ 
+ # MSVC-specific: large address aware, increase section limit for big generated files
+ if(MSVC)
+@@ -190,3 +199,18 @@
+     target_include_directories(tsfp_pc_display_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     target_link_libraries(tsfp_pc_display_test PRIVATE user32)
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    enable_testing()
++    set(TSFP_TESTS "${TSFP_NATIVE_DIR}/../../tests")
++    add_executable(tsfp_native_platform_test "${TSFP_TESTS}/native_platform.c")
++    target_link_libraries(tsfp_native_platform_test PRIVATE platform)
++    add_test(NAME native_platform COMMAND tsfp_native_platform_test)
++    add_executable(tsfp_native_mmio_test "${TSFP_TESTS}/native_mmio.c" "${TSFP_NATIVE_DIR}/mmio.c")
++    target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}" "${XBOXRECOMP_DIR}/include")
++    target_link_libraries(tsfp_native_mmio_test PRIVATE platform)
++    add_test(NAME native_mmio COMMAND tsfp_native_mmio_test)
++    add_executable(tsfp_native_paths_test "${TSFP_TESTS}/native_paths.c")
++    target_link_libraries(tsfp_native_paths_test PRIVATE xboxrecomp)
++    add_test(NAME native_paths COMMAND tsfp_native_paths_test "${CMAKE_BINARY_DIR}/path-tests")
++endif()
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1,3 +1,4 @@
++#include <stddef.h>
+ /**
+  * Manual function overrides and ICALL diagnostics
+  *

@@ -3,7 +3,15 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_display.h"
+#ifndef _WIN32
+#include "platform/win32_compat.h"
+/* Win32 protection values not produced by the POSIX mapper. */
+#define PAGE_GUARD 0x100
+#define PAGE_EXECUTE_WRITECOPY 0x80
+#endif
+#ifdef _WIN32
 #include "pc_online.h"
+#endif
 #include <stdarg.h>
 
 #include "recomp_types.h"
@@ -93,6 +101,7 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+#ifdef _WIN32
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
         const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
@@ -111,6 +120,7 @@ void pc_display_menu_button(void (*original)(void))
         WORD_AT(frame+4)=previous_caption; WORD_AT(frame+20)=callback;
         return;
     }
+#endif
     original();
     if(!frontend && !paused) return;
     save_registers(&r);
@@ -288,6 +298,7 @@ static void activate(void)
     }
     restore_registers(&r); g_esp+=4;
 }
+#ifdef _WIN32
 extern void sub_001A0A60(void);
 static void system_link_activate(void)
 {
@@ -303,6 +314,7 @@ static void online_activate(void)
     if(pc_online_connect()) guest_call(sub_001A0A60,0);
     restore_registers(&r); g_esp+=4;
 }
+#endif
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
     switch(address) {
@@ -311,6 +323,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case TICK_CB: return tick_menu;
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
+#ifdef _WIN32
     case 0x1200du: return online_activate;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;
@@ -318,6 +331,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
        deliberately calls its generated body directly after configuring the
        bridge, while ordinary System Link selection resets to LAN transport. */
     case 0x001A0A60u: return system_link_activate;
+#endif
     default: return NULL;
     }
 }

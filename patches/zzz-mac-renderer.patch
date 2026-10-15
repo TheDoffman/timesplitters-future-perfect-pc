@@ -1,0 +1,1133 @@
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -73,7 +73,7 @@
+ 
+ static unsigned long g_shadow_swaps; /* Guest frame counter, all hosts. */
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ #include "d3d8_xbox.h"
+ #include "d3d8_vsh.h"
+ #include "d3d8_overlay.h"
+@@ -109,7 +109,7 @@
+ 
+ /* ------------------------------------------------------------------ shadow */
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ 
+ #define SHADOW_WM_DESTROY (WM_APP + 1)
+ 
+@@ -252,6 +252,7 @@
+ /* kernel_bridge.c: the flushes a title's own exit does, then ExitProcess. */
+ extern void xbox_HostExit(const char *why);
+ 
++#ifdef _WIN32
+ static void shadow_set_fullscreen(HWND hwnd, int on);
+ static int  g_shadow_fullscreen;
+ 
+@@ -454,6 +455,8 @@
+     return req.hwnd;
+ }
+ 
++#endif /* Windows window; SDL owns the native window */
++
+ /* The surfaces the XDK sets as target and depth inside CreateDevice -- the
+  * frame buffer and the automatic depth buffer, 0 until seen -- and the host
+  * device's own depth surface (shadow_set_render_target). */
+@@ -652,11 +655,16 @@
+     if (pp_va && HLE_MEM32(pp_va + 32))
+         g_z_scale = xbox_depth_z_scale(HLE_MEM32(pp_va + 36));
+ 
++#ifdef _WIN32
+     hwnd = shadow_window(width, height);
+     g_shadow_hwnd = hwnd;
+     if (!hwnd)
+         return;
+ 
++#else
++    hwnd = NULL; /* SDL creates the Cocoa window on this main guest thread. */
++    xbox_D3D8SetWindowTitle("TimeSplitters: Future Perfect — Native Mac");
++#endif
+     memset(&pp, 0, sizeof pp);
+     pp.BackBufferWidth = width;
+     pp.BackBufferHeight = height;
+@@ -671,7 +679,9 @@
+     if (FAILED(hr) || !g_shadow) {
+         fprintf(stderr, "[HLE-D3D8] shadow: CreateDevice failed (0x%08lX)\n", (unsigned long)hr);
+         g_shadow = NULL;
++#ifdef _WIN32
+         PostMessageA(hwnd, SHADOW_WM_DESTROY, 0, 0);
++#endif
+         return;
+     }
+     /* Never wait for vertical blank here. The title paces its loader on the
+@@ -1533,6 +1543,11 @@
+         }
+     }
+ 
++#ifdef __APPLE__
++    if (!asked && keep_last) {
++        snprintf(path, sizeof path, "%s%03d.bmp", prefix, written++ % keep_last);
++    } else
++#endif
+     if (!asked && keep_last && written >= 24 - keep_last) {
+         char *slot = ring[(written - (24 - keep_last)) % keep_last];
+ 
+@@ -1854,7 +1869,7 @@
+     first_call(&seen, "Direct3D_CreateDevice", pp_va);
+     if (original_missing(hle_original_Direct3D_CreateDevice, "Direct3D_CreateDevice"))
+         HLE_RETURN(0x80004005u);                 /* E_FAIL */
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_in_create_device = 1;
+ #endif
+     /* Before the original, not after: some XDKs wait on the fence inside
+@@ -1869,7 +1884,7 @@
+     fprintf(stderr, "[NATIVE-GUEST] graphics initialization returned 0x%08X\n", g_eax);
+ #endif
+     mirror_swap_throttle();
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_in_create_device = 0;
+     if (pp_va) {
+         /* D3DPRESENT_PARAMETERS: BackBufferCount +0xC, SwapEffect +0x14,
+@@ -1897,7 +1912,7 @@
+ HLE_EXPORT(D3DDevice_Clear)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t flags = HLE_ARG(2), color = HLE_ARG(3);
+     uint32_t z_bits = HLE_ARG(4), stencil = HLE_ARG(5);
+ #endif
+@@ -1906,7 +1921,7 @@
+     if (original_missing(hle_original_D3DDevice_Clear, "D3DDevice_Clear"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_Clear);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow) {
+         float z;
+ 
+@@ -2085,7 +2100,7 @@
+ #endif /* Windows overlay and hotkeys */
+ 
+ /* HRESULT D3DDevice_Swap(DWORD Flags)                                       */
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* Everything a completed frame needs after the title's own flip has run:
+  * the capture boundary, the frame dump, the overlay, the host present and
+  * the five-second report. Shared because a title reaches this point
+@@ -2133,6 +2148,10 @@
+         hle_d3d8_texture_frame_end();
+ 
+         g_shadow_swaps++;
++#ifdef __APPLE__
++        if (g_shadow_swaps == 1 || g_shadow_swaps % 300 == 0)
++            fprintf(stderr, "[NATIVE-GUEST] completed frame %lu (host rendering connected)\n", g_shadow_swaps);
++#endif
+         /* The frame boundary for capture: closes the frame being recorded, or
+          * starts recording if this is the requested swap. */
+         hle_d3d8_capture_swap(g_shadow_swaps, g_shadow_width, g_shadow_height);
+@@ -2171,7 +2190,9 @@
+         g_inline_begin_frame = 0;
+         g_inline_vdata_frame = 0;
+         g_frame_draws = 0;
++#ifdef _WIN32
+         overlay_frame();                 /* after the dump: not in the captures */
++#endif
+         {
+             LARGE_INTEGER a, b;
+             QueryPerformanceCounter(&a);
+@@ -2256,7 +2277,7 @@
+     /* Counted before anything else here runs, so RECOMP_FPS means the same
+      * thing whatever is switched on below. */
+     xbox_FpsCountSwap();
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_backbuffer_va)
+         note_framebuffer_phys(HLE_MEM32(g_backbuffer_va + 4));
+     if (shadow_trace_on())
+@@ -2279,7 +2300,7 @@
+         xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
+         HLE_CALL_ORIGINAL(D3DDevice_Swap);
+-#ifndef _WIN32
++#if !defined(_WIN32) && !defined(__APPLE__)
+         g_shadow_swaps++;
+         if (g_shadow_swaps == 1 || g_shadow_swaps % 300 == 0)
+             fprintf(stderr, "[NATIVE-GUEST] completed frame %lu (host rendering not connected)\n", g_shadow_swaps);
+@@ -2290,7 +2311,7 @@
+         g_swap_last = t2;
+         g_swap_timed++;
+     }
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     frame_end_shadow();
+ #endif
+ }
+@@ -2323,7 +2344,7 @@
+     }
+ 
+     xbox_FpsCountSwap();
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_backbuffer_va)
+         note_framebuffer_phys(HLE_MEM32(g_backbuffer_va + 4));
+ #endif
+@@ -2341,12 +2362,12 @@
+         g_swap_last = t2;
+         g_swap_timed++;
+     }
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     frame_end_shadow();
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* The XDK keeps the declaration it parsed in the shader object itself:
+  * X_D3DVertexShader { RefCount, Flags, ProgramSize, ProgramAndConstantsDwords,
+  * BYTE Dimensionality[4], X_VERTEXATTRIBUTEFORMAT VertexAttribute } -- 16 slots
+@@ -2721,7 +2742,7 @@
+     static int seen;
+     uint32_t declaration = HLE_ARG(0);
+     uint32_t function = HLE_ARG(1);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t handle_va = HLE_ARG(2);
+ #endif
+ 
+@@ -2731,7 +2752,7 @@
+                          "D3DDevice_CreateVertexShader"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_CreateVertexShader);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if ((int32_t)g_eax >= 0 && handle_va) {
+         uint32_t guest = HLE_MEM32(handle_va);
+         uint32_t header = function ? HLE_MEM32(function) : 0;
+@@ -2751,7 +2772,7 @@
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* Shaders created before the device.
+  *
+  * Mortal Kombat: Deadly Alliance calls CreateVertexShader before
+@@ -2875,7 +2896,7 @@
+ {
+     static int seen;
+     uint32_t function = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t address = HLE_ARG(1);
+ #endif
+ 
+@@ -2884,7 +2905,7 @@
+                          "D3DDevice_LoadVertexShaderProgram"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_LoadVertexShaderProgram);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && function && address < SHADOW_PROGRAM_SLOTS) {
+         static int logged;
+         uint32_t header = HLE_MEM32(function);
+@@ -2961,7 +2982,7 @@
+     if (original_missing(hle_original_D3DDevice_SetVertexShader, "D3DDevice_SetVertexShader"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShader);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow)
+         shadow_select_vertex_shader(handle, SHADOW_PROGRAM_SLOTS);
+ #endif
+@@ -2981,7 +3002,7 @@
+                          "D3DDevice_SelectVertexShader"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SelectVertexShader);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && handle)
+         shadow_select_vertex_shader(handle, HLE_ARG(1));
+ #endif
+@@ -2996,7 +3017,7 @@
+ HLE_EXPORT(D3DDevice_SetPixelShader)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     static int dumped, probe = -1;
+     uint32_t handle = HLE_ARG(0);
+ #endif
+@@ -3006,7 +3027,7 @@
+                          "D3DDevice_SetPixelShader"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetPixelShader);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow)
+         hle_d3d8_pixel_shader_selected(handle);
+     /* Read once: this runs on every SetPixelShader, which Outrun 2 makes
+@@ -3031,7 +3052,7 @@
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* Immediate mode, drawn (D3DDevice_Begin ... SetVertexData* ... End).
+  *
+  * Each SetVertexData* between Begin and End sets one input register's current
+@@ -3201,7 +3222,7 @@
+ HLE_EXPORT(D3DDevice_SetVertexDataColor)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t reg = HLE_ARG(0), color = HLE_ARG(1);
+ #endif
+ 
+@@ -3210,7 +3231,7 @@
+                          "D3DDevice_SetVertexDataColor"))
+         return;
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexDataColor);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow) {
+         float v[4];
+ 
+@@ -3229,7 +3250,7 @@
+ HLE_EXPORT(D3DDevice_SetVertexData2f)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t reg = HLE_ARG(0), a = HLE_ARG(1), b = HLE_ARG(2);
+ #endif
+ 
+@@ -3238,7 +3259,7 @@
+                          "D3DDevice_SetVertexData2f"))
+         return;
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexData2f);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow) {
+         float v[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+ 
+@@ -3282,7 +3303,7 @@
+     g_inline_begin++;
+     g_inline_begin_frame++;
+     HLE_CALL_ORIGINAL(D3DDevice_Begin);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_inline_on = 1;
+     g_inline_xpt = HLE_ARG(0);
+     g_inline_nverts = 0;
+@@ -3299,7 +3320,7 @@
+         return;
+     g_inline_end++;
+     HLE_CALL_ORIGINAL(D3DDevice_End);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_inline_on) {
+         inline_draw();
+         g_inline_on = 0;
+@@ -3355,7 +3376,7 @@
+ }
+ 
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* Bytes of one vertex under the current vertex shader's stream 0. */
+ static uint32_t push_vertex_stride(void)
+ {
+@@ -3458,7 +3479,7 @@
+     first_call(&seen, "D3DDevice_EndPush", end);
+     if (original_missing(hle_original_D3DDevice_EndPush, "D3DDevice_EndPush"))
+         return;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_push_count++;
+     device = hle_var_D3D_g_pDevice ? HLE_MEM32(hle_var_D3D_g_pDevice) : 0;
+     if (device)
+@@ -3490,7 +3511,7 @@
+     g_inline_vdata++;
+     g_inline_vdata_frame++;
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexData4f);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow) {
+         uint32_t w[4] = { HLE_ARG(1), HLE_ARG(2), HLE_ARG(3), HLE_ARG(4) };
+         float v[4];
+@@ -3511,7 +3532,7 @@
+ {
+     static int seen;
+     uint32_t state = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t matrix = HLE_ARG(1);
+ #endif
+ 
+@@ -3519,7 +3540,7 @@
+     if (original_missing(hle_original_D3DDevice_SetTransform, "D3DDevice_SetTransform"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetTransform);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && matrix && state < 10) {
+         D3DMATRIX m;
+         DWORD host_state;
+@@ -3552,7 +3573,7 @@
+     if (original_missing(hle_original_D3DDevice_SetMaterial, "D3DDevice_SetMaterial"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetMaterial);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && material) {
+         D3DMATERIAL8 m;
+         memcpy(&m, HLE_PTR(material), sizeof m);
+@@ -3566,7 +3587,7 @@
+ {
+     static int seen;
+     uint32_t index = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t light = HLE_ARG(1);
+ #endif
+ 
+@@ -3574,7 +3595,7 @@
+     if (original_missing(hle_original_D3DDevice_SetLight, "D3DDevice_SetLight"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetLight);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && light) {
+         D3DLIGHT8 l;
+         memcpy(&l, HLE_PTR(light), sizeof l);
+@@ -3588,7 +3609,7 @@
+ {
+     static int seen;
+     uint32_t index = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t enable = HLE_ARG(1);
+ #endif
+ 
+@@ -3596,7 +3617,7 @@
+     if (original_missing(hle_original_D3DDevice_LightEnable, "D3DDevice_LightEnable"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_LightEnable);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow)
+         host_LightEnable(g_shadow, index, enable ? TRUE : FALSE);
+ #endif
+@@ -3613,7 +3634,7 @@
+     if (original_missing(hle_original_D3DDevice_SetViewport, "D3DDevice_SetViewport"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetViewport);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && viewport) {
+         D3DVIEWPORT8 vp;
+ 
+@@ -3654,7 +3675,7 @@
+     if (original_missing(hle_original_D3DDevice_SetScissors, "D3DDevice_SetScissors"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetScissors);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow) {
+         D3DRECT rect[8];
+         UINT n = count > 8 ? 8 : count;
+@@ -3668,7 +3689,7 @@
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* ------------------------------------------------------------ render targets
+  *
+  * Titles draw into textures -- Burnout 2 renders its world several times a
+@@ -4113,7 +4134,7 @@
+     uint32_t enable = HLE_ARG(0);
+ 
+     first_call(&seen, "D3DDevice_EnableOverlay", enable);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_overlay_enabled = enable != 0;
+     if (!enable) {
+         g_overlay_updated = 0;
+@@ -4132,7 +4153,7 @@
+     if (original_missing(hle_original_D3DDevice_UpdateOverlay, "D3DDevice_UpdateOverlay"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_UpdateOverlay);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     /* A title that never calls EnableOverlay still means the plane to show
+      * when it updates it; the XDK turns it on at the first update. */
+     g_overlay_enabled = 1;
+@@ -4152,7 +4173,7 @@
+ HLE_EXPORT(D3DDevice_SetRenderTargetFast)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t rt = HLE_ARG(0), zs = HLE_ARG(1);
+ #endif
+ 
+@@ -4161,7 +4182,7 @@
+                          "D3DDevice_SetRenderTargetFast"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetRenderTargetFast);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow)
+         shadow_set_render_target(rt, zs);
+ #endif
+@@ -4172,7 +4193,7 @@
+ HLE_EXPORT(D3DDevice_SetRenderTarget)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t rt = HLE_ARG(0), zs = HLE_ARG(1);
+ #endif
+ 
+@@ -4180,7 +4201,7 @@
+     if (original_missing(hle_original_D3DDevice_SetRenderTarget, "D3DDevice_SetRenderTarget"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetRenderTarget);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_in_create_device && rt) {
+         g_backbuffer_va = rt;
+         g_autodepth_va = zs;
+@@ -4206,7 +4227,7 @@
+     if (original_missing(hle_original_D3DDevice_GetBackBuffer2, "D3DDevice_GetBackBuffer2"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_GetBackBuffer2);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && g_eax && (int32_t)HLE_ARG(0) <= 0) {
+         g_backbuffer_va = g_eax;
+         note_swap_surface(g_eax);
+@@ -4236,7 +4257,7 @@
+ HLE_EXPORT(D3DDevice_CopyRects)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t src = HLE_ARG(0), dst = HLE_ARG(3);
+ #endif
+ 
+@@ -4244,7 +4265,7 @@
+     if (original_missing(hle_original_D3DDevice_CopyRects, "D3DDevice_CopyRects"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_CopyRects);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (g_shadow && src && dst && shadow_trace_on())
+         fprintf(stderr, "[TRACE swap %lu] CopyRects src 0x%08X data 0x%08X -> dst 0x%08X data 0x%08X\n",
+                 g_shadow_swaps, src, HLE_MEM32(src + 4), dst, HLE_MEM32(dst + 4));
+@@ -4341,7 +4362,7 @@
+ }
+ 
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* The vertices a program with NORMPACKED3 registers reads: each vertex copied
+  * behind its unpacked normals, as shadow_read_declaration laid them out. The
+  * bits are x:11, y:11, z:10, signed, divided by 1023, 1023 and 511
+@@ -4651,7 +4672,7 @@
+ {
+     static int seen;
+     uint32_t xpt = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t count = HLE_ARG(1), data = HLE_ARG(2), stride = HLE_ARG(3);
+ #endif
+ 
+@@ -4659,7 +4680,7 @@
+     if (original_missing(hle_original_D3DDevice_DrawVerticesUP, "D3DDevice_DrawVerticesUP"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_DrawVerticesUP);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (data)
+         hle_d3d8_shadow_draw(xpt, count, HLE_PTR(data), stride, 0);
+ #endif
+@@ -4673,7 +4694,7 @@
+ {
+     static int seen;
+     uint32_t xpt = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t count = HLE_ARG(1), index_va = HLE_ARG(2);
+     uint32_t data = HLE_ARG(3), stride = HLE_ARG(4);
+ #endif
+@@ -4683,7 +4704,7 @@
+                          "D3DDevice_DrawIndexedVerticesUP"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_DrawIndexedVerticesUP);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (index_va && data)
+         hle_d3d8_shadow_draw_indexed(xpt, count, (const uint16_t *)HLE_PTR(index_va),
+                                      HLE_PTR(data), stride, 0);
+@@ -4771,7 +4792,7 @@
+     HLE_RETURN(0);                            /* S_OK */
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ /* For hle_d3d8_texture.c: the shadow device (NULL when shadow mode is off)
+  * and the frame count its cache ages entries by. */
+ IDirect3DDevice8 *hle_d3d8_shadow_device(void)
+diff --git a/src/hle/hle_d3d8_state.c b/src/hle/hle_d3d8_state.c
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -61,7 +61,7 @@
+ HLE_IMPORT_VAR(D3D_g_ComplexRenderState);
+ HLE_IMPORT_VAR(D3D_g_DeferredTextureState);
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ #include "d3d8_xbox.h"
+ #include "hle_d3d8_record.h"
+ 
+diff --git a/src/hle/hle_d3d8_texture.c b/src/hle/hle_d3d8_texture.c
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -42,7 +42,7 @@
+ #include <string.h>
+ #include "hle.h"
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ #include "d3d8_xbox.h"
+ #include "d3d8_internal.h"
+ #include "hle_d3d8_record.h"
+@@ -1277,7 +1277,7 @@
+ 
+ HLE_ORIGINAL(D3DDevice_SetTexture);
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ static void shadow_set_texture(uint32_t stage, uint32_t texture);
+ static void op_set_texture(const void *arg)
+ {
+@@ -1291,7 +1291,7 @@
+ {
+     static int seen;
+     uint32_t stage = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t texture = HLE_ARG(1);
+ #endif
+ 
+@@ -1304,7 +1304,7 @@
+         HLE_RETURN(0x80004005u);
+     }
+     HLE_CALL_ORIGINAL(D3DDevice_SetTexture);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     /* Deferred (RECOMP_HLE_D3D8_DEFER), the host side runs when the frame is
+      * executed, so the texels are read then -- as the NV2A reads them when it
+      * reaches the draw, not when the title issued it. */
+@@ -1319,7 +1319,7 @@
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ static void shadow_set_texture(uint32_t stage, uint32_t texture)
+ {
+     {
+@@ -1406,7 +1406,7 @@
+  * hle_d3d8.c uses it for RECOMP_HLE_D3D8_SKIP_FULLSCREEN. */
+ int hle_d3d8_stage0_is_framebuffer(void)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     return g_stage0_framebuffer;
+ #else
+     return 0; /* No host framebuffer sampling on the POSIX renderer yet. */
+@@ -1438,7 +1438,7 @@
+ HLE_EXPORT(D3DDevice_SetPalette)
+ {
+     static int seen;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t stage = HLE_ARG(0), palette_va = HLE_ARG(1);
+ #endif
+ 
+@@ -1454,7 +1454,7 @@
+         return;
+     }
+     HLE_CALL_ORIGINAL(D3DDevice_SetPalette);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     {
+         IDirect3DDevice8 *dev = hle_d3d8_shadow_device();
+         uint32_t data;
+diff --git a/src/hle/hle_d3d8_vertex.c b/src/hle/hle_d3d8_vertex.c
+--- a/src/hle/hle_d3d8_vertex.c
++++ b/src/hle/hle_d3d8_vertex.c
+@@ -44,7 +44,7 @@
+ #include <string.h>
+ #include "hle.h"
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ #include "d3d8_xbox.h"
+ #include "d3d8_vsh.h"
+ #include "hle_d3d8_record.h"
+@@ -342,7 +342,7 @@
+ {
+     static int seen;
+     uint32_t stream = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t vb = HLE_ARG(1), stride = HLE_ARG(2);
+ #endif
+ 
+@@ -350,7 +350,7 @@
+     if (original_missing(hle_original_D3DDevice_SetStreamSource, "D3DDevice_SetStreamSource"))
+         HLE_RETURN(0x80004005u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetStreamSource);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     hle_d3d8_push_arrays_off();          /* the XDK writes its own arrays again */
+     if (stream == 0u) {
+         g_stream0_vb = vb;
+@@ -374,7 +374,7 @@
+     if (original_missing(hle_original_CDevice_SetStateVB, "CDevice_SetStateVB"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(CDevice_SetStateVB);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_base_vertex = base;
+     g_base_vertex_seen = 1;
+ #endif
+@@ -386,7 +386,7 @@
+ {
+     static int seen;
+     uint32_t xpt = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t start = HLE_ARG(1), count = HLE_ARG(2);
+ #endif
+ 
+@@ -394,7 +394,7 @@
+     if (original_missing(hle_original_D3DDevice_DrawVertices, "D3DDevice_DrawVertices"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_DrawVertices);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (hle_d3d8_shadow_device() && count && g_push_active) {
+         uint32_t stride;
+         uint8_t *gathered = push_gather(start, count, &stride);
+@@ -423,7 +423,7 @@
+ {
+     static int seen;
+     uint32_t xpt = HLE_ARG(0);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t count = HLE_ARG(1), index_va = HLE_ARG(2);
+ #endif
+ 
+@@ -432,7 +432,7 @@
+                          "D3DDevice_DrawIndexedVertices"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_DrawIndexedVertices);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (hle_d3d8_shadow_device() && count && index_va &&
+         guest_readable(index_va, (uint64_t)count * 2u)) {
+         const uint16_t *idx = (const uint16_t *)HLE_PTR(index_va);
+@@ -484,7 +484,7 @@
+ #endif
+ }
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ static void forward_constants(uint32_t reg, uint32_t data, uint32_t count)
+ {
+     if (!hle_d3d8_shadow_device() || !data || !count || reg >= MAX_CONSTANT_REGISTERS)
+@@ -503,7 +503,7 @@
+ {
+     static int seen;
+     uint32_t reg = g_ecx;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t data = g_edx;
+ #endif
+ 
+@@ -512,7 +512,7 @@
+                          "D3DDevice_SetVertexShaderConstant1"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstant1);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     forward_constants(reg, data, 1u);
+ #endif
+ }
+@@ -530,7 +530,7 @@
+ {
+     static int seen;
+     uint32_t reg = g_ecx;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t data = g_edx;
+ #endif
+ 
+@@ -539,7 +539,7 @@
+                          "D3DDevice_SetVertexShaderConstant1Fast"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstant1Fast);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     forward_constants(reg, data, 1u);
+ #endif
+ }
+@@ -550,7 +550,7 @@
+ {
+     static int seen;
+     uint32_t reg = g_ecx;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t data = g_edx;
+ #endif
+ 
+@@ -559,7 +559,7 @@
+                          "D3DDevice_SetVertexShaderConstant4"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstant4);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     forward_constants(reg, data, 4u);
+ #endif
+ }
+@@ -575,7 +575,7 @@
+ {
+     static int seen;
+     uint32_t reg = g_ecx;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t data = g_edx, floats = HLE_ARG(0);
+ #endif
+ 
+@@ -583,11 +583,11 @@
+     if (original_missing(hle_original_D3DDevice_SetVertexShaderConstantNotInline,
+                          "D3DDevice_SetVertexShaderConstantNotInline"))
+         HLE_RETURN(0u);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_in_notinline++;
+ #endif
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstantNotInline);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     g_in_notinline--;
+     forward_constants(reg, data, floats / 4u);
+ #endif
+@@ -598,7 +598,7 @@
+ {
+     static int seen;
+     uint32_t reg = g_ecx;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     uint32_t data = g_edx, floats = HLE_ARG(0);
+ #endif
+ 
+@@ -607,7 +607,7 @@
+                          "D3DDevice_SetVertexShaderConstantNotInlineFast"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstantNotInlineFast);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     if (!g_in_notinline)
+         forward_constants(reg, data, floats / 4u);
+ #endif
+@@ -661,7 +661,7 @@
+                          "D3DDevice_SetVertexShaderConstant"))
+         HLE_RETURN(0u);
+     HLE_CALL_ORIGINAL(D3DDevice_SetVertexShaderConstant);
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     forward_constants(reg, data, count);
+ #endif
+ }
+diff --git a/src/hle/hle_d3d8_record.c b/src/hle/hle_d3d8_record.c
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -38,7 +38,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ 
+ #include "d3d8_xbox.h"
+ #include "d3d8_internal.h"
+diff --git a/src/hle/hle_d3d8_interp.c b/src/hle/hle_d3d8_interp.c
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -65,7 +65,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ 
+ #include "d3d8_xbox.h"
+ #include "d3d8_internal.h"
+diff --git a/src/hle/hle_d3d8_record.h b/src/hle/hle_d3d8_record.h
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -40,7 +40,7 @@
+ 
+ #include <stdint.h>
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+ 
+ #include "d3d8_xbox.h"
+ #include "d3d8_vsh.h"
+diff --git a/src/hle/CMakeLists.txt b/src/hle/CMakeLists.txt
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -61,3 +61,7 @@
+     # window of their own for it.
+     target_link_libraries(xbox_hle PRIVATE xbox_d3d8 xbox_video user32)
+ endif()
++
++if(APPLE)
++    target_link_libraries(xbox_hle PRIVATE xbox_d3d8)
++endif()
+diff --git a/src/d3d/d3d8_resources.c b/src/d3d/d3d8_resources.c
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -16,6 +16,7 @@
+ #include <stddef.h>
+ #include <stdio.h>
+ 
++#ifndef TSFP_FORMAT_ONLY
+ /* Forward declarations for mip/slice addressing helpers (defined below,
+  * used early by d3d8_refresh_palette). */
+ static UINT cube_level_width(const struct D3D8CubeTexture *cube, UINT level);
+@@ -30,6 +31,8 @@
+                                   UINT w, UINT h, UINT subresource,
+                                   const BYTE *src_data, UINT src_row_pitch,
+                                   UINT palette);
++
++#endif
+ 
+ /* ================================================================
+  * Format conversion: Xbox D3DFORMAT → DXGI_FORMAT
+@@ -556,15 +559,15 @@
+     case D3DFMT_LIN_R5G5B5A1: {
+         /* R5G5B5A1 → A1R5G5B5 (B5G5R5A1 UNORM) bit reorder. */
+         for (y = 0; y < height; y++) {
+-            const UINT16 *s = (const UINT16 *)(src + (size_t)y * width * 2);
+-            UINT16 *d = (UINT16 *)(dst + (size_t)y * width * 2);
++            const uint16_t *s = (const uint16_t *)(src + (size_t)y * width * 2);
++            uint16_t *d = (uint16_t *)(dst + (size_t)y * width * 2);
+             for (x = 0; x < width; x++) {
+-                UINT16 w = s[x];
+-                UINT16 a = (UINT16)(w & 1);
+-                UINT16 r = (UINT16)((w >> 11) & 0x1F);
+-                UINT16 g = (UINT16)((w >> 6) & 0x1F);
+-                UINT16 b = (UINT16)((w >> 1) & 0x1F);
+-                d[x] = (UINT16)((a << 15) | (r << 10) | (g << 5) | b);
++                uint16_t w = s[x];
++                uint16_t a = (uint16_t)(w & 1);
++                uint16_t r = (uint16_t)((w >> 11) & 0x1F);
++                uint16_t g = (uint16_t)((w >> 6) & 0x1F);
++                uint16_t b = (uint16_t)((w >> 1) & 0x1F);
++                d[x] = (uint16_t)((a << 15) | (r << 10) | (g << 5) | b);
+             }
+         }
+         break;
+@@ -574,15 +577,15 @@
+     case D3DFMT_LIN_R4G4B4A4: {
+         /* R4G4B4A4 → A4R4G4B4 (B4G4R4A4 UNORM) bit reorder. */
+         for (y = 0; y < height; y++) {
+-            const UINT16 *s = (const UINT16 *)(src + (size_t)y * width * 2);
+-            UINT16 *d = (UINT16 *)(dst + (size_t)y * width * 2);
++            const uint16_t *s = (const uint16_t *)(src + (size_t)y * width * 2);
++            uint16_t *d = (uint16_t *)(dst + (size_t)y * width * 2);
+             for (x = 0; x < width; x++) {
+-                UINT16 w = s[x];
+-                UINT16 a = (UINT16)(w & 0xF);
+-                UINT16 r = (UINT16)((w >> 12) & 0xF);
+-                UINT16 g = (UINT16)((w >> 8) & 0xF);
+-                UINT16 b = (UINT16)((w >> 4) & 0xF);
+-                d[x] = (UINT16)((a << 12) | (r << 8) | (g << 4) | b);
++                uint16_t w = s[x];
++                uint16_t a = (uint16_t)(w & 0xF);
++                uint16_t r = (uint16_t)((w >> 12) & 0xF);
++                uint16_t g = (uint16_t)((w >> 8) & 0xF);
++                uint16_t b = (uint16_t)((w >> 4) & 0xF);
++                d[x] = (uint16_t)((a << 12) | (r << 8) | (g << 4) | b);
+             }
+         }
+         break;
+@@ -594,16 +597,16 @@
+          * bit10-5 = L (6-bit luminance), bit4-0 = V (5-bit signed).
+          * Sign-extend V -> R and U -> G of an R8G8_SNORM texel. */
+         for (y = 0; y < height; y++) {
+-            const INT16 *s = (const INT16 *)(src + (size_t)y * width * 2);
++            const int16_t *s = (const int16_t *)(src + (size_t)y * width * 2);
+             BYTE *d = dst + (size_t)y * width * 2;
+             for (x = 0; x < width; x++) {
+-                UINT16 w = (UINT16)s[x];
++                uint16_t w = (uint16_t)s[x];
+                 INT v = ((w >> 0) & 0x1F);
+                 INT u = ((w >> 11) & 0x1F);
+                 if (v & 0x10) v -= 0x20;   /* sign-extend 5 bits */
+                 if (u & 0x10) u -= 0x20;
+-                d[x * 2 + 0] = (BYTE)(INT8)(v << 3);   /* V -> R, 8-bit SNORM */
+-                d[x * 2 + 1] = (BYTE)(INT8)(u << 3);   /* U -> G, 8-bit SNORM */
++                d[x * 2 + 0] = (BYTE)(int8_t)(v << 3);   /* V -> R, 8-bit SNORM */
++                d[x * 2 + 1] = (BYTE)(int8_t)(u << 3);   /* U -> G, 8-bit SNORM */
+             }
+         }
+         break;
+@@ -677,11 +680,11 @@
+         /* In-memory BGRA16: [A][B][G][R] each 16-bit little-endian.
+          * DXGI R16G16B16A16 expects [R][G][B][A]. Swap channels. */
+         for (y = 0; y < height; y++) {
+-            const UINT16 *s = (const UINT16 *)(src + (size_t)y * width * 8);
+-            UINT16 *d = (UINT16 *)(dst + (size_t)y * width * 8);
++            const uint16_t *s = (const uint16_t *)(src + (size_t)y * width * 8);
++            uint16_t *d = (uint16_t *)(dst + (size_t)y * width * 8);
+             for (x = 0; x < width; x++) {
+-                const UINT16 *p = &s[x * 4];       /* A, B, G, R */
+-                UINT16 *q = &d[x * 4];             /* R, G, B, A */
++                const uint16_t *p = &s[x * 4];       /* A, B, G, R */
++                uint16_t *q = &d[x * 4];             /* R, G, B, A */
+                 q[0] = p[3];  /* R */
+                 q[1] = p[2];  /* G */
+                 q[2] = p[1];  /* B */
+@@ -698,11 +701,11 @@
+         /* In-memory BGRA32: [A][B][G][R] each 32-bit. DXGI R32G32B32A32
+          * expects [R][G][B][A]. Swap channels. */
+         for (y = 0; y < height; y++) {
+-            const UINT32 *s = (const UINT32 *)(src + (size_t)y * width * 16);
+-            UINT32 *d = (UINT32 *)(dst + (size_t)y * width * 16);
++            const uint32_t *s = (const uint32_t *)(src + (size_t)y * width * 16);
++            uint32_t *d = (uint32_t *)(dst + (size_t)y * width * 16);
+             for (x = 0; x < width; x++) {
+-                const UINT32 *p = &s[x * 4];       /* A, B, G, R */
+-                UINT32 *q = &d[x * 4];             /* R, G, B, A */
++                const uint32_t *p = &s[x * 4];       /* A, B, G, R */
++                uint32_t *q = &d[x * 4];             /* R, G, B, A */
+                 q[0] = p[3];  /* R */
+                 q[1] = p[2];  /* G */
+                 q[2] = p[1];  /* B */
+@@ -719,14 +722,14 @@
+         /* Xbox A2R10G10B10: bits 30-31=A, 20-29=R, 10-19=G, 0-9=B.
+          * DXGI R10G10B10A2 needs R at 0-9, so swap the A and R fields. */
+         for (y = 0; y < height; y++) {
+-            const UINT32 *s = (const UINT32 *)(src + (size_t)y * width * 4);
+-            UINT32 *d = (UINT32 *)(dst + (size_t)y * width * 4);
++            const uint32_t *s = (const uint32_t *)(src + (size_t)y * width * 4);
++            uint32_t *d = (uint32_t *)(dst + (size_t)y * width * 4);
+             for (x = 0; x < width; x++) {
+-                UINT32 w = s[x];
+-                UINT32 a = (w >> 30) & 0x3;
+-                UINT32 r = (w >> 20) & 0x3FF;
+-                UINT32 g = (w >> 10) & 0x3FF;
+-                UINT32 b = (w >>  0) & 0x3FF;
++                uint32_t w = s[x];
++                uint32_t a = (w >> 30) & 0x3;
++                uint32_t r = (w >> 20) & 0x3FF;
++                uint32_t g = (w >> 10) & 0x3FF;
++                uint32_t b = (w >>  0) & 0x3FF;
+                 d[x] = (r) | (g << 10) | (b << 20) | (a << 30);
+             }
+         }
+@@ -743,6 +746,7 @@
+     }
+ }
+ 
++#ifndef TSFP_FORMAT_ONLY
+ /* ================================================================
+  * Vertex Buffer Implementation
+  * ================================================================ */
+@@ -2523,3 +2527,5 @@
+     rhi_image_destroy(img);
+     return *ppSurface ? S_OK : E_OUTOFMEMORY;
+ }
++
++#endif /* TSFP_FORMAT_ONLY */
+diff --git a/src/d3d/d3d8_internal.h b/src/d3d/d3d8_internal.h
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -16,7 +16,7 @@
+  * (d3d8_device.c on Windows, d3d8_gl.c on POSIX). */
+ IDirect3DDevice8 *d3d8_GetDevice(void);
+ 
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__APPLE__)
+ /* === Everything below is the rhi.h renderer. The POSIX d3d8_compat
+  * library (d3d8_gl.c) implements its own internal state and does not
+  * need any of these declarations. === */
+diff --git a/src/d3d/d3d8_vsh.h b/src/d3d/d3d8_vsh.h
+--- a/src/d3d/d3d8_vsh.h
++++ b/src/d3d/d3d8_vsh.h
+@@ -29,7 +29,7 @@
+ #define XBOXRECOMP_D3D8_VSH_H
+ 
+ #include <stdint.h>
+-#include <windows.h>
++#include "platform/xbox_winnt.h"
+ 
+ #include "rhi.h"
+ 
+diff --git a/src/d3d/d3d8_combiners.h b/src/d3d/d3d8_combiners.h
+--- a/src/d3d/d3d8_combiners.h
++++ b/src/d3d/d3d8_combiners.h
+@@ -43,7 +43,7 @@
+ #include <stddef.h>
+ #include "rhi.h"
+ #include <stdint.h>
+-#include <windows.h>
++#include "platform/xbox_winnt.h"
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff --git a/src/d3d/CMakeLists.txt b/src/d3d/CMakeLists.txt
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -74,9 +74,11 @@
+     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../tests/d3d8_smoke
+                      ${CMAKE_CURRENT_BINARY_DIR}/d3d8_smoke)
+ else()
+-    add_library(xbox_d3d8 STATIC
+-        d3d8_gl.c
+-    )
++    if(APPLE AND TSFP_NATIVE_DIR)
++        add_library(xbox_d3d8 STATIC "${TSFP_NATIVE_DIR}/renderer_gl.c")
++    else()
++        add_library(xbox_d3d8 STATIC d3d8_gl.c)
++    endif()
+     target_link_libraries(xbox_d3d8 PUBLIC platform SDL3::SDL3)
+     if(APPLE)
+         find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)
+@@ -102,3 +104,9 @@
+     target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_display.c")
+     target_compile_definitions(xbox_d3d8 PRIVATE TSFP_PC_DISPLAY)
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(xbox_d3d8 PRIVATE d3d8_resources.c)
++    set_source_files_properties(d3d8_resources.c PROPERTIES COMPILE_DEFINITIONS TSFP_FORMAT_ONLY)
++    target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}")
++endif()

@@ -1,0 +1,58 @@
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -746,6 +746,27 @@
+     }
+ }
+ 
++/* Whether an Xbox format is linear (unswizzled, pitch-addressed). The NV2A
++ * samples these with texel coordinates rather than 0..1, so a shader that
++ * samples one has to scale the coordinates by 1/size (see
++ * NV2APSConstants.tex_scale). The list is every LIN_ enumerator in
++ * d3d8_xbox.h, depth and float formats included. */
++BOOL d3d8_format_is_linear(D3DFORMAT fmt)
++{
++    switch ((unsigned)fmt) {
++    case 0x10: case 0x11: case 0x12: case 0x13: case 0x14: case 0x15:
++    case 0x16: case 0x17: case 0x18: case 0x1B: case 0x1C: case 0x1D:
++    case 0x1E: case 0x1F: case 0x20: case 0x2E: case 0x2F: case 0x30:
++    case 0x31: case 0x35: case 0x36: case 0x37: case 0x3D: case 0x3E:
++    case 0x3F: case 0x40: case 0x41: case 0x5B: case 0x5C: case 0x5D:
++    case 0x5E: case 0x5F: case 0x60: case 0x61: case 0x62: case 0x63:
++    case 0x67: case 0x68: case 0x79: case 0x7A:
++        return TRUE;
++    default:
++        return FALSE;
++    }
++}
++
+ #ifndef TSFP_FORMAT_ONLY
+ /* ================================================================
+  * Vertex Buffer Implementation
+@@ -1712,27 +1733,6 @@
+ }
+ 
+ /* Volume textures place depth before the format, unlike 2D/cube textures. */
+-/* Whether an Xbox format is linear (unswizzled, pitch-addressed). The NV2A
+- * samples these with texel coordinates rather than 0..1, so a shader that
+- * samples one has to scale the coordinates by 1/size (see
+- * NV2APSConstants.tex_scale). The list is every LIN_ enumerator in
+- * d3d8_xbox.h, depth and float formats included. */
+-BOOL d3d8_format_is_linear(D3DFORMAT fmt)
+-{
+-    switch ((unsigned)fmt) {
+-    case 0x10: case 0x11: case 0x12: case 0x13: case 0x14: case 0x15:
+-    case 0x16: case 0x17: case 0x18: case 0x1B: case 0x1C: case 0x1D:
+-    case 0x1E: case 0x1F: case 0x20: case 0x2E: case 0x2F: case 0x30:
+-    case 0x31: case 0x35: case 0x36: case 0x37: case 0x3D: case 0x3E:
+-    case 0x3F: case 0x40: case 0x41: case 0x5B: case 0x5C: case 0x5D:
+-    case 0x5E: case 0x5F: case 0x60: case 0x61: case 0x62: case 0x63:
+-    case 0x67: case 0x68: case 0x79: case 0x7A:
+-        return TRUE;
+-    default:
+-        return FALSE;
+-    }
+-}
+-
+ /* Level-0 size of a 2D texture; FALSE for a cube or volume texture, whose
+  * coordinates are never in texels. */
+ BOOL d3d8_base_size(IDirect3DBaseTexture8 *texture, UINT *width, UINT *height)
