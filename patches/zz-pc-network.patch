@@ -1,0 +1,79 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -109,6 +109,56 @@
+ /* Which dispatch form was refused: 0 unknown, 1 call, 2 jump. Unknown
+  * means this title was lifted before the macros published it. */
+ extern RECOMP_MANUAL_TLS uint32_t g_icall_dispatch_form;
++
++
++/* PC System Link: public XNet API boundary, US 45410066. */
++#include "pc_network_guest.inc"
++extern void sub_00431BB1_gen(void);
++void sub_00431BB1(void) { pc_network_guest(0x00431BB1u,sub_00431BB1_gen); }
++extern void sub_00431BC8_gen(void);
++void sub_00431BC8(void) { pc_network_guest(0x00431BC8u,sub_00431BC8_gen); }
++extern void sub_00431CB6_gen(void);
++void sub_00431CB6(void) { pc_network_guest(0x00431CB6u,sub_00431CB6_gen); }
++extern void sub_00431CC3_gen(void);
++void sub_00431CC3(void) { pc_network_guest(0x00431CC3u,sub_00431CC3_gen); }
++extern void sub_00431D53_gen(void);
++void sub_00431D53(void) { pc_network_guest(0x00431D53u,sub_00431D53_gen); }
++extern void sub_00431700_gen(void);
++void sub_00431700(void) { pc_network_guest(0x00431700u,sub_00431700_gen); }
++extern void sub_0043170B_gen(void);
++void sub_0043170B(void) { pc_network_guest(0x0043170Bu,sub_0043170B_gen); }
++extern void sub_00431716_gen(void);
++void sub_00431716(void) { pc_network_guest(0x00431716u,sub_00431716_gen); }
++extern void sub_00431721_gen(void);
++void sub_00431721(void) { pc_network_guest(0x00431721u,sub_00431721_gen); }
++extern void sub_0043172C_gen(void);
++void sub_0043172C(void) { pc_network_guest(0x0043172Cu,sub_0043172C_gen); }
++extern void sub_00431770_gen(void);
++void sub_00431770(void) { pc_network_guest(0x00431770u,sub_00431770_gen); }
++extern void sub_0043177F_gen(void);
++void sub_0043177F(void) { pc_network_guest(0x0043177Fu,sub_0043177F_gen); }
++extern void sub_0043179B_gen(void);
++void sub_0043179B(void) { pc_network_guest(0x0043179Bu,sub_0043179B_gen); }
++extern void sub_004317A6_gen(void);
++void sub_004317A6(void) { pc_network_guest(0x004317A6u,sub_004317A6_gen); }
++extern void sub_004317B1_gen(void);
++void sub_004317B1(void) { pc_network_guest(0x004317B1u,sub_004317B1_gen); }
++extern void sub_004317BC_gen(void);
++void sub_004317BC(void) { pc_network_guest(0x004317BCu,sub_004317BC_gen); }
++extern void sub_004317D2_gen(void);
++void sub_004317D2(void) { pc_network_guest(0x004317D2u,sub_004317D2_gen); }
++extern void sub_004317DD_gen(void);
++void sub_004317DD(void) { pc_network_guest(0x004317DDu,sub_004317DD_gen); }
++extern void sub_00431802_gen(void);
++void sub_00431802(void) { pc_network_guest(0x00431802u,sub_00431802_gen); }
++extern void sub_0043184C_gen(void);
++void sub_0043184C(void) { pc_network_guest(0x0043184Cu,sub_0043184C_gen); }
++extern void sub_00431866_gen(void);
++void sub_00431866(void) { pc_network_guest(0x00431866u,sub_00431866_gen); }
++extern void sub_0043188F_gen(void);
++void sub_0043188F(void) { pc_network_guest(0x0043188Fu,sub_0043188F_gen); }
++extern void sub_00431968_gen(void);
++void sub_00431968(void) { pc_network_guest(0x00431968u,sub_00431968_gen); }
+ 
+ /* Shared text sizing and rendering: translate controller prompt tokens
+  * before either pass so alignment, wrapping, and displayed text agree. */
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -115,6 +115,17 @@
+     ${CMAKE_CURRENT_SOURCE_DIR}/src/recomp
+     ${XBOXRECOMP_DIR}/include
+ )
++
++
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_network.c")
++    target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/generated")
++    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt)
++    add_executable(tsfp_pc_network_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_network.c"
++        "${TSFP_PC_CONTROLS_DIR}/pc_network.c")
++    target_include_directories(tsfp_pc_network_test PRIVATE "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_BINARY_DIR}/generated")
++    target_link_libraries(tsfp_pc_network_test PRIVATE ws2_32 bcrypt)
++endif()
+ 
+ # Windows SDK libraries needed at link time
+ target_link_libraries(${PROJECT_NAME} PRIVATE

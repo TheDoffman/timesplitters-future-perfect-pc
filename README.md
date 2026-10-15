@@ -30,6 +30,14 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 
 ## Local workflow
 
+The source build replaces Xbox Live with **Online** above System Link, with a
+player-hosted HTTPS directory, compatible-only browser, private join codes and
+a host-routed UDP bridge. **Online > Start New Match** detects your public IPv4,
+starts a background directory and fills in its certificate automatically. Share
+the copied invitation with friends. Router forwarding is still required.
+LAN play is also available with `.\tsfp.ps1 Run -SystemLink`.
+See [multiplayer setup and validation limits](docs/multiplayer.md).
+
 This repository contains the PC input code, runtime patches, and build scripts.
 Game data, translated game code, binaries, personal settings, and saves stay local.
 Keyboard/mouse bindings use a separate F2 settings window. Display settings

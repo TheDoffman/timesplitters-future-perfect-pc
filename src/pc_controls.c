@@ -27,11 +27,29 @@ static volatile LONG editing;
 static struct Replay { unsigned long at; char type[12]; int a, b; } replay[256];
 static int replay_count, replay_next;
 static ULONGLONG replay_started;
+/* Opt-in integration harness: hold a key until an atomic state-file update.
+   Unlike timed startup replays this survives loading stalls and allows two
+   background game processes to be driven without desktop focus changes. */
+static const char *test_state_path;
+static ULONGLONG test_state_checked;
+static unsigned test_state_key;
 
 static void replay_tick(void)
 {
     ULONGLONG now = GetTickCount64();
     if (!replaying) return;
+    if(test_state_path && now-test_state_checked>=16) {
+        FILE *state; unsigned key=0; int down=0;
+        test_state_checked=now;
+        state=fopen(test_state_path,"r");
+        if(state) {
+            if(fscanf(state,"%u %d",&key,&down)!=2 || key>=256) key=0;
+            fclose(state);
+        }
+        if(test_state_key!=key || !down) pc_input_key(&input,test_state_key,0);
+        test_state_key=key;
+        pc_input_key(&input,key,down!=0);
+    }
     if (!replay_started) replay_started = now;
     while (replay_next < replay_count && now - replay_started >= replay[replay_next].at) {
         struct Replay *r = &replay[replay_next++];
@@ -97,6 +115,10 @@ void pc_controls_attach(HWND window)
         pc_input_focus(&input, 1);
         pc_input_capture(&input, 1);
     }
+    test_state_path=getenv("TSFP_PC_INPUT_STATE");
+    if(test_state_path && *test_state_path) {
+        replaying=1; pc_input_focus(&input,1); pc_input_capture(&input,1);
+    } else test_state_path=NULL;
     fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);

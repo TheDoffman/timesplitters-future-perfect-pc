@@ -119,10 +119,19 @@ int main(int argc,char **argv)
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
     pc_prompts_reset();
     CHECK(pc_prompts_keyboard_active());
+    CHECK(pc_prompts_rewrite("XBOX LIVE / SYSTEM LINK",text,sizeof text));
+    CHECK(!strcmp(text,"ONLINE / SYSTEM LINK"));
+    CHECK(pc_prompts_rewrite("Play with friends on Xbox Live",text,sizeof text));
+    CHECK(!strcmp(text,"Play with friends on ONLINE"));
+    CHECK(!pc_prompts_rewrite("XBOX LIVE",text,6));
     pad.lx=2000; pad.ry=-1000; pad.left_trigger=15;
     pc_prompts_controller(&pad,1); CHECK(pc_prompts_keyboard_active());
     pad.buttons=RECOMP_PAD_A;
     pc_prompts_controller(&pad,1); CHECK(!pc_prompts_keyboard_active());
+    CHECK(pc_prompts_rewrite("Xbox Live / SYSTEM LINK",text,sizeof text));
+    CHECK(!strcmp(text,"ONLINE / SYSTEM LINK"));
+    CHECK(pc_prompts_rewrite("\v2 Xbox Live",text,sizeof text));
+    CHECK(!strcmp(text,"\v2 ONLINE"));
     pc_prompts_keyboard();
     pc_prompts_controller(&pad,1); CHECK(pc_prompts_keyboard_active()); /* held button */
     pad.buttons=0;
@@ -176,6 +185,16 @@ int main(int argc,char **argv)
         pc_prompt_guest(guest_original,4,6);
         CHECK(!strcmp(seen_text,"\v2 Select  \v1 Back"));
         CHECK(g_esp==0x10004);
+        strcpy((char *)memory+0x1000,"XBOX LIVE / SYSTEM LINK");
+        for(unsigned arg=3;arg<=4;arg++) {
+            uint32_t *frame=(uint32_t *)(memory+0x10000);
+            g_esp=0x10000; seen_arg=arg;
+            frame[arg]=0x1000;
+            pc_prompt_guest(guest_original,arg,arg==3 ? 4 : 6);
+            CHECK(!strcmp(seen_text,"ONLINE / SYSTEM LINK"));
+            CHECK(g_esp==0x10004 && frame[arg]==0x1000);
+            CHECK(!strcmp((char *)memory+0x1000,"XBOX LIVE / SYSTEM LINK"));
+        }
         pc_prompts_reset();
         VirtualFree(memory,0,MEM_RELEASE);
     }

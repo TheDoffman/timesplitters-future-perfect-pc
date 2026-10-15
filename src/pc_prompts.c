@@ -160,12 +160,42 @@ int pc_prompts_format(const char *source, char *out, size_t capacity,
     return changed;
 }
 
+static int network_labels(const char *source, char *out, size_t capacity)
+{
+    size_t used=0;
+    int changed=0;
+    if(!source || !out || !capacity) return 0;
+    for(size_t i=0;source[i];) {
+        if(!_strnicmp(source+i,"Xbox Live",9)) {
+            if(used+6>=capacity) return 0;
+            memcpy(out+used,"ONLINE",6); used+=6; i+=9; changed=1;
+        } else {
+            if(used+1>=capacity) return 0;
+            out[used++]=source[i++];
+        }
+    }
+    out[used]=0;
+    return changed;
+}
+
 int pc_prompts_rewrite(const char *source, char *out, size_t capacity)
 {
     int keys[PC_ACTION_COUNT],enabled,inverted;
     double sensitivity;
-    if (!pc_prompts_keyboard_active() || !strchr(source,'\v') ||
-        !pc_settings_prompt_keys(keys)) return 0;
-    pc_controls_get_mouse(&sensitivity,&enabled,&inverted);
-    return pc_prompts_format(source,out,capacity,keys,enabled);
+    char renamed[2048];
+    int changed;
+    if(!source || !out || !capacity) return 0;
+    /* Menu names change for every input device, including title/breadcrumb
+       text. Apply before both text measurement and rendering for alignment. */
+    changed=network_labels(source,renamed,sizeof renamed);
+    if(changed) source=renamed;
+    if(pc_prompts_keyboard_active() && strchr(source,'\v') && pc_settings_prompt_keys(keys)) {
+        pc_controls_get_mouse(&sensitivity,&enabled,&inverted);
+        if(pc_prompts_format(source,out,capacity,keys,enabled)) return 1;
+    }
+    if(changed && strlen(source)<capacity) {
+        memcpy(out,source,strlen(source)+1);
+        return 1;
+    }
+    return 0;
 }

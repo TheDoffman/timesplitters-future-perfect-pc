@@ -20,7 +20,7 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     uintptr_t stack=(uintptr_t)saved+g_xbox_mem_offset, text;
     char source[2048], translated[2048];
     size_t length=0;
-    if (!pc_prompts_keyboard_active() || !pc_prompt_memory(stack,(args+1)*4,0)) {
+    if (!pc_prompt_memory(stack,(args+1)*4,0)) {
         original(); return;
     }
     text_va=((uint32_t *)stack)[text_arg];
@@ -39,7 +39,7 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
         memcpy(source+length,part,n); length+=n;
         if (end) break;
     }
-    if (!length || source[length-1] || !strchr(source,'\v')) { original(); return; }
+    if (!length || source[length-1]) { original(); return; }
     if (!pc_prompts_rewrite(source,translated,sizeof translated)) { original(); return; }
     length=strlen(translated)+1;
     if (saved<length+128) { original(); return; }

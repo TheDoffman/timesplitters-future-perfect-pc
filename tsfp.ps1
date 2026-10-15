@@ -5,6 +5,8 @@ param(
     [string]$Iso,
     [string]$Python,
     [string]$InputSequence,
+    [switch]$SystemLink,
+    [string[]]$Peers,
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo')]
     [string]$Configuration = 'Release',
     [int]$Seconds = 30
@@ -137,12 +139,14 @@ try {
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                             '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
                     }
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', '--parallel', '4')
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
                     $textureTest = Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_toggle_test.exe"
                     $textureTestRoot = Join-Path $buildRoot 'texture-toggle-tests'
@@ -174,6 +178,7 @@ try {
                     [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
                         $cleanupPath, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
                     Write-Output 'Build tests passed; temporary build/path-tests data recycled.'
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'), '--seal-executable', $exe)
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game
@@ -186,10 +191,23 @@ try {
                     $previousSequence = $env:RECOMP_INPUT_SEQ
                     $previousBackground = $env:RECOMP_WINDOW_BACKGROUND
                     $pcEnvironment = @{}
-                    foreach ($name in @('RECOMP_INPUT_CONFIG', 'RECOMP_PC_MOUSE', 'RECOMP_MOUSE_SENSITIVITY', 'RECOMP_MOUSE_INVERT_Y', 'RECOMP_TRACE_BUDGET', 'TSFP_TEXTURE_PACK_DIR', 'TSFP_TEXTURE_MODE')) {
+                    foreach ($name in @('RECOMP_INPUT_CONFIG', 'RECOMP_PC_MOUSE', 'RECOMP_MOUSE_SENSITIVITY', 'RECOMP_MOUSE_INVERT_Y', 'RECOMP_TRACE_BUDGET', 'TSFP_TEXTURE_PACK_DIR', 'TSFP_TEXTURE_MODE', 'TSFP_NETWORK', 'TSFP_NET_PEERS')) {
                         $pcEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
                     }
                     try {
+                        if ($SystemLink) { $env:TSFP_NETWORK = '1' }
+                        if ($Peers) {
+                            if ($env:TSFP_NETWORK -ne '1') { throw '-Peers requires -SystemLink.' }
+                            foreach ($peer in $Peers) {
+                                $parsedPeer = $null
+                                if ($peer -notmatch '^\d{1,3}(\.\d{1,3}){3}$' -or
+                                    ![Net.IPAddress]::TryParse($peer, [ref]$parsedPeer) -or
+                                    $parsedPeer.AddressFamily -ne [Net.Sockets.AddressFamily]::InterNetwork) {
+                                    throw "Invalid IPv4 peer address: $peer"
+                                }
+                            }
+                            $env:TSFP_NET_PEERS = $Peers -join ','
+                        }
                         $env:RECOMP_GAME_DIR = $gameRoot
                         if (!$env:TSFP_TEXTURE_PACK_DIR) {
                             $env:TSFP_TEXTURE_PACK_DIR = Join-Path $privateRoot 'texture-remaster\pack'

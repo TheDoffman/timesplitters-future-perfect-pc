@@ -72,6 +72,25 @@ full gameplay and campaign completion have not been verified.
 
 ## Completed
 
+- Online source-build integration: a new network-menu entry, HTTPS browser with
+  certificate fingerprint checking, public/private rooms, compatible-only
+  listing/joining, peer credentials and leases, and a virtual-address bridge
+  using the game host's forwarded UDP port. Guests establish outbound paths;
+  the host relays guest-to-guest traffic. Two local instances used Online and
+  an HTTPS directory to join a 2/16-player lobby and enter the same Shrink match.
+  Cross-internet routing and full-match stability remain unverified. Campaign
+  co-op remains a separate future effort.
+  Automatic hosting now detects public IPv4 over HTTPS, starts/stops a local
+  directory with the bridge, reuses its certificate and offers a copyable
+  invitation containing the directory address, fingerprint and join code.
+
+- Experimental PC System Link: native framed UDP, strict build/content identity
+  checks, default-protocol discovery sockets, and XNADDR/key mapping. Two isolated
+  game instances discovered a match, joined a 2/16-player lobby, and loaded into
+  the same Thief match. This is a same-PC loopback test, not a cross-network test
+  or a completed-match validation. See [multiplayer status](docs/multiplayer.md)
+  for the later Online integration and remaining cross-network validation.
+
 - Read the supplied desktop Xbox ISO without modifying it; extracted 412 files.
 - Confirmed the US executable, title ID `45410066`, entry point `0038024D`,
   XDK 5849 and the expected SHA-256 documented in `README.md`.

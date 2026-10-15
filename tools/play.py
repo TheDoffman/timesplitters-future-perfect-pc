@@ -9,6 +9,13 @@ from pathlib import Path
 
 def main():
     executable = Path(sys.argv[1]).resolve()
+    if os.environ.get('TSFP_NETWORK') == '1':
+        # Online/LAN identities describe the data used at build time. Refuse
+        # stale content instead of letting a changed map use that old identity.
+        root = Path(__file__).resolve().parents[1]
+        subprocess.run([sys.executable, str(root / 'tools/network-identity.py'),
+                        '--verify', '--executable', str(executable),
+                        '--game', os.environ['RECOMP_GAME_DIR']], check=True)
     log_directory = Path(sys.argv[2]).resolve()
     log_directory.mkdir(parents=True, exist_ok=True)
     tag = datetime.now().strftime("play-%Y%m%d-%H%M%S")
