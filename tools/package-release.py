@@ -61,6 +61,7 @@ WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. Click: recapture mouse.
 F1: show/hide the PC Settings menu bar (also PC Settings > Hide Menu Bar).
 F2: keyboard/mouse bindings and sensitivity. F12: Debug settings.
+F10: switch Classic/4K textures live (optional DDS pack in Textures).
 Alt+Enter: fullscreen (also available under PC Settings).
 Button prompts show your first assigned keyboard/mouse binding. Controller input
 restores controller icons; using the keyboard/mouse switches them back.

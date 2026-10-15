@@ -88,7 +88,20 @@ rendering resolution. Extremely wide modes are bounded at 7680×2160; modes abov
 
 ## Texture preview
 
-**Play-Textures.cmd** enables the local texture preview. The current pack contains
+Press **F10** during play to switch between **Classic** and **4K** textures without
+restarting or reloading the level. **PC Settings > 4K Textures** shows the current
+mode with a checkmark and also switches it. Held-key repeats are ignored; the key
+works with the menu bar hidden and in fullscreen. The mode applies to texture
+artwork independently of display resolution and lasts for the current session.
+
+**Play.cmd** starts in Classic mode and makes the installed local pack available
+to F10. **Play-Textures.cmd** starts in 4K mode with the same live toggle.
+Standalone packages look for an optional pack in `Textures` beside `Play.cmd`.
+For direct executable launches, set `TSFP_TEXTURE_PACK_DIR` to the pack directory;
+`TSFP_TEXTURE_MODE=classic` or `4k` selects the initial mode. An explicit pack path
+defaults to 4K if no mode is set. Without a pack, both modes use original artwork.
+
+The current 4K option is a partial texture preview. The current pack contains
 11 replacements: selected terrain, masonry, timber, concrete, flooring, metal
 panels and a weapon atlas. Most of the game still uses original art. The pack is
 about 44 MiB; its compiler enforces the requested **6 GiB** cap, including metadata.
@@ -101,7 +114,9 @@ wall source is 1774×887. Compilation resamples these images; this is not native
 outside the active pack. Full level, tiling and material-consistency review remains.
 The loader currently supports DXT1/DXT3/DXT5 replacements and limits resident
 replacement textures to 512 MiB of GPU memory. Missing or invalid replacements
-fall back to original textures. Restart after changing pack files.
+fall back to original textures. Both views stay cached within the existing
+512 MiB replacement-memory limit, making repeated toggles allocation-free.
+Restart after changing pack files on disk; switching the mode itself is live.
 
 Run `.venv/Scripts/python.exe tools/texture-worklist.py` to audit installed DDS
 hashes, dimensions and mip chains and refresh the local coverage/size plan.
@@ -146,6 +161,7 @@ Default bindings:
 | Pause and release cursor | Escape |
 | Show / hide PC Settings menu bar | F1 |
 | Keyboard & mouse settings | F2 |
+| Switch Classic / 4K textures | F10 |
 | Debug settings | F12 |
 | Fullscreen | Alt+Enter |
 
@@ -154,7 +170,7 @@ current window mode.
 
 Press **F1** to show or hide the menu bar, including in fullscreen. You can also
 choose **PC Settings > Hide Menu Bar** and press F1 to bring it back. The menu bar
-starts visible each launch; F2, F12, and Alt+Enter still work while it is hidden.
+starts visible each launch; F2, F10, F12, and Alt+Enter still work while it is hidden.
 Escape releases the mouse; click the game to recapture it.
 
 Click the game window to recapture the mouse. The recapture click is consumed

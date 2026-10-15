@@ -5,6 +5,7 @@
 #include "pc_input.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
+#include "texture_mode.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -96,7 +97,7 @@ void pc_controls_attach(HWND window)
         pc_input_focus(&input, 1);
         pc_input_capture(&input, 1);
     }
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
     pc_debug_init(window);
@@ -142,6 +143,8 @@ static void update_fullscreen_menu(HWND window)
     HMENU menu = GetSubMenu(GetMenu(window), 0);
     if (menu) CheckMenuItem(menu, PC_FULLSCREEN_COMMAND, MF_BYCOMMAND |
         ((GetWindowLongPtr(window, GWL_STYLE) & WS_CAPTION) ? MF_UNCHECKED : MF_CHECKED));
+    if (menu) CheckMenuItem(menu, PC_TEXTURE_MODE_COMMAND, MF_BYCOMMAND |
+        (tsfp_texture_is_4k() ? MF_CHECKED : MF_UNCHECKED));
 }
 
 int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT *result)
@@ -154,6 +157,9 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     if(replaying) return 0;
     switch (message) {
     case WM_COMMAND:
+        if (LOWORD(wp) == PC_TEXTURE_MODE_COMMAND) {
+            tsfp_texture_toggle(); update_fullscreen_menu(window); return 1;
+        }
         if (LOWORD(wp) == PC_MENU_BAR_COMMAND) {
             pc_settings_toggle_menu(window); update_fullscreen_menu(window); return 1;
         }
@@ -203,6 +209,12 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break;
     case WM_KEYDOWN: case WM_SYSKEYDOWN:
         pc_prompts_keyboard();
+        if (wp == VK_F10) {
+            if (!(lp & (1LL << 30))) {
+                tsfp_texture_toggle(); update_fullscreen_menu(window);
+            }
+            return 1;
+        }
         if (wp == VK_F2 || wp == VK_F12) {
             if (!(lp & (1LL << 30))) show_settings(window, wp == VK_F12);
             return 1;
@@ -228,7 +240,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
-        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11) return 1;
+        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, (unsigned)wp, 0);
         ReleaseSRWLockExclusive(&lock);

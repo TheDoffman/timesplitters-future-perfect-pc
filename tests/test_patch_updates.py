@@ -48,7 +48,7 @@ def test_fresh_checkout_and_repeated_build(checkout):
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # The user's state: controls/debug/prompts applied, display/textures missing.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name not in ('pc-display.patch', 'texture-pack.patch'):
+        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')

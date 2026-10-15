@@ -61,6 +61,7 @@ Your existing game saves are in Saves. Keep that folder when moving the game.
 Press F2, or PC Settings > Keyboard & Mouse, to change bindings.
 Pause a mission before opening the separate settings window.
 F1 shows/hides the PC Settings menu bar; Alt+Enter switches fullscreen.
+F10 switches Classic/4K textures live (optional DDS pack in Textures).
 Escape releases the mouse; click the game to recapture it.
 Button prompts show your assigned keys and switch to controller icons when you
 use a controller. The first unassigned controller also controls player 1.

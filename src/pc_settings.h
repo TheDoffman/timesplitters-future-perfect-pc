@@ -7,6 +7,7 @@
 #define PC_SETTINGS_COMMAND 0x7e20
 #define PC_FULLSCREEN_COMMAND 0x7e22
 #define PC_MENU_BAR_COMMAND 0x7e23
+#define PC_TEXTURE_MODE_COMMAND 0x7e24
 typedef struct PcSettings {
     int keys[PC_ACTION_COUNT][PC_BINDING_SLOTS];
     double sensitivity;

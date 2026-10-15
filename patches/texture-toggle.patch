@@ -1,0 +1,118 @@
+diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -16,6 +16,7 @@
+ target_link_libraries(xbox_input PUBLIC platform SDL3::SDL3)
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+     target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_controls.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/texture_mode.c"
+                                       "${TSFP_PC_CONTROLS_DIR}/pc_input.c"
+                                       "${TSFP_PC_CONTROLS_DIR}/pc_settings.c")
+     target_include_directories(xbox_input PUBLIC "${TSFP_PC_CONTROLS_DIR}")
+diff --git a/src/d3d/d3d8_resources.c b/src/d3d/d3d8_resources.c
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -1682,9 +1682,8 @@
+     if (!texture) return NULL;
+     d3d8_check_overlay();
+ #ifdef TSFP_TEXTURE_PACK
+-    if(texture->lpVtbl == (const IDirect3DBaseTexture8Vtbl *)&g_tex_vtbl &&
+-       ((D3D8Texture *)texture)->pack_srv)
+-        return ((D3D8Texture *)texture)->pack_srv;
++    if(texture->lpVtbl == (const IDirect3DBaseTexture8Vtbl *)&g_tex_vtbl)
++        return tsfp_texture_view((D3D8Texture *)texture);
+ #endif
+     return *(RhiView **)((BYTE *)texture + offsetof(D3D8Texture, srv));
+ }
+diff --git a/src/d3d/d3d8_device.c b/src/d3d/d3d8_device.c
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -16,6 +16,10 @@
+  */
+ 
+ #include "d3d8_internal.h"
++#ifdef TSFP_TEXTURE_PACK
++#include "texture_pack.h"
++#include "texture_mode.h"
++#endif
+ #include "d3d8_display.h"
+ #ifdef TSFP_PC_DISPLAY
+ #include "pc_display.h"
+@@ -1571,6 +1575,19 @@
+         rhi_set_textures(stage, 1, &srv);
+     }
+ }
++
++#ifdef TSFP_TEXTURE_PACK
++/* Refresh textures the game leaves bound across frames. GPU work stays on
++ * the renderer thread; the window only changes an atomic mode flag. */
++void tsfp_texture_sync_bindings(void)
++{
++    static int previous=-1;
++    int mode=tsfp_texture_is_4k();
++    if(mode==previous) return;
++    previous=mode;
++    rebind_stage_srvs(g_cur_rt ? g_cur_rt->image : NULL);
++}
++#endif
+ 
+ static HRESULT __stdcall dev_SetRenderTarget(IDirect3DDevice8 *self, IDirect3DSurface8 *pRenderTarget, IDirect3DSurface8 *pZStencilSurface)
+ {
+diff --git a/src/d3d/d3d8_shaders.c b/src/d3d/d3d8_shaders.c
+--- a/src/d3d/d3d8_shaders.c
++++ b/src/d3d/d3d8_shaders.c
+@@ -17,6 +17,9 @@
+  */
+ 
+ #include "d3d8_internal.h"
++#ifdef TSFP_TEXTURE_PACK
++#include "texture_pack.h"
++#endif
+ #include "d3d8_fvf.h"
+ #include <string.h>
+ #include <stdio.h>
+@@ -1094,6 +1097,9 @@
+     const DWORD *rs;
+ 
+     if (!rhi_device_ready()) return;
++#ifdef TSFP_TEXTURE_PACK
++    tsfp_texture_sync_bindings();
++#endif
+     if (d3d8_vsh_prepare_draw(handle)) {
+         /* A program that never reads the projection's first column is
+          * placing vertices in screen coordinates it worked out itself; one
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -2030,7 +2030,12 @@
+         enabled = !enabled;
+ #endif
+     }
+-    if (f10 && !f10_was_down) {
++    /* F10 belongs to Classic/4K textures in the PC build. */
++    if (f10 && !f10_was_down
++#ifdef TSFP_PC_CONTROLS
++        && 0
++#endif
++       ) {
+         xbox_Nv2aFlipGateCycle();
+         window_start.QuadPart = 0;           /* the old window straddles the change */
+     }
+diff --git a/src/d3d/CMakeLists.txt b/src/d3d/CMakeLists.txt
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -23,6 +23,14 @@
+         target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/texture_pack.c")
+         target_include_directories(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+         target_compile_definitions(xbox_d3d8 PUBLIC TSFP_TEXTURE_PACK)
++        add_executable(tsfp_texture_toggle_test
++            "${TSFP_PC_CONTROLS_DIR}/../tests/texture_toggle.c"
++            "${TSFP_PC_CONTROLS_DIR}/texture_pack.c"
++            "${TSFP_PC_CONTROLS_DIR}/texture_mode.c")
++        target_include_directories(tsfp_texture_toggle_test PRIVATE
++            "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
++            "${CMAKE_CURRENT_SOURCE_DIR}/..")
++        target_compile_definitions(tsfp_texture_toggle_test PRIVATE TSFP_TEXTURE_PACK)
+         add_executable(tsfp_texture_format_test "${TSFP_PC_CONTROLS_DIR}/../tests/texture_pack_format.c")
+         target_include_directories(tsfp_texture_format_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     endif()

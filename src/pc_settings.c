@@ -3,6 +3,7 @@
 #endif
 #define _WIN32_WINNT 0x0601
 #include "pc_settings.h"
+#include "texture_mode.h"
 #include "pc_debug.h"
 #include <commctrl.h>
 #include <stdio.h>
@@ -281,6 +282,8 @@ void pc_settings_attach(HWND game)
     GetClientRect(game,&client);
     AppendMenuA(settings,MF_STRING,PC_SETTINGS_COMMAND,"&Keyboard && Mouse...\tF2");
     AppendMenuA(settings,MF_STRING,PC_DEBUG_COMMAND,"&Debug...\tF12");
+    AppendMenuA(settings,MF_STRING | (tsfp_texture_is_4k() ? MF_CHECKED : 0),
+                PC_TEXTURE_MODE_COMMAND,"&4K Textures (off = Classic)\tF10");
     AppendMenuA(settings,MF_SEPARATOR,0,NULL);
     AppendMenuA(settings,MF_STRING,PC_FULLSCREEN_COMMAND,"&Fullscreen\tAlt+Enter");
     AppendMenuA(settings,MF_STRING,PC_MENU_BAR_COMMAND,"&Hide Menu Bar\tF1");

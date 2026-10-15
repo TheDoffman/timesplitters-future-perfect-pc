@@ -1,5 +1,6 @@
 #include "pc_prompts.h"
 #include "pc_controls.h"
+#include "texture_mode.h"
 #include "input_bindings.h"
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -51,6 +52,28 @@ static int virtual_pad_test(void)
     CHECK(RegisterClassA(&wc));
     window=CreateWindowA(wc.lpszClassName,"Input prompt test",WS_OVERLAPPEDWINDOW,0,0,320,200,NULL,NULL,wc.hInstance,NULL);
     CHECK(window); pc_controls_attach(window);
+    {
+        HMENU menu=GetSubMenu(GetMenu(window),0);
+        int before=tsfp_texture_is_4k();
+        SendMessage(window,WM_SYSKEYDOWN,VK_F10,0);
+        CHECK(tsfp_texture_is_4k()!=before);
+        CHECK((GetMenuState(menu,PC_TEXTURE_MODE_COMMAND,MF_BYCOMMAND)&MF_CHECKED)==
+              (tsfp_texture_is_4k()?MF_CHECKED:0));
+        SendMessage(window,WM_SYSKEYDOWN,VK_F10,(LPARAM)1<<30);
+        CHECK(tsfp_texture_is_4k()!=before);
+        SendMessage(window,WM_SYSKEYUP,VK_F10,0);
+        pc_settings_toggle_menu(window); CHECK(!GetMenu(window));
+        SendMessage(window,WM_KEYDOWN,VK_F10,0);
+        CHECK(tsfp_texture_is_4k()==before);
+        pc_settings_toggle_menu(window);
+        SendMessage(window,WM_INITMENUPOPUP,(WPARAM)menu,0);
+        CHECK((GetMenuState(menu,PC_TEXTURE_MODE_COMMAND,MF_BYCOMMAND)&MF_CHECKED)==
+              (before?MF_CHECKED:0));
+        SendMessage(window,WM_COMMAND,PC_TEXTURE_MODE_COMMAND,0);
+        CHECK(tsfp_texture_is_4k()!=before);
+        SendMessage(window,WM_COMMAND,PC_TEXTURE_MODE_COMMAND,0);
+        CHECK(tsfp_texture_is_4k()==before);
+    }
     ShowWindow(window,SW_SHOW); SetForegroundWindow(window);
     CHECK(pc_controls_accept_pad());
     Sleep(260);

@@ -18,6 +18,9 @@ $info.RedirectStandardError = $true
 foreach ($name in @($info.EnvironmentVariables.Keys)) {
     if ($name -like 'RECOMP_*' -or $name -like 'TSFP_*') { $info.EnvironmentVariables.Remove($name) }
 }
+# Optional authored pack; installing it later needs no launcher changes.
+$info.EnvironmentVariables['TSFP_TEXTURE_PACK_DIR'] = Join-Path $gameRoot 'Textures'
+$info.EnvironmentVariables['TSFP_TEXTURE_MODE'] = 'classic'
 $info.EnvironmentVariables['RECOMP_GAME_DIR'] = Join-Path $gameRoot 'Data'
 $info.EnvironmentVariables['RECOMP_SAVE_DIR'] = Join-Path $gameRoot 'Saves'
 $info.EnvironmentVariables['RECOMP_INPUT_CONFIG'] = $settingsPath
