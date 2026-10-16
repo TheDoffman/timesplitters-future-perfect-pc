@@ -48,11 +48,13 @@ Output: `build/launcher/TimeSplitters-Launcher-windows-x64.zip`. Extract the who
 ZIP into a writable folder and open `TimeSplitters Launcher.exe`. Keep its
 `Bin/TimeSplitters.App.exe` and `Support/Launcher/manifest.json` companions.
 This bootstraps a fresh installation from published releases. Its first run starts
-with Stable selected. The interface uses original vector artwork and a temporal
-scanner theme; no game art is bundled. See [launcher maintenance](docs/windows-launcher.md).
+with Stable selected. The interface uses blue steel panels, silver text and icy
+blue highlights. Local builds embed the generated Cortez/time-portal banner
+when the private artwork is available, with a matching vector fallback.
+See [launcher maintenance](docs/windows-launcher.md#launcher-artwork-and-colors).
 
 Launcher publishing assets are generated separately in `build/launcher`:
-`TimeSplitters-Launcher-v1.1.0-windows-x64.zip`, its `.sha256` sidecar, and
+`TimeSplitters-Launcher-v1.1.1-windows-x64.zip`, its `.sha256` sidecar, and
 `launcher-update.json`. Publish these together on a GitHub Release to enable
 automatic launcher updates without downloading a game runtime ZIP.
 

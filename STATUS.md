@@ -4,6 +4,26 @@ Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an exp
 full gameplay and campaign completion have not been verified.
 
 
+
+## Windows launcher v1.1.1 release preparation - October 16, 2026
+
+This release embeds the generated Cortez/time-portal banner and original title
+lettering, with blue steel panels, silver text and icy blue highlights. A compact
+silver TS/blue portal icon replaces the miniature wide title logo. Both launcher
+executables contain the multi-resolution icon; no extra runtime image is needed.
+The banner is an unchanged 2032 x 774 generated PNG. Raw artwork remains private;
+builds without it retain the vector/text fallback. Icon source is reproducible.
+
+Windows x64/.NET Framework 4.8 WPF: 71 isolated launcher regressions and two
+packaging tests passed. The compiled ZIP verifies and installs in isolation.
+Native startup and icon appearance were inspected, and all seven icon sizes
+were reviewed. No game run was needed; game files and personal controls were
+preserved. Mac icon/UI adaptation remains queued as MAC-014.
+
+The source tag excludes unrelated uncommitted texture changes. Publication
+preserves the checked-out branch, HEAD and real Git index.
+
+
 ## Launcher v1.1.0 release preparation
 
 - Release tag: `launcher-v1.1.0`. This source snapshot includes the launcher,

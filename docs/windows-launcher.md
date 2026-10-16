@@ -33,6 +33,37 @@ a Windows runtime ZIP. The checkout's developer `Play.cmd` is unchanged. The
 packaged `Play.cmd` opens the launcher, with its previous direct-launch path as
 a compatibility fallback when the EXE is absent.
 
+## Launcher artwork and colors
+
+The v1.1.1 interface uses dark blue steel panels, silver text and icy blue
+accents, with a matching startup splash and silver TS/blue portal icon. The primary Play button
+uses a silver-blue metallic gradient.
+
+`tools/build-launcher.ps1` embeds the optional
+`private/launcher-art/future-perfect-banner-v1.png` into the main application.
+Use `-BannerPath <image.png>` to supply a different banner (maximum 8 MiB).
+The image travels inside `Bin/TimeSplitters.App.exe` for launcher-only updates;
+no extra runtime image file or download is required. If the private image is
+absent, the build retains the blue/silver vector header. Generated source
+artwork and its prompt/provenance stay ignored under `private/launcher-art`.
+The banner fills the header with top alignment to preserve the title and face.
+
+The optional `private/launcher-art/timesplitters-future-perfect-logo.png`
+supplies the original title wordmark and subtitle lettering in the sidebar.
+`-LogoPath <image.png>` accepts
+the 500 x 187 title lockup (maximum 1 MiB); the sidebar subtitle crop depends
+on that layout. The PNG is embedded unchanged, with its subtitle displayed
+separately at a readable size instead of substituting a font. Without this private
+asset, source builds retain the sidebar text fallback. Source URL and SHA-256 stay in
+`private/launcher-art/logo-provenance.json`; no external image is needed at runtime.
+
+Both EXEs use a dedicated compact silver TS monogram inside an icy blue temporal
+aperture, independent of private artwork. `tools/launcher/IconBuilder.cs` draws
+each transparent ICO entry directly at 16, 24, 32, 48, 64, 128 and 256 pixels;
+the small sizes use heavier portal strokes for clarity. The build also writes
+`build/launcher/icon-preview.png` to show all sizes. No image generator or
+external asset is required to reproduce the icon.
+
 ## Publishing game updates
 
 Publish a GitHub Release with a semantic version tag (`v1.2.3`, or
@@ -62,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.1.0, publish all three together:
+in `build/launcher`; for version 1.1.1, publish all three together:
 
-- `TimeSplitters-Launcher-v1.1.0-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.1.0-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.1.1-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.1.1-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.1.0`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.1.1`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot

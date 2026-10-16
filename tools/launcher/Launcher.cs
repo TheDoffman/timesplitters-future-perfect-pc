@@ -135,6 +135,35 @@ namespace TimeSplitters.Launcher
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
             Text("LauncherVersionLabel", "TSFP  /  COMMUNITY PC PROJECT  /  LAUNCHER v" + LauncherVersion.Value);
+            using (var logo = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher-logo.png"))
+            {
+                if (logo != null)
+                {
+                    var bitmap = BitmapFrame.Create(logo, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                    bitmap.Freeze();
+                    Find<Image>("SidebarLogo").Source = bitmap;
+                    // Display the original subtitle lettering at a readable sidebar size.
+                    // Coordinates refer to the unchanged 500x187 source lockup.
+                    var subtitle = new CroppedBitmap(bitmap, new Int32Rect(263, 150, 228, 22));
+                    subtitle.Freeze();
+                    Find<Image>("SidebarSubtitle").Source = subtitle;
+                    Find<StackPanel>("SidebarBrand").Visibility = Visibility.Visible;
+                    Find<StackPanel>("SidebarBrandFallback").Visibility = Visibility.Collapsed;
+                }
+            }
+            using (var banner = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher-banner.png"))
+            {
+                if (banner != null)
+                {
+                    var bitmap = BitmapFrame.Create(banner, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                    bitmap.Freeze();
+                    var hero = Find<Border>("HeroBanner");
+                    hero.Background = new ImageBrush(bitmap) { Stretch = Stretch.UniformToFill,
+                        AlignmentX = AlignmentX.Center, AlignmentY = AlignmentY.Top };
+                    hero.Visibility = Visibility.Visible;
+                    Find<Grid>("HeroFallback").Visibility = Visibility.Collapsed;
+                }
+            }
             Refresh();
             if (previewMode)
             {

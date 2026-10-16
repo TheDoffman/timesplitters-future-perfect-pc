@@ -233,7 +233,16 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   Launcher v1.1.0 adds a pre-window splash/bootstrap, automatic launcher-only
   updates with an eight-second check deadline, offline cancellation/fallback,
   and a separate launcher recovery/backup scope that preserves game rollback.
-- **PC source:** Release tag `launcher-v1.1.0`; `tools/launcher/`, `tools/build-launcher.ps1`,
+    Local v1.1.1 adds an embedded generated Cortez/time-portal banner and a
+    blue/silver palette across the main window and splash. The sidebar uses the
+    original TimeSplitters wordmark and Future Perfect subtitle lettering,
+    with dedicated silver TS/blue portal executable icons drawn at seven sizes
+    by `tools/launcher/IconBuilder.cs`. Private banner/logo assets are optional
+    at build time; sidebar text and vector-header fallbacks remain available.
+    Mac packaging should adapt the compact mark to ICNS rather than shrinking
+    the wide title logo; native Mac icon validation remains pending.
+    Mac UI adaptation should preserve this visual theme and original lettering.
+- **PC source:** Release tag `launcher-v1.1.1`; `tools/launcher/`, `tools/build-launcher.ps1`,
   `tools/package-release.py`, `tools/release/Play.cmd`, `tests/launcher_updates.cs`,
   `tests/package_launcher.py`, `docs/windows-launcher.md`.
 - **PC validation:** 71 isolated C# checks and two packaging tests now pass,

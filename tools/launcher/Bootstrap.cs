@@ -108,16 +108,16 @@ namespace TimeSplitters.Launcher
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
                 Width='496' Height='247' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
-                Background='#15181C' Foreground='#ECEDE9' FontFamily='Segoe UI' ShowInTaskbar='True'>
+                Background='#101E2D' Foreground='#E4EDF5' FontFamily='Segoe UI' ShowInTaskbar='True'>
                 <Grid Margin='26,22'>
                   <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-                  <TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontFamily='Bahnschrift' FontWeight='Bold' FontSize='14' Foreground='#F4B945'/>
+                  <TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontFamily='Bahnschrift' FontWeight='Bold' FontSize='14' Foreground='#86CDFF'/>
                   <TextBlock Grid.Row='1' Text='Checking launcher updates…' FontSize='21' FontWeight='SemiBold' Margin='0,18,0,0'/>
-                  <TextBlock x:Name='Status' Grid.Row='2' Text='Getting everything ready.' FontSize='12' Foreground='#9DA4AA' TextWrapping='Wrap' Margin='0,7,0,15'/>
-                  <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30353B' Foreground='#F4B945' BorderThickness='0'/>
+                  <TextBlock x:Name='Status' Grid.Row='2' Text='Getting everything ready.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap' Margin='0,7,0,15'/>
+                  <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
                   <DockPanel Grid.Row='4' Margin='0,15,0,0' LastChildFill='False'>
-                    <TextBlock x:Name='Version' DockPanel.Dock='Left' Foreground='#7F8A82' FontSize='10' VerticalAlignment='Center'/>
-                    <Button x:Name='Continue' DockPanel.Dock='Right' Content='Open installed launcher' Background='#252A30' Foreground='#ECEDE9' BorderBrush='#42484F' Padding='10,6' FontSize='11' Cursor='Hand'/>
+                    <TextBlock x:Name='Version' DockPanel.Dock='Left' Foreground='#8CA6BE' FontSize='10' VerticalAlignment='Center'/>
+                    <Button x:Name='Continue' DockPanel.Dock='Right' Content='Open installed launcher' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Padding='10,6' FontSize='11' Cursor='Hand'/>
                   </DockPanel>
                 </Grid>
               </Window>");
