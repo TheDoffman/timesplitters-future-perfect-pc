@@ -128,7 +128,7 @@ static unsigned trace_draw;
 static void native_trace(const char *kind,const float *vertices,UINT count) {
     if(!trace_draw || trace_draw>2000)return;
     BYTE pixel[4]={0};glReadPixels(native_target_width/2,native_target_height/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
-    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3]);
+    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p texmodes=%x dotmap=%x inputs=%x\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3],g.rs[D3DRS_PSTEXTUREMODES],g.rs[D3DRS_PSDOTMAPPING],g.rs[D3DRS_PSINPUTTEXTURE]);
     if(vertices && count) {
         const float *v=vertices;
         fprintf(stderr,"[native-draw] vertex=%g,%g,%g,%g color=%g,%g,%g,%g uv=%g,%g comb=%x final=%x,%x\n",v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],g.rs[234],g.rs[208],g.rs[209]);
@@ -913,7 +913,7 @@ static void bind_texture0(void)
         } else if(tm&D3D8_PSTEXTUREMODES_XBOX)modes[stage]=(tm>>(5*stage))&31;
         else {unsigned m=(tm>>(4*stage))&15;modes[stage]=m==0?32:m==3?0:31;}
         unsigned mode=modes[stage];
-        if(mode!=0 && mode!=1 && mode!=4 && mode!=32 && !(warned&(1u<<mode))) {
+        if(mode!=0 && mode!=1 && mode!=4 && mode!=9 && mode!=15 && mode!=16 && mode!=17 && mode!=32 && !(warned&(1u<<mode))) {
             warned|=1u<<mode;fprintf(stderr,"[native-gl] texture shader mode %u remains unsupported\n",mode);
         }
         char name[24];snprintf(name,sizeof name,"u_tex%d",stage);

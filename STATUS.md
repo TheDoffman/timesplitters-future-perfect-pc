@@ -1093,3 +1093,78 @@ Finder action and live fullscreen panel/focus behavior need review. Synthetic
 SDL events and application-driven modal tests do not establish physical macOS
 event delivery. Windows MSVC/runtime checks remain unavailable on this host.
 MAC-011 still awaits the user's real texture pack; no artwork was substituted.
+
+
+## Mac dependent texture modes (2026-10-15)
+
+Pushed the debug adaptation to GitHub on `mac-port` as `149939f` and verified the
+local and remote-tracking revisions match. The graphics changes below remain
+local and uncommitted over that revision. No main merge or other-device checkout
+synchronization was performed.
+
+MAC-005 now evaluates dependent AR/GB texture lookups and DOTPRODUCT/DOT_ST
+in stage order instead of returning zero for those modes. Source-stage selection
+and invalid-source fallback match the PC renderer. Signed byte mappings 1-3
+match its formulas; mapping 0 and the PC's HILO fallback remain unsigned.
+Dependent reads retain linear texture scaling, orientation and existing sampler
+state. Unsupported stages return zero. Non-combiner draws still sample only the
+first texture. Cube/volume/reflection, depth-writing DOT_ZW, bump and other
+advanced modes are not included in this change.
+
+Files: `src/native/gl_fragment.inc`, `renderer_gl.c`,
+`multitexture_selftest.inc`, and `dependent_texture_selftest.inc`. The bounded
+per-draw trace now includes texture modes, dot mapping and source registers for
+both GPU and CPU vertex paths, making future scene-specific gaps inspectable.
+No generated game C, dependencies or Windows rendering source were changed.
+
+Validation on macOS 27.0.1 arm64 / Apple M5 Pro, AppleClang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7, upstream `d90c929` and the complete local patch stack:
+
+- Supported US XBE SHA-256 verified before builds/probes:
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Free space before builds was 223 GiB; no asset copies/downloads were needed.
+- Final `python3 tools/build-native-mac.py --test` passed the three platform
+  CTests and native renderer, input, prompts, settings/capture and debug suites.
+  Thirty-six new real-GPU cases exercise fixed vertices, GPU vertex programs
+  and the CPU vertex fallback. Distinct quadrant colors test AR versus GB,
+  chained stage inputs, invalid source fallback, illegal stage placement,
+  signed mappings 0-3, unsigned HILO fallback and linear DOT_ST coordinates.
+  Existing alpha, scissor, screen-copy, enlarged-target, depth/interpolation and
+  resource regressions also pass. A mistaken chained-color expectation was
+  corrected during fixture development; the final suite passes all cases.
+- Source hashes match `build/macos/BUILD.json`; launcher `--check` and
+  `git diff --check` pass. Final executable SHA-256:
+  `bf612a1531ee9e919baf39b43c49fb4aff29eaaa2f3451db3dc4906488842784`.
+- Bounded isolated probes of 150.18 s and 120.12 s reached the briefing and
+  mission opening respectively, then exited at their time limits with code 0.
+  The isolated existing-profile overwrite prompt required explicit navigation;
+  personal saves were never used. A final 300.19 s run rendered the mission
+  opening (including cockpit/terrain imagery) and its pause menu, then exited
+  cleanly with no native fault or sampled GL errors. It logged at least 14,100
+  completed guest frames and 21,376 successful host presents.
+- The final run's bounded profiler reached its 20,000-row limit at 277.94 s:
+  13,261 guest and 6,739 interpolated presents, 71.96 total presents/s over the
+  recorded menu/loading/cinematic interval, p95 26.35 ms. This includes a traced
+  frame with per-draw readbacks, so it is not a steady gameplay benchmark or a
+  sustained 120 FPS result. Guest simulation timing was unchanged.
+- Runtime probes used executable
+  `6ed302ec40ab05df7afae79ba80c7cf2e59f7e38b63479b8b72bf69912a5bf82`.
+  The final rebuild only moved diagnostic mode fields from CPU-vertex-only
+  output into the common trace; shaders are unchanged and the full native suite
+  passed afterward. The captured GPU-path trace predates that correction, so
+  it does not prove these new modes were used by the reviewed mission imagery.
+
+Evidence: `logs/mac-dependent-build.log`, `logs/mac-dependent-menu-summary.json`,
+`logs/mac-dependent-intro-summary.json`, `logs/mac-dependent-native-boot-summary.json`,
+`logs/mac-dependent-native-boot.err`, `logs/mac-dependent-native-frame-times.csv`,
+and `private/captures/native-mac/graphics-review.png` (final pause-menu capture).
+Both test roots have no remaining disposable partition images. Personal controls
+retained SHA-256 `cf44293910a77fb8f397ced933a1cfd5098e1949c93db9cc0571ed438b39f64a`;
+personal display settings remained absent and personal saves were untouched.
+
+MAC-005 remains In progress. These runs establish startup/mission-opening and
+pause-menu regression evidence, not a sustained gameplay segment, matched PC
+material fidelity, completion of the level or resolution of the reported
+world-disappearance route. Physical input and Windows execution were not tested.
+Cube/volume resources (MAC-006), further screen-copy/title-effect coverage
+(MAC-007), movies and the real texture pack remain separate backlog work.

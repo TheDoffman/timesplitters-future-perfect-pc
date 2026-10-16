@@ -1,3 +1,4 @@
+#include "dependent_texture_selftest.inc"
 static int native_test_multitexture(IDirect3DDevice8 *dev) {
     NATIVE_GL_SCOPE;
     struct Vertex {float p[4];DWORD color;float uv[4][4];} v[4]={
@@ -53,6 +54,7 @@ static int native_test_multitexture(IDirect3DDevice8 *dev) {
     }
     unsetenv("TSFP_NATIVE_CPU_VERTEX");
     for(int stage=0;stage<4;stage++){dev->lpVtbl->SetTexture(dev,stage,NULL);if(textures[stage])textures[stage]->lpVtbl->Release(textures[stage]);}
+    ok &= native_test_dependent_textures(dev,shader);
     d3d8_combiners_set_pixel_shader(0);d3d8_vsh_delete_shader(shader);
     dev->lpVtbl->SetRenderState(dev,D3DRS_PSTEXTUREMODES,0);
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);

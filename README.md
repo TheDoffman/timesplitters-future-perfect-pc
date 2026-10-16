@@ -232,8 +232,9 @@ Higher resolutions render the scene at the selected size, preserve the original
 menu proportions and widen the gameplay camera. Screen-space HUD draws retain
 their proportions. Larger targets cost GPU time, so 120 presentations per second
 remains a target, not a guarantee. Four 2D texture inputs, projected/linear
-texture coordinates, scissor clipping and 32-bit screen copies are implemented. Advanced texture modes, cube/volume
-textures and movies remain incomplete; this is not complete Windows graphics parity.
+texture coordinates, dependent AR/GB lookups, DOTPRODUCT/DOT_ST, scissor clipping
+and 32-bit screen copies are implemented. Reflection/depth/bump and other advanced
+texture modes, cube/volume textures and movies remain incomplete; this is not complete Windows graphics parity.
 
 To use the same compiled DDS texture pack as Windows for one Mac launch:
 
