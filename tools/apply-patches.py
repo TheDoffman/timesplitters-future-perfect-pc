@@ -39,7 +39,11 @@ def apply_patches(runtime, patch_dir):
         # Native boot wraps the SDK library block; networking adds a separate
         # guarded block immediately before it. Require its unchanged adjacent
         # context line, rather than the older two lines across that insertion.
-        # Removed/added code must still match; all other patches keep full context.
+        # The Windows watermark also borders native boot's overlay guard.
+        # Match its adjacent context without requiring the older unguarded
+        # comment/function boundary. Removed/added code must still match.
+        if patch.name == 'zzzz-pc-debug-latency-watermark.patch' and native_boot in patches:
+            return ['-C1']
         return ['-C1'] if patch == native_boot and (patch_dir / 'zz-pc-network.patch') in patches else []
     names = set()
     for patch in patches:

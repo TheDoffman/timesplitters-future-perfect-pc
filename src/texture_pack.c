@@ -22,6 +22,7 @@ void tsfp_texture_release(D3D8Texture *tex) {
 }
 
 static void dump_original(const D3D8Texture *tex, uint64_t key, uint32_t bytes) {
+    FILE *f;
     char path[2304];uint32_t header[32]={0};
     if(!dump_root[0]) return;
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",dump_root,key);

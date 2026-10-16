@@ -168,6 +168,11 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
+- **Windows build fix (2026-10-15):** Uncommitted on `mac-port`,
+  `src/texture_pack.c` restores the local `FILE *f` declaration used by
+  `dump_original`. MSVC syntax compilation passes; no Mac adapter change is
+  needed because the native renderer uses `src/native/gl_texture_pack.inc`.
+  Existing Mac texture coverage remains awaiting validation as described below.
 - **PC source:** Audited revision above; `src/texture_pack.c`, `src/texture_pack_format.h`, `tools/texture-pack.py`, `tools/play-textures.ps1`; `src/native/gl_texture_pack.inc`.
 - **PC validation:** [Display settings and texture preview](STATUS.md#display-settings-and-texture-preview--october-15) records four of eleven replacements loaded in the first mission; seven still need scene-specific checks even on Windows.
 - **Existing Mac support:** Native replacement loading and synthetic real-GPU sampling already pass; the launcher accepts `--texture-pack`. Actual installed-art coverage has not been established on Mac.
@@ -229,6 +234,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 
 If shared code already supplies the feature, record that fact and use awaiting
 validation until Mac checks pass. Do not infer Mac support from Windows results.
+
+### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
+
+- **Status:** Awaiting validation
+- **PC behavior:** Release preparation accepts the complete shared patch stack
+  over fresh sources or an existing Windows watermark build, without losing
+  unrelated runtime edits. Conflicting code still fails before runtime writes.
+- **PC source:** Uncommitted on `mac-port`: `tools/apply-patches.py` and
+  `tests/test_patch_updates.py`; tested with `main` revision `5cf4866` patches.
+- **PC validation:** Eleven patch-loader tests passed on Windows, plus fresh and
+  existing-Windows fixtures using the complete main patch stack; repeated
+  application made no changes. See `STATUS.md`, 2026-10-15 patch preparation.
+- **Existing Mac support:** The same Python patch loader serves both hosts.
+- **Mac adaptation needed:** No native adapter changes; validate the shared
+  loader on macOS. This does not add the Windows watermark patch to this branch.
+- **Mac acceptance checks:** Run patch-loader tests and apply/reapply the
+  complete merged stack on disposable sources, preserving actual code conflicts.
+- **Mac implementation and evidence:** Shared fix present locally; macOS checks
+  and other-device synchronization remain unverified.
 
 ## Entry template
 

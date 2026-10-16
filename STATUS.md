@@ -1094,7 +1094,6 @@ SDL events and application-driven modal tests do not establish physical macOS
 event delivery. Windows MSVC/runtime checks remain unavailable on this host.
 MAC-011 still awaits the user's real texture pack; no artwork was substituted.
 
-
 ## Mac dependent texture modes (2026-10-15)
 
 Pushed the debug adaptation to GitHub on `mac-port` as `149939f` and verified the
@@ -1168,3 +1167,45 @@ material fidelity, completion of the level or resolution of the reported
 world-disappearance route. Physical input and Windows execution were not tested.
 Cube/volume resources (MAC-006), further screen-copy/title-effect coverage
 (MAC-007), movies and the real texture pack remain separate backlog work.
+
+## 2026-10-15 — Windows release patch preparation
+
+Local, uncommitted change on `mac-port` base `e83e074`; release patch inputs
+were read from local `main` revision `5cf4866`. Host: Windows 11 x64
+10.0.26300, Python 3.14.2, Git 2.47.0.windows.2. The native boot overlay guard
+invalidated the Windows watermark patch's original surrounding context.
+The loader now requires one adjacent context line for that specific patch
+when native boot is present; added/removed code must still match.
+
+`python -m pytest tests/test_patch_updates.py -q`: 11 passed. Added regression
+cases cover fresh application, an existing watermark, repeated application,
+and rejection of conflicting watermark code without writes. Separate temporary
+source-only fixtures using all patches from main reproduced the original error
+before the fix and passed afterward for fresh upstream sources and a copy of
+the existing Windows runtime (34 and 28 files updated respectively); a second
+application changed nothing. The actual runtime was not modified. No game
+build, packaging, publishing, or gameplay test was needed or performed for
+this Python loader fix. No game data or personal settings were used.
+
+MAC-014 tracks pending macOS validation. Changes have not been committed,
+pushed, or merged to main; synchronization with the other device is unverified.
+
+## 2026-10-15 — Windows texture-dump compilation fix
+
+Reported during release preparation on main `38f1a2f`. Fix is local and
+uncommitted on `mac-port` base `724b1a1`: restore the missing `FILE *f`
+declaration in `src/texture_pack.c::dump_original`. No runtime patch or generated
+game source changes are required. MAC-011 records the platform impact.
+
+On Windows x64, the installed VS 2022 BuildTools MSVC compiler accepted the
+corrected translation unit with `/Zs /TC` and the Windows renderer include paths
+and feature defines. The existing `tsfp_texture_format_test.exe` passed DDS
+validation checks; that executable was not rebuilt and does not exercise the
+dump function. Texture-tool Python tests could not collect because Pillow is
+not installed in this virtual environment. No dependency pins were changed.
+No full game build, packaging, game launch or macOS validation was performed;
+personal settings and saves were unused. Other-device synchronization remains
+unverified. This fix must reach main before release preparation can use it.
+
+Patch validation: `python -m pytest tests/test_patch_updates.py -q` passed all
+11 tests on Python 3.14.2. `git diff --check` passed.

@@ -114,6 +114,38 @@ def test_windows_line_endings(checkout):
     assert installer.apply_patches(checkout, PATCHES) == []
 
 
+@pytest.mark.parametrize('already_applied', [False, True])
+def test_watermark_beside_native_overlay_guard(tmp_path, already_applied):
+    tree, patches = tmp_path / 'runtime', tmp_path / 'patches'
+    target = tree / 'src/hle/hle_d3d8.c'
+    target.parent.mkdir(parents=True)
+    patches.mkdir()
+    installer.git(tree, 'init', '-q')
+    original = '/* overlay */\nstatic int shown;\nstatic char line[96];\nvoid redraw(void);\n'
+    target.write_text(original, encoding='utf-8')
+    (patches / 'zz-mac-native-boot.patch').write_text(
+        '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
+        '@@ -1,4 +1,5 @@\n /* overlay */\n+#ifdef _WIN32\n'
+        ' static int shown;\n static char line[96];\n void redraw(void);\n', encoding='utf-8')
+    watermark = patches / 'zzzz-pc-debug-latency-watermark.patch'
+    watermark.write_text(
+        '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
+        '@@ -1,4 +1,4 @@\n /* overlay */\n static int shown;\n'
+        '-static char line[96];\n+static char line[192];\n void redraw(void);\n', encoding='utf-8')
+    if already_applied:
+        assert installer.git(tree, 'apply', watermark).returncode == 0
+    assert installer.apply_patches(tree, patches)
+    complete = target.read_bytes()
+    assert b'#ifdef _WIN32' in complete and b'line[192]' in complete
+    assert installer.apply_patches(tree, patches) == []
+    # Reduced context must still reject changes to the actual patched code.
+    target.write_bytes(complete.replace(b'line[192]', b'line[256]'))
+    before = target.read_bytes()
+    with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
+        installer.apply_patches(tree, patches)
+    assert target.read_bytes() == before
+
+
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows PowerShell stderr behavior')
 @pytest.mark.parametrize('exit_code', [0, 7])
 def test_checked_command_uses_exit_status_with_redirected_stderr(exit_code, tmp_path):
