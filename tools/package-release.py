@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,12 +17,21 @@ def main():
     parser.add_argument('--version', default='v0.1.0-alpha.1')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     args = parser.parse_args()
-    if not all(c.isalnum() or c in '.-_' for c in args.version):
-        parser.error('Version must contain only letters, numbers, dots, dashes, or underscores.')
+    if not re.fullmatch(r'v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', args.version):
+        parser.error('Use a semantic release version, such as v1.2.3 or v1.2.3-alpha.1.')
+    if '-' in args.version and any(part.isdecimal() and len(part) > 1 and part[0] == '0'
+                                   for part in args.version.split('-', 1)[1].split('.')):
+        parser.error('Numeric prerelease identifiers must not contain leading zeros.')
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-windows-x64'
     stage = args.output.resolve() / name
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
+
+    # Compile the dependency-free launcher for every package, so a stale local
+    # launcher binary cannot silently enter a new release.
+    powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                    '-File', str(ROOT / 'tools/build-launcher.ps1')], check=True)
 
     def copy(source, dest):
         target = stage / dest
@@ -29,6 +39,9 @@ def main():
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    copy(ROOT / 'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
+    copy(ROOT / 'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
+    copy(ROOT / 'build/launcher/Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
     for dll in ['avcodec-62.dll', 'avutil-60.dll', 'swresample-6.dll']:
         copy(upstream / 'third_party/ffmpeg/bin' / dll, 'Bin/' + dll)
     vs = Path(os.environ.get('ProgramFiles', r'C:\Program Files')) / 'Microsoft Visual Studio'
@@ -50,12 +63,24 @@ def main():
     (stage / 'README.txt').write_text(f'''TimeSplitters: Future Perfect PC {args.version} - experimental prerelease
 
 Requires 64-bit Windows 10/11 and your own US Xbox game files.
-Extract this entire ZIP to a writable folder. Double-click Play.cmd.
-On first launch choose your Xbox ISO or an extracted folder containing
+Extract this entire ZIP to a writable folder. Open TimeSplitters Launcher.exe
+(Play.cmd opens the same launcher). Choose Locate ISO or Use extracted files
+to select your Xbox ISO or an extracted folder containing
 default.xbe, pak, and xmv. Setup validates the supported executable and copies
 the game files to Data. Allow at least 5 GB of free space for setup.
-After setup, click Play.cmd to play. The original ISO is no longer needed.
+After setup, click Play Game in the launcher. The original ISO is no longer needed.
 No Python, Visual Studio, or emulator installation is required.
+
+The launcher checks published GitHub Releases at startup. Main-branch pushes
+do not update your game. Stable excludes prereleases; opt into Preview for
+published alpha/beta builds. Click Install/Update to download and verify a ZIP.
+Before its main window opens, a small splash checks for launcher-only updates
+and installs them automatically. This check has an eight-second timeout and
+an Open installed launcher button. Launcher and game versions are independent.
+Close the game before updating. The launcher reopens when installation finishes.
+Saves, settings, Data and optional Textures are kept. Restore previous returns
+to the preceding installed release. Launcher diagnostics: .launcher/launcher.log.
+Keep .launcher for rollback and interrupted-update recovery.
 
 WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. Click: recapture mouse.
@@ -71,8 +96,8 @@ Settings and paused Options include Display settings for render resolution.
 Confirmed display choices are saved in Settings/pc-display.ini.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
-Keep Data, Settings, and Saves when upgrading. Extract upgrades to a new folder
-and copy those three folders over. Do not overwrite your settings with defaults.
+Use the launcher's Update release button for upgrades. For manual upgrades,
+keep Data, Settings, Saves and Textures; do not overwrite personal settings.
 
 This is an experimental native recompilation, not the original source code.
 Startup and short first-mission gameplay have been checked; a full campaign
@@ -93,6 +118,7 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
 ''', encoding='utf-8')
     info = {
         'version': args.version,
+        'launcher_version': json.loads((ROOT / 'build/launcher/Support/Launcher/manifest.json').read_text(encoding='utf-8-sig'))['version'],
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',

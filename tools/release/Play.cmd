@@ -1,5 +1,9 @@
 @echo off
 setlocal
+if exist "%~dp0TimeSplitters Launcher.exe" (
+    start "" "%~dp0TimeSplitters Launcher.exe"
+    exit /b
+)
 if exist "%~dp0Data\default.xbe" goto play
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -STA -ExecutionPolicy Bypass -File "%~dp0Import-game.ps1"
 if errorlevel 2 exit /b 2

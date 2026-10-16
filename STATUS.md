@@ -3,6 +3,84 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+
+## Launcher v1.1.0 release preparation
+
+- Release tag: `launcher-v1.1.0`. This source snapshot includes the launcher,
+  its build and packaging tools, isolated tests and the MAC-014 handoff.
+- The Windows launcher-only ZIP, checksum and `launcher-update.json` are the
+  publication assets. They contain no game data or personal files.
+- 71 launcher regressions, two packaging tests and native bootstrap-to-main
+  startup passed. Launcher and game update channels remain independent.
+- The source snapshot excludes unrelated uncommitted texture work. Release
+  publication does not merge branches or change the checked-out branch/index.
+
+## Launcher self-update before opening — October 15, 2026
+
+- Launcher v1.1.0 now starts through a separate 64 KiB WPF bootstrap. A themed
+  splash checks published launcher-only assets before opening the main UI, with
+  an eight-second check deadline, a two-minute download limit and an Open
+  installed launcher action. Closing the splash cancels startup.
+- Launcher-only versions, packages and manifests are independent of game
+  releases. The build generates the versioned ZIP, SHA-256 sidecar and
+  launcher-update.json. The ZIP contains the bootstrap, Bin/TimeSplitters.App.exe
+  and Support/Launcher/manifest.json. Full game packages also include them.
+- A separate self-update helper waits for the bootstrap to close and verifies
+  staged hashes before replacement. Self-update recovery/backups are separate
+  from the game's recovery/backups. Game update/rollback preserves a newer
+  independently installed launcher. Neither path changes personal data/settings.
+- Game release discovery now filters the published release list, so a newer
+  launcher-only GitHub Release cannot hide the latest matching game package.
+- Windows x64 .NET Framework 4.8/WPF: 71 isolated launcher regressions and two
+  synthetic packaging tests passed. New checks cover independent versions,
+  channel filtering, metadata agreement, an OS request ignoring cancellation,
+  continue-offline cancellation, narrow extraction, changed staged files,
+  separate-process replacement, failed/interrupted self-updates, independent
+  game rollback preservation, and the generated compiled launcher ZIP itself.
+- Native startup displayed the splash, closed its bootstrap process and opened
+  the main application's normal window with launcher v1.1.0 in the footer.
+  Main UI/accessibility and both offscreen renders passed. No game was launched
+  or extracted, and no personal saves/settings were used.
+- Live launcher checks found no launcher-only release in either channel. The
+  generated assets still need publication to enable a real remote self-update;
+  no release was published and no Git changes were committed/pushed. Remote
+  download/update paths were exercised with controlled synthetic responses.
+- Source remains local/uncommitted in the existing Windows checkout at f847832.
+  See tools/launcher/Bootstrap.cs, SelfUpdate.cs, LauncherVersion.cs,
+  docs/windows-launcher.md and the MAC-014 handoff. Mac execution is unverified.
+
+## Windows GitHub Release launcher — October 15, 2026
+
+- Added a native Windows x64 WPF launcher with a TimeSplitters temporal-scanner
+  theme, local US Xbox ISO/folder import, game launch, release notes, logs and
+  save-folder access. Users need no Git, Python installation or build tools.
+- Stable checks only published non-prereleases; Preview is an explicit opt-in.
+  Startup checks are automatic; installing requires a click. Branch pushes do
+  not trigger updates. Downloads verify GitHub's SHA-256 or the release sidecar,
+  then every file in BUILD.json. An external helper replaces the launcher itself.
+- Safe extraction, protected user directories, per-installation locking, game
+  process checks, backup-before-write installation, interrupted-install recovery
+  and previous-release restore are implemented. Existing controls/display,
+  saves, data and optional textures are retained. One rollback copy is kept.
+- Validation on Windows x64: 45 isolated C# regressions and two synthetic
+  packaging tests passed. They cover release selection/version ordering,
+  checksums, unsafe/duplicate/protected ZIP paths, rollback and injected failures,
+  crash recovery, settings preservation, a separate updater process with spaced
+  paths, malformed ISO rejection and checksum-sidecar fallback.
+- Live GitHub discovery reported no Stable release and Preview v0.2.0-alpha.2.
+  Its 96,663,763-byte ZIP passed SHA-256 and all 1,272 manifest file checks, then
+  installed in isolation through the helper without executing downloaded code.
+  The temporary runtime and archive were removed; no game data was copied.
+- The actual WPF window and accessible controls were inspected. Channel switching
+  discovered the live Preview release; ISO picker open/cancel passed. An
+  illustrative installed-state render is in build/launcher/preview.png. No game
+  launch, new real ISO extraction, campaign test or Mac validation was performed.
+- Source is local/uncommitted, based on the existing Windows texture checkout;
+  no branch switch, commit, push or public release was made. Existing texture
+  work remains in place. Packaging builds/includes the launcher, while the
+  checkout's developer Play.cmd remains intact. Mac adaptation is MAC-014.
+
+
 ## Texture branch integration of Mac PR #10 — October 15
 
 - Integrated merged main `fc25ef3` into the texture branch, retaining F10 cached

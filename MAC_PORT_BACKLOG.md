@@ -222,6 +222,39 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   the Mac build boundary; host-independent dispatch and Windows checks are
   recorded in `STATUS.md`. Native Mac execution remains unverified for this merge.
 
+### MAC-014 — Published-release launcher and updates
+
+- **Status:** Queued
+- **PC behavior:** A TimeSplitters-themed native launcher imports the supported
+  US Xbox ISO/folder once, launches the installed game, checks published GitHub
+  Releases on startup and installs verified Windows ZIPs on request. Stable and
+  opt-in Preview channels, external self-update helper, interrupted-install
+  recovery and previous-release restore preserve user data/settings.
+  Launcher v1.1.0 adds a pre-window splash/bootstrap, automatic launcher-only
+  updates with an eight-second check deadline, offline cancellation/fallback,
+  and a separate launcher recovery/backup scope that preserves game rollback.
+- **PC source:** Release tag `launcher-v1.1.0`; `tools/launcher/`, `tools/build-launcher.ps1`,
+  `tools/package-release.py`, `tools/release/Play.cmd`, `tests/launcher_updates.cs`,
+  `tests/package_launcher.py`, `docs/windows-launcher.md`.
+- **PC validation:** 71 isolated C# checks and two packaging tests now pass,
+  including independent launcher/game versioning, timeout/cancellation,
+  separate-process self replacement and validation of the compiled launcher ZIP.
+  Native splash-to-main-window startup passed. Prior native WPF
+  window/channel/ISO-picker checks and a verified isolated installation of the
+  published v0.2.0-alpha.2 ZIP (1,272 files). No game or personal data was used.
+- **Existing Mac support:** Checkout-based native launcher and build manifests
+  remain unchanged. WPF and .NET Framework updater are Windows-specific.
+- **Mac adaptation needed:** Native UI/update helper, Mac asset selection and
+  packaging, pre-window self-update checks, safe import/update/recovery, signing
+  and dependency integration. Keep launcher/game versions and recovery separate.
+  Coordinate with MAC-012; do not distribute Windows runtime files to Mac users.
+- **Mac acceptance checks:** Discover only selected release channels, verify
+  checksums and archive paths, update/self-update a native package, simulate
+  interruption and rollback, and preserve isolated saves/data/settings. Validate
+  offline play and real native launch on Apple Silicon.
+- **Mac implementation and evidence:** Deferred. Windows evidence is recorded
+  in [STATUS.md](STATUS.md#windows-github-release-launcher--october-15-2026).
+
 ## Status meanings
 
 - **Queued:** PC feature recorded; Mac adaptation is pending.

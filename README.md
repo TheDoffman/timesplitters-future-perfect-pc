@@ -9,16 +9,52 @@ gameplay has been verified.
 ## Download and play
 
 Download the Windows x64 ZIP from [Releases](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases).
-Extract the entire ZIP to a writable folder, then double-click **Play.cmd**.
-On first launch, select your US Xbox ISO or an extracted game folder containing
+Extract the entire ZIP to a writable folder, then open **TimeSplitters Launcher.exe**
+(**Play.cmd** opens the same launcher). Choose **Locate ISO** or **Use extracted files**
+to select your US Xbox ISO or an extracted game folder containing
 `default.xbe`, `pak`, and `xmv`. Setup verifies the game version and copies the
-files once. Afterward, **Play.cmd** launches directly; the ISO is no longer needed.
+files once. Afterward, use **Play Game**; the ISO is no longer needed.
 
 The release includes the PC executable, movie libraries, and default controls.
 It requires Windows 10/11 x64 and about 5 GB free for setup. Python, Visual Studio,
 and an emulator are not required to play. Original game data is not bundled.
 This is an experimental prerelease; a complete campaign playthrough is unverified.
-Keep the release's `Data`, `Settings`, and `Saves` folders when upgrading.
+The launcher checks **published GitHub Releases**, never pushes to `main`.
+**Stable** excludes prereleases; choose **Preview** for published alpha/beta builds.
+If no stable release has been published, Stable reports that explicitly.
+Before the main window opens, a brief splash checks for **launcher-only updates**
+and automatically installs newer launcher files. The check has an eight-second
+timeout; **Open installed launcher** skips the wait. This does not update the
+game. The selected Stable/Preview channel applies to both launcher and game.
+Click **Install release** or **Update release** to download the matching Windows ZIP.
+The launcher verifies the archive's SHA-256 and the package's file manifest,
+then closes briefly while a helper installs it and reopens the launcher.
+The game must be closed during an update. Offline checks do not prevent playing
+an already installed game. Users need no Git, Python or compiler.
+
+Updates preserve `Data`, `Settings`, `Saves` and optional `Textures`.
+**Restore previous** returns to the preceding installed release, keeping personal
+settings. Interrupted installs recover at the next startup. Keep `.launcher`
+for recovery/rollback; its `launcher.log` contains bounded launcher diagnostics.
+Do not manually replace application files while the launcher or game is running.
+
+To build only the standalone Windows launcher:
+
+```powershell
+.\tools\build-launcher.ps1 -Test
+```
+
+Output: `build/launcher/TimeSplitters-Launcher-windows-x64.zip`. Extract the whole
+ZIP into a writable folder and open `TimeSplitters Launcher.exe`. Keep its
+`Bin/TimeSplitters.App.exe` and `Support/Launcher/manifest.json` companions.
+This bootstraps a fresh installation from published releases. Its first run starts
+with Stable selected. The interface uses original vector artwork and a temporal
+scanner theme; no game art is bundled. See [launcher maintenance](docs/windows-launcher.md).
+
+Launcher publishing assets are generated separately in `build/launcher`:
+`TimeSplitters-Launcher-v1.1.0-windows-x64.zip`, its `.sha256` sidecar, and
+`launcher-update.json`. Publish these together on a GitHub Release to enable
+automatic launcher updates without downloading a game runtime ZIP.
 
 To produce the same public package after building:
 
