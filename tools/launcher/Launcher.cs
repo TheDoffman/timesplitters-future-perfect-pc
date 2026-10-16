@@ -372,6 +372,50 @@ namespace TimeSplitters.Launcher
         }
         public static string Quote(string value)
         { return SelfUpdate.Quote(value); }
+        internal static bool GameWindowReady(string root)
+        {
+            string executable = Core.PathIn(root, "Bin/futureperfect_recomp.exe");
+            bool ready = false;
+            foreach (var game in Process.GetProcessesByName("futureperfect_recomp"))
+            {
+                using (game)
+                {
+                    try
+                    {
+                        if (!game.HasExited && game.MainWindowHandle != IntPtr.Zero &&
+                            String.Equals(game.MainModule.FileName, executable, StringComparison.OrdinalIgnoreCase))
+                            ready = true;
+                    }
+                    catch (InvalidOperationException) { } // Process exited during observation.
+                    catch (System.ComponentModel.Win32Exception) { } // Unrelated/inaccessible process.
+                }
+            }
+            return ready;
+        }
+        internal async Task MonitorGame(Process process)
+        {
+            bool minimizedForGame = false;
+            WindowState previousState = Window.WindowState;
+            try
+            {
+                SetStatus("Starting game…");
+                while (!process.HasExited)
+                {
+                    if (!minimizedForGame && GameWindowReady(root))
+                    {
+                        Window.WindowState = WindowState.Minimized;
+                        minimizedForGame = true;
+                        SetStatus("Game running. Have a good jump.");
+                    }
+                    await Task.Delay(200);
+                }
+                await Task.Run(() => process.WaitForExit());
+            }
+            finally
+            {
+                if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
+            }
+        }
         async Task Play()
         {
             if (busy) return;
@@ -393,10 +437,7 @@ namespace TimeSplitters.Launcher
                     process.OutputDataReceived += (s, e) => { if (e.Data != null) Program.Log(root, e.Data); };
                     process.ErrorDataReceived += (s, e) => { if (e.Data != null) Program.Log(root, e.Data); };
                     process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine();
-                    SetStatus("Game running. Have a good jump.");
-                    Window.WindowState = WindowState.Minimized;
-                    await Task.Run(() => process.WaitForExit());
-                    Window.WindowState = WindowState.Normal; Window.Activate();
+                    await MonitorGame(process);
                     SetStatus(process.ExitCode == 0 ? "Welcome back. Ready for another jump?" : "Game launch failed. View logs for details.");
                 }
             }

@@ -233,7 +233,11 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   Launcher v1.1.0 adds a pre-window splash/bootstrap, automatic launcher-only
   updates with an eight-second check deadline, offline cancellation/fallback,
   and a separate launcher recovery/backup scope that preserves game rollback.
-    Local v1.1.1 adds an embedded generated Cortez/time-portal banner and a
+    v1.1.2 waits for this installation's game window before minimizing
+    the launcher, then restores its prior normal/maximized state on game exit;
+    early startup failures leave the launcher visible. Mac UI adaptation should
+    apply the same lifecycle using native window/process observation.
+    v1.1.1 adds an embedded generated Cortez/time-portal banner and a
     blue/silver palette across the main window and splash. The sidebar uses the
     original TimeSplitters wordmark and Future Perfect subtitle lettering,
     with dedicated silver TS/blue portal executable icons drawn at seven sizes
@@ -242,7 +246,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
     Mac packaging should adapt the compact mark to ICNS rather than shrinking
     the wide title logo; native Mac icon validation remains pending.
     Mac UI adaptation should preserve this visual theme and original lettering.
-- **PC source:** Release tag `launcher-v1.1.1`; `tools/launcher/`, `tools/build-launcher.ps1`,
+- **PC source:** Release tag `launcher-v1.1.1` (`effb1a5b82b2a108f94d2e9abd4be6c5dd0de82f`); `tools/launcher/`, `tools/build-launcher.ps1`,
   `tools/package-release.py`, `tools/release/Play.cmd`, `tests/launcher_updates.cs`,
   `tests/package_launcher.py`, `docs/windows-launcher.md`.
 - **PC validation:** 71 isolated C# checks and two packaging tests now pass,
@@ -263,6 +267,30 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   offline play and real native launch on Apple Silicon.
 - **Mac implementation and evidence:** Deferred. Windows evidence is recorded
   in [STATUS.md](STATUS.md#windows-github-release-launcher--october-15-2026).
+
+### MAC-015 — Shared pickup-range comparison fix (issue #6)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Restore the original horizontal-distance rejection for pickups
+  by preserving SSE comparison snapshots across control-flow joins. The old
+  translation ignored this rejection; pickup radii and input bindings are unchanged.
+- **PC source:** Local uncommitted changes: `patches/recomp-float-joins.patch`,
+  `tools/recomp-generation.py`, `tsfp.ps1`, `tests/test_recomp_float_joins.py`,
+  `tests/pickup_collision.c`.
+- **PC validation:** The original US pickup tick reproduces the out-of-range grant
+  with the pinned translator and passes isolated range/height/ABI cases with the
+  patch. Build and gameplay evidence is recorded in
+  [STATUS.md](STATUS.md#pickup-range-comparison-fix--october-16-2026).
+- **Existing Mac support:** The same patch stack and generator are used by both
+  builds. `tools/build-native-mac.py` now rejects stale generator hashes and records
+  them after `--generate`.
+- **Mac adaptation needed:** No platform adapter is required for this math fix.
+  Transfer the patch through Git, regenerate the game C and rebuild on Apple Silicon.
+- **Mac acceptance checks:** Run the shared regression with the supported US XBE
+  and Clang; verify near/far pickup behavior while turning and strafing in a bounded
+  isolated native gameplay run. Body-collision symptoms need separate confirmation.
+- **Mac implementation and evidence:** Shared implementation is present; native
+  compilation/gameplay and cross-device synchronization remain unverified.
 
 ## Status meanings
 

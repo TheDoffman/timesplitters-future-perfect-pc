@@ -5,6 +5,27 @@ full gameplay and campaign completion have not been verified.
 
 
 
+
+## Windows launcher v1.1.2 release preparation - October 16, 2026
+
+The launcher waits for the installed game's actual window before minimizing.
+It restores its previous normal/maximized state on exit. Early startup failure
+leaves the launcher visible; returning to it during play does not re-minimize it.
+Executable-path matching ignores windows from other installations. The banner,
+blue/silver theme, icon and release-only updating remain intact.
+
+Windows x64/.NET Framework 4.8 WPF build, three synthetic lifecycle checks,
+two packaging tests, embedded artwork and compiled ZIP validation passed.
+The broader updater suite was attempted but real game processes are running,
+so its safety guard stopped installation tests. The unchanged updater passed
+71 regressions in v1.1.1; this is prior evidence, not a fresh v1.1.2 full-suite pass.
+No game was started/stopped for this release; personal files were preserved.
+Lifecycle test source is included; Mac lifecycle adaptation remains MAC-014.
+
+The source tag excludes unrelated uncommitted runtime/texture work and preserves
+the checked-out branch, HEAD and real Git index.
+
+
 ## Windows launcher v1.1.1 release preparation - October 16, 2026
 
 This release embeds the generated Cortez/time-portal banner and original title

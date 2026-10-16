@@ -14,6 +14,8 @@ Extract the entire ZIP to a writable folder, then open **TimeSplitters Launcher.
 to select your US Xbox ISO or an extracted game folder containing
 `default.xbe`, `pak`, and `xmv`. Setup verifies the game version and copies the
 files once. Afterward, use **Play Game**; the ISO is no longer needed.
+The launcher minimizes when the game window appears and returns when the game
+closes. Startup failures leave it visible so you can check the status and logs.
 
 The release includes the PC executable, movie libraries, and default controls.
 It requires Windows 10/11 x64 and about 5 GB free for setup. Python, Visual Studio,
@@ -54,7 +56,7 @@ when the private artwork is available, with a matching vector fallback.
 See [launcher maintenance](docs/windows-launcher.md#launcher-artwork-and-colors).
 
 Launcher publishing assets are generated separately in `build/launcher`:
-`TimeSplitters-Launcher-v1.1.1-windows-x64.zip`, its `.sha256` sidecar, and
+`TimeSplitters-Launcher-v1.1.2-windows-x64.zip`, its `.sha256` sidecar, and
 `launcher-update.json`. Publish these together on a GitHub Release to enable
 automatic launcher updates without downloading a game runtime ZIP.
 

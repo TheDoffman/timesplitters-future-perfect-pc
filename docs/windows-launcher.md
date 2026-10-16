@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.1.1, publish all three together:
+in `build/launcher`; for version 1.1.2, publish all three together:
 
-- `TimeSplitters-Launcher-v1.1.1-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.1.1-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.1.2-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.1.2-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.1.1`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.1.2`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -139,6 +139,16 @@ complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
 
 ## Installation and recovery
+
+Starting with v1.1.2, Play keeps the launcher visible during startup and
+minimizes it once the installed game's window appears. It restores the previous
+normal/maximized launcher state when the launch script finishes. Startup failures
+before a game window appears leave the launcher visible with status/log access.
+Window detection matches this installation's executable path.
+`tools/test-launcher-lifecycle.ps1 -LauncherRoot build/launcher-v1.1.2`
+checks normal/maximized minimize-and-restore and failed startup using a bounded
+synthetic executable/window. It uses no game data or personal files. The broader
+updater suite requires real game processes to be closed before its install tests.
 
 The installation directory is the folder containing the launcher. The updater
 accepts only known root files, `Bin/*.exe`, `Bin/*.dll`, `Licenses/*.txt`, the
