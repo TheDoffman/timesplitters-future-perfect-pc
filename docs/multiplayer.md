@@ -1,54 +1,79 @@
-# PC multiplayer bring-up
+# Online multiplayer
 
-The source build replaces Xbox Live with **Online** above System Link. Every PC
-runs its own game, using competitive multiplayer with a player-hosted directory
-and UDP bridge. No Steam, paid service, account, or centrally operated server is
-required. Campaign co-op is a separate future effort.
+Everyone needs the same game build and matching US Xbox game files. Start the
+game from the launcher or **Play.cmd**, then choose **Online / System Link → Online**.
+You do not need an account or a paid service.
 
-Two local processes have used Online, an HTTPS directory, and separate virtual
-network addresses to join a match and enter gameplay. Real routers, different
-internet connections, and full-match stability remain unverified. This feature
-is experimental. Packages produced with the current release script include it;
-older downloadable packages may predate this feature.
+## Host a match
 
-## Set up Online
+1. **Set up your router once:** forward **TCP 30820** and **UDP 30821** to your
+   PC, and allow both through Windows Firewall. Only the host needs to do this.
+2. In the Online window, leave **Start directory automatically on this PC** and
+   automatic public IPv4 detection enabled. Enter a lobby name, then click
+   **Start New Match**. Leave the UDP port at **30821** unless you need another.
+3. Click **Copy invitation** and send the full invitation to your friends.
+4. Click **Return to game**, then select **Start New Match** in the game to
+   choose the map and mode.
+5. Once your friends have joined and selected **Ready**, select **Go**.
 
-Build the same source and game content on all PCs with `.\tsfp.ps1 Build`, then
-launch with `.\tsfp.ps1 Run` or `Play.cmd`.
+Keep the host's game running during the session. If you choose a different UDP
+port, forward that port instead of 30821. The game does not configure your
+router or firewall for you.
 
-Choose **Online / System Link > Online > Start New Match**. Automatic hosting
-is enabled by default. It detects your public IPv4, starts an HTTPS directory in
-the background, creates/reuses a certificate under `private/online-directory`,
-and fills in the local directory address and fingerprint. No PowerShell window
-or certificate copying is needed. Copy the invitation from the hosting window
-and send it to friends, then return to the game and select **Start New Match**
-to choose match settings.
+![Separate Online window showing automatic hosting options and Start New Match.](assets/online-host.png)
 
-The host still forwards **TCP 30820** and **UDP 30821** to their PC and permits
-both through Windows Firewall. If a different game UDP port is selected, forward
-that number instead. This does not configure the router or firewall automatically.
+*Hosting: leave the two automatic options checked, enter a lobby name, and click
+Start New Match.*
 
-Public IPv4 detection uses the free, IPv4-only [ipify HTTPS endpoint](https://www.ipify.org/)
-with a five-second timeout. No lobby details, credentials or game data are sent.
-The address is refreshed each time automatic hosting starts; **Detect** can also
-refresh it explicitly. If lookup fails or a VPN gives the wrong hosting address,
-disable automatic IP detection and enter your public IPv4 manually. The directory
-and bridge otherwise have no dependency on ipify. Detection does not solve
-carrier-grade NAT or port forwarding.
+![Online match hosted dialog showing Copy invitation and Return to game.](assets/online-invitation.png)
 
-Friends paste the full invitation into **Invitation / lobby code** and click
-**Join by code**. It fills in the directory address and fingerprint and joins
-the compatible lobby. Invitations contain connection details, not owner or peer
-credentials; share them with the intended players. A bare code still works when
-the directory address/fingerprint are already configured. The usual compatible
-public browser is available to everyone using that directory.
+*Click Copy invitation to share connection details, then Return to game.
+This screenshot uses an example invitation; ask your host for a real one.*
 
-The automatic directory stops when its host chooses System Link, opens Online
-again, or exits the game.
-If you want several hosts to share a directory, keep a standalone directory
-running instead and disable **Start directory automatically on this PC** in the
-host's Online window. Automatic hosting reports an occupied directory port;
-it never stops or replaces another service.
+## Join a friend
+
+1. Ask the host for the **full invitation**.
+2. In the Online window, paste it into **Invitation / lobby code** and click
+   **Join by code**. Connection details are filled in automatically.
+3. In the game's match list, select the host's match, then select **Ready**.
+   The host starts the match.
+
+Guests do not need to forward ports. To browse public lobbies instead, use the
+same directory as the host, click **Refresh**, select a lobby, then **Join selected**.
+A short join code works only when that directory is already configured.
+
+![Separate Online window with an example invitation pasted above Join by code.](assets/online-join.png)
+
+*Joining: paste your friend's full invitation into Invitation / lobby code,
+then click Join by code. The lobby and invitation shown here are examples.*
+
+## If you cannot connect
+
+- **Different builds or game data:** everyone must use matching versions and
+  the supported US game files.
+- **Host does not answer:** check the host's router forwarding and Windows
+  Firewall. If the host's connection uses carrier-grade NAT, ask another player
+  with a reachable public IPv4 to host. IPv6-only hosting is not supported.
+- **Wrong public IP or VPN:** turn off automatic IP detection and enter the
+  host's public IPv4 manually. **Detect** refreshes the address.
+- **Playing on the same local network:** use **System Link** instead; see below.
+
+Online is experimental. Local two-process matches have reached gameplay;
+real internet connections and full-match stability remain unverified.
+Campaign co-op is not supported.
+
+## Advanced: shared directory
+
+Skip this section for normal hosting. Automatic hosting starts the connection
+service (directory) and configures its certificate for you. It stops when the
+host exits, chooses System Link or reopens Online. Public IP detection uses
+[ipify](https://www.ipify.org/) with a five-second timeout; it sends no lobby
+information, credentials or game data and does not open router ports.
+
+Use a standalone directory only if several hosts need to share one persistent
+lobby list. Disable **Start directory automatically on this PC** when using it.
+Automatic hosting reports an occupied directory port rather than replacing an
+existing service.
 
 ### Optional standalone directory
 

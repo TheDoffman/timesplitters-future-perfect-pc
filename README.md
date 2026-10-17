@@ -142,10 +142,17 @@ original appearance. [Full controls and display guide →](docs/windows-settings
 
 ## Multiplayer
 
-**Online / System Link → Online** opens the experimental competitive mode.
-Host a match, share an invitation, or browse compatible public lobbies. No Steam
-account, paid service or centrally operated server is required. Choose
-**System Link** for LAN play.
+Everyone needs the same game build and matching game data. In the game, choose
+**Online / System Link → Online**.
+
+- **Host:** forward **TCP 30820** and **UDP 30821** to your PC and allow them
+  through Windows Firewall. Leave automatic hosting enabled, click **Start New
+  Match**, and send friends the full invitation. Return to the game and select
+  **Start New Match** to choose the map and mode.
+- **Join:** paste the host's invitation into **Invitation / lobby code**, click
+  **Join by code**, then select the host's match in the game and **Ready**.
+  The host selects **Go**. Guests do not need to forward ports.
+- **On the same local network:** choose **System Link** instead.
 
 Experimental bots are configured through the host's **Options → Bot Set**.
 The lobby shows players, admitted bots and the selected map/mode capacity.
@@ -153,10 +160,9 @@ Humans take priority; excess selected bots wait for space without changing
 the saved bot set. The host sees how many are waiting.
 
 > [!NOTE]
-> Online hosts must forward **TCP 30820** and **UDP 30821** and allow them through
-> the firewall. All players need matching builds and game data. Router setup is
-> not automatic; real internet routing and sustained cross-machine play still
-> need validation. Campaign co-op is a separate future effort.
+> Online is experimental. Router setup is not automatic; real internet routing
+> and sustained cross-machine play still need validation. Campaign co-op is not
+> yet supported.
 
 **[Host or join a match →](docs/multiplayer.md)**
 
