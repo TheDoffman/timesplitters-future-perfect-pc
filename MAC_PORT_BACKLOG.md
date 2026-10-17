@@ -13,7 +13,9 @@
   the shared patch stack, and `tests/ghost_rendering.c`.
 - **Shared Mac support:** Guest wrappers and HLE render-state forwarding are
   shared with Windows. No shader hash/string rewriting, geometry fingerprint,
-  Windows-only API, or diagnostic switch is required.
+  Windows-only API, or diagnostic switch is required. PR #84 CI run
+  `39008025033` passes the macOS ARM64 source-only spirit and patch-transition
+  tests after harness clock fix `57324bc`; native gameplay remains unverified.
 - **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
   No native execution was available on this Windows host. Confirm the native
   unwritten-fog fallback observes the scoped fog-disable state.

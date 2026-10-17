@@ -61,7 +61,13 @@ HLE diagnostic counters. The standalone harness now supplies a deterministic
 clock on both hosts, matching the framebuffer harness, instead of relying
 on the Windows system library or linking the complete Mac compatibility layer.
 Runtime/game behavior is unchanged. All four local Windows spirit/framebuffer
-variants passed; hosted rerun validation is pending.
+variants passed. Hosted run [39008025033](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39008025033)
+passed both jobs at fix commit `57324bc`: macOS ARM64 had 26 patch tests,
+66 native regressions and 32 release tests pass (7 platform-specific skips
+across those suites). Windows had 28 patch tests, 68 native regressions,
+35 release tests, 99 launcher regressions, 25 launcher settings checks and
+6 startup/packaging tests pass (2 native skips and 2 passing subtests).
+These source-only CI results do not establish native Mac gameplay fidelity.
 
 Earlier live comparisons with #9/#21 disabled did not identify either as the
 fix for #17. A forced visibility-query probe worsened effects and was removed.
