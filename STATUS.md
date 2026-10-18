@@ -2,8 +2,8 @@
 
 ## Windows launcher installer (2026-10-18)
 
-Implemented on `feature/launcher-installer`, based on `bfde9cd` in unmerged
-[PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Implemented in `42af795` on `feature/launcher-installer`, [PR #134](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/134),
+based on `bfde9cd` in unmerged [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
 Initial validation used uncommitted installer changes. Host: Windows x64,
 .NET Framework 4.8/WPF compiler, Windows PowerShell 5.1 and Python 3.12.14.
 The official Inno Setup 6.7.3 compiler download is pinned to SHA-256
@@ -40,6 +40,8 @@ existing launcher packaging tests also passed. Setup EXEs, checksum sidecars,
 compiler/source/payload provenance and selected logs remain ignored in the two
 validation output folders. Earlier failed lifecycle fixtures/logs were retained
 after the running-game guard blocked them; they were not reused or deleted.
+A repeat after PowerShell encoding normalization was blocked at preflight by
+a newly running real game; no test installation was changed or process closed.
 
 The Windows CI workflow builds with fallback artwork and runs launcher,
 installer and invalid-payload checks without publishing. Local release-style

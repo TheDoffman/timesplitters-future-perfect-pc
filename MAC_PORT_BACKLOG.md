@@ -12,8 +12,10 @@
   refresh the existing registration's displayed version. Running game/launcher,
   pending transactions, redirected destinations and installer downgrades are
   guarded without terminating processes.
-- **Source:** `feature/launcher-installer`, based on unmerged [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
-  installer changes uncommitted at initial validation. `tools/installer`,
+- **Source:** [PR #134](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/134),
+  feature commit `42af795` on `feature/launcher-installer`, based on unmerged
+  [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+  `tools/installer`,
   `tools/build-launcher-installer.ps1`, `tools/fetch-installer-compiler.ps1`,
   `tools/test-launcher-installer.ps1`, `tools/launcher/InstallerIntegration.cs`,
   `SelfUpdate.cs`, `tests/launcher_installer*.cs` and
