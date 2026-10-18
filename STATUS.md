@@ -42,6 +42,12 @@ validation output folders. Earlier failed lifecycle fixtures/logs were retained
 after the running-game guard blocked them; they were not reused or deleted.
 A repeat after PowerShell encoding normalization was blocked at preflight by
 a newly running real game; no test installation was changed or process closed.
+CI then exposed that Pascal's ASCII-only `UpperCase` did not produce the
+launcher's Unicode mutex name. Setup now uses Windows invariant Unicode case
+mapping before UTF-8 hashing. A standalone, non-installing probe matched .NET's
+normalization for accented, Greek, Turkish, combining and Chinese characters.
+The committed lifecycle regression retains the non-ASCII folder name; final
+Windows CI covers the complete flow independently of the local running game.
 
 The Windows CI workflow builds with fallback artwork and runs launcher,
 installer and invalid-payload checks without publishing. Local release-style

@@ -82,6 +82,22 @@ function NativeCloseHandle(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
 function NativeFileAttributes(Name: String): LongWord;
   external 'GetFileAttributesW@kernel32.dll stdcall';
+function NativeMapCase(LocaleName: String; Flags: LongWord; Source: String;
+  SourceLength: Integer; Destination: String; DestinationLength: Integer;
+  VersionInfo, Reserved, SortHandle: LongWord): Integer;
+  external 'LCMapStringEx@kernel32.dll stdcall';
+
+function InvariantUpper(const Value: String): String;
+var
+  Size: Integer;
+begin
+  { Pascal UpperCase only maps ASCII. Match .NET ToUpperInvariant for paths. }
+  Size := NativeMapCase('', $200, Value, Length(Value), '', 0, 0, 0, 0);
+  if Size = 0 then RaiseException('Cannot normalize the installation path.');
+  SetLength(Result, Size);
+  if NativeMapCase('', $200, Value, Length(Value), Result, Size, 0, 0, 0) <> Size then
+    RaiseException('Cannot normalize the installation path.');
+end;
 
 procedure ReleaseInstallMutex;
 begin
@@ -100,7 +116,7 @@ begin
   Result := True;
   if InstallMutex <> 0 then exit;
   { Identical UTF-8 path hash to Core.MutexName, shared by app/bootstrap/helpers. }
-  Name := 'Local\TSFP-Launcher-' + UpperCase(GetSHA256OfString(Utf8Encode(UpperCase(RemoveBackslashUnlessRoot(ExpandFileName(ExpandConstant('{app}')))))));
+  Name := 'Local\TSFP-Launcher-' + UpperCase(GetSHA256OfString(Utf8Encode(InvariantUpper(RemoveBackslashUnlessRoot(ExpandFileName(ExpandConstant('{app}')))))));
   InstallMutex := NativeCreateMutex(0, 0, Name);
   if InstallMutex = 0 then begin Result := False; exit; end;
   State := NativeWait(InstallMutex, 0);
