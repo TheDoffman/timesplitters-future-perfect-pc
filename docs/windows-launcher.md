@@ -1,9 +1,11 @@
 # Windows release launcher
 
-`TimeSplitters Launcher.exe` is the portable Windows x64 bootstrap. Extract the
-whole launcher ZIP into a writable installation folder, keeping the application
-`Bin/TimeSplitters.App.exe` and `Support/Launcher/manifest.json` beside it in
-their subfolders. It installs game runtime packages from the
+`TimeSplitters Launcher.exe` is the Windows x64 bootstrap. The upcoming Setup
+EXE installs it for the current Windows user, creates shortcuts and registers an
+uninstaller. The portable ZIP remains available: extract it into a writable
+installation folder, keeping `Bin/TimeSplitters.App.exe` and
+`Support/Launcher/manifest.json` beside the bootstrap in their subfolders.
+Both forms install game runtime packages from the
 public `TheDoffman/timesplitters-future-perfect-pc` GitHub Releases page. It never
 pulls a branch, builds game code, requests a GitHub login or downloads original
 game data. It reuses `tools/release/ImportGame.cs` for local ISO/folder import.
@@ -32,6 +34,66 @@ the startup splash without opening a window or checking the network.
 a Windows runtime ZIP. The checkout's developer `Play.cmd` is unchanged. The
 packaged `Play.cmd` opens the launcher, with its previous direct-launch path as
 a compatibility fallback when the EXE is absent.
+
+## Windows installer (current source, not yet published)
+
+Build with `powershell -NoProfile -ExecutionPolicy Bypass -File
+tools/build-launcher-installer.ps1 -FetchCompiler -RequireArtwork -Test`.
+This runs the normal launcher build/tests, verifies the two executable hashes
+and versions against the current source/manifest, and wraps exactly the three
+launcher payload files in Setup. `-LauncherDirectory <built-folder>` reuses a
+verified existing launcher build; `-Output <folder>` selects the output directory.
+With a supplied build, `-Test` runs installer lifecycle checks only; run the
+normal launcher regressions separately. `-RequireArtwork` also verifies embedded
+banner/logo resources in a supplied application.
+
+The official Inno Setup 6.7.3 download and compiler files are SHA-256 pinned in
+`tools/installer/compiler.json`. `tools/fetch-installer-compiler.ps1` downloads
+and verifies it before execution, then installs its compiler in portable mode
+under ignored `build/tools/innosetup-6.7.3`. It creates no compiler shortcuts,
+file associations or uninstall registration. `-CompilerPath` must point to the
+same pinned compiler. End users do not need Inno Setup or build tools.
+
+Setup defaults to `%LOCALAPPDATA%\Programs\TimeSplitters Future Perfect` and
+uses non-administrative current-user installation. The directory chooser permits
+another writable local folder, including an existing portable game installation.
+It never migrates another folder or copies game data automatically. Shortcuts
+use the bootstrap and the selected working directory. Installer-owned uninstaller
+files live in `Support/Installer`; the normal updater never owns these paths.
+
+Setup and uninstall share the launcher's per-installation mutex (uppercase,
+UTF-8 path SHA-256). They block while a game runs or an update needs recovery;
+no process is terminated. Redirected destinations are refused. Setup rejects
+newer executable file versions to prevent an older installer downgrading the
+launcher. Existing settings, saves, ISO, imported data, game runtime, textures,
+logs and caches are excluded from installer ownership and uninstall removal.
+There are no recursive file-install or delete rules.
+
+`InstallerIntegration.cs` updates only `DisplayVersion` in the existing per-user
+`TimeSplitters.FuturePerfect.Launcher_is1` uninstall key after verified startup.
+It requires that `InstallLocation` match the current root. Portable instances
+never create a registration or update another installation's entry. Installer
+registration errors are logged without blocking normal launcher use.
+
+The build emits versioned and stable-alias Setup EXEs with `.sha256` files,
+plus `launcher-installer-build.json` with version, compiler/download pin, source
+commit/changes and launcher payload hashes. The original three-file ZIP,
+checksums and `launcher-update.json` remain the self-update format. Publish the
+installer assets alongside those ZIP assets in the next launcher release; no
+release is created by building. These development Setup EXEs are unsigned;
+Authenticode signing is not configured.
+
+`tools/test-launcher-installer.ps1` compiles a test-only installer identity and
+unique shortcuts, then installs/uninstalls inside its own output subdirectory.
+It tests fresh install, reinstall/repair, retained game-folder reuse, running-game
+and mutex guards, unfinished transactions, downgrade refusal, self-update and
+uninstall preservation, and redirected destinations. It never uses an actual game
+or personal saves. Failures retain their fixture/logs for diagnosis. After
+inspection, `-WorkName installer-tests-<label>` selects a fresh test directory
+without deleting retained failures. The build wrapper exposes `-TestWorkName`.
+Five registration checks use a unique temporary HKCU key; five payload rejection
+subtests run in `tests/test_launcher_installer_packaging.py`. GitHub's Windows
+installer workflow uses fallback artwork and publishes no releases.
 
 ## Launcher artwork and colors
 
@@ -96,18 +158,23 @@ Production code signing and Windows SmartScreen reputation are not included.
 ## Publishing launcher-only updates
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
-assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.8, publish all three together:
+assembly/file version attributes, then run
+`tools/build-launcher-installer.ps1 -FetchCompiler -RequireArtwork -Test`.
+For the chosen version, publish these assets together from `build/launcher`:
 
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v<version>-windows-x64.zip` and its `.sha256`
 - `launcher-update.json`
+- `TimeSplitters-Launcher-Setup-v<version>-windows-x64.exe` and its `.sha256`
+- `TimeSplitters-Launcher-Setup-windows-x64.exe` and its `.sha256`
+- `launcher-installer-build.json`
 
-Use a GitHub Release such as `launcher-v1.2.8`. Mark test builds as prereleases;
+Use a GitHub Release named `launcher-v<version>`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
 hide a game release. Nothing is read from a branch or an unpublished draft.
+`Publish-Release.ps1` / `tools/publish-release.py` remain the game-release
+pipeline; this installer build does not create releases, push tags or upload assets.
 
 The 200-byte update manifest has `schema: 1`, `version`, `asset_name`, `size`
 and the ZIP's `sha256`. The bootstrap derives the download URL from the matching

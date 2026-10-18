@@ -25,14 +25,20 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the launcher.** Open the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest) and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
+| **01** | **Download the launcher.** Open the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest). Choose `TimeSplitters-Launcher-Setup-windows-x64.exe` when available. Installer support is in current source; older releases provide the portable ZIP. |
+| **02** | **Install and open.** Run Setup, choose a folder and optional desktop shortcut, then open **TimeSplitters Launcher** from Start. For a portable ZIP, extract the whole archive to a writable folder and open **TimeSplitters Launcher.exe**. |
 | **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes when the game window appears and returns when you finish. |
 
 **Next time:** open **TimeSplitters Launcher.exe → Play Game**. Installed play
 remains available offline.
+
+The installer uses your Windows account without requiring administrator access.
+Existing portable users can select their current game folder during Setup to
+reuse downloaded files and imported data. Uninstall removes the launcher and
+its shortcuts while keeping game files, saves, settings, the ISO and imported
+data. See the [installer guide](docs/launcher.md#install-with-setup-upcoming-launcher-release).
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>

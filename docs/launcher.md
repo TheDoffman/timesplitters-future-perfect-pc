@@ -2,11 +2,47 @@
 
 [Back to the README](../README.md)
 
-Open the [latest Windows launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)
-and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. Extract it
-completely into a writable folder and open **TimeSplitters Launcher.exe**.
-Keep the companion files in `Bin` and `Support` with it. Windows 10/11 x64 and
-.NET Framework 4.8 are required; no developer tools or GitHub login are needed.
+Open the [latest Windows launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).
+Installer support is available in current source for the next launcher release.
+Choose the Setup EXE when available; older releases still use the portable ZIP.
+Windows 10/11 x64 and .NET Framework 4.8 are required; no developer tools or
+GitHub login are needed to install or play.
+
+## Install with Setup (upcoming launcher release)
+
+Download `TimeSplitters-Launcher-Setup-windows-x64.exe` (or the versioned
+`TimeSplitters-Launcher-Setup-v…-windows-x64.exe`) and run it. Setup installs for
+your Windows account without requesting administrator access. The default is
+`%LOCALAPPDATA%\Programs\TimeSplitters Future Perfect`; you can choose another
+local folder that you can write to. The game runtime, imported data and personal
+files use that same installation folder.
+
+Setup adds a Start menu shortcut and an optional desktop shortcut, plus an entry
+in Windows **Installed apps**. Open the launcher from either shortcut and follow
+the first-time setup below. Automatic launcher and game updates continue working;
+you normally only need Setup once. Windows' displayed launcher version follows
+verified launcher self-updates.
+
+For an existing portable installation, select its existing folder in Setup to
+reuse the installed game, settings, saves and imported data. Nothing is moved or
+copied from another installation automatically. Rerunning the same installer
+repairs launcher files; an older installer refuses to replace a newer launcher.
+Close the game and launcher first. An unfinished updater transaction must be
+recovered by opening the installed launcher before running Setup again.
+
+Uninstall through Windows **Installed apps**. It removes the launcher, its
+installer registration and its shortcuts. Downloaded game files, imported `Data`,
+the ISO, `Saves`, `Settings`, textures, logs and download/recovery records are
+kept in the selected folder. Reinstalling into that folder reuses them. Uninstall
+does not wipe the installation folder recursively.
+
+## Portable ZIP
+
+Download `TimeSplitters-Launcher-…-windows-x64.zip`, extract it completely into
+a writable folder and open **TimeSplitters Launcher.exe**. Keep its `Bin` and
+`Support` files together. This option remains supported and does not add shortcuts
+or an Installed apps registration. The launcher's automatic updater still uses
+verified ZIP packages internally for both kinds of installation.
 
 ## First-time setup
 

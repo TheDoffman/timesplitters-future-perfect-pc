@@ -1,5 +1,35 @@
 # PC features awaiting Mac adaptation
 
+### MAC-038 — Per-user launcher installer
+
+- **Status:** Queued
+- **PC behavior:** Setup installs the Windows launcher for the current user,
+  adds a Start shortcut and optional desktop shortcut, and registers an
+  uninstaller in Installed apps. Existing portable folders can be reused.
+  Installation owns exactly the bootstrap, application and launcher manifest;
+  uninstall preserves game files, saves, settings, the ISO, imported data,
+  textures, logs and recovery records. ZIP self-updates remain supported and
+  refresh the existing registration's displayed version. Running game/launcher,
+  pending transactions, redirected destinations and installer downgrades are
+  guarded without terminating processes.
+- **Source:** `feature/launcher-installer`, based on unmerged [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
+  installer changes uncommitted at initial validation. `tools/installer`,
+  `tools/build-launcher-installer.ps1`, `tools/fetch-installer-compiler.ps1`,
+  `tools/test-launcher-installer.ps1`, `tools/launcher/InstallerIntegration.cs`,
+  `SelfUpdate.cs`, `tests/launcher_installer*.cs` and
+  `tests/test_launcher_installer_packaging.py`.
+- **Mac support:** Windows installer, registry and shortcuts only. Existing
+  native Mac launcher/build paths are unchanged; no Mac installer is provided.
+- **Remaining:** Design a native DMG/PKG or application distribution with
+  appropriate signing, update integration and per-user storage. Reuse ownership
+  boundaries and preservation rules, with native process/path safeguards.
+- **Acceptance:** On Mac, install/reinstall/update/uninstall using disposable
+  data; preserve settings, saves, ISO and imported game files. Verify app launch,
+  native shortcuts/registration equivalents, interrupted update recovery,
+  running-app guards, older-installer refusal and redirected-path handling.
+- **PC evidence:** [Windows installer checks](STATUS.md#windows-launcher-installer-2026-10-18).
+  Mac execution and packaging remain unverified.
+
 ### MAC-036 — Published game version picker and banner replacement
 
 - **Status:** Queued

@@ -1,0 +1,46 @@
+name: Windows launcher installer
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/launcher-installer.yml
+      - tools/installer/**
+      - tools/launcher/**
+      - tools/build-launcher*.ps1
+      - tools/fetch-installer-compiler.ps1
+      - tools/test-launcher-installer.ps1
+      - tools/release/ImportGame.cs
+      - config/pc-controls.default.json
+      - src/pc_display_modes.inc
+      - tests/launcher_*.cs
+      - tests/test_launcher_installer_packaging.py
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/launcher-installer.yml
+      - tools/installer/**
+      - tools/launcher/**
+      - tools/build-launcher*.ps1
+      - tools/fetch-installer-compiler.ps1
+      - tools/test-launcher-installer.ps1
+      - tools/release/ImportGame.cs
+      - config/pc-controls.default.json
+      - src/pc_display_modes.inc
+      - tests/launcher_*.cs
+      - tests/test_launcher_installer_packaging.py
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test launcher and installer
+        shell: powershell
+        run: ./tools/build-launcher-installer.ps1 -FetchCompiler -Test
+      - name: Reject invalid installer payloads
+        run: python tests/test_launcher_installer_packaging.py
+      # CI uses the vector fallback. Original artwork stays private and local.

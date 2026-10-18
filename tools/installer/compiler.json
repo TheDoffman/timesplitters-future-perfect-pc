@@ -1,0 +1,12 @@
+{
+  "version": "6.7.3",
+  "url": "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe",
+  "sha256": "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732",
+  "files": {
+    "ISCC.exe": "0a8757031b33777e4c9cbffee40f11a5062b36d25cbe144c1db73b6102b80ad7",
+    "ISCmplr.dll": "85a1e3090d3a5b85319f001b7c8f9ecfad45f37eff030a67bbe29ef58b7aa2c3",
+    "ISPP.dll": "bde04be7f4a55ca56afb6b06600d7cbe8326fac468ac3f2885b80eefb3ed2a7a",
+    "Setup.e32": "a80d75ba8d8c336050c37f7707de8bb017cc93597329e0ea18d474156b3e0da5",
+    "SetupLdr.e32": "5475964893adbb33ccc420ad4d88bbdff27dfaaca7580cd6058ea2798893490d"
+  }
+}

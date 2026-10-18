@@ -64,7 +64,7 @@ foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','Win
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
 $commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
-    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'LauncherVersion.cs'))
+    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'InstallerIntegration.cs'), (Join-Path $source 'LauncherVersion.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
 & $compiler @arguments
@@ -117,7 +117,7 @@ if ($Test) {
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
-    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_versions.cs'))
+    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_versions.cs'), (Join-Path $project 'tests\launcher_installer.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs
@@ -126,6 +126,8 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Launcher regression tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --downloads
     if ($LASTEXITCODE -ne 0) { throw 'Launcher download tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --installer-registration
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher installer registration tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --versions
     if ($LASTEXITCODE -ne 0) { throw 'Launcher game version tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --news

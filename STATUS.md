@@ -1,5 +1,54 @@
 # Measured progress
 
+## Windows launcher installer (2026-10-18)
+
+Implemented on `feature/launcher-installer`, based on `bfde9cd` in unmerged
+[PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Initial validation used uncommitted installer changes. Host: Windows x64,
+.NET Framework 4.8/WPF compiler, Windows PowerShell 5.1 and Python 3.12.14.
+The official Inno Setup 6.7.3 compiler download is pinned to SHA-256
+`9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732`;
+critical installed compiler files are also individually pinned. No game source,
+runtime dependency pin or native Mac build path changed. Launcher version stays
+1.2.12 for development; no release was published.
+
+Setup installs for the current user, offers an installation folder and desktop
+shortcut, adds a Start shortcut and Installed apps registration, and owns only
+the three launcher payload files. The uninstaller lives in `Support/Installer`.
+The existing ZIP updater remains compatible; verified startup refreshes only
+the matching existing per-user registration's displayed version.
+
+`tools/build-launcher.ps1 -Output build/launcher-validation -RequireArtwork -Test`
+passed all 203 launcher checks: 100 updater/cleanup, 27 downloads/recovery,
+5 installer registration, 11 game versions, 15 news, 25 settings and 20 maintenance.
+`tools/build-launcher-installer.ps1 -Output build/installer-validation
+-LauncherDirectory build/launcher-validation -RequireArtwork -Test
+-TestWorkName installer-tests-verified` passed 10 isolated lifecycle checks using
+a unique installer identity, shortcuts and a Unicode destination. These cover
+fresh install, repair/reinstall, retained-folder reuse, running-game/shared-mutex
+guards, interrupted transactions, newer-version refusal, transactional self-update,
+uninstall and redirected destinations. The same installer script is compiled
+with only identity/shortcut overrides for these tests. A synthetic child process
+was used for game-running checks; no actual game was launched or terminated.
+
+All seeded settings, saves, ISO, imported data, game files, textures, logs and
+download fixtures retained their hashes through reinstall, self-update,
+uninstall and folder reuse. Five isolated registry checks covered portable
+instances, matching/mismatched locations and corrupt/incomplete launcher files.
+The Python packaging test passed all five invalid-payload subcases; all three
+existing launcher packaging tests also passed. Setup EXEs, checksum sidecars,
+compiler/source/payload provenance and selected logs remain ignored in the two
+validation output folders. Earlier failed lifecycle fixtures/logs were retained
+after the running-game guard blocked them; they were not reused or deleted.
+
+The Windows CI workflow builds with fallback artwork and runs launcher,
+installer and invalid-payload checks without publishing. Local release-style
+builds required the private banner/logo. Standard interactive wizard appearance,
+manual first-run game import/gameplay and other-device behavior are unverified.
+Setup is unsigned; Authenticode signing is not configured. No personal files or
+actual installation were used by the tests. Mac packaging is queued in
+[MAC-038](MAC_PORT_BACKLOG.md#mac-038--per-user-launcher-installer).
+
 ## Complete original launcher banner artwork (2026-10-18)
 
 Follow-up on `feature/launcher-game-versions` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).

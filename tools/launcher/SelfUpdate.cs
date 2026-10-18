@@ -103,6 +103,7 @@ namespace TimeSplitters.Launcher
             try
             {
                 if (Directory.Exists(Core.PathIn(root, ".launcher/self-transaction")) || !Complete(root)) return;
+                InstallerIntegration.RefreshVersion(root);
                 TryCleanup(root, ".launcher/self-rollback", true);
                 string pending = Core.PathIn(root, ".launcher/self-pending");
                 if (Directory.Exists(pending))
