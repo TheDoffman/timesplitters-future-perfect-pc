@@ -313,5 +313,7 @@ when no dump was captured. These reports can be exported locally; an unobserved
 exit has an unknown cause and can also follow a reboot or interrupted launcher.
 
 Launcher maintenance: [automatic Windows/Mac compatibility checks](docs/launcher-compatibility.md)
-checks both directions and proposes separate fix PRs, with shared build/package
-validation. Activation requires the dedicated API credential and repository setup.
+validate both hosts in GitHub Actions without an AI API key. An optional dedicated
+Mac worker uses ChatGPT sign-in to propose repair PRs for failed compatibility
+checks. It requires installation on the chosen awake, online Mac; review and
+merging remain manual.

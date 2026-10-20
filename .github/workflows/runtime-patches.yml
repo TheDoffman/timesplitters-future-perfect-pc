@@ -55,6 +55,8 @@ on:
       - tests/test_launcher_shared_ui.py
       - tests/test_launcher_compatibility.py
       - tools/launcher-compatibility.py
+      - tools/compatibility-worker.py
+      - tests/test_compatibility_worker.py
       - .github/workflows/launcher-build.yml
       - .github/workflows/launcher-compatibility.yml
       - tests/launcher_shared_ui.cs
@@ -263,6 +265,8 @@ jobs:
           PY
       - name: Test CI suite selection and feature handoff index
         run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
+      - name: Test subscription worker selection and publication boundaries
+        run: python -m unittest discover -s tests -p test_compatibility_worker.py -v
       - name: Check out pinned upstream source only
         if: steps.scope.outputs.transitions == 'true' || steps.scope.outputs.native == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
