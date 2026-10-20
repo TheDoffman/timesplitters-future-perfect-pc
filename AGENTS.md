@@ -231,6 +231,16 @@ reproducibility, and validation requirements.
 
 ## Project storage and texture work
 
+- Preserve the texture enhancement in the next game/launcher version bump and
+  all later releases (user instruction, 2026-10-20). Carry forward the shared
+  replacement loader, Classic/Enhanced controls, pack installer/download path,
+  and `config/texture-pack.json`; a version-only change must not remove or reset
+  them. Retain the current texture delivery policy, including bundled-pack
+  support when integrated. Verify the published pack's sizes/hashes and require
+  the Optional texture pack check to pass before merging a version bump. Upgrade,
+  repair and rollback checks must preserve installed textures and personal
+  settings. Keep private artwork out of Git and public packages.
+
 - The user explicitly authorized optional public delivery of the compiled
   replacement DDS pack through the launcher (2026-10-20). This is an exception
   to the local-only rule for those compiled replacements and sanitized metadata,

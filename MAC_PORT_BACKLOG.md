@@ -2920,6 +2920,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Release preservation follow-up (2026-10-20,
+  `chore/preserve-texture-release-support`):** Game/launcher version bumps must
+  retain the texture loader, controls, installer and manifest, together with
+  installed textures and personal settings through updates/repair/rollback.
+  The existing pack verification workflow now runs on both version files and
+  either host's game-packaging changes. This is a shared GitHub delivery check;
+  no runtime host adapter changes. Local publication-contract tests pass, but
+  the configured public texture release currently returns HTTP 404 and remote
+  verification fails. Restore/publish the matching assets before the next
+  release; this does not establish Mac scene fidelity. See
+  [validation](STATUS.md#texture-preservation-on-version-bumps--2026-10-20).
+
 - **Status:** Awaiting validation
 - **Behavior:** Players explicitly download the optional GitHub texture pack or
   select a local ZIP/folder in launcher Graphics & resolution settings. The

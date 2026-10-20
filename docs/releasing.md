@@ -30,6 +30,26 @@ without system Python/Git on PATH. Real router forwarding still needs validation
 
 ## Publish a release from main
 
+### Preserve texture enhancements across version bumps
+
+The next game/launcher version and later releases must retain the existing
+texture enhancement: the shared replacement loader, Classic/Enhanced controls,
+the pack installation/download route and the published texture manifest. Keep
+the current delivery policy, including bundled textures once that work is
+integrated; a version bump must not silently become a texture-free regression.
+Do not reset installed texture files or unrelated personal preferences when
+upgrading, repairing or rolling back.
+
+Require **Optional texture pack** to pass on version-bump PRs. It validates the
+manifest and verifies every referenced published asset's size and SHA-256.
+The workflow also runs when either platform's game packager or the publisher
+changes. Keep the existing pack version for ordinary game/launcher bumps; only
+advance it when publishing new compiled replacements. Include the existing
+fresh/upgrade/repair/rollback preservation checks in release validation. These
+delivery checks do not establish full-game visual coverage.
+
+### Published texture pack
+
 The optional texture pack is delivered independently from game and launcher
 packages. For new artwork, run `python tools/texture-release.py publish --version
 <new-pack-version>` from the checkout holding the authoritative pack, then commit

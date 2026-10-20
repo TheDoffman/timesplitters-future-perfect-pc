@@ -3,6 +3,11 @@ name: Optional texture pack
 on:
   pull_request:
     paths:
+      - 'VERSION'
+      - 'tools/launcher/LauncherVersion.cs'
+      - 'tools/package-release.py'
+      - 'tools/package-native-mac.py'
+      - 'tools/publish-release.py'
       - 'config/texture-pack.json'
       - 'tools/texture-release.py'
       - 'tests/test_texture_release.py'

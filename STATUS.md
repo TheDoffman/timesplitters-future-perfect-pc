@@ -1,5 +1,21 @@
 # Measured progress
 
+## Texture preservation on version bumps — 2026-10-20
+
+Branch `chore/preserve-texture-release-support` records the user's requirement
+that future game/launcher bumps retain the texture enhancement and delivery
+route, while upgrades, repairs and rollbacks preserve installed textures and
+personal settings. The existing Optional texture pack workflow now also runs
+for `VERSION`, `LauncherVersion.cs`, both game packagers and the game publisher.
+
+Six publication-contract tests pass on Windows; no runtime code or personal
+texture files changed. The read-only live check currently fails: GitHub returns
+HTTP 404 for `textures-v0.1.0-alpha.1`, referenced by `config/texture-pack.json`.
+The pack must be restored/published and pass remote size/hash verification
+before the next version ships. This records current observed availability,
+separately from earlier publication notes; no assets were uploaded or changed.
+Existing host interaction/scene validation gaps remain under MAC-057/MAC-011.
+
 ## Fixed-60 settings fixture repair (2026-10-20)
 
 Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head
