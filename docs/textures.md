@@ -6,7 +6,8 @@ The texture overhaul is in development: a modern reinterpretation of materials
 and surfaces, using up to 4096×4096 for major surfaces and smaller sizes where
 appropriate. It is not a completed full-game remaster, and the public download
 does not include original game assets or private source artwork. Compiled
-replacement textures are a separate, optional GitHub release download.
+replacement textures are included in newly packaged game ZIPs by default;
+GitHub also hosts a separate pack for source builds and existing installations.
 
 See the [texture alpha overview](texture-alpha.md) for the current source scope,
 local pack snapshot and remaining validation gates.
@@ -17,10 +18,12 @@ Open **Game settings → Graphics & resolution → Download 4K texture pack**.
 The launcher shows the pack version, download size and installed size before
 asking you to continue. It downloads verified parts from this repository and
 installs them in the folder used by the active game installation. A Git clone
-or ordinary game/launcher update does not download the optional artwork.
+alone does not download the artwork. New game ZIPs include the pack; the separate
+launcher bootstrap stays small. Use the pack installer to update existing texture
+pairs; game updates seed missing pairs and preserve installed replacements.
 
-The first public alpha contains **1,242 replacements**, about **990 MiB installed**.
-It covers approximately 18% of supported keys, not the entire game. Selected
+The bundled alpha contains **1,505 replacements**, about **1.08 GiB installed**.
+It covers approximately 22% of known supported keys, not the entire game. Selected
 surfaces use up to 4K; smaller assets use appropriate sizes, and generated
 source images are resampled where recorded in their metadata.
 
@@ -44,6 +47,35 @@ keep a second complete texture pack or a permanent whole-pack ZIP.
 
 The source adds this feature to both Windows and Mac launchers. It becomes
 available to installed users when a launcher release containing it is published.
+
+## Texture build dependency
+
+Windows `tsfp.ps1 Build` and native Mac `tools/build-native-mac.py` prepare the
+same compiled pack by default. The repository contains its pinned release
+manifest and shared download/audit code; artwork and DDS binaries remain outside
+Git history. A valid local pack is reused without downloading, copying, or
+replacing it. An invalid nonempty pack stops the build for inspection.
+
+On a clean checkout, setup downloads the manifest's immutable release parts,
+checks their hashes and archive paths, and installs one active pack under
+`private/texture-remaster/pack`. Parts are bounded to 64 MiB in RAM, with no ZIP
+cache or second full pack. The installed pack must fit the 6 GiB budget. Failed
+installs remove only files created by that attempt; an interrupted process lock
+requires inspection before retrying. Original game files are still supplied by
+the player. Texture mode and saves/settings are not changed by building.
+
+Native Mac launch picks up this pack automatically; `--texture-pack` overrides
+it for one launch. Explicit lightweight builds can use `-SkipTextures` on
+Windows or `--without-textures` on Mac. Game ZIP packaging includes textures by
+default, streaming the DDS files and sanitized metadata directly into `Textures/`
+without a staging duplicate. This is a partial overhaul, not full-game coverage.
+
+The pack is pinned to `textures-v0.1.0-alpha.2`. For later artwork updates, publish
+the audited pack with `tools/texture-release.py publish --version <new-version>
+--memory`, commit its generated `config/texture-pack.json`, then run
+`python tools/texture-release.py verify --remote` before merging. The memory
+option holds one bounded upload part in RAM and creates no temporary ZIPs.
+Versions are immutable. A source push alone cannot upload ignored artwork.
 
 ## Preview an installed local pack
 

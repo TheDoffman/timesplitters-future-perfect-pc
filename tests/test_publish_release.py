@@ -3,6 +3,7 @@
 No real tag, release, game data or personal saves are touched.
 """
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -236,6 +237,30 @@ def test_package_manifest_rejects_changed_stage(publisher):
     publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
     (publisher.stage/'Bin/game.exe').write_bytes(b'changed after packaging')
     with pytest.raises(ValueError, match='Staged file changed'):
+        publisher.verify_package()
+
+
+@pytest.mark.parametrize('corrupt', [False, True])
+def test_streamed_textures_validate_from_zip_without_stage_copy(publisher, corrupt):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    build = json.loads((publisher.stage/'BUILD.json').read_text())
+    name = 'Textures/0123456789abcdef.dds'
+    content = b'synthetic texture payload'
+    build['textures'] = {'source': 'local', 'texture_count': 1}
+    build['files'][name] = hashlib.sha256(content).hexdigest()
+    (publisher.stage/'BUILD.json').write_text(json.dumps(build))
+    with zipfile.ZipFile(publisher.archive, 'w') as archive:
+        for relative in build['files']:
+            if relative != name:
+                archive.write(publisher.stage/relative, publisher.name+'/'+relative)
+        archive.write(publisher.stage/'BUILD.json', publisher.name+'/BUILD.json')
+        archive.writestr(publisher.name+'/'+name, b'corrupt' if corrupt else content)
+    publisher.checksum.write_text(module.digest(publisher.archive)+'  '+publisher.archive.name+'\n')
+    assert not (publisher.stage/'Textures').exists()
+    if corrupt:
+        with pytest.raises(ValueError, match='Archived file changed'):
+            publisher.verify_package()
+    else:
         publisher.verify_package()
 
 

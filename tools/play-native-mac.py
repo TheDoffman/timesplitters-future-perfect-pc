@@ -49,6 +49,8 @@ def game_environment(base, root, fps=None):
     if fps not in (None,60):raise ValueError('Only 60 FPS is supported')
     env.update(RECOMP_FRAME_INTERP='1', RECOMP_FRAME_TARGET='0',
                RECOMP_FPS_CAP='60', RECOMP_REFRESH_RATE='0')
+    if (root/'private/texture-remaster/pack').is_dir():
+        env['TSFP_TEXTURE_PACK_DIR'] = str(root/'private/texture-remaster/pack')
     return env
 
 

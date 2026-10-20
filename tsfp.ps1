@@ -6,6 +6,7 @@ param(
     [string]$Python,
     [string]$InputSequence,
     [switch]$SystemLink,
+    [switch]$SkipTextures,
     [string[]]$Peers,
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo')]
     [string]$Configuration = 'Release',
@@ -145,6 +146,9 @@ try {
                 }
                 'Build' {
                     Assert-Game
+                    if (!$SkipTextures) {
+                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build_textures.py'))
+                    }
                     Apply-LocalPatches
                     if (!(Test-Path -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h')) {
                         throw 'Run Generate first.'

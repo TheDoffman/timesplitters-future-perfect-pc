@@ -24,6 +24,15 @@ def test_existing_fixture_is_supported():
     assert launcher.read_controls(ROOT / 'tests/fixtures/pc-controls.json') == (0.1, True, False)
 
 
+def test_built_texture_pack_is_available_without_changing_settings(tmp_path):
+    pack = tmp_path/'private/texture-remaster/pack'
+    pack.mkdir(parents=True)
+    env = launcher.game_environment({}, tmp_path)
+    assert env['TSFP_TEXTURE_PACK_DIR'] == str(pack)
+    assert 'TSFP_TEXTURE_MODE' not in env
+    assert not (tmp_path/'config').exists()
+
+
 def test_native_routes_and_stale_automation(tmp_path):
     env = launcher.game_environment({'PATH':'/usr/bin', 'RECOMP_INPUT_SEQ':'stale',
                                     'RECOMP_LOG_FILE':'/personal/log', 'TSFP_NATIVE_TEST_KEYS':'stale', 'TSFP_NATIVE_TRACE_RENDER':'stale'}, tmp_path)

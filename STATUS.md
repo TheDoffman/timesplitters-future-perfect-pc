@@ -1,5 +1,37 @@
 # Measured progress
 
+## Bundled texture dependency for game releases (2026-10-20)
+
+Integrated the texture build/packaging change from issue #74 commit 6e11b52 onto
+main a0deeea, retaining fixed-60 timing, OneDrive compatibility and current CI
+scope selection. Windows and native Mac builders prepare one audited pack;
+packagers stream DDS and sanitized metadata into Textures/ without a duplicate
+texture staging tree. The shared launcher accepts bounded keyed texture members,
+seeds missing pairs and preserves existing replacements and settings. Installed
+textures remain separately managed through the pack installer. Launcher 1.2.22
+carries the shared installation change; older launchers must update first.
+
+The 1,505-texture alpha is 1,164,919,237 bytes with sanitized distribution metadata
+(active private pack: 1,165,240,310 bytes), under the 6 GiB cap. Publication uses
+24 immutable release parts, each at most 64 MiB, with one part assembled in RAM.
+Source artwork, prompts, original game data and personal files remain private.
+Texture temporary storage measured 267,500,678 bytes (256 MiB limit 268,435,456),
+with no part ZIPs retained and no duplicate pack. Published textures-v0.1.0-alpha.2 and verified all asset sizes/hashes. Read back
+all 24 public downloads (879,072,920 bytes) against every local audited DDS and
+sanitized metadata hash without extraction; all 1,505 replacements match.
+config/texture-pack.json pins that published release.
+
+Local Windows validation: 233 Python tests pass, one platform-dependent test
+skips, 39 subtests pass. This covers shared download, checksum/size failures,
+unsafe archives, offline reuse, cleanup boundaries, streamed Windows/Mac package
+manifests, publisher policy, native launch/preflight and CI routing. Windows
+launcher build and its full isolated regression suite pass, including bundled
+texture install, existing-pair preservation, OneDrive paths and staging cleanup.
+A native Mac bundled-install/preservation/cleanup fixture is registered for CI.
+No game build or gameplay was run. Native Mac host/package execution is assessed
+by the PR workflow; real pack scene/GPU coverage remains pending under MAC-011.
+This remains a partial overhaul (1,505 of 6,812 known keys), not a full remaster.
+
 ## Fixed-60 settings fixture repair (2026-10-20)
 
 Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head

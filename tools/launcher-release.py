@@ -167,13 +167,15 @@ class GitHub:
         require(bool(token), 'GITHUB_TOKEN is required for publication.')
         self.token = token
 
-    def call(self, method, path, data=None, upload=None):
+    def call(self, method, path, data=None, upload=None, upload_bytes=None):
         # Credentials only go to fixed GitHub API hosts, never a release-supplied URL.
-        url = ('https://uploads.github.com' if upload else 'https://api.github.com') + path
+        binary = upload is not None or upload_bytes is not None
+        require(not (upload is not None and upload_bytes is not None), 'Choose one upload source.')
+        url = ('https://uploads.github.com' if binary else 'https://api.github.com') + path
         headers = {'Authorization': 'Bearer ' + self.token, 'Accept': 'application/vnd.github+json',
                    'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'TSFP-launcher-release'}
-        body = Path(upload).read_bytes() if upload else json.dumps(data).encode() if data is not None else None
-        headers['Content-Type'] = 'application/octet-stream' if upload else 'application/json'
+        body = upload_bytes if upload_bytes is not None else Path(upload).read_bytes() if upload is not None else json.dumps(data).encode() if data is not None else None
+        headers['Content-Type'] = 'application/octet-stream' if binary else 'application/json'
         try:
             opener = urllib.request.build_opener(NoRedirect)
             with opener.open(urllib.request.Request(url, data=body, headers=headers, method=method), timeout=120) as response:

@@ -13,6 +13,7 @@ import urllib.request
 import zipfile
 
 import vulkan_sdk
+from build_textures import ensure_pack, zip_entries, write_zip
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME = 'Bin/futureperfect_recomp'
@@ -121,7 +122,8 @@ def bundle_libraries(executable, stage, sdk):
     return records
 
 
-def verify_payload(stage, manifest):
+def verify_payload(stage, manifest, texture_rows=()):
+    textures = {name: sha for name, _, sha in zip_entries(texture_rows)}
     required = {GAME, 'Launch.command', APP+'/Contents/MacOS/TimeSplitters.Launcher',
                 'Settings/pc-controls.json', 'Bin/libvulkan.1.dylib',
                 'Bin/libMoltenVK.dylib', 'Bin/libdxcompiler.dylib',
@@ -129,6 +131,10 @@ def verify_payload(stage, manifest):
     if not required <= manifest['files'].keys():
         raise ValueError('Incomplete Mac runtime package')
     for name, expected in manifest['files'].items():
+        if name in textures:
+            if expected != textures[name]:
+                raise ValueError('Texture differs from audited pack: '+name)
+            continue
         path = Path(name)
         if (path.is_absolute() or '..' in path.parts or path.parts[0] in
                 ('Data', 'Saves', 'Textures', 'private') or
@@ -138,7 +144,9 @@ def verify_payload(stage, manifest):
         if (stage/path).is_symlink() or digest(stage/path) != expected:
             raise ValueError('Package file differs from manifest: '+name)
     actual = {p.relative_to(stage).as_posix() for p in stage.rglob('*') if p.is_file()}
-    if actual != set(manifest['files']) | {'BUILD.json'}:
+    if not textures.keys() <= manifest['files'].keys():
+        raise ValueError('Texture files missing from package manifest')
+    if actual != (set(manifest['files']) - textures.keys()) | {'BUILD.json'}:
         raise ValueError('Unlisted files in Mac runtime package')
 
 
@@ -147,9 +155,13 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'build/releases')
     parser.add_argument('--launcher', type=Path, default=ROOT/'build/macos-launcher')
+    parser.add_argument('--without-textures', action='store_true', help='Make a lightweight package without enhanced textures')
+    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the default local/release pack')
     parser.add_argument('--licenses', type=Path, default=ROOT/'external/native-mac-licenses',
                         help='Directory containing verified Vulkan/DXC third-party notices')
     args = parser.parse_args()
+    if args.without_textures and args.texture_pack:
+        parser.error('--texture-pack cannot be combined with --without-textures')
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('Package the native game on its Apple Silicon build host.')
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-[\w.-]+)?', args.version):
@@ -166,6 +178,9 @@ def main():
     if native['source_revision'] != release_source:
         parser.error('Game source must match the existing release tag.')
     sdk = vulkan_sdk.verify_install()
+    texture_rows, textures = [], None
+    if not args.without_textures:
+        _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)
     prepare_licenses(args.licenses)
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-macos-arm64'
     stage = args.output.resolve()/name
@@ -254,14 +269,17 @@ Source and third-party notices: Source and Licenses.
         signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native,
         launcher_version=json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         files={p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()})
+    manifest['textures'] = textures
+    manifest['files'].update({name: sha for name, _, sha in zip_entries(texture_rows)})
     (stage/'BUILD.json').write_text(json.dumps(manifest, indent=2)+'\n')
-    verify_payload(stage, manifest)
+    verify_payload(stage, manifest, texture_rows)
     launcher = stage/APP/'Contents/MacOS/TimeSplitters.Launcher'
     archive_path = stage.with_name(name+'.zip')
     with zipfile.ZipFile(archive_path, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
         for path in sorted(stage.rglob('*')):
             if path.is_file():
                 archive.write(path, name+'/'+path.relative_to(stage).as_posix())
+        write_zip(archive, name+'/', texture_rows)
     with zipfile.ZipFile(archive_path) as archive:
         if archive.testzip() is not None:
             raise ValueError('Corrupt release archive')

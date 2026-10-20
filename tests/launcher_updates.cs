@@ -211,6 +211,25 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("bundled textures install while existing replacements and settings survive", () => {
+                string key = "Textures/0123456789abcdef.dds";
+                string root = Path.Combine(temp, "bundled-textures");
+                string zip = Zip("bundled-textures", f => { f[key] = "new texture"; f["Textures/0123456789abcdef.json"] = "new metadata"; f["Textures/abcdef0123456789.dds"] = "second texture"; }, null, false);
+                var changes = Core.Unpack(zip, Path.Combine(temp, "texture-payload"), "v1.1.0");
+                Put(root, key, "artist texture");
+                Put(root, "Settings/pc-controls.json", "personal settings");
+                Core.Apply(root, changes, null);
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+                Assert(!File.Exists(Core.PathIn(root, "Textures/0123456789abcdef.json")));
+                Assert(File.ReadAllText(Core.PathIn(root, "Textures/abcdef0123456789.dds")) == "second texture");
+                Assert(File.ReadAllText(Core.PathIn(root, "Settings/pc-controls.json")) == "personal settings");
+                Assert(Core.PreserveGameFile(key));
+                Assert(!Core.Allowed("Textures/game.exe") && !Core.Allowed("Textures/sub/0123456789abcdef.dds"));
+                Put(root, ".launcher/pending/payload/Textures/abcdef0123456789.dds", "verified staged texture");
+                Core.DiscardGameStaging(root);
+                Assert(!Directory.Exists(Core.PathIn(root, ".launcher/pending")));
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+            });
             if (args.Length == 1 && args[0] == "--cleanup") {
                 CleanupTests(); Console.WriteLine("PASS: " + passed + " isolated launcher cleanup checks."); return 0;
             }

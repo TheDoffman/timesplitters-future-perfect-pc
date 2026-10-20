@@ -237,7 +237,11 @@ reproducibility, and validation requirements.
   not for source artwork, original game assets or personal files. Use
   `tools/texture-release.py publish` before merging a new pack manifest; commit
   only `config/texture-pack.json`, never large texture files into Git. Keep pack
-  downloads opt-in, release versions immutable, and the launcher as GitHub Latest.
+  release versions immutable, and the launcher as GitHub Latest. The user later
+  authorized bundled textures for game builds/releases (2026-10-20): source builds
+  prepare the pack and game ZIPs include compiled replacements by default, with
+  explicit lightweight opt-outs. Keep the separate launcher pack installer for
+  existing/lightweight installations. Never add DDS blobs to Git history.
   Source pushes cannot upload ignored local art from a hosted runner. Confirm the
   Optional texture pack check passes before merging delivery updates.
 

@@ -20,6 +20,14 @@ validates the input paths and Python version, then runs Setup, Extract, Test,
 Generate, and Build in order, stopping at the first failure. It requires internet
 access for dependency downloads; it does not install Git, Python, or Visual Studio.
 The default output is `build/windows/Release/futureperfect_recomp.exe`.
+Build also prepares the compiled texture pack automatically. Git tracks
+`config/texture-pack.json`; the large DDS files are release assets, outside Git
+history. A valid existing `private/texture-remaster/pack` is audited and reused,
+including newer local artwork. Otherwise the pinned release is downloaded once
+with size and SHA-256 checks. Later builds reuse it offline. See the
+[texture build dependency](textures.md#texture-build-dependency) for publication
+status and storage rules. Use `tsfp.ps1 Build -SkipTextures` for an explicitly
+lightweight build; this does not remove an existing pack or change settings.
 After setup succeeds, double-click `Play.cmd` to play from the repository.
 The extracted files in `private/game` must remain; the ISO is no longer needed.
 Use `-Configuration Debug` or `-Configuration RelWithDebInfo` for another build

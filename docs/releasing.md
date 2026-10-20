@@ -18,6 +18,21 @@ To produce the same public package after building:
 
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
+The game ZIP includes the audited compiled textures in `Textures/` by default.
+They stream directly from the single active pack into the ZIP, with sanitized
+metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
+Use `--texture-pack <folder>` to select another audited pack, or
+`--without-textures` for a lightweight distribution. The staging folder alone
+does not contain the streamed textures; use the finished ZIP to test delivery.
+The launcher seeds missing replacement keys while preserving existing texture
+pairs and personal settings. Updating an already installed artist pack remains
+a separate texture-pack operation. Old launcher versions that reject `Textures/`
+need the launcher update containing this shared installer change first.
+The separate launcher bootstrap ZIP stays small; this applies to the game ZIP.
+Launcher 1.2.22 adds bundled-texture installation; publish that shared launcher
+update before distributing a game ZIP that contains textures. The standard
+launcher release workflow validates both Windows and Mac before publication.
+Both Windows and native Mac packaging use the same streaming texture helper.
 The package includes an isolated Windows Python/Tk runtime and the Online
 companion, including automatic hosting certificate support; players do not need
 Python or Git installed. Packaging downloads the pinned Windows wheels in

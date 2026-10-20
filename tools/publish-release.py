@@ -368,7 +368,11 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                     raise ValueError(f'Unsafe package path: {name}')
                 if name.startswith(('Data/', 'Saves/', 'Logs/')) or name.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')):
                     raise ValueError(f'Unexpected private game/test file in package: {name}')
-                if digest(self.stage/name) != expected_hash:
+                # Texture files stream into the ZIP without a staging copy.
+                texture = re.fullmatch(r'Textures/[0-9a-f]{16}\.(dds|json)', name)
+                if name.startswith('Textures/') and (not texture or not build.get('textures')):
+                    raise ValueError(f'Unexpected texture package member: {name}')
+                if not texture and digest(self.stage/name) != expected_hash:
                     raise ValueError(f'Staged file changed: {name}')
                 with archive.open(prefix+name) as stream:
                     if hashlib.file_digest(stream, 'sha256').hexdigest() != expected_hash:
