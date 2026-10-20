@@ -1,0 +1,50 @@
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -22,6 +22,7 @@
+  */
+ #include "d3d8_internal.h"
+ #include "d3d8_xbox.h"
++#include "graphics/screen_copy_rect.h"
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -270,27 +271,24 @@
+         UINT guest_w = d3d8_GetGuestWidth(), guest_h = d3d8_GetGuestHeight();
+         float kx = guest_w ? (float)back_w / (float)guest_w : 1.0f;
+         float ky = guest_h ? (float)back_h / (float)guest_h : 1.0f;
+-        LONG ax = at ? at->x : 0, ay = at ? at->y : 0;
+-        LONG w = src->right - src->left, h = src->bottom - src->top;
+-
+-        if (w <= 0 || h <= 0 || ax >= (LONG)tex->width || ay >= (LONG)tex->height) {
++        TsfpScreenCopyRect clipped;
++        if (!tsfp_screen_copy_rect(src->left, src->top, src->right, src->bottom,
++                                  at ? at->x : 0, at ? at->y : 0,
++                                  guest_w ? guest_w : back_w, guest_h ? guest_h : back_h,
++                                  tex->width, tex->height, &clipped)) {
+             rhi_output_restore(&saved);
+             rhi_view_destroy(rtv);
+-            return S_OK;                /* nothing of it lands in the texture */
++            return S_OK;
+         }
+-        if (ax < 0) { w += ax; ax = 0; }
+-        if (ay < 0) { h += ay; ay = 0; }
+-        if (ax + w > (LONG)tex->width)  w = (LONG)tex->width - ax;
+-        if (ay + h > (LONG)tex->height) h = (LONG)tex->height - ay;
+         float dx = (float)dst_w / tex->width, dy = (float)dst_h / tex->height;
+-        vp.x = (float)ax * dx;
+-        vp.y = (float)ay * dy;
+-        vp.width = (float)w * dx;
+-        vp.height = (float)h * dy;
++        vp.x = (float)clipped.x * dx;
++        vp.y = (float)clipped.y * dy;
++        vp.width = (float)clipped.width * dx;
++        vp.height = (float)clipped.height * dy;
+         c.scale_x = kx / dx;
+         c.scale_y = ky / dy;
+-        c.off_x = (float)src->left * kx - (float)ax * kx;
+-        c.off_y = (float)src->top * ky - (float)ay * ky;
++        c.off_x = (float)(clipped.left - clipped.x) * kx;
++        c.off_y = (float)(clipped.top - clipped.y) * ky;
+     }
+     if ((mapped = rhi_buffer_map(g.cb, RHI_MAP_WRITE_DISCARD)) != NULL) {
+         memcpy(mapped, &c, sizeof c);

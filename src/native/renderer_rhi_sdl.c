@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "../../tests/interpolation_depth_device.h"
+#include "renderer_host_selftest.inc"
 
 static SDL_Window *native_window;
 void *tsfp_native_renderer_window(unsigned width,unsigned height)
@@ -47,7 +49,8 @@ int tsfp_native_renderer_test(void)
     dev->lpVtbl->SetTextureStageState(dev,0,D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
     dev->lpVtbl->SetTextureStageState(dev,0,D3DTSS_ALPHAARG1,D3DTA_DIFFUSE);
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE);
-    int ok=SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF0000FF,1,0));
+    int ok=native_test_renderer_host(native_window,d3d8_overlay_shutdown);
+    ok &= SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF0000FF,1,0));
     ok &= SUCCEEDED(dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_TRIANGLELIST,1,vertices,sizeof vertices[0]));
     IDirect3DSurface8 *surface=NULL;D3DLOCKED_RECT lock;
     ok &= SUCCEEDED(dev->lpVtbl->GetBackBuffer(dev,0,0,&surface));
@@ -76,6 +79,11 @@ int tsfp_native_renderer_test(void)
     } else ok=0;
     if(surface)surface->lpVtbl->Release(surface);
     ok &= interpolation_depth_device_test(dev);
+    ok &= tsfp_native_graphics_settings_test(native_window);
+    /* Settings must leave the common targets usable after resizing/rollback. */
+    ok &= SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF0000FF,1,0));
+    ok &= depth_triangle(dev,.5f,0xFF00FF00) && depth_pixel(dev,0,255,0);
+    ok &= native_test_renderer_window_modes(native_window,dev);
     d3d8_overlay_draw("Shared native renderer");
     ok &= SUCCEEDED(dev->lpVtbl->Swap(dev,0));
     dev->lpVtbl->Release(dev);api->lpVtbl->Release(api);

@@ -1,5 +1,7 @@
 """Regressions for isolation and bounded cleanup, without launching the game."""
 import importlib.util
+import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -37,6 +39,54 @@ def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monk
     message = 'Missing private/game/default.xbe' if game is None else 'Unsupported XBE'
     with pytest.raises(SystemExit, match=message):
         builder.main()
+    assert not (tmp_path / '.venv').exists()
+    assert not (tmp_path / 'build').exists()
+
+
+@pytest.mark.parametrize('requested,version,expected', [
+    ('auto', '26.0', 'vulkan'), ('auto', '27.0.1', 'vulkan'),
+    ('auto', '15.7', 'gl'), ('vulkan', '26.3', 'vulkan'),
+    ('gl', '27.0.1', 'gl'), ('gl', '', 'gl'),
+])
+def test_native_renderer_uses_shared_frontend_on_supported_hosts(requested, version, expected):
+    assert builder.select_renderer(requested, version, 26) == expected
+
+
+@pytest.mark.parametrize('requested,version', [('auto', ''), ('auto', 'unknown'), ('vulkan', '15.7')])
+def test_native_renderer_rejects_unknown_or_unsupported_sdk_hosts(requested, version):
+    with pytest.raises(RuntimeError, match='--renderer gl'):
+        builder.select_renderer(requested, version, 26)
+
+
+@pytest.mark.parametrize('setup', [False, True])
+def test_native_builder_rejects_unverified_sdk_before_build_mutations(tmp_path, monkeypatch, setup):
+    import vulkan_sdk
+    # A synthetic game pin exercises preflight sequencing without private assets.
+    game = tmp_path / 'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'test preflight input')
+    (tmp_path / 'tsfp.ps1').write_text("$revision = '" + 'a' * 40 + "'\n$expectedHash = '" +
+                                     hashlib.sha256(game.read_bytes()).hexdigest().upper() + "'\n")
+    (tmp_path / 'config').mkdir()
+    (tmp_path / 'config/vulkan-sdk.json').write_text(json.dumps(dict(minimum_macos=26)))
+    monkeypatch.setattr(builder, 'ROOT', tmp_path)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(builder.platform, 'mac_ver', lambda: ('27.0.1', (), 'arm64'))
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py'] + (['--setup'] if setup else []))
+    calls = []
+    def reject(root):
+        calls.append(root)
+        raise RuntimeError('SDK receipt invalid')
+    def unexpected(*args, **kwargs):
+        pytest.fail('Mutated build or used wrong SDK operation before verification')
+    monkeypatch.setattr(vulkan_sdk, 'setup' if setup else 'verify_install', reject)
+    monkeypatch.setattr(vulkan_sdk, 'verify_install' if setup else 'setup', unexpected)
+    monkeypatch.setattr(builder, 'run', unexpected)
+    monkeypatch.setattr(builder.subprocess, 'check_output', unexpected)
+    with pytest.raises(SystemExit, match='SDK receipt invalid'):
+        builder.main()
+    assert calls == [tmp_path]
     assert not (tmp_path / '.venv').exists()
     assert not (tmp_path / 'build').exists()
 
@@ -229,3 +279,46 @@ def test_native_fixture_rejects_redirected_xdg_config(tmp_path, unlocked_fixture
 def test_present_counts_require_actual_backend_evidence():
     assert probe.present_counts('[NATIVE-GUEST] completed frame 600') is None
     assert probe.present_counts('[PRESENT] backend=vulkan total=300 guest=180 interpolated=119 other=1 skipped=4 failed=2') == dict(total=300,guest=180,interpolated=119,other=1,skipped=4,failed=2)
+
+
+def test_disabling_validation_requires_explicit_profiling(monkeypatch,capsys):
+    monkeypatch.setattr(probe.platform,'system',lambda:'Darwin')
+    monkeypatch.setattr(probe.platform,'machine',lambda:'arm64')
+    monkeypatch.setattr(sys,'argv',['test-native-mac.py','--profile-without-validation'])
+    with pytest.raises(SystemExit) as stopped:
+        probe.main()
+    assert stopped.value.code==2
+    assert 'requires --profile-frames' in capsys.readouterr().err
+
+
+def test_interpolation_capture_rejects_links_before_removing_old_evidence(tmp_path):
+    test=tmp_path/'private/test-saves/native-mac';test.mkdir(parents=True)
+    captures=tmp_path/'private/captures/native-mac';captures.mkdir(parents=True)
+    guest=captures/'interpolation-guest.bmp';guest.write_bytes(b'old')
+    outside=tmp_path/'keep';outside.write_bytes(b'preserve')
+    link=captures/'interpolation-pair.json';link.symlink_to(outside)
+    with pytest.raises(RuntimeError,match='capture path'):probe.prepare_interpolation_capture(tmp_path,test)
+    assert guest.read_bytes()==b'old' and outside.read_bytes()==b'preserve'
+    link.unlink()
+    env=probe.prepare_interpolation_capture(tmp_path,test)
+    assert not guest.exists() and Path(env['RECOMP_INTERP_CAPTURE_REQUEST']).read_text()==''
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+
+
+def test_interpolation_capture_requires_complete_same_size_readbacks(tmp_path):
+    from test_frame_replay import bmp
+    test=tmp_path/'private/test-saves/native-mac';test.mkdir(parents=True)
+    probe.prepare_interpolation_capture(tmp_path,test)
+    captures=tmp_path/'private/captures/native-mac'
+    receipt=dict(complete=True,presented=True,guest_written=True,midpoint_written=True,guest_frame=42,blend=.5)
+    metadata=captures/'interpolation-pair.json';metadata.write_text(json.dumps(receipt))
+    for name in ('guest','midpoint'):bmp(captures/('interpolation-'+name+'.bmp'))
+    result=probe.interpolation_capture_result(tmp_path)
+    assert result['complete'] and len(result['images'])==2
+    midpoint=captures/'interpolation-midpoint.bmp';midpoint.write_bytes(midpoint.read_bytes()[:-1])
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+    bmp(midpoint);receipt['presented']=False;metadata.write_text(json.dumps(receipt))
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+    for malformed in ('broken', '[]', 'null'):
+        metadata.write_text(malformed)
+        assert not probe.interpolation_capture_result(tmp_path)['complete']

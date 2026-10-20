@@ -18,4 +18,10 @@ set(SDL_GPU OFF CACHE BOOL "" FORCE)
 set(SDL_RENDER OFF CACHE BOOL "" FORCE)
 add_subdirectory("${TSFP_RUNTIME_DIR}/third_party/SDL" SDL EXCLUDE_FROM_ALL)
 add_subdirectory("${TSFP_RUNTIME_DIR}/src/platform" platform)
-include("${TSFP_NATIVE_DIR}/vulkan_probe.cmake")
+# Include the production frontend as well: the frame replay contract must
+# exercise its real capture parser, window adapter, draw and readback paths.
+set(TSFP_NATIVE_RHI ON CACHE BOOL "" FORCE)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/config" config)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/d3d" d3d)
+set_target_properties(tsfp_rhi_vulkan_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)

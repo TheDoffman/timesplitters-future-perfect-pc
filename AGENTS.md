@@ -110,18 +110,25 @@ reproducibility, and validation requirements.
   `requirements.txt`, and the verified FFmpeg download in `tools/fetch-video.ps1`.
   Do not independently upgrade dependencies on one device. Intentional version
   changes must update the shared scripts/documentation and relevant checks.
-- The opt-in common-RHI Mac probe uses the SDK pinned in
-  `config/vulkan-sdk.json` through `tools/test-rhi-mac.py`. Preserve its archive
-  checksum, installed-file receipt, licenses and version manifest; install only
-  inside ignored `external/vulkan-sdk`. This new adapter dependency does not
-  replace existing upstream/Python pins or change the default GL game renderer.
-  `tools/build-native-mac.py --renderer vulkan` opts into the common Xbox
-  frontend; use the bounded runner, which selects pinned GPU loading from the
-  build manifest. Restore `--renderer gl` before normal interactive use while
-  launcher integration is pending. Keep GPU contracts, guest frame counts and
-  common-renderer scene validation distinct. The shared recorder counts successful
-  presentation API calls and separates guest/interpolated/other kinds; it does not
-  measure GPU completion or monitor scanout. Skips/errors must not inflate FPS.
+- Native Mac builds select the common Xbox/Vulkan frontend on macOS 26+ by
+  default (`--renderer auto`), using the SDK pinned in `config/vulkan-sdk.json`.
+  Older hosts select legacy GL; `--renderer gl` is the explicit fallback on
+  any supported Mac. Ordinary renderer features belong in the common frontend;
+  legacy GL gaps are platform exceptions in the backlog, not duplicated policy.
+  `--setup` installs the pinned SDK locally when Vulkan is selected; normal
+  builds verify it before source generation/patching and never silently switch
+  frontends on SDK failure. Preserve its checksum, receipt, licenses and manifest
+  inside ignored `external/vulkan-sdk`. Upstream/Python pins are unchanged.
+  `tools/test-rhi-mac.py` runs asset-free GPU contracts. Both launchers and the
+  bounded runner select verified SDK loading from `BUILD.json`; new Vulkan
+  builds record MoltenVK, while older manifests without a driver field retain
+  KosmicKrisp. Use the shared `tools/vulkan_sdk.py` selection helper for both
+  launchers and tests; temporary driver overrides must not edit saved settings.
+  Prerequisite checks remain read-only. Keep GPU contracts, guest frames and reviewed scenes
+  distinct. The shared recorder counts successful presentation API calls and
+  separates guest/interpolated/other kinds; it does not measure GPU completion
+  or monitor scanout. Skips/errors must not inflate FPS. Full visual fidelity,
+  including Khallos sky rendering, remains unverified on the common renderer.
 - Apply the complete local patch stack with `tools/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes

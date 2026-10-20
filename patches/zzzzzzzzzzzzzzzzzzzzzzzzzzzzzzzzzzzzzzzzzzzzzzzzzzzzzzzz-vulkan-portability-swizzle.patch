@@ -1,0 +1,67 @@
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -37,6 +37,10 @@
+ #define WIN32_LEAN_AND_MEAN
+ #endif
+ #include <windows.h>
++#endif
++/* Portability feature declarations are guarded by this in the pinned headers. */
++#ifndef VK_ENABLE_BETA_EXTENSIONS
++#define VK_ENABLE_BETA_EXTENSIONS
+ #endif
+ #include "volk.h"
+ #if defined(RHI_VULKAN_SDL)
+@@ -1123,10 +1127,13 @@
+     VkPhysicalDeviceVulkan12Features f12 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+     VkPhysicalDeviceVulkan13Features f13 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+     VkPhysicalDeviceCustomBorderColorFeaturesEXT fcb = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT };
++    VkPhysicalDevicePortabilitySubsetFeaturesKHR have_port = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR };
++    VkPhysicalDevicePortabilitySubsetFeaturesKHR port = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR };
+     VkDeviceCreateInfo dci = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+     const char *exts[4];
+     uint32_t next = 0;
+     int border_ext = has_device_ext(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
++    int portability = has_device_ext(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+ 
+     if (!has_device_ext(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)) {
+         fprintf(stderr, "[RHI] vulkan: %s has no push descriptors, which this backend needs\n",
+@@ -1151,7 +1158,11 @@
+ 
+     have.pNext = &have12;
+     have12.pNext = &have13;
+-    have13.pNext = border_ext ? &have_cb : NULL;
++    have13.pNext = portability ? &have_port : NULL;
++    if (border_ext) {
++        have_cb.pNext = have13.pNext;
++        have13.pNext = &have_cb;
++    }
+     vkGetPhysicalDeviceFeatures2(V.pd, &have);
+     if (!have13.dynamicRendering || !have13.synchronization2 || !have13.maintenance4 ||
+         !have12.timelineSemaphore) {
+@@ -1174,13 +1185,24 @@
+     f13.maintenance4 = VK_TRUE;
+     f2.pNext = &f12;
+     f12.pNext = &f13;
+-    if(has_device_ext("VK_KHR_portability_subset"))
+-        exts[next++]="VK_KHR_portability_subset";
++    if (portability) {
++        /* Enabling the extension alone leaves all optional features disabled.
++         * A8/BGRX sampled views require component remapping on every backend. */
++        if (!have_port.imageViewFormatSwizzle) {
++            fprintf(stderr, "[RHI] vulkan: %s lacks image-view component swizzles required for A8/BGRX textures\n",
++                    V.props.deviceName);
++            return -1;
++        }
++        port.imageViewFormatSwizzle = VK_TRUE;
++        f13.pNext = &port;
++        exts[next++] = VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
++    }
+     exts[next++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+     exts[next++] = VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME;
+     if (border_ext && have_cb.customBorderColors && have_cb.customBorderColorWithoutFormat) {
+         fcb.customBorderColors = VK_TRUE;
+         fcb.customBorderColorWithoutFormat = VK_TRUE;
++        fcb.pNext = f13.pNext;
+         f13.pNext = &fcb;
+         exts[next++] = VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME;
+         V.feat_border = 1;

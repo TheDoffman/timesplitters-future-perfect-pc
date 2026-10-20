@@ -1,10 +1,12 @@
 """Interactive launcher preserves settings; tests never touch personal paths."""
 import importlib.util
 import io
+import sys
 from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'tools'))
 spec = importlib.util.spec_from_file_location('play_native', ROOT / 'tools/play-native-mac.py')
 launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
@@ -68,3 +70,69 @@ def test_fps_override_does_not_change_console_clock(tmp_path):
         assert env['RECOMP_FPS_CAP']==('60' if fps==120 else 'adaptive')
         assert 'RECOMP_VBLANK_HZ' not in env
     assert 'RECOMP_FRAME_INTERP' not in launcher.game_environment({},tmp_path)
+
+
+@pytest.mark.parametrize('driver,filename',[(None,'libkosmickrisp_icd.json'),
+    ('moltenvk','MoltenVK_icd.json'),('kosmickrisp','libkosmickrisp_icd.json')])
+def test_manifest_gpu_routing_preserves_personal_paths_without_writes(tmp_path,monkeypatch,driver,filename):
+    import vulkan_sdk
+    calls=[]
+    def verify(root):
+        calls.append(root)
+        return root/'sdk'
+    monkeypatch.setattr(vulkan_sdk,'verify_install',verify)
+    base=launcher.game_environment({'DYLD_INSERT_LIBRARIES':'stale','VK_DRIVER_FILES':'stale'},tmp_path,120)
+    manifest={'renderer':'vulkan'}
+    if driver is not None:manifest['vulkan_driver']=driver
+    env=launcher.renderer_environment(base,tmp_path,manifest)
+    assert calls==[tmp_path]
+    assert env['VK_DRIVER_FILES']==str(tmp_path/'sdk/share/vulkan/icd.d'/filename)
+    assert 'DYLD_INSERT_LIBRARIES' not in env
+    for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG',
+                'XDG_CONFIG_HOME','XDG_DATA_HOME','RECOMP_FRAME_INTERP','RECOMP_FPS_CAP'):
+        assert env[key]==base[key]
+    assert not list(tmp_path.iterdir())
+    for manifest in ({},{'renderer':'gl'}):
+        gl=launcher.renderer_environment(base,tmp_path,manifest)
+        assert 'VK_DRIVER_FILES' not in gl and 'DYLD_INSERT_LIBRARIES' not in gl
+    assert calls==[tmp_path]  # GL needs no Vulkan SDK
+    with pytest.raises(ValueError,match='Unsupported native renderer'):
+        launcher.renderer_environment(base,tmp_path,{'renderer':'unknown'})
+
+
+def test_vulkan_receipt_failure_stops_before_settings_creation(tmp_path,monkeypatch):
+    import vulkan_sdk
+    def reject(root):raise RuntimeError('installed file changed')
+    monkeypatch.setattr(vulkan_sdk,'verify_install',reject)
+    with pytest.raises(ValueError,match='installed file changed'):
+        launcher.renderer_environment({},tmp_path,{'renderer':'vulkan'})
+    assert not list(tmp_path.iterdir())
+
+
+def test_check_validates_vulkan_without_preparing_or_starting_game(tmp_path,monkeypatch):
+    import hashlib
+    import json
+    import vulkan_sdk
+    build=tmp_path/'build/macos';build.mkdir(parents=True)
+    exe=build/'futureperfect_recomp';exe.write_bytes(b'fixture executable')
+    (build/'BUILD.json').write_text(json.dumps(dict(renderer='vulkan',
+        executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest())))
+    config=tmp_path/'config';config.mkdir()
+    (config/'pc-controls.default.json').write_text('{}')
+    before={p.relative_to(tmp_path):p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    monkeypatch.setattr(launcher,'ROOT',tmp_path)
+    monkeypatch.setattr(launcher,'check_game',lambda root:None)
+    monkeypatch.setattr(launcher.platform,'system',lambda:'Darwin')
+    monkeypatch.setattr(launcher.platform,'machine',lambda:'arm64')
+    monkeypatch.setattr(launcher.subprocess,'check_output',lambda *a,**kw:'Mach-O 64-bit executable arm64')
+    checks=[]
+    def verify(root):checks.append(root);return root/'sdk'
+    monkeypatch.setattr(vulkan_sdk,'verify_install',verify)
+    def unexpected(*a,**kw):pytest.fail('--check must not prepare settings or run a child')
+    monkeypatch.setattr(launcher,'prepare_settings',unexpected)
+    monkeypatch.setattr(launcher.subprocess,'Popen',unexpected)
+    monkeypatch.setattr(sys,'argv',['play-native-mac.py','--check'])
+    monkeypatch.setattr(sys,'dont_write_bytecode',False)
+    assert launcher.main()==0 and checks==[tmp_path]
+    assert before=={p.relative_to(tmp_path):p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
+    assert not (tmp_path/'private').exists()

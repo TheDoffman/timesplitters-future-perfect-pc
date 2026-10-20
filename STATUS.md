@@ -162,6 +162,377 @@ This is launcher UI work; the native game remains the `356e5a3` build below.
 Windows source and game behavior are unchanged. Comparison used the Windows
 layout/templates; a live Windows screenshot comparison was unavailable here.
 
+## Common renderer selected by normal Mac builds (2026-10-19)
+
+- **Dependency:** `codex/shared-renderer-default` starts from unmerged `42462f0`;
+  it requires the common frontend, native launcher and GPU-contract stack.
+  Main and the separate launcher worktree are unchanged.
+- **Behavior:** `tools/build-native-mac.py` defaults to `--renderer auto`.
+  macOS versions supported by the pinned SDK (currently 26+) select Vulkan,
+  compiling the same Xbox rendering frontend as PC. Older hosts keep GL and
+  `--renderer gl` remains explicit. Unknown host versions fail with guidance.
+  This removes the need to opt in for ordinary shared renderer changes while
+  retaining a documented older-host/diagnostic compatibility exception.
+- **Dependencies:** Explicit `--setup` installs the existing pinned SDK when
+  selected. Normal builds verify its receipt before patching/generation; missing
+  or changed files fail rather than silently changing renderer. Unknown existing
+  installs are preserved. No SDK/upstream/Python version changed. The manifest
+  records both requested and resolved renderer; existing binaries do not change
+  until rebuilt. Personal settings and the 60 Hz/up-to-120 policy are unchanged.
+- **Local checks:** 101 tooling, SDK, launcher and CI/backlog checks pass.
+  Normal builder invocation with `--test` selected Vulkan and passed all three
+  CTests plus real-GPU renderer/window/fullscreen, input, settings and debug
+  checks. The read-only command launcher prerequisite check passes. Host:
+  Apple M5 Pro, macOS 27.0.1 arm64, Apple Clang 21.0.0, SDK 1.4.363.0 KosmicKrisp.
+  Build provenance is `42462f0` plus this uncommitted builder change; executable
+  SHA-256 `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`
+  matches the preceding runtime (the change selects it, not a new runtime).
+  Logs: `logs/shared-renderer-default-build.out`, `shared-renderer-default-tools.out`,
+  `shared-renderer-default-launch-check.out`.
+- **Bounded startup:** 20.14 seconds, exit 0, at least 900 guest frames and 1,800
+  accepted API presents (968 guest / 832 interpolated), zero sampled skips,
+  failures, shader compile errors, Vulkan validation errors or native faults.
+  This is startup evidence, not another gameplay or performance certification.
+  Isolated saves/controls/both display paths were used; six images recycled
+  (5,243,406,848 logical / 135,168 allocated bytes), after the native suite
+  recycled 12 images (8,192 allocated bytes). Free space before build: 223 GiB.
+- **Hosted acceptance at `a4261ee`:** Both jobs pass in
+  [run 39314716127](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39314716127).
+  Windows: 49 CI/backlog, 28 patch, 213 runtime (30 host skips, including new
+  builder tests among the passes), 52 release, 104 isolated launcher regressions,
+  crash/session checks, six startup tests/two subtests and five icon checks.
+  Mac: 49 CI/backlog, 26 patch (two skips), 200 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+  No source changes were needed after this validation; this follow-up records
+  the results and corrects one obsolete opt-in description.
+- **Milestone:** The published focused branch now provides shared-by-default
+  feature/settings/shader policy and the common Xbox frontend for supported
+  Macs, with thin OS/GPU adapters and both-host contracts. This completes the
+  incremental shared-architecture goal; it does not close the graphics backlog
+  or merge the stack into main.
+- **Limits:** Older-host selection is covered by portable tests, not a physical
+  older Mac. Legacy GL
+  retains its preceding complete GPU/native pass. Khallos sky distortion, movie
+  playback, some GL-only tracing hooks, full campaign/texture-pack fidelity and
+  sustained 120-present performance remain explicit gaps. The other physical
+  computer has not been synchronized or tested.
+
+## Shared screen-copy clipping and GPU contract (2026-10-19)
+
+- **Dependency:** `codex/shared-screen-copy-contract` starts from unmerged
+  integration `c553f9a`, which includes the shared renderer and launcher fixes.
+  Latest fetched main remains `ade3763`; no main merge. Existing untracked
+  files and the separate launcher worktree are preserved.
+- **Reproduction:** The production Xbox screen-copy pass copied the wrong source
+  pixels when a rectangle landed at a negative destination offset. Its clipping
+  moved the destination edge without advancing the source edge. A new real-GPU
+  test failed at pixel (0,0), blue channel 50 versus expected 56, on Apple M5 Pro
+  / macOS 27.0.1 arm64 / SDK 1.4.363.0 MoltenVK.
+- **Shared fix:** `src/graphics/screen_copy_rect.h` now supplies paired clipping
+  for Windows/common Vulkan and legacy native GL. It clips both surfaces,
+  preserves alignment and uses 64-bit intermediates for 32-bit guest inputs.
+  The runtime change is a separate reproducible patch; generated game C is
+  unchanged. Empty/fully clipped copies avoid invalid or negative viewports.
+- **GPU acceptance:** The common fixture now links production
+  `d3d8_screencopy.c` instead of an aborting feedback stub. Identical Windows
+  WARP/Mac Vulkan tests cover full copies, ten rectangle/boundary cases at 1x
+  and 2x source scales, RGBA-to-BGRA channel order, unchanged surrounding pixels,
+  restored output target/viewport and a distinct 4x2 offscreen source. Only
+  device scene discovery is supplied by the fixture. All cases pass locally
+  on MoltenVK with no validation errors (11 known primitive-restart warnings).
+  Executable SHA-256
+  `aff31947b3e1b761ff23128d9b1502ca67ed0a23e2762c35b0efadbeb432f4ec`.
+  Logs: `logs/shared-screen-copy-rhi.out`, `logs/rhi-moltenvk.json` / `.log`.
+- **Fallback/native checks:** The complete GL build and suite pass: three
+  CTests plus renderer/input/settings/debug, including existing real-GPU
+  screen-copy/scissor checks. Executable SHA-256
+  `bc3055b2c9484392619a048c3768ba8ae7ea8cd586850b94bce33b531338aa0f`.
+  Twelve test images recycled (10,486,813,696 logical bytes, 8,192 allocated).
+  Source/patch checks: 74 passed, two host skips; the one historical upgrade
+  fixture initially attempted the new patch before its deliberately excluded
+  feedback dependency. Correcting that historical subset makes the affected
+  test pass (one additional pass). Fresh complete-stack and repeat application
+  already passed. Logs: `logs/shared-screen-copy-gl-build.out`,
+  `logs/shared-screen-copy-source-tests.out`, `logs/shared-screen-copy-historical-test.out`.
+- **Integrated Vulkan suite:** The complete native common-renderer build also
+  passes all three CTests and renderer/input/settings/debug checks using pinned
+  KosmicKrisp. Current executable SHA-256
+  `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`.
+  No validation errors; 12 known disposable images recycled (8,192 allocated
+  bytes). Log: `logs/shared-screen-copy-vulkan-build.out`.
+- **Hosted acceptance at `42462f0`:** Both jobs pass in
+  [run 39313104097](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39313104097).
+  Windows: 49 CI/backlog, 28 patch, 202 runtime passes including the real
+  WARP screen-copy contract (30 skips), 52 release, launcher/startup/icon suites.
+  Mac: 49 CI/backlog, 26 patch (two skips), 189 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+- **Bounded Khallos scene:** Same Vulkan executable above, source based on
+  `c553f9a` plus the screen-copy changes now committed as `42462f0`; macOS
+  27.0.1 arm64 / Apple M5 Pro / pinned KosmicKrisp. Isolated Test Lab run ended
+  at 150.21 seconds with exit 0, at least 7,800 guest frames and 13,200 accepted
+  API presents (7,724 guest / 5,476 interpolated, no skips/failures). No native
+  fault, shader compile failure or Vulkan validation error. Reviewed opening
+  train exterior, first-person weapon/objective and pause/resume. The exterior
+  sky remains stretched/radial; it is not certified fixed. Movement commands
+  were submitted after timeout and were not consumed, so this run does not
+  add movement/firing evidence. Selected captures:
+  `private/captures/native-mac/shared-khallos-opening.png` and
+  `shared-khallos-exterior.png`; receipt `logs/shared-screen-copy-khallos-summary.json`.
+  Six disposable images recycled (5,243,406,848 logical bytes / 135,168 allocated).
+  Recorded personal settings and controls fixture hashes remained unchanged.
+- **Scope limits:** These are pixel/resource contracts plus a bounded scene,
+  not proof of every title post-processing effect. Larger physical destination
+  targets, other formats and matched scene fidelity remain pending. Local source was based on `c553f9a` with this commit's changes;
+  the earlier integration gameplay evidence is not a test of this new fix.
+
+
+## Shared native runtime and launcher integration (2026-10-19)
+
+- **Dependencies:** `codex/shared-native-integration` combines published renderer
+  and acceptance stack `f2c2261` with completed launcher work `da926fc` (runtime
+  implementation `356e5a3`). The latter also brings main through `ade3763`.
+  Both source branches and the launcher worktree are preserved; main is unchanged.
+- **Build ownership:** The launcher worktree is clean, its final validation is
+  committed, and no game/build process remains. Local integrated validation can
+  resume after that completed work. The existing binary still has launcher
+  revision `356e5a3` provenance until rebuilt from this integration branch.
+- **Merge scope:** Source files merge cleanly. The STATUS conflict contains
+  independent evidence sections; both are retained below. Combined CI/backlog,
+  Discord model/Unix IPC, native crash-helper, launcher routing and SDK checks
+  pass locally: 92 passed, six Windows-only skips in 45.40 seconds, with
+  disposable data. Native GPU, packaged launcher and isolated gameplay checks
+  are pending. Log: `logs/shared-integration-source-tests.out`.
+- **Local production resource acceptance:** At `3020167`, the asset-free
+  production RHI and Xbox-factory tests pass on Apple M5 Pro / macOS 27.0.1
+  arm64, pinned SDK 1.4.363.0 with MoltenVK Vulkan 1.3. This includes linear and
+  swizzled cube/volume uploads, mip sampling and child lifetime, plus the earlier
+  shader/depth/presentation contracts. No Vulkan validation errors; nine known
+  primitive-restart warnings. Test executable SHA-256
+  `23f70c075b57697aca936e716e6bb1ce8a06252b5341b5e0e3ff0ac6fd3a0379`;
+  logs: `logs/rhi-moltenvk.json`, `.log`, `logs/shared-integration-rhi.out`.
+  This does not validate other formats or game scenes.
+- **Command launcher integration:** The app already configured Vulkan, but the
+  legacy `.command` entry point did not. It now verifies the manifest-selected
+  SDK and uses the common read-only GPU environment helper, preserving personal
+  routing, FPS preferences and GL without an SDK. Receipt hashing also supports
+  Apple's Python 3.9 without changing development pins. All 28 launcher/SDK
+  checks pass, including no writes/child launch during `--check`, corrupt-SDK
+  rejection, inherited-loader cleanup and configuration preservation. The real
+  `/usr/bin/python3` prerequisite check passes against the existing launcher
+  binary; this is not a rebuilt integration game or gameplay validation.
+
+## Integrated host validation and launcher cleanup fix (2026-10-19)
+
+- **Revision/host:** `codex/shared-native-integration` at `ad9cb0f`, macOS
+  27.0.1 arm64, Apple M5 Pro, Apple Clang 21, SDL 3.4.16, pinned Vulkan SDK
+  1.4.363.0. The completed launcher work was integrated after its exclusive
+  build use ended. Both native builds now have integration provenance; this
+  supersedes the earlier old-binary/build-ownership limitations above.
+- **Native builds:** Complete `--renderer gl --test` and
+  `--renderer vulkan --test` passes: three CTests plus renderer, input,
+  settings and debug suites for each. Both exercise window resize, fullscreen
+  and restoration; Vulkan uses KosmicKrisp. GL executable SHA-256
+  `8d9fbc162fbb7f80288f69113dd8adf750ab52422dd729fa2e3d0c443e68b13d`;
+  current Vulkan executable
+  `9fc8783af4897e9578bcf2680d212bbc22776a6ccc21b54b8de1266670cbc8fb`.
+  Logs: `logs/shared-integration-gl-build.out` and
+  `logs/shared-integration-vulkan-build.out`. Each pass recycled 12 disposable
+  images (10,486,813,696 logical bytes, 8,192 physically allocated).
+- **Bounded gameplay:** The isolated unlocked-profile runner at `ad9cb0f`
+  completed 180.19 seconds with exit 0. Reviewed captures show profile/Story
+  navigation, first-mission world/characters/weapons, movement, mouse-look,
+  firing (16 to 13 rounds), and pause/resume. Input was synthetic SDL, including
+  an explicit focus event; this is not physical-device or full-level validation.
+  No shader compilation failures, Vulkan validation errors or native fault.
+  Logs: `logs/shared-integration-gameplay.out`, `logs/native-boot-summary.json`;
+  selected evidence: `private/captures/native-mac/shared-integration-first-mission.png`
+  and `shared-integration-move-look-fire.png`. Protected settings and controls
+  fixture hashes stayed unchanged; six test disks were recycled (5,243,406,848
+  logical bytes, 135,168 allocated).
+- **Timing limit:** With validation and 1920x1080 capture enabled, the 140–170 s
+  gameplay interval measured 65.35 accepted host presents/s: 47.57 guest and
+  17.78 interpolated. Interval p95 22.38 ms, p99 50.75 ms, worst 71.98 ms.
+  These CPU presentation intervals do not measure scanout or establish stable
+  120 FPS. The whole run includes menus/loading and is not a gameplay benchmark.
+- **Launcher integration:** The local ARM64 app builds and passes all 16 original
+  regression groups at `ad9cb0f`. Isolated real-game quit and intentional fatal
+  signal checks pass: game window observed, launcher minimized/restored,
+  normal exit 0 / synthetic crash exit 134, bounded report/export validated,
+  personal settings unchanged and disposable images recycled. Logs:
+  `logs/shared-integration-launcher-{build,quit,crash}.out`.
+- **Hosted integration:** [Run 39309443027](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39309443027)
+  at `ad9cb0f` passes the Mac job, including actual production RHI/Xbox texture
+  factories, 189 runtime checks (18 skips) and 16 native launcher groups.
+  Windows passes 202 runtime checks (30 skips) and release checks, but its
+  launcher regression catches deletion of the launcher when an older game
+  manifest uses lowercase filenames. The overall Windows job fails; it must
+  be rerun after the fix below. No Windows gameplay is claimed.
+- **Cleanup fix (commit carrying this entry):** The native launcher integration
+  replaced case-insensitive preservation with strict package-name matching.
+  Restore the existing common case-insensitive preservation for the launcher
+  executable/application/manifest while retaining native resource protection.
+  Package acceptance remains strict. The existing Windows transactional pruning
+  test reproduces the failure; a new native test verifies casing protection,
+  preservation of app resources, retired-game-file removal and rollback. All
+  17 native launcher groups pass locally. Windows rerun remains pending.
+- **Hosted fix revalidation:** [Run 39311742707](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39311742707)
+  at `c553f9a` completes successfully on both hosts. Windows passes the original
+  pruning reproduction and all 104 isolated launcher regressions, plus 202
+  runtime tests (30 skips), 52 release checks, session/report/startup/icon
+  suites. Mac passes 189 runtime tests (18 skips), production RHI/Xbox GPU
+  cases and all 17 native launcher groups, including the new cleanup/rollback
+  coverage. This supersedes the pending Windows rerun above; it does not cover
+  the subsequent screen-copy branch.
+- **Remaining:** Common Vulkan remains opt-in. Broader scene fidelity, movies,
+  advanced framebuffer effects, clean-machine delivery and stable 120 presents
+  remain open; no main merge or synchronization of the other physical device.
+
+## Shared cube and volume resource contract (2026-10-19)
+
+- **Source/dependency:** `codex/shared-texture-contract` depends on unmerged
+  `296f970`, including the common renderer and hosted-validation fixes. The
+  launcher chat retains exclusive use of the local native build/runtime.
+- **Shared acceptance work:** `tests/rhi_texture_resources.h` runs through the
+  production RHI on both Windows D3D11 WARP and Mac Vulkan. It tests six cube
+  faces and three mip levels, every voxel of a 4x4x4 volume and its mip chain,
+  padded row/slice uploads, single-face/mip and boxed-slice updates with unchanged
+  neighbors, restricted-mip views, retained image references, and explicit
+  rejection of an unknown format. Sampling uses the same HLSL and expected
+  texels on both backends; cube uploads also receive direct subresource readback.
+  Pixel comparisons reject non-finite output as well as out-of-tolerance values.
+- **Initial validation:** The complete Vulkan fixture passes a local Clang syntax
+  check without modifying the shared runtime/build. All 47 CI selection/backlog
+  checks pass. GPU execution is pending a published hosted run; this does not
+  yet prove cube/volume support, Xbox resource-factory behavior or any game scene.
+- **Publication:** Commits through `4419205` are published on the focused branch.
+  [Run 39306301875](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39306301875)
+  tests the lower-level contract at `e864831`. Main remains unchanged. The
+  latest fetched main is `ade3763`; its remaining changes concern repository
+  maintenance and launcher documentation, not the renderer contract.
+- **Hosted Mac result at `e864831`:** The Mac job completes successfully on
+  macOS 26.6.2 arm64 / Apple Paravirtual GPU with the pinned SDK and MoltenVK.
+  The cube/volume GPU contract passes along with the menu, depth/stencil and
+  presentation checks. Vulkan validation reports no errors and seven known
+  primitive-restart capability warnings. The unknown-format rejection and
+  injected presentation failure are expected cases. Other checks: 47 CI/backlog,
+  26 patch (two skips), 167 runtime (18 skips), 49 release/cleanup (three skips).
+  Windows also completes successfully: 47 CI/backlog, 28 patch, 198 runtime
+  checks (including the actual D3D11 WARP cube/volume contract; 12 other tests
+  skipped), 52 release/cleanup, six startup/packaging (two subtests), five icon
+  checks and the existing launcher suites. This does not validate Xbox factories, palette or
+  compressed resources, actual title usage, fallback GL, or gameplay.
+- **Xbox factory follow-up (commit carrying this entry):** The same fixture now links the
+  production `d3d8_resources.c`. It creates Xbox cube and non-cubic volume
+  resources, requests automatic mip chains, writes through Lock/Unlock in both
+  linear and swizzled ARGB layouts, samples every face/mip and volume voxel,
+  and checks that child cube surfaces/volume levels survive parent release.
+  Palette, feedback and device-query hooks abort if reached; those paths are
+  outside this test's scope. Clang syntax and 47 CI/backlog checks pass. Actual
+  factory GPU execution passes on both hosted Mac Vulkan and Windows WARP at
+  `f2c2261` in [run 39308234267](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39308234267).
+  Both jobs finish successfully. Run 39306301875 covers only the lower-level
+  RHI cases; palette/compressed resources and title usage remain unverified.
+
+## Common renderer Mac settings acceptance (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-window-acceptance` depends on
+  unmerged `37b4af9`, with validation fixes `083e57c` integrated by `8b3866b`;
+  local working changes were tested. The acceptance commits through `24b5403`
+  are now published on that focused branch. No main merge.
+- **Coverage gap closed:** The existing Cocoa graphics-settings fixture now
+  exercises the actual common Xbox/Vulkan device as well as GL. The SDL host
+  fixture takes its window and quit callback as parameters, so both renderers
+  run the same physical-size, worker-snapshot, main-thread-event and unbind checks.
+  No second settings or event policy was introduced.
+- **Measured result:** On macOS 27.0.1 arm64 / Apple M5 Pro, the pinned SDK
+  1.4.363.0 KosmicKrisp driver passes the complete native Vulkan `--test` suite:
+  three CTests plus renderer, input, settings and debug checks. Actual scene
+  targets change from 64x64 to 1000x600, 1280x720 and 1920x1080; failed-save
+  rollback restores 1280x720 before the fixture restores 64x64. Custom modes,
+  aspect lists, FOV, Defaults, Cancel/Save/reopen and read-only save rollback pass.
+  A green triangle readback and subsequent overlay/present verify usable targets
+  after those transitions. There are no Vulkan validation errors.
+- **Isolation/evidence:** The build script validates the supported XBE and uses
+  `build/macos/path-tests` for all mutable test settings and saves. The runner
+  recycled its 12 known disposable disk images (8,192 allocated bytes versus
+  10,486,813,696 logical bytes). Logs:
+  `logs/shared-window-vulkan-build.out` / `.err`. These are programmed Cocoa
+  control tests, not physical F2 input or gameplay verification.
+- **Window transitions:** The common device passes the same SDL fixture's
+  resize/present at a 1280x720 drawable, fullscreen/present at 3024x1898, and
+  restored-window/present. The fixture waits for OS transitions, checks actual
+  flags and physical dimensions, and restores its disposable window. This is
+  API/pixel-contract evidence, not reviewed fullscreen gameplay. Final Vulkan
+  executable SHA-256:
+  `08c3244aa2fbc4fbb853bd55bd8528086c17de0ea85046bbcc5a3328d2f2f6ab`.
+- **Concurrent build limitation:** The subsequent GL restore did not complete.
+  A separate `codex/mac-launcher-parity` worktree reconfigured the shared
+  `build/macos` to its Vulkan sources during the GL build, causing mixed GL/C++
+  link inputs. Its source and new binary were preserved. Exclusive build
+  ownership must be coordinated before rerunning GL or changing that output.
+  The user explicitly gave the launcher chat priority to finish first; this
+  chat must leave the shared build and patched runtime alone until that work
+  finishes. Source work and hosted CI may continue independently. The current
+  binary is not certified as this branch's build. Broader scene
+  acceptance remains pending.
+
+## Shared platform CI validation (2026-10-19)
+
+- **Source/publication:** `codex/shared-present-metrics` at `a0c8a1a` is now
+  published, including its complete ancestor stack. The focused
+  `codex/shared-platform-validation` branch depends on that unmerged revision.
+  Main remains unchanged; the other physical computer's checkout is unverified.
+  The 19 untracked duplicate files and personal settings/saves remain untouched.
+- **First remote run:** [Run 39302357087](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39302357087)
+  manually exercises Windows and Mac at `a0c8a1a`. Mac hosted image
+  `macos-26-arm64/20261013.0424` (macOS 26.6.2, Python 3.12.10) passes 47
+  CI/backlog checks, 26 patch checks (two skips), and 166 runtime checks
+  (18 skips). Its GPU prerequisite fails downloading the pinned SDK with HTTP
+  403; no hosted Mac GPU success is claimed. Windows (MSVC 14.51.36231,
+  Python 3.12.10) passes all 28 patch checks and finishes its runtime selection
+  with 195 passes, 12 skips and two harness failures. The common renderer syntax
+  checks and D3D11 WARP shader/depth/presentation contract pass. Release and
+  launcher stages are skipped after the failed runtime step; Windows gameplay
+  remains untested.
+- **Windows harness fixes:** The GPU environment assertion now compares a
+  native `Path`, rather than expecting Unix separators on Windows. The actual
+  HLE interpolation fixture now explicitly supplies its out-of-scope hooks
+  instead of relying on Clang's dead stripping to hide unresolved symbols.
+  Those hooks abort if called; both hosts link the full fixture without dead
+  stripping and retain the existing redraw/gate/failure assertions. The hosted
+  rerun below confirms MSVC acceptance.
+- **Published rerun:** Both fixes are published at `083e57c` on
+  `codex/shared-platform-validation`.
+  [Run 39304039727](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39304039727)
+  completes the Mac job successfully: 47 CI/backlog, 26 patch (two skips),
+  167 runtime (18 skips) and 49 release/cleanup (three skips) checks pass.
+  Fresh SDK download/install succeeds, and the actual common RHI shader/menu
+  pixel, depth/stencil replay, injected presentation outcomes and swapchain
+  contracts pass on the hosted Apple Paravirtual device through MoltenVK
+  Vulkan 1.3, validation enabled. No validation errors; five known primitive
+  restart capability warnings. This is asset-free GPU validation, not campaign
+  or the user's other computer. The Windows job also completes successfully:
+  47 CI/backlog, 28 patch, 198 runtime (12 skips), 52 release/cleanup,
+  six startup/packaging (two subtests) and five icon checks pass. The release
+  launcher build and its isolated regression suites pass, including download,
+  recovery, settings, news, maintenance, crashes and unfinished sessions. Thus
+  the complete two-host workflow is green at `083e57c`; it does not contain the
+  later native window fixture or cube/volume contract and does not run gameplay.
+- **Download cause/fix:** Local HEAD and four-byte range requests reproduce
+  HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
+  downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from
+  the same URL. Setup now sends that header, preserving version 1.4.363.0,
+  exact archive size/SHA-256 checks, installation receipt and license checks.
+  The official [SDK index](https://vulkan.lunarg.com/sdk/files.json) still lists
+  the pinned archive and checksum. The regression verifies the request and
+  rejects unpinned response bytes before any extraction or installer execution.
+- **Local checks:** On macOS 27.0.1 arm64, 59 SDK/CI/backlog checks pass after
+  the downloader fix; 76 combined renderer/SDK/CI/backlog checks pass after
+  the Windows harness fixes. The preceding full hosted-suite selection also passed locally
+  (173 passed, 11 skipped; `logs/shared-platform-full-host.out`). No game rebuild
+  is needed for these downloader/test-harness changes. Remaining native GL
+  repetition, physical interaction and broader scene acceptance are still required.
+
 ## Native launcher parity completion (2026-10-19)
 
 Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
@@ -7905,6 +8276,450 @@ This includes all 23 compatibility contracts (the Windows symlink case remains a
 explicit skip). Later edits only update this validation record and remove a blank
 line at the end of the reusable workflow; the launcher source is unchanged.
 
+## Khallos sky isolation and native frame replay (2026-10-19)
+
+Work is on `codex/khallos-sky`, based on `d30b652` from the published but
+unmerged `codex/shared-renderer-default` stack. It requires that shared-renderer
+work; main was not changed. The implementation is the commit carrying this
+entry. The sky is **not fixed** and MAC-005 remains in progress.
+
+Host: Apple M5 Pro, ARM64, macOS 27.0.1, Apple Clang 21, pinned Vulkan SDK
+1.4.363.0. Runtime pin `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`
+were retained. No dependency upgrades or personal save/settings changes.
+
+Short Khallos runs used `tools/test-native-mac.py --unlocked-profile` with
+isolated save/input/runtime/display paths, synthetic SDL menu navigation,
+rotating captures and a 120-second limit. There was no full playthrough.
+The final diagnostic run ended normally at 120.14 seconds, recorded at least
+6,300 guest presents, zero interpolated presents, zero counted failed presents,
+zero shader compile failures and zero Vulkan validation errors. These are
+presentation API counts, not GPU completion or a sustained-FPS claim. The sky
+was visibly distorted despite those clean diagnostics. Disposable partition
+images were recycled by the runner; the canonical fixture was not replaced.
+
+Retained local evidence includes `private/captures/native-mac/khallos-sky-probe.d3dcap`
+(SHA-256 `cb17ac5f394db91b72db9c455a73616a822e95fa7fa14d3b6bb6b28331ec7a81`),
+`khallos-scene_05400.d3dcap`, `sky-scotland-control.d3dcap`, selected PNGs and
+`logs/native-boot-summary.json`. Capture/asset data stays ignored. Earlier
+captures that only reached menus/loading were discarded.
+
+The production Windows frame-replay parser/frontend now builds on native Mac
+with `src/native/replay_host_sdl.h` and the `native-frame-replay` patch. SDL only
+supplies window/events/drawable dimensions; the Xbox draws, shaders, textures,
+parser and readback remain shared. `tools/replay-native-mac.py` runs a single
+capture for at most 30 seconds with explicit isolated configuration paths,
+verified SDK loading, rotating output and provenance logs. The retained
+Khallos sky draw prefix (`--draws 3 --skip-draw 0`) reproduced the artifact in
+0.862 seconds with no failed host calls, malformed chunks, unmapped handles or
+unknown chunks. Both KosmicKrisp and MoltenVK reproduced the distorted sky.
+
+Findings so far:
+
+- The artifact survives at 60 guest presents with no interpolation, before
+  later screen effects, and with the first non-sky draw excluded.
+- The two Khallos sky textures contain intact cloud/sun artwork after correct
+  unswizzling. Raw swizzled memory is not an interpretable linear screenshot.
+- Khallos and the working Scotland sky use the same nine-instruction vertex
+  program. It explicitly writes fog; the unwritten-fog fallback is not the
+  explanation for these draws.
+- A sampled triangle's CPU perspective-correct UV calculation agrees with
+  GPU diagnostic output. The first sampled UV triples also occur byte-for-byte
+  in the original game PAK. This does not prove all attributes or state correct.
+- Texture-coordinate seam handling and original Xbox state semantics remain
+  investigation candidates. No coordinate remapping, fog override or
+  title-specific sky workaround has been added without evidence of the cause.
+
+`tools/test-rhi-mac.py` now builds the actual production replay tool without
+requiring game assets and checks a one-frame synthetic red triangle over a
+blue clear. Both pinned Mac drivers passed the existing RHI contracts plus
+this readback test. The Python readback checks reject incorrect pixels,
+truncation and stale images, and support top-down/bottom-up 24/32-bit BMPs.
+The selected local pytest run passed 98 checks with two host-specific skips,
+covering replay readback, CI routing, backlog integrity, patch transitions and
+tracking, and renderer host contracts. `git diff --check` passed.
+The tests and GPU contract are registered in runtime CI; this branch's GitHub
+CI and Windows replay/scene validation have not run yet. Windows keeps its
+existing window adapter.
+
+Temporary guest-address/call-stack probes were removed from the patch stack;
+the supported builder regenerated and rebuilt the game successfully. The
+clean native binary SHA-256 is
+`61777088bf8c16b72fe4a9df74b0bdfb2808c99159e283f1a4cd82d4246955ea`.
+The earlier live captures were made with diagnostic instrumentation and must
+not be described as a live test of this rebuilt binary. The production replay
+contracts were run after probe removal. Personal configuration presence and
+the tracked controls fixture hash were checked unchanged. Free disk space was
+221 GiB at the final build check.
+
+Next: establish the incorrect state/coordinate behavior against a known-good
+reference, add the smallest shared regression and fix, review matched corrected
+sky captures and a short control scene, then proceed to the remaining shared
+renderer reliability work. The goal remains active; no sky-fidelity or
+cross-host visual-parity certification is claimed.
+
+### Khallos sky follow-up: source assets and independent pixel samples
+
+At `244ee77` on the same Mac, both captured sky texture payloads matched their
+full 262,144-byte originals in `pak/storymem/l_11_stm.pak` (archive entries
+`caa402f6` and `68d16bdb`), as well as the two related cutscene-memory archives.
+No texture replacement, truncated upload or stale cache content was found in
+these two resources. The sky mesh duplicates vertices at UV boundaries:
+connected, nondegenerate triangles have maximum UV edge length about 0.171,
+not the large jumps suggested by inspecting consecutive vertex records alone.
+A diagnostic capture with wrapped UVs produced no visible correction and was
+not turned into a runtime workaround.
+
+An independent Python calculation of perspective-correct UVs, Morton texture
+unswizzling, bilinear sampling, vertex-color modulation and the captured blend
+state matched all 65 sampled interior sky pixels within one 8-bit channel
+value on KosmicKrisp. This checks these samples against the captured arguments;
+it does not establish that the guest submitted the same scene/state as an
+original Xbox or a known-good PC build. Local calculation and result:
+`logs/sky-reference-samples.py`, `logs/sky-reference-result.json`; source-byte
+comparison: `logs/sky-asset-check.py`. No game assets were added to Git.
+
+The sky remains visually unverified. A known-good matched scene is still
+needed to distinguish an upstream scene/state error from the original low
+resolution artwork and its intended appearance. A blanket wrapping, fog or
+brightness change is unsupported by the evidence collected so far.
+
+### Shared scene interpolation and Khallos pacing (2026-10-19)
+
+The commit carrying this section on `codex/shared-scene-interpolation` depends
+on `codex/khallos-sky` at `683026d` and the unmerged shared-renderer stack.
+Both title entry points now configure projection c60 and transform c64-c75
+through `src/graphics/tsfp_interpolation.h`. The shared recorder recognizes
+programs reading composed transforms such as c68. The HLE patch deprojects
+these matrices, interpolates their recovered affine motion and reapplies the
+projection; it does not substitute unrelated/stale c64 values. Replay scheduling
+also accounts for preparation time and refreshes the clock before drawing.
+Guest timing and saved interpolation preferences remain unchanged.
+
+Production-code tests cover transform/FOV interpolation, endpoints, HUD,
+unmatched geometry, camera cuts, invalid projection, configured-register draw
+classification and preparation overruns. The selected source suite passed
+125 tests with two host-specific skips. Native build and both pinned drivers'
+asset-free RHI plus production replay contracts passed. Windows runtime and
+GitHub CI for this change remain unrun. `--profile-without-validation` now
+explicitly permits frame profiling without layers; normal tests keep validation.
+
+Host: Apple M5 Pro, ARM64 macOS 27.0.1, Apple Clang 21, pinned SDK 1.4.363.0,
+upstream `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; supported XBE hash unchanged.
+Build source is `683026d` plus these then-uncommitted changes; executable SHA-256
+`f3396fd435609f9bea91a90d182b093f9aaa794c6e841a650581333f0c1b5696`.
+Short isolated Khallos runs used the disposable unlocked profile and synthetic
+SDL navigation. Reviewed captures retain train, weapon and landscape geometry;
+this is not a full playthrough or physical-input test. A retained interpolated
+frame is not a matched same-frame guest/midpoint comparison.
+
+In separate 120-second runs, the 80-95-second gameplay window at 1920x1080,
+without validation layers or readback in that window, measured:
+
+| Driver | Host presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| KosmicKrisp | 50.498 | 46.568 | 3.931 | 19.054 ms | 37.607 ms |
+| MoltenVK | 119.802 | 59.934 | 59.868 | 8.738 ms | 9.779 ms |
+
+These count successful presentation API calls, not GPU completion or scanout;
+a single 15-second scene sample does not certify sustained campaign-wide 120 FPS.
+Local comparison: `logs/shared-scene-pacing-comparison.json` and
+`logs/shared-khallos-{scheduled,moltenvk}-120-*`. The default is still KosmicKrisp.
+
+A separate 95-second MoltenVK validation run exited normally with no shader
+compile failures or native fault, but reported ten capped instances of
+`VUID-VkImageViewCreateInfo-imageViewFormatSwizzle-04465`. Thus gameplay was
+NOT validation-clean even though the narrower GPU contracts passed. Fix and
+extend coverage of portability feature negotiation before changing the default.
+Evidence: `logs/shared-khallos-moltenvk-validation-120-*` and
+`private/captures/native-mac/shared-khallos-validation-120.png`.
+
+The static Khallos sky remains unresolved; this interpolation fix does not
+correct it. The common renderer also does not yet implement the documented
+legacy-GL one-shot `--capture-interpolation` request; shared paired-capture
+support remains acceptance work. Personal config presence and controls fixture
+hash were unchanged, disposable test partitions recycled, and retained capture
+allocation stayed below 256 MiB.
+
+### Vulkan portability texture swizzles (2026-10-19)
+
+The commit carrying this section on `codex/vulkan-portability-swizzle` depends
+on `codex/shared-scene-interpolation` at `f1f4236` and its unmerged renderer stack.
+The shared Vulkan device enabled `VK_KHR_portability_subset` but never queried
+or enabled its optional `imageViewFormatSwizzle` feature. Alpha-only and
+opaque-X texture views consequently violated Vulkan's portability requirements.
+The additive `vulkan-portability-swizzle.patch` queries and explicitly enables
+that feature, preserving the custom-border-color feature chain; an unsupported
+portability device now gets a clear prerequisite error instead of invalid views.
+Native Vulkan devices without the extension retain their existing feature path.
+This follows the [Vulkan feature-enabling contract](https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDevicePortabilitySubsetFeaturesKHR.html).
+
+The shared D3D11/Vulkan resource contract now samples A8, BGRX, R8 and RGBA
+textures and verifies all channels. Before the fix, the new MoltenVK test
+reproduced two swizzle validation errors even though its sampled pixels matched.
+After the fix, both pinned Mac drivers passed the expanded resource/pixel tests
+and production frame replay with no validation errors. The historical patch
+upgrade fixture excludes this dependent patch from its pre-Vulkan starting
+state, then checks installation of the complete stack. Relevant source checks:
+75 passed and three host-specific skips across the initial run and focused
+retest. Windows D3D11 execution and GitHub CI have not run for this change.
+
+The native build succeeded on the same M5 Pro/macOS 27.0.1/Clang 21 host with
+pinned SDK 1.4.363.0 and unchanged supported XBE/upstream revisions. Its source
+is `f1f4236` plus this then-uncommitted repair; executable SHA-256
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`.
+A separate 95.12-second isolated Khallos run on MoltenVK with validation enabled
+reached at least 5,400 guest frames, reported zero Vulkan validation errors,
+zero shader compilation failures and no native fault, and exited normally.
+The reviewed capture retains the train, weapon and landscape; static sky
+fidelity remains unresolved. Logs: `logs/shared-khallos-swizzle-validation-120-*`;
+selected capture: `private/captures/native-mac/shared-khallos-swizzle-fixed.png`.
+Driver warnings about Metal primitive-restart support remain distinct from
+validation errors. The driver default has not changed, and no new performance
+claim is made from validation-enabled runs.
+
+A second isolated 95.15-second run of the opening mission used the same binary
+and MoltenVK with validation enabled. It likewise reported zero validation
+errors, shader failures or native faults and exited normally. The reviewed
+capture shows canyon terrain, NPCs, weapon, HUD/tutorial text and fire/smoke
+with the world present. Synthetic movement, mouse/button and pause/resume events
+were delivered; this single final capture does not independently verify every
+input response or physical mouse operation. No level completion was attempted.
+Evidence: `logs/shared-firstmission-swizzle-control-120-*` and
+`private/captures/native-mac/shared-firstmission-swizzle-control.png`.
+Personal settings/fixture remained unchanged; both runs recycled their six
+known disposable partition images. Captures remain under 100 MiB allocated.
+
+### Manifest-selected MoltenVK and short pacing checks (2026-10-19)
+
+The commit carrying this section on `codex/mac-moltenvk-default` depends on
+`codex/vulkan-portability-swizzle` at `cc364fd` and the unmerged shared renderer
+and scene-interpolation stack. New native Vulkan builds record `vulkan_driver`
+in `BUILD.json`, defaulting to MoltenVK. Python and native-app launchers use the
+same read-only `tools/vulkan_sdk.py` helper. Old manifests lacking the field
+retain KosmicKrisp; invalid values fail rather than silently switching drivers.
+Builder, Python launcher and isolated runner accept explicit driver selection;
+launch overrides leave manifests, preferences and the 60 Hz guest unchanged.
+The bounded summary now records the selected driver separately from renderer.
+The SDK/upstream/Python pins and legacy GL selection remain unchanged.
+
+Validation on Apple M5 Pro/ARM64 macOS 27.0.1, Clang 21, pinned Vulkan SDK
+1.4.363.0 and launcher SDK 8.0.426: 114 Python checks passed; the native builder's
+three CTest checks and renderer/input/settings/debug self-tests passed. The
+native launcher built and passed 18 regression groups, including bounded helper
+output, error and timeout handling. Read-only checks passed for both launchers.
+The final isolated eight-second launcher/game quit test confirmed the actual
+production environment selected MoltenVK before test isolation was applied,
+observed the game window, and verified minimize/restore and clean exit. Its
+reported older crash-record path was pre-existing test evidence, not a new crash.
+
+Repeated native-app prerequisite checks exposed an ARM64 .NET pipe crash:
+13/30 attempts failed with `AccessViolationException` while both pipes were
+redirected, even with synchronous readers. The final helper uses one bounded
+stdout pipe for results and controlled Python errors; 30/30 fresh processes
+passed. This is empirical scope, not proof that every .NET pipe issue is fixed.
+A [related upstream runtime report](https://github.com/dotnet/runtime/issues/88288)
+describes the dual-redirection failure pattern; it does not establish identical
+root cause or justify upgrading the pinned SDK. Logs retain the failures and
+final results in `logs/moltenvk-default-launcher-*-checks.json`.
+
+Both 120-second isolated Khallos runs used the build manifest's default driver
+(no `--vulkan-driver` argument), disposable Test Lab saves and synthetic SDL
+menu input. Same executable SHA-256:
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`;
+build revision `cc364fd` plus the then-uncommitted driver-selection changes.
+The binary code is unchanged from the validated swizzle fix; BUILD.json records
+the new selection. Supported XBE and upstream hashes remain as above.
+
+| Setting | Host API presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 60 | 59.995 | 59.995 | 0 | 16.610 ms | 17.654 ms |
+| 120 | 119.995 | 59.998 | 59.998 | 8.563 ms | 9.551 ms |
+
+Samples cover elapsed seconds 80-95 at 1920x1080, after loading/navigation;
+validation was explicitly off for timing and readback occurred afterward.
+Launcher/build activity finished before each measured window (the last check
+ended about 77.96 seconds into the 120-setting run). These are successful host
+presentation API calls, not GPU completion or monitor scanout. No sustained
+whole-campaign 120 FPS claim follows from a single 15-second sample.
+Both reviewed final captures retain train, weapon, landscape and HUD. Sky
+fidelity remains unresolved. The final launcher test and preceding swizzle
+scene tests provide separate validation-on evidence; timing runs are not
+validation passes. Logs: `logs/shared-khallos-default-{60,120}-*`,
+`logs/moltenvk-default-gameplay-pacing.json`,
+`logs/moltenvk-default-launcher-final-e2e.log`.
+
+Personal configuration presence and tracked controls fixture remain unchanged;
+known disposable partitions were recycled, captures remain below 256 MiB, and
+free space before the builds was 221 GiB. Main and concurrent duplicate files
+were untouched. These changes are local until explicitly published; Windows
+runtime execution, another Mac, and this branch's GitHub CI remain unverified.
+Next: shared one-shot guest/midpoint capture, additional representative graphics
+checks, and a known-good matched reference to resolve the Khallos sky.
+
+### Shared guest and intermediate frame evidence (2026-10-19)
+
+The commit carrying this section on `codex/shared-interpolation-capture`
+depends on `codex/mac-moltenvk-default` at `65330e8` and its unmerged renderer
+stack. One-shot capture now belongs to the common HLE interpolation recorder,
+replacing the duplicate GL hook. It captures the completed guest image before
+replay and the intermediate image before host-only overlays, consumes the
+explicit request once, invalidates old pair files and writes a frame/blend/
+presentation receipt. Legacy environment names remain aliases. The isolated
+runner verifies receipt flags, dimensions, complete BMP payloads and hashes;
+missing or failed evidence cannot be reported as a complete pair. An opt-in
+trace prints only the first three draws' transforms for a requested pair.
+
+Portable production-code tests cover ordering, request consumption, stale
+evidence, legacy aliases and failed begin/readback/presentation. Runner tests
+cover symlinks, malformed receipts and truncated BMPs. The final focused run
+passed 47 renderer/runner checks; patch/tracking/CI/backlog checks passed 75
+with two host-specific skips. The initial native build passed three CTest
+checks and the renderer/input/settings/debug self-tests. The final capture
+ordering/trace rebuild and focused tests passed. Windows execution, legacy GL
+live capture and this branch's hosted CI remain unrun.
+
+Host: Apple M5 Pro/ARM64, macOS 27.0.1, Clang 21, pinned Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK, supported XBE and upstream pins unchanged.
+Final executable SHA-256:
+`3257c89de3dd7b625ed2fdbdd3764bed53e00f20d4e53a496f6b59fb7e1b91de`.
+Source was `65330e8` plus these then-uncommitted changes. Two isolated runs,
+each 95.20 seconds, used disposable Test Lab saves, synthetic SDL menu input
+and validation enabled; both exited normally with zero Vulkan validation
+errors, shader compilation failures or native faults.
+
+| Scene | Guest frame | Intermediate blend | Reviewed evidence |
+| --- | ---: | ---: | --- |
+| Khallos exterior | 4584 | 0.958429266 | Train, weapon, landscape and HUD retained in both images |
+| Opening gameplay | 5184 | 0.527869472 | Canyon, weapon/hand animation, tutorial/HUD, NPC and fire/smoke retained |
+
+Both receipts verified complete 1920x1080 pairs. Logs:
+`logs/shared-{khallos,firstmission}-pair-final-120-*`; retained PNGs:
+`private/captures/native-mac/{khallos,opening}-pair-final-{guest,intermediate}.png`.
+Raw pair BMPs rotate; the final ones belong to the opening mission. Readback
+disturbs timing, so these runs establish no new FPS result. Synthetic menu
+input and reviewed captures do not certify physical controls or a playthrough.
+
+Earlier diagnostic pairs used executable `3bf49b32...` and captured the
+intermediate image after overlays. The earlier opening pair showed the NPC
+briefing, not gameplay. Its Khallos pair at blend 0.722856 showed a sky streak
+that needs a controlled comparison; the final near-current-frame blend above
+does not independently resolve it. The final trace matches both sky draws to
+their corresponding previous draws and shows small transform changes. Static
+Khallos sky fidelity and the cause of the earlier streak remain unresolved;
+no brightness, fog or wrapping workaround was introduced. Main, personal
+settings, the canonical fixture and concurrent duplicate files were preserved.
+Known disposable partitions were recycled; captures remain below 256 MiB.
+
+### Khallos motion-blur reference and overlay isolation (2026-10-19)
+
+`codex/khallos-sky-replay` depends on the unmerged shared paired-capture commit
+`5271401`; main remains unchanged. The user's observation that moving-train
+streaks may be intentional changes the acceptance criterion: preserve the
+effect until a matched reference demonstrates incorrect rendering. The author's
+[Xbox compatibility gameplay screenshots](https://superadventuresingaming.blogspot.com/2026/07/timesplitters-future-perfect-xbox-part-2.html)
+in the Khallos section show a muted grey sky, streaked passing scenery and
+directional streaks in the helicopter scene. These support the motion-blur
+hypothesis qualitatively; they are not matched camera/frame evidence and do
+not establish that our interpolated frame is correct. Brighter pre-release
+promotional screenshots are not an appropriate fidelity target.
+
+A temporary diagnostic patch captured three guest/intermediate pairs plus
+the same intermediate image immediately after host overlays. The isolated
+95.19-second run exited 0 with zero Vulkan validation errors, shader failures
+or native faults. Frames 4537/4780/5023 used blends 0.680246143/0.688135938/
+0.693967514. For each before/after-overlay comparison, all 17,388 changed pixels
+were confined to the top/bottom 45 rows; none changed the sky outside those
+overlay areas. This rules out direct overlay drawing for these captures,
+not every synchronization hazard. Pair 1's intermediate sky streak is stronger
+than its guest image, but that alone does not distinguish intended effects
+from replay differences. Sky draws matched their corresponding previous draws
+with small transform changes. Attempted synthetic mouse motion occurred while
+capture was released and is not a successful camera-look check.
+
+Host/toolchain/pins: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK
+1.4.363.0, manifest-selected MoltenVK, supported XBE/upstream unchanged.
+Diagnostic executable SHA-256:
+`21e66d01bf897615f2781907b7189a50b4fc1c99d9bd5aabe2c90f733ade79ba`;
+source `5271401` plus the temporary overlay-readback patch. Logs/receipts:
+`logs/shared-khallos-overlay-probe-120-*`, `logs/sky-overlay-comparison.json`;
+selected PNGs and pair receipts remain under
+`private/captures/native-mac/sky-overlay-*`. Readback affects timing; these
+counts are not a new FPS benchmark. No full playthrough or physical input test.
+
+The diagnostic patch was removed from the active stack and the supported
+builder successfully restored the production build at `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`.
+Ten redundant diagnostic BMPs were recycled with hashes recorded in
+`logs/sky-overlay-recycled.json`; retained captures allocate 125,656 KiB.
+No sky brightness, fog, wrapping or motion-blur workaround was introduced.
+MAC-005 remains in progress; matched reference and Windows runtime acceptance
+remain pending. This focused investigation and its dependency commits are local,
+not newly pushed or verified on the other computer.
+
+### Shared renderer mansion scene acceptance (2026-10-19)
+
+The documentation commit on `codex/shared-scene-acceptance` depends on
+`codex/khallos-sky-replay` at `0ded9e0` and its unmerged renderer stack. No
+runtime change was needed for these checks. The production binary still comes
+from `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`;
+all source-input hashes in BUILD.json and the binary hash matched before the
+runs. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK. Supported XBE/upstream/dependency pins unchanged.
+
+Three bounded runs used `tools/test-native-mac.py --unlocked-profile` with
+`--capture-interpolation --test-keys --fps 120`, isolated saves/controls/both
+display paths, and Vulkan validation enabled. Synthetic menu navigation chose
+Story, Mansion of Madness, then skipped the opening scene. A synthetic click
+recaptured the pointer after Escape before motion input. The exterior route
+turned with `motion 280 0`, moved forward briefly, and sent a fire-button press;
+no hit/combat success is claimed. The separate hall route moved straight to
+the entrance, interacted and entered, stopping in the first room.
+
+| Run | Bound/actual seconds | Captured guest frames | Reviewed result |
+| --- | --- | --- | --- |
+| Exterior, production interpolation | 105 / 105.20 | 4419, 4555, 4817 | Building, foliage, rain, lamps, companion and weapon retained through turn/movement |
+| Exterior, temporary affine-off control | 95 / 95.14 | 4423, 4558, 4820 | Replay preserves rain and scene content without transform blending |
+| Entrance hall, production interpolation | 120 / 120.15 | 4922, 5314, 5931 | Entrance transition, stairs/railings/stained glass, characters, falling chandelier and fire retained |
+
+Each run produced three complete 1920x1080 guest/intermediate pairs and exited
+0 with no Vulkan validation errors, shader failures or native faults. All
+18 selected PNGs were reviewed. The hall's first pair is the entrance cinematic,
+not gameplay; its later pairs show the first room in gameplay. Spirits were
+not observed in these selected frames: MAC-049's appearance, red-eye/trail and
+wall-occlusion acceptance remains open. This is neither level completion nor
+original-Xbox pixel parity, physical input, or all-effects certification.
+
+An initial visual impression of fainter rain in one intermediate image was
+not supported as missing content by the control. Production pairs have mean
+absolute channel differences of 0.106, 0.199 and 0.233 on a 0–255 scale, with
+near-zero signed means; the affine-off pairs differ by one channel unit at
+one pixel, zero pixels and zero pixels respectively. These results isolate
+small transform-related differences; they do not prove every moving particle
+is correct. The override was confined to the control process; normal
+interpolation settings and the 60 Hz guest clock remain unchanged. Readback
+perturbs timing, so no FPS result is inferred from these runs.
+
+Evidence: `logs/shared-mansion-{scene,affine-off,hall}-{out.log,summary.json,err}`,
+`logs/mansion-pair-differences.json`, and `logs/mansion-capture-index.json`.
+The index is reconstructed from per-run console records and retained PNGs
+after a scratch helper reused a receipt filename; it is not presented as an
+original runtime receipt. Final-pair verification remains in each runner
+summary. Images: `private/captures/native-mac/mansion-{scene,affine-off,hall}-*`.
+The affine-off control also retains one 9,758,496-byte, 343-draw capture at
+`private/captures/native-mac/mansion-rain-control.d3dcap` for targeted follow-up.
+
+Shared spirit/cache-restoration, framebuffer-sampling, interpolation/capture
+and backlog tests: **25 passed**. Windows execution and this branch's hosted
+CI were not run. Personal settings/fixture hashes were unchanged; each runner
+recycled six disposable partition images (5,243,406,848 apparent bytes versus
+135,168 allocated bytes per pass). Captures allocate 175,784 KiB, below
+256 MiB; no second game copy or build tree was created. Main and concurrent
+untracked files are preserved. Changes remain local; other-device sync is
+unverified. Remaining goal work includes matched Khallos fidelity, spirit
+scene acceptance and Windows validation of the unmerged shared changes.
+
 ## Issue #167 - Experimental smoother presentation (2026-10-19)
 
 Windows implementation is local and uncommitted on `feature/167-144-fps`, based
@@ -8483,3 +9298,313 @@ CI follow-up at `ba5aaa7`: both launcher/package jobs passed again in run
 LF/CRLF append. The fixture now follows the source file's existing line ending
 and compares byte-exact hashes to keep failure logs bounded. Both historical
 migration cases pass locally after this correction; fresh Windows CI is pending.
+
+### Renderer and PC presentation integration (2026-10-19)
+
+Focused branch `codex/renderer-main-integration` depends on the unmerged
+renderer/scene stack at `a0a89f5` and merges main `4d5b3f0` (PR #188) into that
+branch only. Main is not changed by this work. The integration is recorded
+on this focused branch; prior scene results apply to their original builds,
+not this one.
+
+The independent PC timing patches assumed the old replay implementation.
+Their integrated forms now apply after the common renderer stack, preserve
+successful-present return values/counts and use the shared per-subresource
+replay-depth cache for CPU prediction as well as gate replay. They do not
+replace guest depth views with a second platform-specific mechanism. Paired
+capture requests stay pending during CPU prediction, whose guest image is
+incomplete. Both title entry and interpolation setup use the shared register
+layout helper. Windows monitor API includes/enumeration remain host adapters.
+
+The launcher retains Mac's 2x default and saved 1x preferences. Saved PC target
+and monitor-rate fields survive unrelated native settings edits even though
+Mac does not activate those fields. The native capability remains unavailable;
+Mac keeps its existing 60/up-to-120 presentation path and 60 Hz guest clock.
+Backlog IDs MAC-054/055 distinguish PR #188's additions from existing spirit
+and build-restoration records. CI retains both sets of behavioral checks.
+
+Validation so far on Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan
+SDK 1.4.363.0/MoltenVK and .NET 8.0.426:
+
+- Clean patch application and repeated application passed. The recorded old
+  PC and native renderer stacks each upgrade, downgrade and re-upgrade while
+  retaining an unrelated source edit (two regression cases).
+- Native launcher builds; 19 regression groups pass, including a new PC-field
+  preservation/default-capability case. No personal settings were used.
+- Shared renderer/frame-clock/profile-save checks: 23 passed. The retry test
+  covers failed begins, cooldown, failed presents and accepted-present counts;
+  the capture test rejects partial-frame prediction evidence.
+- Asset-free MoltenVK resource/shader/presentation/replay checks passed. Their
+  injected device-loss result is expected test coverage, not a gameplay fault.
+  Existing unsupported primitive-restart warnings remain. These tests alone
+  do not establish the actual Xbox device prediction-depth behavior.
+- The first native rebuild exposed a Windows monitor header included through
+  the shared-controls define. The include is now restricted to its Windows
+  adapter. The rebuilt native executable passes all three platform/MMIO/path
+  CTests and renderer/input/settings/debug self-tests. The actual Xbox device
+  contract also passes prediction color/depth/stencil preservation and unsafe
+  custom-target rejection. The final 150-case Python run had 147 passes, two
+  host skips and one historical-fixture dependency failure; after correcting
+  that fixture, the targeted migration/backlog/CI rerun passed all 50 cases.
+  Thus all 148 applicable cases passed across the run and targeted rerun.
+  The read-only launcher prerequisite check passed. Windows compilation/runtime
+  and hosted CI remain pending.
+
+Validation executable SHA-256:
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`.
+BUILD.json records `a0a89f5` plus the integration working tree; all runtime-input
+hashes and the executable hash match. Native test cleanup recycled twelve known
+partition images (10,486,813,696 apparent bytes, 8,192 allocated bytes), preserving
+profiles and metadata.
+
+Logs use `logs/renderer-integration-*`. A 4.9 MiB source-only patch fixture and
+604 KiB patch inputs were used; no duplicate game extract or build tree.
+Pre-build free space was 220 GiB. Personal saves/settings and the other chat's
+launcher worktree are preserved. Khallos matched-reference fidelity, spirits,
+full scene coverage and other-device synchronization remain unverified.
+
+The integrated build also completed a **95.17-second** isolated Khallos run,
+exit 0, with no Vulkan validation errors, shader failures or native fault.
+Synthetic navigation reached the mission and produced a complete pair before
+guest frame 4556 at blend 0.659900094. Both retained PNGs were reviewed: train
+stairs/railings, weapon, HUD, trees and sky remain visible. Muted sky and moving
+scenery streaks remain; no matched PC/Xbox fidelity claim or sky fix is made.
+The summary's `rendered_game_verified: false` is an automated placeholder;
+this paragraph records the separate human-readable image review.
+
+Images: `private/captures/native-mac/integration-khallos-{guest,midpoint}.png`;
+receipt/logs: `logs/shared-khallos-integration-120-*`. The final counter sample
+records at least 5,481 guest and 4,719 interpolated successful presents, zero
+skips/failures. Loading, validation and diagnostic readback are included, so
+this is not a 120 FPS benchmark. Six disposable partitions were recycled
+(5,243,406,848 apparent bytes; 135,168 allocated bytes). Captures allocate
+179,600 KiB, below 256 MiB. Protected settings and controls-fixture hashes
+match the pre-existing baseline. Windows and hosted CI remain pending.
+
+### Integrated renderer pacing and spirit observation (2026-10-19)
+
+Focused documentation branch `codex/integrated-renderer-acceptance` depends on
+unmerged `codex/renderer-main-integration` at `9940dba19f1d17fc3d0ca7b58740f9b532a4b84e`.
+No runtime change or new build was needed. The existing executable SHA-256 is
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`;
+all recorded runtime-input hashes still match. Its manifest retains the honest
+pre-commit provenance (`a0a89f5` plus integration changes), rather than being
+relabeled. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan SDK
+1.4.363.0 with manifest-selected MoltenVK. The supported US XBE hash was checked
+by the isolated runner.
+
+Two 120-second runs used the disposable unlocked profile and synthetic SDL
+navigation to Khallos. Performance runs disabled Vulkan validation explicitly.
+The preselected 80–95-second measurement window excluded loading/navigation and
+capture readback; the one diagnostic capture occurred at guest frame 6000,
+after the window. Both later captures were reviewed and show train stairs,
+railings, weapon, HUD, moving scenery and muted sky. Streaks remain; this is
+neither a sky correction nor a matched original-Xbox/Windows fidelity check.
+
+| Mode | API presents/s | Guest/s | Interpolated/s | Median | p95 | Worst |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 60 | 60.001 | 60.001 | 0 | 16.691 ms | 17.599 ms | 18.737 ms |
+| 120 | 119.998 | 59.999 | 59.999 | 8.521 ms | 9.515 ms | 13.083 ms |
+
+The selected windows contain 900 and 1,800 successful API presents respectively,
+with no interval above 33.33 ms. These are CPU-observed presentation intervals,
+not GPU completion, display scanout or sustained campaign certification. The
+whole runs, including startup/loading and one capture, averaged 59.865 and
+113.278 presents/s with worst intervals 133.162 and 135.402 ms. Both exited 0
+at their limits (120.18 and 120.12 seconds). The 60 Hz guest clock is unchanged.
+
+Evidence: `logs/shared-khallos-integrated-{60,120}-{summary.json,frames.csv,err}`,
+`logs/integrated-khallos-pacing-results.json`, and
+`private/captures/native-mac/integrated-pacing-{60,120}.png`.
+
+A separate **155.19-second** Mansion run kept Vulkan validation enabled and
+completed with exit 0, no reported validation errors/shader failures/native
+fault, and five fresh paired captures. Synthetic navigation reached the hall;
+frames 4978/5369/5986/6723/7339 show the exterior transition, hall characters,
+falling/burning chandelier, then attacking spirits. All ten PNGs were reviewed.
+Pair 3 (frame 6723, blend 0.671622794) visibly contains skull geometry, glowing
+red eyes and dark trailing shapes in both guest and intermediate images. The
+near spirit is partially clipped by the top edge. Pair 4 includes a synthetic
+horizontal turn and a partly off-screen trail; it is not complete multi-angle
+face-culling evidence. Hall geometry, fire and damage indicators remain visible.
+No runtime fix was needed for this observation.
+
+MAC-049 remains Awaiting validation: controlled wall occlusion, full skull
+views from multiple angles, interpreted-vertex execution and the other affected
+ghost encounters were not checked. These frames establish actual spirit
+visibility in this encounter, not every acceptance criterion or original-console
+parity. The runner's automated `rendered_game_verified: false` remains separate
+from this explicit image review.
+
+Evidence: `logs/shared-mansion-spirit-{summary.json,err,captures.json}` and
+`private/captures/native-mac/mansion-spirit-{0,1,2,3,4}-{guest,midpoint}.png`.
+Last sampled counters: 9,108 guest plus 8,292 interpolated successful presents,
+zero skipped/failed; loading, validation and paired readback make these counts
+unsuitable for FPS claims. All three runs recycled their six known disposable
+partition images (5,243,406,848 apparent bytes and 135,168 allocated bytes per
+run). Ten protected personal configuration/fixture paths match their baseline
+hashes. Capture storage allocates 206,792 KiB, below 256 MiB. Windows runtime,
+hosted CI, matched Khallos reference and other-device synchronization remain
+unverified. No full playthrough was performed.
+
+A follow-up **145.15-second** isolated run on the same verified executable
+used a step back, an upward-look request and a short left strafe near the hall
+pillar. It exited 0 with validation enabled, no reported validation/shader
+errors or native fault. Six fresh pairs were produced; pairs 3–5 were reviewed
+and retained (guest frames 6421/6802/7060, blends 0.579280611/0.575864582/
+0.623379742). The first retained pair shows several unclipped distant spirits
+with red eyes, and the next shows a closer side view with skull surface and
+trails. Hall geometry, the nearby pillar and fire remain visible in both guest
+and intermediate images. No new rendering defect was established. The final
+pair does not show the same spirit in the same position, so it cannot establish
+wall occlusion. Controlled occlusion and full-angle face fidelity remain open.
+
+Receipts/logs: `logs/shared-mansion-spirit-angle-{captures.json,summary.json,err}`;
+selected PNGs: `private/captures/native-mac/mansion-spirit-angle-{3,4,5}-{guest,midpoint}.png`.
+Six redundant setup PNGs were recycled; the receipt lists retained indices.
+Capture allocation is 218,992 KiB. Six known disposable partition images were
+recycled (5,243,406,848 apparent / 135,168 allocated bytes), and all ten protected
+configuration/fixture paths still match their baseline hashes. No executable,
+shader, personal setting or fixture was changed. The latest counters record
+8,486 guest and 7,714 interpolated successful presents, zero skips/failures;
+this validation/readback run is not a pacing benchmark.
+
+### Renderer integration hosted CI and line-ending fixture (2026-10-19)
+
+Draft [PR #191](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/191)
+now reviews `codex/renderer-main-integration` against its unmerged
+`codex/shared-scene-acceptance` base. No merge into main was performed.
+At head `9940dba`, [run 39345301346](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39345301346)
+passed its macOS job: 49 scope/backlog tests; 28 patch tests (two host skips);
+228 runtime/render/input tests (18 host skips); real MoltenVK GPU contracts and
+production frame replay; 49 release tests (three host skips); and native launcher
+build/tests. This hosted run uses synthetic GPU data, not game assets.
+
+Windows passed 28 patch tests but failed the two newly added historical-stack
+fixtures before reaching runtime tests. Both appended LF bytes to a CRLF file;
+Git's configured CRLF conversion normalized the artificial mixed-ending edit,
+violating the fixture's byte comparison. The same two failures reproduced on
+Mac with `core.autocrlf=true`. The fixture now appends using the file's existing
+line ending and explicitly tests both conversion settings on both hosts while
+retaining exact source snapshots and unrelated-edit checks. All four local
+history/conversion combinations pass (46.18 seconds). The existing workflow
+already selects this test; no new workflow entry or runtime patch is required.
+Logs: `logs/renderer-integration-crlf-{repro,fixed}.log`. Windows rerun remains
+pending; the native executable and its prior scene evidence are unchanged.
+
+### Khallos PC appearance comparison (2026-10-19)
+
+The user checked the PC build at the mission's starting train stairs and
+reported that its sky also looks muted grey/stretched ("it looks like that").
+This is user-reported observation; the PC revision, driver and a matched frame
+capture were not supplied. Combined with the source-texture/CPU-pixel checks
+and the independent motion-blur reference above, it does not support a new
+Mac-specific static-sky correction. Preserve the train's authored motion effect.
+Exact original-console fidelity is not certified. The shared interpolation and
+Vulkan resource fixes retain their separate measured evidence.
+
+The acceptance branch incorporates the test-only integration follow-up
+`d0edd6d`, preserving the earlier scene/pacing records. PR #191 remains a draft
+against its unmerged renderer base; main and the other chat's worktree are
+unchanged by this work.
+
+The `d0edd6d` follow-up [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely, including 30 patch tests (two host skips), 228 runtime
+checks (18 host skips), real GPU contracts and native launcher checks. Windows
+passed the patch transitions, then reported 248 runtime checks passing, 30 skips
+and three interpolation harness link failures: their config stub lacks
+`recomp_config_lookup`, now used by the Windows initializer. A focused test
+harness correction is required; this run does not establish Windows success.
+
+### Interpolation harness Windows linkage (2026-10-19)
+
+At `d0edd6d`, [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely (30 patch tests with two skips; 228 runtime/render/input
+checks with 18 skips; real MoltenVK GPU contracts; native launcher checks).
+Windows passed the patch transitions, then 248 runtime checks with 30 skips,
+but three interpolation harnesses failed to link `recomp_config_lookup`.
+The integrated Windows initializer calls that API; the isolated harness supplied
+only the integer-config stub. The shared harness now supplies the missing lookup
+stub, retaining its fail-loud behavior if configuration is unexpectedly reached.
+No runtime behavior changes. All 20 renderer-host tests pass locally on macOS
+ARM64/Clang 21 (3.22 seconds); Windows rerun remains required.
+
+
+### Shared renderer final bounded acceptance (2026-10-19)
+
+At runtime/test head `c6b01d3`, [run 39347966123](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39347966123)
+passes **both** Windows and macOS jobs. Windows: 49 scope checks, 32 patch
+transition checks, 251 runtime/render/input checks (30 host skips), 52 release
+checks, 104 isolated launcher regressions, plus the selected UI/crash suites.
+macOS: 49 scope checks, 30 patch checks (two host skips), 228 runtime/render/input
+checks (18 host skips), real MoltenVK resource/presentation/replay GPU contracts,
+49 release checks (three host skips), and 19 native launcher regression groups.
+The missing lookup-stub correction is verified on Windows. These asset-free
+host checks are not Windows gameplay or matching scene captures.
+
+An additional **115.17-second** isolated opening-mission run on acceptance
+revision `aaf926d` used the same integrated ARM64 executable (`f3e85f5c…` above).
+All BUILD.json runtime-input hashes, binary and supported-XBE hashes matched
+before launch. Host remains Apple M5 Pro/macOS 27.0.1 ARM64/Clang 21, pinned SDK
+1.4.363.0 and MoltenVK. The complete integration runtime is unchanged; BUILD.json
+retains its original `a0a89f5` plus working-tree provenance. Synthetic SDL input
+navigated the menus, skipped the introduction, moved forward, turned both ways
+and strafed. Vulkan validation stayed enabled. It exited 0 without reported
+validation errors, shader failures or native faults.
+
+Three fresh guest/intermediate pairs (frames 4782/5219/5597, blends
+0.655409880/0.567987274/0.569679921) were reviewed, six images total. Canyon walls,
+ground, debris, weapon/hand, HUD, characters and fire/smoke remain visible through
+movement and turns; the last pair shows the new-objective overlay. No disappearing
+world or new rendering defect was observed in this bounded route. The last
+counter sample has 6,774 guest and 6,126 interpolated successful presents, zero
+skips/failures; this readback/validation run is not a pacing benchmark.
+
+Evidence: `logs/shared-integrated-opening-{summary.json,err,captures.json}`,
+`logs/integrated-opening-validation.log`, and
+`private/captures/native-mac/integrated-opening-{0,1,2}-{guest,midpoint}.png`.
+Ten protected configuration/fixture paths still match their baseline. Six known
+disposable partitions were recycled (5,243,406,848 apparent / 135,168 allocated
+bytes). Captures allocate 230,772 KiB; pre-run free space was 220 GiB. No game
+extract, build tree, personal configuration or save was replaced.
+
+Goal audit against the requested bounded renderer work:
+
+| Requirement | Evidence and scope |
+| --- | --- |
+| Diagnose Khallos sky and fix demonstrated rendering defects | Source textures and independent pixel samples agree; both Mac drivers reproduce the static appearance, and the user reports the same on PC. Preserve authored motion instead of adding an unsupported Mac-only sky change. Shared affine interpolation and Vulkan swizzle/resource fixes have production-code and GPU regressions. Exact original-console fidelity is not certified. |
+| Shared implementation and Windows/macOS regressions | Shared patches/interfaces, host adapters and the final two-host CI run above; test-only CI corrections do not alter runtime behavior. |
+| Short representative geometry, lighting, transparency and effects checks | Current integrated Khallos, Mansion hall/spirit and opening-mission captures, with the earlier exterior/rain control separately versioned. No full playthrough or all-scenes claim. |
+| 60 and up-to-120 pacing while retaining the guest clock | Preselected windows measure 60.001 / 119.998 successful API presents/s; 120 mode splits into 59.999 guest + 59.999 interpolated, with no interval over 33.33 ms in those windows. Loading/readback stalls and whole-run means remain reported separately. |
+| Preserve settings, fixtures, pins, lean storage and concurrent work | Verified hashes, isolated runner paths, known partition cleanup and storage totals above; 19 unrelated duplicate files and the other chat's worktree are preserved. |
+| Focused branches, provenance and handoff | Runtime integration PR #191 depends on the unmerged renderer stack; acceptance PR #193 depends on #191. Main was not modified by this work. Other-device checkout synchronization and Windows gameplay remain unverified. |
+
+This completes the requested bounded renderer investigation and acceptance,
+not full-game certification. Broader MAC-005 shader fidelity and MAC-049 spirit
+wall-occlusion/full-angle/other-encounter coverage remain in the backlog. There
+is no demonstrated unresolved Mac-only Khallos defect in the collected evidence.
+
+
+### Renderer promotion onto current main (2026-10-19)
+
+The user authorized merging the completed renderer work into main. Focused
+`codex/renderer-main-promotion` combines main `c238ab3` (including the shared
+launcher UI/release/compatibility work) with renderer acceptance `be37669`.
+Conflict resolution retains main's shared pages and presentation capability
+model, both launcher/runtime test sets and all versioned validation records.
+The superseded launcher-only presentation guard is archived; the shared patch
+supplies that same guard once alongside capture and title-register integration.
+Historical migration now covers PC, native-launcher and native-renderer stacks
+under both Git conversion modes, preserving exact byte hashes and unrelated edits.
+
+Applying the combined stack to the existing tested renderer changed **zero**
+runtime source files (all patched-source hashes compared before/after). The
+existing game executable is not relabeled or rebuilt. On this Mac, the combined
+native launcher builds and passes 21 host regression groups and eight shared UI
+groups. Renderer/tooling/SDK/layout checks: 74 passed, one host skip. Patch/tracking/backlog/scope checks: 85 passed, two host skips (143.59 seconds).
+Hosted Windows/macOS checks are recorded in the promotion PR before merge.
+Prior scene/pacing evidence keeps its original executable/source provenance;
+this source merge does not publish a release or validate Windows gameplay.
+Logs: `logs/renderer-promotion-{patches,contracts,launcher}.log`; source hash
+baseline: `logs/renderer-promotion-runtime-before.json`. No personal data or
+concurrent worktree changes were included.

@@ -1,0 +1,46 @@
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -73,6 +73,9 @@
+ #include "hle_d3d8_record.h"
+ #include "recomp_config.h"
+ #include "pc_frame_clock.h"
++#ifdef TSFP_PC_CONTROLS
++#include "graphics/tsfp_interpolation.h"
++#endif
+ #include "../kernel/xbox_memory_layout.h"
+ 
+ #define INTERP_MAX_MULTIPLE  8
+@@ -857,6 +860,9 @@
+     int wanted = 0;
+     char path[4128];
+     capture->requested = capture->guest_ok = capture->midpoint_ok = 0;
++    /* Prediction runs while the guest image is incomplete. Leave requests
++     * pending for a gate replay of a complete guest frame. */
++    if (hle_d3d8_interp_predicting) return;
+     if (!request) {
+         request = getenv("TSFP_NATIVE_INTERP_CAPTURE_REQUEST");
+         prefix = getenv("TSFP_NATIVE_INTERP_CAPTURE_PREFIX");
+@@ -1287,10 +1293,7 @@
+     }
+ #endif
+ #ifdef TSFP_PC_CONTROLS
+-    /* TSFP puts camera/object transforms in c64-c75. Blending just its
+-     * fixed c60 projection repeats poses and only inflates the FPS count.
+-     * The native Mac bridge already supplies this title-specific layout. */
+-    xbox_D3D8SetInterpRegisters(60, 64, 12);
++    tsfp_configure_interpolation();
+ #endif
+     n = g_target ? 3 : recomp_config_int("RECOMP_FRAME_INTERP", "frame_interp", 0);
+     if (n < 2)
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -69,7 +69,9 @@
+ #include "recomp_config.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
++#ifdef _WIN32
+ #include "pc_refresh.h"
++#endif
+ #endif
+ 
+ static unsigned long g_shadow_swaps; /* Guest frame counter, all hosts. */

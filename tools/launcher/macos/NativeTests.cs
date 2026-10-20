@@ -35,6 +35,30 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new[]{new{tag_name=tag,prerelease=preview,draft=false,assets=new[]{new{name=name,state="uploaded",size=10,digest="sha256:"+new string('a',64),browser_download_url="https://github.com/"+ReleaseClient.Repository+"/releases/download/"+tag+"/"+name}}}});
         }
         sealed class Handler:HttpMessageHandler { public Func<HttpRequestMessage,HttpResponseMessage> Reply;protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken t){var response=Reply(r);response.RequestMessage=r;return Task.FromResult(response);} }
+        static void GamePruningTest()
+        {
+            foreach (string name in new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest })
+                Need(Core.PreserveGameFile(name.ToLowerInvariant()) && Core.PreserveGameFile(name.ToUpperInvariant()), "Launcher casing lost cleanup protection");
+            var root = NewRoot("game-pruning");
+            Core.Apply(root, Core.Unpack(Archive(root, "v1.0.0"), Path.Combine(root, "initial"), "v1.0.0"), null);
+            var metadata = Json.Object(File.ReadAllText(Core.PathIn(root, "BUILD.json")));
+            var files = (Dictionary<string, object>)metadata["files"];
+            var preserved = new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest,
+                "TimeSplitters Launcher.app/Contents/MacOS/host.dylib",
+                "TimeSplitters Launcher.app/Contents/Resources/Licenses/notice.txt" };
+            foreach (var name in preserved.Concat(new[] { "Support/retired.txt" })) {
+                Write(root, name, "old package file"); files[name] = Hash(Encoding.UTF8.GetBytes("old package file"));
+            }
+            Write(root, "BUILD.json", Json.Encode(metadata));
+            string pending = Core.PathIn(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+            Core.Unpack(Archive(root, "v1.1.0"), Path.Combine(pending, "payload"), "v1.1.0");
+            Write(root, ".launcher/pending/release.json", "{\"version\":\"v1.1.0\"}");
+            Core.InstallPending(root);
+            foreach (var name in preserved) Need(File.ReadAllText(Core.PathIn(root, name)) == "old package file", "Game cleanup removed launcher file: " + name);
+            Need(!File.Exists(Core.PathIn(root, "Support/retired.txt")), "Retired game file retained");
+            Core.Rollback(root);
+            Need(Core.InstalledVersion(root) == "v1.0.0" && File.ReadAllText(Core.PathIn(root, "Support/retired.txt")) == "old package file", "Game cleanup rollback failed");
+        }
         public static int VerifyPackage(string archive,string version)
         {
             string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
@@ -58,10 +82,24 @@ namespace TimeSplitters.Launcher
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
+                Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});
                 Test("JSON adapter round-trips nested fields and journal records",()=>{var map=Json.Object("{\"nested\":{\"flag\":true},\"list\":[1,2],\"n\":9223372036854775807}");Need(map["nested"] is Dictionary<string,object> && map["list"] is object[] && (long)map["n"]==long.MaxValue,"JSON types lost");var journal=Json.Serializer().Deserialize<List<Original>>(Json.Encode(new[]{new Original{Name="Bin/test",Existed=true}}));Need(journal[0].Name=="Bin/test"&&journal[0].Existed,"Journal fields lost");});
                 Test("settings drafts, backups, unknown fields and external edit protection",()=>{var r=NewRoot("settings");var model=GameSettings.Load(r,null);Need(!Directory.Exists(Path.Combine(r,"Settings")),"Load wrote settings");model.Width=1280;model.Height=720;model.Save();var file=Core.PathIn(r,"Settings/pc-controls.json");var map=Json.Object(File.ReadAllText(file));map["future_option"]="preserve";File.WriteAllText(file,Json.Encode(map));var before=File.ReadAllBytes(file);model=GameSettings.Load(r,null);model.Sensitivity=.2;model.Save();Need(File.ReadAllBytes(file+".bak").SequenceEqual(before),"Backup differs");Need(Json.String(Json.Object(File.ReadAllText(file)),"future_option")=="preserve","Unknown setting lost");var a=GameSettings.Load(r,null);File.AppendAllText(file,"\n");Reject(()=>a.Save());});
                 Test("multi-file settings failure rolls back committed files",()=>{var r=NewRoot("settings-failure");var m=GameSettings.Load(r,null);m.Save();var files=LauncherPlatform.Settings(r).Select(p=>Core.PathIn(r,p)).ToArray();var old=files.Select(File.ReadAllBytes).ToArray();Directory.CreateDirectory(files[2]+".bak");m.Sensitivity=.3;Reject(()=>m.Save());for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(old[i]),"Partial settings commit");});
+                Test("PC presentation preferences survive unrelated native settings edits",()=>{
+                    var r=NewRoot("pc-presentation");
+                    Write(r,"tools/play-native-mac.py","fixture");
+                    Write(r,"private/native-settings/runtime.conf","frame_interp = 1\nframe_target = 144\nrefresh_rate = 144\nframe_cap = 30\nfuture_setting = retained\n");
+                    var m=GameSettings.Load(r,null);
+                    Need(!m.SupportsPresentationTarget,"Unsupported native presentation target advertised");
+                    m.Sensitivity=.2;m.Save();
+                    var saved=GameSettings.Load(r,null);
+                    Need(saved.PresentationFps==144 && saved.RefreshRate==144 && saved.Interpolation==1 && saved.FrameCap=="30","PC timing preference lost or activated");
+                    Need(saved.Sensitivity==.2,"Native edit not saved");
+                    var fresh=GameSettings.Load(NewRoot("native-defaults"),null);
+                    Need(fresh.Interpolation==2 && fresh.PresentationFps==0,"Native 120 default changed");
+                });
                 Test("checkout settings and launch routing preserve user defaults",()=>{var r=NewRoot("checkout");Write(r,"tools/play-native-mac.py","fixture");Write(r,"private/native-settings/runtime.conf","frame_interp = 1\nfuture_setting = retained\n");var m=GameSettings.Load(r,null);Need(m.Interpolation==1,"60 FPS preference lost");m.Save();Need(!Directory.Exists(Path.Combine(r,"Settings")),"Created package settings in checkout");Environment.SetEnvironmentVariable("RECOMP_TEST_STALE","bad");var info=GameSettings.StartInfo(r);Need(info.FileName==Path.Combine(r,"build/macos/futureperfect_recomp"),"Wrong native executable");Need(info.EnvironmentVariables["RECOMP_SAVE_DIR"]==Path.Combine(r,"private/saves"),"Wrong save route");Need(info.EnvironmentVariables["RECOMP_DISPLAY_CONFIG"]==Path.Combine(r,"private/native-settings/runtime.conf")&&info.EnvironmentVariables["TSFP_DISPLAY_CONFIG"]==Path.Combine(r,"config/pc-display.ini"),"Display routes wrong");Need(!info.EnvironmentVariables.ContainsKey("RECOMP_TEST_STALE"),"Inherited override leaked");Need(File.ReadAllText(Path.Combine(r,"private/native-settings/runtime.conf")).Contains("future_setting = retained"),"Unsupported setting lost");Environment.SetEnvironmentVariable("RECOMP_TEST_STALE",null);});
                 Test("binding conflicts, reserved keys and clear are shared",()=>{Need(GameSettings.WheelUpKey==134 && GameSettings.WheelDownKey==135 && GameSettings.BindingLabel("key:F24")=="Wheel down" && GameSettings.CaptureKey(162)==17,"Native capture differs from shared bindings");var m=GameSettings.Load(NewRoot("bindings"),null);m.Assign(0,0,65,true);Need(m.Conflict(1,65)==0,"Conflict missing");Reject(()=>m.Assign(1,0,65,false));m.Assign(1,0,65,true);Need(m.Binding(0)[0]=="none","Move left old key");Reject(()=>m.Assign(1,0,113,true));m.Assign(1,0,0,true);Need(m.Binding(1)[0]=="none","Clear failed");});
                 Test("native update, failed transaction recovery and rollback preserve personal files",()=>{var r=NewRoot("updates");Write(r,"Saves/keep","save");Write(r,"Data/keep","data");Write(r,"Settings/pc-controls.json","personal");var a=Core.Unpack(Archive(r,"v1.0.0"),Path.Combine(r,"one"),"v1.0.0");Core.Apply(r,a,null);Need(File.ReadAllText(Path.Combine(r,"Settings/pc-controls.json"))=="personal","Controls overwritten");Need((File.GetUnixFileMode(Path.Combine(r,LauncherPlatform.GameBinary))&UnixFileMode.UserExecute)!=0,"Execute bit absent");var b=Core.Unpack(Archive(r,"v1.1.0"),Path.Combine(r,"two"),"v1.1.0");Reject(()=>Core.Apply(r,b,i=>{if(i==1)throw new IOException("synthetic failure");}));Need(Core.InstalledVersion(r)=="v1.0.0","Failure did not recover");Core.Apply(r,b,null);Core.Rollback(r);Need(Core.InstalledVersion(r)=="v1.0.0","Rollback failed");Need(File.ReadAllText(Path.Combine(r,"Saves/keep"))=="save"&&File.ReadAllText(Path.Combine(r,"Data/keep"))=="data","Personal files changed");});
@@ -84,6 +122,14 @@ namespace TimeSplitters.Launcher
                     Need(candidate.Package.AssetName==names[2]&&candidate.ManifestUrl==prefix+names[3],"Wrong host selected from combined release");
                     var metadata=Json.Encode(new{schema=1,version=version,size=100,sha256=new string('a',64),asset_name=names[2]});
                     Need(ReleaseClient.VerifyLauncherMetadata(candidate,metadata).Tag==version,"Combined release metadata rejected");
+                });
+                Test("SDK helper caps/drains one pipe and rejects failure/timeout",()=>{
+                    ProcessStartInfo Helper(string script){var i=new ProcessStartInfo("/bin/sh"){UseShellExecute=false,RedirectStandardOutput=true};i.ArgumentList.Add("-c");i.ArgumentList.Add(script);return i;}
+                    string output=NativeHost.ReadGpuHelper(Helper("printf '{\"driver\":\"test\"}'"));
+                    Need(Json.String(Json.Object(output),"driver")=="test","Helper output was lost");
+                    Need(NativeHost.ReadGpuHelper(Helper("head -c 100000 /dev/zero")).Length==16384,"Unbounded or blocked output");
+                    Reject(()=>NativeHost.ReadGpuHelper(Helper("printf rejected; exit 7")));
+                    Reject(()=>NativeHost.ReadGpuHelper(Helper("sleep 5"),50));
                 });
                 Test("wrong XBE and altered native executable fail read-only checks",()=>{var r=NewRoot("checks");Write(r,"Data/default.xbe","invalid");Reject(()=>NativeHost.CheckData(r));Write(r,LauncherPlatform.GameBinary,"invalid");Write(r,"BUILD.json",Json.Encode(new{version="v1.0.0",executable_sha256=new string('a',64)}));Reject(()=>NativeHost.CheckBuild(r));Need(!Directory.Exists(Path.Combine(r,"Saves")),"Check created saves");});
                 Test("verified download and cached replay use shared integrity policy",()=>{var r=NewRoot("download");byte[] bytes=Encoding.UTF8.GetBytes("verified archive");var release=new Release{AssetUrl="https://github.com/"+ReleaseClient.Repository+"/releases/download/v1.0.0/a.zip",Digest="sha256:"+Hash(bytes),Size=bytes.Length};int calls=0;using(var c=new ReleaseClient(new Handler{Reply=q=>{calls++;return new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(bytes)};}})){c.Download(release,Path.Combine(r,"one.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();c.Download(release,Path.Combine(r,"two.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();}Need(calls==1&&File.ReadAllBytes(Path.Combine(r,"two.zip")).SequenceEqual(bytes),"Cache replay failed");});

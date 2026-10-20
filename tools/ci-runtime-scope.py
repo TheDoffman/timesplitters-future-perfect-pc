@@ -14,7 +14,7 @@ def affected(paths, *, full=False):
         if (path in ('.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
                      'tools/ci-runtime-scope.py', 'tests/test_ci_runtime_scope.py',
                      'tools/apply-patches.py', 'tests/test_patch_tracking.py',
-                     'tests/test_patch_updates.py', 'tests/fixtures/launcher-patch-stacks.json') or path.startswith('patches/')):
+                     'tests/test_patch_updates.py', 'tests/fixtures/launcher-patch-stacks.json', 'tests/fixtures/renderer-patch-stacks.json') or path.startswith('patches/')):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
                 '.github/workflows/launcher-release.yml', '.github/workflows/launcher-build.yml',
@@ -39,6 +39,7 @@ def affected(paths, *, full=False):
                 'tools/build-native-mac.py', 'tools/play-native-mac.py',
                 'tools/test-native-mac.py', 'tools/native_mac_common.py',
                 'tools/testing_profile.py', 'tools/vulkan_sdk.py', 'tools/test-rhi-mac.py',
+                'tools/frame_replay_contract.py', 'tools/replay-native-mac.py',
                 'config/vulkan-sdk.json'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')

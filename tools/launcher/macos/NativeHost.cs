@@ -61,27 +61,52 @@ namespace TimeSplitters.Launcher
             if(expected.Length==0 && m.TryGetValue("files",out var files) && files is Dictionary<string,object> map)expected=Json.String(map,LauncherPlatform.GameBinary);
             Core.Require(expected.Length==64 && Core.Hash(exe)==expected,"Native executable differs from its build manifest. Rebuild or repair before playing.");
             using(var stream=File.OpenRead(exe)){var header=new byte[8];Core.Require(stream.Read(header,0,8)==8 && BitConverter.ToUInt32(header,0)==0xfeedfacf && BitConverter.ToUInt32(header,4)==0x0100000c,"This launcher requires a native Apple Silicon game executable.");}
-            if(Json.String(m,"renderer")=="vulkan")GpuSdk(root);
+            if(Json.String(m,"renderer")=="vulkan")GpuEnvironment(root,m);
             return m;
         }
-        static string GpuSdk(string root)
+        static Dictionary<string,object> GpuEnvironment(string root,Dictionary<string,object> manifest)
         {
             string python=Path.Combine(root,".venv/bin/python");
             Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
-            var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
-            info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools')); import vulkan_sdk; print(vulkan_sdk.verify_install(pathlib.Path(sys.argv[1])))");info.ArgumentList.Add(root);
-            using(var process=Process.Start(info)){var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();
-                if(!process.WaitForExit(30000)){process.Kill();throw new IOException("Pinned Vulkan SDK verification timed out.");}
-                Core.Require(process.ExitCode==0,"Pinned Vulkan SDK verification failed: "+error.GetAwaiter().GetResult());string sdk=output.GetAwaiter().GetResult().Trim();Core.Require(Directory.Exists(sdk),"Pinned Vulkan SDK directory is missing.");return sdk;}
+            var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,WorkingDirectory=root};
+            // The helper needs driver metadata only, not source hashes or build logs.
+            var selection=new Dictionary<string,object>();
+            if(manifest.TryGetValue("vulkan_driver",out var driver))selection["vulkan_driver"]=driver;
+            info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
+            return Json.Object(ReadGpuHelper(info));
         }
+        internal static string ReadGpuHelper(ProcessStartInfo info,int timeout=30000)
+        {
+            // One redirected pipe avoids the ARM64 dual-pipe initialization crash.
+            // The controlled Python helper reports failures on stdout as well.
+            Core.Require(info.RedirectStandardOutput&&!info.RedirectStandardError,"SDK helper requires one output pipe.");
+            using(var process=Process.Start(info)){
+                string output="";Exception readError=null;
+                var reader=new Thread(()=>{try{
+                    var text=new System.Text.StringBuilder();var buffer=new char[2048];int count;
+                    while((count=process.StandardOutput.Read(buffer,0,buffer.Length))>0)
+                        if(text.Length<16384)text.Append(buffer,0,Math.Min(count,16384-text.Length));
+                    output=text.ToString();
+                }catch(Exception e){readError=e;}}){IsBackground=true};
+                reader.Start();bool exited=process.WaitForExit(timeout);
+                if(!exited){process.Kill(true);process.WaitForExit(3000);}
+                bool drained=reader.Join(3000);
+                Core.Require(exited,"Pinned Vulkan SDK verification timed out.");
+                Core.Require(drained&&readError==null,"Could not read pinned Vulkan SDK verification output.");
+                Core.Require(process.ExitCode==0,"Pinned Vulkan SDK verification failed: "+output);
+                return output;
+            }
+        }
+
         public static void Configure(ProcessStartInfo info,string root)
         {
             info.WorkingDirectory=root;
             foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_"))info.EnvironmentVariables.Remove(key);
             string manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
-            if(File.Exists(manifest) && Json.String(Json.Object(File.ReadAllText(manifest)),"renderer")=="vulkan"){
-                string sdk=GpuSdk(root);info.EnvironmentVariables["DYLD_LIBRARY_PATH"]=Path.Combine(sdk,"lib");info.EnvironmentVariables["SDL_VULKAN_LIBRARY"]=Path.Combine(sdk,"lib/libvulkan.1.dylib");
-                info.EnvironmentVariables["VK_DRIVER_FILES"]=Path.Combine(sdk,"share/vulkan/icd.d/libkosmickrisp_icd.json");info.EnvironmentVariables["VK_LAYER_PATH"]=Path.Combine(sdk,"share/vulkan/explicit_layer.d");info.EnvironmentVariables["RECOMP_SHADER_CACHE"]="0";
+            if(File.Exists(manifest)){
+                var build=Json.Object(File.ReadAllText(manifest));
+                if(Json.String(build,"renderer")=="vulkan")
+                    foreach(var pair in GpuEnvironment(root,build))info.EnvironmentVariables[pair.Key]=(string)pair.Value;
             }
             string settings=LauncherPlatform.Checkout(root)?"private/native-settings":"Settings";
             info.EnvironmentVariables["XDG_CONFIG_HOME"]=Core.PathIn(root,settings+"/xdg-config");

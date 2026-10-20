@@ -1,3 +1,4 @@
+#include "graphics/screen_copy_rect.h"
 /* Copy the current host scene, not the window's previous presentation. Keep
  * guest rectangle coordinates even when the scene uses a larger target. */
 static unsigned long native_screen_copies;
@@ -14,15 +15,11 @@ static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const
     if(src) {
         left=src->left;top=src->top;right=src->right;bottom=src->bottom;
         x=at?at->x:0;y=at?at->y:0;
-        /* Intersect both surfaces, advancing the paired source/destination. */
-        if(x<0){left-=x;x=0;}if(y<0){top-=y;y=0;}
-        if(left<0){x-=left;left=0;}if(top<0){y-=top;top=0;}
-        if(right>g.backbuf_w)right=g.backbuf_w;if(bottom>g.backbuf_h)bottom=g.backbuf_h;
-        w=right-left;h=bottom-top;
-        if(x>=(int)t->width || y>=(int)t->height)return S_OK;
-        if(w>(int)t->width-x)w=t->width-x;if(h>(int)t->height-y)h=t->height-y;
-        right=left+w;bottom=top+h;
-        if(w<=0 || h<=0)return S_OK;
+        TsfpScreenCopyRect clipped;
+        if(!tsfp_screen_copy_rect(left,top,right,bottom,x,y,g.backbuf_w,g.backbuf_h,
+                                 t->width,t->height,&clipped))return S_OK;
+        left=clipped.left;top=clipped.top;x=clipped.x;y=clipped.y;
+        w=clipped.width;h=clipped.height;right=left+w;bottom=top+h;
     }
     GLint read,draw,binding,width=0;
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);

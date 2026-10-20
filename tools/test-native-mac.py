@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import platform
 import re
+import math
+import struct
 from native_mac_common import recycle_test_disks
 import shutil
 import signal
@@ -100,6 +102,65 @@ def capture_environment(root):
                 RECOMP_HLE_D3D8_DUMP_EVERY='60', RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
 
 
+def prepare_interpolation_capture(root, test):
+    capture_environment(root)
+    captures = root / 'private/captures/native-mac'
+    request = test / 'capture-interpolation.txt'
+    outputs = [captures / ('interpolation-' + name)
+               for name in ('guest.bmp', 'midpoint.bmp', 'pair.json')]
+    for path in (request, *outputs):
+        if path.is_symlink():
+            raise RuntimeError('Unexpected interpolation capture path')
+    # Invalidate only this runner's known files, before starting any process.
+    for path in outputs:
+        path.unlink(missing_ok=True)
+    request.write_text('')
+    return dict(RECOMP_INTERP_CAPTURE_REQUEST=str(request),
+                RECOMP_INTERP_CAPTURE_PREFIX=str(captures / 'interpolation'))
+
+
+def interpolation_capture_result(root):
+    captures = root / 'private/captures/native-mac'
+    result = dict(complete=False, diagnostic_readback=True, images=[])
+    metadata = captures / 'interpolation-pair.json'
+    if not metadata.exists():
+        return dict(result, reason='No eligible interpolation capture completed')
+    try:
+        if metadata.is_symlink() or metadata.stat().st_size > 4096:
+            raise ValueError('Invalid interpolation metadata file')
+        receipt = json.loads(metadata.read_text())
+        if not isinstance(receipt, dict):raise ValueError('Invalid interpolation metadata object')
+        result['receipt'] = receipt
+        if not (receipt.get('complete') is True and receipt.get('presented') is True
+                and receipt.get('guest_written') is True and receipt.get('midpoint_written') is True
+                and isinstance(receipt.get('guest_frame'), int) and receipt['guest_frame'] > 0
+                and isinstance(receipt.get('blend'), (int, float)) and math.isfinite(receipt['blend'])
+                and 0 <= receipt['blend'] <= 1):
+            raise ValueError('Capture/readback/presentation did not complete')
+        dimensions = []
+        for name in ('guest', 'midpoint'):
+            path = captures / ('interpolation-' + name + '.bmp')
+            if path.is_symlink():raise ValueError('Unexpected interpolation image link')
+            with path.open('rb') as stream:header = stream.read(54)
+            if len(header) != 54 or header[:2] != b'BM':raise ValueError('Invalid interpolation BMP')
+            offset = struct.unpack_from('<I', header, 10)[0]
+            width, height, planes, bits, compression = struct.unpack_from('<iiHHI', header, 18)
+            if not (0 < width <= 16384 and 0 < abs(height) <= 16384 and planes == 1
+                    and bits in (24, 32) and compression == 0 and offset >= 54):
+                raise ValueError('Invalid interpolation BMP format')
+            size = path.stat().st_size
+            if size != offset + ((width * bits + 31) // 32) * 4 * abs(height):
+                raise ValueError('Truncated or oversized interpolation BMP')
+            dimensions.append((width, abs(height)))
+            result['images'].append(dict(path=str(path.relative_to(root)), bytes=size,
+                width=width, height=abs(height), sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+        if dimensions[0] != dimensions[1]:raise ValueError('Interpolation pair sizes differ')
+        result['complete'] = True
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        result['reason'] = str(error)
+    return result
+
+
 def present_counts(errors):
     """Last cumulative API-acceptance snapshot, never inferred from guest ticks."""
     samples=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) '
@@ -119,15 +180,19 @@ def main():
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     parser.add_argument('--profile-frames', action='store_true',
                         help='Record up to 20,000 host present intervals, without GPU readback')
+    parser.add_argument('--profile-without-validation', action='store_true',
+                        help='With --profile-frames, measure Vulkan without validation-layer overhead; not a validation pass')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
     parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
-    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),default='kosmickrisp',
-                        help='Driver for an explicitly built common Vulkan renderer')
+    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),
+                        help='Temporary Vulkan driver override; default comes from BUILD.json')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
     if not 1 <= args.seconds <= 1800:
         parser.error('--seconds must be between 1 and 1800')
+    if args.profile_without_validation and not args.profile_frames:
+        parser.error('--profile-without-validation requires --profile-frames')
     xbe = ROOT / 'private/game/default.xbe'
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != EXPECTED_XBE:
         raise SystemExit('Unsupported game executable')
@@ -148,20 +213,13 @@ def run_probe(args, test, env, exe, kind):
     if manifest.get('renderer')=='vulkan':
         import vulkan_sdk
         env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
-            getattr(args,'vulkan_driver','kosmickrisp'))
-        env['RECOMP_VK_VALIDATION']='1'
+            vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)))
+        env['RECOMP_VK_VALIDATION']='0' if getattr(args,'profile_without_validation',False) else '1'
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
                    RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')
     if args.capture_interpolation:
-        capture_environment(ROOT) # Same path and symlink checks as normal captures.
-        captures=ROOT / 'private/captures/native-mac'
-        request=test / 'capture-interpolation.txt'
-        for path in (request,captures/'interpolation-guest.bmp',captures/'interpolation-midpoint.bmp'):
-            if path.is_symlink():raise SystemExit('Unexpected interpolation capture path')
-        request.write_text('')
-        env.update(TSFP_NATIVE_INTERP_CAPTURE_REQUEST=str(request),
-                   TSFP_NATIVE_INTERP_CAPTURE_PREFIX=str(captures/'interpolation'))
+        env.update(prepare_interpolation_capture(ROOT, test))
     if args.test_keys:
         keys = test / 'test-keys.txt'
         if keys.is_symlink():raise SystemExit('Unexpected test key file')
@@ -236,8 +294,11 @@ def run_probe(args, test, env, exe, kind):
                   test_directory=str(test.relative_to(ROOT)),
                   unlocked_profile=bool(args.unlocked_profile),
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
+                  vulkan_driver=(vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)) if manifest.get('renderer')=='vulkan' else None),
                   frame_captures=captures,
                   rendered_game_verified=False) # Visual recognition is a separate reviewed result.
+    if args.capture_interpolation:
+        result['interpolation_capture'] = interpolation_capture_result(ROOT)
     if args.profile_frames:
         from native_frame_stats import summarize
         try:

@@ -97,6 +97,14 @@ def test_gpu_overlay_preserves_runner_isolation(tmp_path,monkeypatch):
     assert 'DYLD_INSERT_LIBRARIES' not in env
     assert env['RECOMP_SHADER_CACHE']=='0'
     assert existing['VK_DRIVER_FILES']=='/wrong/driver'
+    assert not list(tmp_path.iterdir())  # also safe for an interactive --check
+
+
+def test_digest_works_with_system_python_api(tmp_path,monkeypatch):
+    monkeypatch.delattr(sdk.hashlib,'file_digest',raising=False)
+    data=b'known receipt contents'*100000
+    path=tmp_path/'library';path.write_bytes(data)
+    assert sdk.sha256(path)==sdk.hashlib.sha256(data).hexdigest()
 
 
 @pytest.mark.parametrize('output',[
@@ -109,3 +117,25 @@ def test_validation_errors_fail_the_contract(output):
 
 def test_validation_warning_is_distinct():
     sdk.require_clean_validation('validation on\n[VKVAL warning] optional capability')
+
+
+@pytest.mark.parametrize('manifest,override,expected', [
+    ({},None,'kosmickrisp'),  # old binaries keep their original driver
+    ({'vulkan_driver':'moltenvk'},None,'moltenvk'),
+    ({'vulkan_driver':'kosmickrisp'},None,'kosmickrisp'),
+    ({'vulkan_driver':'moltenvk'},'kosmickrisp','kosmickrisp'),
+])
+def test_manifest_driver_and_temporary_override_are_read_only(tmp_path,monkeypatch,manifest,override,expected):
+    before=dict(manifest)
+    monkeypatch.setattr(sdk,'verify_install',lambda root:root/'sdk')
+    env=sdk.launch_environment(tmp_path,manifest,override)
+    assert Path(env['VK_DRIVER_FILES']).name==sdk.DRIVERS[expected]
+    assert manifest==before and not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('invalid',[None,'',True,[],{},'other','../other'])
+def test_invalid_manifest_driver_rejected_before_sdk_access(tmp_path,monkeypatch,invalid):
+    def unexpected(root):pytest.fail('Invalid driver reached SDK access')
+    monkeypatch.setattr(sdk,'verify_install',unexpected)
+    with pytest.raises(ValueError,match='Unknown pinned Vulkan driver'):
+        sdk.launch_environment(tmp_path,{'vulkan_driver':invalid})

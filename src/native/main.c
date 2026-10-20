@@ -4,6 +4,7 @@
 #include "recomp_config.h"
 #include "crash_posix.h"
 #include "../pc_discord.h"
+#include "../graphics/tsfp_interpolation.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +48,7 @@ int main(int argc, char **argv)
         extern int tsfp_native_debug_test(void);return tsfp_native_debug_test();
     }
     (void)argc; (void)argv;
+    tsfp_configure_interpolation();
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     tsfp_native_crash_init(capture_guest);

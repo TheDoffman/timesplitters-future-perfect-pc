@@ -29,6 +29,9 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
     CHECK(s);return s;
 }
 #include "rhi_depth_replay.h"
+#include "rhi_texture_resources.h"
+#include "rhi_xbox_textures.h"
+#include "rhi_screen_copy.h"
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
@@ -119,7 +122,12 @@ int main(void) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
     rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     rhi_shader_destroy(point_vs);rhi_shader_destroy(point_ps);
+    rhi_texture_resources_test();
+    rhi_xbox_textures_test();
+    rhi_set_shader(RHI_STAGE_PIXEL,ps);rhi_set_textures(0,1,&srv);
+    rhi_set_samplers(0,1,&sampler);rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&parameters);
     rhi_depth_replay_test(rtv);
+    rhi_screen_copy_test(rtv);
 
 #ifdef RHI_VULKAN_SDL
     /* Also exercise presentation and the swapchain readback channel order. */

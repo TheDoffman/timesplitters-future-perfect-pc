@@ -1,0 +1,102 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -112,8 +112,8 @@
+ add_subdirectory(src/hle)
+ 
+ # Frame replay tool: replays a D3D8 capture into the host renderer with no
+-# game running (src/hle/d3d8_capture.h). Windows only, like the D3D11 backend.
+-if(WIN32)
++# game running (src/hle/d3d8_capture.h), through the common Xbox frontend.
++if(WIN32 OR (APPLE AND TSFP_NATIVE_RHI))
+     add_subdirectory(src/replay)
+ endif()
+ 
+--- a/src/replay/CMakeLists.txt
++++ b/src/replay/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ # d3d8_replay -- replay a captured frame into the host renderer.
+ #
+-# Windows only: the D3D11 backend is (src/d3d/CMakeLists.txt builds d3d8_gl.c
+-# on POSIX instead, which has no equivalent entry points for this tool).
++# Uses the common Xbox frontend on Windows and native Mac Vulkan.
++# Legacy GL has no equivalent entry points for this tool.
+ #
+ # It compiles d3d8_capture.c directly rather than linking xbox_hle, because
+ # the container has no dependencies and xbox_hle would drag in the kernel
+@@ -20,4 +20,10 @@
+     ${CMAKE_CURRENT_SOURCE_DIR}/../hle
+     ${CMAKE_CURRENT_SOURCE_DIR}/../kernel
+ )
+-target_link_libraries(d3d8_replay PRIVATE xbox_d3d8 user32)
++target_link_libraries(d3d8_replay PRIVATE xbox_d3d8)
++if(WIN32)
++    target_link_libraries(d3d8_replay PRIVATE user32)
++elseif(APPLE AND TSFP_NATIVE_RHI)
++    target_include_directories(d3d8_replay PRIVATE "${TSFP_NATIVE_DIR}")
++    target_sources(d3d8_replay PRIVATE "${TSFP_NATIVE_DIR}/config_files.c")
++endif()
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -268,6 +268,9 @@
+ 
+ /* ------------------------------------------------------------------ window */
+ 
++#if defined(__APPLE__)
++#include "replay_host_sdl.h"
++#else
+ static LRESULT CALLBACK replay_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+ {
+     if (msg == WM_DESTROY) {
+@@ -327,6 +330,8 @@
+         DispatchMessageA(&msg);
+     }
+ }
++
++#endif
+ 
+ /* -------------------------------------------------------------------- dump */
+ 
+@@ -1503,7 +1508,11 @@
+ 
+     hwnd = replay_window(r.width, r.height);
+     if (!hwnd) {
++#if defined(__APPLE__)
++        fprintf(stderr, "[replay] CreateWindow failed: %s\n", SDL_GetError());
++#else
+         fprintf(stderr, "[replay] CreateWindow failed (%lu)\n", GetLastError());
++#endif
+         d3d8cap_close_read(cap);
+         return 1;
+     }
+@@ -1518,8 +1527,13 @@
+     pp.Windowed = TRUE;
+     pp.EnableAutoDepthStencil = TRUE;
+ 
+-    if (backend)
++    if (backend) {
++#if defined(__APPLE__)
++        setenv("RECOMP_D3D8_BACKEND", backend, 1);
++#else
+         _putenv_s("RECOMP_D3D8_BACKEND", backend);
++#endif
++    }
+     d3d = xbox_Direct3DCreate8(0);
+     hr = d3d ? d3d->lpVtbl->CreateDevice(d3d, 0, 1 /* HAL */, hwnd, 0, &pp, &r.dev)
+              : E_FAIL;
+@@ -1571,12 +1585,16 @@
+     }
+ 
+     if (hold) {
++#if defined(__APPLE__)
++        replay_hold();
++#else
+         MSG msg;
+         note("[replay] holding the window open; close it to exit\n");
+         while (GetMessageA(&msg, NULL, 0, 0) > 0) {
+             TranslateMessage(&msg);
+             DispatchMessageA(&msg);
+         }
++#endif
+     }
+ 
+     free(r.textures);

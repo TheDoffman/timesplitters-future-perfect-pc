@@ -3,19 +3,10 @@
  * so offscreen target changes and readback use the same paths as guest draws. */
 static GLuint native_saved_fbo,native_saved_color,native_saved_depth;
 static unsigned native_saved_w,native_saved_h;
-static int native_capture_pair;
 static GLint native_interp_read,native_interp_draw;
 static unsigned native_interpolated_count;
 static int native_interp_projection=60,native_interp_affine=64,native_interp_count=12;
 
-static void native_interp_capture(const char *suffix) {
-    const char *prefix=getenv("TSFP_NATIVE_INTERP_CAPTURE_PREFIX");
-    if(!prefix)return;
-    char path[4096];if(snprintf(path,sizeof path,"%s-%s.bmp",prefix,suffix)>=(int)sizeof path)return;
-    extern int hle_d3d8_dump_back_buffer(const char *);
-    if(hle_d3d8_dump_back_buffer(path)==0)
-        fprintf(stderr,"[native-gl] interpolation evidence: %s\n",path);
-}
 static void native_interp_copy(GLuint from,GLuint to) {
     GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
     glDisable(GL_SCISSOR_TEST);
@@ -65,19 +56,11 @@ BOOL xbox_D3D8InterpBegin(void) {
     }
     glBindFramebuffer(GL_READ_FRAMEBUFFER,native_interp_read);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,native_interp_draw);
-    native_capture_pair=0;
-    const char *request=getenv("TSFP_NATIVE_INTERP_CAPTURE_REQUEST");
-    if(complete && request) {
-        FILE *f=fopen(request,"r");int wanted=0;
-        if(f){fscanf(f,"%d",&wanted);fclose(f);}
-        if(wanted){f=fopen(request,"w");if(f){fclose(f);native_capture_pair=1;native_interp_capture("guest");}}
-    }
     native_interp_on=complete;return complete;
 }
 BOOL xbox_D3D8InterpPresent(void) {
     NATIVE_GL_SCOPE;
     if(!native_interp_on)return FALSE;
-    if(native_capture_pair)native_interp_capture("midpoint");
     native_scene_present();
     Uint64 start=SDL_GetTicksNS();
     if(native_swap_window()) {

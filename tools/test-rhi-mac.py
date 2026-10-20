@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 import vulkan_sdk
+import frame_replay_contract
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--setup-sdk', action='store_true', help='Download and verify the pinned checkout-local SDK')
-    parser.add_argument('--driver', choices=['moltenvk', 'kosmickrisp'], default='moltenvk')
+    parser.add_argument('--driver', choices=['moltenvk', 'kosmickrisp'], default=vulkan_sdk.DEFAULT_DRIVER)
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('Requires Apple Silicon macOS')
@@ -39,7 +40,7 @@ def main():
     subprocess.run([str(cmake),'-S',str(ROOT/'tests/rhi'),'-B',str(build),'-G','Ninja',
         '-DCMAKE_BUILD_TYPE=Release','-DCMAKE_OSX_ARCHITECTURES=arm64',
         '-DCMAKE_MAKE_PROGRAM='+str(ninja),'-DTSFP_VULKAN_SDK='+str(sdk)],check=True)
-    subprocess.run([str(cmake),'--build',str(build),'--target','tsfp_rhi_vulkan_test','--parallel','4'],check=True)
+    subprocess.run([str(cmake),'--build',str(build),'--target','tsfp_rhi_vulkan_test','d3d8_replay','--parallel','4'],check=True)
     exe=build/'tsfp_rhi_vulkan_test'
     env=vulkan_sdk.probe_environment(sdk,args.driver)
     started=time.monotonic()
@@ -57,10 +58,22 @@ def main():
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],text=True),
         runtime_revision=revision,host=platform.platform(),sdk_version=vulkan_sdk.pin()['version'],
         driver=args.driver,executable_sha256=vulkan_sdk.sha256(exe),seconds=round(time.monotonic()-started,3),
-        returncode=result.returncode,passed=passed,validation_error=validation_error,scope='Asset-free common RHI shader/pixel/presentation contract; not gameplay')
+        returncode=result.returncode,passed=passed,validation_error=validation_error,scope='Asset-free common RHI shader/pixel/resource/presentation contract; not gameplay')
     (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
     print(output)
     if not passed:raise SystemExit('Common RHI validation failed; see logs/rhi-'+args.driver+'.log')
+    replay_executable = build/'replay/d3d8_replay'
+    summary['replay_executable_sha256'] = vulkan_sdk.sha256(replay_executable)
+    summary['replay_passed'] = False
+    try:
+        replay_output = frame_replay_contract.run(replay_executable,
+                                                  build/'replay-contract', env)
+        vulkan_sdk.require_clean_validation(replay_output)
+        summary['replay_passed'] = True
+    finally:
+        summary['passed'] = passed and summary['replay_passed']
+        (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
+    print('PASS: production frame replay red triangle / blue clear (one frame)')
 
 
 if __name__=='__main__':

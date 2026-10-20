@@ -40,7 +40,7 @@ def main():
         env.update(native.capture_environment(root))
         if manifest['renderer']=='vulkan':
             import vulkan_sdk
-            env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(root),'kosmickrisp')
+            env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(root),vulkan_sdk.select_driver(manifest))
             env['RECOMP_VK_VALIDATION']='1'
         plan=session/'plan.json';assert not plan.is_symlink();plan.write_text(json.dumps(dict(runtime_root=str(root),environment=env,seconds=args.seconds,mode=args.mode)))
         stdout=root/'logs/mac-launcher-e2e.out';stderr=root/'logs/mac-launcher-e2e.err'

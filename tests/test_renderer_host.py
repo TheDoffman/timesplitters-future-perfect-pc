@@ -97,16 +97,22 @@ def test_present_metrics(tmp_path):
     assert rows[1]['kind']=='other'
 
 
-def test_interpolation_present_outcomes(tmp_path):
+@pytest.mark.parametrize('name', ['interpolation_present', 'interpolation_scene', 'interpolation_draw_key', 'interpolation_capture'])
+def test_interpolation_present_outcomes(tmp_path,name):
     compiler, env=native_compiler(tmp_path)
     exe=tmp_path/('interp-present.exe' if os.name=='nt' else 'interp-present')
-    includes=[ROOT/'src',RUNTIME,*[RUNTIME/name for name in ('d3d','config','hle','kernel','platform')]]
-    source=str(ROOT/'tests/interpolation_present.c')
+    includes=[tmp_path,ROOT/'src',RUNTIME,*[RUNTIME/name for name in ('d3d','config','hle','kernel','platform')]]
+    if name=='interpolation_draw_key':
+        recorder=(RUNTIME/'hle/hle_d3d8_record.c').read_text()
+        begin=recorder.index('static void draw_key(')
+        end=recorder.index('\n}\n',begin)+3
+        (tmp_path/'draw_key.inc').write_text(recorder[begin:end])
+    source=str(ROOT/'tests'/f'{name}.c')
     if os.name=='nt':
         args=[compiler,'/nologo','/std:c11',*['/I'+str(p) for p in includes],source,'/Fe:'+str(exe)]
     else:
         args=[compiler,'-std=gnu11',*['-I'+str(p) for p in includes],source,'-o',str(exe)]
     result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
-    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    result=subprocess.run([str(exe)],cwd=tmp_path,capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr

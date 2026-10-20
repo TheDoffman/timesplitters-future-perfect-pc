@@ -7,5 +7,5 @@
   "bytes": 396088200,
   "checksum_source": "https://vulkan.lunarg.com/sdk/files.json",
   "minimum_macos": 26,
-  "purpose": "Opt-in common RHI validation; does not change the default game renderer"
+  "purpose": "Common native renderer on macOS 26+ and asset-free RHI validation"
 }

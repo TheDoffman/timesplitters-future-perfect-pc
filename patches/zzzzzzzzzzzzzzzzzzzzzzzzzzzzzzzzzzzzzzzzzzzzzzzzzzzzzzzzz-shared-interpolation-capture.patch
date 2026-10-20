@@ -1,0 +1,139 @@
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -139,7 +139,7 @@
+  * side. */
+ static const char   *g_dump_prefix;
+ static unsigned long g_dump_from, g_swaps;
+-static int           g_dumped;
++static int           g_dumped, g_pair_trace;
+ 
+ /* For the report. */
+ static unsigned long g_frames, g_shown, g_late, g_held_2d, g_held_match, g_held_cut,
+@@ -785,6 +785,17 @@
+             }
+         }
+     }
++    if (g_pair_trace && i < 3) {
++        fprintf(stderr, "[INTERP-PAIR] draw=%d previous=%d tier=%d cut=%d groups=%u\n",
++                i, d->match, d->tier, d->cut, d->groups);
++        const float *values[] = {d->match >= 0 ? regs_of(prev, d->match) : b, b, out};
++        const char *names[] = {"previous", "current", "blended"};
++        for (int row = 0; row < 3; row++) {
++            fprintf(stderr, "[INTERP-PAIR] %s", names[row]);
++            for (int k = 0; k < g_nregs * 4; k++) fprintf(stderr, " %.9g", values[row][k]);
++            fputc('\n', stderr);
++        }
++    }
+     if (g_proj >= 0) {
+         d3d8_vsh_set_constant(g_proj, out, 4);
+         if (g_aff_count)
+@@ -796,13 +807,79 @@
+ 
+ /* ---------------------------------------------------------- drawing it */
+ 
++/* Explicit one-shot evidence; readback changes timing, never a benchmark.
++ * Shared by all renderer adapters. Keep the old native env names as aliases. */
++typedef struct {
++    char prefix[4096];
++    int requested, guest_ok, midpoint_ok;
++} InterpCapture;
++
++static int capture_image(InterpCapture *capture, const char *suffix)
++{
++    char path[4128];
++    snprintf(path, sizeof path, "%s-%s.bmp", capture->prefix, suffix);
++    return hle_d3d8_dump_back_buffer(path) == 0;
++}
++
++static void capture_begin(InterpCapture *capture)
++{
++    const char *request = getenv("RECOMP_INTERP_CAPTURE_REQUEST");
++    const char *prefix = getenv("RECOMP_INTERP_CAPTURE_PREFIX");
++    FILE *f;
++    int wanted = 0;
++    char path[4128];
++    capture->requested = capture->guest_ok = capture->midpoint_ok = 0;
++    if (!request) {
++        request = getenv("TSFP_NATIVE_INTERP_CAPTURE_REQUEST");
++        prefix = getenv("TSFP_NATIVE_INTERP_CAPTURE_PREFIX");
++    }
++    if (!request || !*request || !prefix || !*prefix || strlen(prefix) >= sizeof capture->prefix)
++        return;
++    f = fopen(request, "r+");
++    if (!f) return;
++    if (fscanf(f, "%d", &wanted) != 1 || wanted != 1 || fseek(f, 0, SEEK_SET) != 0) {
++        fclose(f); return;
++    }
++    int consumed = fputc('0', f) != EOF;
++    if (fclose(f) != 0 || !consumed) return;
++    strcpy(capture->prefix, prefix);
++    capture->requested = 1;
++    /* Invalidate old evidence before this attempt, including failed begins. */
++    const char *suffixes[] = {"guest.bmp", "midpoint.bmp", "pair.json"};
++    for (int i = 0; i < 3; i++) {
++        snprintf(path, sizeof path, "%s-%s", prefix, suffixes[i]);
++        remove(path);
++    }
++    capture->guest_ok = capture_image(capture, "guest");
++}
++
++static void capture_finish(const InterpCapture *capture, double alpha, int presented)
++{
++    if (!capture->requested) return;
++    char path[4128];
++    snprintf(path, sizeof path, "%s-pair.json", capture->prefix);
++    FILE *f = fopen(path, "w");
++    if (!f) { fprintf(stderr, "[INTERP] pair metadata failed: %s\n", path); return; }
++    fprintf(f, "{\"guest_frame\":%lu,\"blend\":%.9f,\"guest_written\":%s,"
++               "\"midpoint_written\":%s,\"presented\":%s,\"complete\":%s,\"diagnostic_readback\":true}\n",
++            g_swaps + 1, alpha, capture->guest_ok ? "true" : "false",
++            capture->midpoint_ok ? "true" : "false", presented ? "true" : "false",
++            capture->guest_ok && capture->midpoint_ok && presented ? "true" : "false");
++    int failed = ferror(f);
++    if (fclose(f) != 0 || failed) remove(path);
++    else fprintf(stderr, "[INTERP] paired evidence before guest %lu, blend %.6f, complete=%d -> %s\n",
++                 g_swaps + 1, alpha, capture->guest_ok && capture->midpoint_ok && presented, path);
++}
++
+ static int redraw(double a)
+ {
+     InterpList *cur = &g_list[g_cur];
+     const float *c = hle_d3d8_interp_constants();
+     int rec = hle_d3d8_interp_rec;
+     size_t off;
+-
++    InterpCapture capture;
++
++    capture_begin(&capture); /* guest N, before switching to the replay target */
+     if (!xbox_D3D8InterpBegin()) {
+         static int said;
+         if (!said++) {
+@@ -811,8 +888,10 @@
+             fflush(stderr);
+         }
+         g_on = 0;
++        capture_finish(&capture, a, 0);
+         return 0;
+     }
++    g_pair_trace = capture.requested && getenv("RECOMP_INTERP_DEBUG") != NULL;
+     hle_d3d8_interp_rec = 0;                     /* what is drawn now is not kept */
+     for (off = 0; off < cur->len; ) {
+         op_header *h = (op_header *)(cur->ops + off);
+@@ -835,6 +914,8 @@
+         d3d8_vsh_set_constant(g_proj, c + g_proj * 4, 4);
+     if (g_aff_count)
+         d3d8_vsh_set_constant(g_aff_first, c + g_aff_first * 4, g_aff_count);
++    /* Both images contain guest content, before host-only debug overlays. */
++    if (capture.requested) capture.midpoint_ok = capture_image(&capture, "midpoint");
+     hle_d3d8_overlay_redraw();
+     {
+         /* CPU submission-start estimate for scheduling, not scanout time.
+@@ -846,6 +927,8 @@
+     int presented=xbox_D3D8InterpPresent();
+     xbox_D3D8InterpEnd();
+     hle_d3d8_interp_rec = rec;
++    g_pair_trace = 0;
++    capture_finish(&capture, a, presented);
+     if(presented) {g_presents_total++;g_shown++;}
+     return presented;
+ }

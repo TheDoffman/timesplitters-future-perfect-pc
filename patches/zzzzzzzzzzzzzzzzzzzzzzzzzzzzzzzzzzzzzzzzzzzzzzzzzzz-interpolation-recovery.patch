@@ -11,12 +11,15 @@ index 76eaec7..c61ec18 100644
  static unsigned long g_suppressed;
  
  unsigned long hle_d3d8_interp_suppressed(void) { return g_suppressed; }
-@@ -907,14 +907,22 @@ static int redraw(double a)
+@@ -907,18 +907,27 @@ static int redraw(double a)
      size_t off;
+     InterpCapture capture;
  
 +    LARGE_INTEGER now;
 +    QueryPerformanceCounter(&now);
+     capture_begin(&capture); /* guest N, before switching to the replay target */
 +    if (g_target && now.QuadPart < g_retry_after) {
++        capture_finish(&capture, a, 0);
 +        return 0;
 +    }
      if (!xbox_D3D8InterpBegin()) {
@@ -32,9 +35,11 @@ index 76eaec7..c61ec18 100644
 +        if (g_target) g_retry_after = now.QuadPart + g_qpf;
 +        else g_on = 0;
 +        g_frame_ok = g_idle_ok = 0;
+         capture_finish(&capture, a, 0);
          return 0;
      }
 +    g_retry_after = 0;
+     g_pair_trace = capture.requested && getenv("RECOMP_INTERP_DEBUG") != NULL;
      hle_d3d8_interp_rec = 0;                     /* what is drawn now is not kept */
      for (off = 0; off < cur->len; ) {
 @@ -1118,7 +1127,7 @@ void hle_d3d8_interp_finish(void)

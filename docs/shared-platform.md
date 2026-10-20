@@ -4,6 +4,35 @@ Ordinary features should be implemented once and built for both hosts. This
 requires common behavior plus small adapters for each operating system or GPU
 API. Git synchronization, a shared account and a backlog do not translate code.
 
+## Short captured-frame checks on Mac
+
+The shared `d3d8_replay` capture reader and Xbox renderer now build on native
+Mac Vulkan through a thin SDL window adapter. No guest execution or game files
+are required to build it or run its synthetic triangle/readback contract:
+
+```sh
+.venv/bin/python tools/test-rhi-mac.py --driver kosmickrisp
+```
+
+Use `--driver moltenvk` to check the other pinned driver. CI runs the asset-free
+Mac contract alongside the existing RHI checks. It verifies red-triangle and
+blue-clear pixels; a passing fixture does not establish mission fidelity.
+
+For an existing local capture, the bounded wrapper replays one frame in at most
+30 seconds using isolated runtime, display, input and save paths:
+
+```sh
+.venv/bin/python tools/replay-native-mac.py private/captures/native-mac/khallos-sky-probe.d3dcap --draws 3 --skip-draw 0
+```
+
+The example capture is local evidence, not a repository fixture. The output
+reuses `private/captures/native-mac/replay/frame-000.bmp`; retain selected frames
+before rerunning. Logs and source/capture/executable hashes are in
+`logs/native-frame-replay.log` and `.json`. `--draws` limits the draw prefix and
+`--skip-draw` omits a zero-based draw. These are diagnostic exclusions, not fixes.
+Captured game assets stay ignored and local. Windows retains its existing
+replay frontend; the new SDL adapter is only selected on Mac.
+
 ## Current boundaries
 
 | Area | Common implementation | Host-specific work |
@@ -11,11 +40,12 @@ API. Git synchronization, a shared account and a backlog do not translate code.
 | Launcher pages and theme | `Launcher.xaml`, `*Page.cs`, `PageTheme.cs`, `PageTheme.xaml`, `TabsTheme.xaml` | `Ui.cs` maps WPF/Avalonia events and controls; native templates/text rendering, dialogs, process lifetime and file opening |
 | Guest execution and gameplay fixes | Pinned runtime, complete patch stack, generated guest code | Build/compiler and process entry |
 | Menu, camera and display policy | `pc_display*`, `pc_menu_*`, `pc_cutscene.h`, `pc_ui_layout.h` | OS pointer events, window/resolution application |
+| Screen-copy rectangle policy | `graphics/screen_copy_rect.h` clips paired source/destination rectangles once | RHI shader draw or legacy GL blit |
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |
 | Renderer window/events | `RhiHost` callbacks and drawable-size contract | Default Win32 host and SDL/Cocoa host; worker threads use cached physical dimensions |
-| Xbox graphics semantics | `d3d8_*` device/resources/shaders/display in Windows and opt-in Mac Vulkan builds | SDL/Vulkan window and CoreText text bitmap; default Mac GL remains a separate fallback |
+| Xbox graphics semantics | `d3d8_*` device/resources/shaders/display in Windows and normal Mac Vulkan builds | SDL/Vulkan window and CoreText text bitmap; legacy Mac GL remains a compatibility fallback |
 
 The shared debug definition automatically exposes a new boolean setting in both
 dialogs and persistence, unless its required capability is unavailable. Runtime
@@ -26,8 +56,8 @@ offering an unsupported control. Existing keys and defaults remain compatible.
 The menu shader has one algorithmic body. Changing its reconstruction or glyph
 coverage rules changes both backends. Its language adapters must contain only
 syntax/resource operations, not a second set of coefficients or feature rules.
-Windows keeps the existing RHI renderer; Mac currently binds the same shader
-logic through its GL adapter. This is an incremental step, not full RHI parity.
+Windows and supported Macs compile this through the common RHI frontend. The
+legacy Mac GL adapter also consumes the shared algorithm.
 
 ## Adding a feature
 
@@ -60,7 +90,7 @@ checks. Keep the 60 Hz guest clock and up-to-120 interpolated host presentation
 target; preserve both display configs, controls, personal saves and the canonical
 Test Lab fixture. See root `AGENTS.md` for commands and cleanup requirements.
 
-## Remaining renderer consolidation
+## Common renderer and remaining exceptions
 
 The Windows frontend already targets the pinned runtime's `rhi.h`, which accepts
 HLSL shader source. The Mac GL renderer still implements much of the Xbox-facing
@@ -72,24 +102,31 @@ device, resources, state, shader compilation and display policy. `RhiHost` remov
 Win32 event pumping and window sizing from that frontend. The current GL renderer
 uses the same interface through `renderer_host_sdl.c`; callback registration is
 outside the render-thread lifetime and drawable sizes are physical pixels.
-The opt-in native Vulkan game now links this frontend; default GL remains available.
+The native Vulkan game links this frontend by default on macOS 26+; legacy GL
+remains available explicitly and for older hosts.
 
 The existing Vulkan backend now has an SDL surface adapter and uses the same
 loader as SDL. It compiles the PC HLSL through DXC and passes the shared menu
 pixel contract, swapchain readback and presentation on this Mac. Portability
 extensions are enabled only when advertised. This is the selected integration
-route. The opt-in native game connects its Xbox frontend and host services;
-normal builds still use GL while wider acceptance remains pending.
+route. The native game connects its Xbox frontend and host services. Normal
+builds now select it on hosts supported by the pinned SDK; GL is the older-host
+compatibility route. Missing/changed SDK files fail verification rather than
+silently selecting a different frontend.
 
 The asset-free probe uses `tools/test-rhi-mac.py` and the SDK pinned in
 `config/vulkan-sdk.json`. Setup verifies the publisher's archive checksum and
 installs only inside ignored `external/vulkan-sdk`; receipts verify the relevant
 installed files on later runs. Licenses and version manifests remain with it.
-The probe needs macOS 26+ with this SDK; this does not raise the current GL game's
-requirement. Run `--setup-sdk` once, then `--driver moltenvk` or
+The shared renderer/probe needs macOS 26+ with this SDK; the GL fallback's
+requirement is unchanged. Run `--setup-sdk` once, then `--driver moltenvk` or
 `--driver kosmickrisp`. See [Mac guide](macos.md#common-renderer-development-probe).
-The same `tests/rhi_menu_sampling.c` pixel test is registered for Windows D3D11
-WARP, without a swapchain there. Remote Windows/CI execution is still pending.
+The same `tests/rhi_menu_sampling.c` pixel test runs on Windows D3D11 WARP,
+without a swapchain there. Hosted Windows and Mac validation passed at
+`083e57c`; see [the CI results](../STATUS.md#shared-platform-ci-validation-2026-10-19).
+New cube/volume resource cases pass on hosted Mac Vulkan and Windows WARP at
+`e864831`. The deeper Xbox-factory cases also pass on both hosts at `f2c2261`
+in [run 39308234267](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39308234267).
 
 The game can now be built with `tools/build-native-mac.py --renderer vulkan`.
 Its SDL adapter creates the window and supplies physical dimensions/events;
@@ -98,7 +135,12 @@ combiner, screen-copy and display code is compiled directly into the Mac game.
 The bounded runner selects the pinned GPU environment from `BUILD.json` while
 preserving all isolated save/config paths. See the [developer commands](macos.md#opt-in-common-game-renderer).
 First-mission evidence is scoped in [STATUS](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
-This is an opt-in migration stage, not a replacement of the validated default.
+Normal `--renderer auto` builds now select this implementation on supported
+hosts. `--setup` installs its pinned SDK; an explicit `--renderer gl` build needs
+no SDK. `BUILD.json` records the requested/resolved renderer and Vulkan driver.
+New builds select MoltenVK; older manifests without a driver retain KosmicKrisp.
+Both launchers call `tools/vulkan_sdk.py` for the same verified driver mapping.
+Driver overrides do not change gameplay settings or the 60 Hz guest clock.
 
 Interpolation now uses common replay-owned depth/stencil per source subresource,
 with fresh history each replay and restoration of guest target bindings. The
@@ -109,8 +151,16 @@ only accepted API presentations, separating guest/interpolated/other kinds and
 retaining skipped/failed counts. Failed replay does not advance HLE present totals
 or feed stale timing into its scheduler. These are CPU API-call timings, not
 scanout measurements.
-Next, verify fullscreen and settings application,
-and compare targeted scenes before changing defaults.
+The common Vulkan game passes programmed native settings, resize and fullscreen
+acceptance. The completed native launcher is integrated with the renderer on
+`codex/shared-native-integration`; the command launcher also selects the verified
+GPU loader from the build manifest. Combined GL/Vulkan suites, native launcher
+lifecycle and a bounded first-mission check pass at `ad9cb0f`; see
+[integration evidence and limits](../STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
+Windows CI found a launcher cleanup casing regression, fixed in shared code
+at `c553f9a`; [hosted revalidation](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39311742707) passes on both hosts. The subsequent screen-copy contract and bounded Khallos
+check add acceptance coverage; defaults now select the common implementation
+on supported hosts, with the remaining visual gaps explicitly retained.
 Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared
@@ -134,9 +184,27 @@ integration work, tracked in the backlog.
 | `codex/shared-native-renderer` | `4d23a6d` | `2c63fbf`: common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
 | `codex/shared-interpolation-depth` | `2c63fbf` | `3e78f7c`: Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
+| `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; both hosted jobs and GPU contracts pass |
+| `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
+| `codex/shared-renderer-default` | `42462f0` | `a4261ee`: common frontend selected on SDK-supported hosts; both hosted jobs pass, GL fallback retained |
+| `codex/shared-screen-copy-contract` | `c553f9a` | Common rectangle clipping and production screen-copy GPU contract; local Mac and both hosted GPU contracts pass at `42462f0` |
+| `codex/shared-texture-contract` | `296f970` | `f2c2261`: both hosted lower-level and Xbox-factory cube/volume contracts pass |
 
-These are local branches; they have not been merged into main or verified on the
-other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.
+The complete ancestor stack through `a0c8a1a` is published on
+`codex/shared-present-metrics`, with `codex/shared-platform-validation` also
+published at `083e57c`, and `codex/shared-native-window-acceptance` published
+through `296f970`, and `codex/shared-texture-contract` published at `4419205`;
+the other milestone branch refs remain local.
+The native window acceptance work depends on these validation fixes. Nothing has been
+merged into main or verified on the other physical computer. Hosted CI results,
+measured scope and unavailable checks are recorded in `STATUS.md`.
+
+The normal shared-renderer build policy and all selected host suites pass at
+`a4261ee` in [run 39314716127](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39314716127).
+The complete integration stack is published on `codex/shared-renderer-default`.
+Merge/review that branch before expecting the main checkout on another device to
+use this architecture; no merge into main has been performed. New common code
+still needs both-host checks, and genuine adapter exceptions stay in the backlog.
 
 ## Launcher changes that reach both builds
 

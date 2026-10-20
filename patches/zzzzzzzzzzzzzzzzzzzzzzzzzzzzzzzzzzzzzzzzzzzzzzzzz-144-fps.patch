@@ -359,8 +359,10 @@ index 0298429..76eaec7 100644
      const InterpDraw *d = &cur->draws[i];
      const float *b = regs_of(cur, i);
      float out[INTERP_MAX_REGS * 4];
-@@ -929,5 +957,23 @@ static int redraw(double a)
+@@ -929,7 +957,25 @@ static int redraw(double a)
      hle_d3d8_interp_rec = rec;
+     g_pair_trace = 0;
+     capture_finish(&capture, a, presented);
 -    if(presented) {g_presents_total++;g_shown++;}
 +    if (presented) {
 +    {

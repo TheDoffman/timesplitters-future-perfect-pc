@@ -9,6 +9,9 @@ on:
       - tools/build-native-mac.py
       - tools/vulkan_sdk.py
       - tools/test-rhi-mac.py
+      - tools/frame_replay_contract.py
+      - tools/replay-native-mac.py
+      - tests/test_frame_replay.py
       - config/vulkan-sdk.json
       - tools/play-native-mac.py
       - tools/test-native-mac.py
@@ -26,6 +29,7 @@ on:
       - tools/apply-patches.py
       - tests/test_patch_updates.py
       - tests/fixtures/launcher-patch-stacks.json
+      - tests/fixtures/renderer-patch-stacks.json
       - tests/test_patch_tracking.py
       - tests/test_audio_timing.py
       - tests/native_compiler.py
@@ -102,10 +106,16 @@ on:
       - tests/rhi_menu_sampling.c
       - tests/rhi_host.c
       - tests/present_metrics.c
+      - tests/interpolation_capture.c
       - tests/interpolation_present.c
+      - tests/interpolation_scene.c
+      - tests/interpolation_draw_key.c
       - tests/vulkan_present_outcomes.h
       - tests/text_bitmap_macos.c
       - tests/rhi_depth_replay.h
+      - tests/rhi_texture_resources.h
+      - tests/rhi_xbox_textures.h
+      - tests/rhi_screen_copy.h
       - tests/interpolation_depth_device.h
       - tests/interpolation_depth_cache.c
       - tests/test_debug_settings_model.py
@@ -293,6 +303,7 @@ jobs:
             tests/test_fov_settings.py
             tests/test_menu_sampling.py
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
+            tests/test_frame_replay.py
             tests/test_debug_settings_model.py
             tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py
           )

@@ -45,7 +45,7 @@ int tsfp_native_renderer_test(void) {
         {56,56,0,1,0xFFFF0000,1,1}, {8,56,0,1,0xFFFF0000,0,1}
     };
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
-    int ok=native_test_renderer_host();
+    int ok=native_test_renderer_host(g.window,native_debug_release);
     ok &= native_test_debug_overlay(dev);
     ok &= native_test_screen_copy(dev);
     ok &= native_test_channel_clears(dev);
@@ -220,6 +220,7 @@ int tsfp_native_renderer_test(void) {
     ok &= pc_display_apply((PcDisplayMode){0,0});
     ok &= native_scene_w==64 && native_scene_h==64;
     ok &= tsfp_native_graphics_settings_test(g.window);
+    ok &= native_test_renderer_window_modes(g.window,dev);
     fprintf(stderr,"[native-feature-test] resolution apply/reject/restore and high-resolution offscreen/interpolation: %s\n",ok?"PASS":"FAIL");
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;

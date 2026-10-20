@@ -9,6 +9,8 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DRIVER = 'moltenvk'
+DRIVERS = {'moltenvk': 'MoltenVK_icd.json', 'kosmickrisp': 'libkosmickrisp_icd.json'}
 CRITICAL = (
     'VERSIONS.txt', 'macOS/include/dxc/dxcapi.h', 'macOS/include/dxc/WinAdapter.h',
     'macOS/lib/libdxcompiler.dylib', 'macOS/lib/libvulkan.1.dylib',
@@ -21,8 +23,13 @@ CRITICAL = (
 
 
 def sha256(path):
+    # The interactive .command entry point uses Apple's Python 3.9 as well as
+    # the pinned development interpreter; file_digest requires Python 3.11.
+    digest = hashlib.sha256()
     with Path(path).open('rb') as source:
-        return hashlib.file_digest(source, 'sha256').hexdigest()
+        for block in iter(lambda: source.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def pin(root=ROOT):
@@ -114,10 +121,33 @@ def setup(root=ROOT):
     return sdk
 
 
-def probe_environment(sdk, driver, root=ROOT):
-    drivers = {'moltenvk': 'MoltenVK_icd.json', 'kosmickrisp': 'libkosmickrisp_icd.json'}
-    if driver not in drivers:
+def select_driver(manifest, override=None):
+    """New builds record their driver; older manifests keep their tested default."""
+    driver = override if override is not None else manifest.get('vulkan_driver', 'kosmickrisp')
+    if not isinstance(driver, str) or driver not in DRIVERS:
+        raise ValueError('Unknown pinned Vulkan driver in build manifest or override')
+    return driver
+
+
+def launch_environment(root, manifest, override=None):
+    """Shared read-only launcher boundary; no preferences or manifest writes."""
+    driver = select_driver(manifest, override)
+    return gpu_environment(verify_install(root), driver)
+
+
+def gpu_environment(sdk, driver):
+    """Pinned loader settings only; no file creation or save/config routing."""
+    if driver not in DRIVERS:
         raise ValueError('Unknown pinned Vulkan driver')
+    return dict(DYLD_LIBRARY_PATH=str(sdk / 'lib'),
+                SDL_VULKAN_LIBRARY=str(sdk / 'lib/libvulkan.1.dylib'),
+                VK_DRIVER_FILES=str(sdk / 'share/vulkan/icd.d' / DRIVERS[driver]),
+                VK_LAYER_PATH=str(sdk / 'share/vulkan/explicit_layer.d'),
+                RECOMP_SHADER_CACHE='0')
+
+
+def probe_environment(sdk, driver, root=ROOT):
+    gpu = gpu_environment(sdk, driver)
     # No inherited user cache, driver override, game or config path can redirect this probe.
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(('RECOMP_', 'TSFP_', 'VK_', 'SDL_VULKAN', 'DYLD_'))}
@@ -125,12 +155,8 @@ def probe_environment(sdk, driver, root=ROOT):
     if isolated.is_symlink() or not isolated.resolve().is_relative_to((root / 'build/macos').resolve()):
         raise RuntimeError('Unexpected RHI probe cache/config path')
     isolated.mkdir(parents=True, exist_ok=True)
-    env.update(DYLD_LIBRARY_PATH=str(sdk / 'lib'),
-               SDL_VULKAN_LIBRARY=str(sdk / 'lib/libvulkan.1.dylib'),
-               VK_DRIVER_FILES=str(sdk / 'share/vulkan/icd.d' / drivers[driver]),
-               VK_LAYER_PATH=str(sdk / 'share/vulkan/explicit_layer.d'),
-               RECOMP_SHADER_CACHE='0',
-               XDG_CACHE_HOME=str(isolated / 'cache'),
+    env.update(gpu)
+    env.update(XDG_CACHE_HOME=str(isolated / 'cache'),
                XDG_CONFIG_HOME=str(isolated / 'config'), XDG_DATA_HOME=str(isolated / 'data'))
     return env
 
@@ -139,9 +165,7 @@ def with_probe_gpu_environment(existing, sdk, driver, root=ROOT):
     """Add pinned GPU loading without replacing a runner's isolated data paths."""
     env = {key: value for key, value in existing.items()
            if not key.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
-    for key, value in probe_environment(sdk, driver, root).items():
-        if key.startswith(('VK_', 'SDL_VULKAN', 'DYLD_')) or key=='RECOMP_SHADER_CACHE':
-            env[key]=value
+    env.update(gpu_environment(sdk, driver))
     return env
 
 

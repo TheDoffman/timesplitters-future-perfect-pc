@@ -30,8 +30,14 @@ historical STATUS records retain their original identifiers and dates.
 | Native build watermark | MAC-034 on native stack | MAC-051 |
 | Network bots | MAC-028, then MAC-033 on main | MAC-052 |
 | Discord Rich Presence | MAC-048 on main | MAC-053 |
-| Fractional presentation targets (#167) | MAC-049 on main | MAC-054 |
-| Frontend Controls Accept persistence | MAC-050 on main | MAC-055 |
+| Fractional presentation / monitor refresh | MAC-049 in PR #188 | MAC-054 |
+| Frontend Controls Accept persistence | MAC-050 in PR #188 | MAC-055 |
+
+`codex/renderer-main-integration` depends on the unmerged native renderer stack
+at `a0a89f5` and integrates main `4d5b3f0` (PR #188). The two new IDs above
+preserve the existing spirit and native-build entries. Historical PC validation
+records keep their original IDs. Combined-host acceptance is recorded separately
+in [STATUS](STATUS.md#renderer-and-pc-presentation-integration-2026-10-19).
 
 Main's MAC-032 menu backgrounds, MAC-033 transition fades, MAC-034 issue-form
 handoff and MAC-048 vehicle joins retain their IDs. MAC-026 remains proportions.
@@ -136,7 +142,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
 | MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
 | MAC-005 | Multiple texture stages and shader fidelity | In progress |
-| MAC-006 | Cube and volume texture resources | Queued |
+| MAC-006 | Cube and volume texture resources | In progress |
 | MAC-007 | Screen-copy effects and image surfaces | In progress |
 | MAC-008 | Scissor clipping | Verified |
 | MAC-009 | Intro and in-game movie playback | Queued |
@@ -144,7 +150,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
 | MAC-012 | Standalone Mac runtime distribution | Queued |
 | MAC-013 | System Link and Online multiplayer | Queued |
-| MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Awaiting validation |
+| MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Verified |
 | MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
@@ -755,6 +761,100 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Main promotion:** The user-authorized promotion combines `be37669` with
+  main's newer shared launcher at `c238ab3`, preserving both test sets. The
+  patched runtime hashes remain identical to the scene-tested renderer;
+  launcher checks pass independently. This does not close broader visual gaps.
+  [Promotion evidence](STATUS.md#renderer-promotion-onto-current-main-2026-10-19).
+
+- **Final bounded acceptance (2026-10-19):** Both hosted jobs pass at `c6b01d3`.
+  The integrated executable also passes a 115.17-second opening-mission route:
+  six reviewed images retain canyon geometry, characters, weapon/HUD and
+  fire/smoke after movement/turns. The user reports the same Khallos sky on PC;
+  no additional Mac-only sky correction is justified. This completes the short
+  renderer goal, while this broader entry remains in progress. Windows gameplay,
+  exact original-console fidelity and all-scenes coverage are unverified.
+  [Final evidence and scope audit](STATUS.md#shared-renderer-final-bounded-acceptance-2026-10-19).
+
+- **Khallos PC comparison (2026-10-19):** The user reports the same muted
+  grey/stretched sky at the starting train stairs on PC. No PC revision or
+  matched capture was provided; this is user-reported appearance evidence.
+  Together with the source/pixel investigation, it supports preserving the
+  shared sky and train motion effect. Exact original-console fidelity remains
+  unverified; no additional Mac-only sky change is justified by these checks.
+  [Evidence](STATUS.md#khallos-pc-appearance-comparison-2026-10-19).
+- **Integrated-build acceptance (2026-10-19):** The documentation branch
+  `codex/integrated-renderer-acceptance` depends on unmerged `9940dba`.
+  Separate 15-second Khallos windows measured 60.001 and 119.998 successful
+  API presents/s (120 mode: 59.999 guest + 59.999 interpolated), with no
+  interval above 33.33 ms. These exclude loading/capture readback and do not
+  certify display scanout or campaign stability. Reviewed frames retain the
+  sky/train/scenery; intentional-motion versus matched-reference fidelity
+  remains open. A 155-second validation-enabled Mansion run now shows actual
+  spirits, red eyes and trails alongside hall geometry/fire in paired images.
+  MAC-049 retains its remaining acceptance checks. No new runtime fix or
+  Windows validation is claimed.
+  [Evidence](STATUS.md#integrated-renderer-pacing-and-spirit-observation-2026-10-19).
+- **Representative common-renderer scenes (2026-10-19):** The documentation
+  commit on `codex/shared-scene-acceptance` depends on `0ded9e0`; the unchanged
+  runtime is `5271401`. Short native MoltenVK Mansion exterior and entrance-hall
+  runs retain geometry, foliage/rain, lighting, characters and chandelier/fire
+  in paired guest/intermediate captures after synthetic turning/movement.
+  A temporary affine-off control reproduced the guest image to within one
+  channel unit at one pixel, with two other pairs exactly equal. No missing-rain
+  correction was justified and no runtime/settings change was made. All three
+  runs exited normally without validation errors. Original-Xbox fidelity,
+  spirits and Windows runtime comparison remain open; this does not close the
+  entry or establish a new FPS result.
+  [Evidence](STATUS.md#shared-renderer-mansion-scene-acceptance-2026-10-19).
+- **Shared paired-frame evidence (2026-10-19, commit carrying this update):**
+  `codex/shared-interpolation-capture` depends on `codex/mac-moltenvk-default`
+  at `65330e8` and its unmerged renderer stack. The common interpolation
+  recorder now owns one-shot guest/intermediate capture on both host paths;
+  legacy GL no longer carries a separate capture implementation. A receipt
+  identifies the guest frame, actual blend and readback/present outcomes; the
+  Mac runner rejects stale, incomplete and malformed evidence. Short Mac
+  Vulkan Khallos and opening-gameplay pairs passed without validation errors.
+  Windows and legacy GL live capture remain unrun. Sky fidelity is still open:
+  the new comparison tool is not a sky correction.
+  Sources: `patches/*-shared-interpolation-capture.patch`,
+  `tools/test-native-mac.py`, `tests/interpolation_capture.c`;
+  [evidence](STATUS.md#shared-guest-and-intermediate-frame-evidence-2026-10-19).
+- **Shared scene interpolation (2026-10-19, commit carrying this update):**
+  `codex/shared-scene-interpolation` depends on `codex/khallos-sky` at `683026d`
+  and its unmerged shared-renderer base. Both entry points now select the same
+  title transform registers. The shared HLE path recognizes draws that use a
+  precomposed projection/model-view matrix, recovers and interpolates its
+  affine transform, and reapplies the projection instead of presenting the
+  unchanged matrix. Portable production-code tests cover motion, FOV changes,
+  unrelated stale registers, endpoints, HUD/unmatched draws and camera cuts.
+  Short Mac Khallos captures retain scene geometry. Both drivers passed RHI and
+  replay contracts; Windows runtime validation remains pending. A 15-second
+  MoltenVK sample measured 119.802 host API presents/s, but a separate gameplay
+  validation found portability swizzle errors. Fix feature negotiation and add
+  format readback coverage before changing the default. Shared one-shot paired
+  captures also remain missing. This does not fix the static sky or certify
+  sustained 120 FPS. [Evidence](STATUS.md#shared-scene-interpolation-and-khallos-pacing-2026-10-19).
+- **Portability swizzle repair (2026-10-19, commit carrying this update):**
+  `codex/vulkan-portability-swizzle` depends on `f1f4236`. The common Vulkan
+  device now queries/enables the optional image-view swizzle feature required
+  by the existing A8/BGRX views. Shared resource tests cover those formats and
+  ordinary-format controls; both Mac drivers pass, and a 95-second Khallos
+  validation run reports no validation errors. Windows execution remains
+  pending. This fixes device feature negotiation, not the static sky.
+  Sources: `patches/*-vulkan-portability-swizzle.patch`,
+  `tests/rhi_texture_resources.h`; [evidence](STATUS.md#vulkan-portability-texture-swizzles-2026-10-19).
+- **Khallos investigation (2026-10-19):** The commit carrying this update on
+  `codex/khallos-sky`, based on unmerged `codex/shared-renderer-default` at
+  `d30b652`, adds the Mac SDL adapter for the shared frame-replay tool and a
+  one-frame GPU readback contract. The dark/stretched Khallos sky reproduces
+  at 60 guest presents with no interpolation and in isolated sky draws on
+  both pinned Vulkan drivers. Sky root cause and visual correction remain
+  open; Windows scene comparison is pending. Do not mark this entry verified
+  from the new replay contract. Next acceptance: reproduce the cause in a
+  shared regression, review a corrected matched sky capture, then check a
+  short control scene on each available host.
+  [Evidence and limits](STATUS.md#khallos-sky-isolation-and-native-frame-replay-2026-10-19).
 - **PC behavior:** The Windows renderer evaluates multiple texture inputs and Xbox texture/combiner modes for layered materials and effects.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; native counterparts `src/native/gl_fragment.inc`, `src/native/gl_vertex.inc`, `src/native/gl_bridge.inc`.
 - **PC validation:** Windows shader implementation exists; scene-by-scene material fidelity is not established by this audit.
@@ -808,6 +908,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   services next. Missing modes and scene acceptance remain open, and Windows
   RHI/WARP execution is pending. [Evidence](STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
 
+- **Normal shared builds (2026-10-19, commit carrying this entry):**
+  `codex/shared-renderer-default` depends on `42462f0`. Normal Mac builds now
+  choose the common Xbox/Vulkan frontend where the pinned SDK supports the OS
+  (currently macOS 26+). Older hosts and explicit `--renderer gl` keep the legacy
+  adapter; its missing features remain compatibility exceptions. SDK failure
+  stops before patching/generation, and only `--setup` installs the pinned SDK.
+  Local normal build, full native suite, launcher check, 101 portable checks
+  and bounded startup pass. Both hosted jobs pass at `a4261ee` in run
+  39314716127, including Mac Vulkan/Windows WARP GPU contracts. Full visual
+  parity, Khallos sky and movie support remain open.
+  [Evidence](STATUS.md#common-renderer-selected-by-normal-mac-builds-2026-10-19).
+
 - **Common native frontend (2026-10-19):** The commit carrying this entry on
   `codex/shared-native-renderer` depends on `4d23a6d`. Opt-in Vulkan builds compile
   the same PC Xbox device, resources, shaders, combiners and display code. SDL
@@ -839,9 +951,44 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   source/fault contracts in CI; its execution and stable-120 gameplay remain
   pending. [Evidence](STATUS.md#shared-presentation-outcomes-and-timing-2026-10-19).
 
+- **Hosted validation setup (2026-10-19):** The shared stack through `a0c8a1a`
+  is published. Mac CI passes its source contracts but cannot yet reach GPU
+  validation because the SDK CDN rejects urllib's default client. The dependent
+  `codex/shared-platform-validation` change identifies the downloader and keeps
+  the existing archive/version/checksum pins. Local regression checks pass;
+  Windows subsequently passed 195 runtime checks, including the common renderer
+  compile checks and WARP GPU contract, with two test-harness failures. Native
+  path comparison and explicit interpolation fixture hooks fix those failures;
+  the published rerun at `083e57c` passes Mac source/release checks and the actual
+  hosted MoltenVK RHI GPU contract. The Windows rerun also passes its complete
+  workflow, including 198 runtime checks and WARP GPU validation. This does not close
+  renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
+
+- **Common settings acceptance (2026-10-19):**
+  `codex/shared-native-window-acceptance` depends on `37b4af9`. The existing
+  Cocoa graphics and SDL host fixtures now run against both native renderers.
+  The common Vulkan device passes actual resolution/FOV Save, Cancel and
+  failed-save rollback, then renders/readbacks/presents successfully. Automated
+  resize/fullscreen/restore presentation also passes on Vulkan. GL repetition
+  is pending because concurrent launcher work reconfigured the shared build
+  directory; its source/output were preserved. Physical input and broader scene
+  acceptance remain pending.
+  [Evidence](STATUS.md#common-renderer-mac-settings-acceptance-2026-10-19).
+
+- **Khallos motion-blur investigation (2026-10-19):** The documentation commit
+  on `codex/khallos-sky-replay` depends on shared paired capture `5271401`.
+  Xbox reference screenshots also show muted sky and moving-train streaks;
+  preserve intentional effects rather than treating darkness/streaking alone
+  as a defect. Three controlled before/after-overlay pairs show no sky changes
+  outside the overlay rows. The temporary diagnostic was removed and the
+  production Mac build restored successfully. A matched reference is still
+  needed to distinguish replay errors from intentional blur; no sky fix or
+  Windows scene parity is claimed. Status remains In progress.
+  [Evidence](STATUS.md#khallos-motion-blur-reference-and-overlay-isolation-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
-- **Status:** Queued
+- **Status:** In progress
 - **PC behavior:** Windows has resource factories and sampling paths for cube/volume textures.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_device.c`, `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; `src/native/renderer_gl.c`, `src/native/gl_bridge.inc`.
 - **PC validation:** Factories are implemented on the Windows path; usage and fidelity in particular game scenes need targeted evidence.
@@ -850,10 +997,44 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac acceptance checks:** Synthetic face/slice/mip checks and resource release pass on the GPU; validate a game scene if one uses these resources. Unsupported formats must fail explicitly.
 - **Mac implementation and evidence:** Remaining work pending. Existing coverage:
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Shared acceptance contract (2026-10-19):** The commit carrying this entry on
+  `codex/shared-texture-contract`, dependent on `296f970`, adds one asset-free
+  RHI GPU fixture for Windows and Mac. It checks cube faces, volume voxels,
+  mip chains, pitched uploads, isolated updates, restricted views, retain/release
+  and unknown-format rejection using common shaders/expectations. Local syntax
+  and CI/backlog checks pass. Both hosted jobs and the Mac Vulkan/Windows WARP
+  GPU contracts pass at `e864831`. The Xbox factories and title scenes remain separate
+  acceptance work.
+  [Evidence](STATUS.md#shared-cube-and-volume-resource-contract-2026-10-19).
+- **Xbox factory follow-up (`4419205`, same published branch):** Adds the production
+  resource implementation to both GPU fixtures. It covers automatic mip counts,
+  linear/swizzled Lock/Unlock uploads, face/voxel sampling and child lifetime
+  after parent release. Both hosted Mac Vulkan and Windows WARP execute these
+  cases successfully at `f2c2261` (run 39308234267).
+  Palette/compressed formats, other texture modes and actual title usage are
+  outside this fixture and remain unverified.
+- **Integrated native acceptance:** `3020167` combines the renderer and completed
+  launcher sources. The real Xbox factory fixture passes locally through
+  MoltenVK on Apple M5 Pro, including linear/swizzled uploads and child lifetime.
+  Other formats and scene usage remain open.
+  [Evidence](STATUS.md#shared-native-runtime-and-launcher-integration-2026-10-19).
 
 ### MAC-007 — Screen-copy effects and image surfaces
 
 - **Status:** In progress
+- **Shared clipping/acceptance (2026-10-19, commit carrying this entry):**
+  `codex/shared-screen-copy-contract`, based on unmerged `c553f9a`, replaces
+  separate rectangle clipping with `src/graphics/screen_copy_rect.h` for PC,
+  common Vulkan and native GL. A reproduced negative-destination copy selected
+  incorrect pixels in the common renderer; paired source/destination clipping
+  fixes it and safely rejects empty/extreme rectangles. The real production
+  copy/shader/resource fixture is registered for both hosted GPU backends.
+  Local MoltenVK contract and complete GL tests pass; hosted Windows WARP and
+  Mac Vulkan contracts pass at `42462f0` (run 39313104097). A bounded Khallos
+  run retains visible exterior/weapon but stretched sky; matched title-effect
+  scene fidelity remains pending.
+  [Evidence](STATUS.md#shared-screen-copy-clipping-and-gpu-contract-2026-10-19).
+
 - **PC behavior:** Windows can copy the full backbuffer or a rectangle into a texture for later draws.
 - **Issue #21 channel-clear follow-up (this revision):** The lobby uses destination
   alpha as a temporary text mask. `src/pc_clear_rhi.inc` and
@@ -1050,6 +1231,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
+- **Renderer integration CI (2026-10-19, PR #191):** The current common stack
+  passes hosted macOS patch transitions, runtime regressions, GPU contracts and
+  launcher checks at `9940dba`. Windows exposed a mixed-line-ending assumption
+  in the new historical-stack test. The test now appends edits in the existing
+  file style and exercises both Git conversion settings; four local cases pass.
+  This is a shared test correction, with no runtime adapter change. Windows and macOS
+  reruns now pass at `c6b01d3`; prior historical unverified notes below are superseded only
+  for the native scope recorded here.
+  [Evidence](STATUS.md#renderer-integration-hosted-ci-and-line-ending-fixture-2026-10-19).
+
 - **CI efficiency follow-up (branch `ci/faster-runtime-checks`):**
   `.github/workflows/runtime-patches.yml` and `tools/ci-runtime-scope.py` select
   affected suites for PRs and main pushes; manual, patch/pin and workflow changes
@@ -1059,11 +1250,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   or fixture construction. `tools/apply-patches.py` eliminates a redundant dry-run
   process per staged patch, preserving full-stack validation before runtime
   writes; shared multi-file conflict/rollback tests cover this change.
-  macOS execution of this revision remains unverified.
+  The integrated revision now passes these suites on hosted macOS and Windows.
   Acceptance: full transition suite and affected scope tests pass on both hosted
   platforms. See [CI validation](STATUS.md#runtime-ci-efficiency).
 
-- **Status:** Awaiting validation
+- **Status:** Verified
 - **PC behavior:** Release preparation accepts the complete shared patch stack
   over fresh sources or an existing Windows watermark build, without losing
   unrelated runtime edits. Conflicting code still fails before runtime writes.
@@ -1094,8 +1285,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Include texture-to-main-to-texture transitions and unrelated-edit preservation.
   Cross-platform CI now covers source-only transitions, record corruption,
   changed/removed patches and rollback. Native Mac build validation is separate.
-- **Mac implementation and evidence:** Shared fix present locally; macOS checks
-  and other-device synchronization remain unverified.
+- **Mac implementation and evidence:** The integrated shared loader passes the
+  complete transition suite on both hosted platforms at `d0edd6d`, including
+  historical stacks, both Git line-ending modes, unrelated edits and rollback.
+  This verifies the patch-loader scope. Separate interpolation harness failures
+  are tracked below; Windows gameplay and the user's other checkout remain
+  unverified.
+
+- **Hosted integration follow-up:** `d0edd6d` passes macOS patch/runtime/GPU/launcher
+  checks. Windows patch transitions pass, but three isolated interpolation tests
+  need a missing config-lookup stub. The test-only correction passes all 20 local
+  renderer-host cases; final Windows and macOS CI both pass at `c6b01d3`. See
+  [harness linkage evidence](STATUS.md#interpolation-harness-windows-linkage-2026-10-19).
 
 ### MAC-015 — Release test privileges and disposable cleanup
 
@@ -1306,6 +1507,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   expand/collapse and selector interaction, launcher checks and packaged
   repair/restart passed; see [STATUS](STATUS.md#native-launcher-visual-spacing-follow-up-2026-10-19).
   Windows source is unchanged; live Windows comparison remains unverified.
+
+- **Integrated regression fix (2026-10-19, commit carrying this entry):** Windows
+  CI at `ad9cb0f` exposed launcher deletion during game cleanup when a legacy
+  manifest uses different filename casing. Shared `Core.PreserveGameFile` now
+  restores case-insensitive protection while retaining native app resources.
+  The existing Windows reproduction and a new native transaction/rollback
+  check cover the fix; both jobs pass at `c553f9a` in run 39311742707, including
+  104 Windows launcher regressions and 17 native groups. Integrated
+  native game launch/quit and synthetic crash/report checks also pass.
+  [Evidence](STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
+
 - **Parity completion (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   Native Discord editing/IPC, native fatal/hang report open/export, shared rich
   Markdown, matching release/version/maintenance page structure, safe successful
@@ -2034,6 +2246,22 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-049 — Spirit skull and eye rendering (#17)
 
 - **Status:** Awaiting validation
+- **Integrated native observation (2026-10-19):** Unchanged runtime `9940dba`
+  completed a 155-second isolated MoltenVK run with validation enabled and no
+  reported GPU errors. Five guest/intermediate pairs were reviewed; the later
+  hall frames show skull geometry, glowing red eyes and dark trailing shapes.
+  The closest skull in that run is partly off-screen. A separate 145-second
+  follow-up retains unclipped distant spirits and a closer side view in three
+  reviewed pairs, without validation errors. This establishes visibility in
+  this encounter; controlled wall occlusion, complete multi-angle face fidelity,
+  interpreted-vertex behavior and other encounters remain pending.
+  [Evidence](STATUS.md#integrated-renderer-pacing-and-spirit-observation-2026-10-19).
+- **Native check (2026-10-19):** Shared wrappers are present in the verified
+  `5271401` Mac Vulkan build, and the spirit/cache-restoration tests pass within
+  a 25-check focused suite. A 120-second Mansion run reached the entrance hall
+  and reviewed its characters, chandelier and fire, but the retained frames
+  did not show spirits. Do not count this as skull/eye/trail or occlusion
+  acceptance. [Scope and evidence](STATUS.md#shared-renderer-mansion-scene-acceptance-2026-10-19).
 - **PC behavior:** The US spirit renderer uses clockwise culling for rigid
   skull nodes while keeping skinned trails two sided. Its two eye-billboard
   batches use unbiased clip-space positions and no fog, preserving their
@@ -2060,6 +2288,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-050 — Restore a reproducible native build from current main
 
 - **Status:** Verified
+- **Driver selection follow-up (2026-10-19, commit carrying this update):**
+  `codex/mac-moltenvk-default` depends on the unmerged renderer/interpolation
+  stack through `cc364fd`. New builds record MoltenVK in `BUILD.json`; both
+  launchers and the isolated runner share `tools/vulkan_sdk.py` selection.
+  Older manifests retain KosmicKrisp and explicit overrides remain available.
+  `tools/launcher/macos/NativeHost.cs` uses a single bounded helper pipe after
+  repeated checks exposed a dual-pipe ARM64 runtime crash. Native build/input/
+  settings checks, 114 Python checks, 18 launcher groups, 30 fresh prerequisite
+  checks and bounded launcher start/quit passed. Windows was not run for these
+  Mac adapter changes. The default-path Khallos sample measured 59.995/119.995
+  host API presents/s at 60/120; this is not campaign-wide FPS certification or
+  a static sky correction. [Evidence](STATUS.md#manifest-selected-moltenvk-and-short-pacing-checks-2026-10-19).
 - **PC behavior:** The supported build regenerates from the complete pinned
   patch stack and supplies generated build identity to the shared debug code.
   Current project rules permit focused branches on either platform.
@@ -2309,6 +2549,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   A shared UI regression exercises preservation on both hosts. Local Mac build,
   18 host groups and eight shared UI groups pass. This validates launcher behavior,
   not native 144 FPS gameplay. See [STATUS](STATUS.md#api-free-launcher-integration-2026-10-19).
+
+- **Integration boundary (2026-10-19, `codex/renderer-main-integration`):** The PC timing patches
+  now apply after the shared renderer series and reuse its replay-depth helper
+  and successful-present accounting. CPU prediction cannot consume a capture
+  request for a complete guest/intermediate pair. Native builds retain 1x/2x
+  rendering with a 60 Hz guest clock; the requested Mac maximum remains 120.
+  The launcher preserves saved PC `frame_target`/`refresh_rate` values during
+  unrelated native edits without advertising their activation. Windows monitor
+  enumeration stays in its host adapter; Mac reports desktop-only/unknown until
+  a real native monitor adapter is implemented. No 144 FPS Mac mode is added.
+  See [integration validation](STATUS.md#renderer-and-pc-presentation-integration-2026-10-19).
 - **PC behavior:** Experimental fixed host clocks for 120/144 FPS, independent
   of the 60 Hz console clock. TSFP's c64–c75 camera/object matrices are now
   configured for Windows replay; projecting alone did not interpolate motion.
