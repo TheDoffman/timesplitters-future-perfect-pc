@@ -14,6 +14,23 @@ static void ui_place(int placement,uint32_t tag)
     host_SetTwoDPlacement(placement,tag);
     ui_placement=placement;ui_tag=tag;
 }
+/* US sub_000C8120 composes a camera before its optional texture copy.
+ * Camera flag 8 identifies a texture feed; flag 0x400000 renders it into a
+ * corner of the back buffer and copies that corner instead of binding an RT.
+ * Such a pass still has g_cur_rt == NULL. Its logo, scanlines and alpha mask
+ * are texture pixels, not HUD widgets: keep every layer in guest coordinates.
+ * Restore the enclosing placement after flushing the final feed batch. */
+void pc_display_camera_feed(void (*original)(void))
+{
+    uint32_t camera=WORD_AT(0x007B0CC0u);
+    int old=ui_placement;uint32_t old_tag=ui_tag;
+    int feed=guest_writable(camera,0x224u) &&
+        (WORD_AT(camera+0x21Cu)&9u)==9u;
+    if(feed)ui_place(1,0x000C8120u);
+    original();
+    if(feed)ui_place(old,old_tag);
+}
+
 void pc_display_radar_begin(void)
 {
     /* The radar routine first draws world target markers. Only its later

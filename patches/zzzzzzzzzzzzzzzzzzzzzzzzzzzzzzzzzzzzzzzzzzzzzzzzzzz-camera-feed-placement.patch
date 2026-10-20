@@ -1,0 +1,17 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1386,3 +1386,14 @@
+     fflush(stderr);
+ }
+ 
++
++/* Texture cameras share their guest-pixel layout with their copied mask. */
++extern void sub_000C8120_gen(void);
++void sub_000C8120(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_camera_feed(sub_000C8120_gen);
++#else
++    sub_000C8120_gen();
++#endif
++}

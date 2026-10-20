@@ -184,6 +184,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-053 | Discord Rich Presence (issue #63) | Awaiting validation |
 | MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Queued |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
+| MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -2406,6 +2407,26 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   signed bytes. Validate save-error/retry UI and multiple loaded profiles;
   ensure no draft is committed by Cancel. Preserve personal saves and configs.
 - **PC evidence:** See the Controls Accept save follow-up in STATUS.md.
+
+### MAC-056 — Texture-camera composition alignment (issue #49)
+
+- **Status:** Awaiting validation
+- **Behavior:** Camera feeds keep their logo, mask and scanlines aligned with
+  the scene on widescreen displays, including the U-Genix opening wall monitor.
+  World-camera and ordinary HUD placement remain unchanged.
+- **Source:** Uncommitted on `49-u-genix-screen-bug`: shared
+  `src/pc_display_ui.inc`, `src/pc_display_menu.h`, additive
+  `camera-feed-placement.patch`, `tests/camera_feed.c` and
+  `tests/test_camera_feed.py`.
+- **Existing Mac support:** The wrapper is enabled by `TSFP_NATIVE_DISPLAY`
+  as well as PC controls. Existing native GL and common RHI adapters implement
+  STRETCH placement; no new OS adapter is required. Portable regressions are
+  registered in both host jobs. Actual Mac rendering has not been validated.
+- **Acceptance:** Build on Mac and run the camera-feed placement regression.
+  In an isolated U-Genix mission, inspect Crow's opening monitor message and the
+  following U logo at 4:3 and widescreen ratios. Confirm no left black strip,
+  clipped picture or shifted mask, then check normal HUD and terminal cameras.
+- **PC evidence:** See the issue #49 section in STATUS.md.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 
