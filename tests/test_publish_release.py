@@ -462,3 +462,40 @@ def test_changed_asset_between_prepare_and_publish_is_blocked(publisher):
     with pytest.raises(ValueError, match='changed before upload'):
         publisher.publish()
     assert not publication_calls(publisher)
+
+
+def test_large_texture_pr_uses_verified_local_merge_diff(publisher, monkeypatch):
+    publisher.preflight()
+    old_git = publisher.git
+    def git(*args):
+        if args[0] == 'diff':
+            assert args == ('diff', '--no-renames', '--name-only', '-z', HEAD+'^1', HEAD)
+            return 'assets/textures/0123456789abcdef.dds\0'
+        return old_git(*args)
+    def gh(*args, **kwargs):
+        if '--paginate' in args:
+            return json.dumps([[{'filename': 'docs/'+str(i)} for i in range(3000)]])
+        return json.dumps(dict(merged_at='2026-10-20', merge_commit_sha=HEAD,
+                               title='Texture pack', changed_files=3040))
+    monkeypatch.setattr(publisher, 'git', git)
+    monkeypatch.setattr(publisher, 'gh', gh)
+    assert '[#12]' in publisher.game_pr_notes('https://github.com/owner/repo/pull/12')
+
+
+@pytest.mark.parametrize('version,draft,missing,passes', [
+    ('1.2.21', False, False, False), ('1.2.22', True, False, False),
+    ('1.2.22', False, True, False), ('1.2.22', False, False, True)])
+def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypatch, version, draft, missing, passes):
+    publisher.preflight()
+    publisher.output.mkdir(parents=True, exist_ok=True)
+    publisher.metadata.write_text(json.dumps({'textures': {'texture_count': 1}}))
+    release = {'tag_name': 'launcher-v'+version, 'draft': draft, 'prerelease': False,
+               'published_at': '2026-10-20', 'assets': [
+                   {'name': f'TimeSplitters-Launcher-v{version}-{platform}.zip', 'state': 'uploaded', 'size': 1}
+                   for platform in (['windows-x64'] if missing else ['windows-x64', 'macos-arm64'])]}
+    monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(release))
+    if passes:
+        publisher.require_texture_launcher()
+    else:
+        with pytest.raises(ValueError, match='launcher'):
+            publisher.require_texture_launcher()

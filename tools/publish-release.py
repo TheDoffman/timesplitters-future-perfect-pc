@@ -71,7 +71,7 @@ def digest(path):
 
 def game_release_path(path):
     """Game source/runtime inputs, excluding launcher and release housekeeping."""
-    return (path.startswith(('src/', 'patches/', 'config/'))
+    return (path.startswith(('src/', 'patches/', 'config/', 'assets/textures/'))
             or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt',
                         'tools/build-game-icon.ps1', 'tools/launcher/IconBuilder.cs',
                         'tools/launcher/GameMonogram.cs')
@@ -245,7 +245,16 @@ class Publisher:
                 continue
             pages = json.loads(self.gh('api', '--paginate', '--slurp', endpoint+'/files?per_page=100'))
             files = [item for page in pages for item in page]
-            if len(files) != pr['changed_files']:
+            if pr['changed_files'] > 3000 and len(files) == 3000:
+                # GitHub caps this endpoint at 3,000 files. The merge commit was
+                # already checked against the release range above; use its full
+                # first-parent diff, including both sides of renamed paths.
+                merge = pr['merge_commit_sha']
+                names = self.git('diff', '--no-renames', '--name-only', '-z', merge+'^1', merge)
+                files = [{'filename': name} for name in names.rstrip('\0').split('\0') if name]
+                if not files:
+                    raise ValueError(f'Empty local changed-file list for PR #{number}')
+            elif len(files) != pr['changed_files']:
                 raise ValueError(f'Incomplete changed-file list for PR #{number}; cannot classify release notes safely.')
             if not any(game_release_path(item[key]) for item in files
                        for key in ('filename', 'previous_filename') if key in item):
@@ -406,12 +415,31 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             self.recycle(self.stage)
         print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
 
+    def require_texture_launcher(self):
+        if not json.loads(self.metadata.read_text()).get('textures'):
+            return
+        latest = json.loads(self.gh('api', f'repos/{self.repo}/releases/latest'))
+        tag = latest.get('tag_name', '')
+        version = tag.removeprefix('launcher-v')
+        if (not tag.startswith('launcher-v') or not SEMVER.fullmatch(version)
+                or latest.get('draft') or latest.get('prerelease')
+                or not latest.get('published_at')
+                or version_key(version) < version_key('1.2.22')):
+            raise ValueError('Publish a stable launcher 1.2.22 or newer before a bundled-texture game release.')
+        assets = {a['name'] for a in latest.get('assets', [])
+                  if a.get('state') == 'uploaded' and a.get('size', 0) > 0}
+        required = {f'TimeSplitters-Launcher-v{version}-{platform}.zip'
+                    for platform in ('windows-x64', 'macos-arm64')}
+        if not required <= assets:
+            raise ValueError('The compatible launcher release must contain both Windows and Mac packages.')
+
     def publish(self, draft=False):
         self.validate_remote()
         plan = json.loads(self.plan.read_text())
         for path in (self.archive, self.checksum, self.metadata):
             if digest(path) != plan['assets'][path.name]:
                 raise ValueError('Prepared assets changed before upload')
+        self.require_texture_launcher()
         # Pin the tag before creating the draft. GitHub rejects a concurrent
         # attempt to create the same ref, so an existing tag is never moved.
         existing = self.git('ls-remote', 'origin', 'refs/tags/'+self.tag)
