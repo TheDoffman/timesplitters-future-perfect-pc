@@ -12927,3 +12927,38 @@ The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
 config/texture-pack.json records the exact published files. Publication used one
 bounded part at a time and left no ZIP files in build/texture-publication.
 The launcher installer remains source-only until its PR and a launcher release.
+
+## Launcher native frame-rate selector (2026-10-20)
+
+Source: `feature/launcher-native-frame-rate`, based on main `a0deeea`; the commit
+carrying this entry adds launcher integration only. Runtime contract inspected
+in `feature/native-144-fps` at `338dd62` plus that chat's in-progress
+`src/pc_frame_rate_settings.h`: `TSFP_NATIVE_FPS` and `TSFP_FRAME_RATE_V1` sidecar
+values 0/120/144. The runtime branch remains separate and under development.
+
+The shared Windows/Mac graphics page offers 60 FPS (Original), 120 FPS (Beta),
+and 144 FPS (Beta). Original timing is the default; explicit zero prevents a
+stale runtime native_fps value from enabling high refresh. The preference is
+shared with the new game menu, backed up, protected against concurrent writes,
+and included in multi-file rollback. The UI states compatible-build/restart
+requirements and the known Arcade movement/firing limitation. No game build,
+personal settings, saves, or active game session was changed.
+
+Validation on Windows x64 with the installed .NET Framework 4.8 compiler:
+- Launcher/bootstrap/test executable compilation passed. All 12 shared UI groups
+  passed, including three new native frame-rate behavioral groups. Existing
+  updater, download, version, startup, release-news and texture tests passed.
+- 35 settings checks, crash reporting, 14 unfinished-session checks, and 20
+  maintenance checks passed. The first settings run hit the Windows path-length
+  limit in an existing synthetic crash-log fixture under the deeply nested build
+  folder. The identical compiled test executable passed from the shorter
+  `build/lfr-tests` location; no production logic or assertion was weakened.
+- Three portable shared-theme and nine compatibility-policy tests passed.
+- Inspected a 900×720 WPF graphics-page render scrolled to Frame rate: selector,
+  beta/restart guidance, performance advice and Save/Cancel remain readable.
+  Preview and logs are under the ignored launcher worktree build directory.
+- Mac native build, UI execution and prerequisite checks were not run: this host
+  is Windows and lacks the pinned Mac SDK/runtime. Shared C# logic/tests are wired
+  into the existing dual-host workflow, but that is not Mac execution evidence.
+- Gameplay at 120/144 FPS remains the separate runtime task's responsibility.
+  No release was published and no other device's checkout was modified.

@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
         public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/play-native-mac.py")); }
         public static string GamePath(string root) { return Checkout(root)?"build/macos/futureperfect_recomp":GameBinary; }
         public static string ManifestPath(string root) { return Checkout(root)?"build/macos/BUILD.json":"BUILD.json"; }
-        public static string[] Settings(string root) { return Checkout(root)?new[]{"config/pc-controls.json","config/pc-display.ini","private/native-settings/runtime.conf","config/pc-discord.ini"}:new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini"}; }
+        public static string[] Settings(string root) { return Checkout(root)?new[]{"config/pc-controls.json","config/pc-display.ini","private/native-settings/runtime.conf","config/pc-discord.ini","config/pc-frame-rate.ini"}:new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini"}; }
         public static string Data(string root) { return Checkout(root)?"private/game":"Data"; }
         public static string Saves(string root) { return Checkout(root)?"private/saves":"Saves"; }
         public static string Textures(string root) { return Checkout(root)?"private/texture-remaster/pack":"Textures"; }
@@ -100,7 +100,7 @@ namespace TimeSplitters.Launcher
         public static bool Checkout(string root) { return false; }
         public static string GamePath(string root) { return GameBinary; }
         public static string ManifestPath(string root) { return "BUILD.json"; }
-        public static string[] Settings(string root) { return new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini"}; }
+        public static string[] Settings(string root) { return new[]{"Settings/pc-controls.json","Settings/pc-display.ini","Settings/runtime.conf","Settings/pc-discord.ini","Settings/pc-frame-rate.ini"}; }
         public static string Data(string root) { return "Data"; }
         public static string Saves(string root) { return "Saves"; }
         public static string Textures(string root) { return "Textures"; }

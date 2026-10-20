@@ -171,3 +171,30 @@ the package. This is separate from the recommended launcher-managed setup above.
 The repository's developer **Play.cmd** starts an existing local build. Follow
 the [build guide](building.md) if you are working from source; downloading the
 source repository alone does not install a playable game.
+
+## Native frame-rate selection (upcoming launcher update)
+
+Open **Game settings → Graphics & resolution → Frame rate** to select
+**60 FPS (Original)**, **120 FPS (Beta)**, or **144 FPS (Beta)**, then save.
+The original 60 FPS path is the default and the recovery option. High-refresh
+mode requires a game build containing the `feature/native-144-fps` runtime;
+installing this launcher alone does not add that capability to older games.
+It targets fresh game frames without reviving the retired interpolation engine.
+Actual FPS depends on the game build, hardware and display. The desktop refresh
+rate is unchanged.
+
+Native high refresh remains beta. The development branch has a reported Arcade
+movement/firing regression, and complete gameplay validation is still pending.
+Save and restart the game to apply changes; return to **60 FPS (Original)** if
+problems occur.
+
+The launcher shares `pc-frame-rate.ini` with the new in-game frame-rate menu,
+beside `pc-display.ini` in the installation's settings folder. Its versioned
+format is `TSFP_FRAME_RATE_V1 0`, `120`, or `144` (zero selects original timing).
+Reopen launcher settings after changing the choice in the game. Concurrent
+changes are rejected instead of overwritten, and the preference participates
+in the existing backup and multi-file rollback transaction. Cancel leaves it
+unchanged. Launch uses the saved choice as `TSFP_NATIVE_FPS`; zero explicitly
+overrides older native-FPS runtime overrides. Legacy presentation keys retain
+their safe fixed-60 migration values for compatibility with older game packages.
+The common settings model and page serve both Windows and Mac.

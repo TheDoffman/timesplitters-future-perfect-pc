@@ -21,6 +21,8 @@ xbox_kernel.log
 /config/pc-online.json
 /config/pc-discord.ini
 /config/pc-discord.ini.bak
+/config/pc-frame-rate.ini
+/config/pc-frame-rate.ini.bak
 
 # Packaged builds and local credentials are never source uploads.
 *.zip

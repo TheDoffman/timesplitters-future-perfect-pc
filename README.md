@@ -136,6 +136,12 @@ when launcher settings are saved; unrelated preferences remain intact.
 Your desktop refresh rate stays unchanged. Published builds require an update
 containing these changes.
 
+Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#native-frame-rate-selection-upcoming-launcher-update):
+60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
+an accompanying game build with the new native high-refresh runtime; older
+published games do not gain high-FPS support from the launcher alone.
+
+
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
 current game mode and session timer. Enable it in **Game settings → Discord**
 with the Discord desktop app running. Fresh installs leave it off.
