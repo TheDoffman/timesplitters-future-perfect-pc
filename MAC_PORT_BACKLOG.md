@@ -2665,7 +2665,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Behavior:** Camera feeds keep their logo, mask and scanlines aligned with
   the scene on widescreen displays, including the U-Genix opening wall monitor.
   World-camera and ordinary HUD placement remain unchanged.
-- **Source:** Uncommitted on `49-u-genix-screen-bug`: shared
+- **Source:** `61235d1` on `49-u-genix-screen-bug`, [PR #195](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/195): shared
   `src/pc_display_ui.inc`, `src/pc_display_menu.h`, additive
   `camera-feed-placement.patch`, `tests/camera_feed.c` and
   `tests/test_camera_feed.py`.

@@ -2,7 +2,8 @@
 
 ## Issue #49 — U-Genix monitor composition (2026-10-19)
 
-Uncommitted on `49-u-genix-screen-bug`, based on main `c238ab3`.
+Implementation `61235d1` on `49-u-genix-screen-bug`, [PR #195](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/195),
+initially based on `c238ab3` and integrated with main `988daa3`.
 The opening U-Genix monitor was reproduced independently at 1280×720:
 its left quarter was black and Crow/the subsequent U logo shifted right and
 clipped. The guest texture camera renders a 256×256 feed into the top-left
@@ -19,7 +20,12 @@ layout keep their existing behavior. No game asset or generated C is edited.
 The same hook runs under `TSFP_NATIVE_DISPLAY`; existing native GL/common RHI
 placement adapters need no new platform code (MAC-056: awaiting validation).
 
-The Windows build and its built-in checks passed. Twenty-one focused camera,
+The Windows build and its built-in checks passed, including a rebuild after
+integrating main `988daa3`. Initial PR CI caught an end-of-file patch anchor
+that prevented unwinding the hook when local edits followed it. The patch now
+inserts before a stable upstream declaration, preserving appended local edits
+when migrating historical stacks; the hook behavior is unchanged.
+Twenty-one focused camera,
 UI-layout and cutscene regression cases passed, followed by all five camera
 cases with the generator-hook assertion and the backlog integrity check.
 Mutation cases detect missing scope, missing restoration and missing batch

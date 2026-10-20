@@ -1,10 +1,9 @@
 --- a/titles/futureperfect/src/recomp_manual.c
 +++ b/titles/futureperfect/src/recomp_manual.c
-@@ -1386,3 +1386,14 @@
+@@ -302,6 +302,17 @@
+     RECOMP_DIAG_UNLOCK();
      fflush(stderr);
  }
- 
-+
 +/* Texture cameras share their guest-pixel layout with their copied mask. */
 +extern void sub_000C8120_gen(void);
 +void sub_000C8120(void)
@@ -15,3 +14,7 @@
 +    sub_000C8120_gen();
 +#endif
 +}
++
+ /* An indirect call whose target is not code: a null or wild function pointer.
+  *
+  * Skipping these is right -- calling a data address is worse -- but skipping
