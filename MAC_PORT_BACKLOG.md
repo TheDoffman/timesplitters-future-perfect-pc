@@ -1460,6 +1460,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.2.19 release preparation (2026-10-19):** Shared version bump packages
+  the already merged Windows and native Mac implementation through the common
+  release workflow. Local Windows upgrade/rollback and full-suite evidence is
+  in STATUS.md; both host CI/package checks are required before publication.
+  No adapter behavior changes here. Existing signing/notarization and
+  clean-machine acceptance gaps remain; no local Mac execution is claimed.
+
 - **Status:** Awaiting validation
 - **API-free compatibility checks (2026-10-19, PR #186 integration, uncommitted):**
   The user's no-API-credit requirement supersedes the paid review/fix design in

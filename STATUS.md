@@ -30,8 +30,10 @@ UI-layout and cutscene regression cases passed, followed by all five camera
 cases with the generator-hook assertion and the backlog integrity check.
 Mutation cases detect missing scope, missing restoration and missing batch
 flushes; fixture cases cover ordinary/disabled/invalid and nested cameras.
-Both Windows/macOS runtime-patch jobs include the new regression. Actual Mac
-compilation and rendering have not been run on this Windows host.
+All 39 local patch tracking, historical upgrade and camera regressions passed
+after the anchor correction. Windows and macOS runtime CI, including the new
+regression, passed in [run 39355133510](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39355133510).
+Actual Mac game rendering remains unverified.
 
 Independent live-game verification uses the isolated unlocked Test Lab profile,
 with personal saves/configs untouched and each run capped at 150 seconds.
@@ -45,6 +47,30 @@ validation and `git diff --check` passed. The capture format does not
 record the GPU CopyRects result, so a full replay's black monitor is not visual
 validation; use the real game's framebuffer dumps. Replaying the feed's first
 44 draws does reproduce the original composition error and its placement fix.
+
+## Launcher v1.2.19 release preparation (2026-10-19)
+
+Prepared on `release/launcher-v1.2.19` from main `f53b31f`. The shared launcher
+version and both assembly attributes are 1.2.19. This release packages the
+already merged shared Windows/Mac pages and themes, native Mac adapters,
+launcher-file preservation during game updates, and Windows experimental
+presentation settings. The latter require a game newer than v0.3.0-alpha.2;
+this launcher update does not supply that runtime.
+
+Local Windows x64 .NET Framework required-artwork build and full tests passed:
+105 updater, eight shared UI groups, 28 download, 11 version, 10 startup,
+30 news, 37 settings, 20 maintenance and 14 unfinished-session checks, plus
+crash-report checks. The 16 publication-policy, seven compatibility-policy and
+three shared-layout Python tests also passed. The published v1.2.18 updater
+successfully installed the local v1.2.19 ZIP and recovered an injected failure,
+preserving isolated game, ISO, data, save, setting, texture, rollback and
+untracked fixtures. All three embedded artwork hashes match the pinned art.
+
+The dual-platform workflow must pass both real host builds and package checks
+before publication from main. Local Windows validation does not establish Mac
+execution. MAC-021 retains signing/notarization and clean-machine delivery
+gaps; MAC-054 tracks unsupported native presentation targets. No personal
+files or live game installation were used for these checks.
 
 ## Shared launcher interface (2026-10-19)
 
