@@ -96,7 +96,7 @@ def main():
         raise SystemExit('Runtime checkout differs from the shared pin; no changes made.')
     textures = None
     if not args.without_textures:
-        _, _, textures = ensure_pack(runtime_root)
+        _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:
         run('git', '-C', UPSTREAM, 'submodule', 'update', '--init', '--depth', '1',

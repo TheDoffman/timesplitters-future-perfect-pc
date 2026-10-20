@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--version', default='v'+(ROOT/'VERSION').read_text().strip())
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     parser.add_argument('--without-textures', action='store_true', help='Make a smaller package without enhanced textures')
-    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the default local/release pack')
+    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
     args = parser.parse_args()
     if args.without_textures and args.texture_pack:
         parser.error('--texture-pack cannot be combined with --without-textures')

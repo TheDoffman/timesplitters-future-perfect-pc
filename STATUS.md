@@ -1,3 +1,14 @@
+## 2026-10-20 — Repository texture delivery correction
+
+The user requires compiled textures in main, bundled with normal game releases.
+This supersedes the separate-release delivery described below. The accidental
+textures-v0.1.0-alpha.2 release has been unpublished. DDS files are tracked
+through Git LFS with sanitized metadata; builds audit repository content and
+fail on unresolved pointers. No game release or gameplay test was performed.
+After the correction, 222 Python tests pass (one platform skip), with 39
+subtests. Local launcher tests reach the new large-manifest test but stop at
+the running-game guard for another checkout; host CI supplies the full tests.
+
 # Measured progress
 
 ## Bundled texture dependency for game releases (2026-10-20)

@@ -1117,11 +1117,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - 2026-10-20 bundled texture delivery: shared tools/build_textures.py prepares
-  the same dependency for Windows and native Mac; both game packagers stream it
+  the Git LFS pack in assets/textures for Windows and native Mac (PR #235);
+  both game packagers stream it
   directly into their ZIP. Shared Core.cs accepts bounded texture members,
   preserves existing pairs and settings, and cleans only staged payloads with
   existing OneDrive/link checks. Launcher 1.2.22 includes this behavior. Local
-  Windows build/regressions and 233 Python tests pass (one platform skip).
+  Windows build/regressions passed before the delivery correction; 221 Python
+  tests pass after it (one platform skip). Updated host CI is required.
   Native Mac install/cleanup fixture is registered in NativeTests.cs; host
   execution is evaluated in PR CI. **Awaiting validation** remains for real
   texture scene/GPU/display/residency coverage. See STATUS.md bundled texture

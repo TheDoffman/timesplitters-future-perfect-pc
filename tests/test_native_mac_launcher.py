@@ -25,7 +25,7 @@ def test_existing_fixture_is_supported():
 
 
 def test_built_texture_pack_is_available_without_changing_settings(tmp_path):
-    pack = tmp_path/'private/texture-remaster/pack'
+    pack = tmp_path/'assets/textures'
     pack.mkdir(parents=True)
     env = launcher.game_environment({}, tmp_path)
     assert env['TSFP_TEXTURE_PACK_DIR'] == str(pack)

@@ -250,7 +250,7 @@ try {
                         }
                         $env:RECOMP_GAME_DIR = $gameRoot
                         if (!$env:TSFP_TEXTURE_PACK_DIR) {
-                            $env:TSFP_TEXTURE_PACK_DIR = Join-Path $privateRoot 'texture-remaster\pack'
+                            $env:TSFP_TEXTURE_PACK_DIR = Join-Path $projectRoot 'assets\textures'
                             if (!$env:TSFP_TEXTURE_MODE) { $env:TSFP_TEXTURE_MODE = 'classic' }
                         }
                         $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'

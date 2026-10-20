@@ -45,15 +45,10 @@ without system Python/Git on PATH. Real router forwarding still needs validation
 
 ## Publish a release from main
 
-The optional texture pack is delivered independently from game and launcher
-packages. For new artwork, run `python tools/texture-release.py publish --version
-<new-pack-version>` from the checkout holding the authoritative pack, then commit
-the resulting `config/texture-pack.json` before merging the delivery update.
-This uploads the DDS files to an immutable GitHub release without putting them
-in Git history. Every main push and release publication verifies that the
-manifest still references uploaded assets with matching sizes and SHA-256 hashes.
-An ordinary code release reuses the existing pack; it does not force users to
-download it. See [texture publication](textures.md#publish-pack-updates).
+Compiled replacements are committed under `assets/textures` through Git LFS.
+Run `git lfs pull` before building; the normal game ZIP includes these files
+without a separate texture release. Commit reviewed texture updates alongside
+source changes. See [updating repository textures](textures.md#publish-pack-updates).
 
 Commit the intended `VERSION` and merge the changes, including these release
 scripts, into `main`. Install [GitHub CLI](https://cli.github.com/) and authenticate

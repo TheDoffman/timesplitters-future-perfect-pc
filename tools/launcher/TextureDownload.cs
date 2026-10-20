@@ -23,6 +23,7 @@ namespace TimeSplitters.Launcher
         public static TextureRelease Parse(string text)
         {
             var value = Json.Object(text);
+            Core.Require(value == null || Json.String(value,"delivery") != "bundled", "Textures are included with game downloads. Install or update the game through the launcher, then select Display settings → Textures → Enhanced.");
             Core.Require(value != null && Json.String(value,"schema") == "1", "Texture download information is unavailable or unsupported.");
             string version = Json.String(value,"version");
             Core.Require(Regex.IsMatch(version,@"^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?$"), "Invalid texture pack version.");

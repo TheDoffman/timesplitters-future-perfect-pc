@@ -156,7 +156,7 @@ def main():
     parser.add_argument('--output', type=Path, default=ROOT/'build/releases')
     parser.add_argument('--launcher', type=Path, default=ROOT/'build/macos-launcher')
     parser.add_argument('--without-textures', action='store_true', help='Make a lightweight package without enhanced textures')
-    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the default local/release pack')
+    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
     parser.add_argument('--licenses', type=Path, default=ROOT/'external/native-mac-licenses',
                         help='Directory containing verified Vulkan/DXC third-party notices')
     args = parser.parse_args()

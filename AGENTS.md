@@ -231,19 +231,16 @@ reproducibility, and validation requirements.
 
 ## Project storage and texture work
 
-- The user explicitly authorized optional public delivery of the compiled
-  replacement DDS pack through the launcher (2026-10-20). This is an exception
-  to the local-only rule for those compiled replacements and sanitized metadata,
-  not for source artwork, original game assets or personal files. Use
-  `tools/texture-release.py publish` before merging a new pack manifest; commit
-  only `config/texture-pack.json`, never large texture files into Git. Keep pack
-  release versions immutable, and the launcher as GitHub Latest. The user later
-  authorized bundled textures for game builds/releases (2026-10-20): source builds
-  prepare the pack and game ZIPs include compiled replacements by default, with
-  explicit lightweight opt-outs. Keep the separate launcher pack installer for
-  existing/lightweight installations. Never add DDS blobs to Git history.
-  Source pushes cannot upload ignored local art from a hosted runner. Confirm the
-  Optional texture pack check passes before merging delivery updates.
+- The user requires compiled replacement textures committed to main and bundled
+  with ordinary game-version releases (2026-10-20). Store sanitized DDS/JSON in
+  assets/textures, with DDS tracked through Git LFS. Do not publish separate
+  versioned texture releases. Source artwork, original game files, prompts,
+  personal settings and saves remain private. The source build and game packagers
+  audit the committed pack by default; missing LFS content must stop packaging.
+  Keep the 6 GiB pack limit. The Repository texture pack CI check must pass before
+  merging changes to these assets. Avoid hydrating textures in unrelated CI jobs.
+  Retain one private art-production pack; a source-only worktree may use LFS
+  pointers to avoid a redundant working copy. Never prune unpushed LFS objects.
 
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.

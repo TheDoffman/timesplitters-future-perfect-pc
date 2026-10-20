@@ -6,7 +6,6 @@ original game files, absolute paths, saves and settings never enter the package.
 import argparse
 import hashlib
 import importlib.util
-import io
 import json
 import os
 from pathlib import Path
@@ -125,8 +124,7 @@ def archive(records, destination):
                             raise ValueError('Source texture changed while packaging')
                     else:
                         target.write(source)
-    size = destination.getbuffer().nbytes if isinstance(destination, io.BytesIO) else destination.stat().st_size
-    if size > PART_LIMIT:
+    if destination.stat().st_size > PART_LIMIT:
         raise ValueError('Texture download part exceeds 64 MiB')
 
 
@@ -178,7 +176,7 @@ def verify_remote(manifest, api):
     return release['html_url']
 
 
-def publish(pack, version, output, work, api, *, memory=False):
+def publish(pack, version, output, work, api):
     if not VERSION.fullmatch(version):
         raise ValueError('Invalid pack version')
     records, total = audit(pack)
@@ -209,30 +207,23 @@ def publish(pack, version, output, work, api, *, memory=False):
                     installed_bytes=total, parts=[])
     for i, batch in enumerate(groups(records), 1):
         name = f'textures-{i:03}.zip'
-        part = io.BytesIO() if memory else work/name
+        part = work/name
         try:
             archive(batch, part)
-            content = part.getvalue() if memory else None
-            record = dict(name=name, size=len(content) if memory else part.stat().st_size,
-                          sha256=hashlib.sha256(content).hexdigest() if memory else digest(part))
+            record = dict(name=name, size=part.stat().st_size, sha256=digest(part))
             found = assets.get(name)
             if found and (found.get('size') != record['size'] or found.get('digest') != 'sha256:'+record['sha256']):
                 raise ValueError('This texture version already has different content. Choose a new version.')
             if not found:
                 if not release['draft']:
                     raise ValueError('Published texture releases are immutable; choose a new version')
-                upload = {'upload_bytes': content} if memory else {'upload': part}
-                found = api.call('POST', base+f'/releases/{release["id"]}/assets?name={name}', **upload)
+                found = api.call('POST', base+f'/releases/{release["id"]}/assets?name={name}', upload=part)
             if found.get('state') != 'uploaded' or found.get('digest') != 'sha256:'+record['sha256']:
                 raise ValueError('GitHub did not verify the uploaded part')
             manifest['parts'].append(record)
             print(f'Verified {name}: {record["size"]/1024**2:.1f} MiB', flush=True)
         finally:
-            if memory:
-                part.close()
-                content = None
-            else:
-                part.unlink(missing_ok=True)
+            part.unlink(missing_ok=True)
     validate_manifest(manifest)
     metadata = work/'texture-pack.json'
     metadata.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
@@ -260,12 +251,11 @@ def main():
     parser.add_argument('--manifest', type=Path, default=ROOT/'config/texture-pack.json')
     parser.add_argument('--work', type=Path, default=ROOT/'build/texture-publication')
     parser.add_argument('--remote', action='store_true')
-    parser.add_argument('--memory', action='store_true', help='Keep each bounded upload part in RAM instead of writing temporary ZIPs')
     args = parser.parse_args()
     if args.command == 'publish':
         if not args.version:
             parser.error('--version is required for publication')
-        print(publish(args.pack, args.version, args.manifest, args.work, RELEASE.GitHub(credentials()), memory=args.memory))
+        print(publish(args.pack, args.version, args.manifest, args.work, RELEASE.GitHub(credentials())))
     else:
         manifest = validate_manifest(json.loads(args.manifest.read_text(encoding='utf-8')))
         if args.remote:

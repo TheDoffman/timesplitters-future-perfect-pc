@@ -6,7 +6,7 @@ For native Apple Silicon, start with the [Mac guide](macos.md). Run commands bel
 
 ## Build on Windows
 
-For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
+For a fresh checkout, install Git with Git LFS, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
 
 ```powershell
@@ -20,14 +20,12 @@ validates the input paths and Python version, then runs Setup, Extract, Test,
 Generate, and Build in order, stopping at the first failure. It requires internet
 access for dependency downloads; it does not install Git, Python, or Visual Studio.
 The default output is `build/windows/Release/futureperfect_recomp.exe`.
-Build also prepares the compiled texture pack automatically. Git tracks
-`config/texture-pack.json`; the large DDS files are release assets, outside Git
-history. A valid existing `private/texture-remaster/pack` is audited and reused,
-including newer local artwork. Otherwise the pinned release is downloaded once
-with size and SHA-256 checks. Later builds reuse it offline. See the
-[texture build dependency](textures.md#texture-build-dependency) for publication
-status and storage rules. Use `tsfp.ps1 Build -SkipTextures` for an explicitly
-lightweight build; this does not remove an existing pack or change settings.
+Build audits the compiled pack in `assets/textures`, committed through Git LFS.
+Run `git lfs install` and `git lfs pull` after cloning if the files are still
+LFS pointers. Source ZIP downloads may contain pointers; a Git LFS checkout is
+the supported build input. No separate texture release is needed. Later builds
+reuse these files offline. See the [texture build dependency](textures.md#texture-build-dependency).
+Use `tsfp.ps1 Build -SkipTextures` for an explicitly lightweight build.
 After setup succeeds, double-click `Play.cmd` to play from the repository.
 The extracted files in `private/game` must remain; the ISO is no longer needed.
 Use `-Configuration Debug` or `-Configuration RelWithDebInfo` for another build

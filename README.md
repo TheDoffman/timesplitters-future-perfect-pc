@@ -292,9 +292,9 @@ surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency l
 keep storage and memory bounded. Game builds and release ZIPs now include the
 **1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
 **Display settings → Textures → Enhanced** in the game to use it; Classic remains
-available. Existing/lightweight installations can download the pack through
-**Game settings → Graphics & resolution → Download 4K texture pack**.
-Git contains the version manifest, while GitHub Releases hosts the large files.
+available. Install or update the game through the launcher to receive the pack.
+Compiled textures are committed through Git LFS and bundled with normal game
+releases; there is no separate texture release.
 This is a partial overhaul; 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 

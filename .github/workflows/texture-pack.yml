@@ -1,16 +1,26 @@
-name: Optional texture pack
+name: Repository texture pack
 
 on:
   pull_request:
     paths:
+      - 'assets/textures/**'
+      - '.gitattributes'
       - 'config/texture-pack.json'
+      - 'tools/build_textures.py'
+      - 'tools/texture-repository.py'
       - 'tools/texture-release.py'
-      - 'tests/test_texture_release.py'
+      - 'tests/test_build_textures.py'
       - '.github/workflows/texture-pack.yml'
   push:
     branches: [main]
-  release:
-    types: [published]
+    paths:
+      - 'assets/textures/**'
+      - 'config/texture-pack.json'
+      - 'tools/build_textures.py'
+      - 'tools/texture-repository.py'
+      - 'tools/texture-release.py'
+      - '.gitattributes'
+      - '.github/workflows/texture-pack.yml'
   workflow_dispatch:
 
 permissions:
@@ -19,17 +29,28 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          lfs: true
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - name: Test packaging and publication contracts
-        run: python -m unittest discover -s tests -p test_texture_release.py -v
-      - name: Verify the optional download exists with the advertised checksums
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python tools/texture-release.py verify --remote
+      - name: Verify repository LFS textures and metadata
+        run: |
+          python - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from build_textures import ensure_pack
+          pack, records, identity = ensure_pack()
+          manifest = json.loads(Path('config/texture-pack.json').read_text())
+          assert manifest['schema'] == 2 and manifest['delivery'] == 'bundled'
+          assert manifest['texture_count'] == identity['texture_count']
+          assert manifest['installed_bytes'] == identity['installed_bytes']
+          for path, public, sha in records:
+              assert path.with_suffix('.json').read_bytes() == public, path.name
+          print(identity)
+          PY

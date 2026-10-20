@@ -70,7 +70,7 @@ namespace TimeSplitters.Launcher
 
     public static class Json
     {
-        public static JavaScriptSerializer Serializer() { return new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }; }
+        public static JavaScriptSerializer Serializer() { return new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }; }
         public static Dictionary<string, object> Object(string text) { return Serializer().Deserialize<Dictionary<string, object>>(text); }
         public static string String(Dictionary<string, object> obj, string key) { object v; return obj.TryGetValue(key, out v) && v != null ? Convert.ToString(v, CultureInfo.InvariantCulture) : ""; }
         public static bool Flag(Dictionary<string, object> obj, string key) { object v; return obj.TryGetValue(key, out v) && v is bool && (bool)v; }

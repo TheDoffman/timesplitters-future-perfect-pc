@@ -1,7 +1,4 @@
 import importlib.util
-import io
-import hashlib
-from urllib.parse import parse_qs, urlparse
 import json
 from pathlib import Path
 import struct
@@ -118,18 +115,17 @@ class TextureReleaseTests(unittest.TestCase):
         class Api:
             result = None
             uploads = 0
-            def call(self, method, path, data=None, upload=None, upload_bytes=None):
+            def call(self, method, path, data=None, upload=None):
                 if method == 'GET':
                     return self.result
                 if method == 'PATCH':
                     self.assert_ready()
                     self.result.update(data)
                     return self.result
-                if upload or upload_bytes is not None:
+                if upload:
                     self.uploads += 1
-                    content = upload_bytes if upload_bytes is not None else Path(upload).read_bytes()
-                    value = dict(name=parse_qs(urlparse(path).query)['name'][0], size=len(content),
-                                 digest='sha256:'+hashlib.sha256(content).hexdigest(), state='uploaded')
+                    value = dict(name=Path(upload).name, size=Path(upload).stat().st_size,
+                                 digest='sha256:'+release.digest(Path(upload)), state='uploaded')
                     self.result['assets'].append(value)
                     return value
                 self.result = {**data, 'id': 1, 'assets': [], 'html_url': 'release'}
@@ -145,7 +141,7 @@ class TextureReleaseTests(unittest.TestCase):
             api = Api()
             output = root/'config.json'
             with patch.object(release.subprocess, 'check_output', return_value='a'*40):
-                release.publish(pack, '0.1.0-alpha.1', output, root/'work', api, memory=True)
+                release.publish(pack, '0.1.0-alpha.1', output, root/'work', api)
                 self.assertEqual(api.result['make_latest'], 'false')
                 self.assertFalse(api.result['draft'])
                 self.assertEqual(api.uploads, 2)

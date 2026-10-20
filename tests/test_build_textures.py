@@ -38,88 +38,44 @@ def fixture(tmp_path):
     return source, records, content, manifest, pin
 
 
-def test_download_once_then_offline_reuse_and_no_zip_cache(tmp_path):
-    _, _, content, _, pin = fixture(tmp_path)
-    calls = []
-    def download(url, size):
-        calls.append((url, size))
-        return content
-    root = tmp_path/'build'
-    path, records, identity = textures.ensure_pack(root, manifest_path=pin, downloader=download)
-    assert identity['source'] == 'release'
-    assert identity['version'] == '0.1.0-test'
-    assert len(calls) == 1
-    assert '/releases/download/textures-v0.1.0-test/textures-001.zip' in calls[0][0]
-    assert not list(root.rglob('*.zip'))
-    assert not list(root.rglob('*.lock'))
-    _, again, reused = textures.ensure_pack(root, manifest_path=pin, downloader=lambda *_: pytest.fail('network on cached build'))
-    assert reused == identity
-    assert len(again) == len(records) == 1
-    assert path == root/'private/texture-remaster/pack'
+def test_repository_pack_is_reused_offline_without_copies(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
+    target = tmp_path/'assets/textures'
+    target.parent.mkdir()
+    source.rename(target)
+    before = {p.name: p.read_bytes() for p in target.iterdir()}
+    path, records, identity = textures.ensure_pack(tmp_path)
+    assert path == target and len(records) == 1
+    assert identity['source'] == 'repository'
+    assert before == {p.name: p.read_bytes() for p in target.iterdir()}
+    assert not (tmp_path/'private').exists()
 
 
-def test_valid_artist_pack_is_reused_without_replacing_or_downloading(tmp_path):
-    source, _, _, _, pin = fixture(tmp_path)
-    before = {p.name: p.read_bytes() for p in source.iterdir()}
-    _, rows, identity = textures.ensure_pack(tmp_path, source, pin, lambda *_: pytest.fail('download'))
-    assert identity['source'] == 'local'
-    assert len(rows) == 1
-    assert before == {p.name: p.read_bytes() for p in source.iterdir()}
+def test_artist_override_is_explicit_and_preserved(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
+    _, rows, identity = textures.ensure_pack(tmp_path, source)
+    assert identity['source'] == 'local' and len(rows) == 1
+    with pytest.raises(ValueError, match='missing'):
+        textures.ensure_pack(tmp_path)
 
 
-def test_invalid_existing_pack_is_preserved(tmp_path):
-    source, _, _, _, pin = fixture(tmp_path)
+def test_lfs_pointer_fails_with_recovery_instruction(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
+    pointer = b'version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 136\n'
+    path = source/'0123456789abcdef.dds'
+    path.write_bytes(pointer)
+    with pytest.raises(ValueError, match='git lfs pull'):
+        textures.ensure_pack(tmp_path, source)
+    assert path.read_bytes() == pointer
+
+
+def test_corrupt_texture_is_preserved_and_rejected(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
     path = source/'0123456789abcdef.dds'
     path.write_bytes(b'broken artist file')
     with pytest.raises(ValueError):
-        textures.ensure_pack(tmp_path, source, pin, lambda *_: pytest.fail('download'))
+        textures.ensure_pack(tmp_path, source)
     assert path.read_bytes() == b'broken artist file'
-
-
-@pytest.mark.parametrize('failure', ['hash', 'size', 'count', 'bytes', 'second-part'])
-def test_failed_install_rolls_back_only_new_files(tmp_path, failure):
-    _, _, content, manifest, pin = fixture(tmp_path)
-    if failure == 'hash':
-        content = content[:-1]+b'x'
-    elif failure == 'size':
-        content += b'x'
-    elif failure == 'count':
-        manifest['texture_count'] = 2
-    elif failure == 'bytes':
-        manifest['installed_bytes'] += 1
-    elif failure == 'second-part':
-        manifest['parts'].append({**manifest['parts'][0], 'name': 'textures-002.zip'})
-    pin.write_text(json.dumps(manifest))
-    root = tmp_path/'build'
-    root.mkdir()
-    settings = root/'my-settings.ini'
-    settings.write_text('keep')
-    with pytest.raises(ValueError):
-        textures.ensure_pack(root, manifest_path=pin, downloader=lambda *_: content)
-    assert settings.read_text() == 'keep'
-    assert not list((root/'private/texture-remaster/pack').iterdir())
-    assert not list(root.rglob('*.lock'))
-
-
-@pytest.mark.parametrize('names', [('../escape.dds',), ('/escape.dds',),
-                                 ('0123456789abcdef.dds',)*2, ('folder/file.dds',)])
-def test_unsafe_archive_rejected_before_extraction(names):
-    data = io.BytesIO()
-    with zipfile.ZipFile(data, 'w') as archive:
-        for name in names:
-            archive.writestr(name, b'bad')
-    with pytest.raises(ValueError):
-        textures.inspect_part(data.getvalue(), set(), 1000)
-
-
-def test_member_expansion_and_cross_part_duplicates_rejected():
-    data = io.BytesIO()
-    with zipfile.ZipFile(data, 'w') as archive:
-        archive.writestr('0123456789abcdef.dds', b'a'*100)
-    with pytest.raises(ValueError, match='budget'):
-        textures.inspect_part(data.getvalue(), set(), 99)
-    with pytest.raises(ValueError, match='duplicate'):
-        textures.inspect_part(data.getvalue(), {'0123456789abcdef.dds'}, 1000)
 
 
 def test_packaging_streams_sanitized_metadata_and_hashes(tmp_path):
@@ -137,30 +93,25 @@ def test_packaging_streams_sanitized_metadata_and_hashes(tmp_path):
         textures.write_zip(archive, '', records)
 
 
-def test_interrupted_or_concurrent_setup_does_not_touch_files(tmp_path):
-    source, _, _, _, pin = fixture(tmp_path)
-    lock = source.parent/'.build-textures.lock'
-    lock.write_text('existing operation')
-    with pytest.raises(ValueError, match='already running'):
-        textures.ensure_pack(tmp_path, source, pin)
-    assert lock.read_text() == 'existing operation'
-    assert len(list(source.iterdir())) == 2
-
-
-def test_no_space_download_never_starts(tmp_path, monkeypatch):
-    _, _, _, _, pin = fixture(tmp_path)
-    from collections import namedtuple
-    usage = namedtuple('Usage', 'total used free')
-    monkeypatch.setattr(textures.shutil, 'disk_usage', lambda _: usage(100, 100, 0))
-    with pytest.raises(ValueError, match='free disk'):
-        textures.ensure_pack(tmp_path/'build', manifest_path=pin, downloader=lambda *_: pytest.fail('download'))
-
-
-def test_published_download_matches_local_pack_without_extracting(tmp_path):
-    source, _, content, manifest, pin = fixture(tmp_path)
-    before = {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
-    result = textures.verify_download(source, pin, lambda *_: content)
-    assert result['texture_count'] == 1 and result['installed_bytes'] == manifest['installed_bytes']
-    assert before == {p.relative_to(tmp_path): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file()}
-    with pytest.raises(ValueError, match='checksum'):
-        textures.verify_download(source, pin, lambda *_: content[:-1]+b'x')
+def test_repository_export_tracks_only_audited_public_content(tmp_path):
+    import importlib.util
+    import subprocess
+    spec = importlib.util.spec_from_file_location('repository_textures', ROOT/'tools/texture-repository.py')
+    exporter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(exporter)
+    source, _, _, _, _ = fixture(tmp_path)
+    repo = tmp_path/'repo'
+    repo.mkdir()
+    (repo/'config').mkdir()
+    subprocess.run(['git', 'init', str(repo)], check=True, capture_output=True)
+    if subprocess.run(['git', 'lfs', 'version'], capture_output=True).returncode:
+        pytest.skip('Git LFS unavailable')
+    exporter.stage(source, root=repo, pointers_only=True)
+    pointer = (repo/'assets/textures/0123456789abcdef.dds').read_text()
+    assert pointer.startswith('version https://git-lfs.github.com/spec/v1')
+    assert textures.RELEASE.digest(source/'0123456789abcdef.dds') in pointer
+    public = json.loads((repo/'assets/textures/0123456789abcdef.json').read_text())
+    assert 'source' not in public and 'prompt' not in public
+    assert json.loads((repo/'config/texture-pack.json').read_text())['texture_count'] == 1
+    with pytest.raises(ValueError, match='git lfs pull'):
+        textures.ensure_pack(repo)

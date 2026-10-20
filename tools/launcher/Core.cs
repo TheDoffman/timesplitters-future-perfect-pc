@@ -140,11 +140,11 @@ namespace TimeSplitters.Launcher
             Require(!Directory.Exists(destination), "An extraction folder already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
-                Require(zip.Entries.Count > 0 && zip.Entries.Count <= 20000, "Invalid release archive file count.");
+                Require(zip.Entries.Count > 0 && zip.Entries.Count <= 60000, "Invalid release archive file count.");
                 var manifests = zip.Entries.Where(e => e.FullName == "BUILD.json" || e.FullName.EndsWith("/BUILD.json", StringComparison.Ordinal)).ToArray();
                 Require(manifests.Length == 1, "The release needs exactly one BUILD.json manifest.");
                 var manifest = manifests[0];
-                Require(manifest.Length <= 1024 * 1024, "Oversized build manifest.");
+                Require(manifest.Length <= 8 * 1024 * 1024, "Oversized build manifest.");
                 string prefix = manifest.FullName.Substring(0, manifest.FullName.Length - "BUILD.json".Length);
                 if (prefix.Length > 0) { Name(prefix.TrimEnd('/')); Require(prefix.Count(c => c == '/') == 1, "Invalid package root."); }
                 string manifestText;
@@ -333,7 +333,7 @@ namespace TimeSplitters.Launcher
         }
         internal static Dictionary<string, string> GameFiles(string manifest)
         {
-            Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized installed game manifest.");
+            Require(new FileInfo(manifest).Length <= 8 * 1024 * 1024, "Oversized installed game manifest.");
             var metadata = Json.Object(File.ReadAllText(manifest));
             GameVersion.Parse(Json.String(metadata, "version"));
             object value;
@@ -362,7 +362,7 @@ namespace TimeSplitters.Launcher
         {
             try {
                 string manifest = PathIn(root, "BUILD.json");
-                Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized game manifest.");
+                Require(new FileInfo(manifest).Length <= 8 * 1024 * 1024, "Oversized game manifest.");
                 return Hash(manifest);
             }
             catch (Exception ex) { LauncherLog.Write(root, "Game cleanup unavailable: " + ex.Message); return ""; }
