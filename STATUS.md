@@ -12788,3 +12788,18 @@ The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
 config/texture-pack.json records the exact published files. Publication used one
 bounded part at a time and left no ZIP files in build/texture-publication.
 The launcher installer remains source-only until its PR and a launcher release.
+
+Final host CI on 3396c08 passed all five workflows: Windows and native Mac
+launcher builds/regressions, shared texture installer and UI contracts, native
+packaged update/repair/restart, dual-platform package verification, runtime
+transitions, issue policies and published texture availability. Launcher run:
+https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39380664618
+
+PR #217 review follow-up validates part counts before any GitHub call and rejects
+stale/unexpected draft assets before upload and again before publication. The
+public manifest is now verified alongside every part, accepting the first
+Windows publication's exact CRLF encoding and using LF for future manifests.
+47 focused Python tests and 39 subtests pass; live remote verification passes.
+Part capacity is 256 to accommodate valid 6 GiB packs with large individual DDS
+files while retaining the 64 MiB download and 48 MiB raw-part storage bounds.
+Follow-up host CI is pending; no renderer or game executable changed.

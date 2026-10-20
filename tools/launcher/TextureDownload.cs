@@ -32,7 +32,7 @@ namespace TimeSplitters.Launcher
                 "Texture pack exceeds supported installation limits.");
             object entries;Core.Require(value.TryGetValue("parts",out entries) && entries is System.Collections.IList, "Texture download parts are missing.");
             var parts=((System.Collections.IList)entries).Cast<object>().ToArray();
-            Core.Require(parts.Length>0 && parts.Length<=128,"Invalid texture download part count.");
+            Core.Require(parts.Length>0 && parts.Length<=256,"Invalid texture download part count.");
             foreach(var entry in parts) {
                 var part=entry as Dictionary<string,object>;Core.Require(part!=null,"Invalid texture download part.");
                 string name=Json.String(part,"name"),hash=Json.String(part,"sha256");

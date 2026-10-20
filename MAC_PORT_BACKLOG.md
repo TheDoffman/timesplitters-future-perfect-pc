@@ -2877,7 +2877,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   select a local ZIP/folder in launcher Graphics & resolution settings. The
   shared installer chooses the runtime's texture path, validates DDS/metadata,
   enforces 6 GiB, preserves unrelated files and recovers interrupted replacements.
-- **Source:** `feat/launcher-texture-install` (uncommitted at entry creation);
+- **Source:** `feat/launcher-texture-install`, [PR #217](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/217);
   `tools/launcher/TexturePack.cs`, `TextureDownload.cs`, `SettingsPage.cs`,
   host window adapters and `tools/texture-release.py`.
 - **PC evidence:** Windows compilation, shared UI and installer tests cover
@@ -2886,8 +2886,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Existing Mac support:** Uses the same service and UI; the adapter uses native
   file/folder pickers and the existing checkout/portable texture-path policy.
   Both host builds execute `tests/launcher_textures.cs` and shared UI contracts.
-- **Remaining validation:** Native CI build/contracts and packaged interaction;
-  verify opt-in confirmation, cancellation, installation under a portable root
+- **Native CI evidence:** Windows and native Mac launcher builds, shared texture
+  and UI contracts, and packaged Mac update/repair/restart passed on `3396c08`.
+  This establishes automated behavior, not physical picker or game-scene review.
+- **Remaining validation:** Native packaged interaction; verify opt-in
+  confirmation, cancellation, installation under a portable root
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 

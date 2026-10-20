@@ -101,8 +101,14 @@ class TextureReleaseTests(unittest.TestCase):
             def call(self, method, path):
                 return self.result
         api = Api()
-        api.result = dict(draft=False, assets=[asset], html_url='release')
-        self.assertEqual(release.verify_remote(manifest, api), 'release')
+        metadata = (json.dumps(manifest, indent=2)+'\n').encode()
+        manifest_asset = dict(name='texture-pack.json', size=len(metadata),
+                             digest='sha256:'+release.hashlib.sha256(metadata).hexdigest(),
+                             state='uploaded')
+        api.result = dict(draft=False, assets=[asset, manifest_asset], html_url='release')
+        for size, digest in release.manifest_encodings(manifest):
+            manifest_asset.update(size=size, digest=digest)
+            self.assertEqual(release.verify_remote(manifest, api), 'release')
         api.result['draft'] = True
         with self.assertRaises(ValueError):
             release.verify_remote(manifest, api)
@@ -148,6 +154,34 @@ class TextureReleaseTests(unittest.TestCase):
                 release.publish(pack, '0.1.0-alpha.1', output, root/'work', api)
                 self.assertEqual(api.uploads, 2)
                 self.assertEqual(list((root/'work').iterdir()), [])
+
+    def test_excessive_parts_are_rejected_before_any_api_call(self):
+        class Api:
+            def call(self, *args, **kwargs):
+                raise AssertionError('Network called before part-count validation')
+        with (patch.object(release, 'audit', return_value=([], 1)),
+              patch.object(release, 'groups', return_value=[[]]*(release.MAX_PARTS+1))):
+            with self.assertRaisesRegex(ValueError, 'too many download parts'):
+                release.publish(Path('unused'), '0.1.0', Path('unused.json'), Path('unused-work'), Api())
+
+    def test_resumed_draft_with_stale_asset_is_never_published(self):
+        class Api:
+            def call(self, method, path, **kwargs):
+                if method != 'GET':
+                    raise AssertionError('Stale draft was modified')
+                return dict(id=1, draft=True, assets=[dict(name='textures-099.zip')])
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            pack = root/'pack'
+            pack.mkdir()
+            self.fixture(pack)
+            with self.assertRaisesRegex(ValueError, 'unaudited or stale'):
+                release.publish(pack, '0.1.0', root/'config.json', root/'work', Api())
+
+    def test_remote_verification_rejects_extra_assets(self):
+        manifest = self.manifest()
+        with self.assertRaisesRegex(ValueError, 'unaudited assets'):
+            release.verify_assets(manifest, dict(assets=[dict(name='extra.zip')]))
 
 
 if __name__ == '__main__':

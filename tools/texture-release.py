@@ -21,6 +21,7 @@ REPO = 'TheDoffman/timesplitters-future-perfect-pc'
 BUDGET = 6 * 1024**3
 PART_LIMIT = 64 * 1024**2
 RAW_PART_LIMIT = 48 * 1024**2
+MAX_PARTS = 256
 KEY = re.compile(r'[0-9a-f]{16}\Z')
 VERSION = re.compile(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?\Z')
 SPEC = importlib.util.spec_from_file_location('launcher_release', ROOT/'tools/launcher-release.py')
@@ -135,7 +136,7 @@ def validate_manifest(value):
             or not isinstance(value.get('installed_bytes'), int)
             or not 0 < value['installed_bytes'] <= BUDGET
             or not isinstance(value.get('parts'), list)
-            or not 0 < len(value['parts']) <= 128):
+            or not 0 < len(value['parts']) <= MAX_PARTS):
         raise ValueError('Invalid texture manifest')
     names = set()
     for part in value['parts']:
@@ -162,17 +163,35 @@ def credentials():
     return fields['password']
 
 
-def verify_remote(manifest, api):
-    validate_manifest(manifest)
-    release = api.call('GET', f'/repos/{REPO}/releases/tags/textures-v{manifest["version"]}')
-    if not release or release['draft']:
-        raise ValueError('The configured texture release is not published')
+def manifest_encodings(manifest):
+    text = json.dumps(manifest, indent=2)+'\n'
+    # The first Windows publication used CRLF. Accept that exact historical
+    # encoding too; future publications explicitly use LF on both hosts.
+    return {(len(data), 'sha256:'+hashlib.sha256(data).hexdigest())
+            for data in (text.encode(), text.replace('\n', '\r\n').encode())}
+
+
+def verify_assets(manifest, release):
     assets = {a['name']: a for a in release['assets']}
+    expected = {p['name'] for p in manifest['parts']} | {'texture-pack.json'}
+    if set(assets) != expected or len(assets) != len(release['assets']):
+        raise ValueError('Texture release contains missing, duplicate or unaudited assets')
     for part in manifest['parts']:
         a = assets.get(part['name'], {})
         if (a.get('state') != 'uploaded' or a.get('size') != part['size']
                 or a.get('digest') != 'sha256:'+part['sha256']):
             raise ValueError('Published texture asset is missing or differs: '+part['name'])
+    a = assets['texture-pack.json']
+    if a.get('state') != 'uploaded' or (a.get('size'), a.get('digest')) not in manifest_encodings(manifest):
+        raise ValueError('Published texture manifest does not match the tracked download')
+
+
+def verify_remote(manifest, api):
+    validate_manifest(manifest)
+    release = api.call('GET', f'/repos/{REPO}/releases/tags/textures-v{manifest["version"]}')
+    if not release or release['draft']:
+        raise ValueError('The configured texture release is not published')
+    verify_assets(manifest, release)
     return release['html_url']
 
 
@@ -180,6 +199,13 @@ def publish(pack, version, output, work, api):
     if not VERSION.fullmatch(version):
         raise ValueError('Invalid pack version')
     records, total = audit(pack)
+    batches = list(groups(records))
+    # Validate the grouping before creating a draft or uploading a single byte.
+    # At most 256 groups accommodates the 6 GiB budget even for ~24 MiB files
+    # whose metadata prevents pairing two inside the 48 MiB raw-payload limit.
+    if not 0 < len(batches) <= MAX_PARTS:
+        raise ValueError('Texture pack has too many download parts')
+    expected_names = {f'textures-{i:03}.zip' for i in range(1, len(batches)+1)} | {'texture-pack.json'}
     work.mkdir(parents=True, exist_ok=True)
     if shutil.disk_usage(work).free < 160*1024**2:
         raise ValueError('At least 160 MiB of working space is required')
@@ -203,9 +229,11 @@ def publish(pack, version, output, work, api):
                      'No ISO, game executable, original game archives, personal settings or saves are included.')
         })
     assets = {a['name']: a for a in release['assets']}
+    if not set(assets).issubset(expected_names) or len(assets) != len(release['assets']):
+        raise ValueError('The existing draft contains unaudited or stale assets. Use a new version; no files were removed.')
     manifest = dict(schema=1, version=version, texture_count=len(records),
                     installed_bytes=total, parts=[])
-    for i, batch in enumerate(groups(records), 1):
+    for i, batch in enumerate(batches, 1):
         name = f'textures-{i:03}.zip'
         part = work/name
         try:
@@ -226,19 +254,21 @@ def publish(pack, version, output, work, api):
             part.unlink(missing_ok=True)
     validate_manifest(manifest)
     metadata = work/'texture-pack.json'
-    metadata.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
+    metadata.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8', newline='\n')
     existing = assets.get(metadata.name)
-    if existing and (existing.get('digest') != 'sha256:'+digest(metadata)):
+    if existing and (existing.get('size'), existing.get('digest')) not in manifest_encodings(manifest):
         raise ValueError('This release already has a different manifest')
     if not existing:
         if not release['draft']:
             raise ValueError('Published release is missing its manifest; use a new version')
         api.call('POST', base+f'/releases/{release["id"]}/assets?name=texture-pack.json', upload=metadata)
+    # Re-fetch after all uploads, including resumed drafts, before visibility changes.
+    verify_assets(manifest, api.call('GET', base+f'/releases/{release["id"]}'))
     if release['draft']:
         api.call('PATCH', base+f'/releases/{release["id"]}', {'draft': False, 'make_latest': 'false'})
     url = verify_remote(manifest, api)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
+    output.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8', newline='\n')
     metadata.unlink()
     return url
 
