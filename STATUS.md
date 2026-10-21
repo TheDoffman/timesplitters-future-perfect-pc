@@ -13008,7 +13008,7 @@ Validation on Windows x64 with the installed .NET Framework 4.8 compiler:
 - Gameplay at 120/144 FPS remains the separate runtime task's responsibility.
   No release was published and no other device's checkout was modified.
 
-## Launcher v1.2.21 release preparation (2026-10-20)
+## Launcher v1.2.22 release preparation (2026-10-20)
 
 Integrated current main `1680301` into `feature/launcher-native-frame-rate`.
 Restored the previously requested single-ZIP policy: the publisher had regained

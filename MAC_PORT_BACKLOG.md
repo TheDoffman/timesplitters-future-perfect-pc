@@ -1585,7 +1585,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
-- **v1.2.21 publication preparation (2026-10-20):** Restores the common publisher's
+- **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
   one-versioned-ZIP-per-host policy and Latest release-page download links.
   Platform update manifests retain their existing names and package formats.
   All 25 portable publisher regressions pass. Both host checks on the preparation
