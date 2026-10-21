@@ -209,18 +209,8 @@ def asset_matches(record, path):
 
 
 def publication_assets(directory, plan):
-    # Verify both platforms before preparing aliases or contacting GitHub.
-    assets = {path.name: path for path in release_assets(directory, plan)}
-    for platform in PLATFORMS:
-        archive = assets[package_names(plan['version'], platform)[0]]
-        alias = f'TimeSplitters-Launcher-{platform}.zip'
-        # Upload the verified archive again under the stable name. Never trust
-        # a stale alias on disk, or make another local copy of the large ZIP.
-        assets[alias] = archive
-        checksum = Path(directory)/(alias + '.sha256')
-        checksum.write_text(digest(archive) + '  ' + alias + '\n', encoding='utf-8')
-        assets[checksum.name] = checksum
-    return assets
+    # Publish only verified versioned ZIPs; existing updaters require these names.
+    return {path.name: path for path in release_assets(directory, plan)}
 
 
 def publish(directory, plan, api):

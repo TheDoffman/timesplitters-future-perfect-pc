@@ -208,7 +208,7 @@ jobs:
           python tools/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
-        run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py tests/test_native_mac_package.py -q --tb=short
+        run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py tests/test_native_mac_package.py tests/test_build_textures.py -q --tb=short
 
   # Preserve the two existing branch-protection check names. An intentional
   # scope skip passes; failed/cancelled/missing or unexpectedly skipped work fails.

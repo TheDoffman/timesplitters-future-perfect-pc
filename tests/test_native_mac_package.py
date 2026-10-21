@@ -74,3 +74,18 @@ def test_minimum_os_is_highest_actual_binary_requirement(monkeypatch):
                     'cmd LC_BUILD_VERSION\n minos 26.0\n sdk 26.0'])
     monkeypatch.setattr(package, 'run', lambda *args: next(outputs))
     assert package.minimum_macos([Path('game'), Path('driver')]) == '27.0'
+
+
+def test_texture_members_stream_without_a_staging_copy(tmp_path):
+    from test_build_textures import fixture
+    source = tmp_path/'inputs'
+    source.mkdir()
+    _, rows, _, _, _ = fixture(source)
+    stage = tmp_path/'stage'
+    manifest = payload(stage)
+    manifest['files'].update({name: sha for name, _, sha in package.zip_entries(rows)})
+    package.verify_payload(stage, manifest, rows)
+    assert not (stage/'Textures').exists()
+    manifest['files']['Textures/0123456789abcdef.dds'] = '0'*64
+    with pytest.raises(ValueError, match='Texture differs'):
+        package.verify_payload(stage, manifest, rows)

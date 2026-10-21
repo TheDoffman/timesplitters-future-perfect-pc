@@ -110,6 +110,54 @@ public static class LauncherSharedUiChecks
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(shared,null);
                 Need(saved.VerticalFov==70 && saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing settings survived migration");
             });
+            Test("native frame-rate defaults, beta selection and game-menu synchronization",()=>{
+                string folder=Path.Combine(root,"native-fps");Directory.CreateDirectory(Path.Combine(folder,"Settings"));
+                string sidecar=Path.Combine(folder,"Settings/pc-frame-rate.ini");
+                File.WriteAllText(Path.Combine(folder,"Settings/runtime.conf"),"native_fps = 144\nfuture_setting = retained\n");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                var picker=Find<ComboBox>(page.View,"NativeFrameRate");
+                Need(picker.Items.Count==3 && picker.SelectedIndex==0,"High refresh must remain opt-in");
+                Need(Find<TextBlock>(page.View,"NativeFrameRateBetaNote").Text.Contains("Arcade"),"Missing beta limitations");
+                picker.SelectedIndex=2;Click(Find<Button>(page.View,"SettingsCancelButton"));
+                Need(!File.Exists(sidecar),"Cancelled draft changed the game preference");
+                foreach(int choice in new[]{2,1,0}) {
+                    picker.SelectedIndex=choice;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                    int rate=GameSettings.NativeFrameRates[choice];
+                    Need(GameSettings.Load(folder,null).NativeFps==rate,"Saved rate did not round trip");
+                    Need(File.ReadAllText(sidecar)=="TSFP_FRAME_RATE_V1 "+rate+"\n","Game-menu sidecar format differs");
+                    var info=GameSettings.StartInfo(folder);
+                    Need(info.EnvironmentVariables["TSFP_NATIVE_FPS"]==rate.ToString(),"Launch did not select the saved timing mode");
+                    Need(info.EnvironmentVariables["RECOMP_FRAME_INTERP"]=="1" && info.EnvironmentVariables["RECOMP_FRAME_TARGET"]=="0" && info.EnvironmentVariables["RECOMP_FPS_CAP"]=="60","Retired presentation settings were reactivated");
+                }
+                Need(File.ReadAllText(Path.Combine(folder,"Settings/runtime.conf")).Contains("future_setting = retained"),"Unrelated setting lost");
+                File.WriteAllText(sidecar,"TSFP_FRAME_RATE_V1 120\n"); // Simulate in-game settings.
+                var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(1);
+                Need(Find<ComboBox>(reopened.View,"NativeFrameRate").SelectedIndex==1,"In-game choice not reflected");
+                Find<Slider>(reopened.View,"VerticalFovSlider").Value=70;Click(Find<Button>(reopened.View,"SettingsSaveButton"));
+                Need(GameSettings.Load(folder,null).NativeFps==120,"Unrelated edit reset frame rate");
+            });
+            Test("native frame-rate rejects invalid or concurrently changed preferences",()=>{
+                string folder=Path.Combine(root,"native-fps-conflict");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                string sidecar=Path.Combine(folder,"Settings/pc-frame-rate.ini");
+                File.WriteAllText(sidecar,"TSFP_FRAME_RATE_V1 144\n");
+                bool rejected=false;try{model.NativeFps=120;model.Save();}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(sidecar)=="TSFP_FRAME_RATE_V1 144\n","Concurrent game preference was overwritten");
+                foreach(string invalid in new[]{"TSFP_FRAME_RATE_V1 60","TSFP_FRAME_RATE_V1 240","TSFP_FRAME_RATE_V2 144","TSFP_FRAME_RATE_V1 144 extra"}) {
+                    File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
+                    Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid sidecar was accepted or rewritten");
+                }
+            });
+            Test("native frame-rate failure rolls back all earlier settings writes",()=>{
+                string folder=Path.Combine(root,"native-fps-rollback");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.Save();
+                var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
+                var before=files.Select(File.ReadAllBytes).ToArray();
+                Directory.CreateDirectory(files[4]+".bak");model.NativeFps=144;model.VerticalFov=75;
+                bool rejected=false;try{model.Save();}catch{rejected=true;}
+                Need(rejected,"Blocked backup should reject save");
+                for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived");
+            });
             Test("news selection, stale notes and toolbar spacing",()=>{
                 var page=new WhatsNewPage();page.SetVersions("v1.0.0","1.0.0",false);
                 var game=new Release{Tag="v1.1.0",Url=ReleaseClient.ReleasesPage,Notes="## Changes\n- **Shared** release"};

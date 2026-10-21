@@ -28,6 +28,11 @@ Common UI/model changes compile into both launchers. OS-specific calls still nee
 an implementation for the other host or an explicit capability/backlog entry.
 Both hosts remove retired high-FPS preferences and migrate old timing values to
 the fixed 60 FPS policy (MAC-054), while retaining unrelated settings.
+The new native frame-rate selector is separate: the common model/page writes
+`pc-frame-rate.ini` and passes `TSFP_NATIVE_FPS`, with original timing as default.
+Shared UI regressions exercise selection, game-menu preference round trips,
+concurrent edits, invalid input and transaction rollback on both host builds.
+These tests do not establish high-refresh gameplay correctness or Mac rendering.
 
 Passing checks establish tested behavior, not complete visual or system-integration
 parity. Discord sessions, native dialogs, physical displays, signing/notarization

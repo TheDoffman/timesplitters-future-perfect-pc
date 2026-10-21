@@ -6,7 +6,7 @@ For native Apple Silicon, start with the [Mac guide](macos.md). Run commands bel
 
 ## Build on Windows
 
-For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
+For a fresh checkout, install Git with Git LFS, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
 
 ```powershell
@@ -20,6 +20,12 @@ validates the input paths and Python version, then runs Setup, Extract, Test,
 Generate, and Build in order, stopping at the first failure. It requires internet
 access for dependency downloads; it does not install Git, Python, or Visual Studio.
 The default output is `build/windows/Release/futureperfect_recomp.exe`.
+Build audits the compiled pack in `assets/textures`, committed through Git LFS.
+Run `git lfs install` and `git lfs pull` after cloning if the files are still
+LFS pointers. Source ZIP downloads may contain pointers; a Git LFS checkout is
+the supported build input. No separate texture release is needed. Later builds
+reuse these files offline. See the [texture build dependency](textures.md#texture-build-dependency).
+Use `tsfp.ps1 Build -SkipTextures` for an explicitly lightweight build.
 After setup succeeds, double-click `Play.cmd` to play from the repository.
 The extracted files in `private/game` must remain; the ISO is no longer needed.
 Use `-Configuration Debug` or `-Configuration RelWithDebInfo` for another build

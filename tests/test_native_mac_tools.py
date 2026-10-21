@@ -36,6 +36,7 @@ def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monk
         pytest.fail('Build touched tools or Git before verifying its game input')
     monkeypatch.setattr(builder.subprocess, 'check_output', unexpected)
     monkeypatch.setattr(builder, 'run', unexpected)
+    monkeypatch.setattr(builder, 'ensure_pack', unexpected)
     message = 'Missing private/game/default.xbe' if game is None else 'Unsupported XBE'
     with pytest.raises(SystemExit, match=message):
         builder.main()

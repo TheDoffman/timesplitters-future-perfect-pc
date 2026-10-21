@@ -1,20 +1,64 @@
-# Measured progress
-
 ## Texture preservation on version bumps — 2026-10-20
 
-Branch `chore/preserve-texture-release-support` records the user's requirement
-that future game/launcher bumps retain the texture enhancement and delivery
-route, while upgrades, repairs and rollbacks preserve installed textures and
-personal settings. The existing Optional texture pack workflow now also runs
-for `VERSION`, `LauncherVersion.cs`, both game packagers and the game publisher.
+PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
+current main and adds VERSION, LauncherVersion.cs, both game packagers and the
+publisher to the Repository texture pack PR/main-push triggers. The workflow
+hydrates and audits the committed pack, including hashes, metadata, count/size
+and the 6 GiB budget; no separate texture release is required.
 
-Six publication-contract tests pass on Windows; no runtime code or personal
-texture files changed. The read-only live check currently fails: GitHub returns
-HTTP 404 for `textures-v0.1.0-alpha.1`, referenced by `config/texture-pack.json`.
-The pack must be restored/published and pass remote size/hash verification
-before the next version ships. This records current observed availability,
-separately from earlier publication notes; no assets were uploaded or changed.
-Existing host interaction/scene validation gaps remain under MAC-057/MAC-011.
+The previous failure came from the obsolete published-release lookup. Shared
+rules, release documentation and MAC-057 now describe repository delivery.
+No runtime code, textures, personal settings or saves changed; no playtest or
+new pack copy is needed. Thirteen focused local contract checks and three
+subtests pass on Windows; final CI is recorded in PR #234. MAC-057/MAC-011
+scene and host-interaction gaps remain explicit.
+
+## 2026-10-20 — Repository texture delivery correction
+
+The user requires compiled textures in main, bundled with normal game releases.
+This supersedes the separate-release delivery described below. The accidental
+textures-v0.1.0-alpha.2 release has been unpublished. DDS files are tracked
+through Git LFS with sanitized metadata; builds audit repository content and
+fail on unresolved pointers. No game release or gameplay test was performed.
+After the correction, 227 Python tests pass (one platform skip), with 39
+subtests. The Windows packaging/startup/icon CI fixture was corrected to include
+a tiny synthetic repository texture; all 11 tests and two subtests pass locally.
+Local launcher tests reach the new large-manifest test but stop at
+the running-game guard for another checkout; host CI supplies the full tests.
+
+# Measured progress
+
+## Bundled texture dependency for game releases (2026-10-20)
+
+Integrated the texture build/packaging change from issue #74 commit 6e11b52 onto
+main a0deeea, retaining fixed-60 timing, OneDrive compatibility and current CI
+scope selection. Windows and native Mac builders prepare one audited pack;
+packagers stream DDS and sanitized metadata into Textures/ without a duplicate
+texture staging tree. The shared launcher accepts bounded keyed texture members,
+seeds missing pairs and preserves existing replacements and settings. Installed
+textures remain separately managed through the pack installer. Launcher 1.2.22
+carries the shared installation change; older launchers must update first.
+
+The 1,505-texture alpha is 1,164,919,237 bytes with sanitized distribution metadata
+(active private pack: 1,165,240,310 bytes), under the 6 GiB cap. Publication uses
+24 immutable release parts, each at most 64 MiB, with one part assembled in RAM.
+Source artwork, prompts, original game data and personal files remain private.
+Texture temporary storage measured 267,500,678 bytes (256 MiB limit 268,435,456),
+with no part ZIPs retained and no duplicate pack. Published textures-v0.1.0-alpha.2 and verified all asset sizes/hashes. Read back
+all 24 public downloads (879,072,920 bytes) against every local audited DDS and
+sanitized metadata hash without extraction; all 1,505 replacements match.
+config/texture-pack.json pins that published release.
+
+Local Windows validation: 233 Python tests pass, one platform-dependent test
+skips, 39 subtests pass. This covers shared download, checksum/size failures,
+unsafe archives, offline reuse, cleanup boundaries, streamed Windows/Mac package
+manifests, publisher policy, native launch/preflight and CI routing. Windows
+launcher build and its full isolated regression suite pass, including bundled
+texture install, existing-pair preservation, OneDrive paths and staging cleanup.
+A native Mac bundled-install/preservation/cleanup fixture is registered for CI.
+No game build or gameplay was run. Native Mac host/package execution is assessed
+by the PR workflow; real pack scene/GPU coverage remains pending under MAC-011.
+This remains a partial overhaul (1,505 of 6,812 known keys), not a full remaster.
 
 ## Fixed-60 settings fixture repair (2026-10-20)
 
@@ -12943,3 +12987,52 @@ The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
 config/texture-pack.json records the exact published files. Publication used one
 bounded part at a time and left no ZIP files in build/texture-publication.
 The launcher installer remains source-only until its PR and a launcher release.
+
+## Launcher native frame-rate selector (2026-10-20)
+
+Source: `feature/launcher-native-frame-rate`, based on main `a0deeea`; the commit
+carrying this entry adds launcher integration only. Runtime contract inspected
+in `feature/native-144-fps` at `338dd62` plus that chat's in-progress
+`src/pc_frame_rate_settings.h`: `TSFP_NATIVE_FPS` and `TSFP_FRAME_RATE_V1` sidecar
+values 0/120/144. The runtime branch remains separate and under development.
+
+The shared Windows/Mac graphics page offers 60 FPS (Original), 120 FPS (Beta),
+and 144 FPS (Beta). Original timing is the default; explicit zero prevents a
+stale runtime native_fps value from enabling high refresh. The preference is
+shared with the new game menu, backed up, protected against concurrent writes,
+and included in multi-file rollback. The UI states compatible-build/restart
+requirements and the known Arcade movement/firing limitation. No game build,
+personal settings, saves, or active game session was changed.
+
+Validation on Windows x64 with the installed .NET Framework 4.8 compiler:
+- Launcher/bootstrap/test executable compilation passed. All 12 shared UI groups
+  passed, including three new native frame-rate behavioral groups. Existing
+  updater, download, version, startup, release-news and texture tests passed.
+- 35 settings checks, crash reporting, 14 unfinished-session checks, and 20
+  maintenance checks passed. The first settings run hit the Windows path-length
+  limit in an existing synthetic crash-log fixture under the deeply nested build
+  folder. The identical compiled test executable passed from the shorter
+  `build/lfr-tests` location; no production logic or assertion was weakened.
+- Three portable shared-theme and nine compatibility-policy tests passed.
+- Inspected a 900×720 WPF graphics-page render scrolled to Frame rate: selector,
+  beta/restart guidance, performance advice and Save/Cancel remain readable.
+  Preview and logs are under the ignored launcher worktree build directory.
+- Mac native build, UI execution and prerequisite checks were not run: this host
+  is Windows and lacks the pinned Mac SDK/runtime. Shared C# logic/tests are wired
+  into the existing dual-host workflow, but that is not Mac execution evidence.
+- Gameplay at 120/144 FPS remains the separate runtime task's responsibility.
+  No release was published and no other device's checkout was modified.
+
+## Launcher v1.2.22 release preparation (2026-10-20)
+
+Integrated current main `1680301` into `feature/launcher-native-frame-rate`.
+Restored the previously requested single-ZIP policy: the publisher had regained
+versionless aliases, which would duplicate both platform downloads. It now
+uploads eight verified assets, with one versioned ZIP per host and unchanged
+update-manifest names. README buttons open Latest and the release notes retain
+direct platform links. No existing public asset is removed or renamed.
+All 25 release-publication tests pass, including interrupted uploads, immutable
+published assets, stale-alias exclusion and exact eight-asset completeness.
+Windows/Mac hosted checks are pending on the release preparation PR; publication
+still requires its merge to main. The native-FPS game runtime is not included in
+this launcher release, and its beta choices explicitly require a compatible game.

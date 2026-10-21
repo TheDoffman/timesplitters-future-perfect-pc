@@ -41,7 +41,7 @@ namespace TimeSplitters.Launcher
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled;
-        readonly ComboBox device, resolution, aspect, scale, filtering;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -198,6 +198,12 @@ namespace TimeSplitters.Launcher
             cameraLeft.Children.Add(resetFov);
             if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
             var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
+            var timing=PageTheme.Section(graphics,"Frame rate","Choose a target for your next game launch. Your desktop refresh rate stays unchanged.");
+            frameRate=Choices(GameSettings.NativeFrameRateLabels,GameSettings.NativeFrameRateLabels[Array.IndexOf(GameSettings.NativeFrameRates,model.NativeFps)]);
+            frameRate.Name="NativeFrameRate";Field(timing,"Frame-rate target",frameRate);
+            var betaNote=Text("120 / 144 FPS use native high-refresh mode (beta), without interpolation. Gameplay issues may occur, including movement or firing problems in Arcade. Choose 60 FPS (Original) if you encounter problems.",12);
+            betaNote.Name="NativeFrameRateBetaNote";timing.Children.Add(betaNote);
+            timing.Children.Add(Text("Requires a game build with native high-refresh support; older releases will not gain high FPS from this setting. Save and restart the game to apply changes.",12));
             var quality=PageTheme.Section(graphics,"Quality & performance","Lower output resolution reduces GPU work. Console render scale applies only at Original console resolution.");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale / supersampling",scale);
@@ -206,6 +212,7 @@ namespace TimeSplitters.Launcher
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
+            frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
@@ -283,7 +290,7 @@ namespace TimeSplitters.Launcher
             scale.IsEnabled=original;
             Int32.TryParse(Convert.ToString(scale.SelectedItem),out n);
             var notes=new System.Collections.Generic.List<string>();
-            notes.Add("Game rendering and simulation run at 60 FPS. Your desktop refresh rate stays unchanged.");
+            notes.Add(frameRate.SelectedIndex>0 ? "Native high-refresh target: "+GameSettings.NativeFrameRates[frameRate.SelectedIndex]+" FPS (Beta). Actual FPS depends on your game build, hardware and display." : "Original 60 FPS timing. Your desktop refresh rate stays unchanged.");
             if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
             else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
             else notes.Add("Console scale is already 1×.");
@@ -301,6 +308,7 @@ namespace TimeSplitters.Launcher
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);

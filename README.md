@@ -4,8 +4,8 @@
 
 Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
 
 <sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
 
@@ -36,7 +36,7 @@ for release notes and checksums.
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip).** This downloads the latest stable Windows x64 launcher ZIP directly. |
+| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64**. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
 | **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
@@ -84,7 +84,7 @@ to open. Intel Macs are not supported by this native build.
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip).** This downloads the latest stable Apple Silicon launcher ZIP directly. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
+| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Mac (Apple Silicon)**. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
 | **02** | **Set up the native game.** Follow the [Mac source-build guide](docs/macos.md) for developer tools, your supported US Xbox game data and the native build. Keep `default.xbe`, `pak` and `xmv` together in the checkout's `private/game` folder. |
 | **03** | **Open the launcher for your checkout.** Use the command below, replacing both example paths with your extracted app and checkout folders. Then choose **Play Game**. |
 
@@ -135,6 +135,12 @@ removed. Older timing preferences are ignored by the runtime and normalized
 when launcher settings are saved; unrelated preferences remain intact.
 Your desktop refresh rate stays unchanged. Published builds require an update
 containing these changes.
+
+Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#native-frame-rate-selection-upcoming-launcher-update):
+60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
+an accompanying game build with the new native high-refresh runtime; older
+published games do not gain high-FPS support from the launcher alone.
+
 
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
 current game mode and session timer. Enable it in **Game settings → Discord**
@@ -289,12 +295,13 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. The **optional alpha pack** contains 1,242
-replacements (about 990 MiB installed); much of the game still uses original art.
-In launchers containing the texture installer, choose **Game settings → Graphics
-& resolution → Download 4K texture pack**, then enable **Enhanced** in the game's
-Display settings. The pack is hosted separately on GitHub and is never downloaded
-by cloning the repository. 4K output does not imply native 4K source detail.
+keep storage and memory bounded. Game builds and release ZIPs now include the
+**1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
+**Display settings → Textures → Enhanced** in the game to use it; Classic remains
+available. Install or update the game through the launcher to receive the pack.
+Compiled textures are committed through Git LFS and bundled with normal game
+releases; there is no separate texture release.
+This is a partial overhaul; 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 
 > [!NOTE]

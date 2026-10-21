@@ -429,7 +429,7 @@ public static class LauncherSettingsChecks
                     Require(values["future_graphics"]=="keep" && model.Fullscreen);
                 }
             });
-            Test("graphics page removes interpolation and high FPS controls",()=>STA(()=>{
+            Test("graphics page keeps retired interpolation and presentation controls removed",()=>STA(()=>{
                 var page=new SettingsPage(new System.Windows.Window().Resources,Root("fixed-fps-ui"),true);page.SelectTab(1);
                 var names=Descendants(page.View).OfType<System.Windows.FrameworkElement>().Select(n=>n.Name).ToList();
                 foreach(string name in new[]{"PresentationTarget","LegacyInterpolation","GameFramePacing","MonitorRefreshRate","PerformancePreset120","PerformancePreset144"})

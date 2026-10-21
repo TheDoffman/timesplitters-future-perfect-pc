@@ -154,14 +154,18 @@ reproducibility, and validation requirements.
   captures. Native `--test` also runs bounded real-GPU and SDL input regression
   checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
   device test; distinguish it from macOS event delivery and human playtesting.
-- Both Windows and native Mac use fixed 60 FPS rendering and the original
-  60 Hz guest clock. Above-60 presentation, interpolation, prediction and
-  automatic monitor-rate switching were removed at the user's request.
-  Legacy timing settings migrate to frame_interp=1, frame_target=0,
-  frame_cap=60 and refresh_rate=0. Preserve unrelated personal settings.
-  Do not reintroduce higher-FPS features or raise the console clock without
-  an explicit new request. Keep shared renderer correctness fixes and GPU
-  contracts independently of the retired presentation engine.
+- Both Windows and native Mac retain original 60 FPS timing by default and
+  the original 60 Hz console interrupt clock. The user explicitly requested
+  launcher settings for the new native 144 FPS work on 2026-10-20. This authorizes
+  opt-in 120/144 FPS beta choices for compatible native-high-refresh game builds;
+  it does not restore the retired interpolation/prediction engine or automatic
+  monitor-rate switching. Label beta limitations and preserve 60 FPS (Original)
+  as the recovery option. Legacy presentation keys still migrate to
+  frame_interp=1, frame_target=0, frame_cap=60 and refresh_rate=0. Preserve unrelated
+  preferences. Keep runtime gameplay validation separate from launcher setting
+  tests; a selector does not establish that older games support native high FPS.
+  Do not raise the console interrupt clock. Keep shared renderer correctness
+  fixes and GPU contracts independent of the retired presentation engine.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
   personal controls/display settings and uses `private/saves`; native runtime settings stay in ignored
   `private/native-settings`. Its `--check` is read-only. Automated tests must
@@ -231,25 +235,24 @@ reproducibility, and validation requirements.
 
 ## Project storage and texture work
 
-- Preserve the texture enhancement in the next game/launcher version bump and
-  all later releases (user instruction, 2026-10-20). Carry forward the shared
-  replacement loader, Classic/Enhanced controls, pack installer/download path,
-  and `config/texture-pack.json`; a version-only change must not remove or reset
-  them. Retain the current texture delivery policy, including bundled-pack
-  support when integrated. Verify the published pack's sizes/hashes and require
-  the Optional texture pack check to pass before merging a version bump. Upgrade,
-  repair and rollback checks must preserve installed textures and personal
-  settings. Keep private artwork out of Git and public packages.
+- Preserve texture enhancements across game/launcher version bumps: the shared
+  loader, Classic/Enhanced controls, installer, repository DDS/JSON and bundled
+  game packaging must carry forward. Require Repository texture pack to pass
+  on version-bump and game-packaging PRs; it verifies hydrated Git LFS files,
+  DDS/mips, sanitized metadata hashes, declared count/size and the 6 GiB limit.
+  Upgrade, repair and rollback checks must preserve installed textures and
+  personal settings. Do not restore a separate texture-release dependency.
 
-- The user explicitly authorized optional public delivery of the compiled
-  replacement DDS pack through the launcher (2026-10-20). This is an exception
-  to the local-only rule for those compiled replacements and sanitized metadata,
-  not for source artwork, original game assets or personal files. Use
-  `tools/texture-release.py publish` before merging a new pack manifest; commit
-  only `config/texture-pack.json`, never large texture files into Git. Keep pack
-  downloads opt-in, release versions immutable, and the launcher as GitHub Latest.
-  Source pushes cannot upload ignored local art from a hosted runner. Confirm the
-  Optional texture pack check passes before merging delivery updates.
+- The user requires compiled replacement textures committed to main and bundled
+  with ordinary game-version releases (2026-10-20). Store sanitized DDS/JSON in
+  assets/textures, with DDS tracked through Git LFS. Do not publish separate
+  versioned texture releases. Source artwork, original game files, prompts,
+  personal settings and saves remain private. The source build and game packagers
+  audit the committed pack by default; missing LFS content must stop packaging.
+  Keep the 6 GiB pack limit. The Repository texture pack CI check must pass before
+  merging changes to these assets. Avoid hydrating textures in unrelated CI jobs.
+  Retain one private art-production pack; a source-only worktree may use LFS
+  pointers to avoid a redundant working copy. Never prune unpushed LFS objects.
 
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.

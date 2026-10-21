@@ -198,7 +198,11 @@ their proportions. Larger targets cost GPU time and can cause drops below 60 FPS
 texture coordinates, scissor clipping and 32-bit screen copies are implemented. Advanced texture modes, cube/volume
 textures and movies remain incomplete; this is not complete Windows graphics parity.
 
-To use the same compiled DDS texture pack as Windows for one Mac launch:
+Native builds prepare the same compiled DDS texture pack as Windows by default,
+and the source launcher finds it automatically. See the [texture dependency and
+publication status](textures.md#texture-build-dependency). Use
+`--without-textures` on the builder for an explicitly lightweight build.
+To override the pack for one Mac launch:
 
 ```sh
 ./Play-Native-Mac.command --texture-pack private/texture-remaster/pack

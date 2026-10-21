@@ -9,7 +9,7 @@ namespace System.Web.Script.Serialization
 {
     public sealed class JavaScriptSerializer
     {
-        public int MaxJsonLength {get;set;} = 4*1024*1024;
+        public int MaxJsonLength {get;set;} = 8*1024*1024;
         static readonly JsonSerializerOptions Options = new JsonSerializerOptions { IncludeFields=true, Converters={new Objects()} };
         public string Serialize(object value) { return JsonSerializer.Serialize(value,Options); }
         public T Deserialize<T>(string text) { if(text.Length>MaxJsonLength)throw new System.IO.InvalidDataException("Oversized JSON.");return JsonSerializer.Deserialize<T>(text,Options); }
