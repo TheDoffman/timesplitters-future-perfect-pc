@@ -62,19 +62,38 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
-            Test("texture installation is opt-in, exposes both local sources and locks during work",()=>{
-                var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
-                int mode=-1;bool cancelled=false;
-                page.InstallTextures+=value=>mode=value;page.CancelTextureInstall+=()=>cancelled=true;
-                Click(Find<Button>(page.View,"DownloadTexturePack"));Need(mode==0,"Download not routed");
-                Click(Find<Button>(page.View,"InstallTextureZip"));Need(mode==1,"ZIP not routed");
-                Click(Find<Button>(page.View,"InstallTextureFolder"));Need(mode==2,"Folder not routed");
-                page.TextureBusy(true);
-                Need(!Find<Button>(page.View,"DownloadTexturePack").IsEnabled,"Busy download remains enabled");
-                page.TextureProgress("Installing test pack");
-                Need(Find<TextBlock>(page.View,"TexturePackStatus").Text=="Installing test pack","Progress not shown");
-                Click(Find<Button>(page.View,"CancelTextureInstall"));Need(cancelled,"Cancel not routed");
-                page.TextureBusy(false);Need(Find<Button>(page.View,"InstallTextureZip").IsEnabled,"Installer remained disabled");
+            Test("bundled texture beta toggle saves a launch preference without changing textures",()=>{
+                string folder=Path.Combine(root,"textures-toggle");Directory.CreateDirectory(Path.Combine(folder,"Textures"));
+                string texture=Path.Combine(folder,"Textures/0123456789abcdef.dds");File.WriteAllText(texture,"untouched texture fixture");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                var toggle=Find<CheckBox>(page.View,"EnhancedTextures");
+                Need(toggle.IsChecked==false && Convert.ToString(toggle.Content).Contains("Beta"),"Classic default or Beta label missing");
+                Need(!All(page.View).OfType<Button>().Any(b=>new[]{"DownloadTexturePack","InstallTextureZip","InstallTextureFolder"}.Contains(b.Name)),"Retired texture delivery controls remain");
+                Need(Find<TextBlock>(page.View,"EnhancedTexturesHint").Text.Contains("incomplete"),"Missing beta limitation");
+                toggle.IsChecked=true;Click(Find<Button>(page.View,"SettingsCancelButton"));
+                Need(!Directory.Exists(Path.Combine(folder,"Settings")),"Cancelled texture draft was saved");
+                foreach(bool enabled in new[]{true,false}) {
+                    toggle.IsChecked=enabled;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                    Need(GameSettings.Load(folder,null).EnhancedTextures==enabled,"Texture preference did not persist");
+                    Need(GameSettings.StartInfo(folder).EnvironmentVariables["TSFP_TEXTURE_MODE"]==(enabled?"4k":"classic"),"Runtime texture mode differs from saved choice");
+                    Need(File.ReadAllText(texture)=="untouched texture fixture","Toggle modified texture assets");
+                    var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(1);
+                    Need(Find<CheckBox>(reopened.View,"EnhancedTextures").IsChecked==enabled,"Reopened toggle lost saved choice");
+                }
+                var saved=GameSettings.Load(folder,null);saved.EnhancedTextures=true;saved.NativeFps=120;saved.Save();
+                saved=GameSettings.Load(folder,null);saved.VerticalFov=70;saved.Save();
+                Need(GameSettings.Load(folder,null).EnhancedTextures && GameSettings.Load(folder,null).NativeFps==120,"Unrelated save reset preferences");
+            });
+            Test("texture preference works without a pack and rejects malformed saved choices",()=>{
+                string folder=Path.Combine(root,"textures-no-pack");Directory.CreateDirectory(folder);
+                var model=GameSettings.Load(folder,null);model.EnhancedTextures=true;model.Save();
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["TSFP_TEXTURE_MODE"]=="4k","Missing pack blocked selection instead of runtime fallback");
+                Need(!Directory.Exists(Path.Combine(folder,"Textures")),"Saving tried to install textures");
+                string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                var doc=Json.Object(File.ReadAllText(controls));((Dictionary<string,object>)doc["launcher"])["enhanced_textures"]="yes";
+                string invalid=Json.Encode(doc);File.WriteAllText(controls,invalid);bool rejected=false;
+                try {GameSettings.Load(folder,null);}catch{rejected=true;}
+                Need(rejected && File.ReadAllText(controls)==invalid,"Malformed preference was accepted or rewritten");
             });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);

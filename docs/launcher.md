@@ -69,10 +69,25 @@ launcher closes after preparation and automatically reopens after installation,
 so Play always uses the newly installed launcher. Repairs and restoring a previous
 game use the same restart flow. Cancelling a download does not restart it.
 Leave room for staging and one rollback snapshot in addition to
-the installed game; optional textures also need their own space.
+the installed game, including its bundled replacement textures.
 
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
+
+## Enhanced textures (upcoming launcher update)
+
+Under **Game settings → Graphics & resolution**, enable **Use enhanced textures
+(Beta)** and select **Save settings**. The next launch uses the replacement
+textures bundled with supported game releases. Turn it off to start with the
+original textures; original textures are the default.
+
+The Beta is incomplete and may have visual issues. Textures without replacements,
+or game versions without a bundled pack, retain their original appearance. The
+toggle does not download, install or delete textures. Normal game updates deliver
+the pack; the separate download, ZIP and folder installation buttons are removed.
+
+Changing textures in the game's **Display settings** or with **F10** affects only
+that session. The launcher's saved choice applies again on the next launch.
 
 ## Compare specific game versions (upcoming launcher update)
 

@@ -1585,6 +1585,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Bundled texture toggle (2026-10-20, commit carrying this entry on
+  `feature/launcher-texture-toggle`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` replace texture download/ZIP/folder controls with an
+  off-by-default **Use enhanced textures (Beta)** checkbox. Both host adapters
+  remove the obsolete install actions while retaining interrupted-install
+  recovery. The saved launcher preference sets `TSFP_TEXTURE_MODE` to `4k` or
+  `classic`; in-game/F10 changes remain session-only. No new native adapter is
+  needed. Windows compilation, 13 shared UI groups and 35 settings checks pass.
+  Mac compilation and UI execution remain pending on a Mac host; acceptance
+  covers save/cancel, reopening, launch environment and unchanged texture files.
+  [Evidence](STATUS.md#launcher-bundled-texture-toggle-2026-10-20).
+
 - **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
   one-versioned-ZIP-per-host policy and Latest release-page download links.
   Platform update manifests retain their existing names and package formats.

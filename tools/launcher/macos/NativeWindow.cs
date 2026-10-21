@@ -147,31 +147,7 @@ namespace TimeSplitters.Launcher
             }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
-        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.InstallTextures+=mode=>Run(()=>InstallTextures(mode));settings.CancelTextureInstall+=()=>operation?.Cancel();settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
-        async Task InstallTextures(int mode)
-        {
-            if(render||busy||gameRunning||Core.GameRunning())return;
-            var page=settings;string source=null;
-            if(mode==1){var picked=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title="Choose a texture pack ZIP",AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Texture pack ZIP"){Patterns=new[]{"*.zip"}}}});source=picked.FirstOrDefault()?.TryGetLocalPath();if(source==null)return;}
-            else if(mode==2){var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions{Title="Choose the folder containing the keyed texture DDS files",AllowMultiple=false});source=picked.FirstOrDefault()?.TryGetLocalPath();if(source==null)return;}
-            if(busy||gameRunning||Core.GameRunning())return;
-            busy=true;operation=new CancellationTokenSource();page.TextureBusy(true);Refresh();
-            try{
-                var token=operation.Token;var progress=new Progress<string>(message=>page.TextureProgress(message));
-                if(mode==0){
-                    page.TextureProgress("Checking the optional texture pack download…");
-                    var pack=await TextureDownload.Check(client,token);
-                    if(!await Confirm("Optional 4K texture pack",TextureDownload.Description(pack))){page.RefreshTextures();return;}
-                    await TextureDownload.Install(root,client,pack,progress,token);
-                }else{
-                    if(!await Confirm("Install texture pack?","Matching texture keys will be updated. Other textures, saves and settings are kept.")){page.RefreshTextures();return;}
-                    await Task.Run(()=>TexturePack.Install(root,source,progress,token),token);
-                }
-                page.RefreshTextures();Status("Texture pack installed. Select Enhanced in the game's Display settings.");
-            }catch(OperationCanceledException){page.TextureProgress("Installation cancelled. Completed download parts remain installed; retry to finish the pack.");}
-            catch(Exception e){page.TextureProgress("Texture installation stopped: "+e.Message);LauncherLog.Write(root,e.ToString());}
-            finally{operation.Dispose();operation=null;busy=false;page.TextureBusy(false);Refresh();}
-        }
+        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
         async Task News()
         {
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}

@@ -106,7 +106,6 @@ namespace TimeSplitters.Launcher
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Release available;
         SettingsPage settings;
-        CancellationTokenSource textureStop;
         MaintenancePage repairPage, diagnosticsPage;
         MaintenanceArea maintenanceArea;
         WhatsNewPage newsPage;
@@ -285,8 +284,6 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings==null) {
                     settings=new SettingsPage(Window.Resources,root,previewMode);
-                    settings.InstallTextures+=async mode=>await InstallTextures(mode);
-                    settings.CancelTextureInstall+=()=> { if(textureStop!=null)textureStop.Cancel(); };
                     settings.Saved+=()=> { SetStatus("Settings saved."); Refresh(); };
                     settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
                     Find<ContentControl>("SettingsHost").Content=settings.View;
@@ -751,38 +748,6 @@ namespace TimeSplitters.Launcher
                 catch (Exception ex) { Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex);ShowRecovery(ex,Check,false); }
             }
             checking = false; Refresh();
-        }
-        async Task InstallTextures(int mode)
-        {
-            if(previewMode || busy || Core.GameRunning())return;
-            var page=settings;
-            string source=null;
-            if(mode==1) {
-                var picker=new Microsoft.Win32.OpenFileDialog {Title="Choose a texture pack ZIP",Filter="Texture pack ZIP (*.zip)|*.zip",CheckFileExists=true};
-                if(picker.ShowDialog(Window)!=true)return;source=picker.FileName;
-            } else if(mode==2) {
-                using(var picker=new System.Windows.Forms.FolderBrowserDialog {Description="Choose the folder containing the keyed texture DDS files."}) {
-                    if(picker.ShowDialog()!=System.Windows.Forms.DialogResult.OK)return;source=picker.SelectedPath;
-                }
-            }
-            if(busy || Core.GameRunning())return;
-            busy=true;textureStop=new CancellationTokenSource();page.TextureBusy(true);Refresh();
-            try {
-                var token=textureStop.Token;
-                var progress=new Progress<string>(message=>page.TextureProgress(message));
-                if(mode==0) {
-                    page.TextureProgress("Checking the optional texture pack download…");
-                    var pack=await TextureDownload.Check(client,token);
-                    if(MessageBox.Show(Window,TextureDownload.Description(pack),"Optional 4K texture pack",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes){page.RefreshTextures();return;}
-                    await TextureDownload.Install(root,client,pack,progress,token);
-                } else {
-                    if(MessageBox.Show(Window,"Install this pack? Matching texture keys will be updated. Other textures, saves and settings are kept.","Install texture pack",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes){page.RefreshTextures();return;}
-                    await Task.Run(()=>TexturePack.Install(root,source,progress,token),token);
-                }
-                page.RefreshTextures();SetStatus("Texture pack installed. Select Enhanced in the game's Display settings.");
-            } catch(OperationCanceledException) {page.TextureProgress("Installation cancelled. Completed download parts remain installed; retry to finish the pack.");}
-            catch(Exception e) {page.TextureProgress("Texture installation stopped: "+e.Message);Program.Log(root,e.ToString());}
-            finally {textureStop.Dispose();textureStop=null;busy=false;page.TextureBusy(false);Refresh();}
         }
         async Task Import(bool folder)
         {

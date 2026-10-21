@@ -299,6 +299,9 @@ keep storage and memory bounded. Game builds and release ZIPs now include the
 **1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
 **Display settings → Textures → Enhanced** in the game to use it; Classic remains
 available. Install or update the game through the launcher to receive the pack.
+The upcoming launcher update adds **Game settings → Graphics & resolution →
+Use enhanced textures (Beta)** to save the starting choice for each launch.
+Off uses the originals; in-game changes remain session-only.
 Compiled textures are committed through Git LFS and bundled with normal game
 releases; there is no separate texture release.
 This is a partial overhaul; 4K output does not imply native 4K source detail.

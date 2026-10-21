@@ -21,6 +21,7 @@ namespace TimeSplitters.Launcher
         string runtime;
         public double Sensitivity = .10;
         public bool DiscordEnabled;
+        public bool EnhancedTextures;
         public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
@@ -76,6 +77,11 @@ namespace TimeSplitters.Launcher
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
+                if (launcher.TryGetValue("enhanced_textures", out value))
+                {
+                    Core.Require(value is bool, "Enhanced textures must be true or false. No settings were changed.");
+                    model.EnhancedTextures = (bool)value;
+                }
                 if (launcher.TryGetValue("skip_startup_splashes", out value))
                 {
                     Core.Require(value is bool, "Skip startup splash screens must be true or false. No settings were changed.");
@@ -267,6 +273,7 @@ namespace TimeSplitters.Launcher
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
+            Map(value)["enhanced_textures"] = EnhancedTextures;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
@@ -306,7 +313,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_PC_MOUSE"] = model.MouseEnabled ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
-            info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = "classic";
+            info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = model.EnhancedTextures ? "4k" : "classic";
             #if MACOS
             NativeHost.Configure(info,root);
 #endif

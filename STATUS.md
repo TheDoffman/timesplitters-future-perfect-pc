@@ -13036,3 +13036,25 @@ published assets, stale-alias exclusion and exact eight-asset completeness.
 Windows/Mac hosted checks are pending on the release preparation PR; publication
 still requires its merge to main. The native-FPS game runtime is not included in
 this launcher release, and its beta choices explicitly require a compatible game.
+
+## Launcher bundled texture toggle (2026-10-20)
+
+Based on main `c932bee`, the commit carrying this entry on
+`feature/launcher-texture-toggle` replaces separate texture installation actions
+with **Use enhanced textures (Beta)** in the shared graphics settings page.
+The optional `launcher.enhanced_textures` boolean defaults off, uses existing
+transactional settings persistence, and selects `TSFP_TEXTURE_MODE=4k/classic`
+at launch. Game releases supply the textures. Missing replacements fall back to
+originals; Display-menu/F10 changes remain session-only. Both Windows and Mac
+adapters remove the old actions but retain recovery for interrupted legacy
+texture installations. No game source or personal game files were changed.
+
+Windows .NET Framework launcher/bootstrap/test compilation passed with required
+artwork. All 13 shared UI groups and 35 settings checks passed, including toggle
+save/cancel, reopening, launch mode, missing packs, malformed values and preservation
+of texture files and unrelated settings. Inspected the 900×720 WPF graphics page:
+the checkbox, Beta/fallback guidance and Save/Cancel controls remain readable.
+Three portable shared UI checks and nine compatibility-policy checks passed.
+The Mac backlog consistency check also passed.
+Native Mac compilation and UI execution are unavailable on this
+Windows host and remain pending. No release is published by this change.
