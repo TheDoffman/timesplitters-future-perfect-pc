@@ -130,6 +130,9 @@ reviews, merges the exact repair SHA, then requires fresh parent CI before its
 SHA-conditional merge into protected main. It refuses missing effective gates,
 changed revisions and failed follow-up CI. Legacy state is not automatically
 enrolled. `status` includes the installed controller hash and merge mode.
+`upgrade` replaces installed source/config under the worker lock after preflight,
+preserving an existing dashboard LaunchAgent, pause and attempt history; it keeps
+one previous source/config pair. Tests cover preservation and failed-write rollback.
 
 A stale source is updated from main before a repair attempt so the agent sees
 the same source as CI; conflicts and post-repair base drift need inspection.

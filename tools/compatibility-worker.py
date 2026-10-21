@@ -669,14 +669,48 @@ def launch_agent(root, python):
             'StandardErrorPath': str(root / 'launchd.log')}
 
 
+def upgrade_installation(root, plist, config):
+    """Called under the worker lock; retain an existing dashboard/service wrapper."""
+    target = root / 'worker.py'
+    settings = root / 'config.json'
+    paths = [plist, target, settings, root / 'worker.py.previous',
+             root / 'config.json.previous', root / 'config.tmp']
+    if any(path.is_symlink() for path in paths):
+        raise WorkerError('Refusing symlink in worker installation')
+    if not all(path.is_file() for path in (plist, target, settings)):
+        raise WorkerError('Worker is not installed; use install first')
+    old_source = target.read_bytes()
+    old_config = settings.read_bytes()
+    candidate = Path(__file__).read_bytes()
+    compile(candidate, str(target), 'exec')
+    for name, data in [('worker.py.previous', old_source), ('config.json.previous', old_config)]:
+        backup = root / name
+        backup.write_bytes(data)
+        os.chmod(backup, 0o600)
+    with tempfile.NamedTemporaryFile(dir=root, prefix='worker-upgrade-', delete=False) as stream:
+        pending = Path(stream.name)
+        stream.write(candidate)
+    try:
+        pending.replace(target)
+        try:
+            save_json(settings, config)
+        except Exception:
+            # No new poll can start while the caller holds worker.lock.
+            target.write_bytes(old_source)
+            settings.write_bytes(old_config)
+            raise
+    finally:
+        pending.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--state-dir', type=Path, default=default_root())
     parser.add_argument('--codex')
     parser.add_argument('--gh')
     parser.add_argument('--auto-merge', action='store_true',
-                        help='On install, enable checked repair and parent PR merges; never bypass rules')
-    parser.add_argument('action', choices=('check', 'dry-run', 'run', 'install', 'status', 'pause', 'resume', 'uninstall'))
+                        help='On install/upgrade, enable checked repair and parent PR merges; never bypass rules')
+    parser.add_argument('action', choices=('check', 'dry-run', 'run', 'install', 'upgrade', 'status', 'pause', 'resume', 'uninstall'))
     args = parser.parse_args()
     if sys.platform != 'darwin':
         raise WorkerError('The background worker runs on macOS; portable tests may run on any host')
@@ -688,7 +722,7 @@ def main():
     service = 'gui/%d/%s' % (os.getuid(), LABEL)
     with exclusive_lock(root / 'worker.lock'):
         config = load_json(root / 'config.json', {})
-        if args.action in ('check', 'install', 'dry-run'):
+        if args.action in ('check', 'install', 'upgrade', 'dry-run'):
             config = {**config, 'gh': find_program('gh', args.gh or config.get('gh')),
                       'codex': find_program('codex', args.codex or config.get('codex'))}
             if args.auto_merge:
@@ -714,16 +748,20 @@ def main():
             if config.get('auto_merge'):
                 worker.protected_main()
             print('GitHub maintainer access and ChatGPT authentication verified; no model call')
-        elif args.action == 'install':
+        elif args.action in ('install', 'upgrade'):
             worker.preflight()
             if config.get('auto_merge'):
                 worker.protected_main()
-            if plist.exists():
-                raise WorkerError('Worker already installed; pause/uninstall before updating')
-            shutil.copyfile(Path(__file__).resolve(), root / 'worker.py')
-            save_json(root / 'config.json', config)
-            plist.parent.mkdir(parents=True, exist_ok=True)
-            plist.write_bytes(plistlib.dumps(launch_agent(root, str(Path(sys.executable).resolve()))))
+            if args.action == 'upgrade':
+                upgrade_installation(root, plist, config)
+                print('Upgraded controller/config; existing service, dashboard, pause and attempts preserved')
+            else:
+                if plist.exists():
+                    raise WorkerError('Worker already installed; use upgrade')
+                shutil.copyfile(Path(__file__).resolve(), root / 'worker.py')
+                save_json(root / 'config.json', config)
+                plist.parent.mkdir(parents=True, exist_ok=True)
+                plist.write_bytes(plistlib.dumps(launch_agent(root, str(Path(sys.executable).resolve()))))
         else:
             if not config:
                 raise WorkerError('Run check/install with --codex and --gh first')

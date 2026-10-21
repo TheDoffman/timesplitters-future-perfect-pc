@@ -171,6 +171,8 @@ python3 tools/compatibility-worker.py check
 python3 tools/compatibility-worker.py dry-run
 python3 tools/compatibility-worker.py --auto-merge check
 python3 tools/compatibility-worker.py --auto-merge install
+# For an existing worker (including one with a dashboard wrapper):
+python3 tools/compatibility-worker.py --auto-merge upgrade
 ```
 
 If discovery needs help, add `--codex /absolute/path/to/codex` and
@@ -198,8 +200,13 @@ python3 "$HOME/Library/Application Support/TSFP Compatibility Worker/worker.py" 
 `status` shows the installed controller hash, merge mode, last poll and repair
 outcome; `last_error` identifies failures.
 `pause` preserves the service but stops repair attempts. `uninstall` unloads the
-service and retains source/state/logs for recovery. Review and uninstall before
-installing an updated controller. Moving to another Mac requires uninstalling on
+service and retains source/state/logs for recovery. From the reviewed checkout,
+`upgrade` checks authentication and protections, acquires the worker lock and
+replaces only the controller/configuration. It preserves the existing LaunchAgent,
+dashboard wrapper, pause state and attempt history. The next scheduled poll uses
+the new source; no service restart or automatic resume is required. One previous
+controller/config pair remains as `worker.py.previous`/`config.json.previous`
+for operator recovery. Moving to another Mac requires uninstalling on
 the old Mac and signing in/installing separately on the new one. Account sharing
 does not synchronize the worker or its local state.
 

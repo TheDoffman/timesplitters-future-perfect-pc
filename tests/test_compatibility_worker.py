@@ -135,6 +135,54 @@ class PolicyTests(unittest.TestCase):
         self.assertNotIn('OPENAI_API_KEY', json.dumps(plist))
 
 
+class UpgradeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.plist = self.root / 'worker.plist'
+        self.plist.write_bytes(b'existing dashboard wrapper')
+        (self.root / 'worker.py').write_bytes(b'old controller')
+        W.save_json(self.root / 'config.json', {'gh': 'gh', 'codex': 'codex'})
+        W.save_json(self.root / 'state.json', {'paused': 'operator', 'attempts': {'old': 'retained'}})
+        self.config = {'gh': 'gh', 'codex': 'codex', 'auto_merge': True}
+
+    def test_upgrade_retains_wrapper_state_and_rollback_files(self):
+        state = (self.root / 'state.json').read_bytes()
+        settings = (self.root / 'config.json').read_bytes()
+        W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), Path(W.__file__).read_bytes())
+        self.assertEqual(W.load_json(self.root / 'config.json', {}), self.config)
+        self.assertEqual((self.root / 'worker.py.previous').read_bytes(), b'old controller')
+        self.assertEqual((self.root / 'config.json.previous').read_bytes(), settings)
+        self.assertEqual((self.root / 'state.json').read_bytes(), state)
+        self.assertEqual(self.plist.read_bytes(), b'existing dashboard wrapper')
+        self.assertEqual(list(self.root.glob('worker-upgrade-*')), [])
+
+    def test_failed_config_write_restores_installed_controller(self):
+        settings = (self.root / 'config.json').read_bytes()
+        with mock.patch.object(W, 'save_json', side_effect=OSError('disk write failed')):
+            with self.assertRaisesRegex(OSError, 'disk write failed'):
+                W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+        self.assertEqual((self.root / 'config.json').read_bytes(), settings)
+        self.assertEqual(list(self.root.glob('worker-upgrade-*')), [])
+
+    def test_missing_installation_is_not_created(self):
+        self.plist.unlink()
+        with self.assertRaisesRegex(W.WorkerError, 'not installed'):
+            W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+
+    @unittest.skipIf(os.name == 'nt', 'Windows symlink privileges are optional')
+    def test_symlink_backup_is_rejected_before_writes(self):
+        (self.root / 'worker.py.previous').symlink_to(self.plist)
+        with self.assertRaisesRegex(W.WorkerError, 'symlink'):
+            W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+        self.assertEqual(self.plist.read_bytes(), b'existing dashboard wrapper')
+
+
 class RepairTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
