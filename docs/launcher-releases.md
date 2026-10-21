@@ -34,40 +34,23 @@ requires updating those shared pins after the new assets are available.
 
 ## Published assets and failure handling
 
-New releases contain a versioned ZIP and a stable download alias per platform,
-four SHA-256 sidecars, two platform build receipts and these update manifests
-(twelve assets):
+New releases contain exactly one versioned ZIP per platform, two SHA-256
+sidecars, two build receipts and two update manifests (eight assets):
 
 - Windows: `launcher-update.json`, selecting `windows-x64`.
 - Mac: `launcher-update-macos-arm64.json`, selecting `macos-arm64`.
 
-The workflow verifies internal file manifests, archive checksums, permissions,
-source receipts and the uploaded GitHub asset digests before making its draft
-public. A failed build leaves no release. A failed upload leaves an unpublished
-draft; rerun the failed job to finish it. It can repair its own incomplete draft,
-but refuses to overwrite an unrelated release, move a tag or replace published
-assets. Fix a published package by releasing a new version.
+The workflow verifies internal manifests, archive hashes, permissions, source
+receipts and uploaded GitHub digests before publishing. Failed builds leave no
+release; failed uploads leave a draft that can be resumed. Published assets and
+tags are immutable: fixes require a new version.
 
-Stable launcher releases become **Latest**. The README has separate direct-download
-buttons using `releases/latest/download/TimeSplitters-Launcher-windows-x64.zip`
-and `releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip`. They follow
-the next stable release automatically, without a README edit. Generated release
-notes also link directly to each versioned platform ZIP. Previews do not replace
-Latest. Keep Latest assigned to a stable launcher release containing both aliases.
-Versioned ZIP names and platform update
-manifests stay unchanged so existing Windows and Mac launchers can still discover,
-verify and repair their matching package without a bridge update.
-
-The two ZIP entries for each platform contain identical bytes. The publisher
-uploads the verified versioned archive under both names without making another
-local ZIP copy. Alias checksum sidecars name their matching alias. All twelve
-assets must pass uploaded-digest verification before the draft becomes public.
-The stable aliases are intentional: GitHub direct-download links require fixed
-filenames. Keep them in future releases so the README buttons remain usable.
-
-Do not remove or rename assets in already-published releases. v1.2.19 already
-contains these aliases. A retry must not add aliases to or replace files in an
-older published release that lacks them; publish a new version instead.
+Stable launcher releases become **Latest**. README download buttons open the
+latest release page, which provides direct links to the Windows and Mac ZIPs.
+Versioned ZIP names and update manifests retain their existing format, so
+installed launchers can still discover, verify and repair their matching package.
+Versionless ZIP aliases are not published. Stale aliases in local build folders
+are ignored; older public assets remain untouched.
 
 Publication explicitly refreshes the issue-form version workflow because releases
 created using `GITHUB_TOKEN` do not trigger its release event.

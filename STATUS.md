@@ -13007,3 +13007,17 @@ Validation on Windows x64 with the installed .NET Framework 4.8 compiler:
   into the existing dual-host workflow, but that is not Mac execution evidence.
 - Gameplay at 120/144 FPS remains the separate runtime task's responsibility.
   No release was published and no other device's checkout was modified.
+
+## Launcher v1.2.21 release preparation (2026-10-20)
+
+Integrated current main `1680301` into `feature/launcher-native-frame-rate`.
+Restored the previously requested single-ZIP policy: the publisher had regained
+versionless aliases, which would duplicate both platform downloads. It now
+uploads eight verified assets, with one versioned ZIP per host and unchanged
+update-manifest names. README buttons open Latest and the release notes retain
+direct platform links. No existing public asset is removed or renamed.
+All 25 release-publication tests pass, including interrupted uploads, immutable
+published assets, stale-alias exclusion and exact eight-asset completeness.
+Windows/Mac hosted checks are pending on the release preparation PR; publication
+still requires its merge to main. The native-FPS game runtime is not included in
+this launcher release, and its beta choices explicitly require a compatible game.

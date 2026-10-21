@@ -1585,6 +1585,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.2.21 publication preparation (2026-10-20):** Restores the common publisher's
+  one-versioned-ZIP-per-host policy and Latest release-page download links.
+  Platform update manifests retain their existing names and package formats.
+  All 25 portable publisher regressions pass. Both host checks on the preparation
+  PR remain pending; native Mac validation is not inferred from Windows results.
+
 - **Native frame-rate selector (2026-10-20, commit carrying this entry on
   `feature/launcher-native-frame-rate`):** Shared `GameSettings.cs` and
   `SettingsPage.cs` provide original 60 / beta 120 / beta 144 FPS, with restart,
