@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import sys
 import subprocess
+import struct
 import tempfile
 import unittest
 from unittest import mock
@@ -44,6 +45,19 @@ class LauncherPackaging(unittest.TestCase):
             root = Path(directory)
             (root/'VERSION').write_text('0.2.0-alpha.4\n')
             upstream = root / 'external/ts3FPrecomp'
+            # Exercise the default bundled path without network or real artwork.
+            textures = root/'assets/textures'
+            textures.mkdir(parents=True)
+            words = [0]*32
+            for index, value in {0: 0x20534444, 1: 124, 3: 1, 4: 1, 7: 1,
+                                 19: 32, 20: 4, 21: 0x31545844}.items():
+                words[index] = value
+            dds = struct.pack('<32I', *words)+b'\0'*8
+            key = '0123456789abcdef'
+            (textures/(key+'.dds')).write_bytes(dds)
+            (textures/(key+'.json')).write_text(json.dumps({
+                'key': key, 'sha256': hashlib.sha256(dds).hexdigest(),
+                'prompt': 'private fixture prompt', 'source': '/private/art.png'}))
 
             def put(path):
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -105,6 +119,12 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')
+                self.assertEqual(manifest['textures']['source'], 'repository')
+                self.assertEqual(manifest['textures']['texture_count'], 1)
+                self.assertEqual(archive.read(prefix+'Textures/'+key+'.dds'), dds)
+                public = json.loads(archive.read(prefix+'Textures/'+key+'.json'))
+                self.assertNotIn('prompt', public)
+                self.assertNotIn('source', public)
                 self.assertEqual(manifest['launcher_version'], '1.1.0')
                 self.assertIn('TimeSplitters Launcher.exe', manifest['files'])
                 for name, digest in manifest['files'].items():

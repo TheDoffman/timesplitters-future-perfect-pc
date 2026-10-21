@@ -12,6 +12,7 @@ import subprocess
 import sys
 from native_mac_common import recycle_test_disks
 import vulkan_sdk
+from build_textures import ensure_pack
 
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = ROOT / 'external/ts3FPrecomp'
@@ -44,6 +45,7 @@ def main():
     parser.add_argument('--setup', action='store_true', help='Install pinned build dependencies (including the common-renderer SDK when selected) and build the symbol scanner')
     parser.add_argument('--generate', action='store_true', help='Regenerate game C from the verified local XBE')
     parser.add_argument('--test', action='store_true', help='Run native platform, MMIO and path regression tests after building')
+    parser.add_argument('--without-textures', action='store_true', help='Skip texture setup for an explicitly lightweight/offline build')
     parser.add_argument('--renderer', choices=('auto','gl','vulkan'), default='auto',
                         help='Default: common Xbox/Vulkan frontend on supported macOS; legacy GL on older hosts')
     parser.add_argument('--vulkan-driver', choices=tuple(vulkan_sdk.DRIVERS), default=vulkan_sdk.DEFAULT_DRIVER,
@@ -92,6 +94,9 @@ def main():
     actual = subprocess.check_output(['git', '-C', str(UPSTREAM), 'rev-parse', 'HEAD'], text=True).strip()
     if actual != revision:
         raise SystemExit('Runtime checkout differs from the shared pin; no changes made.')
+    textures = None
+    if not args.without_textures:
+        _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:
         run('git', '-C', UPSTREAM, 'submodule', 'update', '--init', '--depth', '1',
@@ -135,6 +140,7 @@ def main():
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+                    textures=textures,
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],

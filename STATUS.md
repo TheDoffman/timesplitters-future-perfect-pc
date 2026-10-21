@@ -1,4 +1,49 @@
+## 2026-10-20 — Repository texture delivery correction
+
+The user requires compiled textures in main, bundled with normal game releases.
+This supersedes the separate-release delivery described below. The accidental
+textures-v0.1.0-alpha.2 release has been unpublished. DDS files are tracked
+through Git LFS with sanitized metadata; builds audit repository content and
+fail on unresolved pointers. No game release or gameplay test was performed.
+After the correction, 227 Python tests pass (one platform skip), with 39
+subtests. The Windows packaging/startup/icon CI fixture was corrected to include
+a tiny synthetic repository texture; all 11 tests and two subtests pass locally.
+Local launcher tests reach the new large-manifest test but stop at
+the running-game guard for another checkout; host CI supplies the full tests.
+
 # Measured progress
+
+## Bundled texture dependency for game releases (2026-10-20)
+
+Integrated the texture build/packaging change from issue #74 commit 6e11b52 onto
+main a0deeea, retaining fixed-60 timing, OneDrive compatibility and current CI
+scope selection. Windows and native Mac builders prepare one audited pack;
+packagers stream DDS and sanitized metadata into Textures/ without a duplicate
+texture staging tree. The shared launcher accepts bounded keyed texture members,
+seeds missing pairs and preserves existing replacements and settings. Installed
+textures remain separately managed through the pack installer. Launcher 1.2.22
+carries the shared installation change; older launchers must update first.
+
+The 1,505-texture alpha is 1,164,919,237 bytes with sanitized distribution metadata
+(active private pack: 1,165,240,310 bytes), under the 6 GiB cap. Publication uses
+24 immutable release parts, each at most 64 MiB, with one part assembled in RAM.
+Source artwork, prompts, original game data and personal files remain private.
+Texture temporary storage measured 267,500,678 bytes (256 MiB limit 268,435,456),
+with no part ZIPs retained and no duplicate pack. Published textures-v0.1.0-alpha.2 and verified all asset sizes/hashes. Read back
+all 24 public downloads (879,072,920 bytes) against every local audited DDS and
+sanitized metadata hash without extraction; all 1,505 replacements match.
+config/texture-pack.json pins that published release.
+
+Local Windows validation: 233 Python tests pass, one platform-dependent test
+skips, 39 subtests pass. This covers shared download, checksum/size failures,
+unsafe archives, offline reuse, cleanup boundaries, streamed Windows/Mac package
+manifests, publisher policy, native launch/preflight and CI routing. Windows
+launcher build and its full isolated regression suite pass, including bundled
+texture install, existing-pair preservation, OneDrive paths and staging cleanup.
+A native Mac bundled-install/preservation/cleanup fixture is registered for CI.
+No game build or gameplay was run. Native Mac host/package execution is assessed
+by the PR workflow; real pack scene/GPU coverage remains pending under MAC-011.
+This remains a partial overhaul (1,505 of 6,812 known keys), not a full remaster.
 
 ## Fixed-60 settings fixture repair (2026-10-20)
 

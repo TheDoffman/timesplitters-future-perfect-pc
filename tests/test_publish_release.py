@@ -3,6 +3,7 @@
 No real tag, release, game data or personal saves are touched.
 """
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -239,6 +240,30 @@ def test_package_manifest_rejects_changed_stage(publisher):
         publisher.verify_package()
 
 
+@pytest.mark.parametrize('corrupt', [False, True])
+def test_streamed_textures_validate_from_zip_without_stage_copy(publisher, corrupt):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    build = json.loads((publisher.stage/'BUILD.json').read_text())
+    name = 'Textures/0123456789abcdef.dds'
+    content = b'synthetic texture payload'
+    build['textures'] = {'source': 'local', 'texture_count': 1}
+    build['files'][name] = hashlib.sha256(content).hexdigest()
+    (publisher.stage/'BUILD.json').write_text(json.dumps(build))
+    with zipfile.ZipFile(publisher.archive, 'w') as archive:
+        for relative in build['files']:
+            if relative != name:
+                archive.write(publisher.stage/relative, publisher.name+'/'+relative)
+        archive.write(publisher.stage/'BUILD.json', publisher.name+'/BUILD.json')
+        archive.writestr(publisher.name+'/'+name, b'corrupt' if corrupt else content)
+    publisher.checksum.write_text(module.digest(publisher.archive)+'  '+publisher.archive.name+'\n')
+    assert not (publisher.stage/'Textures').exists()
+    if corrupt:
+        with pytest.raises(ValueError, match='Archived file changed'):
+            publisher.verify_package()
+    else:
+        publisher.verify_package()
+
+
 def test_published_baseline_includes_prereleases_and_ignores_drafts():
     stable = dict(tag_name='v0.1.0', draft=False, published_at='2026-01-01T00:00:00Z')
     preview = dict(tag_name='v0.2.0-alpha.2', draft=False, published_at='2026-10-01T00:00:00Z')
@@ -437,3 +462,40 @@ def test_changed_asset_between_prepare_and_publish_is_blocked(publisher):
     with pytest.raises(ValueError, match='changed before upload'):
         publisher.publish()
     assert not publication_calls(publisher)
+
+
+def test_large_texture_pr_uses_verified_local_merge_diff(publisher, monkeypatch):
+    publisher.preflight()
+    old_git = publisher.git
+    def git(*args):
+        if args[0] == 'diff':
+            assert args == ('diff', '--no-renames', '--name-only', '-z', HEAD+'^1', HEAD)
+            return 'assets/textures/0123456789abcdef.dds\0'
+        return old_git(*args)
+    def gh(*args, **kwargs):
+        if '--paginate' in args:
+            return json.dumps([[{'filename': 'docs/'+str(i)} for i in range(3000)]])
+        return json.dumps(dict(merged_at='2026-10-20', merge_commit_sha=HEAD,
+                               title='Texture pack', changed_files=3040))
+    monkeypatch.setattr(publisher, 'git', git)
+    monkeypatch.setattr(publisher, 'gh', gh)
+    assert '[#12]' in publisher.game_pr_notes('https://github.com/owner/repo/pull/12')
+
+
+@pytest.mark.parametrize('version,draft,missing,passes', [
+    ('1.2.21', False, False, False), ('1.2.22', True, False, False),
+    ('1.2.22', False, True, False), ('1.2.22', False, False, True)])
+def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypatch, version, draft, missing, passes):
+    publisher.preflight()
+    publisher.output.mkdir(parents=True, exist_ok=True)
+    publisher.metadata.write_text(json.dumps({'textures': {'texture_count': 1}}))
+    release = {'tag_name': 'launcher-v'+version, 'draft': draft, 'prerelease': False,
+               'published_at': '2026-10-20', 'assets': [
+                   {'name': f'TimeSplitters-Launcher-v{version}-{platform}.zip', 'state': 'uploaded', 'size': 1}
+                   for platform in (['windows-x64'] if missing else ['windows-x64', 'macos-arm64'])]}
+    monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(release))
+    if passes:
+        publisher.require_texture_launcher()
+    else:
+        with pytest.raises(ValueError, match='launcher'):
+            publisher.require_texture_launcher()

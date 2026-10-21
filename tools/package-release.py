@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import zipfile
 from bundle_online import bundle
+from build_textures import ensure_pack, zip_entries, write_zip
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -17,7 +18,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', default='v'+(ROOT/'VERSION').read_text().strip())
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
+    parser.add_argument('--without-textures', action='store_true', help='Make a smaller package without enhanced textures')
+    parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
     args = parser.parse_args()
+    if args.without_textures and args.texture_pack:
+        parser.error('--texture-pack cannot be combined with --without-textures')
     if not re.fullmatch(r'v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', args.version):
         parser.error('Use a semantic release version, such as v1.2.3 or v1.2.3-alpha.1.')
     if '-' in args.version and any(part.isdecimal() and len(part)>1 and part[0]=='0' for part in args.version.split('-',1)[1].split('.')):
@@ -26,6 +31,9 @@ def main():
     # Only a successfully built executable with matching content can be packaged.
     subprocess.run([os.sys.executable, str(ROOT/'tools/network-identity.py'), '--verify',
                     '--executable', str(ROOT/'build/windows/Release/futureperfect_recomp.exe')], check=True)
+    texture_rows, textures = [], None
+    if not args.without_textures:
+        _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)
     stage = args.output.resolve() / name
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
@@ -108,7 +116,8 @@ WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. Click: recapture mouse.
 F1: show/hide the PC Settings menu bar (also PC Settings > Hide Menu Bar).
 F2: keyboard/mouse bindings and sensitivity. F12: Debug settings.
-F10: switch Classic/4K textures live (optional DDS pack in Textures).
+F10: switch Classic/Enhanced textures live.
+Enhanced textures: {'included in Textures; partial overhaul' if textures else 'not bundled in this lightweight package'}.
 Alt+Enter: fullscreen (also available under PC Settings).
 Button prompts show your first assigned keyboard/mouse binding. Controller input
 restores controller icons; using the keyboard/mouse switches them back.
@@ -157,17 +166,21 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
         'online': online,
+        'textures': textures,
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',
         'files': {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in sorted(stage.rglob('*')) if p.is_file()},
     }
+    info['files'].update({name: sha for name, _, sha in zip_entries(texture_rows)})
     (stage / 'BUILD.json').write_text(json.dumps(info, indent=2) + '\n', encoding='utf-8')
     archive_path = stage.with_name(name + '.zip')
     with zipfile.ZipFile(archive_path, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
         for p in sorted(stage.rglob('*')):
             if p.is_file():
                 archive.write(p, name + '/' + p.relative_to(stage).as_posix())
+        # Stream directly from the single active pack: no second staging copy.
+        write_zip(archive, name+'/', texture_rows)
     with zipfile.ZipFile(archive_path) as archive:
         assert archive.testzip() is None
         assert not any('/Data/' in n or '/Saves/' in n or n.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')) for n in archive.namelist())

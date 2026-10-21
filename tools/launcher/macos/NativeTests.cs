@@ -21,9 +21,10 @@ namespace TimeSplitters.Launcher
         static string NewRoot(string name){var root=Path.Combine(sandbox,name);Directory.CreateDirectory(root);return root;}
         static string Hash(byte[] b){return Convert.ToHexString(SHA256.HashData(b)).ToLowerInvariant();}
         static void Write(string root,string name,string value){var path=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,value);}
-        static string Archive(string root,string version,bool corrupt=false,bool launcher=false)
+        static string Archive(string root,string version,bool corrupt=false,bool launcher=false,bool textures=false)
         {
             var files=launcher?new Dictionary<string,string>{{Core.LauncherName,"native launcher"},{Core.AppPath,"plist"}}:new Dictionary<string,string>{{LauncherPlatform.GameBinary,"native game "+version},{LauncherPlatform.LaunchScript,"#!/bin/sh"},{"Settings/pc-controls.json","defaults"},{"Licenses/example.txt","license"}};
+            if(textures) {files["Textures/0123456789abcdef.dds"]="new texture";files["Textures/0123456789abcdef.json"]="new metadata";files["Textures/abcdef0123456789.dds"]="second texture";}
             var hashes=files.ToDictionary(p=>p.Key,p=>(object)Hash(Encoding.UTF8.GetBytes(p.Value)));
             string manifest=Json.Encode(new {schema=1,version=version,files=hashes});var path=Path.Combine(root,Guid.NewGuid()+".zip");
             using(var zip=ZipFile.Open(path,ZipArchiveMode.Create)){foreach(var pair in files){using(var writer=new StreamWriter(zip.CreateEntry(pair.Key).Open()))writer.Write(pair.Value+(corrupt?"corrupt":""));}using(var writer=new StreamWriter(zip.CreateEntry(launcher?Core.SelfManifest:"BUILD.json").Open()))writer.Write(manifest);}
@@ -37,6 +38,8 @@ namespace TimeSplitters.Launcher
         sealed class Handler:HttpMessageHandler { public Func<HttpRequestMessage,HttpResponseMessage> Reply;protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken t){var response=Reply(r);response.RequestMessage=r;return Task.FromResult(response);} }
         static void GamePruningTest()
         {
+            Need(Core.Allowed("Textures/0123456789abcdef.dds") && Core.PreserveGameFile("Textures/0123456789abcdef.dds"), "Bundled texture install/preservation missing");
+            Need(!Core.Allowed("Textures/game.exe") && !Core.Allowed("Textures/sub/0123456789abcdef.dds"), "Unsafe texture path accepted");
             foreach (string name in new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest })
                 Need(Core.PreserveGameFile(name.ToLowerInvariant()) && Core.PreserveGameFile(name.ToUpperInvariant()), "Launcher casing lost cleanup protection");
             var root = NewRoot("game-pruning");
@@ -59,6 +62,21 @@ namespace TimeSplitters.Launcher
             Need(!File.Exists(Core.PathIn(root, "Support/retired.txt")), "Retired game file retained");
             Core.Rollback(root);
             Need(Core.InstalledVersion(root) == "v1.0.0" && File.ReadAllText(Core.PathIn(root, "Support/retired.txt")) == "old package file", "Game cleanup rollback failed");
+        }
+        static void BundledTexturesTest()
+        {
+            var root=NewRoot("bundled-textures");
+            Write(root,"Textures/0123456789abcdef.dds","artist texture");
+            Write(root,"Settings/pc-controls.json","personal settings");
+            var changes=Core.Unpack(Archive(root,"v1.0.0",textures:true),Path.Combine(root,".launcher/pending/payload"),"v1.0.0");
+            Core.Apply(root,changes,null);
+            Need(File.ReadAllText(Core.PathIn(root,"Textures/0123456789abcdef.dds"))=="artist texture","Existing DDS replaced");
+            Need(!File.Exists(Core.PathIn(root,"Textures/0123456789abcdef.json")),"Existing pair received mismatched metadata");
+            Need(File.ReadAllText(Core.PathIn(root,"Textures/abcdef0123456789.dds"))=="second texture","Missing bundled texture not installed");
+            Need(File.ReadAllText(Core.PathIn(root,"Settings/pc-controls.json"))=="personal settings","Personal controls replaced");
+            Core.DiscardGameStaging(root);
+            Need(!Directory.Exists(Core.PathIn(root,".launcher/pending")),"Texture staging retained");
+            Need(File.Exists(Core.PathIn(root,"Textures/abcdef0123456789.dds")),"Installed texture removed during cleanup");
         }
         static bool BundleSignatureValid(string root)
         {
@@ -216,6 +234,7 @@ namespace TimeSplitters.Launcher
             try{
                 Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
                 LauncherTextureChecks.Run();
+                Test("bundled game textures install and preserve existing replacements",BundledTexturesTest);
                 Test("translocation recovery validates the real writable installation and preserves personal files", LocationTests);
                 Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});

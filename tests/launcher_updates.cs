@@ -50,7 +50,7 @@ static class LauncherTests
         return new Dictionary<string, string> { { "Bin/futureperfect_recomp.exe", "new game" }, { "Launch.ps1", "launch" },
             { "Settings/pc-controls.json", "defaults" }, { Core.LauncherName, "new launcher" }, { "Licenses/Runtime.txt", "license" } };
     }
-    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash)
+    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash, string padding = null)
     {
         var files = Files(); if (alter != null) alter(files);
         var hashes = files.ToDictionary(p => p.Key, p => Hash(p.Value));
@@ -61,7 +61,7 @@ static class LauncherTests
             foreach (var file in files)
                 using (var writer = new StreamWriter(zip.CreateEntry("package/" + file.Key).Open(), new UTF8Encoding(false))) writer.Write(file.Value);
             using (var writer = new StreamWriter(zip.CreateEntry("package/BUILD.json").Open(), new UTF8Encoding(false)))
-                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes }));
+                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes, padding = padding }));
             if (extra != null) using (var writer = new StreamWriter(zip.CreateEntry(extra).Open())) writer.Write("unlisted");
         }
         return path;
@@ -211,6 +211,31 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("bundled texture manifests can exceed one MiB", () => {
+                string archive = Zip("large-manifest", null, null, false, new string('x', 1100*1024));
+                string stage = Path.Combine(temp, "large-manifest-stage");
+                Core.Unpack(archive, stage, "v1.1.0");
+                Assert(new FileInfo(Path.Combine(stage, "BUILD.json")).Length > 1024*1024);
+            });
+            Test("bundled textures install while existing replacements and settings survive", () => {
+                string key = "Textures/0123456789abcdef.dds";
+                string root = Path.Combine(temp, "bundled-textures");
+                string zip = Zip("bundled-textures", f => { f[key] = "new texture"; f["Textures/0123456789abcdef.json"] = "new metadata"; f["Textures/abcdef0123456789.dds"] = "second texture"; }, null, false);
+                var changes = Core.Unpack(zip, Path.Combine(temp, "texture-payload"), "v1.1.0");
+                Put(root, key, "artist texture");
+                Put(root, "Settings/pc-controls.json", "personal settings");
+                Core.Apply(root, changes, null);
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+                Assert(!File.Exists(Core.PathIn(root, "Textures/0123456789abcdef.json")));
+                Assert(File.ReadAllText(Core.PathIn(root, "Textures/abcdef0123456789.dds")) == "second texture");
+                Assert(File.ReadAllText(Core.PathIn(root, "Settings/pc-controls.json")) == "personal settings");
+                Assert(Core.PreserveGameFile(key));
+                Assert(!Core.Allowed("Textures/game.exe") && !Core.Allowed("Textures/sub/0123456789abcdef.dds"));
+                Put(root, ".launcher/pending/payload/Textures/abcdef0123456789.dds", "verified staged texture");
+                Core.DiscardGameStaging(root);
+                Assert(!Directory.Exists(Core.PathIn(root, ".launcher/pending")));
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+            });
             if (args.Length == 1 && args[0] == "--cleanup") {
                 CleanupTests(); Console.WriteLine("PASS: " + passed + " isolated launcher cleanup checks."); return 0;
             }

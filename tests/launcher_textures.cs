@@ -124,6 +124,7 @@ public static class LauncherTextureChecks
                 }
             });
             Test("download manifest binds bounded parts to this repository",()=>{
+                Reject(()=>TextureDownload.Parse("{\"schema\":2,\"delivery\":\"bundled\"}"));
                 string text=Json.Encode(new {schema=1,version="0.1.0-alpha.1",installed_bytes=256,texture_count=1,parts=new[]{new{name="textures-001.zip",size=256,sha256=new string('a',64)}}});
                 var pack=TextureDownload.Parse(text);
                 Need(pack.Parts[0].AssetUrl==ReleaseClient.ReleasesPage+"/download/textures-v0.1.0-alpha.1/textures-001.zip","Wrong download origin");
