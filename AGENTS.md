@@ -154,14 +154,18 @@ reproducibility, and validation requirements.
   captures. Native `--test` also runs bounded real-GPU and SDL input regression
   checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
   device test; distinguish it from macOS event delivery and human playtesting.
-- Both Windows and native Mac use fixed 60 FPS rendering and the original
-  60 Hz guest clock. Above-60 presentation, interpolation, prediction and
-  automatic monitor-rate switching were removed at the user's request.
-  Legacy timing settings migrate to frame_interp=1, frame_target=0,
-  frame_cap=60 and refresh_rate=0. Preserve unrelated personal settings.
-  Do not reintroduce higher-FPS features or raise the console clock without
-  an explicit new request. Keep shared renderer correctness fixes and GPU
-  contracts independently of the retired presentation engine.
+- Both Windows and native Mac retain original 60 FPS timing by default and
+  the original 60 Hz console interrupt clock. The user explicitly requested
+  launcher settings for the new native 144 FPS work on 2026-10-20. This authorizes
+  opt-in 120/144 FPS beta choices for compatible native-high-refresh game builds;
+  it does not restore the retired interpolation/prediction engine or automatic
+  monitor-rate switching. Label beta limitations and preserve 60 FPS (Original)
+  as the recovery option. Legacy presentation keys still migrate to
+  frame_interp=1, frame_target=0, frame_cap=60 and refresh_rate=0. Preserve unrelated
+  preferences. Keep runtime gameplay validation separate from launcher setting
+  tests; a selector does not establish that older games support native high FPS.
+  Do not raise the console interrupt clock. Keep shared renderer correctness
+  fixes and GPU contracts independent of the retired presentation engine.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
   personal controls/display settings and uses `private/saves`; native runtime settings stay in ignored
   `private/native-settings`. Its `--check` is read-only. Automated tests must
