@@ -749,6 +749,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **HUD panel performance follow-up (2026-10-22, uncommitted candidate):**
+  The shared `text-panel-scope` patch reuses read mapping checks across the
+  original panel's width/fit/draw sequence, inside the existing placement
+  wrapper. Windows and native prompt feature definitions pass the same modeled
+  panel fixture: five read queries become one; all measurements/draws, fresh
+  scratch writes, operation expiry and placement boundaries remain covered.
+  No OS adapter change is needed. Full Windows build, rendered comparison,
+  measured FPS and native Mac execution remain pending; see STATUS.md.
+
 - **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
   text read cache now keeps the complete OS-validated interval, avoiding repeat
   queries when guest stack reads descend or labels visit earlier addresses in

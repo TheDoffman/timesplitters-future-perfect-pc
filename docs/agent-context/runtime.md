@@ -183,6 +183,14 @@ and performs no AI, animation, rendering-quality or frame-rate throttling.
 The mapping cache remains read-only; prompt scratch writes query live protection.
 Adding the manual wrapper requires the normal guest regeneration/build route.
 
+`*-text-panel-scope.patch` extends reuse across the original shared HUD panel
+`sub_0012E3F0_gen`: width/fit measurements and subsequent label draws share
+one read scope. `pc_panel_text_original` is passed into the existing placement
+wrapper, so its pre/post sprite flushes execute outside the cached lifetime.
+Font metrics, label contents and all original drawing remain live; this caches
+mapping metadata only. The panel's font/colour setup is synchronous and does
+not change VM protection. Scratch writes retain fresh writable checks.
+
 ## Experimental water coefficient precision
 
 `*-native-surface-coefficients.patch` follows `*-native-surface-constants.patch`

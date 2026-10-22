@@ -34,6 +34,13 @@ with captures disabled and identical resolution, FOV and bot settings.
 The same Python suite extracts the production outlined-text wrapper and tests
 both host feature defines, all five draws, guest ABI, invalidation and fresh
 scratch writes. Removing the outer scope is a required failing mutation.
+The panel variant extracts `pc_panel_text_original` and `sub_0012E3F0` too.
+It models the panel's three measurement/fit calls and two outlined labels,
+reducing same-region read queries from five to one while retaining all three
+measurements, ten draws and thirteen fresh scratch-write checks. The mutation
+removes only the panel scope; outlined scopes remain. Placement callbacks
+assert they run outside the reused mapping lifetime. This is a boundary/ABI
+fixture, not execution of the full original panel or a rendered comparison.
 
 `tests/test_decal_projection.py` checks the production projection wrapper's
 guest ABI and all matrix elements, plus one VM query per same-region correction.

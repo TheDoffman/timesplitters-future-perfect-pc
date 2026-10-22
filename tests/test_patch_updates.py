@@ -139,6 +139,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
+        if patch.name.endswith('-text-panel-scope.patch'):
+            continue  # Depends on the later shared panel/display wrapper.
         if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
             continue  # Depends on display/viewport hooks installed by the complete migration.
         if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):

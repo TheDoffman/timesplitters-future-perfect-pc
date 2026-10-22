@@ -1,3 +1,20 @@
+## 2026-10-22 — HUD panel text validation overhead (candidate)
+
+On `perf/arcade-panel-text-scope`, the shared HUD panel now reuses the existing
+read-only mapping scope across its width/fit measurements and text draws.
+Its placement flushes stay outside the scope; scratch writes still query live
+protection. The original font sizing, labels, rendering and gameplay cadence
+are unchanged. The preceding crowded-Venice CPU profile identifies text
+validation as remaining work, but is not an isolated FPS comparison.
+
+The complete patch stack applies. Ten focused scope tests pass on Windows,
+including both host feature configurations and a failing no-panel-scope
+mutation. A modeled panel falls from five read queries to one, retaining three
+measurements, ten draws, thirteen translated scratch-write checks and fresh
+validation on the next operation. Full build, rendered comparison, measured
+FPS and native Mac execution are pending. Another game session was active,
+so no competing performance benchmark was launched. See MAC-002.
+
 ## 2026-10-22 — Pending PR integration
 
 The integration branch combines PRs #290, #294, #296–#301 on main after #295.
