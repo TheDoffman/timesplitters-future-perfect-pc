@@ -44,6 +44,13 @@ See STATUS for values and provenance. Keep one-run asynchronous/captured
 behavior evidence separate from exact trajectories, physical input and pacing.
 The normal playable pair is restored after each run; candidate objects remain
 in the root build cache, so preserve the pair and force a fresh link next build.
+The later `vehicle-integrated-terrain-*` route removes pre-drive steering and
+extends throttle toward the ice pillar. At built source `fb261e1`, 60/144 stop
+but120 reaches the bank; a second60 also stops with a different pose. Its
+asynchronous position/quaternion/velocity readings show approach differences,
+so neither an isolated collision cause nor exact handling parity is proven.
+Preserve this counterexample and use controlled contact evidence before editing
+mechanics. STATUS records checkpoints and rejected broad conclusions.
 Main `acf4464` integration retains keyboard-menu/weapon-slot exclusions in
 the historical controls fixture alongside vehicle physics. Full-stack apply
 and all four current/historical upgrade checks pass on the combined source.

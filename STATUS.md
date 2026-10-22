@@ -1,3 +1,37 @@
+## 2026-10-22 — Straight vehicle obstacle comparison remains unresolved
+
+The same corrected `fb261e1` Windows executable was tested against the Siberia
+ice pillar with no bots, six seconds for vehicle entry, no steering commands,
+and the same three-second throttle plus two further three-second bursts.
+Read-only observations include body position, quaternion and velocity, with
+matching frame brackets. Steering remains below 0.001 magnitude throughout.
+Original60 and native144 stop at the pillar near Z67.987 and Z67.912; native120
+continues onto the bank near Z109.037. Reviewed captures confirm those outcomes.
+A repeat Original60 run also stops, near Z67.568, with a different final pose.
+
+The approach is still not identical. Near Z66, sampled X values at 60/120/144
+are -11.38515 / -11.41138 / -11.17424; quaternion-derived yaw is approximately
+2.168 / 1.943 / 2.192 degrees. The repeated Original60 sample is X-11.30164,
+yaw2.087 degrees. The divergence occurs around the pillar edge near Z67;
+the 120 run retains forward velocity while the other runs turn and stop.
+This reproduces an unresolved terrain outcome on the current executable,
+but does not isolate its cause to collision code or establish a rate-specific
+failure. No production physics change was made from these observations.
+The prior six-bot replay's alternate path occurred at144, not120; keep both
+records instead of treating either short replay as complete handling acceptance.
+
+All four bounded sessions exit cleanly, retain health1.75 and unchanged valid
+profile signatures, and pass stationary settled pause (119 / 114 / 114 / 114
+samples for 60/120/144/60-repeat). Disposable disks are recycled and the normal
+playable executable is restored. Evidence: isolated
+`vehicle-integrated-terrain-{60,120,144,60-repeat}` reports/captures/provenance
+and `logs/vehicle-terrain-comparison.json`. These are asynchronous observations
+with captures and synthetic input, not exact trajectories or frame-pacing
+measurements. A controlled obstacle/contact comparison is needed before a
+mechanics change. Full terrain handling and native Mac gameplay remain open.
+All selected CI checks pass at documentation head `a2c9db6`; these checks do
+not resolve the observed live difference. PR #307 remains draft.
+
 ## 2026-10-22 — Vehicle chase-camera fractional time correction
 
 The camera-distance suspicion is now reproduced independently of image age.

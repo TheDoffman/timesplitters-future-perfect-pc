@@ -5940,6 +5940,21 @@ physical input, vehicle exit, frame pacing and native Mac acceptance remain
 pending. Evidence: `logs/vehicle-camera-comparison.json` and isolated
 `vehicle-integrated-camfix-{60,120,144}` reports/provenance/captures.
 
+The subsequent straight no-bot obstacle route uses that same `fb261e1` binary,
+removes all pre-drive steering, and extends throttle through two additional
+three-second bursts. Original60/native144 stop near Z67.987/67.912, whereas
+native120 reaches the bank near Z109.037. A second Original60 stops at Z67.568.
+Captures confirm the different outcomes. Steering remains below0.001, health
+stays1.75 and pause/profile-preservation checks pass in all four sessions.
+The earlier six-bot replay split at144; this one splits at120. Small position,
+orientation and vertical-motion differences are present before the pillar
+edge, including differences between the two Original60 runs. Neither replay
+establishes the collision root cause. No production mechanics change was made;
+controlled obstacle/contact acceptance remains open. See STATUS and
+`logs/vehicle-terrain-comparison.json`, plus the isolated
+`vehicle-integrated-terrain-{60,120,144,60-repeat}` records. Captured asynchronous
+observations do not establish exact trajectories or pacing.
+
 ## Native-start return to Original 60 (2026-10-22)
 
 The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing

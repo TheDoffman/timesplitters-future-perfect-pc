@@ -3655,6 +3655,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle obstacle follow-up (2026-10-22, built source `fb261e1`, PR #307):**
+  Straight no-bot Windows runs stop at the Siberia pillar at60/144, while120
+  reaches the bank. A second Original60 run also stops with a different pose.
+  Small approach differences remain; STATUS records observations and limits.
+  No new production fix or Mac parity claim follows. Controlled contact,
+  broader handling and actual Mac gameplay acceptance remain outstanding.
+
 - **Vehicle chase camera (2026-10-22, source `24d0ad5`, PR #307):** Shared numeric policy
   admits fractional chase updates at `CA040` and nonzero spring groups at
   `CA424`. No new OS adapter. Full-original camera tests reproduce the old
