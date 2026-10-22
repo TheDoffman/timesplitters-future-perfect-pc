@@ -65,7 +65,10 @@ fractional intervals while `17E680` cleared throttle/brake fields `+530/+534`.
 The shared numeric gate now admits every advancing native interval there too.
 `17DA00 -> 172EE0` runs in `native_vehicle_driver.c` with controlled action,
 model and wake services; original mode and zero-float pause retain their gates.
-Live handling acceptance remains separate from this input-production check.
+Build `67c1864` passes and matched live initial acceleration now agrees within
+0.1% at the three presets. Later pillar/bank contact diverges, so full handling
+acceptance remains separate. Latest candidate recovery is `vehicle-67c1864`;
+the earlier candidate binary was recycled and the playable crowd pair restored.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

@@ -3630,6 +3630,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   update. Original `17DA00/172EE0` tests reproduce missing native throttle before
   the fix and cover forward/reverse/braking/release, pause, speeds and ABI.
   No host adapter change; native Mac execution and live handling remain pending.
+  Windows build `67c1864` and 112 timing/vehicle/translator/generation checks
+  pass. Matched initial jeep acceleration now agrees within 0.1% across the
+  presets, while later pillar/bank contact still differs. This is Windows input
+  validation, not full handling acceptance or native Mac verification.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

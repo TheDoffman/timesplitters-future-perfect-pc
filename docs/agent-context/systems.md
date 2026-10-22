@@ -34,7 +34,7 @@ advancing interval, deferring across pause. Routine tests establish elapsed-time
 and timer behavior. Original body integration now has force/drag/rotation and
 controlled support-contact checks at all three rates. The original entity
 publisher and bounds transform, sleep/wake and vehicle component integration
-now run in that fixture. Real broadphase geometry, driver input, model/render
+now run in that fixture. Real broadphase geometry, model/render
 notification and Mac gameplay remain unverified. The scoped
 RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
 from advancing the shared sequence through contact/constraint shuffle sites;
@@ -49,6 +49,9 @@ gate at `17DA03`, dropping throttle on intervening native updates. Its numeric
 policy now uses positive game time, matching the vehicle consumer's cadence.
 The original trigger producer `172EE0` checks forward, reverse, braking and
 release on fractional frames; seat weapons and live handling remain unverified.
+The rebuilt live replay now matches initial acceleration within 0.1% across
+the three presets, but later terrain contact differs. Do not infer collision
+parity or measured 144 FPS from that corrected throttle window.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

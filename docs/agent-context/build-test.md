@@ -64,6 +64,9 @@ throttle at native120 before the `17DA03` gate correction; `legacy-driver`
 must still fail. It checks normal/slow/fast/irregular intervals, fresh analog
 throttle, braking, reverse, release, pause and the guest ABI. Wake, model and
 seat-action services are controlled; full handling requires the live replay.
+The `67c1864` replay corrects the original throttle deficit (initial travel
+within 0.1% across presets); later pillar/bank paths still diverge. Inspect both
+the sampled input window and subsequent captures before declaring acceptance.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused

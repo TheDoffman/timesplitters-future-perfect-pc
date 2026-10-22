@@ -61,7 +61,14 @@ fixture reproduces 60 throttle updates and half the intended integrated power
 at native120. The shared gate correction supplies fresh input on every advancing
 native interval. Original60 remains unchanged; forward/reverse/braking, release,
 pause and slow/fast/irregular timing are covered. This fixes the proven input
-defect; a rebuilt live comparison is still needed to assess total handling.
+defect. Supported Windows build `67c1864` passes, and fresh matched live throttle
+windows now travel 29.695/29.678/29.674 units at requested 60/120/144, a spread
+below 0.1%. All use 178 authored ticks, unchanged health and near-identical
+starting positions. Later terrain contact diverges: 60/120 stop against the
+pillar while 144 proceeds onto the bank. Collision acceptance therefore remains
+open; these capture-enabled runs do not establish locked frame rates. All exit
+cleanly with fixture/profile signatures unchanged. The latest candidate EXE/PDB
+are retained locally, and the prior playable crowd build is restored.
 Windows validation passes 112 timing/vehicle/translator/generation cases and
 77 repository-context/backlog/CI-scope cases after this correction.
 

@@ -5634,3 +5634,39 @@ The Windows regression run passes 112 timing/vehicle/float-join/vehicle-join/
 generation cases in 132.95 seconds (`logs/native-vehicle-driver-regressions.log`),
 plus 77 context/backlog/CI-scope cases in 1.18 seconds. The original-routine
 test requires the supported private XBE and skips without it.
+
+### Rebuilt driver comparison (`67c1864`)
+
+The supported Windows build and its build tests pass. Executable SHA-256 is
+`02757346892118abf6caf7eb1376634afce4753a93155600c21d799b3ef2adb8`.
+The same established Siberia input sequence runs sequentially at 144, 60 and
+120 with six default bots, Classic textures and 1280x720 captures. All sampled
+throttle windows have 60 observations, 178 authored ticks, health 1.75 and
+starting positions within 0.02 units. Initial throttle travel is now:
+
+| Requested preset | Sample span (seconds) | Travel (game units) |
+| --- | ---: | ---: |
+| Original 60 | 2.975451 | 29.694886 |
+| Native 120 | 2.976108 | 29.677941 |
+| Native 144 | 2.975363 | 29.674005 |
+
+This removes the earlier large acceleration deficit; the spread is below 0.1%.
+The later route still diverges at terrain contact: 60/120 stop against the ice
+pillar near Z=67.57/68.56, while 144 proceeds onto the bank near Z=106.06. Captures
+confirm these different outcomes. No collision root cause is established by
+this replay, and broader handling acceptance remains open. The exit attempt
+again does not leave the vehicle. Pause and resume are observed at each rate.
+
+Native120/144 traces have median positive game deltas 0.52116/0.51533 ticks;
+1,703/1,766 advancing gameplay updates carry zero integer ticks. These are
+diagnostic runs, not locked-preset FPS or pacing measurements; a separate
+menu-footer checkout's game also remains open and untouched. All three runners
+exit cleanly, preserve fixture/profile signatures and recycle disposable disks.
+Evidence: `private/test-saves/vehicle-driver-{60,120,144}`, corresponding
+`logs/native-vehicle-driver-{60,120,144}.log`, and
+`private/pipeline/vehicle-driver-comparison.json`. Runner SHA-256 is
+`f9e0751890fc3511181c993a3881737c3c7ed173b9fac7f4c03742b71c9755f5`.
+The previous playable crowd EXE/PDB are restored and their executable hash
+reverified. Current candidate files are in `private/build-recovery/vehicle-67c1864`;
+the superseded `vehicle-ba4f0bf` binary pair was recycled. Source remains on the
+focused WIP branch, without a candidate PR or release. Mac execution is pending.
