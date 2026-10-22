@@ -33,6 +33,11 @@ Independent spawn events test all carried-clock phases at 60/120/144,
 signed inheritance, rotated transforms, vertex offsets, pause, missing
 history and allocation failure. `legacy-spawn-motion` must fail at native120.
 This private-XBE fixture does not certify live model rendering or trajectories.
+Supported Windows build `3e1ee87` includes this fix and `6232685` contact
+velocity; the full build and built-in checks pass. The retained diagnostic
+pair is `private/build-recovery/vehicle-3e1ee87`. Normal playable `4adb6b0`
+is restored, so force a fresh link when building from the candidate object
+cache again. Live spawn/contact and native Mac checks are still pending.
 
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts

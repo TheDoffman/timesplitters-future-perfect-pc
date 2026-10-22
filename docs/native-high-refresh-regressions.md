@@ -5748,5 +5748,15 @@ the old-gate negative control (`logs/native-spawn-motion-after.log`). These
 checks establish initial body state, not live appearance or full trajectories.
 The broader Windows suite passes 114 timing/vehicle/translator/generation
 checks in 147.56 seconds (`logs/native-spawn-motion-regressions.log`) and 77
-context/backlog/scope checks in 1.17 seconds. Full game build, live spawn and
-native Mac validation are pending.
+context/backlog/scope checks in 1.17 seconds. Supported Windows build `3e1ee87`
+and its built-in validation pass (`logs/native-spawn-motion-build.log`), using
+MSVC 14.44.35207, Windows SDK 10.0.26100 and the common Xbox frontend. This
+build also includes the prior character-contact correction `6232685`.
+Candidate EXE SHA-256:
+`6cfe6c7a5b5fe71b0f128b520e1e08affd1e50e3fbd672de783c34f21387c42e`.
+The EXE/PDB pair is retained in `private/build-recovery/vehicle-3e1ee87`;
+the superseded `vehicle-67c1864` pair was recycled. The normal playable
+`4adb6b0` pair was restored and its executable hash reverified as
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+No game session was launched for these two additions. Live spawn/contact,
+broader handling, measured pacing and native Mac validation remain pending.

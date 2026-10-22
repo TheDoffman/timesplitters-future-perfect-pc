@@ -3649,7 +3649,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Original history-copy, spawn and setter tests pass at 60/120/144 with
   rotated transforms, signed inheritance, offset vertices and failure/pause
   paths. The old gate fails at native120. No platform-specific code or adapter;
-  native Mac execution and live spawn acceptance remain pending.
+  Windows full build `3e1ee87` and built-in checks pass, including the previous
+  character-contact addition. Native Mac execution and live spawn/contact
+  acceptance remain pending. Candidate provenance and limits are in STATUS.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

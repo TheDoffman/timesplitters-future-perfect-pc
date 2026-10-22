@@ -62,6 +62,8 @@ on fractional events. The original history copy and spawn/setter path test
 linear velocity and angular momentum, including a rotated owner transform,
 an offset model vertex, pause, absent history and allocation failure. This is
 shared numeric policy; live visual/physics and native Mac acceptance are pending.
+Windows candidate `3e1ee87` builds and passes its built-in checks with both
+contact and spawn fixes; it is retained separately from normal playable `4adb6b0`.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

@@ -88,6 +88,10 @@ original copy, spawn, matrix math and `167CE0/167C00/167AE0` setters with
 controlled allocation/model services. Caller `2107E8` supplies a nonzero
 inheritance factor; `1FA7B2` explicitly disables it. Live spawn/rendering
 acceptance remains separate from this routine evidence.
+The supported Windows `3e1ee87` build passes with both contact and spawn
+changes. Its candidate EXE/PDB are retained in `vehicle-3e1ee87`; the older
+`vehicle-67c1864` pair was recycled, and the normal playable pair restored.
+No live contact/spawn check of this new build has run yet.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

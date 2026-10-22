@@ -92,8 +92,15 @@ the old gate fails at native120. Controlled services supply allocation, model
 orientation and owner transforms. Pause, disabled inheritance, missing history
 and allocation failure are covered. This is a one-time spawn fix, not a change
 to continuous animation colliders. All 114 timing/vehicle/translator/generation
-regressions and 77 context/backlog/scope checks pass. Full build/live spawn
-acceptance is pending.
+regressions and 77 context/backlog/scope checks pass. Supported Windows build
+`3e1ee87` and its built-in tests also pass, covering both the character-contact
+and spawn-motion source additions. Candidate EXE/PDB are retained under
+`private/build-recovery/vehicle-3e1ee87`; executable SHA-256 is
+`6cfe6c7a5b5fe71b0f128b520e1e08affd1e50e3fbd672de783c34f21387c42e`.
+The previous `67c1864` binary pair was recycled and the normal playable
+`4adb6b0` pair restored with its hash verified. No live gameplay was launched
+for these two additions; live spawn/contact and native Mac acceptance remain
+pending. Build evidence is `logs/native-spawn-motion-build.log`.
 
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
