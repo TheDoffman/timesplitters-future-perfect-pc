@@ -18,9 +18,10 @@ def unused_udp_port():
         return probe.getsockname()[1]
 
 
-def test_auto_host_tls_invitation_join_and_cleanup(tmp_path):
+@pytest.mark.parametrize('mode', ['arcade', 'story'])
+def test_auto_host_tls_invitation_join_and_cleanup(tmp_path, mode):
     host = online_host.start_match(tmp_path, '203.0.113.7', VERSION, 'Automatic host', unused_udp_port(), True,
-                                  directory_port=0)
+                                  directory_port=0, mode=mode)
     directory = host.local_directory
     guest = None
     try:
@@ -28,14 +29,14 @@ def test_auto_host_tls_invitation_join_and_cleanup(tmp_path):
         assert url == directory.public_url and fingerprint == directory.fingerprint and code == host.lobby['code']
         assert host.lobby['address'] == '203.0.113.7'
         client = Client(directory.address, fingerprint)
-        assert client.request('GET', '/v2/lobbies?compatibility='+VERSION)['lobbies'][0]['code'] == code
+        assert client.request('GET', '/v2/lobbies?compatibility='+VERSION+'&mode='+mode)['lobbies'][0]['code'] == code
         assert client.request('GET', '/v2/lobbies?compatibility='+'b'*64)['lobbies'] == []
         with pytest.raises(ValueError, match='certificate does not match'):
             Client(directory.address, '0'*64).request('GET', '/v2/lobbies?compatibility='+VERSION)
         # Simulate the forwarded host endpoint on loopback for the real UDP handshake.
         with directory.server.directory.lock:
             directory.server.directory.online[code]['address'] = '127.0.0.1'
-        guest = Session.join(client, VERSION, code)
+        guest = Session.join(client, VERSION, code, mode=mode)
         assert guest.bridge.ready.is_set()
         with pytest.raises(OSError):
             online_host.LocalDirectory(tmp_path, '203.0.113.7', directory.server.server_port)

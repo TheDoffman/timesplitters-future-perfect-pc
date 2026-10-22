@@ -56,8 +56,9 @@ class Client:
 
 
 class Session:
-    def __init__(self, client, compatibility, lobby, host, bridge):
+    def __init__(self, client, compatibility, lobby, host, bridge, mode='arcade'):
         self.client, self.compatibility, self.lobby = client, compatibility, lobby
+        self.mode = mode
         self.host, self.bridge = host, bridge
         self.closed = threading.Event()
         self.error = ''
@@ -67,28 +68,61 @@ class Session:
         self.worker = threading.Thread(target=self.heartbeat, daemon=True)
         self.worker.start()
 
+    @staticmethod
+    def validate_mode(mode):
+        if mode not in ('arcade', 'story'):
+            raise ValueError('Unknown Online mode')
+
+    @staticmethod
+    def validate_lobby(lobby, mode):
+        # Old directories can still serve Arcade, but cannot enforce Story limits.
+        if (lobby.get('mode', 'arcade') != mode or
+            (mode == 'story' and lobby.get('capacity') != 4)):
+            raise ValueError('Directory does not support the requested Online mode')
+
     @classmethod
-    def create(cls, client, compatibility, name, port, public):
+    def create(cls, client, compatibility, name, port, public, mode='arcade'):
+        cls.validate_mode(mode)
         # Bind before advertising: a failed port bind must not leave a ghost lobby.
         bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port))
+        lobby = None
         try:
             lobby = client.request('POST', '/v2/lobbies', dict(
-                compatibility=compatibility, name=name, port=port, public=public))
+                compatibility=compatibility, name=name, port=port, public=public, mode=mode))
+            cls.validate_lobby(lobby, mode)
             bridge.room = bytes.fromhex(lobby['room'])
-            return cls(client, compatibility, lobby, True, bridge)
+            return cls(client, compatibility, lobby, True, bridge, mode)
         except Exception:
             bridge.close()
+            if lobby:
+                try:
+                    client.request('DELETE', '/v2/lobbies/'+lobby['code'], token=lobby['owner_token'])
+                except Exception:
+                    pass  # The directory also expires failed registrations.
             raise
 
     @classmethod
-    def join(cls, client, compatibility, code):
+    def join(cls, client, compatibility, code, mode='arcade'):
+        cls.validate_mode(mode)
         if len(code) != 16 or any(c not in '0123456789abcdefABCDEF' for c in code):
             raise ValueError('Lobby code must contain 16 hexadecimal characters')
-        lobby = client.request('POST', '/v2/lobbies/'+code.upper()+'/join', dict(compatibility=compatibility))
-        address = str(ipaddress.IPv4Address(lobby['address']))
-        bridge = Bridge(compatibility, lobby['room'], lobby['peer_id'], lobby['peer_key'],
-                        host=(address, lobby['port']))
-        session = cls(client, compatibility, lobby, False, bridge)
+        path = '/v2/lobbies/'+code.upper()
+        lobby = client.request('POST', path+'/join', dict(compatibility=compatibility, mode=mode))
+        bridge = None
+        try:
+            cls.validate_lobby(lobby, mode)
+            address = str(ipaddress.IPv4Address(lobby['address']))
+            bridge = Bridge(compatibility, lobby['room'], lobby['peer_id'], lobby['peer_key'],
+                            host=(address, lobby['port']))
+            session = cls(client, compatibility, lobby, False, bridge, mode)
+        except Exception:
+            if bridge:
+                bridge.close()
+            try:
+                client.request('DELETE', path+'/peers/'+str(lobby['peer_id']), token=lobby['peer_key'])
+            except Exception:
+                pass
+            raise
         if not bridge.ready.wait(12):
             session.close()
             raise ValueError('Host did not answer. Check the host UDP port forwarding and firewall.')
@@ -105,7 +139,8 @@ class Session:
         while not self.closed.is_set():
             try:
                 path, token = self.endpoint()
-                reply = self.client.request('PUT', path, dict(compatibility=self.compatibility), token)
+                reply = self.client.request('PUT', path, dict(compatibility=self.compatibility, mode=self.mode), token)
+                self.validate_lobby(reply, self.mode)
                 if self.host:
                     self.bridge.update_peers(reply['peers'])
                 last_success = time.monotonic()

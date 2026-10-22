@@ -75,7 +75,8 @@ def send_game(game, bridge, target, payload=b'game packet'):
                           virtual_ip(bridge.peer_id), target, 1000, 1000)+payload, bridge.local.getsockname())
 
 
-def test_directory_handshake_and_three_pc_relay():
+@pytest.mark.parametrize('mode', ['arcade', 'story'])
+def test_directory_handshake_and_three_pc_relay(mode):
     directory = Directory()
     with Server(('127.0.0.1', 0), directory) as server:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -87,16 +88,16 @@ def test_directory_handshake_and_three_pc_relay():
         port_probe.close()
         sessions, games = [], []
         try:
-            host = Session.create(client, VERSION, 'Test room', port, True)
+            host = Session.create(client, VERSION, 'Test room', port, True, mode=mode)
             sessions.append(host)
             assert client.request('GET', '/v2/lobbies?compatibility='+'b'*64) == {'lobbies': []}
-            listing = client.request('GET', '/v2/lobbies?compatibility='+VERSION)['lobbies']
+            listing = client.request('GET', '/v2/lobbies?compatibility='+VERSION+'&mode='+mode)['lobbies']
             assert len(listing) == 1 and 'owner_token' not in listing[0] and 'peer_key' not in listing[0]
             with pytest.raises(ValueError, match='Incompatible'):
-                Session.join(client, 'b'*64, host.lobby['code'])
-            first = Session.join(client, VERSION, host.lobby['code'])
+                Session.join(client, 'b'*64, host.lobby['code'], mode=mode)
+            first = Session.join(client, VERSION, host.lobby['code'], mode=mode)
             sessions.append(first)
-            second = Session.join(client, VERSION, host.lobby['code'])
+            second = Session.join(client, VERSION, host.lobby['code'], mode=mode)
             sessions.append(second)
             for session in sessions:
                 games.append(game_socket(session.bridge, 1000))
@@ -165,3 +166,115 @@ def test_remote_plaintext_and_invalid_pin_rejected():
         Client('http://203.0.113.7:30820')
     with pytest.raises(ValueError, match='fingerprint'):
         Client('https://example.test:30820', 'short')
+
+
+def test_story_listing_admission_and_immutable_mode():
+    directory = Directory()
+    def create(**options):
+        return directory.request('POST', '/v2/lobbies', {}, dict(
+            compatibility=VERSION, name='Test', port=30821, public=True, **options),
+            '127.0.0.1', '')[1]
+    arcade = create()
+    story = create(mode='story', capacity=16)
+    assert arcade['mode'] == 'arcade' and arcade['capacity'] == 16
+    assert story['mode'] == 'story' and story['capacity'] == 4
+    for mode, expected in [('arcade', arcade), ('story', story)]:
+        _, listing = directory.request('GET', '/v2/lobbies',
+            dict(compatibility=[VERSION], mode=[mode]), {}, '', '')
+        assert [row['code'] for row in listing['lobbies']] == [expected['code']]
+    path = '/v2/lobbies/'+story['code']
+    before = directory.online[story['code']]['next_peer']
+    for mode in ('arcade', None):
+        body = dict(compatibility=VERSION)
+        if mode is not None:
+            body['mode'] = mode
+        with pytest.raises(LobbyError) as failure:
+            directory.request('POST', path+'/join', {}, body, '', '')
+        assert failure.value.status == 409
+    assert directory.online[story['code']]['next_peer'] == before
+    assert not directory.online[story['code']]['peers']
+    with pytest.raises(LobbyError) as failure:
+        directory.request('PUT', path, {}, dict(compatibility=VERSION, mode='arcade'),
+                          '', story['owner_token'])
+    assert failure.value.status == 409
+    assert directory.online[story['code']]['mode'] == 'story'
+
+
+def test_story_final_seat_is_atomic_and_departed_seat_reopens():
+    from concurrent.futures import ThreadPoolExecutor
+    directory = Directory()
+    body = dict(compatibility=VERSION, mode='story')
+    _, host = directory.request('POST', '/v2/lobbies', {}, dict(
+        **body, name='Story', port=30821, public=False), '127.0.0.1', '')
+    path = '/v2/lobbies/'+host['code']
+    def join(_):
+        try:
+            return directory.request('POST', path+'/join', {}, body, '', '')[1]
+        except LobbyError as error:
+            assert error.status == 409
+            return None
+    first, second = join(0), join(0)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        attempts = list(pool.map(join, range(8)))
+    winners = [peer for peer in attempts if peer]
+    assert len(winners) == 1
+    assert winners[0]['players'] == winners[0]['capacity'] == 4
+    assert len(directory.online[host['code']]['peers']) == 3
+    directory.request('DELETE', path+'/peers/'+str(first['peer_id']), {}, {}, '', first['peer_key'])
+    replacement = join(0)
+    assert replacement and replacement['peer_id'] > winners[0]['peer_id']
+    # Wrong-mode heartbeat must not mutate the member or owner mode.
+    with pytest.raises(LobbyError) as failure:
+        directory.request('PUT', path+'/peers/'+str(second['peer_id']), {},
+                          dict(compatibility=VERSION), '', second['peer_key'])
+    assert failure.value.status == 409
+
+
+@pytest.mark.parametrize('mode', ['', 'coop', None, [], 4])
+def test_invalid_online_mode_rejected(mode):
+    directory = Directory()
+    with pytest.raises(LobbyError) as failure:
+        directory.request('POST', '/v2/lobbies', {}, dict(
+            compatibility=VERSION, name='Invalid', port=30821, mode=mode), '127.0.0.1', '')
+    assert failure.value.status == 400
+    assert not directory.online
+    with pytest.raises(ValueError, match='mode'):
+        Session.validate_mode(mode)
+
+
+@pytest.mark.parametrize('host', [True, False])
+def test_story_rejects_old_directory_and_cleans_registration(host):
+    class OldDirectory:
+        def __init__(self):
+            self.deleted = False
+        def request(self, method, path, body=None, token=None):
+            if method == 'DELETE':
+                self.deleted = True
+                assert token == ('owner-fixture' if host else 'peer-fixture')
+                return {}
+            return dict(code='A'*16, room='0'*32, address='127.0.0.1', port=30821,
+                        owner_token='owner-fixture', peer_key='peer-fixture', peer_id=2,
+                        capacity=16)
+    client = OldDirectory()
+    with pytest.raises(ValueError, match='does not support'):
+        if host:
+            Session.create(client, VERSION, 'Story', 0, False, mode='story')
+        else:
+            Session.join(client, VERSION, 'A'*16, mode='story')
+    assert client.deleted
+
+
+def test_story_expired_peer_frees_capacity_without_reusing_identity():
+    now = [0]
+    directory = Directory(clock=lambda: now[0])
+    body = dict(compatibility=VERSION, mode='story')
+    _, host = directory.request('POST', '/v2/lobbies', {}, dict(
+        **body, name='Story', port=30821), '127.0.0.1', '')
+    path = '/v2/lobbies/'+host['code']
+    for _ in range(3):
+        directory.request('POST', path+'/join', {}, body, '', '')
+    now[0] = 60
+    directory.request('PUT', path, {}, body, '', host['owner_token'])
+    now[0] = 91
+    _, peer = directory.request('POST', path+'/join', {}, body, '', '')
+    assert peer['players'] == 2 and peer['peer_id'] == 5

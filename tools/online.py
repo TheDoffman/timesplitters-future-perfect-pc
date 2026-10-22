@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--pid', type=int, required=True)
     parser.add_argument('--result', type=Path, required=True)
     parser.add_argument('--compatibility', required=True)
+    parser.add_argument('--mode', choices=('arcade', 'story'), default='arcade')
     args = parser.parse_args()
     result = args.result.resolve()
     private = HANDSHAKES.resolve()
@@ -129,7 +130,9 @@ def main():
     def refreshed(reply):
         browser.delete(*browser.get_children())
         for lobby in reply.get('lobbies', []):
-            if lobby.get('compatibility') == args.compatibility:
+            if (lobby.get('compatibility') == args.compatibility and
+                lobby.get('mode', 'arcade') == args.mode and
+                (args.mode != 'story' or lobby.get('capacity') == 4)):
                 browser.insert('', 'end', iid=lobby['code'], values=(lobby['name'],
                     f"{lobby['players']}/{lobby['capacity']}", lobby['code']))
         status.set(f'{len(browser.get_children())} compatible lobbies. Private lobbies can be joined by code.')
@@ -157,7 +160,7 @@ def main():
     def refresh():
         try:
             directory = client()
-            work(lambda: directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility), refreshed)
+            work(lambda: directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
         except Exception as error:
             status.set(str(error))
 
@@ -168,7 +171,7 @@ def main():
                 address.set(directory_address)
                 pin.set(fingerprint)
             directory = client()
-            work(lambda: Session.join(directory, args.compatibility, join_code), connected)
+            work(lambda: Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -186,12 +189,12 @@ def main():
                 raise ValueError('Choose a UDP port between 1024 and 65535')
             if automatic.get():
                 public_address = None if detect_ip.get() else public_ip.get().strip()
-                work(lambda: start_match(ROOT, public_address, args.compatibility, host_name, host_port, public), connected)
+                work(lambda: start_match(ROOT, public_address, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
                 status.set('Detecting public IPv4 and starting the directory...' if public_address is None else
                            'Starting the directory...')
             else:
                 directory = client()
-                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public), connected)
+                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
         except Exception as error:
             status.set(str(error))
 

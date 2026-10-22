@@ -25,6 +25,18 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Online v2 discovery now has immutable `arcade`/`story` session types. Omitted
+types retain Arcade; Story capacity is four including the host. The directory
+checks type before admission (including private codes), serializes final-seat
+joins under its existing lock, and rejects type changes on either heartbeat.
+`Session.create/join`, automatic hosting and the companion's `--mode` propagate
+this type; Story fails closed against old directories and releases rejected
+registrations. Existing `test_online.py` covers mode isolation, limits, concurrent
+admission, expiry/departure and old-directory cleanup; the real loopback relay
+and `test_online_host.py` TLS invitation checks run for both modes. These are
+transport/admission checks only: no Story guest loading or gameplay is established
+by them. No Story entry is exposed in the game menu by this infrastructure change.
+
 Hosted-only contributors need no local model, Ollama service or installed router.
 The context/maintenance checker uses Python and Git. The optional broker's Node
 contract tests run in CI with disposable/mocked fixtures; they invoke no hosted
