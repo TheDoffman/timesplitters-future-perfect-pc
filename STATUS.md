@@ -18,9 +18,26 @@ float-constant path, with shader scope, copied payloads and clearing. Five
 focused tests pass. Full water dynamics/appearance and native Mac execution
 remain open under MAC-060; the experiment is still disabled for normal play.
 The selected timing, shader, queue/replay, texture-preservation, statistics,
-patch/backlog and repository-context suite passes 118 cases. Build and live
-comparison results follow when available. The existing combined playable
-executable is unchanged at this checkpoint.
+patch/backlog and repository-context suite passes 118 cases. The supported
+Windows build and its required native checks pass on integration source
+`20ee848`, which also includes the separate crowd, FPS-handoff and Escort fixes.
+The executable SHA-256 is
+`9eb9a3c2ac5d80c0157f1b3bd15fbeedc31cfd34884882a021b606e2f9c0c88e`.
+
+Three isolated Scotland runs (Original 60, opt-in 120 and 144) complete the
+same shoreline/movement/pause/resume route and exit cleanly. Each validates
+360 consecutive GPU images with all 359 adjacent pairs changed. Reviewed
+shoreline stills show visible water at all three rates. Profiles are unchanged,
+fixture signatures remain valid, and disposable disks are recycled.
+
+This is freshness/startup evidence, not complete wave parity: over the first
+120 captured game ticks, active-channel standard deviations are 24.639/23.854
+at 60, 19.351/18.589 at 120, and 19.315/18.343 at 144. Runs do not share an
+identical random trajectory, and synchronous readback changes workload. The
+remaining amplitude/dynamics difference requires investigation; no pacing,
+long-term stability or motion-equivalence claim follows. Compressed captures,
+reports and selected screenshots are retained privately with verified hashes.
+See the fractional damping regression record for build and measurement scope.
 
 ## 2026-10-22 — Escort recovery timing audit
 

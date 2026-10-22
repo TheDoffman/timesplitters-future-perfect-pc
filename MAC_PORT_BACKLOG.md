@@ -3599,11 +3599,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Precise fractional water coefficients (2026-10-22, uncommitted):** Shared
+- **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
   policy and HLE patch extend the existing disabled experiment; no new host
   adapter or capture format. The actual current guest uploader supplies the
   truncated reference values, replacing an earlier rounded diagnostic assumption.
-  Queue/scope/replay and local Windows original-program GPU checks pass. Native
+  Queue/scope/replay and local Windows original-program GPU checks pass. The
+  combined Windows build and three bounded Scotland routes pass; every captured
+  image updates, but measured amplitude differs and motion parity is unproven. Native
   Mac GPU/scene execution and complete wave/appearance acceptance remain awaiting
   validation; this is not enabled for normal play. See STATUS for current scope.
 

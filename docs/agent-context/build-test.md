@@ -400,3 +400,11 @@ checks the stack/callee-saved-register boundary and supplies sufficient command
 space; no generated game code is checked in. `test_ordered_combiner_constants`
 also covers the production coefficient setter/clear/cache path. The GPU scalar
 case now uses the shared coefficient helper for its corrected values.
+
+The coefficient integration was exercised with the existing bounded Scotland
+route at 60/120/144 and `--trace-surface-images`. Use the image validator for
+consecutive-frame/hash/freshness checks; compare common elapsed game-time
+windows rather than treating 360 samples as equal time at different rates.
+Unpaired RNG and synchronous GPU readback prevent mechanics/pacing claims.
+Current fresh images and reviewed stills are not complete wave acceptance;
+the measured amplitude difference remains recorded in STATUS.

@@ -5573,3 +5573,44 @@ and native Mac GPU/scene validation remain unverified; water remains opt-in.
 The full GPU cases require the private supported XBE and Windows WARP. Hosted
 skips are not GPU acceptance. Evidence: `logs/surface-damping-upload.log` and
 `logs/surface-coefficients-focused.log`. No private game code is distributed.
+
+### Coefficient build and bounded scene comparison
+
+Source `1d02157` was integrated as `20ee848` with the independent crowd,
+FPS-handoff and Escort repairs, then built with the supported Windows script.
+Host: Windows 10.0.26300 AMD64, MSVC 14.44.35207 and SDK 10.0.26100.0;
+the shader diagnostic uses the production common-RHI D3D11 WARP route.
+All required build/native checks pass (`logs/surface-coefficients-combined-build.log`).
+The selected local timing/shader/queue/preservation/statistics/patch/backlog/
+context suite passes 118 tests (`logs/surface-coefficients-regressions.log`).
+
+The built executable hash is
+`9eb9a3c2ac5d80c0157f1b3bd15fbeedc31cfd34884882a021b606e2f9c0c88e`.
+Three isolated runs use the existing Scotland fixture and bounded 120-second
+runner, stopping after approximately 73 seconds. Original 60 has experiments
+off; the 120/144 runs enable float, fractional, bias and live surfaces. All
+reach scene 4, turn toward the shoreline, move, pause, resume and exit cleanly.
+Profiles remain unchanged with valid signatures, fixtures are preserved, and
+disposable disks are recycled. No personal session is left running.
+
+| Path | Images | Changed adjacent pairs | Captured game ticks | First 120 ticks channel 1/2 standard deviation |
+| --- | ---: | ---: | ---: | --- |
+| Original 60 | 360 | 359/359 | 372.000 | 24.639 / 23.854 |
+| Candidate 120 | 360 | 359/359 | 197.518 | 19.351 / 18.589 |
+| Candidate 144 | 360 | 359/359 | 167.515 | 19.315 / 18.343 |
+
+The validator checks actual GPU bytes, image hashes, consecutive guest frames
+and stable resource/format/path. All shoreline stills show water without a
+missing/black target. Pause/resume state and health remain correct at the
+observed checkpoints. These limited observations do not establish complete
+wave dynamics, continuous motion fidelity or long-term stability. In particular,
+the amplitude statistics still differ. Random trajectories are unpaired and
+capture durations differ; equal elapsed-window statistics do not remove that
+limitation. Synchronous GPU readback invalidates ordinary pacing comparisons.
+Do not enable the experiment based on this run.
+
+Evidence: private `surface-coefficients-{60-control,120-candidate,144-candidate}`
+reports/captures and `procedural-surface-coefficients-summary.json`. Each raw
+23,592,960-byte trace was gzip-compressed and byte-exact roundtrip-verified
+before recycling the raw file; selected PNGs and provenance are retained.
+No private assets, generated code or screenshots are distributed in Git.

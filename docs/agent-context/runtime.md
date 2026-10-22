@@ -182,6 +182,9 @@ guest ABI, enables the same path for `TSFP_PC_CONTROLS`/`TSFP_NATIVE_PROMPTS`,
 and performs no AI, animation, rendering-quality or frame-rate throttling.
 The mapping cache remains read-only; prompt scratch writes query live protection.
 Adding the manual wrapper requires the normal guest regeneration/build route.
+
+## Experimental water coefficient precision
+
 `*-native-surface-coefficients.patch` follows `*-native-surface-constants.patch`
 in the explicit loader tail. It extends the existing HLE water float-constant
 scope with copied original parameters and precise coefficients at bank 0 stages
