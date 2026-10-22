@@ -196,3 +196,18 @@ The original-icon policy also includes historical public DDS/JSON hashes.
 identities in `BUILD.json` under `textures.retired` for both game packagers.
 The shared launcher retires only matching installed pairs transactionally;
 custom artwork stays protected. See the launcher guide for recovery behavior.
+
+## Native movement boost resource
+
+The US walking routine `sub_00258F50` gates a movement boost on mode byte
+`0x7DE456 == 0x11`, selected player `0x7DE498`, input bit `0x800`, and positive
+entity+0x1D0 resource. The fixed subtraction at `0x259060` is now scoped through
+`pc_native_boost_drain` in `pc_native_numeric.h`. Native frames split one active
+original-update charge by `max(0, min(1, raw_delta, game_delta))`: slow motion
+retains the original zero-whole-tick gate's reduced consumption; fast/catch-up
+updates still consume at most one charge. Original mode and other sites retain
+exact subtraction. No constant table, boost speed, threshold or stored clock
+is changed. The complete US routine fixture uses a controlled flat collision
+floor; it does not establish real-map geometry, input acceleration or network
+transport parity. The user-visible mode name and live activation remain to be
+confirmed; do not infer them solely from the mode byte.

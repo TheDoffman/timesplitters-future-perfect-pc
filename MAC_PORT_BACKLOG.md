@@ -3599,6 +3599,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`):** Shared
+  `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
+  Windows actual-routine evidence shows the old boost drain doubled at 120 and
+  multiplied by 2.4 at 144; the fix preserves original active-update consumption
+  at normal, slow/fast and catch-up intervals. No new OS adapter. Asset-free
+  clock/resource tests run in both-host CI; the complete walking fixture needs
+  the supported private XBE. Native Mac execution and live activation remain
+  awaiting validation. See the walking/boost audit in
+  `docs/native-high-refresh-regressions.md` for exact scope and unknown mode name.
+
 - **Combined local Windows validation (2026-10-22):** A local test branch
   combines PR #295's text-read optimization with PR #296's clock handoff fix.
   Two ten-bot Hotel runs average 143.079/143.021 FPS at 3440×1440. One 72.171 ms

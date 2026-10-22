@@ -1,3 +1,21 @@
+## 2026-10-22 — Walking boost resource timing
+
+`fix/native-boost-timing`, based on main 564fda6, fixes a resource-drain
+calculation in the mode-byte-0x11 movement boost. The complete original walking
+routine retains normal/boosted speeds at 60/120/144, but its per-update fixed
+charge previously doubled at 120 and multiplied by 2.4 at 144. A shared numeric
+policy at US site 0x259060 now splits the charge across native fractional
+updates while retaining original pause, slow/fast-time and catch-up semantics.
+No global constant, input binding, collision policy or boost speed is changed.
+
+Windows: 69 timing/network/backlog cases pass, including the hash-verified US
+walking routine, depletion, eligibility, movement directions and a no-fix
+mutation. Existing Windows/macOS CI runs an asset-free clock/resource case;
+the full routine requires private game data. Real-map geometry, actual boost
+activation, the user-visible mode name, upstream input acceleration and native
+Mac execution remain unverified. See MAC-060 and the
+[walking/boost audit](docs/native-high-refresh-regressions.md#walking-update-and-boost-resource-audit-2026-10-22).
+
 ## 2026-10-22 — Combined crowd and live-FPS test build
 
 Local branch `test/crowd-and-fps-handoff` combines PR #295 (`d1f924d`) with

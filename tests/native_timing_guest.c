@@ -168,6 +168,32 @@ static void live_rates(void)
     frame();assert(FLOAT(0x4E7948)>.416f && FLOAT(0x4E7948)<.417f);
     puts("PASS: live 60/120/144 transitions, pacing, remainder continuity, pause/resume and stale clock reset");
 }
+/* Asset-free clock-to-resource contract; full US walking integration is
+ * exercised by native_locomotion.c when the supported XBE is available. */
+static void boost_resource_clock(void)
+{
+    const char *rates[]={"60","120","144"};
+    const unsigned frames_per_second[]={60,120,144};
+    const float scales[]={.25f,1.f,3.f};
+    for(unsigned r=0;r<3;r++) for(unsigned speed=0;speed<3;speed++) {
+        setting="0";frame();setting=rates[r];frame();
+        float remaining=1.f;
+        for(unsigned f=0;f<frames_per_second[r];f++) {
+            frame();FLOAT(0x4E794C)=FLOAT(0x4E7948)*scales[speed];
+            remaining=RECOMP_F32_SUB_AT(0x259060u,remaining,.006f);
+        }
+        float expected=1.f-.36f*(speed==0?.25f:1.f);
+        assert(fabsf(remaining-expected)<.00002f);
+    }
+    FLOAT(0x4E7948)=.5f;FLOAT(0x4E794C)=0;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.006f)==1.f);
+    FLOAT(0x4E7948)=3.f;FLOAT(0x4E794C)=3.f;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.25f)==.75f);
+    assert(RECOMP_F32_SUB_AT(0x259061u,1.f,.25f)==.75f);
+    g_tsfp_native_timing_active=0;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.25f)==.75f);
+    puts("PASS: boost resource follows active original update time at 60/120/144");
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -206,6 +232,7 @@ int main(void)
     live_rates();
     input_edges();
     input_after_pause();
+    boost_resource_clock();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

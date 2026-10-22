@@ -199,8 +199,23 @@ static inline float pc_native_force_add(float force,float velocity)
     (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
+/* The mode-0x11 movement boost subtracts one fixed resource charge per
+ * active original update at 0x259060. Split that charge across fractional
+ * updates. The original player gate skips zero game ticks; slow motion thus
+ * consumes fewer charges, while fast/catch-up updates still consume only one.
+ * Do not alter the shared charge constant or unrelated subtraction sites. */
+static inline float pc_native_boost_drain(float left,float charge)
+{
+    if(g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        charge*=fmaxf(0.f,fminf(1.f,fminf(raw,game)));
+    }
+    return left-charge;
+}
 #define RECOMP_F32_SUB_AT(site,left,right) \
-    ((site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
+    ((site)==0x259060u ? pc_native_boost_drain((float)(left),(float)(right)) : \
+    (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
     ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \

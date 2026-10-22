@@ -5451,3 +5451,43 @@ worst 9.385/18.310 ms). Its Apply window worst is 18.105 ms, with no interval
 over 33.33 ms. Endpoint clock ratios are 0.999821/0.999836. Both final runs exit
 cleanly with valid isolated save signatures; no tracing/captures/CPU sampling
 ran during measurement. Saved preference ends at Original 60 in each run.
+
+## Walking update and boost resource audit (2026-10-22)
+
+The existing remote-correction fixture controls `sub_001CE850` rather than
+executing its player movement. Following its dispatch chain reaches the normal
+walking routine `sub_00258F50` through `sub_000D5EB0` and `sub_000D5C70`.
+The new fixture executes all of US `0x258F50..0x2597FF`, lifting code and scalar
+constants from the hash-verified supported XBE. Controlled input displacement,
+world eligibility and a flat collision floor replace real input/level geometry.
+No gameplay code was copied into the fixture or edited in generated output.
+
+Ordinary forward travel is 12 units over one second at original 60 and native
+60/120/144 (maximum observed numerical error below 0.00002). Boosted travel
+is 19.2 units at each rate. However, the mode-byte-0x11 path subtracts the same
+0.006 resource charge at `0x259060` on every active update. With initial test
+resource 100, one second leaves 99.640198 at original/native 60, 99.280396 at
+120 and 99.136475 at 144. The full-routine resource assertion fails at 120
+before the fix; normal walking and boost speed still pass.
+
+The shared site-specific policy now splits the charge across fractional active
+updates. It uses the lesser of raw and game time, capped at one original charge,
+so quarter-speed consumption matches the original parent dispatcher's skipped
+zero-whole-tick updates, while triple-speed and catch-up calls retain one-charge
+semantics. The disabled-native path, unrelated subtraction sites, shared charge
+constant, boost multiplier and depletion threshold remain original.
+
+After the fix, 120 leaves 99.640198 and 144 leaves 99.639648. Quarter-speed
+results are within 0.0003 of 99.91; triple speed remains approximately 99.64.
+A separate initial-resource-1 test checks depletion time/travel within one
+original update, retaining threshold overshoot. Eligibility, released input,
+empty resource, pause/catch-up, diagonal movement, stopping/reversal, stack and
+callee-saved registers are checked. A no-fix mutation fails the same resource
+assertion. Asset-free clock-to-resource cases cover all presets in shared CI.
+
+Scope: this is actual-routine evidence with controlled services, not live boost
+activation, real collision/terrain, upstream input acceleration, full network
+prediction or native Mac execution. The user-visible name associated with mode
+byte 0x11 has not been established. Live activation/appearance still needs
+validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
+`logs/native-boost-focused.log`; source branch `fix/native-boost-timing`.
