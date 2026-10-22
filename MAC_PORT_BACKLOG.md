@@ -3599,7 +3599,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Walking boost resource (2026-10-22, `fix/native-boost-timing`):** Shared
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`, `bcb1f78`):** Shared
   `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
   Windows actual-routine evidence shows the old boost drain doubled at 120 and
   multiplied by 2.4 at 144; the fix preserves original active-update consumption

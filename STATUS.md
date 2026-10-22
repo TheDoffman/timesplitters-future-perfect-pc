@@ -8,6 +8,12 @@ policy at US site 0x259060 now splits the charge across native fractional
 updates while retaining original pause, slow/fast-time and catch-up semantics.
 No global constant, input binding, collision policy or boost speed is changed.
 
+The supported Windows Build and its native tests pass on integration revision
+`bc0daf5`, combining this fix (`bcb1f78`) with PRs #295 and #296. Executable
+SHA-256: `aa2868fd0e2009ea96f26d90725c969a3067c3f78dd00a0bb0390db5d7973146`.
+This is a local combined development build, not a standalone release or proof
+of live boost activation.
+
 Windows: 69 timing/network/backlog cases pass, including the hash-verified US
 walking routine, depletion, eligibility, movement directions and a no-fix
 mutation. Existing Windows/macOS CI runs an asset-free clock/resource case;
