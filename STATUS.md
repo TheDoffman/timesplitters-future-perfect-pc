@@ -18,8 +18,25 @@ also reconstructs their capture storage correctly. Normal-play defaults, guest
 headers and final byte textures remain unchanged. Existing GPU checks cover
 byte/half/full conversion and exact capture reconstruction. Eleven focused
 surface/GPU/transaction cases pass locally, plus 80 companion timing/queue/
-patch checks and four affected upgrade cases. Build/live and native Mac results
-for this follow-up are pending; the existing playable executable is unchanged.
+patch checks and four affected upgrade cases. The combined source `6a766f5`
+build passes all required Windows checks. Executable SHA-256:
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+
+Three bounded isolated Scotland routes at 60/120/144 complete shoreline viewing,
+movement and pause/resume, with unchanged valid profiles and preserved fixtures.
+Logs confirm host format 0x4B in the high-rate runs. Each contains 360 validated
+consecutive GPU images, with all 359 adjacent pairs changed; reviewed shoreline
+stills contain water. First-120-game-tick active-channel standard deviations
+are 24.396/24.093 at 60, 18.940/18.147 at 120 and 19.014/18.381 at 144.
+The original-byte appearance/dynamics gap remains; unpaired RNG and synchronous
+capture prevent exact motion or pacing claims. Traces are roundtrip-verified
+compressed, disposable disks recycled, and no personal session is left open.
+
+Mac native runtime and the asset-free common-RHI GPU check pass for source
+`6035ed7` in PR #299. This includes the extended full-float conversion contract,
+not private-XBE wave-shader or actual Mac gameplay acceptance. Further live
+switching, longer motion, additional scenes and capture-free performance remain
+pending. The experiment stays disabled for normal play.
 
 ## 2026-10-22 — Controlled coupled-water and upgrade follow-up
 

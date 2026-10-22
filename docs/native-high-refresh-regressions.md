@@ -5718,3 +5718,40 @@ unchanged. No new game assets or normal-play setting is introduced. Full scene
 motion, original-byte appearance, long-term behavior, live preset switching,
 performance and native Mac GPU/gameplay validation remain pending. Legacy GL
 continues to decline this opt-in experiment. Do not enable it from this fixture.
+
+### Full-float build and scene evidence
+
+Focused source `6035ed7` was integrated as `6a766f5` with the earlier crowd,
+clock-handoff and Escort repairs. Supported Windows Build and all its required
+checks pass (`logs/surface-float32-combined-build.log`); executable SHA-256 is
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+Host/toolchain remain Windows 10.0.26300 AMD64, MSVC 14.44.35207 and SDK
+10.0.26100.0, common HLE/RHI D3D11 renderer.
+
+Three isolated 120-second-bounded routes stop after approximately 73 seconds,
+reaching Scotland scene 4 with shoreline viewing, movement and pause/resume.
+Health is 35 at the observed checkpoints. Original 60 uses normal byte buffers;
+120/144 select all four existing experiment flags. High-rate logs confirm 0x4B
+host intermediates. All runs exit cleanly, signed profiles are unchanged,
+fixtures remain valid and disposable disks are recycled.
+
+| Path | Images | Changed pairs | Captured game ticks | First 120 ticks channel 1/2 standard deviation |
+| --- | ---: | ---: | ---: | --- |
+| Original 60 | 360 | 359/359 | 375.000 | 24.396 / 24.093 |
+| Full-float 120 | 360 | 359/359 | 196.138 | 18.940 / 18.147 |
+| Full-float 144 | 360 | 359/359 | 164.384 | 19.014 / 18.381 |
+
+Actual-byte hashes, consecutive guest frames and stable resource/path/format
+validate every trace. Reviewed shoreline stills show water. Statistics remain
+different from original-byte output; neither unpaired RNG nor short synchronous
+GPU captures support full motion equivalence or a pacing/performance claim.
+Full-float removes the identified storage error in the deterministic test but
+has not closed the game's original-byte appearance/dynamics gap.
+
+Evidence is private under `surface-float32-*`, with measurement/storage JSONs.
+Every raw 23,592,960-byte trace was gzip-compressed and byte-exact verified before
+recycling its raw file. No game assets, screenshots or generated code are in Git.
+The Mac CI common-RHI GPU step passes for `6035ed7`, including the extended
+conversion/capture contract; original-XBE wave tests and native Mac gameplay
+remain unverified. Live preset cycles, long-duration motion and capture-free
+performance remain pending for this format change.
