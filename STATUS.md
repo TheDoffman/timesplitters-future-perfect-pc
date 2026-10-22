@@ -11,9 +11,22 @@ The complete patch stack applies. Ten focused scope tests pass on Windows,
 including both host feature configurations and a failing no-panel-scope
 mutation. A modeled panel falls from five read queries to one, retaining three
 measurements, ten draws, thirteen translated scratch-write checks and fresh
-validation on the next operation. Full build, rendered comparison, measured
-FPS and native Mac execution are pending. Another game session was active,
-so no competing performance benchmark was launched. See MAC-002.
+validation on the next operation. Supported Windows build `4a4aa02` and built-in
+checks pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend). A bounded
+native144 Venice/10-bot run at 3440x1440, FOV 73, Classic reaches match state 7;
+reviewed captures show readable RANK/ordinal labels during death/respawn. This
+is a rendering smoke check, not a pixel comparison or FPS benchmark: another
+game session remained open, and capture/test overhead was present. The profile
+and canonical fixture remained valid and unchanged; disposable partitions were
+cleaned. Full rendered comparison, measured FPS and native Mac execution remain
+pending. Broader patch-upgrade/context/backlog/CI-scope validation passes:
+109 tests in 588.40 seconds. See MAC-002.
+
+Candidate EXE/PDB retained in `private/build-recovery/panel-4a4aa02`, EXE SHA256
+`55440352d61716a05c4237acc788a258020aca636d7ac46c899e24b4219e3d82`.
+The normal playable `4adb6b0` executable is restored with its hash verified.
+This branch starts at main `31052eb`; mounted-input PR #304 and the separate
+vehicle-physics candidate are not incorporated into this performance candidate.
 
 ## 2026-10-22 — Pending PR integration
 
