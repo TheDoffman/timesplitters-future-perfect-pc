@@ -213,3 +213,12 @@ transport parity. The game rule-name table at 0x4D1F90 + index*0x20, decoded
 through the existing Discord string-table path, identifies index 17 as Escort.
 A bounded frontend lookup confirms the name; live boost activation remains
 unverified.
+
+Escort recovery takes a separate route: active-match `sub_00068830` calls
+`sub_000681C0`, then `sub_000654E0`. Its original game-clock delay is more than
+five seconds; eligible match updates include zero-whole-game-tick frames.
+`pc_native_boost_recover` therefore scales only addition site `0x6552D` by
+`max(0,min(1,raw_delta))`. The original dispatcher gates pause; its selected-actor
+write and mirror, threshold overshoot and health-dependent clamp are preserved.
+The full three-routine fixture controls external services and validates those
+boundaries separately from the walking drain's active-game-update budget.

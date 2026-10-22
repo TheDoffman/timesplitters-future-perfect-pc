@@ -5493,3 +5493,29 @@ ID 5861); control index 3 resolves to Deathmatch. The bounded 60-second startup
 run exits cleanly and preserves the signed test profile. This identifies the
 mode, but live activation/appearance still needs validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
 `logs/native-boost-focused.log`; source branch `fix/native-boost-timing`.
+
+### Escort resource recovery and match dispatch
+
+Following the resource write reaches `sub_000654E0`, called through the complete
+mode dispatcher `sub_000681C0` and active-match state in `sub_00068830`.
+Recovery waits until more than five game seconds since the last boost use,
+then adds a fixed 0.003 at US site `0x6552D` on every match update. Unlike the
+walking gate, this caller executes on fractional updates with zero integer
+game ticks. The original-code regression leaves 0.1800001 after one second
+at original/native 60 but 0.3599999 at 120 before the fix.
+
+The shared addition policy scales only this charge by raw fractional time,
+capped at one original charge. Game-speed scaling still affects the original
+five-second delay; it does not alter recovery's rate once eligible. The original
+match dispatcher owns pause suppression. The selected actor, mirrored resource,
+threshold overshoot and existing health-dependent clamp are unchanged.
+
+`native_escort_recovery.c` lifts all three complete routines, preserving their
+switch tables and scalar constants. It verifies 0.18 units per second across
+60/120/144, quarter/normal/triple game speed, the tick-300/301 eligibility
+boundary, paused match dispatch, catch-up, selected actor and clamp/overshoot.
+Restoring the original addition only at the recovery site must fail with
+the original doubled 120-FPS recovery. External world, network, rendering and
+pause-query services are controlled; this is not live Escort or network parity.
+The asset-free clock/resource fixture also checks recovery in both-host CI.
+Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.

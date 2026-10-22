@@ -1,3 +1,18 @@
+## 2026-10-22 — Escort recovery timing audit
+
+PR #297 also covers the recovery side of the Escort movement resource. The
+complete match-state, mode and recovery routines confirm that the old fixed
+0.003-per-update addition doubles recovery at 120 FPS. Scaling only US addition
+site 0x6552D by raw fractional time retains 0.18 units per second at native
+60/120/144. Original game-time recovery delay, pause suppression, selected actor,
+resource mirror, catch-up and clamp/overshoot semantics remain intact.
+
+The prior drain-only revision 264bc50 passed all selected Windows/macOS CI.
+Windows: 69 companion timing/network/backlog cases pass; the new recovery
+case and three directly related timing cases pass after correcting the negative
+control runner. Both no-fix mutations fail for their intended rate mismatch.
+Live Escort activation and native Mac gameplay remain open under MAC-060.
+
 ## 2026-10-22 — Walking boost resource timing
 
 `fix/native-boost-timing`, based on main 564fda6, fixes a resource-drain

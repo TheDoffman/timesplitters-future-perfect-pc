@@ -177,13 +177,15 @@ static void boost_resource_clock(void)
     const float scales[]={.25f,1.f,3.f};
     for(unsigned r=0;r<3;r++) for(unsigned speed=0;speed<3;speed++) {
         setting="0";frame();setting=rates[r];frame();
-        float remaining=1.f;
+        float remaining=1.f,recovered=0.f;
         for(unsigned f=0;f<frames_per_second[r];f++) {
             frame();FLOAT(0x4E794C)=FLOAT(0x4E7948)*scales[speed];
             remaining=RECOMP_F32_SUB_AT(0x259060u,remaining,.006f);
+            recovered=RECOMP_F32_ADD_AT(0x6552Du,recovered,.003f);
         }
         float expected=1.f-.36f*(speed==0?.25f:1.f);
         assert(fabsf(remaining-expected)<.00002f);
+        assert(fabsf(recovered-.18f)<.00002f);
     }
     FLOAT(0x4E7948)=.5f;FLOAT(0x4E794C)=0;
     assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.006f)==1.f);
@@ -192,7 +194,15 @@ static void boost_resource_clock(void)
     assert(RECOMP_F32_SUB_AT(0x259061u,1.f,.25f)==.75f);
     g_tsfp_native_timing_active=0;
     assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.25f)==.75f);
-    puts("PASS: boost resource follows active original update time at 60/120/144");
+    g_tsfp_native_timing_active=1;FLOAT(0x4E7948)=0;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.f);
+    FLOAT(0x4E7948)=3;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
+    FLOAT(0x4E7948)=.5f;
+    assert(RECOMP_F32_ADD_AT(0x6552Eu,4.f,.25f)==4.25f);
+    g_tsfp_native_timing_active=0;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
+    puts("PASS: boost drain and recovery retain original time budgets at 60/120/144");
 }
 int main(void)
 {

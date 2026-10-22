@@ -3599,6 +3599,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Escort recovery follow-up (2026-10-22, PR #297):** Shared numeric addition
+  at 0x6552D now uses raw fractional time, retaining the original match-dispatch
+  pause gate and game-clock delay. Full supported-XBE match/mode/recovery chain
+  checks and an asset-free clock contract cover original/native rates. No new
+  host adapter; native Mac gameplay remains awaiting validation. The prior
+  drain-only head 264bc50 passed both-host CI; follow-up results are in STATUS.
+
 - **Walking boost resource (2026-10-22, `fix/native-boost-timing`, `bcb1f78`):** Shared
   `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
   Windows actual-routine evidence shows the old boost drain doubled at 120 and

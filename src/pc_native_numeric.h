@@ -192,10 +192,22 @@ static inline float pc_native_force_add(float force,float velocity)
     }
     return force+velocity;
 }
+/* Escort recovery is dispatched once per match update, even on zero game
+ * ticks. Preserve its original wall-time rate and one-charge catch-up cap;
+ * the match dispatcher owns pause and the five-game-second recovery delay. */
+static inline float pc_native_boost_recover(float left,float charge)
+{
+    if(g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        charge*=fmaxf(0.f,fminf(1.f,raw));
+    }
+    return left+charge;
+}
 #define RECOMP_F32_ADD_AT(site,left,right) \
     (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
     pc_native_hit_add((float)(left),(float)(right)) : \
     (site)==0xD4853u ? pc_native_force_add((float)(left),(float)(right)) : \
+    (site)==0x6552Du ? pc_native_boost_recover((float)(left),(float)(right)) : \
     (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))

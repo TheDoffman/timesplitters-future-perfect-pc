@@ -377,3 +377,11 @@ runtime mutation restores the old subtraction and must fail resource parity.
 `native_timing_guest.c` also checks the actual clock-to-resource calculation
 without game assets in existing Windows/macOS CI. The XBE-dependent fixture
 is skipped when assets are absent; do not count that skip as gameplay coverage.
+
+`test_original_fractional_dispatch[native_escort_recovery.c]` executes the
+complete original match/mode/recovery dispatch chain from the supported XBE,
+including original switch tables. It tests recovery delay/rate, pause,
+slow/fast-time, catch-up, selected actor and existing clamps. Its no-fix mutation
+must double recovery at 120 FPS. The asset-free `native_timing_guest.c` recovery
+contract remains in the existing Windows/macOS CI route; neither fixture proves
+live Escort input activation or network transport behavior.

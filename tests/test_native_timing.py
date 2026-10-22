@@ -291,6 +291,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                   (0xb9510,0xb9711),(0xb9270,0xb92f9),
                                   (0x259344,0x259389)]),
     ('native_hud_messages.c', [(0x14a5a0,0x14aad6),(0x12df00,0x12df5d),(0x12dec0,0x12def8),(0x12d1e0,0x12d29c)]),
+    ('native_escort_recovery.c', [(0x68830,0x69587),(0x681c0,0x685e3),(0x654e0,0x65588)]),
     ('native_arcade_countdown.c', [(0x68830,0x69587),(0x42830,0x4286a)]),
     ('native_camera_motion.c', [(0xc73c0,0xc760e),(0xc7610,0xc77bc)]),
     ('native_camera_effects.c', [(0x151e80,0x151f1c),(0x1533e0,0x153431),
@@ -374,10 +375,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                                 for address in list(range(0x4e72e0,0x4e7348,4)))
-        if harness_name=='native_arcade_countdown.c':
+        if harness_name in ('native_arcade_countdown.c','native_escort_recovery.c'):
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
-                                for address in range(0x69588,0x695b8,4))
+                                for address in [*range(0x69588,0x695b8,4),
+                                    *(list(range(0x685e4,0x6860c,4))+[0x475c78,0x478864]
+                                      if harness_name=='native_escort_recovery.c' else [])])
         if harness_name=='native_visual_time_guest.c':
             # Execute each real direct clock store. Append RET at the next
             # instruction; this tests store dispatch/ABI, not enclosing paths.
@@ -595,6 +598,10 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
+    if harness_name=='native_escort_recovery.c':
+        executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
+        assert mutation.returncode != 0 and 'fps=120 charge=0.359' in mutation.stdout
     if harness_name=='native_locomotion.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-boost'],capture_output=True,text=True,timeout=10)
@@ -609,6 +616,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name in ('native_analog_input.c','native_network_correction.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
+    if harness_name=='native_escort_recovery.c':print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
         rows=[dict(field.split('=',1) for field in line.split()[1:])
