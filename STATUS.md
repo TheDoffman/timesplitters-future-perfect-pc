@@ -12,6 +12,12 @@ Windows: 69 companion timing/network/backlog cases pass; the new recovery
 case and three directly related timing cases pass after correcting the negative
 control runner. Both no-fix mutations fail for their intended rate mismatch.
 Live Escort activation and native Mac gameplay remain open under MAC-060.
+The supported Windows Build and native build checks pass on combined revision
+`d702561` (PRs #295/#296 plus drain/recovery source `535d4ce`). The resulting
+executable SHA-256 is
+`375178baaa3bac44c1a6d2e663e0c2882648dabaa3bdbd50bf6b51de711aa7b3`.
+This replaces the earlier local drain-only development binary; no new live
+Escort acceptance or crowded-match benchmark is claimed for this build.
 
 ## 2026-10-22 — Walking boost resource timing
 

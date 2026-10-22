@@ -3599,7 +3599,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Escort recovery follow-up (2026-10-22, PR #297):** Shared numeric addition
+- **Escort recovery follow-up (2026-10-22, PR #297, `535d4ce`):** Shared numeric addition
   at 0x6552D now uses raw fractional time, retaining the original match-dispatch
   pause gate and game-clock delay. Full supported-XBE match/mode/recovery chain
   checks and an asset-free clock contract cover original/native rates. No new
