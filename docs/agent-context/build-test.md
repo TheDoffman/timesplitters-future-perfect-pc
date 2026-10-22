@@ -44,6 +44,10 @@ fixture, not execution of the full original panel or a rendered comparison.
 The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
 the original panel now runs inside that callback. Other placement targets keep
 their direct original callbacks. The scope suite verifies callback execution.
+The first native144 Venice panel comparison is recorded in STATUS: average FPS
+and tail intervals move in different directions, so query savings alone must
+not be reported as a pacing improvement. Exclude a measurement window when
+another game starts during it, even if that run reports a better average.
 
 `tests/test_decal_projection.py` checks the production projection wrapper's
 guest ABI and all matrix elements, plus one VM query per same-region correction.

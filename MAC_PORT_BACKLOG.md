@@ -757,8 +757,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   scratch writes, operation expiry and placement boundaries remain covered.
   No OS adapter change is needed. Windows full build/built-in checks pass;
   a bounded native144 Venice run shows readable RANK/ordinal labels and
-  preserves the isolated profile. Full rendered comparison, measured FPS and
-  native Mac execution remain pending; see STATUS.md.
+  preserves the isolated profile. Hosted Windows/Mac runtime CI passes at
+  `c580949`, including Mac asset-free graphics contracts. Initial Windows
+  before/after pacing results are mixed; no FPS benefit is established.
+  Full rendered comparison and native Mac gameplay/performance remain pending;
+  see STATUS.md.
 
 - **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
   text read cache now keeps the complete OS-validated interval, avoiding repeat
