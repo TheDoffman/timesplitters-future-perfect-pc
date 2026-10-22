@@ -36,6 +36,14 @@ asset-free real-lowering cases cover both clock sites and an unrelated one.
 For live camera comparisons, read camera and body positions in one bounded
 observation with frame brackets and verify active camera ownership/mode/FOV.
 A similarly timed renderer capture alone is not a synchronized pose trace.
+Integrated `fb261e1` passes the supported Windows build and selected both-host
+CI. The `vehicle-integrated-camfix-{60,120,144}` bounded Windows runs use that
+same executable with isolated Test Lab profiles. Their matched-position
+camera distances remove the prior large lag; steering and settled pause pass.
+See STATUS for values and provenance. Keep one-run asynchronous/captured
+behavior evidence separate from exact trajectories, physical input and pacing.
+The normal playable pair is restored after each run; candidate objects remain
+in the root build cache, so preserve the pair and force a fresh link next build.
 Main `acf4464` integration retains keyboard-menu/weapon-slot exclusions in
 the historical controls fixture alongside vehicle physics. Full-stack apply
 and all four current/historical upgrade checks pass on the combined source.

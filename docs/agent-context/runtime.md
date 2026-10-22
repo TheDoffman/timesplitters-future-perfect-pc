@@ -34,7 +34,8 @@ zero division/loop underflow. Original60, authored coefficients, target/world
 geometry and multi-tick groups retain the original code. Pause rejects stale
 whole counts at entry. The full-original `native_vehicle_camera.c` fixture
 controls collision services/history/targets and host CRT math; it is not live
-terrain acceptance. See STATUS for synchronized before-fix camera evidence.
+terrain acceptance. See STATUS for frame-bracketed live camera/body readings;
+these asynchronous observations are not exact completed-update traces.
 
 The candidate `-native-vehicle-physics.patch` adds a default-identity
 `RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory and

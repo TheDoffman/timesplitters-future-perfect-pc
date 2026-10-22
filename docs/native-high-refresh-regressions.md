@@ -5919,10 +5919,26 @@ All three pass signed steering (>0.9 magnitude in each direction), throttle
 movement and stationary paused-body checks, with zero bots and unchanged
 profiles. The 3,502 / 3,507 / 3,536 read-only samples are asynchronous; see
 STATUS and `logs/vehicle-nobots-comparison.json` for sampled differences.
-The images suggest a camera-distance difference that still needs synchronized
-verification: the 180-frame dump cadence yields different capture ages across
-presets. Exact response, complete trajectories, terrain/contact, physical input,
-vehicle exit, frame pacing and native Mac acceptance remain pending.
+Those images prompted a separate camera/body position probe because their
+180-frame dump cadence yields different capture ages across presets. Before
+the camera fix, valid ownership/mode/FOV and matching frame brackets show
+distance 10.44548 at Original60 versus 15.13290 at native144 near vehicle Z30.
+Original `CA040` discarded fractional frames despite consuming a fractional
+physics-history duration; `CA424` also required a nonzero spring-substep count.
+Shared numeric fix `24d0ad5`, integrated into `fb261e1`, corrects both loads
+while retaining Original60, authored coefficients and world routines.
+
+The full-original camera fixture reproduces the deficit and passes after the
+fix; gate/count counterfactuals fail independently. Full Windows build and all
+selected CI pass at `fb261e1`. Its matched no-bot camera runs at 60/120/144
+measure distances 10.10340 / 10.10925 / 9.97361 near Z30, with signed steering,
+stationary pause and unchanged profiles. Captures show the expected chase
+view. STATUS records all checkpoints, binary provenance and scope. These
+single short captured runs use asynchronous observations, not completed-update
+or scanout traces. Exact response, complete trajectories, terrain/contact,
+physical input, vehicle exit, frame pacing and native Mac acceptance remain
+pending. Evidence: `logs/vehicle-camera-comparison.json` and isolated
+`vehicle-integrated-camfix-{60,120,144}` reports/provenance/captures.
 
 ## Native-start return to Original 60 (2026-10-22)
 

@@ -38,10 +38,38 @@ passes 151 tests in 174.45 seconds; 21 context/backlog checks also pass.
 Source fix `24d0ad5` is integrated with main `acf4464` (keyboard/storage
 changes), preserving both historical-fixture exclusions. The integrated
 vehicle/input/menu/storage/fixture/context selection passes 60 tests with two
-Mac-only local skips; four current/historical patch upgrades pass. The rebuilt
-game and live corrected-camera acceptance remain pending. Native Mac gameplay and real geometry
-remain unverified under MAC-060. This fix does not establish full vehicle or
-full-game fidelity.
+Mac-only local skips; four current/historical patch upgrades pass. Integrated
+`fb261e1` passes the supported full Windows build and built-in checks (MSVC
+14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Its EXE SHA-256 is
+`992d6788a3357c8e02c67762b0731c65d53020a2b6c6dbd8dae1b65594f96289`.
+The normal playable executable is restored and hash-verified after each test.
+Native Mac gameplay and broader geometry remain unverified under MAC-060.
+This fix does not establish full vehicle or full-game fidelity.
+
+The corrected executable completes the same bounded, no-bot Siberia route at
+Original60, native120 and native144. Frame-bracketed observations retain valid
+camera ownership, mode24 and FOV55. Camera/body distances in world units at
+matched vehicle positions are:
+
+| Vehicle Z | Original60 | Native120 | Native144 |
+| --- | ---: | ---: | ---: |
+| Near 10 | 7.82404 | 7.93013 | 7.79685 |
+| Near 20 | 10.03926 | 9.93714 | 9.86945 |
+| Near 30 | 10.10340 | 10.10925 | 9.97361 |
+
+This removes the large pre-fix lag in this route; it is not exact trajectory
+parity. Each preset has one short run, asynchronous 20 ms reads, synthetic
+inputs and renderer captures approximately every 0.2 seconds. The largest
+selected-read duration is 0.479 ms. Captures show the expected chase view;
+their pose age is not treated as synchronized. All presets pass both signed
+steering windows and stationary settled pause (115 / 114 / 115 samples with
+zero game delta and XYZ span). Total observations are 3,502 / 3,532 / 3,518.
+Profiles remain unchanged with valid signatures; disposable disks are recycled.
+Evidence: `vehicle-integrated-camfix-{60,120,144}` reports, captures and
+provenance, and `logs/vehicle-camera-comparison.json`. All selected runtime,
+upgrade, transition, launcher and issue CI checks pass at built source
+`fb261e1`. Native Mac gameplay, terrain/contact, physical input, exit and frame
+pacing remain separate acceptance requirements.
 
 ## 2026-10-22 — Vehicle integration with main
 

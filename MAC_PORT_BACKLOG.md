@@ -3659,9 +3659,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   admits fractional chase updates at `CA040` and nonzero spring groups at
   `CA424`. No new OS adapter. Full-original camera tests reproduce the old
   lag and pass after correction; registered asset-free load-lowering tests
-  cover both hosts. Source/full-build/live corrected-camera verification is
-  in progress; actual Mac gameplay and geometry acceptance remain pending.
-  See STATUS for the independently measured pre-fix 60/144 distance difference.
+  cover both hosts. Integrated `fb261e1` passes the full Windows build and
+  selected Windows/Mac CI. Bounded no-bot Windows driving at 60/120/144 removes
+  the large pre-fix camera-distance mismatch and passes steering/pause checks;
+  see STATUS for measurements, asynchronous scope and binary provenance.
+  Actual Mac gameplay, broader geometry and pacing acceptance remain pending.
 
 - **Integrated vehicle build (2026-10-22):** Draft PR #307, source `d0116a7`,
   incorporates main `7545d4b`. Windows full build/built-in checks, 147 combined
