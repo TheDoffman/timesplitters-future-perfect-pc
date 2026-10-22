@@ -3599,6 +3599,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Projection query candidate (2026-10-22, `perf/projection-memory-checks`,
+  this revision):** Shared `pc_display_memory.h` retains a VM region only during
+  one post-guest camera/projection correction. It uses the existing Windows
+  query and Darwin Mach region adapter, with no new OS-specific policy. Bounds
+  and write permission remain checked; snapshots expire before guest execution.
+  Sixteen focused Windows geometry/protection/ABI cases pass. Native Mac real-VM
+  execution, camera/cutscene visual acceptance and performance remain awaiting
+  validation. Existing projection/cutscene CI routes run the extended checks.
+
 - **Full-float feedback follow-up (2026-10-22, PR #299, `6035ed7`):** The shared opt-in
   policy selects 32-bit float intermediates to remove measured half-float
   accumulation error. The common RHI already maps this format on D3D11/Vulkan;

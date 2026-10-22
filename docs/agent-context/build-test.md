@@ -25,6 +25,15 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_decal_projection.py` checks the production projection wrapper's
+guest ABI and all matrix elements, plus one VM query per same-region correction.
+A retained-snapshot mutation must fail, proving each invocation queries afresh.
+`tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
+no-access, boundary-crossing and overflow rejection (Windows also guard pages).
+The existing registered projection/cutscene CI suites run these checks on both
+hosts. The cutscene fixture shares a controlled query adapter for geometry;
+neither query counts nor successful geometry tests establish FPS improvement.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

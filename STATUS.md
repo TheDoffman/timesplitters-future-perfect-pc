@@ -1,3 +1,21 @@
+## 2026-10-22 — Camera/projection memory-query candidate
+
+`perf/projection-memory-checks` is independent from main `564fda6`. A Windows
+Venice ten-bot diagnostic on combined source `6a766f5` found 1,873 of 6,872
+guest-main samples in `NtQueryVirtualMemory` between cumulative reports at
+110 and 150 seconds. Of these, 460 sampled chains came through perspective
+correction and 208 through camera correction. Folded linker symbols elsewhere
+in the stack are not reliable function identities; these callers identify the
+actual source. Profiling perturbs timing and is not an FPS benchmark.
+
+The candidate reuses one OS-validated writable region within each uninterrupted
+camera/projection correction, initialized after the original guest call and
+discarded before returning. It preserves bounds/protection checks and matrix
+arithmetic. Sixteen focused projection, real-VM and cutscene tests pass locally,
+including rejection of a mutation that retains the snapshot between calls.
+Supported build, live performance benefit and native Mac execution are pending.
+No saved settings or gameplay rates are changed.
+
 ## 2026-10-22 — Full-float procedural feedback candidate
 
 PR #298 head `496b636` passes all selected Windows/Mac native, upgrade and

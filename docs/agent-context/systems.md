@@ -56,6 +56,15 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+Camera and perspective corrections use `pc_display_memory.h` to retain one
+OS-validated writable region only after their original guest routine returns.
+The stack-local snapshot expires when the correction returns; no guest calls,
+allocations or protection changes may occur while it is reused. Bounds,
+overflow, read-only and guard/no-access rejection remain enforced. Other
+display/menu validation still uses its existing checks. This avoids repeating
+the VM query for camera, output and source matrices within the same region;
+it does not cache matrices, reduce updates or change projection arithmetic.
+
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
 otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,
