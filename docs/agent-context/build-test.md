@@ -25,6 +25,18 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+The registered vehicle suite now lifts full `CA040` with original spring,
+history-average and angle helpers. Controlled unobstructed collision queries
+and CRT math isolate time consumption. It compares aligned two-second camera
+checkpoints on both horizontal axes through reversal, slow/normal/fast and
+regular/irregular native intervals; it checks fresh updates, pause and ABI.
+Gate/count mutations fail independently; check a missing substep count before
+entering the original decrement loop to avoid an underflow hang. Three
+asset-free real-lowering cases cover both clock sites and an unrelated one.
+For live camera comparisons, read camera and body positions in one bounded
+observation with frame brackets and verify active camera ownership/mode/FOV.
+A similarly timed renderer capture alone is not a synchronized pose trace.
+
 When integrating the vehicle branch with main `7545d4b`, preserve both
 `physics_history_transitions` and `boost_resource_clock` in the guest clock
 fixture. The three historical patch fixtures exclude vehicle physics alongside

@@ -3634,6 +3634,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle chase camera (2026-10-22, uncommitted):** Shared numeric policy
+  admits fractional chase updates at `CA040` and nonzero spring groups at
+  `CA424`. No new OS adapter. Full-original camera tests reproduce the old
+  lag and pass after correction; registered asset-free load-lowering tests
+  cover both hosts. Source/full-build/live corrected-camera verification is
+  in progress; actual Mac gameplay and geometry acceptance remain pending.
+  See STATUS for the independently measured pre-fix 60/144 distance difference.
+
 - **Integrated vehicle build (2026-10-22):** Draft PR #307, source `d0116a7`,
   incorporates main `7545d4b`. Windows full build/built-in checks, 147 combined
   source checks, four patch upgrades and 88 repository checks pass. Selected

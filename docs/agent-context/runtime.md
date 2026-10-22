@@ -26,6 +26,16 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+Vehicle chase camera `CA040` (modes 24/32) uses physics-history average
+`165650` for elapsed time. Its entry whole-tick gate now follows positive
+live game time. The `CA424` count load retains carried groups of five spring
+substeps, but supplies one group on an advancing zero-whole interval to avoid
+zero division/loop underflow. Original60, authored coefficients, target/world
+geometry and multi-tick groups retain the original code. Pause rejects stale
+whole counts at entry. The full-original `native_vehicle_camera.c` fixture
+controls collision services/history/targets and host CRT math; it is not live
+terrain acceptance. See STATUS for synchronized before-fix camera evidence.
+
 The candidate `-native-vehicle-physics.patch` adds a default-identity
 `RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory and
 the input of byte-memory DECs. The latter keeps its flag snapshot on the
@@ -74,7 +84,7 @@ and overshooting weights retain original arithmetic. This is separate from
 the unresolved real-terrain trajectory differences.
 Build `67c1864` passes and matched live initial acceleration now agrees within
 0.1% at the three presets. Later pillar/bank contact diverges, so full handling
-acceptance remains separate. Latest candidate recovery is `vehicle-67c1864`;
+acceptance remains separate. That historical candidate was superseded by `vehicle-d0116a7`;
 the earlier candidate binary was recycled and the playable crowd pair restored.
 Contact-velocity gate `166899` is now also keyed by positive live game time:
 the original `1667C0` otherwise omits a character's displacement-derived

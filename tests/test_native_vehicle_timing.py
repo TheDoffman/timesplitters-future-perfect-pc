@@ -28,6 +28,12 @@ def test_physics_wrapper_retains_original_body():
 
 
 @pytest.mark.parametrize('harness,ranges,mutations', [
+    ('native_vehicle_camera.c', [(0xca040,0xcafa3),(0x165650,0x165686),
+                               (0xc7950,0xc79c0),(0xc9f80,0xca03d),
+                               (0x152090,0x15211d),(0x1521d0,0x15225d),
+                               (0x152990,0x152a01),(0x1533e0,0x153431),
+                               (0x12660,0x126b4),(0x12570,0x1265e)],
+     ['legacy-camera-gate','legacy-camera-count']),
     ('native_vehicle_actor_impact.c', [(0xa7360, 0xa7666), (0x17cae0, 0x17ccc9),
                                      (0x166060, 0x166136), (0x1665f0, 0x166769),
                                      (0x17bc90, 0x17bd05), (0x16c070, 0x16c0c6),
@@ -106,7 +112,9 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         result = subprocess.run([str(executable), mutation], capture_output=True, text=True, timeout=15)
         assert result.returncode != 0 and 'Assertion' in result.stderr, result.stdout + result.stderr
         assert 'UNEXPECTED' not in result.stderr
-        expected = {'missing-contact': 'fps=60 forced=2',
+        expected = {'legacy-camera-gate': 'camera fps=60 mode=1',
+                    'legacy-camera-count': 'camera fps=60 mode=1',
+                    'missing-contact': 'fps=60 forced=2',
                     'legacy-secondary': 'rigid_mixed mode=1',
                     'legacy-character-contact': 'character_contact fps=120',
                     'legacy-body-sleep': 'rigid_sleep fps=120'}.get(mutation, 'fps=120')
@@ -311,3 +319,42 @@ int main(void) {
     source = source.replace('/* POLICY */',
         f'#include "{(ROOT / "src/pc_native_numeric.h").as_posix()}"')
     print(compile_and_run(tmp_path, source))
+
+
+@pytest.mark.parametrize('site', [0xca040, 0xca424, 0x123400])
+def test_vehicle_camera_clock_lowering(tmp_path, site):
+    # Actual global-load lowering: gate, substep count and an unrelated site.
+    image = bytes.fromhex('a144794e00c3')
+    config._install([config.Section('.text', site, len(image), 0, len(image), True)],
+                    site, 0, 'synthetic-camera-clock')
+    info = dict(name='tick', end=site + len(image))
+    code = FunctionTranslator(image, {site: info}).translate_function(site, info)
+    source = r'''
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define RECOMP_GENERATED_CODE
+/* POLICY */
+#include "recomp_types.h"
+ptrdiff_t g_xbox_mem_offset;
+int g_tsfp_native_timing_active;
+RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
+/* ROUTINES */
+int main(void) {
+    void *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
+    const float times[]={0,.25f,5.f/12.f,1,3};
+    for(unsigned native=0;native<2;native++)for(unsigned i=0;i<5;i++)for(unsigned whole=0;whole<4;whole++) {
+        g_tsfp_native_timing_active=native;MEMF(0x4e794c)=times[i];MEM32(0x4e7944)=whole;
+        g_esp=0x1000;g_edx=0x12345678;tick();
+        unsigned expected=whole;
+        if(native && /* SITE */==0xca040)expected=times[i]>0;
+        if(native && /* SITE */==0xca424)expected=times[i]>0?(whole?whole:1):0;
+        assert(g_eax==expected && g_esp==0x1004 && g_edx==0x12345678);
+        assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==times[i]);
+    }
+    free(memory);puts("PASS: camera gate/count lowering, fractional/pause/catch-up, Original and unrelated site");return 0;
+}
+'''
+    policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
+    source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
+    print(compile_and_run(tmp_path, source.replace('/* SITE */', hex(site))))

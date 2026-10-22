@@ -123,6 +123,16 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0)
         return 1;
+    /* Vehicle chase camera CA040 integrates the averaged physics interval.
+     * Its entry gate otherwise drops fractional time. CA424 chooses five
+     * spring substeps per carried tick and divides the live duration among
+     * them; supply one group when advancing time has no whole tick. Keep
+     * original/multi-tick groups intact, and never divide by zero. */
+    if (site == 0xCA424u && address == 0x4E7944u &&
+        g_tsfp_native_timing_active) {
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        return game>0.f ? (value ? value : 1u) : 0u;
+    }
     /* Driver dispatch must replenish throttle/brake inputs on every vehicle
      * update: 17E680 consumes and clears them even on fractional frames.
      * 17DA03 is only an entry gate; its EAX is overwritten before use.
@@ -134,6 +144,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * EAX is overwritten, and 172B01 already divides by live game time. */
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
+         site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||

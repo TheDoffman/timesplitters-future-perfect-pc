@@ -1,3 +1,44 @@
+## 2026-10-22 — Vehicle chase-camera fractional time correction
+
+The camera-distance suspicion is now reproduced independently of image age.
+Bounded no-bot Siberia runs of integrated code `d0116a7` read the jeep and
+active camera positions together, retain matching frame-counter brackets and
+verify the player's camera link, chase mode 24 and FOV 55. At vehicle Z near
+30, camera/body separation is 10.445 world units at Original60 and 15.133 at
+native144. Each selected read completes within 0.247 ms; capture cadence is
+approximately 0.2 seconds at both presets. These are behavior diagnostics,
+not pacing or monitor-scanout measurements. Evidence:
+`logs/vehicle-camera-before.json` and isolated `vehicle-integrated-camera-*`.
+
+Original chase update `CA040` gates on whole game ticks, while its elapsed
+interval comes from physics history through `165650`. Fractional frames are
+therefore discarded. A second whole-tick load at `CA424` controls five spring
+substeps per tick. The shared numeric correction admits every positive live
+interval at entry and supplies one substep group when that interval has no
+whole tick. The original duration is divided among those substeps; authored
+spring constants, target construction, collisions and whole/catch-up groups
+remain in the original routine. Original60 behavior stays unchanged.
+
+A full-original camera fixture reproduces the tracking deficit before the fix
+and passes afterward. It includes the original history average, spring,
+orientation helpers and publication, with unobstructed collision services,
+controlled history windows/targets and host CRT math. Comparisons cover both
+horizontal axes, reversal, quarter/normal/triple speed, 60/120/144, irregular
+intervals, fresh fractional updates, stale-whole pause and ABI. Two-second
+checkpoints align carried-tick phases. Moving-target tolerance is one authored
+sample's travel plus 0.03 units of integration margin, scaled for fast time;
+maximum observed error is 0.144440 units. Independently removing either gate
+or substep-count correction fails (the latter is checked before entering a
+zero-count loop). Three asset-free tests exercise actual global-load lowering
+at both sites and an unrelated address. The registered both-host suite runs
+these without game assets; full-original cases require the verified US XBE.
+
+The combined timing/physics/generation/frame-clock/input/projection suite
+passes 151 tests in 174.45 seconds; 21 context/backlog checks also pass.
+The rebuilt game and live corrected-camera acceptance remain pending. Native Mac gameplay and real geometry
+remain unverified under MAC-060. This fix does not establish full vehicle or
+full-game fidelity.
+
 ## 2026-10-22 — Vehicle integration with main
 
 Vehicle candidate `d0116a7` integrates main `7545d4b`, including its
