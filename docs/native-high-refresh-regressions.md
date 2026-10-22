@@ -5892,12 +5892,38 @@ The full Windows timing/vehicle/float-join/vehicle-join/generation suite passes
 maximum absolute error from the independent Original60 recurrence is
 0.000000238. Supported Windows build `464f850` and all built-in checks pass
 (`logs/native-steering-build.log`), using MSVC 14.44.35207, SDK 10.0.26100 and
-the common Xbox frontend. The EXE/PDB pair is retained in
-`private/build-recovery/vehicle-464f850`; EXE SHA-256 is
+the common Xbox frontend. This pair was superseded by integrated `d0116a7`;
+its historical EXE SHA-256 is
 `a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
 The normal `4adb6b0` pair was restored with its previously recorded hash verified.
-No live driving run was performed for this follow-up. Live handling, current-main
-integration and native Mac acceptance remain pending.
+No live driving run was performed at that source revision. Subsequent integrated
+source `d0116a7` incorporates main `7545d4b` and passes the supported Windows
+build, 147 combined runtime/source checks, four upgrades and 88 repository
+checks. All selected Windows/Mac CI and transition jobs pass at `d0116a7`
+(runtime workflow 39851684749). Original-routine cases require private assets;
+these hosted results do not establish actual Mac gameplay.
+
+Initial integrated live144 runs were excluded from steering comparison: one
+observer confused a body handle with a pointer and had no samples, and in the
+next run a bot killed the player before entry. The later Original60 route
+showed steering/throttle and a stationary paused jeep but still had six bots,
+despite its `60-empty` name. `logs/vehicle-integrated-live-summary.json` records
+these exclusions and limits. A subsequent setup probe selected the normal
+None bot preset (roster257, zero bots); the different spawn invalidated its old
+walk-to-jeep route. No handling comparison is claimed from that probe.
+Use the verified None preset and observed approach position for future matched
+runs; preserve asynchronous diagnostic scope and inspect actual jeep entry.
+The corrected `vehicle-integrated-settled-{60,120,144}` runs use that setup,
+a bounded normal-input approach and six seconds for the entry animation.
+All three pass signed steering (>0.9 magnitude in each direction), throttle
+movement and stationary paused-body checks, with zero bots and unchanged
+profiles. The 3,502 / 3,507 / 3,536 read-only samples are asynchronous; see
+STATUS and `logs/vehicle-nobots-comparison.json` for sampled differences.
+The images suggest a camera-distance difference that still needs synchronized
+verification: the 180-frame dump cadence yields different capture ages across
+presets. Exact response, complete trajectories, terrain/contact, physical input,
+vehicle exit, frame pacing and native Mac acceptance remain pending.
+
 ## Native-start return to Original 60 (2026-10-22)
 
 The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing

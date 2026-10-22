@@ -3634,6 +3634,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Integrated vehicle build (2026-10-22):** Draft PR #307, source `d0116a7`,
+  incorporates main `7545d4b`. Windows full build/built-in checks, 147 combined
+  source checks, four patch upgrades and 88 repository checks pass. Selected
+  Windows/Mac runtime CI jobs pass at this head; workflow completion is tracked
+  in the PR. Private-XBE original routine checks remain distinct from asset-free
+  CI. Short no-bot Windows runs at all three presets pass signed steering and
+  pause checks; rejected setup runs and asynchronous timing limits are recorded
+  in STATUS. Exact handling and actual Mac gameplay remain unverified.
+  Shared policy requires no new platform adapter. Status remains Awaiting validation.
+
 - **Vehicle steering follow-up (2026-10-22, WIP):** Shared numeric policy adds
   original coefficient site `17306A` to the existing fractional easing rule.
   No host adapter is needed. Original driver/steering tests reproduce slower

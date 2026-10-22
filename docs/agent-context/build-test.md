@@ -31,6 +31,24 @@ fixture. The three historical patch fixtures exclude vehicle physics alongside
 surface coefficients/full-float and flip handoff; the complete stack includes
 all of them. Run combined timing/input and historical upgrades before treating
 earlier separate-branch validation as applicable to the merged candidate.
+Integrated `d0116a7` passes the supported Windows build, 147 combined checks,
+four historical/current upgrades and 88 context/backlog/scope checks (draft
+PR #307). The retained candidate is `vehicle-d0116a7`; older `vehicle-464f850`
+and `vehicle-60e5b36` executable/symbol pairs have been superseded and recycled,
+while diagnostic evidence remains. Build provenance and live exclusions are
+in STATUS. In particular, the earlier `60-empty` route retained six bots:
+verify both roster and captures before treating a route as an empty-map test.
+The first integrated144 observer produced no data, and the second run lost
+the player before jeep entry; neither establishes steering parity.
+For the corrected Siberia route, choose LEFT from Recommended to None,
+verify roster257 (zero bots), and approach the observed jeep using normal
+controls rather than the old six-bot spawn path. Allow six seconds after
+entry; an earlier right-input probe was consumed during the climb-in animation.
+The three `vehicle-integrated-settled-*` runs pass signed-input and settled
+pause checks with unchanged profiles. Keep their asynchronous measurements
+separate from exact response and pacing acceptance. A 180-frame dump cadence
+has different wall-time age across presets; camera-distance comparisons need
+synchronized capture/position observations before diagnosing a regression.
 
 `native_spawn_motion.c`, registered in `test_native_vehicle_timing.py`, lifts
 original joint-history copy `57040`, object spawn `1727A0` and its real
@@ -63,8 +81,8 @@ be combined with `--watch-input`. Entry traces identify callers and registers,
 not exact impulse arguments or matched full handling.
 The `vehicle-actor-trace-60e5b36-144` live probe reaches `17CAE0` from the
 player collision caller and passes pause/resume. Its entry-only trace does
-not establish the callback's taken branch or impact magnitude. The candidate
-EXE/PDB is retained; the normal playable pair is restored and hash verified.
+not establish the callback's taken branch or impact magnitude. That candidate
+EXE/PDB was superseded by `vehicle-d0116a7`; its evidence is retained.
 
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts
@@ -115,7 +133,7 @@ synthetic SSE coefficient test in the same Python suite runs on both CI hosts;
 it checks real lowering, untouched upper lanes, Original-mode arithmetic and
 an unrelated instruction site. Full wheel/terrain forces remain outside it.
 Steering source `464f850` passes the supported Windows build and built-in
-checks. Its candidate pair is retained in `vehicle-464f850`; the normal
+checks. Its candidate pair was superseded by `vehicle-d0116a7`; the normal
 `4adb6b0` pair is restored. The object/generated cache is newer than the normal
 executable, so preserve that pair and force a fresh link before the next build.
 The `67c1864` replay corrects the original throttle deficit (initial travel

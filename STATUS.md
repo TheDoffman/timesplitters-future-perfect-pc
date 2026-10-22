@@ -1,6 +1,6 @@
 ## 2026-10-22 — Vehicle integration with main
 
-The vehicle candidate is being integrated with main `7545d4b`, including its
+Vehicle candidate `d0116a7` integrates main `7545d4b`, including its
 mounted-input, boost-resource, crowded-map and clock-handoff fixes. Conflict
 resolution retains both physics history and boost-clock tests and both numeric
 policy helpers. The patch sequence retains coefficient precision before surface
@@ -10,8 +10,60 @@ dependent set. The complete patch sequence applies. Combined Windows timing,
 physics, generation, frame-clock, mounted/terminal-input, text-scope and
 projection checks pass: 147 tests in 195.31 seconds. Four fresh/repeated and
 historical upgrade checks pass in 106.87 seconds; 88 context/backlog/scope
-checks also pass. Prior branch builds are not validation of this combined
-source; its supported build and live driving acceptance remain pending.
+checks also pass. The supported full Windows build and built-in checks pass
+(MSVC 14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Candidate
+EXE SHA-256 is
+`30d1e377a38e33f20c7ba9bee2430e74bd9239be8d4ff31e2bbdbb41fe8e0747`.
+Draft PR #307 contains this integration; broader live handling and actual Mac
+gameplay acceptance remain pending.
+
+The initial integrated 144 live run shows jeep entry/driving and pause/resume,
+but its private observer confused a body handle with a pointer and produced
+no steering data. A corrected observer collected 1,967 samples in the next
+run, but the player died before jeep entry; exclude it from driving comparison.
+The subsequent Original60 run collected 1,957 samples and showed signed
+steering, eligible wheel response and throttle. Its 128 settled pause samples
+have zero game delta and no position change. Despite the run name ending
+`60-empty`, six bots remained enabled; it is not an empty-map reference.
+These asynchronous observations and captures are neither completed-update
+traces nor frame-pacing measurements. Evidence and exclusions are retained in
+`logs/vehicle-integrated-live-summary.json` and each disposable run's provenance.
+
+The corrected, no-bot Siberia route completes at Original60, native120 and
+native144 using the same `d0116a7` executable and isolated settings. The normal
+None bot preset is confirmed by roster and captures. A bounded normal-input
+approach accounts for the different spawn, then waits six seconds for entry
+before testing right/left steering, release, three-second throttle and pause.
+Both signed steering windows exceed 0.9 magnitude at every preset; live
+observations total 3,502 / 3,507 / 3,536 samples. Settled pause windows contain
+128 / 128 / 129 observations, all with zero game delta and zero XYZ span.
+Profiles/signatures remain unchanged and disposable partitions are recycled.
+
+These are single short diagnostic runs per preset, with 20 ms asynchronous
+reads and synthetic inputs. Nearest half-second right-steering samples are
+-0.88718 / -0.86954 / -0.88497; left samples are 0.87706 / 0.85964 / 0.87013.
+Sampled displacement during throttle is 29.959 / 29.571 / 29.660 world units;
+window endpoints are asynchronous, so this is not exact trajectory parity.
+The driving images show a possible camera-distance difference, but the
+180-frame capture cadence is different in wall time at each preset. A
+synchronized camera check is required before assigning a regression.
+Vehicle exit was not verified. Terrain/contact, exact response timing,
+physical input, pacing and native Mac gameplay remain open. Evidence:
+`private/test-saves/vehicle-integrated-settled-{60,120,144}` and
+`logs/vehicle-nobots-comparison.json`. Earlier no-bot setup probes that missed
+the jeep or sent right input during the entry animation are excluded from
+matched steering acceptance.
+
+All selected CI checks pass for code commit `d0116a7`, including both host
+runtime, upgrade and transition jobs in workflow 39851684749. A subsequent
+documentation commit must be tracked separately from that verified code head.
+
+The current candidate pair is retained in `private/build-recovery/vehicle-d0116a7`;
+its older `464f850` and `60e5b36` executable/symbol pairs were superseded and
+recycled, with their diagnostic evidence preserved. The normal playable
+`4adb6b0` pair is restored between owned tests; its hash is verified. Generated
+code and object files correspond to `d0116a7`, so preserve the normal pair and
+force a fresh link for any further build.
 
 ## 2026-10-22 — Vehicle steering response candidate
 
@@ -33,11 +85,11 @@ generation checks pass in 153.58 seconds, plus 77 context/backlog/scope checks.
 The 135 steering stage comparisons differ from their Original60 reference by
 at most 0.000000238. Supported Windows build `464f850` and all built-in checks
 pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend).
-Candidate EXE/PDB are retained in `private/build-recovery/vehicle-464f850`;
+This historical candidate was superseded by integrated `d0116a7`; its
 EXE SHA-256 is
 `a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
 The prior playable `4adb6b0` executable was restored and its hash verified.
-Live handling acceptance and integration with current main remain pending.
+Live handling acceptance remains pending; current-main integration is recorded above.
 This is not an established fix for the earlier pillar/bank trajectory difference.
 See MAC-060 and the steering audit in the high-refresh regression record.
 
