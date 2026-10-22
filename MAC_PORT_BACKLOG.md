@@ -3591,8 +3591,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   native120 response before correction and pass afterward, including signed
   steering/release, speed target clamp, wheel eligibility and time variations.
   Both-host CI registration already includes the extended vehicle test file
-  and its new asset-free SSE case. Windows full rebuild/live handling and Mac
-  execution of this follow-up remain pending; see STATUS.md. This does not
+  and its new asset-free SSE case. Windows build `464f850` and its built-in
+  checks pass. Live handling and Mac execution of this follow-up remain
+  pending; see STATUS.md. This does not
   establish the cause of the earlier pillar/bank trajectory divergence.
 
 - **Vehicle/rigid-clock candidate (2026-10-22):** WIP branch

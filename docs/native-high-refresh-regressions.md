@@ -5869,4 +5869,11 @@ The full Windows timing/vehicle/float-join/vehicle-join/generation suite passes
 117 tests in 153.58 seconds (`logs/native-steering-regressions.log`); another
 77 context/backlog/scope checks pass. Across 135 steering stage comparisons,
 maximum absolute error from the independent Original60 recurrence is
-0.000000238. Full game rebuild and live handling validation remain pending.
+0.000000238. Supported Windows build `464f850` and all built-in checks pass
+(`logs/native-steering-build.log`), using MSVC 14.44.35207, SDK 10.0.26100 and
+the common Xbox frontend. The EXE/PDB pair is retained in
+`private/build-recovery/vehicle-464f850`; EXE SHA-256 is
+`a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
+The normal `4adb6b0` pair was restored with its previously recorded hash verified.
+No live driving run was performed for this follow-up. Live handling, current-main
+integration and native Mac acceptance remain pending.

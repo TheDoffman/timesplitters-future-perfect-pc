@@ -107,6 +107,10 @@ only the new coefficient correction and must fail at native120. The asset-free
 synthetic SSE coefficient test in the same Python suite runs on both CI hosts;
 it checks real lowering, untouched upper lanes, Original-mode arithmetic and
 an unrelated instruction site. Full wheel/terrain forces remain outside it.
+Steering source `464f850` passes the supported Windows build and built-in
+checks. Its candidate pair is retained in `vehicle-464f850`; the normal
+`4adb6b0` pair is restored. The object/generated cache is newer than the normal
+executable, so preserve that pair and force a fresh link before the next build.
 The `67c1864` replay corrects the original throttle deficit (initial travel
 within 0.1% across presets); later pillar/bank paths still diverge. Inspect both
 the sampled input window and subsequent captures before declaring acceptance.

@@ -16,8 +16,13 @@ including an unrelated site and preserved upper lanes. Physics and world
 geometry remain controlled boundaries. All 117 timing/physics/translator/
 generation checks pass in 153.58 seconds, plus 77 context/backlog/scope checks.
 The 135 steering stage comparisons differ from their Original60 reference by
-at most 0.000000238. A rebuilt game and live handling acceptance are pending;
-the prior playable executable is unchanged.
+at most 0.000000238. Supported Windows build `464f850` and all built-in checks
+pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend).
+Candidate EXE/PDB are retained in `private/build-recovery/vehicle-464f850`;
+EXE SHA-256 is
+`a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
+The prior playable `4adb6b0` executable was restored and its hash verified.
+Live handling acceptance and integration with current main remain pending.
 This is not an established fix for the earlier pillar/bank trajectory difference.
 See MAC-060 and the steering audit in the high-refresh regression record.
 
