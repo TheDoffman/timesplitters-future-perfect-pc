@@ -120,3 +120,8 @@ The 2026-10-22 root texture policy retains original character selection/profile
 icons via `config/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
 Historical artwork acceptance does not override the current user preference.
+
+The native-start handoff patch extends the explicit timing tail after surface
+integration. The index regression checks that dependency and the new final
+patch; refreshing the generated index alone cannot update an old tail assertion.
+This CI correction changes navigation tests only, not runtime pacing.

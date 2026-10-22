@@ -361,3 +361,7 @@ Historical upgrade fixtures exclude the new handoff patch along with the later
 native timing tail when constructing old stacks, then apply it via the complete
 current loader. This preserves the historical dependency graph rather than
 inserting the new HLE call into a runtime that predates native timing.
+
+The handoff follow-up also updates `test_repo_context.py` to check surface-live
+before native-flip-handoff and the new tail. Its old final-patch assertion
+blocked CI scope selection even though the generated index was current.
