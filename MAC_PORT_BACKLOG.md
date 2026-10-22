@@ -3607,7 +3607,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   clock/resource tests run in both-host CI; the complete walking fixture needs
   the supported private XBE. Native Mac execution and live activation remain
   awaiting validation. See the walking/boost audit in
-  `docs/native-high-refresh-regressions.md` for exact scope and unknown mode name.
+  `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
 
 - **Combined local Windows validation (2026-10-22):** A local test branch
   combines PR #295's text-read optimization with PR #296's clock handoff fix.

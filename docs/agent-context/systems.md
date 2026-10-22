@@ -209,5 +209,7 @@ updates still consume at most one charge. Original mode and other sites retain
 exact subtraction. No constant table, boost speed, threshold or stored clock
 is changed. The complete US routine fixture uses a controlled flat collision
 floor; it does not establish real-map geometry, input acceleration or network
-transport parity. The user-visible mode name and live activation remain to be
-confirmed; do not infer them solely from the mode byte.
+transport parity. The game rule-name table at 0x4D1F90 + index*0x20, decoded
+through the existing Discord string-table path, identifies index 17 as Escort.
+A bounded frontend lookup confirms the name; live boost activation remains
+unverified.

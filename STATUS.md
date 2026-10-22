@@ -1,7 +1,7 @@
 ## 2026-10-22 — Walking boost resource timing
 
 `fix/native-boost-timing`, based on main 564fda6, fixes a resource-drain
-calculation in the mode-byte-0x11 movement boost. The complete original walking
+calculation in the Escort (mode-byte-0x11) movement boost. The complete original walking
 routine retains normal/boosted speeds at 60/120/144, but its per-update fixed
 charge previously doubled at 120 and multiplied by 2.4 at 144. A shared numeric
 policy at US site 0x259060 now splits the charge across native fractional
@@ -13,12 +13,16 @@ The supported Windows Build and its native tests pass on integration revision
 SHA-256: `aa2868fd0e2009ea96f26d90725c969a3067c3f78dd00a0bb0390db5d7973146`.
 This is a local combined development build, not a standalone release or proof
 of live boost activation.
+A bounded 60-second isolated startup run reaches frontend scene 101 and exits
+cleanly with unchanged signed test profiles. A read-only lookup through the
+existing Discord rule-name decoder confirms index 17 as Escort (index 3 is
+Deathmatch); this identifies the mode but does not activate or validate its boost.
 
 Windows: 69 timing/network/backlog cases pass, including the hash-verified US
 walking routine, depletion, eligibility, movement directions and a no-fix
 mutation. Existing Windows/macOS CI runs an asset-free clock/resource case;
 the full routine requires private game data. Real-map geometry, actual boost
-activation, the user-visible mode name, upstream input acceleration and native
+activation, upstream input acceleration and native
 Mac execution remain unverified. See MAC-060 and the
 [walking/boost audit](docs/native-high-refresh-regressions.md#walking-update-and-boost-resource-audit-2026-10-22).
 

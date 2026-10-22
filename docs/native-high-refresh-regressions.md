@@ -5487,7 +5487,9 @@ assertion. Asset-free clock-to-resource cases cover all presets in shared CI.
 
 Scope: this is actual-routine evidence with controlled services, not live boost
 activation, real collision/terrain, upstream input acceleration, full network
-prediction or native Mac execution. The user-visible name associated with mode
-byte 0x11 has not been established. Live activation/appearance still needs
-validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
+prediction or native Mac execution. A read-only frontend lookup through the
+existing Discord rule-name decoder identifies mode index 17 as Escort (string
+ID 5861); control index 3 resolves to Deathmatch. The bounded 60-second startup
+run exits cleanly and preserves the signed test profile. This identifies the
+mode, but live activation/appearance still needs validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
 `logs/native-boost-focused.log`; source branch `fix/native-boost-timing`.
