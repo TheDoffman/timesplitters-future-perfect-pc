@@ -22,6 +22,11 @@ cleaned. Full rendered comparison, measured FPS and native Mac execution remain
 pending. Broader patch-upgrade/context/backlog/CI-scope validation passes:
 109 tests in 588.40 seconds. See MAC-002.
 
+Initial Mac CI found one stale placement-source assertion expecting the direct
+panel callback. The assertion now requires its scoped callback at the same
+placement tag; the existing behavioral scope tests still verify execution and
+lifetime. No runtime change or game rebuild is needed for that test correction.
+
 Candidate EXE/PDB retained in `private/build-recovery/panel-4a4aa02`, EXE SHA256
 `55440352d61716a05c4237acc788a258020aca636d7ac46c899e24b4219e3d82`.
 The normal playable `4adb6b0` executable is restored with its hash verified.

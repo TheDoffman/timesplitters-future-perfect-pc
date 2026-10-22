@@ -41,6 +41,9 @@ measurements, ten draws and thirteen fresh scratch-write checks. The mutation
 removes only the panel scope; outlined scopes remain. Placement callbacks
 assert they run outside the reused mapping lifetime. This is a boundary/ABI
 fixture, not execution of the full original panel or a rendered comparison.
+The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
+the original panel now runs inside that callback. Other placement targets keep
+their direct original callbacks. The scope suite verifies callback execution.
 
 `tests/test_decal_projection.py` checks the production projection wrapper's
 guest ABI and all matrix elements, plus one VM query per same-region correction.
