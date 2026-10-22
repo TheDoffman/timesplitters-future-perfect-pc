@@ -4,6 +4,9 @@
 #include <stddef.h>
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
+#ifndef PC_NATIVE_PHYSICS_OBSERVE
+#define PC_NATIVE_PHYSICS_OBSERVE() ((void)0)
+#endif
 #if defined(_MSC_VER)
 #define PC_PHYSICS_TLS __declspec(thread)
 #else
@@ -41,6 +44,7 @@ static void pc_native_physics_guest(void (*original)(void))
  * Authored primary steps retain their original shared random side effects. */
 static void pc_native_physics_solver_guest(void (*original)(void))
 {
+    PC_NATIVE_PHYSICS_OBSERVE();
     PcPhysicsScope *scope=pc_physics_scope;
     if(!g_tsfp_native_timing_active || !scope) {original();return;}
     PcPhysicsRandom random={0,0,0,0},*saved=scope->random;

@@ -1,3 +1,20 @@
+## 2026-10-22 — Synchronous vehicle contact diagnostic
+
+The read-only background contact probe at native120 observed 534 stable arena
+reads, all with 500 free entries and no contacts. Original `171FB0` resets that
+arena immediately after solving; these observations cannot establish that no
+contact was generated. This repeat stopped at the pillar, unlike the earlier120
+run, with changed instrumentation and a slightly different approach. Neither
+outcome alone isolates a frame-rate-dependent collision failure.
+
+An opt-in shared diagnostic now captures generated and selected contact lists
+at the exact `172114 -> 171560` solver entry, alongside body state and time
+intervals. It validates memory spans, body identity and finite values, writes no
+guest state, and caps output at 16,000 rows or 8 MiB. Disabled builds take only
+the cached enable check. This is investigation infrastructure, not a collision
+fix or performance evidence. Local asset-free diagnostic checks pass; integrated
+build/live validation and native Mac gameplay remain pending under MAC-060.
+
 ## 2026-10-22 — Controlled contact impulse audit
 
 The original rigid-motion fixture now supplies identical zero-depth static

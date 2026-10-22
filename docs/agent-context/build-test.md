@@ -25,6 +25,19 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+The solver-entry contact diagnostic requires `TSFP_CONTACT_TRACE` (CSV path),
+`TSFP_CONTACT_TRACE_SLOT` (rigid-body pool slot, 0..1023), and
+`TSFP_CONTACT_TRACE_Z` (finite inclusive `min,max` world-Z window). Set these
+only in an isolated test child's environment after the runner strips inherited
+debug variables. It records a summary even for zero matching contacts, then
+generated and selected records separately. It stops at 16,000 rows or 8 MiB;
+the last snapshot may be partial, so consumers must check its row counts.
+The registered asset-free `native_contact_trace.c` fixture checks filter/identity,
+unreadable data, finite values, list membership, zero-contact snapshots, disabled
+and invalid configuration, opening failure, and both output limits. The physics
+scope fixture checks observation in Original, native and nested solver calls.
+Live contact evidence still requires a build containing this optional hook.
+
 `native_rigid_motion.c` also covers 864 identical zero-depth static-contact
 cases against an independent frictionless inelastic impulse equation: signed
 axes, centered/eccentric points, inverse masses, closing/separating/rest speeds

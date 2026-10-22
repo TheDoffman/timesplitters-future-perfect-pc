@@ -26,6 +26,15 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`pc_native_contact_guest.inc` observes exact `172114 -> 171560` solver entry
+before the RNG scope changes. It runs in Original and native modes when explicitly
+enabled. `pc_native_contact_trace.h` reads the current generated arena and selected
+pointer array, retaining each list separately with body pose/velocity and solver
+intervals. `171FB0` resets the arena after solving; asynchronous empty-arena reads
+cannot establish absence of contacts. The shared host adapter checks readable VM
+spans with `pc_guest_memory.h`, discarding its mapping cache before guest execution.
+The optional diagnostic writes no guest state and does not measure pacing.
+
 The rigid-motion fixture checks original contact solver `16FC00` and integrator
 `16CA00` against analytical static-contact impulses across signed axes, eccentric
 points, inverse masses and native intervals. Keep authored linear drag in the

@@ -37,12 +37,13 @@
  #define RECOMP_PUSH_IMM_U32_AT(site, value) (value)
 --- a/titles/futureperfect/src/recomp_manual.c
 +++ b/titles/futureperfect/src/recomp_manual.c
-@@ -104,6 +104,19 @@
+@@ -104,6 +104,20 @@
  #include "pc_native_timing_guest.inc"
  extern void sub_001538C0_gen(void);
  void sub_001538C0(void) { pc_native_timing_guest(sub_001538C0_gen); }
 +
 +/* Fractional physics keeps contact-order RNG separate from gameplay draws. */
++#include "pc_native_contact_guest.inc"
 +#include "pc_native_physics_guest.h"
 +extern void sub_00171FB0_gen(void);
 +extern void sub_00171560(void),sub_00153B40(void);

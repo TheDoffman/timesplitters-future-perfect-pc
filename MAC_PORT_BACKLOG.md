@@ -3655,6 +3655,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+The optional solver-entry contact trace is shared by both hosts through
+`pc_native_contact_trace.h` / `pc_native_contact_guest.inc`; the VM-read adapter
+uses the existing Windows/Darwin `pc_guest_memory.h` implementation. It separates
+generated and selected lists before the original arena reset, with bounded CSV
+output and no guest writes. Asset-free filter/list/writer checks are registered
+in the existing both-host timing suite. Windows integrated build/live contact
+validation and actual native Mac execution remain pending; this diagnostic does
+not resolve the live pillar outcome or certify handling parity. See STATUS.
+
 - **Controlled contact audit (2026-10-22, PR #307):** The existing shared
   `native_rigid_motion.c` fixture now passes 864 static-contact impulse cases
   against independent mechanics, with a missing-solve mutation. No production

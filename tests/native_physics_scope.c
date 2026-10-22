@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+static unsigned observations;
+#define PC_NATIVE_PHYSICS_OBSERVE() (++observations)
 /* PHYSICS POLICY */
 ptrdiff_t g_xbox_mem_offset;
 int g_tsfp_native_timing_active;
@@ -52,10 +54,11 @@ int main(void)
     for(unsigned native=0;native<2;native++)for(whole=0;whole<5;whole++)for(steps=0;steps<5;steps++) {
         g_tsfp_native_timing_active=native;
         WORD(0x4e7950)=1;WORD(0x4e7954)=100;WORD(0x7497c8)=0;WORD(0x4e7944)=whole;
-        total_calls=0;pc_native_physics_guest(update);
+        total_calls=0;observations=0;pc_native_physics_guest(update);
         unsigned committed=steps+3*(native && whole<steps?whole:steps);
         assert(WORD(0x7497c8)==committed && pc_physics_scope==NULL);
         assert(total_calls==steps*(native?6:4));
+        assert(observations==steps*(native?2:1)); /* Includes Original and nested calls. */
         pc_native_physics_random_guest(original_random);
         assert(WORD(0x7497c8)==committed+1); /* outside scope remains original */
     }
