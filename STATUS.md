@@ -1,3 +1,22 @@
+## 2026-10-22 — Correction to live vehicle reference-clock labels
+
+The solver trace exposed a validation-label error: prior live `vehicle-*-60`
+runs supplied `--native-fps 60`, which activates the native clock at 60 Hz.
+Their saved provenance and `[NATIVE-TIMING] 60 fresh` log messages confirm this;
+the new solver trace reports `native=1`. They are native60 comparisons, not
+Original60. This applies to vehicle-live/driver, integrated camera/camfix,
+settled-steering and terrain/terrain-repeat evidence. The observed values remain
+valid for those runs, but their former Original60 labels and any implied live
+original-clock parity are withdrawn. Offline fixtures explicitly disabling the
+native policy still exercise Original60 and are unaffected. A real original
+clock run must explicitly select zero/disabled native timing and verify it.
+
+The bounded runner now accepts `--native-fps 0` explicitly. The new
+`vehicle-integrated-solver-original60` run independently verifies `native=0`
+in every solver record; its native60/native120 controls verify `native=1`.
+This corrects the reference for this contact probe only, not every historical
+camera, steering or terrain comparison.
+
 ## 2026-10-22 — Synchronous vehicle contact diagnostic
 
 The read-only background contact probe at native120 observed 534 stable arena
@@ -12,8 +31,37 @@ at the exact `172114 -> 171560` solver entry, alongside body state and time
 intervals. It validates memory spans, body identity and finite values, writes no
 guest state, and caps output at 16,000 rows or 8 MiB. Disabled builds take only
 the cached enable check. This is investigation infrastructure, not a collision
-fix or performance evidence. Local asset-free diagnostic checks pass; integrated
-build/live validation and native Mac gameplay remain pending under MAC-060.
+fix or performance evidence. All 86 local timing/vehicle checks, four full-stack
+and historical upgrades, and 21 context/backlog checks pass. Supported Windows
+build `20dc25d` passes; the virtual-pad routing check explicitly skips because
+Windows refuses foreground activation. EXE SHA-256 is
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`.
+No production collision mechanics changed. Native Mac gameplay remains pending.
+All selected Windows/Mac runtime, upgrade, transition, launcher and issue CI
+checks pass at code head `20dc25d`; the subsequent runner/evidence revision must
+be tracked separately from that verified head.
+
+On that same executable, original60/native60/native120 probes record
+453 / 663 / 870 solver entries, with 945 / 1,385 / 1,750 selected target contacts.
+Each includes contacts with the pillar, followed by reduced forward velocity;
+all three stop near Z67.946 / 68.027 / 67.622. Reviewed captures agree. The
+allocated `generated` arena is captured after selection can merge records;
+it is not an untouched contact-generation trace. Every recorded selected address
+belongs to that entry's allocated arena, and these runs are below output caps.
+First-contact positions, normals, penetration depths and approach velocities
+differ, so this does not isolate the earlier pass-through or prove exact handling.
+The native144 attempt gets stuck on the walking approach and never enters the
+jeep; it is excluded from contact acceptance.
+
+Each accepted run has 114 stationary settled-pause samples and unchanged valid
+profiles. Separate frame-bracketed camera/body samples near Z30 measure
+10.15778 / 10.13406 / 10.03145 world units at original60/native60/native120,
+with valid camera ownership/mode24/FOV55; reads take at most 0.120 ms. These are
+asynchronous diagnostics with captures and synthetic controls, not pacing or
+scanout measurements. Evidence: `logs/vehicle-solver-comparison.json`,
+`logs/vehicle-solver-camera-check.json` and per-run trace/provenance/captures.
+The normal playable executable is restored and verified. Full handling, true
+original-versus144 live comparisons, physical input and Mac acceptance remain open.
 
 ## 2026-10-22 — Controlled contact impulse audit
 
@@ -53,13 +101,13 @@ ice pillar with no bots, six seconds for vehicle entry, no steering commands,
 and the same three-second throttle plus two further three-second bursts.
 Read-only observations include body position, quaternion and velocity, with
 matching frame brackets. Steering remains below 0.001 magnitude throughout.
-Original60 and native144 stop at the pillar near Z67.987 and Z67.912; native120
+Native60 and native144 stop at the pillar near Z67.987 and Z67.912; native120
 continues onto the bank near Z109.037. Reviewed captures confirm those outcomes.
-A repeat Original60 run also stops, near Z67.568, with a different final pose.
+A repeat native60 run also stops, near Z67.568, with a different final pose.
 
 The approach is still not identical. Near Z66, sampled X values at 60/120/144
 are -11.38515 / -11.41138 / -11.17424; quaternion-derived yaw is approximately
-2.168 / 1.943 / 2.192 degrees. The repeated Original60 sample is X-11.30164,
+2.168 / 1.943 / 2.192 degrees. The repeated native60 sample is X-11.30164,
 yaw2.087 degrees. The divergence occurs around the pillar edge near Z67;
 the 120 run retains forward velocity while the other runs turn and stop.
 This reproduces an unresolved terrain outcome on the current executable,
@@ -86,7 +134,7 @@ The camera-distance suspicion is now reproduced independently of image age.
 Bounded no-bot Siberia runs of integrated code `d0116a7` read the jeep and
 active camera positions together, retain matching frame-counter brackets and
 verify the player's camera link, chase mode 24 and FOV 55. At vehicle Z near
-30, camera/body separation is 10.445 world units at Original60 and 15.133 at
+30, camera/body separation is 10.445 world units at native60 and 15.133 at
 native144. Each selected read completes within 0.247 ms; capture cadence is
 approximately 0.2 seconds at both presets. These are behavior diagnostics,
 not pacing or monitor-scanout measurements. Evidence:
@@ -129,11 +177,11 @@ Native Mac gameplay and broader geometry remain unverified under MAC-060.
 This fix does not establish full vehicle or full-game fidelity.
 
 The corrected executable completes the same bounded, no-bot Siberia route at
-Original60, native120 and native144. Frame-bracketed observations retain valid
+Native60, native120 and native144. Frame-bracketed observations retain valid
 camera ownership, mode24 and FOV55. Camera/body distances in world units at
 matched vehicle positions are:
 
-| Vehicle Z | Original60 | Native120 | Native144 |
+| Vehicle Z | Native60 | Native120 | Native144 |
 | --- | ---: | ---: | ---: |
 | Near 10 | 7.82404 | 7.93013 | 7.79685 |
 | Near 20 | 10.03926 | 9.93714 | 9.86945 |
@@ -176,7 +224,7 @@ The initial integrated 144 live run shows jeep entry/driving and pause/resume,
 but its private observer confused a body handle with a pointer and produced
 no steering data. A corrected observer collected 1,967 samples in the next
 run, but the player died before jeep entry; exclude it from driving comparison.
-The subsequent Original60 run collected 1,957 samples and showed signed
+The subsequent native60 run collected 1,957 samples and showed signed
 steering, eligible wheel response and throttle. Its 128 settled pause samples
 have zero game delta and no position change. Despite the run name ending
 `60-empty`, six bots remained enabled; it is not an empty-map reference.
@@ -184,7 +232,7 @@ These asynchronous observations and captures are neither completed-update
 traces nor frame-pacing measurements. Evidence and exclusions are retained in
 `logs/vehicle-integrated-live-summary.json` and each disposable run's provenance.
 
-The corrected, no-bot Siberia route completes at Original60, native120 and
+The corrected, no-bot Siberia route completes at native60, native120 and
 native144 using the same `d0116a7` executable and isolated settings. The normal
 None bot preset is confirmed by roster and captures. A bounded normal-input
 approach accounts for the different spawn, then waits six seconds for entry
@@ -295,7 +343,7 @@ The corrected Windows build at `ba4f0bf` passes supported generation, linking
 and build tests. Bounded Siberia sessions at all three presets verify entry,
 visible driving, terrain contact and pause/resume, but expose an unresolved
 acceleration discrepancy. The same roughly 2.97-second sampled throttle window
-travels 29.96 game units at Original 60, versus 19.88/22.39 at requested 120/144;
+travels 29.96 game units at native60, versus 19.88/22.39 at requested 120/144;
 starting positions are nearly identical, health stays unchanged and authored
 time advances 179/178/178 ticks. These captured runs are not pacing benchmarks
 or full handling acceptance. Further driver/force/contact investigation is

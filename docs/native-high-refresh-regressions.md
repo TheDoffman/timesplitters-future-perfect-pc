@@ -5667,7 +5667,7 @@ starting positions within 0.02 units. Initial throttle travel is now:
 
 | Requested preset | Sample span (seconds) | Travel (game units) |
 | --- | ---: | ---: |
-| Original 60 | 2.975451 | 29.694886 |
+| Native 60 | 2.975451 | 29.694886 |
 | Native 120 | 2.976108 | 29.677941 |
 | Native 144 | 2.975363 | 29.674005 |
 
@@ -5903,9 +5903,15 @@ checks. All selected Windows/Mac CI and transition jobs pass at `d0116a7`
 (runtime workflow 39851684749). Original-routine cases require private assets;
 these hosted results do not establish actual Mac gameplay.
 
+**Reference-clock correction:** the live `vehicle-*-60` records in this vehicle
+investigation use native60 (`--native-fps 60`), verified by saved provenance and
+startup logs. They do not exercise Original60; prior original-clock labels are
+withdrawn. This does not alter offline fixtures that explicitly disable native
+timing. Use zero/disabled native timing for a genuine live original reference.
+
 Initial integrated live144 runs were excluded from steering comparison: one
 observer confused a body handle with a pointer and had no samples, and in the
-next run a bot killed the player before entry. The later Original60 route
+next run a bot killed the player before entry. The later native60 route
 showed steering/throttle and a stationary paused jeep but still had six bots,
 despite its `60-empty` name. `logs/vehicle-integrated-live-summary.json` records
 these exclusions and limits. A subsequent setup probe selected the normal
@@ -5922,7 +5928,7 @@ STATUS and `logs/vehicle-nobots-comparison.json` for sampled differences.
 Those images prompted a separate camera/body position probe because their
 180-frame dump cadence yields different capture ages across presets. Before
 the camera fix, valid ownership/mode/FOV and matching frame brackets show
-distance 10.44548 at Original60 versus 15.13290 at native144 near vehicle Z30.
+distance 10.44548 at native60 versus 15.13290 at native144 near vehicle Z30.
 Original `CA040` discarded fractional frames despite consuming a fractional
 physics-history duration; `CA424` also required a nonzero spring-substep count.
 Shared numeric fix `24d0ad5`, integrated into `fb261e1`, corrects both loads
@@ -5942,18 +5948,38 @@ pending. Evidence: `logs/vehicle-camera-comparison.json` and isolated
 
 The subsequent straight no-bot obstacle route uses that same `fb261e1` binary,
 removes all pre-drive steering, and extends throttle through two additional
-three-second bursts. Original60/native144 stop near Z67.987/67.912, whereas
-native120 reaches the bank near Z109.037. A second Original60 stops at Z67.568.
+three-second bursts. Native60/native144 stop near Z67.987/67.912, whereas
+native120 reaches the bank near Z109.037. A second native60 stops at Z67.568.
 Captures confirm the different outcomes. Steering remains below0.001, health
 stays1.75 and pause/profile-preservation checks pass in all four sessions.
 The earlier six-bot replay split at144; this one splits at120. Small position,
 orientation and vertical-motion differences are present before the pillar
-edge, including differences between the two Original60 runs. Neither replay
+edge, including differences between the two native60 runs. Neither replay
 establishes the collision root cause. No production mechanics change was made;
 controlled obstacle/contact acceptance remains open. See STATUS and
 `logs/vehicle-terrain-comparison.json`, plus the isolated
 `vehicle-integrated-terrain-{60,120,144,60-repeat}` records. Captured asynchronous
 observations do not establish exact trajectories or pacing.
+
+### Synchronous vehicle contacts and actual original-clock reference
+
+Build `20dc25d` adds a disabled-by-default bounded solver-entry diagnostic.
+Generated arena records and selected pointers are read at `172114 -> 171560`
+with checked memory spans. The arena has already passed selection/merging;
+it is not untouched producer output. The previous asynchronous probe sampled
+the arena after reset and cannot establish absence of contacts.
+
+New original60/native60/native120 runs on the same Windows executable record
+453/663/870 solver entries and 945/1,385/1,750 selected target contacts. The
+original run explicitly uses `--native-fps 0` and verifies `native=0`; controls
+verify `native=1`. All three stop at the pillar, near Z67.946/68.027/67.622, with
+visible contact response and stationary pause. Initial contact geometry and
+approach velocities differ; the earlier pass-through remains unresolved.
+The native144 navigation attempt never reaches the jeep and is excluded.
+Independent frame-bracketed camera samples near Z30 are 10.15778/10.13406/
+10.03145 units for original60/native60/native120. These short captured runs are
+not pacing evidence or full original-versus144 acceptance. See STATUS and
+`logs/vehicle-solver-comparison.json` for scope, provenance and exclusions.
 
 ## Native-start return to Original 60 (2026-10-22)
 

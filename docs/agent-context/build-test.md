@@ -25,18 +25,34 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Live vehicle reference correction: `--native-fps 60` means native60, not
+Original60. Existing `vehicle-*-60` camera, steering and terrain recordings use
+that setting, confirmed by their startup logs and solver flag. Their old
+Original60 labels are invalid; do not reuse them as original-clock acceptance.
+The bounded runner now accepts `--native-fps 0` for explicit Original60;
+verify `native=0` in a live solver trace. Omitting the option also uses the
+isolated default. Values 60/120/144 explicitly select the native clock.
+Offline original-routine fixtures explicitly disable the native policy and are
+not affected. See the correction at the top of STATUS.
+
 The solver-entry contact diagnostic requires `TSFP_CONTACT_TRACE` (CSV path),
 `TSFP_CONTACT_TRACE_SLOT` (rigid-body pool slot, 0..1023), and
 `TSFP_CONTACT_TRACE_Z` (finite inclusive `min,max` world-Z window). Set these
 only in an isolated test child's environment after the runner strips inherited
 debug variables. It records a summary even for zero matching contacts, then
 generated and selected records separately. It stops at 16,000 rows or 8 MiB;
-the last snapshot may be partial, so consumers must check its row counts.
+the last snapshot may be partial when capped, so discard it for comparisons
+unless completeness is independently established. The allocated arena is read
+after selection has run; merged normals can already differ from producer output.
 The registered asset-free `native_contact_trace.c` fixture checks filter/identity,
 unreadable data, finite values, list membership, zero-contact snapshots, disabled
 and invalid configuration, opening failure, and both output limits. The physics
 scope fixture checks observation in Original, native and nested solver calls.
 Live contact evidence still requires a build containing this optional hook.
+Build `20dc25d` and the three accepted solver runs (original60/native60/native120)
+are now recorded in STATUS. Check the CSV's `native` flag rather than inferring
+the clock from a filename or FPS counter. The failed144 walking approach never
+reaches the jeep and is excluded. Do not interpret these captures as pacing tests.
 
 `native_rigid_motion.c` also covers 864 identical zero-depth static-contact
 cases against an independent frictionless inelastic impulse equation: signed

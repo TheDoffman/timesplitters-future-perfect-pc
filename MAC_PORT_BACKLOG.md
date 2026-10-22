@@ -3655,14 +3655,24 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+**Live vehicle reference correction:** the vehicle camera/steering/terrain
+recordings labeled 60 used native60, not Original60. Startup logs and the new
+solver flag confirm this. Their measured values remain valid, but original-clock
+live parity is unverified by those runs. Offline Original60 fixtures are separate
+and unaffected. See STATUS for the explicit evidence correction.
+
 The optional solver-entry contact trace is shared by both hosts through
 `pc_native_contact_trace.h` / `pc_native_contact_guest.inc`; the VM-read adapter
 uses the existing Windows/Darwin `pc_guest_memory.h` implementation. It separates
 generated and selected lists before the original arena reset, with bounded CSV
 output and no guest writes. Asset-free filter/list/writer checks are registered
-in the existing both-host timing suite. Windows integrated build/live contact
-validation and actual native Mac execution remain pending; this diagnostic does
-not resolve the live pillar outcome or certify handling parity. See STATUS.
+in the existing both-host timing suite. Windows `20dc25d` builds successfully;
+the foreground virtual-pad check explicitly skips. New original60/native60/
+native120 traces independently verify the timing mode, capture selected pillar
+contacts and stop at the pillar; the native144 walking approach fails to reach
+the jeep and is excluded. Actual native Mac execution remains pending. This
+diagnostic does not resolve the earlier pillar outcome or certify handling parity.
+See STATUS for exact measurements and the corrected reference scope.
 
 - **Controlled contact audit (2026-10-22, PR #307):** The existing shared
   `native_rigid_motion.c` fixture now passes 864 static-contact impulse cases
@@ -3673,7 +3683,7 @@ not resolve the live pillar outcome or certify handling parity. See STATUS.
 
 - **Vehicle obstacle follow-up (2026-10-22, built source `fb261e1`, PR #307):**
   Straight no-bot Windows runs stop at the Siberia pillar at60/144, while120
-  reaches the bank. A second Original60 run also stops with a different pose.
+  reaches the bank. A second native60 run also stops with a different pose.
   Small approach differences remain; STATUS records observations and limits.
   No new production fix or Mac parity claim follows. Controlled contact,
   broader handling and actual Mac gameplay acceptance remain outstanding.

@@ -47,7 +47,8 @@ def weapon_set_metrics(run):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
-    parser.add_argument('--native-fps',type=int,choices=(60,120,144))
+    parser.add_argument('--native-fps',type=int,choices=(0,60,120,144),
+        help='0 selects Original60; 60, 120 and 144 select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
@@ -113,7 +114,7 @@ def main():
     if args.no_captures:
         for key in ('RECOMP_HLE_D3D8_DUMP','RECOMP_HLE_D3D8_DUMP_EVERY','RECOMP_HLE_D3D8_DUMP_KEEP_LAST'):
             env.pop(key,None)
-    if args.native_fps:
+    if args.native_fps is not None:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
                    TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
     env['TSFP_SURFACE_TRACE_SWITCHES']='1' if args.trace_surface_switches else '0'
