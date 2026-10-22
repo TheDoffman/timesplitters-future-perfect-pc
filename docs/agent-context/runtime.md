@@ -52,10 +52,14 @@ substeps and identical shared seeds at 60/120/144. Numeric ADDSS site `17164F`
 snaps the accumulated secondary time to `8*step` only within four float epsilons
 of that boundary; otherwise rounding could run a ninth solve. Original timing
 is unchanged. The added manual `171FB0` wrapper requires supported guest
-regeneration before building; the existing playable binary does not include
-this candidate. Its `_gen` extern must be a standalone declaration: the
+regeneration before building. Its `_gen` extern must be a standalone declaration: the
 generator's manual scanner does not recognize comma-separated declarations.
-Full handling/collision acceptance is pending.
+The corrected `ba4f0bf` Windows build links and drives the Siberia jeep, but
+matched throttle replays reveal less travel at native rates. Full handling/
+collision acceptance remains pending, and the prior playable binary is restored.
+The live jeep callback at vehicle-data `+0x68` is `177AE0`; dispatcher `17E680`
+calls it before `174860` force and `174D60` component-force preparation. Treat
+these as investigation entry points, not a proven acceleration root cause.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

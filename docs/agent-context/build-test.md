@@ -54,7 +54,10 @@ cases run on CI even when the private original-routine cases skip.
 `tests/native_timing_guest.c` checks physics-history handoff through the actual
 clock wrapper, including paused return and slow motion. Candidate vehicle and
 multi-contact/vehicle integration still require broader acceptance before replacing
-the existing playable build.
+the existing playable build. The supported Windows build at `ba4f0bf` passes,
+but matched live Siberia throttle replays show lower travel at native rates.
+Use the recorded input sequences, observations and captures linked in the
+high-refresh regression record to investigate before accepting handling.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused

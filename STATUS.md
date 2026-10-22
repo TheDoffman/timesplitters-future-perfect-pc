@@ -40,10 +40,17 @@ vehicle and generation regressions and four fresh/install/upgrade cases;
 live driving and rendering are still separate acceptance work.
 The first full build exposed a missing generated physics body at link time:
 the manual scanner did not recognize a comma-separated `_gen` declaration.
-The declaration is now standalone and a production-scanner regression passes;
-the corrected full build and live vehicle validation remain pending. Actual geometry, multiple
-contacts, active driving, model/render notification and performance remain gaps.
-This candidate has not replaced the tested combined crowd-performance build.
+The declaration is now standalone and a production-scanner regression passes.
+The corrected Windows build at `ba4f0bf` passes supported generation, linking
+and build tests. Bounded Siberia sessions at all three presets verify entry,
+visible driving, terrain contact and pause/resume, but expose an unresolved
+acceleration discrepancy. The same roughly 2.97-second sampled throttle window
+travels 29.96 game units at Original 60, versus 19.88/22.39 at requested 120/144;
+starting positions are nearly identical, health stays unchanged and authored
+time advances 179/178/178 ticks. These captured runs are not pacing benchmarks
+or full handling acceptance. Further driver/force/contact investigation is
+required. The candidate executable is retained locally for diagnosis; the
+previous tested crowd-performance executable was restored for normal play.
 Shared implementation and tests are registered for both CI hosts; native Mac
 execution is pending (MAC-060). No PR/release published for this candidate.
 

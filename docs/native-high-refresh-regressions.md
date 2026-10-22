@@ -5547,3 +5547,64 @@ the actual scanner to require both wrapper recognition and solver/RNG name
 pinning. The full patch loader applied the repair normally. The failed build
 is recorded in `logs/native-vehicle-full-build.log`; a corrected build is
 required before any gameplay claim.
+
+### First full build and live vehicle comparison: acceptance still fails
+
+The corrected supported Windows/MSVC build at `ba4f0bf` passes generation,
+linking and the builder's native tests (`logs/native-vehicle-wrapper-build.log`).
+Executable SHA-256 is
+`d973dbe170da727c0d8bc554cd16e1445aa03b01b1077f3776b199632d45b78f`.
+The scanner regression passes, 78 generation/context/backlog/scope checks pass
+in 1.39 seconds, and four full-stack install/upgrade cases pass in 186.13 seconds.
+The patch loader applied the correction normally; generated source was not edited.
+
+Bounded isolated Test Lab runs use Siberia multiplayer, Classic textures,
+1280x720 and the default six bots on the same Windows i7-13700K/RTX 4070 SUPER
+D3D11 host. The initial exploratory `vehicle-live-144` run establishes that
+entry, rendered driving, ice/bank motion and collision with a wall execute.
+It contains long idle periods and combat damage, so it is not the matched
+handling comparison. W moves the player on foot; the right trigger (replayed
+left mouse button) accelerates the jeep. Initial W-only vehicle commands did
+not test acceleration.
+
+The subsequent `vehicle-live-60`, `vehicle-compare-120` and
+`vehicle-compare-144` runs use the same shorter command sequence. Each starts
+from the same player spawn, approaches and enters the parked jeep, holds the
+right trigger for three seconds, then drives toward the bank and pauses/resumes.
+Captures were reviewed at all three rates. Player health remains 1.75 through
+the compared throttle interval. Read-only player position samples taken during
+that first throttle hold give:
+
+| Requested preset | Sample span (seconds) | Authored ticks advanced | Distance (game units) |
+| --- | ---: | ---: | ---: |
+| Original 60 | 2.972633 | 179 | 29.958242 |
+| Native 120 | 2.975056 | 178 | 19.875402 |
+| Native 144 | 2.977932 | 178 | 22.393338 |
+
+Each row has 60 asynchronous samples. Initial XYZ values are approximately
+(-12.48, 1.57, 7.03), differing by less than 0.02 game units. These results
+contradict handling acceptance despite normal elapsed game time and the passing
+controlled-routine tests. They do not yet isolate whether force production,
+wheel/contact coupling or another vehicle path causes the difference. The
+later bank trajectories also diverge; no arbitrary terrain-parity claim follows.
+These are captured diagnostic runs, not locked 120/144 performance tests. The
+native trace confirms positive fractional updates; it does not record vehicle
+state at every completed update. The first exploratory trace hits its 20,000-row
+bound before the entire driving route; the shorter comparisons remain within it.
+
+All four runners exit cleanly, preserve fixture/profile signatures and recycle
+their disposable partitions. Logs are `logs/native-vehicle-live-{60,144}.log`
+and `logs/native-vehicle-compare-{120,144}.log`; command sequences, captures,
+provenance, observations and reports are in the correspondingly named isolated
+directories under `private/test-saves/`. The summarized throttle samples are
+`private/pipeline/vehicle-live-comparison.json`. Exit-button attempts did not
+establish leaving the jeep and remain unverified. Mac driving is untested.
+
+The candidate EXE/PDB are retained at
+`private/build-recovery/vehicle-ba4f0bf/` for continued diagnosis. The previously
+tested combined crowd-performance EXE/PDB were restored to the normal Release
+location, with executable hash
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`
+reverified. No candidate PR or release has been published. The next investigation
+must include actual driver/force/contact production, beyond the controlled
+component inputs that currently pass.

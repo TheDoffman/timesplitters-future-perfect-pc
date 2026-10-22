@@ -3618,6 +3618,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The shared manual wrapper uses a standalone `_gen` declaration so both host
   generators retain its original body. The first Windows link caught the
   comma-declaration defect; a scanner regression now covers this requirement.
+  Corrected Windows build `ba4f0bf` passes generation/link/build checks. Actual
+  Siberia jeep driving works at the three presets, but a matched throttle
+  replay travels substantially less at native rates (see STATUS). Candidate
+  acceptance still requires resolving that technical discrepancy.
+  The prior playable Windows executable is restored; native Mac validation
+  and full handling acceptance remain pending.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

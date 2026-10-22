@@ -40,8 +40,10 @@ RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
 from advancing the shared sequence through contact/constraint shuffle sites;
 controlled three-contact tests verify its cadence. `17164F` also prevents a
 rounding-induced ninth secondary solve. These results do not certify arbitrary
-contact geometry or vehicle handling. The playable combined crowd build has
-not been replaced.
+contact geometry or vehicle handling. A subsequent Windows build runs actual
+Siberia jeep driving at all presets, but matched throttle replays expose lower
+travel at native rates; see STATUS for measurements and limits. The playable
+combined crowd build was restored while this discrepancy is investigated.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
