@@ -3599,6 +3599,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Precise fractional water coefficients (2026-10-22, uncommitted):** Shared
+  policy and HLE patch extend the existing disabled experiment; no new host
+  adapter or capture format. The actual current guest uploader supplies the
+  truncated reference values, replacing an earlier rounded diagnostic assumption.
+  Queue/scope/replay and local Windows original-program GPU checks pass. Native
+  Mac GPU/scene execution and complete wave/appearance acceptance remain awaiting
+  validation; this is not enabled for normal play. See STATUS for current scope.
+
 - **Water damping coefficient diagnosis (2026-10-22):** The local Windows WARP
   original-shader case now isolates packed fractional coefficient drift and a
   precise anchored alternative. This is a diagnostic, not a runtime change.

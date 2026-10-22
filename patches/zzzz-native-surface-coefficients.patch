@@ -1,0 +1,54 @@
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -66,7 +66,20 @@
+ #include "hle_d3d8_record.h"
+ #include "pc_surface_bias.h"
+ static float g_surface_bias_step=-1;
+-void hle_d3d8_surface_bias_step(float delta){g_surface_bias_step=delta;}
++static float g_surface_coefficients[3];
++static int g_surface_coefficients_valid;
++void hle_d3d8_surface_coefficients(float acceleration,float velocity,float damping)
++{
++    g_surface_coefficients[0]=acceleration;
++    g_surface_coefficients[1]=velocity;
++    g_surface_coefficients[2]=damping;
++    g_surface_coefficients_valid=isfinite(acceleration) && isfinite(velocity) && isfinite(damping);
++}
++void hle_d3d8_surface_bias_step(float delta)
++{
++    g_surface_bias_step=delta;
++    if(!(delta>0 && delta<1))g_surface_coefficients_valid=0;
++}
+ 
+ #define XRS_COUNT        167         /* X_D3DRS_DONOTCULLUNCOMPRESSED + 1 */
+ #define XRS_REMOVED      154         /* X_D3DRS_MULTISAMPLETYPE */
+@@ -591,8 +604,8 @@
+ static int      g_ps_def_ok;
+ static void forward_surface_bias(uint32_t shader)
+ {
+-    static int last_enabled;
+-    static float last_value;
++    static int last_enabled,last_coefficients;
++    static float last_value,last_coefficients_value[3];
+     int enabled=shader==0x4bbf10u && g_surface_bias_step>0 && g_surface_bias_step<1;
+     float value=enabled?pc_surface_bias(g_surface_bias_step):0;
+     if(enabled!=last_enabled || (enabled && value!=last_value)) {
+@@ -600,6 +613,18 @@
+         host_combiners_set_float_constant(1,6,enabled?color:NULL);
+         last_enabled=enabled;last_value=value;
+     }
++    int coefficients=enabled && g_surface_coefficients_valid;
++    float values[3]={0};
++    if(coefficients)pc_surface_coefficients(g_surface_bias_step,g_surface_coefficients,values);
++    const unsigned stages[3]={3,5,7};
++    for(unsigned i=0;i<3;i++) {
++        if(coefficients!=last_coefficients || (coefficients && values[i]!=last_coefficients_value[i])) {
++            const float color[4]={0,i==0?values[i]:0,i==0?0:values[i],i==0?0:values[i]};
++            host_combiners_set_float_constant(0,stages[i],coefficients?color:NULL);
++            last_coefficients_value[i]=values[i];
++        }
++    }
++    last_coefficients=coefficients;
+ }
+ static int      g_state_dumped;
+ static int g_state_dump_wanted = -1;

@@ -34,6 +34,23 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
         config.configure_from_xbe(str(xbe))
         offset = config.va_to_file_offset(address)
         (tmp_path / 'feedback.bin').write_bytes(image[offset:offset + 240])
+        if case == 'surface_damping_gpu.inc':
+            import struct
+            from tools.recomp.translator import FunctionTranslator
+            from test_recomp_float_joins import compile_and_run
+            start=0x3d9520;info={'end':0x3d97e7,'name':'sub_003D9520'}
+            code=FunctionTranslator(image,{start:info}).translate_function(start,info)
+            constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                for a in range(0x5496c0,0x549720,4))
+            fixture=(ROOT/'tests/surface_coefficient_upload.c').read_text()
+            packed=compile_and_run(tmp_path,fixture.replace('/* GENERATED_UPLOAD */',code)
+                                   .replace('/* ORIGINAL_CONSTANTS */',constants))
+            print(packed)
+            rows=[dict(field.split('=') for field in line.split()[1:])
+                  for line in packed.splitlines() if line.startswith('upload ')]
+            assert [r['fps'] for r in rows]==['60','120','144']
+            (tmp_path/'surface_upload.h').write_text('static const unsigned packed_coefficients[3][3]={' +
+                ','.join('{'+','.join(r[k] for k in ('a','b','d'))+'}' for r in rows)+'};\n')
     finally:
         vars(config).update(previous)
 
@@ -65,6 +82,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
 
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
+    if case == 'surface_damping_gpu.inc':
+        setup = setup.replace('#include "rhi.h"','#include "rhi.h"\n#include "surface_upload.h"')
     setup = setup.replace('#include "rhi.h"',
                           '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
     source = tmp_path / 'surface.c'

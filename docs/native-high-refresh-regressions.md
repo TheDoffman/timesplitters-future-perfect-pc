@@ -5521,41 +5521,55 @@ The asset-free clock/resource fixture also checks recovery in both-host CI.
 Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.
 ## Fractional damping coefficient packing (2026-10-22)
 
-A new original-program WARP case isolates coefficient packing from the earlier
-feedback-storage and centering issues. It uses the hash-verified US second
-feedback shader, production HLSL translator and common RHI, uniform float32
-inputs/targets, zero acceleration and displacement coupling, and feedback only
-in the blue displacement channel. It runs one second of updates at each rate.
-These are controlled shader coefficients, not a captured Scotland trajectory.
+The first diagnostic used rounded test coefficients and found scalar damping
+drift. Follow-up execution of the complete current-recompiler US uploader
+`sub_003D9520` exposed an incorrect assumption: its lifted `cvtss2si` uses a C
+integer cast, truncating rather than rounding. The earlier 250/255 anchor and
+-20.70%/+5.58% figures describe that rounded diagnostic, not the current game's
+60-FPS upload. This audit now derives every packed test coefficient from the
+actual re-lifted upload routine and passes those values to the GPU case.
 
-For authored damping 0.98, original upload rounds to 250/255. The current
-fractional candidate instead packs `pow(0.98, delta)` on every substep. Its
-120-FPS coefficient is 252/255 and its 144-FPS coefficient is 253/255. Repeated
-multiplication exposes a rate-dependent damping error even with perfect float
-storage and no random disturbance or spatial filtering:
+For authored `(acceleration, displacement, damping)=(0.105,0.65,0.98)`, actual
+packed bytes are `(26,165,249)` at one tick, `(13,82,252)` at half a tick and
+`(11,69,252)` at 60/144 ticks. These are controlled inputs, not a captured
+Scotland trajectory. The uploader's command-buffer space, definition mappings
+and ABI are supplied/checked; refill is an unexpected failure.
 
-| Case | FPS | Final blue from 0.6 | Relative to original 60 steps |
+The GPU test uses the hash-verified US second feedback shader, production HLSL
+translator and common RHI, uniform float32 inputs/targets, zero acceleration
+and displacement coupling, and feedback only in blue. One second from 0.6 gives:
+
+| Coefficient path | FPS | Final blue | Relative to current original-60 path |
 | --- | ---: | ---: | ---: |
-| Packed fractional coefficient | 60 | 0.182869345 | -0.00002% |
-| Packed fractional coefficient | 120 | 0.145008832 | -20.70361% |
-| Packed fractional coefficient | 144 | 0.193072483 | +5.57945% |
-| Precise power of original packed coefficient | 120 | 0.182869047 | -0.00018% |
-| Precise power of original packed coefficient | 144 | 0.182869136 | -0.00014% |
+| Current packed upload | 60 | 0.143780917 | -0.00001% |
+| Current packed upload | 120 | 0.145008832 | +0.85400% |
+| Current packed upload | 144 | 0.109154858 | -24.08252% |
+| Precise anchored fractional damping | 120 | 0.143780857 | -0.00005% |
+| Precise anchored fractional damping | 144 | 0.143780395 | -0.00038% |
 
-The diagnostic correction quantizes the original one-tick value once, then
-uploads `pow(250/255, delta)` without re-quantizing fractional steps. Its 60-FPS
-coefficient stays identical. Every GPU pixel/update is also compared with the
-single-step damping equation, not just the final average. This supports a
-specific next implementation: transport precise time-scaled coefficients in
-the existing ordered, shader-scoped float-constant path. The candidate's linear
-acceleration/displacement coefficients also need original-quantized anchors;
-their coupled/spatial behavior is not established by this damping-only case.
+The shared `pc_surface_coefficients` policy clamps/truncates the original one-tick
+values once, scales the acceleration/displacement anchors by fractional time,
+and raises the damping anchor to that time. The correction is part of the
+existing opt-in bias/float/fractional experiment; normal play and the original
+whole-tick/catch-up path remain unchanged. It preserves the current recompiled
+60-FPS contract; the lifter's broader CVTSS2SI/MXCSR fidelity remains a separate
+unverified hardware-fidelity issue and is not silently changed here.
 
-`tests/test_surface_shader_feedback.py` now includes `surface_damping_gpu.inc`.
-All three original-program GPU cases pass locally on Windows WARP. They require
-the private supported XBE and skip without it; neither a hosted skip nor this
-float32 recurrence proves native Mac execution or original byte-storage wave
-appearance. No runtime behavior, saved setting or playable executable changes
-in this diagnostic checkpoint. Water remains opt-in, pending coefficient
-integration, full dynamics, rendered appearance and broader-level acceptance.
-Evidence: `logs/surface-damping-gpu.log` and `logs/surface-shader-audit.log`.
+Original parameters are copied before the guest's fractional parameter scope.
+The HLE shader-state path sends acceleration/displacement/damping through the
+existing ordered float-constant payloads at bank 0 stages 3/5/7, alongside the
+centering value at bank 1 stage 6, only for the validated second feedback shader.
+Changing shader, leaving fractional scope, or invalid parameters clears the
+appropriate slots. Identical updates are cached; new parameters at the same
+delta refresh the values. Queued and replayed commands own copied values.
+No delayed draw reads mutable guest timing or parameter memory.
+
+Five focused cases pass: queue/scope/copy/replay checks, three original-program
+WARP cases (including actual uploader capture), and the original procedural
+update/upload integration with disabled and precision/bias/live variants.
+Every damping pixel/update is compared with the scalar equation. Broader
+coupled/spatial dynamics, original byte-storage appearance, additional levels
+and native Mac GPU/scene validation remain unverified; water remains opt-in.
+The full GPU cases require the private supported XBE and Windows WARP. Hosted
+skips are not GPU acceptance. Evidence: `logs/surface-damping-upload.log` and
+`logs/surface-coefficients-focused.log`. No private game code is distributed.

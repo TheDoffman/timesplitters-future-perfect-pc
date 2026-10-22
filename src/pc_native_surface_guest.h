@@ -10,6 +10,7 @@
 #include "pc_native_rate.h"
 #include "pc_surface_bias.h"
 extern void hle_d3d8_surface_bias_step(float delta);
+extern void hle_d3d8_surface_coefficients(float acceleration,float velocity,float damping);
 extern void hle_d3d8_surface_precision_rate(int high_rate);
 #ifndef PC_SURFACE_WORD
 #define PC_SURFACE_WORD(va) (*(uint32_t *)((uintptr_t)(va)+g_xbox_mem_offset))
@@ -55,7 +56,10 @@ static void pc_surface_feedback_guest(void (*original)(void))
     PC_SURFACE_VALUE(params+0x18u)=velocity*delta;
     PC_SURFACE_VALUE(params+0x1cu)=powf(damping,delta);
     int bias=pc_surface_bias_requested();
-    if(bias)hle_d3d8_surface_bias_step(delta);
+    if(bias) {
+        hle_d3d8_surface_coefficients(acceleration,velocity,damping);
+        hle_d3d8_surface_bias_step(delta);
+    }
     original();
     if(bias)hle_d3d8_surface_bias_step(-1);
     PC_SURFACE_VALUE(params+0x14u)=acceleration;

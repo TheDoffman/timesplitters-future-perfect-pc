@@ -1,18 +1,27 @@
-## 2026-10-22 — Water damping coefficient diagnosis
+## 2026-10-22 — Water coefficient precision candidate
 
-On `test/water-coefficient-parity`, a new original-shader WARP test isolates
-fractional coefficient packing. For a controlled damping value of 0.98, packed
-substeps leave 20.70% less blue displacement at 120 FPS and 5.58% more at 144
-after one second than the original 60-step float32 reference. Preserving a
-precise fractional power of the original packed coefficient reduces the error
-to below 0.0002% in this scalar test. The GPU checks every pixel and update.
+`fix/native-water-coefficients` extends the existing disabled water experiment
+with precise fractional coefficients, anchored to the actual recompiled
+one-tick upload. A complete US constant-uploader fixture corrected the earlier
+rounding assumption: the current lifter truncates, producing damping 249/255
+for authored 0.98. The earlier rounded-reference GPU figures did not represent
+this current game-upload path.
 
-This checkpoint changes diagnostics only. It establishes a cause and candidate
-coefficient policy, not full water dynamics or live appearance. The original
-GPU shader, production translator and common RHI are used with uniform inputs,
-zero coupling and float32 storage. Game data remains private; native Mac GPU
-execution is unverified (MAC-060). The ready-to-play combined game is unchanged.
-See the fractional damping audit in `docs/native-high-refresh-regressions.md`.
+In an isolated one-second float32 damping test, current packed uploads differ
+from the 60-step reference by +0.854% at 120 and -24.083% at 144. The shared
+anchored correction reduces that scalar error below 0.0005%. The original
+shader and production translator/common RHI execute every step; uniform input,
+zero coupling and float32 storage deliberately isolate coefficient effects.
+
+The candidate now supplies all three coefficients through the existing ordered
+float-constant path, with shader scope, copied payloads and clearing. Five
+focused tests pass. Full water dynamics/appearance and native Mac execution
+remain open under MAC-060; the experiment is still disabled for normal play.
+The selected timing, shader, queue/replay, texture-preservation, statistics,
+patch/backlog and repository-context suite passes 118 cases. Build and live
+comparison results follow when available. The existing combined playable
+executable is unchanged at this checkpoint.
+
 ## 2026-10-22 — Escort recovery timing audit
 
 PR #297 also covers the recovery side of the Escort movement resource. The

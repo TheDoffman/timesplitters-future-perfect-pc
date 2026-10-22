@@ -392,3 +392,11 @@ packed fractional coefficients are a required negative control; a precise
 power of the original packed one-tick damping must retain the 60-step result.
 This needs the local supported XBE; hosted skips are not GPU acceptance. It
 proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
+
+The damping case first executes all of `sub_003D9520` through the current lifter
+and passes its packed bytes to the GPU fixture. Do not substitute hand-rounded
+constants: the current recompiled conversion truncates. `surface_coefficient_upload.c`
+checks the stack/callee-saved-register boundary and supplies sufficient command
+space; no generated game code is checked in. `test_ordered_combiner_constants`
+also covers the production coefficient setter/clear/cache path. The GPU scalar
+case now uses the shared coefficient helper for its corrected values.

@@ -16,11 +16,14 @@
      * zero, inputs are uniform, storage is float32, and only B feeds back.
      * This diagnoses coefficient packing, not a complete water trajectory. */
     const unsigned rates[]={60,120,144};
-    const float authored=.98f,original=roundf(.98f*255.f)/255.f;
+    const float original=packed_coefficients[0][2]/255.f;
     const float reference=.6f*powf(original,60.f);
     for(unsigned corrected=0;corrected<2;corrected++)for(unsigned rate=0;rate<3;rate++) {
         unsigned fps=rates[rate];float delta=60.f/fps;
-        float damping=corrected?powf(original,delta):roundf(powf(authored,delta)*255.f)/255.f;
+        const float authored[3]={.105f,.65f,.98f};float precise[3];
+        pc_surface_coefficients(delta,authored,precise);
+        for(unsigned i=0;i<3;i++)CHECK(pc_surface_packed_coefficient(authored[i])==packed_coefficients[0][i]/255.f);
+        float damping=corrected?precise[2]:packed_coefficients[rate][2]/255.f;
         NV2APSConstants cb={0};for(unsigned i=0;i<4;i++)cb.tex_scale[i][0]=cb.tex_scale[i][1]=1;
         float vectors[3][4]={{0},{0},{0,0,damping,damping}};
         const unsigned shifts[4]={16,8,0,24};
@@ -54,7 +57,7 @@
         printf("damping corrected=%u fps=%u coefficient=%.9f final=%.9f reference=%.9f relative_error=%.7f\n",
             corrected,fps,damping,state[2],reference,error);
         if(corrected || !rate)CHECK(fabsf(state[2]-reference)<.000005f);
-        else if(fps==120)CHECK(error<-.20f);else CHECK(error>.05f);
+        else CHECK(fabsf(error)>.001f);
         RhiView *none[2]={0};rhi_set_textures(0,2,none);rhi_view_destroy(view);rhi_image_destroy(input);
     }
     puts("PASS: original translated feedback shader exposes packed fractional damping drift");

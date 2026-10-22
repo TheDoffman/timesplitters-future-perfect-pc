@@ -25,6 +25,8 @@ def test_ordered_combiner_constants(tmp_path):
         function(record, 'static void rec_ps_float_constant('),
         function(record, 'static void op_ps_float_constant('),
         function(record, 'void host_combiners_set_float_constant('),
+        function(state, 'void hle_d3d8_surface_coefficients('),
+        function(state, 'void hle_d3d8_surface_bias_step('),
         function(state, 'static void forward_surface_bias(')]))
     body = body.replace('/* REPLAY_CASE */', replay_case)
     source = tmp_path / 'constants.c'

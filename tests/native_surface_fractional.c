@@ -26,6 +26,8 @@ static int requested;
 static int precision_rate=-1;
 void hle_d3d8_surface_precision_rate(int high_rate){precision_rate=high_rate;}
 static float bias_step=-1;
+static float coefficients[3];
+void hle_d3d8_surface_coefficients(float a,float b,float d){coefficients[0]=a;coefficients[1]=b;coefficients[2]=d;}
 void hle_d3d8_surface_bias_step(float delta){bias_step=delta;}
 static void state(void) {g_eax=7;g_esp+=4;}
 void sub_00019650(void){state();} void sub_0001ED60(void){state();}
@@ -56,7 +58,10 @@ void sub_0002A310(void) {
     pass=MEM32(g_esp+4);assert(pass<2);
     if(program==0x12) { assert(!pass);g_esp+=4;return; }
     assert(program==0x14);
-    if(pc_surface_bias_requested() && pc_surface_step.active)assert(bias_step==expected_delta);
+    if(pc_surface_bias_requested() && pc_surface_step.active) {
+        assert(bias_step==expected_delta);
+        assert(coefficients[0]==.105f && coefficients[1]==.65f && coefficients[2]==.98f);
+    }
     else assert(bias_step==-1);
     if(!pass)assert(MEMF(0x665308)==.17f && MEMF(0x665314)==.17f);
     else {
