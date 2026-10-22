@@ -71,6 +71,7 @@ namespace TimeSplitters.Launcher
         }
         void Refresh()
         {
+            foreach(var name in new[]{"HomeNav","NewsNav","RepairNav","SettingsNav"})Find<Button>(name).IsEnabled=!busy;
             bool installed=File.Exists(Core.PathIn(root,LauncherPlatform.GamePath(root)));
             bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));
@@ -147,7 +148,7 @@ namespace TimeSplitters.Launcher
             }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
-        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
+        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");settings.CheckTexturesIfOptedIn();}
         async Task News()
         {
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}

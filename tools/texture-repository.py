@@ -48,7 +48,7 @@ def stage(source, root=ROOT, pointers_only=False):
         if i % 100 == 0 or i == len(records):
             print(f'Staged {i}/{len(records)} textures in Git LFS', flush=True)
     (root/'config/texture-pack.json').write_text(json.dumps({
-        'schema': 2, 'delivery': 'bundled', 'path': 'assets/textures',
+        'schema': 2, 'delivery': 'optional', 'path': 'assets/textures',
         'texture_count': len(records), 'installed_bytes': size}, indent=2)+'\n', encoding='utf-8')
 
 

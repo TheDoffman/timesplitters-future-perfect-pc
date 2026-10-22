@@ -688,6 +688,22 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
+  `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
+  fractional game time at native presets. Windows and SDL adapters pass their
+  native-mode selection; no new OS adapter is required. The old helper lost
+  fresh packets at 60 and discarded zero-whole-frame motion at 120/144.
+  Existing gun behavior plus cadence/pause/handoff and two negative controls
+  pass five focused Windows checks; 159 broader timing/input/context cases
+  also pass. Supported Windows build `a5e0dc2` and built-in checks pass; draft
+  PR #304 carries this independent main-based fix. Mac execution and a live turret test of
+  this addition remain awaiting validation; existing #182 acceptance applies.
+  Windows actual-adapter checks now pass native/pause/live-rate handoff and
+  return-to-foot cases with synthetic raw motion. Matching cases are in SDL's
+  input self-test, awaiting native execution. The new packet fixture explicitly
+  includes `<stddef.h>` after Mac CI exposed the missing `ptrdiff_t` declaration;
+  that CI repair does not change gameplay behavior.
+
 - **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
   clears its synthetic terminal context after the fractional-time fixture,
   before the independent capture/fire case. The previous test retained terminal
@@ -748,6 +764,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
+
+- **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
+  text read cache now keeps the complete OS-validated interval, avoiding repeat
+  queries when guest stack reads descend or labels visit earlier addresses in
+  the same mapping. The US outlined-label wrapper also shares one read scope
+  across its four outline passes and foreground draw. Scope expiry at return
+  and fresh scratch-write validation are unchanged.
+  The existing Windows/Darwin VM adapters provide the interval; no new platform
+  adapter is needed. Descending-read regression fails before the fix and passes
+  after it. Both host feature defines pass the five-pass wrapper/ABI fixture,
+  including a mutation that detects repeated queries. Native Mac gameplay and
+  performance remain awaiting validation; see STATUS.md for Windows evidence.
+  Windows/macOS runtime, upgrade and patch-transition CI passes at PR #295
+  implementation head `4a40569`; that does not replace a native gameplay run.
 
 - **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
   (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
@@ -1784,6 +1814,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   missing or over-budget files, preserve alpha and the 512 MiB residency cap.
   The 232 installed local replacements are partial coverage; consolidated
   scene testing remains deferred. See the issue #74 transfer record in STATUS.
+
+#### Launcher v1.2.24 icon retirement release
+
+MAC-011: shared launcher migration is included in v1.2.24 on Windows and native
+Apple Silicon. The release workflow validates both host builds and packages.
+No new adapter is needed; actual Mac game/menu appearance remains Awaiting
+validation. This version bump alone is not publication evidence.
 
 ### MAC-012 — Standalone Mac runtime distribution
 
@@ -3529,6 +3566,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Optional-delivery replacement (2026-10-22, `optional-texture-downloads`):** The user's new
+  request supersedes the default-bundling follow-ups below. Shared `SettingsPage`,
+  `TextureDownload` and `TexturePack` implement opt-in checks, confirmed downloads,
+  file-hash adoption of bundled packs, incremental part updates and preservation.
+  Both hosts bind the same busy/cancel behavior. Both game packagers omit textures
+  by default; separate `texture-release.py` publication supplies the schema-3 index.
+  No Mac-specific algorithm is required. Windows checks and portable package tests
+  are recorded in STATUS.md; native Apple Silicon build, download/cancel/update UI
+  and preserved-pack gameplay still need host validation. The optional pack and
+  launcher releases have not been published by this change.
+
+
 - **Alpha.2 removal compatibility (2026-10-22):** Launcher 1.2.24 carries the
   shared retired-icon migration for both hosts. The game publisher requires
   stable 1.2.24+ with both platform downloads when the audited pack declares
@@ -3676,6 +3725,80 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Siberia contact and passes pause/resume; it does not measure impact strength.
   The current retained diagnostic build is `60e5b36`; playable `4adb6b0`
   remains restored. These Windows results do not establish Mac execution.
+- **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
+  Shared HLE Swap/Present paths observe the last real vblank while native pacing
+  bypasses the gate. First return to Original 60 can consume the tick already
+  awaited by the guest clock, without a second wait. No new OS adapter or
+  settings definition; existing real-event/cheap-frame pacing remains. Windows
+  phase measurements reduce the extra gate wait from 16.391 to 0.0008 ms.
+  Actual-source phase and mutation fixtures run in existing Windows/macOS CI.
+  Mac execution and timing acceptance remain awaiting validation; check startup
+  at 120/144 followed by Original 60 and subsequent steady pacing on each native
+  renderer. [Measured scope](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
+
+- **Escort recovery follow-up (2026-10-22, PR #297, `535d4ce`):** Shared numeric addition
+  at 0x6552D now uses raw fractional time, retaining the original match-dispatch
+  pause gate and game-clock delay. Full supported-XBE match/mode/recovery chain
+  checks and an asset-free clock contract cover original/native rates. No new
+  host adapter; native Mac gameplay remains awaiting validation. The prior
+  drain-only head 264bc50 passed both-host CI; follow-up results are in STATUS.
+
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`, `bcb1f78`):** Shared
+  `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
+  Windows actual-routine evidence shows the old boost drain doubled at 120 and
+  multiplied by 2.4 at 144; the fix preserves original active-update consumption
+  at normal, slow/fast and catch-up intervals. No new OS adapter. Asset-free
+  clock/resource tests run in both-host CI; the complete walking fixture needs
+  the supported private XBE. Native Mac execution and live activation remain
+  awaiting validation. See the walking/boost audit in
+  `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
+
+- **Full-float feedback follow-up (2026-10-22, PR #299, `6035ed7`):** The shared opt-in
+  policy selects 32-bit float intermediates to remove measured half-float
+  accumulation error. The common RHI already maps this format on D3D11/Vulkan;
+  preservation now handles its capture-storage channel order too. Local WARP
+  conversion and two-pass spatial diagnostics pass. The Mac asset-free common-RHI
+  GPU conversion contract passes for `6035ed7`; Windows bounded scene routes
+  pass. Native Mac wave shaders/gameplay, live preset switching and full scene
+  dynamics remain awaiting validation.
+  Legacy GL remains unsupported for this experiment, as before; normal-play
+  defaults and original byte targets are unchanged. See STATUS for scope.
+
+- **Coupled-water follow-up (2026-10-22, PR #298):** Controlled Windows WARP
+  execution distinguishes fractional coupling from float32/half-float/UNORM8
+  storage effects. It uses the original second shader with a fixed neighbor;
+  full spatial dynamics and native Mac GPU/scene behavior remain awaiting
+  validation. The shared historical-upgrade fixture now excludes the new
+  coefficient patch when constructing old stacks lacking its prerequisite.
+
+- **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
+  policy and HLE patch extend the existing disabled experiment; no new host
+  adapter or capture format. The actual current guest uploader supplies the
+  truncated reference values, replacing an earlier rounded diagnostic assumption.
+  Queue/scope/replay and local Windows original-program GPU checks pass. The
+  combined Windows build and three bounded Scotland routes pass; every captured
+  image updates, but measured amplitude differs and motion parity is unproven. Native
+  Mac GPU/scene execution and complete wave/appearance acceptance remain awaiting
+  validation; this is not enabled for normal play. See STATUS for current scope.
+
+- **Water damping coefficient diagnosis (2026-10-22):** The local Windows WARP
+  original-shader case now isolates packed fractional coefficient drift and a
+  precise anchored alternative. This is a diagnostic, not a runtime change.
+  Shared CI knows the fixture, but skips without the private XBE/Windows WARP.
+  Native Mac GPU/scene validation and full water acceptance remain awaiting
+  validation. See STATUS and the fractional damping audit for measured scope.
+
+- **Projection query candidate (2026-10-22, `perf/projection-memory-checks`,
+  PR #300, `beff7a7`):** Shared `pc_display_memory.h` retains a VM region only during
+  one post-guest camera/projection correction. It uses the existing Windows
+  query and Darwin Mach region adapter, with no new OS-specific policy. Bounds
+  and write permission remain checked; snapshots expire before guest execution.
+  Sixteen focused Windows geometry/protection/ABI cases and both-host native CI
+  pass, including the real-VM contract on Mac. Combined Windows build `4adb6b0`
+  passes; two Venice ten-bot samples average 142.933/143.240 FPS versus 140.843
+  before this change. One unexplained 60.555 ms hitch does not recur. Actual
+  native Mac camera/cutscene visual acceptance and performance remain awaiting
+  validation. See STATUS and the detailed regression record for scope.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

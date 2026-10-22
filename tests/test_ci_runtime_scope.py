@@ -100,6 +100,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/publish-release.py', 'tests/test_publish_release.py', 'docs/releasing.md'], {'release'}),
     (['tools/crash-symbols.py', 'tests/test_crash_symbols.py'], {'release'}),
     (['tools/package-release.py'], {'release'}),
+    (['tools/texture-release.py'], {'release'}),
+    (['tests/test_texture_release.py'], {'release'}),
     (['tools/apply-patches.py'], set(scope.SUITES)),
     (['tests/fixtures/launcher-patch-stacks.json'], set(scope.SUITES)),
     (['tsfp.ps1', 'requirements.txt'], set(scope.SUITES)),

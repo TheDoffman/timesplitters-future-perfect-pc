@@ -29,9 +29,9 @@
             /* Use original static constants and the XDK mapping of the three
              * vectors uploaded by 0x195110. Quantization matches its 0..255
              * constant upload, not an imagined floating-point uniform path. */
-            float vectors[3][4]={{0,roundf(.105f*delta*255)/255,0,0},
-                {0,0,roundf(.65f*delta*255)/255,roundf(.65f*delta*255)/255},
-                {0,0,roundf(powf(.98f,delta)*255)/255,roundf(powf(.98f,delta)*255)/255}};
+            float vectors[3][4]={{0,pc_surface_packed_coefficient(.105f*delta),0,0},
+                {0,0,pc_surface_packed_coefficient(.65f*delta),pc_surface_packed_coefficient(.65f*delta)},
+                {0,0,pc_surface_packed_coefficient(powf(.98f,delta)),pc_surface_packed_coefficient(powf(.98f,delta))}};
             const unsigned shifts[4]={16,8,0,24};
             for(unsigned bank=0;bank<2;bank++)for(unsigned stage=0;stage<8;stage++) {
                 float *dst=bank?cb.c1[stage]:cb.c0[stage];

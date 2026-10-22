@@ -13,7 +13,7 @@ import urllib.request
 import zipfile
 
 import vulkan_sdk
-from build_textures import ensure_pack, zip_entries, write_zip, write_source_files
+from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME = 'Bin/futureperfect_recomp'
@@ -155,12 +155,13 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'build/releases')
     parser.add_argument('--launcher', type=Path, default=ROOT/'build/macos-launcher')
+    parser.add_argument('--with-textures', action='store_true', help='Explicitly bundle the audited enhanced pack (offline distribution)')
     parser.add_argument('--without-textures', action='store_true', help='Make a lightweight package without enhanced textures')
     parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
     parser.add_argument('--licenses', type=Path, default=ROOT/'external/native-mac-licenses',
                         help='Directory containing verified Vulkan/DXC third-party notices')
     args = parser.parse_args()
-    if args.without_textures and args.texture_pack:
+    if args.without_textures and (args.texture_pack or args.with_textures):
         parser.error('--texture-pack cannot be combined with --without-textures')
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('Package the native game on its Apple Silicon build host.')
@@ -178,8 +179,8 @@ def main():
     if native['source_revision'] != release_source:
         parser.error('Game source must match the existing release tag.')
     sdk = vulkan_sdk.verify_install()
-    texture_rows, textures = [], None
-    if not args.without_textures:
+    texture_rows, textures = [], optional_identity(ROOT)
+    if args.with_textures or args.texture_pack:
         _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)
     prepare_licenses(args.licenses)
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-macos-arm64'
@@ -229,8 +230,8 @@ def main():
         write_source_files(archive, ROOT, sources)
         archive.writestr('runtime-local.patch', subprocess.check_output(['git', '-C', str(upstream), 'diff', '--binary']))
     (stage/'Source/README.txt').write_text('Project source and the exact runtime patch are in pc-port-source.zip.\n'
-        'Compiled DDS/JSON replacements are included once in the package Textures folder.\n'
-        'For a source build, copy that folder to assets/textures in the extracted source.\n'
+        'Enhanced textures are an optional launcher download; source archives omit them.\n'
+        'Source builds may use assets/textures; explicit offline bundles include Textures.\n'
         'Runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'+native['runtime_revision']+'\n'
         'SDL: https://github.com/libsdl-org/SDL/tree/'+run('git','-C',upstream/'third_party/SDL','rev-parse','HEAD')+'\n'
         'Build with tools/build-native-mac.py; package with tools/package-native-mac.py.\n')
@@ -248,7 +249,8 @@ require System Settings > Privacy & Security > Open Anyway for the downloaded ap
 WASD: move. Mouse: look/fire/aim. E/Enter: confirm. Escape: pause.
 F2: controls/settings. F12: debug. F11: fullscreen. F9: FPS display.
 Saves and settings stay in Saves and Settings. Keep Data, Saves, Settings and
-Textures when upgrading. Game data, personal settings and saves are not bundled.
+Textures when upgrading. Enhanced textures are an optional launcher download.
+Game data, personal settings and saves are not bundled.
 
 Uses the shared experimental Xbox/Vulkan renderer with bundled MoltenVK.
 Basic first-level gameplay has been checked previously; complete rendering,

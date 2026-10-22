@@ -190,6 +190,42 @@ static void physics_history_transitions(void)
     original_game_delta=-1.f;
     puts("PASS: physics history rebased only after native-to-original handoff, including pause and slow motion");
 }
+/* Asset-free clock-to-resource contract; full US walking integration is
+ * exercised by native_locomotion.c when the supported XBE is available. */
+static void boost_resource_clock(void)
+{
+    const char *rates[]={"60","120","144"};
+    const unsigned frames_per_second[]={60,120,144};
+    const float scales[]={.25f,1.f,3.f};
+    for(unsigned r=0;r<3;r++) for(unsigned speed=0;speed<3;speed++) {
+        setting="0";frame();setting=rates[r];frame();
+        float remaining=1.f,recovered=0.f;
+        for(unsigned f=0;f<frames_per_second[r];f++) {
+            frame();FLOAT(0x4E794C)=FLOAT(0x4E7948)*scales[speed];
+            remaining=RECOMP_F32_SUB_AT(0x259060u,remaining,.006f);
+            recovered=RECOMP_F32_ADD_AT(0x6552Du,recovered,.003f);
+        }
+        float expected=1.f-.36f*(speed==0?.25f:1.f);
+        assert(fabsf(remaining-expected)<.00002f);
+        assert(fabsf(recovered-.18f)<.00002f);
+    }
+    FLOAT(0x4E7948)=.5f;FLOAT(0x4E794C)=0;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.006f)==1.f);
+    FLOAT(0x4E7948)=3.f;FLOAT(0x4E794C)=3.f;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.25f)==.75f);
+    assert(RECOMP_F32_SUB_AT(0x259061u,1.f,.25f)==.75f);
+    g_tsfp_native_timing_active=0;
+    assert(RECOMP_F32_SUB_AT(0x259060u,1.f,.25f)==.75f);
+    g_tsfp_native_timing_active=1;FLOAT(0x4E7948)=0;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.f);
+    FLOAT(0x4E7948)=3;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
+    FLOAT(0x4E7948)=.5f;
+    assert(RECOMP_F32_ADD_AT(0x6552Eu,4.f,.25f)==4.25f);
+    g_tsfp_native_timing_active=0;
+    assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
+    puts("PASS: boost drain and recovery retain original time budgets at 60/120/144");
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -229,6 +265,7 @@ int main(void)
     input_edges();
     input_after_pause();
     physics_history_transitions();
+    boost_resource_clock();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

@@ -13,6 +13,7 @@ typedef struct { LONGLONG QuadPart; } LARGE_INTEGER;
 static volatile LONG g_flip_gate_vblanks=1;
 static void *g_flip_gate_event=(void *)1;
 static LONGLONG g_flip_gate_period=1000,g_flip_gate_last_vblank,now;
+static LONGLONG g_flip_gate_previous;
 static int g_flip_gate_strict=1,signalled=1,waits;
 static LONGLONG (*g_flip_gate_idle)(LONGLONG,LONGLONG);
 static int flip_gate_divisor(void){return 1;}
@@ -31,8 +32,22 @@ static int WaitForSingleObject(void *event,unsigned timeout)
 static BOOL flip_gate_lend(void){return FALSE;}
 #include "arm.inc"
 #define CHECK(x) do{if(!(x)){fprintf(stderr,"FAIL %d: %s (now=%lld waits=%d)\n",__LINE__,#x,now,waits);exit(1);}}while(0)
-int main(void)
+int main(int argc,char **argv)
 {
+    if(argc>1) {
+        /* Start natively: Arm has never run. A native frame observes the
+           current real vblank without waiting or consuming its signal. */
+        now=1000+atoi(argv[1]);g_flip_gate_last_vblank=1000;signalled=1;
+        xbox_Nv2aFlipGateNativeFrame();
+        CHECK(waits==0 && signalled==1 && now==1000+atoi(argv[1]));
+        /* The original clock has now waited for the next ISR. Its Swap
+           must consume that real signal, not discard it for a second wait. */
+        now=2100;g_flip_gate_last_vblank=2000;signalled=1;
+        xbox_Nv2aFlipGateArm();CHECK(now==2100 && waits==0);
+        now=2200;xbox_Nv2aFlipGateArm();CHECK(now==3000 && waits==1);
+        puts("PASS: native-start handoff consumes real vblank; following frame remains paced");
+        return 0;
+    }
     /* Initial cheap frame must wait; the original 60-Hz clock is unchanged. */
     xbox_Nv2aFlipGateArm();CHECK(now==1000 && waits==1);
     /* 18.3ms CPU frame, using 1000 units per 16.67ms. A real vblank arrived

@@ -309,7 +309,7 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     int terminal=pc_terminal_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset,pc_native_rate()!=0);
     pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));
     if(terminal>=0 || pc_mounted_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),
-            atomic_load(&mouse_invert),player,fov_object,offset)>=0 || !pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov)) {
+            atomic_load(&mouse_invert),player,fov_object,offset,pc_native_rate()!=0)>=0 || !pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov)) {
         pthread_mutex_unlock(&camera_lock);
         return;
     }
@@ -502,6 +502,27 @@ int tsfp_native_input_test(void) {
                 const float expected[]={110,110,120,120,130};
                 ok &= fabsf(TF(0x22038)-expected[step])<.001f && TF(0x10100)==0;
             }
+            /* The same live-rate selection must reach mounted gun routing. */
+            TU(0x10114)=0x80;TU(0x10014)=0x21000;TU(0x2107c)=0x22000;
+            TU(0x22c14)=0x30000;TU(0x3007c)=0x31000;
+            TU(0x31000)=0x30000;TU(0x31004)=0x4147554e;TU(0x31010)=4;TU(0x31068)=0x21000;
+            TF(0x31034)=-90;TF(0x31038)=90;TF(0x3103c)=-179;TF(0x31040)=179;
+            ok &= setenv("TSFP_NATIVE_FPS","144",1)==0;
+            for(int step=0;step<5;++step) {
+                TU(0x4e7944)=(step==1 || step==4)?1:0;
+                TF(0x4e794c)=(step==1 || step==4)?0:60.f/144;
+                if(step==3)ok &= setenv("TSFP_NATIVE_FPS","0",1)==0;
+                e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=100;e.motion.yrel=20;
+                tsfp_native_input_event(&e,NULL);
+                pc_controls_apply_mouse(0x10000,0x20000,terminal_offset);
+                const float expected[]={10,10,20,20,30};
+                ok &= fabsf(TF(0x31024)+expected[step])<.001f;
+                ok &= fabsf(TF(0x3101c)-expected[step]*.2f)<.001f;
+                ok &= TF(0x10100)==0 && TF(0x10104)==0;
+            }
+            TU(0x10114)=2;
+            pc_controls_apply_mouse(0x10000,0x20000,terminal_offset);
+            ok &= TF(0x10100)==0 && TF(0x10104)==0;
             if(saved_rate)ok &= setenv("TSFP_NATIVE_FPS",saved_rate,1)==0;
             else ok &= unsetenv("TSFP_NATIVE_FPS")==0;
             #undef TU

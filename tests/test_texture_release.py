@@ -47,6 +47,30 @@ class TextureReleaseTests(unittest.TestCase):
                 self.assertNotIn('prompt', metadata)
                 self.assertEqual(metadata['format'], 'DXT1')
 
+    def test_index_matches_exact_archive_bytes_and_buckets_are_stable(self):
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            self.fixture(root)
+            rows, size = release.audit(root)
+            archive = root/'part.zip'
+            release.archive(rows, archive)
+            index = release.file_index(rows)
+            import hashlib
+            with zipfile.ZipFile(archive) as payload:
+                self.assertEqual(index, {n: hashlib.sha256(payload.read(n)).hexdigest() for n in payload.namelist()})
+            manifest = dict(schema=3, version='1.0.0', installed_bytes=size, texture_count=1,
+                            parts=[dict(name='textures-001.zip', size=archive.stat().st_size,
+                                        sha256=release.digest(archive), files=index)])
+            release.validate_manifest(manifest)
+            original = list(release.groups(rows))[0]
+            other = root/'fedcba9876543210.dds'
+            other.write_bytes(rows[0][0].read_bytes())
+            extra = (other, b'{}', release.digest(other))
+            self.assertEqual(list(release.groups(rows+[extra]))[0], original)
+            del index['0123456789abcdef.json']
+            with self.assertRaisesRegex(ValueError, 'file index'):
+                release.validate_manifest(manifest)
+
     def test_source_changes_and_checksum_mismatches_stop_publication(self):
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
@@ -145,6 +169,10 @@ class TextureReleaseTests(unittest.TestCase):
                 self.assertEqual(api.result['make_latest'], 'false')
                 self.assertFalse(api.result['draft'])
                 self.assertEqual(api.uploads, 2)
+                published = json.loads(output.read_text())
+                self.assertEqual(published['schema'], 3)
+                self.assertTrue(published['published'])
+                self.assertEqual(len(published['parts'][0]['files']), 2)
                 release.publish(pack, '0.1.0-alpha.1', output, root/'work', api)
                 self.assertEqual(api.uploads, 2)
                 self.assertEqual(list((root/'work').iterdir()), [])

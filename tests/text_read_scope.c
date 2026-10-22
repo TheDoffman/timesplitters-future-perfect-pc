@@ -6,16 +6,32 @@
 static unsigned queries;
 static uintptr_t base=0x1000;
 static size_t length=0x1000;
-static size_t pc_guest_region(uintptr_t address,int writing)
+typedef struct PcGuestRegion {uintptr_t base;size_t size;int writable;} PcGuestRegion;
+static inline PcGuestRegion pc_guest_query_region(uintptr_t address)
 {
     ++queries;
-    return !writing && address>=base && address-base<length ? length-(address-base):0;
+    PcGuestRegion result={0,0,0};
+    if(address>=base && address-base<length) {result.base=base;result.size=length;}
+    return result;
+}
+static inline size_t pc_guest_region_remaining(const PcGuestRegion *region,uintptr_t address,int writing)
+{
+    return !writing && address>=region->base && address-region->base<region->size ?
+        region->size-(address-region->base):0;
 }
 #include "pc_text_read_scope.h"
 #define CHECK(x) do {if(!(x)) {fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}} while(0)
 int main(void)
 {
     PcTextReadScope scope={0};
+    pc_text_read_begin(&scope);
+    /* Guest stack addresses descend; labels can share a mapping in any order. */
+    for(unsigned i=999;i>0;i--) CHECK(pc_text_read_region(&scope,base+i)==length-i);
+    CHECK(pc_text_read_region(&scope,base)==length);
+    CHECK(queries==1);
+    CHECK(!pc_text_read_region(&scope,base-1)); /* Never extend below the mapping. */
+    pc_text_read_end(&scope);
+    queries=0;
     pc_text_read_begin(&scope);
     for(unsigned i=0;i<1000;i++) CHECK(pc_text_read_region(&scope,base+i)==length-i);
     CHECK(queries==1); /* A word wrapper's successive prefixes/suffixes. */

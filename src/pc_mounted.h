@@ -27,19 +27,26 @@ static inline float pc_mounted_limit(double angle,float minimum,float maximum)
  * checking the reverse owner link so stale or AI-controlled guns stay intact. */
 static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity,
                                    int invert,uint32_t player,uint32_t fov_object,
-                                   ptrdiff_t offset)
+                                   ptrdiff_t offset,int native_timing)
 {
     uintptr_t p=pc_mounted_read(player,offset,0x118),entity,extra,gun,data,ticks,f;
     uint32_t owner,gun_address,state;
     double dx,dy,scale;
     float pitch,yaw,pmin,pmax,ymin,ymax,fov;
     if(!p || *(const uint32_t*)(p+0x114)!=0x80)return -1;
-    dx=input->dx;dy=input->dy;input->dx=input->dy=0;
-    if(!input->focused || !input->captured || now-input->motion_at>100 ||
+    uint64_t age=pc_input_consume_motion(input,now,&dx,&dy);
+    if(!input->focused || !input->captured || age>100 ||
        !isfinite(dx) || !isfinite(dy) || (!dx && !dy) ||
        !isfinite(sensitivity) || sensitivity<=0 || *(const int32_t*)(p+4)!=0)return 0;
-    ticks=pc_mounted_read(0x004e7944,offset,4);
-    if(!ticks || !*(const uint32_t*)ticks)return 0;
+    ticks=pc_mounted_read(native_timing?0x004e794c:0x004e7944,offset,4);
+    if(!ticks)return 0;
+    /* Raw mouse counts are displacement. Every advancing native interval
+     * consumes them once, including frames without a carried whole tick.
+     * Paused/invalid time still consumes without moving or replaying later. */
+    if(native_timing) {
+        float delta=*(const float*)ticks;
+        if(!isfinite(delta) || delta<=0)return 0;
+    } else if(!*(const uint32_t*)ticks)return 0;
     owner=*(const uint32_t*)(p+0x14);
     entity=pc_mounted_read(owner,offset,0x80);
     if(!entity)return 0;

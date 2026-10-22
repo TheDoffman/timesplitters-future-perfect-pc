@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "086f9f0e8cc3538d4dbb852a3eb98b5d3b970a6ee13c32fa6592556c3ae38ceb",
+  "loaderSha256": "0a61fe21ba31378eae0b5004b54b7f53f76efb791b33da204198342cd07b48a2",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -825,6 +825,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-text-outline-scope.patch",
+      "sha256": "eb703ac45b4121b940e8189d893640b84f01adde0ab5e90ec4ff6b4619b70c5f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-replay.patch",
       "sha256": "50d4b55ae7b955eb00fbd3e734f39fed3322d6c8a7bac6925747fc84c9a720a8",
       "targets": [
@@ -1175,6 +1182,13 @@
       ]
     },
     {
+      "name": "zzzz-native-surface-coefficients.patch",
+      "sha256": "cb26a14ec5f5e76391db9f1211d88f768b886de5ca2c294fa0f25ee0ca87349c",
+      "targets": [
+        "src/hle/hle_d3d8_state.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-preservation.patch",
       "sha256": "c5dfbb03ad35833252f98f51b2524c70bfe6d7d8b8c37f43d4ac6996aa4b0b1d",
       "targets": [
@@ -1197,6 +1211,22 @@
       "sha256": "db83501d3f08446e7d9cc7f54e0eed3f1797293b21be2947640b7756c1cab396",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-surface-float32.patch",
+      "sha256": "1e4fbb5b2e5d145f3774d5c15f74a00dffad7b37937a60a3db74a30bed86e335",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-flip-handoff.patch",
+      "sha256": "9ba63836c54b9ebf3bd45df568fb19885893dfd767ea244de25b799b61f96b2c",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
       ]
     }
   ]

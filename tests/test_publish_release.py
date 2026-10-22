@@ -632,3 +632,15 @@ def test_retired_textures_require_launcher_with_transactional_migration(publishe
     else:
         with pytest.raises(ValueError, match='launcher 1.2.24'):
             publisher.require_texture_launcher()
+
+
+def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publisher):
+    manifest_path = publisher.root/'config/texture-pack.json'
+    manifest = json.loads(manifest_path.read_text())
+    manifest['delivery'] = 'optional'
+    manifest_path.write_text(json.dumps(manifest))
+    (publisher.root/'assets/textures').rename(publisher.root/'assets/preserved-textures')
+    publisher.require_repository_textures()
+    publisher.require_package_textures({'textures': None, 'files': {'Bin/game.exe': 'a'*64}})
+    with pytest.raises(ValueError):
+        publisher.require_package_textures({'textures': None, 'files': {'Textures/0123456789abcdef.dds': 'a'*64}})

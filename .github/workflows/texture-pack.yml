@@ -3,11 +3,6 @@ name: Repository texture pack
 on:
   pull_request:
     paths:
-      - 'VERSION'
-      - 'tools/launcher/LauncherVersion.cs'
-      - 'tools/package-release.py'
-      - 'tools/package-native-mac.py'
-      - 'tools/publish-release.py'
       - 'assets/textures/**'
       - '.gitattributes'
       - 'config/texture-pack.json'
@@ -19,11 +14,6 @@ on:
   push:
     branches: [main]
     paths:
-      - 'VERSION'
-      - 'tools/launcher/LauncherVersion.cs'
-      - 'tools/package-release.py'
-      - 'tools/package-native-mac.py'
-      - 'tools/publish-release.py'
       - 'assets/textures/**'
       - 'config/texture-pack.json'
       - 'tools/build_textures.py'
@@ -57,7 +47,7 @@ jobs:
           from build_textures import ensure_pack
           pack, records, identity = ensure_pack()
           manifest = json.loads(Path('config/texture-pack.json').read_text())
-          assert manifest['schema'] == 2 and manifest['delivery'] == 'bundled'
+          assert manifest['schema'] == 2 and manifest['delivery'] == 'optional'
           assert manifest['texture_count'] == identity['texture_count']
           assert manifest['installed_bytes'] == identity['installed_bytes']
           for path, public, sha in records:

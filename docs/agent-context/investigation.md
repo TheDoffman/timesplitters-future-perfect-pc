@@ -120,3 +120,25 @@ The 2026-10-22 root texture policy retains original character selection/profile
 icons via `config/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
 Historical artwork acceptance does not override the current user preference.
+
+The native-start handoff patch extends the explicit timing tail after surface
+integration. The index regression checks that dependency and the new final
+patch; refreshing the generated index alone cannot update an old tail assertion.
+This CI correction changes navigation tests only, not runtime pacing.
+
+The loader-order contract now checks that full-float surface preservation
+follows live-surface support. Check prerequisite relationships explicitly when
+adding a dependent patch; unrelated integration patches may follow it.
+
+## Texture policy change (2026-10-22)
+
+The user's optional-download request supersedes the earlier mandatory bundled-pack
+rule. AGENTS.md now records lightweight default game packaging, separate audited
+optional publication and preservation of installed packs. Use the launcher and
+build-test guides for the implementation; do not infer publication from local code.
+
+The ownership gate has one content-aware data exception: bug-form release-version
+changes within validated existing AUTO blocks. It compares the rest of the file
+against the base unchanged and rejects empty-list regressions, malformed/duplicate
+markers and arbitrary inserted content. Deleted/new forms and all implementation
+or workflow changes retain ordinary guide requirements.

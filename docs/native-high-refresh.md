@@ -4,6 +4,8 @@ The `feature/native-144-fps` branch adds an opt-in path that runs the title's
 own update and rendering loop at a 60, 120 or 144 FPS target. Without a saved
 FPS preference, normal play keeps main's fixed-60 default. The old interpolated presentation engine and Smooth
 motion setting remain retired.
+The initial branch was merged into main through PR #285 (`8f3b422`);
+focused follow-up branches retain the same high-refresh goal and beta status.
 
 Build this branch with the normal `tsfp.ps1 -Action Build` workflow. On Windows,
 open `Play-Native.cmd` for the 144 FPS target. `Play-Native.cmd 120` selects 120;

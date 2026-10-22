@@ -43,8 +43,8 @@ int main(int argc,char **argv)
     for(unsigned slot=0;slot<5;slot++)for(unsigned i=0;i<4;i++) {
         unsigned va=0x30000+(100+slot*4+i)*0x34;
         assert(PC_SURFACE_WORD(va)==0xabababab);
-        assert(pc_surface_precision_format(&targets,va,6)==(requested && i<3?0x34u:6u));
-        assert(pc_surface_precision_format(&targets,va,0x12)==(requested && i<3?0x34u:0x12u));
+        assert(pc_surface_precision_format(&targets,va,6)==(requested && i<3?0x4bu:6u));
+        assert(pc_surface_precision_format(&targets,va,0x12)==(requested && i<3?0x4bu:0x12u));
         assert(pc_surface_precision_format(&targets,va,0x0b)==0x0b);
     }
     assert(pc_surface_precision_format(&targets,0,6)==6);

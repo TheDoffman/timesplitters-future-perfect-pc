@@ -11,10 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')
-def test_mounted_mouse(tmp_path):
+@pytest.mark.parametrize('fixture', ['mounted_mouse', 'native_mounted_mouse'])
+def test_mounted_mouse(tmp_path, fixture):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / ('mounted.exe' if os.name == 'nt' else 'mounted')
-    sources = [str(ROOT / 'tests/mounted_mouse.c'), str(ROOT / 'src/pc_input.c')]
+    sources = [str(ROOT / 'tests' / (fixture+'.c')), str(ROOT / 'src/pc_input.c')]
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/W4',
                    '/I' + str(ROOT / 'src'), *sources, '/Fe:' + str(exe)]
@@ -27,3 +28,7 @@ def test_mounted_mouse(tmp_path):
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PASS: mounted mouse routing' in result.stdout
+    if fixture == 'native_mounted_mouse':
+        for mutation in ('legacy-clock', 'legacy-batch'):
+            legacy = subprocess.run([str(exe), mutation], capture_output=True, text=True, timeout=10)
+            assert legacy.returncode != 0 and 'FAIL' in legacy.stderr, legacy.stdout + legacy.stderr

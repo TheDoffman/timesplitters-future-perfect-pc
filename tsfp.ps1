@@ -147,7 +147,7 @@ try {
                 }
                 'Build' {
                     Assert-Game
-                    if (!$SkipTextures) {
+                    if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build_textures.py'))
                     }
                     Apply-LocalPatches

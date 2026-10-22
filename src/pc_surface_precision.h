@@ -2,7 +2,9 @@
 #define PC_SURFACE_PRECISION_H
 #include <stdint.h>
 #include <string.h>
-/* Bounded host-only precision hints. Guest texture headers/data stay intact. */
+/* Bounded host-only precision hints. Guest texture headers/data stay intact.
+ * Full float (Xbox format 0x4B) avoids repeated half-float feedback rounding.
+ * Only registered intermediates use it; the final image and opt-in gates stay. */
 typedef struct { uint32_t targets[15]; } PcSurfacePrecision;
 static inline void pc_surface_precision_reset(PcSurfacePrecision *state)
 { memset(state,0,sizeof *state); }
@@ -14,7 +16,7 @@ static inline int pc_surface_precision_set(PcSurfacePrecision *state,unsigned sl
 static inline uint32_t pc_surface_precision_format(const PcSurfacePrecision *state,uint32_t va,uint32_t format)
 {
     if(format!=0x06u && format!=0x12u)return format;
-    for(unsigned i=0;i<15;i++)if(va && state->targets[i]==va)return 0x34u;
+    for(unsigned i=0;i<15;i++)if(va && state->targets[i]==va)return 0x4bu;
     return format;
 }
 static inline uint32_t pc_surface_precision_rate_format(const PcSurfacePrecision *state,

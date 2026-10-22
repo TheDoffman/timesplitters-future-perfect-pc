@@ -2,6 +2,8 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 #if MACOS
 using Avalonia;
@@ -31,6 +33,14 @@ namespace TimeSplitters.Launcher
         readonly Border footerBorder;
         readonly TabControl tabs;
         public event Action Saved, Cancelled;
+        public event Action<bool> TextureBusyChanged;
+        readonly bool texturePreview;
+        TextBlock textureStatus;
+        Button textureCheck, textureInstall;
+        CheckBox textureUpdates;
+        TextureRelease textureAvailable;
+        long textureDownloadBytes;
+        bool textureBusy;
         readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
@@ -72,7 +82,7 @@ namespace TimeSplitters.Launcher
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
-            this.root=root;
+            this.root=root;texturePreview=preview;
             string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
@@ -123,12 +133,24 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            var textures=PageTheme.Section(graphics,"Enhanced textures · Beta","Replacement textures are included with supported game updates.");
+            var textures=PageTheme.Section(graphics,"Enhanced textures · Beta","Optional download for Windows and Mac. Classic textures need no extra download.");
             enhancedTextures=Check("Use enhanced textures (Beta)",model.EnhancedTextures);enhancedTextures.Name="EnhancedTextures";
             textures.Children.Add(enhancedTextures);
-            var textureHint=Text("On uses the bundled enhanced textures; off uses the original textures. This Beta is incomplete and may contain visual issues. Textures without replacements keep their original appearance.",12);
+            var textureHint=Text("On uses installed replacements; off uses the original textures. Missing replacements always use originals. This Beta is incomplete and may contain visual issues.",12);
             textureHint.Name="EnhancedTexturesHint";textures.Children.Add(textureHint);
-            textures.Children.Add(Text("Save to apply on your next launch. Changes in the game's Display menu or with F10 last for that game session. If your game version has no bundled pack, original textures remain available.",12));
+            textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
+            textureUpdates=Check("Check for texture updates when opening settings",TextureDownload.OptedIn(root));textureUpdates.Name="TextureUpdateChecks";
+            textureUpdates.Click+=(s,e)=> {if(texturePreview)return;try{TextureDownload.SetOptedIn(root,textureUpdates.IsChecked==true);}catch(Exception ex){textureStatus.Text=ex.Message;}};
+            textures.Children.Add(textureUpdates);
+            var textureActions=new WrapPanel();textures.Children.Add(textureActions);
+            textureCheck=Button("Check texture downloads");textureCheck.Name="CheckTexturePack";textureActions.Children.Add(textureCheck);
+            textureInstall=Button("Download / update textures");textureInstall.Name="DownloadTexturePack";textureInstall.IsEnabled=false;textureActions.Children.Add(textureInstall);
+            textureCheck.Click+=async(s,e)=>await CheckTextureUpdates();
+            textureInstall.Click+=(s,e)=> {
+                if(textureAvailable==null || textureBusy)return;
+                Confirm("Install enhanced textures?",TextureDownload.Description(textureAvailable,textureDownloadBytes)+" Automatic update checks will be enabled; downloads always require your confirmation.","Download / update",async()=>await InstallTextures());
+            };
+            textures.Children.Add(Text("Downloads and the update-check preference apply immediately. Save the Enhanced toggle for your next launch. F10 switches Classic/Enhanced for the current game session.",12));
             var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
@@ -227,8 +249,53 @@ namespace TimeSplitters.Launcher
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
+        public async void CheckTexturesIfOptedIn()
+        { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }
+        public async Task CheckTextureUpdates()
+        {
+            if(textureBusy)return;
+            if(texturePreview){textureStatus.Text="Preview only. Download checks run in the installed launcher.";return;}
+            await TextureOperation(async token=> {
+                textureAvailable=null;textureInstall.IsEnabled=false;
+                using(var client=new ReleaseClient()) {
+                    var pack=await TextureDownload.Check(client,token);
+                    long bytes=await Task.Run(()=>TextureDownload.DownloadBytes(root,pack,token),token);
+                    textureAvailable=pack;textureDownloadBytes=bytes;
+                    textureStatus.Text=bytes==0?"Installed textures match pack "+pack.Version+". No download needed.":
+                        "Pack "+pack.Version+": "+(bytes/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MiB to download. Existing matching files are reused.";
+                    textureInstall.IsEnabled=bytes>0;
+                }
+            },"Checking textures…");
+        }
+        async Task InstallTextures()
+        {
+            if(textureBusy || textureAvailable==null)return;
+            await TextureOperation(async token=> {
+                TextureDownload.SetOptedIn(root,true);textureUpdates.IsChecked=true;
+                using(var client=new ReleaseClient())await TextureDownload.Install(root,client,textureAvailable,
+                    new Progress<string>(message=>textureProgress.Text=message),token);
+                textureStatus.Text="Pack "+textureAvailable.Version+" installed. "+TexturePack.Summary(root);
+                textureInstall.IsEnabled=false;
+            },"Downloading enhanced textures…");
+        }
+        TextBlock textureProgress;
+        async Task TextureOperation(Func<CancellationToken,Task> operation,string message)
+        {
+            textureBusy=true;if(TextureBusyChanged!=null)TextureBusyChanged(true);
+            using(var cancel=new CancellationTokenSource()) {
+                var content=Prompt(message,"Existing textures, saves and settings are kept. You can cancel and resume later.");
+                textureProgress=Text(message,14);content.Children.Add(textureProgress);
+                var button=Button("Cancel");button.Name="CancelTextureDownload";content.Children.Add(button);
+                button.Click+=(s,e)=>{cancel.Cancel();button.IsEnabled=false;};
+                try { await operation(cancel.Token); }
+                catch(OperationCanceledException){textureStatus.Text="Cancelled. Completed parts are kept; retry to resume. Your installed pack remains available.";}
+                catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";}
+                finally {textureBusy=false;DismissPrompt();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
+            }
+        }
         public void DismissPrompt()
         {
+            if(textureBusy)return;
             Ui.Show(overlay,false); overlay.Child=null; layout.IsEnabled=true;
         }
         StackPanel Prompt(string title, string description)

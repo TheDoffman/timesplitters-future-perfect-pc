@@ -6,6 +6,27 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Crowded multiplayer preset coverage (2026-10-22)
+
+PR #295 (`252e72e`, implementation head `4a40569`) reduces repeated memory
+queries across an outlined label's four offset passes and foreground draw.
+The same supported Windows executable now has original-60, native-120 and
+two native-144 ten-bot Hotel observations at 3440x1440/FOV 73. Strict complete
+host-clock intervals give 59.999, 119.840, 139.701 and 142.401 guest FPS;
+none of these predeclared 50-second windows exceeds 33.33 ms. Asynchronous
+level-clock endpoints over approximately 61.44 seconds give game/wall ratios
+0.999912-1.000504 during combat and respawns. Native-144 baseline before the
+optimization was approximately 132 FPS in this workload.
+
+These checks support pacing and game-clock consistency in the sampled match,
+not identical bot trajectories, weapon cadence, individual rendered poses or
+full-game correctness. A separate Enhanced run and visual checks are recorded
+with their distinct scope in [STATUS](../STATUS.md#2026-10-22--crowded-multiplayer-text-overhead).
+All selected Windows/macOS CI checks pass for that implementation head;
+native Mac gameplay, online human matches, remaining animation/physics audits,
+texture-fluidity acceptance and representative full-game coverage remain open.
+The earlier live 144-to-60 handoff gap also remains a separate pacing target.
+
 ## Fresh analogue input at native cadence (2026-10-21)
 
 The native pad wrapper previously skipped the complete original decoder on
@@ -5877,3 +5898,450 @@ the common Xbox frontend. The EXE/PDB pair is retained in
 The normal `4adb6b0` pair was restored with its previously recorded hash verified.
 No live driving run was performed for this follow-up. Live handling, current-main
 integration and native Mac acceptance remain pending.
+## Native-start return to Original 60 (2026-10-22)
+
+The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing
+repair. On main 564fda6, a corrected Original60 → 120 → 144 → Original60 replay
+has no interval over 33.33 ms in its three Apply windows (worst 18.371, 15.672,
+17.720 ms). The return frame is 9.396 ms: original clock 2.540 ms and flip gate
+0.0008 ms. This does not retroactively assign the historical gaps one cause.
+
+Starting directly at native 144 still reproduces a distinct double wait. Native
+Swap bypasses Arm, leaving its function-local previous-boundary value zero.
+On return, the original clock waits for the next ISR; Arm then resets that
+ready event and waits for another tick. A bounded opt-in QPC phase diagnostic
+measured a 31.568 ms frame: original-clock wait 9.993 ms, gate wait 16.391 ms,
+and original Swap body 0.520 ms. The same replay with the fix measures 20.128 ms:
+clock 14.505 ms, gate 0.0008 ms, Swap body 0.426 ms. The varying first clock wait
+reflects the phase at Apply; the identified extra gate wait is removed.
+
+`-native-flip-handoff.patch` records the last real vblank during both native
+Swap and Present-only bypasses. Arm retains its real-signal and elapsed-period
+checks, with normal cheap-frame pacing. The shared observer neither waits nor
+consumes/synthesizes a tick. Tests execute the actual observer/Arm bodies at five
+native phases and retain cheap/late/no-signal cases. Removing the observation
+reproduces the failing first-return assertion. The diagnostic trace code was
+removed before the final production build; it is retained only in ignored
+investigation artifacts.
+
+The old live replay entered Controls after the pause menu reorder; finishing
+its command labels did not prove FPS changes. The tracked fixture now uses one
+Down to Video Options. Analysis additionally requires actual NATIVE-TIMING
+transitions and the saved preference; the stale run is rejected as evidence.
+
+Phase evidence: `private/test-saves/handoff-{phase-corrected,initial-native,
+initial-native-fixed}`, QPC joins in `handoff-phase-summary.json`, and
+`logs/handoff-*-phase.log`. All tests use isolated signed Test Lab copies and
+recycle disposable partitions. No personal settings/saves are changed. Native
+Mac execution, other scenes, full-game mechanics and monitor scanout remain
+unverified. This patch is independent of the crowded-multiplayer optimization
+in PR #295; these main-based binaries do not contain that unmerged change.
+
+
+Final trace-free Windows binary SHA-256:
+`70d3327017b1989136a5a42b1c5abacf38c44010d3fe82e4d7c6d2bc535f4f78`.
+The stationary Scotland cycle (`handoff-final-cycle`, 1280×720) measures:
+
+| Window | Mean FPS | p99 interval ms | Worst interval ms |
+| --- | ---: | ---: | ---: |
+| Original 60 | 59.998 | 18.395 | 18.904 |
+| Native 120 | 120.000 | 9.673 | 10.524 |
+| Native 144 | 143.994 | 8.225 | 8.813 |
+| Return to Original 60 | 60.005 | 17.860 | 18.151 |
+
+The three Apply windows have worst intervals 17.727, 13.510 and 22.922 ms;
+none exceeds 33.33 ms. These windows include the surrounding menu wait, not
+just conversion. All observed presents are guest frames. Strict analysis
+requires continuous frame IDs and clock coverage, matching health/position/look,
+and actual applied rates. Endpoint game-clock/wall-clock ratios range from
+0.999829 to 1.001160; endpoints are quantized and do not establish animation or
+mechanics parity. Supported Windows Build, 44 selected frame-clock/patch tests,
+backlog integrity and repository-context checks pass. Two initial historical
+fixture failures were repaired by excluding the new dependent patch from old
+stacks; all three affected upgrade cases were rerun successfully.
+
+The same trace-free binary's native-start replay (`handoff-final-native-start`)
+confirms 143.987 FPS before switching and 59.998 afterward (p99 8.209/17.875 ms,
+worst 9.385/18.310 ms). Its Apply window worst is 18.105 ms, with no interval
+over 33.33 ms. Endpoint clock ratios are 0.999821/0.999836. Both final runs exit
+cleanly with valid isolated save signatures; no tracing/captures/CPU sampling
+ran during measurement. Saved preference ends at Original 60 in each run.
+
+## Walking update and boost resource audit (2026-10-22)
+
+The existing remote-correction fixture controls `sub_001CE850` rather than
+executing its player movement. Following its dispatch chain reaches the normal
+walking routine `sub_00258F50` through `sub_000D5EB0` and `sub_000D5C70`.
+The new fixture executes all of US `0x258F50..0x2597FF`, lifting code and scalar
+constants from the hash-verified supported XBE. Controlled input displacement,
+world eligibility and a flat collision floor replace real input/level geometry.
+No gameplay code was copied into the fixture or edited in generated output.
+
+Ordinary forward travel is 12 units over one second at original 60 and native
+60/120/144 (maximum observed numerical error below 0.00002). Boosted travel
+is 19.2 units at each rate. However, the mode-byte-0x11 path subtracts the same
+0.006 resource charge at `0x259060` on every active update. With initial test
+resource 100, one second leaves 99.640198 at original/native 60, 99.280396 at
+120 and 99.136475 at 144. The full-routine resource assertion fails at 120
+before the fix; normal walking and boost speed still pass.
+
+The shared site-specific policy now splits the charge across fractional active
+updates. It uses the lesser of raw and game time, capped at one original charge,
+so quarter-speed consumption matches the original parent dispatcher's skipped
+zero-whole-tick updates, while triple-speed and catch-up calls retain one-charge
+semantics. The disabled-native path, unrelated subtraction sites, shared charge
+constant, boost multiplier and depletion threshold remain original.
+
+After the fix, 120 leaves 99.640198 and 144 leaves 99.639648. Quarter-speed
+results are within 0.0003 of 99.91; triple speed remains approximately 99.64.
+A separate initial-resource-1 test checks depletion time/travel within one
+original update, retaining threshold overshoot. Eligibility, released input,
+empty resource, pause/catch-up, diagonal movement, stopping/reversal, stack and
+callee-saved registers are checked. A no-fix mutation fails the same resource
+assertion. Asset-free clock-to-resource cases cover all presets in shared CI.
+
+Scope: this is actual-routine evidence with controlled services, not live boost
+activation, real collision/terrain, upstream input acceleration, full network
+prediction or native Mac execution. A read-only frontend lookup through the
+existing Discord rule-name decoder identifies mode index 17 as Escort (string
+ID 5861); control index 3 resolves to Deathmatch. The bounded 60-second startup
+run exits cleanly and preserves the signed test profile. This identifies the
+mode, but live activation/appearance still needs validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
+`logs/native-boost-focused.log`; source branch `fix/native-boost-timing`.
+
+### Escort resource recovery and match dispatch
+
+Following the resource write reaches `sub_000654E0`, called through the complete
+mode dispatcher `sub_000681C0` and active-match state in `sub_00068830`.
+Recovery waits until more than five game seconds since the last boost use,
+then adds a fixed 0.003 at US site `0x6552D` on every match update. Unlike the
+walking gate, this caller executes on fractional updates with zero integer
+game ticks. The original-code regression leaves 0.1800001 after one second
+at original/native 60 but 0.3599999 at 120 before the fix.
+
+The shared addition policy scales only this charge by raw fractional time,
+capped at one original charge. Game-speed scaling still affects the original
+five-second delay; it does not alter recovery's rate once eligible. The original
+match dispatcher owns pause suppression. The selected actor, mirrored resource,
+threshold overshoot and existing health-dependent clamp are unchanged.
+
+`native_escort_recovery.c` lifts all three complete routines, preserving their
+switch tables and scalar constants. It verifies 0.18 units per second across
+60/120/144, quarter/normal/triple game speed, the tick-300/301 eligibility
+boundary, paused match dispatch, catch-up, selected actor and clamp/overshoot.
+Restoring the original addition only at the recovery site must fail with
+the original doubled 120-FPS recovery. External world, network, rendering and
+pause-query services are controlled; this is not live Escort or network parity.
+The asset-free clock/resource fixture also checks recovery in both-host CI.
+Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.
+
+## Fractional damping coefficient packing (2026-10-22)
+
+The first diagnostic used rounded test coefficients and found scalar damping
+drift. Follow-up execution of the complete current-recompiler US uploader
+`sub_003D9520` exposed an incorrect assumption: its lifted `cvtss2si` uses a C
+integer cast, truncating rather than rounding. The earlier 250/255 anchor and
+-20.70%/+5.58% figures describe that rounded diagnostic, not the current game's
+60-FPS upload. This audit now derives every packed test coefficient from the
+actual re-lifted upload routine and passes those values to the GPU case.
+
+For authored `(acceleration, displacement, damping)=(0.105,0.65,0.98)`, actual
+packed bytes are `(26,165,249)` at one tick, `(13,82,252)` at half a tick and
+`(11,69,252)` at 60/144 ticks. These are controlled inputs, not a captured
+Scotland trajectory. The uploader's command-buffer space, definition mappings
+and ABI are supplied/checked; refill is an unexpected failure.
+
+The GPU test uses the hash-verified US second feedback shader, production HLSL
+translator and common RHI, uniform float32 inputs/targets, zero acceleration
+and displacement coupling, and feedback only in blue. One second from 0.6 gives:
+
+| Coefficient path | FPS | Final blue | Relative to current original-60 path |
+| --- | ---: | ---: | ---: |
+| Current packed upload | 60 | 0.143780917 | -0.00001% |
+| Current packed upload | 120 | 0.145008832 | +0.85400% |
+| Current packed upload | 144 | 0.109154858 | -24.08252% |
+| Precise anchored fractional damping | 120 | 0.143780857 | -0.00005% |
+| Precise anchored fractional damping | 144 | 0.143780395 | -0.00038% |
+
+The shared `pc_surface_coefficients` policy clamps/truncates the original one-tick
+values once, scales the acceleration/displacement anchors by fractional time,
+and raises the damping anchor to that time. The correction is part of the
+existing opt-in bias/float/fractional experiment; normal play and the original
+whole-tick/catch-up path remain unchanged. It preserves the current recompiled
+60-FPS contract; the lifter's broader CVTSS2SI/MXCSR fidelity remains a separate
+unverified hardware-fidelity issue and is not silently changed here.
+
+Original parameters are copied before the guest's fractional parameter scope.
+The HLE shader-state path sends acceleration/displacement/damping through the
+existing ordered float-constant payloads at bank 0 stages 3/5/7, alongside the
+centering value at bank 1 stage 6, only for the validated second feedback shader.
+Changing shader, leaving fractional scope, or invalid parameters clears the
+appropriate slots. Identical updates are cached; new parameters at the same
+delta refresh the values. Queued and replayed commands own copied values.
+No delayed draw reads mutable guest timing or parameter memory.
+
+Five focused cases pass: queue/scope/copy/replay checks, three original-program
+WARP cases (including actual uploader capture), and the original procedural
+update/upload integration with disabled and precision/bias/live variants.
+Every damping pixel/update is compared with the scalar equation. Broader
+coupled/spatial dynamics, original byte-storage appearance, additional levels
+and native Mac GPU/scene validation remain unverified; water remains opt-in.
+The full GPU cases require the private supported XBE and Windows WARP. Hosted
+skips are not GPU acceptance. Evidence: `logs/surface-damping-upload.log` and
+`logs/surface-coefficients-focused.log`. No private game code is distributed.
+
+### Coefficient build and bounded scene comparison
+
+Source `1d02157` was integrated as `20ee848` with the independent crowd,
+FPS-handoff and Escort repairs, then built with the supported Windows script.
+Host: Windows 10.0.26300 AMD64, MSVC 14.44.35207 and SDK 10.0.26100.0;
+the shader diagnostic uses the production common-RHI D3D11 WARP route.
+All required build/native checks pass (`logs/surface-coefficients-combined-build.log`).
+The selected local timing/shader/queue/preservation/statistics/patch/backlog/
+context suite passes 118 tests (`logs/surface-coefficients-regressions.log`).
+
+The built executable hash is
+`9eb9a3c2ac5d80c0157f1b3bd15fbeedc31cfd34884882a021b606e2f9c0c88e`.
+Three isolated runs use the existing Scotland fixture and bounded 120-second
+runner, stopping after approximately 73 seconds. Original 60 has experiments
+off; the 120/144 runs enable float, fractional, bias and live surfaces. All
+reach scene 4, turn toward the shoreline, move, pause, resume and exit cleanly.
+Profiles remain unchanged with valid signatures, fixtures are preserved, and
+disposable disks are recycled. No personal session is left running.
+
+| Path | Images | Changed adjacent pairs | Captured game ticks | First 120 ticks channel 1/2 standard deviation |
+| --- | ---: | ---: | ---: | --- |
+| Original 60 | 360 | 359/359 | 372.000 | 24.639 / 23.854 |
+| Candidate 120 | 360 | 359/359 | 197.518 | 19.351 / 18.589 |
+| Candidate 144 | 360 | 359/359 | 167.515 | 19.315 / 18.343 |
+
+The validator checks actual GPU bytes, image hashes, consecutive guest frames
+and stable resource/format/path. All shoreline stills show water without a
+missing/black target. Pause/resume state and health remain correct at the
+observed checkpoints. These limited observations do not establish complete
+wave dynamics, continuous motion fidelity or long-term stability. In particular,
+the amplitude statistics still differ. Random trajectories are unpaired and
+capture durations differ; equal elapsed-window statistics do not remove that
+limitation. Synchronous GPU readback invalidates ordinary pacing comparisons.
+Do not enable the experiment based on this run.
+
+Evidence: private `surface-coefficients-{60-control,120-candidate,144-candidate}`
+reports/captures and `procedural-surface-coefficients-summary.json`. Each raw
+23,592,960-byte trace was gzip-compressed and byte-exact roundtrip-verified
+before recycling the raw file; selected PNGs and provenance are retained.
+No private assets, generated code or screenshots are distributed in Git.
+
+### Deterministic coupled feedback and storage comparison
+
+`surface_coupling_gpu.inc` runs the unchanged production-translated second
+feedback shader on D3D11 WARP. Texture 0 supplies persistent state initialized
+to R/G/B = 0.5/0.5/0.65; texture 1 supplies a fixed neutral neighbor. The initial
+shader inputs are identical for every run. Actual GPU render targets use float32,
+half-float or UNORM8; readback feeds their stored G/B into the next update without
+an extra conversion. Constants use the actual uploader anchors and the current
+precise fractional helper. This tests the coupled kernel rather than only its
+isolated damping coefficient.
+
+Every pixel/update is compared with the unsaturated coupled equation. Float32
+error is below 3e-6, half-float below 0.0005, UNORM8 below 0.501/255. The states
+stay within the tested unsaturated range. All runs execute one second; results:
+
+| Storage | FPS | Final green | Final blue | Changed updates |
+| --- | ---: | ---: | ---: | ---: |
+| Float32 | 60 | 0.521120727 | 0.446032643 | 60/60 |
+| Float32 | 120 | 0.520336211 | 0.448130667 | 120/120 |
+| Float32 | 144 | 0.520253778 | 0.448478669 | 144/144 |
+| Half-float | 60 | 0.520507812 | 0.448242188 | 60/60 |
+| Half-float | 120 | 0.519531250 | 0.452636719 | 120/120 |
+| Half-float | 144 | 0.519531250 | 0.454833984 | 144/144 |
+| UNORM8 | 60 | 0.521568656 | 0.443137258 | 60/60 |
+| UNORM8 | 120 | 0.513725519 | 0.443137258 | 120/120 |
+| UNORM8 | 144 | 0.521568656 | 0.447058827 | 144/144 |
+
+Even with precise coefficients, float32 fractional coupling does not reproduce
+the complete one-tick coupled update. Half-float adds a separately measurable
+rounding effect; byte storage also changes the trajectory. The assertions
+characterize these discrepancies, not accept them as full-game equivalence.
+There is no random input, smoothing pass, first feedback pass or spatial field
+in this fixture, so these results do not by themselves explain the full scene's
+variance deficit. They identify two independent next targets for integration
+work. Local evidence: `logs/surface-coupling-gpu.log`. The four original-program
+GPU cases remain asset-dependent and Windows-only; hosted skips do not prove
+native Mac GPU execution.
+
+PR #298's first historical upgrade checks failed because three old-stack
+fixtures selected the new coefficient patch while omitting its surface-constant
+prerequisite. Corrected old-stack selection excludes both. Full current-stack
+installation, fresh/repeated builds and local-edit preservation remain tested;
+no runtime patch or game behavior is weakened to bypass this failure.
+
+After the fixture repair, all four affected upgrade/fresh-install cases pass
+locally in 65.37 seconds. The four original shader cases, ordered constants and
+context/backlog checks pass 17 cases in 14.88 seconds. Source-only validation
+needs no rebuild or additional gameplay run because runtime code is unchanged.
+
+## Two-pass spatial feedback and full-float candidate (2026-10-22)
+
+The new `surface_spatial_gpu.inc` extracts both original pixel programs
+(0x4BBE20 and 0x4BBF10) from the verified US XBE and uses their unchanged
+production HLSL/common-RHI WARP execution. The synthetic vertex shader supplies
+explicit offsets observed in callback 0x2BF10: the first pass samples center,
+(-1,-1), (+1,-1), (+1,+1); the second reads the first-pass center and prior
+state at (-1,+1). Coordinates are texel-centered on a 64x64 clamped field.
+This does not execute the original vertex microcode or verify all guest-to-GPU
+coordinate conventions. It is a controlled spatial kernel, not a scene replay.
+
+Initial green is 0.5; blue is a 0.05 Gaussian disturbance around 0.5. All
+inputs are identical at all rates/formats. Each pass stores through actual GPU
+float32, half-float or UNORM8 targets; decoded stored values become the next
+inputs. Every pixel is checked against the unsaturated stencil. The first-pass
+red is `128/255 + k*(128/255-B) + Bnw+Bne+Bse-3*B`; green/blue persist.
+The second uses the already documented coupled equation and the remaining
+southwest neighbor. `k` and the three feedback coefficients use current
+uploader truncation anchors. No smoothing or random forcing is applied.
+
+| Storage | FPS | Mean blue | Blue standard deviation | RMS blue vs same-format 60 |
+| --- | ---: | ---: | ---: | ---: |
+| Float32 | 60 | 0.567762114 | 0.001816350 | 0 |
+| Float32 | 120 | 0.566613230 | 0.001811594 | 0.001149301 |
+| Float32 | 144 | 0.566421304 | 0.001811069 | 0.001341274 |
+| Half-float | 60 | 0.560359955 | 0.002508131 | 0 |
+| Half-float | 120 | 0.546896696 | 0.005342875 | 0.013886190 |
+| Half-float | 144 | 0.562387943 | 0.008247281 | 0.010135495 |
+| UNORM8 | 60 | 0.604052758 | 0.024023703 | 0 |
+| UNORM8 | 120 | 0.686370270 | 0.031592553 | 0.084577354 |
+| UNORM8 | 144 | 0.645906118 | 0.042783565 | 0.072853017 |
+
+All frames changed. Maximum per-pass equation/storage errors were 0.000000328,
+0.000488222 and 0.001960814 respectively. The assertions characterize existing
+gaps, not declare cross-rate wave equivalence. Evidence: `logs/surface-spatial-gpu.log`.
+
+The dependent full-float candidate changes only opt-in intermediate format
+selection from 0x34 to 0x4B. The common resource adapter already supports full
+float; the new subsequent patch extends precision preservation's allowlist and
+reverses 32-bit channel words when rebuilding guest-layout capture storage.
+The GPU contract tests original byte data across both byte layouts, byte/full
+promotion/demotion, exact clone reconstruction, live GPU rather than stale CPU
+source, output-state retention and invalid inputs; existing half tests remain.
+The cache transaction still handles queued work, failed allocation/copy and
+read-first transitions. Historical old-stack tests exclude the new patch until
+its preservation prerequisite is installed.
+
+This doubles each registered intermediate's GPU storage from 8 to 16 bytes per
+pixel; at 128x128, three intermediates rise from 384 to 768 KiB per resource.
+Corresponding CPU capture storage also grows. The final byte texture stays
+unchanged. No new game assets or normal-play setting is introduced. Full scene
+motion, original-byte appearance, long-term behavior, live preset switching,
+performance and native Mac GPU/gameplay validation remain pending. Legacy GL
+continues to decline this opt-in experiment. Do not enable it from this fixture.
+
+### Full-float build and scene evidence
+
+Focused source `6035ed7` was integrated as `6a766f5` with the earlier crowd,
+clock-handoff and Escort repairs. Supported Windows Build and all its required
+checks pass (`logs/surface-float32-combined-build.log`); executable SHA-256 is
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+Host/toolchain remain Windows 10.0.26300 AMD64, MSVC 14.44.35207 and SDK
+10.0.26100.0, common HLE/RHI D3D11 renderer.
+
+Three isolated 120-second-bounded routes stop after approximately 73 seconds,
+reaching Scotland scene 4 with shoreline viewing, movement and pause/resume.
+Health is 35 at the observed checkpoints. Original 60 uses normal byte buffers;
+120/144 select all four existing experiment flags. High-rate logs confirm 0x4B
+host intermediates. All runs exit cleanly, signed profiles are unchanged,
+fixtures remain valid and disposable disks are recycled.
+
+| Path | Images | Changed pairs | Captured game ticks | First 120 ticks channel 1/2 standard deviation |
+| --- | ---: | ---: | ---: | --- |
+| Original 60 | 360 | 359/359 | 375.000 | 24.396 / 24.093 |
+| Full-float 120 | 360 | 359/359 | 196.138 | 18.940 / 18.147 |
+| Full-float 144 | 360 | 359/359 | 164.384 | 19.014 / 18.381 |
+
+Actual-byte hashes, consecutive guest frames and stable resource/path/format
+validate every trace. Reviewed shoreline stills show water. Statistics remain
+different from original-byte output; neither unpaired RNG nor short synchronous
+GPU captures support full motion equivalence or a pacing/performance claim.
+Full-float removes the identified storage error in the deterministic test but
+has not closed the game's original-byte appearance/dynamics gap.
+
+Evidence is private under `surface-float32-*`, with measurement/storage JSONs.
+Every raw 23,592,960-byte trace was gzip-compressed and byte-exact verified before
+recycling its raw file. No game assets, screenshots or generated code are in Git.
+The Mac CI common-RHI GPU step passes for `6035ed7`, including the extended
+conversion/capture contract; original-XBE wave tests and native Mac gameplay
+remain unverified. Live preset cycles, long-duration motion and capture-free
+performance remain pending for this format change.
+
+## Crowded-map camera query follow-up (2026-10-22)
+
+Windows x64 / MSVC 19.44 / D3D11, i7-13700K, RTX 4070 SUPER driver
+32.0.16.1742. Isolated Test Lab deathmatches use ten enabled bots, recommended
+weapons, Classic textures, 3440x1440, FOV 73 and native 144. Separate captured
+setup runs confirm bot counts and actual Vietnam/Venice scenes. Normal combat,
+death and respawn use synthetic inputs; bots and spawn outcomes are not
+deterministic. No human network matches or full-map coverage are established.
+
+The initial Venice pacing attempt reached its 15-point score limit during the
+measurement window. Strict gameplay-state analysis rejected it. Its apparent
+143.202 FPS is not accepted gameplay evidence. The corrected route changes only
+the disposable test's score limit to None (Go → Down → Left five times; Up twice
+then Enter opens Bot Set), retaining the ten-minute time limit. This lets the
+same complete combat window remain active.
+
+Every accepted pacing row covers spawn-observation+5 through +55 seconds, with
+consecutive Present clock evidence on both sides and scene/match-state/pause
+checks at all observed checkpoints through combat-six. No screenshot capture,
+CPU sampler, parallel local tests or builds run during these timing windows.
+These are successful host Present intervals, not GPU completion or scanout.
+
+| Run | Mean FPS | p95 ms | p99 ms | Worst ms | >9 ms | Slowest 1 s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vietnam, prior combined build | 141.303 | 8.490 | 9.242 | 35.056 | 1.953% | 125 |
+| Venice, prior combined build | 140.843 | 8.495 | 9.447 | 31.830 | 2.215% | 117 |
+| Venice, projection candidate | 142.933 | 8.111 | 8.889 | 60.555 | 0.798% | 129 |
+| Venice, candidate repeat | 143.240 | 8.149 | 8.702 | 11.812 | 0.572% | 137 |
+
+The baseline is combined source `6a766f5`, executable SHA-256
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+Candidate source `4adb6b0` adds PR #300 to the same earlier #295–#299 changes;
+executable SHA-256
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+Both use the supported builder and verified US XBE. The water experiments are
+disabled. All measured presents are guest frames; none are interpolated.
+Gameplay-clock/wall ratios are 0.999972 (Vietnam), 0.999932 (Venice baseline),
+0.999698 and 0.999937 (candidate/repeat). Asynchronous combat/respawn endpoints
+do not establish exact motion, animation or weapon parity.
+
+A separate 200 Hz sample profile on the prior build shows 1,873/6,872 guest-main
+samples in NtQueryVirtualMemory during cumulative 110–150 second reports, with
+460 chains through perspective correction and 208 through camera correction.
+Other folded linker names are not reliable identities. The diagnostic includes
+profiler overhead and is not used as a performance result. PR #300 initializes
+a local writable-region snapshot after the guest routine returns. Camera and
+source matrix are checked before the output, because actual decal callers use
+temporary guest-stack output in a different region. This reduces three queries
+to two in the split-region case, or one in a common region, with bounds and
+permissions still enforced. No AI/animation throttling or quality reduction.
+
+Sixteen focused geometry, ABI, real-VM and cutscene tests pass. Query counts
+cover both region layouts; retaining a snapshot across calls must fail. The
+OS test includes read-only/no-access, crossing spans, overflow, new snapshots
+and Windows guard pages. Nineteen companion cases pass, with one Mac-only
+local skip. The supported final build passes its required checks. PR #300 source
+`beff7a7` passes selected Windows/Mac native and transition CI, including the Mac
+real-VM contract; this is not actual Mac camera/cutscene or performance acceptance.
+
+The candidate's 60.555 ms outlier occurs 38.879 seconds into its window; its
+Present body is only 0.148 ms. It does not recur in the repeat. Its cause remains
+unknown; do not discard it or label this locked/hitch-free 144 FPS. The observed
+average/tail improvement supports the narrow optimization, with wider gameplay,
+Mac visual/performance acceptance and rare-hitch investigation still open.
+
+Evidence: isolated `crowd-vietnam-native144`, `crowd-venice-long144`,
+`crowd-projection-144` and `crowd-projection-repeat144` reports/provenance/Present
+CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
+`crowd-venice-native144`; separate `crowd-venice-profile` and
+`logs/crowd-venice-sample-delta.json`; setup images in `crowd-vietnam-setup`,
+`crowd-venice-setup`, `crowd-venice-match-rules` and `crowd-projection-visual`.
+All sessions exit cleanly with unchanged valid profile signatures, preserved
+fixtures, recycled disposable disks and no personal game left open.

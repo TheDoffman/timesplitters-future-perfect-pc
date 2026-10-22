@@ -89,3 +89,33 @@ def test_texture_members_stream_without_a_staging_copy(tmp_path):
     manifest['files']['Textures/0123456789abcdef.dds'] = '0'*64
     with pytest.raises(ValueError, match='Texture differs'):
         package.verify_payload(stage, manifest, rows)
+
+
+@pytest.mark.parametrize('options,bundled', [([], False), (['--without-textures'], False),
+                                            (['--with-textures'], True), (['--texture-pack', 'custom'], True)])
+def test_mac_packager_only_audits_textures_when_explicit(tmp_path, monkeypatch, options, bundled):
+    native = tmp_path/'build/macos'
+    native.mkdir(parents=True)
+    executable = native/'futureperfect_recomp'
+    executable.write_bytes(b'fixture')
+    (native/'BUILD.json').write_text(json.dumps({'executable_sha256': package.digest(executable),
+        'renderer': 'vulkan', 'vulkan_driver': 'moltenvk', 'source_revision': 'revision'}))
+    monkeypatch.setattr(package, 'ROOT', tmp_path)
+    monkeypatch.setattr(package.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(package.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(package, 'run', lambda *args: 'revision')
+    monkeypatch.setattr(package.vulkan_sdk, 'verify_install', lambda: tmp_path/'sdk')
+    calls = []
+    monkeypatch.setattr(package, 'ensure_pack', lambda root, override: (calls.append((root, override)), [], {}))
+    class PolicyChecked(Exception):
+        pass
+    def stop_before_host_packaging(*args):
+        raise PolicyChecked()
+    monkeypatch.setattr(package, 'prepare_licenses', stop_before_host_packaging)
+    monkeypatch.setattr(sys, 'argv', ['package-native-mac.py', '--version', 'v1.0.0', *options])
+    with pytest.raises(PolicyChecked):
+        package.main()
+    assert bool(calls) == bundled
+    if calls:
+        assert calls[0][0] == tmp_path
+        assert calls[0][1] == (Path('custom') if '--texture-pack' in options else None)

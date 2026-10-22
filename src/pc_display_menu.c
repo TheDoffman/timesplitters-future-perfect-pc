@@ -2,6 +2,7 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#include "pc_display_memory.h"
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
@@ -157,15 +158,16 @@ void pc_display_camera(void (*original)(void))
     uint32_t player, matrix;
     float factor, zoom, fov_scale=gameplay_fov_scale(WORD_AT(g_esp));
     original();
+    PcGuestRegion region={0,0,0};
     /* US build sub_000C77C0 creates the player's perspective matrix through
        sub_00151CF0, then writes tan(vertical FOV/2) at +0x37c and the
        horizontal frustum extent at +0x380. Widen both projection and CPU
        culling together, after the original's cutscene aspect clamp. */
     player=WORD_AT(0x007B0CC0u);
     /* Camera allocations use the Xbox 0x80000000 RAM alias, not low VAs. */
-    if(!guest_writable(player,0x384)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,player,0x384)) return;
     matrix=WORD_AT(player+0x204u);
-    if(!guest_writable(matrix,64)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64)) return;
     factor=pc_display_camera_factor();
     zoom=cutscene_camera_zoom();
     if(factor!=last_factor) {
@@ -191,13 +193,14 @@ void pc_display_perspective_projection(void (*original)(void))
     const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
     uint32_t camera, matrix;
     original();
+    PcGuestRegion region={0,0,0};
     /* US sub_001B73F0 builds the first-person weapon lens; sub_002C44D0
        rebuilds the character picker lens, including when models change.
        Neither goes through pc_display_camera. Correct each freshly built
        matrix, rather than copying the world camera's different FOV/zoom or
        adjusting a retained matrix repeatedly while a new character loads. */
     if(caller==0x001B7482u || caller==0x002C46EFu) {
-        if(guest_writable(destination,64)) {
+        if(pc_display_writable(&region,g_xbox_mem_offset,destination,64)) {
             float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
             projection[0]/=pc_display_camera_factor();
         }
@@ -210,9 +213,12 @@ void pc_display_perspective_projection(void (*original)(void))
        include menus and offscreen effects and must keep their own aperture. */
     if(caller!=0x00112F7Fu && caller!=0x00115B0Cu) return;
     camera=WORD_AT(0x007B0CC0u);
-    if(!guest_writable(camera,0x208) || !guest_writable(destination,64)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,camera,0x208)) return;
     matrix=WORD_AT(camera+0x204u);
-    if(!guest_writable(matrix,64)) return;
+    /* Validate the camera's matrix before the temporary output: decal callers
+       use a guest-stack destination in a different region from camera RAM. */
+    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64) ||
+       !pc_display_writable(&region,g_xbox_mem_offset,destination,64)) return;
     WORD_AT(destination)=WORD_AT(matrix);
     WORD_AT(destination+0x14u)=WORD_AT(matrix+0x14u);
 }

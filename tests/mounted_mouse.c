@@ -5,7 +5,7 @@
 #define U(a) (*(uint32_t*)(guest+(a)))
 #define F(a) (*(float*)(guest+(a)))
 #define MOVE(x,y) pc_input_motion(&input,(x),(y),1000)
-#define APPLY() pc_mounted_mouse(&input,1001,.1f,0,0x10000,0x40000,offset)
+#define APPLY() pc_mounted_mouse(&input,1001,.1f,0,0x10000,0x40000,offset,0)
 int main(void)
 {
     unsigned char *guest=calloc(1,0x800000);
@@ -30,7 +30,7 @@ int main(void)
     CHECK(F(0x31024)==90 && F(0x3101c)==0);
     F(0x3101c)=30;F(0x31024)=0;F(0x40384)=27.5f;
     U(0x31008)=0x1000000;F(0x3105c)=1.6f;
-    MOVE(10,10);CHECK(pc_mounted_mouse(&input,1001,.1f,1,0x10000,0x40000,offset)==1);
+    MOVE(10,10);CHECK(pc_mounted_mouse(&input,1001,.1f,1,0x10000,0x40000,offset,0)==1);
     CHECK(fabsf(F(0x31024)+.8f)<.001f && fabsf(F(0x3101c)-29.2f)<.001f);
     /* Exact authored fixed axes and full-circle guns retain their semantics. */
     U(0x31008)=0;F(0x40384)=55;F(0x31034)=F(0x31038)=15;
@@ -47,7 +47,7 @@ int main(void)
     U(0x4e7944)=0;MOVE(10,10);CHECK(APPLY()==0);U(0x4e7944)=1;
     input.focused=0;MOVE(10,10);CHECK(APPLY()==0);input.focused=1;
     input.captured=0;MOVE(10,10);CHECK(APPLY()==0);input.captured=1;
-    MOVE(10,10);CHECK(pc_mounted_mouse(&input,1200,.1f,0,0x10000,0x40000,offset)==0);
+    MOVE(10,10);CHECK(pc_mounted_mouse(&input,1200,.1f,0,0x10000,0x40000,offset,0)==0);
     F(0x40384)=NAN;MOVE(10,10);CHECK(APPLY()==0);F(0x40384)=55;
     input.dx=INFINITY;CHECK(APPLY()==0 && !input.dx);
     CHECK(F(0x10100)==34 && F(0x10104)==-12 && F(0x31024)==-179);

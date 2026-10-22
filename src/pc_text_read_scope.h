@@ -28,10 +28,13 @@ static inline size_t pc_text_read_region(PcTextReadScope *scope,uintptr_t addres
         if(address>=first && address-first<scope->regions[i].bytes)
             return scope->regions[i].bytes-(address-first);
     }
-    size_t bytes=pc_guest_region(address,0);
+    PcGuestRegion region=pc_guest_query_region(address);
+    size_t bytes=pc_guest_region_remaining(&region,address,0);
     if(scope->depth && bytes) {
         unsigned i=scope->next++%8;
-        scope->regions[i].first=address;scope->regions[i].bytes=bytes;
+        /* Cache the OS-validated interval, not only its suffix. Guest stack
+           reads descend and adjacent labels need not be visited in order. */
+        scope->regions[i].first=region.base;scope->regions[i].bytes=region.size;
     }
     return bytes;
 }

@@ -62,11 +62,11 @@ static IDirect3DTexture8 *sample_cached(void) {
     return e->host;
 }
 static void setup(int wide) {
-    g_textures[0]=(texture_entry){0x10000,0x123456,6<<8,0,&old_object,1,wide?0x34u:6u,1,2};
+    g_textures[0]=(texture_entry){0x10000,0x123456,6<<8,0,&old_object,1,wide?0x4bu:6u,1,2};
     memset(g_bound,0,sizeof g_bound);g_bound[0]=g_bound[2]=&old_object;
     pc_surface_precision_reset(&g_surface_precision);
     if(!wide)assert(pc_surface_precision_set(&g_surface_precision,0,0x10000));
-    desired=wide?6u:0x34u;gpu_state=0;deferred=1;
+    desired=wide?6u:0x4bu;gpu_state=0;deferred=1;
     creates=copies=releases=bindings=flushed=old_released=new_released=g_skip_create=0;
     fail_create=fail_copy=0;layout_ok=1;
 }

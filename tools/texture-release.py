@@ -1,4 +1,4 @@
-"""Publish opt-in DDS packs as bounded GitHub release assets, never Git blobs.
+"""Publish opt-in repository DDS packs as bounded GitHub release assets.
 
 Only keyed DDS and sanitized provenance metadata are uploaded. Source artwork,
 original game files, absolute paths, saves and settings never enter the package.
@@ -92,16 +92,28 @@ def audit(pack):
 
 
 def groups(records):
-    batch, size = [], 0
-    for record in records:
-        n = record[0].stat().st_size+len(record[1])
-        if batch and size+n > RAW_PART_LIMIT:
+    # Stable key buckets keep additions from shifting unrelated download parts.
+    for prefix in '0123456789abcdef':
+        batch, size = [], 0
+        for record in records:
+            if not record[0].stem.startswith(prefix):
+                continue
+            n = record[0].stat().st_size+len(record[1])
+            if batch and size+n > RAW_PART_LIMIT:
+                yield batch
+                batch, size = [], 0
+            batch.append(record)
+            size += n
+        if batch:
             yield batch
-            batch, size = [], 0
-        batch.append(record)
-        size += n
-    if batch:
-        yield batch
+
+
+def file_index(records):
+    files = {}
+    for path, metadata, sha in records:
+        files[path.name] = sha
+        files[path.with_suffix('.json').name] = hashlib.sha256(metadata).hexdigest()
+    return files
 
 
 def archive(records, destination):
@@ -129,15 +141,16 @@ def archive(records, destination):
 
 
 def validate_manifest(value):
-    if (value.get('schema') != 1 or not VERSION.fullmatch(value.get('version', ''))
+    if (value.get('schema') not in (1, 3) or not VERSION.fullmatch(value.get('version', ''))
             or not isinstance(value.get('texture_count'), int)
             or not 0 < value['texture_count'] <= 20000
             or not isinstance(value.get('installed_bytes'), int)
             or not 0 < value['installed_bytes'] <= BUDGET
             or not isinstance(value.get('parts'), list)
-            or not 0 < len(value['parts']) <= 128):
+            or not 0 < len(value['parts']) <= 256):
         raise ValueError('Invalid texture manifest')
     names = set()
+    files = set()
     for part in value['parts']:
         name = part.get('name', '')
         if (not re.fullmatch(r'textures-[0-9]{3}\.zip', name) or name in names
@@ -145,6 +158,17 @@ def validate_manifest(value):
                 or not isinstance(part.get('size'), int) or not 0 < part['size'] <= PART_LIMIT):
             raise ValueError('Invalid texture part')
         names.add(name)
+        if value['schema'] == 3:
+            index = part.get('files')
+            if (not isinstance(index, dict) or not 0 < len(index) <= 40000
+                    or any(not re.fullmatch(r'[0-9a-f]{16}\.(dds|json)', key)
+                           or not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
+                           or key in files for key, sha in index.items())
+                    or any(str(Path(key).with_suffix('.json' if key.endswith('.dds') else '.dds')) not in index for key in index)):
+                raise ValueError('Invalid texture file index')
+            files.update(index)
+    if value['schema'] == 3 and len(files) != value['texture_count'] * 2:
+        raise ValueError('Texture file count does not match manifest')
     return value
 
 
@@ -194,7 +218,7 @@ def publish(pack, version, output, work, api):
             'prerelease': '-' in version, 'make_latest': 'false',
             'body': ('Optional texture alpha for TimeSplitters: Future Perfect. '
                      'Use the launcher’s Game settings → Graphics & resolution → '
-                     'Download 4K texture pack when available. The launcher downloads and installs '
+                     'Download / update textures. The launcher downloads and installs '
                      'these parts automatically; do not concatenate the ZIPs.\n\n'
                      f'{len(records):,} replacements, up to 4K for selected surfaces. '
                      'This is an incomplete modern reinterpretation, not a full-game remaster. '
@@ -203,14 +227,14 @@ def publish(pack, version, output, work, api):
                      'No ISO, game executable, original game archives, personal settings or saves are included.')
         })
     assets = {a['name']: a for a in release['assets']}
-    manifest = dict(schema=1, version=version, texture_count=len(records),
+    manifest = dict(schema=3, delivery='optional', published=True, version=version, texture_count=len(records),
                     installed_bytes=total, parts=[])
     for i, batch in enumerate(groups(records), 1):
         name = f'textures-{i:03}.zip'
         part = work/name
         try:
             archive(batch, part)
-            record = dict(name=name, size=part.stat().st_size, sha256=digest(part))
+            record = dict(name=name, size=part.stat().st_size, sha256=digest(part), files=file_index(batch))
             found = assets.get(name)
             if found and (found.get('size') != record['size'] or found.get('digest') != 'sha256:'+record['sha256']):
                 raise ValueError('This texture version already has different content. Choose a new version.')
@@ -246,9 +270,9 @@ def publish(pack, version, output, work, api):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('publish', 'verify'))
-    parser.add_argument('--pack', type=Path, default=ROOT/'private/texture-remaster/pack')
+    parser.add_argument('--pack', type=Path, default=ROOT/'assets/textures')
     parser.add_argument('--version')
-    parser.add_argument('--manifest', type=Path, default=ROOT/'config/texture-pack.json')
+    parser.add_argument('--manifest', type=Path, default=ROOT/'config/texture-download.json')
     parser.add_argument('--work', type=Path, default=ROOT/'build/texture-publication')
     parser.add_argument('--remote', action='store_true')
     args = parser.parse_args()

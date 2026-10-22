@@ -5,43 +5,54 @@
 This branch contains **2,046 replacements**, about **1.72 GiB installed**, covering
 approximately 30% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
-These additions enter game downloads after integration and a normal game release. Major surfaces use up to 4K; smaller
+These additions enter optional texture downloads after integration and publication. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
 source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
 
 ## Install through the launcher
 
-Install or update the game through the launcher. New game-version packages
-include the pack in `Textures/`; no separate texture release is required.
-Launcher 1.2.22 or newer supports these game packages. The launcher bootstrap
-stays small. In game, select **Display settings → Textures → Enhanced**.
-Classic remains available. Game updates seed missing texture pairs and preserve
-existing custom replacements, saves and settings. A launcher with the retirement
-migration removes explicitly retired bundled icon pairs only when their hashes
-match; older published launchers require an update to perform this migration. To replace existing custom pairs,
-use **Install pack ZIP** or **Install pack folder**, with the game closed.
-The old download button explains that textures now come with game updates.
+The upcoming shared Windows/Mac launcher offers **Game settings → Graphics &
+resolution → Check texture downloads → Download / update textures**. Normal game
+packages omit the pack. Existing bundled packs remain installed and usable.
+The launcher compares file hashes, skips matching parts, downloads changed parts
+and merges their keys. Matching official keys are updated; unrelated custom
+textures, saves and settings remain. Downloads require confirmation, including
+when opted into checks on opening Settings. Cancelled updates keep completed parts
+and restore the part in progress. Classic remains the default; save the Enhanced
+checkbox separately to enable replacements on launch. See [launcher usage](launcher.md).
 
 ## Texture build dependency
 
-Compiled DDS files live in `assets/textures` through **Git LFS**, alongside
-sanitized JSON metadata. An LFS-enabled clone supplies them. Existing checkouts:
+Sanitized DDS/JSON remain in `assets/textures`, with DDS stored through Git LFS.
+Ordinary source builds and game packages do not hydrate or bundle them. For asset
+work run `git lfs pull`; optional publication audits DDS/mips, hashes, metadata
+and the 6 GiB budget. Explicit offline bundles use packager `--with-textures` or
+`--texture-pack PATH`; official publishing enforces texture-free game downloads.
+The nested source ZIP also omits compiled textures. Source launches can continue
+to use `assets/textures` when present. Building never enables Enhanced or changes
+personal settings. Players still supply their original game data.
 
-```sh
-git lfs install
-git lfs pull
-```
+## Publishing optional pack updates
 
-Windows and Mac builds audit repository textures, rejecting unresolved pointers,
-invalid DDS/mips, mismatched hashes and packs over 6 GiB. No separate release
-is downloaded. Both packagers stream textures into the game ZIP and record
-hashes in `BUILD.json`, without making a staging copy. Use `--texture-pack`
-for an explicit artist-pack override. Source launches select repository textures.
-Mac `--texture-pack` overrides the source launch selection.
+1. Audit and hydrate the committed `assets/textures` pack. Keep private source art
+   out of publication. Choose a new texture version; published versions are immutable.
+2. Run `python tools/texture-release.py publish --version X.Y.Z`. This streams at
+   most one bounded part at a time, verifies uploaded hashes and writes the public
+   schema-3 file index to `config/texture-download.json`. It does not replace the
+   separate repository catalog `config/texture-pack.json`.
+3. Run `python tools/texture-release.py verify --remote`, review and commit the
+   generated download manifest, then merge it into main. The launcher reads that
+   manifest. Publish the updated Windows and Mac launchers for the new controls.
+4. Subsequent updates repeat with a new texture version. File hashes let older
+   bundled packs and partial downloads be reused without a historical receipt.
 
-Lightweight builds accept `-SkipTextures` (Windows) or `--without-textures`
-(Mac); both packagers accept `--without-textures`. Players still supply original
-game data. Building does not enable Enhanced or change personal settings.
+The checked-in `published: false` placeholder is intentional until the first
+optional release is published. No pack or launcher is published just by changing
+this source. Stable key-prefix buckets reduce part churn as new textures are added.
+Each archive is capped at 64 MiB compressed and generated from at most 48 MiB raw;
+installer validation bounds expanded content too. Optional updates do not prune
+unknown keys. Game packages retain the earlier exact-hash retirement policy for
+original character icons; custom-modified icon pairs are preserved.
 
 ## Preview an installed local pack
 
@@ -217,12 +228,12 @@ git push
 The exporter audits the pack, strips private paths/prompts and creates Git LFS
 objects. Git push uploads them with the source revision. On the art workstation,
 `--pointers-only` avoids a second working copy; run `git lfs pull` before
-building that checkout, or package with an explicit artist-pack override.
+publishing optional assets, or package with an explicit artist-pack override.
 LFS retains an object cache as well as hydrated files. Avoid hydrating unrelated
 worktrees and never prune unpushed objects.
 
 The **Repository texture pack** workflow downloads LFS content and checks every
 DDS, metadata file and declared size/count. Unrelated CI jobs keep pointer-only
-checkouts. Merge approved updates into main; the next normal game-version
-release packages the committed textures. Do not publish separate texture
-releases. Issue #74 stays open until the overhaul is complete.
+checkouts. Merge approved assets into main, then follow Publishing optional pack
+updates above to make them available in the launcher. Ordinary game releases do
+not carry the pack. Issue #74 stays open until the overhaul is complete.

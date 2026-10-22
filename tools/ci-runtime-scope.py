@@ -26,6 +26,7 @@ RELEASE_INPUTS = {
     'tools/package-native-mac.py', 'tests/test_native_mac_package.py',
     'config/native-mac-runtime-licenses.json',
     'tools/build_textures.py', 'tests/test_build_textures.py',
+    'tools/texture-release.py', 'tests/test_texture_release.py',
 }
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.

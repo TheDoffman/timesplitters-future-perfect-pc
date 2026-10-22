@@ -175,3 +175,20 @@ def test_retirement_policy_travels_with_pack_and_rejects_reintroduction(tmp_path
     path.write_text(json.dumps(policy))
     with pytest.raises(ValueError, match='Retained-original'):
         textures.ensure_pack(tmp_path, source)
+
+
+def test_optional_identity_preserves_retirement_policy_without_assets(tmp_path):
+    assert textures.optional_identity(tmp_path) is None
+    config = tmp_path/'config'
+    config.mkdir()
+    key = '0123456789abcdef'
+    pair = {'dds': 'a'*64, 'json': 'b'*64}
+    policy = config/'texture-originals.json'
+    policy.write_text(json.dumps({'keys': [key], 'retired': {key: pair}}))
+    assert textures.optional_identity(tmp_path) == {'delivery': 'optional', 'retired': {key: pair}}
+    with pytest.raises(ValueError, match='Retained-original'):
+        textures.retired_textures(tmp_path, [key])
+    pair['dds'] = 'bad'
+    policy.write_text(json.dumps({'keys': [key], 'retired': {key: pair}}))
+    with pytest.raises(ValueError, match='retired texture identity'):
+        textures.optional_identity(tmp_path)
