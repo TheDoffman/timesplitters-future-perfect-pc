@@ -1,3 +1,43 @@
+## 2026-10-22 — Combined crowd and live-FPS test build
+
+Local branch `test/crowd-and-fps-handoff` combines PR #295 (`d1f924d`) with
+PR #296's handoff fix and CI-ordering repair. Both PRs remain separate and
+unmerged. Supported Windows Build passes, with 79 selected frame-clock,
+text-read-scope and native-timing tests, plus 11 repository-context checks.
+The ready-to-play executable SHA-256 is
+`679d4d4772fa901aef3a81fc57625c77c298df15e97c2490eec8dd869e9361de`.
+These are local development results, not a published release.
+
+Two isolated Hotel ten-bot runs at 3440×1440, FOV 73, Classic, native 144 use
+the prior combat/death/respawn route and the same spawn+5 through spawn+55
+second measurement window. No captures or CPU sampler run. Strict analysis
+checks full clock coverage, consecutive guest frames and actual gameplay state.
+
+| Combined run | Mean FPS | p95 ms | p99 ms | Worst ms | Frames >9 ms | Slowest 1 s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| First valid run | 143.079 | 8.088 | 8.749 | 72.171 | 0.643% | 130 frames |
+| Repeat | 143.021 | 8.129 | 8.868 | 18.393 | 0.671% | 131 frames |
+
+The first valid run has one interval over 33.33 ms, followed by 24.888 ms;
+its measured Present body is only 0.099 ms. The stall's cause is unproven.
+It does not recur in the repeat, which has no interval over 33.33 ms and no
+local shell/CI queries during the measured combat window. Do not discard the
+outlier or infer that scheduling caused it. Combat is nondeterministic; this
+supports retained crowd-performance gains, not locked 144 or hitch-free play.
+Endpoint game-clock/wall-clock ratios are 0.999672 and 0.999935; neither proves
+full movement/weapon/animation parity. All measured presents are guest frames.
+Both runs close cleanly with unchanged valid profile signatures and preserved
+canonical fixtures. Native Mac gameplay/performance and online human matches
+remain unverified under MAC-002/MAC-060.
+
+The first combined attempt queued menu input ten seconds earlier than previous
+runs and never left scene 101. Strict analysis rejected it; it is not gameplay
+performance evidence. The ignored adapter now retains the original absolute
+startup delay. Valid runs are `crowd-handoff-verified` and
+`crowd-handoff-repeat`, with raw reports/provenance under `private/test-saves`
+and strict summaries in `logs/crowd-handoff-*-matrix.json`. The stale attempt
+and rejection remain available for audit.
+
 ## 2026-10-22 — Native startup to Original 60 handoff
 
 On `fix/live-fps-clock-handoff` from main 564fda6, shared Swap/Present paths

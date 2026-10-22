@@ -3599,6 +3599,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Combined local Windows validation (2026-10-22):** A local test branch
+  combines PR #295's text-read optimization with PR #296's clock handoff fix.
+  Two ten-bot Hotel runs average 143.079/143.021 FPS at 3440×1440. One 72.171 ms
+  interval does not recur on repeat; its cause remains unproven. Shared-source
+  tests pass; native Mac gameplay and timing remain awaiting validation. See
+  the combined-build section in STATUS.md for provenance and remaining limits.
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already
