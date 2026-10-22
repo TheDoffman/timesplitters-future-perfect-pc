@@ -26,6 +26,14 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+Original contact-term routine `168720` sets penetration escape velocity using
+the authored 60-Hz constant times 0.2 and clamped overlap (0..0.1 world units),
+then combines it with restitution at contact+0x20. That output is a velocity,
+not per-frame displacement. Do not multiply it by the render target. The full
+rigid-motion fixture checks nonzero depth, rebound and quantized normals against
+an independent impulse equation; source/fixture evidence does not replace live
+contact generation and terrain coverage.
+
 `pc_native_contact_guest.inc` observes exact `172114 -> 171560` solver entry
 before the RNG scope changes. It runs in Original and native modes when explicitly
 enabled. `pc_native_contact_trace.h` reads the current generated arena and selected

@@ -5981,6 +5981,26 @@ Independent frame-bracketed camera samples near Z30 are 10.15778/10.13406/
 not pacing evidence or full original-versus144 acceptance. See STATUS and
 `logs/vehicle-solver-comparison.json` for scope, provenance and exclusions.
 
+The subsequent `vehicle-integrated-solver-144-detour` reaches the jeep using
+normal walking waypoints around the obstructing column, then runs the same
+jeep inputs. Its 241 solver entries include 655 selected contacts within
+Z60..80; the jeep continues to the bank near Z105.204. The first object normal
+points sideways (-0.9962,-0.0654,+0.0573), unlike the original-clock front normal
+(-0.0551,0,-0.9921). Allocated records contain four side-facing normals and no
+front-facing normals in that window; selection may already have merged them.
+This identifies different contact geometry entering the solver, not a proven
+missed response. Approach differences and broader handling remain open.
+Camera/body distance near Z30 is 10.01738 at144 versus 10.15778 at original60;
+114 settled pause observations are stationary. These captured synthetic-control
+runs remain separate from pacing and scanout measurements.
+
+The original rigid fixture also checks 576 nonzero-depth/rebound/quantized-normal
+cases against an independent generalized impulse with unit inverse inertia.
+Original penetration correction is already a velocity (12 * clamped overlap),
+not a per-frame displacement. Dropping that term fails the new counterfactual.
+All 19 vehicle tests pass; controlled geometry and the private-XBE requirement
+limit this evidence. No runtime mechanics change follows from the audit.
+
 ## Native-start return to Original 60 (2026-10-22)
 
 The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing

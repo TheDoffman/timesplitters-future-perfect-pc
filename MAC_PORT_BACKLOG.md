@@ -3655,6 +3655,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Corner-contact follow-up (2026-10-22, PR #307):** Windows `20dc25d`
+  completes a new native144 walking detour and jeep probe. Solver-entry records
+  show side-facing contacts at144 versus front-facing contacts in the genuine
+  Original60 run, with small approach differences. The different outcome is
+  not proof of skipped solver work; broader handling remains unverified. The
+  existing rigid fixture adds 576 overlap/restitution/quantized-normal cases
+  against independent impulses; all 19 vehicle tests pass locally. These
+  private-XBE cases skip in asset-free CI. No runtime change or new OS adapter;
+  actual Mac gameplay is still pending. See STATUS for measurements and limits.
+
 **Live vehicle reference correction:** the vehicle camera/steering/terrain
 recordings labeled 60 used native60, not Original60. Startup logs and the new
 solver flag confirm this. Their measured values remain valid, but original-clock

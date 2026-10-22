@@ -68,7 +68,7 @@ def test_physics_wrapper_retains_original_body():
                              (0x1753a0, 0x175508), (0x1677e0, 0x167877),
                              (0x16e780, 0x16e867), (0x16da90, 0x16df5b)],
      ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep',
-      'legacy-character-contact', 'missing-wall']),
+      'legacy-character-contact', 'missing-wall', 'missing-penetration']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -116,6 +116,7 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
                     'legacy-camera-count': 'camera fps=60 mode=1',
                     'missing-contact': 'fps=60 forced=2',
                     'missing-wall': 'wall_contact fps=60',
+                    'missing-penetration': 'penetration fps=60',
                     'legacy-secondary': 'rigid_mixed mode=1',
                     'legacy-character-contact': 'character_contact fps=120',
                     'legacy-body-sleep': 'rigid_sleep fps=120'}.get(mutation, 'fps=120')

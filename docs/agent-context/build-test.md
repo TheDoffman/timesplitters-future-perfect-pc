@@ -25,6 +25,17 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+The rigid-motion fixture additionally checks 576 overlap/rebound cases using
+the original contact-term/solver/integrator functions: signed/capped depths,
+restitution, unit and quantized normals, centered/eccentric points, static kinds
+0/2 and regular/irregular timing. Expected impulse includes the original escape
+velocity (12 * clamped overlap), with authored drag in the linear bound; energy
+must not grow for the tested closing contacts. `missing-penetration` removes only
+the escape-velocity term and must fail. This fixture controls geometry, uses
+closing speed12/inverse mass0.5/unit inverse inertia, and requires the private XBE.
+It is not a live corner replay. STATUS records the subsequent successful144
+walking detour and the different front/side contact normals versus Original60.
+
 Live vehicle reference correction: `--native-fps 60` means native60, not
 Original60. Existing `vehicle-*-60` camera, steering and terrain recordings use
 that setting, confirmed by their startup logs and solver flag. Their old

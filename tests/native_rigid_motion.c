@@ -31,6 +31,9 @@ static unsigned publications,sleeps;
 static unsigned vehicle_updates;
 static int character_contact,legacy_contact;
 static int wall_contact,missing_wall;
+static int penetration_contact,missing_penetration;
+static unsigned contact_kind;
+static float contact_depth,contact_restitution;
 static float contact_normal[3],contact_offset[3];
 static void impact_callback(void);
 static double seconds;
@@ -49,7 +52,8 @@ static double seconds;
      (value) : pc_native_global_load(site,address,value))
 #undef RECOMP_F32_MUL_AT
 #define RECOMP_F32_MUL_AT(site,left,right) \
-    ((site)==0x172099 && legacy ? (left)*(right) : pc_native_multiply(site,left,right))
+    ((site)==0x1689ACu && penetration_contact && missing_penetration ? 0.f : \
+    (site)==0x172099 && legacy ? (left)*(right) : pc_native_multiply(site,left,right))
 /* The other ADDSS sites in these lifted routines have identity policy. */
 #undef RECOMP_F32_ADD_AT
 #define RECOMP_F32_ADD_AT(site,left,right) \
@@ -81,7 +85,8 @@ void sub_00170500(void) {
             MEMF(CONTACT+0xc+i*4)=contact_normal[i];
         }
         MEM32(CONTACT+0x24)=PROP;MEM32(CONTACT+0x28)=STATIC_PROP;
-        MEM16(CONTACT+0x2e)=2;MEM32(STATIC_PROP+0x80)=0xffffffff;
+        MEM16(CONTACT+0x2e)=contact_kind;MEM32(STATIC_PROP+0x80)=0xffffffff;
+        MEMF(CONTACT+0x18)=contact_depth;MEMF(CONTACT+0x20)=contact_restitution;
         if(character_contact) {
             MEM16(CONTACT+0x2e)=3;MEM32(STATIC_PROP+0x7c)=CHARACTER;
             MEMF(STATIC_PROP+0xfc)=2.f*MEMF(0x4e794c)/60.f;
@@ -126,7 +131,8 @@ static void impact_callback(void) {
 static void reset(int forced)
 {
     memset((void *)(g_xbox_mem_offset+BODY),0,0x9000);
-    character_contact=wall_contact=0;
+    character_contact=wall_contact=penetration_contact=0;
+    contact_kind=2;contact_depth=contact_restitution=0;
     for(unsigned i=0;i<3;i++) {contact_normal[i]=i==1?1.f:0.f;contact_offset[i]=0;}
     contact_mode=forced==2?1:forced==3?3:0;
     MEM32(0x7497c8)=0;MEM32(0x4e7950)=1;MEM32(0x4e7954)=0;
@@ -201,7 +207,8 @@ int main(int argc,char **argv)
     legacy_sleep=argc>1 && !strcmp(argv[1],"legacy-body-sleep");
     legacy_contact=argc>1 && !strcmp(argv[1],"legacy-character-contact");
     missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");
-    missing_wall=argc>1 && !strcmp(argv[1],"missing-wall");setbuf(stdout,NULL);
+    missing_wall=argc>1 && !strcmp(argv[1],"missing-wall");
+    missing_penetration=argc>1 && !strcmp(argv[1],"missing-penetration");setbuf(stdout,NULL);
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
@@ -391,5 +398,58 @@ int main(int argc,char **argv)
         wall_cases++;
     }
     printf("wall_summary cases=%u max_linear_error=%.9f max_angular_error=%.9f\n",wall_cases,max_linear_error,max_angular_error);
+    /* Real pillar contacts include quantized normals, shallow overlap and
+     * rebound. Original168720 specifies an escape speed in world units/sec:
+     * max(12*clamp(-depth,0,.1), restitution*closing). It is not per-frame
+     * displacement. Test the full solver against an independent generalized
+     * impulse, retaining authored drag and unit inverse inertia. Geometry is
+     * still controlled; this is not a replay of the live corner encounter. */
+    const float depths[]={-.006f,-.05f,-.15f,.02f},rebounds[]={0,.004f,.4f};
+    unsigned overlap_cases=0;double overlap_linear_error=0,overlap_angular_error=0;
+    for(unsigned depth=0;depth<4;depth++)for(unsigned rebound=0;rebound<3;rebound++)
+    for(unsigned normal=0;normal<2;normal++)for(int arm=-1;arm<=1;arm++)
+    for(unsigned kind=0;kind<2;kind++)for(unsigned rate=0;rate<4;rate++) {
+        unsigned fps=rate==0?60:rate==1?120:144;
+        g_tsfp_native_timing_active=rate!=0;reset(2);penetration_contact=1;
+        contact_depth=depths[depth];contact_restitution=rebounds[rebound];contact_kind=kind?2:0;
+        float n[3]={normal?-7.f/127.f:0,0,normal?-126.f/127.f:-1.f};
+        double norm2=(double)n[0]*n[0]+(double)n[2]*n[2],offset=arm*.25;
+        double cross[3]={offset*n[2],0,-offset*n[0]},cross2=cross[0]*cross[0]+cross[2]*cross[2];
+        double initial[3],target=fmax(12.*fmin(fmax(-contact_depth,0),.1),12.*contact_restitution);
+        double impulse=(12.+target)/(.5*norm2+cross2),initial_energy=0;
+        for(unsigned i=0;i<3;i++) {
+            contact_normal[i]=n[i];contact_offset[i]=i==1?(float)offset:0;
+            MEMF(FORCE+i*4)=MEMF(FORCE+12+i*4)=0;
+            initial[i]=-12.*n[i]/norm2;MEMF(BODY+0x14c+4*i)=(float)initial[i];
+            MEMF(BODY+0x128+4*i)=MEMF(BODY+0x134+4*i)=0;
+            initial_energy+=initial[i]*initial[i];
+        }
+        float ticks=0;unsigned frame=0;
+        while(ticks<1.f) {
+            float delta=rate==3?(frame%2?.8f:.2f):60.f/fps;
+            if(delta>1.f-ticks)delta=1.f-ticks;
+            unsigned whole=(unsigned)(ticks+delta)-(unsigned)ticks;
+            step(whole,delta);ticks+=delta;frame++;
+        }
+        printf("penetration fps=%u mode=%u depth=%u rebound=%u normal=%u arm=%d kind=%u target=%.9f\n",
+               fps,rate,depth,rebound,normal,arm,contact_kind,target);
+        /* Linear speed cannot exceed the initial kinetic-energy bound here.
+         * Allow authored drag .001*v * inverse_mass over one tick, plus
+         * roundoff. Angular response has an independent roundoff bound. */
+        double linear_tolerance=.001*sqrt(initial_energy)*.5/60.+.00002;
+        double energy=0;
+        for(unsigned i=0;i<3;i++) {
+            double expected_v=initial[i]+.5*impulse*n[i],expected_w=impulse*cross[i];
+            float v=MEMF(BODY+0x14c+4*i),w=MEMF(BODY+0x134+4*i);
+            double ve=fabs(v-expected_v),we=fabs(w-expected_w);
+            if(ve>overlap_linear_error)overlap_linear_error=ve;
+            if(we>overlap_angular_error)overlap_angular_error=we;
+            assert(isfinite(v) && isfinite(w) && ve<linear_tolerance && we<.00002);
+            energy+=(double)v*v+.5*(double)w*w;
+        }
+        assert(energy<=initial_energy+.0001);overlap_cases++;
+    }
+    printf("penetration_summary cases=%u max_linear_error=%.9f max_angular_error=%.9f\n",
+           overlap_cases,overlap_linear_error,overlap_angular_error);
     free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support/contact impulse, fresh steps and pause");return 0;
 }

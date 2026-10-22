@@ -1,3 +1,51 @@
+## 2026-10-22 — Native144 corner-contact evidence and overlap checks
+
+The same `20dc25d` Windows executable completes a new bounded native144 run.
+Normal walking inputs detour through X/Z (30,35) and (0,20) around the column
+that blocked the prior approach; jeep inputs remain unchanged. Entry, throttle,
+pause/resume and profile-preservation checks pass. The trace independently
+verifies native mode and records 241 solver entries, 660 allocated target
+records and 655 selected records while the jeep is within Z60..80. The vehicle
+continues onto the bank, ending near X-8.420/Z105.204; the capture confirms this.
+
+The first object contact differs from genuine Original60: native144 touches a
+side-facing plane near body Z67.488, normal (-0.9962,-0.0654,+0.0573), whereas
+Original60 touches the front near Z67.118, normal (-0.0551,0,-0.9921). Within
+the recorded window, the native144 allocated object records contain four
+side-facing normals and no front-facing ones; Original60 has 28 front-facing
+records. Selection can already have merged these arena records. They establish
+different geometry entering the solver, not untouched producer output. Small
+position/yaw differences exist before contact. This supports a corner-grazing
+explanation and does not demonstrate a skipped solver contact; it does not yet
+isolate all sources of the trajectory difference or certify broader handling.
+
+The native144 run has 3,516 asynchronous body observations, zero steering,
+zero bots and 114 stationary settled-pause samples. Its frame-bracketed camera
+distance near Z30 is 10.01738 units versus 10.15778 in the genuine Original60
+run (valid ownership/mode24/FOV55; native144 read 0.105 ms). This is short-route
+behavior evidence with synthetic inputs and captures, not pacing or scanout
+acceptance. The normal playable executable is restored. The failed earlier144
+approach remains excluded; evidence is in `vehicle-integrated-solver-144-detour`
+and the updated `logs/vehicle-solver-comparison.json` / camera check.
+
+Original `168720` already specifies penetration escape velocity in world units
+per second: 60 * 0.2 * clamp(-depth,0,0.1), combined with restitution. It does
+not need an FPS multiplier. The rigid-motion fixture now checks 576 additional
+cases against an independent generalized impulse equation: four signed/capped
+depths, three restitution values, unit/quantized normals, centered/eccentric
+points, static contact kinds0/2 and Original60/native120/native144/irregular
+intervals. These closing contacts use speed12, inverse mass0.5 and unit inverse
+inertia. Linear tolerance includes authored drag; angular response and kinetic
+energy have separate checks. Removing only the penetration term fails the new
+assertion. Maximum linear/angular errors are 0.000034368 / 0.000008169.
+
+All 19 vehicle tests pass in 44.82 seconds, including prior counterfactuals.
+The new checks require the supported private US XBE; asset-free hosted CI skips
+those original-routine cases. No runtime mechanics change or new game build was
+made for this audit. Native Mac gameplay, full terrain handling and pacing
+remain open. All selected CI passes at preceding head `fcdbad2`; fresh test/docs
+head checks must be tracked separately.
+
 ## 2026-10-22 — Correction to live vehicle reference-clock labels
 
 The solver trace exposed a validation-label error: prior live `vehicle-*-60`
@@ -60,8 +108,8 @@ with valid camera ownership/mode24/FOV55; reads take at most 0.120 ms. These are
 asynchronous diagnostics with captures and synthetic controls, not pacing or
 scanout measurements. Evidence: `logs/vehicle-solver-comparison.json`,
 `logs/vehicle-solver-camera-check.json` and per-run trace/provenance/captures.
-The normal playable executable is restored and verified. Full handling, true
-original-versus144 live comparisons, physical input and Mac acceptance remain open.
+The normal playable executable is restored and verified. Full handling, broader
+original-versus144 comparisons, physical input and Mac acceptance remain open.
 
 ## 2026-10-22 — Controlled contact impulse audit
 
