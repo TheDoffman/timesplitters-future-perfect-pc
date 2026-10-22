@@ -63,10 +63,13 @@ def main():
     parser.add_argument('--trace-surface-images',action='store_true',help='Read back up to 360 Scotland procedural images; synchronous GPU diagnostics, not a pacing test')
     parser.add_argument('--watch-surfaces',action='store_true',help='Observe the five procedural texture resources; asynchronous metadata, not image or update-cadence proof')
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
+    parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     parser.add_argument('--scenario',choices=['weapon-set'])
     args=parser.parse_args()
+    if args.watch_input and args.trace_vehicle_contact:
+        parser.error('--watch-input and --trace-vehicle-contact select different bounded function traces; run them separately')
     if args.trace_surface_switches and not args.trace_surface_images:
         parser.error("--trace-surface-switches requires --trace-surface-images")
     if args.live_surfaces and not (args.bias_surfaces and args.float_surfaces and args.fractional_surfaces):
@@ -120,6 +123,8 @@ def main():
     env['TSFP_SURFACE_FRACTIONAL_TEST']='1' if args.fractional_surfaces else '0'
     if args.watch_input:
         env.update(RECOMP_WATCH_VA='0x6B9408', RECOMP_TRACE_ONLY='sub_00042830,sub_00042870,sub_000428D0', RECOMP_TRACE_ONLY_MAX='32')
+    if args.trace_vehicle_contact:
+        env.update(RECOMP_TRACE_ONLY='sub_0017CAE0,sub_0017BC90,sub_00174EC0',RECOMP_TRACE_ONLY_MAX='64')
     if args.manual_start: replay.write_text('')
     def profiles():
         result={}

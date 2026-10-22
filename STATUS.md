@@ -113,7 +113,15 @@ suspension impulse response. This is controlled single-contact evidence,
 not a live character/vehicle or static-terrain acceptance result.
 The combined timing, vehicle, numeric-join and generation suite passes all
 115 tests (146.56 seconds); 77 context/backlog/scope checks also pass.
-Full Windows build and live acceptance of this addition remain pending.
+Supported Windows build `60e5b36` and its built-in checks pass
+(`logs/native-actor-impact-build.log`). Live acceptance remains pending.
+A bounded 144 FPS Siberia probe walks into the parked jeep and records the
+original actor callback `17CAE0` from player collision (`C4A41` return).
+Pause/resume passes, health remains 1.75 and the isolated profile is unchanged.
+This proves callback entry, not the taken branch, impulse magnitude or driving
+parity. The retained candidate is now `private/build-recovery/vehicle-60e5b36`;
+the previous `3e1ee87` pair was recycled and playable `4adb6b0` restored with
+its hash verified. See the regression record for evidence and remaining limits.
 
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 

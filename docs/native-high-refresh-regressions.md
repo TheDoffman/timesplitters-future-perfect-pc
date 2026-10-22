@@ -5796,4 +5796,34 @@ the before-fix run passes60 and zero-whole120, then fails the carried120 case:
 normal speed -10.4 instead of -5.2 (`logs/native-actor-impact-before.log`).
 The corrected fixture passes (`logs/native-actor-impact-after.log`), including
 negative controls restoring the old division or opening only the old gate.
-Full build, live vehicle/actor contacts and native Mac validation are pending.
+The combined timing/vehicle/numeric-join/generation suite passes 115 tests
+in 146.56 seconds. Supported Windows build `60e5b36` and its built-in checks
+pass (`logs/native-actor-impact-build.log`), using MSVC 14.44.35207 and
+Windows SDK 10.0.26100 with the common Xbox frontend. Executable SHA-256:
+`6431273bb202aa4a0efa9b66cd2611cd3b63191cd9b3cb111115d6aa59c224d4`.
+Live vehicle/actor acceptance and native Mac validation remain pending.
+
+The bounded native144 Siberia probe is recorded in
+`private/test-saves/vehicle-actor-trace-60e5b36-144` (`report.json`, selected
+captures, `run0.err`, `contact-probe.json`). It walks into the parked jeep
+without entering it, reaching 64 bounded `17CAE0` entries from the original
+player collision return `C4A41`. The scene also records 64 `17BC90` and ten
+`174EC0` entries; these include vehicle/world setup contacts and are not
+attributed to the player impact. Pause/resume changes the observed pause
+flag 0/1/0, health stays 1.75, and the isolated profile/signatures are intact.
+The reviewed contact capture shows the player stopped beside the jeep.
+Entry traces do not expose the actor argument/type or confirm that a particular
+entry reached `17CBD6`; they do not measure impact strength or repeated-contact
+parity. No locked-144 FPS or full handling claim follows from this probe.
+
+The first probe (`vehicle-actor-60e5b36-144`) reached the same scene but had
+no function trace because `prepare_run` correctly strips inherited debug
+environment variables. The runner now accepts explicit `--trace-vehicle-contact`
+after isolation, with a 64-entry budget per function, mutually exclusive with
+the different `--watch-input` function trace. The repeated probe uses that flag.
+Both bounded child processes exited normally and disposable partitions were
+cleaned by the runner. The new candidate EXE/PDB is retained under
+`private/build-recovery/vehicle-60e5b36`; the superseded `3e1ee87` pair was
+recycled. Playable `4adb6b0` was restored with its previously recorded hash
+verified. The root object cache remains the newer candidate, requiring a
+fresh link after preserving the playable pair before any subsequent rebuild.

@@ -3653,13 +3653,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   character-contact addition. Native Mac execution and live spawn/contact
   acceptance remain pending. Candidate provenance and limits are in STATUS.
 
-  Actor/vehicle impact follow-up (same WIP branch): native divide
+  Actor/vehicle impact follow-up (`60e5b36`, same WIP branch): native divide
   `17CBD6` no longer normalizes already normalized entity velocity a second
   time. Original60 and callback cadence are preserved. Original publication,
   registration, queue delivery, contact construction and suspension response
   pass controlled direct/queued checks; old division and opening only the
-  gate both fail at120. No host adapter change. Full build/live vehicle-actor
-  contact and native Mac validation of this addition remain pending.
+  gate both fail at120. No host adapter change. Windows full build and its
+  built-in checks pass, along with 115 timing/vehicle/generation regressions.
+  Live vehicle-actor acceptance and native Mac validation remain pending.
+  A bounded Windows native144 probe reaches the actor callback in live
+  Siberia contact and passes pause/resume; it does not measure impact strength.
+  The current retained diagnostic build is `60e5b36`; playable `4adb6b0`
+  remains restored. These Windows results do not establish Mac execution.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

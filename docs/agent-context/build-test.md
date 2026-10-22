@@ -35,7 +35,7 @@ history and allocation failure. `legacy-spawn-motion` must fail at native120.
 This private-XBE fixture does not certify live model rendering or trajectories.
 Supported Windows build `3e1ee87` includes this fix and `6232685` contact
 velocity; the full build and built-in checks pass. The retained diagnostic
-pair is `private/build-recovery/vehicle-3e1ee87`. Normal playable `4adb6b0`
+pair was superseded by `private/build-recovery/vehicle-60e5b36`. Normal playable `4adb6b0`
 is restored, so force a fresh link when building from the candidate object
 cache again. Live spawn/contact and native Mac checks are still pending.
 `native_vehicle_actor_impact.c` in the same Python suite links original
@@ -45,6 +45,19 @@ registration/queue delivery `A5CE0/16C070/16C0D0`. Original `166060/1665F0`,
 selected impulses and suspension component changes. Movement/geometry and
 effects are controlled. Old divide and gate-only counterfactuals fail at120;
 all preset clock phases and mismatched producer/event intervals are covered.
+The complete Windows build and built-in checks pass at `60e5b36`, as do all
+115 combined timing/vehicle/numeric-join/generation checks. Live contact
+acceptance and Mac execution remain separate requirements.
+For a bounded live probe, `stability_transitions_game.py --trace-vehicle-contact`
+explicitly enables the three original contact/impulse entry traces (64 each)
+after environment isolation. Inherited `RECOMP_*` flags are intentionally
+stripped by `prepare_run`; they cannot enable these traces. The option cannot
+be combined with `--watch-input`. Entry traces identify callers and registers,
+not exact impulse arguments or matched full handling.
+The `vehicle-actor-trace-60e5b36-144` live probe reaches `17CAE0` from the
+player collision caller and passes pause/resume. Its entry-only trace does
+not establish the callback's taken branch or impact magnitude. The candidate
+EXE/PDB is retained; the normal playable pair is restored and hash verified.
 
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts
