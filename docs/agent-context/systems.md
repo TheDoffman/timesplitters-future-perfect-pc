@@ -57,6 +57,11 @@ on fractional updates. Original contact math and the body callback forwarding
 path verify the fix. In the controlled co-moving support case, body motion
 was already correct; the previously stale normal/vector notification changes.
 Character movement and world geometry remain fixture inputs, not live coverage.
+The object-spawn gate `172AB5` now retains animation-derived initial motion
+on fractional events. The original history copy and spawn/setter path test
+linear velocity and angular momentum, including a rotated owner transform,
+an offset model vertex, pause, absent history and allocation failure. This is
+shared numeric policy; live visual/physics and native Mac acceptance are pending.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

@@ -78,6 +78,16 @@ rigid-body contacts are unchanged. `native_contact_velocity.c` runs original
 to a controlled body callback, checking the reported relative velocity. Its
 zero material coefficients disable actual damage/effects. This does not
 establish live character collision or explain the static-pillar trajectory.
+Spawn gate `172AB5` now also uses advancing game time. Original `1727A0`
+creates a body from a model joint and optionally inherits its movement; this
+is a one-time spawn, not a continuously updated collider. Its existing
+`172B01` division already uses fractional time, but the integer gate dropped
+initial velocity/momentum on fractional spawns. `57040` copies joint history
+from the model matrices (called at `A7425`); `native_spawn_motion.c` runs that
+original copy, spawn, matrix math and `167CE0/167C00/167AE0` setters with
+controlled allocation/model services. Caller `2107E8` supplies a nonzero
+inheritance factor; `1FA7B2` explicitly disables it. Live spawn/rendering
+acceptance remains separate from this routine evidence.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

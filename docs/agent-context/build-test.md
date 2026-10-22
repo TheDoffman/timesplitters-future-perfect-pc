@@ -25,6 +25,15 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`native_spawn_motion.c`, registered in `test_native_vehicle_timing.py`, lifts
+original joint-history copy `57040`, object spawn `1727A0` and its real
+velocity/momentum setters and matrix helpers. Allocation, owner transform,
+Euler extraction, bounds/wake and the CRT floor service are controlled.
+Independent spawn events test all carried-clock phases at 60/120/144,
+signed inheritance, rotated transforms, vertex offsets, pause, missing
+history and allocation failure. `legacy-spawn-motion` must fail at native120.
+This private-XBE fixture does not certify live model rendering or trajectories.
+
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts
 the complete vehicle dispatcher, spring helper, linear adjustment, rest routine

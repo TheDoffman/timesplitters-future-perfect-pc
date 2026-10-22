@@ -5718,3 +5718,35 @@ expanded original notification-path fixture in 12.04 seconds
 tests require the private supported XBE. Full game build/live contact and
 native Mac execution of this correction remain pending. The playable crowd
 EXE/PDB and retained driver candidate `67c1864` are unchanged.
+
+### Initial motion inherited by spawned physics objects
+
+Original `1727A0` creates a physics object from a model joint. Its gate at
+`172AB5` checked integer time before inheriting the difference between current
+and previous joint positions. A spawn on a fractional native update therefore
+permanently lost its initial linear velocity and angular momentum. The
+conversion at `172B01` already divides by fractional game time; the temporary
+gate register is overwritten. The shared positive-time gate now includes this
+site, while Original60 and native pause retain their intended behavior.
+
+Joint history is copied by `57040`, called at `A7425` in the entity updater.
+Caller `2107E8` passes a nonzero inheritance factor; `1FA7B2` passes zero and
+intentionally disables inheritance. This routine creates an object once per
+event; it is not a continuous animated-collider update.
+
+`tests/native_spawn_motion.c` lifts full `57040/1727A0`, real linear-velocity
+and angular-momentum setters `167CE0/167C00/167AE0`, and their matrix helpers
+from the verified US XBE. Controlled services provide allocation, neutral
+Euler extraction, owner transforms, CRT floor, bounds and wake notification.
+The history routine samples the prescribed joint before it moves. Independent
+spawn events check every carried-clock phase at 60/120/144, signed/disabled
+inheritance, identity/rotated transforms, an offset vertex, slow/long intervals,
+pause with stale whole time, missing history, allocation failure and guest ABI.
+The before-fix run passes Original60 and fails native120's velocity assertion
+(`logs/native-spawn-motion-before.log`). After correction it passes, including
+the old-gate negative control (`logs/native-spawn-motion-after.log`). These
+checks establish initial body state, not live appearance or full trajectories.
+The broader Windows suite passes 114 timing/vehicle/translator/generation
+checks in 147.56 seconds (`logs/native-spawn-motion-regressions.log`) and 77
+context/backlog/scope checks in 1.17 seconds. Full game build, live spawn and
+native Mac validation are pending.

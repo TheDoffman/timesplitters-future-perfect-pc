@@ -3644,6 +3644,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   impact information. No new platform adapter. Full game build/live contact
   and Mac execution of this addition remain pending; source tests require XBE.
 
+  Spawn-motion follow-up (same WIP branch, commit titled `Preserve inherited motion on fractional object spawns`): shared gate `172AB5`
+  now preserves initial joint-derived velocity/momentum on fractional spawns.
+  Original history-copy, spawn and setter tests pass at 60/120/144 with
+  rotated transforms, signed inheritance, offset vertices and failure/pause
+  paths. The old gate fails at native120. No platform-specific code or adapter;
+  native Mac execution and live spawn acceptance remain pending.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

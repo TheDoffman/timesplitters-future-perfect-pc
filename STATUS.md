@@ -85,6 +85,16 @@ original-notification case. Full game build/live character-contact and native
 Mac validation of this last correction are pending. The existing playable
 binary and retained `67c1864` candidate remain unchanged.
 
+Spawn follow-up corrects `172AB5`: object creation previously skipped inherited
+joint velocity and angular momentum on fractional native frames. Original
+history-copy, spawn, setters and matrix math now pass at 60/120/144; restoring
+the old gate fails at native120. Controlled services supply allocation, model
+orientation and owner transforms. Pause, disabled inheritance, missing history
+and allocation failure are covered. This is a one-time spawn fix, not a change
+to continuous animation colliders. All 114 timing/vehicle/translator/generation
+regressions and 77 context/backlog/scope checks pass. Full build/live spawn
+acceptance is pending.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons
