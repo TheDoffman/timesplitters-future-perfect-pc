@@ -1,3 +1,26 @@
+## 2026-10-22 — Full-float procedural feedback candidate
+
+PR #298 head `496b636` passes all selected Windows/Mac native, upgrade and
+transition checks. The dependent `fix/native-water-float32` follow-up addresses
+another measured error in the disabled water experiment: repeated half-float
+render-target writes change the evolving image more than float32 writes.
+
+A deterministic 64x64 field now executes both original feedback pixel programs.
+Explicit diagonal offsets follow callback 0x2BF10; all pixels are compared to
+the controlled stencil. After one second, RMS blue differences from the same
+format's 60 FPS run are 0.001149/0.001341 for float32 at 120/144, versus
+0.013886/0.010135 for half-float. This excludes the original vertex program,
+smoothing, random forcing and full scene behavior. Remaining timestep drift
+and differences from original byte storage are explicit, not accepted parity.
+
+The opt-in policy now selects full-float intermediates; shared preservation
+also reconstructs their capture storage correctly. Normal-play defaults, guest
+headers and final byte textures remain unchanged. Existing GPU checks cover
+byte/half/full conversion and exact capture reconstruction. Eleven focused
+surface/GPU/transaction cases pass locally, plus 80 companion timing/queue/
+patch checks and four affected upgrade cases. Build/live and native Mac results
+for this follow-up are pending; the existing playable executable is unchanged.
+
 ## 2026-10-22 — Controlled coupled-water and upgrade follow-up
 
 The original second feedback shader now has a deterministic fixed-neighbor

@@ -3599,6 +3599,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Full-float feedback follow-up (2026-10-22, uncommitted):** The shared opt-in
+  policy selects 32-bit float intermediates to remove measured half-float
+  accumulation error. The common RHI already maps this format on D3D11/Vulkan;
+  preservation now handles its capture-storage channel order too. Local WARP
+  conversion and two-pass spatial diagnostics pass. Native Mac GPU/gameplay,
+  live preset switching and full scene dynamics remain awaiting validation.
+  Legacy GL remains unsupported for this experiment, as before; normal-play
+  defaults and original byte targets are unchanged. See STATUS for scope.
+
 - **Coupled-water follow-up (2026-10-22, PR #298):** Controlled Windows WARP
   execution distinguishes fractional coupling from float32/half-float/UNORM8
   storage effects. It uses the original second shader with a fixed neighbor;

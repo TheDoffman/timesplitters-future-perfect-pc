@@ -7,14 +7,16 @@ static float preservation_half(uint16_t v) {
     return exponent?ldexpf(1.f+mantissa/1024.f,(int)exponent-15):ldexpf((float)mantissa,-24);
 }
 static void rhi_surface_preservation_test(RhiView *restore_target) {
-    for(unsigned swizzled=0;swizzled<2;swizzled++) {
+    for(unsigned full=0;full<2;full++)for(unsigned swizzled=0;swizzled<2;swizzled++) {
+        D3DFORMAT precise_format=full?D3DFMT_A32B32G32R32F:D3DFMT_A16B16G16R16F;
+        unsigned bpp=full?16:8;
         D3DFORMAT format=swizzled?D3DFMT_A8R8G8B8:D3DFMT_LIN_A8R8G8B8;
         IDirect3DTexture8 *source=NULL,*wide=NULL,*restored=NULL,*clone=NULL;
         CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,format,&source)==S_OK);
-        CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,D3DFMT_A16B16G16R16F,&wide)==S_OK);
+        CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,precise_format,&wide)==S_OK);
         CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,format,&restored)==S_OK);
-        CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,D3DFMT_A16B16G16R16F,&clone)==S_OK);
-        BYTE pixels[256*4],actual[256*4];uint16_t precise[256*4],clone_pixels[256*4];
+        CHECK(d3d8_CreateTextureImpl(16,16,1,D3DUSAGE_RENDERTARGET,precise_format,&clone)==S_OK);
+        BYTE pixels[256*4],actual[256*4];uint32_t precise[256*4],clone_pixels[256*4];
         for(unsigned i=0;i<256;i++) {
             pixels[4*i]=(BYTE)i;pixels[4*i+1]=(BYTE)(255-i);
             pixels[4*i+2]=(BYTE)(i*73);pixels[4*i+3]=(BYTE)(i*19);
@@ -28,16 +30,17 @@ static void rhi_surface_preservation_test(RhiView *restore_target) {
         RhiOutputState output;rhi_output_save(&output);
         CHECK(rhi_output_color_is(&output,restore_target) && output.viewport_count==1);
         CHECK(memcmp(output.viewports,&original,sizeof original)==0);rhi_output_restore(&output);
-        CHECK(rhi_image_readback(((D3D8Texture *)wide)->image,0,precise,16*8)==0);
+        CHECK(rhi_image_readback(((D3D8Texture *)wide)->image,0,precise,16*bpp)==0);
         /* WARP's byte-to-half render conversion can truncate (e.g. 254/255
          * becomes 0x3bf7). Permit one half ULP, then require exact byte
          * recovery below; this still rejects lost channels or state. */
         const unsigned channels[4]={2,1,0,3};
         for(unsigned i=0;i<256;i++)for(unsigned c=0;c<4;c++) {
-            float actual_value=preservation_half(precise[4*i+c]),expected=pixels[4*i+channels[c]]/255.f;
-            if(fabsf(actual_value-expected)>.000489f)
-                fprintf(stderr,"preserve swizzled=%u pixel=%u channel=%u bits=%04x value=%.9g expected=%.9g\n",swizzled,i,c,precise[4*i+c],actual_value,expected);
-            CHECK(fabsf(actual_value-expected)<=.000489f);
+            float actual_value=full?((float *)precise)[4*i+c]:preservation_half(((uint16_t *)precise)[4*i+c]);
+            float expected=pixels[4*i+channels[c]]/255.f,tolerance=full?.0000002f:.000489f;
+            if(fabsf(actual_value-expected)>tolerance)
+                fprintf(stderr,"preserve swizzled=%u pixel=%u channel=%u full=%u value=%.9g expected=%.9g\n",swizzled,i,c,full,actual_value,expected);
+            CHECK(fabsf(actual_value-expected)<=tolerance);
         }
         /* Replay initially uploads this CPU storage. Verify both its channel
          * order and swizzle by rebuilding a GPU texture from those bytes. */
@@ -46,8 +49,8 @@ static void rhi_surface_preservation_test(RhiView *restore_target) {
         CHECK(clone->lpVtbl->LockRect(clone,0,&lock,NULL,0)==S_OK);
         CHECK((UINT)lock.Pitch==pitch);memcpy(lock.pBits,stored,pitch*rows);
         CHECK(clone->lpVtbl->UnlockRect(clone,0)==S_OK);
-        CHECK(rhi_image_readback(((D3D8Texture *)clone)->image,0,clone_pixels,16*8)==0);
-        CHECK(memcmp(precise,clone_pixels,sizeof precise)==0);
+        CHECK(rhi_image_readback(((D3D8Texture *)clone)->image,0,clone_pixels,16*bpp)==0);
+        CHECK(memcmp(precise,clone_pixels,256*bpp)==0);
         CHECK(d3d8_PreserveFeedbackTexture(restored,wide)==S_OK);
         CHECK(rhi_image_readback(((D3D8Texture *)restored)->image,0,actual,16*4)==0);
         CHECK(memcmp(pixels,actual,sizeof actual)==0); /* every byte value round trips */
@@ -69,6 +72,6 @@ static void rhi_surface_preservation_test(RhiView *restore_target) {
         source->lpVtbl->Release(source);wide->lpVtbl->Release(wide);
         restored->lpVtbl->Release(restored);clone->lpVtbl->Release(clone);
     }
-    puts("PASS: feedback byte/half conversion, live GPU source, capture storage, source and output-state preservation");
+    puts("PASS: feedback byte/half/full-float conversion, live GPU source, capture storage, source and output-state preservation");
 }
 #endif

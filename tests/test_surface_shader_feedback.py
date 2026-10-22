@@ -21,7 +21,8 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 @pytest.mark.parametrize('address,case,stage', [(0x4bbf10, 'surface_feedback_gpu.inc', 7),
                                                 (0x4bbc40, 'surface_filter_gpu.inc', 4),
                                                 (0x4bbf10, 'surface_damping_gpu.inc', 7),
-                                                (0x4bbf10, 'surface_coupling_gpu.inc', 7)])
+                                                (0x4bbf10, 'surface_coupling_gpu.inc', 7),
+                                                (0x4bbf10, 'surface_spatial_gpu.inc', 7)])
 def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
@@ -35,7 +36,10 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
         config.configure_from_xbe(str(xbe))
         offset = config.va_to_file_offset(address)
         (tmp_path / 'feedback.bin').write_bytes(image[offset:offset + 240])
-        if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc'):
+        if case == 'surface_spatial_gpu.inc':
+            offset = config.va_to_file_offset(0x4bbe20)
+            (tmp_path / 'first.bin').write_bytes(image[offset:offset + 240])
+        if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
             import struct
             from tools.recomp.translator import FunctionTranslator
             from test_recomp_float_joins import compile_and_run
@@ -81,14 +85,24 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     (tmp_path / 'surface_shader.h').write_text(
         'static const char surface_hlsl[]=' + json.dumps(hlsl) + ';\n', encoding='utf-8')
 
+    if case == 'surface_spatial_gpu.inc':
+        first = run([str(generator), 'first.bin'])
+        assert 'Stage 6' in first
+        with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
+            header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
+
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
-    if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc'):
+    if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
         setup = setup.replace('#include "rhi.h"','#include "rhi.h"\n#include "surface_upload.h"')
     setup = setup.replace('#include "rhi.h"',
                           '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
+    fixture = (ROOT / 'tests' / case).read_text(encoding='utf-8')
+    if case == 'surface_spatial_gpu.inc':
+        helpers, fixture = fixture.split('/* SPATIAL_MAIN */')
+        setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
-    source.write_text(setup + (ROOT / 'tests' / case).read_text(encoding='utf-8'),
+    source.write_text(setup + fixture,
                       encoding='utf-8')
     exe = tmp_path / 'surface.exe'
     sources = [source, *(RUNTIME / 'd3d' / name for name in

@@ -234,3 +234,10 @@ steps retain original uploads. The HLE path copies bank 0 stages 3/5/7 and bank
 clearing on scope exit. Defaults and original/catch-up behavior stay unchanged.
 The constant-uploader fixture documents the current lifter's truncation; this
 change does not claim original Xbox MXCSR rounding fidelity or full wave parity.
+
+The opt-in precision policy now selects full-float format 0x4B for registered
+feedback intermediates. Final byte textures, guest headers, rate gating and
+normal-play defaults are unchanged. Common-RHI promotion/demotion preserves
+live GPU contents and capture bytes; the transaction still flushes before copy,
+rebinds only on success and retains the old resource on failure. This removes
+measured half-float accumulation error but does not prove original wave parity.

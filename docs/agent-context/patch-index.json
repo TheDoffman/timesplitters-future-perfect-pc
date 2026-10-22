@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1d617b45f70ccbea7dd5a4bdbaeb53ed84f8ef8db105e0303cc1b20218c5db9b",
+  "loaderSha256": "241490fd61e8a128ede2e35bc2698c4f61b0944998c01b5ef8aac74cbbf1bf43",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1202,6 +1202,13 @@
       "sha256": "db83501d3f08446e7d9cc7f54e0eed3f1797293b21be2947640b7756c1cab396",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-surface-float32.patch",
+      "sha256": "1e4fbb5b2e5d145f3774d5c15f74a00dffad7b37937a60a3db74a30bed86e335",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
       ]
     },
     {

@@ -5663,3 +5663,58 @@ After the fixture repair, all four affected upgrade/fresh-install cases pass
 locally in 65.37 seconds. The four original shader cases, ordered constants and
 context/backlog checks pass 17 cases in 14.88 seconds. Source-only validation
 needs no rebuild or additional gameplay run because runtime code is unchanged.
+
+## Two-pass spatial feedback and full-float candidate (2026-10-22)
+
+The new `surface_spatial_gpu.inc` extracts both original pixel programs
+(0x4BBE20 and 0x4BBF10) from the verified US XBE and uses their unchanged
+production HLSL/common-RHI WARP execution. The synthetic vertex shader supplies
+explicit offsets observed in callback 0x2BF10: the first pass samples center,
+(-1,-1), (+1,-1), (+1,+1); the second reads the first-pass center and prior
+state at (-1,+1). Coordinates are texel-centered on a 64x64 clamped field.
+This does not execute the original vertex microcode or verify all guest-to-GPU
+coordinate conventions. It is a controlled spatial kernel, not a scene replay.
+
+Initial green is 0.5; blue is a 0.05 Gaussian disturbance around 0.5. All
+inputs are identical at all rates/formats. Each pass stores through actual GPU
+float32, half-float or UNORM8 targets; decoded stored values become the next
+inputs. Every pixel is checked against the unsaturated stencil. The first-pass
+red is `128/255 + k*(128/255-B) + Bnw+Bne+Bse-3*B`; green/blue persist.
+The second uses the already documented coupled equation and the remaining
+southwest neighbor. `k` and the three feedback coefficients use current
+uploader truncation anchors. No smoothing or random forcing is applied.
+
+| Storage | FPS | Mean blue | Blue standard deviation | RMS blue vs same-format 60 |
+| --- | ---: | ---: | ---: | ---: |
+| Float32 | 60 | 0.567762114 | 0.001816350 | 0 |
+| Float32 | 120 | 0.566613230 | 0.001811594 | 0.001149301 |
+| Float32 | 144 | 0.566421304 | 0.001811069 | 0.001341274 |
+| Half-float | 60 | 0.560359955 | 0.002508131 | 0 |
+| Half-float | 120 | 0.546896696 | 0.005342875 | 0.013886190 |
+| Half-float | 144 | 0.562387943 | 0.008247281 | 0.010135495 |
+| UNORM8 | 60 | 0.604052758 | 0.024023703 | 0 |
+| UNORM8 | 120 | 0.686370270 | 0.031592553 | 0.084577354 |
+| UNORM8 | 144 | 0.645906118 | 0.042783565 | 0.072853017 |
+
+All frames changed. Maximum per-pass equation/storage errors were 0.000000328,
+0.000488222 and 0.001960814 respectively. The assertions characterize existing
+gaps, not declare cross-rate wave equivalence. Evidence: `logs/surface-spatial-gpu.log`.
+
+The dependent full-float candidate changes only opt-in intermediate format
+selection from 0x34 to 0x4B. The common resource adapter already supports full
+float; the new subsequent patch extends precision preservation's allowlist and
+reverses 32-bit channel words when rebuilding guest-layout capture storage.
+The GPU contract tests original byte data across both byte layouts, byte/full
+promotion/demotion, exact clone reconstruction, live GPU rather than stale CPU
+source, output-state retention and invalid inputs; existing half tests remain.
+The cache transaction still handles queued work, failed allocation/copy and
+read-first transitions. Historical old-stack tests exclude the new patch until
+its preservation prerequisite is installed.
+
+This doubles each registered intermediate's GPU storage from 8 to 16 bytes per
+pixel; at 128x128, three intermediates rise from 384 to 768 KiB per resource.
+Corresponding CPU capture storage also grows. The final byte texture stays
+unchanged. No new game assets or normal-play setting is introduced. Full scene
+motion, original-byte appearance, long-term behavior, live preset switching,
+performance and native Mac GPU/gameplay validation remain pending. Legacy GL
+continues to decline this opt-in experiment. Do not enable it from this fixture.

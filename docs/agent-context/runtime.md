@@ -191,3 +191,11 @@ scope with copied original parameters and precise coefficients at bank 0 stages
 3/5/7; bank 1 stage 6 still supplies centering. The generic deferred/capture/replay
 payload format is unchanged. Scope clears, parameter refresh at equal timestep,
 invalid input and duplicate suppression are tested from the production functions.
+
+## Experimental full-float water storage
+
+`*-native-surface-float32.patch` follows the preservation/live-surface patches.
+It extends the existing common-RHI preservation transaction to A32B32G32R32F,
+including reversed 32-bit channels in CPU capture storage. The existing shared
+resource adapter already allocates/uploads this format. Half-float conversion
+remains supported. Legacy GL still declines the experiment as documented.

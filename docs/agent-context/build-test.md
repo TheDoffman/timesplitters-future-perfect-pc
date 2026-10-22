@@ -418,3 +418,13 @@ The earlier scalar damping case alone cannot prove coupled equivalence.
 Historical upgrade fixtures exclude the later coefficient patch together with
 its surface-constant dependency before installing the complete current stack;
 including only the newer patch creates an impossible historical checkpoint.
+
+`surface_spatial_gpu.inc` executes both original feedback pixel programs over a
+64x64 Gaussian disturbance with explicit diagonal offsets traced from 0x2BF10.
+Every intermediate/final pixel is checked against the controlled stencil using
+actual float32, half-float or UNORM8 storage. It omits the original vertex
+program, smoothing and disturbances; it is not full gameplay equivalence.
+`rhi_surface_preservation.h` now checks byte/half and byte/full-float conversion,
+channel/swizzle order, exact capture reconstruction, output state and rollback
+prerequisites on the existing Windows and native Mac GPU test route. Old-stack
+fixtures exclude the new full-float patch until its prerequisites are installed.

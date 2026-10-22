@@ -125,3 +125,7 @@ The native-start handoff patch extends the explicit timing tail after surface
 integration. The index regression checks that dependency and the new final
 patch; refreshing the generated index alone cannot update an old tail assertion.
 This CI correction changes navigation tests only, not runtime pacing.
+
+The loader-order contract now checks that full-float surface preservation
+follows live-surface support. Check prerequisite relationships explicitly when
+adding a dependent patch; unrelated integration patches may follow it.
