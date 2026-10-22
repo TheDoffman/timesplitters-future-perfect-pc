@@ -1,3 +1,27 @@
+## 2026-10-22 — Native startup to Original 60 handoff
+
+On `fix/live-fps-clock-handoff` from main 564fda6, shared Swap/Present paths
+retain the real vblank boundary while native pacing bypasses the flip gate.
+Starting at 144 then applying Original 60 previously waited twice: the original
+guest clock waited for an ISR and the uninitialized gate discarded that event.
+The observed extra gate wait falls from 16.391 ms to 0.0008 ms. Subsequent cheap
+frames still wait normally; real-event and elapsed-period checks remain.
+
+Windows supported build and 44 selected tests pass. Final trace-free live cycle
+averages 59.998/120.000/143.994/60.005 FPS; native-start replay averages
+143.987 then 59.998 FPS. Its Apply window worst is 18.105 ms, with no interval
+over 33.33 ms in either run's Apply windows. Complete clock coverage and actual
+rate changes are verified; these stationary samples do not prove full-game
+mechanics or locked 144 FPS in crowds. Actual-source tests cover five native phases,
+normal cheap/late/no-signal behavior and a no-op mutation that restores the
+failure. Historical patch fixtures exclude this new dependent patch from their
+old stacks before applying the full current stack. Temporary phase tracing is
+removed from the final binary. Native Mac gameplay/timing remains unverified
+under MAC-060; no new platform adapter is required. This branch is independent
+of PR #295's crowded-multiplayer text-read optimization.
+
+[Evidence, provenance and limitations](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
+
 ## 2026-10-22 — Crowded multiplayer text overhead
 
 On `perf/crowded-multiplayer`, based on main `564fda6`, profiling identified
@@ -89,6 +113,7 @@ isolated `crowd-hotel-before`, `crowd-hotel-after`, `crowd-hotel-outline` and
 `33014b3d8d621fa5e4d60b2ac587962e84cca9b55efecce1e221dbe58a54f4af`;
 combined candidate:
 `ba7df7f5e3406264f2d082fe3d18558a4aa9fec49bed964ebd957ffc1fbc0809`.
+
 
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 

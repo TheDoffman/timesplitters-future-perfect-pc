@@ -5381,3 +5381,73 @@ No screenshots or game assets were added. Native Mac execution, other scenes,
 full-game behavior, original water appearance and the measured pacing gaps remain
 open. The next targeted pacing check should distinguish settings application,
 original guest-clock waiting and host flip waiting during the 144-to-60 handoff.
+
+
+## Native-start return to Original 60 (2026-10-22)
+
+The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing
+repair. On main 564fda6, a corrected Original60 → 120 → 144 → Original60 replay
+has no interval over 33.33 ms in its three Apply windows (worst 18.371, 15.672,
+17.720 ms). The return frame is 9.396 ms: original clock 2.540 ms and flip gate
+0.0008 ms. This does not retroactively assign the historical gaps one cause.
+
+Starting directly at native 144 still reproduces a distinct double wait. Native
+Swap bypasses Arm, leaving its function-local previous-boundary value zero.
+On return, the original clock waits for the next ISR; Arm then resets that
+ready event and waits for another tick. A bounded opt-in QPC phase diagnostic
+measured a 31.568 ms frame: original-clock wait 9.993 ms, gate wait 16.391 ms,
+and original Swap body 0.520 ms. The same replay with the fix measures 20.128 ms:
+clock 14.505 ms, gate 0.0008 ms, Swap body 0.426 ms. The varying first clock wait
+reflects the phase at Apply; the identified extra gate wait is removed.
+
+`-native-flip-handoff.patch` records the last real vblank during both native
+Swap and Present-only bypasses. Arm retains its real-signal and elapsed-period
+checks, with normal cheap-frame pacing. The shared observer neither waits nor
+consumes/synthesizes a tick. Tests execute the actual observer/Arm bodies at five
+native phases and retain cheap/late/no-signal cases. Removing the observation
+reproduces the failing first-return assertion. The diagnostic trace code was
+removed before the final production build; it is retained only in ignored
+investigation artifacts.
+
+The old live replay entered Controls after the pause menu reorder; finishing
+its command labels did not prove FPS changes. The tracked fixture now uses one
+Down to Video Options. Analysis additionally requires actual NATIVE-TIMING
+transitions and the saved preference; the stale run is rejected as evidence.
+
+Phase evidence: `private/test-saves/handoff-{phase-corrected,initial-native,
+initial-native-fixed}`, QPC joins in `handoff-phase-summary.json`, and
+`logs/handoff-*-phase.log`. All tests use isolated signed Test Lab copies and
+recycle disposable partitions. No personal settings/saves are changed. Native
+Mac execution, other scenes, full-game mechanics and monitor scanout remain
+unverified. This patch is independent of the crowded-multiplayer optimization
+in PR #295; these main-based binaries do not contain that unmerged change.
+
+
+Final trace-free Windows binary SHA-256:
+`70d3327017b1989136a5a42b1c5abacf38c44010d3fe82e4d7c6d2bc535f4f78`.
+The stationary Scotland cycle (`handoff-final-cycle`, 1280×720) measures:
+
+| Window | Mean FPS | p99 interval ms | Worst interval ms |
+| --- | ---: | ---: | ---: |
+| Original 60 | 59.998 | 18.395 | 18.904 |
+| Native 120 | 120.000 | 9.673 | 10.524 |
+| Native 144 | 143.994 | 8.225 | 8.813 |
+| Return to Original 60 | 60.005 | 17.860 | 18.151 |
+
+The three Apply windows have worst intervals 17.727, 13.510 and 22.922 ms;
+none exceeds 33.33 ms. These windows include the surrounding menu wait, not
+just conversion. All observed presents are guest frames. Strict analysis
+requires continuous frame IDs and clock coverage, matching health/position/look,
+and actual applied rates. Endpoint game-clock/wall-clock ratios range from
+0.999829 to 1.001160; endpoints are quantized and do not establish animation or
+mechanics parity. Supported Windows Build, 44 selected frame-clock/patch tests,
+backlog integrity and repository-context checks pass. Two initial historical
+fixture failures were repaired by excluding the new dependent patch from old
+stacks; all three affected upgrade cases were rerun successfully.
+
+The same trace-free binary's native-start replay (`handoff-final-native-start`)
+confirms 143.987 FPS before switching and 59.998 afterward (p99 8.209/17.875 ms,
+worst 9.385/18.310 ms). Its Apply window worst is 18.105 ms, with no interval
+over 33.33 ms. Endpoint clock ratios are 0.999821/0.999836. Both final runs exit
+cleanly with valid isolated save signatures; no tracing/captures/CPU sampling
+ran during measurement. Saved preference ends at Original 60 in each run.

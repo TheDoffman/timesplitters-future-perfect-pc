@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "02a0a8f8dffbe193afcf75c890a2c9466f60d9f5bdb7ddf577bad07fcb1dcfb2",
+  "loaderSha256": "d4ed5a313c932972fbe766258803f7fba9f5c90a98ca5827b217f6fec57345e5",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1195,6 +1195,15 @@
       "sha256": "db83501d3f08446e7d9cc7f54e0eed3f1797293b21be2947640b7756c1cab396",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-flip-handoff.patch",
+      "sha256": "9ba63836c54b9ebf3bd45df568fb19885893dfd767ea244de25b799b61f96b2c",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
       ]
     }
   ]

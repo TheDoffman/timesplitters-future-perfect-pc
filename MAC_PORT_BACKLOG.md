@@ -3599,6 +3599,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
+  Shared HLE Swap/Present paths observe the last real vblank while native pacing
+  bypasses the gate. First return to Original 60 can consume the tick already
+  awaited by the guest clock, without a second wait. No new OS adapter or
+  settings definition; existing real-event/cheap-frame pacing remains. Windows
+  phase measurements reduce the extra gate wait from 16.391 to 0.0008 ms.
+  Actual-source phase and mutation fixtures run in existing Windows/macOS CI.
+  Mac execution and timing acceptance remain awaiting validation; check startup
+  at 120/144 followed by Original 60 and subsequent steady pacing on each native
+  renderer. [Measured scope](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

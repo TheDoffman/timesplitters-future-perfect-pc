@@ -344,3 +344,20 @@ in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifi
 that the exact retirement identities enter both package manifests and rejects
 reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
 CI provides native Mac launcher compilation and shared fixture execution.
+
+## Live FPS handoff regression
+
+`test_frame_clock.py` extracts the actual native observer and Arm bodies into
+`flip_gate_deadline.c`. Five within-vblank native phases cover a first return
+to Original 60; following cheap frames must still wait. The no-op observer
+mutation must fail the first-return assertion. Existing cheap/late/no-signal
+cases remain. This suite already runs on Windows and macOS runtime CI.
+`tests/fixtures/live-fps-pacing-commands.json` enters Video Options with one Down
+from Continue after the pause-menu reorder. Confirm actual NATIVE-TIMING rate
+changes and saved preference, not replay labels alone: stale navigation can
+finish successfully while selecting Controls and never changing FPS.
+
+Historical upgrade fixtures exclude the new handoff patch along with the later
+native timing tail when constructing old stacks, then apply it via the complete
+current loader. This preserves the historical dependency graph rather than
+inserting the new HLE call into a runtime that predates native timing.

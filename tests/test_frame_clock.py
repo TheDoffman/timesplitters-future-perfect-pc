@@ -2,23 +2,38 @@
 import os
 from pathlib import Path
 import subprocess
+import pytest
 from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_late_frame_does_not_wait_twice(tmp_path):
+@pytest.mark.parametrize('native_phase,omit_observer',
+                         [(None,False),(0,False),(100,False),(500,False),
+                          (900,False),(999,False),(500,True)])
+def test_late_frame_does_not_wait_twice(tmp_path,native_phase,omit_observer):
     source=(ROOT/'external/ts3FPrecomp/src/kernel/xbox_memory_layout.c').read_text(encoding='utf-8')
     start=source.index('void xbox_Nv2aFlipGateArm(void)')
     end=source.index('\nvoid xbox_Nv2aFlipGateRelease(void)',start)
-    (tmp_path/'arm.inc').write_text(source[start:end],encoding='utf-8')
+    observer='void xbox_Nv2aFlipGateNativeFrame(void)'
+    body=source[source.index(observer):end]
+    if omit_observer:
+        # Mutation control: skipping the observation must reproduce the hitch.
+        body=observer+' {}\n'+source[start:end]
+    (tmp_path/'arm.inc').write_text(body,encoding='utf-8')
     compiler, environment=native_compiler(tmp_path)
     output=tmp_path/('gate-deadline.exe' if os.name=='nt' else 'gate-deadline')
     fixture=str(ROOT/'tests/flip_gate_deadline.c')
     command=([compiler,'/nologo','/std:c11','/I'+str(tmp_path),fixture,'/Fe:'+str(output)]
              if os.name=='nt' else [compiler,'-std=c11','-I'+str(tmp_path),fixture,'-o',str(output)])
     subprocess.run(command,cwd=tmp_path,env=environment,check=True,timeout=60)
-    subprocess.run([str(output)],check=True,timeout=10)
+    result=subprocess.run([str(output)]+([] if native_phase is None else [str(native_phase)]),
+                          capture_output=True,text=True,timeout=10)
+    if omit_observer:
+        assert result.returncode != 0
+        assert 'now==2100 && waits==0' in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
 
 
 def test_target_settings_round_trip(tmp_path):
