@@ -3625,6 +3625,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The prior playable Windows executable is restored; native Mac validation
   and full handling acceptance remain pending.
 
+  Driver follow-up (same WIP branch): shared gate `17DA03` now admits positive
+  fractional game intervals, replenishing inputs consumed by the vehicle each
+  update. Original `17DA00/172EE0` tests reproduce missing native throttle before
+  the fix and cover forward/reverse/braking/release, pause, speeds and ABI.
+  No host adapter change; native Mac execution and live handling remain pending.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

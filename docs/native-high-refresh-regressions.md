@@ -5608,3 +5608,29 @@ location, with executable hash
 reverified. No candidate PR or release has been published. The next investigation
 must include actual driver/force/contact production, beyond the controlled
 component inputs that currently pass.
+
+### Driver input gate follow-up
+
+The original driver dispatcher `17DA00` reads the integer game delta at
+`17DA03` and exits when it is zero. Its throttle/brake producer `172EE0` then
+does not replenish vehicle fields `+530/+534`, which the now-fractional vehicle
+dispatcher consumes and clears. The new `native_vehicle_driver.c` fixture lifts
+both complete routines and the original seat switch table from the verified US
+XBE. Before correction, native120 runs only 60 throttle updates in a second and
+integrates 100 units of a requested 200-unit input (Original60 integrates 200).
+See `logs/native-vehicle-driver-before.log` for that actual failing assertion.
+
+The shared numeric policy now treats `17DA03` as a positive-game-time entry
+gate. Its temporary integer value is overwritten before use as anything else.
+Original timing remains unchanged; stale integer ticks cannot advance a native
+zero-float pause. With the correction, the original producer runs on every
+native interval and integrates the same input at 60/120/144. Tests also cover
+fractional analog throttle changes, braking, reverse, release, quarter/triple
+speed, irregular intervals, pause and stack/callee-saved invariants. The
+`legacy-driver` negative control restores the original gate and must fail.
+Model lookup, wake and seat-action services are controlled. This test establishes
+input production, not tire traction, weapon behavior or live handling parity.
+The Windows regression run passes 112 timing/vehicle/float-join/vehicle-join/
+generation cases in 132.95 seconds (`logs/native-vehicle-driver-regressions.log`),
+plus 77 context/backlog/CI-scope cases in 1.18 seconds. The original-routine
+test requires the supported private XBE and skips without it.

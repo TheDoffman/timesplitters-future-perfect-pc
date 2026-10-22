@@ -44,6 +44,11 @@ contact geometry or vehicle handling. A subsequent Windows build runs actual
 Siberia jeep driving at all presets, but matched throttle replays expose lower
 travel at native rates; see STATUS for measurements and limits. The playable
 combined crowd build was restored while this discrepancy is investigated.
+The original driver dispatcher `17DA00` independently retained a whole-tick
+gate at `17DA03`, dropping throttle on intervening native updates. Its numeric
+policy now uses positive game time, matching the vehicle consumer's cadence.
+The original trigger producer `172EE0` checks forward, reverse, braking and
+release on fractional frames; seat weapons and live handling remain unverified.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

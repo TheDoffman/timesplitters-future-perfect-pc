@@ -28,6 +28,8 @@ def test_physics_wrapper_retains_original_body():
 
 
 @pytest.mark.parametrize('harness,ranges,mutations', [
+    ('native_vehicle_driver.c', [(0x17da00, 0x17df97), (0x172ee0, 0x1730d3)],
+     ['legacy-driver']),
     ('native_vehicle_timing.c', [(0x17e680, 0x17f2d2), (0x175150, 0x175399),
                                (0x1515e0, 0x15163b), (0x1521d0, 0x15225d),
                                (0x176530, 0x1766de)],
@@ -64,6 +66,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     unexpected = '\n'.join(f'void {name}(void) {{ fprintf(stderr,"UNEXPECTED: {name}\\n");abort(); }}'
                            for name in sorted(calls - defined))
     addresses = set(range(0x17f2d4, 0x17f2e8, 4)) if harness == 'native_vehicle_timing.c' else set()
+    if harness == 'native_vehicle_driver.c':
+        addresses.update(range(0x17df98, 0x17dfac, 4))
     for start, end in ranges:
         offset = config.va_to_file_offset(start)
         for instruction in Cs(CS_ARCH_X86, CS_MODE_32).disasm(image[offset:offset + end - start], start):

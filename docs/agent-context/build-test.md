@@ -58,6 +58,12 @@ the existing playable build. The supported Windows build at `ba4f0bf` passes,
 but matched live Siberia throttle replays show lower travel at native rates.
 Use the recorded input sequences, observations and captures linked in the
 high-refresh regression record to investigate before accepting handling.
+The added `native_vehicle_driver.c` fixture runs original `17DA00/172EE0` and
+the XBE's seat switch table. It reproduces half the intended integrated
+throttle at native120 before the `17DA03` gate correction; `legacy-driver`
+must still fail. It checks normal/slow/fast/irregular intervals, fresh analog
+throttle, braking, reverse, release, pause and the guest ABI. Wake, model and
+seat-action services are controlled; full handling requires the live replay.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused

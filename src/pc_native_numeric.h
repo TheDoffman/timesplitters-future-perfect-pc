@@ -123,12 +123,16 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0)
         return 1;
+    /* Driver dispatch must replenish throttle/brake inputs on every vehicle
+     * update: 17E680 consumes and clears them even on fractional frames.
+     * 17DA03 is only an entry gate; its EAX is overwritten before use. */
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
-         site == 0x2B93DAu || site == 0x14A5CDu || site == 0x17E6C3u) &&
+         site == 0x2B93DAu || site == 0x14A5CDu || site == 0x17E6C3u ||
+         site == 0x17DA03u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;

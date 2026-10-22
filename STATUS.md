@@ -54,6 +54,17 @@ previous tested crowd-performance executable was restored for normal play.
 Shared implementation and tests are registered for both CI hosts; native Mac
 execution is pending (MAC-060). No PR/release published for this candidate.
 
+Driver follow-up identifies a concrete missing input update: original dispatcher
+`17DA00` skips fractional frames at `17DA03`, even though vehicle simulation
+consumes and clears throttle/brake inputs on them. A new original-routine
+fixture reproduces 60 throttle updates and half the intended integrated power
+at native120. The shared gate correction supplies fresh input on every advancing
+native interval. Original60 remains unchanged; forward/reverse/braking, release,
+pause and slow/fast/irregular timing are covered. This fixes the proven input
+defect; a rebuilt live comparison is still needed to assess total handling.
+Windows validation passes 112 timing/vehicle/translator/generation cases and
+77 repository-context/backlog/CI-scope cases after this correction.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

@@ -60,6 +60,12 @@ collision acceptance remains pending, and the prior playable binary is restored.
 The live jeep callback at vehicle-data `+0x68` is `177AE0`; dispatcher `17E680`
 calls it before `174860` force and `174D60` component-force preparation. Treat
 these as investigation entry points, not a proven acceleration root cause.
+The subsequent original driver fixture proves `17DA03` still skipped positive
+fractional intervals while `17E680` cleared throttle/brake fields `+530/+534`.
+The shared numeric gate now admits every advancing native interval there too.
+`17DA00 -> 172EE0` runs in `native_vehicle_driver.c` with controlled action,
+model and wake services; original mode and zero-float pause retain their gates.
+Live handling acceptance remains separate from this input-production check.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
