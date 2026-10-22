@@ -44,7 +44,9 @@ correction; further controls omit contact resolution, RNG isolation or the
 secondary-step boundary correction or body sleep cadence and must fail their
 relevant cases. Synthetic memory-DEC checks cover all byte values, stored
 result flags and preserved carry at the sleep site and an unrelated site.
-The motion fixture now also executes the original RNG with three controlled
+The same suite checks the production manual scanner retains the `171FB0`
+original body; a comma-separated `_gen` extern passes C compilation but the
+scanner misses it and the final link fails. The motion fixture now also executes the original RNG with three controlled
 contacts and checks slow, fast and irregular native intervals. Asset-free
 `native_physics_scope.c` checks nested/private/shared draws and cleanup; the
 same Python test file checks 20,000 secondary-step partitions. Those portable

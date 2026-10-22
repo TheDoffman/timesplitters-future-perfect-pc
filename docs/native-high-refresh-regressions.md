@@ -5537,3 +5537,13 @@ with the supported JO branch yielded two passing exhaustive DEC cases. No
 unrelated lifter instruction support was added. Real world geometry, vehicle
 driver/force production, damage/model notification and rendered driving remain
 unverified. These routine results do not establish full handling acceptance.
+
+The first supported Windows build regenerated guest code but failed to link
+`sub_00171FB0_gen`. The runtime manual scanner only recognizes standalone
+`extern void sub_X_gen(void);` declarations; combining it with two other
+declarations was valid C but caused the generator to omit the original body.
+The patch now separates that declaration, and a new asset-free regression uses
+the actual scanner to require both wrapper recognition and solver/RNG name
+pinning. The full patch loader applied the repair normally. The failed build
+is recorded in `logs/native-vehicle-full-build.log`; a corrected build is
+required before any gameplay claim.

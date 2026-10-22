@@ -16,6 +16,17 @@ def restore_sections():
     vars(config).update(previous)
 
 
+def test_physics_wrapper_retains_original_body():
+    # The real generator's scanner requires a standalone _gen declaration.
+    # A valid C comma declaration previously caused the full build to drop
+    # the original function, despite the routine fixtures passing.
+    from tools.recomp.manual_scan import scan
+    manual = ROOT / 'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c'
+    skip, wrap, referenced = scan(str(manual))
+    assert 0x171fb0 in skip and 0x171fb0 in wrap
+    assert {0x171560, 0x153b40} <= referenced
+
+
 @pytest.mark.parametrize('harness,ranges,mutations', [
     ('native_vehicle_timing.c', [(0x17e680, 0x17f2d2), (0x175150, 0x175399),
                                (0x1515e0, 0x15163b), (0x1521d0, 0x15225d),

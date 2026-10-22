@@ -1185,7 +1185,7 @@
     },
     {
       "name": "zzzz-native-vehicle-physics.patch",
-      "sha256": "a826ca5b9a5b9d9e2e26d37228bfd43b5aeaab86507afcdee22ad0d7b7971e2d",
+      "sha256": "57d96b4da32191c1c7812c2f84c375f4c0fe9f0a6b5d4c40bf310b8d73fc0af2",
       "targets": [
         "templates/runtime/recomp_types.h",
         "titles/futureperfect/src/recomp_manual.c",

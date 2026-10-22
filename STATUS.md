@@ -38,7 +38,10 @@ at quarter speed; wake resumes on the next fractional update. Position and
 velocity are published each advancing frame. The follow-up passes 110 timing,
 vehicle and generation regressions and four fresh/install/upgrade cases;
 live driving and rendering are still separate acceptance work.
-No gameplay build or live vehicle validation yet. Actual geometry, multiple
+The first full build exposed a missing generated physics body at link time:
+the manual scanner did not recognize a comma-separated `_gen` declaration.
+The declaration is now standalone and a production-scanner regression passes;
+the corrected full build and live vehicle validation remain pending. Actual geometry, multiple
 contacts, active driving, model/render notification and performance remain gaps.
 This candidate has not replaced the tested combined crowd-performance build.
 Shared implementation and tests are registered for both CI hosts; native Mac

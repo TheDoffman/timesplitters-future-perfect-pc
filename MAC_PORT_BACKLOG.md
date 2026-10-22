@@ -3615,6 +3615,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Windows checks restore the same sleep duration at 60/120/144, including slow
   and fast game speed, and verify immediate fractional wake motion. Mac tests,
   live driving and rendered model behavior remain pending; no adapter change.
+  The shared manual wrapper uses a standalone `_gen` declaration so both host
+  generators retain its original body. The first Windows link caught the
+  comma-declaration defect; a scanner regression now covers this requirement.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures

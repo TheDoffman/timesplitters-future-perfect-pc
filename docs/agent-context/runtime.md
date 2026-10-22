@@ -53,7 +53,9 @@ snaps the accumulated secondary time to `8*step` only within four float epsilons
 of that boundary; otherwise rounding could run a ninth solve. Original timing
 is unchanged. The added manual `171FB0` wrapper requires supported guest
 regeneration before building; the existing playable binary does not include
-this candidate. Full handling/collision acceptance is pending.
+this candidate. Its `_gen` extern must be a standalone declaration: the
+generator's manual scanner does not recognize comma-separated declarations.
+Full handling/collision acceptance is pending.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
