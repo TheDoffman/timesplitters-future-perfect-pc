@@ -3655,6 +3655,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Controlled contact audit (2026-10-22, PR #307):** The existing shared
+  `native_rigid_motion.c` fixture now passes 864 static-contact impulse cases
+  against independent mechanics, with a missing-solve mutation. No production
+  policy/adapter change. Windows vehicle suite passes 19 tests; this requires
+  the private US XBE and skips in asset-free CI. Actual Mac execution, contact
+  generation and the live pillar discrepancy remain unverified; see STATUS.
+
 - **Vehicle obstacle follow-up (2026-10-22, built source `fb261e1`, PR #307):**
   Straight no-bot Windows runs stop at the Siberia pillar at60/144, while120
   reaches the bank. A second Original60 run also stops with a different pose.

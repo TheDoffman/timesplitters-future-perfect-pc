@@ -30,6 +30,8 @@ static unsigned random_calls;
 static unsigned publications,sleeps;
 static unsigned vehicle_updates;
 static int character_contact,legacy_contact;
+static int wall_contact,missing_wall;
+static float contact_normal[3],contact_offset[3];
 static void impact_callback(void);
 static double seconds;
 #undef RECOMP_TRACE_ENTER
@@ -65,7 +67,7 @@ static double seconds;
 static void drop_contact(void) {g_esp+=4;}
 #undef RECOMP_DIRECT_CALLEE_AT
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0x17162du && missing_contact ? drop_contact : \
+    ((site)==0x17162du && (missing_contact || (missing_wall && wall_contact)) ? drop_contact : \
     (legacy_rng && ((site)==0x1715A0u || (site)==0x170E51u)) ? (function) : \
     PC_NATIVE_PHYSICS_CALLEE(site,function))
 void sub_0003DFA0(void) {g_eax=allocations++%2?0x3000:0x2000;g_esp+=4;}
@@ -74,8 +76,10 @@ void sub_0003D6B0(void) {g_esp+=4;}
 void sub_00170500(void) {
     MEM32(g_edi)=contact_mode;
     if(contact_mode) {
-        for(unsigned i=0;i<3;i++)MEMF(CONTACT+i*4)=MEMF(BODY+0x140+i*4);
-        MEMF(CONTACT+0x10)=1; /* zero-depth, upward normal at body centre */
+        for(unsigned i=0;i<3;i++) {
+            MEMF(CONTACT+i*4)=MEMF(BODY+0x140+i*4)+contact_offset[i];
+            MEMF(CONTACT+0xc+i*4)=contact_normal[i];
+        }
         MEM32(CONTACT+0x24)=PROP;MEM32(CONTACT+0x28)=STATIC_PROP;
         MEM16(CONTACT+0x2e)=2;MEM32(STATIC_PROP+0x80)=0xffffffff;
         if(character_contact) {
@@ -122,7 +126,8 @@ static void impact_callback(void) {
 static void reset(int forced)
 {
     memset((void *)(g_xbox_mem_offset+BODY),0,0x9000);
-    character_contact=0;
+    character_contact=wall_contact=0;
+    for(unsigned i=0;i<3;i++) {contact_normal[i]=i==1?1.f:0.f;contact_offset[i]=0;}
     contact_mode=forced==2?1:forced==3?3:0;
     MEM32(0x7497c8)=0;MEM32(0x4e7950)=1;MEM32(0x4e7954)=0;
     MEM32(0x74c458)=BODY;MEM32(0x74c46c)=TABLE;MEM32(0x7a20c8)=BODY;
@@ -195,7 +200,8 @@ int main(int argc,char **argv)
     legacy_secondary=argc>1 && !strcmp(argv[1],"legacy-secondary");
     legacy_sleep=argc>1 && !strcmp(argv[1],"legacy-body-sleep");
     legacy_contact=argc>1 && !strcmp(argv[1],"legacy-character-contact");
-    missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");setbuf(stdout,NULL);
+    missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");
+    missing_wall=argc>1 && !strcmp(argv[1],"missing-wall");setbuf(stdout,NULL);
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
@@ -331,5 +337,59 @@ int main(int argc,char **argv)
         MEMF(BODY+0x14c)=6;step(rate?0:1,60.f/fps);
         assert(integrations==before+1 && MEMF(PROP+0x64)>0 && MEM8(BODY+0x1c8)==10);
     }
-    free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support contact, fresh steps and pause");return 0;
+    /* Identical zero-depth static contact at each preset, independent of live
+     * broadphase/approach. A frictionless inelastic impulse has analytical
+     * magnitude -v.n / (inverse_mass + |r cross n|^2) for unit inverse inertia.
+     * Cover all normal axes/signs and centre/eccentric points. The contact
+     * oracle supplies fixed world-space offsets; this is not level geometry. */
+    const float inverse_masses[]={.25f,.5f,2.f},closing_speeds[]={4.f,12.f,-4.f,0.f};
+    double max_linear_error=0,max_angular_error=0;unsigned wall_cases=0;
+    for(unsigned axis=0;axis<3;axis++)for(int sign=-1;sign<=1;sign+=2)
+    for(int offset=-1;offset<=1;offset++)for(unsigned mass=0;mass<3;mass++)
+    for(unsigned speed=0;speed<4;speed++)for(unsigned rate=0;rate<4;rate++) {
+        unsigned fps=rate==0?60:rate==1?120:144;
+        g_tsfp_native_timing_active=rate!=0;reset(2);wall_contact=1;
+        unsigned tangent=(axis+1)%3,angular=(axis+2)%3;
+        float arm=offset*.25f,closing=closing_speeds[speed],inverse_mass=inverse_masses[mass];
+        MEMF(BODY+0x1a8)=inverse_mass;
+        for(unsigned i=0;i<3;i++) {
+            contact_normal[i]=i==axis?(float)sign:0;
+            contact_offset[i]=i==tangent?arm:0;
+            MEMF(FORCE+i*4)=MEMF(FORCE+12+i*4)=0;
+            MEMF(BODY+0x14c+i*4)=i==axis?-sign*closing:0;
+            MEMF(BODY+0x128+i*4)=MEMF(BODY+0x134+i*4)=0;
+        }
+        float ticks=0;unsigned frame=0;
+        while(ticks<1.f) {
+            float delta=rate==3?(frame%2?.8f:.2f):60.f/fps;
+            if(delta>1.f-ticks)delta=1.f-ticks;
+            unsigned whole=(unsigned)(ticks+delta)-(unsigned)ticks;
+            step(whole,delta);ticks+=delta;frame++;
+        }
+        float impulse=closing>0 ? closing/(inverse_mass+arm*arm) : 0;
+        float expected_linear=sign*(-closing+inverse_mass*impulse);
+        float expected_angular=-sign*arm*impulse;
+        printf("wall_contact fps=%u mode=%u axis=%u sign=%d offset=%d mass=%u speed=%u v=%.9f expected=%.9f w=%.9f expected_w=%.9f\n",
+               fps,rate,axis,sign,offset,mass,speed,MEMF(BODY+0x14c+4*axis),expected_linear,
+               MEMF(BODY+0x134+4*angular),expected_angular);
+        assert(integrations && (closing<=0 || contacts));
+        /* Original16CA00 also applies linear drag 0.001*v, verified at
+         * US constant475DBC. Bound its one-tick velocity contribution plus
+         * float roundoff; do not mistake it for a contact-impulse error. */
+        double linear_tolerance=.001*fabs(closing)*inverse_mass/60.+.00002;
+        double energy=0;
+        for(unsigned i=0;i<3;i++) {
+            float v=MEMF(BODY+0x14c+4*i),w=MEMF(BODY+0x134+4*i);
+            double linear_error=fabs(v-(i==axis?expected_linear:0));
+            double angular_error=fabs(w-(i==angular?expected_angular:0));
+            if(linear_error>max_linear_error)max_linear_error=linear_error;
+            if(angular_error>max_angular_error)max_angular_error=angular_error;
+            assert(isfinite(v) && isfinite(w) && linear_error<linear_tolerance && angular_error<.00002);
+            energy+=.5*((double)v*v/inverse_mass+(double)w*w);
+        }
+        assert(energy<=.5*(double)closing*closing/inverse_mass+.0001);
+        wall_cases++;
+    }
+    printf("wall_summary cases=%u max_linear_error=%.9f max_angular_error=%.9f\n",wall_cases,max_linear_error,max_angular_error);
+    free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support/contact impulse, fresh steps and pause");return 0;
 }

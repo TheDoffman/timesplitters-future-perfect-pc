@@ -26,6 +26,15 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+The rigid-motion fixture checks original contact solver `16FC00` and integrator
+`16CA00` against analytical static-contact impulses across signed axes, eccentric
+points, inverse masses and native intervals. Keep authored linear drag in the
+expected bound. This protects impulse/time units but controls contact generation
+and selection; the live pillar outcome remains unresolved. Original `170500`
+calls `16D380` and additionally `175510` for vehicle class `0x400000`;
+`170690` selects contacts.
+These boundaries need separate geometry evidence before changing mechanics.
+
 Vehicle chase camera `CA040` (modes 24/32) uses physics-history average
 `165650` for elapsed time. Its entry whole-tick gate now follows positive
 live game time. The `CA424` count load retains carried groups of five spring

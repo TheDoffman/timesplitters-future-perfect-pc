@@ -1,3 +1,34 @@
+## 2026-10-22 — Controlled contact impulse audit
+
+The original rigid-motion fixture now supplies identical zero-depth static
+contacts to the original solver and integrator, independently of the live
+approach. All 864 combinations pass: three normal axes, both signs, centered
+and positive/negative eccentric points, three inverse masses, closing speeds
+4/12, separating speed4, rest, Original60, native120/144 and irregular native
+intervals. Expected linear/angular response comes from the independent
+frictionless inelastic impulse equation with unit inverse inertia. Kinetic
+energy must not increase and all unused vector components must remain zero
+within roundoff. The `missing-wall` mutation removes the original contact solve
+only in these cases and fails their analytical response assertion.
+
+Maximum linear difference is 0.000133514 velocity units and angular difference
+0.000000954. The linear bound includes the original integrator's verified
+0.001*v drag over one authored tick plus 0.00002 roundoff; an initial assertion
+that ignored drag correctly needed its physical expectation corrected.
+Separating/resting contacts need no impact notification, so that counter is
+required only for closing cases. The full vehicle suite passes 19 tests in
+48.77 seconds, including its existing and new mutations. Evidence:
+`logs/native-wall-contact-test.log` and `logs/native-contact-regressions.log`.
+
+This narrows the live obstacle investigation; it does not resolve the pillar
+outcome. Geometry generation, contact selection and world-space contact offsets
+remain controlled by this fixture. The original call path `170500 -> 16D380`,
+with an additional `175510` call for vehicle class `0x400000`, and selection
+`170690` are investigation targets. No production physics change or new game
+build follows from passing these checks. The fixture requires the supported
+private US XBE; asset-free hosted CI skips it. Actual Mac execution and broader
+vehicle handling remain unverified under MAC-060.
+
 ## 2026-10-22 — Straight vehicle obstacle comparison remains unresolved
 
 The same corrected `fb261e1` Windows executable was tested against the Siberia

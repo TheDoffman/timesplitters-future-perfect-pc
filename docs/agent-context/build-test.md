@@ -25,6 +25,16 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`native_rigid_motion.c` also covers 864 identical zero-depth static-contact
+cases against an independent frictionless inelastic impulse equation: signed
+axes, centered/eccentric points, inverse masses, closing/separating/rest speeds
+and regular/irregular native intervals. Its linear error bound accounts for
+original `16CA00` drag `0.001*v` over one authored tick; angular response and kinetic
+energy have separate checks. `missing-wall` drops only these contact solves
+and must fail the analytical response. Broadphase/contact selection and contact
+offsets remain fixture-controlled. This private-XBE test cannot close the live
+pillar discrepancy; source inspection is not geometry acceptance.
+
 The registered vehicle suite now lifts full `CA040` with original spring,
 history-average and angle helpers. Controlled unobstructed collision queries
 and CRT math isolate time consumption. It compares aligned two-second camera
