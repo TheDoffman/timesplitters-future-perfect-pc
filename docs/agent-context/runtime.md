@@ -92,6 +92,17 @@ The supported Windows `3e1ee87` build passes with both contact and spawn
 changes. Its candidate EXE/PDB are retained in `vehicle-3e1ee87`; the older
 `vehicle-67c1864` pair was recycled, and the normal playable pair restored.
 No live contact/spawn check of this new build has run yet.
+The next actor/vehicle contact correction changes only divide `17CBD6`:
+`A7360` already publishes actor `+F8/+FC/+100` in units per authored tick,
+so native `17CAE0` needs a constant 60 conversion to units/second. Dividing
+by the event interval again doubled the reported speed on carried-tick120
+frames while leaving zero-whole frames correct. Gate `17CBAF` is deliberately
+unchanged. Registration `182C04 -> A5CE0` stores the callback at `+170`;
+player collision `C4A3F` and queued `16C126` deliver it. Queue production
+`1709F0/170B53 -> 16C070` drains through `171FB0 -> 16C0D0` before entity
+post-update in `A7870`. `native_vehicle_actor_impact.c` couples original
+publication with direct/queued callback, contact construction and suspension
+impulse response; geometry/motion and final effects remain controlled.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

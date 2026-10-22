@@ -28,6 +28,13 @@ def test_physics_wrapper_retains_original_body():
 
 
 @pytest.mark.parametrize('harness,ranges,mutations', [
+    ('native_vehicle_actor_impact.c', [(0xa7360, 0xa7666), (0x17cae0, 0x17ccc9),
+                                     (0x166060, 0x166136), (0x1665f0, 0x166769),
+                                     (0x17bc90, 0x17bd05), (0x16c070, 0x16c0c6),
+                                     (0x16c0d0, 0x16c16b), (0xa5ce0, 0xa5e34),
+                                     (0x174ec0, 0x175150), (0x167a30, 0x167a6e),
+                                     (0x165690, 0x1656a5), (0x1521d0, 0x15225d)],
+     ['legacy-actor-impact', 'open-gate-only']),
     ('native_spawn_motion.c', [(0x1727a0, 0x172c0c), (0x57040, 0x570d3),
                              (0x167ce0, 0x167d20), (0x167c00, 0x167c92),
                              (0x167ae0, 0x167b3d), (0x1530e0, 0x153187),

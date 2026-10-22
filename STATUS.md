@@ -102,6 +102,19 @@ The previous `67c1864` binary pair was recycled and the normal playable
 for these two additions; live spawn/contact and native Mac acceptance remain
 pending. Build evidence is `logs/native-spawn-motion-build.log`.
 
+Actor/vehicle callback follow-up finds a separate conversion error: entity
+post-update already publishes velocity per authored tick, but `17CAE0` divides
+it by the event's fractional interval again on carried-tick frames. A linked
+original-routine fixture reproduces the same contact reporting 5.2 then 10.4
+units/second at120. Native divide `17CBD6` now retains the constant 60 conversion
+to units/second; its gate and original-mode behavior stay unchanged. Direct
+and queued event delivery now agree across60/120/144, including the original
+suspension impulse response. This is controlled single-contact evidence,
+not a live character/vehicle or static-terrain acceptance result.
+The combined timing, vehicle, numeric-join and generation suite passes all
+115 tests (146.56 seconds); 77 context/backlog/scope checks also pass.
+Full Windows build and live acceptance of this addition remain pending.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

@@ -38,6 +38,13 @@ velocity; the full build and built-in checks pass. The retained diagnostic
 pair is `private/build-recovery/vehicle-3e1ee87`. Normal playable `4adb6b0`
 is restored, so force a fresh link when building from the candidate object
 cache again. Live spawn/contact and native Mac checks are still pending.
+`native_vehicle_actor_impact.c` in the same Python suite links original
+`A7360` velocity publication to `17CAE0`, both directly and through original
+registration/queue delivery `A5CE0/16C070/16C0D0`. Original `166060/1665F0`,
+`17BC90`, and `174EC0` with its mass/matrix helpers verify contact speed,
+selected impulses and suspension component changes. Movement/geometry and
+effects are controlled. Old divide and gate-only counterfactuals fail at120;
+all preset clock phases and mismatched producer/event intervals are covered.
 
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts

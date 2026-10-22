@@ -323,6 +323,13 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
  * and negative cases copy the target directly without reaching this divide. */
 static inline float pc_native_divide(uint32_t site, float left, float right)
 {
+    /* Entity post-update A7360 already normalizes +F8/+FC/+100 to movement
+     * per authored tick. The vehicle's actor-contact callback converts that
+     * velocity to units/second; dividing by the event interval again made
+     * carried-tick contacts stronger than intervening fractional contacts.
+     * Preserve callback cadence and the original-mode conversion. */
+    if (site == 0x17CBD6u && g_tsfp_native_timing_active)
+        return left;
     /* Track blending uses an integer keyframe span. The original float delta
      * matched it; fractional catch-up no longer does. Normalize by the span
      * actually selected at 0xCD851, retaining the original multi-tick path. */

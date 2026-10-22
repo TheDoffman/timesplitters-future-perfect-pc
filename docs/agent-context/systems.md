@@ -64,6 +64,13 @@ an offset model vertex, pause, absent history and allocation failure. This is
 shared numeric policy; live visual/physics and native Mac acceptance are pending.
 Windows candidate `3e1ee87` builds and passes its built-in checks with both
 contact and spawn fixes; it is retained separately from normal playable `4adb6b0`.
+Actor/vehicle impact divide `17CBD6` now preserves the native 60 conversion
+factor: actor entity velocity is already normalized by the post-update.
+Original mode and contact dispatch cadence remain unchanged. Original
+publication, event queue, contact construction, impulse selection and actual
+suspension component changes are covered by `native_vehicle_actor_impact.c`.
+This establishes response to controlled individual contacts, not repeated
+contact dynamics or live driving acceptance.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

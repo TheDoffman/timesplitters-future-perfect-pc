@@ -5760,3 +5760,40 @@ the superseded `vehicle-67c1864` pair was recycled. The normal playable
 `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
 No game session was launched for these two additions. Live spawn/contact,
 broader handling, measured pacing and native Mac validation remain pending.
+
+### Actor-to-vehicle contact velocity units
+
+The previously deferred `17CBAF` gate cannot safely be treated as another
+missing fractional-update gate. Original entity post-update `A7360` already
+divides displacement by live game time at `A75F8`, publishing units per
+authored tick in entity `+F8/+FC/+100`. Callback `17CAE0` then multiplies those
+fields by60, but on positive whole counts also divides by live time again at
+`17CBD6`. The same constant-speed contact at120 therefore alternates between
+the correct speed and twice that speed. Merely opening the gate would make
+both phases wrong. Native `17CBD6` now returns its numerator, leaving the
+original mode, callback cadence and `17CBAF` gate unchanged.
+
+Jeep initialization registers this callback as event7 (`182C04 -> A5CE0`),
+stored at entity `+170`. Player collision delivers it at `C4A3F`; original
+physics contact handling queues events through `1709F0/170B53 -> 16C070` and
+drains them at `16C126` in `16C0D0`. `A7870` runs the physics clock before
+the entity post-update, so prior published velocity may be consumed by the
+next interval. Reusing a different interval must not rescale that velocity.
+
+`native_vehicle_actor_impact.c` executes full original publication `A7360`,
+registration `A5CE0`, queue append/drain `16C070/16C0D0`, callback `17CAE0`,
+point velocity/contact construction `166060/1665F0`, impulse selection
+`17BC90`, and suspension response `174EC0` with its original mass/matrix
+helpers. Motion and contact geometry are prescribed; allocator release and
+the final effect service are controlled. Each case is an independent contact,
+not a repeated-contact or driving simulation. It checks all carried-clock
+phases at60/120/144, signed/stationary motion, 25 combinations of producer and
+event intervals, original-mode multi-tick behavior, pause and guest ABI.
+Both contact speed and actual suspension component changes are asserted.
+
+After fixing test-only stub declarations and contact-normal sign expectation,
+the before-fix run passes60 and zero-whole120, then fails the carried120 case:
+normal speed -10.4 instead of -5.2 (`logs/native-actor-impact-before.log`).
+The corrected fixture passes (`logs/native-actor-impact-after.log`), including
+negative controls restoring the old division or opening only the old gate.
+Full build, live vehicle/actor contacts and native Mac validation are pending.
