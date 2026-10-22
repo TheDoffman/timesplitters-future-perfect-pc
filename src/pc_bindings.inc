@@ -10,6 +10,53 @@ enum { VK_XBUTTON1=5, VK_XBUTTON2=6, VK_F9=0x78, VK_F10=0x79, VK_F11=0x7a,
        VK_F23=0x86, VK_F24=0x87, VK_LWIN=0x5b, VK_RWIN=0x5c };
 #endif
 _Static_assert(CONTROL_COUNT == PC_ACTION_COUNT, "PC settings action order must match runtime controls");
+static SRWLOCK g_pc_weapon_lock=SRWLOCK_INIT;
+static PcWeaponKeys g_pc_weapon_keys;
+static unsigned long long now_ms(void);
+int pc_weapon_slot_take(void)
+{
+    int active=pc_controls_weapon_slots_active(),slot;
+    AcquireSRWLockExclusive(&g_pc_weapon_lock);
+    slot=pc_weapon_keys_take(&g_pc_weapon_keys,active,now_ms());
+    ReleaseSRWLockExclusive(&g_pc_weapon_lock);
+    return slot;
+}
+
+#include "pc_binding_capture.h"
+static SRWLOCK g_capture_lock=SRWLOCK_INIT;
+static PcBindingCapture g_binding_capture;
+void pc_settings_capture_begin(void) {
+    AcquireSRWLockExclusive(&g_capture_lock);
+    pc_binding_capture_begin(&g_binding_capture,now_ms());
+    ReleaseSRWLockExclusive(&g_capture_lock);
+}
+void pc_settings_capture_key(int key) {
+    AcquireSRWLockExclusive(&g_capture_lock);
+    pc_binding_capture_key(&g_binding_capture,key);
+    ReleaseSRWLockExclusive(&g_capture_lock);
+}
+void pc_settings_capture_end(void) {
+    AcquireSRWLockExclusive(&g_capture_lock);
+    if(g_binding_capture.phase)g_binding_capture.phase=3;
+    g_binding_capture.event=0;
+    ReleaseSRWLockExclusive(&g_capture_lock);
+}
+int pc_settings_capture_blocked(void) {
+    AcquireSRWLockShared(&g_capture_lock);int active=g_binding_capture.phase!=0;
+    ReleaseSRWLockShared(&g_capture_lock);return active;
+}
+int pc_settings_capture_event(void) {
+    AcquireSRWLockExclusive(&g_capture_lock);int event=g_binding_capture.event;g_binding_capture.event=0;
+    ReleaseSRWLockExclusive(&g_capture_lock);return event;
+}
+int pc_settings_capture_pump(void) {
+    if(!pc_settings_capture_blocked())return 0;
+    unsigned char keys[256]={0};int focus=pc_controls_binding_keys(keys);
+    AcquireSRWLockExclusive(&g_capture_lock);
+    pc_binding_capture_step(&g_binding_capture,keys,focus,now_ms());
+    ReleaseSRWLockExclusive(&g_capture_lock);
+    return 1; /* Suppress this release sample too. */
+}
 
 const char *const pc_action_labels[PC_ACTION_COUNT] = {
     "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Y action",
@@ -17,16 +64,22 @@ const char *const pc_action_labels[PC_ACTION_COUNT] = {
     "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out",
     "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left",
     "Strafe right", "Crouch", "Look up (optional key)", "Look down (optional key)",
-    "Look left (optional key)", "Look right (optional key)", "Aim"
+    "Look left (optional key)", "Look right (optional key)", "Aim",
+#define PC_WEAPON_SLOT(n,key) "Weapon slot " #n,
+#include "pc_weapon_slots.def"
+#undef PC_WEAPON_SLOT
 };
 
 void pc_settings_defaults(PcSettings *s)
 {
     static const int keys[PC_ACTION_COUNT][PC_BINDING_SLOTS] = {
-        {'E',VK_SPACE,VK_RETURN}, {'F',VK_MBUTTON,VK_XBUTTON1,VK_BACK}, {'R'}, {'Y'},
-        {'2'}, {'1'}, {VK_ESCAPE}, {VK_TAB}, {'G',VK_XBUTTON2}, {VK_LBUTTON},
-        {VK_UP,VK_PRIOR,'Q'}, {VK_DOWN,VK_NEXT,'V'}, {VK_LEFT,VK_F24}, {VK_RIGHT,VK_F23},
-        {'W'}, {'S'}, {'A'}, {'D'}, {VK_CONTROL,'C'}, {0}, {0}, {0}, {0}, {VK_RBUTTON}
+        {'E',VK_SPACE}, {'F',VK_MBUTTON}, {'R'}, {'Y'},
+        {'X'}, {'Z'}, {VK_ESCAPE}, {VK_TAB}, {'G',VK_XBUTTON2}, {VK_LBUTTON},
+        {VK_UP,VK_PRIOR}, {VK_DOWN,VK_NEXT}, {VK_LEFT,VK_F24}, {VK_RIGHT,VK_F23},
+        {'W'}, {'S'}, {'A'}, {'D'}, {VK_CONTROL,'C'}, {0}, {0}, {0}, {0}, {VK_RBUTTON},
+#define PC_WEAPON_SLOT(n,key) {key},
+#include "pc_weapon_slots.def"
+#undef PC_WEAPON_SLOT
     };
     memset(s, 0, sizeof *s);
     memcpy(s->keys, keys, sizeof keys);
@@ -95,7 +148,7 @@ int pc_settings_read(PcSettings *s, char *error, size_t bytes)
         snprintf(error, bytes, "Player 1 is using a controller profile. Select the PC keyboard profile before editing keyboard bindings.");
         return 0;
     }
-    for (i=0; i<CONTROL_COUNT; i++) for (j=0; j<g_ctl[0].bind[i].count; j++) {
+    for (i=0; i<CONTROL_COUNT; i++) for (j=0; j<g_ctl[0].bind[i].count && j<PC_BINDING_SLOTS; j++) {
         if (g_ctl[0].bind[i].src[j].kind == SRC_KEY) s->keys[i][j] = g_ctl[0].bind[i].src[j].arg;
     }
     ReleaseSRWLockShared(&g_pc_bindings_lock);
@@ -256,11 +309,11 @@ failure:
 
 int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
 {
-    char bindings[4096]="{", value[128];
+    char bindings[16384]="{", value[128];
     char *text = NULL;
     const char *controller, *mouse;
     size_t used=1;
-    int i,j,first;
+    int i,j;
     PcSettings current;
     if (!pc_settings_read(&current,error,bytes)) return 0;
     if (!isfinite(s->sensitivity) || s->sensitivity < .001 || s->sensitivity > 10) {
@@ -268,13 +321,13 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     }
     for (i=0;i<PC_ACTION_COUNT;i++) {
         used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"%s\":[",i?",":"",CONTROLS[i].name);
-        first=1;
         for (j=0;j<PC_BINDING_SLOTS;j++) {
             int key=s->keys[i][j];
             if (!pc_settings_key_allowed(key)) {
                 snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
             }
-            if (key) { used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",first?"":",",key); first=0; }
+            if (key) used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",j?",":"",key);
+            else used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"none\"",j?",":"");
         }
         used += (size_t)snprintf(bindings+used,sizeof bindings-used,"]");
     }
@@ -295,11 +348,15 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     for (i=0;i<CONTROL_COUNT;i++) {
         Binding *b=&g_ctl[0].bind[i];
         memset(b,0,sizeof *b);
+        b->count=PC_BINDING_SLOTS;
         for (j=0;j<PC_BINDING_SLOTS;j++) if (s->keys[i][j]) {
-            b->src[b->count].kind=SRC_KEY; b->src[b->count++].arg=(short)s->keys[i][j];
+            b->src[j].kind=SRC_KEY; b->src[j].arg=(short)s->keys[i][j];
         }
     }
     ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+    AcquireSRWLockExclusive(&g_pc_weapon_lock);
+    memset(&g_pc_weapon_keys,0,sizeof g_pc_weapon_keys);
+    ReleaseSRWLockExclusive(&g_pc_weapon_lock);
     pc_controls_set_mouse(s->sensitivity,s->enabled,s->invert_y);
     fprintf(stderr,"[PC-SETTINGS] Saved and applied keyboard/mouse settings to %s\n",g_path);
     free(text); return 1;
@@ -307,4 +364,38 @@ failure:
     free(text);
     snprintf(error,bytes,"Could not safely save the controls file (system error %lu). Your active bindings were kept.",(unsigned long)GetLastError());
     return 0;
+}
+
+/* Only missing actions receive defaults. Keep explicit Unbound and custom
+ * assignments. Old stock White=1/Black=2 are superseded; no disk write occurs
+ * until the player saves. The launcher uses the same migration policy. */
+static void pc_weapon_bindings_migrate(const char *text)
+{
+    const char *controller=pc_controller(text);
+    const char *bindings=controller?pc_member(controller,"bindings",NULL):NULL;
+    Controller *c=&g_ctl[0];
+    if(!bindings || c->device!=DEV_KEYBOARD)return;
+    if(!pc_member(bindings,"weapon_slot_1",NULL)) {
+        const int actions[2]={5,4},keys[2]={'1','2'};
+        for(int n=0;n<2;n++) {
+            Binding *b=&c->bind[actions[n]];
+            if(b->count==1 && b->src[0].kind==SRC_KEY && b->src[0].arg==keys[n]) {
+                int replacement=n?'X':'Z',used=0;
+                for(int a=0;a<CONTROL_COUNT;a++)for(int j=0;j<c->bind[a].count;j++)
+                    if(c->bind[a].src[j].kind==SRC_KEY && c->bind[a].src[j].arg==replacement)used=1;
+                memset(b,0,sizeof *b);
+                if(!used) {b->count=1;b->src[0].kind=SRC_KEY;b->src[0].arg=(short)replacement;}
+            }
+        }
+    }
+    for(int i=0;i<PC_WEAPON_SLOT_COUNT;i++) {
+        int action=PC_PAD_ACTION_COUNT+i,key=i<9?'1'+i:i==9?'0':0,used=0;
+        if(pc_member(bindings,CONTROLS[action].name,NULL))continue;
+        for(int a=0;a<CONTROL_COUNT;a++)for(int j=0;j<c->bind[a].count;j++)
+            if(c->bind[a].src[j].kind==SRC_KEY && c->bind[a].src[j].arg==key)used=1;
+        if(key && !used) {
+            Binding *b=&c->bind[action];
+            b->count=1;b->src[0].kind=SRC_KEY;b->src[0].arg=(short)key;
+        }
+    }
 }

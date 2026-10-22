@@ -7,8 +7,9 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
 
+@pytest.mark.parametrize('source', ['pc_display_menu.c', 'pc_prompts.c'])
 @pytest.mark.skipif(sys.platform != 'darwin', reason='Native Mac menu compile contract')
-def test_native_menu_callbacks_compile(tmp_path):
+def test_native_menu_callbacks_compile(tmp_path, source):
     # The portable pointer fixture supplies its own FOV callback. Compile the
     # real translation unit too: a Windows-only callback guard otherwise passes
     # policy tests but breaks the Mac link after a shared menu feature is added.
@@ -18,7 +19,7 @@ def test_native_menu_callbacks_compile(tmp_path):
         '-I' + str(ROOT / 'src'), '-I' + str(RUNTIME / 'templates/runtime'),
         '-I' + str(RUNTIME / 'src'),
         '-I' + str(RUNTIME / 'src/input'), '-I' + str(RUNTIME / 'src/config'),
-        str(ROOT / 'src/pc_display_menu.c')], cwd=tmp_path, env=environment,
+        str(ROOT / 'src' / source)], cwd=tmp_path, env=environment,
         capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
 

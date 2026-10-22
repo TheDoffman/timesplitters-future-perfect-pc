@@ -213,17 +213,17 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
     case WM_INITDIALOG: {
         int i;
         LVCOLUMNA column={0};
-        const char *headers[]={"Action","Primary","Alternate","Extra 1","Extra 2"};
+        const char *headers[]={"Action","Primary","Alternate"};
         e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
         control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 shows/hides the menu bar.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
         e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
         ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
-        for(i=0;i<5;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
+        for(i=0;i<=PC_BINDING_SLOTS;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
         for(i=0;i<PC_ACTION_COUNT;i++) {
             LVITEMA item={0}; item.mask=LVIF_TEXT; item.iItem=i; item.pszText=(char *)pc_action_labels[i]; ListView_InsertItem(e->list,&item);
         }
         control(d,"COMBOBOX","",WS_TABSTOP|CBS_DROPDOWNLIST,ID_SLOT);
-        for(i=1;i<5;i++) SendDlgItemMessageA(d,ID_SLOT,CB_ADDSTRING,0,(LPARAM)headers[i]);
+        for(i=1;i<=PC_BINDING_SLOTS;i++) SendDlgItemMessageA(d,ID_SLOT,CB_ADDSTRING,0,(LPARAM)headers[i]);
         SendDlgItemMessage(d,ID_SLOT,CB_SETCURSEL,0,0);
         control(d,"BUTTON","Change binding...",WS_TABSTOP|BS_PUSHBUTTON,ID_CHANGE);
         control(d,"BUTTON","Clear binding",WS_TABSTOP|BS_PUSHBUTTON,ID_CLEAR);

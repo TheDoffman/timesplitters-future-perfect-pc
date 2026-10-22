@@ -74,6 +74,47 @@ BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 #undef BOT_STUB
+/* Other shared translation-unit hooks must not run in this display fixture. */
+int pc_weapon_slot_take(void) { CHECK(0);return 0; }
+STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_001BA130) STUB(sub_00142820)
+STUB(sub_00071B60) STUB(sub_00041DC0)
+static int storage_continued,storage_chosen,storage_choose_ok,storage_scanned;
+void sub_00024EC0(void) {
+    CHECK(WORD_AT(g_esp+4)==0xffffffffu&&WORD_AT(g_esp+8)==0x190f70u&&WORD_AT(g_esp+12)==0);
+    CHECK(WORD_AT(0x74f9fc)==0);storage_scanned++;g_esp+=4;
+}
+void sub_00192E60(void) {
+    CHECK(WORD_AT(WORD_AT(g_esp+4)+0x18c)==0 && WORD_AT(0x7a1564)==0);
+    storage_continued++;g_esp+=4;
+}
+void sub_00192770(void) { WORD_AT(0x7a1564)=WORD_AT(WORD_AT(g_esp+4)+0x18c);g_esp+=4; }
+void sub_00191470(void) { CHECK(WORD_AT(WORD_AT(g_esp+8)+0x14)==0);g_esp+=4; }
+int pc_storage_drives(PcStorageDrive *d,int n){
+    CHECK(n>=3);memset(d,0,3*sizeof *d);
+    strcpy(d[0].name,"HDD (D:)");strcpy(d[1].name,"Local Disk (C:)");strcpy(d[2].name,"Steam (F:)");
+    strcpy(d[0].path,"D:/");strcpy(d[1].path,"C:/");strcpy(d[2].path,"F:/");
+    d[1].current=d[1].game=1;
+    for(int i=0;i<3;i++){d[i].available=(uint64_t)(i+1)*1024*1024*1024;d[i].total=d[i].available*2;d[i].known=1;}
+    return 3;
+}
+int pc_storage_choose(const PcStorageDrive *d,char *e,size_t n){
+    CHECK(!strcmp(d->name,"HDD (D:)")||!strcmp(d->name,"Local Disk (C:)"));storage_chosen++;
+    if(!storage_choose_ok)snprintf(e,n,"Test session: save location is locked.");
+    return storage_choose_ok;
+}
+const char *const pc_action_labels[PC_ACTION_COUNT]={0};
+static int capture_active,capture_begins,capture_ends;
+void pc_settings_capture_begin(void) { capture_active=1;capture_begins++; }
+void pc_settings_capture_end(void) { capture_active=0;capture_ends++; }
+int pc_settings_capture_event(void) { CHECK(capture_active);return 0; }
+void pc_settings_defaults(PcSettings *s) { (void)s;CHECK(0); }
+int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)s;(void)e;(void)n;CHECK(0);return 0; }
+int pc_settings_save(const PcSettings *s,char *e,size_t n) { (void)s;(void)e;(void)n;CHECK(0);return 0; }
+void pc_settings_key_name(int k,char *t,size_t n) { (void)k;(void)t;(void)n;CHECK(0); }
+int pc_settings_conflict(const PcSettings *s,int a,int k) { (void)s;(void)a;(void)k;CHECK(0);return 0; }
+int pc_settings_key_allowed(int k) { (void)k;CHECK(0);return 0; }
+int pc_settings_assign(PcSettings *s,int a,int slot,int k,int move) { (void)s;(void)a;(void)slot;(void)k;(void)move;CHECK(0);return 0; }
+void pc_controls_set_mouse(double s,int enabled,int invert) { (void)s;(void)enabled;(void)invert;CHECK(0); }
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
 void sub_00075B70(void) {
@@ -135,10 +176,10 @@ static void call(uint32_t address,int selected,unsigned buttons)
     CHECK(g_esp==0x700004 && g_esi==0xABC && g_ebx==0xDEF && g_fp_top==3);
 }
 static uint32_t observed_builder_flags,observed_row_flags;
-static uint32_t observed_callbacks[2],observed_callback_count;
+static uint32_t observed_callbacks[3],observed_callback_count;
 static void button_probe(void)
 {
-    if(observed_callback_count<2)observed_callbacks[observed_callback_count++]=WORD_AT(g_esp+20);
+    if(observed_callback_count<3)observed_callbacks[observed_callback_count++]=WORD_AT(g_esp+20);
     observed_builder_flags=WORD_AT(0x500028);
     observed_row_flags=WORD_AT(g_esp+12);
     g_eax=0x510000;g_esp+=4;
@@ -161,6 +202,18 @@ int main(int argc,char **argv)
     {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* Descriptor +12 is a per-frame callback, not a destructor. */
+        CHECK(kb_caption());kb_page=KB_CAPTURE;
+        call(KB_BUILD,0,0);
+        CHECK(!(WORD_AT(0x200028)&5u)); /* Selectable instruction keeps ticks active. */
+        kb_capture_pending=1;
+        for(int frame=0;frame<2;frame++) {
+            call(WORD_AT(kb_storage+4),0,0);
+            if(WORD_AT(kb_storage+12))call(WORD_AT(kb_storage+12),0,0);
+            CHECK(capture_active && capture_begins==1 && capture_ends==0);
+        }
+        pc_settings_capture_end();kb_page=KB_HOME;
+    }
     { /* Original and explicit 640x480 share dimensions but not saved identity. */
         PcDisplayMode choices[]={{0,0},{640,480}},filtered[2];int selected;
         CHECK(pc_display_filter_modes(choices,2,0,choices[0],filtered,2,&selected)==2 && selected==0);
@@ -306,8 +359,8 @@ int main(int argc,char **argv)
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
+        CHECK(observed_callback_count==3 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
+        CHECK(observed_callbacks[1]==KB_OPEN && observed_callbacks[2]==callback && WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
     /* Pause Options supplies its own centered (or split-screen) style.
@@ -325,6 +378,44 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;
     pc_display_menu_button(button_probe);
     CHECK((observed_row_flags&0x21)==0x21 && WORD_AT(0x70000c)==0x20000 && g_esp==0x700004);
+    /* Drives use alphabetical letters/names, independent of the active drive,
+       and keep host IDs away from the console device table. */
+    {
+        PcStorageDrive order[3]={0};
+        strcpy(order[0].path,"F:/");strcpy(order[1].path,"D:/");strcpy(order[2].path,"C:/");
+        order[0].current=1;
+        qsort(order,3,sizeof *order,sd_drive_order);
+        CHECK(!strcmp(order[0].path,"C:/") && !strcmp(order[1].path,"D:/") && order[2].current);
+        memset(order,0,sizeof order);
+        strcpy(order[0].name,"Zebra");strcpy(order[1].name,"alpha");strcpy(order[2].name,"Beta");
+        order[0].current=1;
+        qsort(order,3,sizeof *order,sd_drive_order);
+        CHECK(!strcmp(order[0].name,"alpha") && !strcmp(order[1].name,"Beta") && order[2].current);
+        int opened=returned;built_rows=built_row_count=0;
+        g_esp=0x700000;WORD_AT(g_esp)=0x1944c3;
+        WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+8)=0;
+        WORD_AT(g_esp+12)=0x24c00;WORD_AT(g_esp+16)=0;
+        WORD_AT(g_esp+20)=0x192e60;WORD_AT(g_esp+24)=0x191470;
+        pc_display_menu_button(sub_00079D60_gen);
+        CHECK(built_row_count==3 && built_ids[0]==0 && built_ids[1]==1 && built_ids[2]==2);
+        CHECK(returned==opened && g_esp==0x700004 && g_eax==0x200000);
+        CHECK(WORD_AT(0x700004)==0x510000 && WORD_AT(0x700014)==0x192e60 && WORD_AT(0x700018)==0x191470);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+SD_TEXT(0)),"\vs85Local Disk (C:)\vs100"));
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(1)),"HDD (D:)"));
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(2)),"Steam (F:)"));
+        WORD_AT(0x300038)=0;WORD_AT(0x74f9ec)=6;
+        call(0x192770,1,0);CHECK(WORD_AT(0x7a1564)==0 && WORD_AT(0x30018c)==1);
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(SD_DETAILS)),"1.0 GiB free / 2.0 GiB total"));
+        call(SD_SELECT,1,0);CHECK(storage_chosen==1 && !storage_continued && returned==opened);
+        CHECK(strstr((char *)(g_xbox_mem_offset+SD_TEXT(SD_DETAILS)),"locked"));
+        storage_choose_ok=1;call(SD_SELECT,1,0);
+        CHECK(storage_chosen==2 && storage_continued==1 && storage_scanned==1 && sd_drives[1].current && returned==opened);
+        call(SD_SELECT,1,0);CHECK(storage_continued==2 && storage_chosen==2);
+        call(SD_SELECT,0,0);CHECK(storage_continued==3 && storage_chosen==3 && sd_drives[0].current && returned==opened);
+        WORD_AT(0x700008)=0x200200;WORD_AT(0x200214)=2;call(SD_DRAW,2,0);
+        CHECK(WORD_AT(0x200214)==2);
+        WORD_AT(0x74f9ec)=7;call(0x192770,3,0);CHECK(WORD_AT(0x7a1564)==3);
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

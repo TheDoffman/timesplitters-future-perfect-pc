@@ -73,17 +73,70 @@ def test_fixture_and_disposable_copy_lifecycle(tmp_path,monkeypatch):
     monkeypatch.setenv('TSFP_TEXTURE_PACK_DIR',str(tmp_path/'personal-pack'))
     monkeypatch.setenv('TSFP_TEXTURE_MODE','4k')
     monkeypatch.setenv('TSFP_TEXTURE_DUMP_DIR',str(tmp_path/'personal-dumps'))
+    monkeypatch.setenv('TSFP_SAVE_LOCATION_LOCK','0')
     env=profile.prepare_run(tmp_path,run)
-    relative=Path('UserData/45410066/16D15BD8D404/tsftrpft')
+    relative=Path('UserData/45410066')/profile.TEST_SLOT/'tsftrpft'
     saved=(canonical/relative).read_bytes()
+    assert not (run/'saves/UserData/45410066/16D15BD8D404').exists()
     (run/'saves'/relative).write_bytes(b'changed during gameplay')
     assert (canonical/relative).read_bytes()==saved
     profile.prepare_run(tmp_path,run)
     assert (run/'saves'/relative).read_bytes()==saved
+    assert env['TSFP_SAVE_LOCATION_LOCK']=='1'
+    preference=run/'save-location.txt'
+    preference.write_text(str(tmp_path/'chosen-drive/Saves'))
+    profile.prepare_run(tmp_path,run)
+    assert preference.read_text()==str(tmp_path/'chosen-drive/Saves')
+    assert not (tmp_path/'chosen-drive').exists()
     assert env['RECOMP_XMV_PLAY']=='0'
     assert env['TSFP_TEXTURE_PACK_DIR']==str(tmp_path/'assets/textures')
     assert env['TSFP_TEXTURE_MODE']=='classic'
     assert 'TSFP_TEXTURE_DUMP_DIR' not in env
     assert all(str(run) in env[key] for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG','TSFP_CRASH_DIR'))
+    # Legacy Test Lab fixtures kept the Player 1 folder while changing the
+    # display name, making a new Player 1 fail with ERROR_ALREADY_EXISTS.
+    import json
+    legacy='16D15BD8D404'
+    current_base=Path('UserData/45410066')/profile.TEST_SLOT
+    old_base=current_base.with_name(legacy)
+    (canonical/current_base).rename(canonical/old_base)
+    manifest=json.loads((canonical/'fixture.json').read_text())
+    manifest['files']={(old_base/Path(name).name).as_posix() if Path(name).parent==current_base else name:digest
+        for name,digest in manifest['files'].items()}
+    (canonical/'fixture.json').write_text(json.dumps(manifest))
+    legacy_run=tmp_path/'private/test-saves/legacy'
+    profile.prepare_run(tmp_path,legacy_run)
+    assert (legacy_run/'saves'/relative).read_bytes()==saved
+    assert not (legacy_run/'saves'/old_base).exists()
+    # An untouched old test copy is retained outside the game's UserData tree.
+    old=legacy_run/'saves'/old_base;old.mkdir()
+    for name in ('SaveMeta.xbx','tsftrpft'):(old/name).write_bytes((canonical/old_base/name).read_bytes())
+    profile.prepare_run(tmp_path,legacy_run)
+    assert not old.exists()
+    assert (legacy_run/'legacy-fixture-backup'/legacy/'tsftrpft').read_bytes()==saved
     (run/'run.lock').write_text('in use')
     with pytest.raises(ValueError,match='in use'):profile.prepare_run(tmp_path,run)
+
+
+@pytest.mark.skipif(profile.os.name!='nt',reason='Windows bounded play runner')
+@pytest.mark.parametrize('manual',[False,True])
+def test_manual_drive_selection_is_explicit(tmp_path,monkeypatch,manual):
+    import io
+    game=tmp_path/'private/game';game.mkdir(parents=True)
+    (game/'default.xbe').write_bytes(b'test executable')
+    monkeypatch.setattr(profile,'XBE_SHA256',hashlib.sha256(b'test executable').hexdigest())
+    run=tmp_path/'private/test-saves/manual';run.mkdir(parents=True)
+    monkeypatch.setattr(profile,'prepare_run',lambda root,path:{'TSFP_SAVE_LOCATION_LOCK':'1'})
+    monkeypatch.setattr(profile,'recycle_disks',lambda root,path:None)
+    captured={}
+    class Child:
+        pid=123;returncode=0
+        stdout=io.BytesIO();stderr=io.BytesIO()
+        def wait(self,timeout=None):return 0
+        def poll(self):return 0
+    def launch(*args,**kwargs):
+        captured.update(kwargs['env']);return Child()
+    monkeypatch.setattr(profile.subprocess,'Popen',launch)
+    assert profile.play(tmp_path,run,1,allow_save_drive_changes=manual)==0
+    assert captured['TSFP_SAVE_LOCATION_LOCK']==('0' if manual else '1')
+    assert not (run/'run.lock').exists()

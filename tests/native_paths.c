@@ -9,6 +9,7 @@
 
 void *recomp_lookup(ULONG address) { (void)address; abort(); }
 void *recomp_lookup_manual(ULONG address) { (void)address; abort(); }
+extern int xbox_set_profile_root_utf8(const char *);
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %d: %s\n", __LINE__, #x); return 1; } } while (0)
 static int expect(const char *guest, const char *base, const char *relative)
 {
@@ -46,6 +47,16 @@ int main(int argc, char **argv)
     CHECK(st.st_size == (off_t)0x465400 * 512 && (uint64_t)st.st_blocks * 512 < 1024 * 1024);
     xbox_path_init(game, other);
     CHECK(!expect("\\Device\\Harddisk0\\partition1\\udata\\45410066\\profile", other, "UserData/45410066/profile"));
+    CHECK(xbox_set_profile_root_utf8(save));
+    CHECK(!expect("U:\\45410066\\profile",save,"UserData/45410066/profile"));
+    CHECK(!expect("\\Device\\Harddisk0\\partition1\\UDATA\\45410066\\profile",save,"UserData/45410066/profile"));
+    CHECK(!expect("T:\\45410066\\cache",other,"TitleData/45410066/cache"));
+    CHECK(!expect("\\Device\\Harddisk0\\partition0",other,"Partition0.img"));
+    CHECK(!expect("D:\\pak\\test.pak",game,"pak/test.pak"));
+    CHECK(!xbox_set_profile_root_utf8("missing-relative-folder"));
+    CHECK(!expect("U:\\45410066\\profile",save,"UserData/45410066/profile"));
+    CHECK(xbox_set_profile_root_utf8(""));
+    CHECK(!expect("U:\\45410066\\profile",other,"UserData/45410066/profile"));
     puts("PASS: native save/asset paths, partition table, sparse sizing and preservation, save-root switching");
     return 0;
 }

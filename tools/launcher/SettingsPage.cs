@@ -49,7 +49,7 @@ namespace TimeSplitters.Launcher
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate;
         readonly TextBlock performanceAdvice;
-        readonly Button[,] bindingButtons = new Button[24,4];
+        readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
         static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));Ui.Freeze(brush);return brush; }
         static readonly Brush Ink = ColorBrush(228,237,245);
@@ -115,13 +115,13 @@ namespace TimeSplitters.Launcher
             var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
             var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
             var actionHeading=PageTheme.Text("ACTION",11,"#B4C7D8");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
-            for(int slot=0;slot<4;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),11,"#B4C7D8");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
-            for (int i=0;i<24;i++)
+            for(int slot=0;slot<GameSettings.BindingSlots;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),11,"#B4C7D8");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
+            for (int i=0;i<GameSettings.Actions.Length;i++)
             {
                 var row=new Grid { Margin=new Thickness(0,0,0,3), Background=i%2==0?PageTheme.Brush("#172B3F"):Brushes.Transparent };
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(200) });
                 var label=Text(GameSettings.Labels[i],12);label.VerticalAlignment=VerticalAlignment.Center;label.Margin=new Thickness(8,7,8,7);row.Children.Add(label);
-                for (int j=0;j<4;j++)
+                for (int j=0;j<GameSettings.BindingSlots;j++)
                 {
                     row.ColumnDefinitions.Add(new ColumnDefinition());
                     int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");Ui.Tip(button,GameSettings.Labels[i]+", binding "+(j+1));
@@ -247,7 +247,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         public async void CheckTexturesIfOptedIn()
         { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }

@@ -149,6 +149,22 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("weapon slots migrate stock keys, preserve custom keys and round trip",()=>{
+                var r=Root("weapon-slots");
+                Put(r,"Settings/pc-controls.json","{\"controllers\":[{\"port\":1,\"device\":\"keyboard\",\"bindings\":{\"white\":\"key:1\",\"black\":\"key:2\",\"x\":\"key:3\"}}]}");
+                var m=GameSettings.Load(r,null);
+                Require(GameSettings.Actions.Length==34 && GameSettings.Labels.Length==34);
+                Require(GameSettings.KeyCode(m.Binding(4)[0])=='X' && GameSettings.KeyCode(m.Binding(5)[0])=='Z');
+                Require(GameSettings.KeyCode(m.Binding(24)[0])=='1' && GameSettings.KeyCode(m.Binding(25)[0])=='2');
+                Require(m.Binding(26)[0]=="none" && GameSettings.KeyCode(m.Binding(2)[0])=='3');
+                Require(GameSettings.KeyCode(m.Binding(33)[0])=='0');
+                Reject(()=>m.Assign(33,0,'1',false));
+                m.Assign(33,0,'1',true);m.Assign(25,0,0,true);m.Save();
+                m=GameSettings.Load(r,null);
+                Require(m.Binding(24)[0]=="none" && m.Binding(25)[0]=="none");
+                Require(GameSettings.KeyCode(m.Binding(33)[0])=='1');
+                m.ResetControls();Require(GameSettings.KeyCode(m.Binding(24)[0])=='1');
+            });
             Test("Auto display capability, default and persistent manual override",()=>{
                 string root=Root("auto-display");var model=GameSettings.Load(root,null);
                 Require(model.CanAutoResolution && model.Width==1 && model.Height==1);
@@ -428,8 +444,8 @@ public static class LauncherSettingsChecks
                 Put(root,"Settings/pc-controls.json",Json.Encode(json));
                 Put(root,"Settings/runtime.conf","# Keep this comment\nfuture_graphics = keep\nframe_interp = 2\n");
                 var model=GameSettings.Load(root,null);model.Width=3440;model.Height=1440;model.Sensitivity=.35;model.Anisotropy=16;model.Fullscreen=true;
-                model.Assign(14,1,90,false);model.Save();var saved=GameSettings.Load(root,null);
-                Require(saved.Binding(14)[0]=="key:W" && GameSettings.KeyCode(saved.Binding(14)[1])==90);
+                model.Assign(14,1,75,false);model.Save();var saved=GameSettings.Load(root,null);
+                Require(saved.Binding(14)[0]=="key:W" && GameSettings.KeyCode(saved.Binding(14)[1])==75);
                 Require(saved.Width==3440 && saved.Height==1440 && saved.Fullscreen && saved.Interpolation==1 && saved.Anisotropy==16 && saved.Sensitivity==.35);
                 Require(Read(root,"Settings/pc-controls.json").Contains("keep pad") && Read(root,"Settings/pc-controls.json").Contains("future_setting"));
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
@@ -476,6 +492,21 @@ public static class LauncherSettingsChecks
                     using(var stream=File.Create(preview))encoder.Save(stream);
                 }
             }));
+            Test("two binding slots retain primary and alternate from legacy profiles",()=>{
+                string root=Root("two-binding-slots");
+                var model=GameSettings.Load(root,null);model.Save();
+                string path=Path.Combine(root,"Settings/pc-controls.json");
+                string text=File.ReadAllText(path);
+                var doc=Json.Object(text);var profile=(System.Collections.Generic.Dictionary<string,object>)((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First();
+                ((System.Collections.Generic.Dictionary<string,object>)profile["bindings"])["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};
+                File.WriteAllText(path,Json.Encode(doc));
+                model=GameSettings.Load(root,null);
+                Require(GameSettings.BindingSlots==2 && model.Binding(0).Length==2);
+                Require(GameSettings.KeyCode(model.Binding(0)[0])==69 && GameSettings.KeyCode(model.Binding(0)[1])==32);
+                Reject(()=>model.Assign(0,2,'K',true));
+                model.Save();model=GameSettings.Load(root,null);
+                Require(model.Binding(0).Length==2 && !Read(root,"Settings/pc-controls.json").Contains("key:J"));
+            });
             Test("conflicting key requires move and removes only that key",()=>{
                 var model=GameSettings.Load(Root("conflict"),null);Reject(()=>model.Assign(14,1,69,false));
                 model.Assign(14,1,69,true);Require(GameSettings.KeyCode(model.Binding(14)[1])==69);

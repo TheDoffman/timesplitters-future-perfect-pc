@@ -1,0 +1,99 @@
+--- a/src/kernel/kernel_path.c
++++ b/src/kernel/kernel_path.c
+@@ -207,6 +207,48 @@
+     return 0;
+ }
+ 
++
++/* The profile chooser switches future UDATA opens only. Existing handles,
++ * title caches, assets and partition devices keep their original backing. */
++#ifdef _WIN32
++static SRWLOCK s_profile_lock=SRWLOCK_INIT;
++#define PROFILE_LOCK() AcquireSRWLockExclusive(&s_profile_lock)
++#define PROFILE_UNLOCK() ReleaseSRWLockExclusive(&s_profile_lock)
++#else
++#include <pthread.h>
++#include <sys/stat.h>
++static pthread_mutex_t s_profile_lock=PTHREAD_MUTEX_INITIALIZER;
++#define PROFILE_LOCK() pthread_mutex_lock(&s_profile_lock)
++#define PROFILE_UNLOCK() pthread_mutex_unlock(&s_profile_lock)
++#endif
++static char s_profile_root[4096];
++int xbox_set_profile_root_utf8(const char *root)
++{
++    if(!root || strlen(root)>=sizeof s_profile_root)return 0;
++    if(root[0]) {
++#ifdef _WIN32
++        WCHAR wide[MAX_PATH];
++        if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,root,-1,wide,MAX_PATH))return 0;
++        if(!(wide[0]&&wide[1]==L':'&&(wide[2]==L'/'||wide[2]==L'\\')) &&
++           !(wide[0]==L'\\'&&wide[1]==L'\\'))return 0;
++        DWORD attr=GetFileAttributesW(wide);
++        if(attr==INVALID_FILE_ATTRIBUTES || !(attr&FILE_ATTRIBUTE_DIRECTORY))return 0;
++#else
++        struct stat st;
++        if(strlen(root)>=MAX_PATH || root[0]!='/' || stat(root,&st) || !S_ISDIR(st.st_mode))return 0;
++#endif
++    }
++    PROFILE_LOCK();memcpy(s_profile_root,root,strlen(root)+1);PROFILE_UNLOCK();
++    return 1;
++}
++static int profile_root_copy(char *out,size_t capacity)
++{
++    PROFILE_LOCK();size_t n=strlen(s_profile_root);
++    int ok=n>0&&n<capacity;
++    if(ok)memcpy(out,s_profile_root,n+1);
++    PROFILE_UNLOCK();return ok;
++}
++
+ /* ======================================================================== */
+ #if defined(_WIN32)
+ /* ======================================================================== */
+@@ -450,6 +492,7 @@
+     const WCHAR* base_dir  = NULL;
+     const char*  sub_dir   = NULL;
+     char         sub_buf[64];   /* cache_sub_dir */
++    char profile_utf8[4096];WCHAR profile_wide[MAX_PATH];
+     int          skip;
+ 
+     if (!xbox_path || !host_path_buf || buf_size == 0)
+@@ -475,6 +518,10 @@
+         if (skip) {
+             remainder = xbox_path + skip;
+             base_dir  = s_rules[i].to_save ? s_save_dir : s_game_dir;
++            if(s_rules[i].sub_win && !strcmp(s_rules[i].sub_win,"\\UserData") &&
++               profile_root_copy(profile_utf8,sizeof profile_utf8) &&
++               MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,profile_utf8,-1,profile_wide,MAX_PATH))
++                base_dir=profile_wide;
+             sub_dir   = cache_sub_dir(s_rules[i].sub_win, '\\', sub_buf, sizeof sub_buf);
+             goto translate;
+         }
+@@ -679,6 +726,7 @@
+     const char* base_dir  = NULL;
+     const char* sub_dir   = NULL;
+     char        sub_buf[64];   /* cache_sub_dir */
++    char profile_utf8[4096];
+     int         skip;
+ 
+     if (!xbox_path || !host_path_buf || buf_size == 0)
+@@ -700,6 +748,8 @@
+         if (skip) {
+             remainder = xbox_path + skip;
+             base_dir  = s_rules[i].to_save ? s_save_dir : s_game_dir;
++            if(s_rules[i].sub_posix && !strcmp(s_rules[i].sub_posix,"/UserData") &&
++               profile_root_copy(profile_utf8,sizeof profile_utf8))base_dir=profile_utf8;
+             sub_dir   = cache_sub_dir(s_rules[i].sub_posix, '/', sub_buf, sizeof sub_buf);
+             goto translate;
+         }
+--- a/titles/futureperfect/src/main.c
++++ b/titles/futureperfect/src/main.c
+@@ -620,6 +620,9 @@
+ #ifdef TSFP_PC_CONTROLS
+         extern int xbox_save_root_utf8(char *, unsigned);
+         extern void pc_storage_set_path(const char *);
++        extern int xbox_set_profile_root_utf8(const char *);
++        extern void pc_storage_set_profile_router(int (*)(const char *));
++        pc_storage_set_profile_router(xbox_set_profile_root_utf8);
+         extern int pc_storage_resolve_root(const char *,char *,size_t);
+         char save_root[4096],selected[4096];
+         if(xbox_save_root_utf8(save_root,sizeof save_root)) {

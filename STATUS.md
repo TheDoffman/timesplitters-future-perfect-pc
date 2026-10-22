@@ -35,7 +35,11 @@ these without game assets; full-original cases require the verified US XBE.
 
 The combined timing/physics/generation/frame-clock/input/projection suite
 passes 151 tests in 174.45 seconds; 21 context/backlog checks also pass.
-The rebuilt game and live corrected-camera acceptance remain pending. Native Mac gameplay and real geometry
+Source fix `24d0ad5` is integrated with main `acf4464` (keyboard/storage
+changes), preserving both historical-fixture exclusions. The integrated
+vehicle/input/menu/storage/fixture/context selection passes 60 tests with two
+Mac-only local skips; four current/historical patch upgrades pass. The rebuilt
+game and live corrected-camera acceptance remain pending. Native Mac gameplay and real geometry
 remain unverified under MAC-060. This fix does not establish full vehicle or
 full-game fidelity.
 
@@ -258,6 +262,89 @@ This proves callback entry, not the taken branch, impulse magnitude or driving
 parity. The retained candidate is now `private/build-recovery/vehicle-60e5b36`;
 the previous `3e1ee87` pair was recycled and playable `4adb6b0` restored with
 its hash verified. See the regression record for evidence and remaining limits.
+
+## 2026-10-22 — Keyboard/storage PR #306 validation
+
+The integrated Windows build at aba3346 and built-in tests passed with alphabetical
+drive-letter ordering. Focused storage/menu/input/profile checks passed: 22 passed,
+2 Mac-only skips. The Windows launcher CI passed; its local rerun stopped at the
+intentional running-game update guard, leaving the other game session untouched.
+Initial Mac runtime CI found getattrlist was used before its unistd.h declaration;
+the storage adapter now includes that header before querying volume names. Native
+Mac gameplay and drive switching remain awaiting validation in MAC-061.
+
+## 2026-10-22 — Host storage screen (uncommitted)
+
+The original Create Profile storage screen now lists mounted host drives directly,
+in alphabetical drive-letter order on Windows (volume-name order on Mac). The user requested plain drive names/letters;
+Game drive/Save drive suffixes have been removed. Earlier Windows visual checks
+at 640x480 and 1920x1080 found C:, HDD D: and Steam F:. Free/total units replace
+console block counts. Shared selection activates UDATA routing immediately and
+writes an atomic preference, preserves existing profiles, and retains failure/status
+feedback on the same screen. Automated Test Lab sessions lock location changes;
+the explicit manual --allow-save-drive-changes option permits the user's drive
+selection test and honors the preference on later manual launches. Changing drives
+refreshes native duplicate-name enumeration and prepares the new title directory
+before the original free-space check. Caches/partition handles are not remounted.
+
+The user's Player 1 creation failure was traced to the old unlocked test fixture:
+its Test Lab metadata occupied Player 1's native directory, producing
+ERROR_ALREADY_EXISTS. The runner now maps fixtures to the game-created Test Lab
+slot and preserves untouched legacy copies outside UserData. This is a test
+fixture correction, not a silent move of personal profiles. The supported Windows
+build and built-in tests pass. The user confirmed immediate saving to another
+drive works in build 2e0d01cc. Native Mac compilation and volume
+interaction remain pending; see MAC-061.
+
+## 2026-10-22 — Themed keyboard and mouse menus (uncommitted)
+
+On `feature/keyboard-weapon-slots` (base `31052eb`), the native game menus now
+include Keyboard and Mouse in main Settings and paused Options. Binding pages
+use the original panel, fonts and highlights, with a keyboard/mouse schematic
+and Primary/Alternate columns. All 34 actions, including ten weapon slots, are
+reachable on short pages. Exactly two keyboard bindings are supported per action
+in the game, native dialogs and both launchers. Existing keyboard profiles retain
+their first pair in memory; loading does not rewrite files. Controller capacity
+is unchanged. Mouse sensitivity, enable and inversion use the same live settings.
+
+Windows x64/MSVC 19.44/D3D11, isolated Test Lab, 1280x720 output: inspected the
+layout and demonstrated single-tap U assignment, E conflict detection without
+menu activation, wheel capture, explicit conflict transfer, clearing the second
+binding, restoring defaults and live sensitivity dragging with persisted JSON.
+Native descriptor +12 runs every frame, so capture cleanup must not be installed
+there. Shared capture latches input events between polls, suppresses menu actions
+and waits for key release. Callback and pure-policy regressions cover these cases.
+Supported Windows build and its tests pass; focused tests passed (11 passed,
+one Mac-only skip) and Windows launcher tests pass. The pause entry is covered by
+the callback insertion fixture; manual paused-game interaction and native Mac
+compilation/input/rendering remain pending. See MAC-001. Personal settings/saves
+were not used; test binding and sensitivity changes were restored to defaults.
+
+## 2026-10-22 — Customizable keyboard weapon slots (uncommitted)
+
+Branch `feature/keyboard-weapon-slots`, main base `31052eb`: 1–9/0 select the
+first ten owned usable inventory slots through the original weapon selection
+path. Exactly ten slots are bindable; variants share their original group and
+empty slots do nothing. Windows F2, Cocoa settings and both launcher hosts share
+the new actions. Missing defaults migrate without overwriting custom bindings;
+stock White=1/Black=2 move to free Z/X keys. Menu/text/focus/capture guards,
+press edges and bounded request lifetime prevent unwanted repeated selection.
+
+Windows x64, MSVC 19.44, D3D11: supported build and native build tests pass;
+35 focused Python tests with 26 subtests pass, including selection/guard contracts.
+The final launcher passes 37 settings checks, 113 updater checks and 13 shared UI
+groups. A separate automated game run restarted during optional-texture tests,
+so that unrelated group stopped at its intentional running-game guard. Earlier
+full launcher tests passed before the final default-key adjustment. Native Mac
+compilation, Cocoa/SDL delivery and physical Mac gameplay remain pending in
+MAC-001; shared tests on Windows do not establish those results.
+
+Follow-up: the binding list is limited to exactly ten slots in the native
+editors and both launchers (34 total actions). Internal weapon IDs/groups still
+use their separate 70-entry bound. The rebuilt Windows game and all supported
+build tests pass; both weapon-slot tests and the complete Windows launcher
+regression run pass, including all 37 settings checks. A fresh isolated Test Lab
+session is prepared for the user; in-game switching still needs user validation.
 ## 2026-10-22 — Mounted-gun mouse cadence
 
 `fix/native-mounted-mouse` corrects two input losses in shared AGUN/CCTV

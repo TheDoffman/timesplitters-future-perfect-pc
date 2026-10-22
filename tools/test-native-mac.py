@@ -20,7 +20,7 @@ EXPECTED_XBE = '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc
 
 def isolated_environment(root, test):
     env = {k: v for k, v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
-    env.update(RECOMP_GAME_DIR=str(root / 'private/game'), RECOMP_SAVE_DIR=str(test),
+    env.update(RECOMP_GAME_DIR=str(root / 'private/game'), RECOMP_SAVE_DIR=str(test), TSFP_SAVE_LOCATION_LOCK='1',
                RECOMP_INPUT_CONFIG=str(test / 'pc-controls.json'), RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                XDG_CACHE_HOME=str(test / 'xdg-cache'),

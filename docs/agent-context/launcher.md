@@ -161,3 +161,21 @@ PR #303 restored the references from the live published release API; the bad
 refresh's upstream empty response has not been independently attributed.
 `repo-context.py` exempts only valid version data inside both existing AUTO blocks;
 question/schema, marker, publisher and workflow changes still require guides.
+
+## Weapon-slot bindings
+
+`GameSettings` appends weapon-slot actions from embedded
+`config/pc-controls.default.json`, retaining the original 24 action indices
+and adding exactly ten weapon slots (34 actions total).
+Windows and Mac launcher binding views use the shared action count; native
+in-game settings use `PC_ACTION_COUNT`. Missing bindings migrate in the draft
+only, respecting custom keys and explicit Unbound. Stock White=1/Black=2 move
+to Z/X if free; conflicting custom assignments are never stolen. Saving and
+resetting use the existing transactional settings paths.
+
+The binding table now exposes `GameSettings.BindingSlots = 2` on both launcher
+hosts. Legacy four-source keyboard profiles retain their first two alternatives
+and normalize on Save; loading does not rewrite the player's configuration.
+The native runtime dialogs use the matching `PC_BINDING_SLOTS`. The in-game
+themed editor applies bindings live through the shared runtime settings API;
+launcher Save retains its existing close-game requirement.

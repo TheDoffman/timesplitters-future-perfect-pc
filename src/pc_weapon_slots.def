@@ -1,0 +1,11 @@
+/* Shared runtime/settings action vocabulary. Ten inventory slots use 1..9,0. */
+PC_WEAPON_SLOT(1, 49)
+PC_WEAPON_SLOT(2, 50)
+PC_WEAPON_SLOT(3, 51)
+PC_WEAPON_SLOT(4, 52)
+PC_WEAPON_SLOT(5, 53)
+PC_WEAPON_SLOT(6, 54)
+PC_WEAPON_SLOT(7, 55)
+PC_WEAPON_SLOT(8, 56)
+PC_WEAPON_SLOT(9, 57)
+PC_WEAPON_SLOT(10, 48)

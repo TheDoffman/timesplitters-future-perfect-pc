@@ -7,7 +7,7 @@ typedef struct MenuSliderTrack {
     unsigned sw,sh;
     uint64_t time;
 } MenuSliderTrack;
-enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_SLIDER_COUNT };
+enum { MENU_MUSIC, MENU_SOUND, MENU_SENSITIVITY, MENU_FOV, MENU_KEYBOARD_SENSITIVITY, MENU_SLIDER_COUNT };
 static MenuSliderTrack menu_slider_tracks[MENU_SLIDER_COUNT];
 static uint32_t menu_slider_drag;
 static MenuSliderTrack menu_slider_owner;
@@ -73,10 +73,13 @@ void pc_display_menu_slider_bar(void (*original)(void))
     original();
 }
 static void menu_slider_fov_pointer(float x,float left,float width);
+static void menu_slider_keyboard_pointer(float x,float left,float width);
 extern void sub_00045390(void),sub_00045820(void);
 static void menu_slider_set(const MenuSliderTrack *track,unsigned kind,float x)
 {
-    if(kind==MENU_FOV) {
+    if(kind==MENU_KEYBOARD_SENSITIVITY) {
+        menu_slider_keyboard_pointer(x,track->x,track->w);
+    } else if(kind==MENU_FOV) {
         menu_slider_fov_pointer(x,track->x,track->w);
     } else if(kind==MENU_SENSITIVITY) {
         uint32_t address=0x007BA3DCu+track->player*0x1E0u;

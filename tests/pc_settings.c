@@ -121,6 +121,7 @@ int main(int argc,char **argv)
         pc_controls_attach(NULL);
         CHECK(pc_settings_read(&current,error,sizeof error));
         CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
+        CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
         puts("PASS: bindings reload in a fresh process"); return 0;
     }
     CHECK(argc==3);
@@ -145,8 +146,12 @@ int main(int argc,char **argv)
     _putenv_s("RECOMP_INPUT_CONFIG",path); _putenv_s("TSFP_PC_INPUT_REPLAY",replay);
     pc_controls_attach(NULL);
     CHECK(pc_settings_read(&settings,error,sizeof error));
+    CHECK(settings.keys[24][0]=='1' && settings.keys[25][0]=='2' && settings.keys[33][0]=='0');
+    CHECK(settings.keys[4][0]=='X' && settings.keys[5][0]=='Z');
     pc_settings_defaults(&current);
     CHECK(!memcmp(settings.keys,current.keys,sizeof current.keys));
+    CHECK(PC_BINDING_SLOTS==2);
+    CHECK(!pc_settings_assign(&settings,14,2,'K',1));
     CHECK(settings.keys[14][0]=='W');
     CHECK(recomp_bindings_sample(0,&pad) && pad.sThumbLY==0);
     CHECK(pc_settings_conflict(&settings,9,VK_XBUTTON2)==8);
@@ -188,6 +193,9 @@ int main(int argc,char **argv)
     CHECK(pc_settings_read(&current,error,sizeof error));
     CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
     CHECK(fabs(current.sensitivity-.35)<.0001 && !current.invert_y);
+    current.keys[19][0]=0;current.keys[19][1]='K';
+    CHECK(pc_settings_save(&current,error,sizeof error));
+    CHECK(pc_settings_read(&current,error,sizeof error) && !current.keys[19][0] && current.keys[19][1]=='K');
     saved=load(path); CHECK(saved && strstr(saved,"key:#74") && strstr(saved,"key:#134")); free(saved);
     {
         char executable[MAX_PATH],command[2*MAX_PATH+32];
@@ -205,6 +213,10 @@ int main(int argc,char **argv)
         pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner) && IsMenu(bar));
         pc_settings_detach(owner); CHECK(!IsMenu(bar));
     }
+    CHECK(pc_settings_read(&settings,error,sizeof error));
+    CHECK(pc_settings_assign(&settings,33,0,'1',1)==1 && !settings.keys[24][0]);
+    { int ok=pc_settings_save(&settings,error,sizeof error); if(!ok)fprintf(stderr,"Final settings save: %s\n",error); CHECK(ok); }
+    CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[33][0]=='1' && !current.keys[24][0]);
     DestroyWindow(owner);
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */

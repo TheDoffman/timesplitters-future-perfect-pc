@@ -299,3 +299,47 @@ It extends the existing common-RHI preservation transaction to A32B32G32R32F,
 including reversed 32-bit channels in CPU capture storage. The existing shared
 resource adapter already allocates/uploads this format. Half-float conversion
 remains supported. Legacy GL still declines the experiment as documented.
+
+## Keyboard inventory selection
+
+The additive `*-keyboard-weapon-slots.patch` wraps US `sub_001BF140` after
+its original body. The shared `pc_weapon_slots_guest.inc` selects owned usable
+inventory through the original variant/cycle predicates and switch/HUD calls;
+see systems.md for the verified addresses. It preserves requests across native
+frames without a simulation tick and expires old requests after 150 ms. Host-only
+bindings are appended after Xbox controls and never emit controller buttons.
+SDL focus loss clears the request/rearm state; capture state is atomic across
+SDL and guest threads. Regenerate guest bodies through the supported build when
+adding/changing the wrapper, and run `tests/test_weapon_slots.py` on both hosts.
+
+## Keyboard menu callback integration
+
+The additive `keyboard-settings-menu` patch blocks port-0 input dispatch during
+shared binding capture (before controller/focus guards), and limits parsed
+keyboard profiles to two sources per action. Controller profiles retain four.
+The themed editor lives in `src/pc_keyboard_menu.inc`, included by the existing
+display-menu hook. It uses verified unused callback bytes in the US executable;
+no generated C is edited. Menu construction, updates, row drawing and live saves
+remain shared between Windows and native Mac. Device illustration geometry
+uses the original menu primitives, not external artwork.
+
+Binding parsing preserves explicit `none` positions. Saving two slots keeps an
+empty Primary distinct from a populated Alternate, including after restart.
+
+## Host save storage adapter
+
+The additive host-save-storage patch adds read-only xbox_save_root_utf8 after
+kernel path initialization. Windows main and native/main.c use it to resolve a
+persisted next-launch save location before kernel bridge/guest access and publish
+the final root to shared storage metadata. Console disk geometry and device IDs
+are unchanged. pc_display_menu lookup supplies scoped host row selection/icon
+callbacks and a guarded native profile update; generated C is not edited. All
+other profile states continue through the original guest callbacks.
+
+The later live-profile-storage patch adds xbox_set_profile_root_utf8. A locked
+snapshot redirects only UserData rules in both host path translators. Existing
+open file handles, game assets, TitleData/cache paths and partition images retain
+their backing. Both entry points register this adapter with shared storage policy.
+It accepts an existing absolute directory, rejects invalid paths, and accepts an
+empty string to clear the override. save_paths/native_paths cover UDATA aliases,
+unchanged other routes, rejection and override removal.

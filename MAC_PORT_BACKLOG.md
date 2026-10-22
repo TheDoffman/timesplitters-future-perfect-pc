@@ -195,6 +195,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-058 | Crane and remote-view vignette sizing (issue #221) | Awaiting validation |
 | MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
 | MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
+| MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -687,6 +688,26 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 
 ### MAC-001 — Direct-camera mouse look
+
+- **Themed keyboard editor (2026-10-22, uncommitted; native validation pending):**
+  Shared native-menu builders expose every action and mouse option in main Settings
+  and pause Options, with a keyboard/mouse diagram and two binding columns.
+  Shared capture/release/conflict/save policy uses thin Windows and SDL raw-input
+  adapters. Both launcher hosts and native settings dialogs limit keyboard actions
+  to two sources, retaining controller capacity and reading legacy keyboard pairs.
+  No feature adapter is deferred. Mac acceptance: compile and run SDL input tests,
+  bind keyboard/mouse/wheel on both menu paths, cancel/focus/reopen, test conflicts,
+  sensitivity dragging and persistence, and confirm Cocoa/launcher two-column UI.
+  Windows evidence is recorded in STATUS.md; it does not establish Mac validation.
+
+- **Keyboard weapon slots (2026-10-22, uncommitted):** Shared slot bindings,
+  edge/expiry policy and original guest inventory selection support Windows
+  and SDL Mac. Cocoa in-game settings and both launchers expose ten slot actions;
+  existing configurations migrate in memory without overwriting custom keys.
+  No new OS-specific feature is deferred. Windows fixture/build results are
+  recorded in STATUS.md. Native Mac compilation and physical gameplay remain
+  pending: bind slots, select single/dual weapons, try empty slots, switch
+  devices and pause/focus, then save/reload both editors.
 
 - **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
   `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
@@ -3634,7 +3655,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Vehicle chase camera (2026-10-22, uncommitted):** Shared numeric policy
+- **Vehicle chase camera (2026-10-22, source `24d0ad5`, PR #307):** Shared numeric policy
   admits fractional chase updates at `CA040` and nonzero spring groups at
   `CA424`. No new OS adapter. Full-original camera tests reproduce the old
   lag and pass after correction; registered asset-free load-lowering tests
@@ -4608,6 +4629,30 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   placement restores. Check remote views and split-screen viewport boundaries.
   The separate desert shattered-glass report is not yet reproduced or claimed
   fixed by this vignette change.
+
+### MAC-061 — Host save-drive metadata and inline drive selection
+
+- **Status:** Awaiting validation
+- **PC behavior:** Create Profile lists mounted drives directly beneath the
+  current save drive, with plain drive names/letters and actual space information.
+  A different writable drive becomes the save location immediately; existing
+  profiles remain on their original drive.
+- **PC source:** Uncommitted on feature/keyboard-weapon-slots;
+  src/pc_storage*.inc/.h, src/pc_display_menu.c, src/pc_prompts.c,
+  host-save-storage.patch, live-profile-storage.patch and native/main.c.
+- **PC validation:** See STATUS.md host-storage entry. Shared callback and host
+  persistence fixtures run with isolated folders. Full multi-drive save/load
+  playthrough is not claimed.
+- **Existing Mac support:** Shared menu/routing policy plus getmntinfo, statfs,
+  getattrlist and executable-path adapters; atomic POSIX preference writes.
+  Native startup resolves the same preference before guest access.
+- **Mac adaptation needed:** None identified; native compilation and mounted
+  external-volume UI/persistence validation remain pending.
+- **Mac acceptance checks:** Run storage, FOV and isolated-profile tests. Check
+  startup and external volumes, plain drive labels, capacity display,
+  unavailable/read-only media, immediate profile creation, restart persistence and profile
+  preservation. Use a disposable save location; never redirect an automated
+  Test Lab session onto personal saves.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

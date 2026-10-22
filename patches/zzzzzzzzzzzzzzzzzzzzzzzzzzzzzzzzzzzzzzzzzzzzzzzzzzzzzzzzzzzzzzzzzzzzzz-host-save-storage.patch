@@ -1,0 +1,45 @@
+--- a/src/kernel/kernel_path.c
++++ b/src/kernel/kernel_path.c
+@@ -745,3 +745,18 @@
+ }
+ 
+ #endif /* _WIN32 */
++
++/* Read-only host metadata for the save-device UI. Never exposes console paths
++ * or changes the guest's synthetic disk capacity. Call after path init. */
++int xbox_save_root_utf8(char *out, unsigned capacity)
++{
++    if(!out || !capacity || !s_initialized)return 0;
++#ifdef _WIN32
++    return WideCharToMultiByte(CP_UTF8,0,s_save_dir,-1,out,(int)capacity,NULL,NULL)>0;
++#else
++    size_t length=strlen(s_save_dir);
++    if(length>=capacity)return 0;
++    memcpy(out,s_save_dir,length+1);
++    return 1;
++#endif
++}
+--- a/titles/futureperfect/src/main.c
++++ b/titles/futureperfect/src/main.c
+@@ -617,6 +617,21 @@
+     {
+         extern void xbox_path_init(const char *game_dir, const char *save_dir);
+         xbox_path_init(g_game_dir, NULL);
++#ifdef TSFP_PC_CONTROLS
++        extern int xbox_save_root_utf8(char *, unsigned);
++        extern void pc_storage_set_path(const char *);
++        extern int pc_storage_resolve_root(const char *,char *,size_t);
++        char save_root[4096],selected[4096];
++        if(xbox_save_root_utf8(save_root,sizeof save_root)) {
++            int result=pc_storage_resolve_root(save_root,selected,sizeof selected);
++            if(result<0) {
++                MessageBoxA(NULL,"Selected save drive unavailable. Reconnect it or remove save-location.txt beside the controls file.","Save storage",MB_OK|MB_ICONERROR);
++                return 1;
++            }
++            if(result>0){xbox_path_init(g_game_dir,selected);xbox_save_root_utf8(save_root,sizeof save_root);}
++            pc_storage_set_path(save_root);
++        }
++#endif
+     }
+ 
+     /* Step 5: Initialize kernel bridge (thunk table in Xbox memory) */

@@ -36,6 +36,9 @@ asset-free real-lowering cases cover both clock sites and an unrelated one.
 For live camera comparisons, read camera and body positions in one bounded
 observation with frame brackets and verify active camera ownership/mode/FOV.
 A similarly timed renderer capture alone is not a synchronized pose trace.
+Main `acf4464` integration retains keyboard-menu/weapon-slot exclusions in
+the historical controls fixture alongside vehicle physics. Full-stack apply
+and all four current/historical upgrade checks pass on the combined source.
 
 When integrating the vehicle branch with main `7545d4b`, preserve both
 `physics_history_transitions` and `boost_resource_clock` in the guest clock
@@ -607,3 +610,56 @@ empty repositories. `test_repo_context.py` exercises the ownership gate with rea
 Git diffs: generated version data is exempt, structural edits and empty-list
 regressions are not. Existing issue-form/runtime-plan CI runs these asset-free
 Python cases; there is no game or native launcher behavior change.
+
+## Weapon-slot selection checks
+
+`tests/test_weapon_slots.py` compiles the shared key-state and production guest
+selector fixture on Windows/macOS. It covers press edges, held/focus/menu input,
+expiry, empty slots, grouped weapon variants and local-player/state guards.
+The supported Windows build also runs `tests/pc_settings.c` for migration and
+last-slot rebinding/persistence. Launcher settings tests cover defaults, custom
+conflicts, explicit Unbound, moving keys and reset. Original input-hook changes
+require regenerating the guest C through the supported build. These fixtures
+are not a substitute for actual weapon-switch animation/gameplay validation.
+
+## Themed keyboard editor checks
+
+The historical old-controls upgrade fixture excludes keyboard-settings-menu and
+keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+final full-stack upgrade must contain the capture pump, two-binding limit and
+weapon-slot sampling/guest hook, so both new patches are still validated.
+
+`tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
+input release, one event per press, cancel/focus/timeout, complete action
+coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
+`test_weapon_slots.py` and `test_quit_menu.py`. Supported game Build checks
+exercise native settings persistence and two-slot bounds; launcher settings
+tests cover importing legacy four-binding profiles, rejecting a third slot,
+and saving two slots. Live acceptance must separately check main/pause access,
+binding capture without shortcut leakage, conflict/clear/defaults, mouse
+sensitivity, two-column layout and return to gameplay.
+
+## Storage selection checks
+
+Run test_storage_menu.py for actual Windows volume queries, bounded labels,
+free/total formatting, atomic selection, routing rollback, unavailable paths, preserved
+profile files and test-session locks. test_fov_settings.py exercises inline drive
+rows, alphabetical drive-letter/volume-name ordering independent of the active drive, no child menu, failure/success feedback, console
+index isolation, profile-list refresh and original save dispatch. Its Mac-only compile contracts
+cover the production menu and prompts/storage translation units. The Windows and
+Mac bounded runners set TSFP_SAVE_LOCATION_LOCK=1; use temporary test folders for
+persistence checks rather than selecting a real save drive in automated play.
+For a user-requested manual drive-selection session, the Windows runner accepts
+`--play --allow-save-drive-changes`. This explicit option disables that launch's
+lock and respects save-location.txt beside its isolated controls file. Selecting
+a drive activates it immediately and persists the choice; future manual launches
+use the same preference. Preparation preserves this preference and never copies
+the Test Lab fixture onto the selected external drive. Ordinary automated sessions
+stay locked regardless of inherited environment settings.
+Mac runtime/UI validation remains separate from shared fixtures and Windows builds.
+
+Unlocked Test Lab fixtures use their game-created directory ID 1AD19156651F,
+not the original Player 1 seed folder. prepare_run remaps legacy fixtures and
+backs up only untouched seeded copies outside UserData. Modified legacy profiles
+require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
+Player 1 without deleting a profile or altering personal saves.
