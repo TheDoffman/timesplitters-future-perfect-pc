@@ -33,7 +33,21 @@ remain generated instructions. The loader places it after the numeric policy
 and before `-native-surface-live.patch`. Historical pre-native stacks exclude
 this dependent patch; current full-stack application and unwind remain required.
 See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
-original vehicle/rigid-clock fixtures. Full handling/collision acceptance is pending.
+original vehicle/rigid-clock fixtures. The original solver/body math and a
+controlled single support-contact path now run in `native_rigid_motion.c`;
+material, world geometry and entity publication remain service boundaries.
+`pc_native_physics_guest.h` wraps `171FB0` with a nested, thread-local scope.
+Call `172114 -> 171560` assigns carried whole primary steps to the original
+shared RNG; extra primary steps use a private advancing sequence only at
+shuffle calls `1715A0/170E51 -> 153B40`. The original generator still runs;
+its two seed words and count are restored after private draws. Other gameplay
+RNG calls stay original. The three-contact routine fixture checks fresh
+substeps and identical shared seeds at 60/120/144. Numeric ADDSS site `17164F`
+snaps the accumulated secondary time to `8*step` only within four float epsilons
+of that boundary; otherwise rounding could run a ninth solve. Original timing
+is unchanged. The added manual `171FB0` wrapper requires supported guest
+regeneration before building; the existing playable binary does not include
+this candidate. Full handling/collision acceptance is pending.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

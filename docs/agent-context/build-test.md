@@ -28,12 +28,24 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 `tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
 without assets on both CI hosts. With the supported local US XBE it also lifts
 the complete vehicle dispatcher, spring helper, linear adjustment, rest routine
-and rigid-body clock. Controlled world/driver/solver boundaries keep this a
-timing test, not a live handling claim. Negative controls independently remove
-the gate, linear-rate, rest-timer or rigid-clock correction and must fail.
+and rigid-body clock. `native_rigid_motion.c` additionally runs the original
+solver, body integrator, quaternion/matrix helpers and support-contact resolver
+(`171FB0 -> 171560 -> 16CA00`, plus `1667C0/16FC00/168720`). It checks actual
+position/velocity/orientation with applied force, drag, a controlled upward
+contact, and pause at 60/120/144. Broadphase geometry, material/allocation,
+contact notifications and final entity publication remain controlled services.
+These are routine checks, not live driving or geometry acceptance. Negative
+controls independently remove the gate, linear-rate, rest-timer or rigid-clock
+correction; further controls omit contact resolution, RNG isolation or the
+secondary-step boundary correction and must fail their relevant cases.
+The motion fixture now also executes the original RNG with three controlled
+contacts and checks slow, fast and irregular native intervals. Asset-free
+`native_physics_scope.c` checks nested/private/shared draws and cleanup; the
+same Python test file checks 20,000 secondary-step partitions. Those portable
+cases run on CI even when the private original-routine cases skip.
 `tests/native_timing_guest.c` checks physics-history handoff through the actual
 clock wrapper, including paused return and slow motion. Candidate vehicle and
-collision/force integration still require broader acceptance before replacing
+multi-contact/vehicle integration still require broader acceptance before replacing
 the existing playable build.
 
 Native `--input-self-test` must reset the synthetic terminal context between

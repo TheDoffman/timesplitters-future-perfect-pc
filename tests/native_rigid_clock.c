@@ -12,6 +12,7 @@ RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
+/* PHYSICS POLICY */
 static int legacy;
 static unsigned calls,allocs,active_frames;
 static double seconds;
@@ -45,6 +46,7 @@ void sub_00171560(void) {
     assert(MEMF(g_esp+12)==last_step && MEMF(g_esp+16)==secondary);
     seconds+=last_step;++calls;g_esp+=4;
 }
+void pc_native_physics_solver(void) {pc_native_physics_solver_guest(sub_00171560);}
 /* ROUTINES */
 static void step(unsigned whole,float delta)
 {
@@ -52,7 +54,7 @@ static void step(unsigned whole,float delta)
     g_esp=0x18000;MEM32(g_esp)=0x12345678;
     g_ebx=0xabcd;g_esi=0xbcde;g_edi=0xcdef;g_ebp=0xdef0;
     unsigned before=calls;
-    sub_00171FB0();
+    pc_native_physics_guest(sub_00171FB0);
     assert(g_esp==0x18004 && MEM32(0x18000)==0x12345678);
     /* This framed function restores its local EBP. g_ebp is the lifter's
      * published frame for callees, unlike the shared EBX/ESI/EDI registers. */

@@ -1,6 +1,6 @@
 ## 2026-10-22 — Vehicle and rigid-body timing candidate
 
-On `fix/native-vehicle-physics` (local candidate), original-routine tests exposed
+On `fix/native-vehicle-physics` (WIP candidate), original-routine tests exposed
 another native timing gap: at steady 120/144 FPS the rigid-body clock and vehicle
 spring update consumed only 0.5/0.4167 seconds per second. The candidate processes
 every advancing interval, splits long rigid-body intervals into bounded substeps,
@@ -11,8 +11,25 @@ native-sized history temporarily slowing original physics.
 Windows validation: 67 timing tests passed, followed by four focused checks
 covering slow/fast motion, catch-up, the original secondary solver-step
 selection and history handoff. All 114 translator/context/backlog companion
-checks and four full-stack install/upgrade checks also passed. No gameplay build or live
-vehicle validation yet; collision/force integration remains an acceptance gap.
+checks and four full-stack install/upgrade checks also passed. The extended
+four-case vehicle test file now also passes with the original moving-body,
+force/drag, quaternion/matrix and single support-contact routines. At 144 versus
+60, one-second forced X displacement is 8.977188 versus 8.948050 units; final
+velocity is 11.995511 versus 11.995525. A supported body stops at all three rates,
+and negative controls reject both the old clock and missing contact resolution.
+
+A separate original two-contact diagnostic found 480/960/1152 shared random
+draws at 60/120/144. The candidate now gives additional primary solves a private
+advancing sequence at the two shuffle sites, while authored steps retain their
+shared effects. Three-contact original-routine checks produce the same 960
+shared draws and final seed at all three rates. Expanded fast-motion checks
+also exposed a rounding-induced ninth collision substep (3.375 simulated
+seconds for 3 requested); a bounded eighth-step correction restores 3 seconds.
+Final Windows validation passes 70 timing/vehicle tests, including the
+20,000-partition rounding contract, 115 translator/generation/context/backlog
+companions, and four full-stack patch install/upgrade cases.
+No gameplay build or live vehicle validation yet. Actual geometry, multiple
+contacts, active driving, final entity publication and performance remain gaps.
 This candidate has not replaced the tested combined crowd-performance build.
 Shared implementation and tests are registered for both CI hosts; native Mac
 execution is pending (MAC-060). No PR/release published for this candidate.

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 #include <string.h>
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
@@ -203,11 +204,23 @@ static inline float pc_native_force_add(float force,float velocity)
     }
     return force+velocity;
 }
+/* 171560 sums eight secondary steps of primary/8. A rounded sum just below
+ * primary otherwise takes a ninth step (12.5% extra time). Snap only within
+ * the float addition error bound at the eighth boundary; Original 60 and
+ * genuine intermediate sums retain their exact arithmetic. */
+static inline float pc_native_physics_elapsed(float elapsed,float step)
+{
+    float sum=elapsed+step,full=step*8.f;
+    if(g_tsfp_native_timing_active && step>0.f && isfinite(full) &&
+       fabsf(sum-full)<=full*(4.f*FLT_EPSILON))return full;
+    return sum;
+}
 #define RECOMP_F32_ADD_AT(site,left,right) \
     (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
     pc_native_hit_add((float)(left),(float)(right)) : \
     (site)==0xD4853u ? pc_native_force_add((float)(left),(float)(right)) : \
     (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
+    (site)==0x17164Fu ? pc_native_physics_elapsed((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
 #define RECOMP_F32_SUB_AT(site,left,right) \
@@ -379,10 +392,15 @@ static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
     ((site)==0x176673u ? pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
+extern void pc_native_physics_solver(void),pc_native_physics_random(void);
+#define PC_NATIVE_PHYSICS_CALLEE(site,function) \
+    ((site)==0x172114u ? pc_native_physics_solver : \
+    ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
     ((site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
      (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \
-    ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : (function))
+    ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : \
+    PC_NATIVE_PHYSICS_CALLEE(site,function))
 #endif

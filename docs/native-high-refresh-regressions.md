@@ -5397,3 +5397,105 @@ runs on both selected CI hosts; the private-XBE tests skip when assets are absen
 No generated code or private assets are distributed. Full driving/force and
 collision integration, live modes, multiplayer physics, performance and native
 Mac execution remain unverified. The playable combined build is unchanged.
+
+### Original moving-body and support-contact checks
+
+`tests/native_rigid_motion.c` extends the clock fixture through original solver
+`171560`, body integrator `16CA00`, quaternion/matrix helpers, relative contact
+velocity `1667C0`, resolver `16FC00` and Jacobian/bounds helper `168720`. The
+fixture supplies body state, material/allocation services and an upward,
+zero-depth contact at the body's centre; world broadphase, contact notifications
+and final entity publication remain controlled boundaries. No game bytes are
+checked in. The private supported XBE is hash-verified before lifting routines.
+
+The full vehicle test file passes four cases on Windows in 17.10 seconds
+(`logs/native-rigid-motion-final.log`). Free motion and constant force produce
+60/120/144 fresh body positions and one second of integrated time. Without
+external force, final X is 5.998522282/5.998525143/5.998499870. With force X=12
+and inverse mass 0.5, final X is 8.948050499/8.973025322/8.977188110 and velocity
+is 11.995525360/11.995513916/11.995511055. Constant angular speed agrees with the
+analytic half-radian rotation; quaternion normalization remains intact. These
+checks allow the original forward-Euler step-size difference, not lost time.
+
+The support case starts with downward velocity -4 and persistent downward force
+-20. Original contact policy selects eight secondary integrations per update:
+480/960/1152 per second. The body stops after the first update, retaining a
+small first-step displacement of -0.008333325/-0.004166665/-0.003472221; final
+vertical speed is approximately zero. Every advancing frame still resolves
+support impulses. A stationary supported body is not required to change
+position merely to satisfy a fresh-update assertion. Zero-time pause preserves
+the complete body bytes. Negative controls separately restore the old clock
+and remove contact resolution; both fail assertions on the relevant cases.
+
+The initial contact fixture assumed two secondary steps and retained lateral
+motion while reusing its contact point. Inspection confirmed the authored
+factor is one eighth; the intended axial support case now starts with zero
+lateral/angular velocity. No production change or relaxed physical threshold
+was used to make that case pass. Sliding/rolling contact is not covered.
+
+An additional private two-identical-contact diagnostic runs the original RNG
+`153B40` and its 64-bit multiplication helper `3C9ED0`. Contact shuffling at
+`1715A0` consumes 480/960/1152 shared random draws at 60/120/144. With initial
+seed 1, the final 64-bit seeds are `13b6de5c:93f5b261`, `06996cae:198df4c1`,
+and `97219018:3fd0b281`. This is characterization of an unresolved coupling,
+not accepted gameplay parity. The constraint-list shuffle at `170E51` also
+uses the same RNG but is not exercised by this diagnostic. Evidence:
+`private/pipeline/rigid-contact-rng-audit.py` and
+`logs/rigid-contact-rng-audit.log`. The candidate remains WIP and has not
+replaced the playable crowd-performance build. Multi-contact ordering, active
+vehicle forces/input, real geometry, entity publication and live performance
+remain required before acceptance.
+
+### Shuffle RNG isolation and secondary-step rounding correction
+
+The subsequent candidate wraps the complete original `171FB0` with
+`pc_native_physics_guest.h`. Within that scope, each `172114 -> 171560` primary
+solve is classified using the carried whole-tick budget. The original number
+of authored primary solves retains shared RNG side effects. Additional solves
+still shuffle and integrate every time, but only shuffle sites `1715A0` and
+`170E51` use a private advancing sequence. The original `153B40` generator runs
+for every draw; its seed pair and counter are restored after private draws.
+Other gameplay random calls remain shared, including calls inside a solver.
+Nested scopes restore their parent and retain nothing between frames/levels.
+
+The original-routine motion fixture now supplies three coincident support
+contacts, exercising two shuffle draws per secondary solve. At 60/120/144 it
+executes 960/1920/2304 original random calls but commits 960 shared draws at
+every rate, ending at the identical seed `06996cae:198df4c1`. Physical contact
+integration remains fresh. A mutation that bypasses isolation fails the native
+case. This checks RNG cadence with controlled contact lists, not identical
+arbitrary collision trajectories or full vehicle handling.
+
+The fast-motion extension initially failed independently: game delta 1.25
+partitioned into two primary steps, each with secondary duration primary/8,
+but repeated float additions left the eighth sum slightly below the target.
+The original loop then performed a ninth solve. One wall second at triple
+game speed integrated 3.375000101 seconds instead of 3. This failure was not
+hidden by relaxing the test. Native ADDSS site `17164F` now snaps to `8*step`
+only within four float epsilons of that boundary. The correction preserves
+intermediate sums and original-timing arithmetic. The same full original
+solver now integrates 3.000000089 seconds; its negative control fails when
+the correction is removed.
+
+Expanded native support cases report:
+
+| Case | Simulated seconds | Carried ticks | Primary solves | Actual / shared RNG draws |
+| --- | ---: | ---: | ---: | ---: |
+| Quarter speed, 576 frames at 144 | 1.000000007 | 60 | 576 | 9216 / 960 |
+| Triple speed, 144 frames at 144 | 3.000000089 | 180 | 288 | 4608 / 2880 |
+| Repeated irregular intervals | 1.383333387 | 83 | 120 | 1920 / 1328 |
+
+An independent 64-bit recurrence checks the complete shared seed, not only its
+draw count. The asset-free scope case checks varied whole/primary budgets,
+nested fractional solvers, an unrelated shared draw between private draws,
+original-mode behavior and scope cleanup. Five expanded cases passed in 20.98
+seconds (`logs/native-vehicle-rng-expanded.log`). The additional asset-free
+20,000-partition rounding contract also passes. Final Windows suites pass 70
+timing/vehicle tests in 91.37 seconds, 115 translator/generation/context/backlog
+companions in 24.17 seconds, and four fresh/repeated/native-checkpoint/controls/
+Mac-stack patch checks in 74.42 seconds. Logs are
+`native-vehicle-rng-regressions.log`, `native-vehicle-rng-companions.log` and
+`native-vehicle-rng-upgrades.log` under `logs/`. The first companion command
+used a nonexistent scope-test filename and collected nothing; the corrected
+command produced the reported 115 passes. No full-build or live-driving claim is made;
+the previously tested crowd executable remains installed.

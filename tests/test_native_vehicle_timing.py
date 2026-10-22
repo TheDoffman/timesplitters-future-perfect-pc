@@ -22,6 +22,15 @@ def restore_sections():
                                (0x176530, 0x1766de)],
      ['legacy-gate', 'legacy-linear', 'legacy-rest']),
     ('native_rigid_clock.c', [(0x171fb0, 0x172161)], ['legacy-clock']),
+    ('native_rigid_motion.c', [(0x171fb0, 0x172161), (0x171560, 0x1719e0),
+                             (0x170e20, 0x170ed0), (0x16ca00, 0x16ccc9),
+                             (0x150830, 0x150918), (0x150cc0, 0x150d62),
+                             (0x1506b0, 0x15082c), (0x1530e0, 0x153187),
+                             (0x153270, 0x1533e0), (0x151e80, 0x151f1c),
+                             (0x152090, 0x15211d), (0x1667c0, 0x16694c),
+                             (0x16fc00, 0x1704fa), (0x168720, 0x1689ef),
+                             (0x153b40, 0x153b7a), (0x3c9ed0, 0x3c9f04)],
+     ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -32,7 +41,7 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
     config.configure_from_xbe(str(path))
     functions = {start: dict(name=f'sub_{start:08X}', end=end) for start, end in ranges}
-    translator = FunctionTranslator(image, functions, trace_all_entries=harness == 'native_vehicle_timing.c')
+    translator = FunctionTranslator(image, functions, trace_all_entries=harness != 'native_rigid_clock.c')
     code = '\n'.join(f'void {info["name"]}(void);' for info in functions.values()) + '\n'
     code += '\n'.join(translator.translate_function(start, info) for start, info in functions.items())
     source = (ROOT / 'tests' / harness).read_text()
@@ -52,6 +61,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
                           for a in sorted(addresses))
     policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
+    source = source.replace('/* PHYSICS POLICY */',
+        f'#include "{(ROOT / "src/pc_native_physics_guest.h").as_posix()}"')
     source = source.replace('/* UNREACHED */', unexpected).replace('/* CONSTANTS */', constants)
     print(compile_and_run(tmp_path, source))
     executable = next(tmp_path.glob('float_join.exe'), tmp_path / 'float_join')
@@ -59,7 +70,9 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         result = subprocess.run([str(executable), mutation], capture_output=True, text=True, timeout=15)
         assert result.returncode != 0 and 'Assertion' in result.stderr, result.stdout + result.stderr
         assert 'UNEXPECTED' not in result.stderr
-        assert 'fps=120' in result.stdout, result.stdout + result.stderr
+        expected = {'missing-contact': 'fps=60 forced=2',
+                    'legacy-secondary': 'rigid_mixed mode=1'}.get(mutation, 'fps=120')
+        assert expected in result.stdout, result.stdout + result.stderr
 
 
 def test_byte_timer_load_and_default_semantics(tmp_path):
@@ -116,3 +129,49 @@ int main(void) {
 '''
     policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     print(compile_and_run(tmp_path, source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)))
+
+
+def test_physics_random_scope(tmp_path):
+    source = (ROOT / 'tests/native_physics_scope.c').read_text()
+    source = source.replace('/* PHYSICS POLICY */',
+        f'#include "{(ROOT / "src/pc_native_physics_guest.h").as_posix()}"')
+    print(compile_and_run(tmp_path, source))
+
+
+def test_physics_secondary_step_rounding(tmp_path):
+    source = r'''
+#include <assert.h>
+#include <stdio.h>
+/* POLICY */
+ptrdiff_t g_xbox_mem_offset;
+int g_tsfp_native_timing_active;
+int main(void) {
+    for(unsigned i=1;i<=20000;i++) {
+        float delta=(float)i/2371.f;
+        float primary=(1.f/60.f)*delta/ceilf(delta),step=primary*.125f;
+        g_tsfp_native_timing_active=1;
+        float elapsed=0;unsigned count=0;
+        while(elapsed<primary && count<10) {
+            elapsed=RECOMP_F32_ADD_AT(0x17164f,elapsed,step);count++;
+        }
+        assert(count==8 && elapsed==primary);
+        assert(RECOMP_F32_ADD_AT(0x17164f,0.f,primary)==primary);
+        assert(RECOMP_F32_ADD_AT(0x123,step,primary)==step+primary);
+        g_tsfp_native_timing_active=0;
+        for(unsigned k=0;k<=9;k++) {
+            float before=step*k,original=before+step;
+            assert(RECOMP_F32_ADD_AT(0x17164f,before,step)==original);
+        }
+    }
+    g_tsfp_native_timing_active=1;
+    assert(pc_native_physics_elapsed(0,0)==0);
+    assert(isnan(pc_native_physics_elapsed(NAN,1)));
+    assert(isinf(pc_native_physics_elapsed(0,INFINITY)));
+    assert(pc_native_physics_elapsed(-2,-1)==-3);
+    puts("PASS: 20000 fractional partitions, exact eight-step boundaries, original arithmetic and unrelated sites");
+    return 0;
+}
+'''
+    source = source.replace('/* POLICY */',
+        f'#include "{(ROOT / "src/pc_native_numeric.h").as_posix()}"')
+    print(compile_and_run(tmp_path, source))

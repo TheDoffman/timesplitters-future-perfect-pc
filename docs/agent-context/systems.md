@@ -29,8 +29,15 @@ substeps; multiply `0x172099` uses the live interval instead of a fifteen-frame
 average. Original 60 remains on its existing arithmetic. On native-to-original
 handoff, `pc_native_timing_guest.inc` rebases that old history at the first
 advancing interval, deferring across pause. Routine tests establish elapsed-time
-and timer behavior; active driving, collision response and Mac gameplay are
-still unverified. The playable combined crowd build has not been replaced.
+and timer behavior. Original body integration now has force/drag/rotation and
+controlled support-contact checks at all three rates. Real broadphase geometry,
+driver input, entity publication and Mac gameplay remain unverified. The scoped
+RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
+from advancing the shared sequence through contact/constraint shuffle sites;
+controlled three-contact tests verify its cadence. `17164F` also prevents a
+rounding-induced ninth secondary solve. These results do not certify arbitrary
+contact geometry or vehicle handling. The playable combined crowd build has
+not been replaced.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

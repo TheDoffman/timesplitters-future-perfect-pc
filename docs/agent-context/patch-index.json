@@ -1185,9 +1185,10 @@
     },
     {
       "name": "zzzz-native-vehicle-physics.patch",
-      "sha256": "497342d19746861e3c4d650280b523df6c5f512130982da992bfe152eb2ea6e3",
+      "sha256": "835b9842f196e7178fab5885a37725726118aa1636677e9f73d0b24621bc1443",
       "targets": [
         "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
         "tools/recomp/lifter.py"
       ]
     },
