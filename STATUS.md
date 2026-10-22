@@ -13,8 +13,22 @@ camera/projection correction, initialized after the original guest call and
 discarded before returning. It preserves bounds/protection checks and matrix
 arithmetic. Sixteen focused projection, real-VM and cutscene tests pass locally,
 including rejection of a mutation that retains the snapshot between calls.
-Supported build, live performance benefit and native Mac execution are pending.
-No saved settings or gameplay rates are changed.
+Combined source `4adb6b0` (PR #300 plus #295–#299) passes the supported Windows
+build and required native checks. Executable SHA-256:
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+On the same 3440x1440/FOV 73/Classic ten-bot Venice route, 50-second capture-free
+samples improve from 140.843 FPS to 142.933/143.240. Slowest one-second windows
+improve from 117 to 129/137 frames; p99 intervals improve from 9.447 ms to
+8.889/8.702 ms. One 60.555 ms hitch occurs in the first candidate run and does
+not recur in the repeat (11.812 ms worst); its cause remains unknown. These
+nondeterministic combat samples support reduced overhead, not locked 144 FPS.
+All measured presents are guest frames, with gameplay checkpoints and clock
+coverage checked. Reviewed separate captures show the scene, weapons and nearby
+bots; profiles/fixtures remain valid and unchanged, and test games are closed.
+Source `beff7a7` passes all selected Windows/Mac native, transition, launcher
+and scope checks. Mac real-VM contracts pass; actual Mac camera/cutscene
+rendering and gameplay performance remain unverified. No saved settings or
+gameplay rates are changed. See the detailed regression record for limits.
 
 ## 2026-10-22 — Full-float procedural feedback candidate
 

@@ -3600,13 +3600,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
 - **Projection query candidate (2026-10-22, `perf/projection-memory-checks`,
-  this revision):** Shared `pc_display_memory.h` retains a VM region only during
+  PR #300, `beff7a7`):** Shared `pc_display_memory.h` retains a VM region only during
   one post-guest camera/projection correction. It uses the existing Windows
   query and Darwin Mach region adapter, with no new OS-specific policy. Bounds
   and write permission remain checked; snapshots expire before guest execution.
-  Sixteen focused Windows geometry/protection/ABI cases pass. Native Mac real-VM
-  execution, camera/cutscene visual acceptance and performance remain awaiting
-  validation. Existing projection/cutscene CI routes run the extended checks.
+  Sixteen focused Windows geometry/protection/ABI cases and both-host native CI
+  pass, including the real-VM contract on Mac. Combined Windows build `4adb6b0`
+  passes; two Venice ten-bot samples average 142.933/143.240 FPS versus 140.843
+  before this change. One unexplained 60.555 ms hitch does not recur. Actual
+  native Mac camera/cutscene visual acceptance and performance remain awaiting
+  validation. See STATUS and the detailed regression record for scope.
 
 - **Full-float feedback follow-up (2026-10-22, PR #299, `6035ed7`):** The shared opt-in
   policy selects 32-bit float intermediates to remove measured half-float

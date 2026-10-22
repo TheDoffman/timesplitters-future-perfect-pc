@@ -5755,3 +5755,77 @@ The Mac CI common-RHI GPU step passes for `6035ed7`, including the extended
 conversion/capture contract; original-XBE wave tests and native Mac gameplay
 remain unverified. Live preset cycles, long-duration motion and capture-free
 performance remain pending for this format change.
+
+## Crowded-map camera query follow-up (2026-10-22)
+
+Windows x64 / MSVC 19.44 / D3D11, i7-13700K, RTX 4070 SUPER driver
+32.0.16.1742. Isolated Test Lab deathmatches use ten enabled bots, recommended
+weapons, Classic textures, 3440x1440, FOV 73 and native 144. Separate captured
+setup runs confirm bot counts and actual Vietnam/Venice scenes. Normal combat,
+death and respawn use synthetic inputs; bots and spawn outcomes are not
+deterministic. No human network matches or full-map coverage are established.
+
+The initial Venice pacing attempt reached its 15-point score limit during the
+measurement window. Strict gameplay-state analysis rejected it. Its apparent
+143.202 FPS is not accepted gameplay evidence. The corrected route changes only
+the disposable test's score limit to None (Go → Down → Left five times; Up twice
+then Enter opens Bot Set), retaining the ten-minute time limit. This lets the
+same complete combat window remain active.
+
+Every accepted pacing row covers spawn-observation+5 through +55 seconds, with
+consecutive Present clock evidence on both sides and scene/match-state/pause
+checks at all observed checkpoints through combat-six. No screenshot capture,
+CPU sampler, parallel local tests or builds run during these timing windows.
+These are successful host Present intervals, not GPU completion or scanout.
+
+| Run | Mean FPS | p95 ms | p99 ms | Worst ms | >9 ms | Slowest 1 s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Vietnam, prior combined build | 141.303 | 8.490 | 9.242 | 35.056 | 1.953% | 125 |
+| Venice, prior combined build | 140.843 | 8.495 | 9.447 | 31.830 | 2.215% | 117 |
+| Venice, projection candidate | 142.933 | 8.111 | 8.889 | 60.555 | 0.798% | 129 |
+| Venice, candidate repeat | 143.240 | 8.149 | 8.702 | 11.812 | 0.572% | 137 |
+
+The baseline is combined source `6a766f5`, executable SHA-256
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+Candidate source `4adb6b0` adds PR #300 to the same earlier #295–#299 changes;
+executable SHA-256
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+Both use the supported builder and verified US XBE. The water experiments are
+disabled. All measured presents are guest frames; none are interpolated.
+Gameplay-clock/wall ratios are 0.999972 (Vietnam), 0.999932 (Venice baseline),
+0.999698 and 0.999937 (candidate/repeat). Asynchronous combat/respawn endpoints
+do not establish exact motion, animation or weapon parity.
+
+A separate 200 Hz sample profile on the prior build shows 1,873/6,872 guest-main
+samples in NtQueryVirtualMemory during cumulative 110–150 second reports, with
+460 chains through perspective correction and 208 through camera correction.
+Other folded linker names are not reliable identities. The diagnostic includes
+profiler overhead and is not used as a performance result. PR #300 initializes
+a local writable-region snapshot after the guest routine returns. Camera and
+source matrix are checked before the output, because actual decal callers use
+temporary guest-stack output in a different region. This reduces three queries
+to two in the split-region case, or one in a common region, with bounds and
+permissions still enforced. No AI/animation throttling or quality reduction.
+
+Sixteen focused geometry, ABI, real-VM and cutscene tests pass. Query counts
+cover both region layouts; retaining a snapshot across calls must fail. The
+OS test includes read-only/no-access, crossing spans, overflow, new snapshots
+and Windows guard pages. Nineteen companion cases pass, with one Mac-only
+local skip. The supported final build passes its required checks. PR #300 source
+`beff7a7` passes selected Windows/Mac native and transition CI, including the Mac
+real-VM contract; this is not actual Mac camera/cutscene or performance acceptance.
+
+The candidate's 60.555 ms outlier occurs 38.879 seconds into its window; its
+Present body is only 0.148 ms. It does not recur in the repeat. Its cause remains
+unknown; do not discard it or label this locked/hitch-free 144 FPS. The observed
+average/tail improvement supports the narrow optimization, with wider gameplay,
+Mac visual/performance acceptance and rare-hitch investigation still open.
+
+Evidence: isolated `crowd-vietnam-native144`, `crowd-venice-long144`,
+`crowd-projection-144` and `crowd-projection-repeat144` reports/provenance/Present
+CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
+`crowd-venice-native144`; separate `crowd-venice-profile` and
+`logs/crowd-venice-sample-delta.json`; setup images in `crowd-vietnam-setup`,
+`crowd-venice-setup`, `crowd-venice-match-rules` and `crowd-projection-visual`.
+All sessions exit cleanly with unchanged valid profile signatures, preserved
+fixtures, recycled disposable disks and no personal game left open.
