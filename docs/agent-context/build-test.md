@@ -27,6 +27,8 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 `tests/test_decal_projection.py` checks the production projection wrapper's
 guest ABI and all matrix elements, plus one VM query per same-region correction.
+Its split camera/stack case requires two queries and covers the actual decal
+callers' temporary stack output ordering.
 A retained-snapshot mutation must fail, proving each invocation queries afresh.
 `tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
 no-access, boundary-crossing and overflow rejection (Windows also guard pages).

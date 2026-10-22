@@ -213,10 +213,12 @@ void pc_display_perspective_projection(void (*original)(void))
        include menus and offscreen effects and must keep their own aperture. */
     if(caller!=0x00112F7Fu && caller!=0x00115B0Cu) return;
     camera=WORD_AT(0x007B0CC0u);
-    if(!pc_display_writable(&region,g_xbox_mem_offset,camera,0x208) ||
-       !pc_display_writable(&region,g_xbox_mem_offset,destination,64)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,camera,0x208)) return;
     matrix=WORD_AT(camera+0x204u);
-    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64)) return;
+    /* Validate the camera's matrix before the temporary output: decal callers
+       use a guest-stack destination in a different region from camera RAM. */
+    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64) ||
+       !pc_display_writable(&region,g_xbox_mem_offset,destination,64)) return;
     WORD_AT(destination)=WORD_AT(matrix);
     WORD_AT(destination+0x14u)=WORD_AT(matrix+0x14u);
 }

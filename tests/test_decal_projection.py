@@ -54,6 +54,7 @@ int main(void)
     WORD_AT(0x4204)=0x5000;
     for(k=0;k<16;k++)original[k]=(float)k;
     original[0]=1.44f;original[5]=1.92f;original[10]=-1.00005555f;original[14]=-.10050558f;
+    for(display_split_regions=0;display_split_regions<2;display_split_regions++)
     for(i=0;i<sizeof apertures/sizeof apertures[0];i++) {
         factor=1.f+(float)i*.25f;
         float *active=(float *)(memory+0x5000);
@@ -63,7 +64,7 @@ int main(void)
             g_esp=0x10000;WORD_AT(g_esp)=callers[j];WORD_AT(g_esp+4)=0x6000;
             unsigned before=display_region_queries;
             sub_00151CF0();
-            CHECK(display_region_queries-before==(CAMERA_AVAILABLE && j<2 ? 1u : 0u));
+            CHECK(display_region_queries-before==(CAMERA_AVAILABLE && j<2 ? 1u+display_split_regions : 0u));
             CHECK(g_esp==0x10004 && g_eax==0x12345678);
             for(k=0;k<16;k++) {
                 float expected=CAMERA_AVAILABLE && j<2 && (k==0 || k==5) ? active[k] : original[k];

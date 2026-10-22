@@ -64,6 +64,9 @@ overflow, read-only and guard/no-access rejection remain enforced. Other
 display/menu validation still uses its existing checks. This avoids repeating
 the VM query for camera, output and source matrices within the same region;
 it does not cache matrices, reduce updates or change projection arithmetic.
+Decal corrections validate the camera and its source matrix before the output
+because the original callers build their temporary output on the guest stack.
+Separate camera/stack regions therefore need two queries, not three.
 
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
