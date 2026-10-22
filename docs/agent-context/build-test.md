@@ -25,6 +25,17 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Vehicle exit probes must verify the delivered logical action before treating a
+failed departure as a timing defect. With the default Windows bindings and
+Test Lab profile, Y delivers exit bit 0x40; F delivers0x20 and R delivers0x10.
+Xbox analog button order is not the guest logical bit order. Original `D2470`
+reads pressed input through `427B0` and transfers bit 0x40 to driver input+0x18;
+`17DA00` routes the exit request, subject to the original vehicle flags. Keep
+those mechanics intact. Acceptance requires restored weapon, camera 24 -> 0,
+on-foot movement away from a stationary jeep, pause/resume and unchanged saves.
+Use explicit `--native-fps 0` for Original60 and verify the solver trace mode.
+These captured synthetic-input probes do not measure pacing or physical input.
+
 The rigid-motion fixture additionally checks 576 overlap/rebound cases using
 the original contact-term/solver/integrator functions: signed/capped depths,
 restitution, unit and quantized normals, centered/eccentric points, static kinds

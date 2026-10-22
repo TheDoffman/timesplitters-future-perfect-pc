@@ -26,6 +26,13 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+Vehicle exit uses the original logical input mask 0x40 in `D2470` (`D254F`
+queries `427B0`, `D255B` sets driver input+0x18). `17DAF1` consumes that action
+and respects vehicle data+0x58 flag 0x10 before routing `17C740`. Do not infer
+logical masks from Xbox analog indices: the default keyboard Y delivers this
+exit action, while F/R deliver 0x20/0x10. See the live exit scope in STATUS;
+this audit changes no input binding or exit mechanics.
+
 Original contact-term routine `168720` sets penetration escape velocity using
 the authored 60-Hz constant times 0.2 and clamped overlap (0..0.1 world units),
 then combines it with restitution at contact+0x20. That output is a velocity,

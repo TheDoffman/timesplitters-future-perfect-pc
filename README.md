@@ -257,6 +257,7 @@ existing Quit still returns to the game menus.
 | Fire / aim | Left / right mouse button |
 | Use / confirm | E, Space or Enter |
 | Reload / crouch | R / Ctrl or C |
+| Leave vehicle | Y |
 | Melee / menu back | F, middle mouse or Backspace |
 | Throw grenade | G or mouse button 5 |
 | Change weapon | Mouse wheel or left/right arrows |

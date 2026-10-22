@@ -1,3 +1,32 @@
+## 2026-10-22 — Vehicle exit and return to on-foot controls
+
+Same-build Windows probes on `20dc25d` now verify jeep entry, three seconds of
+throttle, five seconds of settling, exit, walking and on-foot pause/resume at
+genuine Original60, native120 and native144. All three restore weapon 4 and camera mode 0 from
+vehicle mode 24. One second of forward input moves the player 7.988814 / 8.001610 / 7.990989
+world units; the jeep does not move during that walking interval. Player/jeep
+separation grows from about 1.9 to 8.35–8.37 units. Each run contains 114 settled pause
+observations with zero game delta and unchanged body/camera positions.
+
+The default vehicle-exit key is **Y**, delivering logical input 0x40. Original
+`D2470` tests that pressed mask and passes it to `17DA00`. Earlier E/F/R probes
+are excluded: they did not issue the required exit action, and stayed seated
+in Original60. F and R explicitly delivered 0x20/0x10. Raw Xbox analog button
+indices must not be treated as guest logical action bits. No binding or runtime
+mechanic changed; the control guide now lists the confirmed key.
+
+All three accepted runs have zero bots, health 1.75, unchanged signed Test Lab saves,
+isolated settings and reviewed exit/movement captures. Solver summaries
+independently verify native=0/native=1, and trace output stays below both limits.
+Evidence is in `vehicle-integrated-exit-y-{original60,120,144}` and
+`logs/vehicle-exit-comparison.json`. EXE SHA-256 remains
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+host/toolchain are Windows x64, MSVC 14.44 / SDK 10.0.26100, common D3D11 renderer.
+These short captured synthetic-input runs do not measure pacing, physical input,
+all seat/vehicle types or exact trajectories. Broader terrain/contact handling,
+campaign/multiplayer and native Mac acceptance remain open. No rebuild needed.
+All selected CI passes at preceding test/evidence head `05009b1`.
+
 ## 2026-10-22 — Native144 corner-contact evidence and overlap checks
 
 The same `20dc25d` Windows executable completes a new bounded native144 run.

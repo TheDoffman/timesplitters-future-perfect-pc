@@ -3655,6 +3655,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle-exit acceptance (2026-10-22, PR #307):** Same Windows `20dc25d`
+  executable passes the Siberia jeep drive/exit/walk/pause route at genuine
+  Original60, native120 and native144. Y delivers the original exit action; weapon and
+  walking camera return, and on-foot movement separates player from stationary
+  jeep. Earlier E/F/R attempts used incorrect actions and are excluded. This is
+  captured synthetic-input evidence, not physical-device or pacing acceptance.
+  No runtime or OS adapter changed. Native Mac gameplay and other vehicles/
+  seats remain awaiting validation; see STATUS and the regression record.
+
 - **Corner-contact follow-up (2026-10-22, PR #307):** Windows `20dc25d`
   completes a new native144 walking detour and jeep probe. Solver-entry records
   show side-facing contacts at144 versus front-facing contacts in the genuine

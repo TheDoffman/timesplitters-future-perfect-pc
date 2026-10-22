@@ -6001,6 +6001,24 @@ not a per-frame displacement. Dropping that term fails the new counterfactual.
 All 19 vehicle tests pass; controlled geometry and the private-XBE requirement
 limit this evidence. No runtime mechanics change follows from the audit.
 
+### Vehicle exit and on-foot controls
+
+Windows `20dc25d` passes a bounded Siberia jeep route at genuine Original60 and
+native144: enter, throttle three seconds, settle five seconds, Y exit, one
+second of walking, pause/resume. Exit restores weapon 4 and camera 24 -> 0; walking
+moves 7.988814/8.001610/7.990989 units while the jeep stays stationary. Each run has 114
+settled zero-delta pause samples with unchanged body/camera positions, zero
+bots, health 1.75 and unchanged valid isolated profiles. The synchronous trace
+verifies native=0/native=1. Exit/movement captures were reviewed. Full handling,
+other seats/vehicles, physical input, pacing and native Mac remain unverified.
+
+Default Y supplies logical 0x40, which original `D2470` forwards to `17DA00`.
+Earlier E/F/R attempts are excluded as incorrect input (F/R measured 0x20/0x10),
+not classified as high-refresh defects. Guest logical bits differ from Xbox
+analog indices. This is validation/documentation only, with no runtime change.
+Evidence: `vehicle-integrated-exit-y-{original60,120,144}` and
+`logs/vehicle-exit-comparison.json`; source/build/hash/host details in STATUS.
+
 ## Native-start return to Original 60 (2026-10-22)
 
 The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing
