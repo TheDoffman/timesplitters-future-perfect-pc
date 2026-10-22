@@ -29,8 +29,11 @@ def restore_sections():
                              (0x153270, 0x1533e0), (0x151e80, 0x151f1c),
                              (0x152090, 0x15211d), (0x1667c0, 0x16694c),
                              (0x16fc00, 0x1704fa), (0x168720, 0x1689ef),
-                             (0x153b40, 0x153b7a), (0x3c9ed0, 0x3c9f04)],
-     ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary']),
+                             (0x153b40, 0x153b7a), (0x3c9ed0, 0x3c9f04),
+                             (0x1719e0, 0x171fad), (0x165a40, 0x165b90),
+                             (0x9e840, 0x9e95c), (0x167880, 0x167993),
+                             (0x1753a0, 0x175508), (0x1677e0, 0x167877)],
+     ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -71,7 +74,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         assert result.returncode != 0 and 'Assertion' in result.stderr, result.stdout + result.stderr
         assert 'UNEXPECTED' not in result.stderr
         expected = {'missing-contact': 'fps=60 forced=2',
-                    'legacy-secondary': 'rigid_mixed mode=1'}.get(mutation, 'fps=120')
+                    'legacy-secondary': 'rigid_mixed mode=1',
+                    'legacy-body-sleep': 'rigid_sleep fps=120'}.get(mutation, 'fps=120')
         assert expected in result.stdout, result.stdout + result.stderr
 
 
@@ -136,6 +140,50 @@ def test_physics_random_scope(tmp_path):
     source = source.replace('/* PHYSICS POLICY */',
         f'#include "{(ROOT / "src/pc_native_physics_guest.h").as_posix()}"')
     print(compile_and_run(tmp_path, source))
+
+
+@pytest.mark.parametrize('start', [0x171f80, 0x5000])
+def test_memory_byte_decrement_and_flags(tmp_path, start):
+    # CMP EAX,1 (EAX starts at zero, setting CF); DEC byte [EDX];
+    # SETZ AL; SETC BL; JO selects ECX=0/1; RET. DEC is three bytes after entry.
+    # Use JO because this lifter does not implement the unused guest SETO form.
+    image = bytes.fromhex('83f801fe0a0f94c00f92c37007b900000000eb05b901000000c3')
+    config._install([config.Section('.text', start, len(image), 0, len(image), True)],
+                    start, 0, 'synthetic-memory-byte-decrement')
+    info = dict(name='tick', end=start + len(image))
+    code = FunctionTranslator(image, {start: info}).translate_function(start, info)
+    assert code.count('RECOMP_LOAD_U8_AT(') == 1
+    assert 'RECOMP_UNIMPL' not in code
+    source = r'''
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define RECOMP_GENERATED_CODE
+/* POLICY */
+#include "recomp_types.h"
+ptrdiff_t g_xbox_mem_offset;
+int g_tsfp_native_timing_active;
+RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
+/* ROUTINES */
+int main(void) {
+    void *memory=calloc(1,0x800000);assert(memory);
+    g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
+    for(unsigned mode=0;mode<3;mode++)for(unsigned value=0;value<256;value++) {
+        g_tsfp_native_timing_active=mode!=0;
+        MEMF(0x4e7948)=.5f;MEMF(0x4e794c)=mode==2?.25f:.5f;
+        MEM32(0x4e7940)=0;MEM32(0x4e7944)=mode==2;
+        MEM8(0x1000)=value;g_edx=0x1000;g_esp=0x2000;g_eax=g_ecx=g_ebx=0;
+        tick();
+        unsigned expected=(value-(mode==1 && /* TARGET */ ? 0:1))&255u;
+        assert(g_esp==0x2004 && MEM8(0x1000)==expected);
+        assert(g_eax==(expected==0) && g_ecx==(expected==0x7f) && g_ebx==1);
+    }
+    free(memory);puts("PASS: memory byte DEC/default/native cadence, all256 values, ZF/OF and preserved CF");return 0;
+}
+'''
+    policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
+    source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
+    print(compile_and_run(tmp_path, source.replace('/* TARGET */', str(int(start == 0x171f80)))))
 
 
 def test_physics_secondary_step_rounding(tmp_path):

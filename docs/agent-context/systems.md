@@ -23,15 +23,19 @@ Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 Native vehicle/physics candidate (`fix/native-vehicle-physics`):
 `pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
 `0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains
-the rest timer's authored raw/game cadence at byte load `0x176673`.
+the rest timer's authored raw/game cadence at byte load `0x176673`. The same
+policy now applies at rigid-body memory DEC `0x171F83`, preventing resting
+bodies from sleeping 2/2.4 times too soon at 120/144.
 Rigid-clock loads `0x171FB9/0x17208E/0x172119` select `ceil(game_delta)` solver
 substeps; multiply `0x172099` uses the live interval instead of a fifteen-frame
 average. Original 60 remains on its existing arithmetic. On native-to-original
 handoff, `pc_native_timing_guest.inc` rebases that old history at the first
 advancing interval, deferring across pause. Routine tests establish elapsed-time
 and timer behavior. Original body integration now has force/drag/rotation and
-controlled support-contact checks at all three rates. Real broadphase geometry,
-driver input, entity publication and Mac gameplay remain unverified. The scoped
+controlled support-contact checks at all three rates. The original entity
+publisher and bounds transform, sleep/wake and vehicle component integration
+now run in that fixture. Real broadphase geometry, driver input, model/render
+notification and Mac gameplay remain unverified. The scoped
 RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
 from advancing the shared sequence through contact/constraint shuffle sites;
 controlled three-contact tests verify its cadence. `17164F` also prevents a

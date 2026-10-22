@@ -32,12 +32,18 @@ and rigid-body clock. `native_rigid_motion.c` additionally runs the original
 solver, body integrator, quaternion/matrix helpers and support-contact resolver
 (`171FB0 -> 171560 -> 16CA00`, plus `1667C0/16FC00/168720`). It checks actual
 position/velocity/orientation with applied force, drag, a controlled upward
-contact, and pause at 60/120/144. Broadphase geometry, material/allocation,
-contact notifications and final entity publication remain controlled services.
+contact, and pause at 60/120/144. The full original final publisher, bounds
+transform, sleep/wake and vehicle-component updater now execute too. Tests
+check entity position/velocity, cleared force accumulators, component
+acceleration/clamping, sleep duration and immediate fractional wake motion.
+Broadphase geometry, material/allocation, contact damage, room membership and
+model notifications remain controlled services.
 These are routine checks, not live driving or geometry acceptance. Negative
 controls independently remove the gate, linear-rate, rest-timer or rigid-clock
 correction; further controls omit contact resolution, RNG isolation or the
-secondary-step boundary correction and must fail their relevant cases.
+secondary-step boundary correction or body sleep cadence and must fail their
+relevant cases. Synthetic memory-DEC checks cover all byte values, stored
+result flags and preserved carry at the sleep site and an unrelated site.
 The motion fixture now also executes the original RNG with three controlled
 contacts and checks slow, fast and irregular native intervals. Asset-free
 `native_physics_scope.c` checks nested/private/shared draws and cleanup; the

@@ -5499,3 +5499,41 @@ Mac-stack patch checks in 74.42 seconds. Logs are
 used a nonexistent scope-test filename and collected nothing; the corrected
 command produced the reported 115 passes. No full-build or live-driving claim is made;
 the previously tested crowd executable remains installed.
+
+### Entity publication, vehicle components and rigid-body sleep
+
+The next fixture extension executes original `1719E0/165A40/9E840` publication
+and bounds transforms, `1753A0` vehicle component integration, and
+`1677E0/167880` sleep/wake. Entity position and velocity now receive the actual
+body results every advancing frame. The fixture supplies controlled external
+forces before each advancing update because the original publisher clears
+the accumulators. A rotating nonzero center offset exercises the position and
+bounds transform. Component acceleration, angle accumulation and clamping run
+at 60/120/144; their small forward-Euler differences remain explicit.
+
+This exposed another real timer defect: direct byte-memory DEC `171F83`
+expired ten sleep counts after ten rendered updates, taking
+0.166667/0.083333/0.069444 seconds. The candidate extends the existing byte-load
+policy to this exact decrement. The lifter applies the hook once to its input,
+then derives flags from the actual stored result, retaining carry. Unrelated
+sites and original timing keep their arithmetic. Synthetic tests exhaust all
+256 byte values at the target and an unrelated site, checking ZF, OF and CF.
+
+The full original-routine test now sleeps after 10/20/24 frames at 60/120/144
+(0.166667 seconds), or 40/80/96 at quarter game speed (0.666667 seconds).
+Triple game speed retains the original raw-clock sleep cadence. Sleeping bodies
+leave the active list; two wake calls reinsert the body once, and the next
+positive fractional update publishes movement immediately. Removing the new
+sleep policy fails the 120 FPS case. Evidence includes
+`logs/native-rigid-publication-before.log`, `logs/native-rigid-sleep-wake.log`
+and `logs/native-rigid-memory-dec.log`.
+
+Windows final suites pass 110 timing/vehicle/float-join/vehicle-join/generation
+tests in 132.34 seconds (`logs/native-rigid-publication-regressions.log`) and
+four fresh/repeated/checkpoint/controls/Mac-stack patch cases in 101.69 seconds
+(`logs/native-rigid-publication-upgrades.log`). The earlier focused test used
+an unsupported synthetic SETO instruction; replacing that test-only instruction
+with the supported JO branch yielded two passing exhaustive DEC cases. No
+unrelated lifter instruction support was added. Real world geometry, vehicle
+driver/force production, damage/model notification and rendered driving remain
+unverified. These routine results do not establish full handling acceptance.

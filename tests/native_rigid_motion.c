@@ -1,6 +1,7 @@
-/* Original clock -> solver -> body integrator -> original quaternion/matrix
- * helpers and a controlled support contact. Broad phase provides controlled
- * geometry; material, allocation and contact notifications are services.
+/* Original clock -> solver -> body integrator -> quaternion/matrix helpers,
+ * vehicle component update, entity publication and sleep/wake, with a
+ * controlled support contact. Broadphase, material/allocation, damage,
+ * room membership and model notification remain controlled services.
  * This checks real body state, not live vehicle handling or level geometry. */
 #include <assert.h>
 #include <math.h>
@@ -21,15 +22,20 @@ extern void sub_00171560(void),sub_00153B40(void);
 void pc_native_physics_solver(void) {pc_native_physics_solver_guest(sub_00171560);}
 void pc_native_physics_random(void) {pc_native_physics_random_guest(sub_00153B40);}
 enum { BODY=0x5000, TABLE=0x6000, MATERIAL=0x7000, FORCE=0x8000,
-       CONTACT=0x9000, PROP=0x9100, STATIC_PROP=0x9300, IMPACTS=0x9500 };
-static int legacy,contact_mode,missing_contact,legacy_rng,legacy_secondary;
+       CONTACT=0x9000, PROP=0x9100, STATIC_PROP=0x9300, IMPACTS=0x9500,
+       VEHICLE=0xa000, PARAMETERS=0xb000, CAPS=0xc000 };
+static int legacy,contact_mode,missing_contact,legacy_rng,legacy_secondary,legacy_sleep;
 static unsigned allocations,integrations,changed,contacts,impulses;
 static unsigned random_calls;
+static unsigned publications,sleeps;
+static unsigned vehicle_updates;
 static double seconds;
 #undef RECOMP_TRACE_ENTER
 #define RECOMP_TRACE_ENTER(name,address) do { if((address)==0x16ca00u) { \
     ++integrations;seconds+=MEMF(g_esp+8);assert(MEM32(g_esp+4)==BODY); } \
-    if((address)==0x153b40u)++random_calls; } while(0)
+    if((address)==0x153b40u)++random_calls; \
+    if((address)==0x1753a0u)++vehicle_updates; \
+    if((address)==0x1677e0u)++sleeps; } while(0)
 #undef RECOMP_LOAD_GLOBAL_U32
 #define RECOMP_LOAD_GLOBAL_U32(site,address,value) \
     (legacy && ((site)==0x171fb9 || (site)==0x17208e || (site)==0x172119) ? \
@@ -41,6 +47,9 @@ static double seconds;
 #undef RECOMP_F32_ADD_AT
 #define RECOMP_F32_ADD_AT(site,left,right) \
     ((site)==0x17164Fu && !legacy_secondary ? pc_native_physics_elapsed(left,right) : (left)+(right))
+#undef RECOMP_LOAD_U8_AT
+#define RECOMP_LOAD_U8_AT(site,value) \
+    ((site)==0x171f83u && legacy_sleep ? (value) : pc_native_load_u8(site,value))
 #undef RECOMP_ICALL_SAFE_AT
 #define RECOMP_ICALL_SAFE_AT(target,stack,site) assert(!"Unexpected callback")
 #undef RECOMP_ITAIL
@@ -77,8 +86,10 @@ void sub_00170690(void) {
 void sub_0016B6B0(void) {g_esp+=4;}
 void sub_0016B050(void) {g_esp+=4;}
 void sub_0016C0D0(void) {g_esp+=4;}
-void sub_001719E0(void) {g_esp+=4;}
-void sub_00167880(void) {assert(MEM32(g_esp+4)==0);g_esp+=4;}
+void sub_0026A500(void) {assert(MEM32(g_esp+4)==BODY);g_esp+=4;}
+void sub_00168180(void) {assert(g_eax==0);g_esp+=4;}
+void sub_002572A0(void) {assert(MEM32(g_esp+4)==PROP);publications++;g_esp+=4;}
+void sub_000872F0(void) {g_eax=1;g_esp+=4;}
 void sub_002561B0(void) {g_eax=MATERIAL;g_esp+=4;}
 void sub_0016E780(void) {
     uint32_t contact=MEM32(g_esp+4);
@@ -91,20 +102,39 @@ void sub_0016E780(void) {
 /* ROUTINES */
 static void reset(int forced)
 {
-    memset((void *)(g_xbox_mem_offset+BODY),0,0x5000);
-    contact_mode=forced>=2 ? (forced==3?3:1) : 0;
+    memset((void *)(g_xbox_mem_offset+BODY),0,0x9000);
+    contact_mode=forced==2?1:forced==3?3:0;
     MEM32(0x7497c8)=0;MEM32(0x4e7950)=1;MEM32(0x4e7954)=0;
     MEM32(0x74c458)=BODY;MEM32(0x74c46c)=TABLE;MEM32(0x7a20c8)=BODY;
+    MEM32(TABLE)=PROP;MEM32(PROP+0x34)=1;MEM8(PROP+0x30)=1;
+    MEM32(PROP+0x28)=0x40000000; /* room membership supplied by the fixture */
     MEM32(0x74c48c)=IMPACTS;
     MEM32(0x74c450)=0;MEM16(0x74c454)=0;MEM32(0x4e8cec)=60;
     for(unsigned i=0;i<15;i++)MEMF(0x74c414+4*i)=1;
     for(unsigned matrix=0;matrix<4;matrix++)
         for(unsigned i=0;i<16;i++)MEMF(BODY+matrix*64+i*4)=i%5==0?1:0;
     MEMF(BODY+0x10c)=1; /* normalized quaternion */
-    MEMF(BODY+0x1a8)=.5f;MEM32(BODY+0x1c0)=0x40000; /* external gravity disabled */
+    MEMF(BODY+0x1a8)=.5f;MEM32(BODY+0x1c0)=0x40004; /* no extra gravity or sleep */
+    MEM8(BODY+0x1c8)=10;
     MEM32(BODY+0x1b8)=FORCE;
     MEMF(BODY+0x14c)=6;MEMF(BODY+0x150)=-4;MEMF(BODY+0x154)=2;
     MEMF(BODY+0x12c)=MEMF(BODY+0x138)=.5f;
+    if(forced>=4) {
+        MEM32(PROP+0x20)=0x400000;MEM32(PROP+0x7c)=VEHICLE;
+        MEM32(VEHICLE+0x50)=PARAMETERS;MEM32(VEHICLE+0x5c)=1;
+        MEMF(PARAMETERS+0x18)=100;MEMF(PARAMETERS+0x1c)=2;
+        MEMF(PARAMETERS+0x54)=2;MEM32(PARAMETERS+0x9c)=2;
+        for(unsigned i=0;i<2;i++) {
+            unsigned state=VEHICLE+0x1c8+i*0x64;
+            MEM32(state-0x54)=CAPS+i*4;MEMF(CAPS+i*4)=1;
+            MEMF(state)=forced==5?(i?-100:100):(i?-4:5);
+            MEMF(state-0x34)=i?.5f:2.f;
+            MEMF(state-8)=MEMF(state-4)=i?-2.f:3.f;
+        }
+        /* Nonzero local centre exercises the original bounds transform and
+         * entity-position offset publication while the body rotates. */
+        MEMF(BODY+0x170)=.25f;MEMF(BODY+0x174)=-.5f;MEMF(BODY+0x178)=.75f;
+    }
     if(forced==1)MEMF(FORCE)=12;
     if(contact_mode) {
         MEMF(FORCE+4)=-20;
@@ -112,36 +142,48 @@ static void reset(int forced)
         MEMF(BODY+0x12c)=MEMF(BODY+0x138)=0;
     }
     for(unsigned i=0;i<6;i++)MEMF(BODY+0x110+i*4)=MEMF(FORCE+i*4);
-    integrations=changed=contacts=impulses=random_calls=0;seconds=0;
+    integrations=changed=contacts=impulses=random_calls=publications=sleeps=vehicle_updates=0;seconds=0;
 }
-static void step(unsigned whole,float delta)
+static void step_clocks(unsigned raw_whole,unsigned whole,float raw,float delta)
 {
     unsigned position=BODY+(contact_mode?0x144:0x140);
     float before=MEMF(position);
     MEM32(0x4e7944)=whole;MEMF(0x4e794c)=delta;
+    MEM32(0x4e7940)=raw_whole;MEMF(0x4e7948)=raw;
+    /* The controlled force producer precedes the physics clock each frame.
+     * The original publisher now clears those accumulators after use. */
+    if(delta>0)for(unsigned i=0;i<6;i++)MEMF(BODY+0x110+i*4)=MEMF(FORCE+i*4);
     g_esp=0x18000;MEM32(g_esp)=0x12345678;
     g_ebx=0xabcd;g_esi=0xbcde;g_edi=0xcdef;g_ebp=0xdef0;
     pc_native_physics_guest(sub_00171FB0);
     assert(g_esp==0x18004 && MEM32(0x18000)==0x12345678 && g_fp_top==0);
     assert(g_ebx==0xabcd && g_esi==0xbcde && g_edi==0xcdef);
     assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==delta);
+    if(delta>0)for(unsigned i=0;i<3;i++) {
+        assert(MEMF(PROP+0x64+i*4)==MEMF(BODY+0x140+i*4)-MEMF(PROP+0x1a8+i*4));
+        assert(MEMF(PROP+0xb4+i*4)==MEMF(BODY+0x14c+i*4));
+        assert(MEMF(BODY+0x110+i*4)==0 && MEMF(BODY+0x11c+i*4)==0);
+    }
     if(MEMF(position)!=before)changed++;
 }
+static void step(unsigned whole,float delta) {step_clocks(whole,whole,delta,delta);}
 int main(int argc,char **argv)
 {
     legacy=argc>1 && !strcmp(argv[1],"legacy-clock");
     legacy_rng=argc>1 && !strcmp(argv[1],"legacy-rng");
     legacy_secondary=argc>1 && !strcmp(argv[1],"legacy-secondary");
+    legacy_sleep=argc>1 && !strcmp(argv[1],"legacy-body-sleep");
     missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");setbuf(stdout,NULL);
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    for(unsigned forced=0;forced<4;forced++) {
+    for(unsigned forced=0;forced<6;forced++) {
         float reference_position[3]={0},reference_velocity[3]={0},reference_quaternion[4]={0};
         uint32_t reference_seed[2]={0};
         for(unsigned rate=0;rate<3;rate++) {
             unsigned fps=rate==0?60:rate==1?120:144;
             g_tsfp_native_timing_active=rate!=0;reset(forced);
+            printf("rigid_begin fps=%u forced=%u\n",fps,forced);
             for(unsigned frame=0;frame<fps;frame++)step((frame+1)*60/fps-frame*60/fps,60.f/fps);
             printf("rigid_motion fps=%u forced=%u fresh=%u integrations=%u seconds=%.9f x=%.9f vx=%.9f qy=%.9f qw=%.9f y=%.9f vy=%.9f contacts=%u impulses=%u\n",
                 fps,forced,changed,integrations,seconds,MEMF(BODY+0x140),MEMF(BODY+0x14c),MEMF(BODY+0x104),MEMF(BODY+0x10c),MEMF(BODY+0x144),MEMF(BODY+0x150),contacts,impulses);
@@ -158,6 +200,18 @@ int main(int argc,char **argv)
              * A body held at rest need not change position after impact. */
             assert((contact_mode ? changed>=1 : changed==fps) &&
                    integrations==fps*(contact_mode?8:1) && fabs(seconds-1.)<1e-6);
+            assert(publications==fps);
+            if(forced>=4) {
+                assert(vehicle_updates==fps);
+                for(unsigned i=0;i<2;i++) {
+                    unsigned state=VEHICLE+0x1c8+i*0x64;
+                    float speed=MEMF(state),angle=MEMF(state-0x3c);
+                    float expected_speed=forced==5?(i?-50.f-2.f/fps:50.f+3.f/fps):(i?-6.f:8.f);
+                    float expected_angle=forced==5?(i?-25.f:100.f):(i?-2.5f:13.f);
+                    printf("vehicle_component fps=%u case=%u index=%u speed=%.9f angle=%.9f\n",fps,forced,i,speed,angle);
+                    assert(fabsf(speed-expected_speed)<.001f && fabsf(angle-expected_angle)<.06f);
+                }
+            } else assert(vehicle_updates==0);
             if(contact_mode) {
                 assert(contacts>=fps && impulses>=fps);
                 assert(fabsf(MEMF(BODY+0x144))<.04f && fabsf(MEMF(BODY+0x150))<.001f);
@@ -210,6 +264,34 @@ int main(int argc,char **argv)
         assert(random_calls==primary*16 && MEM32(0x7497c8)==whole_total*16);
         assert(MEM32(0x4e7950)==(uint32_t)expected_seed && MEM32(0x4e7954)==(uint32_t)(expected_seed>>32));
         assert(fabsf(MEMF(BODY+0x150))<.001f && pc_physics_scope==NULL);
+    }
+    for(unsigned mode=0;mode<3;mode++)for(unsigned rate=0;rate<3;rate++) {
+        unsigned fps=rate==0?60:rate==1?120:144;
+        g_tsfp_native_timing_active=rate!=0;reset(0);
+        MEM32(BODY+0x1c0)=0x40000;
+        for(unsigned i=0;i<3;i++) {
+            MEMF(BODY+0x14c+i*4)=0;MEMF(BODY+0x128+i*4)=0;MEMF(BODY+0x134+i*4)=0;
+        }
+        unsigned frame=0;
+        while(!sleeps && frame<fps) {
+            unsigned whole=(frame+1)*60/fps-frame*60/fps;
+            unsigned divisor=mode==1?4:1,multiplier=mode==2?3:1;
+            unsigned game_whole=(frame+1)*60*multiplier/(fps*divisor)-frame*60*multiplier/(fps*divisor);
+            step_clocks(whole,game_whole,60.f/fps,60.f*multiplier/(fps*divisor));frame++;
+        }
+        printf("rigid_sleep fps=%u mode=%u frame=%u seconds=%.9f count=%u calls=%u\n",fps,mode,frame,(double)frame/fps,MEM8(BODY+0x1c8),sleeps);
+        assert(sleeps==1 && frame*6==fps*(mode==1?4:1));
+        assert(MEM8(BODY+0x1c8)==255 && MEM32(0x7a20c8)==0);
+        unsigned before=integrations;step(1,1);assert(integrations==before);
+        /* Original wake reinserts the body once, resets its countdown, and
+         * allows motion on the very next fractional update. */
+        for(unsigned wake=0;wake<2;wake++) {
+            g_esp=0x18000;MEM32(g_esp+4)=0;sub_00167880();
+            assert(g_esp==0x18004 && MEM32(0x7a20c8)==BODY &&
+                   MEM32(BODY+0x1f8)==0 && MEM32(BODY+0x1fc)==0 && MEM8(BODY+0x1c8)==10);
+        }
+        MEMF(BODY+0x14c)=6;step(rate?0:1,60.f/fps);
+        assert(integrations==before+1 && MEMF(PROP+0x64)>0 && MEM8(BODY+0x1c8)==10);
     }
     free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support contact, fresh steps and pause");return 0;
 }

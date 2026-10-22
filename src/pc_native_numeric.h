@@ -371,15 +371,16 @@ static inline int pc_native_skip_aim_random(void)
  * including on compilers that decline to inline function-pointer helpers. */
 #define RECOMP_PUSH_IMM_U32_AT(site,value) \
     (((site)==0x2B963Fu || (site)==0x17E6ECu) ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
-/* The vehicle rest countdown still decrements integer bytes. Compensate only
- * its load on intervals without an authored tick; the following byte DEC
- * then retains the stored count. Its next TEST replaces the DEC flags.
+/* Vehicle rest (176673 MOV) and rigid-body sleep (171F83 memory DEC) still
+ * decrement integer bytes. Compensate only their load on intervals without
+ * an authored tick; the byte DEC then retains the stored count. Its actual
+ * stored result feeds the generated flags (rigid-body sleep consumes ZF).
  * At fast game speed the original updater runs at raw 60-Hz cadence; at
  * slow speed it runs on game ticks. Do not intersect the two carried clocks,
  * whose phases can diverge across pauses. Existing expired values stay due. */
 static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
 {
-    if (site==0x176673u && g_tsfp_native_timing_active) {
+    if ((site==0x176673u || site==0x171F83u) && g_tsfp_native_timing_active) {
         float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
         float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
         uint32_t address=game<raw ? 0x4E7944u : 0x4E7940u;
@@ -389,7 +390,8 @@ static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
     return value;
 }
 #define RECOMP_LOAD_U8_AT(site,value) \
-    ((site)==0x176673u ? pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
+    (((site)==0x176673u || (site)==0x171F83u) ? \
+     pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);

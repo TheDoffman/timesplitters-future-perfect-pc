@@ -28,8 +28,18 @@ seconds for 3 requested); a bounded eighth-step correction restores 3 seconds.
 Final Windows validation passes 70 timing/vehicle tests, including the
 20,000-partition rounding contract, 115 translator/generation/context/backlog
 companions, and four full-stack patch install/upgrade cases.
+
+The subsequent original entity-publication test exposed a second sleep timer:
+ten counts expired in 0.1667/0.0833/0.0694 seconds at 60/120/144. The candidate
+now preserves authored ticks at its direct byte-memory decrement. Full
+original publication, bounds, sleep/wake and vehicle-component routines pass
+focused checks: ten-count sleep lasts 0.1667 seconds at every rate, or 0.6667
+at quarter speed; wake resumes on the next fractional update. Position and
+velocity are published each advancing frame. The follow-up passes 110 timing,
+vehicle and generation regressions and four fresh/install/upgrade cases;
+live driving and rendering are still separate acceptance work.
 No gameplay build or live vehicle validation yet. Actual geometry, multiple
-contacts, active driving, final entity publication and performance remain gaps.
+contacts, active driving, model/render notification and performance remain gaps.
 This candidate has not replaced the tested combined crowd-performance build.
 Shared implementation and tests are registered for both CI hosts; native Mac
 execution is pending (MAC-060). No PR/release published for this candidate.

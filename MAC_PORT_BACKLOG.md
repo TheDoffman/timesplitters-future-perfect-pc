@@ -3608,6 +3608,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   pause/catch-up and preset switching remain pending. This remains a WIP
   candidate, not verified Mac support or a shipped gameplay fix.
 
+  Follow-up publication checks execute the original body-to-entity position/
+  velocity, bounds, vehicle-component integration and sleep/wake routines.
+  Shared byte-load policy now also covers the direct memory DEC at `171F83`;
+  original/default flags and unrelated sites retain their behavior. Focused
+  Windows checks restore the same sleep duration at 60/120/144, including slow
+  and fast game speed, and verify immediate fractional wake motion. Mac tests,
+  live driving and rendered model behavior remain pending; no adapter change.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

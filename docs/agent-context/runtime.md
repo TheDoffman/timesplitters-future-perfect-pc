@@ -27,15 +27,21 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 ## Source ownership and execution
 
 The candidate `-native-vehicle-physics.patch` adds a default-identity
-`RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory. Title
-policy only changes US rest-countdown load `0x176673`; its following DEC/TEST
-remain generated instructions. The loader places it after the numeric policy
+`RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory and
+the input of byte-memory DECs. The latter keeps its flag snapshot on the
+actual stored result, with CF unchanged. Title policy changes only US vehicle
+rest load `176673` and rigid sleep DEC `171F83`; other loads/decrements retain
+their original value. Their clocks use the slower raw/game authored cadence,
+including phase-shifted carried ticks. The loader places it after the numeric policy
 and before `-native-surface-live.patch`. Historical pre-native stacks exclude
 this dependent patch; current full-stack application and unwind remain required.
 See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
 original vehicle/rigid-clock fixtures. The original solver/body math and a
-controlled single support-contact path now run in `native_rigid_motion.c`;
-material, world geometry and entity publication remain service boundaries.
+controlled support-contact path now run in `native_rigid_motion.c`, followed by
+the original `1719E0/165A40/9E840` entity publication/bounds path and
+`1677E0/167880` sleep/wake. The vehicle-specific component updater `1753A0`
+also runs with controlled parameters. Material, world geometry, damage and
+model notification remain service boundaries; driver/handling is unverified.
 `pc_native_physics_guest.h` wraps `171FB0` with a nested, thread-local scope.
 Call `172114 -> 171560` assigns carried whole primary steps to the original
 shared RNG; extra primary steps use a private advancing sequence only at
