@@ -19,7 +19,8 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
 @pytest.mark.parametrize('address,case,stage', [(0x4bbf10, 'surface_feedback_gpu.inc', 7),
-                                                (0x4bbc40, 'surface_filter_gpu.inc', 4)])
+                                                (0x4bbc40, 'surface_filter_gpu.inc', 4),
+                                                (0x4bbf10, 'surface_damping_gpu.inc', 7)])
 def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config

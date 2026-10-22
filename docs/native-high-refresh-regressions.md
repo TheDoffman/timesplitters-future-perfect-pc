@@ -5519,3 +5519,43 @@ the original doubled 120-FPS recovery. External world, network, rendering and
 pause-query services are controlled; this is not live Escort or network parity.
 The asset-free clock/resource fixture also checks recovery in both-host CI.
 Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.
+## Fractional damping coefficient packing (2026-10-22)
+
+A new original-program WARP case isolates coefficient packing from the earlier
+feedback-storage and centering issues. It uses the hash-verified US second
+feedback shader, production HLSL translator and common RHI, uniform float32
+inputs/targets, zero acceleration and displacement coupling, and feedback only
+in the blue displacement channel. It runs one second of updates at each rate.
+These are controlled shader coefficients, not a captured Scotland trajectory.
+
+For authored damping 0.98, original upload rounds to 250/255. The current
+fractional candidate instead packs `pow(0.98, delta)` on every substep. Its
+120-FPS coefficient is 252/255 and its 144-FPS coefficient is 253/255. Repeated
+multiplication exposes a rate-dependent damping error even with perfect float
+storage and no random disturbance or spatial filtering:
+
+| Case | FPS | Final blue from 0.6 | Relative to original 60 steps |
+| --- | ---: | ---: | ---: |
+| Packed fractional coefficient | 60 | 0.182869345 | -0.00002% |
+| Packed fractional coefficient | 120 | 0.145008832 | -20.70361% |
+| Packed fractional coefficient | 144 | 0.193072483 | +5.57945% |
+| Precise power of original packed coefficient | 120 | 0.182869047 | -0.00018% |
+| Precise power of original packed coefficient | 144 | 0.182869136 | -0.00014% |
+
+The diagnostic correction quantizes the original one-tick value once, then
+uploads `pow(250/255, delta)` without re-quantizing fractional steps. Its 60-FPS
+coefficient stays identical. Every GPU pixel/update is also compared with the
+single-step damping equation, not just the final average. This supports a
+specific next implementation: transport precise time-scaled coefficients in
+the existing ordered, shader-scoped float-constant path. The candidate's linear
+acceleration/displacement coefficients also need original-quantized anchors;
+their coupled/spatial behavior is not established by this damping-only case.
+
+`tests/test_surface_shader_feedback.py` now includes `surface_damping_gpu.inc`.
+All three original-program GPU cases pass locally on Windows WARP. They require
+the private supported XBE and skip without it; neither a hosted skip nor this
+float32 recurrence proves native Mac execution or original byte-storage wave
+appearance. No runtime behavior, saved setting or playable executable changes
+in this diagnostic checkpoint. Water remains opt-in, pending coefficient
+integration, full dynamics, rendered appearance and broader-level acceptance.
+Evidence: `logs/surface-damping-gpu.log` and `logs/surface-shader-audit.log`.

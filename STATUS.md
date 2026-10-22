@@ -1,3 +1,18 @@
+## 2026-10-22 — Water damping coefficient diagnosis
+
+On `test/water-coefficient-parity`, a new original-shader WARP test isolates
+fractional coefficient packing. For a controlled damping value of 0.98, packed
+substeps leave 20.70% less blue displacement at 120 FPS and 5.58% more at 144
+after one second than the original 60-step float32 reference. Preserving a
+precise fractional power of the original packed coefficient reduces the error
+to below 0.0002% in this scalar test. The GPU checks every pixel and update.
+
+This checkpoint changes diagnostics only. It establishes a cause and candidate
+coefficient policy, not full water dynamics or live appearance. The original
+GPU shader, production translator and common RHI are used with uniform inputs,
+zero coupling and float32 storage. Game data remains private; native Mac GPU
+execution is unverified (MAC-060). The ready-to-play combined game is unchanged.
+See the fractional damping audit in `docs/native-high-refresh-regressions.md`.
 ## 2026-10-22 — Escort recovery timing audit
 
 PR #297 also covers the recovery side of the Escort movement resource. The
