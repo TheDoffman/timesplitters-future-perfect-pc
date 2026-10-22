@@ -1,5 +1,56 @@
 # Build, run and validation map
 
+The suspended-spawn trace source check also verifies the original context reset
+is preserved with its return/stack effects and existing suspension flag. The
+patch migration assertion includes the original D50E0 wrapper.
+
+The Story source fixture verifies that suspend/restore tracing preserves the
+original suspension flags/context and return/stack effects. The migration
+fixture also verifies installation of both original script-control wrappers.
+`--script-observe-seconds 20` adds a passive bounded wait only when a peer is
+script-suspended; it retains the initial startup evidence and assertions rather
+than substituting the later state as a passing start.
+
+`tests/story_pair_game.py --load-probe --lobby-controls --players 4 --fire-probe`
+extends the isolated route to four actual game processes and primary-fire input.
+Weapon IDs, aim and muzzle telemetry use the existing bot-shot field contracts;
+they are not ammo or hit counters. Fire-input completion is recorded separately
+from load/movement acceptance and requires reviewed captures. Neither proves
+Story NPC/script authority or coordinated next-level behavior. Spawn-pad source contracts also check scoped slot/ownership/stack preservation,
+valid-result passthrough and inactive/non-Story guards. The migration check
+asserts the separate CF060 wrapper is installed. Year is optional;
+the required lobby header contains a readable selected name and thumbnail.
+
+`tests/test_quit_menu.py` also compiles `tests/story_lobby.c` against the
+production Story lobby adapter with isolated guest RAM. It checks host/guest/mode
+guards, host Options and each peer Progress routing, preserved network inputs and frontend mode,
+and difficulty confirmation without a local-game launch.
+`tests/story_pair_game.py --load-probe --lobby-controls` adds host Scotland/Hard,
+guest reliable settings receipt and Progress/Back before GO and movement.
+The controls route sends an ignored guest Confirm rather than Ready; host GO must
+work using automatic original readiness. Review its guest-confirm-ignored capture
+for only Back/Player Progress, alongside the live lobby authority assertion. The
+runner removes TSFP_STORY_LOAD_PROBE so this exercises normal typed Story start.
+The changed route needs its own runtime receipt and reviewed captures; the prior
+startup-only receipt does not certify these controls. These callback
+contracts do not establish live lobby rendering or synchronized Story play.
+The isolated `story-host-controls` scenario extends `story-host` with Y/level/
+difficulty/X Progress/Back. Expected descriptor checks stop the route if level
+or difficulty navigation differs, before a subsequent confirm could press GO.
+Run with native process access: restricted probes have failed before the menus
+with an invalid-handle exception; native-access runs reached the lobby cleanly.
+Its bounded pipe drain uses `read1` and flushes each chunk: live descriptor
+assertions must not read a log buffered until child shutdown. A menu mismatch
+after that fix is real routing evidence; inspect the captured screen and the
+`PC-STORY-SELECT` trace rather than treating the generic exit check as acceptance.
+The difficulty step chooses mission 1 and checks the live allocated descriptor
+against its trace, plus mission retention and custom-builder entry. Review the
+capture for actual Easy/Normal/Hard choices; tracing alone is insufficient.
+The probe's raw `mission` field is guest frontend data, not the host-owned Story
+choice in network menus. Retention is checked against the custom dialog's own
+mission trace. Review the returned lobby header for the selected mission name
+and thumbnail, in addition to confirming menu descriptors.
+
 <!-- packet:start -->
 Windows entry point is `tsfp.ps1` (Setup/Extract/Test/Generate/Build/Run/SmokeTest);
 `setup.ps1` orchestrates first setup. Use `powershell -NoProfile -File tsfp.ps1
@@ -35,7 +86,31 @@ registrations. Existing `test_online.py` covers mode isolation, limits, concurre
 admission, expiry/departure and old-directory cleanup; the real loopback relay
 and `test_online_host.py` TLS invitation checks run for both modes. These are
 transport/admission checks only: no Story guest loading or gameplay is established
-by them. No Story entry is exposed in the game menu by this infrastructure change.
+by them. The in-game chooser is described in `systems.md`. `test_quit_menu.py`
+compiles its production callbacks for Windows/shared-native fallback, covering
+row routing, original Local descriptor, Back, cancelled/successful typed Story
+connections and allocation failure. Its optional local US-image test checks the
+original Story route and callback padding. `test_fov_settings.py` retains whole
+menu translation-unit coverage. Live navigation and Story gameplay require
+separate checks.
+
+For bounded Windows entry navigation, use
+`tests/stability_transitions_game.py --run-name online-story-entry --scenario
+story-entry`. It visits Local/Back/re-entry and opens/cancels the Story directory
+using isolated Test Lab and online settings. Local Back returns to the chooser;
+another Back returns to Main Menu. The cancellation helper checks only this
+game's `pythonw.exe` child chain, including the venv interpreter child, and the
+exact Story window title. Checking only direct game children misses the window.
+Passing this route establishes entry navigation, not lobby or gameplay acceptance.
+
+The `story-host` scenario uses its own ephemeral loopback-only directory and
+disposable companion automation command under `private/network-validation`,
+reusing the same isolated Test Lab profile routing. It connects Story, visits
+Start New Match and captures the stock host lobby with opt-in numeric tracing.
+Successful runs established host role 1/lobby phase 11 and the menu callbacks
+documented in `systems.md`; later local runs failed at `No renderer capture`.
+Do not label those failures passed, infer that a stock Deathmatch lobby is Story
+co-op, or change capture cadence based on an assumed meaning of `RECOMP_FPS`.
 
 Hosted-only contributors need no local model, Ollama service or installed router.
 The context/maintenance checker uses Python and Git. The optional broker's Node
@@ -247,3 +322,70 @@ until the complete stack installs the display/viewport prerequisites. The
 post-upgrade assertions require both the crane wrapper and renderer clip hook,
 alongside preservation of local edits and idempotent reapplication. This does
 not omit the patch from fresh/current-stack or renderer regression tests.
+## Story load and paired-lobby probes
+
+`tests/story_pair_game.py --load-probe` is a separate, opt-in experiment using
+`online-story-load-pair-host/guest` disposable roots and `story-load-pair` evidence.
+It retains one exact executable/PDB archive as `probe-symbols.zip` BEFORE launch,
+validates its BUILD.json executable hash against the seal and records the archive
+hash in the receipt. A subsequent build must not be substituted when resolving a
+probe dump: the resolver checks the dump's PDB GUID/age. This snapshot prevents
+routine rebuilds from discarding the crash's matching symbols.
+The optional `--receipt-id` caller nonce is echoed in the saved receipt. This
+identifies a diagnostic invocation across Windows venv launcher/interpreter PID
+redirection; parent PID equality must not substitute for this invocation check.
+Offline resolution additionally matches the joined game PID and executable hash,
+so an older startup crash cannot be mistaken for the loading fault.
+After roster join it sends guest Ready and host GO, currently tests mode4/phase15,
+matching Story scenes, two distinct actors and one local view per instance,
+then checks both actor positions changed after separate host/guest input.
+World position is entity+0x64 (matching the replication adapter), not bounds
+centre+0x1A8. The runner samples twice per second during input/command waits
+(ten times per second while unpaused in a Story scene),
+bounded to2400 samples, recording health, actor life/flags, game tick and pause
+flags, original main-update state/timer and network end state. These observations
+also include config rule/variant and the original result flags/failure timer.
+Engine context count/pool and up to four context states at+114 distinguish those
+contexts from healthy actor bodies. The asset-free Story fixture checks the
+pending-load spawn adapter calls the original D50E0(context,1) once per admitted
+context, retains the original frame call/stack and never retries later deaths.
+distinguish entry into failure state8 from propagation of network end status2;
+they do not change either state machine. Before movement the paired probe rejects paused/failure menus or nonliving
+actors. It does not send E after direct gameplay load: doing so could retry a
+Game Over menu and obscure the first failure. Inspect states.json for the first
+spawn/health/pause transition; actor allocation alone does not establish play.
+Review both load-before/load-after captures: positions alone do not prove camera
+control, mutual interaction, Story script/NPC authority or next-level flow.
+Default paired-lobby behavior still sends no GO. No build or probe may run while
+an unrelated interactive game uses the executable. Guest-dispatch tests use the
+repository native compiler discovery on Windows rather than skipping when cl is
+absent from PATH; their passes are ABI evidence only.
+
+`tests/story_pair_game.py` checks the executable seal and normalized source
+identity, then runs two disposable Story-connected instances against one loopback
+directory with separate bridge ports. Success requires both rosters to contain
+two players, host phase11 and guest phase12, and clean runner shutdown. This is
+a lobby transport precondition only; it sends no GO and does not prove Story play.
+
+`tests/stability_transitions_game.py --run-name online-story-load-baseline
+--scenario story-local-load` exercises the original Local Story path, captures
+named frontend/active configuration fields and writes `story-load-baseline.json`
+only after observing Story mode, a gameplay scene and an actor pool outside a
+cinematic. Review `local-game.png` as well as the assertion. This diagnostic needs
+no rebuild after Python-only changes; it does not test network loading. Both
+routes retain the runner's isolated settings, fixture and cleanup guards.
+
+The changed Story detail-row route requires visual review of host and guest
+returned lobbies: selected localized briefing must replace Arcade details without
+covering the roster, and header year/contrast must be assessed from captures.
+Constructor source checks alone cannot certify text layout or visible year.
+
+`story_pair_game.py --load-probe --lobby-controls --lobby-only` stops after guest
+Confirm in the lobby. It verifies settings/Progress/authority and captures the
+changed UI while avoiding an unnecessary repeated level load. Receipt scope and
+status distinguish this from gameplay; old load-before/after PNGs are stale.
+
+Story paired harness --players4 launches one host and three guests, each with a
+separate disposable run/bridge port, and requires all four original rosters plus
+matching selected settings. Four-player evidence is kept in story-four, distinct
+from the prior paired proofs. --lobby-only can verify admission without GO.

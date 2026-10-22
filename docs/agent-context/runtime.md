@@ -1,5 +1,37 @@
 # Runtime and patch navigation
 
+`*-story-context-spawn-trace.patch` wraps original D50E0 without altering its
+ownership checks. D50E0 and the existing D2FD0/D3C50/D2CE0 wrappers use the separate
+script trace budget only while phase15 retains script-suspension flag02000000.
+This observes context replacement after suspension; ordinary spawn calls remain
+direct pass-through. Complete-stack migration verifies the additional wrapper.
+
+`*-story-script-trace.patch` wraps original D4B00/D4BE0 suspend/restore calls.
+The shared callback records caller, argument, peer role/phase, result flags and
+context states before/after, with a separate 32-call opt-in trace budget. Both
+original bodies execute unchanged, including native/disabled fallback. It needs
+supported regeneration and complete-stack migration validation.
+
+`*-story-spawn-pad.patch` separately wraps original CF060 spawn-pad selection.
+It calls `pc_story_network_spawn_pad`, which retains successful original results
+and uses the original first-player lookup only for a missing Story start for
+online slots 2/3. The temporary lookup index is restored before body creation;
+ownership and life-state logic are unchanged. Native fallback calls the original.
+The historical Mac migration fixture excludes this dependent Story patch, then
+asserts that the complete migration installs its wrapper.
+
+The opt-in Story load diagnostic adds original-body wrappers for67450,66FC0
+and681C0, plus context initialization/state routines D2FD0/D3C50/D2CE0, in the
+separate `*-story-failure-trace.patch`. They call shared
+`pc_story_failure_trace` to record the guest caller and state/result changes,
+bounded16 observations and gated by the Story load/trace opt-ins. They never
+modify the original failure predicate or suppress its state transition. Wrapper
+changes require supported regeneration; do not edit generated functions.
+The Mac-only upgrade fixture excludes this network-dependent diagnostic from its
+historical stack, then asserts the full migration installs the failure wrappers.
+The681C0 wrapper now enters `pc_story_network_frame`, which supplies the scoped
+opt-in pending-load spawn adapter and then the unchanged traced evaluator.
+
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
@@ -152,3 +184,8 @@ The captured crane also uses an inclusive 639x479 last-pixel scissor. The
 crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
+
+Online Story lower-details hook wraps original1986A0 through a separate patch.
+The combined198E20 roster renderer remains original. Only a scoped typed Story
+body draw at return199650 substitutes selected briefing text; other callers and
+connection modes run original details. New manual wrapper requires regeneration.

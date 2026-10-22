@@ -1340,6 +1340,36 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story load experiment (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_load.inc` and existing guest config wrappers add an opt-in Windows
+  Story pending-load experiment, with native fallback inert. Both simulation
+  integration and the paired load/movement probe still await Windows runtime
+  validation; this does not establish Story world/script synchronization. Native
+  Online lacks XNet transport and typed session mode, so this cannot be activated
+  by common guest logic alone. Adapt those host capabilities, reuse the same
+  config model, then validate native and mixed-host Story load, independent views,
+  movement/interactions, lobby authority and next-level coordination with isolated
+  profiles. Asset-free Windows/native-fallback tests do not verify native gameplay.
+
+- **Online Story host controls (uncommitted, 2026-10-22):**
+  `src/pc_story_lobby.inc` adds host Options and own Player Progress routing,
+  plus difficulty confirmation without local-game launch, through the shared
+  guest menu dispatcher. This currently requires the Windows-only online mode
+  adapter. Native transport remains queued; remove that adapter boundary when
+  MAC-013 supplies session mode, then run native host/guest navigation and
+  two-instance Story acceptance. Windows callback tests pass; no live validation
+  of this new host-control slice has been performed on either platform.
+
+- **Online Story entry (uncommitted, 2026-10-21):** Shared
+  `src/pc_story_menu.inc` supplies Local/Online after Story; Local retains the
+  original guest descriptor. Windows `pc_online.c` supplies the typed Story
+  companion connection. The native chooser reports Online unavailable because
+  the XNet/companion transport adapter remains queued here; no duplicate Story
+  policy is intended. Shared/native-fallback callback tests cover this boundary;
+  actual native menu navigation and two-instance Story play remain unverified.
+  Remaining acceptance includes the native transport adapter, shared Story lobby
+  and coordinated loading/gameplay; a Windows build cannot establish this.
+
 - **Status:** Queued
 - **Temporary diagnostics experiment (`e9eed34`, 2026-10-16):** Windows
   `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips

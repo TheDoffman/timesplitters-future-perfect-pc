@@ -1,5 +1,142 @@
 # Subsystem entry points
 
+Initialization/spawn calls D2FD0/D3C50/D2CE0/D50E0 made during script suspension
+now share the bounded script-state trace. This separately observes the original
+context reset path after phase15, without changing ownership or state writes.
+The source fixture checks that the original reset still executes and retains
+the suspension flag and return/stack effects. Runtime cause remains unverified.
+A separate bounded pad-source diagnostic records CF060 input cache1504,
+random-selection switch6B988C, original pad result and caller before fallback.
+It distinguishes network-provided pads from the authored Story selection; no
+selection policy changes are implied by this diagnostic.
+
+`pc_story_network_script_trace` observes original D4B00/D4BE0 directly because
+their script suspension writes bypass D2CE0. It retains the original call and
+side effects, records peer/caller/context/result before and after, and limits
+opt-in output to 32 calls independently of startup tracing. No script state is
+forced, replicated or suppressed by this diagnostic.
+The changed four-peer run recorded D4B00 from caller1E4B9B on every peer at
+different ticks, suspending each local context. No D4BE0 restore appeared through
+a further 20 seconds. Host context 0 changed from 256 to 2 as remote contexts
+initialized, while guest-owned contexts stayed 256. The reset writer remains
+unresolved; no script-control or world-synchronization fix is claimed.
+
+Story rule10's original CF060 selector returns -1 when the player index exceeds
+the valid authored starts. `pc_story_network_spawn_pad` preserves valid results;
+for connected Story slots 2/3 only, an explicit -1 retries the original selector
+with a scoped first-player lookup index, then restores the real context slot.
+This reuses an authored start without changing ownership or copying bodies.
+Source tests cover slot/stack preservation, valid-pad passthrough and non-Story
+and lobby guards. A changed four-instance run observed missing starts for slots
+2/3 resolving to authored pad D9 and all players placed in the start area. It
+still failed before movement because one peer retained script flag 02000000.
+Original D4B00 sets that flag and writes context state 256 directly; D4BE0 clears
+it and restores state 2. This bypasses the traced D2CE0 setter. Script authority
+and coordinated suspension/restoration remain unresolved; no flag is forced.
+
+Four-player lobby admission passed, but the first four-player load check failed:
+slot 3 stayed stationary and its owning peer changed context state 2 to 256 at
+tick 14. Firing was not reached. The opt-in Story trace separately observes up
+to eight original D2CE0 requests for state 256, including caller/context/result,
+because repeated preparation exhausted the generic sixteen-observation budget.
+This trace calls the original setter unchanged; its cause remains unresolved.
+A changed trace build then passed four-player load/movement with matching
+positions and active contexts, without reproducing state 256. This does not fix
+the intermittent failure. All four firing-input captures were unarmed views;
+shots, hits and Story world authority remain unverified.
+
+Online Story now publishes host mission/difficulty through the existing reliable
+lobby configuration sender. Publication preserves capacity/ownership header
+bytes; the start adapter normalizes the occupied roster only at GO. Story lobby
+admission uses a four-human limit. Guest descriptor4E99D4/tick1A8F30 shares the
+Story header and own-profile Progress action; guest Y cannot open Options.
+Host Scotland/Hard, guest Progress/Back and removal of the hidden load opt-in
+passed a bounded paired Windows check. Guest footer labels remain wrong despite
+correct Progress routing. Guest readiness now uses original359EB0(0,1) only when local node774028+2FA
+is unready; its A callback is removed. Footer B/X records are applied after the
+original dynamic Ready caption update. The guest footer/Confirm and host GO load were reviewed live; the changed
+pair then failed an inactive second engine context, so gameplay acceptance is
+still unresolved;
+briefing/year/icons, world authority and next-level coordination remain open.
+
+`pc_story_load.inc` adds a typed Story start adapter for an Online Story connection. It validates counts and
+mission records, substitutes scene/difficulty/Cortez and the observed Local
+flags in the host's existing start config, then derives the guest selection from
+that reliable config. `pc_network_bots_guest_config` invokes it before the
+original serializer/pending copy; only the pending-copy function identity may
+activate the per-instance Story mode afterward. The host derives occupied slot extent from the
+original controller roster rather than byte0, which the stock builder left at
+map capacity16 in the failed paired load. Holes, frontend network mode, phase,
+role and local ownership are retained; only the host rewrites the capacity to
+the occupied extent. Guests require the received count within four. Bounded
+opt-in trace reports actual wrapper address/counts. Other connection modes retain their original behavior.
+The first partial-config version reached both pending-load hooks but crashed in
+`sub_0008DC70`; exact matching dumps are recorded in the investigation receipt.
+The factory variant calls the original no-argument Story config
+factory `sub_002D2C70` once on the host at lobby phase11, with scoped frontend
+mode4/mission/difficulty. Before the factory it supplies the original Local Story
+rule10/variant2 selection; mode4's factory reads these fields instead of resetting
+them. Received experimental configs must match this Story rule pair. It restores original guest registers/frontend fields
+and the network header before normalizing counts and selecting direct gameplay.
+Pending phase10 and guests consume that same config without rebuilding/reseeding
+it. Factory runs passed the previously observed loader fault, but both mode14
+and one-view mode4 reached Game Over with health60. The mode choice did not
+explain that failure. Original Local Story additionally supplies rule10/variant2
+before factory construction; the current correction supplies that selection
+before rule-dependent initialization. Runtime acceptance and world/script
+synchronization remain separate requirements. No life/death/pause flags are forced;
+the paired probe still rejects Game Over and requires live cross-observed movement.
+Opt-in `pc_story_failure_trace` wraps the original failure entry points67450,
+66FC0 and main evaluator681C0, plus context init/state D2FD0/D3C50/D2CE0, through
+a separate reproducible patch. It records engine context count and up to four
+context states at+114 (not actor-body health), and
+the guest caller and original state/result changes (bounded16 observations),
+then preserves the original return/side effects. Native/disabled paths remain
+direct pass-through. This identifies the initiating predicate without masking it.
+The opt-in startup adapter `pc_story_network_frame` runs before evaluator681C0.
+Original rule10 bypasses the network state6 spawn loop, leaving both contexts
+inactive after network setup. Once per pending load, if all admitted contexts
+remain state16 at initial state7 with clear result flags, the adapter calls the
+original D50E0(context,1) sequence observed at68F4C for each context. It then runs
+the original evaluator; it never forces health, result or pause flags. Actual
+runtime activation, ownership and full-view behavior still require validation.
+These host hooks require the Windows Online adapter; shared source provides
+inert native fallback until MAC-013 supplies native XNet transport/session mode.
+
+Story host controls live in `src/pc_story_lobby.inc`, dispatched by
+`pc_display_menu_lookup`. Only connected Story host role 1/lobby phase 11
+overrides the original host tick (descriptor `0x004E99C4`). Y opens the original
+Story level builder with scoped frontend-mode changes. Selection
+stores the mission and explicitly opens difficulty under the captured network
+parent, bypassing the original local selector's frontend/load changes; difficulty
+confirmation stores the host's choice and returns to the captured lobby, bypassing the
+original local-game launch. X opens the local Player Progress descriptor.
+`pc_story_lobby_button` rewrites level/difficulty row callbacks to the existing
+synthetic `STORY_SELECT_CB`, at the verified US row-builder callsites. Its lookup
+dispatches by descriptor/stage. This avoids profile-guided indirect-call guards
+calling the original known callback directly before manual lookup; no generated
+code or new synthetic addresses are needed. Opt-in `TSFP_STORY_TRACE` reports
+row rewriting and mission confirmation for live integration checks.
+Difficulty uses an allocated descriptor and four caption buffers (144 bytes
+total), built through the existing synthetic `STORY_BUILD_CB`. Its custom builder
+creates Easy/Normal/Hard rows and highlights the saved difficulty without changing
+the network frontend mode. Back returns to level selection; confirmation stores
+the difficulty choice and returns to the captured lobby. The original local
+difficulty builder is bypassed; scoping it to mode 4 still returned to the lobby
+in the live probe. Selection/back dispatch recognize the allocated descriptor.
+The host footer keeps its physical action IDs and substitutes Back/Player
+Progress captions. Callback tests cover routing, input preservation, invalid
+choices and mode isolation. Custom difficulty, confirmation and own Progress/Back
+were reviewed in the isolated Windows run recorded in STATUS.md.
+Story choices now live in `story_lobby_mission`/`story_lobby_difficulty`, preserving
+guest frontend fields while the network lobby is active. The host header row's
+draw callback is rewritten to the existing synthetic builder callback; scoped
+lookup invokes the original Story row renderer with the selected mission as a
+temporary row ID, restoring it afterward. Its actual header geometry remains
+unverified. This is an incomplete lobby layer: briefing, guest controls, settings
+replication and Story GO/loading are still outstanding. Native Online remains
+dependent on MAC-013's transport adapter.
+
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
 `pc_display*`, `pc_settings*`, `pc_refresh*` for display/configuration;
@@ -55,6 +192,27 @@ for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
 native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
+
+`pc_story_menu.inc` inserts a Local/Online chooser only at the supported-US
+main-menu Story row (return `0x002D0C8E`, ID 0, inherited callback). It uses the
+existing menu dispatcher and guest layout/input helpers. Local opens the original
+`0x005238E0` descriptor; Back restores the captured main menu. Four verified INT3
+bytes `0x1201C..0x1201F` dispatch the chooser. `pc_online_connect_mode` selects
+Arcade or Story for the companion; its mode becomes active only on bridge success
+and resets on disconnect. The unchanged `pc_online_connect` remains Arcade.
+Story Online currently opens the shared network lobby after directory connection;
+Story-specific lobby contents/loading/replication remain pending. Native builds
+share the chooser and Local route; Online reports unavailable pending MAC-013.
+Callback fixtures and the optional checksum-verified US entry contract live in
+`tests/test_quit_menu.py`; they do not prove runtime navigation or co-op gameplay.
+
+For opt-in Story lobby diagnostics, `pc_display_menu_mouse_footer` honors
+`TSFP_STORY_TRACE` only for a connected Windows Story session in lobby phase 11.
+It reports numeric menu descriptor callbacks/footer fields once per descriptor;
+it does not change lobby behavior. The measured host descriptor is `0x004E99C4`,
+with builder `0x001A8DA0` and tick `0x001A8D30`. Its existing Options and character
+actions still enter the ordinary multiplayer menus. Story lobby replacement is
+pending; a connected bridge is not evidence of Story loading or replication.
 
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`
 and `config/pc-display.ini` are personal. `private/game` is the single extracted
@@ -132,3 +290,41 @@ STRETCH tag `0x00137010`. Shared RHI `d3d8_GetScissor` and legacy GL
 `native_apply_scissor` apply this policy before output scaling. Stored guest
 clips, other tags and partial rectangles remain unchanged. The title helper
 scope supplies the tag only for complete single-player non-4:3 views.
+
+The pending Story startup attempts original D50E0 once for each context still
+inactive at the first evaluator, rather than requiring the whole roster inactive.
+A remote spawn may arrive before a guest reaches this boundary. Active contexts
+are preserved, original ownership checks remain in D50E0, and the pending token
+is consumed once so subsequent deaths never trigger initialization. Mixed-state
+regression passed; the changed automatic-ready paired route reached [2,2] on
+both peers with matched movement and reviewed weapons/HUD views. Host original
+spawn correctly denied its remote context; guest initialized that own context.
+
+A wrapped-row replacement experiment found that callback198E20 draws the roster
+as well as Arcade details. Replacing the entire callback hid the roster despite
+showing localized briefing. That experiment was reverted (saved ignored under
+logs/story-briefing-experiment). Preserve198E20; replace only its lower details
+callee1986A0 or an equally scoped drawing boundary. Header flags4/style11 also
+failed to expose year/contrast and were reverted. Briefing remains unfinished.
+
+The lower-details replacement now scopes original198E20 through a synthetic body
+callback and intercepts only its1986A0 call. Existing40F00 word wrapping returns
+a guest string, drawn by41DC0(x,y,text,color), with original font/fade services.
+The roster still draws through original198E20. Paragraph placement remains a
+runtime visual check; no source fixture can certify the final bounds.
+
+The narrow briefing renderer retains both rosters live, but initial visual review
+showed paragraph clipping. It now measures wrapped height through3FCF0, reduces
+shared font scale only as needed within the lower panel and restores all font
+state after drawing. The fitting correction awaits its changed visual check.
+
+The fitted Scotland briefing was visually reviewed complete on both peers while
+preserving roster/controls. Header readability uses the original briefing-menu
+opacity branch during the synchronous heading draw, restoring descriptor after.
+Year is optional per clarified original notes; it is not an acceptance blocker.
+The heading opacity correction awaits runtime review alongside four-player work.
+
+Four real instances now verified admission and matching host settings in one
+Story lobby. Name opacity correction and complete fitted Scotland/TimeToSplit
+briefings reviewed with roster intact. Year optional per actual notes. This does
+not validate four-player level load or world/interaction/next-level authority.

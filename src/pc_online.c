@@ -8,11 +8,13 @@
 #include "pc_network.h"
 #include "pc_network_build.h"
 static HANDLE companion;
+static PcOnlineMode active_mode;
 static char ready_path[MAX_PATH],stop_path[MAX_PATH];
 extern HWND xbox_D3D8Window(void);
 
 void pc_online_disconnect(void)
 {
+    active_mode=PC_ONLINE_NONE;
     if(companion) {
         FILE *file=fopen(stop_path,"w"); if(file) fclose(file);
         /* Browser supervisor observes the stop request and deletes its lobby.
@@ -23,11 +25,19 @@ void pc_online_disconnect(void)
     pc_network_set_online(NULL);
 }
 
-int pc_online_connect(void)
+PcOnlineMode pc_online_mode(void) { return active_mode; }
+
+int pc_online_connect(void) { return pc_online_connect_mode(PC_ONLINE_ARCADE); }
+
+int pc_online_connect_mode(PcOnlineMode mode)
 {
     char root[MAX_PATH],python[MAX_PATH],script[MAX_PATH],folder[MAX_PATH],command[2048],line[128];
     STARTUPINFOA startup={sizeof startup}; PROCESS_INFORMATION process={0};
     DWORD pid=GetCurrentProcessId(); unsigned i; FILE *file; HWND owner=xbox_D3D8Window();
+    const char *kind;
+    if(mode==PC_ONLINE_STORY) kind="story";
+    else if(mode==PC_ONLINE_ARCADE) kind="arcade";
+    else return 0;
     pc_online_disconnect();
     if(!GetModuleFileNameA(NULL,root,sizeof root)) return 0;
     /* Portable build: package/Bin/game.exe, with its own isolated runtime. */
@@ -52,8 +62,8 @@ int pc_online_connect(void)
     snprintf(ready_path,sizeof ready_path,"%s\\%lu.ready",folder,pid);
     snprintf(stop_path,sizeof stop_path,"%s\\%lu.stop",folder,pid);
     DeleteFileA(ready_path); DeleteFileA(stop_path);
-    snprintf(command,sizeof command,"\"%s\" -B \"%s\" --pid %lu --result \"%s\" --compatibility %s",
-        python,script,pid,ready_path,TSFP_NETWORK_COMPATIBILITY_HEX);
+    snprintf(command,sizeof command,"\"%s\" -B \"%s\" --pid %lu --result \"%s\" --compatibility %s --mode %s",
+        python,script,pid,ready_path,TSFP_NETWORK_COMPATIBILITY_HEX,kind);
     if(!CreateProcessA(python,command,NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,root,&startup,&process)) {
         MessageBoxA(NULL,"Could not start the Online browser.","Online",MB_OK|MB_ICONERROR); return 0;
     }
@@ -66,7 +76,7 @@ int pc_online_connect(void)
         if(file) {
             int accepted=fgets(line,sizeof line,file)!=NULL && pc_network_set_online(line);
             fclose(file);
-            if(accepted) { EnableWindow(owner,TRUE); return 1; }
+            if(accepted) { active_mode=mode; EnableWindow(owner,TRUE); return 1; }
         }
     }
     CloseHandle(companion); companion=NULL;

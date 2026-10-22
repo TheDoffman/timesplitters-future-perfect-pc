@@ -31,6 +31,10 @@
 
 extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
+static int pc_story_menu_button(void (*original)(void));
+#ifdef _WIN32
+static int pc_story_lobby_button(void (*original)(void));
+#endif
 
 typedef struct GuestRegisters {
     uint32_t a,c,d,sp,b,si,di,bp,seh;
@@ -223,7 +227,9 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+    if(pc_story_menu_button(original)) return;
 #ifdef _WIN32
+    if(pc_story_lobby_button(original)) return;
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
         const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
@@ -787,8 +793,15 @@ static void online_activate(void)
     restore_registers(&r); g_esp+=4;
 }
 #endif
+#include "pc_story_menu.inc"
+#include "pc_story_lobby.inc"
+#include "pc_story_load.inc"
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+#ifdef _WIN32
+    void (*story_callback)(void)=story_lobby_lookup(address);
+    if(story_callback) return story_callback;
+#endif
     switch(address) {
     case PC_DISPLAY_MENU_CALLBACK: return activate;
     case BUILD_CB: return build_menu;
@@ -796,6 +809,10 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
+    case STORY_OPEN_CB: return story_open;
+    case STORY_BUILD_CB: return story_build;
+    case STORY_SELECT_CB: return story_select;
+    case STORY_BACK_CB: return story_back;
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
     case QUIT_OPEN_CB: return quit_open;
     case QUIT_BUILD_CB: return quit_build;

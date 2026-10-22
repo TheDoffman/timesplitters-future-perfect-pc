@@ -3,6 +3,8 @@
 #ifdef _WIN32
 #define BOT_LOBBY_WORD(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
 static unsigned pc_network_bots_lobby_drawing;
+extern void pc_story_network_lobby_config(void);
+extern unsigned pc_story_network_player_limit(void);
 
 static int pc_network_bots_lobby_network(void)
 {
@@ -12,6 +14,8 @@ static int pc_network_bots_lobby_network(void)
 
 static unsigned pc_network_bots_lobby_limit(void)
 {
+    const unsigned story_limit=pc_story_network_player_limit();
+    if(story_limit) return story_limit;
     unsigned mode=BOT_LOBBY_WORD(0x0078AD2Cu),map=BOT_LOBBY_WORD(0x0078AD4Cu);
     unsigned column=mode==11u?2u:mode==13u?3u:0u,limit;
     /* Same map/profile lookup as US sub_002BEA00, including mode 12's
@@ -43,6 +47,7 @@ static void pc_network_bots_guest_lobby_send(void (*original)(void))
 #ifdef _WIN32
     if(pc_network_bots_lobby_network() && BOT_LOBBY_WORD(0x0076B1A4u)==11u)
         pc_network_bots_lobby_prepare(1);
+    pc_story_network_lobby_config();
 #endif
     original();
 }

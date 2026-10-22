@@ -1,3 +1,186 @@
+## Online Story load experiment - 2026-10-22
+
+Early half-second samples show both mode14 bodies have health60 before and after
+Game Over; life/enable fields remain unchanged. Host failure appears near tick244,
+guest near306. This is not a zero-health-spawn explanation. The current unbuilt
+comparison switches only the per-instance simulation to original one-view Story
+mode4, keeping network role/phase/roster and local count1. No failure/death flags
+are cleared. Tests:11 passed,1 skipped; native mode4 behavior remains unverified.
+
+Latest factory build `08dcf161946c53da` loads both instances into scene2/mode14/
+network phase15 with distinct actors and one local view configured. Both runners
+exited0 with profiles/fixture preserved, but both before/after captures show
+GAME OVER; the probe failed movement. This is a failed Story start, not verified
+gameplay. `crash-diagnosis.json` has probe_exit1/resolved[]; no crash-fix success
+is inferred. The movement probe also mistakenly sampled collision bounds instead
+of world position. Python-only changes now use position+0x64, capture early health/
+life/pause state during waits, and reject failure menus before movement without
+pressing Retry. No gameplay code or rebuilt binary change in this diagnostic slice.
+
+The saved native loading crashes were resolved offline, without another game
+run: both match `sub_0008DC70+0xC5` with exact PDB GUID/age verification. The
+diagnostic freshness assertion incorrectly compared a venv launcher PID with
+the redirected interpreter PID; future invocations use a caller nonce, while
+offline resolution checks actual joined game PIDs and build/archive hashes.
+The run did reach both Story pending-load switches; the earlier claim of a new
+pre-load failure is superseded by its traces and matching saved dumps.
+
+Current unbuilt hypothesis: construct the full host config using the original
+Story factory once before serialization, retain the network header/ownership
+bytes and normalized counts, and reuse the same result on both pending copies.
+Tests verify the factory ABI/scoping, header preservation and no second build at
+pending phase10:11 passed,1 skipped. No runtime fix or co-op completion claim.
+
+New paired trace confirms the count correction and existing start packet carry
+Story scene2/difficulty0/players2 to both peers; both execute the pending-load
+mode14 switch. Both then crash during loading with0xC0000005 at the same native
+address. This is not Story gameplay evidence. Crashed exe `bd62a5e637154e0f`
+differs from current `8c56fef2d954aad1`; the strict resolver rejected the current
+symbols for that dump. The paired harness now retains matching symbols before
+launch. One bounded diagnostic run, with no rebuild, is prepared to identify the
+faulting function without guessing from mismatched symbols. The full notes
+checklist and exact native diagnostic command are current in the investigation log.
+
+Latest supported build exited0 (exe `b69e2b0e74791aa1`, compatibility
+`b96769c4ee78f03c`). The native paired load probe failed the intended Story check:
+both peers reached network phase15 but loaded Arcade scene59/mode13. Both reviewed
+captures show an Arcade arena, both runners exited0 and released their locks.
+The recorded config byte0 remained16 with a two-player roster, which the original
+adapter rejected. New unbuilt source derives the host count from occupied player
+records and adds bounded entry tracing; hook reachability and Story simulation
+remain unverified. Tests with the recorded capacity16:11 passed,1 skipped.
+This supersedes the earlier unbuilt/runtime-not-run statement for the FIRST
+adapter only; the new count correction still needs build and paired verification.
+
+Uncommitted source adds an opt-in `TSFP_STORY_LOAD_PROBE=1` adapter through the
+existing config serialization and pending-load wrappers. Host Story scene and
+difficulty use the original reliable start config; pending copy selects mode14
+while keeping network role/phase/frontend mode and human/local counts. This
+combination is a runtime hypothesis, not verified co-op or production Story GO.
+The separate `tests/story_pair_game.py --load-probe` checks same-scene mode14/
+phase15, two actors, one local view per instance and cross-observed displacement;
+both captures still require review and world/script authority remains unimplemented.
+
+Asset-free checks: 11 passed,1 skipped; probe syntax, context and whitespace
+checks passed. No build/runtime run yet. User closed the unrelated interactive
+game40476; orchestrator verified no remaining game, clearing that prerequisite.
+The prior pair lobby and Local Story baseline receipts remain valid
+within their limited scope; neither certifies the new adapter. All remaining
+notes requirements are listed at the top of logs/agent-investigation.md.
+
+## Online Story host controls implementation - 2026-10-22
+
+Custom difficulty VERIFIED: native probe13442/game33904 with sealed exe
+`ad10ba1ea2334852` / compatibility `419888263857d0c3` completed the host-controls
+route, exit0. Reviewed capture shows Select Difficulty with Easy/Normal/Hard;
+Scotland the Brave was selected, confirming returned to lobby with mission1.
+Player Progress showed the local Test Lab profile, and Back returned to lobby.
+No GO/gameplay sent; profiles unchanged, canonical fixture preserved. The result
+isolates the prior failure to reuse of the local difficulty builder in this flow;
+the exact internal redirect mechanism was not established.
+New unbuilt source adds selected Story year/name/thumbnail rendering in the host
+header through the original Story row renderer, and keeps Story mission/difficulty
+in host-owned lobby state instead of persisting them in guest frontend fields.
+Callback tests:8 passed,1 skipped. Header geometry/content still needs a rebuilt
+live capture; briefing/roster/guest controls and synchronized Story play remain
+unfinished. A changed Arcade header in the prior capture is not proof of memory
+field overlap; no such overlap is claimed.
+
+Latest checkpoint: build session89332 passed the supported native checks, producing
+exe `10693b12379497a6` / compatibility `a1f11e89152cc104`. Native probe90073/game25204
+proved mission 1 and scoped difficulty-builder entry, but still returned to the
+stock lobby. Synthetic row dispatch was reached in the preceding probe88747 too;
+callback bypass alone therefore does not explain the remaining failure.
+Both failed menu probes stopped before GO, exited cleanly and preserved profiles.
+Source now builds its own Easy/Normal/Hard/Back dialog under the network parent,
+bypassing the original local difficulty builder. Callback tests passed (8 passed,
+1 skipped), including Back/re-entry and mode preservation. This latest custom
+dialog is not yet built/live-verified; the selected-level lobby header and briefing
+still need implementation. The full Online Story goal remains incomplete.
+
+Checkpoint: native probe session24013/game36836 against sealed build
+`0197c7c328e2914e` (compatibility `7ddc493b9fb51fe5`) reproduced level selection
+returning to the stock lobby. The probe's pipe drain was fixed to flush live
+menu traces; Options passed, difficulty failed at descriptor `0x004E99C4`.
+The script stopped before GO, game exit was clean, profiles/fixture unchanged.
+This disproves the previous direct-transition fix as integrated behavior.
+Source now rewrites only Story option row callbacks to the existing synthetic
+Story callback to avoid the runtime generator's guarded direct-call path.
+New tests cover the exact builder callsites and descriptor-scoped dispatch:
+8 passed, 1 skipped. The callback rewrite still needs a build/live rerun;
+selected-level lobby presentation and synchronized Story play are not implemented.
+
+Follow-up native-access validation used sealed executable `a359100e93b0463e`,
+compatibility `626f460a265ec96a`. Host probe reached phase 11 and the reviewed
+capture showed Back/Player Progress captions. The extended probe opened Select
+Level, but selection returned to the stock lobby; the subsequent scripted confirm
+started Arcade scene 59. That is a failed Story controls check, not Story play.
+Both processes exited cleanly and profile/fixture checks passed. Restricted
+early crashes were absent with native access. Source now stores the chosen
+mission and explicitly opens difficulty using the captured network parent,
+instead of calling the original local selector. New descriptor assertions stop
+the route before a confirm on an unexpected menu. Targeted tests passed again
+(8 passed, 1 skipped); this follow-up fix still needs a rebuild and live rerun.
+
+Uncommitted `pc_story_lobby.inc` adds host Story Options -> level -> difficulty
+-> lobby callbacks and replaces the host Character action with own Player
+Progress. Only Story host sessions are intercepted; confirmation avoids the
+original local-game launch. Targeted chooser/lobby/FOV tests: 8 passed, 1 skipped.
+This source slice has not been built or exercised in-game. Earlier executable
+hash 95817e93 does not contain it. Guest controls, return navigation, Story
+header/briefing, settings replication, four-player game admission and coordinated
+Story play remain unfinished/unverified. Later host-probe failures included
+invalid-handle exceptions at frames 4/5; they are not successful menu checks.
+
+## Online Story host lobby evidence - 2026-10-22
+
+The isolated `story-host` probe successfully connected through a disposable
+loopback directory, visited Start New Match and entered host role 1/lobby phase
+11. Reviewed captures showed the existing Deathmatch lobby: `/16`, Arcade rule
+summary and Select Character. This identifies unfinished Story lobby work; it
+does not establish Story co-op. Numeric tracing measured host descriptor
+`0x004E99C4`, builder `0x001A8DA0` and tick `0x001A8D30`.
+
+The supported trace build passed (worker session 77691), executable SHA-256
+`95817e93e73b6e7581863540b3da48b208cd403aa5f048aed4e44cb9eaf96543`.
+Its build seal and current affected source hashes were rechecked. The subsequent
+trace probe passed (session 28267), last capture at 52.18 seconds, profiles
+unchanged and canonical fixture preserved. Later LOCAL runs, including PID 23076,
+failed with `No renderer capture`; those are failed checks with no established
+cause. They do not erase earlier measurements or demonstrate Story gameplay.
+The current report directory may contain older named PNGs alongside a newer
+failed report; check run provenance before interpreting any capture.
+
+## Online Story entry development - 2026-10-21
+
+Local, uncommitted work on `online-story-coop` at base `4329529` adds the Story
+Local/Online chooser and a typed Story directory entry. Reviewed Windows renderer
+captures show both rows, Local reaching the original Select Level menu, Local
+Back returning to the chooser, chooser Back returning to Main Menu, and re-entry.
+The supported Windows build and native checks passed; chooser/FOV fixtures passed
+6 tests with one Mac-only skip. The verified executable SHA-256 is
+`4c9848d47f2050a64e55c606f929b7c3553dd3e7046e502e8fd6558d9bc82669`;
+current changed product sources match its generated compatibility manifest.
+
+The isolated `story-entry` navigation check now **passes** against that same
+executable. After correcting the scripted Back sequence, its ownership detector
+also needed to follow the bounded game-to-venv-launcher-to-interpreter chain:
+the launcher PID does not own Tk's window. The final run detected its owned
+`Online Story - TimeSplitters Future Perfect` companion, cancelled it, and returned
+to the chooser with Online highlighted. The last capture was recorded at 62.14
+seconds; the game exited with code 0, without unresolved callbacks or a crash.
+The Test Lab run reported unchanged profiles, valid signatures and an unchanged
+canonical fixture. Captures/reports remain under the isolated
+`private/test-saves/online-story-entry` root. This checks opening/cancelling the
+directory, not successful hosting/joining or gameplay. Native Mac menu navigation
+is untested; its Online adapter remains queued in MAC-013.
+
+Story-specific lobby presentation/options, four-player gameplay admission,
+coordinated loading and synchronized Story play remain unfinished. No two-instance
+Story lobby, shared level load or gameplay acceptance is claimed. See
+`logs/agent-investigation.md` for exact remaining checks. The unrelated broad-suite
+failures reported by LOCAL are not classified as baseline failures without evidence.
+
 ## Launcher v1.2.23 release preparation - 2026-10-21
 
 Source `d35e1df9ab920e176ba0ca87d4e922a4ad3fe55a`, based on main
@@ -13407,3 +13590,162 @@ The failure reproduced locally before the correction; all 34 patch-tracking
 and upgrade tests pass afterward (352.49 seconds). Context and whitespace
 checks pass. Both original native-runtime jobs and both launcher jobs passed;
 new-head hosted validation will run after the correction is pushed.
+## Online Story continuation checkpoint — 2026-10-22
+
+This checkpoint supersedes older pending header/pair instructions below.
+The paired-lobby probe exited0: host11888/role1/phase11 and guest26928/role2/phase12
+both observed two players; both runner exit codes0, profiles unchanged and fixture
+preserved. Evidence: `private/network-validation/story-pair/pair-evidence.json`
+and both `private/test-saves/online-story-pair-*/pair-wait.png` captures. Sealed
+Windows executable SHA256 `3616a43c97c323ab28c03c43ddab261b41a6d4c028eee3b82a8b9240ed42842d`.
+Host name/thumbnail are visible; guest retains multiplayer header/character action
+and both retain Arcade details. Header probe99335 also exited0 with reviewed
+selected-name/thumbnail captures; year/contrast remain unfinished.
+
+Two-instance Story load/play is **not implemented or verified**. Settings
+replication, Story GO, actual four-player admission, guest UI, briefing, Cortez
+icons, independent gameplay views and next-level coordination remain open.
+The later Local Story diagnostic passed with isolated profiles. It measured
+original rule10/variant2 in both cinematic and actual Story configurations.
+The experimental adapter now supplies that pair before the original factory,
+which otherwise retains the prior selection. This correction passed11 affected
+tests (1 skipped) and the supported build, but the paired start still FAILED:
+both reached scene2/phase15 and GAME OVER, HP60. Exe62b3359da6e6160773a5cee1ec23e6ef2796a3bca887f393af2a00d5037271e2;
+compat749147f249fcf361f6ab2e3b9d0f2dcd5469e1be6b9fb9f8dbb2f8b7500facc4.
+Host entered state8/result10000 at tick3 while network end status remained1;
+failure timer36000 remained positive. Network status2 followed. This identifies
+local host failure before propagation, not its final root cause. Both runners
+exited0/profiles unchanged; diagnostic exit0 is separate from paired exit1.
+Current evidence remains `private/network-validation/story-load-pair/` and both
+disposable `load-before.png` captures. Original failure caller228984 inside228870
+tests both context states16 and sets result10000. Context trace showed original
+initialization sets state2, then network setup resets both to16 at tick0. Rule10
+skips original network state6 activation. Sol added an opt-in pending-load adapter
+calling original D50E0(context,1) once before the first Story evaluator, followed
+by the unchanged failure check. Asset-free tests passed; this startup adapter is
+NOT yet built or runtime verified. No health/death/pause bypass was added.
+
+
+Online Story validation (2026-10-22, uncommitted): supported Windows build and
+`tests/story_pair_game.py --load-probe --lobby-controls` exited0. Normal typed
+Story (no hidden gate) replicated host Scotland/Hard in lobby and loaded scene4
+on both. Both player movements matched across instances; separate views and
+visible other Cortez in guest view reviewed. Guest Progress/Back worked but its
+visible footer labels remain wrong and Ready remains exposed. Year/contrast,
+briefing, four-player runtime admission, shared interactions/world authority and
+next-level coordination remain incomplete. EXE
+6f82b956974e1d4b9bbb6008ea60a141e062df19d245ea83198832fa55c60eea;
+compat cfbcbae6fc9ec51b3a1faedf168028b15dc6542ef636e10444a010cad3119683.
+Both isolated runners0, profiles/fixture preserved, no game/locks/images remain.
+Mac transport gap MAC-013 and Mac runtime validation remain open.
+
+
+Online Story follow-up: guest footer now reviewed as Back/Player Progress only;
+Confirm inert, automatic original readiness lets host GO load both. Changed pair
+FAILED before movement: context1 remains16 on both, HP15, no Game Over. Both
+runners0/profiles preserved; full goal incomplete. EXE
+944c33c7240d6afa163b3c3336581da4f2736d13a89a4e497e8a3455af8b8b23.
+Original spawn's ownership predicate35AFB0/35AF40 is the next unresolved boundary;
+no authority/health/death flags were forced. Prior moving-pair proof is retained.
+
+
+Online Story mixed-context startup correction: a remote spawn can reach the guest
+before its first evaluator. Requiring every context inactive skipped the guest's
+own spawn; now each still-inactive context gets one original ownership-checked
+D50E0 attempt, with no later resurrection. Source11passed1skipped, supported
+Build0 and changed auto-ready paired controls/load/movement test0. Both context
+states2/2, matching movement, weapons/HUD/independent views and visible remote
+Cortez reviewed. Both runners0/profiles preserved/cleanup verified. EXE
+5dde317830c297db09ad156e688e53945fe14093896858e8c6d2876f50148d35;
+compat4f14b62c161916009c1bcf96eee15734cdbaf49eacf9bda2cca5373617ce0d5e.
+Briefing/year/contrast, four-player runtime admission, firing/use/world authority
+and next-level coordination remain incomplete. This is not full acceptance.
+
+
+Online Story briefing layout experiment was rejected visually: replacing198E20
+showed localized briefing but removed the roster (callback owns both). Header
+flags/style did not fix year/contrast. Reverted that experiment, preserving prior
+startup/UI implementation. Source11passed1skipped and supported restorationBuild0;
+source compatibility restored4f14b62c161916009c1bcf96eee15734cdbaf49eacf9bda2cca5373617ce0d5e.
+Current rebuilt EXEb1bc3e67b5467fdc977eecbee9cca600252defc13486580aed3a920428cfdcdf.
+No unchanged runtime rerun. Experiment pair0 only certifies its narrow load/
+movement checks, not UI acceptance. Both fresh views showed same new objective,
+which does not prove script/world authority. Briefing/year/contrast still pending;
+next narrow lower-detail boundary1986A0 retains original roster renderer.
+
+
+Online Story lower-details wrapper now retains original roster198E20 and replaces
+only1986A0's lower Arcade information. Source11/1, migration1pass, nativeBuild0;
+lobby-only pair0, both returned captures reviewed with roster and selectedbriefing.
+Text clipped atbottom, so UIacceptance remains incomplete. Fitting correction
+using original wordwrap/height metrics is source-tested11/1 but UNBUILT/unverified.
+Current reviewed EXEcbc3c7cac2303eb8d3654bb70eab5dcbd72ff2e16a8e0675a349a3317127a04e;
+compat5f6e04ffc70fa543f4734fa381206b207400bb5f69f6920af9a41449d4594d77.
+No newgameplay run; bothlobbyrunners0, profilespreserved, cleanupconfirmed. All
+remaining fullgoal gaps continue in investigation checklist.
+
+
+Online Story: measured briefing fit visually passed for both peers. Heading now
+uses original briefing opacity branch during draw, restoring menu descriptor;
+readable name/thumb reviewed. Four actual game instances admitted to same Story
+lobby, all4 original rosters confirm4 humans; Scotland/Hard replicatedtoallguests.
+Source11passed1skipped, supportedBuild0, four-client lobby-onlycheck0. Fourrunners
+exit0/profilespreserved/cleanupconfirmed. EXEa17103d1d45ec4f577d0e79c4231d32cd919773a6584233738fca4ebcedbd553;
+compat14437721e4e4e02f71e0435fe2d936b7b689e54778c9def906e2f78775c97eec.
+Year is optional per actual-user clarification, not required by notes. Required
+shared firing/use/world authority and next-level coordination still incomplete;
+four-player admission is separate from four-player gameplay/fifth rejection.
+# Online Story continuation evidence (uncommitted, 2026-10-22)
+
+Four actual instances loaded Scotland/Hard. The first gameplay probe failed
+because slot 3 stayed stationary and its owner entered context state 256. A
+diagnostic-only build then passed four-player movement with matching peer
+positions; the intermittent startup failure remains unresolved. Firing inputs
+completed, but reviewed captures showed unarmed views without shot/hit evidence.
+Shared interactions, Story world authority and next-level coordination remain
+incomplete. All eight runners across the two bounded probes exited 0, disposable
+profiles were preserved, and cleanup left no active game. Source checks passed
+11 tests with 1 skip; the supported native build passed. Exact receipts and
+provenance are in `private/network-validation/story-four` and the ignored
+`logs/agent-investigation.md`. No Mac runtime validation was performed.
+
+Online Story authored-spawn continuation (uncommitted, 2026-10-22): original
+rule10 exhausted authored starts for extra online players. A scoped fallback
+now retries the original first-player pad lookup only after an explicit missing
+pad for slots 2/3, preserving valid network pads and ownership. Source checks
+passed 11 tests/1 skip; targeted Mac-stack migration and supported Windows build
+passed. Runtime observed missing pads resolving to authored D9 and all four
+players placed in the start area. The four-player probe still FAILED before
+movement on guest3 script flag 02000000. Original D4B00 sets this flag and context
+state 256 directly; D4BE0 restores state 2. Script/world coordination, firing and
+next-level behavior remain incomplete. All four runners exited 0 with profiles
+preserved and no active game. Evidence: story-four/authored-pad-script-suspend-*
+under private/network-validation. Native Mac runtime remains unverified.
+
+Story script tracing (uncommitted, 2026-10-22): source checks passed 11/1,
+original-wrapper migration passed, supported build passed. Changed four-peer
+probe FAILED; each peer entered original suspension D4B00 from caller1E4B9B,
+with no D4BE0 restore over a further 20-second passive observation. The host's
+local context reverted to 2 during remote initialization without the restore;
+guest local contexts remained 256. That reset path and Story authority remain
+unresolved. All four runners exited 0, profiles preserved, cleanup complete.
+Exact provenance and script-caller-stall evidence are in the ignored checkpoint
+and private/network-validation/story-four. No gameplay or world-sync fix claimed.
+
+## Paused Online Story checkpoint (2026-10-22)
+
+Work was paused at the user's request. This commit preserves an incomplete
+implementation and diagnostics, not a completed cooperative Story feature.
+Source checks, patch migration and the supported Windows build passed during
+this investigation. The latest four-instance pad-source diagnostic FAILED:
+a guest remained in player context state 256 with suspension flag 0x02000000.
+All four isolated runners exited 0; no game process remained at pause. A prior
+run passed narrow movement checks without exercising the suspension path; it
+is not evidence that the intermittent failure is fixed. Firing/hits, shared
+Story world/script authority and coordinated next-level progression remain
+unverified or incomplete. Native Mac runtime validation remains outstanding.
+The latest private receipt is private/network-validation/story-four/pair-evidence.json;
+ignored logs/agent-investigation.md and logs/coop-workflow-stage/run-8 retain
+investigation/session evidence. Resume by reconciling the latest pad-source
+trace with that checkpoint; do not repeat an unchanged passing movement run
+as a substitute for resolving the failure. No full-level playthrough is required.

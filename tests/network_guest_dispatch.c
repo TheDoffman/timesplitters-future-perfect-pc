@@ -37,6 +37,15 @@ uint32_t pc_network_call(uint32_t address,const uint32_t *args,ptrdiff_t offset)
 #include "../src/pc_network_guest.inc"
 #ifdef _WIN32
 static int bot_test_enabled;
+static unsigned story_prepares,story_activates;
+static int story_prepare_ok;
+int pc_story_network_prepare(uint32_t address)
+{ (void)address;++story_prepares;return story_prepare_ok; }
+void pc_story_network_activate(void) {++story_activates;}
+static unsigned story_lobby_publishes,story_player_limit;
+void pc_story_network_lobby_config(void) {++story_lobby_publishes;}
+unsigned pc_story_network_player_limit(void) {return story_player_limit;}
+void sub_000658D0_gen(void) {++originals;g_esp+=4;}
 static const char *bot_test_getenv(const char *name)
 { return bot_test_enabled && !strcmp(name,"TSFP_NETWORK_BOTS")?"1":NULL; }
 #define getenv bot_test_getenv
@@ -125,6 +134,18 @@ int main(void)
         g_esp=16;pc_network_bots_guest_config(original);
         CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
     }
+#ifdef _WIN32
+    {
+        story_prepare_ok=1;
+        g_esp=16;pc_network_bots_guest_config(original);
+        CHECK(!story_activates); /* serializer must not change simulation */
+        g_esp=16;pc_network_bots_guest_config(sub_000658D0_gen);
+        CHECK(story_activates==1 && g_esp==20 && story_prepares>=3);
+        story_prepare_ok=0;
+        g_esp=16;pc_network_bots_guest_config(sub_000658D0_gen);
+        CHECK(story_activates==1 && g_esp==20);
+    }
+#endif
 #ifdef TSFP_TEST_NATIVE_FALLBACK
     {
         void (*hooks[])(void (*)(void))={pc_network_bots_guest_lobby_send,
@@ -153,10 +174,18 @@ int main(void)
         memory[(0x4d239c+(2*15+2)*4)/4]=12;
         memory[(0x4d239c+2*15*4)/4]=14;
         CHECK(pc_network_bots_lobby_limit()==8);
+        story_player_limit=4;CHECK(pc_network_bots_lobby_limit()==4);
+        g_esp=16;pc_network_bots_guest_capacity(original);CHECK(g_eax==4);
+        for(i=2;i<5;i++) memory[(0x77728c+i*0x124)/4]=1;
+        i=originals;g_esp=16;pc_network_bots_guest_start(original);
+        CHECK(originals==i && g_esp==20); /* five human slots cannot start Story */
+        for(i=2;i<5;i++) memory[(0x77728c+i*0x124)/4]=0;
+        story_player_limit=0;
         memory[0x78ad2c/4]=11;CHECK(pc_network_bots_lobby_limit()==12);
         memory[0x78ad2c/4]=12;CHECK(pc_network_bots_lobby_limit()==14);
         memory[0x78ad2c/4]=13;
         g_esp=16;pc_network_bots_guest_lobby_send(original);
+        CHECK(story_lobby_publishes>0);
         CHECK(config[0]==2 && config[2]==6 && g_esp==20);
         CHECK(pc_network_bots_lobby_prepare(0).waiting==4);
         g_esp=16;pc_network_bots_guest_capacity(original);

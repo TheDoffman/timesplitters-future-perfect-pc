@@ -13,6 +13,11 @@ static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsign
 }
 #endif
 #include "pc_network_bots_lobby.inc"
+#ifdef _WIN32
+extern void sub_000658D0_gen(void);
+int pc_story_network_prepare(uint32_t address);
+void pc_story_network_activate(void);
+#endif
 static void pc_network_bots_guest_config(void (*original)(void))
 {
 #ifdef _WIN32
@@ -20,8 +25,14 @@ static void pc_network_bots_guest_config(void (*original)(void))
        final serialization and the host's pending-load copy. */
     uint32_t address=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     if(address==0x0078AD58u) pc_network_bots_lobby_prepare(1);
+    const int story=pc_story_network_prepare(address);
 #endif
     original();
+#ifdef _WIN32
+    /* Both original entry points retain their ABI. Only the pending-load
+       function may change simulation mode, never the start serializer. */
+    if(story && original==sub_000658D0_gen) pc_story_network_activate();
+#endif
 }
 
 /* The stock activity predicate checks controller records, so it rejects every

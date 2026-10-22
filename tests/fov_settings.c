@@ -26,6 +26,8 @@ static int slider_capture_enabled;
 HWND xbox_D3D8Window(void) { return NULL; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
 int pc_online_connect(void) { return 0; }
+int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
+PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
 void pc_online_disconnect(void) {}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
@@ -93,7 +95,9 @@ void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+
 STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_0001EFB0) STUB(sub_00019650) STUB(sub_00019D70)
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
-STUB(sub_00079710) STUB(sub_00074910) STUB(sub_001A0A60)
+STUB(sub_00079710) STUB(sub_00074910) STUB(sub_001A0A60) STUB(sub_002D2C70)
+  STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
+STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_0003D7B0) STUB(sub_00040F00) STUB(sub_00041DC0)
 static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }

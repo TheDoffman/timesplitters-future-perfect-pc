@@ -51,7 +51,7 @@ def main():
     except (OSError, ValueError):
         saved = {}
     window = tk.Tk()
-    window.title('Online - TimeSplitters Future Perfect')
+    window.title(('Online Story' if args.mode == 'story' else 'Online')+' - TimeSplitters Future Perfect')
     window.geometry('820x750')
     window.minsize(760, 720)
     theme = OnlineTheme(window)

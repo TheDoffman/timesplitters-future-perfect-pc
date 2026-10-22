@@ -5,6 +5,9 @@
 void pc_display_menu_finish(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));
 void pc_network_bots_menu(void (*original)(void));
+/* Opt-in coordinated Story load experiment; native fallback is inert. */
+int pc_story_network_prepare(uint32_t address);
+void pc_story_network_activate(void);
 void pc_profile_accept(void (*original)(void));
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
@@ -49,5 +52,10 @@ void pc_display_tutorial(void (*original)(void));
 void pc_display_tutorial_wrap(void (*original)(void));
 void pc_display_tutorial_text(void (*original)(void));
 void pc_display_perspective_projection(void (*original)(void));
+void pc_story_failure_trace(void (*original)(void),uint32_t address);
+void pc_story_network_frame(void (*original)(void));
+void pc_story_network_spawn_pad(void (*original)(void));
+void pc_story_network_script_trace(void (*original)(void),uint32_t address);
+void pc_story_lobby_details(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 #endif

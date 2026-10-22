@@ -194,12 +194,22 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch'):
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch')):
             shutil.copyfile(patch, old_patches / patch.name)
+    # The trace depends on network wrapper context; like the network patches,
+    # it belongs to the full migration, not the historical Mac-only fixture.
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
+    manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'pc_story_failure_trace(sub_00067450_gen,0x00067450u)' in manual
+    assert 'pc_story_network_frame(sub_000681C0_gen)' in manual
+    assert 'pc_story_lobby_details(sub_001986A0_gen)' in manual
+    assert 'pc_story_network_spawn_pad(sub_000CF060_gen)' in manual
+    assert 'pc_story_network_script_trace(sub_000D4B00_gen,0x000D4B00u)' in manual
+    assert 'pc_story_network_script_trace(sub_000D4BE0_gen,0x000D4BE0u)' in manual
+    assert 'pc_story_failure_trace(sub_000D50E0_gen,0x000D50E0u)' in manual
     assert installer.apply_patches(checkout, PATCHES) == []
 
 
