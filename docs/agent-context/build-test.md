@@ -25,6 +25,15 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+For integrated crowd pacing, use capture-free Present CSVs and the strict
+`native_frame_stats.summarize_clock_window` analyzer. Retain complete intervals
+inside spawn-observation+5..+55 seconds, clock neighbors outside the boundaries,
+active-scene/match/pause checkpoints and game-clock/wall endpoint ratios. The
+new `20dc25d` versus playable `4adb6b0` Venice runs measure integration cost;
+bot outcomes differ, so do not attribute differences to one fix or a speedup.
+Input key-down timestamps and prior health can locate a respawn correlation;
+they do not identify the underlying source of a hitch. STATUS records results.
+
 Vehicle exit probes must verify the delivered logical action before treating a
 failed departure as a timing defect. With the default Windows bindings and
 Test Lab profile, Y delivers exit bit 0x40; F delivers0x20 and R delivers0x10.

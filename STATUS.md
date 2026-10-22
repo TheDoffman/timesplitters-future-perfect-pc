@@ -1,3 +1,44 @@
+## 2026-10-22 — Integrated physics crowded-match pacing
+
+Capture-free Windows runs compare the integrated physics/camera build `20dc25d`
+with the normal playable `4adb6b0` executable. Both use the established ten-bot
+Venice setup route, unlimited score, native144, Classic textures, 3440x1440 and
+FOV 73. Earlier separate setup captures verify the menu sequence; these new runs
+do not include a roster sampler. No competing TSFP process or owned build, test or CPU profiler runs
+during their measurement windows; other background OS/app activity is uncontrolled. Each uses isolated Test Lab saves/settings,
+exits cleanly and preserves valid profile signatures. Disposable disks are
+recycled and the normal executable is restored.
+
+| Build | Guest presents | Mean FPS | p95 / p99 ms | Worst ms | Slowest full second |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Integrated `20dc25d` | 7,189 | 143.803 | 7.737 / 8.116 | 27.428 | 141 |
+| Playable `4adb6b0` | 7,194 | 143.901 | 7.782 / 8.195 | 34.091 | 141 |
+
+The strict analyzer includes complete successful-present intervals between
+spawn-observation+5 and +55 seconds, with consecutive clock evidence bracketing
+the window. All presentations are fresh guest frames, none interpolated. Scene 46,
+active match state 7 and unpaused checkpoints cover the window. Game-clock/wall
+ratios across the longer combat checkpoints are 0.999959 / 0.999937. These are
+minimized host Present measurements, not GPU completion, scanout or physical
+input acceptance. Hardware is the same Windows x64 i7-13700K / RTX 4070 SUPER
+host used for earlier crowd tests. Bots/death/respawn outcomes differ, so this
+supports no substantial integration slowdown in this route, not a speedup,
+exact gameplay parity, elimination of the reported 110-FPS dips or locked 144 FPS.
+The separate unproven HUD-panel optimization from PR305 is absent from both.
+
+The largest gap in each new run ends 67.273 / 47.697 ms after an E key-down whose
+preceding checkpoint has zero health; the measured Present bodies themselves
+are only 0.069 / 0.068 ms. This is a respawn correlation, not a proven wait/CPU/GPU
+cause. Other slow frames do not share it, including the previously retained
+60.555-ms outlier. Keep that broader hitch investigation open.
+
+Candidate EXE SHA is `f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+playable SHA is `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+Evidence: `vehicle-integrated-crowd-144`, `crowd-playable-compare-144`, their
+source provenance/Present CSVs and `logs/integrated-crowd-comparison.json`.
+No runtime change or rebuild is made for this validation. All selected CI passes
+at preceding head `ba23126`; native Mac gameplay/performance remain unverified.
+
 ## 2026-10-22 — Vehicle exit and return to on-foot controls
 
 Same-build Windows probes on `20dc25d` now verify jeep entry, three seconds of

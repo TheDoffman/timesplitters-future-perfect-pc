@@ -6466,3 +6466,24 @@ CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
 `crowd-venice-setup`, `crowd-venice-match-rules` and `crowd-projection-visual`.
 All sessions exit cleanly with unchanged valid profile signatures, preserved
 fixtures, recycled disposable disks and no personal game left open.
+
+### Integrated vehicle-physics build: crowded-match pacing
+
+The later `20dc25d` build is compared with normal playable `4adb6b0` using the
+same configured ten-bot Venice route, native144, 3440x1440/FOV 73/Classic and
+unlimited score. Capture-free/no-sampler minimized Windows runs produce
+143.803/143.901 guest presents/sec over the strict complete-interval 50-second
+window. p95 is 7.737/7.782 ms, p99 is 8.116/8.195 ms, worst is 27.428/34.091 ms;
+slowest full second is 141 for both. All presents are guest frames. Active
+scene 46/state 7/unpaused checkpoints and clock/wall ratios 0.999959/0.999937
+validate the measurement scope; signed isolated profiles remain unchanged.
+
+This supplies integration pacing evidence after fresh physics updates, not
+an individual-fix speedup, deterministic scene comparison or scanout/physical
+input acceptance. It does not prove the reported 110-FPS drops are eliminated.
+Both largest gaps follow E key-down after zero-health checkpoints by 67.273/
+47.697 ms; their Present bodies take 0.069/0.068 ms. Respawn is a follow-up lead,
+not a proven cause, and other slow frames have different timing. Source hashes,
+CI scope and remaining gaps are in STATUS; raw evidence is under
+`vehicle-integrated-crowd-144`/`crowd-playable-compare-144` and
+`logs/integrated-crowd-comparison.json`. No runtime change or rebuild.

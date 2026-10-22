@@ -3655,6 +3655,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Integrated crowd pacing (2026-10-22, PR #307):** Windows `20dc25d`
+  averages 143.803 guest presents/sec against playable `4adb6b0` 143.901 in the
+  same configured ten-bot Venice route. Both contain isolated slow frames;
+  neither establishes locked 144 FPS or removes the reported 110-FPS dips. These are
+  capture-free minimized host Present intervals, with nondeterministic bots,
+  not scanout or Mac performance acceptance. No runtime/adapter change. See
+  STATUS for complete-window checks, clock ratios, hashes and respawn correlation.
+
 - **Vehicle-exit acceptance (2026-10-22, PR #307):** Same Windows `20dc25d`
   executable passes the Siberia jeep drive/exit/walk/pause route at genuine
   Original60, native120 and native144. Y delivers the original exit action; weapon and
