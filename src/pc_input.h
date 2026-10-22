@@ -16,6 +16,8 @@ void pc_input_focus(PcInput *s, int focused);
 void pc_input_capture(PcInput *s, int captured);
 void pc_input_key(PcInput *s, unsigned key, int down);
 void pc_input_motion(PcInput *s, double dx, double dy, uint64_t now);
+/* Consume/rebase the motion batch and return its previous age in milliseconds. */
+uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy);
 void pc_input_wheel(PcInput *s, int steps);
 int pc_input_down(PcInput *s, unsigned key, uint64_t now);
 void pc_input_terminal_context(PcInput *s, int active, int left_down);

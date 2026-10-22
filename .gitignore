@@ -18,6 +18,7 @@ xbox_kernel.log
 /config/*.tmp
 /config/pc-controls.json
 /config/pc-display.ini
+/config/pc-frame-rate.ini
 /config/pc-online.json
 /config/pc-discord.ini
 /config/pc-discord.ini.bak

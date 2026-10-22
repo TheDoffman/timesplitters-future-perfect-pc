@@ -4,6 +4,7 @@
 #include "recomp_config.h"
 #include "crash_posix.h"
 #include "../pc_discord.h"
+#include "../pc_native_rate.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +69,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "Native bring-up requires explicit game, save, input and runtime-display configuration paths.\n");
         return 2;
     }
-    fprintf(stderr,"[native] fixed 60 FPS; interpolation disabled\n");
+    int native_rate=pc_native_rate();
+    if(native_rate) fprintf(stderr,"[native] target %d fresh game FPS; console clock unchanged\n",native_rate);
+    else fprintf(stderr,"[native] fixed 60 FPS; interpolation disabled\n");
     char path[4096];
     if (snprintf(path, sizeof path, "%s/default.xbe", game) >= (int)sizeof path) return 2;
     FILE *f = fopen(path, "rb");

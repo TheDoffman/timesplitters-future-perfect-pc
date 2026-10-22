@@ -36,16 +36,18 @@ static void tsfp_present_record(TsfpPresentMetrics *m,const char *backend,unsign
         m->checked=1;
         if(path && *path) {
             m->output=fopen(path,"w");
-            if(m->output)fputs("frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame\n",m->output);
+            /* Raw host clock, not UTC. Windows RHI uses QPC, allowing exact
+             * alignment with the isolated runner's perf_counter_ns markers. */
+            if(m->output)fputs("frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame,clock_ns\n",m->output);
         }
     }
     if(m->total==1)m->first_ns=end_ns;
     /* Failed/skipped attempts do not update last_ns: the next interval includes
      * the real gap. Omit the first timestamp because it has no prior interval. */
     if(m->output && m->total>1 && end_ns>m->last_ns && end_ns>=start_ns) {
-        fprintf(m->output,"%" PRIu64 ",%.3f,%.3f,%.3f,%s,%" PRIu64 "\n",m->total,
+        fprintf(m->output,"%" PRIu64 ",%.3f,%.3f,%.3f,%s,%" PRIu64 ",%" PRIu64 "\n",m->total,
             (end_ns-m->first_ns)/1e6,(end_ns-m->last_ns)/1e6,(end_ns-start_ns)/1e6,
-            kind==1?"guest":kind==2?"interpolated":"other",m->guest);
+            kind==1?"guest":kind==2?"interpolated":"other",m->guest,end_ns);
         if(++m->rows%60==0)fflush(m->output);
         if(m->rows==TSFP_PRESENT_PROFILE_LIMIT){fclose(m->output);m->output=NULL;}
     }

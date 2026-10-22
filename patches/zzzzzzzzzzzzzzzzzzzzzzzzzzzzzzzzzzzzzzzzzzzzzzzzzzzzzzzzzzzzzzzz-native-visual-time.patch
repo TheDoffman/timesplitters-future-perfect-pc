@@ -1,0 +1,49 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -1965,6 +1965,12 @@
+                 ops[1].mem_size == 4 and not ops[1].mem_base and
+                 not ops[1].mem_index and not ops[1].mem_seg):
+             src = f"RECOMP_LOAD_GLOBAL_U32(0x{insn.address:X}, {_fmt_mem(ops[1])}, {src})"
++        # Title-owned observation of direct 32-bit global stores. The
++        # policy returns the value to write; default semantics are unchanged.
++        if (ops[0].type == "mem" and ops[0].mem_size == 4 and
++                not ops[0].mem_base and not ops[0].mem_index and
++                not ops[0].mem_seg):
++            src = f"RECOMP_STORE_GLOBAL_U32(0x{insn.address:X}, {_fmt_mem(ops[0])}, {src})"
+         out = [_fmt_operand_write(ops[0], src)]
+         # `mov ebp, esp` establishes this function's frame. Publish it, because
+         # ebp is a per-function local and a callee with no prologue of its own
+@@ -3615,7 +3621,7 @@
+                 src = _fmt_operand_read(ops[1])
+                 value = f"(float)(int32_t){src}"
+                 if ops[1].type == "mem" and ops[1].mem_size == 4:
+-                    value = f"RECOMP_I32_TO_F32({_fmt_mem(ops[1])}, {src})"
++                    value = f"RECOMP_I32_TO_F32_AT(0x{insn.address:X}, {_fmt_mem(ops[1])}, {src})"
+                 return [_sse_write(ops[0], value) + " /* cvtsi2ss */"]
+         if m in ("cvtss2si", "cvttss2si"):
+             if nops >= 2:
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -56,6 +56,12 @@
+ #else
+ #define RECOMP_I32_TO_F32(address, value) ((float)(int32_t)(value))
+ #define RECOMP_I32_TO_F64(address, value) ((double)(int32_t)(value))
++#endif
++#ifndef RECOMP_I32_TO_F32_AT
++#define RECOMP_I32_TO_F32_AT(site, address, value) RECOMP_I32_TO_F32(address, value)
++#endif
++#ifndef RECOMP_STORE_GLOBAL_U32
++#define RECOMP_STORE_GLOBAL_U32(site, address, value) (value)
+ #endif
+ #ifndef RECOMP_LOAD_GLOBAL_U32
+ #define RECOMP_LOAD_GLOBAL_U32(site, address, value) (value)
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -154,6 +154,7 @@
+ { pc_native_rocking_reset_guest(sub_000A5AF0_gen); }
+ 
+ /* Preserve authored random light decisions between native subframes. */
++#include "pc_native_visual_time_guest.inc"
+ #include "pc_native_light_guest.h"
+ extern void sub_00116130_gen(void);
+ void sub_00116130(void)

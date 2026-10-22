@@ -1,0 +1,77 @@
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -46,6 +46,17 @@
+ #include "d3d8_xbox.h"
+ #include "d3d8_internal.h"
+ #include "hle_d3d8_record.h"
++#include "pc_surface_precision.h"
++static PcSurfacePrecision g_surface_precision;
++void hle_d3d8_reset_render_precision(void) {pc_surface_precision_reset(&g_surface_precision);}
++int hle_d3d8_set_render_precision(unsigned slot,uint32_t va)
++{
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
++    return pc_surface_precision_set(&g_surface_precision,slot,va);
++#else
++    (void)slot;(void)va;return 0; /* legacy GL targets are currently RGBA8 */
++#endif
++}
+ 
+ /* Reads a RECOMP_* switch; see xbox_memory_layout.h. Declared here rather than
+  * including the kernel header, which this file otherwise has no need of. */
+@@ -85,6 +96,7 @@
+      * the content -- the guest's bytes are not, since nothing on the guest
+      * side draws them, so it is never re-uploaded. */
+     int                rendered;
++    uint32_t           render_format; /* host precision may differ from guest format */
+     /* The texels are the frame buffer's, so the content comes from the
+      * host's finished frame and is refreshed every frame it is bound. */
+     int                framebuffer;
+@@ -539,6 +551,7 @@
+         }
+         e->va = va;
+         e->rendered = 1;
++        e->render_format = t->fmt;
+         e->framebuffer = 1;
+         fprintf(stderr, "[HLE-D3D8] the title binds its own frame as a texture "
+                 "0x%08X (%ux%u, format 0x%02X, data 0x%08X); filling it from the "
+@@ -1185,7 +1198,8 @@
+             break;
+         }
+     }
+-    if (e && e->rendered) {
++    uint32_t host_format=pc_surface_precision_format(&g_surface_precision,va,(format>>8)&0xffu);
++    if (e && e->rendered && e->render_format==host_format) {
+         e->used_swap = now;
+         return e->host;
+     }
+@@ -1210,7 +1224,7 @@
+         memset(e, 0, sizeof *e);
+     }
+     if (FAILED(host_CreateTexture(dev, t.width, t.height, t.levels, D3DUSAGE_RENDERTARGET,
+-                                  (D3DFORMAT)t.fmt, D3DPOOL_DEFAULT, &e->host)) ||
++                                  (D3DFORMAT)host_format, D3DPOOL_DEFAULT, &e->host)) ||
+         !e->host) {
+         memset(e, 0, sizeof *e);
+         g_skip_create++;
+@@ -1221,7 +1235,9 @@
+     e->format = format;
+     e->size = size;
+     e->rendered = 1;
++    e->render_format = host_format;
+     e->checked_swap = e->used_swap = now;
++    if(host_format!=t.fmt)fprintf(stderr,"[SURFACE-FLOAT] Host target 0x%08X: guest %02X host %02X\n",va,t.fmt,host_format);
+     fprintf(stderr, "[HLE-D3D8] shadow render target texture 0x%08X: format 0x%02X "
+             "%ux%u, %u level(s)\n", va, t.fmt, t.width, t.height, t.levels);
+     return e->host;
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -140,6 +140,9 @@
+ void sub_00195110(void) { pc_surface_feedback_guest(sub_00195110_gen); }
+ void sub_0002BA80(void) { pc_surface_filter_guest(sub_0002BA80_gen); }
+ void sub_00195280(void) { pc_surface_final_guest(sub_00195280_gen); }
++#include "pc_surface_precision_guest.h"
++extern void sub_00194A10_gen(void);
++void sub_00194A10(void) { pc_surface_precision_guest(sub_00194A10_gen); }
+ 
+ 
+ /* Fractional kind-35 projectile motion, scoped to the original updater. */

@@ -1,0 +1,246 @@
+--- a/src/d3d/d3d8_combiners.h
++++ b/src/d3d/d3d8_combiners.h
+@@ -428,8 +428,13 @@
+  */
+ BOOL d3d8_combiners_active(void);
+ 
++/* Optional host float constants, independent of packed guest state. NULL clears. */
++void d3d8_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value);
++int d3d8_combiners_get_float_constant(unsigned bank,unsigned stage,float *value);
++
+ #ifdef __cplusplus
+ }
+ #endif
+ 
+ #endif /* XBOXRECOMP_D3D8_COMBINERS_H */
++
+--- a/src/d3d/d3d8_combiners.c
++++ b/src/d3d/d3d8_combiners.c
+@@ -34,6 +34,12 @@
+ 
+ #include "d3d8_internal.h"
+ #include "d3d8_combiners.h"
++#include "graphics/combiner_constants.h"
++static PcCombinerConstants g_float_constants;
++void d3d8_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value)
++{pc_combiner_constant_set(&g_float_constants,bank,stage,value);}
++int d3d8_combiners_get_float_constant(unsigned bank,unsigned stage,float *value)
++{return pc_combiner_constant_get(&g_float_constants,bank,stage,value);}
+ #include <string.h>
+ #include <stdio.h>
+ #ifdef TSFP_PC_DISPLAY
+@@ -1383,6 +1389,7 @@
+ {
+     RhiBufferDesc cbd;
+ 
++    pc_combiner_constants_reset(&g_float_constants);
+     memset(g_cache, 0, sizeof(g_cache));
+     memset(&g_combiner_state, 0, sizeof(g_combiner_state));
+     g_ps_token = 0;
+@@ -1549,6 +1556,8 @@
+         for (i = 0; i < NV2A_MAX_COMBINER_STAGES; i++) {
+             d3dcolor_to_float4(g_combiner_state.c0[i], cb->c0[i]);
+             d3dcolor_to_float4(g_combiner_state.c1[i], cb->c1[i]);
++            pc_combiner_constant_get(&g_float_constants,0,i,cb->c0[i]);
++            pc_combiner_constant_get(&g_float_constants,1,i,cb->c1[i]);
+         }
+ 
+         /* Final combiner constants */
+--- a/src/hle/d3d8_capture.h
++++ b/src/hle/d3d8_capture.h
+@@ -107,7 +107,8 @@
+  * fixed-function lights and the material, version 7 the texels of cubes
+  * filled from memory and the stage palettes P8 textures are expanded with. */
+ /* Version 8 carries per-channel colour-clear flags; older captures still read. */
+-#define D3D8CAP_VERSION      8u
++/* Version 9 adds lossless host pixel constant overrides. */
++#define D3D8CAP_VERSION      9u
+ /* The oldest version the reader still accepts. A bump that only adds chunk
+  * kinds leaves an older file a valid newer one that happens not to contain
+  * them (version 6 added three; version 5 one), so it leaves this alone. A
+@@ -154,8 +155,14 @@
+     D3D8CAP_TWOD_PLACEMENT      = 28, /* D3D8CapTwoDPlacement (version 6) */
+     D3D8CAP_CUBE_LEVEL          = 29, /* D3D8CapCubeLevel + bytes (version 7) */
+     D3D8CAP_PALETTE             = 30, /* D3D8CapPalette (version 7) */
+-    D3D8CAP_CHUNK_KINDS         = 31  /* one past the last, for per-kind counters */
++    D3D8CAP_PS_FLOAT_CONSTANT   = 31, /* D3D8CapPsFloatConstant (version 9) */
++    D3D8CAP_CHUNK_KINDS         = 32  /* one past the last, for per-kind counters */
+ };
++
++typedef struct {
++    uint32_t bank,stage,enabled;
++    float value[4];
++} D3D8CapPsFloatConstant;
+ 
+ typedef struct {
+     char     magic[D3D8CAP_MAGIC_BYTES];  /* D3D8CAP_MAGIC */
+--- a/src/hle/d3d8_capture.c
++++ b/src/hle/d3d8_capture.c
+@@ -276,7 +276,7 @@
+         "vs_create", "vs_delete", "vs_declaration", "vs_constants",
+         "vs_screenspace", "ps_token", "depth_surface", "set_render_target",
+         "vs_vertex_data", "cube_texture", "scissors", "material", "light",
+-        "light_enable", "two_d_placement", "cube_level", "palette"
++        "light_enable", "two_d_placement", "cube_level", "palette", "ps_float_constant"
+     };
+ 
+     return type < D3D8CAP_CHUNK_KINDS ? names[type] : "unknown";
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -232,6 +232,7 @@
+ void    host_vsh_set_screenspace(const float scale[4], const float offset[4]);
+ void    host_vsh_set_vertex_data(int reg, const float value[4]);
+ void    host_combiners_set_pixel_shader(DWORD token);
++void    host_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value);
+ 
+ #endif /* _WIN32 */
+ 
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1,3 +1,4 @@
++#include <math.h>
+ /*
+  * hle_d3d8_record.c -- shadow mode's host boundary, and frame capture at it.
+  *
+@@ -438,6 +439,13 @@
+     chunk(D3D8CAP_VS_VERTEX_DATA, &c, sizeof c, NULL, 0, NULL, 0);
+ }
+ 
++static void rec_ps_float_constant(unsigned bank,unsigned stage,const float *value)
++{
++    D3D8CapPsFloatConstant c={0};c.bank=bank;c.stage=stage;c.enabled=value!=NULL;
++    if(value)memcpy(c.value,value,sizeof c.value);
++    chunk(D3D8CAP_PS_FLOAT_CONSTANT,&c,sizeof c,NULL,0,NULL,0);
++}
++
+ static void rec_ps_token(DWORD token)
+ {
+     D3D8CapPsToken c;
+@@ -535,6 +543,10 @@
+         rec_vs_vertex_data(i, value);
+     }
+     rec_ps_token(d3d8_combiners_get_pixel_shader());
++    for(unsigned bank=0;bank<2;bank++)for(unsigned stage=0;stage<8;stage++) {
++        float value[4];int enabled=d3d8_combiners_get_float_constant(bank,stage,value);
++        rec_ps_float_constant(bank,stage,enabled?value:NULL);
++    }
+ 
+     dev->lpVtbl->GetVertexShader(dev, &vs);
+     rec_set_vertex_shader(vs);
+@@ -1773,6 +1785,12 @@
+     host_vsh_set_vertex_data(p->reg, p->v);
+ }
+ 
++static void op_ps_float_constant(const void *arg)
++{
++    const D3D8CapPsFloatConstant *p=arg;
++    host_combiners_set_float_constant(p->bank,p->stage,p->enabled?p->value:NULL);
++}
++
+ static void op_ps_token(const void *arg)
+ {
+     host_combiners_set_pixel_shader(*(const DWORD *)arg);
+@@ -1902,6 +1920,20 @@
+     if (g_cap && value)
+         rec_vs_vertex_data(reg, value);
+     d3d8_vsh_set_vertex_data(reg, value);
++}
++
++void host_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value)
++{
++    if(bank>=2 || stage>=8)return;
++    if(value)for(unsigned c=0;c<4;c++)if(!isfinite(value[c]))return;
++    D3D8CapPsFloatConstant p={0};p.bank=bank;p.stage=stage;p.enabled=value!=NULL;
++    if(value)memcpy(p.value,value,sizeof p.value);
++    if(hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_ps_float_constant,&p,sizeof p);return;
++    }
++    if(hle_d3d8_interp_rec)hle_d3d8_interp_op(op_ps_float_constant,&p,sizeof p);
++    if(g_cap)rec_ps_float_constant(bank,stage,value);
++    d3d8_combiners_set_float_constant(bank,stage,value);
+ }
+ 
+ void host_combiners_set_pixel_shader(DWORD token)
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -1,3 +1,4 @@
++#include <math.h>
+ /*
+  * d3d8_replay.c -- replay one captured frame into the host renderer.
+  *
+@@ -1287,6 +1288,17 @@
+     case D3D8CAP_SET_RENDER_TARGET:
+         do_set_render_target(r, c);
+         break;
++    case D3D8CAP_PS_FLOAT_CONSTANT: {
++        const D3D8CapPsFloatConstant *p=c->data;
++        if(c->bytes<sizeof *p || p->bank>=2 || p->stage>=8 || p->enabled>1) {
++            r->malformed++;break;
++        }
++        int valid=1;
++        if(p->enabled)for(unsigned i=0;i<4;i++)if(!isfinite(p->value[i]))valid=0;
++        if(!valid){r->malformed++;break;}
++        d3d8_combiners_set_float_constant(p->bank,p->stage,p->enabled?p->value:NULL);
++        break;
++    }
+     case D3D8CAP_PS_TOKEN: {
+         const D3D8CapPsToken *p = c->data;
+ 
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -64,6 +64,9 @@
+ #if defined(_WIN32) || defined(__APPLE__)
+ #include "d3d8_xbox.h"
+ #include "hle_d3d8_record.h"
++#include "pc_surface_bias.h"
++static float g_surface_bias_step=-1;
++void hle_d3d8_surface_bias_step(float delta){g_surface_bias_step=delta;}
+ 
+ #define XRS_COUNT        167         /* X_D3DRS_DONOTCULLUNCOMPRESSED + 1 */
+ #define XRS_REMOVED      154         /* X_D3DRS_MULTISAMPLETYPE */
+@@ -586,6 +589,18 @@
+  * Until then nothing here is trusted, because a title whose objects are laid
+  * out differently would otherwise have every draw quietly demoted. */
+ static int      g_ps_def_ok;
++static void forward_surface_bias(uint32_t shader)
++{
++    static int last_enabled;
++    static float last_value;
++    int enabled=shader==0x4bbf10u && g_surface_bias_step>0 && g_surface_bias_step<1;
++    float value=enabled?pc_surface_bias(g_surface_bias_step):0;
++    if(enabled!=last_enabled || (enabled && value!=last_value)) {
++        const float color[4]={0,value,0,0};
++        host_combiners_set_float_constant(1,6,enabled?color:NULL);
++        last_enabled=enabled;last_value=value;
++    }
++}
+ static int      g_state_dumped;
+ static int g_state_dump_wanted = -1;
+ 
+@@ -744,6 +759,7 @@
+ 
+     if (g_ps_def_ok && !g_ps_def) {
+         /* The title turned its pixel shader off. */
++        forward_surface_bias(0);
+         host_combiners_set_pixel_shader(0);
+         ps_count_draw(0);
+         return;
+@@ -795,6 +811,7 @@
+      * switched the combiner path on over a combiner state of all zeros: with
+      * no stage sampling anything, every model came out a flat white
+      * silhouette. */
++    forward_surface_bias(g_ps_def);
+     token = count & 0xFu;
+     g_ps_dirty = 0;
+     host_combiners_set_pixel_shader(token);
+--- a/tests/d3d8_capture/test_main.c
++++ b/tests/d3d8_capture/test_main.c
+@@ -422,7 +422,7 @@
+         return;
+     }
+     h = d3d8cap_header(r);
+-    check(h->version == 8 && D3D8CAP_VERSION == 8, "the version is 8");
++    check(h->version == 9 && D3D8CAP_VERSION == 9, "the version is 9");
+     check(h->frame == 7 && h->width == 640 && h->height == 480, "header fields");
+     check(h->chunk_count == SNAPSHOT_CHUNKS + FRAME_CHUNKS, "chunk_count is patched in");
+ 

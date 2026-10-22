@@ -9,6 +9,7 @@
 TSFP_MENU_GLSL
 "uniform int u_combiner;\n"
 "uniform uint u_rs[256];\n"
+"uniform uvec2 u_float_mask;uniform vec4 u_float_c[16];\n"
 "out vec4 frag_color;\n"
 "vec4 r[16];\n"
 "vec4 color(uint c){return vec4(float((c>>16u)&255u),float((c>>8u)&255u),float(c&255u),float(c>>24u))/255.0;}\n"
@@ -61,7 +62,9 @@ TSFP_MENU_GLSL
 " ? (u_rs[28]!=0u?1.0:0.0) : clamp(v_fog,0.0,1.0));\n"
 "    uint control=u_rs[234];int n=min(int(control&15u),8);\n"
 "    for(int i=0;i<n;i++){\n"
-"      r[1]=color(u_rs[235+((control&0x1000u)!=0u?i:0)]);r[2]=color(u_rs[243+((control&0x10000u)!=0u?i:0)]);\n"
+"      int c0slot=(control&0x1000u)!=0u?i:0,c1slot=(control&0x10000u)!=0u?i:0;\n"
+"      r[1]=(u_float_mask.x&(1u<<uint(c0slot)))!=0u?u_float_c[c0slot]:color(u_rs[235+c0slot]);\n"
+"      r[2]=(u_float_mask.y&(1u<<uint(c1slot)))!=0u?u_float_c[8+c1slot]:color(u_rs[243+c1slot]);\n"
 "      uint rgb=u_rs[210+i],a=u_rs[200+i],o=u_rs[218+i],ao=u_rs[226+i];\n"
 "      vec3 A=inp(rgb>>24u,false),B=inp(rgb>>16u,false),C=inp(rgb>>8u,false),D=inp(rgb,false);\n"
 "      vec3 AB=(o&0x2000u)!=0u?vec3(dot(A,B)):A*B,CD=(o&0x1000u)!=0u?vec3(dot(C,D)):C*D;\n"

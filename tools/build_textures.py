@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,7 +33,34 @@ def ensure_pack(root=ROOT, pack=None):
     records, size = RELEASE.audit(pack)
     identity = {'source': 'repository' if pack == Path(root)/'assets/textures' else 'local',
                 'texture_count': len(records), 'installed_bytes': size}
+    retired = retired_textures(root, (path.stem for path, _, _ in records))
+    if retired is not None:
+        identity['retired'] = retired
     return pack, records, identity
+
+
+def retired_textures(root=ROOT, keys=()):
+    """Read the exact-hash retirement policy without hydrating texture assets."""
+    policy_path = Path(root)/'config/texture-originals.json'
+    if policy_path.exists():
+        policy = json.loads(policy_path.read_text(encoding='utf-8'))
+        retained = set(policy['keys'])
+        if retained.intersection(keys):
+            raise ValueError('Retained-original texture has a replacement')
+        retired = policy.get('retired', {})
+        for key, pair in retired.items():
+            if (key not in retained or not re.fullmatch(r'[0-9a-f]{16}', key)
+                    or set(pair) != {'dds', 'json'}
+                    or any(not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
+                           for sha in pair.values())):
+                raise ValueError('Invalid retired texture identity')
+        return retired
+    return None
+
+
+def optional_identity(root=ROOT):
+    retired = retired_textures(root)
+    return {'delivery': 'optional', 'retired': retired} if retired else None
 
 
 def zip_entries(records):
@@ -52,6 +80,16 @@ def write_zip(archive, prefix, records):
                     digest.update(block)
         if digest.hexdigest() != expected:
             raise ValueError('Texture changed during packaging')
+
+
+def write_source_files(archive, root, sources):
+    """Keep compiled replacements in the playable pack, without a source copy."""
+    for relative in sorted(set(sources)):
+        if not relative or relative.startswith('assets/textures/'):
+            continue
+        path = Path(root)/relative
+        if path.is_file():
+            archive.write(path, relative)
 
 
 def main():

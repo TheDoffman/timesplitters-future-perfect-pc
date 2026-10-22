@@ -1,0 +1,57 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -3564,10 +3564,16 @@
+         # ── Arithmetic ──
+         if m in ("addss", "addsd"):
+             if nops >= 2:
+-                return [_sse_write(ops[0], f"{_sse_read(ops[0])} + {_sse_read(ops[1])}") + f" /* {m} */"]
++                a, b = _sse_read(ops[0]), _sse_read(ops[1])
++                value = (f"RECOMP_F32_ADD_AT(0x{insn.address:X}, {a}, {b})"
++                         if m == "addss" else f"{a} + {b}")
++                return [_sse_write(ops[0], value) + f" /* {m} */"]
+         if m in ("subss", "subsd"):
+             if nops >= 2:
+-                return [_sse_write(ops[0], f"{_sse_read(ops[0])} - {_sse_read(ops[1])}") + f" /* {m} */"]
++                a, b = _sse_read(ops[0]), _sse_read(ops[1])
++                value = (f"RECOMP_F32_SUB_AT(0x{insn.address:X}, {a}, {b})"
++                         if m == "subss" else f"{a} - {b}")
++                return [_sse_write(ops[0], value) + f" /* {m} */"]
+         if m in ("mulss", "mulsd"):
+             if nops >= 2:
+                 a, b = _sse_read(ops[0]), _sse_read(ops[1])
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -68,6 +68,12 @@
+ #endif
+ #ifndef RECOMP_FLOAT_BRANCH_AT
+ #define RECOMP_FLOAT_BRANCH_AT(site, taken) (taken)
++#endif
++#ifndef RECOMP_F32_ADD_AT
++#define RECOMP_F32_ADD_AT(site, left, right) ((left) + (right))
++#endif
++#ifndef RECOMP_F32_SUB_AT
++#define RECOMP_F32_SUB_AT(site, left, right) ((left) - (right))
+ #endif
+ #ifndef RECOMP_F32_MUL_AT
+ #define RECOMP_F32_MUL_AT(site, left, right) ((left) * (right))
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -140,6 +140,18 @@
+ extern void sub_000E1FA0(void);
+ void pc_native_kind35_target(void)
+ { pc_native_kind35_target_guest(sub_000E1FA0, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++
++/* Original rocking impulses/contact responses, with fractional free flight. */
++#include "pc_native_rocking_guest.h"
++extern void sub_000A84F0_gen(void);
++void sub_000A84F0(void)
++{ pc_native_rocking_update_guest(sub_000A84F0_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++extern void sub_000A8AA0_gen(void);
++void sub_000A8AA0(void)
++{ pc_native_rocking_init_guest(sub_000A8AA0_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++extern void sub_000A5AF0_gen(void);
++void sub_000A5AF0(void)
++{ pc_native_rocking_reset_guest(sub_000A5AF0_gen); }
+ 
+ /* PC System Link: public XNet API boundary, US 45410066. */
+ #include "pc_network_guest.inc"

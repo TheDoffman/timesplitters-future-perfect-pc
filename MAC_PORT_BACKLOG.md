@@ -194,6 +194,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
 | MAC-058 | Crane and remote-view vignette sizing (issue #221) | Awaiting validation |
 | MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
+| MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -687,6 +688,43 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
+  `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
+  fractional game time at native presets. Windows and SDL adapters pass their
+  native-mode selection; no new OS adapter is required. The old helper lost
+  fresh packets at 60 and discarded zero-whole-frame motion at 120/144.
+  Existing gun behavior plus cadence/pause/handoff and two negative controls
+  pass five focused Windows checks; 159 broader timing/input/context cases
+  also pass. Supported Windows build `a5e0dc2` and built-in checks pass; draft
+  PR #304 carries this independent main-based fix. Mac execution and a live turret test of
+  this addition remain awaiting validation; existing #182 acceptance applies.
+  Windows actual-adapter checks now pass native/pause/live-rate handoff and
+  return-to-foot cases with synthetic raw motion. Matching cases are in SDL's
+  input self-test, awaiting native execution. The new packet fixture explicitly
+  includes `<stddef.h>` after Mac CI exposed the missing `ptrdiff_t` declaration;
+  that CI repair does not change gameplay behavior.
+
+- **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
+  clears its synthetic terminal context after the fractional-time fixture,
+  before the independent capture/fire case. The previous test retained terminal
+  suppression after freeing its mock guest. The candidate reset passed the
+  actual native renderer, input, Cocoa settings/debug checks and three CTests
+  on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
+  final clean release validation follows after integration.
+
+- **Issue #182 follow-up (2026-10-21, this change):** Shared
+  `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
+  of hidden player angles. Both host adapters call it; no additional native
+  adapter is needed. Authored limits, ownership, focus/capture, pause, stale
+  input and normal-camera return are covered by `tests/test_mounted_mouse.py`,
+  registered in the Windows/macOS runtime workflow. Windows fixture and Release
+  build checks pass; the user confirmed the CCTV turret retest works, and
+  read-only telemetry confirmed gun-angle movement. Native compilation,
+  fixture execution and physical mouse/controller comparison remain pending.
+  Acceptance: aim/fire a Breaking and Entering CCTV gun, return to its pointer
+  and on-foot controls, check pitch/yaw limits and pause/focus transitions.
+  See [#182 validation](STATUS.md#mounted-and-cctv-gun-mouse-aim-182--2026-10-21).
+
 - **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
   on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
   counts to the active terminal's logical pointer in
@@ -726,6 +764,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
+
+- **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
+  text read cache now keeps the complete OS-validated interval, avoiding repeat
+  queries when guest stack reads descend or labels visit earlier addresses in
+  the same mapping. The US outlined-label wrapper also shares one read scope
+  across its four outline passes and foreground draw. Scope expiry at return
+  and fresh scratch-write validation are unchanged.
+  The existing Windows/Darwin VM adapters provide the interval; no new platform
+  adapter is needed. Descending-read regression fails before the fix and passes
+  after it. Both host feature defines pass the five-pass wrapper/ABI fixture,
+  including a mutation that detects repeated queries. Native Mac gameplay and
+  performance remain awaiting validation; see STATUS.md for Windows evidence.
+  Windows/macOS runtime, upgrade and patch-transition CI passes at PR #295
+  implementation head `4a40569`; that does not replace a native gameplay run.
 
 - **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
   (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
@@ -1102,6 +1154,25 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-009 — Intro and in-game movie playback
 
 - **Status:** Queued
+- **Native-rate pacing follow-up (`3c2fcc2`, local):** `pc_native_movie_pacing.h`
+  provides per-playback 60/120/144 polling through the existing platform clock/
+  wait interface. The additive `*-native-movie-pacing.patch` connects it to the
+  existing Windows host XMV player and closes its timer with playback. Host
+  movie decoding is still absent from the Mac path; when implementing it,
+  consume this shared helper rather than adding independent pacing rules.
+  Offline timing and actual-update-body fixtures cover cadence, delayed work,
+  queue retry, timestamps, EOF and cleanup using mocked decoder/audio output.
+  Native playback, audible sync, skip latency and full movie coverage remain
+  acceptance work; no Mac movie support is claimed from these fixtures.
+  Windows build/built-in checks, 152 shared checks and 21 patch-upgrade checks
+  pass. A windowless real-file check runs the existing Windows host player and
+  FFmpeg decoder with controlled time, comparing all EA-intro image/timestamp/
+  PCM hashes across original 60 and native 60/120/144. GPU/audio-device output
+  are mocked; this does not validate audible sync or native Mac playback.
+  Real Windows waitable-timer runs also preserve all decoded EA-intro content
+  at 60/120/144 and verify the playback timer handle is invalid after close.
+  Poll completion includes decode/test hashing; display cadence and actual
+  Mac clock/wait execution remain separate acceptance checks.
 - **PC behavior:** Windows uses FFmpeg to decode XMV movies, draws their frames and submits movie PCM audio.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_movie.c`, `tools/fetch-video.ps1`, `tools/build-native-mac.py`, `src/native/gl_bridge.inc`.
 - **PC validation:** [Windows validation](STATUS.md#validation) records EA/Free Radical intro decoding and PCM submissions; this is not exhaustive movie/audio fidelity.
@@ -1143,6 +1214,54 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- PR #289 upgrade follow-up: shared `Core.InstallPending` now consumes packaged
+  retired-icon hashes and transactionally removes only unchanged bundled pairs.
+  Custom pairs survive; recovery/rollback restore removals. Both package builders
+  receive the policy from `build_textures.ensure_pack`; no OS adapter was added.
+  Windows launcher and packaging checks pass; native Mac shared fixtures run
+  in PR CI. Mac scene acceptance remains **Awaiting validation**. Deployment
+  needs a launcher and game release carrying these changes.
+
+- 2026-10-22 character icon removal (commit carrying this entry): 159 replacements retired;
+  164 known selection/profile icon keys intentionally use original assets.
+  Shared pack now has 2,046 entries; character model materials are unchanged.
+  No runtime or host adapter change is required. Windows offline hashes, pack
+  audit and planner regression checks pass; actual Mac menu/GPU behavior remains
+  **Awaiting validation**. See STATUS.md; no gameplay run.
+
+- 2026-10-21 #74 repository texture update (commit carrying this entry):
+  700 new keys, 2,205 total, using the same audited DDS/JSON for both hosts.
+  The shared LFS exporter now reads DDS stdin without a stale pointer-file size
+  hint; the existing-pointer regression failed before the fix and passes now.
+  Windows texture/build/planner/backlog checks: 22 tests and 21 subtests pass.
+  No runtime adapter changed. Native Mac export and GPU/scene acceptance remain
+  unverified; **Awaiting validation** is unchanged. No gameplay or release.
+
+<!-- menu-expanded-progress -->
+- 2026-10-21 expanded menu pass (included in the #74 texture upload):
+  421 source-faithful schematic/UI/effect additions plus 158 newly detailed
+  portraits and 63 scene thumbnails in this continuation. Same keyed RGBA8 files serve both hosts;
+  26 additional cards recover matching native 512px original artwork.
+  no runtime or adapter changes. Windows offline parser, alpha/pixel and full
+  pack audits pass. All-menu coverage and model associations remain incomplete.
+  Actual Windows/Mac menu rendering and GPU residency await final validation;
+  no game launched. See docs/main-menu-textures.md and latest STATUS entry.
+<!-- /menu-expanded-progress -->
+
+- 2026-10-21 menu follow-up (included in the #74 texture upload): corrected
+  reflection, original-mask logo and two faithfully resampled font atlases now
+  pass offline acceptance. Same keyed RGBA8 replacements serve both hosts; no
+  adapter change. Windows DDS parsing and full Python pack audit pass; actual
+  font/logo rendering, menu animation and Mac GPU behavior remain unverified.
+  No gameplay launched. Awaiting validation; see docs/main-menu-textures.md.
+
+- 2026-10-21 main-menu focus (documentation included in the #74 texture upload): mapped
+  logo/font/background and candidate schematic keys using existing Windows
+  evidence. One 1254-square background draft is held, with no installed DDS or
+  runtime/adapter changes. The same eventual replacement pack serves both hosts;
+  Mac and Windows mapped appearance/alpha checks remain pending. Status remains
+  Awaiting validation. See docs/main-menu-textures.md and STATUS.md.
+
 - 2026-10-21 unlocked test launch correction (branch
   `fix/test-profile-texture-pack`): shared `testing_profile.prepare_run` now
   connects `assets/textures` explicitly while starting in Classic mode. The
@@ -1164,6 +1283,426 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   execution is evaluated in PR CI. **Awaiting validation** remains for real
   texture scene/GPU/display/residency coverage. See STATUS.md bundled texture
   dependency entry. No graphics adapter or guest-clock behavior changed.
+
+- 2026-10-20 texture build dependency and game ZIP inclusion (local #74 source):
+  tools/build_textures.py shares audit/download/cache policy across Windows and
+  native Mac builders. play-native-mac.py automatically selects the prepared pack.
+  Shared tools/launcher/Core.cs accepts bounded keyed DDS/JSON in game packages,
+  seeds missing texture pairs, preserves existing pairs, and safely cleans staged
+  payloads. Windows launcher build/regressions and 183 Python tests pass;
+  one platform test skips. Mac native host build/install/GPU checks remain pending,
+  so **Awaiting validation** is unchanged. No separate Mac policy implementation.
+  Missing published textures-v0.1.0-alpha.1 prevents fresh-clone remote validation;
+  local 1,505-texture reuse passes. No release/push/gameplay. See STATUS.md texture
+  build dependency entry; no cross-device synchronization claimed.
+
+- 2026-10-20 texture batch 255: seven metal surfaces installed, one held;
+  1,505 installed. Seven new Windows parser checks and full Python audit pass;
+  previous 1,498 DDS hashes/checker unchanged. Six RAM reviews replay exactly
+  after retiring new reference exports. Pack 1,165,240,310 bytes, temporary
+  snapshot 267,500,128 bytes, within caps. No runtime/adapters/gameplay changes.
+  **Awaiting validation** for Mac GPU, mapped scenes, display modes and residency.
+  See STATUS.md batch 255 and private review/hybrid-255 evidence.
+
+- 2026-10-20 texture batch 254: five metal surfaces installed, three drafts held;
+  1,498 installed. Fresh full Python audit and five new Windows parser checks
+  pass; previous 1,493 DDS hashes/checker unchanged. Five RAM reviews replay
+  exactly after reference retirement. Recoverable JSON formatting compaction and
+  two never-previously-listed cache removals reclaimed temporary headroom.
+  Pack 1,162,614,842 bytes; temporary snapshot 267,413,737 bytes, below caps.
+  No gameplay or runtime adapters changed. **Awaiting validation** remains for
+  Mac GPU, mapped materials/seams/light channels, display modes and residency.
+  See STATUS.md batch 254 and private evidence; no cross-device validation claim.
+
+- 2026-10-20 texture batch 253: four metal replacements installed, four drafts
+  held for tone/geometry correction; 1,493 installed. Fresh full Python audit and
+  four new Windows parser checks pass; prior 1,489 hashes/checker unchanged.
+  Five RAM comparisons replay exactly after retiring eight verified original
+  exports (194,487 bytes). Pack 1,159,466,244 bytes; temporary snapshot
+  268,188,079 bytes, below caps. No runtime adapters or gameplay changed.
+  **Awaiting validation** remains for Mac GPU, mapped materials/seams/light
+  channels, display modes and residency. See STATUS.md batch 253.
+
+- 2026-10-20 texture batch 252: eight metal-family replacements installed;
+  total 1,489. Fresh full Python audit and eight new Windows parser checks pass;
+  prior 1,481 DDS hashes/checker identity unchanged. Six RAM comparisons include
+  enlarged vent-grid review and replay exactly after retirement of eight new
+  source exports (273,500 bytes). Pack 1,158,327,982 bytes; temporary snapshot
+  268,099,093 bytes, below caps. No runtime adapter changes or gameplay.
+  **Awaiting validation** remains for Mac GPU, mapped seams/light channels,
+  material lighting, display modes and residency. See STATUS.md batch 252.
+
+- 2026-10-20 texture batch 251: seven metal-family replacements installed;
+  one brown seam draft held for tonal drift. Total 1,481 installed. Fresh full
+  Python audit and seven new Windows parser checks pass; prior 1,474 DDS hashes
+  and checker identity unchanged. Five RAM comparisons replay exactly, including
+  after verified retirement of eight new original exports (325,816 bytes).
+  Pack 1,156,007,778 bytes; temporary snapshot 268,023,162 bytes, below caps.
+  No runtime adapter changes or gameplay. **Awaiting validation** remains for
+  Mac GPU, mapped seams/light channels/materials, display modes and residency.
+  See STATUS.md artwork batch 251 and private provenance.
+
+- 2026-10-20 texture batch 250: five wood/panel/equipment replacements installed;
+  three drafts held for brightness or missing component detail. Total 1,474
+  installed. Fresh whole-pack Python audit and five new Windows parser checks
+  pass; prior 1,469 hashes/checker identity unchanged. Five RAM comparisons
+  replay exactly. Pack 1,153,294,936 bytes; temporary snapshot 267,950,496 bytes,
+  below caps. Five review JSON records compacted with semantic equality and
+  byte-exact gzip recovery; no artwork changes. No runtime adapter changes or
+  gameplay. **Awaiting validation** remains for Mac GPU, mapped seams/materials,
+  display modes and residency. See STATUS.md artwork batch 250.
+
+- 2026-10-20 texture batch 249: four material/equipment replacements installed,
+  four drafts held for markings, brightness or band geometry. Total 1,469 installed.
+  Fresh whole-pack Python audit and four new Windows parser checks pass; prior
+  1,465 hashes/checker identity unchanged. Six RAM comparisons replay exactly.
+  Pack 1,151,369,672 bytes; temporary snapshot 268,172,153 bytes, below caps.
+  Actual Windows allocation queried without errors; provenance retains source
+  sizes and resampling. No platform adapter/runtime change or gameplay.
+  **Awaiting validation** remains for Mac GPU, mapped seams/markings, material
+  lighting, render modes and residency. See STATUS.md artwork batch 249.
+
+- 2026-10-20 hybrid queue reconciliation: shared Python planner accepts the
+  environment_material alias and routes mixed sensitive categories to specialist
+  review. 145 keys join bounded material batches; 1,191 move to specialist review.
+  Eight planner tests pass on Windows; already registered in runtime-patches CI.
+  No OS-specific adapter or runtime change. Mac execution is unrun. All 1,465
+  installed DDS hashes unchanged and fresh Python audit passes; native evidence
+  stays batch 242. No new artwork or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, channel semantics, display modes and residency.
+
+- 2026-10-20 inventory batch 247: final 243 known keys reviewed (195 opaque,
+  48 nonopaque). Exact-set check proves all 6,812 supported catalog keys have a
+  provisional appearance/alpha classification; zero unclassified. This closes
+  the known-key first pass only, not discovery, category/use or scene validation.
+  Thirty-two RAM sheets replay exactly; full provenance is 42,410-byte gzip.
+  No new art installed. All 1,465 DDS hashes unchanged; fresh full Python audit
+  passes and native evidence stays batch 242. Pack 1,149,619,742 bytes; temporary
+  268,092,924 bytes, below caps. **Awaiting validation** remains for Mac GPU,
+  mapped scenes, channel semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 246: 128 RGB/alpha pairs reviewed (87 opaque,
+  41 nonopaque); 6,569 provisionally classified and 243 unclassified, all needing
+  art. The previously unclassified installed disc-error screen is now recorded.
+  Sixteen RAM sheets replay exactly; full provenance is 23,704-byte lossless gzip.
+  No artwork generated/installed. All 1,465 DDS hashes unchanged; fresh Python
+  audit passes, native evidence stays batch 242. Pack 1,149,619,742 bytes;
+  temporary 268,034,212 bytes, below caps. **Awaiting validation** remains for
+  Mac GPU, mapped scenes, alpha semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 245: 128 RGB/alpha pairs reviewed (90 opaque,
+  38 nonopaque); 6,441 provisionally classified and 371 unclassified. Sixteen
+  RAM-only sheets exactly replayed; 23,350-byte gzip retains full provenance.
+  Alpha-only signage/diagrams, inverse masks and character identity retain
+  explicit constraints. No artwork generated or installed. All 1,465 DDS
+  hashes unchanged; fresh full Python audit passes, native evidence stays
+  batch 242. Pack 1,149,619,742 bytes; temporary 267,996,909 bytes, below caps.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, alpha semantics,
+  display modes and residency. No gameplay; classification is not completion.
+
+- 2026-10-20 inventory batch 244: 128 original RGB/alpha pairs reviewed
+  (93 opaque, 35 nonopaque), bringing provisional classification to 6,313 keys.
+  Functional constants, diagrams, exact lettering, character atlases and
+  channel-dependent effects retain explicit constraints. Sixteen RAM sheets
+  replay exactly; full provenance retained as 25,738-byte lossless gzip JSON.
+  No artwork generated/installed. All 1,465 DDS hashes unchanged and fresh full
+  Python audit passes; native evidence remains batch 242. Pack 1,149,619,742 bytes;
+  temporary 267,960,106 bytes, below caps. **Awaiting validation** remains for
+  Mac GPU, mapped scenes, alpha semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 243: 64 original RGB/alpha pairs reviewed
+  (43 opaque, 21 nonopaque), bringing provisional classification to 6,185 keys.
+  Alpha-carried diagrams, numeral/icon masks, partial-opacity lettering and
+  gradients retain explicit specialist constraints. Eight RAM sheets replay
+  exactly. No artwork generated or installed; all 1,465 existing DDS hashes
+  unchanged and fresh full Python audit passes. Native parser evidence remains
+  batch 242. Pack 1,149,619,742 bytes; temporary 267,920,780 bytes, below caps.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, channel semantics,
+  display modes and residency. No gameplay. See STATUS.md inventory batch 243.
+
+- 2026-10-20 texture batch 242: three mechanical replacements installed;
+  five drafts held for excessive brightness or marking/component fidelity.
+  Total 1,465 installed. Fresh full Python audit and three new Windows parser
+  checks pass; prior 1,462 DDS hashes/checker identity unchanged. Six RAM
+  comparisons replay exactly, including component/marking focus. Pack 1,149,619,742
+  bytes; temporary 267,817,886 bytes, both below caps. Cached originals reused.
+  **Awaiting validation** remains for Mac GPU, mapped components, seam sampling,
+  reflections/lighting, display modes, alpha and 512 MiB residency. No gameplay or
+  runtime changes. See STATUS.md batch 242 and private acceptance.
+
+- 2026-10-20 texture batch 241: five clothing/equipment/character replacements
+  installed; two character drafts held for facial/component fidelity and one
+  generation blocked without retry. Total 1,462 installed. Fresh full Python
+  audit and five new Windows parser checks pass; prior 1,457 DDS hashes/checker
+  identity unchanged. Six RAM comparisons replay exactly, including face focus.
+  Pack 1,148,219,914 bytes; temporary 267,758,522 bytes, both below caps.
+  **Awaiting validation** remains for Mac GPU, mapped character identity, skin/seam
+  matching, equipment, lighting, display modes, alpha and 512 MiB residency.
+  No gameplay/runtime changes. See STATUS.md batch 241 and private acceptance.
+
+- 2026-10-20 texture batch 240: six equipment/clothing replacements installed;
+  two equipment atlases held for warning-symbol/stamped-marking fidelity.
+  Total 1,457 installed. Fresh full Python audit and six new Windows parser
+  checks pass; prior 1,451 DDS hashes/checker identity unchanged. Six RAM
+  comparisons replay exactly, including enlarged marking focus. Pack 1,146,294,650
+  bytes; temporary 267,702,477 bytes, both below caps. Cached originals reused.
+  **Awaiting validation** remains for Mac GPU, character/weapon mapping, seams,
+  lamps/reflections, display modes, alpha and 512 MiB residency. No gameplay or
+  runtime changes. See STATUS.md batch 240 and private acceptance.
+
+- 2026-10-20 texture batch 239: seven prop/folded-metal atlases installed;
+  one curved atlas held for tonal correction. Total 1,451 installed. Fresh full
+  Python audit and seven new Windows parser checks pass; prior 1,444 DDS hashes
+  and checker identity unchanged. Five RAM comparisons replay exactly. Sixteen
+  archive-reproducible original exports retired, reclaiming 712,272 bytes;
+  no denied paths retried. Pack 1,143,495,008 bytes; temporary 267,651,438 bytes,
+  both below caps. **Awaiting validation** remains for Mac GPU, mapped scenes,
+  reflections, display modes, alpha and 512 MiB residency. No gameplay/runtime
+  changes. See STATUS.md batch 239 and private acceptance.
+
+- 2026-10-20 texture batch 238: three machinery atlases installed (yellow lamps,
+  paired hinges and socket/latch panel); five lighting/layout failures held.
+  Total 1,444 installed. Fresh full Python audit and three new Windows parser
+  checks pass; prior 1,441 DDS hashes/checker identity unchanged. Eight cached
+  originals reused; five RAM comparisons replay exactly. Pack 1,140,170,496
+  bytes; temporary 268,300,554 bytes, both below caps. No exports or cleanup.
+  **Awaiting validation** remains for Mac GPU, mapped scenes and lamp behavior,
+  display modes, alpha and 512 MiB residency. No gameplay/runtime changes.
+  See STATUS.md batch 238 and private acceptance.
+
+- 2026-10-20 texture batch 237: six masonry/timber/striated replacements installed;
+  two panel/red-material tonal/detail failures held. Total 1,441 installed.
+  Fresh full Python audit and six new Windows parser checks pass; prior 1,435
+  hashes/checker identity unchanged. Five RAM comparisons replay exactly.
+  Pack 1,138,071,624 bytes; temporary 268,246,333 bytes, below both caps.
+  Original exports retained; JSON whitespace compacted with exact original-byte
+  recovery; no denied cleanup retried. No gameplay/runtime changes.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, alpha, display
+  modes and 512 MiB residency. See STATUS.md batch 237 and private acceptance.
+
+- 2026-10-20 texture batch 236: one corrected ochre rock installed; seven
+  repeated layout/tonal failures remain held and need a different approach.
+  Total 1,435 installed. Fresh full Python audit and one new Windows parser
+  check pass; prior 1,434 hashes/checker identity unchanged. Eight existing
+  references reused, five RAM comparisons replay exactly. Pack 1,137,325,450
+  bytes; temporary 268,061,834 bytes, both below caps. No gameplay/runtime
+  changes. **Awaiting validation** remains for Mac GPU, mapped scenes, alpha,
+  modes and 512 MiB residency. See STATUS.md batch 236 and private acceptance.
+
+- 2026-10-20 texture batch 235: six cliff/stone/concrete replacements installed;
+  two brightness/contrast failures held. Total 1,434 installed. Fresh full
+  Python audit and six new Windows parser checks pass; prior 1,428 hashes and
+  checker identity unchanged. Five RAM comparisons replay exactly. Historical
+  JSON compaction preserves original-byte recovery; no denied cleanup retried.
+  Pack 1,137,237,494 bytes; temporary 268,002,202 bytes, both below limits.
+  No runtime change or gameplay. **Awaiting validation** remains for Mac GPU,
+  mapped scenes, alpha, modes and 512 MiB residency. See STATUS.md batch 235
+  and private review/hybrid-235-acceptance.json.
+
+- 2026-10-20 texture batch 234: six stone/masonry/plaster replacements installed;
+  two color/contrast failures held. Total 1,428 installed; fresh full Python
+  audit and six new Windows parser checks pass, with prior 1,422 DDS hashes and
+  checker identity unchanged. Five RAM comparisons replay exactly; eight new
+  reference exports retained after policy denial. Pack 1,134,088,316 bytes;
+  temporary 267,970,440 bytes. No gameplay or runtime changes. **Awaiting
+  validation** remains for Mac GPU, mapped scenes, alpha, display modes and
+  512 MiB residency. See STATUS.md batch 234 and private acceptance evidence.
+
+- 2026-10-20 texture batch 233: three small surfaces/trim accepted and installed;
+  five drafts held for ridge, atlas, border or brightness errors. Total 1,422
+  installed; fresh full Python audit and three new Windows parser checks pass,
+  with prior 1,419 hashes/checker identity carried forward unchanged. Five RAM
+  comparisons replay exactly; seven reference exports retained after policy
+  denial. Pack 1,133,516,898 bytes, below 6 GiB; temporary 267,793,785 bytes,
+  below 256 MiB. No runtime changes or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, transparency, modes and 512 MiB residency. See
+  STATUS.md batch 233 and private review/hybrid-233-acceptance.json.
+
+- Texture batch 232: six timber/panel replacements installed; two drafts held
+  for missing color detail/darkening. Sources seven 1774x887 and one 1254x1254;
+  accepted outputs downsampled to four 512x256, one 1024x512 and one 1024x1024.
+  Six new Windows native parser passes plus 1,413 unchanged hash/checker
+  evidence; all 1,419 pass fresh Python audit. No runtime/adapter changes;
+  MAC-011 remains Awaiting validation for Mac GPU/scenes/transparency and
+  512 MiB residency. See STATUS.md batch 232 and private
+  review/hybrid-232-acceptance.json. Parser success does not prove scene fidelity.
+
+- Texture batch 231: all six interrupted requests now have generated sources
+  and review decisions; four stone/molding materials installed, two held for
+  palette/brightness corrections. Sources three 1774x887 and three 1254x1254;
+  accepted outputs downsampled to one 1024x512 and three 1024x1024. Four new
+  Windows parser passes plus 1,409 unchanged hash/checker evidence; all 1,413
+  pass fresh Python audit. Shared runtime/512 MiB residency unchanged.
+  MAC-011 remains Awaiting validation for Mac GPU, scenes and transparency.
+  See STATUS.md batch 231 and private review/hybrid-231-acceptance.json.
+
+- Texture batch 230: two new opaque rock materials accepted offline and installed;
+  six unreturned generation requests remain unfinished after orchestration was
+  stopped. Sources 1774x887 and 1254x1254 downsampled to 1024x512/1024x1024.
+  Two new Windows parser passes plus 1,407 unchanged hash/checker evidence;
+  all 1,409 pass fresh Python audit. No runtime or adapter changes. MAC-011
+  remains Awaiting validation for Mac GPU/scenes/transparency/residency.
+  See STATUS.md batch 230 and private review/hybrid-230-acceptance.json.
+
+- Texture batch 229: three held material corrections accepted/installed; five
+  remain held for layout/tone failures. Three new Windows native parser passes
+  plus 1,404 unchanged hash/checker evidence; all 1,407 pass fresh Python audit.
+  Generated sources were three 1774x887 and five 1254x1254; accepted rust/wood
+  upsampled to 2048-square and stone downsampled to 1024-square. No runtime or
+  host adapter changes. MAC-011 remains Awaiting validation: parser success
+  does not prove Mac GPU, mapped scenes, transparency or 512 MiB residency.
+  See STATUS.md batch 229 and private review/hybrid-229-acceptance.json.
+
+- Batch 228 (issue #74): eight opaque material edits, six accepted/installed and two held for tone/palette correction. Actual sources seven 1254-square and one 1774x887; accepted outputs five 1024-square and one 1024x512, all downsampled. Six new Windows parser passes plus 1,398 unchanged-hash results; all 1,404 DDS files pass current Python audit. Exact memory review replay survives retirement of this batch’s eight disposable original exports. No runtime/adapter changes or Mac execution. **Awaiting validation** for Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 228 and private review/hybrid-228-acceptance.json.
+- Batch 227 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 226. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 227 and private review/hybrid-227-acceptance.json.
+- Batch 226 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 225. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 226 and private review/hybrid-226-acceptance.json.
+- Batch 225 (issue #74): 128 original RGB/alpha classifications (85 opaque, 43 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 224. No art, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 225 and private review/hybrid-225-acceptance.json.
+- Batch 224 (issue #74): 128 original RGB/alpha classifications (93 opaque, 35 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried forward. No art, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 224 and private review/hybrid-224-acceptance.json.
+- Batch 223 (issue #74): 128 original RGB/alpha inspections, 83 opaque, 45 nonopaque; exact memory replay and lossless gzip provenance readback verified on Windows. No artwork, pack/runtime or adapter changes. All 1,398 DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency; no Mac execution. See STATUS.md batch 223 and private review/hybrid-223-acceptance.json.
+- Batch 222 (issue #74): eight generated opaque materials, six accepted/installed and two held for masonry-layout/wood-tone corrections. All 1,398 DDS files pass current Python audit; six new Windows parser passes plus 1,392 unchanged-hash results carried forward. No runtime/adapter changes; shared format and 512 MiB residency policy unchanged. **Awaiting validation** for Mac GPU, mapped scenes, alpha and residency; no Mac execution or gameplay. See STATUS.md batch 222 and private review/hybrid-222-acceptance.json.
+- Batch 221 (issue #74): 128 more RGB/alpha original inspections (74 opaque, 54 nonopaque); exact memory-sheet replay with no raster outputs, artwork or runtime changes. All 1,392 DDS files pass fresh Python checks; unchanged-hash Windows parser results carried forward. Shared renderer remains ce45eb4 and requires no adapter; Mac execution unverified. **Awaiting validation** for mapped scenes, GPU/alpha and residency. See STATUS.md batch 221 and private review/hybrid-221-acceptance.json.
+- Batch 220 (issue #74): 128 original RGB/alpha classifications via shared tools/texture-triage-memory.py; sixteen sheets exactly replayed in memory with no raster files written. Windows actual-data replay and three invalid-input cases pass; Mac execution unverified, no OS adapter needed. All 1,392 DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. No pack/runtime changes or gameplay. **Awaiting validation** for Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 220 and private review/hybrid-220-acceptance.json.
+- Batch 219 (issue #74): 128 original RGB/alpha classifications (81 opaque, 47 nonopaque); no artwork, pack, format, runtime or adapter changes. All 1,392 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 219 and private review/hybrid-219-acceptance.json.
+
+- Batch 218 (issue #74): eleven environment materials accepted offline; one rusty sheet held for brightness/color drift. All 1,392 installed files pass current Python audit; eleven new Windows DDS parser passes and 1,381 unchanged-hash results carried forward. Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 218 and private review/hybrid-218-acceptance.json.
+
+- Batch 217 (issue #74): 128 original RGB/alpha classifications (85 opaque, 43 nonopaque); no artwork, pack, format, runtime or adapter changes. All 1,381 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 217 and private review/hybrid-217-acceptance.json.
+
+- Batch 216 (issue #74): seven held material corrections accepted offline; patterned metal remains held for pitch/shape drift. All 1,381 installed files pass current Python audit; seven new Windows DDS parser passes and 1,374 unchanged-hash results carried forward. Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 216 and private review/hybrid-216-acceptance.json.
+
+- Batch 215 (issue #74): eight panel/material replacements accepted offline and four drafts held. All 1,374 installed files pass current Python audit; eight new Windows DDS parser passes and 1,366 unchanged-hash results carried forward. Shared DXT1 and 512 MiB residency policy unchanged; no runtime/format/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 215 and private review/hybrid-215-acceptance.json.
+
+- Batch 214 (issue #74): 128 original RGB/alpha classifications; no artwork, pack, format, runtime or adapter changes. All 1,366 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 214 and private review/hybrid-214-acceptance.json.
+
+- Batch 213 (issue #74): nine environment materials accepted offline and three drafts held for boundary/tone corrections. All 1,366 files pass current Python audit; nine new Windows DDS parser passes and 1,357 unchanged-hash results carried forward. Shared DXT1 and 512 MiB residency policy unchanged; no runtime/format/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 213 and private review/hybrid-213-acceptance.json.
+
+- Batch 212 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. All 1,357 installed DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared DXT1/DXT5/RGBA8 support and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 212 and private review/hybrid-212-acceptance.json.
+
+- Batch 211 (issue #74): five held materials corrected and installed; three pattern corrections remain held. All 1,357 files pass current Python audit; five new Windows DDS parser passes and 1,352 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 211 and private review/hybrid-211-acceptance.json.
+
+- Batch 210 (issue #74): eleven metal/machinery replacements accepted offline, one draft held and 128 original RGB/alpha pairs classified. All 1,352 installed files pass current Python audit; eleven new Windows DDS parser passes and 1,341 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 210 and private review/hybrid-210-acceptance.json.
+
+- Batch 209 (issue #74): eight environment replacements accepted offline and 64 original RGB/alpha pairs classified. All 1,341 installed files pass current Python audit; eight new Windows DDS parser passes and 1,333 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 209 and private review/hybrid-209-acceptance.json.
+
+- Batch 208 (issue #74): six metal-panel/atlas replacements accepted offline; two visual-fidelity drafts held and 32 further RGB/alpha originals classified. All 1,333 installed files pass current Python audit; six new Windows DDS parser passes and 1,327 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 208 and private review/hybrid-208-acceptance.json.
+
+- Batch 207 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. Existing 1,327 DDS files pass current Python audit and unchanged-hash native evidence carry-forward. Shared DXT1/DXT5/RGBA8 support remains; **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency. No Mac execution. See STATUS.md batch 207 and private review/hybrid-207-acceptance.json.
+
+- Batch 206 (issue #74): found and withdrew the batch 205 trim's blended-magenta border, then replaced it and installed seven further narrow trims using original-only repeated references. Eight new Windows DDS parser passes; 1,319 unchanged hashes carried forward and full current Python audit passed (1,327 total). Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. STATUS.md batch 206 and private review/hybrid-206-acceptance.json supersede the earlier edge-color claim.
+
+- Batch 205 (issue #74): one narrow metal trim installed after fixed-region carrier extraction and offline UV/edge review; 1,320 total. New Windows native DDS parser pass, remaining 1,319 unchanged-hash evidence carried forward. Shared DXT1, no format/runtime/adapter change. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 205 and private review/hybrid-205-acceptance.json.
+
+- Batch 204 (issue #74): eight narrow metal drafts held for aspect/layout correction; none installed. Existing 1,319 files pass current Python audit and unchanged-hash native evidence carry-forward. No format/runtime/adapter change; shared DXT1/DXT5/RGBA8 remains. No Mac GPU, alpha, residency or scene execution; **Awaiting validation**. See STATUS.md batch 204 and private review/hybrid-204-acceptance.json.
+
+- Texture batch 203 (2026-10-20, commit carrying this entry): 128 reused
+  original RGB/alpha pairs classified, total 4,297. No art, format or adapter
+  change; existing 1,319-file native evidence retained through unchanged
+  DDS/checker hashes and current Python audit. Status: Awaiting validation;
+  alpha-only text/icons, partial opacity and material behavior still require
+  Mac scene/GPU validation. No new game or native parser execution.
+  See [batch 203 evidence](STATUS.md#texture-batch-203-reused-texture-inventory-and-hidden-alpha-detail-2026-10-20).
+
+- Texture batch 202 (2026-10-20, commit carrying this entry): eight standard
+  DXT1 material replacements accepted offline; four layout/lighting drafts held.
+  Total 1,319 installed and 4,169 provisionally classified keys. Shared format
+  support is already present; no adapter change. Status: Awaiting validation;
+  Windows parser/hash evidence does not validate Mac scenes, GPU memory or
+  darker material/indicator visibility. No new gameplay on either host.
+  See [batch 202 evidence](STATUS.md#texture-batch-202-metal-and-architectural-surfaces-2026-10-20).
+
+- Texture batch 201 (2026-10-20, commit carrying this entry): 128 reused
+  originals classified from separate RGB/alpha review, total 4,105. No artwork,
+  pack or runtime changes; no platform adapter needed. Existing 1,311-file
+  offline evidence is retained by verified unchanged hashes/checker, not a new
+  native execution. Status: Awaiting validation; logos, text, masks, panoramas
+  and alpha behavior still need final Mac scenes and GPU/memory validation.
+  See [batch 201 evidence](STATUS.md#texture-batch-201-reused-asset-inventory-and-alpha-semantics-2026-10-20).
+
+- Texture batch 200 (2026-10-20, commit carrying this entry): seven metal
+  replacements accepted offline; one altered tread pattern held. Standard
+  DXT1 uses existing shared support, requiring no new adapter. The 1,311-file
+  Windows offline structure/hash evidence does not verify Mac curved mapping,
+  brightness, adjacency, residency or scene fidelity. Status: Awaiting
+  validation; retain consolidated Mac scenes, modes, memory and fallback checks
+  near completion. See [batch 200 evidence](STATUS.md#texture-batch-200-metal-patterns-and-baked-shading-2026-10-20).
+
+- Texture batch 199 (2026-10-20, commit carrying this entry): three
+  character/clothing atlases accepted offline and five identity/tone failures
+  held; 1,304 installed files have current offline structure/hash evidence.
+  Standard DXT1 and shared loader support require no adapter change. Windows
+  parser checks do not establish Mac model seams, skin/cloth appearance,
+  renderer fidelity or GPU residency. Status: Awaiting validation; retain
+  consolidated Mac scene/mode/memory/fallback checks near completion. See
+  [batch 199 evidence](STATUS.md#texture-batch-199-character-identity-and-clothing-atlas-review-2026-10-20).
+
+- Texture batch 198 (2026-10-20, commit carrying this entry): fourteen
+  private DXT1 environment/prop replacements accepted; cloth and wood atlas
+  held for correction. 1,301 installed and 3,849 original keys classified.
+  Existing shared DDS support needs no adapter change. Windows offline
+  structure, feature profiles and repeat review do not establish Mac scene
+  lighting, UV behavior or residency; Awaiting validation. See
+  [batch 198 evidence](STATUS.md#texture-batch-198-architectural-materials-and-prop-layout-checks-2026-10-20).
+
+- Texture batch 197 (2026-10-20, commit carrying this entry): seven prior
+  material/cutout drafts corrected and installed; one wire mesh remains held.
+  1,287 installed and 3,753 keys classified. Existing shared DXT1/DXT5/RGBA8
+  support needs no adapter change. Windows offline DDS and color/mask review
+  does not verify Mac scene brightness, alpha blending, shader use or residency;
+  Awaiting validation. See [batch 197 evidence](STATUS.md#texture-batch-197-cutout-corrections-with-complete-color-coverage-2026-10-20).
+
+- Texture batch 196 (2026-10-20, commit carrying this entry): one private
+  DXT5 hedge accepted offline, seven cutout/material corrections held; 1,280
+  installed and 3,689 original keys visually classified. Existing shared DDS
+  support needs no adapter change. Windows DDS and mask/composite review do
+  not establish Mac scene brightness, blending or residency; Awaiting validation.
+  See [batch 196 evidence](STATUS.md#texture-batch-196-alpha-bearing-materials-and-mask-fidelity-2026-10-20).
+
+- Texture batch 195 (2026-10-20, commit carrying this entry): fifteen private
+  DXT1 replacements accepted, one wood correction held; 1,279 installed and
+  3,625 original keys visually classified. Existing shared DDS support needs
+  no adapter change. Windows structure, profile and repeat-grid checks do not
+  prove Mac scene, reflection or residency behavior; Awaiting validation. See
+  [batch 195 evidence](STATUS.md#texture-batch-195-sixteen-asset-production-and-repeated-feature-checks-2026-10-20).
+
+- Texture batch 194 (2026-10-20, commit carrying this entry): eight private
+  DXT1 environment/atlas replacements; 1,264 installed and 3,561 original keys
+  visually classified. Existing shared DDS support needs no adapter change.
+  Windows offline structure/repeat-grid review does not establish Mac scene,
+  brightness or residency behavior; status remains Awaiting validation. See
+  [batch 194 evidence](STATUS.md#texture-batch-194-environment-materials-and-architectural-atlases-2026-10-20).
+
+- Texture batch 193 (2026-10-20, commit carrying this entry): one private
+  identity-preserving portrait installed, seven drafts held; 1,256 installed
+  and 3,497 original keys visually classified. Existing shared RGBA8/alpha
+  support needs no adapter change. Windows offline DDS checks do not establish
+  Mac UI, scene or residency behavior; status remains Awaiting validation. See
+  [batch 193 evidence](STATUS.md#texture-batch-193-portrait-identity-review-and-inventory-2026-10-20).
+
+- Texture batch 192 (2026-10-20, commit carrying this entry): two private lamp
+  replacements, including RGBA8 with exact resampled original alpha; 1,255
+  installed and 3,433 original keys visually classified. Existing shared
+  DXT1/RGBA8 support needs no adapter change. Windows offline checks do not prove
+  Mac scene/alpha or residency behavior; status stays Awaiting validation. See
+  [batch 192 evidence](STATUS.md#texture-batch-192-small-props-and-exact-alpha-lamp-2026-10-20).
+
+- Texture batch 191 (2026-10-20, commit carrying this entry): four private DXT1
+  corrections accepted; 1,253 installed and 3,401 original keys visually
+  classified. Existing shared format support needs no adapter change. Windows
+  offline checks do not establish Mac scene or residency behavior; status stays
+  Awaiting validation. See [batch 191 evidence](STATUS.md#texture-batch-191-correction-acceptance-and-original-triage-2026-10-20).
+
+- Texture batch 190 (2026-10-20, commit carrying this entry): three private
+  shared DDS additions, including luminance preservation for the L8 panel;
+  1,249 installed and 3,369 original keys visually classified. Existing shared
+  format support needs no adapter change. Mac scene and residency validation
+  remain pending; status stays Awaiting validation. See
+  [batch 190 evidence](STATUS.md#texture-batch-190-metal-timber-and-visual-triage-2026-10-20).
+
+- Texture batch 189 (2026-10-20, commit carrying this note) adds four private
+  shared DDS replacements after Windows offline checks; 1,246 total installed.
+  No adapter change is needed for the existing shared DXT1 loader. No Mac
+  runtime/scene or GPU-residency validation was run; status remains Awaiting
+  validation. See [batch 189 evidence](STATUS.md#texture-batch-189-stone-and-concrete-2026-10-20).
 
 - **Status:** Awaiting validation
 - **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**
@@ -1276,6 +1815,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   The 232 installed local replacements are partial coverage; consolidated
   scene testing remains deferred. See the issue #74 transfer record in STATUS.
 
+#### Launcher v1.2.24 icon retirement release
+
+MAC-011: shared launcher migration is included in v1.2.24 on Windows and native
+Apple Silicon. The release workflow validates both host builds and packages.
+No new adapter is needed; actual Mac game/menu appearance remains Awaiting
+validation. This version bump alone is not publication evidence.
+
 ### MAC-012 — Standalone Mac runtime distribution
 
 - **Game-only PR notes (2026-10-17, branch `fix/game-only-release-prs`):**
@@ -1369,6 +1915,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   actual native menu navigation and two-instance Story play remain unverified.
   Remaining acceptance includes the native transport adapter, shared Story lobby
   and coordinated loading/gameplay; a Windows build cannot establish this.
+
+- **Alpha.2 portable TLS follow-up (2026-10-22):** Windows' bundled CPython
+  keeps `ssl.py` adjacent to its unchanged stdlib PEM trust resources instead
+  of loading the module from inside the library ZIP. This fixes TLS context
+  construction during the real package probe. The relocated-module regression
+  runs in both host release CI suites. Native Mac game packages do not bundle
+  this Windows Python/Online runtime; native transport work remains queued.
 
 - **Status:** Queued
 - **Temporary diagnostics experiment (`e9eed34`, 2026-10-16):** Windows
@@ -3043,6 +3596,33 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Optional-delivery replacement (2026-10-22, `optional-texture-downloads`):** The user's new
+  request supersedes the default-bundling follow-ups below. Shared `SettingsPage`,
+  `TextureDownload` and `TexturePack` implement opt-in checks, confirmed downloads,
+  file-hash adoption of bundled packs, incremental part updates and preservation.
+  Both hosts bind the same busy/cancel behavior. Both game packagers omit textures
+  by default; separate `texture-release.py` publication supplies the schema-3 index.
+  No Mac-specific algorithm is required. Windows checks and portable package tests
+  are recorded in STATUS.md; native Apple Silicon build, download/cancel/update UI
+  and preserved-pack gameplay still need host validation. The optional pack and
+  launcher releases have not been published by this change.
+
+
+- **Alpha.2 removal compatibility (2026-10-22):** Launcher 1.2.24 carries the
+  shared retired-icon migration for both hosts. The game publisher requires
+  stable 1.2.24+ with both platform downloads when the audited pack declares
+  retirements. Existing custom-pair preservation/rollback tests and both host
+  launcher builds are required before publication; the new version-gate cases
+  run in the existing release-validation suite.
+
+- **Alpha.2 packaging follow-up (2026-10-22):** Both game packagers use the
+  shared `build_textures.write_source_files` helper to exclude compiled pack
+  files from the nested source ZIP. The complete DDS/JSON pack remains in
+  `Textures/`, and source-build reuse is documented. This removes a duplicate
+  download/staging copy without changing either host's installer or runtime.
+  The combined source/texture delivery regression runs in both release CI jobs;
+  real package validation follows on each release host.
+
 - **Publisher requirement follow-up (2026-10-20):**
   `fix/publish-required-textures` adds an unconditional repository-pack gate to
   `tools/publish-release.py`, including resumed preparations and pre-upload ZIP
@@ -3082,6 +3662,807 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   verify opt-in confirmation, cancellation, installation under a portable root
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
+### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
+  Shared HLE Swap/Present paths observe the last real vblank while native pacing
+  bypasses the gate. First return to Original 60 can consume the tick already
+  awaited by the guest clock, without a second wait. No new OS adapter or
+  settings definition; existing real-event/cheap-frame pacing remains. Windows
+  phase measurements reduce the extra gate wait from 16.391 to 0.0008 ms.
+  Actual-source phase and mutation fixtures run in existing Windows/macOS CI.
+  Mac execution and timing acceptance remain awaiting validation; check startup
+  at 120/144 followed by Original 60 and subsequent steady pacing on each native
+  renderer. [Measured scope](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
+
+- **Escort recovery follow-up (2026-10-22, PR #297, `535d4ce`):** Shared numeric addition
+  at 0x6552D now uses raw fractional time, retaining the original match-dispatch
+  pause gate and game-clock delay. Full supported-XBE match/mode/recovery chain
+  checks and an asset-free clock contract cover original/native rates. No new
+  host adapter; native Mac gameplay remains awaiting validation. The prior
+  drain-only head 264bc50 passed both-host CI; follow-up results are in STATUS.
+
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`, `bcb1f78`):** Shared
+  `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
+  Windows actual-routine evidence shows the old boost drain doubled at 120 and
+  multiplied by 2.4 at 144; the fix preserves original active-update consumption
+  at normal, slow/fast and catch-up intervals. No new OS adapter. Asset-free
+  clock/resource tests run in both-host CI; the complete walking fixture needs
+  the supported private XBE. Native Mac execution and live activation remain
+  awaiting validation. See the walking/boost audit in
+  `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
+
+- **Full-float feedback follow-up (2026-10-22, PR #299, `6035ed7`):** The shared opt-in
+  policy selects 32-bit float intermediates to remove measured half-float
+  accumulation error. The common RHI already maps this format on D3D11/Vulkan;
+  preservation now handles its capture-storage channel order too. Local WARP
+  conversion and two-pass spatial diagnostics pass. The Mac asset-free common-RHI
+  GPU conversion contract passes for `6035ed7`; Windows bounded scene routes
+  pass. Native Mac wave shaders/gameplay, live preset switching and full scene
+  dynamics remain awaiting validation.
+  Legacy GL remains unsupported for this experiment, as before; normal-play
+  defaults and original byte targets are unchanged. See STATUS for scope.
+
+- **Coupled-water follow-up (2026-10-22, PR #298):** Controlled Windows WARP
+  execution distinguishes fractional coupling from float32/half-float/UNORM8
+  storage effects. It uses the original second shader with a fixed neighbor;
+  full spatial dynamics and native Mac GPU/scene behavior remain awaiting
+  validation. The shared historical-upgrade fixture now excludes the new
+  coefficient patch when constructing old stacks lacking its prerequisite.
+
+- **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
+  policy and HLE patch extend the existing disabled experiment; no new host
+  adapter or capture format. The actual current guest uploader supplies the
+  truncated reference values, replacing an earlier rounded diagnostic assumption.
+  Queue/scope/replay and local Windows original-program GPU checks pass. The
+  combined Windows build and three bounded Scotland routes pass; every captured
+  image updates, but measured amplitude differs and motion parity is unproven. Native
+  Mac GPU/scene execution and complete wave/appearance acceptance remain awaiting
+  validation; this is not enabled for normal play. See STATUS for current scope.
+
+- **Water damping coefficient diagnosis (2026-10-22):** The local Windows WARP
+  original-shader case now isolates packed fractional coefficient drift and a
+  precise anchored alternative. This is a diagnostic, not a runtime change.
+  Shared CI knows the fixture, but skips without the private XBE/Windows WARP.
+  Native Mac GPU/scene validation and full water acceptance remain awaiting
+  validation. See STATUS and the fractional damping audit for measured scope.
+
+- **Projection query candidate (2026-10-22, `perf/projection-memory-checks`,
+  PR #300, `beff7a7`):** Shared `pc_display_memory.h` retains a VM region only during
+  one post-guest camera/projection correction. It uses the existing Windows
+  query and Darwin Mach region adapter, with no new OS-specific policy. Bounds
+  and write permission remain checked; snapshots expire before guest execution.
+  Sixteen focused Windows geometry/protection/ABI cases and both-host native CI
+  pass, including the real-VM contract on Mac. Combined Windows build `4adb6b0`
+  passes; two Venice ten-bot samples average 142.933/143.240 FPS versus 140.843
+  before this change. One unexplained 60.555 ms hitch does not recur. Actual
+  native Mac camera/cutscene visual acceptance and performance remain awaiting
+  validation. See STATUS and the detailed regression record for scope.
+
+- **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
+  now supply current include paths and host interfaces. Cutscene/decal fixtures
+  extract camera code without the adjacent menu allocator that Clang rejected.
+  No runtime policy or Mac adapter changes; 18 affected/related Windows cases
+  and 99 release checks pass. Fresh macOS CI remains pending; these source
+  contracts do not establish native Mac gameplay or visual parity.
+
+- **Main integration for PR #285 (2026-10-21):** Renumbered from MAC-058 to
+  avoid main's crane entry; keyboard entry remains MAC-059. Shared native timing
+  and unified Video Options retain Auto mode, main's scoped prompt reads/fresh
+  scratch checks, mounted input and late-frame gate correction. No separate
+  platform policy was introduced. Windows development build and focused native
+  checks pass; native Mac execution and physical/visual acceptance remain
+  awaiting validation. See STATUS.md for exact source parents, build and results.
+
+- **Clock-aligned presentation evidence (2026-10-21, this revision):** The
+  shared recorder serializes its existing host nanosecond timestamp without
+  changing presentation policy. Windows RHI uses QPC and the isolated runner
+  records matching input-request/observation clocks. Shared analysis rejects
+  incomplete windows and discontinuous counters; portable tests are registered
+  in runtime CI. Windows Build/checks and paired live FPS cycles pass their
+  measurement gates, but reveal 36-39 ms return-to-original-60 gaps with and
+  without experimental water. Mac clock-domain alignment and live behavior
+  remain unverified; raw GL/SDL timestamps must not be assumed to share the
+  Windows runner origin. Existing gameplay/platform support is unchanged.
+  [Evidence and unresolved pacing](docs/native-high-refresh-regressions.md#clock-aligned-live-fps-pacing-2026-10-21).
+
+- **Live water precision policy (2026-10-21, this revision):** Shared guest
+  and HLE code now selects byte targets at original 60 and half-float at
+  120/144, finishing queued old-mode draws before publication and converting
+  changed sources before sampling. Existing transactional preservation handles
+  conversion failures. Windows Build and production fixtures pass; a bounded
+  Scotland 144/120/60/144 menu cycle supplies four validated 90-image segments.
+  All four diagnostic flags stay disabled by default. Common RHI needs no new
+  Mac-specific simulation; native Mac build/gameplay, transition latency and
+  appearance parity remain unverified. Legacy GL still lacks half-float targets.
+  [Measured scope](docs/native-high-refresh-regressions.md#live-water-precision-transitions-2026-10-21).
+
+- **Feedback precision preservation (2026-10-21, this revision):** Common RHI
+  copies live state into a provisional replacement before the host cache
+  publishes a precision change. Failure keeps old content/bindings; converted
+  CPU storage preserves capture/replay initialization. Windows WARP byte/half
+  round trips and production cache rollback checks pass; the same GPU cases
+  run through `tools/test-rhi-mac.py` on an available Mac. Native execution
+  remains unverified. Legacy GL explicitly returns unsupported and preserves
+  the old texture; its float-target gap remains. FPS-driven policy and live
+  gameplay transitions still need integration/validation on both hosts.
+  [Measured evidence](docs/native-high-refresh-regressions.md#feedback-texture-preservation-2026-10-21).
+
+- **Ordered water centering (2026-10-21, this revision):** Shared formula and
+  float-constant state, common HLE queued transport/capture/replay, and RHI/GL
+  adapters implement an opt-in second-pass correction. Windows original-code,
+  queue/replay and GPU checks pass; corrected 120/144 final images stay fresh,
+  and 144 variation no longer fades in the bounded sample. This does not prove
+  original-byte appearance or full dynamics. Native Mac compilation/execution,
+  live precision transitions and longer motion/pacing checks remain open.
+  Legacy GL constant support is implemented, but its half-float target gap
+  still blocks the combined experiment. All three switches stay off by default.
+  [Measured evidence](docs/native-high-refresh-regressions.md#ordered-fractional-water-centering-2026-10-21).
+
+- **Fractional buffer reuse (2026-10-21, this revision):** Shared guest
+  wrapper/patch skips extra smoothing while preserving newest-state ownership.
+  Original-code fixtures check lineage and ABI at 60/120/144 and across
+  transitions. Windows Build, 91 checks and three patch migrations pass.
+  Windows GPU images stay fresh, but 144 variation degrades; this experiment
+  is not accepted or enabled by default. Centering correction, intermediate GPU
+  observations, live precision transitions and actual Mac execution remain
+  open. The wrapper is shared; there is no platform-specific copy of its policy.
+
+- **Procedural shader arithmetic audit (2026-10-21, this revision):** Two
+  original-program GPU fixtures use the common HLSL translator/RHI and pinned
+  local XBE on Windows WARP. They identify per-pass centering drift and loss
+  of variation in zero-radius smoothing. No runtime correction or Mac adapter
+  change is made. Ordered state transport, buffer ownership, native Mac GPU
+  execution and scene acceptance remain open; see STATUS and the arithmetic
+  audit for the tested inputs and limits. CI registers the fixtures and skips
+  when the required host or private executable is absent.
+
+- **Half-float feedback experiment (2026-10-21, local source):** Shared
+  `pc_surface_precision.h` and its original-constructor wrapper register only
+  feedback intermediates; final textures and all guest allocations stay intact.
+  Common HLE cache creation selects half float on Windows/native Mac RHI. The
+  legacy GL adapter explicitly refuses the diagnostic; it needs float render
+  storage and matching sampling/readback support. Its CPU pitch is already
+  format-aware, correcting the preceding generic-GL audit. Four Windows image
+  comparisons eliminate the fractional 144 freeze and demonstrate fresh 120
+  output, while revealing appearance differences from the original byte path.
+  Both experiments remain off by default. A shared real-GPU resource contract
+  passes on Windows WARP and is wired into the existing Vulkan fixture; actual
+  Mac execution, live preset switches and motion/appearance acceptance remain
+  unverified. Windows capture-free Scotland pacing sustains 144.006 guest FPS
+  with normal game speed; two rendered shoreline stills show intact water and
+  reflection rendering, without establishing appearance parity.
+  Windows Build, 89 focused checks and three patch migrations pass. See STATUS
+  and the half-float regression record for image metrics and remaining scope.
+
+- **Rejected procedural feedback experiment (2026-10-21, local source):**
+  Shared `pc_native_surface_guest.h` and reproducible wrappers add an explicit
+  `TSFP_SURFACE_FRACTIONAL_TEST=1` experiment; the default is unchanged. It
+  preserves discrete disturbances while stepping feedback at native cadence,
+  but Windows GPU images reject it: reduced variation at 120 and a flat result
+  at 144. A same-build disabled Windows control retains normal variation.
+  Portable fixtures cover original dispatcher/upload ABI and disabled
+  pass-through, not GPU equivalence. Raw-channel histogram statistics now expose
+  loss of variation without float32 accumulation error. The existing shared CI
+  selections include these checks. Native Mac compilation/readback/appearance
+  remain unverified; do not enable this candidate on either host. A replacement
+  must retain fractional feedback precision and original effect behavior. RHI
+  supports float target formats, while `src/native/renderer_gl.c` allocates
+  render targets as GL_RGBA8; changing formats will require explicit adapter validation,
+  not a Windows-only simulation. See the rejected-candidate record in STATUS.
+
+- **GPU image freshness diagnostic (2026-10-21):** Shared
+  `pc_native_surface_trace.h` and original-function wrappers use the common
+  D3D surface readback interface, available in RHI and legacy GL, without
+  changing the simulation. Windows captures prove repeated images on 205 of
+  359 native-144 comparisons versus none at original 60. The bounded COM
+  fixture and portable image-statistics tests run through shared CI; Windows
+  Build and isolated captures pass. Native Mac compilation and actual GPU
+  capture still require host verification, including surface lifetime/readback
+  and raw channel semantics. The Windows runner CLI is host-specific test
+  tooling; no duplicated gameplay policy is introduced. Fractional simulation
+  remains unfinished on both hosts. See STATUS and the GPU image record.
+
+- **Procedural surface audit (2026-10-21):** Windows-only bounded process
+  observation in `tests/stability_transitions_game.py --watch-surfaces` locates
+  an active kind-1 resource in Scotland at original 60/native 144; sampled
+  Venice gameplay has none. Replays are shared JSON fixtures. Production timing
+  and shaders are unchanged. The five-slot observer is diagnostic tooling, not
+  a second platform implementation. Native Mac needs equivalent bounded
+  resource/render-target observation and actual scene/image validation. CPU
+  stamps and Windows captures do not prove GPU image cadence or Mac behavior.
+  Fractional procedural simulation is still open on both hosts; see STATUS and
+  the linked live-resource audit for evidence and precise scope.
+
+- **Fresh analogue input (2026-10-21):** Shared `pc_native_input_guest` in
+  `pc_native_timing_guest.inc` now runs original axis/connection decoding on
+  fractional native updates while preserving the published digital held/edge
+  cadence. It removes an unintended 60 Hz hold without duplicating dead-zone
+  policy or changing raw mouse handling. Original-code four-port 60/120/144
+  checks verify stick/trigger freshness and unchanged absolute rumble commands;
+  Windows build and live menu/gameplay checks pass. The existing shared timing
+  test entry includes this XBE-dependent fixture when the supported asset is
+  available. No new OS adapter is introduced, but native Mac controller/keyboard
+  sampling, menus, pause/hotplug and physical rumble/latency still need actual
+  host validation. See STATUS and the linked input regression record.
+
+- **Completed-update pose observation (2026-10-21):** Shared
+  `pc_native_pose_trace.h` / `pc_native_timing_guest.inc` add a disabled-by-default,
+  bounded observer at the original gameplay clock boundary. Both timing paths
+  use the same collector; no host-specific movement behavior is introduced.
+  Windows original-60/native-144/120 comparisons show consecutive fresh local
+  and remote positions across five holds at the selected update rates and
+  consistent game time. Build and portable observer/statistics checks pass;
+  the new checks are selected by shared CI. Native Mac still requires an
+  equivalent bounded runner route and usable transport, followed by actual
+  runtime/pose/pacing verification. No Mac validation is inferred from Windows
+  results; GPU/scanout and the earlier locally stopped routes remain separate
+  acceptance gaps. See the completed-update comparison in STATUS.
+
+- **Remote correction/observation audit (2026-10-21):** The portable lifted
+  `sub_00356E20` fixture verifies fractional correction and original guard paths;
+  no production change is required for that routine. Windows read-only paired
+  observations now use QPC and bounded background sampling instead of a coarse
+  Python clock. `network_motion_stats.py` and its six portable tests join shared
+  CI; Windows checks pass, but the process-memory sampler is Windows-specific.
+  Implement equivalent bounded observation in the Mac runner for host validation;
+  do not treat these loopback endpoints or intermediate memory changes as Mac
+  transport, rendered-pose or latency acceptance. Native Mac gameplay, sustained
+  remote smoothness and its transport adapter remain open. See the in-motion
+  network audit in STATUS and the linked detailed regression record.
+
+- **Venice comparison (this revision):** The existing shared recorder now has
+  an opt-in `--profile-presents` route in the Windows bounded session runner,
+  usable for original and native timing. Same-replay Venice comparisons show
+  59.999/143.648 guest presentations/s and correct native clock speed, with
+  explicit bot-workload/scanout limitations in STATUS. This changes test tooling,
+  not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
+  pacing and gameplay acceptance require the native Mac runner and hardware.
+
+- **Corrected original/mixed-rate comparison:** Explicit Vietnam Deathmatch
+  with no bots passes bidirectional settled-position delivery at original 60/60
+  and native 144/120 on Windows. `network_movement_stats.py` and its portable
+  tests reject stationary peers, wrong scenes and stale/non-finite endpoints;
+  the tests join shared runtime CI. No production or Mac transport change was
+  made. Mac execution, continuous remote motion and cross-machine latency still
+  require independent acceptance.
+
+- **Mixed-rate loopback acceptance:** Windows System Link at native 144 host /
+  native 120 client reaches a two-human Subway Thief match, with bidirectional
+  settled-position delivery and client movement while the host menu is open.
+  The original-60 attempt remains at team selection and is rejected for movement
+  parity. `stability_transitions_game.py --lan-role` adds isolated loopback
+  observation only. It needs Windows process-memory/window APIs; the unchanged
+  shared timing code still needs actual Mac acceptance and a Mac transport.
+  Cross-machine networking, remote pose smoothness and combat remain open.
+
+- **Native network cadence audit:** Portable test composition of the shared
+  native clock and Windows guest network adapters preserves console-clock
+  packet gates at native 60/120/144, including wraparound, live rate switches,
+  pause and a stall. The existing native fallback remains separately checked.
+  No game or transport code changed. The fixture joins the existing shared
+  runtime CI selection; actual Mac execution and the missing Mac XNet adapter
+  are not validated or supplied by this simulated Windows boundary.
+
+- **Native 120 Venice follow-up:** The same Windows replay on `dbb84e3`
+  reaches 120.003 guest presentations/s with p99 9.429 ms, real-time game
+  speed, matching two-shot/30-degree aim checks and zero game delta during
+  pause. The test uses common production timing code without new host logic.
+  Native Mac gameplay, input delivery and presentation still require their
+  own run; this Windows result does not change the entry's validation status.
+
+- **Settings ordering (this revision):** The common guest Settings constructor
+  orders Audio, Video, Controls, Copy Profile and conditional Cheats, using
+  consistent alignment without the old divider. It retains the native actions
+  and multiplayer profile selector. Windows Build passes; Mac menu navigation,
+  alignment and multiplayer profile selection require validation.
+
+- **Menu order / divider removal follow-up (2026-10-21):** This revision updates shared
+  `src/pc_display_menu.c` and `tests/fov_settings.c` at `894cb45` insert Video
+  before Controls in pause Options, matching the frontend. Frontend Cheats
+  remains conditional and last. The silver Apply divider is removed again at
+  the user's explicit request, superseding the previous note. Windows Build
+  and six menu/display checks pass; no host-specific adaptation is needed.
+  Native Mac menu navigation/visual checks remain pending. See STATUS.md.
+
+- **Pause Audio alignment / Video divider follow-up (2026-10-21):**
+  Uncommitted shared `src/pc_display_menu.c` / `tests/fov_settings.c` on
+  `feature/native-144-fps` at `93a805a` retain the pause builder's centered or
+  multiplayer layout when renaming Audio; only frontend Audio receives the
+  left-aligned style. The native silver divider above Apply is restored after
+  user feedback, superseding the removal noted below. No host adapter is
+  needed. Windows Build, six menu/display regressions and bounded Story-menu
+  captures pass; native Mac execution remains pending. Verify Audio alignment
+  in main/pause and split-screen menus, submenu return, and the separator with
+  both clean and dirty Apply. See the matching STATUS.md validation entry.
+
+- **Unified Video/Audio Options (this revision):** Shared `pc_display_menu.c`
+  stages resolution, FOV, texture style, FPS and Subtitles in one Video Options
+  page, with a disabled-until-dirty Apply. The remaining silver divider above
+  Apply is removed in the menu follow-up (2026-10-21); its shared callback
+  fixture passes with seven rows and zero separators. It removes
+  submenus, the Back row, FPS disclaimer and default-FOV note, rounds shared
+  frontend/pause highlights across menus,
+  renames Audio Options and aligns its Settings entry. Subtitles updates the
+  original profile field/save flag after successful application; native Audio
+  persistence remains in use. The common guest renderer/dispatch paths serve
+  both hosts without a new OS adapter. Windows Build and relevant shared/menu
+  checks pass; native Mac layout, mouse/controller access, persistence and
+  same-process application still require validation. See STATUS for scope.
+
+- **Live FPS application (this revision):** Shared `pc_frame_rate_live.inc`,
+  `pc_native_timing_guest.inc` and `pc_display_menu.c` apply saved 60/120/144
+  choices at an update boundary, preserve native timer remainders, reset stale
+  pacing state and return to original timing without restarting. Failed saves
+  do not queue a change. The helper/disclaimer rows use 75% native text scale.
+  Windows uses Interlocked publication; the existing C11 native Mac config
+  build uses atomics, with immutable strings for concurrent readers. No separate
+  Mac feature implementation is needed. Windows configuration/timing/menu,
+  patch migration and Build checks pass (one focus-dependent routing skip).
+  Same-process frontend preset changes pass on Windows; Mac menu rendering,
+  atomic persistence, live switching and gameplay acceptance remain pending.
+
+- **Region-driven force/drag (this revision):** Shared `pc_native_numeric.h`
+  normalizes mode-0x800 force/drag and view settling while preserving original
+  post-drag speed limits. The complete original selector, state setter, movement
+  and falling routines pass 76 controlled normal/quarter/accelerated sequences,
+  irregular frame intervals and unchanged catch-up checks on Windows. The final
+  56 timing/backlog checks and supported Windows Build pass (`dbb84e3`). No host
+  adapter is required. Mac execution, live region/geometry behavior and network
+  peers remain pending. See STATUS and the native regression record for measured
+  integration differences and the one-ULP speed-ratio correction.
+
+- **Airborne view-height damping (this revision):** Shared numeric policy at
+  `0xD41D0`/`0xD46B4` preserves original view-offset settling at fractional raw
+  rates, including slow game time. The shared original-routine fixture covers
+  both airborne paths, controlled landing/damage, terminal speed, pause and
+  catch-up on Windows; 158 related checks and the full Windows Build pass.
+  No host adapter is required. Native Mac execution and
+  real world-collision/perceptual validation remain pending. Existing fractional
+  gravity trajectory differences are explicit in the native regression record.
+
+- **Hotel match-flow evidence (this revision):** Windows build `2adcf29` completes
+  local Hotel deathmatches at original 60/native 144 and displays results;
+  native results navigation also starts a new countdown. Saves/settings remain
+  unchanged. No runtime or adapter change accompanies this check. Equivalent
+  Mac match/respawn/results validation, online peers and other modes remain
+  pending; see STATUS and the Hotel section of the native regression record.
+
+- **Aim/weapon-offset easing (this revision):** Shared numeric policy now splits
+  six original easing coefficients over fractional raw intervals, preserving
+  original 60-Hz normal/slow-motion response. Original-block Windows tests cover
+  both paths, 60/120/144, pause, snap, uneven steps and unchanged catch-up. No
+  platform adapter is needed. All 157 related Windows checks and the full Build
+  pass. Actual Mac execution and physical/visual aiming
+  acceptance remain pending; see the native regression record and STATUS.
+
+- **Animation timeline coverage (this revision):** Shared test coverage executes
+  the complete original timeline and event readers at original 60/native
+  60/120/144, including normal/quarter speed, reverse, loops, clamping, pause
+  and catch-up. All 32 sequences and five related fixtures pass on Windows.
+  No runtime/adapter change or rebuild is required; actual Mac fixture execution
+  and skeletal/asset/blend validation remain pending. See the animation timeline
+  section of the native regression record for controlled service boundaries.
+
+- **Native weapon sway (this revision):** Shared `pc_native_numeric.h` and
+  `pc_native_visual_time_guest.inc` sample the final weapon motion value at
+  fractional level time. Integer crossings, RNG calls and authored disabling
+  remain original. Complete-dispatcher and original model-store fixtures cover
+  60/120/144, pause, quarter speed and fallback. Full Windows Build passes;
+  actual Mac compilation, model rendering and perceptual smoothness remain
+  pending. No adapter is needed because the existing observed visual clock and
+  numeric hook are shared. See STATUS and the native regression record.
+
+- **Pause/input phase coverage (this revision):** Shared timing/input tests now
+  combine fractional pause offsets with button edges and held-state delivery
+  across 60/120/144. All 864 schedules and all 50 native timing checks pass on
+  Windows. No runtime or adapter behavior changes. The expanded fixture is
+  already in shared CI scope; actual Mac execution remains pending. See the
+  button-delivery section of the native regression record for mocked boundaries.
+
+- **Additional Windows pacing evidence (this revision):** A bounded no-capture
+  What Lies Below run on `d336cd9` measures 143.825 fresh CPU updates/s across
+  62.485569 active gameplay seconds, p99 8.0834 ms and no interval over 16.67 ms.
+  No source/adapter changes accompany this measurement. These minimized Windows
+  results do not validate Mac pacing or monitor output; equivalent Mac scene
+  measurements and platform acceptance remain pending. See STATUS and its
+  linked regression record for the selection, provenance and remaining limits.
+
+- **FPS overlay beta label (this revision):** Shared `src/pc_debug.c` appends
+  `(Beta)` to active 120/144 targets and preserves original/native 60 labels.
+  Existing Windows overlay checks cover all four cases; the full supported
+  Windows Build passes. Both hosts consume the same formatter, so no Mac
+  adapter is needed. Actual Mac build/display validation remains pending.
+  The broader What Lies Below movement/fire/reload/pause comparison recorded
+  in STATUS is Windows evidence only, not Mac acceptance.
+
+- **Player hit displacement/recovery (this revision):** Shared numeric policy
+  normalizes both the hit-vector decay and its walking-position contribution
+  to fractional game time. Updating decay alone would increase displacement.
+  Expanded original-routine tests execute the hit initializer, active player
+  dispatcher and actual three-channel position-add block, with collision/world
+  boundaries explicitly mocked. Equal-time displacement/decay, quarter-speed,
+  uneven steps, repeat hits, pause and original behavior are checked. No new
+  Mac adapter is required; native Mac compilation and actual combat remain
+  unverified. See the player hit section in the native regression record.
+
+- **Scotland route diagnostics (this revision):** The Windows bounded runner
+  adds read-only player health. Repeated original-60/native-120/native-144
+  routes all take damage and move below the upper path under fire; original
+  60 dies in the final firing sequence. This prevents treating that route
+  failure alone as a native regression, but damage, collision, firing and jeep
+  parity remain unverified. Five sessions exit normally with preserved
+  profiles. No gameplay or Mac adapter changes; Mac execution remains pending.
+  See the Scotland route under fire section of the native regression record.
+
+- **Live aiming/movement diagnostics (this revision):** Windows bounded runner
+  `tests/stability_transitions_game.py` adds sequenced synthetic mouse packets
+  and position/level-clock samples during short key holds. Scotland camera
+  turns/reversal and pause-input discard match at original 60/native 120/144;
+  the short shore path is visually checked. Separate no-capture, three-second
+  holds give game-time speed estimates within 0.227% of original 60 on this
+  route. Short asynchronous observations are not exact-physics certification;
+  see the native regression record. No shared gameplay or host adapter is
+  changed by this diagnostic;
+  native Mac/physical-device/scanout validation remains pending.
+
+- **HUD message timing (this revision):** Shared `src/pc_native_numeric.h`
+  opens the audited HUD message pause gate on fractional game intervals,
+  preserving authored delays, expiry, queue ordering and sound holds. The
+  original-routine fixture `tests/native_hud_messages.c` reproduces a doubled
+  notice duration at 120 before correction and passes at original 60 and
+  native 60/120/144 afterward, including quarter-speed and pause. Shared CI
+  already runs its parametrized timing suite. No Mac adapter is needed;
+  native Mac build and live message/voice synchronization remain unverified.
+  Windows Release build/built-in checks and 133 regressions pass. Rebuilt
+  Scotland observations at original 60/native 120/native 144 verify about 1.0
+  message second per wall second, objective fade/removal and pause/resume.
+  These Windows results do not establish Mac validation; see the HUD message
+  timing section in `docs/native-high-refresh-regressions.md`.
+
+- **Scotland opening follow-up (this revision):** Windows original-60/native-144
+  comparison verifies intro-to-dock transition, three pistol rounds, short
+  movement and pause/resume on the unchanged countdown-fix binary. This is
+  opening-only evidence; jeep behavior, mission completion, pacing and Mac
+  execution remain unverified. No shared source or OS adapter changed.
+  See the Scotland opening comparison in the native regression record.
+
+- **Pacing measurement follow-up (this revision):** The Windows bounded
+  transition runner can disable renderer dumps and records that choice in
+  provenance. On the unchanged countdown-fix binary, approximately 48-second
+  Arcade samples average 119.958/143.936 CPU updates/s at 120/144, with 1.0
+  game/wall time and p99 8.9563/7.9785 ms. These are scene CPU measurements,
+  not full-game, scanout, physical latency or Mac validation. The existing
+  Mac runner already makes capture optional; this Windows diagnostic option
+  introduces no shared gameplay or host adapter change. See STATUS.md.
+
+- **Arcade countdown (this revision):** Shared `src/pc_native_numeric.h` keeps
+  the integer match-start counter on accumulated raw whole ticks at its one
+  float-add site. Truncating fractional additions otherwise freezes native
+  120/144 match start and suppresses controls. The complete original state
+  dispatcher/mask-writer fixture passes at original 60 and native 60/120/144
+  on Windows; 132 shared timing/regression checks pass. Full Windows build
+  and live Vietnam match start/movement/fire/pause at 120/144 pass. Capture-heavy
+  intervals still show pacing gaps. Source and test entry
+  are shared with Mac; no additional OS adapter is required. Native Mac build,
+  start/cue behavior and live control acceptance remain unverified. See the
+  Arcade countdown diagnosis in `docs/native-high-refresh-regressions.md`.
+
+- **Display menu / FPS preference (this revision):** Shared `pc_display_menu.c`
+  groups Screen, Camera, Textures and Frame rate. `pc_frame_rate_settings.h`
+  and the additive `native-frame-rate-settings` patch save original 60 or beta
+  native 120/144 for the next startup. Resolution preview, FOV cancellation
+  and live texture controls stay independent. The shared config library takes
+  one startup snapshot so saving cannot change the live clock. No separate
+  Mac menu implementation is required; Mac compilation, controller/mouse
+  navigation, atomic POSIX save and restart acceptance remain unverified.
+  Windows model/navigation/persistence, live menu layout and actual 144-to-120
+  and 120-to-original-60 save/restart checks pass; see STATUS.md. These do not
+  establish Mac runtime support.
+- **Status:** Awaiting validation
+- **Behavior:** Opt-in `TSFP_NATIVE_FPS` / `native_fps` runs fresh title updates
+  and rendering at a 60/120/144 target, disables interpolation, and retains the
+  60 Hz console interrupt clock. Fractional motion deltas, integer-timer
+  remainders, pause/resume and bounded catch-up share one implementation.
+- **Source:** local development checkpoint on `feature/native-144-fps`: `pc_native_timing*.h`,
+  `pc_native_timing_guest.inc`, `pc_native_clock.h`, `pc_native_rate.h`, `pc_native_numeric.h`,
+  additive native timing/numeric/animation-scope/input/script-event/decay/camera patches and
+  `tests/test_native_timing.py`, including execution of the original US script
+  and NPC/player dispatchers, animation-event readers, camera motion and
+  camera-effect timer/decay/collision-call cadence and mode-27 track sampling.
+  The original frontend backdrop motion and texture alternation also have
+  fractional-time coverage. The entity post-update velocity guard at 0xA75E7
+  uses live fractional game time, with the original routine and list dispatcher
+  exercised by `tests/native_entity_velocity.c`; collision services are stubbed.
+  This shared numeric policy needs no second Mac implementation, but actual
+  native execution remains pending. Usage is in
+  `docs/native-high-refresh.md`.
+- **Weapon sound helper:** Shared `pc_native_numeric.h` accepts live fractional
+  time at the 0x1B6FF0 event guard. `tests/native_weapon_sound.c` executes the
+  original sound selector/repeat timer and both parameter builders, with a
+  mocked audio backend and RNG. No platform audio adapter changes are needed
+  for this guard; native Mac execution, audible output and enclosing weapon
+  state-machine timing remain unverified. Windows build, 58 timing/regression
+  checks, 17 fake-device audio checks and a bounded native gameplay smoke pass;
+  see [STATUS](STATUS.md) and the weapon sound regression record for limits.
+  The original deferred weapon cooldown branch also has shared 60/120/144,
+  quarter-speed, pause and catch-up coverage in `native_weapon_cooldown.c`;
+  its whole-tick subtraction already behaves correctly and is unchanged.
+- **Generic firing event scope:** Shared `pc_native_weapon_guest.h` and the
+  additive `native-weapon-event-scope.patch` keep the original projectile gate
+  and scope event/sound timers to its carried tick span, restoring fractional
+  time on return. The original-code fixture passes 96 configurations, nested
+  sound timers, quarter-speed schedules, pause and catch-up; the former strict
+  expected failure is removed. No host adapter is needed. Windows full build,
+  built-in checks and the 120-second native-144 gameplay check pass. All 35
+  patch transition/tracking rechecks pass after compatibility repairs;
+  actual Mac compilation/runtime,
+  real damage/ammo and other weapon callers remain unverified. See
+  [the regression record](docs/native-high-refresh-regressions.md#generic-firing-event-tick-scope).
+- **NPC firing event scope:** The additive `native-npc-weapon-event-scope.patch`
+  reuses `pc_native_weapon_guest.h` for US routine 0x1BB5C0. The original-code
+  fixture covers 96 configurations with original ammo and sound helper
+  operations. No new host adapter is required. Source generation, 143 shared
+  checks, five network dispatch/results checks and five targeted patch-transition
+  tests pass. The timing scope composes with the existing bot-shot hook;
+  Windows Release/built-in checks and the 120-second native-144 gameplay
+  check now pass on `cfaef73`. A same-build repeat with COD absent passes
+  again and averages 138.6 fresh CPU updates/s in the measured gameplay
+  window versus 62.0 earlier; this is Windows evidence only.
+  Actual Mac compilation/runtime remain pending. See
+  [the NPC regression record](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
+- **Object rocking integration:** `src/pc_native_rocking_guest.h`, the shared
+  numeric policy and additive `native-object-rocking` patch now integrate
+  fractional motion while preserving original contact/impact rules. The
+  original-code fixture advances all 144 transforms per second at normal and
+  quarter speed, with exact original endpoints. Expanded checks retain the
+  impact sequence and sound payloads across 96 combinations and cover
+  recursive impulses, per-object isolation, reuse/reset and floor-contact
+  pause. The prior cadence expected failure now passes; the shared suite
+  passes 136 tests, and all 21 patch-upgrade checks pass. No OS adapter is
+  required. The full supported Windows Release build and built-in checks
+  pass on `dee6170`. Live scene acceptance and actual Mac compilation/runtime
+  remain pending.
+  The CRT asin/audio-device boundaries remain adapted fixture services,
+  and entities outside the audited pool retain original motion. Source is
+  committed as `dee6170` on `feature/native-144-fps`. See
+  [the integration evidence](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
+- **Bridge-crash placement:** The crashed mothership's updater at 0x217050
+  dropped fractional motion intervals behind its whole-tick entry gate.
+  `pc_native_numeric.h` now corrects that one gate in shared source, leaving
+  the separate damping loops unchanged. A complete original-code fixture
+  reproduces the altered crash timing/landing and checks the correction at
+  60/120/144 Hz, normal/quarter-speed, pause and catch-up. No OS adapter is
+  needed. Uneven frame intervals and pauses in all crash phases also pass.
+  The supported Windows Release build and built-in tests pass; bridge-scene
+  replay and actual Mac execution remain pending. See
+  [the investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
+- **Ship debris inheritance:** The shared gate at 0x216958 now divides the
+  parent's displacement by positive fractional time even on zero-whole-tick
+  frames. The complete original-code fixture checks velocity, both model
+  branches, RNG/effect output, allocator failures, catch-up, zero time and
+  ABI, with byte-identical original 60 FPS output. No OS adapter is needed.
+  Windows Release/built-in tests and a 120-second isolated native-144 smoke
+  check pass on `ef2ace3`; live debris and actual Mac execution remain pending. See the
+  [debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
+- **Projectile travel:** Shared site 0xF4A66 now accepts every positive
+  fractional game interval. The full original updater fixture checks travel,
+  sweep/impact dispatch, expiry, pause, uneven intervals and native-60 identity.
+  No platform adapter is needed. Scene geometry and damage application remain
+  mocked; live plasma-sniper damage, other projectile families and actual Mac
+  execution are unverified. Windows Release/built-in and 120-second isolated
+  native-144 smoke checks pass on `ef2ace3`. See the
+  [projectile record](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
+- **Sniper damage:** Shared gate 0xBB6C0 now accepts a one-shot hit on any
+  positive fractional game interval; pause remains blocked. The original
+  sniper/actor damage chain reproduces dropped health changes and passes
+  across native intervals, misses, target eligibility and rejection checks.
+  No OS adapter is needed. Windows Release and the 120-second native-144
+  smoke check pass on `fc3a7ce`; targeted live sniper and actual Mac execution
+  remain unverified. See
+  [the sniper record](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
+- **NPC animation-marker shots:** Shared caller-specific transaction handling
+  in `pc_native_weapon_guest.h` preserves one-time shot events at return sites
+  0x27AE66/0x2B9BF8. The additive manual-wrapper patch composes with the existing
+  network boundary. Original selector/caller/firing fixtures pass on Windows;
+  continuous-fire scenarios retain their old cadence. No OS adapter change.
+  Windows Release and a 120-second native-144 smoke check pass on `fc3a7ce`;
+  targeted live AI confirmation and actual Mac execution remain pending.
+  See [event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
+- **NPC aim recovery/tracking:** Shared numeric policy advances the 0x2B93DA
+  gate, normalizes only the 5% argument at 0x2B963F, and preserves whole-tick
+  RNG decisions at 0x2B9478. New generic identity-default immediate/callee
+  hooks are supplied through the shared patch stack. Original branch and
+  helper fixtures pass across 60/120/144, quarter speed, rare decisions,
+  pause and uneven/catch-up intervals. Full Windows Release and the opening
+  native-144 smoke check pass on `dee6170`; targeted live AI and actual Mac
+  execution remain pending. No OS adapter
+  change is needed. [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
+- **Beam lifetime audit:** `tests/native_beam_lifetime.c` executes the original
+  shared effect manager with original switch/type tables. First-update,
+  lifetime, explicit delay and paused-age checks pass on Windows at
+  60/120/144 and quarter speed. Visual geometry/rendering are mocked; delayed
+  trails remain open. No runtime or OS adapter change. Actual Mac execution
+  remains pending. See [beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
+- **Beam geometry audit:** `tests/native_beam_geometry.c` executes the shared
+  original constructor, updater, renderer and manager through vertex writes,
+  with controlled allocation, random values, trig table and rendering services.
+  Windows checks cover immediate vertex-alpha onset, fade, pause and retirement
+  at 60/120/144 and quarter speed; original/native 60 final geometry is identical.
+  No runtime or OS adapter change is required. Actual Mac execution, scene
+  visibility and GPU submission remain unverified; the user's delayed trails
+  remain open. [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
+- **Effect visibility and tracing:** The geometry fixture now executes the
+  original type-32 render-list branch and manager room visibility. Windows
+  checks cover fractional eligibility, hidden/view-mask rejection, deferred
+  starts and retired-list suppression. The portable read-only
+  `tools/native_effect_trace.py` accepts an injected memory reader; the existing
+  Windows runner exposes it through `--trace-effects`. No game or OS adapter
+  changed. Actual Mac execution, upstream scene visibility inputs and GPU
+  submission remain unverified. [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
+- **Kind-35 projectile correction (local source):**
+  `src/pc_native_projectile_guest.h`, the numeric call-site policy and the
+  additive `-native-kind35-projectile-timing.patch` apply through the same
+  manual wrappers on Windows and Mac. No OS adapter is required. Fractional
+  travel/steering/trail anchoring now pass the original-code fixture while
+  preserving whole-update random/target cadence. Tests cover impact/expiry
+  dispatch with controlled services, pause, uneven intervals, missing
+  emitters, recycled slots and nested scope isolation. Full Windows Release
+  and the opening native-144 smoke check pass on `dee6170`. Live scene
+  verification is pending; actual Mac generation/build/gameplay
+  remains unverified. Other projectile kinds and damage falloff are open.
+  [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
+- **Projectile damage-dispatch audit (local tests):** The same portable
+  original-code fixtures now execute 0xDCEF0/0xB9920/0xB9720 for captured
+  kind/profile combinations and include kind 46. Collision-record multipliers
+  stay correct across 60/120/144 and slow motion for these paths. Non-flat
+  profile controls preserve explicit coverage limits; actual target health,
+  other legal combinations and Mac execution remain unverified. No platform
+  adapter or gameplay policy changed in this audit.
+  [Damage-dispatch evidence](docs/native-high-refresh-regressions.md#projectile-distance-accumulation-and-damage-dispatch).
+- **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
+  stack span for stack-local text fragments, avoiding duplicate VM queries.
+  Mapping checks remain fresh for each call and at protection boundaries.
+  Windows real-VM boundary tests are in `tests/pc_prompts.c`; native Mac
+  stack-fragment cases were added to `src/native/prompt_selftest.inc` but
+  require an actual host run. This source change applies to both fixed-60 and
+  native-refresh paths; it does not alter text formatting or wrapping.
+  The follow-up in `pc_guest_memory.h` exposes the queried region and its write
+  permission, so nearby text and scratch within that same region need no
+  duplicate query. No snapshot survives a guest call. Windows real-VM tests
+  cover same-page reuse, different/protected pages and changed permissions;
+  `src/native/prompt_selftest.inc` adds read-only scratch and boundary cases.
+  Actual Mac execution is pending; the common Mach query already supplies the
+  region bounds and protection, so no new platform adapter is required.
+  Source `6fc4d87` passes the full Windows Release build and native-144/original-60
+  two-minute gameplay/pause checks. Reduced local query counts are verified;
+  overall FPS gains and stable 144 FPS are not established.
+  The separate GPU-flush experiment `aef8d29` failed live Windows progress
+  and was reverted by `eae18a3`; no GPU acknowledgment change remains.
+- **MapMaker random light preview (`8893ba8`, local):**
+  `src/pc_native_light_guest.h` and the additive `*-native-light-preview.patch`
+  retain the guest-owned color during zero-whole-tick native intervals and
+  pause. Original code otherwise wrote the dark palette endpoint on those
+  frames. The shared original-code fixture checks exact packed/RGB-table
+  outputs, discrete deadlines, RNG and ABI at 60/120/144 and quarter speed.
+  It spies on model-color propagation; actual preview rendering is unverified.
+  No platform adapter or host cache is added. The full Windows build, 138
+  shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
+  pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
+- **Movie polling pacing (`3c2fcc2`, local):**
+  `src/pc_native_movie_pacing.h` and the additive `*-native-movie-pacing.patch`
+  bound the separate host-video loop at the selected native rate while keeping
+  movie timestamps/audio and guest clocks unchanged. The helper uses shared
+  clock and platform waits; existing Mac host movie playback is still absent
+  (MAC-009). Model and actual update-body tests pass with synthetic backends;
+  the full Windows build/built-in checks and real-file decode/hash comparison
+  pass. Actual GPU/audio-device movie playback and Mac execution remain pending.
+- **Raw mouse packet cadence (local source):** `src/pc_input.c` resets the
+  consumed buffer's age so the next packet batch does not expire against a
+  previous batch's timestamp. Windows and SDL adapters already use this shared
+  helper; no additional Mac adapter is needed. `tests/native_mouse_cadence.c`
+  reproduces lost counts and validates 60/120/144 update rates, 125–8,000 Hz
+  packets, uneven intervals, zoom/inversion and stale-input/focus/capture
+  transitions. All 153 shared checks, seven input context checks, the full
+  Windows build/built-in checks and a 120-second native-144 gameplay replay
+  pass for `149bef9`. Actual Mac execution and physical-device latency remain
+  open. Terminal-pointer timing is addressed by the separate correction below;
+  live pointer acceptance remains pending.
+  [Mouse cadence evidence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
+- **Terminal fractional pointer cadence (local source):** Shared
+  `pc_input_consume_motion` and `pc_terminal_mouse` retain fresh packet batches
+  and use positive finite fractional game time in native mode. Original mode
+  keeps its whole-tick gate. Windows `pc_controls.c` and SDL `input_sdl.c`
+  supply the same native-rate selection. The shared terminal fixture covers
+  42 timing cases plus pause/ownership/return checks. Both adapters gain a
+  synthetic integration check. All 161 shared/regression checks, the Windows
+  build and its built-in adapter checks pass for `c4171db`; actual Mac
+  execution and live terminal-scene acceptance remain pending. No separate
+  Mac policy is required.
+  [Terminal evidence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
+- **Arcade acceptance failure (Windows `c4171db`):** Vietnam Deathmatch renders
+  and accepts pause/resume at native 144, but player movement/fire remain
+  unresponsive despite advancing native game time. Original-60 mode on the
+  same binary shows combat and ammunition consumption. Shared/native Arcade
+  timing is not accepted; root cause is still under investigation. Mac
+  execution is unverified, not inferred from the Windows failure.
+  [Live comparison](docs/native-high-refresh-regressions.md#arcade-vietnam-comparison).
+- **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
+  original-60/native-144 opening replays pass handoff, hand animation, movement,
+  firing and pause/resume. Native CPU intervals average 140.399 updates/s at
+  1x game speed with another game session open. No production or host-adapter
+  change follows from these checks. Mac execution, later levels/modes and
+  physical input/display latency remain unverified.
+  [Comparison evidence](docs/native-high-refresh-regressions.md#latest-build-opening-comparison).
+- **Fractional strip-distortion clock (`a08f41a`, local):**
+  `src/pc_native_numeric.h` extends the existing shared visual-clock sampling
+  to the continuous strip effect at `0xF9B4B`. The original-code fixture in
+  `tests/native_strip_distortion.c` checks draw arguments, original whole-tick
+  parity, native cadence, pause, rebases and view/range isolation. No new clock,
+  patch or platform adapter is introduced. Actual Mac execution and live
+  strip-effect rendering remain unverified. All 148 shared checks and the full
+  Windows build/built-in checks pass; the existing interactive session was
+  preserved on its preceding build, so it is not live evidence for this change.
+- **Procedural-texture cache cadence (`b3c30cf`, local):**
+  `src/pc_native_numeric.h` keys the surface caller's two cache reads by native
+  update ID instead of console vblank, and prevents the procedural dispatcher
+  from updating on zero-float pause with a stale positive whole count.
+  `tests/native_surface_cache.c` executes the complete original caller and
+  dispatcher with graphics/pass spies, covering phase offsets, resource aliases,
+  view slots, UV motion, pause/resume and catch-up. The existing shared load
+  policy supplies all hooks, so no new patch or platform adapter is required.
+  The Windows build and its built-in checks pass. Extended original allocator/
+  initializer checks pass new/reused/recycled resource stamps, pool exhaustion
+  and four-view deduplication; GPU binding/clearing remain spies in that fixture.
+  Actual Mac execution and live procedural-texture visuals remain unverified.
+- **Fractional screen-distortion clock (`ae410c4`, local):**
+  `src/pc_native_visual_time.h`, `pc_native_visual_time_guest.inc`, the numeric
+  policy and additive `*-native-visual-time.patch` observe direct level-clock
+  stores without changing guest integers. Continuous increments accumulate
+  live fractional time; explicit overrides rebase even for same-value writes.
+  Only the audited distortion read at `0xF9726` samples the new time. This is
+  shared title logic with no new platform adapter. All 146 shared checks pass
+  on Windows; all nine original direct store instructions and the complete
+  original distortion mesh/draw routine are exercised. The 21 patch upgrades,
+  full Windows build and two-minute native-144 gameplay/pause replay pass.
+  The original-60 replay was closed before completion and remains incomplete.
+  Actual Mac builds, live effects and complete level/replay/network lifecycle
+  checks are pending.
+- **Screen-distortion absolute-time audit (`4ed4779`, local):**
+  `tests/native_screen_distortion.c` executes the complete original mesh/draw
+  routine, original grid-size selector and sine-table initialization/helper.
+  Graphics services are spies; controlled grid/viewport inputs are explicit.
+  The shared native timing test measures whole-clock repetition at 60/120/144
+  and quarter speed, compares a test-only fractional clock probe, checks exact
+  original tick-boundary outputs and samples resets, pause and two player views.
+  No production clock policy or platform adapter changes here. Actual Mac
+  execution, clock lifecycle integration and live GPU visuals remain pending.
+- **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
+  `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
+  host network settings. Eligible calls still read live settings; no transport
+  or environment cache is introduced. Windows guest-dispatch and original
+  result-builder checks cover this ordering. The existing Mac fallback is
+  unchanged and covered by the portable ABI test; actual Mac play and the
+  queued MAC-013 transport remain unverified.
+- **Existing Mac support:** The guest hooks, update clock and numeric conversion
+  policy are compiled by the shared title build. The Mac entry point reports
+  the opt-in native rate; normal play retains main's fixed-60 default. No second
+  timing model or higher-frequency console clock was introduced.
+- **Overlay follow-up:** Shared `src/pc_debug.c` reads the native rate for its
+  target label and hides offline RTT. `zzzzzzz-native-debug-target.patch`
+  links the shared overlay to runtime configuration on both hosts. Actual Mac
+  compilation and overlay display remain awaiting validation.
+- **Remaining adaptation:** Validate compilation, waitable-timer behavior,
+  common Vulkan and legacy GL rendering on actual Apple Silicon. Integrate a
+  native launcher selector after game-speed and pacing acceptance; the normal
+  launcher currently offers the fixed-60 path.
+- **Acceptance:** Run portable timing/numeric/ABI tests, then isolated Story,
+  Arcade, Challenge, split-screen, vehicle, cutscene/movie, recorded-demo and
+  network sessions at 60/120/144. Compare actual movement, animation, weapon
+  cadence, pause, saves and clock speed; measure update/present intervals
+  separately from monitor scanout and perceived smoothness. Do not claim
+  full-game or native Mac validation from the Windows first-mission run.
+- **PC evidence:** [Native high refresh development](STATUS.md#native-high-refresh-development-2026-10-20).
 
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 

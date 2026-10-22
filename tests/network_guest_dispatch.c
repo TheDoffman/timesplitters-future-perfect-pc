@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 /* Select only the guest adapter after including the host's standard headers. */
 #ifdef TSFP_TEST_NATIVE_FALLBACK
@@ -14,11 +15,14 @@
 
 static uint32_t memory[0x800000 / 4],g_eax,g_ecx,g_esp,g_ebx,g_edi,g_esi;
 static ptrdiff_t g_xbox_mem_offset;
+int g_tsfp_native_timing_active;
+#include "../src/pc_native_weapon_guest.h"
 static int originals,enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 
 #ifdef _WIN32
-int pc_network_enabled(void) { return enabled; }
+static unsigned network_checks;
+int pc_network_enabled(void) { network_checks++; return enabled; }
 int pc_network_latency(double *milliseconds,unsigned *count)
 { *milliseconds=-1;*count=0;return 1; }
 void pc_debug_latency(int mode,double milliseconds,unsigned count)
@@ -92,6 +96,26 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
 {(void)entity;(void)shot;bot_shots++;}
 #endif
 static void original(void) { originals++;g_eax=0x11223344u;g_esp+=4; }
+static void original_firing(void)
+{
+    float delta;
+    memcpy(&delta,(uint8_t *)memory+0x4e794c,4);
+    assert(delta==(float)memory[0x4e7944/4]);
+    g_eax=memory[0x4e7944/4]>0;g_esp+=4;
+}
+static void native_firing(void) { pc_native_weapon_fire_guest(original_firing); }
+static int composed_firing(unsigned whole,float delta)
+{
+    float restored;
+    memory[0x4e7944/4]=whole;
+    memcpy((uint8_t *)memory+0x4e794c,&delta,4);
+    g_tsfp_native_timing_active=1;g_esp=16;
+    pc_network_bots_guest_shot(native_firing);
+    memcpy(&restored,(uint8_t *)memory+0x4e794c,4);
+    CHECK(g_esp==20 && memory[0x4e7944/4]==whole && restored==delta);
+    g_tsfp_native_timing_active=0;
+    return 0;
+}
 #ifdef _WIN32
 static uint8_t broadcast_config[PC_NETWORK_MATCH_BYTES];
 static void original_broadcast(void)
@@ -124,6 +148,9 @@ int main(void)
     pc_network_guest(0x1234u,original);
 #ifdef TSFP_TEST_NATIVE_FALLBACK
     CHECK(originals==2 && g_eax==0x11223344u && g_esp==20);
+    CHECK(!composed_firing(1,.416666667f) && g_eax==1);
+    CHECK(!composed_firing(0,.416666667f) && g_eax==0);
+    CHECK(!composed_firing(1,0) && g_eax==0);
     puts("PASS: native fallback retains original call/register/stack behavior without host networking");
 #else
     CHECK(originals==1 && g_eax==0x55667788u && g_esp==28);
@@ -160,6 +187,33 @@ int main(void)
     }
 #endif
 #ifdef _WIN32
+    {
+        /* Offline animation/combat calls must retain the original ABI without
+           reading host network settings for every actor or bone update. */
+        void (*hooks[])(void (*)(void))={pc_network_bots_guest_active,
+            pc_network_bots_guest_pose,pc_network_bots_guest_bounds,
+            pc_network_bots_guest_shot,pc_network_bots_guest_frame,
+            pc_network_bots_guest_damage};
+        uint8_t *config=(uint8_t *)memory+0x7de400;
+        unsigned i;
+        memset(memory,0,sizeof memory); network_checks=0;
+        enabled=1; /* A LAN launch still has ordinary single-player callbacks. */
+        config[0]=1;config[2]=1;memory[0x7356d8/4]=0x1000;
+        for(i=0;i<sizeof hooks/sizeof hooks[0];i++) {
+            int before=originals;
+            memory[4]=0x64743;memory[5]=0x3000;memory[6]=1;
+            g_esp=16;g_esi=0x3000;hooks[i](original);
+            CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
+            CHECK(memory[6]==1 && network_checks==0);
+        }
+        CHECK(!pc_network_bots_guest_actor(1) && network_checks==0);
+        CHECK(!pc_network_bots_lobby_network() && network_checks==0);
+        memory[0x76b108/4]=1;enabled=0;
+        CHECK(!pc_network_bots_guest_actor(1) && network_checks==1);
+        enabled=1;
+        CHECK(pc_network_bots_guest_actor(1)==0x1ea0 && network_checks==2);
+        memset(memory,0,sizeof memory);g_esi=0;
+    }
     {
         uint8_t *config=(uint8_t *)memory+0x78ad58;
         PcNetworkBot *bot=(PcNetworkBot *)((uint8_t *)memory+0x75fd90);
@@ -336,6 +390,12 @@ int main(void)
         pc_network_bots_guest_shot(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && pc_network_bot_shots[2].serial==1);
         CHECK(pc_network_bot_shots[2].weapon==7 && pc_network_bot_shots[2].target_slot==0);
+        CHECK(!composed_firing(1,.416666667f) && g_eax==1);
+        CHECK(pc_network_bot_shots[2].serial==2);
+        CHECK(!composed_firing(0,.416666667f) && g_eax==0);
+        CHECK(pc_network_bot_shots[2].serial==2);
+        CHECK(!composed_firing(1,0) && g_eax==0);
+        CHECK(pc_network_bot_shots[2].serial==2);
         memcpy((uint8_t *)memory+0x71cc,&health,4);memcpy(actor+0x18,&life,4);
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);

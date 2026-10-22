@@ -189,10 +189,27 @@ class VersionTests(unittest.TestCase):
                     self.assertNotIn('value:', section)
                     self.assertNotIn('options:', section)
                     self.assertIn('      required: true', section)
-            forms.refresh_versions(root, [])
-            self.assertNotIn('- `v3.0.0`', (root / forms.FORMS[0]).read_text())
-            self.assertIn('No published releases.', (root / forms.FORMS[0]).read_text())
+            before = (root / forms.FORMS[0]).read_bytes()
+            for records in ([], [release('v5.0.0')], [release('launcher-v5.0.0')],
+                            [dict(release('v9.0.0'), draft=True)]):
+                for check in (False, True):
+                    with self.subTest(records=records, check=check):
+                        with self.assertRaisesRegex(ValueError, 'Refusing to erase'):
+                            forms.refresh_versions(root, records, check=check)
+                        self.assertEqual((root / forms.FORMS[0]).read_bytes(), before)
             self.assertIn('Not installed yet', (root / forms.FORMS[0]).read_text())
+
+    def test_initial_empty_repository_is_allowed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / forms.FORMS[0]
+            path.parent.mkdir(parents=True)
+            text = (ROOT / forms.FORMS[0]).read_text(encoding='utf-8')
+            text = re.sub(r'(?m)^        - `v[^`]+`\n', '', text)
+            path.write_text(text, encoding='utf-8')
+            forms.refresh_versions(root, [])
+            self.assertEqual(path.read_text(encoding='utf-8').count('No published releases.'), 2)
+            self.assertEqual(forms.refresh_versions(root, []), [])
 
     def test_bad_launcher_block_does_not_partially_update_game_versions(self):
         with tempfile.TemporaryDirectory(prefix='tsfp-issue-forms-test-') as directory:

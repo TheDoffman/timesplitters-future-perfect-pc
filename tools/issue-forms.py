@@ -101,6 +101,12 @@ def refresh_versions(root, releases, check=False):
             pattern = re.compile(
                 rf'(^        <!-- BEGIN AUTO {kind} VERSIONS -->\n).*?'
                 rf'(^        <!-- END AUTO {kind} VERSIONS -->$)', re.M | re.S)
+            block = pattern.search(original)
+            if block is None:
+                raise ValueError(f'Expected one {kind} version block in {relative}.')
+            if not values and re.search(r'^        - `v', block.group(0), re.M):
+                raise ValueError(f'Refusing to erase existing {kind} versions from an empty '
+                                 'release result; verify GitHub releases and retry.')
             reference = ''.join('        - `' + v + '`\n' for v in values)
             if not reference:
                 reference = '        No published releases.\n'

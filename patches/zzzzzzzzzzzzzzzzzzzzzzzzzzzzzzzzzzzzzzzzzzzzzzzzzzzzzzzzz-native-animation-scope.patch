@@ -1,0 +1,17 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -140,7 +140,13 @@
+ { pc_network_bots_guest_death_gate(sub_0035CC10_gen); }
+ extern void sub_0005FDC0_gen(void);
+ void sub_0005FDC0(void)
+-{ pc_network_bots_guest_pose(sub_0005FDC0_gen); }
++{
++    /* Frozen pose evaluation temporarily clears time, then the original
++     * restores it by converting an integer. Retain the fractional delta. */
++    float delta = pc_native_save_animation_delta();
++    pc_network_bots_guest_pose(sub_0005FDC0_gen);
++    pc_native_restore_animation_delta(delta);
++}
+ extern void sub_00354240_gen(void);
+ void sub_00354240(void)
+ { pc_network_bots_guest_lobby_send(sub_00354240_gen); }

@@ -1,0 +1,84 @@
+[
+  {
+    "wait": 24
+  },
+  {
+    "keys": [
+      69
+    ],
+    "wait": 2
+  },
+  {
+    "keys": [
+      40,
+      69
+    ],
+    "gap": 0.8,
+    "wait": 2
+  },
+  {
+    "keys": [
+      69,
+      69
+    ],
+    "gap": 2,
+    "wait": 12
+  },
+  {
+    "keys": [
+      27
+    ],
+    "label": "start",
+    "wait": 12
+  },
+  {
+    "mouse": [
+      900,
+      0
+    ],
+    "label": "turn-right",
+    "wait": 1
+  },
+  {
+    "wait": 0.1,
+    "label": "pacing-begin"
+  },
+  {
+    "wait": 20,
+    "label": "pacing-end"
+  },
+  {
+    "mouse": [
+      -450,
+      0
+    ],
+    "label": "path-heading",
+    "wait": 1
+  },
+  {
+    "keys": [
+      87
+    ],
+    "hold": 2,
+    "sample_hold": true,
+    "label": "forward",
+    "wait": 0.2
+  },
+  {
+    "keys": [
+      27
+    ],
+    "wait": 2,
+    "label": "pause"
+  },
+  {
+    "keys": [
+      69
+    ],
+    "wait": 2,
+    "label": "resume"
+  },
+  {
+    "stop": true
+  }
+]

@@ -1,0 +1,21 @@
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -73,7 +73,6 @@
+ #include "hle_d3d8_record.h"
+ #include "recomp_config.h"
+ #include "pc_frame_clock.h"
+-#include "pc_native_rate.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "graphics/tsfp_interpolation.h"
+ #endif
+@@ -1282,10 +1281,6 @@
+     if (done)
+         return;
+     done = 1;
+-    if (pc_native_rate()) {
+-        fprintf(stderr, "[INTERP] disabled for native game updates\n");
+-        return;
+-    }
+ #ifdef _WIN32
+     g_target = recomp_config_int("RECOMP_FRAME_TARGET", "frame_target", 0);
+     if (g_target != 120 && g_target != 144) g_target = 0;

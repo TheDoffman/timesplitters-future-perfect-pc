@@ -10,8 +10,8 @@ using System.Threading;
 
 namespace TimeSplitters.Launcher
 {
-    public sealed class Change { public string Name; public string Source; }
-    public sealed class Original { public string Name; public bool Existed; }
+    public sealed class Change { public string Name; public string Source; public string RetiredTextureHash; }
+    public sealed class Original { public string Name; public bool Existed; public string RetiredTextureHash; }
     public static class Core
     {
         public const string LauncherName = LauncherPlatform.LauncherBinary;
@@ -285,7 +285,11 @@ namespace TimeSplitters.Launcher
                     Require(Mutable(change.Name) && (!launcher || LauncherFile(change.Name)) && unique.Add(change.Name), "Invalid or duplicate installation target.");
                     string target = PathIn(root, change.Name);
                     if (change.Name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) && File.Exists(target)) continue;
-                    if (TextureFile(change.Name) && (File.Exists(Path.ChangeExtension(target, ".dds")) ||
+                    if (change.RetiredTextureHash != null)
+                        Require(!launcher && TextureFile(change.Name) && change.Source == null &&
+                            File.Exists(target) && Hash(target) == change.RetiredTextureHash,
+                            "Retired texture changed before installation; retry the update.");
+                    else if (TextureFile(change.Name) && (File.Exists(Path.ChangeExtension(target, ".dds")) ||
                         File.Exists(Path.ChangeExtension(target, ".json")))) continue;
                     bool exists = File.Exists(target);
                     if (exists)
@@ -294,7 +298,7 @@ namespace TimeSplitters.Launcher
                         Directory.CreateDirectory(Path.GetDirectoryName(backup));
                         File.Copy(target, backup, false);
                     }
-                    journal.Add(new Original { Name = change.Name, Existed = exists });
+                    journal.Add(new Original { Name = change.Name, Existed = exists, RetiredTextureHash = change.RetiredTextureHash });
                 }
                 Write(Path.Combine(transaction, "journal.json"), Json.Encode(journal));
                 int index = 0;
@@ -437,6 +441,18 @@ namespace TimeSplitters.Launcher
                         }
                         continue;
                     }
+                    if (!pending && relative == "files" && name == "Textures") {
+                        var recorded = ReadJournal(Path.GetDirectoryName(folder));
+                        foreach (string texture in Directory.GetFileSystemEntries(entry)) {
+                            RequireUnlinked(texture, "Linked retired texture backup.");
+                            string key = "Textures/" + Path.GetFileName(texture);
+                            var original = recorded.SingleOrDefault(i => i.Name == key);
+                            Require(File.Exists(texture) && TextureFile(key) && original != null && original.Existed &&
+                                original.RetiredTextureHash != null && Hash(texture) == original.RetiredTextureHash,
+                                "Unrecognized texture backup; files preserved.");
+                        }
+                        continue;
+                    }
                     bool installationRoot = relative.Length == 0 || relative.Equals(pending ? "payload" : "files", StringComparison.OrdinalIgnoreCase);
                     Require(!installationRoot || (!new[] { "Saves", "Data", "Textures" }.Contains(name, StringComparer.OrdinalIgnoreCase) &&
                         (pending || !name.Equals("Settings", StringComparison.OrdinalIgnoreCase))), "Protected data inside game cleanup folder: " + entry);
@@ -506,6 +522,42 @@ namespace TimeSplitters.Launcher
                 .Select(i => new Change { Name = i.Name, Source = i.Existed ? PathIn(folder, "files/" + i.Name) : null }).ToList();
             Apply(root, changes, null);
         }
+        internal static void AddRetiredTextures(string root, Dictionary<string, object> metadata, List<Change> changes)
+        {
+            object value;
+            if (!metadata.TryGetValue("textures", out value) || value == null) return;
+            var textures = value as Dictionary<string, object>;
+            Require(textures != null, "Invalid texture metadata.");
+            if (!textures.TryGetValue("retired", out value)) return;
+            var retired = value as Dictionary<string, object>;
+            Require(retired != null && retired.Count <= 10000, "Invalid retired texture list.");
+            foreach (var entry in retired)
+            {
+                Require(Regex.IsMatch(entry.Key, @"\A[0-9a-f]{16}\z"), "Invalid retired texture key.");
+                var pair = entry.Value as Dictionary<string, object>;
+                Require(pair != null && pair.Count == 2 && pair.ContainsKey("dds") && pair.ContainsKey("json"),
+                    "Invalid retired texture pair.");
+                var removals = new List<Change>();
+                bool custom = false;
+                foreach (string extension in new[] { "dds", "json" })
+                {
+                    string expected = pair[extension] as string;
+                    Require(expected != null && Regex.IsMatch(expected, @"\A[0-9a-f]{64}\z"), "Invalid retired texture hash.");
+                    string name = "Textures/" + entry.Key + "." + extension;
+                    Require(!changes.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)),
+                        "Texture is both installed and retired.");
+                    string path = PathIn(root, name);
+                    if (File.Exists(path))
+                    {
+                        if (Hash(path) != expected) custom = true;
+                        removals.Add(new Change { Name = name, Source = null, RetiredTextureHash = expected });
+                    }
+                }
+                // A customized member preserves the whole pair. Missing members
+                // need no backup; known bundled files use normal transaction recovery.
+                if (!custom) changes.AddRange(removals);
+            }
+        }
         public static void InstallPending(string root)
         {
             string pending = PathIn(root, ".launcher/pending");
@@ -559,6 +611,7 @@ namespace TimeSplitters.Launcher
                     }
                 }
             }
+            AddRetiredTextures(root, metadata, changes);
             changes.Add(new Change { Name = "BUILD.json", Source = PathIn(payload, "BUILD.json") });
             ApplyScope(root, changes, null, false, repair);
             RemoveGameCache(root, ".launcher/pending");

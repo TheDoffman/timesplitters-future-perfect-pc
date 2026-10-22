@@ -61,8 +61,12 @@ def patch_records(paths):
     # stack; recorded prior bytes/order still unwind older Windows/Mac builds.
     for suffix in ('-144-fps.patch', '-presentation-timing.patch',
                    '-interpolation-recovery.patch', '-controls-accept-save.patch',
-                   '-shared-presentation-integration.patch', '-fixed-60-fps.patch',
-                   '-late-frame-pacing.patch'):
+                   '-shared-presentation-integration.patch', '-native-frame-timing.patch',
+                   '-native-interp-retirement.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch',
+                   '-native-numeric-policy.patch', '-native-animation-scope.patch',
+                   '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
+                   '-native-camera-timing.patch', '-native-weapon-event-scope.patch',
+                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch', '-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)

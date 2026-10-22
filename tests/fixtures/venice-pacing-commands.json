@@ -1,0 +1,205 @@
+[
+  {
+    "wait": 24
+  },
+  {
+    "keys": [
+      40,
+      69,
+      69,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 1,
+    "wait": 2
+  },
+  {
+    "keys": [
+      40,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.8,
+    "wait": 2
+  },
+  {
+    "keys": [
+      69,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 2,
+    "wait": 10
+  },
+  {
+    "keys": [
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.8,
+    "wait": 8,
+    "label": "spawn"
+  },
+  {
+    "keys": [
+      1
+    ],
+    "hold": 1.5,
+    "wait": 0.1,
+    "sample_hold": true,
+    "label": "fire"
+  },
+  {
+    "mouse": [
+      300,
+      0
+    ],
+    "keys": [
+      87
+    ],
+    "hold": 3,
+    "wait": 0.1,
+    "sample_hold": true,
+    "label": "move"
+  },
+  {
+    "keys": [
+      27
+    ],
+    "hold": 0.25,
+    "wait": 2,
+    "label": "pause"
+  },
+  {
+    "keys": [
+      69
+    ],
+    "hold": 0.25,
+    "wait": 2,
+    "label": "resume"
+  },
+  {
+    "keys": [
+      69
+    ],
+    "hold": 0.25,
+    "wait": 2,
+    "label": "respawn-if-needed"
+  },
+  {
+    "wait": 1,
+    "label": "pacing-start"
+  },
+  {
+    "mouse": [
+      150,
+      0
+    ],
+    "keys": [
+      87
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      -150,
+      0
+    ],
+    "keys": [
+      83
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      150,
+      0
+    ],
+    "keys": [
+      87
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      -150,
+      0
+    ],
+    "keys": [
+      83
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      150,
+      0
+    ],
+    "keys": [
+      87
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      -150,
+      0
+    ],
+    "keys": [
+      83
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      150,
+      0
+    ],
+    "keys": [
+      87
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "mouse": [
+      -150,
+      0
+    ],
+    "keys": [
+      83
+    ],
+    "hold": 3,
+    "gap": 0.1,
+    "wait": 0.1,
+    "sample_hold": true
+  },
+  {
+    "wait": 2,
+    "label": "pacing-end"
+  },
+  {
+    "stop": true
+  }
+]

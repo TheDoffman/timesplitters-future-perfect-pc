@@ -16,6 +16,8 @@ RhiImage *d3d8_GetSceneImage(void) {return copy_scene;}
 RhiView *d3d8_GetSceneView(void) {return copy_scene_srv;}
 RhiView *d3d8_GetDefaultTargetView(void) {return copy_scene_rtv;}
 
+#include "rhi_surface_preservation.h"
+
 static void copy_texel(unsigned x,unsigned y,unsigned char rgba[4]) {
     rgba[0]=(unsigned char)(20+x*5);rgba[1]=(unsigned char)(30+y*7);
     rgba[2]=(unsigned char)(40+(x+y)*2);rgba[3]=255;
@@ -89,6 +91,7 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
         rhi_view_destroy(offscreen_rtv);rhi_view_destroy(offscreen_srv);rhi_image_destroy(offscreen);
         CHECK(xbox_D3D8CopyBackBufferToTexture(NULL)==E_INVALIDARG);
         CHECK(d3d8_CopyTextureView(texture,NULL)==E_INVALIDARG);
+        if(scale==1)rhi_surface_preservation_test(restore_target);
         xbox_D3D8ScreenCopyShutdown();
         rhi_view_destroy(dest);texture->lpVtbl->Release(texture);
         rhi_view_destroy(copy_scene_srv);rhi_view_destroy(copy_scene_rtv);rhi_image_destroy(copy_scene);

@@ -233,6 +233,57 @@ int main(int argc, char **argv)
         pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         CHECK(fabs(*(float *)(guest+0x10100)-yaw)<.001); /* same sequence is not replayed */
     }
+    {
+        /* Native-rate selection must reach the real Windows terminal adapter,
+           including paused stale-whole input and return to original mode. */
+        char *saved_rate=NULL;size_t saved_size=0;
+        CHECK(!_dupenv_s(&saved_rate,&saved_size,"TSFP_NATIVE_FPS"));
+        CHECK(!_putenv_s("TSFP_NATIVE_FPS","144"));
+        *(uint32_t *)(guest+0x10114)=0x2000;
+        *(float *)(guest+0x22038)=100;*(float *)(guest+0x2203c)=100;
+        float old_yaw=*(float *)(guest+0x10100);
+        for(int step=0;step<5;++step) {
+            *(uint32_t *)(guest+0x4e7944)=(step==1 || step==4)?1:0;
+            *(float *)(guest+0x4e794c)=(step==1 || step==4)?0:60.f/144;
+            if(step==3) CHECK(!_putenv_s("TSFP_NATIVE_FPS","0"));
+            f=fopen(state_file,"w");CHECK(f);
+            fprintf(f,"1 0 %d 100 20",step+2);fclose(f);Sleep(50);
+            pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+            const float expected[]={110,110,120,120,130};
+            CHECK(fabs(*(float *)(guest+0x22038)-expected[step])<.001);
+            CHECK(*(float *)(guest+0x10100)==old_yaw);
+        }
+        /* Repeat through mounted routing, using the real host adapter and
+           changing rate selection without restarting input capture. */
+        #define MU(a) (*(uint32_t *)(guest+(a)))
+        #define MF(a) (*(float *)(guest+(a)))
+        MU(0x10114)=0x80;MU(0x10014)=0x21000;MU(0x2107c)=0x22000;
+        MU(0x22c14)=0x30000;MU(0x3007c)=0x31000;
+        MU(0x31000)=0x30000;MU(0x31004)=0x4147554e;MU(0x31010)=4;MU(0x31068)=0x21000;
+        MF(0x20384)=55;MF(0x31034)=-90;MF(0x31038)=90;
+        MF(0x3103c)=-179;MF(0x31040)=179;
+        float old_pitch=MF(0x10104);
+        CHECK(!_putenv_s("TSFP_NATIVE_FPS","144"));
+        for(int step=0;step<5;++step) {
+            MU(0x4e7944)=(step==1 || step==4)?1:0;
+            MF(0x4e794c)=(step==1 || step==4)?0:60.f/144;
+            if(step==3)CHECK(!_putenv_s("TSFP_NATIVE_FPS","0"));
+            f=fopen(state_file,"w");CHECK(f);
+            fprintf(f,"1 0 %d 100 20",step+7);fclose(f);Sleep(50);
+            pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+            const float expected[]={10,10,20,20,30};
+            CHECK(fabsf(MF(0x31024)+expected[step])<.001f);
+            CHECK(fabsf(MF(0x3101c)-expected[step]*.2f)<.001f);
+            CHECK(MF(0x10100)==old_yaw && MF(0x10104)==old_pitch);
+        }
+        MU(0x10114)=2;
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(MF(0x10100)==old_yaw && MF(0x10104)==old_pitch);
+        #undef MU
+        #undef MF
+        CHECK(!_putenv_s("TSFP_NATIVE_FPS",saved_rate?saved_rate:""));
+        free(saved_rate);
+    }
     VirtualFree(guest, 0, MEM_RELEASE);
     puts("PASS: PC input focus/capture, released buttons, wheel queue, raw-count camera math, pitch limits, FOV scaling, poll independence, WASD/reload/fire bindings and guest camera integration");
     return 0;

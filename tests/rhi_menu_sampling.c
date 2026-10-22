@@ -122,7 +122,7 @@ int main(void) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
     rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     rhi_shader_destroy(point_vs);rhi_shader_destroy(point_ps);
-    rhi_texture_resources_test();
+    rhi_texture_resources_test(rtv);
     rhi_xbox_textures_test();
     rhi_set_shader(RHI_STAGE_PIXEL,ps);rhi_set_textures(0,1,&srv);
     rhi_set_samplers(0,1,&sampler);rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&parameters);

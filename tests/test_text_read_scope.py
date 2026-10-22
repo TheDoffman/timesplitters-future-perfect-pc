@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import subprocess
+import re
 import pytest
 from native_compiler import native_compiler
 
@@ -17,3 +18,28 @@ def test_text_read_scope(tmp_path, fixture):
             [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-I'+str(ROOT/'src'), source, '-o', str(exe)])
     subprocess.run(args, cwd=tmp_path, env=env, check=True, timeout=60)
     subprocess.run([str(exe)], check=True, timeout=10)
+
+
+@pytest.mark.parametrize('platform', ['TSFP_PC_CONTROLS', 'TSFP_NATIVE_PROMPTS'])
+@pytest.mark.parametrize('break_scope', [False, True], ids=['fixed', 'detect-repeated-queries'])
+def test_outlined_label_scope(tmp_path, platform, break_scope):
+    manual = (ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c').read_text(encoding='utf-8')
+    wrapper = re.search(r'void sub_00041E30\(void\)\n\{.*?\n\}', manual, re.S)
+    assert wrapper, 'Apply the complete patch stack before testing'
+    body = wrapper.group()
+    if break_scope:
+        body = body.replace('pc_prompts_layout_begin();', '').replace('pc_prompts_layout_end();', '')
+    source = tmp_path/'outline.c'
+    source.write_text('#define '+platform+'\n'+(ROOT/'tests/text_outline_scope.c').read_text().replace(
+        '/* PRODUCTION_OUTLINE_WRAPPER */', body), encoding='utf-8')
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path/('outline.exe' if os.name=='nt' else 'outline')
+    args = ([compiler, '/nologo', '/std:c11', '/W4', '/I'+str(ROOT/'src'), str(source), '/Fe:'+str(exe)]
+            if os.name=='nt' else [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                                  '-I'+str(ROOT/'src'), str(source), '-o', str(exe)])
+    subprocess.run(args, cwd=tmp_path, env=env, check=True, timeout=60)
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    if break_scope:
+        assert result.returncode != 0 and 'queries==1' in result.stderr
+    else:
+        assert result.returncode == 0, result.stdout+result.stderr

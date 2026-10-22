@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_framebuffer_sampling_passes(tmp_path, break_refresh):
     compiler, environment = native_compiler(tmp_path)
     source = ROOT / 'external/ts3FPrecomp/src'
-    includes = [source, *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
+    includes = [source, ROOT / 'src', *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
     if break_refresh:
         # Prove the behavioral test detects losing the production binding hook.
         original = (source / 'hle/hle_d3d8_texture.c').read_text()

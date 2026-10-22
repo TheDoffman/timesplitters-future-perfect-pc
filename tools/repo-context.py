@@ -153,6 +153,37 @@ def changed_paths(root, base):
     return names - {''}
 
 
+def version_reference_only(root, base, name):
+    """Exempt generated release data, never form structure or empty-list regressions."""
+    if name != '.github/ISSUE_TEMPLATE/01-bug-report.yml':
+        return False
+    path = root / name
+    if not path.is_file() or path.is_symlink():
+        return False
+    try:
+        before = git(root, 'show', f'{base}:{name}')
+    except subprocess.CalledProcessError:
+        return False
+    after = path.read_text(encoding='utf-8')
+    version = r'        - `v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?`\n'
+    for kind in ('GAME', 'LAUNCHER'):
+        pattern = re.compile(
+            rf'(^        <!-- BEGIN AUTO {kind} VERSIONS -->\n)(.*?)'
+            rf'(^        <!-- END AUTO {kind} VERSIONS -->$)', re.M | re.S)
+        old, new = list(pattern.finditer(before)), list(pattern.finditer(after))
+        if len(old) != 1 or len(new) != 1:
+            return False
+        for block in (old[0][2], new[0][2]):
+            if not (re.fullmatch(r'(?:' + version + r'){1,30}', block)
+                    or block == '        No published releases.\n'):
+                return False
+        if old[0][2] != new[0][2] and new[0][2] == '        No published releases.\n':
+            return False
+        before = pattern.sub(lambda m: m[1] + m[3], before)
+        after = pattern.sub(lambda m: m[1] + m[3], after)
+    return before == after
+
+
 def check(root, base=None):
     data = manifest(root)
     for name in [data['overview']] + [t['file'] for t in data['topics']]:
@@ -170,7 +201,8 @@ def check(root, base=None):
             if target and '://' not in target and not (doc.parent / target).exists():
                 raise ValueError(f'{doc.name}: missing linked file {target}')
     if base:
-        missing = missing_updates(data, changed_paths(root, base))
+        missing = missing_updates(data, [name for name in changed_paths(root, base)
+                                         if not version_reference_only(root, base, name)])
         if missing:
             raise ValueError('Changed systems require guide updates: ' + ', '.join(missing))
     return 'Repository context, links and patch index are current.'

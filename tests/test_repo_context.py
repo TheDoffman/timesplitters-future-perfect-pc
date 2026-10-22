@@ -25,8 +25,16 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     names = [p['name'] for p in index['patches']]
     assert {f'patches/{n}' for n in names} == {n for n in tracked if n.startswith('patches/')
                                               and n.count('/') == 1 and n.endswith('.patch')}
-    assert names[-2].endswith('-fixed-60-fps.patch')
-    assert names[-1].endswith('-late-frame-pacing.patch')
+    def position(suffix):
+        return next(i for i, name in enumerate(names) if name.endswith(suffix))
+    assert position('-native-frame-timing.patch') < position('-native-interp-retirement.patch')
+    assert position('-native-interp-retirement.patch') < position('-fixed-60-fps.patch')
+    assert position('-late-frame-pacing.patch') == position('-fixed-60-fps.patch') + 1
+    assert position('-late-frame-pacing.patch') < position('-native-numeric-policy.patch')
+    assert position('-native-surface-live.patch') < position('-native-flip-handoff.patch')
+    assert names[-1].endswith('-native-flip-handoff.patch')
+
+    assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])
 
 
@@ -84,3 +92,69 @@ def test_changed_path_check_includes_deleted_files(tmp_path):
                     'commit', '-qm', 'fixture'], check=True)
     p.unlink()
     assert 'src/removed.c' in context.changed_paths(tmp_path, 'HEAD')
+
+
+@pytest.mark.parametrize('change, exempt', [
+    ('version', True), ('initial', True), ('question', False),
+    ('empty', False), ('marker', False), ('duplicate', False),
+    ('injected', False), ('deleted', False), ('other-path', False),
+])
+def test_only_generated_version_data_avoids_guide_churn(tmp_path, monkeypatch, change, exempt):
+    name = '.github/ISSUE_TEMPLATE/01-bug-report.yml'
+    path = tmp_path / name
+    path.parent.mkdir(parents=True)
+    import re
+    before = (ROOT / name).read_text(encoding='utf-8')
+    for kind in ('GAME', 'LAUNCHER'):
+        before = re.sub(rf'(?m)(^        <!-- BEGIN AUTO {kind} VERSIONS -->\n).*?(?=^        <!-- END AUTO {kind} VERSIONS -->$)',
+                        lambda m: m[1] + '        - `v1.0.0`\n', before, flags=re.S)
+    if change == 'initial':
+        before = re.sub(r'(?m)^        - `v[^`]+`\n', '', before)
+        before = before.replace('VERSIONS -->\n        <!-- END',
+                                'VERSIONS -->\n        No published releases.\n        <!-- END')
+    path.write_text(before, encoding='utf-8')
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    subprocess.run(['git', '-C', str(tmp_path), 'add', '.'], check=True)
+    subprocess.run(['git', '-C', str(tmp_path), '-c', 'user.name=Fixture',
+                    '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'baseline'], check=True)
+    marker = '        <!-- BEGIN AUTO GAME VERSIONS -->\n'
+    if change == 'version':
+        after = before.replace(marker, marker + '        - `v99.0.0`\n')
+    elif change == 'initial':
+        after = before.replace('        No published releases.\n', '        - `v99.0.0`\n')
+    elif change == 'question':
+        after = before + '\n  - type: input\n    id: new-question\n'
+    elif change == 'empty':
+        after = before.replace(marker + '        - `v1.0.0`\n',
+                               marker + '        No published releases.\n')
+    elif change == 'marker':
+        after = before.replace('END AUTO GAME', 'END GAME')
+    elif change == 'duplicate':
+        after = before + marker + '        <!-- END AUTO GAME VERSIONS -->\n'
+    elif change == 'injected':
+        after = before.replace(marker, marker + '        Arbitrary text\n')
+    else:
+        after = before.replace(marker, marker + '        - `v99.0.0`\n')
+    path.write_text(after, encoding='utf-8')
+    if change == 'deleted':
+        path.unlink()
+    if change == 'other-path':
+        name = '.github/ISSUE_TEMPLATE/other.yml'
+        (tmp_path / name).write_text(after, encoding='utf-8')
+    assert context.version_reference_only(tmp_path, 'HEAD', name) is exempt
+    # The real ownership gate must still reject structural/form changes.
+    if change != 'other-path':
+        guide = context.CONTEXT + 'launcher.md'
+        monkeypatch.setattr(context, 'manifest', lambda root: {
+            'overview': 'overview.md', 'topics': [{'file': guide}],
+            'owners': [{'patterns': ['.github/ISSUE_TEMPLATE/**'], 'guide': guide}]})
+        monkeypatch.setattr(context, 'excerpt', lambda *args: '')
+        monkeypatch.setattr(context, 'index_text', lambda root: 'fixture')
+        index = tmp_path / context.INDEX
+        index.parent.mkdir(parents=True)
+        index.write_text('fixture')
+        if exempt:
+            assert 'current' in context.check(tmp_path, 'HEAD')
+        else:
+            with pytest.raises(ValueError, match='require guide updates'):
+                context.check(tmp_path, 'HEAD')

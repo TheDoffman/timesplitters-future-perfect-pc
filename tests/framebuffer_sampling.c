@@ -45,6 +45,9 @@ HRESULT host_LockRect(IDirect3DTexture8 *texture, UINT level, D3DLOCKED_RECT *lo
     assert(texture == &white); locked->Pitch = 4; locked->pBits = &pixel; return S_OK;
 }
 HRESULT host_UnlockRect(IDirect3DTexture8 *texture, UINT level) { return S_OK; }
+/* This fixture samples the screen cache, never a precision-changing surface. */
+HRESULT d3d8_PreserveFeedbackTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src)
+{ assert(0); return E_FAIL; }
 
 unsigned long hle_d3d8_shadow_swaps(void) { return swap; }
 HRESULT host_CreateTexture(IDirect3DDevice8 *dev, UINT w, UINT h, UINT levels,

@@ -1,0 +1,24 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -125,6 +125,21 @@
+ extern void sub_00244F30_gen(void);
+ void sub_00244F30(void) { pc_native_weapon_fire_guest(sub_00244F30_gen); }
+ 
++
++/* Fractional kind-35 projectile motion, scoped to the original updater. */
++#include "pc_native_projectile_guest.h"
++extern void sub_000F08D0_gen(void);
++void sub_000F08D0(void)
++{ pc_native_kind35_update_guest(sub_000F08D0_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++extern void sub_000E78F0_gen(void);
++void sub_000E78F0(void)
++{ pc_native_kind35_init_guest(sub_000E78F0_gen, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
++extern void sub_00153B40(void);
++void pc_native_kind35_rng(void)
++{ pc_native_kind35_rng_guest(sub_00153B40, *(const uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset), &g_eax, &g_esp); }
++extern void sub_000E1FA0(void);
++void pc_native_kind35_target(void)
++{ pc_native_kind35_target_guest(sub_000E1FA0, *(const uint32_t *)((uintptr_t)g_esp+4+g_xbox_mem_offset)); }
+ 
+ /* PC System Link: public XNet API boundary, US 45410066. */
+ #include "pc_network_guest.inc"

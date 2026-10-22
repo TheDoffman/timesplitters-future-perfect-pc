@@ -1,0 +1,63 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -114,6 +114,11 @@
+  * means this title was lifted before the macros published it. */
+ extern RECOMP_MANUAL_TLS uint32_t g_icall_dispatch_form;
+ 
++
++/* Native high refresh updates, independent of console interrupts. */
++#include "pc_native_timing_guest.inc"
++extern void sub_001538C0_gen(void);
++void sub_001538C0(void) { pc_native_timing_guest(sub_001538C0_gen); }
+ 
+ /* PC System Link: public XNet API boundary, US 45410066. */
+ #include "pc_network_guest.inc"
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -73,6 +73,7 @@
+ #include "hle_d3d8_record.h"
+ #include "recomp_config.h"
+ #include "pc_frame_clock.h"
++#include "pc_native_rate.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "graphics/tsfp_interpolation.h"
+ #endif
+@@ -1281,6 +1282,10 @@
+     if (done)
+         return;
+     done = 1;
++    if (pc_native_rate()) {
++        fprintf(stderr, "[INTERP] disabled for native game updates\n");
++        return;
++    }
+ #ifdef _WIN32
+     g_target = recomp_config_int("RECOMP_FRAME_TARGET", "frame_target", 0);
+     if (g_target != 120 && g_target != 144) g_target = 0;
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -67,6 +67,7 @@
+ #include <string.h>
+ #include "hle.h"
+ #include "recomp_config.h"
++#include "pc_native_rate.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
+ #ifdef _WIN32
+@@ -2337,7 +2338,7 @@
+         QueryPerformanceCounter(&t0);
+         if (g_swap_last.QuadPart)
+             g_swap_frame_ticks += t0.QuadPart - g_swap_last.QuadPart;
+-        xbox_Nv2aFlipGateArm();
++        if (!pc_native_rate()) xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
+ #ifdef _WIN32
+         hle_d3d8_interp_finish();
+@@ -2396,7 +2397,7 @@
+         QueryPerformanceCounter(&t0);
+         if (g_swap_last.QuadPart)
+             g_swap_frame_ticks += t0.QuadPart - g_swap_last.QuadPart;
+-        xbox_Nv2aFlipGateArm();
++        if (!pc_native_rate()) xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
+ #ifdef _WIN32
+         hle_d3d8_interp_finish();

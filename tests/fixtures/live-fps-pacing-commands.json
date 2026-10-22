@@ -1,0 +1,176 @@
+[
+  {
+    "wait": 24,
+    "label": "menu-ready"
+  },
+  {
+    "keys": [
+      69
+    ],
+    "wait": 2
+  },
+  {
+    "keys": [
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.8,
+    "wait": 2,
+    "label": "scotland"
+  },
+  {
+    "keys": [
+      69,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 2,
+    "wait": 12
+  },
+  {
+    "keys": [
+      27
+    ],
+    "hold": 0.25,
+    "wait": 10,
+    "label": "original60-begin"
+  },
+  {
+    "wait": 12,
+    "label": "original60-end"
+  },
+  {
+    "keys": [
+      27
+    ],
+    "hold": 0.25,
+    "wait": 1
+  },
+  {
+    "keys": [
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 1,
+    "label": "video60"
+  },
+  {
+    "keys": [
+      40,
+      40,
+      40,
+      40,
+      39,
+      40,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 2,
+    "label": "apply120"
+  },
+  {
+    "keys": [
+      70,
+      27
+    ],
+    "hold": 0.25,
+    "gap": 1,
+    "wait": 3,
+    "label": "native120-begin"
+  },
+  {
+    "wait": 12,
+    "label": "native120-end"
+  },
+  {
+    "keys": [
+      27,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 1,
+    "label": "video120"
+  },
+  {
+    "keys": [
+      40,
+      40,
+      40,
+      40,
+      39,
+      40,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 2,
+    "label": "apply144"
+  },
+  {
+    "keys": [
+      70,
+      27
+    ],
+    "hold": 0.25,
+    "gap": 1,
+    "wait": 3,
+    "label": "native144-begin"
+  },
+  {
+    "wait": 12,
+    "label": "native144-end"
+  },
+  {
+    "keys": [
+      27,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 1,
+    "label": "video144"
+  },
+  {
+    "keys": [
+      40,
+      40,
+      40,
+      40,
+      37,
+      37,
+      40,
+      40,
+      69
+    ],
+    "hold": 0.25,
+    "gap": 0.65,
+    "wait": 2,
+    "label": "apply60"
+  },
+  {
+    "keys": [
+      70,
+      27
+    ],
+    "hold": 0.25,
+    "gap": 1,
+    "wait": 3,
+    "label": "return60-begin"
+  },
+  {
+    "wait": 12,
+    "label": "return60-end"
+  },
+  {
+    "stop": true
+  }
+]

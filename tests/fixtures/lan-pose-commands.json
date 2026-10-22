@@ -1,0 +1,220 @@
+{
+  "_scope": "Vietnam Deathmatch, two humans/no bots. Both bounded runners need --trace-network-poses and --no-captures. Adds client backward/left/right holds. Use network_pose_stats.py; host observation occurs during the later client movement, so the earlier settled-endpoint checker does not apply. Host progress label renamed for clarity after the captured replay; inputs/timing are unchanged.",
+  "host": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 5,
+      "label": "host-lobby"
+    },
+    {
+      "keys": [
+        89
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "match-options"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "select-mode"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "match-settings"
+    },
+    {
+      "keys": [
+        38,
+        37
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 1,
+      "label": "bot-selection"
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 3,
+      "label": "configured-lobby"
+    },
+    {
+      "wait": 12,
+      "label": "paired-lobby"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 15,
+      "label": "match-start"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "host-walk-settled"
+    },
+    {
+      "wait": 22,
+      "label": "client-motion-in-progress"
+    },
+    {
+      "wait": 30,
+      "label": "motion-finished"
+    },
+    {
+      "stop": true
+    }
+  ],
+  "client": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "wait": 18,
+      "label": "client-browser"
+    },
+    {
+      "keys": [
+        82
+      ],
+      "hold": 0.25,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "joined"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "ready"
+    },
+    {
+      "wait": 30,
+      "label": "host-walk-observed"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-walk-settled"
+    },
+    {
+      "wait": 10,
+      "label": "settled"
+    },
+    {
+      "keys": [
+        83
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-back"
+    },
+    {
+      "keys": [
+        65
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-left"
+    },
+    {
+      "keys": [
+        68
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-right"
+    },
+    {
+      "stop": true
+    }
+  ]
+}

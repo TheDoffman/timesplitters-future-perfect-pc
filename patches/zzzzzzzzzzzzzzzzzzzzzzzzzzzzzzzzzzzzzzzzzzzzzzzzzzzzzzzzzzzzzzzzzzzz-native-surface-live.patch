@@ -1,0 +1,49 @@
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -47,7 +47,25 @@
+ #include "d3d8_internal.h"
+ #include "hle_d3d8_record.h"
+ #include "pc_surface_precision.h"
++#include "pc_surface_bias.h"
+ static PcSurfacePrecision g_surface_precision;
++static int g_surface_high_rate;
++void hle_d3d8_surface_precision_rate(int high_rate)
++{
++    high_rate=!!high_rate;
++    if(high_rate==g_surface_high_rate)return;
++    /* Resource creation happens on the guest thread while texture binds may
++     * be queued. Finish the old rate's commands before publishing this mode. */
++    if(hle_d3d8_defer_recording())hle_d3d8_defer_flush();
++    g_surface_high_rate=high_rate;
++    fprintf(stderr,"[SURFACE-FLOAT] Live precision: %s\n",high_rate?"half":"byte");
++}
++static uint32_t surface_host_format(uint32_t va,uint32_t format)
++{
++    return pc_surface_precision_rate_format(&g_surface_precision,va,format,
++        pc_surface_live_requested(),g_surface_high_rate);
++}
++IDirect3DTexture8 *hle_d3d8_render_texture(IDirect3DDevice8 *dev,uint32_t va);
+ void hle_d3d8_reset_render_precision(void) {pc_surface_precision_reset(&g_surface_precision);}
+ int hle_d3d8_set_render_precision(unsigned slot,uint32_t va)
+ {
+@@ -603,6 +621,11 @@
+     }
+     if (e) {
+         e->used_swap = now;
++        /* Convert a changed-precision source before sampling it, even if it
++         * has not yet been selected as a destination in this update. */
++        if(e->rendered && pc_surface_live_requested() &&
++           e->render_format!=surface_host_format(va,(format>>8)&0xffu))
++            return hle_d3d8_render_texture(dev,va);
+         /* RECOMP_HLE_D3D8_TEX_EVERY_BIND=1: check the texels at every bind,
+          * not only the first bind of a frame. A title that rewrites one
+          * texture between two draws of the same frame -- a sprite fighter
+@@ -1198,7 +1221,7 @@
+             break;
+         }
+     }
+-    uint32_t host_format=pc_surface_precision_format(&g_surface_precision,va,(format>>8)&0xffu);
++    uint32_t host_format=surface_host_format(va,(format>>8)&0xffu);
+     if (e && e->rendered && e->render_format==host_format) {
+         e->used_swap = now;
+         return e->host;

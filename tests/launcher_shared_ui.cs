@@ -62,13 +62,16 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
-            Test("bundled texture beta toggle saves a launch preference without changing textures",()=>{
+            Test("optional texture beta toggle saves a launch preference without changing textures",()=>{
                 string folder=Path.Combine(root,"textures-toggle");Directory.CreateDirectory(Path.Combine(folder,"Textures"));
                 string texture=Path.Combine(folder,"Textures/0123456789abcdef.dds");File.WriteAllText(texture,"untouched texture fixture");
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
                 var toggle=Find<CheckBox>(page.View,"EnhancedTextures");
                 Need(toggle.IsChecked==false && Convert.ToString(toggle.Content).Contains("Beta"),"Classic default or Beta label missing");
-                Need(!All(page.View).OfType<Button>().Any(b=>new[]{"DownloadTexturePack","InstallTextureZip","InstallTextureFolder"}.Contains(b.Name)),"Retired texture delivery controls remain");
+                Need(!Find<Button>(page.View,"DownloadTexturePack").IsEnabled,"Download needs a checked manifest first");
+                Need(Find<CheckBox>(page.View,"TextureUpdateChecks").IsChecked==false,"Fresh install unexpectedly opted in");
+                Click(Find<Button>(page.View,"CheckTexturePack"));
+                Need(Find<TextBlock>(page.View,"TexturePackStatus").Text.Contains("Preview only"),"Preview initiated a network check");
                 Need(Find<TextBlock>(page.View,"EnhancedTexturesHint").Text.Contains("incomplete"),"Missing beta limitation");
                 toggle.IsChecked=true;Click(Find<Button>(page.View,"SettingsCancelButton"));
                 Need(!Directory.Exists(Path.Combine(folder,"Settings")),"Cancelled texture draft was saved");

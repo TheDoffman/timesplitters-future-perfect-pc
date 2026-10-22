@@ -1,0 +1,47 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -2050,6 +2050,8 @@
+         if len(ops) < 1:
+             return ["/* push: no operand */"]
+         val = _fmt_operand_read(ops[0])
++        if ops[0].type == "imm":
++            val = f"RECOMP_PUSH_IMM_U32_AT(0x{insn.address:X}, {val})"
+         return [f"PUSH32(esp, {val});"]
+ 
+     def _lift_pop(self, insn, ops):
+@@ -2607,6 +2609,7 @@
+                 # to a plain call when the flag is off. When the callee's own
+                 # `ret N` is known, the exact form checks esp both ways.
+                 pop = self.callee_pop(insn.call_target)
++                name = f"RECOMP_DIRECT_CALLEE_AT(0x{insn.address:X}, {name})"
+                 if pop is None:
+                     lines.append(
+                         f"PUSH32(esp, 0x{ret_va:08X}u); "
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -59,6 +59,12 @@
+ #endif
+ #ifndef RECOMP_LOAD_GLOBAL_U32
+ #define RECOMP_LOAD_GLOBAL_U32(site, address, value) (value)
++#endif
++#ifndef RECOMP_PUSH_IMM_U32_AT
++#define RECOMP_PUSH_IMM_U32_AT(site, value) (value)
++#endif
++#ifndef RECOMP_DIRECT_CALLEE_AT
++#define RECOMP_DIRECT_CALLEE_AT(site, function) (function)
+ #endif
+ #ifndef RECOMP_F32_MUL_AT
+ #define RECOMP_F32_MUL_AT(site, left, right) ((left) * (right))
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -136,6 +136,10 @@
+ void sub_003533F0(void)
+ { pc_network_bots_guest_score_network(sub_003533F0_gen); }
+ extern void sub_001BB5C0_gen(void);
++/* A fractional NPC aim update must not consume another random decision.
++ * Return a nonzero chance outcome without advancing the shared RNG. */
++void pc_native_rng_interval_skip(void)
++{ g_eax=UINT32_MAX; g_esp+=4; }
+ static void pc_native_npc_weapon_event(void)
+ { pc_native_npc_weapon_fire_guest(sub_001BB5C0_gen, *(const uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset)); }
+ void sub_001BB5C0(void)

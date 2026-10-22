@@ -136,6 +136,11 @@ when launcher settings are saved; unrelated preferences remain intact.
 Your desktop refresh rate stays unchanged. Published builds require an update
 containing these changes.
 
+The `feature/native-144-fps` development branch also provides
+[`Play-Native.cmd`](docs/native-high-refresh.md) for experimental fresh game
+updates at up to 144 FPS with interpolation disabled. Game-speed and
+full-campaign validation remain incomplete; this mode is an explicit opt-in.
+
 Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#native-frame-rate-selection-upcoming-launcher-update):
 60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
 an accompanying game build with the new native high-refresh runtime; older
@@ -181,14 +186,14 @@ OS integrations use host adapters. See [launcher development](docs/shared-platfo
 
 | Controls | Display | Launcher |
 | --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
+| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Video Options** (or paused **Options**) puts aspect ratio, resolution, vertical FOV (40–100°, default 55°), texture style, subtitles and frame rate on one page. Choose **60 FPS (Original)** or beta **120/144 FPS**. One **Apply** button enables when settings change and applies the batch without restarting; resolution changes require confirmation within **15 seconds**. Back discards pending changes. Texture style lasts for the current session. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
 
 In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** to select and
 **right-click** to go back. Use the **mouse wheel** to move up/down through
 menu rows, including the level-selection list; click to activate a level.
 Scrolling takes priority over hover until you briefly pause the gesture; clicks
 remain immediate.
-In Windows **Audio/Video Options**, click either Music Volume or Sound Volume bar
+In Windows **Audio Options**, click either Music Volume or Sound Volume bar
 to set its level, or hold left-click and drag. This works from Settings and Pause.
 **Accept** saves the changes; **Cancel** restores the previous levels.
 Click either arrow beside a menu choice to change its value. In multiplayer
@@ -206,10 +211,10 @@ Type letters, numbers, spaces and supported accented characters; use
 limits still apply. Mouse/controller selection of the on-screen keyboard also
 remains available. Arbitrary Unicode and clipboard paste are not supported.
 
-The **Controls** sensitivity bar and **Display settings** FOV bar also support
+The **Controls** sensitivity bar and **Video Options** FOV bar also support
 clicking and dragging. Sensitivity changes the selected player's controller
 setting; mouse sensitivity remains in PC Settings. FOV changes stay pending
-until **Apply settings**; **Back** discards them.
+until **Apply**; **Back** discards them.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
@@ -302,15 +307,17 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. Game builds and release ZIPs now include the
-**1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
-**Display settings → Textures → Enhanced** in the game to use it; Classic remains
-available. Install or update the game through the launcher to receive the pack.
-The upcoming launcher update adds **Game settings → Graphics & resolution →
-Use enhanced textures (Beta)** to save the starting choice for each launch.
-Off uses the originals; in-game changes remain session-only.
-Compiled textures are committed through Git LFS and bundled with normal game
-releases; there is no separate texture release.
+keep storage and memory bounded. The **2,046-texture alpha pack** (about 1.72 GiB
+installed) is moving to an **optional launcher download** on Windows and Mac.
+New game packages omit it; existing installed packs remain usable.
+In the updated launcher, open **Game settings → Graphics & resolution →
+Check texture downloads**, then **Download / update textures**. Save **Use enhanced
+textures (Beta)** to use the pack on future launches. Classic remains the default;
+in-game changes remain session-only.
+Updates reuse matching installed files and add or replace changed texture keys.
+Unrelated custom textures are retained. Downloads require confirmation, including
+when automatic update checks are enabled. Compiled assets remain tracked in Git
+LFS; publishing the optional pack and updated launcher is a separate release step.
 This is a partial overhaul; 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 

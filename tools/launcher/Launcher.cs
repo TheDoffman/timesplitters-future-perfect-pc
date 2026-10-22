@@ -284,6 +284,7 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings==null) {
                     settings=new SettingsPage(Window.Resources,root,previewMode);
+                    settings.TextureBusyChanged+=value=> {busy=value;Refresh();};
                     settings.Saved+=()=> { SetStatus("Settings saved."); Refresh(); };
                     settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
                     Find<ContentControl>("SettingsHost").Content=settings.View;
@@ -295,6 +296,7 @@ namespace TimeSplitters.Launcher
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 SelectNavigation("SettingsNav");
+                settings.CheckTexturesIfOptedIn();
             } catch(Exception ex) { Fail(ex); }
         }
         void ShowHome()

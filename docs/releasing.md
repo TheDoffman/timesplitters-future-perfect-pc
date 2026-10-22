@@ -21,6 +21,9 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 The game ZIP includes the audited compiled textures in `Textures/` by default.
 They stream directly from the single active pack into the ZIP, with sanitized
 metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
+The source-code ZIP excludes these compiled replacements to avoid a second
+copy inside each download. To rebuild from the extracted source archive with
+textures, copy the package's `Textures` folder to its `assets/textures` path.
 Use `--texture-pack <folder>` to select another audited pack, or
 `--without-textures` for a lightweight local test package. Official releases
 through `Publish-Release.ps1` require the complete repository pack; artist
@@ -35,12 +38,18 @@ The separate launcher bootstrap ZIP stays small; this applies to the game ZIP.
 Launcher 1.2.22 adds bundled-texture installation; publish that shared launcher
 update before distributing a game ZIP that contains textures. The game publisher
 refuses to create a release until GitHub Latest is a stable launcher 1.2.22+
-with uploaded Windows and Mac packages. The standard
+with uploaded Windows and Mac packages. Packs declaring retired textures require
+launcher 1.2.24+ so upgrades retire unchanged old pairs while preserving
+customized replacements. The standard
 launcher release workflow validates both Windows and Mac before publication.
 Both Windows and native Mac packaging use the same streaming texture helper.
 The package includes an isolated Windows Python/Tk runtime and the Online
 companion, including automatic hosting certificate support; players do not need
-Python or Git installed. Packaging downloads the pinned Windows wheels in
+Python or Git installed.
+`ssl.py` and its distribution's PEM trust resources remain adjacent on disk in
+the portable Python runtime; packaging preserves their trust policy unchanged.
+The bundled interpreter must pass TLS context/certificate creation before upload.
+Packaging downloads the pinned Windows wheels in
 `requirements-release.txt` and includes their licenses. A matching successful
 Release build is required. `Source/pc-port-source.zip` records the local project
 source and runtime patch, including changes not yet committed.

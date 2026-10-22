@@ -1,5 +1,8 @@
 /* Host roster/activity prototype. Guest AI replication remains unfinished.
- * Called through a reproducible wrapper, never by editing generated game C. */
+ * Called through a reproducible wrapper, never by editing generated game C.
+ * Reject non-network guest states before querying host settings: these hooks
+ * also run for every offline actor's animation and collision updates. Keep
+ * eligible network calls live so menu changes and bridge readiness still work. */
 #ifdef _WIN32
 #include <stdlib.h>
 #include <stdio.h>
@@ -56,8 +59,8 @@ static void pc_network_bots_guest_active(void (*original)(void))
     case 0x0013E230u: /* HUD character draw: humans + AI, actor pool */
     case 0x0013EAFEu: /* HUD roster eligibility: humans + AI */
     case 0x0013EBDAu:
-        if (pc_network_enabled() &&
-            *(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset)) {
+        if (*(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset) &&
+            pc_network_enabled()) {
             const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
             const unsigned index=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
             const unsigned humans=config[0],bots=config[2];
@@ -83,9 +86,9 @@ static uint32_t pc_network_bots_guest_actor(unsigned index)
     const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
     const unsigned humans=config[0],bots=config[2];
     uint32_t pool;
-    if (!pc_network_enabled() || !*(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset) ||
+    if (!*(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset) ||
         !humans || !bots || bots>10u || humans+bots>16u ||
-        index<humans || index>=humans+bots) return 0;
+        index<humans || index>=humans+bots || !pc_network_enabled()) return 0;
     pool=*(uint32_t *)((uintptr_t)0x007356D8u+g_xbox_mem_offset);
     if (!pool) return 0;
     return pool+index*0xea0u;
@@ -111,9 +114,9 @@ static void pc_network_bots_guest_pose(void (*original)(void))
 #ifdef _WIN32
     uint32_t stack=g_esp;
     uint32_t entity=*(uint32_t *)((uintptr_t)(stack+4u)+g_xbox_mem_offset);
-    if(pc_network_enabled() &&
-       *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
+    if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
+       pc_network_enabled() &&
        pc_network_bots_guest_slot(entity)<16u) {
         uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset);
         uint32_t saved=*advance;
@@ -158,9 +161,10 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 #ifdef _WIN32
     const uint32_t entity=g_esi;
     original();
-    if(pc_network_enabled() && entity &&
+    if(entity &&
        *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
-       *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u) {
+       *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
+       pc_network_enabled()) {
         unsigned slot;
         for(slot=0;slot<16u;slot++) {
             const struct PcNetworkBotBounds *bounds=&pc_network_bot_bounds[slot];
@@ -180,9 +184,9 @@ static void pc_network_bots_guest_shot(void (*original)(void))
 {
 #ifdef _WIN32
     PcNetworkBotShot shot;unsigned slot=16u;
-    if(pc_network_enabled() &&
-       *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u &&
-       *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u) {
+    if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u &&
+       *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
+       pc_network_enabled()) {
         const uint32_t *args=(const uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset);
         const uint32_t entity=args[1];unsigned i;
         for(i=0;i<16u;i++) if(entity && pc_network_bots_guest_entity(i)==entity) {slot=i;break;}
@@ -288,8 +292,9 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     unsigned role=*(uint32_t *)((uintptr_t)0x0076B140u+g_xbox_mem_offset);
     const unsigned humans=config[0],bots=config[2];
     unsigned index;uint32_t pool,host_ip=0,host_peer,tick,match;
-    if(!pc_network_enabled() || *(uint32_t *)((uintptr_t)0x0076B1A4u+g_xbox_mem_offset)!=15u ||
-       !humans || !bots || bots>10u || humans+bots>16u || (role!=1u && role!=2u)) {
+    if(*(uint32_t *)((uintptr_t)0x0076B1A4u+g_xbox_mem_offset)!=15u ||
+       !humans || !bots || bots>10u || humans+bots>16u || (role!=1u && role!=2u) ||
+       !pc_network_enabled()) {
         pc_network_bots_context(0,0,0,0,0);sent=0;
         memset(pc_network_bot_shots,0,sizeof pc_network_bot_shots);memset(seen_shots,0,sizeof seen_shots);
         memset(pc_network_bot_bounds,0,sizeof pc_network_bot_bounds);
@@ -451,8 +456,8 @@ static void pc_network_bots_guest_damage(void (*original)(void))
     static unsigned traces;
     /* Guest shot replay (including delayed projectile effects) is cosmetic.
        Only the original incoming host event may apply bot-sourced damage. */
-    if(pc_network_enabled() && *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
-       !*(uint32_t *)((uintptr_t)0x0076b170u+g_xbox_mem_offset)) {
+    if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
+       !*(uint32_t *)((uintptr_t)0x0076b170u+g_xbox_mem_offset) && pc_network_enabled()) {
         uint32_t ctx=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
         uint32_t source=*(uint32_t *)((uintptr_t)(ctx+4u)+g_xbox_mem_offset);
         const uint8_t *config=(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
@@ -470,7 +475,7 @@ static void pc_network_bots_guest_damage(void (*original)(void))
     /* Never run a second health/death simulation for a replicated NPC. Local
        human hits use the existing reliable request; incoming damage is already
        represented by the host snapshot and must not be subtracted twice. */
-    if(pc_network_enabled() && *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u) {
+    if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u && pc_network_enabled()) {
         uint32_t ctx=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
         if(ctx && pc_network_bots_guest_slot(*(uint32_t *)((uintptr_t)ctx+g_xbox_mem_offset))<16u) {
             if(!*(uint32_t *)((uintptr_t)0x0076b170u+g_xbox_mem_offset))

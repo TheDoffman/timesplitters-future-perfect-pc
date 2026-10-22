@@ -27,7 +27,7 @@ static void volume_color(unsigned x,unsigned y,unsigned z,unsigned mip,int updat
     color[2]=(updated && mip==0 && z==1)?.875f:(z+1+4*mip)/16.0f;color[3]=1;
 }
 
-static void rhi_texture_resources_test(void) {
+static void rhi_texture_resources_test(RhiView *restore_target) {
     const uint32_t row=5*4*sizeof(float),slice=5*row;
     float cube_data[18][5*5*4],volume_data[3][5*5*5*4];
     RhiSubresourceData cube_initial[18],volume_initial[3];
@@ -139,6 +139,36 @@ static void rhi_texture_resources_test(void) {
         RhiView *unbound=NULL;rhi_set_textures(0,1,&unbound);
         rhi_view_destroy(view);rhi_image_destroy(image);
     }
+    /* Actual render-target writes, sampling and readback must retain sub-byte
+     * feedback in half float. Both values intentionally round to byte 128. */
+    RhiShader *precision_ps=shader(RHI_STAGE_PIXEL,
+        "cbuffer Q:register(b0){float4 q;}float4 main():SV_TARGET{return q;}","ps_5_0");
+    const float precise[4]={.501953125f,.50244140625f,.5f,1};
+    const float quantized[4]={128/255.f,128/255.f,128/255.f,1};
+    for(unsigned half=0;half<2;half++) {
+        RhiImageDesc pd={0};pd.width=pd.height=pd.depth=pd.mip_levels=pd.samples=1;
+        pd.format=half?RHI_FORMAT_R16G16B16A16_FLOAT:RHI_FORMAT_R8G8B8A8_UNORM;
+        pd.bind=RHI_BIND_SAMPLED|RHI_BIND_RENDER_TARGET;
+        RhiImage *image=rhi_image_create(&pd,NULL);CHECK(image);
+        RhiView *sample=rhi_view_create(image,RHI_VIEW_SAMPLED,NULL);
+        RhiView *write=rhi_view_create(image,RHI_VIEW_RENDER_TARGET,NULL);CHECK(sample && write);
+        RhiView *empty=NULL;rhi_set_textures(0,1,&empty);
+        RhiViewport tiny_viewport={0,0,1,1,0,1},full={0,0,64,64,0,1};
+        rhi_set_render_target(write,NULL);rhi_set_viewports(1,&tiny_viewport);
+        rhi_set_shader(RHI_STAGE_PIXEL,precision_ps);rhi_buffer_update(queries,precise);rhi_draw(3,0);
+        if(half) {
+            uint16_t bytes[4]={0};
+            CHECK(rhi_image_readback(image,0,bytes,sizeof bytes)==0);
+            CHECK(bytes[0]==0x3804 && bytes[1]==0x3805 && bytes[2]==0x3800 && bytes[3]==0x3c00);
+        }
+        rhi_set_render_target(restore_target,NULL);rhi_set_viewports(1,&full);
+        rhi_set_shader(RHI_STAGE_PIXEL,format_ps);rhi_set_textures(0,1,&sample);
+        const float query[4]={0};texture_expect(queries,query,half?precise:quantized);
+        rhi_set_textures(0,1,&empty);
+        rhi_view_destroy(write);rhi_view_destroy(sample);rhi_image_destroy(image);
+    }
+    rhi_shader_destroy(precision_ps);
+    puts("PASS: shared RHI half-float target preserves sub-byte writes while byte target quantizes");
     rhi_shader_destroy(format_ps);
     puts("PASS: shared RHI A8 alpha, BGRX opaque alpha and ordinary format controls");
     RhiView *none=NULL;rhi_set_textures(0,1,&none);

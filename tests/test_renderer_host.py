@@ -93,8 +93,9 @@ def test_present_metrics(tmp_path):
     rows=list(csv.DictReader((tmp_path/'present.csv').open()))
     assert len(rows)==2
     assert rows[0]==dict(frame='2',elapsed_ms='7.000',frame_ms='7.000',swap_ms='2.000',
-                        kind='interpolated',guest_frame='1')
+                        kind='interpolated',guest_frame='1',clock_ns='10000000')
     assert rows[1]['kind']=='other'
+    assert rows[1]['clock_ns']=='12000000'
 
 
 @pytest.mark.parametrize('name', ['interpolation_draw_key'])

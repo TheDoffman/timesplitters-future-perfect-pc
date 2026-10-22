@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import os
+import re
+from collections import Counter
 import shutil
 import subprocess
 import sys
@@ -56,12 +58,40 @@ def snapshot(tree):
 
 def test_fresh_checkout_and_repeated_build(checkout):
     assert installer.apply_patches(checkout, PATCHES)
+    # Multiple features may wrap the same guest routine. They must compose
+    # under one C definition; generation alone does not reject duplicates.
+    manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
+    assert all(count == 1 for count in wrappers.values()), wrappers
     # Both common RHI and legacy GL link the same live mode policy.
     assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
         '"${TSFP_NATIVE_DIR}/../texture_mode.c"') == 2
     complete = snapshot(checkout)
     assert installer.apply_patches(checkout, PATCHES) == []
     assert snapshot(checkout) == complete
+
+
+def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
+    """The native checkpoint predates main's removal of interpolated replay."""
+    # Later coefficient patches require the surface-constant baseline, so the
+    # historical checkpoint must exclude both until the complete-stack upgrade.
+    prior=tmp_path/'native-prior-patches'
+    prior.mkdir()
+    for patch in PATCHES.glob('*.patch'):
+        if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
+            shutil.copyfile(patch,prior/patch.name)
+    assert installer.apply_patches(checkout,prior)
+    assert 'pc_native_rate()' in (checkout/'src/hle/hle_d3d8_interp.c').read_text()
+    assert installer.apply_patches(checkout,PATCHES)
+    interp=(checkout/'src/hle/hle_d3d8_interp.c').read_text()
+    assert 'gate_idle' not in interp and 'pc_native_rate' not in interp
+    assert 'return 0;' in interp
+    assert 'pc_native_timing_guest' in (checkout/'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'if (!pc_native_rate()) xbox_Nv2aFlipGateArm();' in (checkout/'src/hle/hle_d3d8.c').read_text()
+    assert 'if (!strcmp(key, "frame_cap")) return "60";' in (checkout/'src/config/recomp_config.c').read_text()
+    complete=snapshot(checkout)
+    assert installer.apply_patches(checkout,PATCHES)==[]
+    assert snapshot(checkout)==complete
 
 
 @pytest.mark.parametrize('history', ['pc-presentation', 'native-renderer', 'native-launcher'])
@@ -151,7 +181,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
@@ -184,6 +214,9 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
+        if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
+                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
+            continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
                               'zzzzzzzzzzzzzzz-pc-network-movement.patch',
                                   'zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch',

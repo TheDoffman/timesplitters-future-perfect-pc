@@ -45,7 +45,7 @@ class LauncherPackaging(unittest.TestCase):
             root = Path(directory)
             (root/'VERSION').write_text('0.2.0-alpha.4\n')
             upstream = root / 'external/ts3FPrecomp'
-            # Exercise the default bundled path without network or real artwork.
+            # Even when a repository pack exists, the default game ZIP must omit it.
             textures = root/'assets/textures'
             textures.mkdir(parents=True)
             words = [0]*32
@@ -119,12 +119,8 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')
-                self.assertEqual(manifest['textures']['source'], 'repository')
-                self.assertEqual(manifest['textures']['texture_count'], 1)
-                self.assertEqual(archive.read(prefix+'Textures/'+key+'.dds'), dds)
-                public = json.loads(archive.read(prefix+'Textures/'+key+'.json'))
-                self.assertNotIn('prompt', public)
-                self.assertNotIn('source', public)
+                self.assertIsNone(manifest['textures'])
+                self.assertFalse(any('/Textures/' in name for name in archive.namelist()))
                 self.assertEqual(manifest['launcher_version'], '1.1.0')
                 self.assertIn('TimeSplitters Launcher.exe', manifest['files'])
                 for name, digest in manifest['files'].items():

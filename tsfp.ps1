@@ -112,6 +112,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_patch_tracking.py'),
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
                         (Join-Path $projectRoot 'tests\test_frame_clock.py'),
+                        (Join-Path $projectRoot 'tests\test_native_timing.py'),
                         (Join-Path $projectRoot 'tests\test_frame_interpolation.py'),
                         (Join-Path $projectRoot 'tests\test_prediction_targets.py'),
                         (Join-Path $projectRoot 'tests\test_motion_settings.py'),
@@ -146,7 +147,7 @@ try {
                 }
                 'Build' {
                     Assert-Game
-                    if (!$SkipTextures) {
+                    if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build_textures.py'))
                     }
                     Apply-LocalPatches

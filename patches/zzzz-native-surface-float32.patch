@@ -1,0 +1,25 @@
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -2580,7 +2580,8 @@
+        !to->image || !from->image || !from->srv || !to->sys_mem)return E_INVALIDARG;
+     D3DFORMAT formats[2]={to->d3d8_format,from->d3d8_format};
+     for(unsigned i=0;i<2;i++)if(formats[i]!=D3DFMT_A8R8G8B8 &&
+-       formats[i]!=D3DFMT_LIN_A8R8G8B8 && formats[i]!=D3DFMT_A16B16G16R16F)
++       formats[i]!=D3DFMT_LIN_A8R8G8B8 && formats[i]!=D3DFMT_A16B16G16R16F &&
++       formats[i]!=D3DFMT_A32B32G32R32F)
+         return E_NOTIMPL;
+     unsigned bpp=d3d8_format_bpp(to->d3d8_format)/8;
+     size_t bytes=(size_t)to->width*to->height*bpp;
+@@ -2596,6 +2597,12 @@
+                 uint16_t a=p[0],b=p[1];p[0]=p[3];p[1]=p[2];p[2]=b;p[3]=a;
+             }
+         }
++        if(to->d3d8_format==D3DFMT_A32B32G32R32F) {
++            uint32_t *p=(uint32_t *)linear;
++            for(size_t i=0;i<(size_t)to->width*to->height;i++,p+=4) {
++                uint32_t a=p[0],b=p[1];p[0]=p[3];p[1]=p[2];p[2]=b;p[3]=a;
++            }
++        }
+         if(d3d8_format_is_swizzled(to->d3d8_format))
+             xbox_swizzle_rect(to->sys_mem,linear,to->width,to->height,bpp);
+         else for(unsigned y=0;y<to->height;y++)

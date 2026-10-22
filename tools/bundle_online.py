@@ -11,6 +11,24 @@ COMPANION = ('online.py', 'online_client.py', 'online_transport.py', 'online_hos
              'online_paths.py', 'online_theme.py', 'lobby_server.py', 'network-identity.py')
 
 
+def bundle_standard_library(base, runtime, version):
+    """Preserve SSL's adjacent trust resources when relocating CPython."""
+    library_root = base/'Lib'
+    with zipfile.ZipFile(runtime/f'python{version}.zip', 'w', zipfile.ZIP_DEFLATED) as library:
+        for path in sorted(library_root.rglob('*.py')):
+            relative = path.relative_to(library_root)
+            if relative.as_posix() != 'ssl.py' and not set(relative.parts) & {
+                    'site-packages', '__pycache__', 'test', 'tests',
+                    'ensurepip', 'idlelib', 'turtledemo', 'venv'}:
+                library.write(path, relative.as_posix())
+    # SSL may load a distribution's trust policy relative to __file__. OpenSSL
+    # needs a real filesystem path, so neither the module nor its PEM resources
+    # can live only inside pythonXY.zip. Preserve policy bytes without edits.
+    shutil.copy2(library_root/'ssl.py', runtime/'ssl.py')
+    for path in sorted(library_root.glob('*.pem')):
+        shutil.copy2(path, runtime/path.name)
+
+
 def bundle(root, stage, copy):
     base = Path(sys.base_prefix)
     if sys.platform != 'win32' or sys.maxsize <= 2**32 or not (base/'tcl').is_dir():
@@ -25,12 +43,7 @@ def bundle(root, stage, copy):
             if path.is_file() and path.suffix.lower() not in ('.pdb', '.pyc'):
                 copy(path, 'Support/Python/'+path.relative_to(base).as_posix())
     # Do not copy the developer's environment, pip, tests, or cached bytecode.
-    with zipfile.ZipFile(runtime/f'python{version}.zip', 'w', zipfile.ZIP_DEFLATED) as library:
-        for path in sorted((base/'Lib').rglob('*.py')):
-            relative = path.relative_to(base/'Lib')
-            if not set(relative.parts) & {'site-packages', '__pycache__', 'test', 'tests',
-                                           'ensurepip', 'idlelib', 'turtledemo', 'venv'}:
-                library.write(path, relative.as_posix())
+    bundle_standard_library(base, runtime, version)
     # _pth disables registry/PYTHONPATH/site customizations, making relocation
     # independent of Python installations on the tester's machine.
     (runtime/f'python{version}._pth').write_text(

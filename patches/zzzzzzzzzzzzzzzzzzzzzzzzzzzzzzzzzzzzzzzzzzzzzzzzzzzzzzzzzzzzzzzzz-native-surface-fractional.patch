@@ -1,0 +1,22 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -127,7 +127,18 @@
+ #include "pc_native_surface_trace.h"
+ extern void sub_001956A0_gen(void);
+ extern void sub_00195280_gen(void);
+-void sub_001956A0(void) { pc_surface_dispatch_guest(sub_001956A0_gen); }
++extern RECOMP_MANUAL_TLS uint32_t g_esi;
++#include "pc_native_surface_guest.h"
++static void pc_surface_simulation_call(void) { pc_surface_simulation_guest(sub_001956A0_gen); }
++void sub_001956A0(void) { pc_surface_dispatch_guest(pc_surface_simulation_call); }
++extern void sub_001953B0_gen(void);
++extern void sub_001952D0_gen(void);
++extern void sub_00195110_gen(void);
++extern void sub_0002BA80_gen(void);
++void sub_001953B0(void) { pc_surface_disturbance_guest(sub_001953B0_gen); }
++void sub_001952D0(void) { pc_surface_disturbance_guest(sub_001952D0_gen); }
++void sub_00195110(void) { pc_surface_feedback_guest(sub_00195110_gen); }
++void sub_0002BA80(void) { pc_surface_filter_guest(sub_0002BA80_gen); }
+ void sub_00195280(void) { pc_surface_final_guest(sub_00195280_gen); }
+ 
+ 

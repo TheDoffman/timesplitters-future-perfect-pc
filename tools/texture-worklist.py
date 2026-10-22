@@ -94,7 +94,14 @@ def check_asset(dds, meta, original):
     return size
 
 
-def build(root):
+def build(root, originals_path=None):
+    originals_path = originals_path or Path(__file__).resolve().parents[1] / 'config/texture-originals.json'
+    policy = json.loads(originals_path.read_text(encoding='utf-8')) if originals_path.exists() else {'keys': []}
+    retained = set(policy['keys'])
+    if len(retained) != len(policy['keys']) or any(
+            not isinstance(key, str) or len(key) != 16 or any(c not in '0123456789abcdef' for c in key)
+            for key in retained):
+        raise ValueError('Invalid or duplicate retained-original texture key')
     catalog = json.loads((root / 'catalog.json').read_text(encoding='utf-8'))
     textures = {}
     for texture in catalog['textures']:
@@ -115,6 +122,13 @@ def build(root):
                    archive_format=texture['archive_format'], archives=sources,
                    catalog_payloads=texture['payload_count'], occurrences=len(texture['sources']))
         row['embedded_occurrences']=sum(bool(s.get('embedded')) for s in texture['sources'])
+        if identity in retained:
+            if (pack / f'{identity}.dds').exists() or (pack / f'{identity}.json').exists():
+                raise ValueError(f'Retained-original texture has a replacement: {identity}')
+            row.update(status='retained_original', target_size=None, estimated_dds_bytes=0,
+                       reason=policy.get('reason', 'Original artwork requested'))
+            rows.append(row)
+            continue
         if row['embedded_occurrences']:
             row['embedded_runtime_validation']='pending scene validation'
         if 'key' not in texture:

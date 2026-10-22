@@ -17,6 +17,41 @@ class HybridPlanTests(unittest.TestCase):
         record = {'visual_category': 'environment'}
         self.assertEqual(hybrid.lane({'status': 'installed'}, record), 'installed')
         self.assertEqual(hybrid.lane({'status': 'draft_requires_review'}, record), 'correction')
+        self.assertEqual(hybrid.lane({'status': 'retained_original'}, record), 'retained_original')
+
+    def test_new_material_label_joins_same_family_batches(self):
+        worklist = dict(pack_bytes=0, textures=[
+            dict(id='old', status='needs_art', original_size=[128, 128]),
+            dict(id='new', status='needs_art', original_size=[256, 128])])
+        classification = dict(records=[
+            dict(key='old', visual_category='environment', description='wood boards'),
+            dict(key='new', visual_category='environment_material', description='wood boards')])
+        report = hybrid.build(worklist, classification)
+        self.assertEqual(report['counts'], {'batch_candidate': 2})
+        self.assertEqual(len(report['candidate_batches']), 1)
+        self.assertEqual(set(report['candidate_batches'][0]['keys']), {'old', 'new'})
+        self.assertFalse(report['complete'])
+
+    def test_mixed_sensitive_labels_keep_specialist_review(self):
+        for category in ['prop_or_interface', 'interface_or_mechanical_atlas',
+                         'effect_or_reflection', 'signage_or_environment',
+                         'artwork_or_identity', 'character_or_material_uncertain',
+                         'environment_alpha', 'environment_cutout',
+                         'environment_sky', 'foliage', 'decal_or_environment',
+                         'prop_or_utility_atlas', 'interface_font']:
+            with self.subTest(category=category):
+                record = {'visual_category': category}
+                self.assertEqual(hybrid.lane({'status': 'needs_art'}, record), 'specialist_review')
+                self.assertEqual(hybrid.lane({'status': 'installed'}, record), 'installed')
+                self.assertEqual(hybrid.lane({'status': 'draft_requires_review'}, record), 'correction')
+                self.assertEqual(hybrid.lane({'status': 'unsupported'}, record), 'format_research')
+
+    def test_unknown_and_atlas_labels_are_not_promoted_to_bulk(self):
+        for category in ['environment_custom', 'prop_or_architectural_atlas',
+                         'character_atlas', 'weapon_or_prop', 'new_unknown_label']:
+            with self.subTest(category=category):
+                self.assertEqual(hybrid.lane({'status': 'needs_art'}, {'visual_category': category}),
+                                 'individual_review')
 
     def test_batches_are_bounded_and_deterministic(self):
         textures = [dict(id=str(i), status='needs_art', original_size=[128, 128], occurrences=i) for i in range(19)]

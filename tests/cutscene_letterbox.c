@@ -21,6 +21,7 @@ static int guest_writable(uint32_t address,size_t size)
 #define WORD_AT(a) MEM32(a)
 
 ptrdiff_t g_xbox_mem_offset;
+#include "display_memory_mock.h"
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp, g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0, g_xmm1;
 RECOMP_TLS double g_fp_stack[8];

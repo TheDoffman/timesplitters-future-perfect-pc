@@ -11,10 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')
-def test_terminal_mouse(tmp_path):
+@pytest.mark.parametrize('source', ['terminal_mouse.c', 'native_terminal_mouse.c'])
+def test_terminal_mouse(tmp_path, source):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / ('terminal.exe' if os.name == 'nt' else 'terminal')
-    sources = [str(ROOT / 'tests/terminal_mouse.c'), str(ROOT / 'src/pc_input.c')]
+    sources = [str(ROOT / 'tests' / source), str(ROOT / 'src/pc_input.c')]
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/W4',
                    '/I' + str(ROOT / 'src'), *sources, '/Fe:' + str(exe)]

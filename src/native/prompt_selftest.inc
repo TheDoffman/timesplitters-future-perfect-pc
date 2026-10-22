@@ -8,6 +8,8 @@ static ptrdiff_t prompt_test_offset;
 #undef g_esp
 #undef g_xbox_mem_offset
 static char prompt_test_text[2048];
+static unsigned prompt_test_fallbacks;
+static void prompt_test_fallback(void) { ++prompt_test_fallbacks;prompt_test_esp+=4; }
 static void prompt_test_original(void) {
     const uint32_t *frame=(const uint32_t*)(prompt_test_offset+prompt_test_esp);
     snprintf(prompt_test_text,sizeof prompt_test_text,"%s",(const char*)(prompt_test_offset+frame[3]));
@@ -45,8 +47,39 @@ static int native_test_prompts(void) {
     pc_prompt_guest(prompt_test_original,3,4);
     ok &= prompt_test_esp==page/2+4 && stack[0]==0x12345678 && stack[3]==128;
     ok &= !strcmp(prompt_test_text,"[E] Select");
+    stack[3]=(uint32_t)(page/2+128);
+    strcpy((char*)memory+stack[3],"\v2 Select");
+    prompt_test_esp=(uint32_t)(page/2);
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page/2+4 && !strcmp(prompt_test_text,"[E] Select");
+    strcpy((char*)memory+stack[3],"ordinary text");
+    prompt_test_esp=(uint32_t)(page/2);
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page/2+4 && !strcmp(prompt_test_text,"ordinary text");
     ok &= mprotect(memory,page,PROT_READ)==0;
     ok &= pc_guest_memory((uintptr_t)memory,32,0) && !pc_guest_memory((uintptr_t)memory,32,1);
+    ok &= mprotect(memory,page,PROT_READ|PROT_WRITE)==0;
+    strcpy((char*)memory+stack[3],"\v2 Select");
+    ok &= mprotect(memory,page,PROT_READ)==0;
+    prompt_test_esp=(uint32_t)(page/2);prompt_test_fallbacks=0;
+    pc_prompt_guest(prompt_test_fallback,3,4);
+    ok &= prompt_test_fallbacks==1 && prompt_test_esp==page/2+4;
+    ok &= mprotect(memory,page,PROT_READ|PROT_WRITE)==0;
+    prompt_test_esp=(uint32_t)(page/2);
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page/2+4 && !strcmp(prompt_test_text,"[E] Select");
+    /* Move scratch across a real page boundary into read-only memory. */
+    ok &= mprotect(memory+page,page,PROT_READ|PROT_WRITE)==0;
+    uint32_t *edge=(uint32_t*)(memory+page);
+    memcpy(edge,stack,5*sizeof *edge);
+    ok &= mprotect(memory,page,PROT_READ)==0;
+    prompt_test_esp=(uint32_t)page;prompt_test_fallbacks=0;
+    pc_prompt_guest(prompt_test_fallback,3,4);
+    ok &= prompt_test_fallbacks==1 && prompt_test_esp==page+4;
+    ok &= mprotect(memory,page,PROT_READ|PROT_WRITE)==0;
+    prompt_test_esp=(uint32_t)page;
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page+4 && !strcmp(prompt_test_text,"[E] Select");
     munmap(memory,page*2);
     fprintf(stderr,"[native-prompt-test] bindings, device activity, guest ABI and VM protection: %s\n",ok?"PASS":"FAIL");
     return ok;

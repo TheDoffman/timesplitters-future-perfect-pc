@@ -22,11 +22,11 @@ def compile_and_run(tmp_path, source, fails=False):
     includes = RUNTIME / 'templates/runtime'
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/we4028', '/we4029', '/we4142',
-                   '/I' + str(includes), '/I' + str(ROOT / 'src'),
+                   '/I' + str(includes), '/I' + str(ROOT / 'src'), '/I' + str(ROOT / 'tests'),
                    '/I' + str(RUNTIME / 'src/d3d'), str(fixture), '/Fe:' + str(exe),
                    '/Fo:' + str(tmp_path / 'test.obj')]
     else:
-        command = [compiler, '-std=gnu11', '-O2', '-I' + str(includes), '-I' + str(ROOT / 'src'),
+        command = [compiler, '-std=gnu11', '-O2', '-I' + str(includes), '-I' + str(ROOT / 'src'), '-I' + str(ROOT / 'tests'),
                    '-I' + str(RUNTIME / 'src/d3d'), str(fixture), '-lm', '-o', str(exe)]
     result = subprocess.run(command, cwd=tmp_path, env=environment,
                             capture_output=True, text=True, timeout=60)
@@ -42,7 +42,9 @@ def fixture_source():
     assert wrapper, 'Apply the complete runtime patch stack before testing'
     fixture = (ROOT / 'tests/cutscene_letterbox.c').read_text()
     camera = (ROOT / 'src/pc_display_menu.c').read_text()
-    camera = camera[camera.index('static float cutscene_camera_zoom'):camera.index('void pc_display_menu_button')]
+    projection = re.search(r'void pc_display_perspective_projection\(.*?\n\}', camera, re.S)
+    assert projection, 'Production perspective projection function missing'
+    camera = camera[camera.index('static float cutscene_camera_zoom'):projection.end()]
     return fixture.replace('/* PRODUCTION_WRAPPER */', wrapper.group()).replace('/* PRODUCTION_CAMERA */', camera)
 
 

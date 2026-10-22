@@ -226,8 +226,12 @@ class Publisher:
         self.validate_remote()
 
     def require_repository_textures(self):
-        """Official releases always carry the complete committed, hydrated pack."""
+        """Enforce the repository delivery policy without hydrating optional assets."""
         manifest = json.loads((self.root/'config/texture-pack.json').read_text())
+        if manifest.get('schema') == 2 and manifest.get('delivery') == 'optional':
+            self.texture_identity = TEXTURES.optional_identity(self.root)
+            self.texture_files = {}
+            return
         if (manifest.get('schema') != 2 or manifest.get('delivery') != 'bundled'
                 or manifest.get('path') != 'assets/textures'):
             raise ValueError('Releases require the bundled repository texture pack in assets/textures.')
@@ -243,7 +247,8 @@ class Publisher:
     def require_package_textures(self, build):
         files = {name: sha for name, sha in build.get('files', {}).items() if name.startswith('Textures/')}
         if build.get('textures') != self.texture_identity or files != self.texture_files:
-            raise ValueError('Release package must include every repository texture and its metadata with matching hashes/count/size.')
+            raise ValueError('Optional texture delivery requires a game package without textures.' if self.texture_identity is None
+                             else 'Release package must include every repository texture and its metadata with matching hashes/count/size.')
 
     def validate_remote(self):
         if self.git('rev-parse', 'HEAD') != self.commit or self.git('branch', '--show-current') != 'main':
@@ -446,15 +451,19 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
 
     def require_texture_launcher(self):
-        self.require_package_textures(json.loads(self.metadata.read_text()))
+        build = json.loads(self.metadata.read_text())
+        self.require_package_textures(build)
+        if build.get('textures') is None:
+            return  # Optional pack delivery does not depend on a bundled payload.
+        minimum = '1.2.24' if build['textures'].get('retired') else '1.2.22'
         latest = json.loads(self.gh('api', f'repos/{self.repo}/releases/latest'))
         tag = latest.get('tag_name', '')
         version = tag.removeprefix('launcher-v')
         if (not tag.startswith('launcher-v') or not SEMVER.fullmatch(version)
                 or latest.get('draft') or latest.get('prerelease')
                 or not latest.get('published_at')
-                or version_key(version) < version_key('1.2.22')):
-            raise ValueError('Publish a stable launcher 1.2.22 or newer before a bundled-texture game release.')
+                or version_key(version) < version_key(minimum)):
+            raise ValueError(f'Publish a stable launcher {minimum} or newer before this bundled-texture game release.')
         assets = {a['name'] for a in latest.get('assets', [])
                   if a.get('state') == 'uploaded' and a.get('size', 0) > 0}
         required = {f'TimeSplitters-Launcher-v{version}-{platform}.zip'

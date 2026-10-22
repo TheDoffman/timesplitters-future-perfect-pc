@@ -9,7 +9,7 @@ extern unsigned pc_story_network_player_limit(void);
 static int pc_network_bots_lobby_network(void)
 {
     unsigned mode=BOT_LOBBY_WORD(0x0078AD2Cu);
-    return pc_network_enabled() && BOT_LOBBY_WORD(0x0076B108u) && mode>=11u && mode<=13u;
+    return BOT_LOBBY_WORD(0x0076B108u) && mode>=11u && mode<=13u && pc_network_enabled();
 }
 
 static unsigned pc_network_bots_lobby_limit(void)

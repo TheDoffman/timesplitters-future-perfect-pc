@@ -93,6 +93,28 @@ def test_worklist_deduplicates_keys_but_keeps_unsupported(tmp_path):
     assert row['archives']==['pak/a.pak','pak/b.pak']
 
 
+def test_retained_original_skips_existing_draft_and_rejects_reinstallation(tmp_path):
+    import json
+    key = '1'*16
+    entry = dict(key=key, sha256='a', width=64, height=64, archive_format=1,
+                 xbox_format=14, sources=[dict(archive='pak/icons.pak')])
+    (tmp_path/'catalog.json').write_text(json.dumps(dict(scope='test', textures=[entry])))
+    policy = tmp_path/'originals.json'
+    policy.write_text(json.dumps(dict(keys=[key], reason='Keep the original icon')))
+    authored = tmp_path/'authored'
+    authored.mkdir()
+    (authored/'draft.png').write_bytes(b'old generated source')
+    (authored/f'{key}-prompt.json').write_text(json.dumps(dict(source='draft.png')))
+    report = worklist.build(tmp_path, originals_path=policy)
+    assert report['counts'] == {'retained_original': 1}
+    assert report['planned_supported_dds_bytes'] == 0
+    assert report['textures'][0]['target_size'] is None
+    (tmp_path/'pack').mkdir()
+    (tmp_path/'pack'/f'{key}.dds').write_bytes(b'accidental reinstallation')
+    with pytest.raises(ValueError, match='Retained-original texture has a replacement'):
+        worklist.build(tmp_path, originals_path=policy)
+
+
 def test_temporary_storage_includes_comparison_and_unknown_output_directories(tmp_path, monkeypatch):
     monkeypatch.setattr(worklist, 'TEMPORARY_BUDGET_BYTES', 32)
     contents = {'review/evidence.json': 5, 'comparison/packs/test/file.dds': 11,

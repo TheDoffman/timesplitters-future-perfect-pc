@@ -1,0 +1,186 @@
+{
+  "_scope": "Explicit Vietnam Deathmatch with no bots; host/client must run concurrently on isolated loopback addresses. Validate actual movement with tools/network_movement_stats.py; menu timing alone is not acceptance.",
+  "host": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 5,
+      "label": "host-lobby"
+    },
+    {
+      "keys": [
+        89
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "match-options"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "select-mode"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "match-settings"
+    },
+    {
+      "keys": [
+        38,
+        37
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 1,
+      "label": "bot-selection"
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 3,
+      "label": "configured-lobby"
+    },
+    {
+      "wait": 12,
+      "label": "paired-lobby"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 15,
+      "label": "match-start"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "host-walk-settled"
+    },
+    {
+      "wait": 22,
+      "label": "client-walk-observed"
+    },
+    {
+      "stop": true
+    }
+  ],
+  "client": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "wait": 18,
+      "label": "client-browser"
+    },
+    {
+      "keys": [
+        82
+      ],
+      "hold": 0.25,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "joined"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "ready"
+    },
+    {
+      "wait": 30,
+      "label": "host-walk-observed"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-walk-settled"
+    },
+    {
+      "wait": 10,
+      "label": "settled"
+    },
+    {
+      "stop": true
+    }
+  ]
+}

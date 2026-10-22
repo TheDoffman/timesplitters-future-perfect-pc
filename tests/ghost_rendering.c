@@ -26,6 +26,8 @@ HRESULT host_SetRenderState(IDirect3DDevice8 *d,D3DRENDERSTATETYPE s,DWORD v)
 HRESULT host_SetTextureStageState(IDirect3DDevice8 *d,DWORD stage,D3DTEXTURESTAGESTATETYPE s,DWORD v)
 { return S_OK; }
 void host_combiners_set_pixel_shader(DWORD token) { }
+void host_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value)
+{ CHECK(bank==1 && stage==6 && value==NULL); }
 
 #define RECOMP_MANUAL_TLS RECOMP_TLS
 #include "pc_ghost_render_guest.inc"

@@ -6,7 +6,7 @@
 #define U(a) (*(uint32_t*)(guest+(a)))
 #define F(a) (*(float*)(guest+(a)))
 #define MOVE(x,y) pc_input_motion(&input,(x),(y),1000)
-#define APPLY() pc_terminal_mouse(&input,1001,.1f,0x10000,offset)
+#define APPLY() pc_terminal_mouse(&input,1001,.1f,0x10000,offset,0)
 
 int main(void)
 {
@@ -28,7 +28,7 @@ int main(void)
     CHECK(F(0x21038)==251 && F(0x2103c)==4);
     MOVE(-1000000,1000000);CHECK(APPLY()==1);
     CHECK(F(0x21038)==4 && F(0x2103c)==251);
-    MOVE(10,10);CHECK(pc_terminal_mouse(&input,1200,.1f,0x10000,offset)==0);
+    MOVE(10,10);CHECK(pc_terminal_mouse(&input,1200,.1f,0x10000,offset,0)==0);
     CHECK(!input.dx && !input.dy && F(0x21038)==4);
     /* Pause, scripted pointer and disabled-pointer descriptors consume motion
      * without moving either the pointer or the hidden gameplay view. */

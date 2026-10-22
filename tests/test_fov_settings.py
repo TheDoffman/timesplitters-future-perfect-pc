@@ -17,7 +17,7 @@ def test_native_menu_callbacks_compile(tmp_path):
         '-Werror=undefined-internal', '-DTSFP_NATIVE_DISPLAY',
         '-I' + str(ROOT / 'src'), '-I' + str(RUNTIME / 'templates/runtime'),
         '-I' + str(RUNTIME / 'src'),
-        '-I' + str(RUNTIME / 'src/input'),
+        '-I' + str(RUNTIME / 'src/input'), '-I' + str(RUNTIME / 'src/config'),
         str(ROOT / 'src/pc_display_menu.c')], cwd=tmp_path, env=environment,
         capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -28,7 +28,7 @@ def test_fov_settings(tmp_path):
     exe = tmp_path / 'fov.exe'
     result = subprocess.run([compiler, '/nologo', '/std:c11', '/O2', '/W3',
         '/I' + str(ROOT / 'src'), '/I' + str(RUNTIME / 'templates/runtime'),
-        '/I' + str(RUNTIME / 'src/input'),
+        '/I' + str(RUNTIME / 'src/input'), '/I' + str(RUNTIME / 'src/config'),
         str(ROOT / 'tests/fov_settings.c'), str(ROOT / 'src/texture_mode.c'),
         '/Fe:' + str(exe), '/link', 'user32.lib'],
         cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=60)

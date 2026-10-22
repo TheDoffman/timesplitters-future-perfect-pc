@@ -95,7 +95,7 @@ def main():
     if actual != revision:
         raise SystemExit('Runtime checkout differs from the shared pin; no changes made.')
     textures = None
-    if not args.without_textures:
+    if not args.without_textures and json.loads((ROOT/'config/texture-pack.json').read_text())['delivery'] == 'bundled':
         _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:

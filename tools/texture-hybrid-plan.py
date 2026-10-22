@@ -10,12 +10,19 @@ import json
 from pathlib import Path
 
 PACK_BUDGET = 6144 * 1024 * 1024
-SPECIAL = {'effect', 'effect_or_utility', 'interface', 'interface_or_utility',
-           'reflection', 'material_uncertain'}
+# Inventory labels include mixed uses such as prop_or_interface and
+# effect_or_reflection. Inspect their semantic parts rather than maintaining
+# a partial list that silently sends newer sensitive labels to ordinary review.
+SPECIAL_PARTS = {'effect', 'interface', 'reflection', 'signage', 'utility',
+                 'artwork', 'identity', 'uncertain', 'alpha', 'cutout',
+                 'foliage', 'sky', 'font', 'logo', 'decal'}
+MATERIAL_CATEGORIES = {'environment', 'environment_material'}
 
 
 def lane(texture, classification):
     status = texture['status']
+    if status == 'retained_original':
+        return 'retained_original'
     if status == 'installed':
         return 'installed'
     if status == 'draft_requires_review':
@@ -25,9 +32,9 @@ def lane(texture, classification):
     if not classification:
         return 'visual_triage'
     category = classification['visual_category']
-    if category in SPECIAL:
+    if SPECIAL_PARTS.intersection(category.split('_')):
         return 'specialist_review'
-    if category == 'environment':
+    if category in MATERIAL_CATEGORIES:
         return 'batch_candidate'
     return 'individual_review'
 

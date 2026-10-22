@@ -83,7 +83,8 @@ Top-level `patches/*.patch` is the active stack. The legacy subdirectory contain
 migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
 consult the generated ordered index instead of guessing from the number of z's.
-The `-late-frame-pacing.patch` follows `-fixed-60-fps.patch` at the tail.
+The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
+within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
 remain structural dependencies even though higher-FPS behavior is disabled.
 The loader orders the late-frame correction explicitly; do not rely on filename
@@ -91,6 +92,14 @@ length. Its actual Arm-body contract is in `tests/test_frame_clock.py` using
 `tests/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
 already signalled vblank without another tick, and no signal means no bypass.
 The bypass no longer requires the retired interpolation idle callback.
+`-native-flip-handoff.patch` follows the timing tail and moves the prior gate
+boundary into shared `g_flip_gate_previous`. Both native Swap and Present-only
+paths call `xbox_Nv2aFlipGateNativeFrame` to observe the last real vblank without
+waiting or consuming its event. This lets the first return to Original 60
+consume the tick already awaited by the original guest clock, including games
+that started at native 120/144 before Arm ever ran. Arm still requires a real
+signal and sufficient elapsed time; cheap original frames remain paced.
+
 
 The unverified #105 per-thread flip-gate experiment was excluded from the active
 stack; its recovery copy remains in ignored logs. The verified repair combines scoped
@@ -189,3 +198,41 @@ Online Story lower-details hook wraps original1986A0 through a separate patch.
 The combined198E20 roster renderer remains original. Only a scoped typed Story
 body draw at return199650 substitutes selected briefing text; other callers and
 connection modes run original details. New manual wrapper requires regeneration.
+
+## Native FPS integration with current main (PR #285)
+
+The effective tail now installs native timing and retires interpolation before
+fixed-60 defaults, then applies main's late-frame gate correction before the
+remaining native update/surface patches. Original 60 remains the default;
+`pc_native_timing_guest.inc` commits requested 120/144 changes at update boundaries
+and HLE skips the original flip gate while native timing is active. Keep both
+`test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
+validates the combined stack. Water precision experiments remain off by default.
+
+## Outlined text read scope
+
+`*-text-outline-scope.patch` wraps US `sub_00041E30`, whose synchronous body
+draws four outline offsets and then the foreground through `sub_00040FA0`.
+The existing prompt read scope now spans those five passes and ends before
+returning to the caller. The wrapper preserves the original draw routine and
+guest ABI, enables the same path for `TSFP_PC_CONTROLS`/`TSFP_NATIVE_PROMPTS`,
+and performs no AI, animation, rendering-quality or frame-rate throttling.
+The mapping cache remains read-only; prompt scratch writes query live protection.
+Adding the manual wrapper requires the normal guest regeneration/build route.
+
+## Experimental water coefficient precision
+
+`*-native-surface-coefficients.patch` follows `*-native-surface-constants.patch`
+in the explicit loader tail. It extends the existing HLE water float-constant
+scope with copied original parameters and precise coefficients at bank 0 stages
+3/5/7; bank 1 stage 6 still supplies centering. The generic deferred/capture/replay
+payload format is unchanged. Scope clears, parameter refresh at equal timestep,
+invalid input and duplicate suppression are tested from the production functions.
+
+## Experimental full-float water storage
+
+`*-native-surface-float32.patch` follows the preservation/live-surface patches.
+It extends the existing common-RHI preservation transaction to A32B32G32R32F,
+including reversed 32-bit channels in CPU capture storage. The existing shared
+resource adapter already allocates/uploads this format. Half-float conversion
+remains supported. Legacy GL still declines the experiment as documented.

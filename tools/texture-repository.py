@@ -31,7 +31,10 @@ def stage(source, root=ROOT, pointers_only=False):
         regular(destination)
         regular(destination.with_suffix('.json'))
         with path.open('rb') as stream:
-            result = subprocess.run(['git', 'lfs', 'clean', '--', 'assets/textures/'+path.name],
+            # The checkout may contain a small LFS pointer. Passing its filename
+            # makes LFS use that file's size for the different DDS on stdin,
+            # truncating the clean input. Read the complete stream without a hint.
+            result = subprocess.run(['git', 'lfs', 'clean'],
                                     stdin=stream, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     cwd=root, check=True)
         expected_pointer = f'version https://git-lfs.github.com/spec/v1\noid sha256:{sha}\nsize {path.stat().st_size}\n'.encode()
@@ -45,7 +48,7 @@ def stage(source, root=ROOT, pointers_only=False):
         if i % 100 == 0 or i == len(records):
             print(f'Staged {i}/{len(records)} textures in Git LFS', flush=True)
     (root/'config/texture-pack.json').write_text(json.dumps({
-        'schema': 2, 'delivery': 'bundled', 'path': 'assets/textures',
+        'schema': 2, 'delivery': 'optional', 'path': 'assets/textures',
         'texture_count': len(records), 'installed_bytes': size}, indent=2)+'\n', encoding='utf-8')
 
 

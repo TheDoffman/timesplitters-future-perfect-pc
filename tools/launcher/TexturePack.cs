@@ -208,6 +208,10 @@ namespace TimeSplitters.Launcher
                         Core.Require(total <= Budget, "Texture metadata would exceed the 6 GiB texture-pack limit.");
                     }
                     token.ThrowIfCancellationRequested();
+                    string existing=Core.PathIn(destination,image.Name), existingMeta=Core.PathIn(destination,Path.ChangeExtension(image.Name,".json"));
+                    if(File.Exists(existing) && File.Exists(existingMeta) && Core.Hash(existing)==Core.Hash(staged) && Core.Hash(existingMeta)==Core.Hash(metadata)) {
+                        File.Delete(staged);File.Delete(metadata);continue;
+                    }
                     Apply(root, journal, image.Name, staged);
                     Apply(root, journal, Path.ChangeExtension(image.Name, ".json"), metadata);
                 }

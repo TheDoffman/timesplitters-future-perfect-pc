@@ -32,6 +32,9 @@ providers, perform handoffs or limit themselves to advisory work.
   intended new patches, refresh the generated index with `tools/repo-context.py
   refresh`, and run `check --base <task-base-revision>`. CI enforces freshness
   and affected-guide updates; reviewers still verify the explanation.
+  Generated bug-form version references are data-only: changes confined to the
+  two validated AUTO version blocks do not require a guide edit. Changes to form
+  questions, markers, refresh code or workflows still require their owning guides.
 - Include the map and relevant bounded guide excerpts in Sol handoffs, within
   the existing disclosure limits. Follow the supervised panel's controller-owned
   handoff rules. These guides are reference evidence, not permission changes;
@@ -271,24 +274,23 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Project storage and texture work
 
-- Preserve texture enhancements across game/launcher version bumps: the shared
-  loader, Classic/Enhanced controls, installer, repository DDS/JSON and bundled
-  game packaging must carry forward. Require Repository texture pack to pass
-  on version-bump and game-packaging PRs; it verifies hydrated Git LFS files,
-  DDS/mips, sanitized metadata hashes, declared count/size and the 6 GiB limit.
-  Upgrade, repair and rollback checks must preserve installed textures and
-  personal settings. Do not restore a separate texture-release dependency.
-
-- The user requires compiled replacement textures committed to main and bundled
-  with ordinary game-version releases (2026-10-20). Store sanitized DDS/JSON in
-  assets/textures, with DDS tracked through Git LFS. Do not publish separate
-  versioned texture releases. Source artwork, original game files, prompts,
-  personal settings and saves remain private. The source build and game packagers
-  audit the committed pack by default; missing LFS content must stop packaging.
-  Keep the 6 GiB pack limit. The Repository texture pack CI check must pass before
-  merging changes to these assets. Avoid hydrating textures in unrelated CI jobs.
-  Retain one private art-production pack; a source-only worktree may use LFS
-  pointers to avoid a redundant working copy. Never prune unpushed LFS objects.
+- Preserve enhanced texture loading, Classic/Enhanced controls and installed packs
+  across game and launcher updates. The user's 2026-10-22 instruction replaces
+  the earlier default-bundling policy: enhanced textures are an optional download
+  through the shared Windows/Mac launcher. Game packages omit them by default.
+  Never remove an existing pack merely because a newer game ZIP omits it.
+- Keep sanitized DDS/JSON in assets/textures (DDS through Git LFS), and keep
+  source artwork/private data ignored. Audit hydrated assets before optional-pack
+  publication; missing LFS content must stop that publication. Ordinary source
+  builds and game packaging need no texture hydration. The Repository texture
+  pack check gates asset/auditor changes, not unrelated version bumps.
+- Publish optional packs as immutable bounded parts with file hashes. Adopt
+  matching installed files, merge new/changed keys after confirmation and retain
+  unrelated custom keys, saves and settings. Test interrupted updates and game
+  upgrade/repair/rollback preservation on both launcher hosts. Explicit offline
+  bundles may use --with-textures; official game publishing follows the optional
+  policy. Preserve the 6 GiB cap, one private art-production pack and unpushed
+  LFS objects; avoid duplicate working copies.
 
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.
@@ -341,6 +343,11 @@ this preference on all further work, including texture remastering and testing.
   campaign playthrough is separate from texture validation.
 
 ## Active texture issue branch
+
+- The user requests original character selection/profile icons (2026-10-22).
+  Keep the keys in `config/texture-originals.json` out of generation and installed
+  packs unless the user changes this preference. Character model materials and
+  full-size scene artwork remain separate and in scope.
 
 - The user approved hybrid production: individually redesign prominent assets;
   enhance simpler materials in bounded batches grouped by material family.

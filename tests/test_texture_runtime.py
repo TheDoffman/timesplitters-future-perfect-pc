@@ -55,7 +55,7 @@ def test_cached_texture_switch(texture_executables, tmp_path, mode):
 @pytest.mark.parametrize('source', ['pc_controls.c', 'pc_settings.c'])
 def test_windows_texture_controls_compile(tmp_path, source):
     compiler, env = native_compiler(tmp_path)
-    includes = [ROOT / 'src', RUNTIME, RUNTIME / 'input',
+    includes = [ROOT / 'src', RUNTIME, RUNTIME / 'input', RUNTIME / 'config',
                 RUNTIME.parent / 'third_party/SDL/include']
     result = subprocess.run(
         [compiler, '/nologo', '/std:c11', '/Zs',

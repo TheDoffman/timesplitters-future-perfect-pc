@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -38,18 +39,111 @@ public static class LauncherTextureChecks
     }
     sealed class Download : HttpMessageHandler
     {
-        public byte[] Bytes;public int Requests;
+        public byte[] Bytes;public int Requests;public Action<HttpRequestMessage> BeforeRequest;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
         {
-            Requests++;
+            if(BeforeRequest!=null)BeforeRequest(request);
+            token.ThrowIfCancellationRequested();Requests++;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){RequestMessage=request,Content=new ByteArrayContent(Bytes)});
         }
+    }
+    static object IndexedPart(string area,string zipName,string asset,string key,byte pixel)
+    {
+        string source=Path.Combine(area,zipName+"-source");Directory.CreateDirectory(source);
+        string dds=Path.Combine(source,key+".dds"),meta=Path.Combine(source,key+".json");
+        File.WriteAllBytes(dds,Dds(pixel));File.WriteAllText(meta,Json.Encode(new {key=key,sha256=Core.Hash(dds)}));
+        string zip=Path.Combine(area,zipName+".zip");
+        using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create)) {
+            ZipFileExtensions.CreateEntryFromFile(archive,dds,key+".dds");
+            ZipFileExtensions.CreateEntryFromFile(archive,meta,key+".json");
+        }
+        return new {name=asset,size=new FileInfo(zip).Length,sha256=Core.Hash(zip),
+            files=new Dictionary<string,string>{{key+".dds",Core.Hash(dds)},{key+".json",Core.Hash(meta)}}};
+    }
+    static TextureRelease IndexedRelease(string version,params object[] parts)
+    { return TextureDownload.Parse(Json.Encode(new {schema=3,version=version,texture_count=parts.Length,installed_bytes=parts.Length*1024,parts=parts})); }
+    static Dictionary<string, object> Retirement(string key, string dds, string json)
+    {
+        return Json.Object(Json.Encode(new { textures = new { retired = new Dictionary<string, object> {
+            { key, new { dds = dds, json = json } } } } }));
     }
     public static int Run()
     {
         string area=Path.Combine(Path.GetFullPath("."),"texture-tests-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(area);
         int next=0;Func<string> root=()=>{string path=Path.Combine(area,"install-"+(++next));Directory.CreateDirectory(path);return path;};
         try {
+            Test("lightweight game upgrade repair and rollback preserve bundled and custom textures",()=>{
+                string r=root(), dds=Core.PathIn(r,"Textures/"+A+".dds"), meta=Core.PathIn(r,"Textures/"+A+".json");
+                Put(dds,Dds());Put(meta,new byte[]{1,2,3});
+                Put(Core.PathIn(r,"Textures/"+B+".dds"),Dds(2));
+                Core.Write(Core.PathIn(r,"Settings/keep.txt"),"personal");
+                Core.Write(Core.PathIn(r,"Saves/keep.txt"),"save");
+                Core.Write(Core.PathIn(r,"BUILD.json"),Json.Encode(new {version="v1.0.0",files=new Dictionary<string,string>{{"Textures/"+A+".dds",Core.Hash(dds)},{"Textures/"+A+".json",Core.Hash(meta)}}}));
+                foreach(bool repair in new[]{false,true}) {
+                    string pending=Core.PathIn(r,".launcher/pending"),payload=Core.PathIn(pending,"payload");
+                    var files=new Dictionary<string,string>();
+                    foreach(string name in new[]{LauncherPlatform.GameBinary,LauncherPlatform.LaunchScript}) {
+                        string path=Core.PathIn(payload,name);Put(path,new byte[]{8});files[name]=Core.Hash(path);
+                    }
+                    Core.Write(Core.PathIn(payload,"BUILD.json"),Json.Encode(new {version="v1.1.0",textures=(object)null,files=files}));
+                    Core.Write(Core.PathIn(pending,"release.json"),Json.Encode(new {version="v1.1.0",repair=repair}));
+                    Core.InstallPending(r);
+                    Need(File.ReadAllBytes(dds).Last()==7 && File.ReadAllBytes(meta).Length==3,"Bundled pack removed");
+                    Need(File.ReadAllBytes(Core.PathIn(r,"Textures/"+B+".dds")).Last()==2,"Custom pack removed");
+                }
+                Core.Rollback(r);
+                Need(File.Exists(dds) && File.Exists(meta),"Game rollback removed pack");
+                Need(File.ReadAllText(Core.PathIn(r,"Settings/keep.txt"))=="personal" && File.ReadAllText(Core.PathIn(r,"Saves/keep.txt"))=="save","Personal data changed");
+            });
+            Test("game upgrade retires exact bundled icons and rollback restores them",()=>{
+                string r=root(), pending=Path.Combine(r,".launcher/pending"), payload=Path.Combine(pending,"payload");
+                string dds=Core.PathIn(r,"Textures/"+A+".dds"), meta=Core.PathIn(r,"Textures/"+A+".json");
+                Put(dds,Dds());Put(meta,new byte[]{1,2,3});
+                Put(Core.PathIn(r,"Textures/"+B+".dds"),Dds(2));
+                Put(Core.PathIn(r,"BUILD.json"),System.Text.Encoding.UTF8.GetBytes("{\"version\":\"v1.0.0\"}"));
+                var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                ((Dictionary<string,object>)manifest["textures"])["delivery"]="optional";
+                manifest["version"]="v1.1.0";
+                var files=new Dictionary<string,string>();
+                foreach(string name in new[]{LauncherPlatform.GameBinary,LauncherPlatform.LaunchScript}) {
+                    string path=Core.PathIn(payload,name);Put(path,new byte[]{8});files[name]=Core.Hash(path);
+                }
+                manifest["files"]=files;
+                Core.Write(Core.PathIn(payload,"BUILD.json"),Json.Encode(manifest));
+                Core.Write(Core.PathIn(pending,"release.json"),"{\"version\":\"v1.1.0\"}");
+                Core.InstallPending(r);
+                Need(!File.Exists(dds)&&!File.Exists(meta),"Bundled icons survived upgrade");
+                Need(File.Exists(Core.PathIn(r,"Textures/"+B+".dds")),"Unrelated texture removed");
+                Core.Rollback(r);
+                Need(File.Exists(dds)&&File.Exists(meta),"Retired pair not restored");
+                var again=new List<Change>();Core.AddRetiredTextures(r,manifest,again);Core.Apply(r,again,null);
+                Core.FinishGameSession(r,Core.GameBuildHash(r),true,0);
+                // An additional transaction must be able to recycle its verified backups.
+                Core.Apply(r,new List<Change>(),null);
+            });
+            Test("custom icon member preserves both files and partial originals can retire",()=>{
+                foreach(string custom in new[]{"dds","json","missing"}) {
+                    string r=root(), dds=Core.PathIn(r,"Textures/"+A+".dds"), meta=Core.PathIn(r,"Textures/"+A+".json");
+                    Put(dds,Dds());Put(meta,new byte[]{1});
+                    var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                    if(custom=="missing")File.Delete(meta);else Put(custom=="dds"?dds:meta,new byte[]{99});
+                    var changes=new List<Change>();Core.AddRetiredTextures(r,manifest,changes);
+                    Need(changes.Count==(custom=="missing"?1:0),"Custom pair or partial retirement mishandled");
+                    Core.Apply(r,changes,null);
+                    Need(File.Exists(dds)==(custom!="missing"),"Custom texture removed");
+                }
+            });
+            Test("retirement failure restores files and late changes are rejected",()=>{
+                string r=root(),dds=Core.PathIn(r,"Textures/"+A+".dds"),meta=Core.PathIn(r,"Textures/"+A+".json");
+                Put(dds,Dds());Put(meta,new byte[]{1});var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                var changes=new List<Change>();Core.AddRetiredTextures(r,manifest,changes);
+                Reject(()=>Core.Apply(r,changes,i=>{if(i==1)throw new InvalidDataException("Injected failure");}));
+                Need(File.Exists(dds)&&File.Exists(meta),"Failed update lost icon files");
+                Put(dds,Dds(9));Reject(()=>Core.Apply(r,changes,null));
+                Need(File.ReadAllBytes(dds).Last()==9&&File.Exists(meta),"Changed icon was removed");
+                Reject(()=>Core.AddRetiredTextures(r,Retirement("../Saves/user",new string('a',64),new string('a',64)),new List<Change>()));
+                Reject(()=>Core.AddRetiredTextures(r,Retirement(A,"bad",new string('a',64)),new List<Change>()));
+            });
             Test("folder import chooses runtime location and preserves unrelated files",()=>{
                 string r=root(),source=root();Put(Path.Combine(source,A+".dds"),Dds());
                 Put(Path.Combine(r,"Saves","user.txt"),new byte[]{42});
@@ -122,6 +216,67 @@ public static class LauncherTextureChecks
                 foreach(int index in new[]{7,28,21}){
                     string path=Path.Combine(area,"invalid-"+index+".dds");var data=Dds();data[index*4]=0xff;File.WriteAllBytes(path,data);Reject(()=>TexturePack.ValidateDds(path));
                 }
+            });
+            Test("indexed updates adopt bundled textures and download only missing or changed parts",()=>{
+                string r=root();string dest=TexturePack.Destination(r);
+                var a=IndexedPart(area,"indexed-a","textures-001.zip",A,7);
+                var b=IndexedPart(area,"indexed-b","textures-002.zip",B,9);
+                TexturePack.Install(r,Path.Combine(area,"indexed-a.zip"),null,CancellationToken.None); // old bundled pack; no receipt
+                string installed=Path.Combine(dest,A+".dds");var written=File.GetLastWriteTimeUtc(installed);
+                Put(Path.Combine(dest,"aaaaaaaaaaaaaaaa.dds"),Dds(4));Put(Path.Combine(r,"Settings","keep.txt"),new byte[]{5});
+                var pack=IndexedRelease("1.0.0",a);
+                Need(TextureDownload.DownloadBytes(r,pack,CancellationToken.None)==0,"Bundled pack not adopted by hash");
+                var transport=new Download{Bytes=File.ReadAllBytes(Path.Combine(area,"indexed-b.zip"))};
+                using(var client=new ReleaseClient(transport)) {
+                    TextureDownload.Install(r,client,pack,null,CancellationToken.None).GetAwaiter().GetResult();
+                    Need(transport.Requests==0,"Existing bundled file redownloaded");
+                    pack=IndexedRelease("1.1.0",a,b);
+                    Need(TextureDownload.DownloadBytes(r,pack,CancellationToken.None)==transport.Bytes.Length,"Unchanged part counted as download");
+                    TextureDownload.Install(r,client,pack,null,CancellationToken.None).GetAwaiter().GetResult();
+                    Need(transport.Requests==1 && File.GetLastWriteTimeUtc(installed)==written,"Adding a texture rewrote an unchanged part");
+                    Need(File.ReadAllBytes(Path.Combine(dest,B+".dds")).Last()==9,"New key not installed");
+                    var changed=IndexedPart(area,"indexed-a-v2","textures-001.zip",A,8);
+                    transport.Bytes=File.ReadAllBytes(Path.Combine(area,"indexed-a-v2.zip"));
+                    pack=IndexedRelease("1.2.0",changed,b);
+                    TextureDownload.Install(r,client,pack,null,CancellationToken.None).GetAwaiter().GetResult();
+                    Need(transport.Requests==2 && File.ReadAllBytes(installed).Last()==8,"Changed key not replaced");
+                    Need(File.ReadAllBytes(Path.Combine(dest,"aaaaaaaaaaaaaaaa.dds")).Last()==4 && File.ReadAllBytes(Path.Combine(r,"Settings","keep.txt"))[0]==5,"Custom texture or settings changed");
+                    TextureDownload.SetOptedIn(r,true);Need(TextureDownload.OptedIn(r),"Opt in lost");
+                    TextureDownload.SetOptedIn(r,false);Need(!TextureDownload.OptedIn(r) && File.Exists(installed),"Opt out removed pack");
+                }
+            });
+            Test("indexed cancellation keeps completed parts and resumes without redownloading them",()=>{
+                string r=root();
+                var a=IndexedPart(area,"resume-a","textures-001.zip",A,2);
+                var b=IndexedPart(area,"resume-b","textures-002.zip",B,3);
+                var pack=IndexedRelease("2.0.0",a,b);
+                var transport=new Download{Bytes=File.ReadAllBytes(Path.Combine(area,"resume-a.zip"))};
+                using(var client=new ReleaseClient(transport))using(var cancel=new CancellationTokenSource()) {
+                    // Cancel as the second part starts, after the first part is committed.
+                    transport.BeforeRequest=request=>{if(request.RequestUri.AbsolutePath.EndsWith("textures-002.zip"))cancel.Cancel();};
+                    try{TextureDownload.Install(r,client,pack,null,cancel.Token).GetAwaiter().GetResult();throw new Exception("Cancellation ignored");}
+                    catch(OperationCanceledException){}
+                    Need(File.Exists(Path.Combine(TexturePack.Destination(r),A+".dds")),"Completed part lost");
+                    Need(transport.Requests==1,"Cancellation fetched an unnecessary part");
+                    Need(!File.Exists(Core.PathIn(r,".launcher/texture-pack.json")),"Incomplete version marked installed");
+                    transport.BeforeRequest=null;transport.Bytes=File.ReadAllBytes(Path.Combine(area,"resume-b.zip"));
+                    TextureDownload.Install(r,client,pack,null,CancellationToken.None).GetAwaiter().GetResult();
+                    Need(File.Exists(Path.Combine(TexturePack.Destination(r),B+".dds")),"Retry did not complete");
+                    Need(transport.Requests==2,"Retry redownloaded a completed part");
+                    Need(Json.String(Json.Object(File.ReadAllText(Core.PathIn(r,".launcher/texture-pack.json"))),"version")=="2.0.0","Version marker missing");
+                }
+            });
+            Test("indexed checks reject missing pairs, duplicate keys and mismatched archive contents",()=>{
+                var part=IndexedPart(area,"indexed-bad","textures-001.zip",A,7);
+                Reject(()=>IndexedRelease("1.0.0",part,part));
+                var missing=Json.Object(Json.Encode(part));((Dictionary<string,object>)missing["files"]).Remove(A+".json");
+                Reject(()=>IndexedRelease("1.0.0",missing));
+                var pack=IndexedRelease("1.0.0",part);
+                string r=root();var transport=new Download{Bytes=File.ReadAllBytes(Path.Combine(area,"indexed-bad.zip"))};
+                pack.Files["textures-001.zip"][A+".dds"]=new string('0',64);
+                using(var client=new ReleaseClient(transport))Reject(()=>TextureDownload.Install(r,client,pack,null,CancellationToken.None).GetAwaiter().GetResult());
+                Need(!File.Exists(Path.Combine(TexturePack.Destination(r),A+".dds")),"Mismatched indexed payload was installed");
+                Reject(()=>TextureDownload.Parse("{\"schema\":3,\"published\":false}"));
             });
             Test("download manifest binds bounded parts to this repository",()=>{
                 Reject(()=>TextureDownload.Parse("{\"schema\":2,\"delivery\":\"bundled\"}"));

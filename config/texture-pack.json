@@ -1,7 +1,7 @@
 {
   "schema": 2,
-  "delivery": "bundled",
+  "delivery": "optional",
   "path": "assets/textures",
-  "texture_count": 1505,
-  "installed_bytes": 1164919237
+  "texture_count": 2046,
+  "installed_bytes": 1843682193
 }

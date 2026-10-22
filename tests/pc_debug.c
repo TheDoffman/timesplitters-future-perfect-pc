@@ -10,7 +10,7 @@
 #include <math.h>
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while (0)
-static int save_dialog, driven, timed_out;
+static int save_dialog, driven, timed_out, expected_save_error;
 static ULONGLONG deadline;
 
 static BOOL CALLBACK drive_dialog(HWND window, LPARAM unused)
@@ -18,8 +18,16 @@ static BOOL CALLBACK drive_dialog(HWND window, LPARAM unused)
     char title[128];
     (void)unused;
     GetWindowTextA(window,title,sizeof title);
+    if (!strcmp(title,"Debug settings were not saved")) {
+        if (!timed_out) fprintf(stderr,"%s: debug Save opened an error dialog\n",
+                              expected_save_error ? "Expected failure" : "FAIL");
+        timed_out=1;
+        PostMessage(window,WM_CLOSE,0,0);
+        return TRUE;
+    }
     if (strcmp(title,"Debug - TimeSplitters Future Perfect")) return TRUE;
-    if (GetTickCount64()>deadline) { timed_out=1; EndDialog(window,IDCANCEL); return TRUE; }
+    if (timed_out || GetTickCount64()>deadline) { timed_out=1; EndDialog(window,IDCANCEL); return TRUE; }
+    if (driven) return TRUE; /* Do not queue Save again inside a nested dialog. */
     CheckDlgButton(window,200,BST_UNCHECKED);
     CheckDlgButton(window,201,BST_UNCHECKED);
     CheckDlgButton(window,202,BST_UNCHECKED);
@@ -52,7 +60,7 @@ int main(int argc, char **argv)
     PcDebugOptions options, readback;
     PcDebugSnapshot snapshot;
     PcSettings controls;
-    char config[MAX_PATH], log[MAX_PATH], error[320], overlay[96], *text, *before;
+    char config[MAX_PATH], runtime_config[MAX_PATH], log[MAX_PATH], error[320], overlay[96], *text, *before;
     FILE *file;
     HWND owner;
     UINT_PTR timer;
@@ -65,6 +73,9 @@ int main(int argc, char **argv)
     }
     CHECK(argc==3);
     snprintf(config,sizeof config,"%s\\debug-settings.json",argv[2]);
+    snprintf(runtime_config,sizeof runtime_config,"%s\\debug-runtime.ini",argv[2]);
+    _putenv_s("RECOMP_DISPLAY_CONFIG",runtime_config);
+    _putenv_s("TSFP_NATIVE_FPS","0");
     snprintf(log,sizeof log,"%s\\debug-runtime.err",argv[2]);
     text=load(argv[1]); CHECK(text && text[0]=='{');
     file=fopen(config,"wb"); CHECK(file);
@@ -120,7 +131,20 @@ int main(int argc, char **argv)
     pc_debug_sample(60,120);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto"));
     CHECK(strstr(overlay,"60.0/120.0 fps") && strstr(overlay,"16.7 ms") && strstr(overlay,"E:2 W:1"));
-    CHECK(strstr(overlay,"RTT: offline"));
+    CHECK(!strstr(overlay,"RTT:"));
+    _putenv_s("TSFP_NATIVE_FPS","144");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 144 (Beta)") && !strstr(overlay,"cap 60"));
+    _putenv_s("TSFP_NATIVE_FPS","120");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 120 (Beta)"));
+    _putenv_s("TSFP_NATIVE_FPS","60");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 60") && !strstr(overlay,"Beta"));
+    _putenv_s("TSFP_NATIVE_FPS","0");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"cap 60") && !strstr(overlay,"target") && !strstr(overlay,"Beta"));
+    _putenv_s("TSFP_NATIVE_FPS","");
+    memset(&readback,0,sizeof readback); readback.show_latency=1;
+    pc_debug_set(&readback);
+    CHECK(!pc_debug_overlay(overlay,sizeof overlay,"60") && !overlay[0]);
+    pc_debug_set(&options);
     pc_debug_latency(2,42.5,1);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && strstr(overlay,"RTT: 42.5 ms"));
     pc_debug_snapshot(&snapshot); CHECK(snapshot.network_mode==2 && snapshot.latency_peers==1 && snapshot.latency_ms==42.5);
@@ -168,7 +192,18 @@ int main(int argc, char **argv)
     CHECK(driven && !timed_out);
     pc_debug_get(&readback); CHECK(!readback.show_fps && !readback.show_frame_time && !readback.show_issues && !readback.log_performance);
     CHECK(!readback.show_latency && !pc_debug_overlay(overlay,sizeof overlay,"auto"));
+    /* A nested save-error dialog must fail or finish the test, not keep the
+       build waiting indefinitely or queue more Save commands behind it. */
+    before=load(config); CHECK(before);
+    CHECK(SetFileAttributesA(config,FILE_ATTRIBUTE_READONLY));
+    expected_save_error=1; driven=timed_out=0;
+    deadline=GetTickCount64()+5000; timer=SetTimer(NULL,0,70,drive); CHECK(timer);
+    pc_debug_show(owner); KillTimer(NULL,timer);
+    CHECK(SetFileAttributesA(config,FILE_ATTRIBUTE_NORMAL));
+    CHECK(driven && timed_out);
+    text=load(config); CHECK(text && !strcmp(before,text)); free(text); free(before);
+    pc_debug_get(&readback); CHECK(!readback.show_fps && !readback.show_frame_time && !readback.show_issues && !readback.log_performance);
     pc_debug_shutdown(); DestroyWindow(owner);
-    puts("PASS: debug persistence, unrelated settings retention, failed save, live counters, partial lines, bounded reads, truncation, FPS/frame time, menu, Cancel, and dialog Save");
+    puts("PASS: debug persistence, unrelated settings retention, failed save, live counters, partial lines, bounded reads, truncation, FPS/frame time, menu, Cancel, dialog Save and bounded save-error dismissal");
     return 0;
 }

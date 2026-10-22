@@ -527,6 +527,42 @@ def test_release_lock_prevents_overlapping_builds(tmp_path):
                 pytest.fail('Second release acquired the lock')
 
 
+def test_relocated_standard_library_preserves_ssl_trust_resources(tmp_path):
+    import ssl
+    spec = importlib.util.spec_from_file_location('bundle_online', module.ROOT/'tools/bundle_online.py')
+    bundler = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bundler)
+    base, runtime = tmp_path/'base', tmp_path/'relocated'
+    library = base/'Lib'
+    library.mkdir(parents=True); runtime.mkdir()
+    original = Path(ssl.__file__)
+    shutil.copy2(original, library/'ssl.py')
+    resources = list(original.parent.glob('*.pem'))
+    for path in resources:
+        shutil.copy2(path, library/path.name)
+    (library/'portable_fixture.py').write_text('VALUE = 42\n')
+    bundler.bundle_standard_library(base, runtime, 'test')
+    with zipfile.ZipFile(runtime/'pythontest.zip') as archive:
+        assert archive.namelist() == ['portable_fixture.py']
+    assert (runtime/'ssl.py').read_bytes() == original.read_bytes()
+    for path in resources:
+        assert (runtime/path.name).read_bytes() == path.read_bytes()
+    # Actual SSLContext construction failed in alpha.2 preparation when its
+    # module-relative trust policy was absent or addressed inside the ZIP.
+    script = '''import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+sys.path[:0] = [str(root/'pythontest.zip'), str(root)]
+import ssl, portable_fixture
+assert pathlib.Path(ssl.__file__) == root/'ssl.py'
+assert portable_fixture.VALUE == 42
+ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+print('PASS: relocated SSL context and unchanged trust policy')
+'''
+    result = subprocess.run([sys.executable, '-I', '-S', '-c', script, str(runtime)],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stdout+result.stderr
+
+
 def test_main_moving_after_preparation_prevents_upload(publisher):
     publisher.preflight(); publisher.prepare()
     publisher.remote = PREVIOUS
@@ -578,3 +614,33 @@ def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypa
     else:
         with pytest.raises(ValueError, match='launcher'):
             publisher.require_texture_launcher()
+
+
+@pytest.mark.parametrize('version,passes', [('1.2.22', False), ('1.2.23', False), ('1.2.24', True)])
+def test_retired_textures_require_launcher_with_transactional_migration(publisher, monkeypatch, version, passes):
+    publisher.preflight()
+    publisher.output.mkdir(parents=True, exist_ok=True)
+    publisher.texture_identity['retired'] = {'fedcba9876543210': {'dds': 'a'*64, 'json': 'b'*64}}
+    publisher.metadata.write_text(json.dumps({'textures': publisher.texture_identity, 'files': publisher.texture_files}))
+    latest = {'tag_name': 'launcher-v'+version, 'draft': False, 'prerelease': False,
+              'published_at': '2026-10-22', 'assets': [
+                  {'name': f'TimeSplitters-Launcher-v{version}-{platform}.zip', 'state': 'uploaded', 'size': 1}
+                  for platform in ('windows-x64', 'macos-arm64')]}
+    monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(latest))
+    if passes:
+        publisher.require_texture_launcher()
+    else:
+        with pytest.raises(ValueError, match='launcher 1.2.24'):
+            publisher.require_texture_launcher()
+
+
+def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publisher):
+    manifest_path = publisher.root/'config/texture-pack.json'
+    manifest = json.loads(manifest_path.read_text())
+    manifest['delivery'] = 'optional'
+    manifest_path.write_text(json.dumps(manifest))
+    (publisher.root/'assets/textures').rename(publisher.root/'assets/preserved-textures')
+    publisher.require_repository_textures()
+    publisher.require_package_textures({'textures': None, 'files': {'Bin/game.exe': 'a'*64}})
+    with pytest.raises(ValueError):
+        publisher.require_package_textures({'textures': None, 'files': {'Textures/0123456789abcdef.dds': 'a'*64}})

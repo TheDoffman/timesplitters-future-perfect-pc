@@ -27,6 +27,7 @@ void pc_display_menu_sensitivity_draw(void (*original)(void));
 void pc_display_menu_slider_bar(void (*original)(void));
 void pc_display_menu_choice_arrow(void (*original)(void),unsigned direction);
 void pc_display_menu_character_draw(void (*original)(void));
+void pc_display_menu_highlight(void (*original)(void));
 void pc_display_menu_choice_draw(void (*original)(void));
 void pc_display_menu_team_draw(void (*original)(void));
 void pc_display_menu_team_tick(void (*original)(void));

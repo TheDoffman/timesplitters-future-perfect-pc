@@ -1,0 +1,89 @@
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -330,6 +330,8 @@
+  * volume). All three implementations keep it at the same offset as
+  * D3D8Texture, and the image likewise. */
+ HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source);
++/* Initialize a new feedback target from live GPU content, including capture bytes. */
++HRESULT d3d8_PreserveFeedbackTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src);
+ RhiView  *d3d8_base_srv(IDirect3DBaseTexture8 *texture);
+ RhiImage *d3d8_base_resource(IDirect3DBaseTexture8 *texture);
+ 
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -2566,4 +2566,42 @@
+     return *ppSurface ? S_OK : E_OUTOFMEMORY;
+ }
+ 
++/* Precision transitions happen rarely, before the replacement is published.
++ * The shader performs the actual format conversion. Synchronize its result to
++ * system storage too: capture's first TEXTURE chunk must contain the copied
++ * state, rather than the zero allocation which preceded the GPU copy. */
++HRESULT d3d8_PreserveFeedbackTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src)
++{
++    D3D8Texture *to=(D3D8Texture *)dst,*from=(D3D8Texture *)src;
++    if(!to || !from || to==from || to->locked || from->locked ||
++       to->levels!=1 || from->levels!=1 || to->width!=from->width ||
++       to->height!=from->height || !to->width || !to->height ||
++       !(to->usage&D3DUSAGE_RENDERTARGET) || !(from->usage&D3DUSAGE_RENDERTARGET) ||
++       !to->image || !from->image || !from->srv || !to->sys_mem)return E_INVALIDARG;
++    D3DFORMAT formats[2]={to->d3d8_format,from->d3d8_format};
++    for(unsigned i=0;i<2;i++)if(formats[i]!=D3DFMT_A8R8G8B8 &&
++       formats[i]!=D3DFMT_LIN_A8R8G8B8 && formats[i]!=D3DFMT_A16B16G16R16F)
++        return E_NOTIMPL;
++    unsigned bpp=d3d8_format_bpp(to->d3d8_format)/8;
++    size_t bytes=(size_t)to->width*to->height*bpp;
++    BYTE *linear=malloc(bytes);if(!linear)return E_OUTOFMEMORY;
++    HRESULT result=d3d8_CopyTextureView(dst,from->srv);
++    if(SUCCEEDED(result) && rhi_image_readback(to->image,0,linear,to->width*bpp)!=0)
++        result=E_FAIL;
++    if(SUCCEEDED(result)) {
++        /* Reverse the upload conversion: host RGBA16 -> guest ABGR16. */
++        if(to->d3d8_format==D3DFMT_A16B16G16R16F) {
++            uint16_t *p=(uint16_t *)linear;
++            for(size_t i=0;i<(size_t)to->width*to->height;i++,p+=4) {
++                uint16_t a=p[0],b=p[1];p[0]=p[3];p[1]=p[2];p[2]=b;p[3]=a;
++            }
++        }
++        if(d3d8_format_is_swizzled(to->d3d8_format))
++            xbox_swizzle_rect(to->sys_mem,linear,to->width,to->height,bpp);
++        else for(unsigned y=0;y<to->height;y++)
++            memcpy(to->sys_mem+(size_t)y*to->pitch,linear+(size_t)y*to->width*bpp,to->width*bpp);
++    }
++    free(linear);return result;
++}
++
+ #endif /* TSFP_FORMAT_ONLY */
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1205,6 +1205,30 @@
+     }
+     if (!read_layout(va, &t))
+         return NULL;
++    if(e && e->rendered) {
++        /* Retain the old resource until both allocation and preservation
++         * succeed. Flush earlier draws before reading their live GPU output. */
++        /* Earlier queued texture binds must not evict this cache slot. */
++        e->used_swap=now;
++        if(hle_d3d8_defer_recording())hle_d3d8_defer_flush();
++        IDirect3DTexture8 *replacement=NULL,*previous=e->host;
++        HRESULT result=host_CreateTexture(dev,t.width,t.height,t.levels,D3DUSAGE_RENDERTARGET,
++            (D3DFORMAT)host_format,D3DPOOL_DEFAULT,&replacement);
++        if(SUCCEEDED(result) && replacement)
++            result=d3d8_PreserveFeedbackTexture(replacement,previous);
++        if(FAILED(result) || !replacement) {
++            if(replacement)host_ReleaseTexture(replacement);
++            g_skip_create++;e->used_swap=now;return previous;
++        }
++        e->host=replacement;e->render_format=host_format;e->used_swap=now;
++        for(int s=0;s<MAX_STAGES;s++)if(g_bound[s]==previous) {
++            g_bound[s]=replacement;
++            host_SetTexture(dev,(DWORD)s,(IDirect3DBaseTexture8 *)replacement);
++        }
++        host_ReleaseTexture(previous);
++        fprintf(stderr,"[SURFACE-FLOAT] Preserved target 0x%08X at host format %02X\n",va,host_format);
++        return replacement;
++    }
+     if (!e) {
+         e = cache_slot(dev, now);
+         if (!e)

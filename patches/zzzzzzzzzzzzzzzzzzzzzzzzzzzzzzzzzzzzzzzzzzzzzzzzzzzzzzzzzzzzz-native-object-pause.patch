@@ -1,0 +1,25 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -4191,6 +4191,10 @@
+                 curr.mnemonic, last_flag_setter, last_flag_ops)
+             if result:
+                 cond_expr, desc = result
++                if last_flag_setter in ('comiss', 'ucomiss', 'comisd', 'ucomisd'):
++                    # Optional title policy for a float-comparison branch.
++                    # Keep captured operands/flags and evaluate the condition once.
++                    cond_expr = f"RECOMP_FLOAT_BRANCH_AT(0x{curr.address:X}, ({cond_expr}))"
+                 target = curr.jump_target
+                 stmt = _emit_cond_goto(
+                     cond_expr, curr.mnemonic, desc, target, lifter)
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -65,6 +65,9 @@
+ #endif
+ #ifndef RECOMP_DIRECT_CALLEE_AT
+ #define RECOMP_DIRECT_CALLEE_AT(site, function) (function)
++#endif
++#ifndef RECOMP_FLOAT_BRANCH_AT
++#define RECOMP_FLOAT_BRANCH_AT(site, taken) (taken)
+ #endif
+ #ifndef RECOMP_F32_MUL_AT
+ #define RECOMP_F32_MUL_AT(site, left, right) ((left) * (right))

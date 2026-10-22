@@ -103,14 +103,27 @@ static class LauncherTests
         { var response = Reply(request); response.RequestMessage = request; return Task.FromResult(response); }
     }
     sealed class Progress : IProgress<double> { public void Report(double value) { } }
-    sealed class SlowHandler : HttpMessageHandler
+    sealed class StalledHandler : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        public readonly TaskCompletionSource<HttpResponseMessage> Response = new TaskCompletionSource<HttpResponseMessage>();
+        public CancellationToken RequestToken;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            // Deliberately ignore cancellation to model a stalled OS network call.
-            await Task.Delay(500);
-            return new HttpResponseMessage(HttpStatusCode.OK) { RequestMessage = request, Content = new StringContent("[]") };
+            // Stay pending even after cancellation, until the fixture is disposed.
+            RequestToken = token;
+            return Response.Task;
         }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) Response.TrySetCanceled();
+            base.Dispose(disposing);
+        }
+    }
+    static void AwaitStalledCheck(Task pending)
+    {
+        // A generous deadlock guard, not an assertion about runner scheduling speed.
+        Assert(Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(10))).GetAwaiter().GetResult() == pending);
+        pending.GetAwaiter().GetResult();
     }
     static string SelfManifest(string version, string boot, string app)
     {
@@ -789,19 +802,27 @@ static class LauncherTests
             var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { SelfRelease("1.1.0", false, false, 100, "sha256:" + Hash("other")) }), false);
             Reject(() => ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata("1.1.0", 100, Hash("zip"))));
         });
-        Test("launcher check has bounded timeout even if network ignores cancellation", () => {
-            var watch = Stopwatch.StartNew();
-            using (var client = new ReleaseClient(new SlowHandler()))
+        Test("launcher check times out while the network ignores cancellation", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler))
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None).GetAwaiter().GetResult(); throw new Exception("Expected timeout"); }
-                catch (TimeoutException) { Assert(watch.ElapsedMilliseconds < 350); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None);
+                try { AwaitStalledCheck(pending); throw new Exception("Expected timeout"); }
+                catch (TimeoutException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
-        Test("continue offline cancels launcher check", () => {
-            using (var client = new ReleaseClient(new SlowHandler())) using (var cancel = new CancellationTokenSource(20))
+        Test("continue offline cancels launcher check while network stays pending", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler)) using (var cancel = new CancellationTokenSource())
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromSeconds(5), cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMinutes(5), cancel.Token);
+                cancel.Cancel();
+                try { AwaitStalledCheck(pending); throw new Exception("Expected cancellation"); }
                 catch (OperationCanceledException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
         Test("launcher no-update result needs no install", () => {

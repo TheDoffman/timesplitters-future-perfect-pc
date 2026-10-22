@@ -21,6 +21,8 @@
 #include "input_sdl.h"
 #include "renderer_host_sdl.h"
 #include "rhi.h"
+#include "graphics/combiner_constants.h"
+static PcCombinerConstants native_float_constants;
 #include "graphics/present_metrics.h"
 #include "settings_macos.h"
 #include "pc_display.h"
@@ -922,6 +924,8 @@ static void bind_texture0(void)
     glUniform1fv(glGetUniformLocation(g.prog,"u_menu_filter"),4,menu_filter);
     glUniform1i(glGetUniformLocation(g.prog,"u_combiner"),token!=0);
     glUniform1uiv(glGetUniformLocation(g.prog,"u_rs"),256,g.rs);
+    glUniform2uiv(glGetUniformLocation(g.prog,"u_float_mask"),1,native_float_constants.mask);
+    glUniform4fv(glGetUniformLocation(g.prog,"u_float_c"),16,&native_float_constants.value[0][0][0]);
 }
 
 static void update_mvp(DWORD fvf)
@@ -1281,6 +1285,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
         fprintf(stderr,"[native-gl] video init failed: %s\n",SDL_GetError());return E_FAIL;
     }
 
+    pc_combiner_constants_reset(&native_float_constants);
     g.backbuf_w = (int)pPP->BackBufferWidth;
     g.backbuf_h = (int)pPP->BackBufferHeight;
     if (g.backbuf_w <= 0) g.backbuf_w = 640;

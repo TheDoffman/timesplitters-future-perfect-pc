@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b2360c983f8e82eea9b7217f0777703e198581b2277ae4c9e463c8381793cfd0",
+  "loaderSha256": "241490fd61e8a128ede2e35bc2698c4f61b0944998c01b5ef8aac74cbbf1bf43",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -233,6 +233,13 @@
       "sha256": "5114e71da1186be967db0486ad9e99a04635fea347cb9729f780abe44c4f21e8",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzzzzz-native-debug-target.patch",
+      "sha256": "6cc368dbf65ea1dd357e0df9e470147ed9640faee73d5b15e619781d4e896fab",
+      "targets": [
+        "src/input/CMakeLists.txt"
       ]
     },
     {
@@ -818,6 +825,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-text-outline-scope.patch",
+      "sha256": "eb703ac45b4121b940e8189d893640b84f01adde0ab5e90ec4ff6b4619b70c5f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-replay.patch",
       "sha256": "50d4b55ae7b955eb00fbd3e734f39fed3322d6c8a7bac6925747fc84c9a720a8",
       "targets": [
@@ -976,6 +990,22 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-timing.patch",
+      "sha256": "09d2d9a35316cc845e4029f4b23f1f968bc770f4f413475fa1e3d7fb7f728c5a",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_interp.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-interp-retirement.patch",
+      "sha256": "0b9f35b3aa2f49744092a68edbb30c2d0a9c69a1ce4b00c250f21a040298d945",
+      "targets": [
+        "src/hle/hle_d3d8_interp.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-fixed-60-fps.patch",
       "sha256": "5d34de9125871574e2ca4f72ea9910985e2a2b0f2c049aa3be583a1bc859b450",
       "targets": [
@@ -992,6 +1022,237 @@
       "sha256": "b50aa4787339106f31cd6afd2848188b6bf2a46c49002d70d4b2f2ad53a228f3",
       "targets": [
         "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-numeric-policy.patch",
+      "sha256": "4f1a58e7374e28467dd290136b8ed880799fd5b0ae3483173b15ed977ab1a858",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-animation-scope.patch",
+      "sha256": "5edd4ba36343e208385af89483a3c571c7b821aab931983022470fb013ab18ab",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-input-ticks.patch",
+      "sha256": "64014d25af4b6bb66de0b5f0288969a1cefabce046e7a69338fa85b6c0a22c1c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-script-events.patch",
+      "sha256": "70453c7907f65b645092a9b6aa3193ccb58dbb875cef2d6d703ada87ff70abae",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-decay.patch",
+      "sha256": "0de0473d9969ef642f39fe3a851053bbb5ba5338dee75c54473ead07f195d1e4",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_sse.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-camera-timing.patch",
+      "sha256": "74216c398c8e702863d089ac669ec88dbeae4bcdae46e70b40d47506b1b95ca9",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-weapon-event-scope.patch",
+      "sha256": "62e71ef60ffd7ab832fe9decc13cba4ae867f36e5dc65fa9808d73acd8ab319c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-npc-weapon-event-scope.patch",
+      "sha256": "d26d9c7c6054f210bce26eab136010df6234154dfea334a4f6427f4e8038e0d4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-npc-animation-shots.patch",
+      "sha256": "f7eb33821883b3b51d5d1b50c71bef614a3a841fabfe2f3d72f3a0a1972115ec",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-npc-aim-timing.patch",
+      "sha256": "68b9c72073db9f9314f9e91e65c47b9824f05bd00cd14979027fe383e5d44ad0",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-kind35-projectile-timing.patch",
+      "sha256": "a63923de9ed05681cf7837a8e3b66ff10d60d175d7bb7a72d68b84bfba6ccd0a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-object-pause.patch",
+      "sha256": "80149850969cabed9f9bdc7f3bb78730863cbb927d9d05e42be31f2c77241ed3",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-object-rocking.patch",
+      "sha256": "d9a6bacf3d3604aa8c2fb9f8416672ab52e1c2e0764889e0a458b34f4f140179",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-light-preview.patch",
+      "sha256": "7d2178520715640e8d99ba9c540a67914e77523f7944c9c770e68ff17ee62fad",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-visual-time.patch",
+      "sha256": "37735b7060307aa527aa3ca40c0fd27f18960d6b5c93d2231930f26d0a666c08",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-movie-pacing.patch",
+      "sha256": "645e5712c08511d0e29c30755eeaf8bd9d3d3e192b52fd4285ced766dda5b7ed",
+      "targets": [
+        "src/hle/hle_xmv_play.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-rate-settings.patch",
+      "sha256": "18e43570623a47ab5ee21ef418335c5601e519b1acc743c831a296cb741363cd",
+      "targets": [
+        "src/config/CMakeLists.txt",
+        "src/config/recomp_config.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-live-frame-rate.patch",
+      "sha256": "d6a291a3c4657ad3d2d10e2797c9ab4032509797da5e770160101feb3d9adc6e",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-display-rounded-highlight.patch",
+      "sha256": "86303395a66677a1f7d91cdaa6581c45167231e7d7e5536a40e8b4a13dc51418",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-trace.patch",
+      "sha256": "1eae3aba5d349ef0d4cdb794425ac9c12a6698a9ca013d1fe47e9d2ad0b9d43d",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-fractional.patch",
+      "sha256": "e3d1290d6bce43bafec68930786107b9ba2efb1dc91db4257039d23c5b455f50",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-precision.patch",
+      "sha256": "2cb144c3fc9f3f55e787ce9bedf919c0a500983f26890d67aa6081c731910ca2",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-copy.patch",
+      "sha256": "7cd678280b23c5f8451800a6953d44f5def93fe8f34fbc8a80963feefb661e19",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-constants.patch",
+      "sha256": "58bcbd0232bb652195e1eb5343ffc22fef7a01c1f85cef2e42056e90441b971f",
+      "targets": [
+        "src/d3d/d3d8_combiners.c",
+        "src/d3d/d3d8_combiners.h",
+        "src/hle/d3d8_capture.c",
+        "src/hle/d3d8_capture.h",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h",
+        "src/hle/hle_d3d8_state.c",
+        "src/replay/d3d8_replay.c",
+        "tests/d3d8_capture/test_main.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-surface-coefficients.patch",
+      "sha256": "cb26a14ec5f5e76391db9f1211d88f768b886de5ca2c294fa0f25ee0ca87349c",
+      "targets": [
+        "src/hle/hle_d3d8_state.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-preservation.patch",
+      "sha256": "c5dfbb03ad35833252f98f51b2524c70bfe6d7d8b8c37f43d4ac6996aa4b0b1d",
+      "targets": [
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c",
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-live.patch",
+      "sha256": "db83501d3f08446e7d9cc7f54e0eed3f1797293b21be2947640b7756c1cab396",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-surface-float32.patch",
+      "sha256": "1e4fbb5b2e5d145f3774d5c15f74a00dffad7b37937a60a3db74a30bed86e335",
+      "targets": [
+        "src/d3d/d3d8_resources.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-flip-handoff.patch",
+      "sha256": "9ba63836c54b9ebf3bd45df568fb19885893dfd767ea244de25b799b61f96b2c",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
       ]
     }
   ]

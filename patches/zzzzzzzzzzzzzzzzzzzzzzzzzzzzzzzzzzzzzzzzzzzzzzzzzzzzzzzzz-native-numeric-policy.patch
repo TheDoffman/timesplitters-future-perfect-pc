@@ -1,0 +1,74 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -3591,14 +3591,20 @@
+         if m == "cvtsi2ss":
+             if nops >= 2:
+                 src = _fmt_operand_read(ops[1])
+-                return [_sse_write(ops[0], f"(float)(int32_t){src}") + " /* cvtsi2ss */"]
++                value = f"(float)(int32_t){src}"
++                if ops[1].type == "mem" and ops[1].mem_size == 4:
++                    value = f"RECOMP_I32_TO_F32({_fmt_mem(ops[1])}, {src})"
++                return [_sse_write(ops[0], value) + " /* cvtsi2ss */"]
+         if m in ("cvtss2si", "cvttss2si"):
+             if nops >= 2:
+                 return [_fmt_operand_write(ops[0], f"(int32_t){_sse_read(ops[1])}") + f" /* {m} */"]
+         if m == "cvtsi2sd":
+             if nops >= 2:
+                 src = _fmt_operand_read(ops[1])
+-                return [_sse_write(ops[0], f"(double)(int32_t){src}") + " /* cvtsi2sd */"]
++                value = f"(double)(int32_t){src}"
++                if ops[1].type == "mem" and ops[1].mem_size == 4:
++                    value = f"RECOMP_I32_TO_F64({_fmt_mem(ops[1])}, {src})"
++                return [_sse_write(ops[0], value) + " /* cvtsi2sd */"]
+         if m in ("cvtsd2si", "cvttsd2si"):
+             if nops >= 2:
+                 return [_fmt_operand_write(ops[0], f"(int32_t){_sse_read(ops[1])}") + f" /* {m} */"]
+@@ -3821,7 +3827,11 @@
+         if m == "fild":
+             if len(ops) >= 1 and ops[0].type == "mem":
+                 smem = _smem_accessor(ops[0].mem_size)
+-                return [f"fp_push((double){smem}({_fmt_mem(ops[0])})); /* fild */"]
++                address = _fmt_mem(ops[0])
++                value = f"(double){smem}({address})"
++                if ops[0].mem_size == 4:
++                    value = f"RECOMP_I32_TO_F64({address}, {smem}({address}))"
++                return [f"fp_push({value}); /* fild */"]
+             return [f"/* fild {insn.op_str} */"]
+ 
+         if m in ("fist", "fistp"):
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -47,6 +47,17 @@
+ #include <stdint.h>
+ #include <stddef.h>
+ #include <string.h>
++
++/* Optional title numeric policy. The generic runtime retains x86 conversion
++ * semantics; a title can supply a separate header without baking its addresses
++ * into the instruction lifter. Memory operands are evaluated only once. */
++#ifdef RECOMP_NUMERIC_POLICY_HEADER
++#include RECOMP_NUMERIC_POLICY_HEADER
++#else
++#define RECOMP_I32_TO_F32(address, value) ((float)(int32_t)(value))
++#define RECOMP_I32_TO_F64(address, value) ((double)(int32_t)(value))
++#endif
++
+ /* math.h is load-bearing, and its absence was invisible.
+  *
+  * The lifter emits sqrt() and fabs() for fsqrt/fabs -- 146 of them in one of
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -107,6 +107,13 @@
+     ${GAME_SOURCES}
+     ${RECOMP_GEN_SOURCES}
+ )
++
++# Shared title policy for native fractional animation/effect updates. The
++# original integer conversion remains exact while native_fps is disabled.
++if(TSFP_PC_CONTROLS_DIR OR TSFP_NATIVE_DIR)
++    target_compile_definitions(${PROJECT_NAME} PRIVATE
++        RECOMP_NUMERIC_POLICY_HEADER="pc_native_numeric.h")
++endif()
+ 
+ # A build-generated resource embeds the icon before executable identity sealing.
+ # SDL on Windows uses the executable's first group icon for its window class.
