@@ -65,6 +65,13 @@ fractional intervals while `17E680` cleared throttle/brake fields `+530/+534`.
 The shared numeric gate now admits every advancing native interval there too.
 `17DA00 -> 172EE0` runs in `native_vehicle_driver.c` with controlled action,
 model and wake services; original mode and zero-float pause retain their gates.
+Steering easing in `172EE0` computes a speed-dependent target, multiplies its
+error by live game time at `173062`, then by 0.07 at `17306A`, and publishes
+the result to eligible wheel components. The latter site now shares the
+existing aim-easing coefficient subdivision so fractional raw intervals retain
+the original one-tick response at the current game speed. Whole/catch-up steps
+and overshooting weights retain original arithmetic. This is separate from
+the unresolved real-terrain trajectory differences.
 Build `67c1864` passes and matched live initial acceleration now agrees within
 0.1% at the three presets. Later pillar/bank contact diverges, so full handling
 acceptance remains separate. Latest candidate recovery is `vehicle-67c1864`;

@@ -5827,3 +5827,46 @@ cleaned by the runner. The new candidate EXE/PDB is retained under
 recycled. Playable `4adb6b0` was restored with its previously recorded hash
 verified. The root object cache remains the newer candidate, requiring a
 fresh link after preserving the playable pair before any subsequent rebuild.
+
+### Steering response subdivision
+
+The next original-routine audit identifies a separate steering-response mismatch.
+`172EE0` computes a speed-dependent signed target, subtracts the current steering
+value at vehicle data `+538`, multiplies by float game time at `173062` and
+then by 0.07 at `17306A`. Dividing this linear weight over more rendered updates
+changes its remaining-error decay. The same half-second quarter-speed stage
+ends at -0.102306642 with the original 60 update response but -0.100790747 at
+native120 before correction. This is a controlled steering result, not proof
+of the earlier static-pillar trajectory's cause.
+
+The shared numeric policy adds only `17306A` to the existing aim-easing rule.
+For a fractional raw interval, it splits the authored remaining-error factor
+at the current game-speed ratio. One-tick and catch-up intervals keep original
+arithmetic, as do authored weights outside the decay range. The speed-dependent
+target clamp and wheel eligibility/distribution remain original code.
+
+The expanded `native_vehicle_driver.c` executes full original `17DA00/172EE0`
+from the hash-verified US XBE. It compares independent 30-step Original60
+recurrences for left, right and released targets across Original60/native60,
+120/144 and irregular raw intervals, three prescribed game speeds and three
+vehicle-speed inputs (including the target clamp). Every advancing sample must
+publish fresh steering and the correct eligible-wheel angle; other wheels,
+paused state, stack and saved registers remain intact. Whole/catch-up and
+overshooting-weight cases preserve their linear step. The before-fix log fails
+at native120; the corrected fixture passes and the independent
+`legacy-steering` mutation restores the failure. Logs:
+`logs/native-vehicle-steering-{before,after}.log`.
+
+Two asset-free synthetic SSE cases in the same registered Python suite exercise
+the actual lifter and numeric policy at the steering site and an unrelated
+site, including Original-mode arithmetic and preserved upper lanes. Both pass
+on Windows (`logs/native-steering-coefficient.log`). Private original-routine
+cases still skip when the game asset is absent. World geometry, wheel forces,
+physical input and live handling remain separate acceptance work; no full-game
+or native Mac claim follows from these checks.
+
+The full Windows timing/vehicle/float-join/vehicle-join/generation suite passes
+117 tests in 153.58 seconds (`logs/native-steering-regressions.log`); another
+77 context/backlog/scope checks pass. Across 135 steering stage comparisons,
+maximum absolute error from the independent Original60 recurrence is
+0.000000238. Full game rebuild and live handling validation remain pending.

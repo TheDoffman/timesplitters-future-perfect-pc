@@ -98,6 +98,15 @@ throttle at native120 before the `17DA03` gate correction; `legacy-driver`
 must still fail. It checks normal/slow/fast/irregular intervals, fresh analog
 throttle, braking, reverse, release, pause and the guest ABI. Wake, model and
 seat-action services are controlled; full handling requires the live replay.
+The steering extension executes those same complete original routines with
+left/right/released targets, three vehicle-speed inputs including the target
+clamp, quarter/normal/triple time, 60/120/144 and irregular intervals. It checks
+the original-60 recurrence, fresh steering outputs, wheel eligibility, pause
+and unchanged whole/catch-up arithmetic. `legacy-steering` independently removes
+only the new coefficient correction and must fail at native120. The asset-free
+synthetic SSE coefficient test in the same Python suite runs on both CI hosts;
+it checks real lowering, untouched upper lanes, Original-mode arithmetic and
+an unrelated instruction site. Full wheel/terrain forces remain outside it.
 The `67c1864` replay corrects the original throttle deficit (initial travel
 within 0.1% across presets); later pillar/bank paths still diverge. Inspect both
 the sampled input window and subsequent captures before declaring acceptance.

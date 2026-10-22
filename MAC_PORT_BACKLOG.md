@@ -3585,6 +3585,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle steering follow-up (2026-10-22, WIP):** Shared numeric policy adds
+  original coefficient site `17306A` to the existing fractional easing rule.
+  No host adapter is needed. Original driver/steering tests reproduce slower
+  native120 response before correction and pass afterward, including signed
+  steering/release, speed target clamp, wheel eligibility and time variations.
+  Both-host CI registration already includes the extended vehicle test file
+  and its new asset-free SSE case. Windows full rebuild/live handling and Mac
+  execution of this follow-up remain pending; see STATUS.md. This does not
+  establish the cause of the earlier pillar/bank trajectory divergence.
+
 - **Vehicle/rigid-clock candidate (2026-10-22):** WIP branch
   `fix/native-vehicle-physics`; shared `src/pc_native_numeric.h`,
   `src/pc_native_timing_guest.inc`, and `patches/zzzz-native-vehicle-physics.patch`.

@@ -1,3 +1,26 @@
+## 2026-10-22 — Vehicle steering response candidate
+
+The WIP `fix/native-vehicle-physics` branch now preserves the original steering
+easing response on fractional updates. Original `172EE0` multiplies steering
+error by live game time and then 0.07. Linear subdivision makes the remaining
+error decay more slowly at native rates. The shared coefficient rule now covers
+only site `17306A`, retaining the speed-dependent steering target, wheel
+eligibility, Original60, whole/catch-up and overshooting-weight behavior.
+
+The expanded full-original driver fixture fails before this correction at
+native120, then passes with the correction and rejects the `legacy-steering`
+negative control. It checks left/right/released steering, vehicle speed and its
+target clamp, quarter/normal/triple time, 60/120/144, irregular intervals, fresh
+wheel output, pause and ABI. Two asset-free synthetic SSE checks also pass,
+including an unrelated site and preserved upper lanes. Physics and world
+geometry remain controlled boundaries. All 117 timing/physics/translator/
+generation checks pass in 153.58 seconds, plus 77 context/backlog/scope checks.
+The 135 steering stage comparisons differ from their Original60 reference by
+at most 0.000000238. A rebuilt game and live handling acceptance are pending;
+the prior playable executable is unchanged.
+This is not an established fix for the earlier pillar/bank trajectory difference.
+See MAC-060 and the steering audit in the high-refresh regression record.
+
 ## 2026-10-22 — Vehicle and rigid-body timing candidate
 
 On `fix/native-vehicle-physics` (WIP candidate), original-routine tests exposed

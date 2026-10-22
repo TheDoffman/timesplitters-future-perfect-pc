@@ -279,14 +279,17 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
             return fminf(high,fmaxf(low,left*powf(right,exponent)));
         }
     }
-    /* The player aim/weapon-offset easing already multiplies the error by
-     * game delta before these six coefficient multiplies. Linear subdivision
+    /* Player aim/weapon-offset and vehicle steering easing multiply the error
+     * by game delta before these coefficient multiplies. Linear subdivision
      * changes its settling rate. Match the original 60-Hz response at the
      * current game speed: scale the authored weight to one raw tick, then
      * split its remaining-error factor over this fractional raw interval.
+     * Vehicle 17306A uses 0.07 after the steering error's time multiply;
+     * leave its speed-dependent target and wheel distribution unchanged.
      * Keep whole/catch-up updates and the original snap branches unchanged. */
     if ((site == 0x25ABCEu || site == 0x25AC1Eu || site == 0x25AC80u ||
-         site == 0x25ACCAu || site == 0x25B13Cu || site == 0x25B16Du) &&
+         site == 0x25ACCAu || site == 0x25B13Cu || site == 0x25B16Du ||
+         site == 0x17306Au) &&
         g_tsfp_native_timing_active) {
         float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
         float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);

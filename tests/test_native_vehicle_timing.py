@@ -43,7 +43,7 @@ def test_physics_wrapper_retains_original_body():
     ('native_contact_velocity.c', [(0x1667c0, 0x16694c), (0x166060, 0x166136)],
      ['legacy-contact-velocity']),
     ('native_vehicle_driver.c', [(0x17da00, 0x17df97), (0x172ee0, 0x1730d3)],
-     ['legacy-driver']),
+     ['legacy-driver', 'legacy-steering']),
     ('native_vehicle_timing.c', [(0x17e680, 0x17f2d2), (0x175150, 0x175399),
                                (0x1515e0, 0x15163b), (0x1521d0, 0x15225d),
                                (0x176530, 0x1766de)],
@@ -218,6 +218,60 @@ int main(void) {
     policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
     print(compile_and_run(tmp_path, source.replace('/* TARGET */', str(int(start == 0x171f80)))))
+
+
+@pytest.mark.parametrize('site', [0x17306a, 0x123400])
+def test_vehicle_steering_coefficient(tmp_path, site):
+    # Authored MULSS XMM1,[coefficient]; RET. Exercise real lowering without
+    # distributing game bytes; the private fixture covers the full caller.
+    image = bytes.fromhex('f30f590d00d04700c3')
+    config._install([config.Section('.text', site, len(image), 0, len(image), True)],
+                    site, 0, 'synthetic-steering-coefficient')
+    info = dict(name='tick', end=site + len(image))
+    code = FunctionTranslator(image, {site: info}).translate_function(site, info)
+    assert 'RECOMP_F32_MUL_AT' in code and 'RECOMP_UNIMPL' not in code
+    source = r'''
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define RECOMP_GENERATED_CODE
+/* POLICY */
+#include "recomp_types.h"
+ptrdiff_t g_xbox_mem_offset;
+int g_tsfp_native_timing_active;
+RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
+RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
+/* ROUTINES */
+int main(void) {
+    void *memory=calloc(1,0x800000);assert(memory);
+    g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
+    MEMF(0x47d000)=.07f;
+    const unsigned rates[]={60,120,144};
+    const float speeds[]={.25f,1.f,3.f};
+    for(unsigned mode=0;mode<2;mode++)for(unsigned r=0;r<3;r++)
+    for(unsigned s=0;s<3;s++) {
+        unsigned fps=rates[r];float raw=60.f/fps,game=raw*speeds[s];
+        g_tsfp_native_timing_active=mode;
+        MEMF(0x4e7948)=raw;MEMF(0x4e794c)=game;
+        float actual=.35f,reference=.35f;
+        unsigned reference_steps=mode && /* TARGET */ ? 30:fps/2;
+        float reference_delta=mode && /* TARGET */ ? speeds[s]:game;
+        for(unsigned i=0;i<reference_steps;i++)
+            reference+=(-.75f-reference)*reference_delta*.07f;
+        for(unsigned i=0;i<fps/2;i++) {
+            g_xmm1.f[0]=(-.75f-actual)*game;g_xmm1.f[1]=123.f;
+            g_esp=0x2000;tick();actual+=g_xmm1.f[0];
+            assert(g_esp==0x2004 && g_xmm1.f[1]==123.f);
+        }
+        assert(fabsf(actual-reference)<.000003f);
+    }
+    free(memory);puts("PASS: steering coefficient lowering, Original60 response, unrelated site and SSE lanes");
+    return 0;
+}
+'''
+    policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
+    source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
+    print(compile_and_run(tmp_path, source.replace('/* TARGET */', str(int(site == 0x17306a)))))
 
 
 def test_physics_secondary_step_rounding(tmp_path):
