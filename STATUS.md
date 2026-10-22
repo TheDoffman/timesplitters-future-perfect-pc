@@ -1,3 +1,22 @@
+## 2026-10-22 — Vehicle and rigid-body timing candidate
+
+On `fix/native-vehicle-physics` (local candidate), original-routine tests exposed
+another native timing gap: at steady 120/144 FPS the rigid-body clock and vehicle
+spring update consumed only 0.5/0.4167 seconds per second. The candidate processes
+every advancing interval, splits long rigid-body intervals into bounded substeps,
+and preserves the vehicle's linear adjustment and integer rest-timer cadence.
+Returning to Original 60 rebases its old averaged timestep after pause, avoiding
+native-sized history temporarily slowing original physics.
+
+Windows validation: 67 timing tests passed, followed by four focused checks
+covering slow/fast motion, catch-up, the original secondary solver-step
+selection and history handoff. All 114 translator/context/backlog companion
+checks and four full-stack install/upgrade checks also passed. No gameplay build or live
+vehicle validation yet; collision/force integration remains an acceptance gap.
+This candidate has not replaced the tested combined crowd-performance build.
+Shared implementation and tests are registered for both CI hosts; native Mac
+execution is pending (MAC-060). No PR/release published for this candidate.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

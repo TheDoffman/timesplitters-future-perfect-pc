@@ -5360,3 +5360,40 @@ No screenshots or game assets were added. Native Mac execution, other scenes,
 full-game behavior, original water appearance and the measured pacing gaps remain
 open. The next targeted pacing check should distinguish settings application,
 original guest-clock waiting and host flip waiting during the 144-to-60 handoff.
+
+
+## Vehicle and rigid-body clock candidate (2026-10-22)
+
+The complete original US vehicle dispatcher (`17E680`) calls spring update
+`175150` behind whole-tick gate `17E6C3`. In the controlled stationary fixture,
+60/120/144 rendered updates consumed 1/0.5/0.416666657 seconds per second.
+Opening only the gate restored time but made linear adjustment `17E6EC` run
+2/2.4 times too quickly. The original rest routine (`176530`) similarly reached
+its 60-count sleep threshold after 0.5/0.416666667 seconds if simply called at
+native cadence. These are coupled changes, not permission to open all gates.
+
+The underlying complete rigid clock (`171FB0`) also showed 60 solver submissions
+and 1/0.5/0.416666670 seconds at 60/120/144 after history settled. The candidate
+uses each live game interval and `ceil(delta)` equal substeps instead of losing
+zero-whole intervals. The original collision-dependent secondary step selection
+is retained. Its original-60 history is rebased only after a native handoff, at
+the first advancing interval, including return through pause or slow motion.
+
+Candidate tests report 60/120/144 spring calls and approximately one second;
+linear state 20 ends at 13.999977112/14.000053406/14.000045776. Rest eligibility
+occurs at one second at every rate. Spring displacement remains step-size
+sensitive (.297045410/.300243407/.300794750 in this fixture); equal integrated
+time does not establish identical handling. The first combined native timing
+run passed 67 tests. Final focused four tests pass, including slow/fast motion, catch-up, the
+original secondary-step selection and history handoff. Companion translator,
+context and backlog checks pass114; full-stack install/upgrade checks pass four.
+
+`tests/test_native_vehicle_timing.py` lifts original complete routines from the
+hash-verified private US XBE; controlled world, driver, rest-eligibility and
+solver services prevent claims about real geometry/contact behavior. Four
+negative controls separately remove gate, linear adjustment, rest cadence and
+rigid-clock fixes and must fail. An asset-free synthetic byte MOV/DEC/store test
+runs on both selected CI hosts; the private-XBE tests skip when assets are absent.
+No generated code or private assets are distributed. Full driving/force and
+collision integration, live modes, multiplayer physics, performance and native
+Mac execution remain unverified. The playable combined build is unchanged.

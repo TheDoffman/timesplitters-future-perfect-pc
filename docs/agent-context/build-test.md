@@ -25,6 +25,17 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
+without assets on both CI hosts. With the supported local US XBE it also lifts
+the complete vehicle dispatcher, spring helper, linear adjustment, rest routine
+and rigid-body clock. Controlled world/driver/solver boundaries keep this a
+timing test, not a live handling claim. Negative controls independently remove
+the gate, linear-rate, rest-timer or rigid-clock correction and must fail.
+`tests/native_timing_guest.c` checks physics-history handoff through the actual
+clock wrapper, including paused return and slow motion. Candidate vehicle and
+collision/force integration still require broader acceptance before replacing
+the existing playable build.
+
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused
 a false failure during alpha.2 validation; clearing it within the self-test

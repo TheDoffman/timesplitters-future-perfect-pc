@@ -26,6 +26,15 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+The candidate `-native-vehicle-physics.patch` adds a default-identity
+`RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory. Title
+policy only changes US rest-countdown load `0x176673`; its following DEC/TEST
+remain generated instructions. The loader places it after the numeric policy
+and before `-native-surface-live.patch`. Historical pre-native stacks exclude
+this dependent patch; current full-stack application and unwind remain required.
+See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
+original vehicle/rigid-clock fixtures. Full handling/collision acceptance is pending.
+
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
 | Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |

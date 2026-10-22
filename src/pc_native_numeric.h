@@ -88,6 +88,17 @@ extern float pc_native_weapon_sway(float original);
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
+    /* The rigid-body clock divides its elapsed interval across this many
+     * solver steps. A carried whole count can be zero while time advances.
+     * Split long intervals as well, so each native substep is <= one tick.
+     * The denominator uses this same integer register, not a float hook. */
+    if ((site==0x171FB9u || site==0x17208Eu || site==0x172119u) &&
+        address==0x4E7944u && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if (!(delta>0.f) || !isfinite(delta)) return 0;
+        if (delta<2147483648.f) return (uint32_t)ceilf(delta);
+        return value;
+    }
     /* Animated surfaces cache their procedural-texture dispatch per view.
      * A zero-whole native frame can arrive on a new console vblank and cache
      * a no-op; the following whole tick then sees that same vblank and loses
@@ -116,7 +127,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
-         site == 0x2B93DAu || site == 0x14A5CDu) &&
+         site == 0x2B93DAu || site == 0x14A5CDu || site == 0x17E6C3u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -213,6 +224,11 @@ extern uint32_t pc_native_kind35_gate(uint32_t value);
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* The old physics clock averages fifteen rendered-frame deltas, but only
+     * runs on whole ticks. Native simulation consumes this frame's elapsed
+     * time directly; the three count loads above partition that exact span. */
+    if (site==0x172099u && g_tsfp_native_timing_active)
+        right=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
     /* Airborne player paths relax the view-height offset by 0.8 per original
      * update, including at slow game speed. Split that factor in raw time;
      * using game time would change the original slow-motion response. The
@@ -312,6 +328,15 @@ extern float pc_native_kind35_turn(float value);
  * carried whole ticks; skipped decisions do not advance the shared RNG. */
 static inline uint32_t pc_native_push_imm(uint32_t site,uint32_t value)
 {
+    /* Vehicle adjustment: one authored step per original live update, capped
+     * at one even for catch-up/fast game speed; slow motion uses game time. */
+    if (site==0x17E6ECu && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        float factor;memcpy(&factor,&value,sizeof factor);
+        factor*=raw>0.f && game>0.f ? fminf(1.f,fminf(raw,game)) : 0.f;
+        memcpy(&value,&factor,sizeof value);
+    }
     if (site==0x2B963Fu && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
         if (delta!=1.0f) {
@@ -332,7 +357,26 @@ static inline int pc_native_skip_aim_random(void)
 /* Test the constant site outside the helper so other calls remain direct,
  * including on compilers that decline to inline function-pointer helpers. */
 #define RECOMP_PUSH_IMM_U32_AT(site,value) \
-    ((site)==0x2B963Fu ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+    (((site)==0x2B963Fu || (site)==0x17E6ECu) ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+/* The vehicle rest countdown still decrements integer bytes. Compensate only
+ * its load on intervals without an authored tick; the following byte DEC
+ * then retains the stored count. Its next TEST replaces the DEC flags.
+ * At fast game speed the original updater runs at raw 60-Hz cadence; at
+ * slow speed it runs on game ticks. Do not intersect the two carried clocks,
+ * whose phases can diverge across pauses. Existing expired values stay due. */
+static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
+{
+    if (site==0x176673u && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        uint32_t address=game<raw ? 0x4E7944u : 0x4E7940u;
+        if (!(game>0.f) || !*(const uint32_t *)((uintptr_t)address+g_xbox_mem_offset))
+            return (value+1u)&255u;
+    }
+    return value;
+}
+#define RECOMP_LOAD_U8_AT(site,value) \
+    ((site)==0x176673u ? pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \

@@ -20,6 +20,18 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Native vehicle/physics candidate (`fix/native-vehicle-physics`):
+`pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
+`0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains
+the rest timer's authored raw/game cadence at byte load `0x176673`.
+Rigid-clock loads `0x171FB9/0x17208E/0x172119` select `ceil(game_delta)` solver
+substeps; multiply `0x172099` uses the live interval instead of a fifteen-frame
+average. Original 60 remains on its existing arithmetic. On native-to-original
+handoff, `pc_native_timing_guest.inc` rebases that old history at the first
+advancing interval, deferring across pause. Routine tests establish elapsed-time
+and timer behavior; active driving, collision response and Mac gameplay are
+still unverified. The playable combined crowd build has not been replaced.
+
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
 | Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |

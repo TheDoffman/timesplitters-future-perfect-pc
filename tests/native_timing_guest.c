@@ -40,7 +40,11 @@ uint64_t xbox_ReadTimeStampCounter(void) { return (uint64_t)counter*733333333/14
 void sub_000455B0(void) { paused_calls++; g_esp+=4; }
 void sub_000455C0(void) { resume_calls++; g_esp+=4; }
 void sub_00150190(void) { WORD(0x74914C)+=WORD(0x4E7940); g_esp+=4; }
-static void original(void) { original_calls++; g_esp+=4; }
+static float original_game_delta=-1.f;
+static void original(void) {
+    original_calls++;g_esp+=4;
+    if(original_game_delta>=0.f)FLOAT(0x4E794C)=original_game_delta;
+}
 #include "../src/pc_native_timing_guest.inc"
 #include "../src/pc_native_numeric.h"
 static int test_button;
@@ -168,6 +172,24 @@ static void live_rates(void)
     frame();assert(FLOAT(0x4E7948)>.416f && FLOAT(0x4E7948)<.417f);
     puts("PASS: live 60/120/144 transitions, pacing, remainder continuity, pause/resume and stale clock reset");
 }
+static void physics_history_transitions(void)
+{
+    original_game_delta=1.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==1.f);
+    for(unsigned i=0;i<15;i++)FLOAT(0x74c414+4*i)=3.f;
+    frame(); /* Ordinary Original 60 updates retain their authored history. */
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==3.f);
+    setting="120";frame();
+    for(unsigned i=0;i<15;i++)FLOAT(0x74c414+4*i)=.5f;
+    original_game_delta=0.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==.5f);
+    original_game_delta=.25f;frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==.25f);
+    setting="144";frame();original_game_delta=1.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==1.f);
+    original_game_delta=-1.f;
+    puts("PASS: physics history rebased only after native-to-original handoff, including pause and slow motion");
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -206,6 +228,7 @@ int main(void)
     live_rates();
     input_edges();
     input_after_pause();
+    physics_history_transitions();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

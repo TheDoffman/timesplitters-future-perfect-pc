@@ -3585,6 +3585,19 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle/rigid-clock candidate (2026-10-22):** Local branch
+  `fix/native-vehicle-physics`; shared `src/pc_native_numeric.h`,
+  `src/pc_native_timing_guest.inc`, and `patches/zzzz-native-vehicle-physics.patch`.
+  No OS-specific behavior or new adapter. Native intervals reach the original
+  rigid solver and spring updater; linear adjustment and byte rest timer retain
+  authored time units. Original-clock handoff rebases its timestep history.
+  Windows timing suite: 67 passed; final focused four, companion114 and patch
+  install/upgrade four also passed. Both-host CI registration includes an
+  asset-free lifted byte-timer check; original routine tests require the private
+  supported XBE. Mac compilation/execution and live driving, contact response,
+  pause/catch-up and preset switching remain pending. This remains a local
+  candidate, not verified Mac support or a shipped gameplay fix.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.
