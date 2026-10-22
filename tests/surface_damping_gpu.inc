@@ -33,8 +33,8 @@
             for(unsigned channel=0;channel<4;channel++)dst[channel]=mapped<3?vectors[mapped][channel]:
                 ((definition[10+bank*8+stage]>>shifts[channel])&255)/255.f;
         }
-        /* Corrected coefficient is a diagnostic uniform; production still
-         * uses packed constants. Delta 1 retains the original packed value. */
+        /* Use the shared candidate coefficient through this isolated uniform.
+         * Delta 1 retains the actual original packed value. */
         CHECK(cb.c0[7][2]==damping);
         rhi_buffer_update(uniforms,&cb);
         td.width=td.height=1;td.format=RHI_FORMAT_R32G32B32A32_FLOAT;td.bind=RHI_BIND_SAMPLED;

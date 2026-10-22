@@ -5614,3 +5614,52 @@ reports/captures and `procedural-surface-coefficients-summary.json`. Each raw
 23,592,960-byte trace was gzip-compressed and byte-exact roundtrip-verified
 before recycling the raw file; selected PNGs and provenance are retained.
 No private assets, generated code or screenshots are distributed in Git.
+
+### Deterministic coupled feedback and storage comparison
+
+`surface_coupling_gpu.inc` runs the unchanged production-translated second
+feedback shader on D3D11 WARP. Texture 0 supplies persistent state initialized
+to R/G/B = 0.5/0.5/0.65; texture 1 supplies a fixed neutral neighbor. The initial
+shader inputs are identical for every run. Actual GPU render targets use float32,
+half-float or UNORM8; readback feeds their stored G/B into the next update without
+an extra conversion. Constants use the actual uploader anchors and the current
+precise fractional helper. This tests the coupled kernel rather than only its
+isolated damping coefficient.
+
+Every pixel/update is compared with the unsaturated coupled equation. Float32
+error is below 3e-6, half-float below 0.0005, UNORM8 below 0.501/255. The states
+stay within the tested unsaturated range. All runs execute one second; results:
+
+| Storage | FPS | Final green | Final blue | Changed updates |
+| --- | ---: | ---: | ---: | ---: |
+| Float32 | 60 | 0.521120727 | 0.446032643 | 60/60 |
+| Float32 | 120 | 0.520336211 | 0.448130667 | 120/120 |
+| Float32 | 144 | 0.520253778 | 0.448478669 | 144/144 |
+| Half-float | 60 | 0.520507812 | 0.448242188 | 60/60 |
+| Half-float | 120 | 0.519531250 | 0.452636719 | 120/120 |
+| Half-float | 144 | 0.519531250 | 0.454833984 | 144/144 |
+| UNORM8 | 60 | 0.521568656 | 0.443137258 | 60/60 |
+| UNORM8 | 120 | 0.513725519 | 0.443137258 | 120/120 |
+| UNORM8 | 144 | 0.521568656 | 0.447058827 | 144/144 |
+
+Even with precise coefficients, float32 fractional coupling does not reproduce
+the complete one-tick coupled update. Half-float adds a separately measurable
+rounding effect; byte storage also changes the trajectory. The assertions
+characterize these discrepancies, not accept them as full-game equivalence.
+There is no random input, smoothing pass, first feedback pass or spatial field
+in this fixture, so these results do not by themselves explain the full scene's
+variance deficit. They identify two independent next targets for integration
+work. Local evidence: `logs/surface-coupling-gpu.log`. The four original-program
+GPU cases remain asset-dependent and Windows-only; hosted skips do not prove
+native Mac GPU execution.
+
+PR #298's first historical upgrade checks failed because three old-stack
+fixtures selected the new coefficient patch while omitting its surface-constant
+prerequisite. Corrected old-stack selection excludes both. Full current-stack
+installation, fresh/repeated builds and local-edit preservation remain tested;
+no runtime patch or game behavior is weakened to bypass this failure.
+
+After the fixture repair, all four affected upgrade/fresh-install cases pass
+locally in 65.37 seconds. The four original shader cases, ordered constants and
+context/backlog checks pass 17 cases in 14.88 seconds. Source-only validation
+needs no rebuild or additional gameplay run because runtime code is unchanged.

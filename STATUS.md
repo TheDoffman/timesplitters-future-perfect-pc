@@ -1,3 +1,23 @@
+## 2026-10-22 — Controlled coupled-water and upgrade follow-up
+
+The original second feedback shader now has a deterministic fixed-neighbor
+comparison at 60/120/144, with actual float32, half-float and UNORM8 render
+targets. All pixels match the controlled coupled equations within each format's
+rounding bound. After one second, float32 blue is 0.446033 at 60, 0.448131 at
+120 and 0.448479 at 144. Half-float gives 0.448242/0.452637/0.454834; UNORM8
+gives 0.443137/0.443137/0.447059. This separates timestep coupling and storage
+rounding without RNG. It does not reproduce the complete first pass, smoothing,
+forcing or spatial waves, and does not attribute all gameplay amplitude change
+to either factor. The experimental water path remains disabled.
+
+PR #298's historical-upgrade check exposed a fixture error: three synthetic old
+patch sets excluded surface-constant support but accidentally included the new
+coefficient patch that requires it. Those checkpoints now exclude both; their
+upgrade still installs the full current stack and checks idempotence. Current
+runtime code and the previously built combined executable are unchanged.
+All four affected local upgrade/fresh-install cases pass (65.37 seconds), and
+17 shader/queue/context/backlog cases pass (14.88 seconds).
+
 ## 2026-10-22 — Water coefficient precision candidate
 
 `fix/native-water-coefficients` extends the existing disabled water experiment

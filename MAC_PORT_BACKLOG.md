@@ -3599,6 +3599,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Coupled-water follow-up (2026-10-22, PR #298):** Controlled Windows WARP
+  execution distinguishes fractional coupling from float32/half-float/UNORM8
+  storage effects. It uses the original second shader with a fixed neighbor;
+  full spatial dynamics and native Mac GPU/scene behavior remain awaiting
+  validation. The shared historical-upgrade fixture now excludes the new
+  coefficient patch when constructing old stacks lacking its prerequisite.
+
 - **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
   policy and HLE patch extend the existing disabled experiment; no new host
   adapter or capture format. The actual current guest uploader supplies the

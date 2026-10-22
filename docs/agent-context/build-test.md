@@ -408,3 +408,13 @@ windows rather than treating 360 samples as equal time at different rates.
 Unpaired RNG and synchronous GPU readback prevent mechanics/pacing claims.
 Current fresh images and reviewed stills are not complete wave acceptance;
 the measured amplitude difference remains recorded in STATUS.
+
+`surface_coupling_gpu.inc` exercises the unchanged second feedback shader with
+persistent G/B and a fixed neutral neighbor at 60/120/144, separately storing
+outputs in float32, half-float and UNORM8 targets. Identical controlled inputs
+and per-pixel equations separate timestep coupling from actual GPU storage
+rounding; it deliberately excludes smoothing, random forcing and spatial waves.
+The earlier scalar damping case alone cannot prove coupled equivalence.
+Historical upgrade fixtures exclude the later coefficient patch together with
+its surface-constant dependency before installing the complete current stack;
+including only the newer patch creates an impossible historical checkpoint.

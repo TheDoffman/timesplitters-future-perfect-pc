@@ -20,7 +20,8 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
 @pytest.mark.parametrize('address,case,stage', [(0x4bbf10, 'surface_feedback_gpu.inc', 7),
                                                 (0x4bbc40, 'surface_filter_gpu.inc', 4),
-                                                (0x4bbf10, 'surface_damping_gpu.inc', 7)])
+                                                (0x4bbf10, 'surface_damping_gpu.inc', 7),
+                                                (0x4bbf10, 'surface_coupling_gpu.inc', 7)])
 def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
@@ -34,7 +35,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
         config.configure_from_xbe(str(xbe))
         offset = config.va_to_file_offset(address)
         (tmp_path / 'feedback.bin').write_bytes(image[offset:offset + 240])
-        if case == 'surface_damping_gpu.inc':
+        if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc'):
             import struct
             from tools.recomp.translator import FunctionTranslator
             from test_recomp_float_joins import compile_and_run
@@ -82,7 +83,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
 
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
-    if case == 'surface_damping_gpu.inc':
+    if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc'):
         setup = setup.replace('#include "rhi.h"','#include "rhi.h"\n#include "surface_upload.h"')
     setup = setup.replace('#include "rhi.h"',
                           '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
