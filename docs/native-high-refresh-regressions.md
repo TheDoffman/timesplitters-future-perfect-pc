@@ -5670,3 +5670,51 @@ The previous playable crowd EXE/PDB are restored and their executable hash
 reverified. Current candidate files are in `private/build-recovery/vehicle-67c1864`;
 the superseded `vehicle-ba4f0bf` binary pair was recycled. Source remains on the
 focused WIP branch, without a candidate PR or release. Mac execution is pending.
+
+### Character contact velocity and notification follow-up
+
+Analysis of the existing pillar replay finds the approaches differ before
+impact. Aligning adjacent asynchronous observations at Z=66 gives X values
+-11.46446/-11.64785/-11.75056 and headings 2.81737/2.18834/1.84633 degrees
+at requested 60/120/144. The alignment is an analysis of samples, not a game
+timing change. Evidence is `private/pipeline/vehicle-contact-approach.json`.
+These small pre-impact differences prevent attributing the later different
+outcomes to a collision defect without a controlled contact comparison.
+
+The audit independently identifies a missed gate in original contact-relative
+velocity function `1667C0`: `166899` skips the moving character contribution on
+zero-whole native updates. The guarded conversion already divides per-update
+displacement by float game time. The gate register is immediately restored;
+it is not a tick counter. The shared numeric policy now admits positive live
+game intervals there, preserving original mode and avoiding division by zero
+on native pauses with a stale whole tick. Static and rigid-body branches are
+unaffected. This is not a fix for the static-pillar trajectory.
+
+`native_contact_velocity.c` lifts full `1667C0/166060` from the verified US XBE.
+It checks analytical point velocity (linear plus angular cross offset), body,
+static and character contacts, all axes and signed/zero actor velocities,
+60/120/144, quarter/triple speed, irregular intervals, pause, nullable output
+and stack/callee-saved state. Before correction it passes Original60 then fails
+at native120 (`logs/native-contact-velocity-before.log`). The restored-gate
+negative control must still fail at that rate.
+
+The coupled rigid fixture adds a body resting on a character moving upward at
+2 units/second with gravity. A body-position-only assertion passes even with
+the old gate: the impulse solver independently reads live displacement.
+The observable defect is the relative normal/vector velocity forwarded through
+the original `16E780/16DA90` path to the body impact callback. The corrected
+pipeline reports relative velocity near zero instead of the body's absolute
+2 units/second on fractional updates. The callback assertion rejects
+`legacy-character-contact`; the original dispatcher and contact-kind table run
+unchanged. Body positions after one second remain approximately
+1.999984/1.999991/2.000027 at 60/120/144 with velocity approximately 2.
+Material coefficients are controlled at zero, so actual damage/effects and
+live character movement remain outside this check.
+
+Validation: 113 timing/vehicle/float-join/vehicle-join/generation cases pass in
+139.99 seconds (`logs/native-contact-velocity-regressions.log`), followed by the
+expanded original notification-path fixture in 12.04 seconds
+(`logs/native-character-contact-notification.log`). These original-routine
+tests require the private supported XBE. Full game build/live contact and
+native Mac execution of this correction remain pending. The playable crowd
+EXE/PDB and retained driver candidate `67c1864` are unchanged.

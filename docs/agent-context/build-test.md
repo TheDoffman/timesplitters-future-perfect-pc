@@ -67,6 +67,16 @@ seat-action services are controlled; full handling requires the live replay.
 The `67c1864` replay corrects the original throttle deficit (initial travel
 within 0.1% across presets); later pillar/bank paths still diverge. Inspect both
 the sampled input window and subsequent captures before declaring acceptance.
+`native_contact_velocity.c` now lifts original `1667C0/166060` to check rotating
+body point velocity, body/static/character contacts, all movement axes and
+directions, clock speeds, irregular intervals, nullable output, pause and ABI.
+The motion fixture's moving support additionally executes `16E780/16DA90`
+and the original contact-kind table through a controlled body callback. With
+zero material coefficients, damage/effects stay disabled. It verifies fresh
+reported normal/vector velocity while body motion stays consistent. Negative
+`legacy-contact-velocity` and `legacy-character-contact` controls independently
+restore the missed gate and fail at native120. These private-XBE cases skip on
+asset-free CI; CI registration is not evidence of their execution on Mac.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused

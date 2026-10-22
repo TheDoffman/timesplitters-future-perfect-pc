@@ -72,6 +72,19 @@ are retained locally, and the prior playable crowd build is restored.
 Windows validation passes 112 timing/vehicle/translator/generation cases and
 77 repository-context/backlog/CI-scope cases after this correction.
 
+Further contact audit finds `1667C0` discards character velocity at gate
+`166899` on zero-whole native updates. The shared policy now uses positive
+fractional game time there. Original contact math passes body/static/character,
+rotation, speeds, pause and ABI cases; old-gate controls fail at native120.
+The original solver plus `16E780/16DA90` forwarding path demonstrates the
+corrected normal/vector velocity reaches a body callback. In that controlled
+moving-support case body motion was already correct; this fixes contact
+information, not a proven terrain-trajectory cause. Windows validation passes
+113 timing/vehicle/translator/generation cases, followed by the expanded
+original-notification case. Full game build/live character-contact and native
+Mac validation of this last correction are pending. The existing playable
+binary and retained `67c1864` candidate remain unchanged.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

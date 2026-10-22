@@ -52,6 +52,11 @@ release on fractional frames; seat weapons and live handling remain unverified.
 The rebuilt live replay now matches initial acceleration within 0.1% across
 the three presets, but later terrain contact differs. Do not infer collision
 parity or measured 144 FPS from that corrected throttle window.
+The subsequent `166899` correction keeps character contact velocity fresh
+on fractional updates. Original contact math and the body callback forwarding
+path verify the fix. In the controlled co-moving support case, body motion
+was already correct; the previously stale normal/vector notification changes.
+Character movement and world geometry remain fixture inputs, not live coverage.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |

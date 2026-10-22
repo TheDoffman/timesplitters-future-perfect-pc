@@ -69,6 +69,15 @@ Build `67c1864` passes and matched live initial acceleration now agrees within
 0.1% at the three presets. Later pillar/bank contact diverges, so full handling
 acceptance remains separate. Latest candidate recovery is `vehicle-67c1864`;
 the earlier candidate binary was recycled and the playable crowd pair restored.
+Contact-velocity gate `166899` is now also keyed by positive live game time:
+the original `1667C0` otherwise omits a character's displacement-derived
+velocity on zero-whole native updates. Its temporary EDI is immediately
+restored and the guarded division already uses float game time. Static and
+rigid-body contacts are unchanged. `native_contact_velocity.c` runs original
+`1667C0/166060`; the motion fixture also executes original `16E780/16DA90` up
+to a controlled body callback, checking the reported relative velocity. Its
+zero material coefficients disable actual damage/effects. This does not
+establish live character collision or explain the static-pillar trajectory.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

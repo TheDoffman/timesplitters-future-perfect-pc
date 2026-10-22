@@ -28,6 +28,8 @@ def test_physics_wrapper_retains_original_body():
 
 
 @pytest.mark.parametrize('harness,ranges,mutations', [
+    ('native_contact_velocity.c', [(0x1667c0, 0x16694c), (0x166060, 0x166136)],
+     ['legacy-contact-velocity']),
     ('native_vehicle_driver.c', [(0x17da00, 0x17df97), (0x172ee0, 0x1730d3)],
      ['legacy-driver']),
     ('native_vehicle_timing.c', [(0x17e680, 0x17f2d2), (0x175150, 0x175399),
@@ -45,8 +47,10 @@ def test_physics_wrapper_retains_original_body():
                              (0x153b40, 0x153b7a), (0x3c9ed0, 0x3c9f04),
                              (0x1719e0, 0x171fad), (0x165a40, 0x165b90),
                              (0x9e840, 0x9e95c), (0x167880, 0x167993),
-                             (0x1753a0, 0x175508), (0x1677e0, 0x167877)],
-     ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep']),
+                             (0x1753a0, 0x175508), (0x1677e0, 0x167877),
+                             (0x16e780, 0x16e867), (0x16da90, 0x16df5b)],
+     ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep',
+      'legacy-character-contact']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -68,6 +72,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     addresses = set(range(0x17f2d4, 0x17f2e8, 4)) if harness == 'native_vehicle_timing.c' else set()
     if harness == 'native_vehicle_driver.c':
         addresses.update(range(0x17df98, 0x17dfac, 4))
+    if harness == 'native_rigid_motion.c':
+        addresses.update(range(0x16e868, 0x16e87c, 4))
     for start, end in ranges:
         offset = config.va_to_file_offset(start)
         for instruction in Cs(CS_ARCH_X86, CS_MODE_32).disasm(image[offset:offset + end - start], start):
@@ -90,6 +96,7 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
         assert 'UNEXPECTED' not in result.stderr
         expected = {'missing-contact': 'fps=60 forced=2',
                     'legacy-secondary': 'rigid_mixed mode=1',
+                    'legacy-character-contact': 'character_contact fps=120',
                     'legacy-body-sleep': 'rigid_sleep fps=120'}.get(mutation, 'fps=120')
         assert expected in result.stdout, result.stdout + result.stderr
 

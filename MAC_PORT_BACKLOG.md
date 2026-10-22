@@ -3635,6 +3635,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   presets, while later pillar/bank contact still differs. This is Windows input
   validation, not full handling acceptance or native Mac verification.
 
+  Character-contact follow-up (same WIP branch): shared `166899` numeric gate
+  now preserves displacement-derived relative velocity on fractional updates.
+  Windows original `1667C0/166060` fixtures and the coupled solver plus
+  `16E780/16DA90` callback path pass; old-gate controls fail at native120.
+  Static/rigid contact paths and original mode retain their behavior. The
+  controlled support body's motion was already correct; the fix changes stale
+  impact information. No new platform adapter. Full game build/live contact
+  and Mac execution of this addition remain pending; source tests require XBE.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

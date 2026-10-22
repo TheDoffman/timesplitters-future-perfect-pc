@@ -23,22 +23,27 @@ void pc_native_physics_solver(void) {pc_native_physics_solver_guest(sub_00171560
 void pc_native_physics_random(void) {pc_native_physics_random_guest(sub_00153B40);}
 enum { BODY=0x5000, TABLE=0x6000, MATERIAL=0x7000, FORCE=0x8000,
        CONTACT=0x9000, PROP=0x9100, STATIC_PROP=0x9300, IMPACTS=0x9500,
-       VEHICLE=0xa000, PARAMETERS=0xb000, CAPS=0xc000 };
+       VEHICLE=0xa000, PARAMETERS=0xb000, CAPS=0xc000, CHARACTER=0xd000 };
 static int legacy,contact_mode,missing_contact,legacy_rng,legacy_secondary,legacy_sleep;
 static unsigned allocations,integrations,changed,contacts,impulses;
 static unsigned random_calls;
 static unsigned publications,sleeps;
 static unsigned vehicle_updates;
+static int character_contact,legacy_contact;
+static void impact_callback(void);
 static double seconds;
 #undef RECOMP_TRACE_ENTER
 #define RECOMP_TRACE_ENTER(name,address) do { if((address)==0x16ca00u) { \
     ++integrations;seconds+=MEMF(g_esp+8);assert(MEM32(g_esp+4)==BODY); } \
     if((address)==0x153b40u)++random_calls; \
     if((address)==0x1753a0u)++vehicle_updates; \
-    if((address)==0x1677e0u)++sleeps; } while(0)
+    if((address)==0x1677e0u)++sleeps; \
+    if((address)==0x16e780u) { ++contacts; \
+        if(fabsf(MEMF(g_esp+16))>1e-6f)++impulses; } } while(0)
 #undef RECOMP_LOAD_GLOBAL_U32
 #define RECOMP_LOAD_GLOBAL_U32(site,address,value) \
-    (legacy && ((site)==0x171fb9 || (site)==0x17208e || (site)==0x172119) ? \
+    ((legacy && ((site)==0x171fb9 || (site)==0x17208e || (site)==0x172119)) || \
+     (legacy_contact && (site)==0x166899) ? \
      (value) : pc_native_global_load(site,address,value))
 #undef RECOMP_F32_MUL_AT
 #define RECOMP_F32_MUL_AT(site,left,right) \
@@ -51,7 +56,8 @@ static double seconds;
 #define RECOMP_LOAD_U8_AT(site,value) \
     ((site)==0x171f83u && legacy_sleep ? (value) : pc_native_load_u8(site,value))
 #undef RECOMP_ICALL_SAFE_AT
-#define RECOMP_ICALL_SAFE_AT(target,stack,site) assert(!"Unexpected callback")
+#define RECOMP_ICALL_SAFE_AT(target,stack,site) do { \
+    assert((target)==0x7f1234u && (site)==0x16dacau);impact_callback(); } while(0)
 #undef RECOMP_ITAIL
 #define RECOMP_ITAIL(target) assert(!"Unexpected tail")
 /* Mutations omit contact resolution or route shuffling back to the shared
@@ -72,6 +78,10 @@ void sub_00170500(void) {
         MEMF(CONTACT+0x10)=1; /* zero-depth, upward normal at body centre */
         MEM32(CONTACT+0x24)=PROP;MEM32(CONTACT+0x28)=STATIC_PROP;
         MEM16(CONTACT+0x2e)=2;MEM32(STATIC_PROP+0x80)=0xffffffff;
+        if(character_contact) {
+            MEM16(CONTACT+0x2e)=3;MEM32(STATIC_PROP+0x7c)=CHARACTER;
+            MEMF(STATIC_PROP+0xfc)=2.f*MEMF(0x4e794c)/60.f;
+        }
         for(int i=1;i<contact_mode;i++)
             memcpy((void *)(g_xbox_mem_offset+CONTACT+i*0x40),
                    (void *)(g_xbox_mem_offset+CONTACT),0x40);
@@ -91,18 +101,28 @@ void sub_00168180(void) {assert(g_eax==0);g_esp+=4;}
 void sub_002572A0(void) {assert(MEM32(g_esp+4)==PROP);publications++;g_esp+=4;}
 void sub_000872F0(void) {g_eax=1;g_esp+=4;}
 void sub_002561B0(void) {g_eax=MATERIAL;g_esp+=4;}
-void sub_0016E780(void) {
-    uint32_t contact=MEM32(g_esp+4);
+static void impact_callback(void) {
+    uint32_t contact=MEM32(g_esp+8);
     assert(contact>=CONTACT && contact<CONTACT+contact_mode*0x40 &&
-           (contact-CONTACT)%0x40==0);assert(isfinite(MEMF(g_esp+16)));
-    contacts++;if(fabsf(MEMF(g_esp+16))>1e-6f)impulses++;
-    g_esp+=4;
+           (contact-CONTACT)%0x40==0);assert(isfinite(MEMF(g_esp+24)));
+    if(character_contact) {
+        /* The original solver and 16E780/16DA90 forward the pre-impulse
+         * relative normal speed and vector to the body callback. Impulse math
+         * also reads live displacement independently, so body position alone
+         * cannot catch a stale notification velocity. */
+        unsigned vector=MEM32(g_esp+20);
+        assert(fabsf(MEMF(g_esp+16)-(MEMF(BODY+0x150)-2.f))<.00001f);
+        for(unsigned i=0;i<3;i++)
+            assert(fabsf(MEMF(vector+4*i)-(MEMF(BODY+0x14c+4*i)-(i==1?2.f:0)))<.00001f);
+    }
+    g_eax=0;g_esp+=4;
 }
 /* UNREACHED */
 /* ROUTINES */
 static void reset(int forced)
 {
     memset((void *)(g_xbox_mem_offset+BODY),0,0x9000);
+    character_contact=0;
     contact_mode=forced==2?1:forced==3?3:0;
     MEM32(0x7497c8)=0;MEM32(0x4e7950)=1;MEM32(0x4e7954)=0;
     MEM32(0x74c458)=BODY;MEM32(0x74c46c)=TABLE;MEM32(0x7a20c8)=BODY;
@@ -115,6 +135,7 @@ static void reset(int forced)
         for(unsigned i=0;i<16;i++)MEMF(BODY+matrix*64+i*4)=i%5==0?1:0;
     MEMF(BODY+0x10c)=1; /* normalized quaternion */
     MEMF(BODY+0x1a8)=.5f;MEM32(BODY+0x1c0)=0x40004; /* no extra gravity or sleep */
+    MEM32(BODY+0x1e8)=0x7f1234; /* observed body impact callback */
     MEM8(BODY+0x1c8)=10;
     MEM32(BODY+0x1b8)=FORCE;
     MEMF(BODY+0x14c)=6;MEMF(BODY+0x150)=-4;MEMF(BODY+0x154)=2;
@@ -173,6 +194,7 @@ int main(int argc,char **argv)
     legacy_rng=argc>1 && !strcmp(argv[1],"legacy-rng");
     legacy_secondary=argc>1 && !strcmp(argv[1],"legacy-secondary");
     legacy_sleep=argc>1 && !strcmp(argv[1],"legacy-body-sleep");
+    legacy_contact=argc>1 && !strcmp(argv[1],"legacy-character-contact");
     missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");setbuf(stdout,NULL);
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -241,6 +263,22 @@ int main(int argc,char **argv)
             step(0,0);assert(!memcmp(before,memory+BODY,sizeof before));
             assert(MEM32(0x7497c8)==count && pc_physics_scope==NULL);
         }
+    }
+    /* A character moving upward supplies a moving support contact. Use the
+     * original relative-velocity, impulse and notification pipeline with
+     * gravity. Character displacement itself is controlled. */
+    for(unsigned rate=0;rate<3;rate++) {
+        unsigned fps=rate==0?60:rate==1?120:144;
+        g_tsfp_native_timing_active=rate!=0;reset(2);character_contact=1;
+        MEMF(BODY+0x150)=2;
+        printf("character_contact fps=%u\n",fps);
+        for(unsigned frame=0;frame<fps;frame++) {
+            step((frame+1)*60/fps-frame*60/fps,60.f/fps);
+            assert(fabsf(MEMF(BODY+0x150)-2.f)<.001f);
+        }
+        printf("character_support fps=%u y=%.9f vy=%.9f impulses=%u\n",fps,
+               MEMF(BODY+0x144),MEMF(BODY+0x150),impulses);
+        assert(fabsf(MEMF(BODY+0x144)-2.f)<.04f);
     }
     /* Slow/fast game time and variable frame durations still commit only
      * carried authored ticks, even when ceil(delta) adds primary solves. */
