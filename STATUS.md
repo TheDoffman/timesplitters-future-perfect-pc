@@ -21,7 +21,7 @@ runtime, transition, launcher-compatibility and issue CI passes on Windows/Mac;
 patch upgrades and launcher builds are out of scope/skipped for this source-only
 change. Actual native Mac trace/gameplay remains unverified under MAC-060.
 
-The bounded `texture-upload-main-144` run uses the established configured ten-bot
+The bounded, minimized `texture-upload-main-144` run uses the established configured ten-bot
 Venice route, native 144, Classic 3440x1440/FOV73, isolated Test Lab saves/settings,
 no captures and no stack/CPU sampler. Spawn and combat checkpoints verify active
 scene 46/state 7/unpaused; there is no fresh roster sample. EXE SHA256 is
@@ -47,6 +47,44 @@ recycled disposable disks. The normal playable executable is restored. Evidence:
 per-run source provenance, upload/Present CSVs and
 `logs/texture-upload-main-analysis.json`. This is diagnostic CPU wall timing,
 not GPU completion, scanout, a clean pacing benchmark or full-game acceptance.
+
+### Window-state follow-up on the playable baseline
+
+All selected CI checks pass at diagnostic head `bb8f3ad`, including Windows/Mac
+runtime and patch transitions; scope-selected skips remain skips. A follow-up
+audit found the earlier crowded-map timing runs used `--minimized`. Their
+evidence cannot establish normal foreground gameplay performance.
+
+Two bounded Windows runs of the unchanged playable `4adb6b0` executable
+(`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`)
+retain the same configured Venice route, ten bots, native 144, Classic,
+3440x1440 render resolution/FOV73 and isolated Test Lab data. Neither enables
+native/texture traces, captures or CPU/stack sampling. The shared Present CSV
+and one-second read-only window/roster observations remain enabled. Both verify
+active scene 46/state 7 and ten bots throughout the strict spawn+5..55-second
+window. Render-device initialization confirms 3440x1440; client dimensions below
+describe the window, not the render target.
+
+`crowd-visible-4adb-144` records 7,194 successful guest presents, 143.898 interval
+FPS, minimum rolling five-second 143.6 FPS, p99 8.193 ms and maximum 20.808 ms.
+Its 50 observations are visible/non-minimized, with a 640x480 client and no
+foreground samples. `crowd-fullscreen-4adb-144` confirms the fullscreen flag,
+with 50 visible/non-minimized 1920x1060 client observations, also no foreground
+samples despite a focus request. It records 7,099 successful guest presents,
+142.006 interval FPS, minimum rolling five-second 132.6 FPS, p99 8.995 ms and
+maximum 28.385 ms. Guest-swap logs also dip to 136.3/134.6/134.5 FPS in late combat
+windows. The worst interval's Present call itself takes 0.092 ms.
+
+This exposes a larger sustained dip than the small-window run, but does not
+isolate window mode as its cause: bot encounters/deaths are nondeterministic,
+Windows did not grant foreground focus, and the user's roughly 110 FPS drop is
+still unreproduced. Neither run measures GPU completion or scanout. Next compare
+work versus pacing/wait time during the observed slower combat windows; do not
+infer a texture fix or locked 144 from a near-cap average. Both runs exit normally,
+preserve valid profiles/fixture and recycle disposable disks. The playable EXE
+hash remains unchanged. Local evidence is each run's `window-analysis.json`,
+`window-observations.jsonl`, report, Present CSV and provenance. Native Mac
+foreground gameplay remains unverified.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

@@ -39,6 +39,19 @@ accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
 without attempts. Hashing/cached-call costs and trace output are outside these
 attempt spans; broader frame work remains open. STATUS retains the evidence.
 
+Crowded-map performance checks must record actual window state as well as the
+configured render resolution. `stability_transitions_game.py --minimized` hides
+the owned child; successful presents in that state do not establish foreground
+performance. A fullscreen toggle also does not prove focus: the latest bounded
+baseline runs observed visible clients at 640x480 and fullscreen 1920x1060 while
+the device rendered 3440x1440, and Windows granted neither foreground focus.
+Record client size, visibility, minimization, foreground state, scene and bot
+roster alongside complete Present intervals. STATUS records the 143.898/142.006
+interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
+prevent treating the two runs as a causal window-mode comparison. Keep native,
+texture, capture and CPU/stack diagnostics off for this observation unless their
+specific attribution is the question under test.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows
