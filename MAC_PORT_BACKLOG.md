@@ -3662,8 +3662,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   and 50-ms diagnostic ceiling. The former `92ffa8b` direct-clear loading stall
   is absent in four bounded Windows runs of `bf4b755`: Original60, native120 and
   native144 (notification on/off). Paired144 main-thread CPU falls 78.57% to
-  58.44%, p99 interval 8.291 to 7.513 ms; windows are nonforeground and combat
-  varies. This does not resolve all reported crowded-map drops. Nineteen final
+  58.44%, p99 interval 8.291 to 7.513 ms. A second Hotel pair improves typical
+  pacing and main-thread CPU but retains an isolated43.776-ms hitch. Windows
+  are nonforeground and combat varies. This does not resolve all reported crowded-map drops. Nineteen final
   Windows offline cases pass (Mac-only case skips); native runtime CI at
   `af96547` passes the real Mac event fixture. A declaration-placement conflict
   in historical Mac upgrade context is repaired; fresh/repeated and historical

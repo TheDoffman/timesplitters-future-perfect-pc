@@ -41,6 +41,23 @@ recycle disposable disk images, and restore the normal executable/symbol pair
 (hash `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`).
 Logs include per-run window analyses, CPU summaries and exact adapter provenance.
 
+The second paired map, Hotel (verified scene39, ten bots), also completes with
+the same binary and settings. In `gpu-wake-{on,off}-bf4-hotel144`, on/off results
+are 143.840/142.260 interval FPS, minimum rolling five-second 142.8/127.6 FPS,
+p99 7.533/8.895 ms, main-thread CPU 49.98%/82.57%, total process 0.864/1.361
+cores, and game clock 59.990/60.013 ticks/s. Intervals over9 ms number3/55.
+Dead-state observations differ (29.5%/39.4%); foreground observations remain0.
+Profiles/fixture are unchanged and normal binaries restored after both runs.
+
+**Residual outliers remain:** the enabled Hotel run's maximum interval is
+43.776 ms, worse than the control's 18.558 ms, despite improved typical pacing.
+The 43.776-ms frame ends59.3 ms after a read-only observed dead-to-alive transition;
+its Present/Swap span is only0.088 ms. Another24.537-ms interval occurs2.2 seconds
+after an observed respawn. These correlations do not identify a cause. Preserve
+`logs/gpu-wake-hotel-hitch.json` and the underlying CPU/window/Present records;
+next investigate the slow frame's actual wait/stack before changing more timing.
+The worker-notification change is not an all-hitches fix.
+
 Final Windows notifier/lifter/mutation/wait-selection checks: 19 pass, one
 Mac-only check skips. Native runtime CI at `af96547` passes, including the actual
 Mac event adapter's queued/consumed signals, timeout, delayed wake and manual
