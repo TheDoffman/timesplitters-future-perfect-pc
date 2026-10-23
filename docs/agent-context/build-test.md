@@ -25,6 +25,23 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
+20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
+jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
+Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
+mutation must fail the atomic clip-transition assertion. Frame sampling also
+covers native 120/144 Hz without changing the simulation clock. Existing Windows
+and macOS CI invoke this suite; the helper itself has no OS dependencies.
+`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
+bounded production Online host/guest pair through a loopback directory/browser/
+bridge, disposable Test Lab saves and separate input/runtime/display settings.
+It checks the supported XBE and sealed build before launch, records executable
+and compatibility identities, and recycles only its disposable partition images.
+Its asynchronous ReadProcessMemory observations measure actor update holds,
+not rendered frames, monitor scanout or Internet latency. Window captures are
+limited to the test processes. Benchmark fixture junctions are staged locally
+as five manifest files, then checked by the normal fixture validator.
+
 Launcher changelog publication: tests/test_launcher_release.py covers explicit
 previous stable launcher selection across paginated game/launcher history,
 initial-release notes and refusal of incomplete history. It remains registered

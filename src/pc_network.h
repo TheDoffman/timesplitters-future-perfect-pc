@@ -1,6 +1,8 @@
 #ifndef TSFP_PC_NETWORK_H
 #define TSFP_PC_NETWORK_H
 #include <stdint.h>
+/* Monotonic seconds for guest replica presentation, independent of match time. */
+double pc_network_bots_time(void);
 #include <stddef.h>
 /* US executable's public XNet entry points. Guest pointers stay 32-bit. */
 int pc_network_enabled(void);

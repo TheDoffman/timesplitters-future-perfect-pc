@@ -3261,6 +3261,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-052 — Experimental network bot setup (issue #25)
 
+Issue #222 follow-up (`59cc489`, branch `222-bug-online-bots-are-stuttery-for-guests`): `src/pc_network_bot_motion.h` supplies shared
+numeric replica interpolation, integrated through the existing Windows bot hook
+and monotonic QPC adapter in `pc_network.c`. It requires no second Mac algorithm.
+The original native fallback and pending PC XNet adapter (MAC-013) remain intact.
+Native and mixed-peer movement/pose/lifecycle acceptance is still required;
+Windows loopback evidence in `STATUS.md` does not establish native execution.
+
 - **Status:** Queued
 - **PC behavior:** The host's multiplayer lobby Options flow exposes
   Arcade BOT SET below WEAPON SET in match settings, reusing its original

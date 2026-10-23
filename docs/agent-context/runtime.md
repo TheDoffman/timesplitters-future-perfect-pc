@@ -26,6 +26,12 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+Issue #222 changes the shared include reached by the existing bot frame wrapper;
+it adds no guest wrapper, wire field, generated-code edit or patch dependency.
+`src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
+The existing title integration includes it through `pc_network_bots_guest.inc`.
+Apply the complete patch stack and use the supported builder as usual.
+
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
 | Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |

@@ -56,6 +56,22 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
+`pc_network_bots_guest_frame` hook. The transport still consumes each validated
+host snapshot once. The guest caches it and updates the displayed body, spatial
+bounds and matching animation frame times every frame over a 50 ms span, retargeting
+from the current display pose when arrivals vary. Discrete vitals, scores, shots,
+absence and spawn transitions retain host values; no guest AI or extrapolation
+is enabled. A gap over 250 ms snaps to the next received host state. Match,
+host, actor-pool and inactive-state changes clear presentation history. The
+Windows QPC adapter supplies monotonic seconds independently of guest game time.
+Human controller replication and the host's three-tick send interval are unchanged.
+Native Mac fallback remains original until its network adapter exists (MAC-052).
+Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cycle;
+the other animation channels and crossfade controls stay atomic. US `5CEF0`
+can promote the secondary clip during zero-advance evaluation, so mixing fade
+duration/elapsed with another snapshot's clip identity can select an invalid clip.
+
 Camera and perspective corrections use `pc_display_memory.h` to retain one
 OS-validated writable region only after their original guest routine returns.
 The stack-local snapshot expires when the correction returns; no guest calls,
