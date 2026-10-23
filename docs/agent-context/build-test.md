@@ -33,6 +33,11 @@ path and compare raw monotonic timestamps with Present intervals for live
 diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
 clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
 can change frame timing. Actual native Mac gameplay remains a separate check.
+Do not attribute a whole slow frame to a sampled upload: intersect the actual
+attempt begin/end timestamps with each Present interval. The first live trace
+accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
+without attempts. Hashing/cached-call costs and trace output are outside these
+attempt spans; broader frame work remains open. STATUS retains the evidence.
 
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts

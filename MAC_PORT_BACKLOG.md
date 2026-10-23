@@ -3660,9 +3660,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   for the common-RHI loader and legacy GL adapter. Windows uses QPC, POSIX uses
   CLOCK_MONOTONIC; texture behavior/budgets/defaults are unchanged. Disabled,
   failed-output, bounded-output and loader stage tests run in the existing
-  both-host workflow. Windows focused tests pass; full build/live correlation
-  and actual native Mac trace/gameplay remain awaiting validation. This is
-  diagnostic instrumentation, not a fix for the reported high-refresh hitches.
+  both-host workflow. Windows full build and stage correlation pass at `2230901`
+  (PR #308), with one explicit virtual-pad focus skip. All selected both-host
+  CI passes; actual native Mac trace/gameplay remains awaiting validation.
+  The worst 12.639-ms interval includes 2.215 ms of recorded attempts, while other
+  slow intervals contain none. Key hashing/cached calls and trace-output cost
+  remain outside the spans. This is diagnostic evidence, not a hitch fix; see
+  STATUS for scope and the main-based executable's provenance.
 
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**

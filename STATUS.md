@@ -15,8 +15,38 @@ benchmark. No hitch or performance improvement is claimed by instrumentation.
 Forty-eight focused texture runtime/tool tests pass locally in 6.37 seconds,
 including disabled/failed/bounded output and real-loader stage/fallback checks.
 The existing both-host runtime workflow includes the expanded test module.
-Full Windows build and live stage correlation are pending. Actual native Mac
-trace/gameplay validation remains pending under MAC-060.
+The supported Windows build and built-in checks pass at `2230901`; virtual-pad
+foreground routing explicitly skips because Windows refused focus. All selected
+runtime, transition, launcher-compatibility and issue CI passes on Windows/Mac;
+patch upgrades and launcher builds are out of scope/skipped for this source-only
+change. Actual native Mac trace/gameplay remains unverified under MAC-060.
+
+The bounded `texture-upload-main-144` run uses the established configured ten-bot
+Venice route, native 144, Classic 3440x1440/FOV73, isolated Test Lab saves/settings,
+no captures and no stack/CPU sampler. Spawn and combat checkpoints verify active
+scene 46/state 7/unpaused; there is no fresh roster sample. EXE SHA256 is
+`4ddb452a1ec1aa7bcab68a179cd06e98627cd5fb1fa11aab142d3334bb141930`.
+Its 44,677-byte CSV contains 280 attempts: 129 loaded and 151 rejected reads. All 129
+successful-load log entries have records; the row/byte limit is not approached.
+
+In the strict complete-interval spawn+5..55-second window, 46 attempts comprise
+15 loads and 31 rejected reads. Cumulative recorded time is 2.867 ms opening,
+4.590 ms transfer/allocation/close, 0.003 ms validation, 4.339 ms image creation
+and 0.079 ms view creation. The longest single active-window attempt is 1.237 ms.
+The worst 12.639-ms Present interval overlaps eight attempts totaling 2.215 ms;
+its Present call is 0.087 ms. Subsequent 12.462/12.428/11.942-ms intervals have no
+recorded uploads. The original 25.856-ms event is not reproduced. This directly
+limits the texture-loading hypothesis: these fresh attempts add some work but
+do not account for most observed slow-frame time. Key hashing and cached calls
+precede this collector, while CSV output follows its end; those costs and other
+frame work remain outside these spans. No loader optimization or FPS gain is
+justified by this run alone.
+
+The session exits cleanly with unchanged valid profiles, preserved fixture and
+recycled disposable disks. The normal playable executable is restored. Evidence:
+per-run source provenance, upload/Present CSVs and
+`logs/texture-upload-main-analysis.json`. This is diagnostic CPU wall timing,
+not GPU completion, scanout, a clean pacing benchmark or full-game acceptance.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
