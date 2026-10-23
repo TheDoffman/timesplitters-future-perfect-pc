@@ -3671,8 +3671,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   including cached upload calls, with the same disabled/bounded contract.
   Forty-eight focused local tests pass, including real-loader hash ordering and
   no file/resource work on cached calls. The new hash fields are not present in
-  the earlier `2230901` evidence. Full build/live hash correlation and actual
-  native Mac tracing remain pending for this extension.
+  the earlier `2230901` evidence. Windows build/built-in checks pass at `018f2be`
+  (virtual-pad focus skipped). The live 50-second window records only 0.710 ms
+  hashing, with no uploads in its four slowest intervals; no hashing optimization
+  is justified. No live cached calls occurred; the fixture covers that outcome.
+  Actual native Mac tracing remains pending for this extension.
 
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**

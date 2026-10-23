@@ -29,9 +29,29 @@ it does not change the key, loader behavior, texels, resource reuse or budgets.
 Disabled tracing still performs no clock/file work; the row/byte cap is unchanged.
 Forty-eight focused texture runtime/tool tests pass in 6.32 seconds, including
 all twenty cached hashes, stage ordering, unchanged fallback/resource counts
-and disabled/failed/bounded collection. Full build/live hash correlation is
-pending; actual native Mac gameplay is unverified. Earlier trace evidence below
+and disabled/failed/bounded collection. The supported Windows build and built-in
+checks pass at `018f2be`, with the virtual-pad focus route explicitly skipped.
+Actual native Mac gameplay is unverified. Earlier trace evidence below
 uses the original narrower schema and must not be reinterpreted as hash timing.
+
+The bounded `texture-hash-fullscreen-144` run on that main-based diagnostic build
+records 279 calls (127 loaded, 152 rejected reads), with no cached calls observed;
+cached coverage is supplied by the loader fixture. The CSV is 52,795 bytes,
+well below both caps. All 50 window observations verify ten bots, active Venice,
+visible/non-minimized 1920x1060 client and no foreground focus. In the strict
+spawn+5..55-second window, 43 calls total 0.710 ms hashing, 2.254 ms opening,
+2.338 ms transfer, 0.002 ms validation, 3.841 ms image creation and 0.065 ms views.
+The four worst intervals (14.420/14.019/12.734/11.794 ms) contain no upload calls.
+An interval of 10.813 ms overlaps eight calls totaling 2.237 ms, including 0.100 ms
+hashing. The earlier 27.450-ms event is not reproduced, and this run does not
+justify a hashing optimization. It remains a stage diagnostic, not clean pacing
+or a single-change comparison against the older playable baseline. The EXE hash
+is `a9a6737f3645928ae98ee5d9a283ec80607372f83c1a05db34e2a09819a58c5c`.
+The session exits cleanly with valid unchanged profiles/fixture, recycled disks
+and the normal playable EXE restored. Evidence: per-run CSVs/JSON/provenance and
+`logs/texture-hash-fullscreen-analysis.json`. Main-thread CPU pressure during the
+sustained dips remains the next focus; neither cause nor full-game coverage is
+resolved by the texture measurements.
 
 ## 2026-10-22 — Opt-in texture-upload timing
 
