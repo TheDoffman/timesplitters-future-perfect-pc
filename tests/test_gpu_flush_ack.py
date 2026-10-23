@@ -84,3 +84,17 @@ def test_worker_wait_adapters(tmp_path, native):
     environment={k:v for k,v in os.environ.items() if k!='RECOMP_NV2A_ACK_IDLE_US'}
     run=subprocess.run([str(output)],env=environment,capture_output=True,text=True,timeout=10)
     assert run.returncode==0,run.stdout+run.stderr
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='Requires native Mac pthread/event adapters')
+def test_native_event_wait(tmp_path):
+    runtime=ROOT/'external/ts3FPrecomp'
+    compiler,env=native_compiler(tmp_path)
+    output=tmp_path/'platform'
+    command=[compiler,'-std=c11','-O2','-I'+str(runtime/'src'),
+             str(ROOT/'tests/native_platform.c'),
+             str(runtime/'src/platform/win32_compat.c'),'-lm','-lpthread','-o',str(output)]
+    built=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    run=subprocess.run([str(output)],capture_output=True,text=True,timeout=15)
+    assert run.returncode==0,run.stdout+run.stderr

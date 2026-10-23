@@ -33,8 +33,8 @@ stores and excluded loads, narrow/segmented stores and register moves. The actua
 worker wait is exercised with both host adapters, missing-event/timer-failure
 fallback and the original one-millisecond busy window. Native `native_platform.c`
 also tests real event timeout, prequeued/consumed signals, delayed thread wake and
-manual-reset behavior through the microsecond adapter. Run these host primitives
-on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,
+manual-reset behavior through the microsecond adapter. The registered Python
+suite compiles/runs this fixture with the actual compatibility layer on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,
 regenerate/build, then test the previously failing match-loading route before
 measuring performance.
 
