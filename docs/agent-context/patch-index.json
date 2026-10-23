@@ -142,9 +142,9 @@
     },
     {
       "name": "texture-upload-streaming.patch",
-      "sha256": "3247ac4af1abe84774996cfeb2e98b979c2fb1613bca3419ca5d99133b37484b",
+      "sha256": "3d320aa9f521e2b1d37b0ab98db3a89003b02b65b09ba8597d6f129ca92315ad",
       "targets": [
-        "src/d3d/d3d8_device.c\r"
+        "src/d3d/d3d8_device.c"
       ]
     },
     {

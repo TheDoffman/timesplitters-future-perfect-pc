@@ -259,3 +259,7 @@ renderer checks that revision alongside mode before draws, so textures left
 bound across frames see arrivals and queue-full retries without rebinding every
 draw. The streaming patch must follow texture-toggle.patch, which creates this
 binding helper. The texture runtime fixture compiles that actual patched helper.
+
+Keep this patch LF on disk before refreshing its index. A CRLF working copy
+produced a different hash/target spelling from the normalized Git blob; the
+Linux CI context check exposed it. Runtime behavior was unaffected.

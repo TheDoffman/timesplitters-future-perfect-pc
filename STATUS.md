@@ -12,7 +12,9 @@ and uploading at most one ready replacement per frame. Routine texture logging
 is opt-in. GPU-worker PR #310 is not included in this branch. Queue capacity,
 blocked-reader cancellation, owner reuse, cached modes, mipmaps, failures and
 GL binding preservation pass local tests: 55 passed, two host-only skips.
-Windows game build, comparative pacing and actual Mac GPU/scenes are pending.
+Windows build and built-in checks pass at 25e0059 (foreground virtual-pad routing
+skipped). The initial standalone test include failure was repaired. Comparative
+pacing and actual Mac GPU/scenes remain pending.
 The 144-FPS goal remains incomplete; see MAC-011 and MAC-060.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
