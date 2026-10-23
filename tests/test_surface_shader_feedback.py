@@ -18,12 +18,16 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
-@pytest.mark.parametrize('address,case,stage', [(0x4bbf10, 'surface_feedback_gpu.inc', 7),
-                                                (0x4bbc40, 'surface_filter_gpu.inc', 4),
-                                                (0x4bbf10, 'surface_damping_gpu.inc', 7),
-                                                (0x4bbf10, 'surface_coupling_gpu.inc', 7),
-                                                (0x4bbf10, 'surface_spatial_gpu.inc', 7)])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage):
+@pytest.mark.parametrize('address,case,stage,mutation', [
+    (0x4bbf10, 'surface_feedback_gpu.inc', 7, False),
+    (0x4bbc40, 'surface_filter_gpu.inc', 4, False),
+    (0x4bbf10, 'surface_damping_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'transform')])
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -98,10 +102,28 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     setup = setup.replace('#include "rhi.h"',
                           '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
     fixture = (ROOT / 'tests' / case).read_text(encoding='utf-8')
+    if case in ('surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
+        setup = setup.replace('#include "rhi.h"',
+            '#include "rhi.h"\n#include "graphics/surface_coupled.h"')
     if case == 'surface_spatial_gpu.inc':
         helpers, fixture = fixture.split('/* SPATIAL_MAIN */')
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
+    if mutation:
+        # Mutate only a disposable include. Compilation must succeed and the
+        # executed GPU comparison must detect the numeric regression.
+        if mutation == 'transform':
+            name = 'surface_transform_shader.h'
+            needle = 'inverse ? surface_basis(i, k) : surface_basis(k, i)'
+            replacement = 'surface_basis(k, i)'
+        else:
+            name = 'surface_coupled.h'
+            needle = 'result.row[i][j]=(float)p[i][j];'
+            replacement = 'result.row[i][j]=(float)((i==0 && j==0)?1:p[i][j]);'
+        header = (ROOT / 'src/graphics' / name).read_text()
+        assert header.count(needle) == 1
+        (tmp_path / 'graphics').mkdir()
+        (tmp_path / 'graphics' / name).write_text(header.replace(needle, replacement))
     source.write_text(setup + fixture,
                       encoding='utf-8')
     exe = tmp_path / 'surface.exe'
@@ -114,6 +136,15 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
     isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
                     TSFP_DISPLAY_CONFIG=str(tmp_path / 'display.ini'), RECOMP_SAVE_DIR=str(tmp_path / 'saves'))
+    if mutation:
+        result = subprocess.run([str(exe)], cwd=tmp_path, env=isolated,
+                                capture_output=True, text=True, timeout=90)
+        output = result.stdout + result.stderr
+        expected = ('transform_error<.00001' if mutation == 'transform' else
+                    'max_error<.00003' if case == 'surface_spatial_gpu.inc' else 'error<.00001f')
+        assert result.returncode != 0 and expected in output, output
+        print(f'PASS: mutation {mutation} fails the GPU reference comparison')
+        return
     output = run([str(exe)], isolated)
     print(output)
     assert 'PASS: original translated feedback shader' in output

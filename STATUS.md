@@ -1,3 +1,40 @@
+## 2026-10-23 — Coupled fractional water operator candidate
+
+Independent branch `fix/native-water-coupling`, based on main 5c44696. The
+existing experimental water update scales acceleration/travel independently
+and raises damping to the timestep power. This misses coupling between velocity
+and displacement: even the controlled float32 fixed-neighbor fixture diverges
+from the original 60-step result at 120/144. The shared candidate computes the
+fractional power of the complete affine update, including its centering term.
+It is not connected to gameplay and does not enable the water experiment.
+
+Windows x64, MSVC native test compiler, common RHI/D3D11 WARP: the asset-free
+CPU fixture passes 65 controlled modes at all three rates, split-step composition,
+identity and invalid-input guards (maximum trajectory error 0.0000023031).
+Additional cases compare positive/repeated/complex eigenvalue paths against
+the independent original equations. The full native-timing suite passes: 67
+tests in 85.65 seconds; this preserves the existing timing regression coverage.
+All eight original-shader GPU cases pass in 30.74 seconds. The corrected
+fixed-neighbor GPU result differs from the actual original shader's 60-step
+float32 reference by at most 0.0000008345. A 64x64 clamped spatial-field diagnostic
+uses shared separable GPU DCT/inverse transforms and per-mode updates; maximum reconstructed error
+against the original shader pair's float32 reference is 0.000002027. All
+60/120/144 candidate updates change both the spectral state and reconstructed
+world field. Asymmetric corner impulses, checkerboard and noise match independent
+CPU transform/round-trip references within 0.000002862. Reused scratch and basis
+resources avoid allocation per update in the fixture. Removing velocity retention
+or the inverse transpose in disposable headers fails the GPU comparisons as
+required (three negative controls).
+
+Original byte-storage behavior remains different (combined G/B RMS approximately
+0.031375). This work closes the controlled linear coupling gap, not byte rounding,
+authored smoothing/disturbances, guest vertex-coordinate conventions, runtime
+resource/state integration or complete water appearance. No gameplay build/run or
+performance claim follows from these checks. Mac CPU CI, native GPU/scene work
+and runtime integration remain pending under MAC-060. No personal saves/settings
+were used. Evidence: logs/water-coupling-gpu-suite.log and the detailed coupled
+operator section in docs/native-high-refresh-regressions.md.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical

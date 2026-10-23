@@ -2,6 +2,27 @@
  * unchanged. Explicit diagonal offsets follow callback 0x2BF10; this does not
  * execute the original vertex program, disturbance or smoothing passes. */
 static float field_a[64*64*4],field_b[64*64*4],reference_fields[3][64*64*4];
+/* Orthonormal DCT-II diagonalizes the clamped diagonal-neighbor stencil.
+ * CPU transforms are an independent reference for the GPU transform probes;
+ * candidate evolution and every reconstructed frame use the shared GPU body. */
+static double field_basis[64][64],field_work[64*64*2];
+static void field_transform(const float *input,float *output,int inverse) {
+    for(unsigned k=0;k<64;k++)for(unsigned x=0;x<64;x++)
+        field_basis[k][x]=sqrt((k?2.:1.)/64)*cos(3.14159265358979323846*(x+.5)*k/64);
+    for(unsigned y=0;y<64;y++)for(unsigned x=0;x<64;x++)for(unsigned c=0;c<2;c++) {
+        double sum=0;
+        for(unsigned i=0;i<64;i++)sum+=(inverse?field_basis[i][x]:field_basis[x][i])*input[(y*64+i)*4+c];
+        field_work[(y*64+x)*2+c]=sum;
+    }
+    for(unsigned y=0;y<64;y++)for(unsigned x=0;x<64;x++) {
+        for(unsigned c=0;c<2;c++) {
+            double sum=0;
+            for(unsigned i=0;i<64;i++)sum+=(inverse?field_basis[i][y]:field_basis[y][i])*field_work[(i*64+x)*2+c];
+            output[(y*64+x)*4+c]=(float)sum;
+        }
+        output[(y*64+x)*4+2]=0;output[(y*64+x)*4+3]=1;
+    }
+}
 static unsigned field_index(int x,int y,unsigned c) {
     x=x<0?0:x>63?63:x;y=y<0?0:y>63?63:y;
     return (y*64+x)*4+c;
@@ -26,6 +47,19 @@ static void field_constants(NV2APSConstants *cb,const DWORD *definition,float ve
         for(unsigned c=0;c<4;c++)dst[c]=mapped<3?vectors[mapped][c]:
             ((definition[10+bank*8+stage]>>shifts[c])&255)/255.f;
     }
+}
+/* Reusable test-owned resources; every transform stays on the GPU. */
+static RhiShader *transform_ps[2][2];
+static RhiView *transform_scratch_read,*transform_scratch_write,*transform_basis;
+static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned inverse) {
+    for(unsigned axis=0;axis<2;axis++) {
+        RhiView *none[3]={0};rhi_set_textures(0,3,none);
+        rhi_set_render_target(axis?destination:transform_scratch_write,NULL);
+        RhiView *inputs[2]={axis?transform_scratch_read:source,transform_basis};
+        rhi_set_textures(0,2,inputs);
+        rhi_set_shader(RHI_STAGE_PIXEL,transform_ps[inverse][axis]);rhi_draw(3,0);
+    }
+    RhiView *none[3]={0};rhi_set_textures(0,3,none);rhi_set_render_target(NULL,NULL);
 }
 /* SPATIAL_MAIN */
     RhiShader *field_vs[2];
@@ -118,6 +152,162 @@ static void field_constants(NV2APSConstants *cb,const DWORD *definition,float ve
         for(unsigned i=0;i<2;i++){rhi_view_destroy(input_views[i]);rhi_image_destroy(inputs[i]);}
         rhi_view_destroy(output_view);rhi_image_destroy(output);
     }
+    /* Exercise every spectral mode through the actual common-RHI GPU adapter.
+     * Compare reconstructed G/B with the unmodified original shader pair's
+     * 60-step float32 result above. Byte/half reference differences remain open. */
+#define TSFP_SURFACE_VEC2 "float2"
+#define TSFP_SURFACE_VEC3 "float3"
+#include "graphics/surface_coupled_shader.h"
+    const char spectral_hlsl[]=
+        "Texture2D source:register(t0);Texture2D rows0:register(t1);Texture2D rows1:register(t2);"
+        TSFP_SURFACE_COUPLED_SHADER
+        "float4 main(float4 p:SV_POSITION):SV_TARGET {int3 at=int3(p.xy,0);"
+        "float2 state=surface_coupled(source.Load(at).xy,rows0.Load(at).xyz,rows1.Load(at).xyz);"
+        "return float4(state,0,1);}";
+    RhiShader *spectral_ps=shader(RHI_STAGE_PIXEL,spectral_hlsl,"ps_5_0");
+    rhi_set_shader(RHI_STAGE_PIXEL,spectral_ps);
+    static float row_data[2][64*64*4],spectrum[64*64*4],previous_spectrum[64*64*4];
+    const double original_a=packed_coefficients[0][0]/255.,original_b=packed_coefficients[0][1]/255.,
+        original_d=packed_coefficients[0][2]/255.,original_k=43./255,center=128./255;
+#define TSFP_SURFACE_IVEC2 "int2"
+#include "graphics/surface_transform_shader.h"
+    const char transform_prefix[]=
+        "Texture2D source:register(t0);Texture2D basis:register(t1);"
+        "float2 surface_load(int2 at) {return source.Load(int3(at,0)).xy;}"
+        "float surface_basis(int frequency,int position) {return basis.Load(int3(position,frequency,0)).x;}"
+        TSFP_SURFACE_TRANSFORM_SHADER;
+    char transform_text[4096];
+    for(unsigned inverse=0;inverse<2;inverse++)for(unsigned axis=0;axis<2;axis++) {
+        snprintf(transform_text,sizeof transform_text,
+            "%sfloat4 main(float4 p:SV_POSITION):SV_TARGET {return float4(surface_transform(int2(p.xy),%u,%u),0,1);}",
+            transform_prefix,axis,inverse);
+        transform_ps[inverse][axis]=shader(RHI_STAGE_PIXEL,transform_text,"ps_5_0");
+    }
+    for(unsigned k=0;k<64;k++)for(unsigned x=0;x<64;x++) {
+        unsigned i=(k*64+x)*4;
+        spectrum[i]=(float)(sqrt((k?2.:1.)/64)*cos(3.14159265358979323846*(x+.5)*k/64));
+        spectrum[i+1]=spectrum[i+2]=spectrum[i+3]=0;
+    }
+    td.width=td.height=64;td.format=RHI_FORMAT_R32G32B32A32_FLOAT;td.bind=RHI_BIND_SAMPLED;
+    RhiSubresourceData basis_data={spectrum,64*16,sizeof spectrum};
+    RhiImage *basis_image=rhi_image_create(&td,&basis_data);CHECK(basis_image);
+    transform_basis=rhi_view_create(basis_image,RHI_VIEW_SAMPLED,NULL);CHECK(transform_basis);
+    RhiImage *world_input=rhi_image_create(&td,NULL);CHECK(world_input);
+    RhiView *world_read=rhi_view_create(world_input,RHI_VIEW_SAMPLED,NULL);CHECK(world_read);
+    td.bind=RHI_BIND_SAMPLED|RHI_BIND_RENDER_TARGET;
+    RhiImage *transform_scratch=rhi_image_create(&td,NULL);CHECK(transform_scratch);
+    transform_scratch_read=rhi_view_create(transform_scratch,RHI_VIEW_SAMPLED,NULL);
+    transform_scratch_write=rhi_view_create(transform_scratch,RHI_VIEW_RENDER_TARGET,NULL);
+    CHECK(transform_scratch_read && transform_scratch_write);
+    /* Asymmetric corners, checkerboard and deterministic noise expose axis,
+     * transpose and high-frequency errors hidden by a centered Gaussian. */
+    RhiImage *probe[2];RhiView *probe_read[2],*probe_write[2];
+    for(unsigned i=0;i<2;i++) {
+        probe[i]=rhi_image_create(&td,NULL);CHECK(probe[i]);
+        probe_read[i]=rhi_view_create(probe[i],RHI_VIEW_SAMPLED,NULL);
+        probe_write[i]=rhi_view_create(probe[i],RHI_VIEW_RENDER_TARGET,NULL);
+        CHECK(probe_read[i] && probe_write[i]);
+    }
+    for(unsigned pattern=0;pattern<3;pattern++) {
+        unsigned random=0x12345678;
+        for(unsigned y=0;y<64;y++)for(unsigned x=0;x<64;x++)for(unsigned c=0;c<4;c++) {
+            random=random*1664525u+1013904223u;
+            float v=pattern==0?((x==(c?63:0) && y==(c?0:63))?.75f:0):
+                pattern==1?(((x+y+c)&1)?.25f:-.25f):((random>>8)/16777216.f-.5f);
+            field_a[(y*64+x)*4+c]=c<2?v:0;
+        }
+        field_transform(field_a,previous_spectrum,0);
+        rhi_image_update(world_input,0,NULL,field_a,64*16,sizeof field_a);
+        field_gpu_transform(world_read,probe_write[0],0);field_read(probe[0],0,spectrum);
+        double transform_error=0;
+        for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<2;c++) {
+            CHECK(isfinite(spectrum[i*4+c]));
+            transform_error=fmax(transform_error,fabs(spectrum[i*4+c]-previous_spectrum[i*4+c]));
+        }
+        CHECK(transform_error<.00001);
+        field_gpu_transform(probe_read[0],probe_write[1],1);field_read(probe[1],0,spectrum);
+        for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<2;c++) {
+            CHECK(isfinite(spectrum[i*4+c]));
+            transform_error=fmax(transform_error,fabs(spectrum[i*4+c]-field_a[i*4+c]));
+        }
+        printf("spatial-transform pattern=%u max_error=%.9g\n",pattern,transform_error);
+        CHECK(transform_error<.00001);
+    }
+    for(unsigned rate=0;rate<3;rate++) {
+        unsigned fps=rates[rate];
+        for(unsigned y=0;y<64;y++)for(unsigned x=0;x<64;x++) {
+            unsigned i=(y*64+x)*4;float dx=x-31.5f,dy=y-31.5f;
+            field_a[i]=0;field_a[i+1]=.5f+.05f*expf(-(dx*dx+dy*dy)/32);
+            field_a[i+2]=0;field_a[i+3]=1;
+            double laplacian=4*cos(3.14159265358979323846*x/64)*cos(3.14159265358979323846*y/64)-4;
+            double dc=(!x && !y)?64.:0.;PcSurfaceCoupledStep matrix;
+            CHECK(pc_surface_coupled_step(original_a,original_b,original_d,original_k-laplacian,
+                dc*(center-.5+original_k*center),dc*(center-.5),60./fps,&matrix));
+            for(unsigned row=0;row<2;row++)memcpy(&row_data[row][i],matrix.row[row],16);
+        }
+        rhi_image_update(world_input,0,NULL,field_a,64*16,sizeof field_a);
+        td.width=td.height=64;td.format=RHI_FORMAT_R32G32B32A32_FLOAT;td.bind=RHI_BIND_SAMPLED;
+        RhiImage *row_images[2];RhiView *row_views[2];
+        for(unsigned i=0;i<2;i++) {
+            RhiSubresourceData data={row_data[i],64*16,sizeof row_data[i]};
+            row_images[i]=rhi_image_create(&td,&data);CHECK(row_images[i]);
+            row_views[i]=rhi_view_create(row_images[i],RHI_VIEW_SAMPLED,NULL);CHECK(row_views[i]);
+        }
+        td.bind=RHI_BIND_SAMPLED|RHI_BIND_RENDER_TARGET;
+        RhiImage *states[2]={rhi_image_create(&td,NULL),rhi_image_create(&td,NULL)};
+        CHECK(states[0] && states[1]);RhiView *reads[2],*writes[2];
+        for(unsigned i=0;i<2;i++) {
+            reads[i]=rhi_view_create(states[i],RHI_VIEW_SAMPLED,NULL);
+            writes[i]=rhi_view_create(states[i],RHI_VIEW_RENDER_TARGET,NULL);CHECK(reads[i] && writes[i]);
+        }
+        field_gpu_transform(world_read,writes[0],0);
+        field_read(states[0],0,previous_spectrum);
+        rhi_set_shader(RHI_STAGE_PIXEL,spectral_ps);
+        memcpy(field_b,field_a,sizeof field_a);
+        unsigned current=0,fresh=0,world_fresh=0;
+        for(unsigned frame=0;frame<fps;frame++) {
+            unsigned next=current^1;RhiView *none[3]={0};rhi_set_textures(0,3,none);
+            rhi_set_render_target(writes[next],NULL);
+            RhiView *sources[3]={reads[current],row_views[0],row_views[1]};rhi_set_textures(0,3,sources);
+            rhi_set_shader(RHI_STAGE_PIXEL,spectral_ps);
+            rhi_draw(3,0);field_read(states[next],0,spectrum);
+            int changed=0;
+            for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<2;c++) {
+                CHECK(isfinite(spectrum[i*4+c]));changed|=spectrum[i*4+c]!=previous_spectrum[i*4+c];
+            }
+            fresh+=changed;memcpy(previous_spectrum,spectrum,sizeof spectrum);current=next;
+            field_gpu_transform(reads[current],probe_write[1],1);
+            field_read(probe[1],0,field_a);changed=0;
+            for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<2;c++) {
+                CHECK(isfinite(field_a[i*4+c]));changed|=field_a[i*4+c]!=field_b[i*4+c];
+            }
+            world_fresh+=changed;memcpy(field_b,field_a,sizeof field_a);
+        }
+        CHECK(fresh==fps && world_fresh==fps);
+        double max_error=0,rms=0,byte_rms=0;
+        for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<2;c++) {
+            double value=field_a[i*4+c]+(c?0:.5);
+            double error=value-reference_fields[0][i*4+c+1];
+            max_error=fmax(max_error,fabs(error));rms+=error*error;
+            double byte_error=value-reference_fields[2][i*4+c+1];byte_rms+=byte_error*byte_error;
+        }
+        rms=sqrt(rms/(64*64*2));byte_rms=sqrt(byte_rms/(64*64*2));
+        printf("spatial-coupled fps=%u rms_to_float60=%.9g max_error=%.9g rms_to_byte60=%.9g fresh=%u/%u world_fresh=%u/%u\n",
+            fps,rms,max_error,byte_rms,fresh,fps,world_fresh,fps);
+        CHECK(max_error<.00003);CHECK(byte_rms>.001);
+        RhiView *none[3]={0};rhi_set_textures(0,3,none);rhi_set_render_target(NULL,NULL);
+        for(unsigned i=0;i<2;i++) {
+            rhi_view_destroy(reads[i]);rhi_view_destroy(writes[i]);rhi_image_destroy(states[i]);
+            rhi_view_destroy(row_views[i]);rhi_image_destroy(row_images[i]);
+        }
+    }
+    for(unsigned i=0;i<2;i++) {rhi_view_destroy(probe_read[i]);rhi_view_destroy(probe_write[i]);rhi_image_destroy(probe[i]);}
+    rhi_view_destroy(world_read);rhi_image_destroy(world_input);
+    rhi_view_destroy(transform_basis);rhi_image_destroy(basis_image);
+    rhi_view_destroy(transform_scratch_read);rhi_view_destroy(transform_scratch_write);rhi_image_destroy(transform_scratch);
+    for(unsigned inverse=0;inverse<2;inverse++)for(unsigned axis=0;axis<2;axis++)rhi_shader_destroy(transform_ps[inverse][axis]);
+    rhi_shader_destroy(spectral_ps);
+    puts("PASS: original translated feedback shader pair matched by coupled spectral GPU steps (float32 only)");
     puts("PASS: original translated feedback shader pair verifies spatial coupling and storage gaps");
     rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);
     for(unsigned i=0;i<2;i++){rhi_shader_destroy(field_vs[i]);rhi_shader_destroy(field_ps[i]);}

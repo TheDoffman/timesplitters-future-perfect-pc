@@ -3656,6 +3656,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
+  Shared portable `graphics/surface_coupled.h`, coupled shader and separable
+  GPU transform shader bodies preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
+  No game hook calls this candidate; normal water and legacy GL are unchanged.
+  Existing native-timing CI includes its asset-free CPU fixture on both hosts.
+  Windows WARP covers GPU transforms and fresh reconstruction every update;
+  native Mac execution, GPU adapter validation, byte-feedback appearance and
+  gameplay integration remain **Awaiting validation**; this is not an enabled
+  Mac water feature. See STATUS and the coupled-water regression record.
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already
