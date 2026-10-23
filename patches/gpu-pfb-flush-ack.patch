@@ -1,0 +1,77 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -1966,6 +1966,10 @@
+             # dead, so the exception unwound past every handler and off the top
+             # of the stack.
+             out.append("g_seh_ebp = ebp;")
++        # A title may service a known emulated hardware handshake after a
++        # completed store. Default policy emits no code; never reorder the write.
++        if (ops[0].type == "mem" and ops[0].mem_size == 4 and not ops[0].mem_seg):
++            out.append(f"RECOMP_AFTER_STORE32(0x{insn.address:X}, {_fmt_mem(ops[0])});")
+         return out
+ 
+     def _lift_movzx(self, insn, ops):
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -60,6 +60,9 @@
+  * CMakeLists) -- MSVC's C4013 was emitted and discarded. Same failure as the
+  * missing stdlib.h in kernel_bridge.c, in a hotter path. */
+ #include <math.h>
++#ifndef RECOMP_AFTER_STORE32
++#define RECOMP_AFTER_STORE32(site, address) ((void)0)
++#endif
+ #if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
+ #include <xmmintrin.h>
+ #endif
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -35,6 +35,10 @@
+ 
+ /* Base address of all XBE files in Xbox memory */
+ #define XBOX_BASE_ADDRESS       0x00010000
++
++/* Service only the plain-memory PFB flush handshake after a guest write.
++ * No host GPU fence, interrupt, DMA pointer or guest clock is advanced. */
++void xbox_Nv2aAcknowledgePfbFlush(uint32_t guest_address);
+ 
+ /* Start of mapped region - includes low memory (KPCR at 0x0) because
+  * game code reads from addresses like 0x20 and 0x28 (Xbox kernel structures). */
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -1502,6 +1502,36 @@
+     if (g_nv2a_ack_thread) {
+         fprintf(stderr, "  NV2A busy-bit ack: %zu register(s) acknowledged\n",
+                 sizeof(NV2A_ACK) / sizeof(NV2A_ACK[0]));
++    }
++}
++
++/* The HLE renderer handles submitted work; this PFB register is only a
++ * plain-memory hardware handshake, as in NV2A_ACK above. A title that has
++ * just written this register can acknowledge it without waiting for the
++ * polling thread to wake. Keep every other bit and register untouched. */
++void xbox_Nv2aAcknowledgePfbFlush(uint32_t guest_address)
++{
++    volatile LONG *word;
++    static volatile LONG policy; /* 0 unknown, 1 enabled, 2 diagnostic fallback */
++    LONG before, observed, enabled;
++    if (guest_address != XBOX_NV2A_BASE + 0x100410u ||
++        !g_nv2a_memory || !g_nv2a_ack_thread ||
++        InterlockedCompareExchange(&g_nv2a_ack_stop, 0, 0))
++        return;
++    enabled = InterlockedCompareExchange(&policy, 0, 0);
++    if (!enabled) {
++        enabled = xbox_EnvSwitch("RECOMP_PFB_SYNC_ACK", 1) ? 1 : 2;
++        InterlockedCompareExchange(&policy, enabled, 0);
++    }
++    if (enabled == 2)
++        return;
++    word = (volatile LONG *)((char *)g_nv2a_memory + 0x100410u);
++    before = InterlockedCompareExchange(word, 0, 0);
++    while (before & 0x00010000L) {
++        observed = InterlockedCompareExchange(word, before & ~0x00010000L, before);
++        if (observed == before)
++            break;
++        before = observed;
+     }
+ }
+ 

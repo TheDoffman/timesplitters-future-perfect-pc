@@ -41,6 +41,13 @@ applicable adapter plus one relevant test. Tests may encode historical migration
 or compatibility behavior, so confirm current defaults in root instructions and
 effective source. Preserve unknown/unsupported saved settings across hosts.
 
+The shared title header `pc_gpu_ack.h` selects the audited PFB flush store through
+the generated `RECOMP_AFTER_STORE32` hook. It is included by the existing title
+policy header for both Windows and Mac, independent of native timing activation.
+The runtime validates and acknowledges that one plain-memory request immediately;
+game input, clock policy, frame target and saved settings are unchanged. See the
+runtime guide for register guards and the required regeneration boundary.
+
 Ghost Gun living-actor reveal alignment (#181/#241) is handled by
 `pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
 returning to US caller `0x001232A9` is the final filtered screen-copy composite

@@ -25,6 +25,14 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_gpu_flush_ack.py` compiles the actual patched runtime acknowledgement
+with the actual lifted store. It checks post-write ordering, exact instruction
+and register selection, unrelated flag preservation, startup/teardown guards
+and a compare/exchange retry. Omitted, reordered and broad-clear mutations must
+fail. Lifter cases include absolute/indexed/immediate stores plus excluded
+loads, narrow/segmented stores and register moves. Apply all patches first;
+regenerate and build before measuring gameplay. Both hosts run these checks.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

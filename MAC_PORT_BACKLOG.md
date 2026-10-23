@@ -3655,6 +3655,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **PFB acknowledgement prototype (2026-10-22,
+  `perf/gpu-flush-ack`):** The shared lifter's post-store hook selects the supported
+  US PFB flush instruction; the shared runtime clears only its existing busy bit
+  after validating the exact register and active service. Existing interlocked
+  APIs serve both hosts; no additional adapter or timing/settings policy exists.
+  Fifteen final offline lifting/behavioral/mutation cases pass on Windows and
+  are registered in both-host CI. Build,
+  gameplay and native Mac acceptance are pending; the diagnostic worker-spin
+  comparison in STATUS is not evidence of this prototype's performance.
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already

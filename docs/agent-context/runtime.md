@@ -26,6 +26,19 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`gpu-pfb-flush-ack.patch` adds a default-no-op `RECOMP_AFTER_STORE32` hook to
+ordinary 32-bit MOV memory stores. It runs after the original write, excludes
+segmented/narrow/register operations, and preserves existing numeric hooks.
+The title policy (`pc_gpu_ack.h`, included by `pc_native_numeric.h`) selects only
+verified US instruction `0x3D66C3`, before its PFB flush poll at `0x3D66D0`.
+Runtime `xbox_Nv2aAcknowledgePfbFlush` additionally requires the exact register,
+mapped aperture and active acknowledgement service. It clears only `0x10000`
+with compare/exchange, matching the existing poller's plain-memory handshake.
+It does not complete a host GPU fence, advance DMA/interrupts/clocks, or replace
+the acknowledgement worker. `RECOMP_PFB_SYNC_ACK=0` is an opt-in diagnostic
+fallback to the unchanged polling path for same-binary comparisons; the shared
+environment switch is cached once. Regenerate after applying this patch.
+
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
 | Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |

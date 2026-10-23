@@ -1,3 +1,41 @@
+## 2026-10-22 — PFB flush acknowledgement investigation
+
+Same-binary (`7b5f042`, SHA-256
+`0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`)
+bounded ten-bot Venice runs compare `RECOMP_NV2A_ACK_IDLE_US=0` against the
+default 500. Both complete with valid, unchanged isolated profiles and preserved
+fixture; disposable disks are recycled and the normal executable/symbol pair is
+restored. In the fully covered 50-second post-spawn windows, no-sleep/default
+respectively measure 144.000/143.939 interval FPS, p99 7.423/8.229 ms, maximum
+9.301/12.602 ms, and main-thread CPU 53.57%/82.41%. Total process CPU rises from
+1.323 to 1.559 core equivalents without sleep. Dead-state observations differ
+(47.8% versus 42.8%); combat is nondeterministic. All window observations are
+visible/nonminimized but nonforeground. These asynchronous CPU/Present diagnostics
+support investigating acknowledgement latency; they do not prove the cause of
+the user's 110 FPS drops or justify a permanently spinning worker. No setting
+was changed outside the disposable child environment. Evidence is retained in
+`logs/ack-comparison.json` and the two `ack-*-7b5-144` test directories.
+
+Source inspection and disassembly of the verified supported XBE identify the
+PFB flush write at `0x3D66C3` and busy-bit poll at `0x3D66D0`. The existing
+runtime worker clears the same `0x10000` bit in plain-memory register
+`0xFD100410`; its idle wait defaults to 500 microseconds. A main-based prototype
+on `perf/gpu-flush-ack` adds a post-store callback at exactly that instruction,
+servicing the same acknowledgement immediately while retaining the worker for
+other duties. Exact-address/lifecycle guards and atomic bit preservation keep
+other registers, interrupt delivery, DMA, host GPU work and the console clock
+outside its scope. The generic lifter retains default no-op behavior for other
+titles. Full regeneration/build, gameplay comparison and Mac acceptance remain
+pending; the prototype is not yet a verified FPS improvement.
+
+The initial prototype passes 80 focused acknowledgement, timing and generation
+checks (86.20 seconds), plus the full fresh/repeated-stack check (20.17 seconds).
+An explicit cached `RECOMP_PFB_SYNC_ACK=0` diagnostic fallback then adds
+same-binary on/off comparison capability without saved-settings changes. Its
+final 15 lifting/actual-runtime/mutation cases pass, with 21 context/backlog
+checks passing after refreshing the stale patch index. Omitted/reordered
+callbacks and clearing unrelated register bits are required failing mutations.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical
