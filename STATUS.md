@@ -14,16 +14,54 @@ presented frame and none for skips, and delivers real DDS loads through Swap.
 Both selected modes failed before repair; all 15 texture tests pass afterward.
 Legacy GL already delegates Swap to its Present adapter and needs no second pump.
 
-The visual probe also exposed a harness limitation: guest F10 key-state injection
-does not invoke the host shortcut. The bounded runner now offers an explicit
-texture-toggle window command through the existing host menu handler; real mode
-log transitions must confirm delivery. The old captures are not proof of switching.
+The visual probe also exposed a harness limitation: replay mode deliberately
+suppresses host shortcuts. Neither guest F10 injection nor the attempted host
+window command switches texture modes during replay. The ineffective command was
+removed; captures labeled Classic/Enhanced are both Enhanced and are not proof of
+switching. Live switching remains unverified by this probe.
 
 The shared queue/cancellation/format tests and prior build/CI results retain only
-their stated CPU/compile scope. Rebuild, actual Enhanced completion, corrected
-60/120/144 comparisons, final-head CI and Mac scene validation are pending. The
+their stated CPU/compile scope. The supported Windows build at 86b2c1c and its
+built-in checks passed (foreground virtual-pad routing skipped). The bounded
+Venice 144-FPS Enhanced run completed 132 uploads across 128 keys, with maximum
+recorded replacement residency 136,053,628 bytes. Two inspected gameplay captures
+showed no obvious blank/corrupt surfaces; this is not full asset acceptance.
+Capture/texture tracing were enabled, so this run is excluded from performance
+comparisons. Corrected 60/120/144 comparisons, final-head CI and Mac scene
+validation remain pending. The
 normal playable executable/symbol pair was restored and profiles/fixture preserved.
 No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
+
+Corrected-build Hotel comparison: Windows x64/MSVC 17.14.40/D3D11, source
+86b2c1c, executable SHA-256
+998adf71af5d69ecf3c6311fabb92ca01e128a692a4cb00770e1c59f2054ee1c.
+Both bounded runs used Enhanced textures, native 144, ten bots, requested
+3440x1440/FOV73 and observed 1920x1060 client area. Each measured the complete
+50-second window from spawn+5 to spawn+55, with successful guest Present records,
+captures/texture tracing off, read-only CPU observations on, and no concurrent
+local builds/test suites. Source 86b2c1c passed selected Windows/Mac runtime,
+patch-upgrade/transition and launcher CI checks; this is not Mac scene acceptance.
+
+| Measurement | Background reads | Synchronous reads |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.24 FPS | 142.06 FPS |
+| Lowest rolling five-second rate | 139.8 FPS | 132.8 FPS |
+| 99th-percentile frame interval | 8.467 ms | 8.738 ms |
+| Maximum frame interval | 11.653 ms | 11.493 ms |
+| Frames over 9 ms | 26 | 45 |
+| Frames over 16.67 ms | 0 | 0 |
+| Observed level-clock ticks/second | 59.989 | 60.013 |
+
+These are a single on/off pair with nondeterministic AI and deaths (36.7% versus
+37.8% of health observations), not causal proof or a full gameplay comparison.
+Both windows were visible but foreground in zero of 50 samples; requested
+fullscreen did not establish foreground ownership. API presents do not measure
+monitor scanout. Sparse level-clock observations do not establish animation,
+physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
+test-save directories and texture-stream-86b-comparison.json. Both sessions
+completed and restored the normal playable pair; fixture/profiles were preserved.
+Repeat ordering, Original 60/native120, live texture switching and foreground
+gameplay remain outstanding.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

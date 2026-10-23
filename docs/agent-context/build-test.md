@@ -550,6 +550,7 @@ and binding-revision hook, which the controls-upgrade test explicitly checks.
 The texture fixture now compiles actual present_resolve, dev_Swap and dev_Present
 bodies, verifies exactly one queue completion per presentation (none for a skip),
 and finishes real DDS loads through Swap. It fails against the Present-only
-prototype. In stability_transitions_game, window=texture-toggle posts the existing
-PC_TEXTURE_MODE_COMMAND to the owned window. Guest key-state injection of F10
-does not exercise this host shortcut; mode log transitions must confirm delivery.
+prototype. Replay mode deliberately suppresses host shortcuts in pc_controls_message;
+neither guest F10 injection nor posting PC_TEXTURE_MODE_COMMAND validates live
+switching during replay. Use the in-game settings route or a non-replay session,
+and confirm actual mode log transitions. The ineffective window command was removed.

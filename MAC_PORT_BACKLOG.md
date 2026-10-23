@@ -1240,8 +1240,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   route. Earlier background-on gameplay measurements did not include completed
   replacements and are withdrawn. Completion now belongs to shared present_resolve;
   legacy GL already funnels Swap through its Present adapter. Production-body
-  tests fail before this correction and pass after it. Actual rebuilt Enhanced
-  delivery and Windows/Mac scene validation remain **Awaiting validation**.
+  tests fail before this correction and pass after it. Windows D3D11 build
+  86b2c1c completed 132 replacement uploads in a bounded Venice Enhanced run;
+  two reviewed frames showed no obvious blank/corrupt surfaces. Live switching
+  was not exercised because replay suppresses host shortcuts. Mac scene checks,
+  broader Windows coverage and live switching remain **Awaiting validation**.
 
 - Background texture reads (commit carrying this entry): `texture_pack_stream.h`
   shares queue, cancellation and staging policy between common RHI and legacy
