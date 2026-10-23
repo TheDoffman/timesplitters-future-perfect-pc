@@ -25,8 +25,10 @@ servicing the same acknowledgement immediately while retaining the worker for
 other duties. Exact-address/lifecycle guards and atomic bit preservation keep
 other registers, interrupt delivery, DMA, host GPU work and the console clock
 outside its scope. The generic lifter retains default no-op behavior for other
-titles. Full regeneration/build, gameplay comparison and Mac acceptance remain
-pending; the prototype is not yet a verified FPS improvement.
+titles. Regeneration and the supported Windows build at `92ffa8b` pass, including
+built-in checks (foreground virtual-pad routing explicitly skips). Candidate
+SHA-256 is `702cca547d8b05797c985cc2bd7b0e174aee82a646779890907c3ee129213620`.
+The prototype fails live gameplay validation and must remain unmerged.
 
 The initial prototype passes 80 focused acknowledgement, timing and generation
 checks (86.20 seconds), plus the full fresh/repeated-stack check (20.17 seconds).
@@ -35,6 +37,26 @@ same-binary on/off comparison capability without saved-settings changes. Its
 final 15 lifting/actual-runtime/mutation cases pass, with 21 context/backlog
 checks passing after refreshing the stale patch index. Omitted/reordered
 callbacks and clearing unrelated register bits are required failing mutations.
+
+Same-binary disabled control `gpu-ack-off-92f-144` completes the ten-bot route:
+143.901 interval FPS, p99 8.256 ms, main-thread CPU 83.06%, total process 1.376
+core equivalents, and observed level-clock rate 59.99 ticks/second. The enabled
+run `gpu-ack-on-92f-144` stops presenting after 72.446 seconds while loading the
+match; scene stays 101 and level ticks stop at 4275. Its measurement-window
+assertion fails, so no enabled gameplay FPS result is accepted. A second bounded
+run (`gpu-ack-load-stack-92f`) reproduces the stall. Its 6,992 saved-stack samples
+show the later `sub_003D65B0` wait under `sub_003D6870`/Swap; this routine polls
+the GPU tag at `[device+0x934]+0x400B10` against the completion-counter bits at
+`*[device+0x30]`. It is not still waiting for the first PFB busy bit.
+
+The stack run suspends briefly to copy a stack before resuming/unwinding; maximum
+suspension is 1.0552 ms. It establishes the persistent wait location, not clean
+frame pacing. All three runs terminate within their bounds, preserve profile
+bytes/signatures and fixture, recycle disposable disks, and restore the normal
+playable executable/symbol pair. A clean runner exit does not pass scene
+acceptance. Direct acknowledgement is rejected pending rework of the full
+worker handshake; Original 60 and Mac gameplay tests are deferred until the
+loading regression is resolved. The draft PR explicitly records this failure.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

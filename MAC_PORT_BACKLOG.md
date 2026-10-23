@@ -3661,9 +3661,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   after validating the exact register and active service. Existing interlocked
   APIs serve both hosts; no additional adapter or timing/settings policy exists.
   Fifteen final offline lifting/behavioral/mutation cases pass on Windows and
-  are registered in both-host CI. Build,
-  gameplay and native Mac acceptance are pending; the diagnostic worker-spin
-  comparison in STATUS is not evidence of this prototype's performance.
+  are registered in both-host CI. The Windows regeneration/build passes at
+  `92ffa8b`, but enabled gameplay stalls during match loading in two bounded
+  runs. The disabled control completes. The prototype must remain unmerged
+  while the full acknowledgement sequence is reworked. Original 60 and native
+  Mac gameplay acceptance are pending; see STATUS for rejected live evidence.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
