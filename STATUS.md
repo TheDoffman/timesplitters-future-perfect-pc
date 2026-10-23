@@ -60,8 +60,29 @@ monitor scanout. Sparse level-clock observations do not establish animation,
 physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
 test-save directories and texture-stream-86b-comparison.json. Both sessions
 completed and restored the normal playable pair; fixture/profiles were preserved.
-Reverse-order repeats, broader rate/scene coverage and foreground gameplay remain
-outstanding. The following checks extend this same executable's Windows coverage.
+A reverse-order repeat (synchronous first, then background) used the same
+executable, settings, strict 50-second window and instrumentation. No local
+build/test suites ran alongside either measurement. Results:
+
+| Measurement | Background repeat | Synchronous repeat |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.18 FPS | 142.64 FPS |
+| Lowest rolling five-second rate | 136.0 FPS | 136.2 FPS |
+| 99th-percentile frame interval | 8.477 ms | 8.661 ms |
+| Maximum frame interval | 10.323 ms | 18.655 ms |
+| Frames over 9 ms | 17 | 30 |
+| Frames over 16.67 ms | 0 | 1 |
+| Observed level-clock ticks/second | 60.014 | 60.011 |
+
+Both pairs favor background loading in average rate and >9-ms frame counts,
+but the minimum rolling five-second rate does not consistently improve. These
+four samples support a modest scoped pacing improvement, not locked 144 FPS or
+a complete fix for NPC-related dips. Death observations in the repeat were
+28.6%/25.3%; AI events remain unpaired. All 50 window samples were visible and
+none foreground. Evidence: texture-stream-86b-hotel144-off-repeat/on-repeat.
+Both sessions preserved profiles and restored the normal playable binary.
+Broader rate/scene coverage and foreground gameplay remain outstanding.
+The following checks extend this same executable's Windows coverage.
 
 Corrected Enhanced Venice runs at Original 60 and native120 completed with ten
 bots and isolated Test Lab profiles. Same resolution/FOV/client and instrumentation
