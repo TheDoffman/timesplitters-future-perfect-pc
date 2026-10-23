@@ -554,3 +554,57 @@ prototype. Replay mode deliberately suppresses host shortcuts in pc_controls_mes
 neither guest F10 injection nor posting PC_TEXTURE_MODE_COMMAND validates live
 switching during replay. Use the in-game settings route or a non-replay session,
 and confirm actual mode log transitions. The ineffective window command was removed.
+
+## Game release channels and maintenance publication (2026-10-22)
+
+`tools/release_channels.py` owns canonical X.Y.Z[-channel.N] package identity and
+the minimum launcher 1.3.0. `tools/release-version.py` writes an explicitly chosen
+VERSION only; no automatic increment/tag/publication. The next Stable source
+version is 0.3.2. Both game packagers validate identity before staging and emit
+release_channel in BUILD.json. Official packages continue optional texture delivery.
+
+`publish-release.py` defaults to exact origin/main; --branch permits pushed feature
+previews and Stable release/ or hotfix/ branches with a published Stable ancestor.
+It validates monotonic versions within stable major/minor lines or exact preview
+base/channel series. Notes choose an ancestor in that series, falling back to
+Stable; unrelated/nonancestor experiments never become a baseline. Channel JSON
+records exact source and included/latest published Stable; a missing latest
+Stable is disclosed. --notes-file supplies reviewed feature notes for unmerged
+branches. Prepared package reuse includes the channel metadata; publication
+retains latest=false and existing package/installer/hash/rollback checks.
+
+The release CI scope selects release_channels.py and release-version.py and
+existing test_publish_release.py covers their identity, preparation, branch,
+hotfix, unrelated-baseline and prepared-retry contracts using fake GitHub.
+LauncherSharedUiChecks covers shared channel selection/preferences/metadata;
+launcher_versions.cs covers paginated discovery. Run the existing Windows launcher
+suite and both-host CI. See STATUS.md for measured local results; no runtime game
+behavior or generated guest code changed, and no game build/publication is
+established by these asset-free checks.
+
+
+Grouped Preview UI: GameChannelPickerPage.cs is compiled automatically by both
+hosts' existing *Page.cs includes. launcher_shared_ui.cs tests the actual shared
+selector, including remembering a feature while returning through Stable, general
+preview selection and unavailable-track refresh. Rebuild with build-launcher.ps1
+-Test, then run build/launcher/TimeSplitters Launcher.exe. --render-preview produces
+a synthetic named-track example without modifying preferences or calling GitHub.
+No game build or publisher/tag-format change is required for this grouping.
+
+
+Local Windows artwork selection: build-launcher.ps1 resolves explicit image
+arguments first, then validates each build/launcher-art PNG against the shared
+artwork pin, then uses the existing private legacy fallback if no cached file
+exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
+executing downloaded code. -RequireArtwork checks the selected resources; normal
+local rebuilds now reuse the same verified art as release CI when cached.
+
+
+Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
+publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
+both package entry points and publisher preflight enforce that mode. Beta's
+canonical identity is beta/Beta; a custom Beta display name is rejected. Historical
+identities remain readable for baselines without joining Beta's series. Publisher
+fixtures now use beta.N, with explicit legacy rejection/history and independent
+Beta baseline tests. Existing generic semantic-version ordering tests still cover
+alpha/beta ordering separately from the new publication policy.

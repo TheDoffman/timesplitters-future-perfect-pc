@@ -59,7 +59,7 @@ A successful prerequisite check is not gameplay or graphics validation.
 ## Shared behavior and distribution
 
 `LauncherPlatform.cs` contains package names, paths and Mac atomic replacement.
-Version ordering, Stable/Preview filtering, original-game import, checksum/path
+Version ordering, Stable/named-preview filtering, original-game import, checksum/path
 validation, resumed downloads, update journals, rollback, settings models,
 diagnostics filtering and issue-draft preparation use the existing Windows
 source. Native keyboard/mouse events map to the shared binding codes, including
@@ -185,3 +185,21 @@ The native builder accepts the same `--runtime-root` to reuse dependencies and
 the single `build/macos` directory from a focused source worktree. It records the
 source worktree revision/hashes and never copies game data or virtual environments.
 Use the bounded wrapper, never automate Play against the personal installation.
+
+
+## Stable and named game previews
+
+Launcher 1.3.0 source adds independent game channels on Windows and native Mac.
+New installations default to **Stable**; use the game update channel selector to
+choose **Preview**, then select **Beta** or a named feature such as
+**Story Co-op** under **Testing track**. Each track receives only its own updates.
+The track selector appears only for Preview; switching through Stable remembers
+the previously selected track. Old Preview preferences
+migrate to Beta without enabling launcher preview updates. Historical alpha and
+`-preview.N` versions remain available only in Game versions; no release-candidate type is required.
+Select Stable and confirm the channel switch to install its latest game, even
+when its version is lower than the installed preview. **Game versions** still
+allows exact-version installation. Missing channels never silently substitute
+another channel. Saves/settings/game data/textures are preserved; back up saves
+before testing because preview save/network compatibility can vary.
+See [versions, publishing and recovery](releasing.md) for the full process.

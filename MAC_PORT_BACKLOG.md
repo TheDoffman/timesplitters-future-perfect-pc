@@ -196,6 +196,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
 | MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 | MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
+| MAC-062 | Stable and named game release channels | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -4577,6 +4578,39 @@ fidelity lack complete evidence across the project. They should not be described
 as proven PC features missing only on Mac. Track focused validation in `STATUS.md`.
 The reported world disappearance remains unresolved until reproduced and checked;
 none of the renderer entries above is a confirmed diagnosis of that symptom.
+
+### MAC-062 - Stable and named game release channels
+
+- **Status:** Awaiting validation
+- **PC behavior:** Launcher 1.3.0 chooses Stable or a named opt-in game preview,
+  keeps launcher updates independent, and confirms return to a lower Stable game.
+  VERSION 0.3.2 prepares the next Stable game. Local changes on release-channels
+  are uncommitted; no release has been published.
+- **Source files:** tools/launcher/ReleaseClient.cs (GameChannels), Launcher.cs,
+  SelfUpdate.cs, WhatsNewPage.cs, macos/NativeWindow.cs and NativeNews.cs;
+  tools/release_channels.py, publish-release.py and both game packagers.
+- **Existing Mac support:** Shared models, installer and generated layout already
+  serve both hosts. Channel policy and shared behavioral fixtures are common.
+- **Beta naming follow-up:** Preview's general testing track is Beta (-beta.N).
+  Shared source migrates old general-preview preferences to beta, retains feature
+  tracks, and leaves historical alpha/preview releases in Game versions only.
+  Shared UI fixtures cover this policy on WPF/Avalonia; refreshed Mac CI is needed.
+- **Preview grouping follow-up:** Shared GameChannelPickerPage now supplies
+  Stable/Preview and the conditional testing-track selector on both hosts.
+  game_preview_track persists the remembered feature across Stable. The generated
+  layout hosts this common component; native host validation remains pending.
+- **Mac adaptation needed:** NativeWindow maps the shared choices/checks to
+  Avalonia; NativeNews supplies the named game channel. No separate policy or
+  runtime implementation is needed. Native compilation/lifecycle remains unrun
+  on this Windows host.
+- **Mac acceptance checks:** Run dual-host launcher CI and native prerequisite/
+  package/lifecycle checks; exercise old Preview migration, named-channel
+  discovery, missing-channel retention, return to Stable confirmation, exact
+  version installation, independent launcher updates and preserved personal
+  data. Channel switches continue using existing saves: back up before testing.
+- **Mac implementation and evidence:** Shared C# fixtures plus Windows host
+  results are recorded in [STATUS.md](STATUS.md#release-channel-strategy-2026-10-22).
+  Native execution/visual acceptance is pending; Windows is not Mac evidence.
 
 ## Entry template
 

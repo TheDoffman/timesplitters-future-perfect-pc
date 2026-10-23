@@ -18081,3 +18081,117 @@ Advances the shared launcher and assembly versions for the original character
 icon migration from PR #289. Both platform packages are published only after
 the release workflow passes; the game update follows launcher publication.
 The game remains v0.3.1-alpha.2. No gameplay validation is claimed by this bump.
+
+
+## Release channel strategy (2026-10-22)
+
+Local uncommitted source on `release-channels`, based on main
+`acf4464accc33ff2d3ab6d76b20076650e9d17fd`. VERSION is now **0.3.2** for the
+first Stable game after `0.3.1-alpha.2`; shared launcher source is **1.3.0**.
+Neither version has been published by this task. No main merge, tag, GitHub
+release, game rebuild or gameplay validation was performed.
+
+On Windows x64, .NET Framework 4.8's x64 compiler builds the shared/WPF launcher.
+The complete `tools/build-launcher.ps1 -Test` suite passed, including 113 core
+updater/installation regressions, 13 version checks, 30 news checks, 38 settings
+checks, 28 download checks, 10 startup checks and 20 maintenance checks, plus
+shared UI/texture/session/diagnostic contracts. New shared channel fixtures cover
+Stable/named-preview isolation, lower-version return to Stable, unavailable
+channels, old Preview preference migration without launcher enrollment,
+unrelated preference preservation and release metadata validation. The version
+fixture checks discovery beyond the first 100 GitHub records. Test fixtures use
+workspace-local temporary paths and fake release metadata, not personal saves.
+The first session-report run encountered an isolated File.Replace error; the
+subsequent complete run passed. Logs: ignored logs/release-channel-launcher-tests.log.
+
+Asset-free Python validation passed 240 tests plus 36 subtests (4 directory
+symlink prerequisite skips) across publisher, native Mac package contracts,
+launcher release, runtime scope and launcher compatibility/shared-layout, backlog and repository-context checks.
+Publisher checks simulate GitHub; they cover pushed feature sources, independent
+Stable hotfixes, nonancestor/unrelated baselines, explicit version preparation
+and prepared-package identity. These checks do not upload any assets.
+
+Mac Avalonia adapters and both game packagers share the channel model. This
+Windows host has no dotnet command/native macOS environment available; native
+Mac build, prerequisite, lifecycle and visual checks remain unrun under MAC-062.
+No native game behavior or rendering claim follows from the shared fixtures.
+Publish/validate the dual-platform launcher 1.3.0+ before the Stable game; the
+publisher enforces compatible stable launcher packages. Existing game saves,
+settings and installed optional textures remain preserved. Preview testing
+continues to use existing saves; back them up before switching builds.
+
+
+### Grouped Preview track selector follow-up
+
+Local source on release-channels now groups all feature tests under the Preview
+parent. GameChannelPickerPage supplies the same two selectors on WPF/Avalonia:
+Stable/Preview, then General Preview or a named testing track. The remembered
+track persists across Stable and restarts without changing canonical release IDs.
+Normal UI shows published tracks (plus a saved unavailable selection); synthetic
+Story Co-op appears only in developer render previews.
+
+Windows x64 local build succeeded. The complete build-launcher.ps1 -Test suite
+passed, including the new shared selector/preference checks and 13 game-version
+checks. Its first run hit the already observed unrelated GameSessions File.Replace
+failure; the subsequent full run passed. Python shared-layout, compatibility,
+backlog and publishing checks passed 113 tests plus 26 subtests, with four directory
+symlink prerequisite skips. No game runtime or personal-save test was needed.
+Mac native compilation/visual/lifecycle remains pending under MAC-062.
+
+Runnable local build: build/launcher/TimeSplitters Launcher.exe (launcher 1.3.0,
+source based on acf4464 with the uncommitted release-channels changes). Run from
+the repository root with `& '.\build\launcher\TimeSplitters Launcher.exe'`.
+Reviewed synthetic screenshot: build/launcher/channel-preview.png; it does not
+establish that a Story Co-op release is published. Validation log:
+logs/release-channel-grouping-tests.log. No commit, merge, push or release was made.
+
+
+### Local banner and channel badge correction
+
+The local launcher had embedded the older launcher-v1.2.12 banner from private
+recovery files and omitted the backdrop. Recovered the exact PNG resources pinned
+in config/launcher-artwork.json (launcher-v1.2.18), leaving original private files
+untouched. The Windows builder now prefers that verified cache on ordinary
+rebuilds; explicit artwork arguments still take precedence. No release pins or
+published assets changed. Restored STABLE CHANNEL / PREVIEW CHANNEL badge wording
+on Windows and Mac; the grouped selectors remain Stable/Preview.
+
+The local Windows build with -RequireArtwork succeeds. Reflection-only inspection
+of the built application verifies embedded banner, backdrop and logo SHA-256
+against all three shared pins; no downloaded code was executed. The refreshed
+build/launcher/channel-preview.png was visually reviewed for the complete current
+banner/backdrop and restored badge. Mac runtime validation remains pending MAC-062.
+
+The full Windows -RequireArtwork -Test suite also passed; log:
+logs/release-channel-art-tests.log.
+
+
+## Launcher 1.3.0 publication preparation (2026-10-23)
+
+User requested publishing the new launcher. Preparing the reviewed release-channels
+source for the shared Windows/Mac workflow; launcher-v1.3.0 is not yet published.
+The live latest launcher is launcher-v1.2.24, and origin/main is still acf4464.
+Local Windows -RequireArtwork -Test and embedded resource hash verification passed;
+Mac builds/package/lifecycle checks will run in PR/release CI before publication.
+Game VERSION 0.3.2 is source preparation only; this launcher publication does not
+publish the game or original/private assets. MAC-062 remains awaiting validation.
+
+
+## Beta as the general Preview track (2026-10-23)
+
+Before merging/publishing launcher 1.3.0, the user selected Beta as the sole general
+testing track. Preview now contains Beta and independent named features such as
+Story Co-op. New general versions use -beta.N; version preparation, package entry
+points and publisher preflight reject new alpha/preview/rc/legacy suffixes. Beta's
+name is fixed. Historical alpha and -preview.N releases remain exact-version
+history/repair entries labeled Legacy Preview, outside Beta update candidates.
+Old general-preview preferences migrate to beta, preserving named tracks and
+unrelated preferences. Stable remains the default. Tags/assets are not relabeled.
+
+Local asset-free publisher/package/launcher checks passed 227 tests plus 36
+subtests, with four directory symlink prerequisite skips. Windows built with the
+pinned artwork; shared grouped-selection, preference and version checks passed.
+The broader local suite again failed the pre-existing GameSessions fallback-
+retention File.Replace check (also reproduced separately); maintenance checks
+passed. Updated dual-platform PR CI must validate the final commit before merge.
+No GameSessions code was changed. No merge, tag or release was created.

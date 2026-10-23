@@ -1,21 +1,24 @@
 #requires -Version 5.1
 <#
 .SYNOPSIS
-Build, validate, package and publish the VERSION on a clean, up-to-date main.
+Build, validate, package and publish the VERSION from a clean, pushed source branch.
 .DESCRIPTION
-Requires the complete bundled repository textures. Run git lfs pull first.
-Missing, incomplete or unhydrated textures stop preparation and publication.
+Stable uses main by default; pass -Branch for a preview or maintenance branch.
+Enhanced textures are optional and omitted from official game packages.
 .EXAMPLE
 .\Publish-Release.ps1 -PrepareOnly
 .EXAMPLE
 .\Publish-Release.ps1
 #>
 [CmdletBinding()]
-param([switch]$PrepareOnly, [switch]$Draft)
+param([switch]$PrepareOnly, [switch]$Draft, [string]$Branch = 'main', [string]$ChannelName, [string]$NotesFile)
 $ErrorActionPreference = 'Stop'
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (!(Test-Path -LiteralPath $python)) { throw 'Run setup.ps1 first.' }
 $releaseArguments = @((Join-Path $PSScriptRoot 'tools\publish-release.py'))
+$releaseArguments += @('--branch', $Branch)
+if ($ChannelName) { $releaseArguments += @('--channel-name', $ChannelName) }
+if ($NotesFile) { $releaseArguments += @('--notes-file', $NotesFile) }
 if ($PrepareOnly) { $releaseArguments += '--prepare-only' }
 if ($Draft) { $releaseArguments += '--draft' }
 $previousPreference = $ErrorActionPreference

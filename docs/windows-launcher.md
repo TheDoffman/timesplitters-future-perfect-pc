@@ -12,6 +12,9 @@ their subfolders. It installs game runtime packages from the
 public `TheDoffman/timesplitters-future-perfect-pc` GitHub Releases page. It never
 pulls a branch, builds game code, requests a GitHub login or downloads original
 game data. It reuses `tools/release/ImportGame.cs` for local ISO/folder import.
+For normal installation, download the latest stable launcher and keep the game
+**Update channel** set to **Stable**, then select **Install release**. Preview
+channels are optional testing choices.
 
 ## Build and validate
 
@@ -130,7 +133,7 @@ release; resource-link tests use a tiny executable without running the game.
 ## Publishing game updates
 
 Publish a GitHub Release with a semantic version tag (`v1.2.3`, or
-`v1.2.3-alpha.1` for a prerelease) and these assets from the existing packager:
+`v1.3.0-beta.1` or `v1.3.0-story-coop.1` for an opt-in prerelease) and these assets from the existing packager:
 
 - `TimeSplitters-Future-Perfect-PC-<tag>-windows-x64.zip`
 - The corresponding `.zip.sha256` sidecar (publish both).
@@ -140,10 +143,12 @@ root and a `BUILD.json` with a matching `version` plus SHA-256 for every file
 except the manifest itself. Existing release packages are supported even if
 they predate the launcher. The standalone launcher remains installed in that case.
 
-Both channels check the most recent 100 published release records and choose
-the highest supported game version with the matching Windows asset. Stable
-excludes prereleases; Preview includes them. Launcher-only releases, drafts and source-only releases are
-ignored. Updates never downgrade the installed version; rollback is explicit.
+Launcher 1.3.0+ pages through published release records and chooses the highest
+compatible game version in the selected channel with the matching Windows asset.
+Stable is the default and excludes prereleases. Beta and named
+previews follow their own testing releases. Launcher-only releases, drafts and
+source-only releases are ignored. Same-channel updates do not downgrade; an
+explicit channel switch can install a lower Stable version after confirmation.
 An unpublished or checksum-less release is not offered. Network failures and
 rate limits leave installed play available.
 
@@ -158,7 +163,8 @@ Use the [shared Windows and Mac release workflow](launcher-releases.md). Bump
 `LauncherVersion.Value` and its assembly/file attributes, merge the update to
 `main`, then run **Launcher release (Windows + Mac)** with **publish** enabled.
 The workflow builds/tests both platforms and publishes their ZIPs, checksums,
-platform manifests and permanent download aliases together under `launcher-vX.Y.Z`.
+platform manifests together under `launcher-vX.Y.Z`. The Latest release-page
+link stays permanent; versionless ZIP aliases are not published.
 Preview version suffixes produce prereleases; stable releases become Latest.
 Launcher versions and game tags remain independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -198,8 +204,9 @@ an actual security prompt. Run it through `tools/build-launcher.ps1 -Test` or
 `launcher-tests.exe --startup`. The build remains unsigned; this handles recovery
 and does not bypass SmartScreen or configure Authenticode signing.
 
-Updates are automatic for the selected Stable/Preview channel. No game update
-is implied. The bootstrap waits for neither a game build nor a large runtime ZIP.
+Launcher updates use Stable by default, independently of the selected game
+channel. Opting into a game preview does not opt into launcher test updates.
+No game update is implied. The bootstrap waits for neither a game build nor a large runtime ZIP.
 When ready, `.launcher/self-helper.exe` waits for the bootstrap process to exit,
 acquires the shared installation mutex, and replaces the three launcher files.
 The new bootstrap skips its network check once after a helper handoff to avoid
@@ -738,3 +745,30 @@ its recorded game process is gone; a surviving game is left running. Diagnostics
 states when no dump or exit code was captured. An unfinished record cannot prove
 a crash cause: forced closure, reboot, and interrupted launcher monitoring can
 also leave one. See [session recovery and limits](windows-crash-logger.md#unfinished-sessions-and-exits-without-a-dump).
+
+
+## Stable and named game previews
+
+Launcher 1.3.0 source adds independent game channels on Windows and native Mac.
+New installations default to **Stable**; use the game update channel selector to
+choose **Preview**, then select **Beta** or a named feature such as
+**Story Co-op** under **Testing track**. Each track receives only its own updates.
+The track selector appears only for Preview; switching through Stable remembers
+the previously selected track. Old Preview preferences
+migrate to Beta without enabling launcher preview updates. Historical alpha and
+`-preview.N` versions remain available only in Game versions; no release-candidate type is required.
+Select Stable and confirm the channel switch to install its latest game, even
+when its version is lower than the installed preview. **Game versions** still
+allows exact-version installation. Missing channels never silently substitute
+another channel. Saves/settings/game data/textures are preserved; back up saves
+before testing because preview save/network compatibility can vary.
+See [versions, publishing and recovery](releasing.md) for the full process.
+
+
+### Use the pinned artwork for a local build
+
+Run `powershell -NoProfile -File tools/fetch-launcher-art.ps1` once to recover the
+checksum-pinned published banner, backdrop and logo. Normal Windows builds then
+prefer that verified cache in build/launcher-art, so an older private banner does
+not replace the current artwork or leave its backdrop missing. Explicit artwork
+arguments still take precedence; original private files remain untouched.

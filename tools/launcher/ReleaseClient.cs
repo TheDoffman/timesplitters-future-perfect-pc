@@ -51,9 +51,109 @@ namespace TimeSplitters.Launcher
         }
     }
 
+    // Shared channel identity/preferences for both launcher hosts. A display name
+    // is presentation only; updates follow the stable channel ID from the tag.
+    public sealed class GameChannelChoice
+    {
+        public string Id, Name;
+        public override string ToString(){return Name;}
+    }
+    public static class GameChannels
+    {
+        public static string FromTag(string tag)
+        {
+            string pre=GameVersion.Parse(tag).Pre;
+            if(pre.Length==0)return "stable";
+            var match=Regex.Match(pre,@"^([a-z][a-z0-9-]{0,39})\.[1-9][0-9]*$");
+            if(!match.Success)return "legacy"; // Exact-version history only.
+            string id=match.Groups[1].Value;
+            return id=="alpha"||id=="preview"||id=="rc"||id=="stable"||id=="legacy"?"legacy":id;
+        }
+        public static GameChannelChoice[] Choices(IEnumerable<Release> releases,string selected)
+        {
+            selected=Preference(selected);
+            var names=new Dictionary<string,string> { {"stable","Stable"},{"beta","Beta"} };
+            foreach(var release in releases.Where(r=>r.Channel!="legacy").OrderBy(r=>GameVersion.Parse(r.Tag)))names[release.Channel]=release.Channel=="beta"?"Beta":release.ChannelName;
+            if(!names.ContainsKey(selected))names[selected]=Name(selected);
+            return names.OrderBy(p=>p.Key=="stable"?0:p.Key=="beta"?1:2).ThenBy(p=>p.Key,StringComparer.Ordinal)
+                .Select(p=>new GameChannelChoice {Id=p.Key,Name=p.Value}).ToArray();
+        }
+        public static bool Valid(string id) {return Regex.IsMatch(id??"",@"^[a-z][a-z0-9-]{0,39}\z");}
+        public static string Name(string id)
+        {return id=="stable"?"Stable":id=="beta"?"Beta":id=="legacy"?"Legacy Preview":CultureInfo.InvariantCulture.TextInfo.ToTitleCase(id.Replace('-',' '))+" Preview";}
+        public static string Preference(string id)
+        {return id=="preview"||id=="alpha"||id=="rc"||id=="legacy"?"beta":id;}
+        public static string Read(string root)
+        {
+            try {
+                string path=Core.PathIn(root,".launcher/preferences.json");
+                if(!File.Exists(path))return "stable";
+                var prefs=Json.Object(File.ReadAllText(path));string id=Json.String(prefs,"game_channel");
+                return Valid(id)?Preference(id):Json.Flag(prefs,"preview")?"beta":"stable";
+            } catch(Exception ex){LauncherLog.Write(root,"Game channel preferences: "+ex.Message);return "stable";}
+        }
+        public static string ReadPreviewTrack(string root)
+        {
+            try {
+                string path=Core.PathIn(root,".launcher/preferences.json");
+                if(File.Exists(path)) {
+                    string id=Json.String(Json.Object(File.ReadAllText(path)),"game_preview_track");
+                    if(Valid(id) && id!="stable")return Preference(id);
+                }
+            } catch(Exception ex){LauncherLog.Write(root,"Preview track preferences: "+ex.Message);}
+            string selected=Read(root);return selected=="stable"?"beta":selected;
+        }
+        public static void Save(string root,string id,string previewTrack=null)
+        {
+            Core.Require(Valid(id),"Invalid game channel.");
+            id=Preference(id);previewTrack=Preference(previewTrack);
+            string path=Core.PathIn(root,".launcher/preferences.json");
+            var prefs=File.Exists(path)?Json.Object(File.ReadAllText(path)):new Dictionary<string,object>();
+            string remembered=id!="stable"?id:previewTrack;
+            if(Valid(remembered) && remembered!="stable")prefs["game_preview_track"]=remembered;
+            prefs["game_channel"]=id;prefs["preview"]=false; // Older clients recover on Stable.
+            Core.Write(path,Json.Encode(prefs));
+        }
+        public static string Installed(string root)
+        {
+            string version=Core.InstalledVersion(root);
+            try{return FromTag(version);}catch(InvalidDataException){return "stable";}
+        }
+        public static bool CanInstall(Release release,string installed)
+        {
+            if(release==null)return false;
+            if(String.IsNullOrEmpty(installed))return true;
+            try{return release.Tag!=installed && (release.Channel!=FromTag(installed)||GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed))>0);}
+            catch(InvalidDataException){return true;}
+        }
+        public static Release Select(IEnumerable<Release> releases,string id)
+        {return releases.Where(r=>r.Channel==id).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
+        internal static void Metadata(Release release,string body)
+        {
+            release.Channel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"legacy":FromTag(release.Tag);
+            release.ChannelName=Name(release.Channel);
+            var match=Regex.Match(body??"",@"<!-- tsfp-release (.*?) -->");
+            if(!match.Success)return; // Published legacy releases remain installable.
+            Dictionary<string,object> data;
+            try{data=Json.Object(match.Groups[1].Value);}catch(Exception error){throw new InvalidDataException("Invalid release channel metadata.",error);}
+            Core.Require(data!=null && Regex.Matches(body,@"<!-- tsfp-release ").Count==1,"Invalid release channel metadata.");
+            string metadataChannel=Json.String(data,"channel");
+            bool oldGeneral=metadataChannel=="preview" && (release.Channel=="legacy" || release.Channel=="beta");
+            Core.Require(Json.String(data,"schema")=="1" && (metadataChannel==release.Channel || oldGeneral) &&
+                Regex.IsMatch(Json.String(data,"source_commit"),"^[0-9a-f]{40}$"),"Release channel metadata does not match its version.");
+            string name=Json.String(data,"name");
+            Core.Require(name.Length>0 && name.Length<=80 && !name.Any(Char.IsControl),"Invalid channel display name.");
+            release.ChannelName=release.Channel=="legacy"?"Legacy Preview":release.Channel=="beta"?"Beta":name;release.MinimumLauncher=Json.String(data,"minimum_launcher");
+            GameVersion.Parse(release.MinimumLauncher);
+        }
+        public static string VisibleNotes(string body)
+        {return Regex.Replace(body??"",@"<!-- tsfp-release .*? -->\s*","");}
+    }
+
     public sealed class Release
     {
         public string Tag, Notes, Url, Name, Published, AssetName, AssetUrl, ChecksumUrl, Digest;
+        public string Channel="stable", ChannelName="Stable", MinimumLauncher="";
         public long Size;
         public bool IsPreview;
     }
@@ -129,10 +229,12 @@ namespace TimeSplitters.Launcher
                 if (checkUrl.Length > 0) ValidateDownloadUrl(checkUrl);
                 long size;
                 if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 4L * 1024 * 1024 * 1024) continue;
-                if (best == null || version.CompareTo(GameVersion.Parse(best.Tag)) > 0)
+                if (best == null || version.CompareTo(GameVersion.Parse(best.Tag)) > 0) {
                     best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag), Name=Json.String(r,"name"),Published=Json.String(r,"published_at"),
                         AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest,
                         IsPreview = Json.Flag(r,"prerelease") || version.Pre.Length != 0 };
+                    GameChannels.Metadata(best, best.Notes);best.Notes=GameChannels.VisibleNotes(best.Notes);
+                }
             }
             return best;
         }
@@ -163,6 +265,18 @@ namespace TimeSplitters.Launcher
             string json = await Text(url, 4 * 1024 * 1024, token).ConfigureAwait(false);
             return json.Length == 0 ? null : Select(json, preview);
         }
+        public async Task<Release[]> ReadGameCatalog(CancellationToken token)
+        {
+            var releases=new Dictionary<string,Release>(StringComparer.Ordinal);
+            for(int page=1;page<=100;page++) {
+                var result=await ReadGameVersions(page,token).ConfigureAwait(false);
+                foreach(var release in result.Releases)releases[release.Tag]=release;
+                if(!result.HasMore)return releases.Values.ToArray();
+            }
+            throw new InvalidDataException("Too many release pages; no partial update catalog was selected.");
+        }
+        public async Task<Release> Check(string channel,CancellationToken token)
+        {return GameChannels.Select(await ReadGameCatalog(token).ConfigureAwait(false),channel);}
         internal Task<string> ReadTextureManifest(CancellationToken token)
         { return Text(TextureDownload.ManifestUrl,8*1024*1024,token); }
         public async Task<Release> FindGame(string version, CancellationToken token)
@@ -255,14 +369,20 @@ namespace TimeSplitters.Launcher
         }
         public async Task<Release> CheckLauncher(bool preview, CancellationToken token)
         {
-            // List releases so a newer game-only release cannot hide the last
-            // launcher-only release. Launcher and game versions are independent.
-            string json = await Text("https://api.github.com/repos/" + Repository + "/releases?per_page=100", 4 * 1024 * 1024, token).ConfigureAwait(false);
-            if (json.Length == 0) return null;
-            var candidate = SelectLauncher(json, preview);
-            if (candidate == null) return null;
-            return VerifyLauncherMetadata(candidate, await Text(candidate.ManifestUrl, 16384, token).ConfigureAwait(false));
+            // Every release page participates: many experiment builds must not
+            // hide the most recent compatible stable launcher.
+            LauncherRelease best=null;
+            for(int page=1;page<=100;page++) {
+                string json=await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100&page="+page.ToString(CultureInfo.InvariantCulture),4*1024*1024,token).ConfigureAwait(false);
+                if(json.Length==0)return null;
+                var candidate=SelectLauncher(json,preview);
+                if(candidate!=null && (best==null || GameVersion.Parse(candidate.Package.Tag).CompareTo(GameVersion.Parse(best.Package.Tag))>0))best=candidate;
+                if(((object[])Json.Serializer().DeserializeObject(json)).Length<100)
+                    return best==null?null:VerifyLauncherMetadata(best,await Text(best.ManifestUrl,16384,token).ConfigureAwait(false));
+            }
+            throw new InvalidDataException("Too many release pages; no partial launcher catalog was selected.");
         }
+
         public Task<KnownIssues> ReadKnownIssues(CancellationToken token)
         { return ReadKnownIssuesWithTimeout(TimeSpan.FromSeconds(25),token); }
         internal async Task<KnownIssues> ReadKnownIssuesWithTimeout(TimeSpan limit,CancellationToken token)
@@ -312,6 +432,16 @@ namespace TimeSplitters.Launcher
         }
         static void ObserveNewsFailure(Task pending)
         { pending.ContinueWith(task=>{var error=task.Exception;},TaskContinuationOptions.OnlyOnFaulted); }
+        public async Task<ReleaseNews> ReadNews(string channel,string installedGame,string installedLauncher,CancellationToken token)
+        {
+            var result=new ReleaseNews {Game=await Check(channel,token).ConfigureAwait(false),Preview=channel!="stable"};
+            result.Launcher=await CheckLauncher(false,token).ConfigureAwait(false);
+            var empty=new Dictionary<string,object>[0];
+            result.InstalledGame=await InstalledNotes(empty,installedGame,false,token).ConfigureAwait(false);
+            result.InstalledLauncher=await InstalledNotes(empty,installedLauncher,true,token).ConfigureAwait(false);
+            result.CheckedUtc=DateTime.UtcNow;return result;
+        }
+
         async Task<ReleaseNews> ReadNewsCore(bool preview,string installedGame,string installedLauncher,CancellationToken token)
         {
             string json=await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100",4*1024*1024,token).ConfigureAwait(false);
@@ -336,6 +466,8 @@ namespace TimeSplitters.Launcher
         }
         public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token, string cachePrefix = null)
         {
+            Core.Require(release.MinimumLauncher.Length==0 || GameVersion.Parse(LauncherVersion.Value).CompareTo(GameVersion.Parse(release.MinimumLauncher))>=0,
+                "Update the launcher before installing this game release.");
             ValidateDownloadUrl(release.AssetUrl);
             string expected = release.Digest.StartsWith("sha256:", StringComparison.Ordinal) ? release.Digest.Substring(7) : "";
             if (expected.Length == 0)

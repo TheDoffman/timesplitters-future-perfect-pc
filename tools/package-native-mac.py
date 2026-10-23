@@ -13,6 +13,7 @@ import urllib.request
 import zipfile
 
 import vulkan_sdk
+from release_channels import identity as release_identity
 from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -161,6 +162,10 @@ def main():
     parser.add_argument('--licenses', type=Path, default=ROOT/'external/native-mac-licenses',
                         help='Directory containing verified Vulkan/DXC third-party notices')
     args = parser.parse_args()
+    try:
+        release_identity(args.version, publishing=True)
+    except ValueError as error:
+        parser.error(str(error))
     if args.without_textures and (args.texture_pack or args.with_textures):
         parser.error('--texture-pack cannot be combined with --without-textures')
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
@@ -265,6 +270,7 @@ Exact native build and packaging provenance: BUILD.json and Support/Launcher.
 Source and third-party notices: Source and Licenses.
 ''', encoding='utf-8')
     manifest = dict(auto_display_resolution=native.get("auto_display_resolution", False), version=args.version, platform='macos-arm64', source_commit=release_source,
+        release_channel=release_identity(args.version),
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),
         renderer='vulkan', vulkan_driver='moltenvk', minimum_macos=minimum,

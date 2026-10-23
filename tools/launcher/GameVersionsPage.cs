@@ -96,7 +96,7 @@ namespace TimeSplitters.Launcher
             Ui.Tip(Install,running?"Close the game before switching versions.":"Review and confirm the selected game version before downloading.");
             if(release==null) {notes.SetMarkdown("");return;}
             DateTime date;string published=DateTime.TryParse(release.Published,CultureInfo.InvariantCulture,DateTimeStyles.RoundtripKind,out date)?date.ToUniversalTime().ToString("yyyy-MM-dd",CultureInfo.InvariantCulture):"Date unavailable";
-            details.Text=release.Tag+"  ·  "+(release.IsPreview?"Preview":"Stable")+"  ·  "+published+"  ·  "+(release.Size/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MB";
+            details.Text=release.Tag+"  ·  "+release.ChannelName+"  ·  "+published+"  ·  "+(release.Size/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MB";
             string text=String.IsNullOrWhiteSpace(release.Notes)?"No release notes were provided.":release.Notes;
             notes.SetMarkdown(text.Length>24000?text.Substring(0,24000)+"\n\nNotes shortened. View the release on GitHub for the full text.":text);
         }

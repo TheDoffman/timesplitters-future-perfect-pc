@@ -52,7 +52,7 @@ namespace TimeSplitters.Launcher
         public static bool PreviewChannel(string root)
         {
             string path = Core.PathIn(root, ".launcher/preferences.json");
-            try { return File.Exists(path) && Json.Flag(Json.Object(File.ReadAllText(path)), "preview"); }
+            try { return File.Exists(path) && Json.Flag(Json.Object(File.ReadAllText(path)), "launcher_preview"); }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher preferences: " + ex.Message); return false; }
         }
         public static string InstalledVersion(string root)

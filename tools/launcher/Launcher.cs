@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,8 +136,11 @@ namespace TimeSplitters.Launcher
         Button Button(string name) { return Find<Button>(name); }
         void Text(string name, string value) { Find<TextBlock>(name).Text = value; }
         ProgressBar Bar { get { return Find<ProgressBar>("OperationProgress"); } }
-        ComboBox Channel { get { return Find<ComboBox>("ChannelPicker"); } }
-        bool PreviewChannel { get { return Channel.SelectedIndex == 1; } }
+        readonly GameChannelPickerPage channelPicker=new GameChannelPickerPage();
+        string SelectedGameChannel { get { return channelPicker.Selected; } }
+        bool PreviewChannel { get { return SelectedGameChannel!="stable"; } }
+        void SetChannels(Release[] releases,string selected)
+        {channelPicker.SetReleases(releases,selected);}
         string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
         public void SetStatus(string value) { Text("StatusText", value); }
         public LauncherWindow(string path, bool preview)
@@ -147,6 +151,8 @@ namespace TimeSplitters.Launcher
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
             Window.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
+            channelPicker.SetReleases(new Release[0],GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             ShowUpdateState(UpdatePresentationState.Checking);
             Find<Grid>("CommandCenter").SizeChanged+=(s,e)=> {
                 // Keep the action cards reachable at the minimum window height.
@@ -215,7 +221,9 @@ namespace TimeSplitters.Launcher
             Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
-                Text("InstalledLabel", "v0.1.0-alpha.1");
+                SetChannels(new[]{new Release {Tag="v0.4.0-story-coop.1",Channel="story-coop",ChannelName="Story Co-op Preview"}},"story-coop");
+                Text("InstalledLabel", "v0.4.0-story-coop.1 (sample)");
+                Text("ChannelBadge", "\u25cf  PREVIEW CHANNEL");
                 Text("ReadyTitle", "Ready to play");
                 Text("ReadyDescription", "Your game is installed and ready to launch.");
                 Text("DataLabel", "●  Verified US Xbox data");
@@ -228,15 +236,11 @@ namespace TimeSplitters.Launcher
                 SetHomePrimaryAction("PlayButton");
                 return;
             }
-            var prefsPath = Core.PathIn(root, ".launcher/preferences.json");
-            if (File.Exists(prefsPath))
+            SetChannels(new Release[0],GameChannels.Read(root));
+            channelPicker.Changed += async () =>
             {
-                try { Channel.SelectedIndex = Json.Flag(Json.Object(File.ReadAllText(prefsPath)), "preview") ? 1 : 0; }
-                catch (Exception ex) { Program.Log(root, "Preferences: " + ex.Message); }
-            }
-            Channel.SelectionChanged += async (s, e) =>
-            {
-                try { Core.Write(prefsPath, Json.Encode(new { preview = PreviewChannel })); await Check(); }
+                if(previewMode)return;
+                try { GameChannels.Save(root,SelectedGameChannel,channelPicker.LastPreview); await Check(); }
                 catch (Exception ex) { Fail(ex); }
             };
             Button("PlayButton").Click += async (s, e) => await Play();
@@ -386,9 +390,9 @@ namespace TimeSplitters.Launcher
             Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
             Find<ContentControl>("NewsHost").Visibility=Visibility.Visible;
             Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;SelectNavigation("NewsNav");
-            string context=NewsGameVersion+"/"+LauncherVersion.Value+"/"+PreviewChannel;
+            string context=NewsGameVersion+"/"+LauncherVersion.Value+"/"+SelectedGameChannel;
             if(newsContext!=context) {if(newsStop!=null){newsStop.Cancel();newsStop=null;}newsReady=false;newsContext=context;newsPage.Reset();}
-            newsPage.SetVersions(NewsGameVersion,LauncherVersion.Value,PreviewChannel);
+            newsPage.SetVersions(NewsGameVersion,LauncherVersion.Value,SelectedGameChannel);
             if(previewMode) {
                 newsPage.SetVersions("v1.0.0",LauncherVersion.Value,false);
                 newsPage.SetNews(new ReleaseNews {CheckedUtc=DateTime.UtcNow,Game=new Release {Tag="v1.1.0",Name="Game update (interface sample)",Published="2026-10-17T12:00:00Z",Url=ReleaseClient.ReleasesPage,
@@ -427,7 +431,7 @@ namespace TimeSplitters.Launcher
                 newsStop=timeout;timeout.CancelAfter(TimeSpan.FromSeconds(25));newsPage.SetLoading(true);
                 string context=newsContext;
                 try {
-                    var notes=await client.ReadNews(PreviewChannel,NewsGameVersion,LauncherVersion.Value,timeout.Token);
+                    var notes=await client.ReadNews(SelectedGameChannel,NewsGameVersion,LauncherVersion.Value,timeout.Token);
                     if(!lifetime.IsCancellationRequested && !timeout.IsCancellationRequested && Object.ReferenceEquals(newsStop,timeout) && context==newsContext){newsPage.SetNews(notes);newsReady=true;}
                 }catch(Exception ex) {
                     if(!lifetime.IsCancellationRequested && Object.ReferenceEquals(newsStop,timeout) && context==newsContext){newsPage.Failed();Program.Log(root,"Release notes: "+ex.GetType().Name);}
@@ -701,19 +705,16 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").IsEnabled=!busy && !checking;
             Button("RecoveryLogsButton").IsEnabled=!busy;
             Button("CheckButton").IsEnabled = !busy && !checking;
-            Channel.IsEnabled = !busy && !checking;
+            channelPicker.SetEnabled(!busy && !checking);
             Button("UpdateButton").IsEnabled = !busy && !checking && CanUpdate();
-            Button("UpdateButton").Content = DownloadTransfer.SavedBytes(Core.PathIn(root,".launcher/downloads/game"),available)>0?"Resume download":gameInstalled ? "Update release" : "Install release";
+            Button("UpdateButton").Content = DownloadTransfer.SavedBytes(Core.PathIn(root,".launcher/downloads/game"),available)>0?"Resume download":gameInstalled ? (available!=null && available.Channel!=GameChannels.Installed(root)?"Switch game channel":"Update release") : "Install release";
             Button("RollbackButton").IsEnabled = !busy && !checking && Core.CanRollback(root) && !Core.GameRunning();
             SetHomePrimaryAction(retryOperation!=null?"RetryButton":!gameInstalled?"UpdateButton":!validData?(dataExists?"OpenDataButton":"ImportButton"):"PlayButton");
-            Text("ChannelBadge", PreviewChannel ? "●  PREVIEW CHANNEL" : "●  STABLE CHANNEL");
+            Text("ChannelBadge", PreviewChannel?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
         }
         bool CanUpdate()
         {
-            if (available == null) return false;
-            if (!gameInstalled || installed.Length == 0) return true;
-            try { return GameVersion.Parse(available.Tag).CompareTo(GameVersion.Parse(installed)) > 0; }
-            catch (InvalidDataException) { return true; }
+            return GameChannels.CanInstall(available,installed);
         }
         async Task Check()
         {
@@ -722,19 +723,21 @@ namespace TimeSplitters.Launcher
             Refresh();
             ShowUpdateState(UpdatePresentationState.Checking);
             Text("ReleaseTitle", "Checking for updates…");
-            Text("ReleaseDescription", "Looking for published " + (PreviewChannel ? "preview or stable" : "stable") + " releases on GitHub.");
+            Text("ReleaseDescription", "Looking for published " + GameChannels.Name(SelectedGameChannel) + " releases on GitHub.");
             SetStatus("Checking GitHub Releases…");
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token))
             {
                 timeout.CancelAfter(TimeSpan.FromSeconds(25));
                 try
                 {
-                    available = await client.Check(PreviewChannel, timeout.Token);
+                    string selected=SelectedGameChannel;
+                    var catalog=await client.ReadGameCatalog(timeout.Token);
+                    SetChannels(catalog,selected);available=GameChannels.Select(catalog,selected);
                     if (available == null)
                     {
                         ShowUpdateState(UpdatePresentationState.Empty);
                         Text("ReleaseTitle", PreviewChannel ? "No compatible release yet." : "No stable release yet.");
-                        Text("ReleaseDescription", PreviewChannel ? "A published Windows ZIP with a checksum will appear here." : "Stable excludes test builds. Choose Preview to check published prereleases.");
+                        Text("ReleaseDescription", PreviewChannel ? "A verified package for this testing channel will appear here." : "Stable excludes test builds. Choose Preview and a testing track to opt into testing.");
                         SetStatus(gameInstalled ? "Your installed game is available offline." : "No compatible published release was found for this channel.");
                     }
                     else
@@ -792,6 +795,8 @@ namespace TimeSplitters.Launcher
         {
             if (busy || checking || release==null || (!specific && !CanUpdate())) return;
             if(previewMode){SetStatus("Preview only. No download was started.");return;}
+            if(!specific && gameInstalled && release.Channel!=GameChannels.Installed(root) &&
+                MessageBox.Show(Window,"Switch to "+release.ChannelName+" ("+release.Tag+")?\n\nThis can install an older game version. Saves and settings are preserved, but compatibility can vary. Back up saves before testing.","Switch game channel",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
             if(Core.GameRunning()){SetStatus("Close the game before installing a release.");return;}
             ClearRecovery();busy=true;
             using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
@@ -822,7 +827,7 @@ namespace TimeSplitters.Launcher
                     SetStatus("Verifying and preparing the release…");
                     await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token),cancel.Token);
                     cancel.Token.ThrowIfCancellationRequested();
-                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag,game_only=specific}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
+                    GameChannels.Save(root,release.Channel);Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag,game_only=specific}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
                     Program.Log(root,"Prepared "+release.Tag+"; handing off to updater.");HandOff(false);
                 }catch(Exception ex){
                     if(!(ex is OperationCanceledException))Fail(ex);

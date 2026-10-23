@@ -21,6 +21,7 @@ FULL_INPUTS = {
 }
 RELEASE_INPUTS = {
     'tools/publish-release.py', 'tests/test_publish_release.py',
+    'tools/release_channels.py', 'tools/release-version.py',
     'tools/crash-symbols.py', 'tests/test_crash_symbols.py',
     'tools/recycle-release-work.ps1', 'tools/package-release.py',
     'tools/package-native-mac.py', 'tests/test_native_mac_package.py',

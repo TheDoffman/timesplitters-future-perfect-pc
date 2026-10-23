@@ -16,7 +16,8 @@
   (implementation `b9a05b9`) using the launcher's `--render-preview` command after removing slogans and
   themed status quips. This is a source/development preview, not a published
   launcher screenshot. Its installed version/channel values are illustrative;
-  the README caption directs players to Preview for published game prereleases.
+  the README installation steps use Stable by default. Preview channels are
+  optional testing choices; the screenshot does not prescribe an update channel.
 - Rendered application SHA-256:
   `5763c056ea3da1f6779bbd901524afcb4a91dda3ee1fb5d77f2acc10291e579f`.
   The launcher was built on Windows x64 with the existing private banner/logo

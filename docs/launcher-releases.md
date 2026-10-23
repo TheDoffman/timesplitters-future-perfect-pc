@@ -4,13 +4,13 @@ The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launche
 and native Apple Silicon Mac app from the same source revision and shared version.
 It publishes both packages in one GitHub release only after both hosts pass their
 launcher regressions and package checks. Each installed launcher selects its own
-platform's update manifest. Game releases remain independent.
+platform's update manifest. Game releases remain independent. [Game Stable and named preview channels](releasing.md) do not control launcher self-updates. Publish stable launcher 1.3.0+ before publishing games using the new channel strategy.
 
 ## Publish an update
 
 1. Change `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs`, plus its
    assembly/file attributes, to a new unused version. Keep the attributes numeric
-   (`X.Y.Z.0`); a preview may use `X.Y.Z-rc.1` for `Value`.
+   (`X.Y.Z.0`); a preview may use `X.Y.Z-beta.1` for `Value`.
 2. Merge that change and the desired launcher updates into `main` through a PR.
 3. In **Actions → Launcher release (Windows + Mac) → Run workflow**, select `main`,
    enable **publish**, and run it once. The workflow creates `launcher-vX.Y.Z` at

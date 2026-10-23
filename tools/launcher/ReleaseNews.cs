@@ -64,7 +64,7 @@ namespace TimeSplitters.Launcher
             var record = records.FirstOrDefault(r => !Json.Flag(r, "draft") && Json.String(r, "tag_name") == tag);
             if (record == null) return null;
             string version = tag.StartsWith("launcher-v", StringComparison.Ordinal) ? tag.Substring(10) : tag;
-            return new Release { Tag=version, Notes=Json.String(record,"body"),
+            return new Release { Tag=version, Notes=GameChannels.VisibleNotes(Json.String(record,"body")),
                 Url=ReleaseClient.ReleasesPage+"/tag/"+Uri.EscapeDataString(tag),
                 Name=Json.String(record,"name"), Published=Json.String(record,"published_at") };
         }
@@ -74,6 +74,7 @@ namespace TimeSplitters.Launcher
             if (String.IsNullOrEmpty(installed)) return "Available to install. Open Home to install the game runtime.";
             try {
                 int order=GameVersion.Parse(latest.Tag).CompareTo(GameVersion.Parse(installed));
+                if(!launcher && latest.Channel!=GameChannels.FromTag(installed))return "A different game channel is selected. Open Home to confirm switching versions; back up saves before testing.";
                 if(order<0)return "Your installed version is newer than this channel's latest release. No downgrade is offered.";
                 if(order==0)return "You're up to date on this channel. These notes describe your installed release.";
                 return launcher ? "A newer launcher is available. Restart the launcher to let the startup updater install it." :
