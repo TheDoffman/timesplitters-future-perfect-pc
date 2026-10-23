@@ -25,13 +25,18 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
-`tests/test_gpu_flush_ack.py` compiles the actual patched runtime acknowledgement
-with the actual lifted store. It checks post-write ordering, exact instruction
-and register selection, unrelated flag preservation, startup/teardown guards
-and a compare/exchange retry. Omitted, reordered and broad-clear mutations must
-fail. Lifter cases include absolute/indexed/immediate stores plus excluded
-loads, narrow/segmented stores and register moves. Apply all patches first;
-regenerate and build before measuring gameplay. Both hosts run these checks.
+`tests/test_gpu_flush_ack.py` compiles the actual patched notifier and lifted
+store. It checks post-write notification, exact instruction/register selection,
+untouched guest words and lifecycle guards. Omitted/reordered notifications and
+a direct-clear mutation must fail. Lifter cases include absolute/indexed/immediate
+stores and excluded loads, narrow/segmented stores and register moves. The actual
+worker wait is exercised with both host adapters, missing-event/timer-failure
+fallback and the original one-millisecond busy window. Native `native_platform.c`
+also tests real event timeout, prequeued/consumed signals, delayed thread wake and
+manual-reset behavior through the microsecond adapter. Run these host primitives
+on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,
+regenerate/build, then test the previously failing match-loading route before
+measuring performance.
 
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts

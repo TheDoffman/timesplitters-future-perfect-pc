@@ -31,13 +31,19 @@ ordinary 32-bit MOV memory stores. It runs after the original write, excludes
 segmented/narrow/register operations, and preserves existing numeric hooks.
 The title policy (`pc_gpu_ack.h`, included by `pc_native_numeric.h`) selects only
 verified US instruction `0x3D66C3`, before its PFB flush poll at `0x3D66D0`.
-Runtime `xbox_Nv2aAcknowledgePfbFlush` additionally requires the exact register,
-mapped aperture and active acknowledgement service. It clears only `0x10000`
-with compare/exchange, matching the existing poller's plain-memory handshake.
-It does not complete a host GPU fence, advance DMA/interrupts/clocks, or replace
-the acknowledgement worker. `RECOMP_PFB_SYNC_ACK=0` is an opt-in diagnostic
-fallback to the unchanged polling path for same-binary comparisons; the shared
-environment switch is cached once. Regenerate after applying this patch.
+Runtime `xbox_Nv2aNotifyPfbFlush` signals an auto-reset event after validating
+that exact register and the active service. The caller changes no guest word;
+the existing worker retains its busy-bit/DMA/fence pass and 500-us idle fallback.
+Windows waits on the event plus its existing high-resolution timer. The native
+adapter `w32_WaitForEventMicroseconds` waits on the event condition variable with
+a monotonic deadline (relative pthread wait on Mac), avoiding multi-wait polling.
+Queued requests coalesce without an explicit reset. Shutdown publishes stop,
+drains notifier users, wakes/joins the worker, then closes the event; thread-start
+failure closes it too. Event creation failure retains polling. The cached
+`RECOMP_PFB_WAKE_ACK=0` switch disables notifications for same-binary diagnostics.
+No clock/settings policy changes. Regenerate after applying the patch. The former
+direct-clear prototype stalled loading and is rejected; this rework requires
+fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

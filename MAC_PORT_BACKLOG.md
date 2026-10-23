@@ -3655,17 +3655,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **PFB acknowledgement prototype (2026-10-22,
-  `perf/gpu-flush-ack`):** The shared lifter's post-store hook selects the supported
-  US PFB flush instruction; the shared runtime clears only its existing busy bit
-  after validating the exact register and active service. Existing interlocked
-  APIs serve both hosts; no additional adapter or timing/settings policy exists.
-  Fifteen final offline lifting/behavioral/mutation cases pass on Windows and
-  are registered in both-host CI. The Windows regeneration/build passes at
-  `92ffa8b`, but enabled gameplay stalls during match loading in two bounded
-  runs. The disabled control completes. The prototype must remain unmerged
-  while the full acknowledgement sequence is reworked. Original 60 and native
-  Mac gameplay acceptance are pending; see STATUS for rejected live evidence.
+- **PFB worker notification rework (2026-10-22, `perf/gpu-flush-ack`,
+  PR #310):** The shared exact-store hook now wakes the existing acknowledgement
+  worker; it no longer clears a guest register on the guest thread. The original
+  worker sequence, clocks and polling fallback remain. Windows uses its native
+  event/timer wait; native Mac adds a thin condition-variable microsecond event
+  wait to avoid polling `WaitForMultipleObjects`. Seventeen offline cases pass
+  on Windows, including simulated host wait selection. Real native event tests
+  are extended in `tests/native_platform.c`, but Mac execution is pending.
+  The previous `92ffa8b` direct-clear candidate stalled loading twice and remains
+  rejected. This rework requires fresh Windows loading/performance/Original60
+  evidence and native Mac gameplay before acceptance. See STATUS.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing

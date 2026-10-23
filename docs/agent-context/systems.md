@@ -44,7 +44,7 @@ effective source. Preserve unknown/unsupported saved settings across hosts.
 The shared title header `pc_gpu_ack.h` selects the audited PFB flush store through
 the generated `RECOMP_AFTER_STORE32` hook. It is included by the existing title
 policy header for both Windows and Mac, independent of native timing activation.
-The runtime validates and acknowledges that one plain-memory request immediately;
+The runtime validates the request and wakes its existing acknowledgement worker;
 game input, clock policy, frame target and saved settings are unchanged. See the
 runtime guide for register guards and the required regeneration boundary.
 

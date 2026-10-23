@@ -19,10 +19,12 @@
     },
     {
       "name": "gpu-pfb-flush-ack.patch",
-      "sha256": "bcf5cf620fc8582848ef92149de0626e6285036644e72813daf4748f8949eb1c",
+      "sha256": "faa5e8d79ca474b80971ff88c2a2537af3cdfd0ebde08feb30eff21acaec6764",
       "targets": [
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h",
         "templates/runtime/recomp_types.h",
         "tools/recomp/lifter.py"
       ]

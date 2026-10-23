@@ -30,48 +30,167 @@
  /* Base address of all XBE files in Xbox memory */
  #define XBOX_BASE_ADDRESS       0x00010000
 +
-+/* Service only the plain-memory PFB flush handshake after a guest write.
-+ * No host GPU fence, interrupt, DMA pointer or guest clock is advanced. */
-+void xbox_Nv2aAcknowledgePfbFlush(uint32_t guest_address);
++/* Wake the existing acknowledgement service after a verified guest store.
++ * This notification never changes guest registers or completes GPU work. */
++void xbox_Nv2aNotifyPfbFlush(uint32_t guest_address);
  
  /* Start of mapped region - includes low memory (KPCR at 0x0) because
   * game code reads from addresses like 0x20 and 0x28 (Xbox kernel structures). */
 --- a/src/kernel/xbox_memory_layout.c
 +++ b/src/kernel/xbox_memory_layout.c
-@@ -1502,6 +1502,36 @@
+@@ -214,6 +214,8 @@
+ }
+ 
+ static HANDLE g_nv2a_ack_thread = NULL;
++static HANDLE g_nv2a_ack_wake = NULL; /* auto-reset: requests may coalesce */
++static volatile LONG g_nv2a_ack_notifiers = 0;
+ static volatile LONG g_nv2a_ack_stop = 0;
+ 
+ /*
+@@ -1324,9 +1326,21 @@
+         Sleep(0);   /* busy: a waiter is spinning on another core */
+         return;
+     }
++#ifndef _WIN32
++    if (g_nv2a_ack_wake) {
++        w32_WaitForEventMicroseconds(g_nv2a_ack_wake, (uint32_t)idle_us);
++        return;
++    }
++#endif
+     due.QuadPart = -(LONGLONG)idle_us * 10;   /* relative, 100 ns units */
+-    if (SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE))
+-        WaitForSingleObject(timer, 50);
++    if (SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) {
++        if (g_nv2a_ack_wake) {
++            HANDLE waits[] = {g_nv2a_ack_wake, timer};
++            WaitForMultipleObjects(2, waits, FALSE, 50);
++        } else {
++            WaitForSingleObject(timer, 50);
++        }
++    }
+     else
+         Sleep(1);
+ }
+@@ -1497,12 +1511,42 @@
+ static void xbox_Nv2aAckStart(void)
+ {
+     g_nv2a_ack_stop = 0;
++    g_nv2a_ack_wake = CreateEventW(NULL, FALSE, FALSE, NULL);
+     g_nv2a_ack_thread = CreateThread(NULL, 0, nv2a_ack_thread,
+                                      g_nv2a_memory, 0, NULL);
      if (g_nv2a_ack_thread) {
          fprintf(stderr, "  NV2A busy-bit ack: %zu register(s) acknowledged\n",
                  sizeof(NV2A_ACK) / sizeof(NV2A_ACK[0]));
+-    }
++    } else if (g_nv2a_ack_wake) {
++        CloseHandle(g_nv2a_ack_wake);
++        g_nv2a_ack_wake = NULL;
 +    }
 +}
 +
-+/* The HLE renderer handles submitted work; this PFB register is only a
-+ * plain-memory hardware handshake, as in NV2A_ACK above. A title that has
-+ * just written this register can acknowledge it without waiting for the
-+ * polling thread to wake. Keep every other bit and register untouched. */
-+void xbox_Nv2aAcknowledgePfbFlush(uint32_t guest_address)
++/* Do not acknowledge one register on the guest thread. The worker must
++ * service its original busy-bit, DMA and fence sequence. An auto-reset event
++ * retains a request arriving before/during the timed wait; no reset can lose it.
++ * Failure to create/signal the event retains the normal polling fallback. */
++void xbox_Nv2aNotifyPfbFlush(uint32_t guest_address)
 +{
-+    volatile LONG *word;
 +    static volatile LONG policy; /* 0 unknown, 1 enabled, 2 diagnostic fallback */
-+    LONG before, observed, enabled;
-+    if (guest_address != XBOX_NV2A_BASE + 0x100410u ||
-+        !g_nv2a_memory || !g_nv2a_ack_thread ||
-+        InterlockedCompareExchange(&g_nv2a_ack_stop, 0, 0))
++    LONG enabled;
++    if (guest_address != XBOX_NV2A_BASE + 0x100410u)
 +        return;
 +    enabled = InterlockedCompareExchange(&policy, 0, 0);
 +    if (!enabled) {
-+        enabled = xbox_EnvSwitch("RECOMP_PFB_SYNC_ACK", 1) ? 1 : 2;
++        enabled = xbox_EnvSwitch("RECOMP_PFB_WAKE_ACK", 1) ? 1 : 2;
 +        InterlockedCompareExchange(&policy, enabled, 0);
 +    }
 +    if (enabled == 2)
 +        return;
-+    word = (volatile LONG *)((char *)g_nv2a_memory + 0x100410u);
-+    before = InterlockedCompareExchange(word, 0, 0);
-+    while (before & 0x00010000L) {
-+        observed = InterlockedCompareExchange(word, before & ~0x00010000L, before);
-+        if (observed == before)
-+            break;
-+        before = observed;
-     }
++    /* Enter before checking stop. Shutdown publishes stop, drains callers,
++     * wakes/joins the worker, then releases the event. Later callers see stop. */
++    InterlockedIncrement(&g_nv2a_ack_notifiers);
++    if (!InterlockedCompareExchange(&g_nv2a_ack_stop, 0, 0) &&
++        g_nv2a_memory && g_nv2a_ack_thread && g_nv2a_ack_wake)
++        SetEvent(g_nv2a_ack_wake);
++    InterlockedDecrement(&g_nv2a_ack_notifiers);
  }
  
+ /* Separate allocation for Xbox kernel address space (0x80010000+).
+@@ -3028,9 +3072,17 @@
+     }
+     if (g_nv2a_ack_thread) {
+         InterlockedExchange(&g_nv2a_ack_stop, 1);
++        while (InterlockedCompareExchange(&g_nv2a_ack_notifiers, 0, 0))
++            Sleep(0);
++        if (g_nv2a_ack_wake)
++            SetEvent(g_nv2a_ack_wake);
+         WaitForSingleObject(g_nv2a_ack_thread, 1000);
+         CloseHandle(g_nv2a_ack_thread);
+         g_nv2a_ack_thread = NULL;
++    }
++    if (g_nv2a_ack_wake) {
++        CloseHandle(g_nv2a_ack_wake);
++        g_nv2a_ack_wake = NULL;
+     }
+     if (g_nv2a_memory) {
+         VirtualFree(g_nv2a_memory, 0, MEM_RELEASE);
+--- a/src/platform/win32_compat.h
++++ b/src/platform/win32_compat.h
+@@ -130,6 +130,8 @@
+ HANDLE CreateEventA(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCSTR name);
+ HANDLE CreateEventW(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCWSTR name);
+ BOOL   SetEvent(HANDLE h);
++/* Interruptible sub-millisecond event wait; no multi-object polling. */
++DWORD  w32_WaitForEventMicroseconds(HANDLE h, uint32_t microseconds);
+ 
+ /* Waitable timers, as far as the kernel bridge uses them: created for
+  * NtCreateTimer and cancelled for NtCancelTimer, never armed. There is
+--- a/src/platform/win32_compat.c
++++ b/src/platform/win32_compat.c
+@@ -459,6 +459,47 @@
+         case K_MUTEX: o->mtx_owner = GetCurrentThreadId(); o->mtx_recursion++; break;
+         default: break;
+         }
++    }
++    pthread_mutex_unlock(&o->lock);
++    return result;
++}
++
++/* Event-only timed wait for sub-millisecond host services. Recheck a
++ * monotonic deadline after every wake, including spurious notifications. */
++DWORD w32_WaitForEventMicroseconds(HANDLE h, uint32_t microseconds)
++{
++    w32_object *o = (w32_object *)h;
++    struct timespec now;
++    uint64_t end, current;
++    DWORD result = WAIT_TIMEOUT;
++    if (!o || o->kind != K_EVENT) return WAIT_FAILED;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    end = (uint64_t)now.tv_sec * 1000000000ull + now.tv_nsec +
++          (uint64_t)microseconds * 1000ull;
++    pthread_mutex_lock(&o->lock);
++    for (;;) {
++        uint64_t remaining;
++        struct timespec delay;
++        if (o->signaled) {
++            if (!o->manual_reset) o->signaled = 0;
++            result = WAIT_OBJECT_0;
++            break;
++        }
++        clock_gettime(CLOCK_MONOTONIC, &now);
++        current = (uint64_t)now.tv_sec * 1000000000ull + now.tv_nsec;
++        if (current >= end) break;
++        remaining = end - current;
++        delay.tv_sec = (time_t)(remaining / 1000000000ull);
++        delay.tv_nsec = (long)(remaining % 1000000000ull);
++#ifdef __APPLE__
++        pthread_cond_timedwait_relative_np(&o->cond, &o->lock, &delay);
++#else
++        clock_gettime(CLOCK_REALTIME, &now);
++        now.tv_sec += delay.tv_sec;
++        now.tv_nsec += delay.tv_nsec;
++        if (now.tv_nsec >= 1000000000L) { now.tv_sec++; now.tv_nsec -= 1000000000L; }
++        pthread_cond_timedwait(&o->cond, &o->lock, &now);
++#endif
+     }
+     pthread_mutex_unlock(&o->lock);
+     return result;

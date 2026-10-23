@@ -1,3 +1,17 @@
+## 2026-10-22 — PFB worker wake rework (uncommitted)
+
+The rejected direct-clear shortcut is replaced with a notification to the existing
+worker, preserving its full busy-bit/DMA/fence service pass. Auto-reset event
+notifications survive arrival before the wait and may coalesce. Windows retains
+its high-resolution timer; the native adapter uses a condition-variable event
+wait with a monotonic deadline. Shutdown drains notifier users before releasing
+the event. Creation failure and diagnostic RECOMP_PFB_WAKE_ACK=0 retain polling.
+
+Windows offline checks: 17 actual-lifter/notifier/mutation/wait-selection cases
+pass. Real native event tests were extended but cannot execute on this Windows
+host. Build, match-loading, performance and Original60 validation are pending;
+no improvement or resolution of the prior loading failure is claimed yet.
+
 ## 2026-10-22 — PFB flush acknowledgement investigation
 
 Same-binary (`7b5f042`, SHA-256
