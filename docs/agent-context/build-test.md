@@ -25,6 +25,13 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_trace_filter.py` compiles the actual runtime name-filter function,
+checks zero label scans for absent/empty filters, and retains exact matching,
+independent hit limits and zero/negative caps. Its eager-scan mutation must fail.
+It is registered in both-host native runtime CI. For changes to this function,
+apply the complete patch stack first; passing scan-count checks establish the
+removed work, not a gameplay FPS improvement.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

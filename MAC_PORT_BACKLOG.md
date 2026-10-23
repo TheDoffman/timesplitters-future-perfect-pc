@@ -3655,6 +3655,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Disabled trace-filter work (2026-10-22, `perf/disabled-trace-name-scan`):**
+  Shared `trace-filter-disabled-scan.patch` avoids scanning every guest function
+  name when `RECOMP_TRACE_ONLY` is absent/empty. Enabled matching/hit limits and
+  all other diagnostics retain their behavior. No host adapter is needed.
+  Six actual-function/mutation cases are registered for both hosts and pass on
+  Windows. Full build/gameplay and actual Mac validation remain pending; removed
+  scan counts do not establish an FPS gain. See STATUS for the measured scope.
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already

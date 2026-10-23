@@ -1,3 +1,29 @@
+## 2026-10-22 — Skip diagnostic name scans when filtering is disabled
+
+The focused `perf/disabled-trace-name-scan` branch starts from main `acf4464`.
+Runtime `trace_only_match` calculated `strlen(name)` before checking whether a
+name filter was configured. Every traced guest-function entry therefore scanned
+its diagnostic label during normal play, even with `RECOMP_TRACE_ONLY` absent.
+Saved Windows crowded-map samples include `strlen` beneath `recomp_trace_enter`.
+The additive shared patch moves this calculation below the existing empty-filter
+return. It retains enabled matching, hit caps, trace budgets, watch/dump/profile
+hooks and renderer-idle callbacks. No game updates, AI or rendering are throttled.
+
+The full patch stack applies. Six actual-function checks cover absent/empty
+filters (zero scans across 10,000 entries), enabled exact-name and per-filter hit
+limits, zero/negative limits, and a required failing eager-scan mutation.
+Together with runtime-scope tests, 73 checks pass locally in 6.62 seconds. The new
+suite runs in the existing Windows/macOS runtime workflow. A further 35 context,
+backlog and patch-tracking checks pass in 10.40 seconds. A local component-only
+benchmark compiles the actual before/after filter in separate translation units
+with MSVC `/O2`: five alternating 20-million-call trials give median 2.296 ns per
+disabled call before and 0.959 ns after. This hot-label microbenchmark is not a
+game FPS measurement (`logs/trace-filter-component-bench.json`). The complete
+fresh-checkout and repeated-build patch transition passes (20.15 seconds).
+Build, live gameplay
+and native Mac acceptance remain pending. Eliminating these scans is verified;
+a measurable game FPS gain and the reported 110 FPS slowdown remain unverified.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical
