@@ -941,6 +941,76 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-character-roster.patch",
+      "sha256": "77cc5cbbe4cd6c2ff0762bd74cde5c626d3b53cfa77dcba754b0ab312ca9433b",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-intro-transition.patch",
+      "sha256": "fae4815d406faf29a6a8d6ad90792e9058172086e43982609bf66f01806c6a87",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-cinematic-ready.patch",
+      "sha256": "dae0a6145bb30b64b6b133f754378de22b3314dc7a0a72636eb5dd3c5d2751f1",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-authored-records.patch",
+      "sha256": "eb046cdcfda71281360c521a7aa3a4f2d5efde5439469ea2dc33145b00806ec2",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-npc-lifecycle-trace.patch",
+      "sha256": "75f9ee2ef57d75bc187d9805fd1518bf2dda9f9f8bb0ebc7f15618685b6f7edf",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-npc-creation.patch",
+      "sha256": "ca15c91462283b2ee599b1cbaacca32a1fed7b74672535ba40b564a24af4e7d0",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-extra-starts.patch",
+      "sha256": "d63496f657730f3e854eb3723808912f882efe7706aaa41c706f5b66ae267bfe",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-extra-loadout.patch",
+      "sha256": "6614bd73a2a8ca5b3e530a73ba9082714827134c0342fa10068b029e33a515a4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-handoff-authority.patch",
+      "sha256": "7fcfdd1a5c6c0080d4463765bc8c5489a64c4b5df55dfcb7bf0aa17ae3924016",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-human-teams.patch",
+      "sha256": "6a164396d16ab675aefb2da541cb69f75169c26952109a3d8dd054fdd2156d9f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-144-fps.patch",
       "sha256": "713619cbaedc4ce9656d1d72c17a2b682e87e9b72a8e62cf8afc8dae39206a00",
       "targets": [

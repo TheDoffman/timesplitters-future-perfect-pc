@@ -20,6 +20,10 @@ static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsign
 extern void sub_000658D0_gen(void);
 int pc_story_network_prepare(uint32_t address);
 void pc_story_network_activate(void);
+int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity);
+int pc_story_network_hit_trace(void (*original)(void));
+int pc_story_network_replica(uint32_t entity);
+int pc_story_network_replica_bounds(uint32_t entity);
 #endif
 static void pc_network_bots_guest_config(void (*original)(void))
 {
@@ -45,6 +49,10 @@ static void pc_network_bots_guest_active(void (*original)(void))
 {
 #ifdef _WIN32
     const uint32_t caller=*(uint32_t *)((uintptr_t)g_esp+g_xbox_mem_offset);
+    const unsigned story_index=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
+    if(pc_story_network_actor_active(caller,story_index,g_ebx)) {
+        g_eax=1u;g_esp+=4u;return;
+    }
     switch (caller) {
     case 0x00064743u: /* team score ordering */
     case 0x00064856u: /* score calculation: human + AI actor records */
@@ -117,7 +125,7 @@ static void pc_network_bots_guest_pose(void (*original)(void))
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
        pc_network_enabled() &&
-       pc_network_bots_guest_slot(entity)<16u) {
+       (pc_network_bots_guest_slot(entity)<16u || pc_story_network_replica(entity))) {
         uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset);
         uint32_t saved=*advance;
         *advance=0;
@@ -161,6 +169,7 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 #ifdef _WIN32
     const uint32_t entity=g_esi;
     original();
+    if(pc_story_network_replica_bounds(entity)) return;
     if(entity &&
        *(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
@@ -396,13 +405,9 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             {
                 uint32_t model;memcpy(&model,body+4,4);
                 if(model) {
-                    const uint8_t *pose=(const uint8_t *)((uintptr_t)model+g_xbox_mem_offset);
-                    memcpy(&state.clip,pose+0xd4,4);memcpy(state.clip_channels,pose+0xdc,72);
-                    memcpy(&state.clip_cycle,pose+0x124,4);memcpy(&state.clip_flags,pose+0x128,4);
-                    memcpy(&state.next_clip,pose+0x12c,4);memcpy(state.next_channels,pose+0x134,72);
-                    memcpy(&state.next_cycle,pose+0x17c,4);memcpy(&state.next_flags,pose+0x180,4);
-                    memcpy(&state.overlay_phase,pose+0xa8,4);memcpy(state.overlay_channels,pose+0xac,32);
-                    memcpy(state.blend_channels,pose+0x198,12);
+                    PcCharacterPose pose;
+                    pc_character_pose_read(&pose,(const void *)((uintptr_t)model+g_xbox_mem_offset));
+                    memcpy(&state.clip,&pose,sizeof pose);
                 }
             }
             memcpy(state.scores,actor+0xa10,sizeof state.scores);
@@ -453,6 +458,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
 static void pc_network_bots_guest_damage(void (*original)(void))
 {
 #ifdef _WIN32
+    if(pc_story_network_hit_trace(original)) return;
     static unsigned traces;
     /* Guest shot replay (including delayed projectile effects) is cosmetic.
        Only the original incoming host event may apply bot-sourced damage. */

@@ -1,5 +1,108 @@
 # Build, run and validation map
 
+The team fixture verifies the scoped33ACDB setter receives1 for Story humans,
+with original arguments/result/stack restored and NPC/other-caller/Arcade
+fallback. Supported-US checks confirm original Story selects that shared team.
+The four-peer runner checks every loaded human actor retains team1.
+
+The handoff authority fixture verifies host/original fallback, guest animation-
+callback suppression, independent pistol/rifle queues, original co-op slot1
+ownership and preservation of its existing pistol ammo. Original-US contracts
+include the rifle grant call sites. The isolated opening test compares each
+owned ammo total with the host to catch animation-triggered duplicate awards.
+
+The Story pose fixtures enforce the original256-byte sender ceiling, assemble
+reordered/missing physical/pose parts and reject mixed checksums before applying
+SNP2 animation and bounds. They reject
+non-finite channels/negative bounds and stale body generations, and preserve
+duplicate protection. The display fixture executes the common pose renderer,
+verifying local asset/bone handles, crossfade asset resolution and root-motion
+flag clearing. Guest dispatch checks Story frozen evaluation as well as existing
+bot behavior. Runtime world snapshots expose host/guest clip/time metadata;
+source checks alone do not prove live NPC animation or hit synchronization.
+
+Story `--combat-probe` extends the bounded four-peer runner after firearm checks.
+It uses ordinary movement/mouse/fire inputs, checks the original NPC ID decoder
+would resolve the same entity, searches a bounded opening route for a nearby live enemy marked locally visible,
+and requires a host-received guest-source damage trace plus agreeing NPC health.
+No target, health drop from unrelated AI combat, or camera/ammo-only evidence is
+not acceptance. Read-only world snapshots now include class/team, pose metadata,
+last-damage tick and first-ID-match evidence from the original entity pool.
+The hit-trace C fixture verifies one unchanged original call, stack/result/health
+effects, disabled tracing and invalid-backlink/other-mode fallback.
+
+The Story loadout fixture executes production ammo/grant observers, reliable
+serialization, receive dispatch, loading/ownership gates and original-API calls.
+It checks replay does not refill ammo, other players remain untouched, existing
+inventory is preserved, and malformed/non-host/stale-generation commands do not
+grant items. Supported-US call-site checks bind both handoff pairs to their
+original inventory functions; live four-peer ammo/fire acceptance is separate.
+
+The extra-start fixture verifies distinct signed16 pad IDs, private template
+positions with unchanged room/heading data, tag/inverse lookup, delayed cached
+resolution, late remote setup after activation, authored slot0/1 selection, checkpoint release, allocation failure and other-scene
+fallback. Complete-stack fresh/repeated and historical Mac migration must also
+include the three new original-pad wrappers; source tests alone cannot establish
+collision-free playable starts.
+
+The Story fixture now exercises host NPC serialization and guest body creation
+from production adapters, initial state/team/identity/list preservation,
+duplicate/out-of-order messages, loading queues, absence and ordinary fallback.
+It rejects non-host senders, short messages and non-finite state. The reliable
+creation message replaces a reproduced null-target guest spawn, rather than
+discarding the valid spawn. Fresh runtime construction/pose/combat still needs
+the changed four-peer build. The fixture also checks periodic host publication,
+same-tick/rate bounds, later roster removal, absence and loading suppression.
+Historical Mac migration excludes the dependent
+creation patch before applying the complete stack.
+
+The pending-start fixture covers state4 after Arcade ready placement is skipped,
+alongside16, and confirms the one-shot token prevents later respawn attempts.
+Active2 and script-suspended256 contexts retain their original handling. The
+adapter validates the full cached-pad span before clearing each initial pad.
+
+The activity adapter fixtures cover an existing Story NPC, stale/backlinked
+entities, player contexts, controller callers, mode/phase and pool bounds. Guest
+dispatch tests retain controller enumeration and ordinary bot behavior. The
+supported-US fixture executes3568C0/358560 to prove the original controller gate
+rejects NPCs and the subsequent script-ownership gate accepts only the host.
+They also cover a dormant script actor with no active body and rejection of an
+obsolete prototype, and verify dispatch supplies the caller's original entity.
+
+The isolated `story-local-load` route enables Local NPC lifecycle tracing for a
+direct original-versus-Online comparison. Scene telemetry includes placed-NPC
+count+30 and labels unverified allocation counters by their numeric addresses.
+Those counters must not be interpreted as human population. Numeric guest
+return candidates are observations, not a validated stack unwind.
+
+The NPC lifecycle patch's four boundaries keep independent eight-call trace
+budgets. Complete-stack migration checks the scripted-spawn hook installation.
+Scene metadata comparison now proves identical NPC budgets and record counts
+between Local and four-player Online; it does not prove the spawn events execute.
+
+Story pair-load samples include the numeric active config tail60..9F, to compare
+mission/variant initialization independently of the limited scene/difficulty
+summary. The authored-record trace is separately bounded to24 masked records.
+Neither a predicate fixture nor a generated wrapper proves NPC initialization;
+the first changed runtime probe still failed firearm acceptance after60s.
+Local and paired Story samples also record the scene setup pointer, authored
+NPC budget index/count, bounded record counts and actor/human allocation counts.
+The refreshed Local reference reaches six characters and weapon14 with budget
+index8/count5; use it to distinguish resource availability from NPC replication.
+
+The original-US Story fixture executes6B100 with the verified rule jump table:
+stock four-player/co-op rejection, stock network exclusion, and retained Normal
+versus Easy/Hard and solo-only restrictions. Adapter tests check restored argument
+and return/stack behavior, co-op normalization, retained solo/difficulty masks
+and Arcade pass-through. Complete-stack migration installs the new wrapper;
+the historical Mac-only fixture excludes this dependent patch before migration.
+
+The Story lobby fixture covers the guest intro-to-game pending copy while the
+original receiver is still phase15, with no host broadcast from the guest.
+Ready fixtures cover zero-actor transport for pending Story gameplay and
+ordinary pass-through after that pending start is consumed. The supported-US
+357540 fixture executes its real transport tail for gameplay flags80008 too.
+
 The suspended-spawn trace source check also verifies the original context reset
 is preserved with its return/stack effects and existing suspension flag. The
 patch migration assertion includes the original D50E0 wrapper.
@@ -18,8 +121,8 @@ they are not ammo or hit counters. Fire-input completion is recorded separately
 from load/movement acceptance and requires reviewed captures. Neither proves
 Story NPC/script authority or coordinated next-level behavior. Spawn-pad source contracts also check scoped slot/ownership/stack preservation,
 valid-result passthrough and inactive/non-Story guards. The migration check
-asserts the separate CF060 wrapper is installed. Year is optional;
-the required lobby header contains a readable selected name and thumbnail.
+asserts the separate CF060 wrapper is installed. Revised notes require the
+header's name, year, difficulty/trophy, thumbnail and population.
 
 `tests/test_quit_menu.py` also compiles `tests/story_lobby.c` against the
 production Story lobby adapter with isolated guest RAM. It checks host/guest/mode
@@ -631,3 +734,127 @@ scenarios, stop requests and load observations alongside native FPS, LAN and
 surface probes. Both `hold_seconds` (Story callers) and `hold` command fields
 are accepted; observations share the perf-counter clock. Menu fixtures retain
 Story stubs alongside the separator/font behavior required by Video Options.
+
+The revised Story acceptance route defaults to Time to Split (mission 0), Normal.
+`story_pair_game.py --load-probe --lobby-controls --players 4 --fire-probe`
+selects that mission through host Options. Use `--mission 1 --difficulty 2` for
+the historical Scotland/Hard diagnostic. Receipts retain requested selection;
+scene agreement is required across all four peers, not only the first pair.
+Intro, combat/world authority, separate starts and host restart acceptance remain
+independent requirements; movement-only success does not complete Story co-op.
+
+First-level movement diagnostics retain per-slot context flags/local port, action binding masks, local/network
+pad axes and original input-block/source selectors during key holds. These are observations
+of original fields, not input or state overrides; separate body movement assertions
+remain mandatory. This distinguishes collision/startup state from missing input.
+
+`tests/story_lobby.c` checks the revised header metadata against a sparse
+roster and localized year and verifies font/stack restoration and invalid
+difficulty rejection. It does not establish visual layout or trophy rendering.
+
+The Story lobby C fixture also checks that six authored character entries
+survive Arcade-only pruning while ordinary removal, Arcade and lobby paths
+still invoke the original function. Patch migration checks the separate roster
+wrapper; live NPC state and interactions remain separate acceptance gates.
+
+The Story factory fixture now requires original stage1 for direct gameplay
+and checks the stage on guest activation. Runtime probes record Story stage
+and active character count alongside pad diagnostics.
+
+The changed pad probe confirms actual nonneutral local/network axes during
+four-peer movement with input-block0 and passes its narrow movement assertions.
+Two earlier first-level probes failed with stationary bodies; the later pass
+therefore does not establish a fix for those failures. Fresh positions remain
+spread across the scene, and firing input is not proof of shots or hits.
+
+Explicit `world_probe` command captures inspect at most 64 original active
+characters, including original type2 network object IDs, positions and health.
+Regular sampling records only the active count to bound overhead/storage.
+The paired route requests these at load/movement/fire boundaries; membership
+and matching IDs alone do not certify synchronized NPC actions or damage.
+
+The Local Story diagnostic also records settled startup, forward/back input and
+fire captures using the same isolated profile. Its character-list probe accepts
+both low guest heap addresses and high Xbox aliases; requiring high addresses
+incorrectly omitted every low-heap character. Reads remain bounded kernel RPM.
+
+The gameplay stage fixture invokes the actual stage-builder entry65940 with
+a config argument. Frontend factory2D2C70 resets stage0 unconditionally; merely
+setting stage1 before that factory did not fix configuration construction.
+
+The pending-load fixture requires the original missing-pad sentinel before
+D50E0. This guards against using Arcade staging pads for initial Story spawns;
+existing mixed-state and no-resurrection checks retain active/later contexts.
+World character entity reads now follow the first word, as in the established
+opening-handoff observer; character+8 is an actor-record link, not its entity.
+
+The registered quit/Story suite now lifts and executes complete original65940
+from the hash-verified US image with original first-mission metadata. It checks
+stage0 intro versus stage1 gameplay, local co-op characters, full gameplay field
+initialization and guest stack/callee-saved registers. CI skips this asset-bound
+case without the XBE; callback fixtures remain asset-free. Generated C stays in
+the disposable test directory.
+
+The first-level route now moves each owner backward in sequence: the measured
+Local start has a wreck blocking forward motion. It retains strict displacement,
+living contexts and peer agreement. Local input ownership is checked explicitly.
+`--fire-probe` requires each first-level owner to receive weapon14 and consume
+actual ammunition, summing both magazines and shared reserve once per type;
+unarmed punches or reloads cannot count as gunfire. World hits remain separate.
+
+The roster fixture covers pending-load preservation while the active scene
+is still the lobby and pre-play phase14. Ordinary lobby pruning remains live.
+The bounded PC-STORY-ROSTER trace measures whether the corrected boundary is
+actually reached; list preservation alone does not prove NPC replication.
+
+The first-level paired route requires fresh intro captures on all four peers
+before sending host skip, then retains strict gameplay/movement/fire checks.
+Story callback fixtures cover intro metadata/difficulty retention, guest advance
+rejection, host authority, occupied-header preservation and generation255->1
+through the reliable config sender. Original65940 fixture distinguishes real
+intro/gameplay construction. Neither source fixture certifies live video or
+coordinated loading; inspect the changed intro-before and gameplay captures.
+
+Intro readiness accepts the observed cinematic phase10 (also14/15) as distinct
+from gameplay15. Original64CE0 returns false for flags20000000, so357540 does
+not activate ordinary gameplay transport there. The first four-peer intro run
+reached scene24/flags20000000 on every peer while remaining phase10. The Story transition retains that
+boundary and sends a new reliable gameplay start; no forced phase15 write is
+used to make an intro pass a gameplay assertion.
+
+The cinematic-ready fixture requires the original transport routine to see
+zero actors and ordinary eligibility only within that call, then verifies
+restored cinematic flags/count, original return/stack effects and peer-ready
+side effects. This tests the boundary; actual four-peer long movie and handoff
+acceptance must come from a changed build. One earlier phase10 diagnostic peer
+returned to menu before cleanup, so its four captures are not a passing intro.
+
+The original-US fixture also executes64CE0/3533F0/357540: an ordinary movie
+cannot emit ready, while the scoped eligible/no-actor call emits the stock
+class10 ready packet and peer-state updates without any player-body helper.
+This checks the real transport tail rather than reproducing it in test code.
+
+The default first-level acceptance route now lets the intro finish naturally,
+with an extra fresh progress capture after25s and a450s parent bound. This
+exercises cinematic connection lifetime instead of masking a timeout by early
+skip. `--skip-intro` is an explicit shorter diagnostic. After the original intro,
+the route gives the original scripted firearm/control handoff up to60s, recording
+first gameplay separately and rejecting Game Over/failure/disconnection promptly.
+It never forces control/life/result flags; all four must genuinely equip14.
+
+Live current-state samples use a temporary file and atomic replacement, retaining
+the previous complete sample if a Windows reader briefly prevents replacement.
+The Story parent retries unavailable snapshots before asserting disconnection or
+opening failure. The cinematic-ready run's empty guest2 dictionary was a read
+race: its final on-disk sample still showed phase15 and network enabled, matching
+the other peers. That run does not establish natural intro completion.
+
+Human-team contracts bind originalD7570 direct initialization evidence and
+exercise frame normalization for all four slots in loading/gameplay, plus the
+D7550 pump, non-Story and invalid-backlink fallbacks. The four-peer load probe requires every human team to be1;
+matching each local team alone does not pass this gate.
+
+Human-team contracts bind originalD7570 direct initialization evidence and
+exercise frame normalization for all four slots in loading/gameplay, plus the
+D7550 pump, non-Story and invalid-backlink fallbacks. The four-peer load probe requires every human team to be1;
+matching each local team alone does not pass this gate.

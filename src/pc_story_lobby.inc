@@ -90,6 +90,42 @@ static int pc_story_lobby_button(void (*original)(void))
     return 1;
 }
 
+/* Draw the selected year/difficulty and actual population below the original
+ * mission title. Use the original localized year, not a second mission table. */
+static void story_lobby_status(uint32_t menu,uint32_t rect,uint32_t frame)
+{
+    if(story_lobby_mission>=13u || story_lobby_difficulty>=3u || frame<512u ||
+       !guest_writable(menu,0xf8u) || !guest_writable(rect,16u) ||
+       !guest_writable(frame-256u,256u)) return;
+    float bounds[4];memcpy(bounds,(const void *)((uintptr_t)rect+g_xbox_mem_offset),16u);
+    if(!(bounds[2]>bounds[0]+64.f && bounds[3]>bounds[1]+16.f)) return;
+    GuestRegisters saved;save_registers(&saved);g_esp=frame-256u;
+    const uint32_t font=guest_call(sub_0003FA10,1,3u);
+    const uint32_t row=0x004D1AC0u+story_lobby_mission*0x44u;
+    uint16_t year_id;memcpy(&year_id,(const void *)((uintptr_t)row+g_xbox_mem_offset),2u);
+    const uint32_t year=guest_call(sub_0003D7B0,1,(uint32_t)year_id);
+    unsigned players=0;
+    for(unsigned i=0;i<16u;i++) players+=!!(WORD_AT(0x0077728Cu+i*0x124u)&1u);
+    const char *difficulties[]={"Easy","Normal","Hard"};
+    const uint32_t caption=frame-160u;
+    const char *year_text=year && guest_writable(year,32u)?
+        (const char *)((uintptr_t)year+g_xbox_mem_offset):"";
+    snprintf((char *)((uintptr_t)caption+g_xbox_mem_offset),128u,"%.31s  %s  %u/4 Players",
+        year_text,difficulties[story_lobby_difficulty],players);
+    const uint32_t old_x=WORD_AT(0x007E7270u),old_y=WORD_AT(0x007E7280u);
+    float sx,sy;memcpy(&sx,&old_x,4u);memcpy(&sy,&old_y,4u);
+    sx*=.65f;sy*=.65f;
+    memcpy(&WORD_AT(0x007E7270u),&sx,4u);memcpy(&WORD_AT(0x007E7280u),&sy,4u);
+    guest_call(sub_0003F8D0,0);
+    const float x=bounds[0]+8.f,y=bounds[1]+(bounds[3]-bounds[1])*.88f;
+    uint32_t xb,yb;memcpy(&xb,&x,4u);memcpy(&yb,&y,4u);
+    const uint32_t color=guest_call(sub_00154FE0,2,0x7f7f7f7fu,WORD_AT(menu+0xf4u));
+    guest_call(sub_00041DC0,4,xb,yb,caption,color);
+    WORD_AT(0x007E7270u)=old_x;WORD_AT(0x007E7280u)=old_y;
+    guest_call(sub_0003F8D0,0);guest_call(sub_0003FA10,1,font);
+    restore_registers(&saved);
+}
+
 static void story_lobby_header(void)
 {
     const uint32_t item=WORD_AT(g_esp+8u);
@@ -98,6 +134,7 @@ static void story_lobby_header(void)
        story_lobby_mission>=13u) { sub_00197890();return; }
     /* Reuse the original Story row's year, name and thumbnail renderer. The
        verified draw ABI is (menu,item,rectangle); its mission is the row ID. */
+    const uint32_t frame=g_esp,rect=WORD_AT(g_esp+12u);
     const uint32_t id=WORD_AT(item+0x14u);
     WORD_AT(item+0x14u)=story_lobby_mission;
     const uint32_t menu=WORD_AT(g_esp+4u);
@@ -109,6 +146,7 @@ static void story_lobby_header(void)
     sub_002CA9F0();
     if(scoped) WORD_AT(menu+4u)=descriptor;
     WORD_AT(item+0x14u)=id;
+    story_lobby_status(menu,rect,frame);
 }
 
 static void story_lobby_body(void)

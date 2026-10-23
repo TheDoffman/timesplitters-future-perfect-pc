@@ -14,6 +14,7 @@ import os
 import re
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import threading
 import time
@@ -133,13 +134,19 @@ def main():
             dict(keys=[69],label='local-briefing',wait=4),
             dict(keys=[69],label='local-loading',wait=25),
             dict(keys=[69],label='local-skip',wait=5),
-            dict(keys=[69],label='local-game',wait=5),dict(stop=True)]
+            dict(keys=[69],label='local-game',wait=5),
+            dict(label='local-settled',wait=15,world_probe=True),
+            dict(keys=[87],hold_seconds=1,sample_hold=True,label='local-move',wait=2,world_probe=True),
+            dict(keys=[83],hold_seconds=1,sample_hold=True,label='local-back',wait=2,world_probe=True),
+            dict(keys=[1],hold_seconds=1,label='local-fire',wait=2,world_probe=True),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     env['TSFP_ONLINE_SETTINGS']=str(run/'online-settings.json')
     # Typed Story now supplies normal start behavior. Instrumentation must not
     # enable a hidden feature switch that an ordinary player does not receive.
     env.pop('TSFP_STORY_LOAD_PROBE',None)
     directory_server=None;directory_thread=None
+    if args.scenario=='story-local-load':
+        env['TSFP_STORY_TRACE']='1';env['TSFP_STORY_TRACE_LOCAL']='1'
     if args.scenario in ('story-host','story-host-controls','story-pair'):
         env['TSFP_STORY_TRACE']='1'
         import socket
@@ -224,8 +231,8 @@ def main():
         value=c.c_int16()
         if not kernel.ReadProcessMemory(handle,address+0x10000,c.byref(value),2,None):return None
         return value.value
-    def player_snapshot():
-        player=word(0x7b0c7c)
+    def player_snapshot(player=None):
+        if player is None:player=word(0x7b0c7c)
         if player is None or not 0x80000000<=player<0x84000000:return None
         entity=word(player+0x14)
         actor=word(entity+0x7c) if entity else None
@@ -292,7 +299,51 @@ def main():
                                        health=floats(entity+0x1cc,1)))
         return dict(state=word(0x76b1a4),role=word(0x76b140),human_slots=humans,bot_slots=bots,
                     peers=[i for i in range(16) if word(0x666040+i*4)],actors=actors)
-    def snapshot():
+    def world_snapshot():
+        count=word(0x74C37C);characters=[]
+        if count is None or not 0<=count<=256:return dict(count=count,characters=[])
+        # The original active-character list stores character-data pointers.
+        # Their first word is the entity (the existing handoff_actor observer
+        # uses this layout); +230 is the original type2 network object ID.
+        for index in range(min(count,64)):
+            actor=word(0x7A3580+index*4)
+            if actor is None or not 0x10000<=actor<0x84000000:continue
+            entity=word(actor)
+            if entity is None or not 0x10000<=entity<0x84000000:continue
+            characters.append(dict(index=index,network_id=word(entity+0x230),
+                loadout=word(actor+0x94),character_flags=word(actor+0x24),
+                entity=entity,context=word(entity+0x150),flags=word(entity+0x28),
+                position=floats(entity+0x64,3),health=real(entity+0x1cc)))
+        # Original359390 resolves type2 references by the FIRST matching ID in
+        # the entity pool. Pointer-free replica creation must retain that identity.
+        entity_pool=word(0x72F5E8);entity_count=word(0x7B4FAC)
+        identities={}
+        if entity_pool and 0x10000<=entity_pool<0x84000000 and entity_count is not None and 0<=entity_count<=8192:
+            raw=(c.c_ubyte*(entity_count*0x2e8))()
+            if kernel.ReadProcessMemory(handle,entity_pool+0x10000,raw,len(raw),None):
+                for index in range(entity_count):
+                    key=struct.unpack_from('<I',raw,index*0x2e8+0x230)[0]
+                    if key:identities.setdefault(key,[]).append(entity_pool+index*0x2e8)
+        for entry in characters:
+            entity=entry['entity'];actor=word(entity+0x7c);model=word(entity+4)
+            entry.update(slot=word(actor+8),visibility_flags=word(actor+0x2c),kind=[short(actor+0x48),short(actor+0x4a)],
+                team=word(actor+0x84),last_damage_tick=word(entity+0x1d4),
+                clip=word(model+0xd4) if model else None,
+                next_clip=word(model+0x12c) if model else None,
+                weapon_defs=[word(actor+0xd4),word(actor+0x204)],
+                weapon_models=[word(actor+0x18c),word(actor+0x2bc)],
+                clip_time=real(model+0xdc) if model else None,
+                bounds_center=floats(entity+0x1a8,3),bounds_radius=floats(entity+0x1c0,3),
+                lookup_entities=identities.get(entry['network_id'],[]))
+        return dict(count=count,sample_limit=64,characters=characters,entity_pool_count=entity_count)
+    def story_scene_snapshot():
+        setup=word(0x74C36C)
+        budget=word(setup+8) if setup else None
+        return dict(setup=setup,budget_index=budget,
+            budget_count=word(0x53D2D0+budget*0xA4) if budget is not None and budget<256 else None,
+            record_counts={hex(offset):word(setup+offset) for offset in (0x10,0x28,0x30,0x88,0xB0,0xE0)} if setup else {},
+            allocation_counters={'0x7a3500':word(0x7A3500),'0x74c388':word(0x74C388)})
+    def snapshot(world=False):
         pointer=word(0x761C48)
         menu=word(0x7613E4);descriptor=word(menu+4) if menu else None
         def config(address):
@@ -303,13 +354,17 @@ def main():
                 flags=word(address+0x58),
                 characters=[(word(address+0x14+i) or 0)&255 for i in range(4)])
         actors=[];pool=word(0x7356D8)
-        if pool and args.pair_load_probe:
+        if pool and (args.pair_load_probe or args.scenario=='story-local-load'):
             for slot in range(min(word(0x790950) or 0,4)):
                 actor=pool+slot*0xea0;entity=word(actor)
                 # Existing bot replication uses +64 for world position;
                 # +1a8 is collision-bounds centre, not movement telemetry.
                 position=[real(entity+0x64+i*4) for i in range(3)] if entity else []
+                context=(word(0x7B0C48) or 0)+slot*0x1584
                 actors.append(dict(slot=slot,entity=entity,position=position,
+                    context=context,local_port=word(context+4),context_flags=word(context+0xc),
+                    action_masks=[word(context+0x20+i*4) for i in range(6)],
+                    context_position=[real(context+0xb4+i*4) for i in range(3)],
                     # Field contracts used by pc_network_bots_guest_shot and
                     # its snapshot sender; weapon IDs are not ammo counters.
                     weapons=[word(actor+0xd4+hand*0x130) for hand in range(2)],
@@ -319,7 +374,13 @@ def main():
                     entity_flags=word(entity+0x28) if entity else None,
                     life=[word(actor+0x10+i*4) for i in range(4)],
                     actor_flags=[word(actor+0x24+i*4) for i in range(3)]))
+        contexts=word(0x7B0C48);local_player=None
+        if contexts:
+            owned=[contexts+i*0x1584 for i in range(min(word(0x790950) or 0,4))
+                   if word(contexts+i*0x1584+4)==0]
+            if len(owned)==1:local_player=player_snapshot(owned[0])
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
+            local_player=local_player,
             paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
             menu_mode=word(0x78AD2C),network_phase=word(0x76B1A4),role=word(0x76B140),
             menu_descriptor=descriptor,menu_builder=word(descriptor) if descriptor else None,
@@ -336,9 +397,20 @@ def main():
             context_states=[word((word(0x7B0C48) or 0)+i*0x1584+0x114)
                 for i in range(min(word(0x790950) or 0,4))] if word(0x7B0C48) else [],
             frontend_config=config(0x78AD58),active_config=config(0x7DE400),actors=actors,
+            input_block=word(0x6B9888),network_input=word(0x76B0FC),
+            active_characters=word(0x74C37C),story_stage=word(0x78AD50),
+            local_axes=[word(0x6B93E8+i*4) for i in range(4)],
+            network_pads=[dict(held=word(0x6B94D4+slot*0x3c),
+                blocked=word(0x6B9500+slot*0x3c),
+                axes=[word(0x6B94E0+slot*0x3c+i*4) for i in range(4)])
+                for slot in range(min(word(0x790950) or 0,4))],
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
+            story_config_tail=[word(address) for address in range(0x7DE460,0x7DE4A0,4)]
+                if args.pair_load_probe or args.scenario=='story-local-load' else None,
+            story_scene=story_scene_snapshot() if args.pair_load_probe or args.scenario=='story-local-load' else None,
+            **(dict(world=world_snapshot()) if world else {}),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
@@ -348,9 +420,13 @@ def main():
         if elapsed>=next_sample:
             assert len(samples)<2400,'Bounded state-sample limit reached'
             item=dict(seconds=round(elapsed,2),**snapshot());samples.append(item)
-            (run/'current.json').write_text(json.dumps(item))
+            current_pending=run/'current.pending.json'
+            current_pending.write_text(json.dumps(item))
+            try:current_pending.replace(run/'current.json')
+            except PermissionError:pass # A Windows reader may briefly hold it; retain the last complete sample.
             early_story=(item.get('active_mode') in (4,14) and
-                item.get('scene') is not None and item['scene']<100 and not item.get('paused'))
+                item.get('scene') is not None and item['scene']<100 and not item.get('paused') and
+                not (item.get('flags',0)&0x20000000))
             next_sample=elapsed+(.1 if args.pair_load_probe and early_story else
                 .5 if args.pair_load_probe else 1)
     def wait_observed(seconds):
@@ -546,7 +622,7 @@ def main():
                 if command.get('cancel_online'):cancel_online()
                 wait_observed(command.get('wait',2.5))
                 item=dict(seconds=round(time.perf_counter()-start,3),observed_ns=time.perf_counter_ns(),
-                    command=command,key_events=key_events,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                    command=command,key_events=key_events,**snapshot(world=command.get('world_probe',False)),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))

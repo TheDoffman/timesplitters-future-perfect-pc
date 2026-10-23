@@ -1,3 +1,4 @@
+#include <stddef.h>
 /* US Xbox build 45410066. Insert through the title's own button builder:
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
@@ -406,14 +407,47 @@ void pc_network_bots_entity_refresh(uint32_t entity)
     (void)entity;
 #endif
 }
-void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
+/* Preserve the existing bot packet layout while sharing its animation policy. */
+_Static_assert(sizeof(PcCharacterPose)==216,"Character pose wire layout");
+_Static_assert(offsetof(PcNetworkBotState,shot)-offsetof(PcNetworkBotState,clip)==sizeof(PcCharacterPose),"Bot pose slice");
+void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 {
 #ifdef _WIN32
     extern void sub_000966E0(void);
-    uint32_t model,speed,actor;unsigned hand;
-    const int32_t clip=state->clip;
+    uint32_t model,speed;
+    const int32_t clip=pose->clip;
     int16_t next_index;
-    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095 || state->next_clip<0 || state->next_clip>4095) return;
+    if(!guest_writable(entity,0x238u) || !pc_character_pose_valid(pose)) return;
+    model=WORD_AT(entity+4u);
+    if(!guest_writable(model,0x200u)) return;
+    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
+        memcpy(&speed,pose->clip_channels+11,4);
+        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    }
+    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),pose->clip_channels,72);
+    WORD_AT(model+0x124u)=pose->clip_cycle;WORD_AT(model+0x128u)=pose->clip_flags&~0xc00u;
+    /* The original character animator crossfades a second numeric clip block
+       into the first. Resolve its asset index locally; never copy host handles. */
+    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)pose->next_clip*2u)+g_xbox_mem_offset);
+    WORD_AT(model+0x12cu)=(uint32_t)pose->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
+    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),pose->next_channels,72);
+    WORD_AT(model+0x17cu)=pose->next_cycle;WORD_AT(model+0x180u)=pose->next_flags&~0xc00u;
+    WORD_AT(model+0xa8u)=pose->overlay_phase;
+    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),pose->overlay_channels,32);
+    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),pose->blend_channels,12);
+    /* 0xc00 carries pending root translation/rotation, already included in
+       the host's body transform. Do not apply it twice. Bone buffers belong
+       to the frame arena: evaluate in the normal animation pass, not here.
+       sub_00096C20 is lighting preparation, not skeleton evaluation. */
+#else
+    (void)entity;(void)pose;
+#endif
+}
+void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
+{
+#ifdef _WIN32
+    uint32_t actor;unsigned hand;
+    if(!guest_writable(entity,0x238u)) return;
     actor=WORD_AT(entity+0x7cu);
     if(guest_writable(actor,0xea0u)) for(hand=0;hand<2u;hand++) {
         uint32_t weapon=WORD_AT(actor+0x18cu+hand*0x130u);
@@ -422,28 +456,10 @@ void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
             else WORD_AT(weapon+0x28u)&=~1u;
         }
     }
-    if(!state->body_present) return;
-    model=WORD_AT(entity+4u);
-    if(!guest_writable(model,0x200u)) return;
-    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
-        memcpy(&speed,state->clip_channels+11,4);
-        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    if(state->body_present) {
+        PcCharacterPose pose;memcpy(&pose,&state->clip,sizeof pose);
+        pc_character_pose_present(entity,&pose);
     }
-    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),state->clip_channels,72);
-    WORD_AT(model+0x124u)=state->clip_cycle;WORD_AT(model+0x128u)=state->clip_flags&~0xc00u;
-    /* The original character animator crossfades a second numeric clip block
-       into the first. Resolve its asset index locally; never copy host handles. */
-    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)state->next_clip*2u)+g_xbox_mem_offset);
-    WORD_AT(model+0x12cu)=(uint32_t)state->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
-    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),state->next_channels,72);
-    WORD_AT(model+0x17cu)=state->next_cycle;WORD_AT(model+0x180u)=state->next_flags&~0xc00u;
-    WORD_AT(model+0xa8u)=state->overlay_phase;
-    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),state->overlay_channels,32);
-    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),state->blend_channels,12);
-    /* 0xc00 carries pending root translation/rotation, already included in
-       the host's body transform. Do not apply it twice. Bone buffers belong
-       to the frame arena: evaluate in the normal animation pass, not here.
-       sub_00096C20 is lighting preparation, not skeleton evaluation. */
 #else
     (void)entity;(void)state;
 #endif

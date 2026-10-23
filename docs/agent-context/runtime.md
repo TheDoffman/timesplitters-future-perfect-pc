@@ -1,5 +1,60 @@
 # Runtime and patch navigation
 
+`*-story-human-teams.patch` wraps D7550. Only the33ACDB network-team call for a
+validated human actor in live Story replaces the requested Arcade team with1,
+matching original Story25A420. Arguments are restored after the original setter;
+other callers, NPCs and native/non-Story fallback retain original behavior.
+
+`*-story-handoff-authority.patch` wraps original218910/21B540. Connected first-
+level Story guests skip their inventory side effects when rendering replicated
+NPC poses; the host runs the unchanged callbacks and publishes their awards.
+Other modes/native fallback retain the original. The existing ammo/grant adapters
+observe the pistol25 and rifle32 authored pairs; no generated body is edited.
+
+The supported353990 broadcast path copies packets into a256-byte stack buffer.
+Do not send the372-byte internal SNP2 state directly: bounded physical/pose
+messages and checksum-based assembly preserve that original sender limit.
+
+Story poses reuse the existing frozen-animation and bounds wrappers through
+`pc_network_bots_guest.inc`; no additional guest wrapper is required. Those
+shared boundaries accept only a current validated Story NPC replica as well as
+ordinary bots. Primary/crossfade clip binding is shared in the display-menu
+translation unit; original model handles and frame-arena bones remain local.
+Native/disabled transport fallbacks retain original guest calls.
+
+`*-story-extra-loadout.patch` wraps original1BA2B0 ammo grant and1BFCA0 inventory
+addition. The scoped adapter observes only the supported first-level authored
+handoff call sites and the host's primary actor; it preserves original arguments,
+return and stack behavior. The source owner is `src/pc_story_loadout.inc`, included
+through the shared Story load adapter. Regenerate the full stack for the wrappers.
+
+`*-story-extra-starts.patch` adds wrappers for original9A420 pad lookup,
+9A4C0 tag lookup and9A510 inverse index. Only two reserved first-scene Online
+Story indices resolve to private copies of the original primary start; all
+ordinary/native paths retain the original bodies. The wire remains the original
+signed16 spawn-pad field. Regenerate the complete stack after wrapper changes.
+
+`*-story-npc-creation.patch` adds original DAC30/35BE90/3580D0 boundaries and
+composes the existing15F8C0 diagnostic with the Story spawn adapter. Ordinary
+multiplayer/native fallback stays original. The original NPC pre-spawn sender
+is replaced only for connected Story host NPCs; the completed original host spawn
+then emits a versioned creation message through353A90. Never hand-edit generated
+bodies; the full stack must regenerate these new wrappers.
+
+`*-story-npc-lifecycle-trace.patch` wraps D73B0 model-cache construction,
+15C560 character-list bootstrap, 15F8C0 script spawn and35CF80 network spawn gate.
+The shared opt-in observer emits at most eight entry/exit pairs per boundary in
+Story gameplay. Each original runs once with its original arguments and return.
+Native/disabled paths pass through; it does not create or replicate NPCs itself.
+
+`*-story-authored-records.patch` wraps original6B100's scene-record eligibility
+filter through `pc_story_network_asset`. For connected Story gameplay only, it
+removes bit31's ordinary-network exclusion and accepts authored two-player co-op
+records for three/four humans. Single-player-only records and the original
+difficulty/mission filters remain unchanged. Argument bytes are restored after
+the original call; native fallback and other modes call the original directly.
+This boundary is used by object/script creation and authored pad selection.
+
 `*-story-context-spawn-trace.patch` wraps original D50E0 without altering its
 ownership checks. D50E0 and the existing D2FD0/D3C50/D2CE0 wrappers use the separate
 script trace budget only while phase15 retains script-suspension flag02000000.
@@ -236,3 +291,29 @@ It extends the existing common-RHI preservation transaction to A32B32G32R32F,
 including reversed 32-bit channels in CPU capture storage. The existing shared
 resource adapter already allocates/uploads this format. Half-float conversion
 remains supported. Legacy GL still declines the experiment as documented.
+
+A separate `*-story-character-roster.patch` wraps original15BCC0. Only the
+Arcade network reconciliation caller355EA4 is suppressed during connected
+Story pending loads and active rule10 scenes, including pre-play phase14. Other removal callers and native fallback remain original;
+new wrapper needs supported regeneration and complete-stack migration.
+
+The separate `*-story-intro-transition.patch` wraps original65C70. A connected
+Story guest cannot independently run the intro next-load builder. Host movie-end
+pending-copy caller65CDC normalizes the Local config to the occupied network
+header, increments the original start generation and uses356490 to serialize
+it reliably before658D0 copies it. Source contracts cover generation wrap and
+guest authority; runtime cinematic/handshake/visual acceptance remains pending.
+
+`*-story-cinematic-ready.patch` wraps357540 at the original loader boundary
+3D67D. During connected Story movies only, it runs the stock ready exchange
+with a scoped zero actor-loop count and cinematic eligibility flag cleared,
+then restores count/flags. The original peer state and ready packet execute;
+no player bodies are spawned into the intro. Ordinary/native calls are original.
+
+Story human teams are normalized in the existing681C0 frame adapter once a
+real entity/context/pool backlink is available, before NPC replica updates.
+OriginalD7570 can initialize remote teams before the scoped setter is eligible;
+wrapping initialization alone did not correct the four-peer snapshots. The
+frame path calls the original setter only when a validated human differs from
+team1, preserving its derived color and original local-body ownership. NPCs and
+other modes remain untouched. D7550 pump normalization covers loading too.

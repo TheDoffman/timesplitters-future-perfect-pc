@@ -11,6 +11,7 @@ import argparse
 import json
 import math
 import os
+import re
 import shutil
 from pathlib import Path
 import subprocess
@@ -33,17 +34,23 @@ def read_json(path,default=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--load-probe',action='store_true',help='Opt-in experimental Story start and movement check')
-    parser.add_argument('--lobby-controls',action='store_true',help='Select Scotland/Hard, verify guest settings and own Progress before loading')
+    parser.add_argument('--lobby-controls',action='store_true',help='Select mission/difficulty, verify guest settings and own Progress before loading')
+    parser.add_argument('--mission',type=int,choices=range(13),default=0,help='Story mission index; 0 is Time to Split')
+    parser.add_argument('--difficulty',type=int,choices=range(3),default=1,help='0 Easy, 1 Normal, 2 Hard')
     parser.add_argument('--lobby-only',action='store_true',help='Stop after changed lobby controls; no GO/load/movement')
     parser.add_argument('--players',type=int,choices=[2,4],default=2,help='Actual instances/players admitted to the isolated lobby')
-    parser.add_argument('--fire-probe',action='store_true',help='Bounded primary-fire inputs and captures; visual interaction review still required')
+    parser.add_argument('--fire-probe',action='store_true',help='Check first-level firearm and ammunition consumption; save captures for interaction review')
+    parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
+    parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
     parser.add_argument('--script-observe-seconds',type=int,default=0,choices=range(31),metavar='0..30',help='Passive diagnostic wait if a peer is script-suspended; does not replace failed startup evidence')
     parser.add_argument('--receipt-id',help='Caller nonce for interpreter-independent receipt identity')
     args=parser.parse_args()
     assert not args.lobby_controls or args.load_probe
     assert not args.lobby_only or args.lobby_controls
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
+    assert not args.combat_probe or (args.fire_probe and args.mission==0 and args.players==4)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
+    assert not args.skip_intro or (args.load_probe and args.mission==0 and not args.lobby_only)
     assert args.players==2 or args.load_probe
     roles=['host','guest']+(['guest2','guest3'] if args.players==4 else [])
     if args.receipt_id:
@@ -55,7 +62,7 @@ def main():
     identity=read_json(ROOT/'build/windows/generated/network-identity.json')
     assert identity and identity['compatibility']==seal['compatibility']
     for name,digest in identity['files']:
-        if name.startswith(('src/pc_story','src/pc_network','src/pc_online','src/pc_display_menu')) or name=='tools/online.py':
+        if name.startswith(('src/pc_story','src/pc_network','src/pc_online','src/pc_display_menu','src/pc_character_pose.h')) or name=='tools/online.py':
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()==digest, 'Rebuild required: '+name
     evidence_root=ROOT/'private/network-validation'/('story-four' if args.players==4 else 'story-load-pair' if args.load_probe else 'story-pair')
     evidence_root.mkdir(parents=True,exist_ok=True)
@@ -64,7 +71,8 @@ def main():
     runs={role:ROOT/'private/test-saves'/(('online-story-four-' if args.players==4 else 'online-story-load-pair-' if args.load_probe else 'online-story-pair-')+role) for role in roles}
     assert all(not (run/'run.lock').exists() for run in runs.values()),'Pair runner already active; inspect its PID'
     result=dict(scope='Story lobby precondition only; no GO or gameplay',status='running',
-        build=seal,parent_pid=os.getpid(),processes={},admitted_players=args.players)
+        build=seal,parent_pid=os.getpid(),processes={},admitted_players=args.players,
+        requested_mission=args.mission,requested_difficulty=args.difficulty)
     if args.receipt_id:result['receipt_id']=args.receipt_id
     if args.load_probe:result['scope']='Experimental Story synchronized load and two actor movement; not full goal acceptance'
     if args.lobby_only:result['scope']='Story lobby controls and visual layout only; no GO or gameplay'
@@ -86,7 +94,7 @@ def main():
     address=f'http://127.0.0.1:{directory.server_port}'
     client=Client(address)
     children={};streams=[]
-    deadline=time.monotonic()+(330 if args.load_probe else 210)
+    deadline=time.monotonic()+(450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
 
     def launch(role,code=None):
         command=[sys.executable,str(ROOT/'tests/stability_transitions_game.py'),
@@ -153,12 +161,12 @@ def main():
             if args.lobby_controls:
                 append('host',keys=[89],label='story-options',wait=4)
                 wait_for(lambda:captured('host','story-options'),'Host Options did not complete')
-                append('host',keys=[40,69],label='story-difficulty',wait=4)
+                append('host',keys=[40]*args.mission+[69],label='story-difficulty',wait=4)
                 wait_for(lambda:captured('host','story-difficulty'),'Host level choice did not complete')
-                append('host',keys=[40,40,69],label='story-settings-return',wait=4)
+                append('host',keys=[40]*args.difficulty+[69],label='story-settings-return',wait=4)
                 selected=wait_for(lambda:captured('host','story-settings-return'),'Host difficulty choice did not complete')
                 expected=selected['frontend_config']
-                assert expected['scene']<100 and expected['rule']==10 and expected['difficulty']==2,selected
+                assert expected['scene']<100 and expected['rule']==10 and expected['difficulty']==args.difficulty,selected
                 def replicated():
                     guests=[read_json(runs[role]/'current.json',{}).get('frontend_config',{}) for role in roles[1:]]
                     return guests[0] if all(all(g.get(k)==expected[k] for k in ('scene','rule','variant','difficulty')) for g in guests) else None
@@ -178,11 +186,53 @@ def main():
             if args.lobby_only:
                 result['status']='lobby-controls-passed'
             else:
-                append('host',keys=[69],label='story-go',wait=25)
+                append('host',keys=[69],label='story-go',wait=8)
                 wait_for(lambda:captured('host','story-go'),'Host GO input not completed')
-                # Direct gameplay load has no cinematic to skip. Sending E here
-                # retried the Game Over menu and obscured the initial failure.
-                for role in runs:append(role,label='load-before',wait=8)
+                if args.mission==0:
+                    def intro_loaded():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        return states if all(s.get('flags',0)&0x20000000 and s.get('network_phase') in (10,14,15)
+                                             for s in states.values()) else None
+                    wait_for(intro_loaded,'All peers did not enter the original first-level intro')
+                    for role in runs:append(role,label='intro-before',wait=2,world_probe=True)
+                    intros=wait_for(lambda:{role:captured(role,'intro-before') for role in runs}
+                        if all(captured(role,'intro-before') for role in runs) else None,'Missing intro captures')
+                    assert all(s['flags']&0x20000000 and s['scene']==intros['host']['scene'] for s in intros.values()),intros
+                    result['intro_states']=intros
+                    if args.skip_intro:
+                        # Only skip after observing a real cinematic; never retry
+                        # a failure menu or obscure an initial loading fault.
+                        append('host',keys=[69],label='intro-host-handoff',wait=20)
+                        wait_for(lambda:captured('host','intro-host-handoff'),'Host intro handoff did not complete')
+                    else:
+                        for role in runs:append(role,label='intro-progress',wait=25)
+                        result['intro_progress']=wait_for(lambda:{role:captured(role,'intro-progress') for role in runs}
+                            if all(captured(role,'intro-progress') for role in runs) else None,'Missing long-intro captures')
+                    def gameplay_after_intro():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        if not all(states.values()):return None
+                        assert all(s.get('network_enabled') and s.get('role') in (1,2) for s in states.values()),('Peer disconnected during Story intro',states)
+                        return states if all(not s.get('flags',0)&0x20000000 and s.get('scene',101)<100 and
+                                             s.get('network_phase')==15 for s in states.values()) else None
+                    result['first_gameplay_states']=wait_for(gameplay_after_intro,'Host intro did not hand off every peer to gameplay')
+                    # Retain world identities/positions even if the scripted opening stalls.
+                    for role in runs:
+                        append(role,label='opening-world',wait=8,world_probe=True)
+                        append(role,label='opening-later',wait=20,world_probe=True)
+                    # The original first-level opening has its own scripted
+                    # firearm handoff. Observe it, without forcing control flags.
+                    opening_deadline=min(deadline,time.monotonic()+60)
+                    def opening_ready():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        if not all(states.values()):return None
+                        assert all(s.get('game_state')!=8 and not (s.get('result_flags',0)&0x10000) and
+                                   s.get('network_phase')==15 for s in states.values()),('Opening failed or left the network',states)
+                        ready=all(s.get('context_states')==[2]*args.players and s.get('result_flags')==0 and
+                                  (s.get('local_player') or {}).get('equipped',[None,None])[1]==14 for s in states.values())
+                        assert ready or time.monotonic()<opening_deadline,('Original opening firearm/control handoff did not complete in 60 seconds',states)
+                        return states if ready else None
+                    result['opening_ready_states']=wait_for(opening_ready,'Original Story opening did not become playable')
+                for role in runs:append(role,label='load-before',wait=8,world_probe=True)
                 before=wait_for(lambda:{role:captured(role,'load-before') for role in runs}
                     if all(captured(role,'load-before') for role in runs) else None,'Missing pre-movement captures')
                 result['loaded_states']=before
@@ -202,14 +252,23 @@ def main():
                     assert len(s['actors'])==args.players and all(a['entity'] for a in s['actors']),(role,'missing actor',s)
                     assert len({a['entity'] for a in s['actors']})==args.players,(role,'aliased actors',s)
                     assert all(a.get('health') is not None and math.isfinite(a['health']) and a['health']>0 for a in s['actors']),(role,'nonliving actor before movement',s)
-                assert before['host']['scene']==before['guest']['scene'],'Story scenes differ'
+                assert all(s['scene']==before['host']['scene'] for s in before.values()),'Story scenes differ'
                 if args.lobby_controls:
                     for role,s in before.items():
                         assert all(s['active_config'][k]==expected[k] for k in ('scene','rule','variant','difficulty')),(role,'Loaded selection differs from host lobby',s)
-                for role,key in zip(roles,[87,68,83,65]):
-                    append(role,keys=[key],hold_seconds=1,label='move-own-player',wait=2)
+                for role,s in before.items():
+                    assert sum(a.get('local_port')==0 for a in s['actors'])==1,(role,'Expected one owned input context',s)
+                    assert all(c.get('team')==1 for c in s.get('world',{}).get('characters',[]) if c.get('context')),(role,'Story humans lost their original shared team',s.get('world'))
+                # Local first-level reference shows W blocked against the initial
+                # wreck, while S produces real movement. Use the verified escape
+                # direction one owner at a time; keep real displacement checks.
+                result['movement_steps']={}
+                for role,key in zip(roles,[83]*len(roles) if args.mission==0 else [87,68,83,65]):
+                    append(role,keys=[key],hold_seconds=1,sample_hold=True,label='move-own-player',wait=2)
+                    step=wait_for(lambda:captured(role,'move-own-player'),'Owned movement input not completed')
+                    result['movement_steps'][role]=step
                 wait_for(lambda:all(captured(role,'move-own-player') for role in runs),'Movement input not completed')
-                for role in runs:append(role,label='load-after',wait=4)
+                for role in runs:append(role,label='load-after',wait=4,world_probe=True)
                 after=wait_for(lambda:{role:captured(role,'load-after') for role in runs}
                     if all(captured(role,'load-after') for role in runs) else None,'Missing post-movement captures')
                 result['after_movement']=after
@@ -225,16 +284,98 @@ def main():
                         host_position=after['host']['actors'][slot]['position']
                         assert sum((x-y)**2 for x,y in zip(b,host_position))<=1.,(role,slot,'Peer positions diverged',b,host_position)
                 if args.fire_probe:
+                    def ammo_total(player):
+                        kinds={}
+                        for slot in (player or {}).get('ammo',[]):
+                            value=kinds.setdefault(slot['type'],[slot['reserve'],0])
+                            value[1]+=slot['loaded']
+                        return sum(sum(value) for value in kinds.values()) if kinds else None
+                    if args.mission==0:
+                        for role,s in after.items():
+                            local=s.get('local_player') or {}
+                            assert local.get('equipped',[None,None])[1]==14,(role,'Opening firearm handoff incomplete',local)
+                            assert ammo_total(local) is not None,(role,'Opening ammunition unavailable',local)
+                            assert ammo_total(local)==ammo_total(after['host'].get('local_player')),(role,'Opening handoff duplicated or lost ammunition',local)
                     for role in runs:
                         # Mouse 1 is the common input model's default primary
                         # fire binding, delivered through the isolated state file.
-                        append(role,keys=[1],hold_seconds=1,label='fire-own-player',wait=1)
+                        append(role,keys=[1],hold_seconds=1,label='fire-own-player',wait=1,world_probe=True)
                     fired=wait_for(lambda:{role:captured(role,'fire-own-player') for role in runs}
                         if all(captured(role,'fire-own-player') for role in runs) else None,'Firing captures missing')
                     result['after_fire_input']=fired
-                    result['fire_scope']='Input delivered and captures saved; firing, hits and world synchronization require separate evidence'
+                    result['fire_scope']='First-level owned firearm and ammunition consumption checked; hits and world synchronization need separate evidence'
                     for role,s in fired.items():
+                        if args.mission==0:
+                            remaining=ammo_total(s.get('local_player'))
+                            assert remaining is not None and remaining<ammo_total(after[role].get('local_player')),(role,'No firing ammunition consumed',s.get('local_player'))
                         assert s['scene']==before[role]['scene'] and s['network_phase']==15 and not s['paused'],(role,'Lost live Story during firing input',s)
+                if args.combat_probe:
+                    # Inputs only: do not manufacture targets, teleport actors or
+                    # write health. Preserve a failed search as missing evidence.
+                    def extra_slot(s):
+                        pointer=(s.get('local_player') or {}).get('player')
+                        return next((a['slot'] for a in s['actors'] if a.get('context')==pointer),-1)
+                    shooter=next(role for role in roles if role!='host' and extra_slot(fired[role])>=2)
+                    shooter_slot=extra_slot(fired[shooter]);result['combat_shooter']=dict(role=shooter,slot=shooter_slot)
+                    def command_capture(role,label,**step):
+                        append(role,label=label,world_probe=True,**step)
+                        return wait_for(lambda:captured(role,label),'Missing combat capture '+label)
+                    current=command_capture(shooter,'combat-before',wait=.3)
+                    target=None;walk=[]
+                    # The old straight-forward route stopped against the north
+                    # canyon wall. Turn through the opening occupied by the
+                    # authored soldiers before approaching the far NPC. These
+                    # are ordinary input waypoints, never position writes.
+                    waypoints=[(0,25),(20,42),(42,45),(62,25),(63,0)]
+                    waypoint=0
+                    controls=read_json(runs[shooter]/'controls.json')['mouse'];sensitivity=controls['sensitivity']
+                    for index in range(12):
+                        world=current.get('world',{});npcs=[c for c in world.get('characters',[]) if not c.get('context')]
+                        for c in npcs:
+                            assert c.get('lookup_entities') and c['lookup_entities'][0]==c['entity'],('Original NPC ID decoder resolves a different entity',shooter,c)
+                        enemies=[c for c in npcs if c.get('kind',[None])[0]==91 and c.get('health',0)>0 and
+                                 (c.get('visibility_flags',0)&0x10) and math.dist(current['local_player']['position'],c['position'])<=40]
+                        if enemies:
+                            target=min(enemies,key=lambda c:math.dist(current['local_player']['position'],c['position']));break
+                        if index==11:break
+                        local=current['local_player'];position=local['position']
+                        while waypoint<len(waypoints)-1 and math.dist((position[0],position[2]),waypoints[waypoint])<6:
+                            waypoint+=1
+                        point=waypoints[waypoint]
+                        yaw=math.degrees(math.atan2(point[0]-position[0],point[1]-position[2]))
+                        dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                        dy=round(local['look'][1]/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                        current=command_capture(shooter,'combat-walk-'+str(index),mouse=[dx,dy],keys=[87],hold_seconds=3,sample_hold=True,wait=.3)
+                        walk.append(current)
+                    result['combat_walk']=walk
+                    assert target,('No living enemy found on bounded opening route; combat remains unverified',current)
+                    result['combat_target_before']=target
+                    controls=read_json(runs[shooter]/'controls.json')['mouse'];sensitivity=controls['sensitivity']
+                    for attempt in range(3):
+                        candidates=[c for c in current['world']['characters'] if c.get('network_id')==target['network_id'] and c.get('health',0)>0]
+                        if not candidates:break
+                        point=list(candidates[0]['position']);point[1]+=1.1
+                        local=current['local_player'];delta=[a-b for a,b in zip(point,local['position'])]
+                        yaw=math.degrees(math.atan2(delta[0],delta[2]));pitch=math.degrees(math.atan2(delta[1],math.hypot(delta[0],delta[2])))
+                        dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                        dy=round((local['look'][1]-pitch)/sensitivity)*( -1 if controls.get('invert_y') else 1)
+                        current=command_capture(shooter,'combat-shot-'+str(attempt),mouse=[dx,dy],keys=[1],hold_seconds=1,wait=.3)
+                    observations={role:command_capture(role,'combat-after',wait=1) for role in roles}
+                    result['combat_after']=observations
+                    # Attribute the host's actual damage application to this
+                    # guest; an unrelated NPC fight is not a successful hit test.
+                    trace=(runs['host']/'run0.err').read_text(errors='replace')
+                    pattern=r'\[PC-STORY-HIT\] role=1 incoming=[1-9]\d* target='+str(target['network_id'])+r' slot=\d+ source='+str(shooter_slot)+r' damage=([^ ]+) hp=([^ ]+)->([^ ]+) result=(\d+)'
+                    hits=[m.group(0) for m in re.finditer(pattern,trace) if float(m.group(2))>float(m.group(3))]
+                    result['combat_host_hits']=hits
+                    assert hits,('No host-accepted damage from the guest on the selected NPC',target,observations)
+                    def npc_health(s):
+                        c=next((c for c in s.get('world',{}).get('characters',[]) if c.get('network_id')==target['network_id']),None)
+                        return c.get('health') if c else None
+                    expected_health=npc_health(observations['host'])
+                    for role,s in observations.items():
+                        value=npc_health(s)
+                        assert (value is None and expected_health is None) or (value is not None and expected_health is not None and abs(value-expected_health)<=.05),(role,'NPC health differs from host',value,expected_health)
                 result['status']='load-probe-passed'
     except BaseException as error:
         result['status']='failed';result['error']=str(error)

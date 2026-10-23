@@ -71,11 +71,20 @@ MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
 #define BOT_STUB(name) void name(void) { CHECK(0); }
 BOT_STUB(sub_000DAC30) BOT_STUB(sub_000D7570) BOT_STUB(sub_0009FBE0)
-BOT_STUB(sub_000966E0) BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
+BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
 BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
+BOT_STUB(sub_001BA2B0) BOT_STUB(sub_001BFCA0) BOT_STUB(sub_001BA130)
+BOT_STUB(sub_0025EE60)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 #undef BOT_STUB
+static unsigned pose_clip_bindings;
+void sub_000966E0(void)
+{
+    CHECK(WORD_AT(g_esp+4)==0x540000 && WORD_AT(g_esp+8)==43);
+    WORD_AT(0x5400d4)=43;++pose_clip_bindings;g_esp+=4;
+}
+
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
 void sub_00075B70(void) {
@@ -118,7 +127,9 @@ void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 void sub_00079710(void) { separators++;g_esp+=4; }
 STUB(sub_00074910) STUB(sub_001A0A60)
-STUB(sub_002D2C70)
+STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490)
+STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
+STUB(sub_002402B0) STUB(sub_00353A90)
 STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
 STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00) STUB(sub_00041DC0)
 static float drawn;
@@ -330,6 +341,23 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;
     pc_display_menu_button(button_probe);
     CHECK((observed_row_flags&0x21)==0x21 && WORD_AT(0x70000c)==0x20000 && g_esp==0x700004);
+    /* The common pose renderer preserves local asset/bone handles and clears
+       root-motion flags already represented by the host body transform. */
+    const uint32_t entity=0x520000,model=0x540000;
+    WORD_AT(entity+4)=model;WORD_AT(model+0xd4)=42;WORD_AT(model+0x12c)=43;
+    WORD_AT(model+0xd8)=0xcafe;WORD_AT(model+0x18c)=0xbabe;
+    WORD_AT(model+0x128)=0xc03;WORD_AT(model+0x180)=0xc05;
+    *(int16_t *)((uintptr_t)(0x7e03c0+43*2)+g_xbox_mem_offset)=17;
+    PcCharacterPose pose;pc_character_pose_read(&pose,(void *)((uintptr_t)model+g_xbox_mem_offset));
+    CHECK(pc_character_pose_valid(&pose));pose.clip=43;pose.clip_channels[0]=.5f;
+    pose.blend_channels[2]=.75f;g_esp=0x700000;
+    pc_character_pose_present(entity,&pose);
+    float pose_time;memcpy(&pose_time,&WORD_AT(model+0xdc),4);
+    CHECK(pose_clip_bindings==1 && pose_time==.5f && WORD_AT(model+0x130)==17 &&
+          WORD_AT(model+0x128)==3 && WORD_AT(model+0x180)==5 &&
+          WORD_AT(model+0xd8)==0xcafe && WORD_AT(model+0x18c)==0xbabe && g_esp==0x700000);
+    pose.clip_channels[0]=NAN;pc_character_pose_present(entity,&pose);
+    CHECK(pose_clip_bindings==1);
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;

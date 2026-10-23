@@ -2,6 +2,7 @@
 #define TSFP_PC_NETWORK_BOTS_STATE_H
 #include <stdint.h>
 #include <math.h>
+#include "pc_character_pose.h"
 /* Wire values only: no guest pointers, controller records or animation handles. */
 typedef struct PcNetworkBotShot {
     uint32_t serial,tick,spawn,hand,mode,flags,target_slot;
@@ -51,15 +52,12 @@ static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned hu
     for(i=0;i<3;i++) if(!isfinite(state->bounds_center[i]) || fabsf(state->bounds_center[i])>10000.f ||
         !isfinite(state->bounds_radius[i]) || state->bounds_radius[i]<0.f || state->bounds_radius[i]>10000.f) return 0;
     for(i=0;i<2;i++) if(!isfinite(state->health_scale[i]) || fabsf(state->health_scale[i])>1000.f) return 0;
-    if(state->clip<0 || state->clip>4095 || state->next_clip<0 || state->next_clip>4095 || state->overlay_phase>2u) return 0;
+    PcCharacterPose pose;memcpy(&pose,&state->clip,sizeof pose);
+    if(!pc_character_pose_valid(&pose)) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->angles[i]) || fabsf(state->angles[i])>100000.f) return 0;
     if(!isfinite(state->heading) || fabsf(state->heading)>100000.f) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->aim[i]) || fabsf(state->aim[i])>1000000.f ||
         !isfinite(state->muzzle[i]) || fabsf(state->muzzle[i])>1000000.f) return 0;
-    for(i=0;i<18;i++) if(!isfinite(state->clip_channels[i]) || fabsf(state->clip_channels[i])>1000000.f ||
-        !isfinite(state->next_channels[i]) || fabsf(state->next_channels[i])>1000000.f) return 0;
-    for(i=0;i<8;i++) if(!isfinite(state->overlay_channels[i]) || fabsf(state->overlay_channels[i])>1000000.f) return 0;
-    for(i=0;i<3;i++) if(!isfinite(state->blend_channels[i]) || fabsf(state->blend_channels[i])>1000000.f) return 0;
     if(!pc_network_bot_shot_valid(&state->shot,humans+bots)) return 0;
     return isfinite(state->health) && state->health>=-1000.f && state->health<=1000.f &&
            isfinite(state->armor) && state->armor>=0.f && state->armor<=1000.f &&

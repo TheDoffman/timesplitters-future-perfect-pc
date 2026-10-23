@@ -227,7 +227,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch')):
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch','-story-character-roster.patch','-story-intro-transition.patch','-story-cinematic-ready.patch','-story-authored-records.patch','-story-npc-lifecycle-trace.patch','-story-npc-creation.patch','-story-extra-starts.patch','-story-extra-loadout.patch','-story-handoff-authority.patch','-story-human-teams.patch')):
             shutil.copyfile(patch, old_patches / patch.name)
     # The trace depends on network wrapper context; like the network patches,
     # it belongs to the full migration, not the historical Mac-only fixture.
@@ -242,6 +242,16 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     assert 'pc_story_network_spawn_pad(sub_000CF060_gen)' in manual
     assert 'pc_story_network_script_trace(sub_000D4B00_gen,0x000D4B00u)' in manual
     assert 'pc_story_network_script_trace(sub_000D4BE0_gen,0x000D4BE0u)' in manual
+    assert 'pc_story_network_character_remove(sub_0015BCC0_gen)' in manual
+    assert 'pc_story_network_advance(sub_00065C70_gen)' in manual
+    assert 'pc_story_network_ready(sub_00357540_gen)' in manual
+    assert 'pc_story_network_asset(sub_0006B100_gen)' in manual
+    assert 'pc_story_network_npc_spawn(sub_0015F8C0_gen)' in manual
+    assert 'pc_story_network_npc_receive(sub_003580D0_gen)' in manual
+    assert 'pc_story_network_start_record(sub_0009A420_gen)' in manual
+    assert 'pc_story_network_loadout_grant(sub_001BFCA0_gen)' in manual
+    assert 'pc_story_network_handoff(sub_00218910_gen)' in manual
+    assert 'pc_story_network_team(sub_000D7550_gen)' in manual
     assert 'pc_story_failure_trace(sub_000D50E0_gen,0x000D50E0u)' in manual
     assert installer.apply_patches(checkout, PATCHES) == []
 

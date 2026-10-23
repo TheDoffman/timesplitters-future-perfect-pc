@@ -1,3 +1,103 @@
+## Story co-op checkpoint before pause - 2026-10-22
+
+Current Windows x64 implementation remains incomplete. The latest four-instance
+probe (`logs/story-team-frame-probe.log`, retained receipt and exact symbols in
+`private/network-validation/story-four`) verifies first-level loading, four
+independent full-view owners, distinct starts, shared human team1 on every peer,
+equal opening ammunition (16 loaded/112 reserve), movement and ammunition
+consumption when firing. All runners exited cleanly. The combat gate failed:
+no eligible living enemy was found on the bounded walking route; host acceptance
+of a guest hit and combat/world synchronization remain unverified.
+
+The supported Windows build and built-in checks pass. Targeted source tests:
+12 passed, 1 native-host-only skip; fresh/repeated and historical Mac patch
+migration checks pass. The earlier fragmented NPC pose run compared 27 guest
+poses with no primary/crossfade clip mismatches (maximum sampled time delta
+0.03333s). This does not establish combat, interaction or full world replication.
+The final team correction uses the existing Story frame hook after validating
+human body/context backlinks; earlier setter-only/initialization-only attempts
+did not correct remote teams. The ineffective additional initialization wrapper
+was removed. Native Online transport remains queued under MAC-013.
+
+Remaining goal work includes real player/NPC hit and use interactions, combat
+and world effects, host-only checkpoint/level restart controls and synchronized
+restarts, next-level handoff, selected difficulty trophy icons, and stronger
+own-profile Progress/fifth-player rejection acceptance. The user will test full
+level completion and subsequent levels after initial implementation is complete.
+Personal saves/settings and the canonical test fixture were preserved.
+
+## Four-player Story implementation continuation - 2026-10-22
+
+The initial-state4 spawn correction reaches the original Story NPC scripts and
+broadcasts their spawn events, but the stock slot-only event crashed guests on
+an absent NPC body. The shared creation adapter now sends explicit scalar
+constructor identity and completed initial state through that reliable channel;
+guests validate and prepare replicas, with loading queues and replay protection.
+Source/adapter/full-menu checks pass (12 passed,1 Mac-only skip), fresh/upgrade
+patch checks pass (2), and the supported Windows build passes its built-in checks.
+Changed four-peer NPC creation validation is in progress. Ongoing NPC pose,
+combat, armed players, distinct starts and the remaining feature checklist are
+not yet accepted; this remains uncommitted work on the active goal.
+
+NPC lifecycle probe: the model-cache constructor runs for all five authored
+character kinds and the bootstrap completes, but no scripted NPC spawn or
+network spawn request is observed on the host before the60s opening timeout.
+This narrows investigation to Story script initialization/activation rather
+than demonstrating a rejected network spawn. Current build/source checks pass;
+the four-player opening remains unarmed and fails acceptance. No gameplay-ready
+or full co-op completion claim is made.
+
+The authored-record four-peer probe also failed the opening firearm check after
+60s: all contexts stayed active and synchronized, but only human characters were
+present. That change is not a verified NPC/startup fix. Bounded record-filter
+tracing and active-config-tail telemetry now target the remaining load gate.
+
+The changed guest handoff/start-ready build kept all four players in scene2,
+stage1 and active state2 for60s, but they stayed unarmed and the character list
+contained only four humans. Fresh `opening-watch` captures/receipt are retained.
+Original6B100 scene eligibility rejects two-player-only co-op records for count4,
+and bit31 rejects records in all network sessions. A new reproducible
+`story-authored-records.patch` adapts those inputs only in connected Story
+gameplay, preserving solo-only rejection and difficulty/mission selection.
+Eight source/original-US tests and two complete-stack migration tests pass;
+the supported Windows build and built-in checks pass. Four-peer runtime
+validation of the authored-record correction is in progress. Native Mac runtime
+validation remains unavailable under MAC-013.
+
+Natural intro check (Windows x64/D3D11, cinematic-ready build): all four peers
+remained connected through the original approximately120-second movie and loaded
+scene2 on the host's next generation. Reviewed late-intro captures show matching
+shots. Gameplay acceptance failed immediately: guests retained Story stage0.
+The changed-generation receiver invokes GO while still phase15; the adapter now
+accepts its scoped pending-copy boundary and updates guest stage1. Pending Story
+gameplay also bypasses the ready routine's Arcade team-pad placement, retaining
+the original Story start path. Eight targeted source/original-US tests pass;
+changed runtime validation is pending. A prior false disconnect caused by a
+partially read state JSON is fixed with atomic publication and parent retries.
+
+Work continues on `online-story-coop` from `45a96e3`; changes below remain local
+and uncommitted. Revised notes require intro playback, correct distinct starts,
+selected difficulty/year/trophy/count, synchronized Story interactions and host
+restart controls. Full first-level completion testing is left to the user.
+
+Windows x64, Python 3.14.2, MSVC x64 and common D3D11 frontend: the revised
+header is visually reviewed as 2401 / Normal / 4/4 Players with title, thumbnail,
+briefing and roster retained. Trophy rendering is unfinished. Source menu,
+original-US stage builder, guest-dispatch and backlog checks pass: 13 passed,
+1 Mac-only compile check skipped. Fresh/upgrade patch validation passes (2).
+Supported Windows builds and built-in checks pass; current intro build evidence
+is `logs/story-intro-build.log`. Real Mac transport/runtime remains MAC-013.
+
+Earlier first-level four-peer probes passed narrow movement checks intermittently,
+but subsequent authored-start validation failed. Neither result proves armed
+cooperative Story. The original Local reference equips weapon14, has six active
+characters at the opening, and moves backward away from the initial wreck.
+The four-peer route now checks ownership, real displacement and ammunition use.
+Original stage0 intro construction and host-driven reliable gameplay handoff are
+implemented in source and currently under changed four-peer runtime validation.
+Correct start separation, NPC/world authority, host restarts, next-level flow,
+combat/use and complete visual acceptance remain unfinished or unverified.
+
 ## Story branch merge-conflict resolution - 2026-10-22
 
 Resolved the nine conflicts when merging main `7545d4b` into
@@ -18287,3 +18387,78 @@ Advances the shared launcher and assembly versions for the original character
 icon migration from PR #289. Both platform packages are published only after
 the release workflow passes; the game update follows launcher publication.
 The game remains v0.3.1-alpha.2. No gameplay validation is claimed by this bump.
+
+Story co-op NPC creation probe (Windows x64, uncommitted): all four peers stayed
+connected in scene2 and all guests constructed host NPCs; no null-body spawn
+crash. Opening firearm acceptance failed after60 seconds, so gameplay remains
+incomplete. Host first spawn had roster0 and was absent from guest receive logs;
+later host roster changes were not transmitted. Added six-tick host NPC state
+republication with bounded logs; eight focused source/original-US tests pass.
+Changed runtime acceptance pending; no Mac runtime validation.
+
+Story NPC reconciliation validation (Windows x64, uncommitted build SHA-256
+90dde36bc305d88d22a8ccb72bc20a0e5e1297c314a2a3f2502b60dca8acd07e,
+original60 FPS): supported build and built-in checks passed; four-peer probe
+completed with all runners exit0. All peers had18 characters, then17 after the
+same NPC removal, with identical remaining NPC IDs82..94. Two timed world
+samples showed matching movement and at most0.0117 game units positional
+disagreement. This establishes sampled physical state/lifecycle replication,
+not full animation or combat. Overall opening acceptance still fails: only
+slot1 receives firearm14; extra humans select nonopening padsE1/E3 instead of
+the authored first two starts1F40/1F62. Distinct correct extra starts and the
+remaining Story requirements are incomplete. No native Mac validation.
+
+First-level four-player starts (Windows x64, uncommitted, original60 FPS):
+source/original-US fixtures8passed, fresh/repeated and historical Mac migration
+2passed, supported Build and built-in checks passed. Runtime probe build SHA-256
+fd3a506b13bd944cd8c998b717ddb5aa764d981a05b4da3f48bab3005b66b091
+placed extra slots2/3 at[-1.185,-2.42,-3.346] and[2.815,-2.34,-3.346] on every
+peer. Bounded backward movement changed their local positions by4.089/3.354
+units with health35 retained; final remote positions agreed. Reviewed the extra
+player's canyon view with another Cortez body and own unarmed hands. No crash;
+all four owned runners exit0. Host and original co-op slot1 eventually received
+firearm14, while extras2/3 remained unarmed, so overall opening acceptance still
+fails. Remaining implementation includes the extra-player loadout handoff and
+the other Story requirements; this is not complete gameplay acceptance. Mac
+transport/runtime validation remains queued under MAC-013.
+
+Four-player Story opening/loadout validation (uncommitted base45a96e38507dfb761b94c4e8b7fad41efbabef0e,
+Windows x64, MSVC x64 workflow, D3D11 RHI at1280x720, original60 FPS):
+source/original-US/FOV checks9passed1native-host-onlyskip; patch migration2passed;
+supported Windows Build and built-in checks passed. Probe50947 completed with
+statusload-probe-passed, all four runners exit0. Executable SHA-256
+ff670c67d470bb8b932e42a5d6c5dfe43dbeb6143d4e201168e785990435eaf8.
+The host's actual authored grant was observed once; only each extra player's
+owning peer applied its original ammo/grant/select calls. All four players
+received weapon14, 16loaded/112reserve rounds. Bounded owned movement measured
+3.587/3.210/3.130/6.366 world units; peer-position checks passed. Firing reduced
+each loaded clip from16to13 without changing112reserve. Health remained35.
+All four fresh load-after captures were reviewed: independent first-person
+views, own equipped weapons and other Cortez bodies where within the view.
+Inputs are synthetic isolated test-file input, not physical controller tests.
+This verifies the opening, human movement and firearm/ammo consumption. It does
+not establish damage/hits, complete NPC animation/combat/world synchronization,
+checkpoint/level restart or next-level handoff; the full goal remains active.
+Source/build receipts and snapshots remain in the ignored story-four evidence
+and disposable test roots. Native Mac transport/runtime acceptance is unverified.
+
+Story combat/pose follow-up (uncommitted Windows11 AMD64, D3D11 RHI, 60FPS):
+the first hit-trace probe65449 stopped before combat because a late slot1 spawn
+selected distant ordinary padE3. That contradicts reliable opening acceptance
+from a single earlier pass. The corrected adapter retains authored opening
+pads1F40/1F62 and private extra pads until the original read-only25EE60 checkpoint
+predicate becomes active. Repeated probe14973 on executable SHA-256
+4b0692fa780b2a0cbdf3f2161e86ab7c68dc6f8741c895e67f6e0316e19363d0
+passed the opening, all four movement checks and ammo-consumption firing checks.
+All four runners exited0. Its overall combat extension failed: selected enemy85
+was across a canyon wall; the reviewed combat-shot-0.png shows firing into that
+wall, and no human-to-NPC hit was delivered. This does not establish a hit-routing
+failure. The harness now filters targets by local visibility and40-unit range.
+Read-only entity-pool checks matched NPC IDs to the intended actors on all peers.
+New pose metadata proves guest NPC animations differ from the host (many remain
+clip37 while host clips are42/55/56/1547/2522). Pose/animation replication needs
+implementation; physical state agreement alone was insufficient. The diagnostic
+preserves original damage policy and calls the original once. Source checks
+12passed1native-onlyskip; final checkpoint fallback regression8passed. A small
+post-probe correction also preserves the existing missing-extra-pad fallback
+when a checkpoint is active; its runtime checkpoint acceptance remains pending.

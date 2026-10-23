@@ -1886,6 +1886,104 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- Shared Story human teams (uncommitted): `pc_story_load.inc` and the separate
+  human-teams patch plus existing frame adapter preserve original Story team1
+  when the ordinary network pump or remote-body initializer reapplies Arcade teams. The scoped original setter still runs; NPC/lobby/native
+  fallback is unchanged. Windows source checks and four-peer team acceptance
+  pass; native acceptance is pending. Reuse the shared policy after native transport and verify human
+  allegiance/AI targeting and original Arcade/Local behavior on Mac.
+
+- Story handoff authority (uncommitted): shared `pc_story_loadout.inc` and the
+  separate handoff-authority patch keep first-level NPC inventory callbacks on
+  the host. Remote players receive deduplicated pistol/rifle awards through the
+  shared reliable channel, including original co-op slot1. Windows source tests
+  pass; changed runtime ammo parity is pending. Native original fallback remains
+  until transport exists; reuse this policy and verify replicated poses cannot
+  duplicate inventory or affect another player's profile after native support.
+
+- Story NPC poses (uncommitted): `src/pc_character_pose.h` and the common pose
+  renderer in `src/pc_display_menu.c` serve both bot and Story numeric snapshots.
+  SNP2 carries animation channels/bounds; existing shared guest hooks evaluate
+  replicas without a second simulation and retain local handles. Windows source
+  tests pass; live pose/hit validation is pending. Native original fallback is
+  retained until this entry's transport exists; reuse the shared implementation
+  and verify NPC animation, collision bounds and hits on Mac after that adapter.
+
+- Extra Story loadouts (uncommitted): `src/pc_story_loadout.inc` and the
+  `*-story-extra-loadout.patch` observe the authored first-level weapon handoff,
+  delivering its original inventory API calls to locally owned extra players
+  through the shared reliable Story protocol. Windows source checks and the
+  four-peer load/movement/ammo-consumption probe pass. Native original fallback is retained
+  until this entry's transport is implemented; reuse the policy and test four
+  peer ownership, replay/refill prevention and usable firearms on Mac afterward.
+
+- Story extra starts (uncommitted): `src/pc_story_load.inc` and the separate
+  `*-story-extra-starts.patch` add first-level slots2/3 through the common
+  pad lookup/tag/index adapters and original spawn wire. The Windows build,
+  source fixtures and historical Mac patch migration pass. The Windows four-peer
+  probe confirms distinct starts and bounded movement; extra loadouts remain
+  incomplete. Native adapters retain original behavior until this entry's
+  transport exists. Reuse the shared start policy after transport support,
+  then verify distinct collision-free starts and checkpoint preservation on Mac.
+
+- Story NPC creation (uncommitted): shared source and a separate patch extend
+  the original reliable NPC spawn channel with pointer-free constructor and
+  initial actor state. Guests validate host/generation and prepare replicas
+  through original game constructors; loading arrivals queue. Native fallback
+  remains original until this transport entry exists. Adapter tests run on
+  Windows; live NPC replication and Mac acceptance remain unverified.
+
+- Story NPC activity (uncommitted): shared source accepts existing non-player
+  actors only at the original actor-update activity caller, preserving the later
+  host-authority check. Native fallback remains original; reuse this shared
+  policy after transport support, then validate first-level scripts/NPCs and
+  peer interactions on Mac. Windows runtime acceptance is pending.
+
+- Authored Story eligibility (uncommitted): the shared6B100 adapter selects
+  authored co-op records for three/four humans and removes their ordinary network
+  exclusion while preserving difficulty filters. Native fallback stays inert;
+  reuse this policy after native transport exists. Original-US/source tests run
+  on Windows; native four-peer NPC/script/start acceptance remains pending.
+
+- Story continuation (uncommitted): guest intro handoff accepts the original
+  changed-generation pending-copy boundary at phase15; pending Story gameplay
+  skips Arcade staging-pad placement during ready. Both are shared adapter logic
+  in `src/pc_story_load.inc`, with unchanged inert native fallback. Windows source
+  checks pass; native runtime acceptance still requires this entry's transport
+  adapter and four-peer intro/authored-start tests on Mac.
+
+- **Story cinematic transport readiness (uncommitted, 2026-10-22):**
+  The shared load adapter and cinematic-ready patch invoke the stock network
+  ready exchange without its gameplay body loop, restoring cinematic flags and
+  character count after the call. Original-US and adapter fixtures verify that
+  boundary. Native Online remains queued under this entry; reuse the same policy
+  after transport support. Four-peer movie stability, duplicate-free views and
+  reliable gameplay handoff remain runtime acceptance requirements on each host.
+
+- **Story intro handshake (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_load.inc` and the separate intro-transition patch retain original
+  stage0 movie construction and host-only advance through reliable start packets.
+  Native transport/session-mode support is still absent under MAC-013; reuse
+  these guest policies after that adapter exists. Source tests cover authority/
+  stage metadata; fresh Windows and native/mixed-host movie, full-view and
+  coordinated next-load acceptance remain pending.
+
+- **Story startup/character roster (uncommitted, 2026-10-22):**
+  `src/pc_story_load.inc` selects the original gameplay factory stage for direct
+  loads and preserves Story NPC membership at Arcade's network-only prune
+  callsite through a separate reproducible patch. It retains original death/
+  script removals. Native Online remains blocked on this entry's transport/
+  session adapter; inert fallback uses the original code. Windows runtime and
+  native/mixed-host NPC, startup and world-authority acceptance remain pending.
+
+- **Revised Story header (uncommitted, 2026-10-22):** Shared
+  `src/pc_story_lobby.inc` adds localized year, selected difficulty and actual
+  population to the existing Story header callback. Native Online still needs
+  the MAC-013 XNet/session-mode adapter before this callback is reachable; no
+  separate Mac menu model is required. Asset-free checks cover scoped font and
+  stack restoration. Native and mixed-host visual/runtime acceptance is pending.
+
+
 - **Story load experiment (uncommitted, 2026-10-22):** Shared
   `src/pc_story_load.inc` and existing guest config wrappers add an opt-in Windows
   Story pending-load experiment, with native fallback inert. Both simulation

@@ -46,6 +46,14 @@ static int story_prepare_ok;
 int pc_story_network_prepare(uint32_t address)
 { (void)address;++story_prepares;return story_prepare_ok; }
 void pc_story_network_activate(void) {++story_activates;}
+int pc_story_network_hit_trace(void (*original)(void)){(void)original;return 0;}
+static uint32_t story_replica;
+int pc_story_network_replica(uint32_t entity){return entity && entity==story_replica;}
+int pc_story_network_replica_bounds(uint32_t entity)
+{if(entity!=story_replica || !entity)return 0;memory[(entity+0x1a8)/4]=99;return 1;}
+static int story_actor_active;
+int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity)
+{return story_actor_active && caller==0xd8e5d && index==4 && entity==0x7000;}
 static unsigned story_lobby_publishes,story_player_limit;
 void pc_story_network_lobby_config(void) {++story_lobby_publishes;}
 unsigned pc_story_network_player_limit(void) {return story_player_limit;}
@@ -341,6 +349,12 @@ int main(void)
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);
         enabled=1;memory[0x7356d8/4]=0;g_esp=16;
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);
+        story_actor_active=1;g_ebx=0x7000;live[2]=0;g_esp=16;memory[4]=0xd8e5d;memory[5]=4;
+        int before=originals;pc_network_bots_guest_active(original);
+        CHECK(originals==before && g_eax==1 && g_esp==20);
+        g_esp=16;memory[4]=0x15c5a3;pc_network_bots_guest_active(original);
+        CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
+        story_actor_active=0;
     }
 #else
     g_esp=16;pc_network_bots_guest_active(original);
@@ -426,6 +440,10 @@ int main(void)
         memory[5]=0x7000;memory[0x76b140/4]=1;g_esp=16;
         pc_network_bots_guest_pose(original_pose);
         CHECK(pose_advance==1 && bot_weapon_poses==1);memory[0x76b140/4]=2;
+        story_replica=0x7300;memory[5]=story_replica;memory[6]=1;g_esp=16;
+        pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2);
+        story_replica=0;bot_weapon_poses=1;
         CHECK(memory[(0x7000+0x258)/4]==7);
         CHECK(!memcmp((uint8_t *)memory+0x7070,&last_bot.heading,4));
         CHECK(!memcmp(actor+0xbb4,last_bot.muzzle,12));

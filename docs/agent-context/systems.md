@@ -1,5 +1,155 @@
 # Subsystem entry points
 
+Original Story25A420 puts human actors on team1, but the ordinary33ACB0 network
+pump overwrites them from per-controller Arcade team data. The shared Story
+team adapter normalizes that D7550 call for validated human pool slots.
+D7570 also writes slot+1 directly while initializing remote bodies. Initial
+construction precedes the eligible setter scope, so initialization wrappers
+alone did not correct remote teams. The existing Story frame adapter validates
+real body/context/pool backlinks and calls the original setter for a human
+whose team differs from1, before NPC updates. This keeps derived team color
+consistent and never changes controller ownership or NPC assignments.
+NPC factions, lobby colors, other team callers and other modes remain original.
+Original-US and source contracts bind the intended caller and shared-team value;
+The latest Windows four-peer probe confirms all four human teams are1 on every peer.
+
+NPC pose replication uses the shared numeric `PcCharacterPose` model in
+`src/pc_character_pose.h`. Bot snapshots retain their existing binary layout;
+the shared collector/validator and `pc_character_pose_present` handle primary
+clips, crossfades, overlays and blend channels for both bot and Story replicas.
+The internal Story SNP2 snapshot is372 bytes, including optional pose and hit
+bounds. Original353990 has a256-byte outgoing stack buffer, so it is transported
+as164-byte physical and240-byte pose messages, with match/slot/sequence and a
+shared checksum. Guests assemble complete matching parts before applying pose
+state; absence needs only the physical message. Missing/reordered or mixed
+parts cannot cause partial state application.
+Guests retain local model/asset/bone handles, strip already-applied root-motion
+flags, evaluate valid replicas without advancing a second animation simulation,
+and restore authoritative bounds after local evaluation. The replica guard
+checks match, slot, entity backlink and spawn generation for all32 actor slots.
+Only the host runs Story NPC scripts. Expanded sender scratch spans are checked
+and the wire magic/length distinguishes the new snapshot from SNP1. Source
+checks pass; changed four-peer pose/combat runtime acceptance is pending.
+
+Opt-in Story hit tracing composes with the existingBB6C0 damage wrapper. It
+records only valid human-source/NPC-victim pairs, original replay state, network
+ID, damage and health before/after, up to128 observations. The original damage
+body executes once with its original result/stack behavior; tracing changes no
+health, ownership or hit routing. Disabled/non-Story paths remain untouched.
+
+The first-level handoffs award pistol25/eight magazines and rifle32/six
+magazines through original1BA2B0/1BFCA0.
+`pc_story_loadout.inc` observes that actual host event and sends a versioned
+pointer-free loadout command to remote humans, through the existing reliable
+Story channel. Each guest waits for a ready, locally owned context and invokes
+the original ammo/inventory/select APIs on its own actor. Host identity,
+match generation, recipient mask and bounded authored values are validated.
+Replicated NPC animation must not execute the guest218910/21B540 inventory
+callbacks again. Those callbacks are host-only in this scope. Separate pending
+commands and per-weapon replay tracking preserve both awards, including for the
+original co-op guest and two-player sessions, without refilling an owned weapon.
+Periodic resend recovers readiness races; per-slot generation/serial tracking
+prevents refill on replay. Existing inventory and weapon selection are retained
+when the grant already exists. Local/Arcade/native fallbacks remain original.
+The changed Windows four-peer probe passes: each player receives weapon14 with
+16 loaded/112 reserve rounds, moves independently, and consumes three rounds
+when firing. Peer actor positions remain consistent; combat hits, NPC/world
+interaction and restart/next-level behavior require separate acceptance.
+
+First-level starts: stockCF060 can select later scene pads during remote setup,
+including for original co-op slot1. Before the first checkpoint, Online Story
+uses authored first-player/second-player pads1f40/1f62 and extra signed16
+indices7f02/7f03. The pad/tag/inverse-index
+adapters resolve private32-byte copies of the authored1f40 primary start, offset
+by minus/plus2 world units onX. Original coordinates, room and heading remain
+otherwise intact, and the original player placement/collision and spawn packet
+run normally. The original read-only25EE60(0) checkpoint predicate ends the opening override;
+a first active body alone does not establish that network setup has finished.
+Checkpoint selection stays original. Cached initial packets resolve locally; Local Story and other scenes are unchanged. The changed Windows four-peer probe confirmed matching starts four units apart,
+health35 and subsequent three/four-unit bounded movement by both extra humans.
+The later loadout adapter supplies the authored grant to the added humans, as
+verified by the four-peer opening/movement/ammo probe described above.
+
+Story NPC creation is separate from controller membership. The stock spawn RPC
+only names a slot and assumes its body already exists; the first restored Story
+spawn run reached NPC scripts but crashed guests on a null slot. Shared
+`pc_story_npc.inc` records scalar constructor identity and replaces that NPC-only
+pre-spawn notification with a host-authored post-spawn creation/state message
+on the original reliable channel. Guests construct through original DAC30,
+retain local pointers, apply identity/team/initial physical state and roster
+membership, and leave Story script simulation to the host. Messages carry no
+guest pointers; host identity, generation, sequence, slot, loaded character kind
+and finite scalar values are checked. Early arrivals queue until scene readiness.
+The first changed four-peer run constructed NPCs on all guests without the old
+null-body crash, but the host first spawn preceded guest readiness and later
+script roster changes were missing. The frame adapter now republishes recorded
+NPC state every six simulation ticks through the reliable channel, including
+absence and current roster membership. Same-tick calls do not retransmit; only
+the host publishes. This supplies creation recovery and ongoing physical state;
+The changed Windows four-peer probe retained the same NPC identities on every
+peer, recovered the early body and reflected its later removal; sampled NPC
+positions differed by at most0.012 game units. Full NPC animation/combat/world acceptance remains unverified. Human starts
+and four-player firearm handoff now pass their separate changed runtime probe.
+
+Story NPC activity: Local spawn stacks establish D8E30 ->15EAE0 ->27F8E0 ->
+15F8C0 at the opening. D8E30 first calls3568C0 fromD8E5D; its ordinary network
+path rejects every actor without a controller record. `pc_story_network_actor_active`
+accepts only that caller's valid non-player Story actor, with matching pool index,
+entity backlink and no player context. It leaves controller enumeration, humans,
+other modes and the later original358560 host-ownership gate unchanged. The changed runtime reaches host NPC scripts and spawns; its four-peer
+physical-state acceptance is described above.
+The caller supplies its actual entity from original D8E30's EBX register. This
+also accepts a dormant script actor whose pooled active-body pointer is0, while
+rejecting a prototype that refers to a different active body. An inactive script
+must be allowed to run before it can create its first body.
+
+NPC lifecycle tracing can also observe the original offline Story path when
+both `TSFP_STORY_TRACE` and `TSFP_STORY_TRACE_LOCAL` are explicitly set. The Local
+path additionally requires network disabled, active Story mode4 and rule10.
+Scripted spawn observations include bounded numeric guest return candidates
+from128 stack bytes, to locate its original activation path. No Local behavior
+changes; ordinary launches do not enable this diagnostic.
+
+NPC initialization investigation: the paired scene setup matches the Local
+reference (budget index8/count5, model record count26). `pc_story_network_npc_trace`
+separately observes model-cache creation, character-list setup, scripted spawn
+and its stock network request/replay gate, with independent eight-call budgets.
+It retains original behavior and return/stack effects. This distinguishes missing
+resources, allocation failure and rejected spawn events; no NPC fix is claimed.
+The changed lifecycle run observes all five D73B0 cache calls returning1 and the
+bootstrap returning, while the host never enters15F8C0/35CF80 through the opening
+timeout. This points investigation upstream of scripted spawn requests. The
+scene's placed-NPC count at setup+30 is0 Online; its Local value is not yet
+measured, so that value alone does not establish a missing scene record.
+
+The opt-in authored-record startup trace emits at most24 observations per
+process for records with network/count masks, recording caller, active scene/
+flags/count, normalization and original predicate result. It observes both
+adapted and rejected guard paths, with no second predicate execution. The first
+authored-record runtime probe still had no NPC/firearm handoff after60s; the
+remaining initialization gate is unresolved.
+
+Story authored records: original6B100 rejects bit31 in network matches, and its
+00400000 co-op mask requires exactly two contexts. `pc_story_network_asset`
+adapts these inputs for connected Story gameplay with up to four players, without
+changing global player counts or difficulty checks. The argument is restored
+after the original predicate; masks for solo-only records remain restrictive.
+The preceding four-peer handoff fix kept all contexts alive/stage1 for60s, but
+only four human characters existed and every player remained unarmed. Source
+tests verify the new filter; NPC/opening acceptance still needs a changed build.
+
+Story movie handoff: original class3B receiver352BC0 invokes GO2D38C0 on a
+changed generation while still in phase15, before switching to10. The guest
+pending-copy call2D398D is accepted only during an active Story intro, so its
+selected mission/difficulty/stage and pending spawn token advance with the host.
+The first natural four-peer intro reached gameplay on all peers, but guest stage
+stayed0 and opening failed before this correction; combat remains unverified.
+The ready adapter also skips original357540's Arcade staging-pad/body loop for
+a pending Story gameplay start. That loop explicitly replaces each cached pad
+with original6C1E0's team selection. Original Story scripts and the pending
+context adapter retain responsibility for authored starts; later ready calls,
+ordinary multiplayer and native fallback retain original behavior.
+
 Initialization/spawn calls D2FD0/D3C50/D2CE0/D50E0 made during script suspension
 now share the bounded script-state trace. This separately observes the original
 context reset path after phase15, without changing ownership or state writes.
@@ -72,9 +222,10 @@ the occupied extent. Guests require the received count within four. Bounded
 opt-in trace reports actual wrapper address/counts. Other connection modes retain their original behavior.
 The first partial-config version reached both pending-load hooks but crashed in
 `sub_0008DC70`; exact matching dumps are recorded in the investigation receipt.
-The factory variant calls the original no-argument Story config
-factory `sub_002D2C70` once on the host at lobby phase11, with scoped frontend
-mode4/mission/difficulty. Before the factory it supplies the original Local Story
+The current direct-load variant calls the original Story stage builder
+`sub_00065940(config)` once on the host at lobby phase11 with stage1 and scoped
+frontend mode4/mission/difficulty. The earlier `sub_002D2C70` route reset stage0
+internally and built an intro config before the adapter rewrote scene/flags. Before the factory it supplies the original Local Story
 rule10/variant2 selection; mode4's factory reads these fields instead of resetting
 them. Received experimental configs must match this Story rule pair. It restores original guest registers/frontend fields
 and the network header before normalizing counts and selecting direct gameplay.
@@ -95,9 +246,10 @@ then preserves the original return/side effects. Native/disabled paths remain
 direct pass-through. This identifies the initiating predicate without masking it.
 The opt-in startup adapter `pc_story_network_frame` runs before evaluator681C0.
 Original rule10 bypasses the network state6 spawn loop, leaving both contexts
-inactive after network setup. Once per pending load, if all admitted contexts
-remain state16 at initial state7 with clear result flags, the adapter calls the
-original D50E0(context,1) sequence observed at68F4C for each context. It then runs
+inactive after network setup. Once per pending load, at initial state7 with clear
+result flags, the adapter calls original D50E0(context,1) for each context still
+in initial state4 or16. State4 is observed after skipping Arcade ready placement;
+accepting only16 skipped the original spawn entirely. The adapter then runs
 the original evaluator; it never forces health, result or pause flags. Actual
 runtime activation, ownership and full-view behavior still require validation.
 These host hooks require the Windows Online adapter; shared source provides
@@ -345,12 +497,14 @@ state after drawing. The fitting correction awaits its changed visual check.
 The fitted Scotland briefing was visually reviewed complete on both peers while
 preserving roster/controls. Header readability uses the original briefing-menu
 opacity branch during the synchronous heading draw, restoring descriptor after.
-Year is optional per clarified original notes; it is not an acceptance blocker.
+Revised notes now require the year (superseding the earlier optional-year
+clarification); the later metadata renderer supplies it.
 The heading opacity correction awaits runtime review alongside four-player work.
 
 Four real instances now verified admission and matching host settings in one
 Story lobby. Name opacity correction and complete fitted Scotland/TimeToSplit
-briefings reviewed with roster intact. Year optional per actual notes. This does
+briefings reviewed with roster intact. The year requirement was subsequently
+restored in the revised notes. This does
 not validate four-player level load or world/interaction/next-level authority.
 
 ## Mounted and CCTV gun mouse aim (#182)
@@ -470,3 +624,51 @@ ordinary missing texture files never cause removal of an installed pack.
 Merge with main (2026-10-22): the common button/lookup dispatcher retains Story
 chooser and lobby interception alongside Audio, subtitle-row and settings
 callbacks. Both sets of callbacks remain in the shared translation unit.
+
+Revised Story notes require year, selected difficulty and population in the
+lobby header. `story_lobby_status` uses the mission record's localized year ID
+and actual occupied controller rows, with scoped small-font state below the
+original title/thumbnail. It never substitutes profile completion for selected
+difficulty. Trophy icons and changed runtime layout still need validation.
+
+Story preserves authored active-character membership when the Arcade network
+tick reconciles its player-only actor pool. Original3559A0 otherwise removes
+every nonplayer from list74C37C/7A3580 via15BCC0 at355E9F. Death/script removal
+callers remain unchanged. This preserves NPC membership, not NPC replication or
+verified world authority; its live first-level effect still needs measurement.
+
+The direct-load Story adapter now selects original stage1 and calls65940
+without the frontend factory's unconditional stage0 reset, then records stage1
+on each peer. Stage0 constructs an intro configuration;
+changing its scene/flags afterward was insufficient gameplay initialization.
+This corrects factory selection, while synchronized intro playback remains open.
+
+Fresh four-instance Windows captures show Time to Split with localized 2401,
+Normal and 4/4 Players, while keeping title/thumbnail/roster/briefing and host
+footer. This validates header placement; trophy rendering remains unfinished.
+
+Initial pending Story context spawns discard cached Arcade map pads before
+calling original D50E0. Original CF060 can then choose authored Story starts.
+Only still-inactive contexts are affected once per pending load; active remote
+contexts and later deaths retain their existing handling. Runtime placement
+requires fresh first-level captures and cross-peer positions.
+
+Story character membership is now preserved during pending load as well as
+active Story scenes. Restricting the prune guard to network phase15 allowed
+newly initialized NPCs to be removed during loading. A separate eight-event
+trace records phase/scene/pending/count; it does not alter character state.
+
+Story GO now asks original65940 for stage0 and retains its cinematic scene,
+movie ID and flags, including the original no-intro fallthrough. Received intro
+selection is derived from original mission/movie metadata, while retaining the
+host gameplay difficulty. Only host65C70 advances after the intro; its pending
+config uses the original reliable network start handshake for all peers. The
+manual context-spawn adapter runs only for gameplay stage1. These source changes
+still require a changed four-peer runtime and duplicate-character visual check.
+
+The first live intro reached original scene24 on all peers but remained
+network phase10; the stock ready routine rejects cinematics, eventually causing
+a peer to leave. Host/guest captures show the authored cinematic, not accepted
+co-op readiness. The new cinematic-ready adapter runs only original transport
+startup while skipping its gameplay actor loop, restoring all cinematic state
+afterward. Long intro stability and the changed handoff still need validation.
