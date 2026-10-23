@@ -6487,3 +6487,11 @@ not a proven cause, and other slow frames have different timing. Source hashes,
 CI scope and remaining gaps are in STATUS; raw evidence is under
 `vehicle-integrated-crowd-144`/`crowd-playable-compare-144` and
 `logs/integrated-crowd-comparison.json`. No runtime change or rebuild.
+
+The subsequent read-only CPU/health diagnostic reproduces a 25.856-ms gap
+after health restoration, with a 0.070-ms Present call. A follow-up observing
+emulated GPU handshake words has a worst selected gap of 14.332 ms and does
+not reproduce the larger event. These instrumented runs preserve isolated
+profiles and verify the ten-bot roster, but neither identifies a causal routine
+or proves an FPS improvement. Keep the hitch open; STATUS records the CPU
+counter limitations, raw evidence and need for a timestamped stack/wait trace.

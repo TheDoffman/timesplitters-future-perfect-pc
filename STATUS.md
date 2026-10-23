@@ -1,3 +1,41 @@
+## 2026-10-22 — Respawn hitch diagnostic, cause still open
+
+Two bounded Windows diagnostics use the unchanged integrated `20dc25d` binary
+and the same native144, ten-bot Venice, Classic 3440x1440/FOV73 setup below.
+Read-only observations bracket initial guest-thread cycles/CPU time, guest
+frame, health and roster with QPC. No stack suspension is used. These polling
+runs are diagnostic evidence, not clean pacing benchmarks or a performance fix.
+
+`vehicle-integrated-respawn-thread` records 34,914 observations, including
+16,433 active-route observations confirming ten bots and four health
+restorations. The largest interval in spawn+5..55 seconds is 25.856 ms, ending
+83.418 ms after E key-down and about 65 ms after health has already returned.
+The Present call takes 0.070 ms. A surrounding 26.323-ms CPU observation bracket
+contains 35,207,451 cycles and 15.625 ms of coarse CPU time; the largest query
+takes 0.0402 ms. Reduced cycle growth in the middle does not establish a wait
+reason, precise CPU utilization or the responsible routine. Other gaps are
+unrelated to respawn, so a single cause remains unproven.
+
+`vehicle-integrated-respawn-mmio` adds read-only samples of the emulated PFB
+flush bit and DMA PUT/GET words. It records 34,871 observations, 16,423 in the
+active route, ten bots and five health restorations. The larger hitch does not
+recur: the worst selected interval is 14.332 ms, with no pending handshake in
+its six surrounding samples. A 10.646-ms interval shortly after respawn contains
+one set flush-bit sample followed by cleared samples. This does not establish
+handshake latency or exclude short waits missed by the nominal 4-ms sampler;
+it supplies no basis for changing acknowledgement policy. Native-frame GPU
+timing is not supplied by `pc_gpu_timing.inc`, whose begin hook is only in the
+retired interpolated redraw path. A timestamped main-thread stack/wait trace
+around an actually reproduced large gap is the next discriminating check.
+
+Both sessions exit cleanly, preserve signed isolated profiles and the canonical
+fixture, and recycle disposable disks. Normal playable SHA `0072d5b4...efc7ab`
+is restored; candidate SHA remains `f6f5cd1a...a4f610`. No runtime change or
+rebuild. Evidence: the named runs, `logs/respawn-thread-analysis.json` and
+`logs/respawn-mmio-analysis.json`. All selected runtime, upgrades, transitions,
+launcher and issue CI checks pass at `128fa06`; native Mac gameplay/performance
+and the broader high-refresh goal remain unverified.
+
 ## 2026-10-22 — Integrated physics crowded-match pacing
 
 Capture-free Windows runs compare the integrated physics/camera build `20dc25d`

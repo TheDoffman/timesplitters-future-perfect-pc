@@ -3655,6 +3655,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Respawn diagnostic (2026-10-22, PR #307):** Read-only Windows CPU/health
+  observations reproduce a 25.856-ms gap after health restoration; a follow-up
+  sampling emulated GPU handshake words does not reproduce the large gap or
+  identify its cause. This is instrumented diagnostic evidence, not a performance
+  improvement. No runtime/adapter changes. Native Mac gameplay and pacing remain
+  unverified; see STATUS for measurements, exclusions and next check.
+
 - **Integrated crowd pacing (2026-10-22, PR #307):** Windows `20dc25d`
   averages 143.803 guest presents/sec against playable `4adb6b0` 143.901 in the
   same configured ten-bot Venice route. Both contain isolated slow frames;

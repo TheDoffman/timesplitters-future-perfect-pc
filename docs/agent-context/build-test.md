@@ -34,6 +34,14 @@ bot outcomes differ, so do not attribute differences to one fix or a speedup.
 Input key-down timestamps and prior health can locate a respawn correlation;
 they do not identify the underlying source of a hitch. STATUS records results.
 
+For a respawn diagnostic, bracket read-only thread-cycle/CPU-time observations
+with QPC and the guest frame, and record actor health plus the configured roster.
+Health restoration can precede the slow interval: do not equate an E key-down
+with the expensive routine. Coarse thread CPU-time counters and asynchronous
+samples cannot identify a wait reason. These instrumented runs are separate
+from clean pacing acceptance. The existing `pc_gpu_timing.inc` starts only from
+`xbox_D3D8InterpBegin`, so it does not measure fresh native guest-frame GPU time.
+
 Vehicle exit probes must verify the delivered logical action before treating a
 failed departure as a timing defect. With the default Windows bindings and
 Test Lab profile, Y delivers exit bit 0x40; F delivers0x20 and R delivers0x10.
