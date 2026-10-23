@@ -542,3 +542,7 @@ The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
 patched binding helper into its temporary include directory. The CMake loader
 fixture runs without that extra helper; it requires no pytest-generated files.
 Both routes default to background loading when no diagnostic override is set.
+
+Historical controls-only and pre-toggle snapshots omit streaming along with its
+texture prerequisites. Full-stack migration must install both the Present pump
+and binding-revision hook, which the controls-upgrade test explicitly checks.

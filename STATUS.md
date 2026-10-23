@@ -14,7 +14,21 @@ blocked-reader cancellation, owner reuse, cached modes, mipmaps, failures and
 GL binding preservation pass local tests: 55 passed, two host-only skips.
 Windows build and built-in checks pass at 25e0059 (foreground virtual-pad routing
 skipped). The initial standalone test include failure was repaired. Comparative
-pacing and actual Mac GPU/scenes remain pending.
+pacing is preliminary: one same-binary Hotel ten-bot pair has background on/off
+143.378/137.940 interval FPS, minimum five-second averages 139.0/108.8 FPS,
+p99 intervals 8.409/10.543 ms, maxima 16.184/22.613 ms, and 28/416 intervals
+above 9 ms. Strict 50-second post-spawn windows have continuous guest Presents;
+Classic 3440x1440/FOV73, actual client1920x1060, no foreground observations.
+Dead-state samples differ 31.0%/30.2%; observed clocks are 60.012/59.990 ticks/s.
+Both runs preserve profiles/fixture, recycle disposable disks and restore the
+normal executable/symbol pair. These are diagnostic API-present intervals, not
+scanout or clean foreground evidence; reverse-order repeats are in progress.
+
+Mac runtime CI at c4baddf passes: 446 tests, 76 skips, 18 subtests plus asset-free
+common-RHI GPU contracts. Real Mac Enhanced arrivals/scenes remain unverified.
+CI's historical controls-only fixture omitted the streaming prerequisite exclusion;
+the corrected test now verifies both hooks after migration and passes locally.
+Ten other fresh/repeated/historical transition cases pass (505.46 seconds).
 The 144-FPS goal remains incomplete; see MAC-011 and MAC-060.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation

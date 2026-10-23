@@ -139,6 +139,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
+        if patch.name == 'texture-upload-streaming.patch':
+            continue  # The historical state has neither texture-pack nor toggle.
         if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
             continue  # Depends on display/viewport hooks installed by the complete migration.
         if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):
@@ -197,6 +199,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'pc_weapon_keys_sample' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()
+    assert b'tsfp_texture_frame_complete();' in device
+    assert b'tsfp_texture_binding_revision();' in device
     assert b'pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);' in device
     assert b'pc_display_camera' in manual.read_bytes()
     assert b'pc_prompt_guest' in manual.read_bytes()
