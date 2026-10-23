@@ -69,7 +69,8 @@ def test_actual_pfb_ack(tmp_path,mutation,setting):
 
 
 @pytest.mark.parametrize('native', [False, True])
-def test_worker_wait_adapters(tmp_path, native):
+@pytest.mark.parametrize('idle_us', [500, 60000])
+def test_worker_wait_adapters(tmp_path, native, idle_us):
     runtime=(ROOT/'external/ts3FPrecomp/src/kernel/xbox_memory_layout.c').read_text()
     body=re.search(r'static void nv2a_ack_wait\(void\)\n\{.*?\n\}',runtime,re.S)
     assert body
@@ -82,6 +83,7 @@ def test_worker_wait_adapters(tmp_path, native):
           if os.name=='nt' else [compiler,'-std=c11','-Wall','-Wextra',str(source),'-o',str(output)])
     subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,check=True,timeout=60)
     environment={k:v for k,v in os.environ.items() if k!='RECOMP_NV2A_ACK_IDLE_US'}
+    environment['RECOMP_NV2A_ACK_IDLE_US']=str(idle_us)
     run=subprocess.run([str(output)],env=environment,capture_output=True,text=True,timeout=10)
     assert run.returncode==0,run.stdout+run.stderr
 

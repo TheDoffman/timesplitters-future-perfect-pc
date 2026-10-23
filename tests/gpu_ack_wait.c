@@ -14,6 +14,7 @@ static LONG g_ack_activity;
 static long long counter=100000;
 static unsigned timer_sets, multi_waits, single_waits, native_waits, sleeps;
 static int arm_ok=1;
+static int configured_idle=500;
 static void Sleep(unsigned ms) { CHECK(ms<=1); ++sleeps; }
 static HANDLE CreateWaitableTimerExW(void *a,void *b,unsigned c,unsigned d)
 { (void)a;(void)b;(void)c;(void)d;return (HANDLE)(uintptr_t)2; }
@@ -22,7 +23,7 @@ static HANDLE CreateWaitableTimerW(void *a,int b,void *c)
 static int QueryPerformanceFrequency(LARGE_INTEGER *f) {f->QuadPart=1000000;return 1;}
 static int QueryPerformanceCounter(LARGE_INTEGER *f) {f->QuadPart=counter;return 1;}
 static int SetWaitableTimer(HANDLE h,LARGE_INTEGER *due,int p,void *a,void *b,int c)
-{ (void)p;(void)a;(void)b;(void)c;CHECK(h==(HANDLE)(uintptr_t)2 && due->QuadPart==-5000);++timer_sets;return arm_ok; }
+{ (void)p;(void)a;(void)b;(void)c;CHECK(h==(HANDLE)(uintptr_t)2 && due->QuadPart==-(long long)configured_idle*10);++timer_sets;return arm_ok; }
 static unsigned WaitForSingleObject(HANDLE h,unsigned ms)
 { CHECK(h==(HANDLE)(uintptr_t)2 && ms==50);++single_waits;return 0; }
 static unsigned WaitForMultipleObjects(unsigned n,const HANDLE *h,int all,unsigned ms)
@@ -30,7 +31,7 @@ static unsigned WaitForMultipleObjects(unsigned n,const HANDLE *h,int all,unsign
 #ifdef TEST_NATIVE_WAIT
 #undef _WIN32
 static unsigned w32_WaitForEventMicroseconds(HANDLE h,uint32_t us)
-{CHECK(h==g_nv2a_ack_wake && us==500);++native_waits;return 0;}
+{CHECK(h==g_nv2a_ack_wake && us==(uint32_t)(configured_idle>50000?50000:configured_idle));++native_waits;return 0;}
 #else
 #ifndef _WIN32
 #define _WIN32
@@ -39,6 +40,8 @@ static unsigned w32_WaitForEventMicroseconds(HANDLE h,uint32_t us)
 /* ACTUAL_WAIT_FUNCTION */
 int main(void)
 {
+    const char *setting=getenv("RECOMP_NV2A_ACK_IDLE_US");
+    if(setting)configured_idle=atoi(setting);
     nv2a_ack_wait();
 #ifdef TEST_NATIVE_WAIT
     CHECK(native_waits==1 && timer_sets==0 && multi_waits==0);

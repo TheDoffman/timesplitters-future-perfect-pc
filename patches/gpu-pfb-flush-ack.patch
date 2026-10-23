@@ -47,13 +47,14 @@
  static volatile LONG g_nv2a_ack_stop = 0;
  
  /*
-@@ -1324,9 +1326,21 @@
+@@ -1324,9 +1326,22 @@
          Sleep(0);   /* busy: a waiter is spinning on another core */
          return;
      }
 +#ifndef _WIN32
 +    if (g_nv2a_ack_wake) {
-+        w32_WaitForEventMicroseconds(g_nv2a_ack_wake, (uint32_t)idle_us);
++        w32_WaitForEventMicroseconds(g_nv2a_ack_wake,
++            (uint32_t)(idle_us > 50000 ? 50000 : idle_us));
 +        return;
 +    }
 +#endif
@@ -71,7 +72,7 @@
      else
          Sleep(1);
  }
-@@ -1497,12 +1511,42 @@
+@@ -1497,12 +1512,42 @@
  static void xbox_Nv2aAckStart(void)
  {
      g_nv2a_ack_stop = 0;
@@ -115,7 +116,7 @@
  }
  
  /* Separate allocation for Xbox kernel address space (0x80010000+).
-@@ -3028,9 +3072,17 @@
+@@ -3028,9 +3073,17 @@
      }
      if (g_nv2a_ack_thread) {
          InterlockedExchange(&g_nv2a_ack_stop, 1);
@@ -135,15 +136,15 @@
          VirtualFree(g_nv2a_memory, 0, MEM_RELEASE);
 --- a/src/platform/win32_compat.h
 +++ b/src/platform/win32_compat.h
-@@ -130,6 +130,8 @@
+@@ -127,6 +127,8 @@
+ const char *w32_handle_path(HANDLE h);
+ 
+ /* ---- Events ----------------------------------------------------------- */
++/* Interruptible sub-millisecond event wait; no multi-object polling. */
++DWORD  w32_WaitForEventMicroseconds(HANDLE h, uint32_t microseconds);
  HANDLE CreateEventA(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCSTR name);
  HANDLE CreateEventW(LPSECURITY_ATTRIBUTES sa, BOOL manualReset, BOOL initialState, LPCWSTR name);
  BOOL   SetEvent(HANDLE h);
-+/* Interruptible sub-millisecond event wait; no multi-object polling. */
-+DWORD  w32_WaitForEventMicroseconds(HANDLE h, uint32_t microseconds);
- 
- /* Waitable timers, as far as the kernel bridge uses them: created for
-  * NtCreateTimer and cancelled for NtCancelTimer, never armed. There is
 --- a/src/platform/win32_compat.c
 +++ b/src/platform/win32_compat.c
 @@ -459,6 +459,47 @@

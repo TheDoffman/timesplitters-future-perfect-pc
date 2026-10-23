@@ -31,7 +31,8 @@ untouched guest words and lifecycle guards. Omitted/reordered notifications and
 a direct-clear mutation must fail. Lifter cases include absolute/indexed/immediate
 stores and excluded loads, narrow/segmented stores and register moves. The actual
 worker wait is exercised with both host adapters, missing-event/timer-failure
-fallback and the original one-millisecond busy window. Native `native_platform.c`
+fallback, the 50-ms diagnostic timeout ceiling and the original one-millisecond
+busy window. Native `native_platform.c`
 also tests real event timeout, prequeued/consumed signals, delayed thread wake and
 manual-reset behavior through the microsecond adapter. The registered Python
 suite compiles/runs this fixture with the actual compatibility layer on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,

@@ -1,16 +1,55 @@
-## 2026-10-22 — PFB worker wake rework (uncommitted)
+## 2026-10-22 — PFB worker wake rework
 
-The rejected direct-clear shortcut is replaced with a notification to the existing
-worker, preserving its full busy-bit/DMA/fence service pass. Auto-reset event
-notifications survive arrival before the wait and may coalesce. Windows retains
-its high-resolution timer; the native adapter uses a condition-variable event
-wait with a monotonic deadline. Shutdown drains notifier users before releasing
-the event. Creation failure and diagnostic RECOMP_PFB_WAKE_ACK=0 retain polling.
+Runtime `bf4b755` replaces the rejected direct-clear shortcut with a notification
+to the existing worker, retaining its busy-bit/DMA/fence service and activity
+accounting. Queued auto-reset event requests survive arrival before the wait.
+Windows waits on the event plus its high-resolution timer. Native Mac uses a
+condition-variable event wait with a monotonic deadline. A follow-up retains
+the original 50-ms ceiling for diagnostic idle values above 50,000 us; the
+normal 500-us path and compiled Windows behavior are unchanged. Shutdown drains
+notifier users before releasing the event. Missing event creation and diagnostic
+`RECOMP_PFB_WAKE_ACK=0` retain polling. No console/game clock changes.
 
-Windows offline checks: 17 actual-lifter/notifier/mutation/wait-selection cases
-pass. Real native event tests were extended but cannot execute on this Windows
-host. Build, match-loading, performance and Original60 validation are pending;
-no improvement or resolution of the prior loading failure is claimed yet.
+The supported Windows regeneration/build and built-in tests pass (foreground
+virtual-pad routing skipped). Retained binary SHA-256:
+`2da9e5b31c4b63df90824a1dd240535f9edeeb235f68c55bc56072f820d9cb8c`.
+Four bounded ten-bot Venice runs at Classic 3440x1440/FOV73 complete loading,
+combat/respawns and the strict 50-second post-spawn measurement window. All
+recorded intervals are successful guest Present calls, with continuous frame
+IDs and recorder coverage beyond both endpoints.
+
+| Configuration | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval (ms) | Main-thread CPU | Process CPU cores | Observed game ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native144, notification off | 143.982 | 143.6 | 8.291 / 12.327 | 78.57% | 1.347 | 59.990 |
+| Native144, notification on | 144.000 | 143.8 | 7.513 / 10.041 | 58.44% | 1.036 | 59.990 |
+| Original60, notification on | 60.001 | 59.8 | 17.249 / 18.681 | 29.35% | 0.519 | 59.986 |
+| Native120, notification on | 120.000 | 119.8 | 8.875 / 10.923 | 51.10% | 0.962 | 60.013 |
+
+The paired 144 runs use the same executable and settings except notification.
+Main-thread CPU time falls 25.6% (39.281 to 29.219 seconds over about 50 seconds),
+and intervals above 9 ms fall from 15 to 4. Combat is nondeterministic: dead-state
+observations differ (30.3% off, 35.3% on). All 50 window observations per run are
+visible/nonminimized but nonforeground; client size is 1920x1060. Read-only 4-ms
+CPU counters and 1-Hz window/roster observations remain enabled. These measurements
+support this bounded improvement, not a clean foreground benchmark, GPU completion,
+scanout or resolution of the user's 110-FPS crowded-match report. Sparse level
+clock observations do not certify every simulation system or complete playability.
+
+Runs `gpu-wake-{on,off}-bf4-144`, `gpu-wake-on-bf4-original60` and
+`gpu-wake-on-bf4-120` preserve profile bytes/signatures and the canonical fixture,
+recycle disposable disk images, and restore the normal executable/symbol pair
+(hash `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`).
+Logs include per-run window analyses, CPU summaries and exact adapter provenance.
+
+Final Windows notifier/lifter/mutation/wait-selection checks: 19 pass, one
+Mac-only check skips. Native runtime CI at `af96547` passes, including the actual
+Mac event adapter's queued/consumed signals, timeout, delayed wake and manual
+reset checks. This is native host-unit evidence, not Mac gameplay. Its historical
+Mac-stack upgrade check exposed declaration placement inside old patch context;
+the declaration is moved before CreateEventA so the old SetEvent/timer context
+remains intact. The fresh/repeated and historical Mac-stack upgrade tests both
+pass locally (46.32 seconds); final-head CI is pending. Full-game and native Mac gameplay
+acceptance remain outstanding; PR #310 remains draft/unmerged.
 
 ## 2026-10-22 — PFB flush acknowledgement investigation
 

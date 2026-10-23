@@ -37,6 +37,9 @@ the existing worker retains its busy-bit/DMA/fence pass and 500-us idle fallback
 Windows waits on the event plus its existing high-resolution timer. The native
 adapter `w32_WaitForEventMicroseconds` waits on the event condition variable with
 a monotonic deadline (relative pthread wait on Mac), avoiding multi-wait polling.
+Both hosts retain the existing 50-ms maximum wait for large diagnostic idle
+values. The new native declaration precedes CreateEventA, preserving the old
+SetEvent/timer context used by historical Mac patch upgrades.
 Queued requests coalesce without an explicit reset. Shutdown publishes stop,
 drains notifier users, wakes/joins the worker, then closes the event; thread-start
 failure closes it too. Event creation failure retains polling. The cached

@@ -19,7 +19,7 @@
     },
     {
       "name": "gpu-pfb-flush-ack.patch",
-      "sha256": "faa5e8d79ca474b80971ff88c2a2537af3cdfd0ebde08feb30eff21acaec6764",
+      "sha256": "57e2b78f8c7735ecc0d08f25e8c0f6c8b5bd4172243bdab4d5dac3970a79d7df",
       "targets": [
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h",

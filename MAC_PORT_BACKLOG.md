@@ -3656,16 +3656,19 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
 - **PFB worker notification rework (2026-10-22, `perf/gpu-flush-ack`,
-  PR #310):** The shared exact-store hook now wakes the existing acknowledgement
-  worker; it no longer clears a guest register on the guest thread. The original
-  worker sequence, clocks and polling fallback remain. Windows uses its native
-  event/timer wait; native Mac adds a thin condition-variable microsecond event
-  wait to avoid polling `WaitForMultipleObjects`. Seventeen offline cases pass
-  on Windows, including simulated host wait selection. Real native event tests
-  are extended in `tests/native_platform.c`, but Mac execution is pending.
-  The previous `92ffa8b` direct-clear candidate stalled loading twice and remains
-  rejected. This rework requires fresh Windows loading/performance/Original60
-  evidence and native Mac gameplay before acceptance. See STATUS.
+  PR #310):** Shared exact-store notification wakes the original worker, keeping
+  its register/DMA/fence service and activity accounting. Windows event/timer
+  wait and native Mac condition-variable wait retain the 500-us idle fallback
+  and 50-ms diagnostic ceiling. The former `92ffa8b` direct-clear loading stall
+  is absent in four bounded Windows runs of `bf4b755`: Original60, native120 and
+  native144 (notification on/off). Paired144 main-thread CPU falls 78.57% to
+  58.44%, p99 interval 8.291 to 7.513 ms; windows are nonforeground and combat
+  varies. This does not resolve all reported crowded-map drops. Nineteen final
+  Windows offline cases pass (Mac-only case skips); native runtime CI at
+  `af96547` passes the real Mac event fixture. A declaration-placement conflict
+  in historical Mac upgrade context is repaired; fresh/repeated and historical
+  upgrade tests pass locally, with current-head CI pending. Native Mac gameplay, foreground pacing and broad campaign/mode
+  coverage remain awaiting validation. See STATUS for exact evidence and limits.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
