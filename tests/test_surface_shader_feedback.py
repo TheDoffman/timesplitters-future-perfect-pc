@@ -18,12 +18,16 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
-@pytest.mark.parametrize('address,case,stage', [(0x4bbf10, 'surface_feedback_gpu.inc', 7),
-                                                (0x4bbc40, 'surface_filter_gpu.inc', 4),
-                                                (0x4bbf10, 'surface_damping_gpu.inc', 7),
-                                                (0x4bbf10, 'surface_coupling_gpu.inc', 7),
-                                                (0x4bbf10, 'surface_spatial_gpu.inc', 7)])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage):
+@pytest.mark.parametrize('address,case,stage,mutation', [
+    (0x4bbf10, 'surface_feedback_gpu.inc', 7, False),
+    (0x4bbc40, 'surface_filter_gpu.inc', 4, False),
+    (0x4bbf10, 'surface_damping_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'transform')])
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -39,6 +43,9 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
         if case == 'surface_spatial_gpu.inc':
             offset = config.va_to_file_offset(0x4bbe20)
             (tmp_path / 'first.bin').write_bytes(image[offset:offset + 240])
+            offset = config.va_to_file_offset(0x4bbb90)
+            assert int.from_bytes(image[offset:offset + 4], 'little') == 0x62078
+            (tmp_path / 'vertex.bin').write_bytes(image[offset:offset + 4 + 6 * 16])
         if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
             import struct
             from tools.recomp.translator import FunctionTranslator
@@ -63,7 +70,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     include = ['/I' + str(p) for p in
                (ROOT / 'src', ROOT / 'tests', RUNTIME, RUNTIME / 'd3d', RUNTIME / 'config')]
 
-    def run(args, environment=env):
+    isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+    isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
+                    TSFP_DISPLAY_CONFIG=str(tmp_path / 'display.ini'), RECOMP_SAVE_DIR=str(tmp_path / 'saves'))
+
+    def run(args, environment=isolated):
         result = subprocess.run(args, cwd=tmp_path, env=environment,
                                 capture_output=True, text=True, timeout=90)
         assert result.returncode == 0, result.stdout + result.stderr
@@ -91,6 +102,23 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
         with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
             header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
 
+    if case == 'surface_spatial_gpu.inc':
+        vertex_translator = (RUNTIME / 'd3d/d3d8_vsh.c').read_text(encoding='utf-8')
+        end = vertex_translator.index('/* ================================================================\n * Input Layout Management')
+        start = vertex_translator.index('int d3d8_vsh_hor_plus_reg(void)\n{')
+        helper = vertex_translator[start:vertex_translator.index('\n}', start) + 2]
+        vertex_source = tmp_path / 'vertex_translate.c'
+        vertex_source.write_text(vertex_translator[:end] + '\n' + helper + '\n' +
+                                (ROOT / 'tests/surface_vertex_definition.c').read_text(), encoding='utf-8')
+        vertex_generator = tmp_path / 'vertex_translate.exe'
+        run([compiler, '/nologo', '/std:c11', '/O2', *include, str(vertex_source),
+             str(RUNTIME / 'kernel/nv2a_vsh.c'), str(RUNTIME / 'config/recomp_config.c'),
+             '/Fe:' + str(vertex_generator)])
+        vertex_hlsl = run([str(vertex_generator)])
+        assert 'Program body (6 instructions)' in vertex_hlsl
+        with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
+            header.write('static const char surface_vertex_hlsl[]=' + json.dumps(vertex_hlsl) + ';\n')
+
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
     if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
@@ -98,10 +126,28 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     setup = setup.replace('#include "rhi.h"',
                           '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
     fixture = (ROOT / 'tests' / case).read_text(encoding='utf-8')
+    if case in ('surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
+        setup = setup.replace('#include "rhi.h"',
+            '#include "rhi.h"\n#include "graphics/surface_coupled.h"')
     if case == 'surface_spatial_gpu.inc':
         helpers, fixture = fixture.split('/* SPATIAL_MAIN */')
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
+    if mutation:
+        # Mutate only a disposable include. Compilation must succeed and the
+        # executed GPU comparison must detect the numeric regression.
+        if mutation == 'transform':
+            name = 'surface_transform_shader.h'
+            needle = 'inverse ? surface_basis(i, k) : surface_basis(k, i)'
+            replacement = 'surface_basis(k, i)'
+        else:
+            name = 'surface_coupled.h'
+            needle = 'result.row[i][j]=(float)p[i][j];'
+            replacement = 'result.row[i][j]=(float)((i==0 && j==0)?1:p[i][j]);'
+        header = (ROOT / 'src/graphics' / name).read_text()
+        assert header.count(needle) == 1
+        (tmp_path / 'graphics').mkdir()
+        (tmp_path / 'graphics' / name).write_text(header.replace(needle, replacement))
     source.write_text(setup + fixture,
                       encoding='utf-8')
     exe = tmp_path / 'surface.exe'
@@ -111,9 +157,15 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     run([compiler, '/nologo', '/std:c11', '/O2', '/W3', *include, *map(str, sources),
          '/Fe:' + str(exe), '/link', 'd3d11.lib', 'dxgi.lib', 'dxguid.lib',
          'd3dcompiler.lib', 'user32.lib', 'gdi32.lib'])
-    isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
-    isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
-                    TSFP_DISPLAY_CONFIG=str(tmp_path / 'display.ini'), RECOMP_SAVE_DIR=str(tmp_path / 'saves'))
+    if mutation:
+        result = subprocess.run([str(exe)], cwd=tmp_path, env=isolated,
+                                capture_output=True, text=True, timeout=90)
+        output = result.stdout + result.stderr
+        expected = ('transform_error<.00001' if mutation == 'transform' else
+                    'max_error<.00003' if case == 'surface_spatial_gpu.inc' else 'error<.00001f')
+        assert result.returncode != 0 and expected in output, output
+        print(f'PASS: mutation {mutation} fails the GPU reference comparison')
+        return
     output = run([str(exe)], isolated)
     print(output)
     assert 'PASS: original translated feedback shader' in output

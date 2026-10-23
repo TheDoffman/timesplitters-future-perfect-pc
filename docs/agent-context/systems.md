@@ -359,3 +359,19 @@ volume identities; drive metadata retains executable-volume identity internally.
 The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
 provides attribute structures but not that function declaration. The production
 pc_prompts.c compile contract checks this include order in Mac CI.
+
+## Experimental coupled water operator
+
+`graphics/surface_coupled.h` computes a fractional power of the coupled affine
+velocity/displacement step, anchored to the existing one-tick coefficients.
+`graphics/surface_coupled_shader.h` supplies one shader body with vector-type
+adapters. `graphics/surface_transform_shader.h` supplies separable 64x64
+DCT-II/inverse passes with texture-load and vector syntax adapters. The current
+common-RHI fixture reuses its basis and scratch resources and reconstructs the
+world field on the GPU after every fractional update. These are experimental helpers exercised by CPU/common-RHI fixtures;
+the game does not call them and no normal-play or legacy-GL policy changes.
+The matrix's restoring coefficient belongs to a spatial eigenmode, not an
+independent world texel. A runtime integration needs spatial transforms and the
+original disturbance/smoothing/storage rules. Float32 equivalence alone does
+not preserve the original byte-feedback appearance. See the coupled-operator
+section in `docs/native-high-refresh-regressions.md` for evidence and limits.

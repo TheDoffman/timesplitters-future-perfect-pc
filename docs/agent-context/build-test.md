@@ -611,3 +611,30 @@ identities remain readable for baselines without joining Beta's series. Publishe
 fixtures now use beta.N, with explicit legacy rejection/history and independent
 Beta baseline tests. Existing generic semantic-version ordering tests still cover
 alpha/beta ordering separately from the new publication policy.
+
+## Coupled water operator checks
+
+The existing native-timing suite compiles `native_surface_coupled.c` on both CI
+hosts without game assets: 65 controlled modes, split-step composition,
+60/120/144 trajectories, identity and invalid-input nonmutation, plus
+positive/repeated/complex eigenvalue cases against independent original equations. The existing
+original-shader suite extends its fixed-neighbor and 64x64 spatial cases with
+the shared coupled step, comparing actual WARP results against the unmodified
+game shaders' one-second float32 output. Temporary-header mutations remove the
+velocity correction and must fail those GPU comparisons after successful build.
+The spatial diagnostic now uses shared GPU DCT/inverse passes around per-mode
+GPU matrices, with a fresh reconstructed field after every update. CPU DCT is
+only an independent reference for asymmetric corners, checkerboard and noise.
+A third disposable-header mutation breaks the inverse transpose and must fail
+its numeric comparison. Resources are reused inside the fixture; this is not a
+game runtime integration or a performance test. Existing byte
+storage differences remain asserted. These GPU cases require the supported
+private XBE and Windows WARP; hosted skips are not Mac GPU/gameplay acceptance.
+
+The spatial fixture now translates and executes the supported XBE's original
+six-instruction water vertex program as well as both pixel programs. Its input
+triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
+`surface_vertex_definition.c` reads private microcode and uses the current
+production parser/emitter. Translation helpers also receive isolated runtime
+configuration. Single-pass and gradient-only byte-storage controls isolate
+rounding contributions; none is an accepted replacement for the original map.

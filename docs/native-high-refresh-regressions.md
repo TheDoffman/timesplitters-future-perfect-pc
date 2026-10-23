@@ -5830,3 +5830,114 @@ CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
 `crowd-venice-setup`, `crowd-venice-match-rules` and `crowd-projection-visual`.
 All sessions exit cleanly with unchanged valid profile signatures, preserved
 fixtures, recycled disposable disks and no personal game left open.
+
+## Coupled fractional water operator (2026-10-23)
+
+The earlier controlled tests isolate two independent problems: fractional
+coupling and intermediate storage. This candidate addresses the first without
+claiming the second is solved. The game still uses its existing paths; no hook
+calls the candidate, and the normal-play water experiment remains disabled.
+
+For centered velocity `g = G - 0.5` and displacement `h = B`, the verified
+one-step linear model is `v = g + a*(forcing - k*h)`,
+`g_next = v + bias`, `h_next = d*(h + travel*v)`. Its linear matrix is
+`[[1, -a*k], [d*travel, d*(1-a*travel*k)]]`; its offset is
+`[a*forcing+bias, d*travel*a*forcing]`. The new portable helper takes the real
+principal fractional matrix power and preserves the affine fixed point.
+It handles the complex-conjugate and positive-real eigenvalue cases, including
+the repeated-eigenvalue limit, and rejects invalid/non-real-step inputs without
+publishing partial output. Timestep zero is identity and one retains the original
+matrix. Input coefficients remain anchored to the actual uploader's packed bytes.
+
+The old three-parameter scaling cannot express this operator: the required
+velocity-retention coefficient is approximately 1.00824992 at 120 and 1.00802577
+at 144 in the fixed-neighbor fixture, whereas the old shader structure fixes it
+at one. The new shader body evaluates both coupled rows; language adapters only
+supply vector syntax. These rows must operate on spatial modes, not independent
+world texels with an assumed constant restoring strength.
+
+`native_surface_coupled.c` runs through the existing Windows/Mac native-timing
+suite without assets. It checks 65 restoring strengths spanning the clamped
+diagonal stencil, original/native rates, 0.17+0.83 split-step composition,
+identity and invalid-input nonmutation. Local maximum trajectory error is
+0.0000023031 after float coefficient storage. Additional cases cover positive,
+repeated and complex eigenvalues against independent original equations. The
+full native-timing suite passes 67 tests in 85.65 seconds. This is a linear
+numerical contract.
+
+The Windows WARP fixture still executes the unmodified production-translated
+original pixel programs and extracts coefficient bytes from the complete US
+uploader. Their float32 60-step results supply the independent GPU references.
+The shared candidate shader matches the fixed-neighbor result within
+0.0000008345 at 60/120/144, with every candidate update changing the state.
+
+The 64x64 spatial extension uses an orthonormal DCT-II for the same clamped
+diagonal-neighbor stencil. Its mode restoring strength is
+`k + 4 - 4*cos(pi*x/64)*cos(pi*y/64)`; only the zero mode receives the constant
+forcing/centering offsets. The shared separable GPU transform runs before per-mode stepping, and its inverse
+reconstructs the field after **every** update. The fixture reuses its basis and
+scratch textures. CPU transforms remain only as independent numeric references;
+asymmetric corner impulses, a checkerboard and deterministic noise exercise both
+axes, the inverse transpose and high frequencies. Their maximum absolute error
+is 0.0000028611. The direct 64-term-per-axis transform is bounded, but its game
+frame-time cost has not been measured and no runtime hook calls it.
+
+| Candidate rate | G/B RMS vs original float32 60 | Maximum error | G/B RMS vs original byte 60 | Fresh updates |
+| --- | ---: | ---: | ---: | ---: |
+| 60 | 0.0000008438 | 0.0000018478 | 0.03137490 | 60/60 |
+| 120 | 0.0000009699 | 0.0000020266 | 0.03137500 | 120/120 |
+| 144 | 0.0000007604 | 0.0000017286 | 0.03137483 | 144/144 |
+
+Temporary-header mutations reset fractional velocity retention to one. Both
+the fixed-neighbor and spatial GPU comparisons then fail their numeric acceptance
+after successful compilation, proving that those tests detect the missing term.
+An additional mutation removes the inverse-transform transpose and must fail
+the GPU round-trip comparison. Both spectral state and reconstructed world
+field are checked for fresh updates at every candidate frame. All eight GPU
+cases pass in 30.74 seconds, including the three expected-failure mutations. Existing byte/half-float discrepancy checks remain.
+No supported game rebuild is needed for these currently uncalled helpers/tests.
+
+Outstanding: original byte-feedback appearance/rounding, clipping, smoothing,
+disturbance timing, original guest geometry/viewport submission, runtime ownership/state restoration for the GPU
+transform resources, runtime integration, live-rate transitions, actual
+frame-time cost and native Mac GPU/gameplay acceptance. Do not enable the water
+experiment solely from these controlled results. Evidence is local in
+logs/water-coupling-gpu-suite.log; shader bytes and game assets are not tracked.
+
+### Original vertex program and rounding isolation
+
+The updated WARP fixture extracts the vertex program at US 0x4BBB90 (header
+0x00062078, six instructions) and translates it with the unmodified production
+vertex parser/emitter. The original program consumes v1/v2/v3, copies position,
+swizzles color and adds c17-c20 to UVs. It now runs on the GPU alongside both
+original pixel programs. The fixture still supplies a synthetic fullscreen
+triangle/NDC position and texel-centered UVs; this does not validate the game's
+actual vertex submission or viewport/half-texel handling. All controlled spatial
+results are unchanged. Translation helpers use isolated runtime configuration.
+
+Three added one-second Original-60 controls isolate byte rounding. Each pass
+renders to its selected actual GPU storage format. The gradient-only control
+retains the first pass's byte red result but explicitly restores copied green/
+blue channels from the float input before pass two. This is an intentional
+ablation, not game behavior. Each mixed path must remain distinct from the
+original both-byte result (RMS blue difference > 0.005).
+
+| Storage control | Mean blue | Blue standard deviation | RMS blue vs both-byte 60 |
+| --- | ---: | ---: | ---: |
+| Both passes byte (reference) | 0.604052758 | 0.024023703 | 0 |
+| First pass byte, second float | 0.595155834 | 0.023109208 | 0.012476170 |
+| First pass float, second byte | 0.562469389 | 0.009027910 | 0.045231253 |
+| First gradient byte, copied G/B and second pass float | 0.570406683 | 0.001638243 | 0.041304309 |
+
+The closer first-byte-only result cannot be attributed solely to rounding the
+spatial gradient: it also repeatedly rounds the carried velocity/displacement.
+Keeping only the quantized gradient loses that result. Mean signed rounding
+errors are recorded per pass/channel, rather than treating quantization as
+zero-mean noise. For the both-byte reference, first red mean error is
++0.000151594 and second green mean error is +0.000358667 per update. These are
+state-dependent observations, not constants to add to the fractional solver.
+Neither changing one target format nor rounding only the gradient preserves
+the original byte feedback in this field. Full nonlinear/state-rounding behavior
+remains unresolved. Evidence: logs/water-original-vertex.log and
+logs/water-quantization-ablation.log; no game asset bytes are committed. All
+eight updated GPU cases pass in 31.96 seconds (logs/water-coupling-gpu-followup.log).
