@@ -31,6 +31,9 @@ static void guest_store(void) { /* ACTUAL_GUEST_STORE */ }
 static void neighboring_store(void) { /* NEIGHBOR_GUEST_STORE */ }
 int main(void)
 {
+    /* Keep the adapter referenced in the deliberate direct-clear mutation so
+     * Clang reaches its behavioral failure instead of an unused-function error. */
+    (void)SetEvent;
     void *memory=calloc(1,0x101000); CHECK(memory);
     g_nv2a_memory=memory;g_nv2a_ack_thread=(void *)(uintptr_t)1;
     g_nv2a_ack_wake=(void *)(uintptr_t)2;
