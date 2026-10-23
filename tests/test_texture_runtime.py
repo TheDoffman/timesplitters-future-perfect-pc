@@ -29,11 +29,11 @@ def texture_executables(tmp_path_factory):
         exe = folder / (name + ('.exe' if os.name == 'nt' else ''))
         includes = [folder, ROOT / 'src', RUNTIME, RUNTIME / 'd3d']
         if os.name == 'nt':
-            args = [compiler, '/nologo', '/std:c11', '/DTSFP_TEXTURE_PACK',
+            args = [compiler, '/nologo', '/std:c11', '/DTSFP_TEXTURE_PACK', '/DTSFP_TEST_BINDING_SYNC',
                     *['/I' + str(p) for p in includes],
                     *map(str, sources), '/Fe:' + str(exe)]
         else:
-            args = [compiler, '-std=gnu11', '-DTSFP_TEXTURE_PACK', '-pthread',
+            args = [compiler, '-std=gnu11', '-DTSFP_TEXTURE_PACK', '-DTSFP_TEST_BINDING_SYNC', '-pthread',
                     *['-I' + str(p) for p in includes],
                     *map(str, sources), '-o', str(exe)]
         result = subprocess.run(args, cwd=folder, env=env, capture_output=True,

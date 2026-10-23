@@ -21,10 +21,14 @@ static int _putenv_s(const char *name,const char *value) {
 
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 static int images, views, allocations, fail_view;
+#ifdef TSFP_TEST_BINDING_SYNC
+/* Pytest extracts this helper from the fully patched runtime. The standalone
+ * CMake target exercises the same loader without that generated fixture. */
 static unsigned rebinds;
 static struct {void *image;} *g_cur_rt;
 static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
 #include "texture_binding_sync.inc"
+#endif
 static int finish(D3D8Texture *texture)
 {
     for(int i=0;i<2000;i++) {
@@ -72,14 +76,17 @@ int main(int argc,char **argv)
     char path[4096]; int initial, cached_allocations;
     RhiView *cached;
     CHECK(argc==3);
+    if(!getenv("TSFP_TEXTURE_STREAMING"))_putenv_s("TSFP_TEXTURE_STREAMING","1");
     _putenv_s("TSFP_TEXTURE_DUMP_DIR","");
     _putenv_s("TSFP_TEXTURE_PACK_DIR",!strcmp(argv[2],"missing") ? "" : argv[1]);
     _putenv_s("TSFP_TEXTURE_MODE",!strcmp(argv[2],"implicit") ? "" : argv[2]);
     /* getenv returns an empty string as unset with _putenv_s on Windows. */
     initial=!strcmp(argv[2],"4k") || !strcmp(argv[2],"implicit");
     CHECK(tsfp_texture_is_4k()==initial);
+#ifdef TSFP_TEST_BINDING_SYNC
     tsfp_texture_sync_bindings();CHECK(rebinds==1);
     tsfp_texture_sync_bindings();CHECK(rebinds==1);
+#endif
     texture.width=texture.height=4;texture.d3d8_format=12;texture.sys_mem=data;
     texture.srv=(RhiView *)(uintptr_t)1;
     snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",argv[1],tsfp_texture_key(12,4,4,data,8));
@@ -97,8 +104,10 @@ int main(int argc,char **argv)
         CHECK(tsfp_texture_view(&texture)==texture.srv);
     }
     CHECK(finish(&texture));
+#ifdef TSFP_TEST_BINDING_SYNC
     tsfp_texture_sync_bindings();CHECK(rebinds==2);
     tsfp_texture_sync_bindings();CHECK(rebinds==2);
+#endif
     CHECK(images==1 && views==1 && texture.pack_bytes==24);
     cached=texture.pack_srv;cached_allocations=allocations;
     CHECK(tsfp_texture_view(&texture)==(initial?cached:texture.srv));

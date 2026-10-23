@@ -537,3 +537,8 @@ asset-free CPU/adapter tests, not GPU or scene acceptance. Run fresh/repeated an
 historical Mac patch upgrades for the new Present hook. Real pacing and texture
 pop-in still need bounded gameplay comparisons; default 60 and native120/144
 settings must be reported separately.
+
+The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
+patched binding helper into its temporary include directory. The CMake loader
+fixture runs without that extra helper; it requires no pytest-generated files.
+Both routes default to background loading when no diagnostic override is set.
