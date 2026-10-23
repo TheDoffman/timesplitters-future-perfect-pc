@@ -1,35 +1,50 @@
-## 2026-10-22 — Background texture loading under validation
+## 2026-10-22 — Background texture loading (PR #311)
 
 A bounded Hotel diagnostic on GPU-worker candidate bf4b755 captured optional
 texture fopen/CreateFile and per-texture log writes inside one 22.090-ms guest
-frame (Present/Swap 0.085 ms). Four stack snapshots stayed within that same frame;
-maximum thread suspension was 0.0564 ms. This identifies work inside a hitch,
-not its complete cost or the cause of every crowded-map slowdown.
+frame (Present/Swap 0.085 ms). Four same-frame snapshots had maximum suspension
+0.0564 ms. This identifies work inside a hitch, not its complete cost or the
+cause of every crowded-map slowdown.
 
-Independent branch perf/texture-pack-streaming from main acf4464 moves replacement
-DDS reads into a shared bounded worker, retaining original views while loading
-and uploading at most one ready replacement per frame. Routine texture logging
-is opt-in. GPU-worker PR #310 is not included in this branch. Queue capacity,
-blocked-reader cancellation, owner reuse, cached modes, mipmaps, failures and
-GL binding preservation pass local tests: 55 passed, two host-only skips.
+Independent perf/texture-pack-streaming from main acf4464 moves replacement DDS
+reads into a bounded shared worker. Original views remain available; at most one
+ready replacement uploads per frame. Completion/cancellation refreshes persistent
+bindings. Per-texture logging is opt-in. PR #310's GPU-worker optimization and
+PR #309's trace filter are not included in this branch.
+
 Windows build and built-in checks pass at 25e0059 (foreground virtual-pad routing
-skipped). The initial standalone test include failure was repaired. Comparative
-pacing is preliminary: one same-binary Hotel ten-bot pair has background on/off
-143.378/137.940 interval FPS, minimum five-second averages 139.0/108.8 FPS,
-p99 intervals 8.409/10.543 ms, maxima 16.184/22.613 ms, and 28/416 intervals
-above 9 ms. Strict 50-second post-spawn windows have continuous guest Presents;
-Classic 3440x1440/FOV73, actual client1920x1060, no foreground observations.
-Dead-state samples differ 31.0%/30.2%; observed clocks are 60.012/59.990 ticks/s.
-Both runs preserve profiles/fixture, recycle disposable disks and restore the
-normal executable/symbol pair. These are diagnostic API-present intervals, not
-scanout or clean foreground evidence; reverse-order repeats are in progress.
+skipped). Fifteen final loader/queue/GL-adapter tests pass; 88 scope/context/backlog
+checks pass. Ten fresh/repeated/historical transition cases pass (505.46 seconds),
+plus the corrected controls-only historical upgrade (24.67 seconds). That fixture
+must omit streaming until its texture prerequisites arrive, then verify both
+Present and binding-revision hooks. The initial standalone test include failure
+and the Linux patch-index line-ending mismatch are repaired.
+
+Four bounded ten-bot Hotel runs use the same executable (runtime 63771be, build
+25e0059), Classic 3440x1440/FOV73 and native144. Each strict 50-second post-spawn
+window has continuous guest Present coverage. The reverse-order repeat pair ran
+without local builds/test suites during its measured windows:
+
+| Background reads | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval | Frames >9 ms | Main CPU | Game ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Off, repeat | 142.159 | 132.6 | 9.014 / 16.047 ms | 76 | 80.19% | 59.989 |
+| On, repeat | 144.002 | 143.8 | 8.152 / 12.540 ms | 2 | 78.48% | 60.012 |
+
+Actual client1920x1060; all 50 window observations in each run were visible,
+nonminimized and nonforeground. Death samples differ 31.1% off /29.3% on; process
+CPU was 1.417/1.303 core equivalents. AI/deaths and other system activity remain
+uncontrolled. These are API-present diagnostic intervals with read-only counters,
+not GPU completion/scanout, clean foreground benchmarks or full-game acceptance.
+The first pair (on143.378/min139.0, off137.940/min108.8) is excluded from performance
+conclusions because a local patch test overlapped the off run. All four sessions
+preserve profiles/fixture, recycle test partitions and restore the playable pair.
 
 Mac runtime CI at c4baddf passes: 446 tests, 76 skips, 18 subtests plus asset-free
-common-RHI GPU contracts. Real Mac Enhanced arrivals/scenes remain unverified.
-CI's historical controls-only fixture omitted the streaming prerequisite exclusion;
-the corrected test now verifies both hooks after migration and passes locally.
-Ten other fresh/repeated/historical transition cases pass (505.46 seconds).
-The 144-FPS goal remains incomplete; see MAC-011 and MAC-060.
+common-RHI GPU contracts. Mac runtime and corrected upgrade CI also pass at
+680acf0; Windows jobs were still running when this record was written. Final-head
+CI, actual Enhanced arrivals, native60/120 loader gameplay, other maps and native
+Mac scenes remain outstanding. Sparse clock observations do not audit every
+simulation system. The full high-refresh goal stays incomplete (MAC-011/MAC-060).
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
