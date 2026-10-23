@@ -17,7 +17,7 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
 ![TimeSplitters launcher v1.2.18 with the updated banner, aligned sidebar, Play Game, game versions and update controls](docs/assets/launcher-preview.png)
 
-<p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
+<p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; Stable is the default game channel; named previews are opt-in with launcher 1.3.0+.</sub></p>
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it
@@ -38,7 +38,7 @@ for release notes and checksums.
 | :---: | --- |
 | **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64**. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
-| **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
+| **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. Choose a preview only when opting into testing. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes when the game window appears and returns when you finish. |
 
@@ -60,7 +60,7 @@ Launcher v1.2.14 adds recovery when Windows interrupts startup, with **Retry**,
 - Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/building.md#inputs-and-generated-files).
 - Internet access for the initial runtime download; about **5 GB** for the game,
   plus space for update staging, rollback and any optional textures.
-- **Preview** includes published game prereleases. **Stable** excludes them.
+- **Stable** is the default game channel. choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
   Launcher and game versions are separate.
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,

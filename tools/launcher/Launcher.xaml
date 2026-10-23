@@ -226,9 +226,7 @@
             </StackPanel>
             <StackPanel Grid.Row="3">
               <StackPanel x:Name="UpdateChannelSection">
-                <DockPanel Margin="0,0,0,8"><TextBlock Text="UPDATE CHANNEL" Style="{StaticResource Label}" VerticalAlignment="Center"/>
-                  <ComboBox x:Name="ChannelPicker" SelectedIndex="0" Width="120" HorizontalAlignment="Right" FontSize="13" AutomationProperties.Name="Update channel" ToolTip="Stable excludes prereleases. Preview includes published test releases."><ComboBoxItem Content="Stable"/><ComboBoxItem Content="Preview"/></ComboBox>
-                </DockPanel>
+                <ContentControl x:Name="GameChannelPickerHost"/>
                 <TextBlock Text="Updates preserve saves and settings." Foreground="#B4C7D8" FontSize="11"/>
               </StackPanel>
               <TextBlock x:Name="TransferDetails" Visibility="Collapsed" FontSize="13" Foreground="#A7D9FA" Margin="0,10,0,8"/>

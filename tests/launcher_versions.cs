@@ -51,6 +51,24 @@ public static class LauncherVersionChecks
     static void RunCore()
     {
         var records=new[]{Record("v1.0.0"),Record("v1.0.0-alpha.10"),Record("v1.0.0-alpha.2"),Record("v1.1.0",true),Record("v9.0.0",false,true),Record("launcher-v1.2.12")};
+        Test("channel discovery reaches older release pages without substituting unrelated experiments",()=>{
+            int requests=0;
+            using(var client=new ReleaseClient(new Handler {Reply=r=>{
+                requests++;Need(r.Method==HttpMethod.Get);
+                bool first=r.RequestUri.Query.EndsWith("&page=1",StringComparison.Ordinal);
+                var page=first?Enumerable.Repeat(Record("launcher-v1.3.0"),100).ToArray():new[]{Record("v0.4.1"),Record("v0.5.0-story-coop.2",true),Record("v0.6.0-other.7",true)};
+                return new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent(Json.Encode(page))};
+            }})) {
+                var catalog=client.ReadGameCatalog(CancellationToken.None).GetAwaiter().GetResult();
+                Need(requests==2 && GameChannels.Select(catalog,"stable").Tag=="v0.4.1" && GameChannels.Select(catalog,"story-coop").Tag=="v0.5.0-story-coop.2");
+            }
+        });
+        Test("named release news does not select a different experiment",()=>{
+            using(var client=new ReleaseClient(new Handler {Reply=r=>new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent(Json.Encode(new[]{Record("v0.4.1"),Record("v0.5.0-story-coop.1",true),Record("v0.6.0-other.8",true)}))}})) {
+                var news=client.ReadNews("story-coop","","",CancellationToken.None).GetAwaiter().GetResult();
+                Need(news.Game.Tag=="v0.5.0-story-coop.1" && news.Preview && news.Launcher==null);
+            }
+        });
         Test("history lists every compatible stable and preview release in semantic order",()=>{
             var list=ReleaseClient.GameVersions(Json.Encode(records));Need(list.Releases.Select(r=>r.Tag).SequenceEqual(new[]{"v1.1.0","v1.0.0","v1.0.0-alpha.10","v1.0.0-alpha.2"}));
             Need(list.Releases[0].IsPreview && !list.Releases[1].IsPreview && list.Releases[2].IsPreview && !list.HasMore);

@@ -1,220 +1,238 @@
-# Packaging and publishing Windows releases
+# Game releases: Stable and named previews
 
-[Back to the README](../README.md)
+[Back to the README](../README.md) | [Launcher releases](launcher-releases.md)
 
-Run these commands from the repository root. Players can use the ready-made ZIP linked in the README.
+Game and launcher versions are independent. The next Stable game source version
+is **0.3.2**, including fixes since `0.3.1-alpha.2`. This source change does not
+publish a release or establish full campaign/platform validation. Historical
+alpha and `-preview.N` releases remain available in Game versions; do not
+relabel their assets or offer them as Beta updates.
 
-Release regression tests can run from ordinary PowerShell. They discover Visual
-Studio or standalone Build Tools and load the MSVC x64 environment automatically.
-Install the C++ x64 toolchain; a Developer PowerShell session is not required.
+## Versions and channels
 
-## Package locally
+| Purpose | Example tag | Channel | GitHub status |
+| --- | --- | --- | --- |
+| Stable game | `v0.3.2` | `stable` | Regular release, never Latest |
+| Maintenance fix | `v0.3.3` | `stable` | Regular release, never Latest |
+| Beta testing | `v0.4.0-beta.1` | `beta` | Pre-release |
+| Named feature test | `v0.4.0-story-coop.1` | `story-coop` | Pre-release |
+| Launcher | `launcher-v1.3.0` | Independent launcher updates | Stable launcher owns Latest |
 
-To produce the same public package after building:
+Choose the intended version explicitly. Patch increments are fixes/maintenance;
+minor increments are new features; major increments are deliberate compatibility
+or project milestones. Before 1.0 the port remains experimental: document save,
+settings and multiplayer compatibility in each release. Stable means the default
+supported game channel, not a claim of complete original-game fidelity.
+
+A preview's base number is its intended future release. Both a co-op branch with
+recent main fixes and one without them can use `0.4.0-story-coop.1`; the commit
+and notes identify their actual contents. Once published, the next changed build
+is `.2`. New general tests use `beta.N`; the track is always named **Beta**. Named
+feature tests keep their own suffixes, such as `story-coop.N`. New alpha,
+preview and rc suffixes are rejected by version preparation, packaging and
+publishing. Historical versions remain readable for exact-version history and
+repair, and are excluded from Beta update selection.
+
+Stable hotfixes such as `0.3.3` are not blocked by a published `0.4.0-story-coop.8`.
+Ordering is checked within the stable major/minor maintenance line, or within a
+preview's exact base version and channel. Independent experiments never compete
+for the same update candidate. Prefer merging relevant Stable fixes into each
+feature branch before a public test. If a feature slips to another target minor,
+start the new series there and retain the original published tags.
+
+## Prepare the version and source
+
+Start independent release-tooling changes from main. For ordinary Stable game
+releases merge the intended changes and VERSION into main. A release must have a
+clean checkout exactly matching its pushed origin branch. No uncommitted game
+changes or dirty source receipts are accepted.
+
+```powershell
+# Explicitly choose a version; this edits VERSION only, without publishing.
+.\.venv\Scripts\python.exe tools/release-version.py 0.3.2
+# Review and commit VERSION with the intended changes through a PR.
+```
+
+For an urgent fix after main has moved ahead, create `hotfix/0.3.3` from the
+`v0.3.2` tag, apply the fix, prepare VERSION `0.3.3`, review and push the branch.
+Stable publication accepts main, or an explicitly selected `hotfix/` or
+`release/` branch descending from a published Stable release. Merge the fix back
+into main through a PR; do not replace main's development VERSION with an older
+maintenance version. The local publisher checks provenance and ancestry; normal
+repository review/branch protection still applies.
+
+Feature previews may publish an explicitly selected pushed branch without
+merging unfinished work into main. On that branch:
+
+```powershell
+.\.venv\Scripts\python.exe tools/release-version.py 0.4.0-story-coop.1
+# Review, commit and push VERSION plus the intended feature changes first.
+.\Publish-Release.ps1 -Branch story-coop -ChannelName 'Story Co-op Preview' -PrepareOnly
+```
+
+Channel IDs are lowercase letters/digits/hyphens, start with a letter, and are at
+most 40 characters; preview counters start at 1 without leading zeros. Display
+names may vary independently and are limited to 80 printable characters. A custom
+name is specified on each invocation. The tag, package and channel ID must agree.
+
+For general Beta testing, prepare `0.4.0-beta.1` on the intended pushed branch:
+
+```powershell
+.\.venv\Scripts\python.exe tools/release-version.py 0.4.0-beta.1
+# Review, commit and push the version and intended changes first.
+.\Publish-Release.ps1 -Branch beta-testing -PrepareOnly
+```
+
+This appears as **Preview -> Beta**. Repeat the same branch argument without
+`-PrepareOnly` to publish after reviewing the package and notes. Beta's display
+name is fixed; `-ChannelName` customizes named feature tracks only.
+
+## Build, inspect and publish
+
+Use the existing checkout, pinned upstream/dependencies and supported US Xbox
+data. Validate its executable before generation/game validation. Keep personal
+saves and settings intact. Check free space before a full build/package.
+Install GitHub CLI and authenticate outside automated validation if necessary.
+
+For main's Stable release:
+
+```powershell
+git switch main
+git pull --ff-only origin main
+.\Publish-Release.ps1 -PrepareOnly
+# Review build/releases/<package>.notes.md and the package/receipts.
+.\Publish-Release.ps1
+```
+
+For a named preview, repeat the same branch and display-name arguments when
+publishing the prepared package:
+
+```powershell
+.\Publish-Release.ps1 -Branch story-coop -ChannelName 'Story Co-op Preview' -NotesFile logs/story-coop-release.md -PrepareOnly
+.\Publish-Release.ps1 -Branch story-coop -ChannelName 'Story Co-op Preview' -NotesFile logs/story-coop-release.md
+```
+
+For the maintenance example use `-Branch hotfix/0.3.3`. `-Draft` uploads a draft
+instead of making it public. `-PrepareOnly` creates no tag or GitHub release.
+
+The publisher validates the full patch stack, rebuilds Release with native checks,
+runs Python tests, verifies package hashes/manifests and exercises the production
+launcher installer with disposable fixtures. It checks preservation of game data,
+saves, settings and textures and tests the bundled Online runtime. Existing
+prepared packages are reusable only for the exact commit, repository, version and
+channel metadata; changed assets or a moved origin branch stop publication.
+
+Publish **launcher 1.3.0 or newer for both Windows and Mac first**. The game
+publisher checks that a compatible stable launcher with both ZIPs is already
+published. Launcher 1.3.0 separates game channels from launcher self-updates;
+older launchers' Preview selector includes unrelated experiments.
+
+Publication pins the exact tested tag, creates a draft, uploads the ZIP, checksum
+and BUILD receipt, verifies asset names/sizes, then publishes. Game releases
+always use `--latest=false`; only previews set `--prerelease`. Tags/assets are
+never overwritten or moved. If upload fails, inspect its draft before retrying;
+the game publisher refuses an existing draft/release instead of replacing it.
+Keep recovery/provenance records and use a new version for changed published code.
+
+The local publisher currently builds/uploads the Windows game ZIP. The native
+Mac packager produces a matching versioned package from the exact existing tag
+and matching native build revision, with the same channel identity in BUILD.json.
+Attach only verified Mac assets/checksums for that tag. A missing Mac package
+means that release is unavailable on Mac; never substitute another channel's
+package. Windows validation does not establish Mac runtime acceptance.
+
+## Release notes and provenance
+
+Stable notes compare against the highest earlier published Stable game ancestor,
+even across minor versions. For the first Stable game release only, when no
+Stable game has been published, use the most recently published earlier game
+prerelease that is an ancestor. Thus `v0.3.2` compares against
+`v0.3.1-alpha.2`; subsequent Stable releases compare against Stable releases,
+even if newer previews exist. Launcher releases and drafts are never candidates.
+Preview notes compare against the highest suitable ancestor in the same release
+series, falling back to an ancestor Stable release. Nonancestor commits cannot
+become a baseline. A maintenance branch still requires a published Stable ancestor.
+
+The publisher includes merged game-related PRs from the exact commit range.
+Launcher-only, documentation-only and release housekeeping PRs are excluded.
+Feature-branch work may not have a merged PR: use `-NotesFile` to supply reviewed
+Markdown describing the changes, known issues, test steps and compatibility.
+The file is limited to 64 KiB. Notes are regenerated on every invocation; review
+them before publication. Missing PR metadata fails rather than guessing.
+
+A hidden `tsfp-release` JSON comment declares schema, channel ID/name, minimum
+launcher, source branch/commit, initial package platforms, included Stable
+ancestor and latest published Stable at preparation time. If a preview omits the
+latest Stable release, visible notes say so. This proves ancestry of published
+Stable releases, not inclusion of every unreleased main fix. BUILD.json records
+source/package provenance and the canonical version-derived channel identity.
+The launcher validates tag/channel agreement and hides the metadata from displayed
+notes. Legacy releases without metadata remain installable.
+
+Promoting work to Stable uses a new suffix-free version and fresh validation;
+never turn an existing preview tag into Stable or rename its ZIP. A preview alone
+does not reserve its target minor release for that feature.
+
+## Launcher behavior and recovery
+
+Fresh installs default to Stable. The top-level **Update channel** has only
+**Stable** and **Preview**. Selecting Preview reveals **Testing track**, containing
+**Beta** and published named features such as **Story Co-op**. The
+launcher remembers the track when switching through Stable; checks stay within
+the selected track. Beta releases use `-beta.N` and channel ID `beta`; named
+feature IDs remain unchanged. Old Preview/general-preview preferences migrate
+to Beta, preserving the remembered named feature when present. Historical alpha
+and `-preview.N` releases stay in Game versions without being relabeled Beta.
+This migration never opts the launcher itself into test updates. Launcher self-updates remain Stable unless a
+separate explicit launcher preview preference is configured.
+
+Select **Stable** and confirm **Switch game channel** to return from a newer
+preview to the available Stable game. Same-channel checks never automatically
+downgrade. **Game versions** remains available for exact-version comparisons;
+installing a version also records its channel. An unavailable/withdrawn channel
+stays selected without silently switching to another experiment or Stable.
+
+Switching replaces the game runtime while preserving saves, settings, imported
+data and installed textures. Test releases currently use the existing save
+location: back up saves before testing or use a separate portable installation
+with its own saves. No automatic save conversion or compatibility guarantee is
+provided. State multiplayer version compatibility in each preview's notes.
+
+## Optional textures and local packaging
+
+Official game ZIPs omit enhanced textures. Ordinary source builds and publishing
+need no texture LFS hydration. Players opt into the separate pack through the
+shared launcher; updates, repairs and rollbacks preserve installed/custom packs.
+Do not remove a pack because a new game ZIP omits it.
 
 ```powershell
 .\.venv\Scripts\python.exe tools/package-release.py
 ```
 
-This uses an explicit file list and default settings. It excludes all game data,
-personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
-The game ZIP includes the audited compiled textures in `Textures/` by default.
-They stream directly from the single active pack into the ZIP, with sanitized
-metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
-The source-code ZIP excludes these compiled replacements to avoid a second
-copy inside each download. To rebuild from the extracted source archive with
-textures, copy the package's `Textures` folder to its `assets/textures` path.
-Use `--texture-pack <folder>` to select another audited pack, or
-`--without-textures` for a lightweight local test package. Official releases
-through `Publish-Release.ps1` require the complete repository pack; artist
-overrides and texture-free packages cannot be published with that script.
-The staging folder alone
-does not contain the streamed textures; use the finished ZIP to test delivery.
-The launcher seeds missing replacement keys while preserving existing texture
-pairs and personal settings. Updating an already installed artist pack remains
-a separate texture-pack operation. Old launcher versions that reject `Textures/`
-need the launcher update containing this shared installer change first.
-The separate launcher bootstrap ZIP stays small; this applies to the game ZIP.
-Launcher 1.2.22 adds bundled-texture installation; publish that shared launcher
-update before distributing a game ZIP that contains textures. The game publisher
-refuses to create a release until GitHub Latest is a stable launcher 1.2.22+
-with uploaded Windows and Mac packages. Packs declaring retired textures require
-launcher 1.2.24+ so upgrades retire unchanged old pairs while preserving
-customized replacements. The standard
-launcher release workflow validates both Windows and Mac before publication.
-Both Windows and native Mac packaging use the same streaming texture helper.
-The package includes an isolated Windows Python/Tk runtime and the Online
-companion, including automatic hosting certificate support; players do not need
-Python or Git installed.
-`ssl.py` and its distribution's PEM trust resources remain adjacent on disk in
-the portable Python runtime; packaging preserves their trust policy unchanged.
-The bundled interpreter must pass TLS context/certificate creation before upload.
-Packaging downloads the pinned Windows wheels in
-`requirements-release.txt` and includes their licenses. A matching successful
-Release build is required. `Source/pc-port-source.zip` records the local project
-source and runtime patch, including changes not yet committed.
-Use `.venv\Scripts\python.exe tests/portable_online.py --stage <extracted-package>`
-to test the bundled runtime, HTTPS hosting, invitations, and three-peer UDP relay
-without system Python/Git on PATH. Real router forwarding still needs validation.
+This creates a versioned ZIP/checksum under build/releases using default settings,
+without game data or personal files. It requires the matching successful Release
+build and includes the portable Online/Python dependencies and licenses. An
+explicit `--with-textures` offline bundle is separate from official publishing;
+audit/hydrate its assets and preserve the 6 GiB pack budget. Optional pack
+publication follows [the texture guide](textures.md), including hash/LFS checks.
 
-## Publish a release from main
+## Issue-form versions and validation
 
-### Preserve texture enhancements across version bumps
+Published game tags (`v...`) and launcher tags (`launcher-v...`) are refreshed in
+the bug form by **Issue form versions**. Drafts and unshipped source bumps are
+excluded; Stable and preview versions remain available. Required inputs remain
+empty text fields. The workflow proposes reference-list updates through a PR;
+it does not push to main. Launcher publication dispatches it explicitly because
+GITHUB_TOKEN-created release events do not start another workflow.
 
-Keep the shared replacement loader, Classic/Enhanced controls, pack installer,
-`assets/textures`, `config/texture-pack.json` and default bundled-game delivery
-in the next game/launcher version and later releases. Version bumps must not
-reset installed textures or unrelated settings during upgrades, repairs or
-rollbacks. Keep the existing preservation checks in release validation.
-
-Require **Repository texture pack** to pass before merging a version bump or
-changing either host's game packager or the publisher. The workflow runs on
-those PRs and matching main pushes, checks out actual Git LFS content, and audits
-DDS/mips, sanitized metadata hashes, the declared count/size and the 6 GiB limit.
-It does not require a separately published texture release. Commit reviewed
-texture changes through Git LFS; ordinary version bumps reuse the committed pack.
-These delivery checks do not establish full-game scene fidelity.
-
-### Repository texture pack
-
-Compiled replacements are committed under `assets/textures` through Git LFS.
-Run `git lfs pull` before building; the normal game ZIP includes these files
-without a separate texture release. Commit reviewed texture updates alongside
-source changes. See [updating repository textures](textures.md#publish-pack-updates).
-
-`Publish-Release.ps1` requires this pack, including `-PrepareOnly` and `-Draft`.
-Before building, it audits hydrated DDS files, mip chains, sanitized metadata,
-the manifest's bundled delivery/path, count/size and the 6 GiB limit. Before
-uploading, every required DDS/JSON entry and hash in the finished ZIP must match
-the audited repository pack. Missing textures, Git LFS pointers, artist overrides
-and incomplete packs stop the release. Resuming a prepared release repeats the
-ZIP checks even after its staging folder has been recycled. The compatible
-Windows/Mac launcher requirement also applies to every official game release.
-
-Commit the intended `VERSION` and merge the changes, including these release
-scripts, into `main`. Install [GitHub CLI](https://cli.github.com/) and authenticate
-once with `gh auth login` using an account allowed to publish this repository.
-Use the existing workspace and game data; setup/build dependencies must already
-be installed. Then run in PowerShell:
+Local checks use simulated GitHub and disposable data; they never publish:
 
 ```powershell
-git switch main
-git pull --ff-only origin main
-.\Publish-Release.ps1
+.\.venv\Scripts\python.exe -m pytest tests/test_publish_release.py tests/test_native_mac_package.py tests/test_launcher_release.py tests/test_ci_runtime_scope.py -q
+powershell -NoProfile -File tools/build-launcher.ps1 -Test
 ```
 
-The script requires clean source and an exact match with `origin/main`. It reads
-`VERSION`, validates the runtime patch stack, rebuilds Release with native checks,
-runs Python tests, packages the public ZIP and verifies its manifest/checksum.
-It then installs that exact ZIP with the launcher's production unpack/install
-code in a disposable folder, checking fresh installs and preservation of existing
-settings, saves, game data and textures. A launcher rejection stops publication.
-It tests the bundled Online runtime with the existing game data, without copying
-the game or using personal saves. It creates a GitHub draft for the exact tested
-commit, uploads the ZIP, checksum and build metadata, checks the uploaded asset
-names/sizes, then publishes it. Versions containing a prerelease suffix (such as
-`0.2.0-alpha.3`) become prereleases. All game-runtime releases, including stable
-versions, use `--latest=false` during draft creation and final publication.
-
-### Keep the launcher download current
-
-Use short release titles with the product and version first: **TSFP v0.2.0-alpha.5**
-and **Launcher v1.2.7**. The game publisher sets this title automatically. For a
-launcher release, the [Windows and Mac workflow](launcher-releases.md) sets
-`Launcher vX.Y.Z` automatically. Keep the existing
-`vX.Y.Z` and `launcher-vX.Y.Z` tag formats; titles do not change download URLs.
-
-The README download button uses GitHub's permanent `/releases/latest` URL.
-Reserve the repository's **Latest** designation for the newest stable launcher
-release containing both Windows and native Mac packages. The shared workflow
-uploads and verifies both before publishing, then assigns Latest for stable
-versions only. This moves the README destination automatically; no README
-version edit is needed.
-
-Game releases published through this script retain the launcher destination.
-If publishing a game release manually, also leave **Set as the latest release**
-off or use `--latest=false`. The launcher discovers game updates from the release
-list, so game releases do not need the Latest badge. See GitHub's
-[permanent release links](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases).
-
-### Issue-form versions and labels
-
-The **Issue form versions** workflow refreshes the bug report's reference lists from published GitHub
-releases after publication, editing, deletion or unpublishing. Game tags use
-`v...`; launcher tags use `launcher-v...`. Draft releases and unreleased source
-version bumps are not offered as installed versions. Both stable and preview
-releases are included, newest version first, with up to 30 versions of each
-in a collapsed Markdown reference. Game version, Launcher version and Platform
-are required text inputs without prefilled values. GitHub counts an empty
-dropdown option as a selection, so blank dropdown entries do not enforce an
-answer. Users can type older/custom, unknown or uninstalled values explicitly.
-Release refreshes must update only the reference lists and never prefill inputs.
-The improvement form
-asks only for the idea, has no version, platform or diagnostic questions, and is
-excluded from version refreshes.
-
-The workflow also refreshes on relevant pushes to `main` and can be run manually
-from Actions. It proposes only the bug form's reference lists through a PR on
-`automation/issue-form-versions`, with `contents: write` and `pull-requests: write`;
-it never pushes directly to the protected default branch or force-pushes.
-Approve workflows to run if GitHub requests it on the bot-created PR, then let
-the required checks pass before merging. Auto-merge can be enabled for that PR.
-See [CI and branch protection](ci.md) for repository settings and check names.
-The game publisher uses the maintainer's GitHub CLI authentication. The launcher
-workflow uses `GITHUB_TOKEN` and explicitly dispatches **Issue form versions**
-because token-created release events do not start another workflow.
-
-Form submissions receive `bug` or `enhancement` immediately. On issue creation,
-editing or reopening, the separate **Automatic issue labels** workflow synchronizes that type plus
-`platform: windows` or `platform: macos` when a platform answer is present. New
-improvement suggestions receive only `enhancement`. It creates
-missing platform labels, removes outdated managed labels after edits, and keeps
-other labels such as priority, accessibility and triage decisions. Unrecognized
-reports and pull requests are left alone. Issue text is read as data, never
-inserted into shell commands. The labeling job has `issues: write` and no
-repository-write permission.
-
-Offline checks: `python -m unittest discover -s tests -p test_issue_forms.py -v`.
-Manual refresh: `python tools/issue-forms.py versions --repository owner/name`
-(optional `--check` reports stale choices without writing).
-
-### Release notes and preparation
-
-The description includes merged game-related PRs since the most
-recently **published game** release (including prereleases) and installation
-instructions, with numbered launcher steps followed by a portable ZIP alternative.
-The generated "What's Changed" heading is removed beneath
-"Changes since"; source commit lists and build/validation sections are omitted.
-Build provenance remains in the verification assets. The comparison does not use
-the last Git tag or skip prereleases by asking for GitHub's latest stable release.
-Launcher releases, drafts and unrelated tags are excluded from the comparison.
-GitHub's [release notes API](https://docs.github.com/en/rest/releases/releases#generate-release-notes-content-for-a-release)
-provides candidate PRs. The publisher verifies each PR is merged and its merge
-commit is within the exact game-release commit range, then reads all changed
-files (including renamed paths). Game source, shared patches/configuration,
-game build inputs and runtime/import tools qualify; launcher-only,
-documentation-only, version-only and CI/release-note housekeeping PRs do not.
-Mixed game/launcher PRs remain because they change the game. Classification uses
-files rather than title keywords or labels. Incomplete file metadata stops note
-generation instead of guessing. PRs are deduplicated; an empty range gets an
-explicit message. The full changelog link still opens GitHub's repository-wide
-comparison, which can contain launcher commits.
-
-To prepare and inspect the ZIP/notes locally without creating a tag or release:
-
-```powershell
-.\Publish-Release.ps1 -PrepareOnly
-```
-
-Run normally afterward to publish the same validated package. `-Draft` instead
-uploads a draft for review on GitHub. Notes are regenerated on each invocation.
-Artifacts and the preparation record stay under ignored `build/releases`;
-Disposable staging and Python test fixtures are permanently removed using
-validated paths; packaged archives and release metadata are retained. Test
-fixtures are also cleaned when tests fail. No Recycle Bin support is required.
-No branch switching, version bump, overwrite of existing release files, or tag
-rewriting occurs. Changed prepared assets or a changed main commit stop the run.
-Existing drafts/releases with the version also stop it; inspect a failed upload's
-draft on GitHub before retrying. Failed package stages are retained for diagnosis.
-Do not rename a package to reuse an already published version: update `VERSION`,
-commit and merge it before preparing the next release.
+The release CI suite includes publisher/version/channel checks; both launcher
+hosts run shared channel-selection/preferences/metadata fixtures. Run native Mac
+launcher/package/lifecycle checks on macOS. A source version change requires no
+gameplay test by itself; publishing still runs the actual build/package gates.

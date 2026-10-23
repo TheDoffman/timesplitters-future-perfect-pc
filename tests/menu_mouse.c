@@ -32,6 +32,9 @@ static unsigned music_previews,sound_previews,sensitivity_previews;
 static unsigned slider_fov;
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
+static unsigned slider_keyboard;
+static void menu_slider_keyboard_pointer(float x,float left,float width)
+{ slider_keyboard=pc_menu_slider_value(x,left,width,1000); }
 static unsigned character_previews;
 void sub_002C4310(void) {}
 void sub_00045390(void) {mode=15;}

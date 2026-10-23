@@ -174,7 +174,7 @@ int main(int argc,char **argv)
     CHECK(pc_prompts_format("\vG / \vI / \vM / \vE",text,sizeof text,keys,1));
     CHECK(!strcmp(text,"[G] / [Mouse 1] / [Mouse 2] / [Mouse]"));
     CHECK(pc_prompts_format("\v3 \v4 \v5 \v6 \v7",text,sizeof text,keys,1));
-    CHECK(!strcmp(text,"[Y] [R] [2] [1] [Esc]"));
+    CHECK(!strcmp(text,"[Y] [R] [X] [Z] [Esc]"));
     CHECK(pc_prompts_format("\vD",text,sizeof text,keys,1));
     CHECK(!strcmp(text,"[W/S/A/D]"));
     keys[0]=0;

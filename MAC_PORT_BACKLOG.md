@@ -195,6 +195,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-058 | Crane and remote-view vignette sizing (issue #221) | Awaiting validation |
 | MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
 | MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
+| MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
+| MAC-062 | Stable and named game release channels | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -687,6 +689,26 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 
 ### MAC-001 — Direct-camera mouse look
+
+- **Themed keyboard editor (2026-10-22, uncommitted; native validation pending):**
+  Shared native-menu builders expose every action and mouse option in main Settings
+  and pause Options, with a keyboard/mouse diagram and two binding columns.
+  Shared capture/release/conflict/save policy uses thin Windows and SDL raw-input
+  adapters. Both launcher hosts and native settings dialogs limit keyboard actions
+  to two sources, retaining controller capacity and reading legacy keyboard pairs.
+  No feature adapter is deferred. Mac acceptance: compile and run SDL input tests,
+  bind keyboard/mouse/wheel on both menu paths, cancel/focus/reopen, test conflicts,
+  sensitivity dragging and persistence, and confirm Cocoa/launcher two-column UI.
+  Windows evidence is recorded in STATUS.md; it does not establish Mac validation.
+
+- **Keyboard weapon slots (2026-10-22, uncommitted):** Shared slot bindings,
+  edge/expiry policy and original guest inventory selection support Windows
+  and SDL Mac. Cocoa in-game settings and both launchers expose ten slot actions;
+  existing configurations migrate in memory without overwriting custom keys.
+  No new OS-specific feature is deferred. Windows fixture/build results are
+  recorded in STATUS.md. Native Mac compilation and physical gameplay remain
+  pending: bind slots, select single/dual weapons, try empty slots, switch
+  devices and pause/focus, then save/reload both editors.
 
 - **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
   `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
@@ -2003,6 +2025,13 @@ validation. This version bump alone is not publication evidence.
   MAC-013 supplies session mode, then run native host/guest navigation and
   two-instance Story acceptance. Windows callback tests pass; no live validation
   of this new host-control slice has been performed on either platform.
+
+- **Story/main merge (2026-10-23, uncommitted on online-story-coop):**
+  Shared Story callbacks move to verified unused 0x1237b..0x1237e so main's
+  keyboard callbacks and drive selection coexist. No new host API is needed;
+  native Online transport and live acceptance remain queued under this entry.
+  Windows/native-fallback fixtures cover source behavior; Mac execution remains
+  unverified. Reuse the existing native Story/menu and mixed-peer acceptance above.
 
 - **Online Story entry (uncommitted, 2026-10-21):** Shared
   `src/pc_story_menu.inc` supplies Local/Online after Story; Local retains the
@@ -3367,6 +3396,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-052 — Experimental network bot setup (issue #25)
 
+Issue #222 follow-up (`59cc489`, branch `222-bug-online-bots-are-stuttery-for-guests`): `src/pc_network_bot_motion.h` supplies shared
+numeric replica interpolation, integrated through the existing Windows bot hook
+and monotonic QPC adapter in `pc_network.c`. It requires no second Mac algorithm.
+The original native fallback and pending PC XNet adapter (MAC-013) remain intact.
+Native and mixed-peer movement/pose/lifecycle acceptance is still required;
+Windows loopback evidence in `STATUS.md` does not establish native execution.
+
 - **Status:** Queued
 - **PC behavior:** The host's multiplayer lobby Options flow exposes
   Arcade BOT SET below WEAPON SET in match settings, reusing its original
@@ -4628,6 +4664,30 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The separate desert shattered-glass report is not yet reproduced or claimed
   fixed by this vignette change.
 
+### MAC-061 — Host save-drive metadata and inline drive selection
+
+- **Status:** Awaiting validation
+- **PC behavior:** Create Profile lists mounted drives directly beneath the
+  current save drive, with plain drive names/letters and actual space information.
+  A different writable drive becomes the save location immediately; existing
+  profiles remain on their original drive.
+- **PC source:** Uncommitted on feature/keyboard-weapon-slots;
+  src/pc_storage*.inc/.h, src/pc_display_menu.c, src/pc_prompts.c,
+  host-save-storage.patch, live-profile-storage.patch and native/main.c.
+- **PC validation:** See STATUS.md host-storage entry. Shared callback and host
+  persistence fixtures run with isolated folders. Full multi-drive save/load
+  playthrough is not claimed.
+- **Existing Mac support:** Shared menu/routing policy plus getmntinfo, statfs,
+  getattrlist and executable-path adapters; atomic POSIX preference writes.
+  Native startup resolves the same preference before guest access.
+- **Mac adaptation needed:** None identified; native compilation and mounted
+  external-volume UI/persistence validation remain pending.
+- **Mac acceptance checks:** Run storage, FOV and isolated-profile tests. Check
+  startup and external volumes, plain drive labels, capacity display,
+  unavailable/read-only media, immediate profile creation, restart persistence and profile
+  preservation. Use a disposable save location; never redirect an automated
+  Test Lab session onto personal saves.
+
 ## Shared uncertainties, not confirmed Mac-only omissions
 
 Campaign completion, checkpoint/save-load round trips, physical-controller play,
@@ -4636,6 +4696,39 @@ fidelity lack complete evidence across the project. They should not be described
 as proven PC features missing only on Mac. Track focused validation in `STATUS.md`.
 The reported world disappearance remains unresolved until reproduced and checked;
 none of the renderer entries above is a confirmed diagnosis of that symptom.
+
+### MAC-062 - Stable and named game release channels
+
+- **Status:** Awaiting validation
+- **PC behavior:** Launcher 1.3.0 chooses Stable or a named opt-in game preview,
+  keeps launcher updates independent, and confirms return to a lower Stable game.
+  VERSION 0.3.2 prepares the next Stable game. Local changes on release-channels
+  are uncommitted; no release has been published.
+- **Source files:** tools/launcher/ReleaseClient.cs (GameChannels), Launcher.cs,
+  SelfUpdate.cs, WhatsNewPage.cs, macos/NativeWindow.cs and NativeNews.cs;
+  tools/release_channels.py, publish-release.py and both game packagers.
+- **Existing Mac support:** Shared models, installer and generated layout already
+  serve both hosts. Channel policy and shared behavioral fixtures are common.
+- **Beta naming follow-up:** Preview's general testing track is Beta (-beta.N).
+  Shared source migrates old general-preview preferences to beta, retains feature
+  tracks, and leaves historical alpha/preview releases in Game versions only.
+  Shared UI fixtures cover this policy on WPF/Avalonia; refreshed Mac CI is needed.
+- **Preview grouping follow-up:** Shared GameChannelPickerPage now supplies
+  Stable/Preview and the conditional testing-track selector on both hosts.
+  game_preview_track persists the remembered feature across Stable. The generated
+  layout hosts this common component; native host validation remains pending.
+- **Mac adaptation needed:** NativeWindow maps the shared choices/checks to
+  Avalonia; NativeNews supplies the named game channel. No separate policy or
+  runtime implementation is needed. Native compilation/lifecycle remains unrun
+  on this Windows host.
+- **Mac acceptance checks:** Run dual-host launcher CI and native prerequisite/
+  package/lifecycle checks; exercise old Preview migration, named-channel
+  discovery, missing-channel retention, return to Stable confirmation, exact
+  version installation, independent launcher updates and preserved personal
+  data. Channel switches continue using existing saves: back up before testing.
+- **Mac implementation and evidence:** Shared C# fixtures plus Windows host
+  results are recorded in [STATUS.md](STATUS.md#release-channel-strategy-2026-10-22).
+  Native execution/visual acceptance is pending; Windows is not Mac evidence.
 
 ## Entry template
 

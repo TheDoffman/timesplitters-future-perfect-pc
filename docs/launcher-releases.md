@@ -4,13 +4,13 @@ The **Launcher release (Windows + Mac)** workflow builds the Windows x64 launche
 and native Apple Silicon Mac app from the same source revision and shared version.
 It publishes both packages in one GitHub release only after both hosts pass their
 launcher regressions and package checks. Each installed launcher selects its own
-platform's update manifest. Game releases remain independent.
+platform's update manifest. Game releases remain independent. [Game Stable and named preview channels](releasing.md) do not control launcher self-updates. Publish stable launcher 1.3.0+ before publishing games using the new channel strategy.
 
 ## Publish an update
 
 1. Change `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs`, plus its
    assembly/file attributes, to a new unused version. Keep the attributes numeric
-   (`X.Y.Z.0`); a preview may use `X.Y.Z-rc.1` for `Value`.
+   (`X.Y.Z.0`); a preview may use `X.Y.Z-beta.1` for `Value`.
 2. Merge that change and the desired launcher updates into `main` through a PR.
 3. In **Actions → Launcher release (Windows + Mac) → Run workflow**, select `main`,
    enable **publish**, and run it once. The workflow creates `launcher-vX.Y.Z` at
@@ -54,6 +54,21 @@ are ignored; older public assets remain untouched.
 
 Publication explicitly refreshes the issue-form version workflow because releases
 created using `GITHUB_TOKEN` do not trigger its release event.
+
+Generated changelogs explicitly compare against the highest earlier published
+stable `launcher-vX.Y.Z` release, including for launcher previews. Game tags,
+drafts and launcher prereleases cannot become the baseline. Release history is
+paged; incomplete history stops publication. With no previous stable launcher,
+the notes describe an initial launcher release without an unrelated comparison.
+
+The change list includes only merged PRs in that commit range touching launcher
+source, packaging, artwork/SDK pins or embedded default controls. Game-only,
+documentation-only and issue/release housekeeping PRs are excluded. Mixed PRs
+remain included when they change launcher inputs.
+Mixed PRs touching game source, patches or texture assets use the neutral
+"Launcher updates" label instead of advertising a game feature in their title.
+Changed-file lists are paged and checked for completeness, including renamed paths. The full source comparison
+link is explicitly labeled because GitHub's compare view also shows game changes.
 
 The Mac target is ARM64, not Intel. The app retains its existing ad-hoc signing;
 Developer ID signing/notarization and clean-machine Gatekeeper acceptance remain

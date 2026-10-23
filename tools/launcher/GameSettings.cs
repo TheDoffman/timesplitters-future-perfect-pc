@@ -13,8 +13,18 @@ namespace TimeSplitters.Launcher
 {
     public sealed class GameSettings
     {
-        public static readonly string[] Actions = { "a", "b", "x", "y", "black", "white", "start", "back", "ltrigger", "rtrigger", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "lstick_up", "lstick_down", "lstick_left", "lstick_right", "lthumb", "rstick_up", "rstick_down", "rstick_left", "rstick_right", "rthumb" };
-        public static readonly string[] Labels = { "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Y action", "Black button action", "White button action", "Pause / Start", "Objectives / Back", "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out", "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left", "Strafe right", "Crouch", "Look up", "Look down", "Look left", "Look right", "Aim" };
+        public const int BindingSlots = 2;
+        static readonly string[] PadActions = { "a", "b", "x", "y", "black", "white", "start", "back", "ltrigger", "rtrigger", "dpad_up", "dpad_down", "dpad_left", "dpad_right", "lstick_up", "lstick_down", "lstick_left", "lstick_right", "lthumb", "rstick_up", "rstick_down", "rstick_left", "rstick_right", "rthumb" };
+        static readonly string[] PadLabels = { "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Y action", "Black button action", "White button action", "Pause / Start", "Objectives / Back", "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out", "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left", "Strafe right", "Crouch", "Look up", "Look down", "Look left", "Look right", "Aim" };
+        static string[] WeaponActions()
+        {
+            var defaults=Json.Object(DefaultControls());
+            var profile=Map(((IEnumerable)defaults["controllers"]).Cast<object>().First());
+            return Map(profile["bindings"]).Keys.Where(k=>k.StartsWith("weapon_slot_",StringComparison.Ordinal))
+                .OrderBy(k=>Int32.Parse(k.Substring(12),CultureInfo.InvariantCulture)).ToArray();
+        }
+        public static readonly string[] Actions=PadActions.Concat(WeaponActions()).ToArray();
+        public static readonly string[] Labels=PadLabels.Concat(WeaponActions().Select(k=>"Weapon slot "+k.Substring(12))).ToArray();
         readonly string root;
         readonly Dictionary<string, byte[]> originals = new Dictionary<string, byte[]>();
         Dictionary<string, object> document, controller, bindings;
@@ -150,6 +160,25 @@ namespace TimeSplitters.Launcher
             if (!controller.ContainsKey("device")) controller["device"] = "keyboard";
             if (!controller.TryGetValue("bindings", out value)) controller["bindings"] = value = new Dictionary<string, object>();
             bindings = Map(value);
+            MigrateWeaponSlots();
+        }
+        void MigrateWeaponSlots()
+        {
+            if(Device!="keyboard")return;
+            if(!bindings.ContainsKey("weapon_slot_1")) {
+                foreach(int action in new[]{4,5}) {
+                    var keys=Binding(action).Where(k=>k!="none").ToArray();
+                    if(keys.Length==1 && KeyCode(keys[0])==(action==4?'2':'1')) {
+                        int replacement=action==4?'X':'Z';
+                        bindings[Actions[action]]=Conflict(action,replacement)<0?"key:#"+replacement:"none";
+                    }
+                }
+            }
+            for(int action=PadActions.Length;action<Actions.Length;action++) {
+                if(bindings.ContainsKey(Actions[action]))continue;
+                int slot=action-PadActions.Length, key=slot<9?'1'+slot:slot==9?'0':0;
+                bindings[Actions[action]]=key!=0 && Conflict(action,key)<0?"key:#"+key:"none";
+            }
         }
         public string[] Binding(int action)
         {
@@ -161,7 +190,8 @@ namespace TimeSplitters.Launcher
                 else throw new InvalidDataException("Invalid binding value.");
             }
             Core.Require(list.Count <= 4, "This profile has more than four bindings on an action; it was left unchanged.");
-            while (list.Count < 4) list.Add("none");
+            if (list.Count > BindingSlots) list.RemoveRange(BindingSlots, list.Count - BindingSlots);
+            while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
         }
         public const int WheelUpKey = 134, WheelDownKey = 135;
@@ -197,12 +227,12 @@ namespace TimeSplitters.Launcher
         { for (int i = 0; i < Actions.Length; i++) if (i != action && Binding(i).Any(t => KeyCode(t) == key && key != 0)) return i; return -1; }
         public void Assign(int action, int slot, int key, bool move)
         {
-            Core.Require(action >= 0 && action < 24 && slot >= 0 && slot < 4 && KeyAllowed(key), "That key is reserved by the game. Choose another key.");
+            Core.Require(action >= 0 && action < Actions.Length && slot >= 0 && slot < BindingSlots && KeyAllowed(key), "That key is reserved by the game. Choose another key.");
             Core.Require(move || Conflict(action, key) < 0, "This key is already assigned to another action.");
-            if (key != 0) for (int i = 0; i < 24; i++)
+            if (key != 0) for (int i = 0; i < Actions.Length; i++)
             {
                 var keys = Binding(i); bool changed = false;
-                for (int j = 0; j < 4; j++) if (KeyCode(keys[j]) == key) { keys[j] = "none"; changed = true; }
+                for (int j = 0; j < BindingSlots; j++) if (KeyCode(keys[j]) == key) { keys[j] = "none"; changed = true; }
                 if (changed) bindings[Actions[i]] = keys;
             }
             var assigned = Binding(action); assigned[slot] = key == 0 ? "none" : "key:#" + key;
@@ -239,7 +269,7 @@ namespace TimeSplitters.Launcher
             Core.Require((loading && Width==1 && Height==1) || SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");
-            for (int i = 0; i < 24; i++) Binding(i);
+            for (int i = 0; i < Actions.Length; i++) Binding(i);
         }
         public static bool Running(string root)
         {
@@ -281,6 +311,7 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
+            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;

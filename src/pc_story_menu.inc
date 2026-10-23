@@ -2,10 +2,11 @@
  * the guest copies its callback. Local opens the original descriptor from
  * sub_002D0A60's choice-zero branch. No generated code or XBE is modified. */
 /* Four checksum-verified unused INT3 bytes following the Quit callbacks. */
-#define STORY_OPEN_CB 0x1201cu
-#define STORY_BUILD_CB 0x1201du
-#define STORY_SELECT_CB 0x1201eu
-#define STORY_BACK_CB 0x1201fu
+/* Distinct from keyboard callbacks at 0x1201c..0x1201f; verified US INT3 padding. */
+#define STORY_OPEN_CB 0x1237bu
+#define STORY_BUILD_CB 0x1237cu
+#define STORY_SELECT_CB 0x1237du
+#define STORY_BACK_CB 0x1237eu
 static uint32_t story_storage,story_parent,story_previous;
 static int story_online_unavailable;
 #define STORY_TITLE (story_storage+16u)

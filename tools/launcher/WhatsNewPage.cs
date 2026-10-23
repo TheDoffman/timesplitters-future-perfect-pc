@@ -90,6 +90,11 @@ namespace TimeSplitters.Launcher
         }
         public void SetVersions(string game,string currentLauncher,bool preview)
         { installedGame=game??"";installedLauncher=currentLauncher;channel.Text=preview?"PREVIEW CHANNEL · includes published test builds":"STABLE CHANNEL · published stable releases";Render(); }
+        public void SetVersions(string game,string currentLauncher,string gameChannel)
+        {
+            SetVersions(game,currentLauncher,gameChannel!="stable");
+            channel.Text=GameChannels.Name(gameChannel)+" game channel; launcher updates are independent.";
+        }
         public void Reset() { news=null;Refresh.IsEnabled=true;Edition.SelectedIndex=0;status.Text="Refresh to load published release notes.";Render(); }
         public void SetLoading(bool value) { Refresh.IsEnabled=!value; if(value)status.Text="Checking published release notes…"; }
         public void SetNews(ReleaseNews value)

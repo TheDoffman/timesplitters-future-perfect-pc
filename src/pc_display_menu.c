@@ -3,6 +3,9 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#include "pc_settings.h"
+#define KB_OPEN 0x1200fu
+static uint32_t kb_caption(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
@@ -238,6 +241,9 @@ static uint32_t audio_options_caption(void)
     }
     return audio_caption;
 }
+static void sd_width(void);
+static void sd_buttons(void (*original)(void));
+static void sd_capacity(void (*original)(void));
 void pc_display_menu_button(void (*original)(void))
 {
     static uint32_t caption;
@@ -248,6 +254,10 @@ void pc_display_menu_button(void (*original)(void))
     GuestRegisters r;
     if(pc_story_menu_button(original)) return;
 
+
+    if(callsite==0x0019440bu)sd_width();
+    if(callsite==0x001944c3u && callback==0x00192e60u){sd_buttons(original);return;}
+    if(callsite==0x0019450au){sd_capacity(original);return;}
     if(callback==0x002CBE10u || callback==0x002EC1F0u) {
         uint32_t frame=g_esp,old_caption=WORD_AT(frame+4),label=audio_options_caption();
         uint32_t builder=WORD_AT(0x007BB1E0u),flags=0;
@@ -308,6 +318,10 @@ void pc_display_menu_button(void (*original)(void))
         }
     }
     restore_registers(&r);
+    if(kb_caption()) {
+        push(0);push(KB_OPEN);push(0);push(0);push(UINT32_MAX);push(kb_caption());push(callsite);
+        original();restore_registers(&r);
+    }
     original();
 }
 
@@ -365,6 +379,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     return result;
 }
 #include "pc_profile_accept.inc"
+#include "pc_weapon_slots_guest.inc"
 
 /* Recreate only a missing guest body using the same constructor as the
  * original Arcade initializer. Keep the existing actor-list entry and scores;
@@ -644,6 +659,7 @@ static void settings_build(void)
     guest_call(sub_00071C50,1,0x26200u);
     guest_call(sub_00079D60_gen,6,audio_options_caption(),UINT32_MAX,0u,0u,0x002CBE10u,0u);
     guest_call(sub_00079D60_gen,6,video_caption,UINT32_MAX,0u,0u,PC_DISPLAY_MENU_CALLBACK,0u);
+    if(kb_caption())guest_call(sub_00079D60_gen,6,kb_caption(),UINT32_MAX,0u,0u,KB_OPEN,0u);
     guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x17A4u),UINT32_MAX,0u,0u,0x002CBE50u,0u);
     if(WORD_AT(0x005236C4u)>1u) {
         uint32_t selector=guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x39Cu),0u,0u,0u,0u,0u);
@@ -972,6 +988,10 @@ static void online_activate(void)
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
 #include "pc_story_load.inc"
+
+#include "pc_keyboard_menu.inc"
+#include "pc_storage_menu.inc"
+
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
 #ifdef _WIN32
@@ -983,6 +1003,15 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;
     switch(address) {
+    case 0x00192770u:return sd_profile_tick;
+    case SD_SELECT:return sd_select;
+    case SD_DRAW:return sd_draw;
+    case KB_OPEN:return kb_open;
+    case KB_BUILD:return kb_build;
+    case KB_TICK:return kb_tick;
+    case KB_SELECT:return kb_select;
+    case KB_BACK:return kb_back;
+    case KB_DRAW:return kb_draw;
     case PC_DISPLAY_MENU_CALLBACK: return activate;
     case BUILD_CB: return build_menu;
     case TICK_CB: return tick_menu;

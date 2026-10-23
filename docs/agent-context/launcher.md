@@ -161,3 +161,120 @@ PR #303 restored the references from the live published release API; the bad
 refresh's upstream empty response has not been independently attributed.
 `repo-context.py` exempts only valid version data inside both existing AUTO blocks;
 question/schema, marker, publisher and workflow changes still require guides.
+
+## Weapon-slot bindings
+
+`GameSettings` appends weapon-slot actions from embedded
+`config/pc-controls.default.json`, retaining the original 24 action indices
+and adding exactly ten weapon slots (34 actions total).
+Windows and Mac launcher binding views use the shared action count; native
+in-game settings use `PC_ACTION_COUNT`. Missing bindings migrate in the draft
+only, respecting custom keys and explicit Unbound. Stock White=1/Black=2 move
+to Z/X if free; conflicting custom assignments are never stolen. Saving and
+resetting use the existing transactional settings paths.
+
+The binding table now exposes `GameSettings.BindingSlots = 2` on both launcher
+hosts. Legacy four-source keyboard profiles retain their first two alternatives
+and normalize on Save; loading does not rewrite the player's configuration.
+The native runtime dialogs use the matching `PC_BINDING_SLOTS`. The in-game
+themed editor applies bindings live through the shared runtime settings API;
+launcher Save retains its existing close-game requirement.
+
+
+## Stable and named preview releases (2026-10-22)
+
+Launcher 1.3.0 source separates game channels from launcher self-updates.
+`GameChannels` in ReleaseClient.cs owns canonical tag-derived IDs, optional
+`tsfp-release` note metadata, channel options, preference migration and cross-channel
+install eligibility. New game versions are X.Y.Z or X.Y.Z-channel.N; legacy
+Beta tags map to the beta track; alpha/preview/rc tags remain history-only. New installs choose Stable; old preview
+preferences affect only the game. Save preserves unrelated preference keys and
+writes game_channel plus preview=false for older-client recovery. SelfUpdate
+reads the separate launcher_preview preference, default false on both hosts.
+
+ReadGameCatalog and CheckLauncher page through the release list, refusing a
+partial catalog at their cap. Windows Launcher and Mac NativeWindow populate
+channel options from verified platform packages and retain unavailable selections.
+Game checks select exactly one channel; switching to Stable may install a lower
+version after confirmation. Same-channel checks do not downgrade. Exact-version
+installation saves its channel; normal installer/repair/rollback protections stay
+in Core. Visible notes omit channel JSON and describe named game channels
+separately from launcher updates. Saves remain shared and require backup before
+preview testing; no save-format migration or profile copy is introduced.
+
+Publisher and both game packagers record channel identity; publication requires
+a published stable launcher 1.3.0+ with Windows/Mac assets. VERSION 0.3.2 is the
+next Stable game source version, not a published release. The docs/releasing.md
+process covers explicit feature/hotfix branches, version choice and rollout.
+Shared UI fixtures execute channel isolation, preference preservation/migration,
+metadata checks and return-to-Stable eligibility on both hosts; Windows versions
+fixtures cover paginated discovery. Native Mac host acceptance remains pending
+in MAC-062 and STATUS.md.
+
+
+Installation-copy follow-up: README's primary Windows installation row and
+Windows launcher setup now explicitly keep Stable selected. Screenshot provenance
+in docs/assets/README.md treats its old channel as illustrative. Older Windows
+launcher release/update guidance now describes paginated channel-specific game
+selection and independent Stable launcher updates; previews remain opt-in tests.
+This follow-up changes documentation only, with no runtime or installer change.
+
+
+Preview grouping follow-up: `GameChannelPickerPage.cs` is the shared WPF/Avalonia
+Home selector hosted by GameChannelPickerHost. Its top-level choices are Stable
+and Preview; Preview reveals Beta and named feature tracks. Canonical
+channel IDs/tags and release selection stay unchanged. game_preview_track remembers
+the last testing track across Stable and restarts; game_channel still stores the
+actual selected ID for compatibility. Catalog refreshes suppress selection events,
+and unavailable tracks remain selected. Both hosts lock both selectors while busy.
+Shared UI checks exercise grouped options, remembered selections, silent refresh,
+missing-track retention and disabled controls. Developer render previews show an
+explicit synthetic Story Co-op sample; normal launchers list published tracks only.
+
+
+Local artwork correction: the Windows builder now prefers hash-verified cached
+resources in build/launcher-art (recovered by fetch-launcher-art.ps1 from the
+config/launcher-artwork.json pin), then falls back to legacy private source art.
+Explicit build arguments remain supported. Older private artwork is preserved;
+the incorrect local banner came from 1.2.12 and lacked the pinned backdrop.
+Top-right badge wording is restored to Stable Channel/Preview Channel on both
+hosts; the grouped selector itself remains Stable/Preview. No release artwork
+pin or published asset was changed.
+
+
+Beta naming (2026-10-23): canonical general-track ID/name are beta/Beta and tags
+use -beta.N. GameChannels.FromTag marks old alpha/preview/rc releases as legacy;
+they remain repairable in Game versions, outside Choices and Beta candidates.
+Old general-preview preference IDs/remembered tracks and the old boolean Preview
+flag migrate to beta; named features and unrelated preferences remain intact.
+GameChannelPickerPage shows Beta under Preview and retains the feature suffixes.
+Old general-track note metadata remains readable without relabeling legacy builds.
+Shared UI fixtures check Beta-only candidates, hidden legacy tracks/history,
+preference migration and existing grouped selectors on both hosts.
+
+Launcher changelog correction: tools/launcher-release.py launcher_notes pages the
+published release history and explicitly supplies the highest earlier stable
+launcher tag to GitHub's generated notes API. This prevents a game alpha from
+becoming the implicit comparison baseline; drafts, launcher previews and later
+versions are excluded. Initial launcher notes avoid implicit generation, and
+incomplete pagination fails closed. tests/test_launcher_release.py covers mixed
+paginated history, initial releases and the history cap in the existing dual-host
+publication test route. No launcher binaries or OS adapters change.
+
+launcher_pr_notes filters generated PR references to merges in the exact Git
+range and launcher payload/build paths via launcher_release_path. Game-only,
+docs and automation PRs are omitted; mixed launcher/game PRs remain eligible.
+File pagination, rename sources and API truncation are validated (the 3,000-file
+cap uses the local merge diff). The source comparison link explicitly includes
+game history. Offline release fixtures cover filtering, range and complete files.
+Mixed PRs touching game runtime/patch/texture source use a neutral launcher label
+so their game feature titles do not become advertised launcher features.
+
+Game changelog bootstrap: tools/publish-release.py preflight uses the most
+recently published earlier ancestor game prerelease (including legacy alpha)
+only when publishing the first Stable game and no Stable game exists. Later
+Stable notes select the highest earlier Stable ancestor across minor versions;
+preview series policy is unchanged. Maintenance branches still need a Stable
+ancestor. Launcher tags, drafts, future versions and nonancestor previews are
+excluded. tests/test_publish_release.py verifies baseline selection and generated
+notes payload/range through the existing release test route. No host adapters change.

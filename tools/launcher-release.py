@@ -213,6 +213,80 @@ def publication_assets(directory, plan):
     return {path.name: path for path in release_assets(directory, plan)}
 
 
+def launcher_release_path(path):
+    """Launcher payload/build inputs, excluding game runtime and housekeeping."""
+    return path.startswith('tools/launcher/') or path in {
+        'tools/build-launcher.ps1', 'tools/build-mac-launcher.py',
+        'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json',
+        'config/mac-launcher-sdk.json', 'config/pc-controls.default.json'}
+
+
+def launcher_pr_notes(api, base, generated, previous, tag, sha):
+    commits = set(git('rev-list', previous+'..'+sha).splitlines())
+    url = 'https://github.com/'+base.removeprefix('/repos/')
+    rows = []
+    for number in dict.fromkeys(re.findall(re.escape(url)+r'/pull/(\d+)\b', generated)):
+        endpoint = base+'/pulls/'+number
+        pr = api.call('GET', endpoint)
+        if not pr.get('merged_at') or pr.get('merge_commit_sha') not in commits:
+            continue
+        files = []
+        for page in range(1, 31):
+            items = api.call('GET', endpoint+f'/files?per_page=100&page={page}')
+            files.extend(items)
+            if len(items) < 100:
+                break
+        if pr['changed_files'] > 3000 and len(files) == 3000:
+            merge = pr['merge_commit_sha']
+            names = git('diff', '--no-renames', '--name-only', '-z', merge+'^1', merge)
+            files = [{'filename': name} for name in names.rstrip('\0').split('\0') if name]
+            require(bool(files), f'Empty local changed-file list for PR #{number}.')
+        else:
+            require(len(files) == pr['changed_files'],
+                    f'Incomplete changed-file list for PR #{number}; cannot classify launcher notes safely.')
+        if not any(launcher_release_path(item[key]) for item in files
+                   for key in ('filename', 'previous_filename') if key in item):
+            continue
+        title = pr['title'].replace('\n', ' ').replace('\r', ' ')
+        # Mixed PR titles can describe game features the launcher does not ship.
+        # Keep their launcher contribution linked without advertising that title.
+        if any(item[key].startswith(('src/', 'patches/', 'assets/textures/'))
+               for item in files for key in ('filename', 'previous_filename') if key in item):
+            title = 'Launcher updates'
+        title = title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        title = re.sub(r'([\\`*_[\]])', r'\\\1', title)
+        rows.append(f'- {title} ([#{number}]({url}/pull/{number}))')
+    changes = '\n'.join(rows) or 'No merged launcher-related pull requests in this release.'
+    return ("## Launcher changes\n\n"+changes+
+            f'\n\n**Full source comparison** (includes game changes): {url}/compare/{previous}...{tag}')
+
+
+def launcher_notes(api, base, tag, sha):
+    # GitHub's implicit baseline can be a game release in this shared repository.
+    current = tuple(map(int, VERSION.fullmatch(tag[10:]).groups()[:3]))
+    candidates = []
+    for page in range(1, 21):
+        releases = api.call('GET', base+f'/releases?per_page=100&page={page}')
+        for item in releases:
+            name = item.get('tag_name', '')
+            match = VERSION.fullmatch(name[10:]) if name.startswith('launcher-v') else None
+            if not match or match[4] or item.get('draft') or item.get('prerelease'):
+                continue
+            version = tuple(map(int, match.groups()[:3]))
+            if version < current:
+                candidates.append((version, name))
+        if len(releases) < 100:
+            break
+    else:
+        raise ValueError('Launcher release history is incomplete; refusing an ambiguous changelog baseline.')
+    if not candidates:
+        return 'Initial launcher release.'
+    previous = max(candidates)[1]
+    generated = api.call('POST', base+'/releases/generate-notes', {
+        'tag_name': tag, 'target_commitish': sha, 'previous_tag_name': previous})['body']
+    return launcher_pr_notes(api, base, generated, previous, tag, sha)
+
+
 def publish(directory, plan, api):
     require(plan['publish'] and plan['repository'] == REPOSITORY, 'This run is validation-only.')
     expected = publication_assets(directory, plan)
@@ -235,7 +309,7 @@ def publish(directory, plan, api):
     if existing_sha is None:
         api.call('POST', base+'/git/refs', {'ref': 'refs/tags/'+tag, 'sha': sha})
     if release is None:
-        notes = api.call('POST', base+'/releases/generate-notes', {'tag_name': tag, 'target_commitish': sha})
+        notes = launcher_notes(api, base, tag, sha)
         download = 'https://github.com/'+REPOSITORY+'/releases/download/'+tag+'/'
         links = ' · '.join('['+label+']('+download+package_names(version, platform)[0]+')'
                            for label, platform in [('Download Windows x64', 'windows-x64'),
@@ -246,7 +320,7 @@ def publish(directory, plan, api):
                 'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
                 'that older updater cannot install the newly sealed app bundle. Preserve game files, saves, settings and ISO.\n\n'
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '
-                'remain pending. No game runtime or original game data is included.\n\n' + notes.get('body', '') + '\n\n' + marker)
+                'remain pending. No game runtime or original game data is included.\n\n' + notes + '\n\n' + marker)
         release = api.call('POST', base+'/releases', {'tag_name': tag, 'target_commitish': sha,
             'name': 'Launcher v'+version, 'body': body, 'draft': True,
             'prerelease': plan['prerelease'], 'make_latest': 'false'})

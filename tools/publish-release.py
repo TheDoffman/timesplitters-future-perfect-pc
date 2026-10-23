@@ -1,4 +1,4 @@
-"""Publish a tested main commit with matching version, notes, tag and assets.
+"""Publish a tested, pushed commit with matching version, notes, tag and assets.
 
 No checkout switching, version edits, force pushes or published-release updates.
 GitHub CLI authentication is used; tokens never enter command arguments or files.
@@ -20,6 +20,9 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TEXTURE_SPEC = importlib.util.spec_from_file_location('publish_textures', ROOT/'tools/build_textures.py')
+CHANNEL_SPEC = importlib.util.spec_from_file_location('release_channels', ROOT/'tools/release_channels.py')
+CHANNELS = importlib.util.module_from_spec(CHANNEL_SPEC)
+CHANNEL_SPEC.loader.exec_module(CHANNELS)
 TEXTURES = importlib.util.module_from_spec(TEXTURE_SPEC)
 TEXTURE_SPEC.loader.exec_module(TEXTURES)
 SEMVER = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\Z')
@@ -155,7 +158,10 @@ def release_lock(path):
 
 
 class Publisher:
-    def __init__(self, root=ROOT):
+    def __init__(self, root=ROOT, *, branch="main", channel_name=None, notes_file=None):
+        self.source_branch = branch
+        self.channel_name = channel_name
+        self.notes_file = Path(notes_file).resolve() if notes_file else None
         self.root = Path(root).resolve()
         self.output = self.root/'build/releases'
         self.python = self.root/'.venv/Scripts/python.exe'
@@ -179,26 +185,37 @@ class Publisher:
 
     def clean(self):
         if self.git('status', '--porcelain'):
-            raise ValueError('Commit/merge all source changes first. Releases require a clean main checkout.')
+            raise ValueError('Commit/merge all source changes first. Releases require a clean checkout.')
 
     def preflight(self):
         self.clean()
-        if self.git('branch', '--show-current') != 'main':
-            raise ValueError('Merge this work, then run on main: git switch main; git pull --ff-only origin main')
+        if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', self.source_branch)
+                or '..' in self.source_branch or self.source_branch.endswith('/')
+                or self.git('branch', '--show-current') != self.source_branch):
+            raise ValueError('Check out the intended branch and pass --branch for a non-main release.')
         if not shutil.which('gh'):
             raise ValueError('Install GitHub CLI (gh), then run gh auth login before releasing.')
         self.repo = github_repository(self.git('remote', 'get-url', 'origin'))
         self.gh('auth', 'status', '--hostname', 'github.com')
-        self.git('fetch', 'origin', 'refs/heads/main:refs/remotes/origin/main', '--tags')
+        self.git('fetch', 'origin', f'refs/heads/{self.source_branch}:refs/remotes/origin/{self.source_branch}', '--tags')
         self.commit = self.git('rev-parse', 'HEAD')
-        if self.commit != self.git('rev-parse', 'refs/remotes/origin/main'):
-            raise ValueError('main must match origin/main exactly. Push merged work or pull --ff-only, then retry.')
+        if self.commit != self.git('rev-parse', 'refs/remotes/origin/'+self.source_branch):
+            raise ValueError('The source branch must match its origin branch exactly. Push or pull --ff-only, then retry.')
         self.version = (self.root/'VERSION').read_text().strip()
         if self.version.startswith('v'):
             raise ValueError('VERSION contains the number without the v prefix')
         key = version_key(self.version)
         self.tag = 'v'+self.version
         self.prerelease = not key[3]
+        self.channel = CHANNELS.identity(self.version, publishing=True)
+        if self.channel_name:
+            if self.channel['channel']=='beta' and self.channel_name!='Beta':
+                raise ValueError('The beta track is named Beta; custom display names are for feature tracks.')
+            if not self.prerelease or not self.channel_name.strip() or len(self.channel_name)>80 or any(ord(c)<32 for c in self.channel_name):
+                raise ValueError('A preview display name must be 1-80 printable characters.')
+            self.channel['name'] = self.channel_name
+        if not self.prerelease and self.source_branch != 'main' and not self.source_branch.startswith(('release/', 'hotfix/')):
+            raise ValueError('Stable releases require main or an explicit release/ or hotfix/ branch.')
         self.name = 'TimeSplitters-Future-Perfect-PC-'+self.tag+'-windows-x64'
         self.stage = self.output/self.name
         self.archive = self.output/(self.name+'.zip')
@@ -207,21 +224,68 @@ class Publisher:
         self.notes = self.output/(self.name+'.notes.md')
         self.plan = self.output/(self.name+'.release.json')
         pages = json.loads(self.gh('api', '--paginate', '--slurp', f'repos/{self.repo}/releases?per_page=100'))
-        releases, self.previous = last_published(pages)
+        releases, _ = last_published(pages)
         if any(release['tag_name'] == self.tag for release in releases):
             raise ValueError(f'{self.tag} already has a release or draft. Inspect it on GitHub; it will not be overwritten.')
-        if self.previous:
+        published = [r for r in releases if not r.get('draft') and r.get('published_at')]
+        same_series, stable, previews = [], [], []
+        for release in published:
             try:
-                previous_key = version_key(self.previous['tag_name'])
-            except ValueError:
-                previous_key = None  # Older non-versioned tags still work as note baselines.
-            if previous_key is not None and key <= previous_key:
-                raise ValueError(f'Update VERSION beyond the last published version, {self.previous["tag_name"]}, and commit it.')
-            self.baseline = self.git('rev-parse', '--verify', 'refs/tags/'+self.previous['tag_name']+'^{commit}')
-            if self.baseline == self.commit:
-                raise ValueError('There are no new source commits since the last published release')
+                tag = release['tag_name']
+                if not tag.startswith('v'):
+                    continue
+                old_key = version_key(tag)
+                old_channel = CHANNELS.identity(tag)['channel']
+            except (ValueError, KeyError):
+                continue
+            if old_channel == 'stable' and not release.get('prerelease'):
+                stable.append(release)
+            elif release.get('prerelease') and old_key < key:
+                previews.append(release)
+            if (old_channel == self.channel['channel'] and
+                    (old_key[:3] == key[:3] if self.prerelease else old_key[:2] == key[:2])):
+                same_series.append(release)
+        if same_series and key <= max(version_key(r['tag_name']) for r in same_series):
+            raise ValueError('Update VERSION beyond the published versions in this release series.')
+        self.previous = None
+        self.baseline = None
+        if self.prerelease:
+            candidates = (sorted(same_series, key=lambda r: version_key(r['tag_name']), reverse=True)
+                          + sorted(stable, key=lambda r: version_key(r['tag_name']), reverse=True))
         else:
-            self.baseline = None
+            candidates = sorted((r for r in stable if version_key(r['tag_name']) < key),
+                                key=lambda r: version_key(r['tag_name']), reverse=True)
+            # Bootstrap the first Stable changelog from the latest published game
+            # preview (including historical alphas), then use Stable baselines forever.
+            if not stable:
+                candidates = sorted(previews, key=lambda r: r['published_at'], reverse=True)
+        # Notes compare only against an ancestor; unrelated experimental branches
+        # must never become a baseline merely because they were published later.
+        for release in candidates:
+            revision = self.git('rev-parse', '--verify', 'refs/tags/'+release['tag_name']+'^{commit}')
+            try:
+                self.git('merge-base', '--is-ancestor', revision, self.commit)
+            except RuntimeError:
+                continue
+            self.previous, self.baseline = release, revision
+            break
+        if not self.prerelease and self.source_branch != 'main' and self.previous not in stable:
+            raise ValueError('A maintenance branch must descend from a published Stable release.')
+        if self.baseline == self.commit:
+            raise ValueError('There are no new source commits since the last published release')
+        self.stable_base = None
+        for release in sorted(stable, key=lambda r: version_key(r['tag_name']), reverse=True):
+            revision = self.git('rev-parse', '--verify', 'refs/tags/'+release['tag_name']+'^{commit}')
+            try:
+                self.git('merge-base', '--is-ancestor', revision, self.commit)
+            except RuntimeError:
+                continue
+            self.stable_base = release['tag_name']
+            break
+        self.channel['latest_stable'] = max(stable, key=lambda r: version_key(r['tag_name']))['tag_name'] if stable else None
+        self.channel['includes_latest_stable'] = bool(stable and self.channel['latest_stable'] == self.stable_base)
+        self.channel.update(source_commit=self.commit, source_branch=self.source_branch,
+                            stable_base=self.stable_base, platforms=['windows-x64'])
         self.require_repository_textures()
         self.validate_remote()
 
@@ -251,13 +315,13 @@ class Publisher:
                              else 'Release package must include every repository texture and its metadata with matching hashes/count/size.')
 
     def validate_remote(self):
-        if self.git('rev-parse', 'HEAD') != self.commit or self.git('branch', '--show-current') != 'main':
+        if self.git('rev-parse', 'HEAD') != self.commit or self.git('branch', '--show-current') != self.source_branch:
             raise ValueError('The checkout changed during release preparation')
         self.clean()
-        rows = self.git('ls-remote', 'origin', 'refs/heads/main', 'refs/tags/'+self.tag, 'refs/tags/'+self.tag+'^{}').splitlines()
+        rows = self.git('ls-remote', 'origin', 'refs/heads/'+self.source_branch, 'refs/tags/'+self.tag, 'refs/tags/'+self.tag+'^{}').splitlines()
         refs = dict((row.split()[1], row.split()[0]) for row in rows)
-        if refs.get('refs/heads/main') != self.commit:
-            raise ValueError('GitHub main changed. Update main and prepare the release again.')
+        if refs.get('refs/heads/'+self.source_branch) != self.commit:
+            raise ValueError('The remote source branch changed. Update it and prepare the release again.')
         tagged = refs.get('refs/tags/'+self.tag+'^{}', refs.get('refs/tags/'+self.tag))
         if tagged and tagged != self.commit:
             raise ValueError('The release tag already points at a different commit; it will not be moved')
@@ -305,10 +369,31 @@ class Publisher:
         generated = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/releases/generate-notes',
                                        '--input', '-', payload=payload)).get('body', '').strip()
         generated = self.game_pr_notes(generated)
+        extra_notes = ''
+        if self.notes_file:
+            if self.notes_file.stat().st_size>64*1024:
+                raise ValueError('Maintainer release notes must be at most 64 KiB.')
+            extra_notes = self.notes_file.read_text(encoding='utf-8').strip()
+            if '<!-- tsfp-release ' in extra_notes:
+                raise ValueError('Maintainer notes must not override channel metadata.')
         baseline = self.previous['tag_name'] if self.previous else 'the beginning of the project'
+        channel_metadata = '<!-- tsfp-release '+json.dumps(self.channel, separators=(',', ':'))+' -->'
+        stable_note = self.stable_base or 'No published Stable release is an ancestor of this build.'
+        missing_note = ('This build does not include the latest Stable release, '+self.channel['latest_stable']+'.'
+                        if self.prerelease and self.channel['latest_stable'] and not self.channel['includes_latest_stable'] else '')
         body = f'''TimeSplitters: Future Perfect PC **{self.tag}** for Windows 10/11 x64.
 
 This is an experimental PC port. Original US Xbox game files are required and are not included.
+
+{channel_metadata}
+
+**Game channel:** {self.channel['name']}. **Included Stable baseline:** {stable_note}
+
+{missing_note}
+
+{'Opt-in test build. Features and save/network compatibility may change. Review Known issues before testing.' if self.prerelease else 'Stable game release. The port remains experimental; see known platform limitations.'}
+
+{extra_notes}
 
 ## Changes since {baseline}
 
@@ -320,7 +405,7 @@ This is an experimental PC port. Original US Xbox game files are required and ar
 
 1. [Download the Windows launcher](https://github.com/{self.repo}/releases/latest) and extract its ZIP.
 2. Open **TimeSplitters Launcher.exe**.
-3. Set **Update channel** to **{'Preview' if self.prerelease else 'Stable'}**, then select **Install release**.
+3. Set **Update channel** to **{self.channel['name']}**, then select **Install release**.
 4. Import your US Xbox game using **Locate ISO** or **Use extracted files**. You only need to do this once.
 5. Select **Play Game**.
 
@@ -332,7 +417,7 @@ The launcher downloads and verifies updates, keeping your game data, settings an
 2. Extract the entire ZIP to a writable folder.
 3. Run **Play.cmd** and select your US Xbox ISO or extracted game folder when prompted.
 
-When upgrading, preserve **Data**, **Settings** and **Saves**.
+When upgrading, preserve **Data**, **Settings**, **Saves** and **Textures**.
 Use the companion `.zip.sha256` file to verify the download.
 
 **Requirements:** Windows 10/11 x64 and original US Xbox game files.
@@ -390,6 +475,8 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         if build['source_commit'] != self.commit or build['version'] != self.tag or build['source_changes']:
             raise ValueError('Package source/version does not match the clean release commit')
         self.require_package_textures(build)
+        if build.get('release_channel') != CHANNELS.identity(self.tag):
+            raise ValueError('Package channel does not match the release version.')
         expected = self.checksum.read_text(encoding='ascii').split()
         if expected != [digest(self.archive), self.archive.name]:
             raise ValueError('Package checksum mismatch')
@@ -425,14 +512,15 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         self.output.mkdir(parents=True, exist_ok=True)
         if self.plan.exists():
             prepared = json.loads(self.plan.read_text())
-            if prepared['commit'] != self.commit or prepared['tag'] != self.tag or prepared['repo'] != self.repo:
+            if (prepared['commit'] != self.commit or prepared['tag'] != self.tag or prepared['repo'] != self.repo
+                    or prepared.get('channel') != self.channel):
                 raise ValueError('Prepared output belongs to another commit/version/repository')
             if set(prepared['assets']) != {path.name for path in (self.archive, self.checksum, self.metadata)}:
                 raise ValueError('Prepared release has an incomplete asset list')
             for name, expected in prepared['assets'].items():
                 if Path(name).name != name or digest(self.output/name) != expected:
                     raise ValueError('Prepared release assets changed; they will not be published')
-            print('Reusing the validated package for this exact main commit.', flush=True)
+            print('Reusing the validated package for this exact source commit.', flush=True)
             # The staging folder may already have been recycled.
             self.verify_package()
         else:
@@ -441,7 +529,7 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         assets = {path.name: digest(path) for path in (self.archive, self.checksum, self.metadata)}
         temporary = self.plan.with_suffix('.json.tmp')
         temporary.write_text(json.dumps(dict(commit=self.commit, tag=self.tag, repo=self.repo,
-                              previous=self.previous['tag_name'] if self.previous else None, assets=assets), indent=2)+'\n')
+                              previous=self.previous['tag_name'] if self.previous else None, channel=self.channel, assets=assets), indent=2)+'\n')
         temporary.replace(self.plan)
         self.validate_remote()
         self.write_notes()  # Refresh the baseline; a network failure can resume without rebuilding.
@@ -450,12 +538,10 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             self.recycle(self.stage)
         print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
 
-    def require_texture_launcher(self):
+    def require_launcher(self):
         build = json.loads(self.metadata.read_text())
         self.require_package_textures(build)
-        if build.get('textures') is None:
-            return  # Optional pack delivery does not depend on a bundled payload.
-        minimum = '1.2.24' if build['textures'].get('retired') else '1.2.22'
+        minimum = CHANNELS.MINIMUM_LAUNCHER
         latest = json.loads(self.gh('api', f'repos/{self.repo}/releases/latest'))
         tag = latest.get('tag_name', '')
         version = tag.removeprefix('launcher-v')
@@ -463,7 +549,7 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                 or latest.get('draft') or latest.get('prerelease')
                 or not latest.get('published_at')
                 or version_key(version) < version_key(minimum)):
-            raise ValueError(f'Publish a stable launcher {minimum} or newer before this bundled-texture game release.')
+            raise ValueError(f'Publish a stable launcher {minimum} or newer before publishing game channels.')
         assets = {a['name'] for a in latest.get('assets', [])
                   if a.get('state') == 'uploaded' and a.get('size', 0) > 0}
         required = {f'TimeSplitters-Launcher-v{version}-{platform}.zip'
@@ -478,7 +564,7 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             if digest(path) != plan['assets'][path.name]:
                 raise ValueError('Prepared assets changed before upload')
         self.verify_package()
-        self.require_texture_launcher()
+        self.require_launcher()
         # Pin the tag before creating the draft. GitHub rejects a concurrent
         # attempt to create the same ref, so an existing tag is never moved.
         existing = self.git('ls-remote', 'origin', 'refs/tags/'+self.tag)
@@ -513,8 +599,11 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--prepare-only', action='store_true', help='Build, test and save notes locally; no tag/release is created')
     group.add_argument('--draft', action='store_true', help='Upload a draft instead of publishing it')
+    parser.add_argument('--branch', default='main', help='Exact pushed source branch; Stable also allows release/ and hotfix/ branches')
+    parser.add_argument('--channel-name', help='Human-readable preview name, for example Story Co-op Preview')
+    parser.add_argument('--notes-file', type=Path, help='Reviewed Markdown with feature notes, known issues and test instructions')
     args = parser.parse_args()
-    publisher = Publisher()
+    publisher = Publisher(branch=args.branch, channel_name=args.channel_name, notes_file=args.notes_file)
     check_directory(publisher.root, publisher.output)
     publisher.output.mkdir(parents=True, exist_ok=True)
     with release_lock(publisher.output/'.publish.lock'):

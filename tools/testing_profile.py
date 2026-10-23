@@ -16,6 +16,9 @@ TITLE='45410066'
 BODY_SIZE=0x1F54
 PROGRESS=0x1290
 FIXTURE='private/test-fixtures/unlocked'
+# Directory produced by the supported US game when creating the name Test Lab.
+# Reusing the seed Player 1 directory makes XCreateSaveGame reject that name.
+TEST_SLOT='1AD19156651F'
 
 
 def contained(root,path,area):
@@ -78,7 +81,7 @@ def create_fixture(root,seed):
     slot=profile.parent.name
     if len(slot)!=12 or any(c not in '0123456789ABCDEFabcdef' for c in slot):
         raise ValueError('Unexpected Xbox save slot')
-    base=Path('UserData')/TITLE/slot
+    base=Path('UserData')/TITLE/TEST_SLOT
     files[base/'SaveMeta.xbx']='\ufeffName=Test Lab\r\n'.encode('utf-16-le')
     files[base/'tsftrpft']=result
     manifest=dict(schema=1,xbe_sha256=XBE_SHA256,seed_sha256=hashlib.sha256(raw).hexdigest(),
@@ -124,8 +127,26 @@ def prepare_run(root,run):
     if (run/'run.lock').exists():
         raise ValueError('Test directory is in use; close its game before preparing again')
     run.mkdir(parents=True,exist_ok=True)
+    old_base=Path(next(name for name in manifest['files'] if name.endswith('/tsftrpft'))).parent
+    new_base=Path('UserData')/TITLE/TEST_SLOT
+    # Legacy fixtures renamed only SaveMeta, retaining the seed's directory ID.
+    # Preserve an untouched old test copy outside UserData instead of leaving
+    # a hidden name collision. Never move a profile changed since fixture copy.
+    if old_base!=new_base:
+        old=contained(root,run/'saves'/old_base,'private/test-saves')
+        if old.exists():
+            expected={Path(name).name:digest for name,digest in manifest['files'].items() if Path(name).parent==old_base}
+            if set(p.name for p in old.iterdir())!=set(expected) or any(
+                hashlib.sha256((old/name).read_bytes()).hexdigest()!=digest for name,digest in expected.items()):
+                raise ValueError('Legacy test profile was modified; use a fresh isolated test directory')
+            backup=contained(root,run/'legacy-fixture-backup'/old_base.name,'private/test-saves')
+            if backup.exists():raise ValueError('Legacy fixture backup exists; use a fresh test directory')
+            backup.parent.mkdir(parents=True,exist_ok=True)
+            old.rename(backup)
     for name in manifest['files']:
-        destination=contained(root,run/'saves'/name,'private/test-saves')
+        relative=Path(name)
+        if relative.parent==old_base:relative=new_base/relative.name
+        destination=contained(root,run/'saves'/relative,'private/test-saves')
         destination.parent.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(fixture/name,destination)
     for source,name in ((root/'tests/fixtures/pc-controls.json','controls.json'),):
@@ -137,6 +158,7 @@ def prepare_run(root,run):
     marker.write_text(json.dumps(dict(schema=1,fixture=str(fixture.relative_to(root))))+'\n')
     environment={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     environment.update(RECOMP_GAME_DIR=str(root/'private/game'),RECOMP_SAVE_DIR=str(run/'saves'),
+        TSFP_SAVE_LOCATION_LOCK='1',
         TSFP_CRASH_DIR=str(run/'crashes'),
         TSFP_TEXTURE_PACK_DIR=str(root/'assets/textures'),TSFP_TEXTURE_MODE='classic',
         RECOMP_INPUT_CONFIG=str(run/'controls.json'),TSFP_DISPLAY_CONFIG=str(run/'display.ini'),
@@ -144,7 +166,7 @@ def prepare_run(root,run):
     return environment
 
 
-def play(root,run,seconds):
+def play(root,run,seconds,*,allow_save_drive_changes=False):
     """Bounded Windows session, with capped logs and an exclusive run marker."""
     if os.name!='nt':raise ValueError('Use the isolated native runner on macOS')
     if not 1<=seconds<=600:raise ValueError('Duration must be between 1 and 600 seconds')
@@ -152,6 +174,10 @@ def play(root,run,seconds):
     if hashlib.sha256((root/'private/game/default.xbe').read_bytes()).hexdigest()!=XBE_SHA256:
         raise ValueError('Unsupported game executable')
     env=prepare_run(root,run)
+    if allow_save_drive_changes:
+        # Explicit human drive-selection testing only. Automated sessions stay
+        # locked even when the parent process has disabled the lock.
+        env['TSFP_SAVE_LOCATION_LOCK']='0'
     lock=run/'run.lock'
     with lock.open('x') as stream:stream.write(str(os.getpid()))
     child=None
@@ -168,7 +194,10 @@ def play(root,run,seconds):
             destination=contained(root,run/name,'private/test-saves')
             thread=threading.Thread(target=drain,args=(pipe,destination),daemon=True)
             thread.start();threads.append(thread)
-        print(f'Test Lab session: PID {child.pid}, limit {seconds}s, saves {run / "saves"}',flush=True)
+        print(f'Test Lab session: PID {child.pid}, limit {seconds}s, default saves {run / "saves"}',flush=True)
+        if allow_save_drive_changes:
+            print(f'Manual drive selection enabled. Selected drives activate immediately and persist; '
+                  f'preference: {run / "save-location.txt"}. Existing saves are not moved.',flush=True)
         try:child.wait(timeout=seconds)
         except (subprocess.TimeoutExpired,KeyboardInterrupt):
             child.terminate();child.wait(timeout=10)
@@ -208,10 +237,15 @@ def main():
     parser.add_argument('--prepare',type=Path,help='Restore a test copy beneath private/test-saves')
     parser.add_argument('--play',action='store_true',help='Run a bounded Windows test with a disposable copy')
     parser.add_argument('--seconds',type=int,default=120,help='Play duration, 1–600 seconds (default 120)')
+    parser.add_argument('--allow-save-drive-changes',action='store_true',
+        help='Manual play only: allow selecting and immediately using another save drive')
     args=parser.parse_args()
+    if args.allow_save_drive_changes and not args.play:
+        parser.error('--allow-save-drive-changes requires --play')
     if args.seed:print('Created',create_fixture(ROOT,args.seed))
     if args.play:
-        raise SystemExit(play(ROOT,args.prepare or ROOT/'private/test-saves/quick-test',args.seconds))
+        raise SystemExit(play(ROOT,args.prepare or ROOT/'private/test-saves/quick-test',args.seconds,
+                             allow_save_drive_changes=args.allow_save_drive_changes))
     elif args.prepare:
         env=prepare_run(ROOT,args.prepare)
         print(json.dumps({k:v for k,v in env.items() if k.startswith(('RECOMP_','TSFP_'))},indent=2))

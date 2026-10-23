@@ -242,6 +242,12 @@ static unsigned char bot_fresh[16],bot_seen[16];
 static uint32_t bot_last_tick[16];
 static uint32_t bot_targets[16];
 static unsigned bot_target_count;
+double pc_network_bots_time(void)
+{
+    LARGE_INTEGER counter,frequency;
+    QueryPerformanceCounter(&counter);QueryPerformanceFrequency(&frequency);
+    return (double)counter.QuadPart/(double)frequency.QuadPart;
+}
 static void bot_reset(void)
 {
     memset(&bot_context,0,sizeof bot_context);

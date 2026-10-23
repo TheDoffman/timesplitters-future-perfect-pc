@@ -242,3 +242,29 @@ current launch since startup or the last clear. Use `Play.cmd` or `tsfp.ps1 Run`
 for live log monitoring; direct launches without `RECOMP_LOG_FILE` show
 "Log unavailable". Log reading is bounded and runs outside the render thread.
 The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** does nothing.
+
+
+### Keyboard and Mouse menu
+
+Main Settings and Pause Options now include Keyboard and Mouse, using the game's
+controller-style menu theme. Each action has Primary and Alternate bindings,
+with at most two keyboard/mouse bindings per action. All 34 actions are covered,
+including ten inventory slots (1–9 and 0 by default). The internal 70 weapon IDs
+are not additional settings slots. Bindings and mouse sensitivity update live.
+Capture supports keyboard, mouse buttons and wheel, waits for opening input to
+release and supports Escape cancellation. Conflicts can move the existing binding;
+clear and defaults are available. Existing four-binding keyboard profiles use
+the first two positions; controller mappings retain their capacity.
+
+### Save drives
+
+Create Profile → Select Storage Device lists mounted drives in the existing
+screen, sorted by drive letter on Windows and volume name on Mac. Rows show just drive names and letters.
+Highlight a drive
+to see its free and total space. Choosing another writable drive immediately
+continues saving the new profile there; no restart is needed. Existing profiles stay on
+their original drive. New locations use TimeSplittersFuturePerfect/Saves on that
+drive. The selected path is stored in save-location.txt beside controls.json.
+If that drive is unavailable on startup, reconnect it or remove that preference
+to restore the default save location. Automated Test Lab sessions lock location
+changes. Explicit manual testing uses --allow-save-drive-changes.

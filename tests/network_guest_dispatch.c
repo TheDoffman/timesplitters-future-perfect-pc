@@ -58,6 +58,9 @@ static unsigned story_lobby_publishes,story_player_limit;
 void pc_story_network_lobby_config(void) {++story_lobby_publishes;}
 unsigned pc_story_network_player_limit(void) {return story_player_limit;}
 void sub_000658D0_gen(void) {++originals;g_esp+=4;}
+
+static double bot_time=1.;
+double pc_network_bots_time(void) {return bot_time;}
 static const char *bot_test_getenv(const char *name)
 { return bot_test_enabled && !strcmp(name,"TSFP_NETWORK_BOTS")?"1":NULL; }
 #define getenv bot_test_getenv
@@ -523,7 +526,11 @@ int main(void)
         CHECK((memory[(0x7000+0x28)/4]&0x71u)==0x71u && bot_notices==1);
         CHECK(!memcmp((uint8_t *)memory+0x71cc,&last_bot.health,4));
         last_bot.position[0]=NAN;bot_incoming=1;
-        g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_refreshes==5);
+        /* An invalid packet must not replace the valid cached host state;
+           presentation still refreshes that state on every guest frame. */
+        { float before;memcpy(&before,(uint8_t *)memory+0x7064,4);
+          g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_refreshes==6);
+          CHECK(!memcmp(&before,(uint8_t *)memory+0x7064,4)); }
         memory[0x76b140/4]=1;memory[(0x1000+2*0xea0)/4]=0;
         memory[0x7de318/4]+=3;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(last_bot.body_present==0 && last_bot.killed_by[1]==1);
@@ -537,6 +544,22 @@ int main(void)
         bot_notice_blocked=0;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(bot_notices==3 && bot_notice_victim==2 && bot_notice_killer==1);
         bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);CHECK(bot_notices==3);
+
+        /* Exercise the actual guest hook between fresh packets, including its
+           body/actor write and collision-bound refresh, not only the helper. */
+        last_bot.body_present=1;last_bot.health=100;last_bot.entity_flags=0x71;
+        last_bot.spawn=100;last_bot.position[0]=0;last_bot.bounds_center[0]=10;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        bot_time=1.05;last_bot.position[0]=3;last_bot.bounds_center[0]=13;
+        bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        { float x;memcpy(&x,(uint8_t *)memory+0x7064,4);CHECK(x==0); }
+        bot_time=1.075;g_esp=16;pc_network_bots_guest_frame(original);
+        { float x,actor_x,center;
+          memcpy(&x,(uint8_t *)memory+0x7064,4);
+          memcpy(&actor_x,(uint8_t *)memory+0x1000+2*0xea0+0x30,4);
+          memcpy(&center,(uint8_t *)memory+0x71a8,4);
+          CHECK(fabsf(x-1.5f)<.001f && x==actor_x && fabsf(center-11.5f)<.001f);
+          CHECK(!bot_incoming && bot_notices==3); }
 
     }
 #else

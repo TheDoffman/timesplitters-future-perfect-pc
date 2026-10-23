@@ -151,10 +151,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         CHECK((WORD_AT(args[0]+0x114)==16 || WORD_AT(args[0]+0x114)==4) && WORD_AT(args[0]+0x1504)==0x7fffffff);
         WORD_AT(args[0]+0x114)=2;++context_spawns;
     }
-    else if(fn==sub_00075B70){CHECK(count==5 && args[4]==0x1201f);difficulty_rows=0;}
+    else if(fn==sub_00075B70){CHECK(count==5 && args[4]==0x1237e);difficulty_rows=0;}
     else if(fn==sub_00079D60_gen){
         static const char *names[]={"Easy","Normal","Hard"};
-        CHECK(count==6 && difficulty_rows<3 && args[1]==difficulty_rows && args[4]==0x1201e);
+        CHECK(count==6 && difficulty_rows<3 && args[1]==difficulty_rows && args[4]==0x1237d);
         CHECK(!strcmp((char *)(g_xbox_mem_offset+args[0]),names[difficulty_rows]));++difficulty_rows;
     }else if(fn==sub_000771D0){CHECK(count==1);++finalized;}
     else if(fn==sub_000770E0){CHECK(count==2);highlighted=args[1];}
@@ -178,9 +178,9 @@ void sub_002CAFE0(void)
     CHECK(0); /* Story settings must not enter the original local load path. */
 }
 #endif
-#define STORY_SELECT_CB 0x1201eu
-#define STORY_BUILD_CB 0x1201du
-#define STORY_BACK_CB 0x1201fu
+#define STORY_SELECT_CB 0x1237du
+#define STORY_BUILD_CB 0x1237cu
+#define STORY_BACK_CB 0x1237eu
 #ifdef _WIN32
 static int load_probe_enabled;
 static const char *load_getenv(const char *name)

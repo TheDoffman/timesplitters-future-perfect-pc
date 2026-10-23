@@ -19,7 +19,23 @@ $framework = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $compiler = Join-Path $framework 'csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw '.NET Framework 4.x x64 compiler is missing.' }
 $source = Join-Path $PSScriptRoot 'launcher'
-if (!$BannerPath) { $BannerPath = Join-Path $project 'private\launcher-art\future-perfect-banner-v1.png' }
+# Prefer the checksum-pinned artwork used by both release builds. Keep older
+# private source artwork intact as a development fallback when no cache exists.
+function Resolve-LauncherArtwork([string]$ExplicitPath, [string]$ResourceName, [string]$LegacyName) {
+    if ($ExplicitPath) { return $ExplicitPath }
+    $cachedArtwork = Join-Path $project ('build\launcher-art\' + $ResourceName)
+    if (Test-Path -LiteralPath $cachedArtwork -PathType Leaf) {
+        $artworkPin = Get-Content -Raw (Join-Path $project 'config\launcher-artwork.json') | ConvertFrom-Json
+        $expectedArtworkHash = $artworkPin.resources.$ResourceName
+        if (!$expectedArtworkHash -or (Get-FileHash -LiteralPath $cachedArtwork -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expectedArtworkHash) {
+            throw "Cached launcher artwork differs from config/launcher-artwork.json: $ResourceName. Recover it with tools/fetch-launcher-art.ps1."
+        }
+        return $cachedArtwork
+    }
+    return (Join-Path $project ('private\launcher-art\' + $LegacyName))
+}
+
+$BannerPath = Resolve-LauncherArtwork $BannerPath 'launcher-banner.png' 'future-perfect-banner-v1.png'
 $bannerArguments = @()
 if (Test-Path -LiteralPath $BannerPath -PathType Leaf) {
     $BannerPath = (Resolve-Path -LiteralPath $BannerPath).ProviderPath
@@ -31,7 +47,7 @@ if (Test-Path -LiteralPath $BannerPath -PathType Leaf) {
 }
 
 # Wide title artwork is sidebar-only; the EXEs use a dedicated compact portal mark.
-if (!$LogoPath) { $LogoPath = Join-Path $project 'private\launcher-art\timesplitters-future-perfect-logo.png' }
+$LogoPath = Resolve-LauncherArtwork $LogoPath 'launcher-logo.png' 'timesplitters-future-perfect-logo.png'
 $logoArguments = @()
 Add-Type -AssemblyName System.Drawing
 if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
@@ -47,7 +63,7 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
 }
 # The generated environment is separate from the untouched original key art.
-if (!$BackdropPath) { $BackdropPath = Join-Path $project 'private\launcher-art\future-perfect-backdrop-v1.png' }
+$BackdropPath = Resolve-LauncherArtwork $BackdropPath 'launcher-backdrop.png' 'future-perfect-backdrop-v1.png'
 if (Test-Path -LiteralPath $BackdropPath -PathType Leaf) {
     $BackdropPath = (Resolve-Path -LiteralPath $BackdropPath).ProviderPath
     if ((Get-Item -LiteralPath $BackdropPath).Length -gt 8MB) { throw 'Launcher backdrop must be no larger than 8 MiB.' }

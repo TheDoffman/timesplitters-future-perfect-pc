@@ -10,6 +10,7 @@ POLICY_FILES = {
     '.github/workflows/launcher-build.yml', '.github/workflows/launcher-release.yml',
     'tools/launcher-compatibility.py', 'tests/test_launcher_compatibility.py',
     'tools/launcher-release.py', 'tools/build-launcher.ps1',
+    'tools/release_channels.py',
     'tools/build-mac-launcher.py', 'tools/fetch-launcher-art.ps1',
     'tools/play-native-mac.py', 'tools/test-mac-launcher.py',
     'tools/playable-launch.ps1', 'config/mac-launcher-sdk.json',

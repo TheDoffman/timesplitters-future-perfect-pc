@@ -77,6 +77,7 @@ static void wheel_input(int steps)
         if(menu_wheel>8) menu_wheel=8;
         if(menu_wheel<-8) menu_wheel=-8;
         menu_wheel_at=GetTickCount64();
+        if(steps)pc_settings_capture_key(steps>0?0x86:0x87);
     } else pc_input_wheel(&input,steps);
 }
 
@@ -258,6 +259,15 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         return 1;
     }
     if(replaying) return 0;
+    /* Binding capture owns key events before text/menu and host shortcuts. */
+    if((message==WM_KEYDOWN || message==WM_SYSKEYDOWN ||
+        message==WM_KEYUP || message==WM_SYSKEYUP) && pc_settings_capture_blocked()) {
+        AcquireSRWLockExclusive(&lock);
+        pc_input_key(&input,(unsigned)wp,message==WM_KEYDOWN || message==WM_SYSKEYDOWN);
+        if(input.focused && (message==WM_KEYDOWN || message==WM_SYSKEYDOWN))pc_settings_capture_key((int)wp);
+        ReleaseSRWLockExclusive(&lock);
+        return 1;
+    }
     if(message==WM_CHAR || message==WM_UNICHAR) {
         if(message==WM_UNICHAR && wp==0xffff) { *result=TRUE;return 1; }
         AcquireSRWLockExclusive(&lock);
@@ -384,6 +394,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         }
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, key, down && (captured || menu_mode));
+        if(down && input.focused)pc_settings_capture_key((int)key);
         ReleaseSRWLockExclusive(&lock);
         break;
     }
@@ -391,7 +402,8 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if (message == WM_XBUTTONDOWN) pc_prompts_keyboard();
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
-                     message == WM_XBUTTONDOWN && input.captured);
+                     message == WM_XBUTTONDOWN && (input.captured || menu_mode));
+        if(message==WM_XBUTTONDOWN && input.focused)pc_settings_capture_key(HIWORD(wp)==XBUTTON1?VK_XBUTTON1:VK_XBUTTON2);
         ReleaseSRWLockExclusive(&lock);
         *result = TRUE;
         return 1;
@@ -428,10 +440,34 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     return 0;
 }
 
+int pc_controls_weapon_slots_active(void)
+{
+    int active;
+    AcquireSRWLockShared(&lock);
+    active=!InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+        input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
+    ReleaseSRWLockShared(&lock);
+    return active;
+}
+
 int pc_controls_accept_pad(void)
 {
     return !replaying && !InterlockedCompareExchange(&editing,0,0) &&
            window_handle && GetForegroundWindow()==window_handle;
+}
+
+int pc_controls_binding_keys(unsigned char keys[256])
+{
+    AcquireSRWLockExclusive(&lock);
+    int focused=input.focused && (replaying || GetForegroundWindow()==window_handle);
+    memset(keys,0,256);
+    if(focused) {
+        for(unsigned i=1;i<256;i++)keys[i]=(unsigned char)pc_input_down(&input,i,GetTickCount64());
+        if(menu_mode && GetTickCount64()-menu_wheel_at<250) {
+            keys[0x86]|=menu_wheel>0;keys[0x87]|=menu_wheel<0;
+        }
+    }
+    ReleaseSRWLockExclusive(&lock);return focused;
 }
 
 int pc_controls_key_down(int key)
@@ -492,6 +528,7 @@ static PcMenuPointer menu_pointer(int consume)
     }
     if(consume) menu_wheel=0;
     ReleaseSRWLockExclusive(&lock);
+    if(pc_settings_capture_blocked())p.valid=p.left=p.right=p.wheel=0;
     return p;
 }
 

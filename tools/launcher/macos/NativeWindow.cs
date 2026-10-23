@@ -26,6 +26,8 @@ namespace TimeSplitters.Launcher
         {
             this.root=root;this.args=args;render=args.Any(a=>a.StartsWith("--render-"));
             AvaloniaXamlLoader.Load(this);Artwork();
+            Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
+            channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  macOS ARM64");
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
@@ -35,8 +37,9 @@ namespace TimeSplitters.Launcher
             Click("ImportButton",()=>Run(()=>Import(false)));Click("FolderButton",()=>Run(()=>Import(true)));
             Click("ReleaseNotesButton",()=>Run(News));Click("GameVersionsButton",()=>Run(Versions));
             Click("RollbackButton",()=>Run(Rollback));Click("PauseDownloadButton",()=>operation?.Cancel());
-            Find<ComboBox>("ChannelPicker").SelectedIndex=render?1:SelfUpdate.PreviewChannel(root)?1:0;
-            Find<ComboBox>("ChannelPicker").SelectionChanged+=(s,e)=>{if(render)return;Core.Write(Core.PathIn(root,".launcher/preferences.json"),Json.Encode(new{preview=Preview}));Run(Check);};
+            if(render)SetChannels(new[]{new Release {Tag="v0.4.0-story-coop.1",Channel="story-coop",ChannelName="Story Co-op Preview"}},"story-coop");
+            else SetChannels(Array.Empty<Release>(),GameChannels.Read(root));
+            channelPicker.Changed+=()=>{if(render)return;GameChannels.Save(root,SelectedGameChannel,channelPicker.LastPreview);Run(Check);};
             Opened+=async(s,e)=>{try{
                 if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
@@ -55,7 +58,11 @@ namespace TimeSplitters.Launcher
         void Label(string name,string value){Find<TextBlock>(name).Text=value;}
         void Status(string message){Label("StatusText",message);if(!render)LauncherLog.Write(root,message);}
         internal bool GameRunning { get { return gameRunning; } }
-        bool Preview=>Find<ComboBox>("ChannelPicker").SelectedIndex==1;
+        readonly GameChannelPickerPage channelPicker=new GameChannelPickerPage();
+        string SelectedGameChannel=>channelPicker.Selected;
+        bool Preview=>SelectedGameChannel!="stable";
+        void SetChannels(Release[] releases,string selected)
+        {channelPicker.SetReleases(releases,selected);}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
             foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
@@ -82,20 +89,22 @@ namespace TimeSplitters.Launcher
             Label("GameDataHint",data?"Your local game files are kept between updates.":"Import your supported US Xbox ISO or extracted game folder.");
             Find<Control>("ImportActions").IsVisible=!data&&!render;Find<Button>("OpenDataButton").IsVisible=data||render;Find<Expander>("GameDataExpander").IsExpanded=!data&&!render;
             Find<Button>("ImportButton").IsEnabled=!busy;Find<Button>("FolderButton").IsEnabled=!busy;
+            channelPicker.SetEnabled(!busy&&!gameRunning);
             Find<Button>("RollbackButton").IsEnabled=!busy&&!gameRunning&&!LauncherPlatform.Checkout(root)&&Core.CanRollback(root);
-            Label("ChannelBadge",Preview?"●  PREVIEW CHANNEL":"●  STABLE CHANNEL");
+            Label("ChannelBadge", Preview?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
             if(render){Label("ReleaseTitle","Native Mac launcher");Label("ReleaseDescription","Preview layout · native Mac releases appear here when published.");Label("UpdateStateLabel","MAC PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
         async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
         {
-            if(busy)return;int revision=++checkRevision;bool channel=Preview;Label("ReleaseTitle","Checking for updates…");
+            if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
             using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(8))){try{
-                var found=await client.Check(channel,timeout.Token);if(revision!=checkRevision)return;latest=found;
+                var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);
                 Label("ReleaseTitle",latest==null?"No Mac release available":"Available: "+latest.Tag);
                 Label("ReleaseDescription",latest==null?"No compatible native Mac package is published on this channel. Your local build remains available.":ReleaseNews.Availability(Core.InstalledVersion(root),latest,false));
-                bool newer=latest!=null && (String.IsNullOrEmpty(Core.InstalledVersion(root)) || GameVersion.Parse(latest.Tag).CompareTo(GameVersion.Parse(Core.InstalledVersion(root)))>0);
+                bool newer=GameChannels.CanInstall(latest,Core.InstalledVersion(root));
                 Find<Button>("UpdateButton").IsEnabled=newer&&!LauncherPlatform.Checkout(root)&&!gameRunning;
+                Find<Button>("UpdateButton").Content=latest!=null && latest.Channel!=GameChannels.Installed(root)?"Switch game channel":String.IsNullOrEmpty(Core.InstalledVersion(root))?"Install release":"Update release";
                 Label("UpdateStateLabel",latest==null?"NATIVE MAC":"CHECKED");
                 Status(LauncherPlatform.Checkout(root)?"Development build · published updates install into a separate portable installation.":"Update check complete.");
             }catch(Exception e){Label("ReleaseTitle","Couldn't check updates");Label("ReleaseDescription","Your installed game remains available. "+e.Message);}}
@@ -138,12 +147,12 @@ namespace TimeSplitters.Launcher
         async Task Install(Release release)
         {
             if(release==null||busy)return;Core.Require(!LauncherPlatform.Checkout(root),"Release updates cannot overwrite a developer checkout.");Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before updating.");
-            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved."))return;
+            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved. Back up saves before testing; save and network compatibility can vary."))return;
             if(busy||gameRunning)return;busy=true;operation=new CancellationTokenSource();Refresh();Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateProgress").IsVisible=true;
             try{string pending=Core.PathIn(root,".launcher/pending");Core.Require(!Directory.Exists(pending),"An unfinished update is staged. Restart for recovery before continuing.");Directory.CreateDirectory(pending);
                 try{string zip=Path.Combine(pending,"release.zip");await client.Download(release,zip,new TransferProgress(snapshot=>{Label("TransferDetails",snapshot.Summary);Find<Control>("TransferDetails").IsVisible=true;Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;}),operation.Token,Core.PathIn(root,".launcher/downloads/game"));
                     await Task.Run(()=>Core.Unpack(zip,Path.Combine(pending,"payload"),release.Tag,operation.Token));operation.Token.ThrowIfCancellationRequested();
-                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);Status("Restarting the launcher to install "+release.Tag+"…");NativeStartup.HandoffGame(root);}
+                    GameChannels.Save(root,release.Channel);Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);Status("Restarting the launcher to install "+release.Tag+"…");NativeStartup.HandoffGame(root);}
                 catch{if(!NativeStartup.HandingOff)Core.DiscardGameStaging(root);throw;}
             }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
@@ -151,7 +160,7 @@ namespace TimeSplitters.Launcher
         void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");settings.CheckTexturesIfOptedIn();}
         async Task News()
         {
-            if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}
+            if(newsPage==null){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;}
             Page("NewsHost");await newsPage.Refresh();
         }
         NativeVersions versionsPage;
@@ -208,7 +217,7 @@ namespace TimeSplitters.Launcher
         {
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
             if(mode.Contains("confirm")||mode.Contains("alert")){
-                string message="This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved.";
+                string message="This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved. Back up saves before testing; save and network compatibility can vary.";
                 if(mode.Contains("long"))message+="\n\n"+string.Join("\n\n",Enumerable.Repeat("Matching files will be updated. Other files are kept. You can cancel before installation begins.",8));
                 var dialog=MessageDialog(mode.Contains("alert")?"TimeSplitters":"Install v0.3.1-alpha.1?",message,!mode.Contains("alert"));
                 var shown=dialog.ShowDialog<bool>(this);await Task.Delay(350);
@@ -219,7 +228,7 @@ namespace TimeSplitters.Launcher
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
-            if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
+            if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             if(mode.Contains("download")){
                 var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};

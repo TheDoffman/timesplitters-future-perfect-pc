@@ -920,10 +920,41 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-host-save-storage.patch",
+      "sha256": "e9ac815ff5cbb59f73f703498448df38815e0689316b26e82584fad06062970e",
+      "targets": [
+        "src/kernel/kernel_path.c",
+        "titles/futureperfect/src/main.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-keyboard-settings-menu.patch",
+      "sha256": "dd655eae7516c5e120b3a3674d1cc18be8e5e493358921e51c819070c6bc1f5c",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-keyboard-weapon-slots.patch",
+      "sha256": "aa8b4f66e6ddee66c3eda94975004bde96a838a24b7f9d3885a976391859706b",
+      "targets": [
+        "src/input/input_bindings.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-spawn-pad.patch",
       "sha256": "c0996b89e2f8f05f0f22f84a44310f6a6087e97c60e7547e2a0d9125c0985840",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-live-profile-storage.patch",
+      "sha256": "d48d10f38801d876f56eddcfd011981b833def30fde2c8bee1d6abcbb328405a",
+      "targets": [
+        "src/kernel/kernel_path.c",
+        "titles/futureperfect/src/main.c"
       ]
     },
     {

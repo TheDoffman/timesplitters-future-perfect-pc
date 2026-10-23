@@ -47,7 +47,7 @@ def test_story_original_us_entry_contract():
             if start <= address and address+size <= start+length:
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
-    assert read(0x1201c, 4) == b'\xcc'*4
+    assert read(0x1237b, 4) == b'\xcc'*4
     call = read(0x2d0c89, 5)
     assert call[0] == 0xe8
     assert 0x2d0c8e+struct.unpack_from('<i', call, 1)[0] == 0x79d60

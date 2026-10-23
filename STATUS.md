@@ -292,6 +292,89 @@ Story lobby, shared level load or gameplay acceptance is claimed. See
 `logs/agent-investigation.md` for exact remaining checks. The unrelated broad-suite
 failures reported by LOCAL are not classified as baseline failures without evidence.
 
+
+## 2026-10-22 — Keyboard/storage PR #306 validation
+
+The integrated Windows build at aba3346 and built-in tests passed with alphabetical
+drive-letter ordering. Focused storage/menu/input/profile checks passed: 22 passed,
+2 Mac-only skips. The Windows launcher CI passed; its local rerun stopped at the
+intentional running-game update guard, leaving the other game session untouched.
+Initial Mac runtime CI found getattrlist was used before its unistd.h declaration;
+the storage adapter now includes that header before querying volume names. Native
+Mac gameplay and drive switching remain awaiting validation in MAC-061.
+
+## 2026-10-22 — Host storage screen (uncommitted)
+
+The original Create Profile storage screen now lists mounted host drives directly,
+in alphabetical drive-letter order on Windows (volume-name order on Mac). The user requested plain drive names/letters;
+Game drive/Save drive suffixes have been removed. Earlier Windows visual checks
+at 640x480 and 1920x1080 found C:, HDD D: and Steam F:. Free/total units replace
+console block counts. Shared selection activates UDATA routing immediately and
+writes an atomic preference, preserves existing profiles, and retains failure/status
+feedback on the same screen. Automated Test Lab sessions lock location changes;
+the explicit manual --allow-save-drive-changes option permits the user's drive
+selection test and honors the preference on later manual launches. Changing drives
+refreshes native duplicate-name enumeration and prepares the new title directory
+before the original free-space check. Caches/partition handles are not remounted.
+
+The user's Player 1 creation failure was traced to the old unlocked test fixture:
+its Test Lab metadata occupied Player 1's native directory, producing
+ERROR_ALREADY_EXISTS. The runner now maps fixtures to the game-created Test Lab
+slot and preserves untouched legacy copies outside UserData. This is a test
+fixture correction, not a silent move of personal profiles. The supported Windows
+build and built-in tests pass. The user confirmed immediate saving to another
+drive works in build 2e0d01cc. Native Mac compilation and volume
+interaction remain pending; see MAC-061.
+
+## 2026-10-22 — Themed keyboard and mouse menus (uncommitted)
+
+On `feature/keyboard-weapon-slots` (base `31052eb`), the native game menus now
+include Keyboard and Mouse in main Settings and paused Options. Binding pages
+use the original panel, fonts and highlights, with a keyboard/mouse schematic
+and Primary/Alternate columns. All 34 actions, including ten weapon slots, are
+reachable on short pages. Exactly two keyboard bindings are supported per action
+in the game, native dialogs and both launchers. Existing keyboard profiles retain
+their first pair in memory; loading does not rewrite files. Controller capacity
+is unchanged. Mouse sensitivity, enable and inversion use the same live settings.
+
+Windows x64/MSVC 19.44/D3D11, isolated Test Lab, 1280x720 output: inspected the
+layout and demonstrated single-tap U assignment, E conflict detection without
+menu activation, wheel capture, explicit conflict transfer, clearing the second
+binding, restoring defaults and live sensitivity dragging with persisted JSON.
+Native descriptor +12 runs every frame, so capture cleanup must not be installed
+there. Shared capture latches input events between polls, suppresses menu actions
+and waits for key release. Callback and pure-policy regressions cover these cases.
+Supported Windows build and its tests pass; focused tests passed (11 passed,
+one Mac-only skip) and Windows launcher tests pass. The pause entry is covered by
+the callback insertion fixture; manual paused-game interaction and native Mac
+compilation/input/rendering remain pending. See MAC-001. Personal settings/saves
+were not used; test binding and sensitivity changes were restored to defaults.
+
+## 2026-10-22 — Customizable keyboard weapon slots (uncommitted)
+
+Branch `feature/keyboard-weapon-slots`, main base `31052eb`: 1–9/0 select the
+first ten owned usable inventory slots through the original weapon selection
+path. Exactly ten slots are bindable; variants share their original group and
+empty slots do nothing. Windows F2, Cocoa settings and both launcher hosts share
+the new actions. Missing defaults migrate without overwriting custom bindings;
+stock White=1/Black=2 move to free Z/X keys. Menu/text/focus/capture guards,
+press edges and bounded request lifetime prevent unwanted repeated selection.
+
+Windows x64, MSVC 19.44, D3D11: supported build and native build tests pass;
+35 focused Python tests with 26 subtests pass, including selection/guard contracts.
+The final launcher passes 37 settings checks, 113 updater checks and 13 shared UI
+groups. A separate automated game run restarted during optional-texture tests,
+so that unrelated group stopped at its intentional running-game guard. Earlier
+full launcher tests passed before the final default-key adjustment. Native Mac
+compilation, Cocoa/SDL delivery and physical Mac gameplay remain pending in
+MAC-001; shared tests on Windows do not establish those results.
+
+Follow-up: the binding list is limited to exactly ten slots in the native
+editors and both launchers (34 total actions). Internal weapon IDs/groups still
+use their separate 70-entry bound. The rebuilt Windows game and all supported
+build tests pass; both weapon-slot tests and the complete Windows launcher
+regression run pass, including all 37 settings checks. A fresh isolated Test Lab
+session is prepared for the user; in-game switching still needs user validation.
 ## 2026-10-22 — Mounted-gun mouse cadence
 
 `fix/native-mounted-mouse` corrects two input losses in shared AGUN/CCTV
@@ -18462,3 +18545,208 @@ preserves original damage policy and calls the original once. Source checks
 12passed1native-onlyskip; final checkpoint fallback regression8passed. A small
 post-probe correction also preserves the existing missing-extra-pad fallback
 when a checkpoint is active; its runtime checkpoint acceptance remains pending.
+
+## Issue #222 — Online guest bot movement (2026-10-22)
+
+Original implementation validated against `31052eb1a740d89541f26358a5a809ebdc6975c1`,
+committed as `59cc489` on `222-bug-online-bots-are-stuttery-for-guests`.
+The host sends bot snapshots every three match ticks; the old guest applied
+positions only on fresh packets and froze replica animation between them.
+The shared `pc_network_bot_motion.h` now retargets guest presentation over
+50 ms each frame. Host AI, human replication, packet cadence, scores, vitals,
+shots and death/spawn authority retain their existing paths. Animation uses
+only verified frame-time scalars within matching clip/cycle identities;
+crossfade controls remain atomic. An initial draft mixed those controls and
+crashed; it was rejected and corrected before final acceptance.
+
+Windows 11 build 26300 / AMD64, MSVC 14.42.34433, SDK 10.0.22621.0,
+SDL 3.4.16, D3D11, Original 60 FPS, Classic textures, 640x480:
+
+- Supported baseline and final `tsfp.ps1 -Action Build -SkipTextures` passed,
+  including native checks, complete patch verification and executable sealing.
+- Actual production Online directory/browser/bridge over loopback, two isolated
+  Test Lab profiles, two humans and six bots. Baseline completed 173.5 seconds
+  (69 seconds of sampled gameplay); final completed 248.7 seconds (144 seconds
+  of sampled gameplay). Both peers remained in active state 15 at completion.
+- All six guest bots changed position at median intervals **51.125–51.143 ms
+  before**, **17.041–17.043 ms after**; host controls remained about 17 ms.
+  Final host and guest observed the same 6/6/4/4/5/8 distinct bot spawn IDs.
+  Every bot showed multiple health values; both human slots continued moving
+  on both peers. These asynchronous memory observations establish update
+  cadence, not scanout, speed parity or Internet latency.
+- Final run produced no crash dumps. Reviewed test-window captures show actual
+  gameplay; stills do not establish continuous bot-mesh animation. All
+  disposable partition images and run locks were cleaned.
+- 37 affected Online/network tests passed; final guest-hook/helper and both
+  rejecting mutations passed (6 cases), as did 88 context/CI/backlog checks.
+  Plain context/index and whitespace checks pass. Base-revision context
+  ownership reports the pre-existing launcher lockfile edit, preserved here.
+
+Baseline executable SHA-256:
+`f1dd31301ae8c873bf150ff8f22556b8eb68092cbd150e6e6f874713de825fa2`.
+Final executable SHA-256:
+`7e58ec7253057be74d1aa7e3d7f563154e40f6f6ffd2f1c13d0e8da5d922f2e4`.
+Final multiplayer identity:
+`0200ac69c9f0e288ed756f1aadc6a6458396b5eca83809178f6977e5c8fd9906`.
+The original benchmark report remains local evidence; the measured scope and
+limits are recorded above. These executable hashes describe the original run,
+not a rebuild after synchronization with current main.
+Mac execution, mixed peers, Internet/NAT, induced packet loss and all-map/mode
+acceptance remain untested. MAC-052 retains the missing native network adapter;
+the shared helper and native fallback are covered by portable C fixtures.
+That validation performed no publication or personal-save/settings writes.
+
+
+## Release channel strategy (2026-10-22)
+
+Local uncommitted source on `release-channels`, based on main
+`acf4464accc33ff2d3ab6d76b20076650e9d17fd`. VERSION is now **0.3.2** for the
+first Stable game after `0.3.1-alpha.2`; shared launcher source is **1.3.0**.
+Neither version has been published by this task. No main merge, tag, GitHub
+release, game rebuild or gameplay validation was performed.
+
+On Windows x64, .NET Framework 4.8's x64 compiler builds the shared/WPF launcher.
+The complete `tools/build-launcher.ps1 -Test` suite passed, including 113 core
+updater/installation regressions, 13 version checks, 30 news checks, 38 settings
+checks, 28 download checks, 10 startup checks and 20 maintenance checks, plus
+shared UI/texture/session/diagnostic contracts. New shared channel fixtures cover
+Stable/named-preview isolation, lower-version return to Stable, unavailable
+channels, old Preview preference migration without launcher enrollment,
+unrelated preference preservation and release metadata validation. The version
+fixture checks discovery beyond the first 100 GitHub records. Test fixtures use
+workspace-local temporary paths and fake release metadata, not personal saves.
+The first session-report run encountered an isolated File.Replace error; the
+subsequent complete run passed. Logs: ignored logs/release-channel-launcher-tests.log.
+
+Asset-free Python validation passed 240 tests plus 36 subtests (4 directory
+symlink prerequisite skips) across publisher, native Mac package contracts,
+launcher release, runtime scope and launcher compatibility/shared-layout, backlog and repository-context checks.
+Publisher checks simulate GitHub; they cover pushed feature sources, independent
+Stable hotfixes, nonancestor/unrelated baselines, explicit version preparation
+and prepared-package identity. These checks do not upload any assets.
+
+Mac Avalonia adapters and both game packagers share the channel model. This
+Windows host has no dotnet command/native macOS environment available; native
+Mac build, prerequisite, lifecycle and visual checks remain unrun under MAC-062.
+No native game behavior or rendering claim follows from the shared fixtures.
+Publish/validate the dual-platform launcher 1.3.0+ before the Stable game; the
+publisher enforces compatible stable launcher packages. Existing game saves,
+settings and installed optional textures remain preserved. Preview testing
+continues to use existing saves; back them up before switching builds.
+
+
+### Grouped Preview track selector follow-up
+
+Local source on release-channels now groups all feature tests under the Preview
+parent. GameChannelPickerPage supplies the same two selectors on WPF/Avalonia:
+Stable/Preview, then General Preview or a named testing track. The remembered
+track persists across Stable and restarts without changing canonical release IDs.
+Normal UI shows published tracks (plus a saved unavailable selection); synthetic
+Story Co-op appears only in developer render previews.
+
+Windows x64 local build succeeded. The complete build-launcher.ps1 -Test suite
+passed, including the new shared selector/preference checks and 13 game-version
+checks. Its first run hit the already observed unrelated GameSessions File.Replace
+failure; the subsequent full run passed. Python shared-layout, compatibility,
+backlog and publishing checks passed 113 tests plus 26 subtests, with four directory
+symlink prerequisite skips. No game runtime or personal-save test was needed.
+Mac native compilation/visual/lifecycle remains pending under MAC-062.
+
+Runnable local build: build/launcher/TimeSplitters Launcher.exe (launcher 1.3.0,
+source based on acf4464 with the uncommitted release-channels changes). Run from
+the repository root with `& '.\build\launcher\TimeSplitters Launcher.exe'`.
+Reviewed synthetic screenshot: build/launcher/channel-preview.png; it does not
+establish that a Story Co-op release is published. Validation log:
+logs/release-channel-grouping-tests.log. No commit, merge, push or release was made.
+
+
+### Local banner and channel badge correction
+
+The local launcher had embedded the older launcher-v1.2.12 banner from private
+recovery files and omitted the backdrop. Recovered the exact PNG resources pinned
+in config/launcher-artwork.json (launcher-v1.2.18), leaving original private files
+untouched. The Windows builder now prefers that verified cache on ordinary
+rebuilds; explicit artwork arguments still take precedence. No release pins or
+published assets changed. Restored STABLE CHANNEL / PREVIEW CHANNEL badge wording
+on Windows and Mac; the grouped selectors remain Stable/Preview.
+
+The local Windows build with -RequireArtwork succeeds. Reflection-only inspection
+of the built application verifies embedded banner, backdrop and logo SHA-256
+against all three shared pins; no downloaded code was executed. The refreshed
+build/launcher/channel-preview.png was visually reviewed for the complete current
+banner/backdrop and restored badge. Mac runtime validation remains pending MAC-062.
+
+The full Windows -RequireArtwork -Test suite also passed; log:
+logs/release-channel-art-tests.log.
+
+
+## Launcher 1.3.0 publication preparation (2026-10-23)
+
+User requested publishing the new launcher. Preparing the reviewed release-channels
+source for the shared Windows/Mac workflow; launcher-v1.3.0 is not yet published.
+The live latest launcher is launcher-v1.2.24, and origin/main is still acf4464.
+Local Windows -RequireArtwork -Test and embedded resource hash verification passed;
+Mac builds/package/lifecycle checks will run in PR/release CI before publication.
+Game VERSION 0.3.2 is source preparation only; this launcher publication does not
+publish the game or original/private assets. MAC-062 remains awaiting validation.
+
+
+## Beta as the general Preview track (2026-10-23)
+
+Before merging/publishing launcher 1.3.0, the user selected Beta as the sole general
+testing track. Preview now contains Beta and independent named features such as
+Story Co-op. New general versions use -beta.N; version preparation, package entry
+points and publisher preflight reject new alpha/preview/rc/legacy suffixes. Beta's
+name is fixed. Historical alpha and -preview.N releases remain exact-version
+history/repair entries labeled Legacy Preview, outside Beta update candidates.
+Old general-preview preferences migrate to beta, preserving named tracks and
+unrelated preferences. Stable remains the default. Tags/assets are not relabeled.
+
+Local asset-free publisher/package/launcher checks passed 227 tests plus 36
+subtests, with four directory symlink prerequisite skips. Windows built with the
+pinned artwork; shared grouped-selection, preference and version checks passed.
+The broader local suite again failed the pre-existing GameSessions fallback-
+retention File.Replace check (also reproduced separately); maintenance checks
+passed. Updated dual-platform PR CI must validate the final commit before merge.
+No GameSessions code was changed. No merge, tag or release was created.
+
+
+### Issue #222 synchronization with main (2026-10-23)
+
+Merged main `5c4469692b5d9a1d87f81b3c191c1bd3c99db497` into the bot-motion
+branch, preserving both histories in STATUS and the build/test guide. The bot
+source merged without conflicts. Windows MSVC Release retains optimized
+`/O2 /Ob2 /DNDEBUG`; compiler parallelism was limited with CL_MPCount=2.
+The supported `tsfp.ps1 -Action Build -SkipTextures` completed, including complete
+patch application, native/build checks and crash-symbol matching. Affected
+network/Online tests plus backlog/CI routing checks passed **116 tests**.
+Repository context/index check against current main and branch whitespace check
+passed. Log: ignored `logs/bot-pr-main-build.log`. No new gameplay or Mac-host
+validation was performed for this synchronization; original loopback evidence
+and MAC-052 limitations above still apply. No game release was published.
+
+
+## Story co-op synchronization with Stable main (2026-10-23)
+
+Merged main `691523aff5e2c81ec20d9b0978f701402e032151` (including the #222
+bot-motion fix and release tooling) into online-story-coop from `29f34a8`.
+Preserved Story hooks, pose/load/roster behavior and main's keyboard/save-drive
+menus. Both branches allocated callbacks at 0x1201c..0x1201f; Story now uses
+0x1237b..0x1237e, verified as unused INT3 bytes in the checksum-supported US XBE.
+The dispatcher compiles with both callback sets; fixture stubs and bot-motion
+mutation dependencies retain the shared character pose model.
+
+Windows x64 / MSVC 14.42.34433: 21 affected menu/FOV/network/keyboard/storage/
+weapon tests passed (2 prerequisite skips); 99 additional Online/identity/CI/
+backlog checks passed. Supported tsfp.ps1 Build -SkipTextures applied the complete
+combined patch stack, regenerated guest sources, built optimized Release
+(/O2 /Ob2 /DNDEBUG, CL_MPCount=2), passed native checks and matched crash symbols.
+Context/index check against starting Story revision and working-diff whitespace
+checks passed. Repeated context paragraphs were condensed to retain the guide's
+size bound. Logs: ignored logs/story-main-tests-fixed.log,
+logs/story-main-integration.log and logs/story-main-build.log.
+
+No fresh four-peer gameplay, native Mac execution, checkpoint or campaign
+acceptance was performed. Existing Story validation gaps and MAC-013 remain;
+source integration does not complete Story co-op. Personal settings/saves were
+preserved. No release or merge of Story into main was performed.

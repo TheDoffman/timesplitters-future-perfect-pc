@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "pc_text_read_scope.h"
+#include "pc_storage.inc"
 
 #ifdef _MSC_VER
 static __declspec(thread) PcTextReadScope text_read_scope;
@@ -198,6 +199,7 @@ int pc_prompts_rewrite(const char *source, char *out, size_t capacity)
     if(!source || !out || !capacity) return 0;
     /* Menu names change for every input device, including title/breadcrumb
        text. Apply before both text measurement and rendering for alignment. */
+    if(pc_storage_rewrite(source,out,capacity))return 1;
     changed=network_labels(source,renamed,sizeof renamed);
     if(changed) source=renamed;
     if(strchr(source,'\v') && pc_prompts_keyboard_active() && pc_settings_prompt_keys(keys)) {

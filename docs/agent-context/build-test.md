@@ -215,6 +215,38 @@ documented in `systems.md`; later local runs failed at `No renderer capture`.
 Do not label those failures passed, infer that a stock Deathmatch lobby is Story
 co-op, or change capture cadence based on an assumed meaning of `RECOMP_FPS`.
 
+`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
+20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
+jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
+Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
+mutation must fail the atomic clip-transition assertion. Frame sampling also
+covers native 120/144 Hz without changing the simulation clock. Existing Windows
+and macOS CI invoke this suite; the helper itself has no OS dependencies.
+`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
+bounded production Online host/guest pair through a loopback directory/browser/
+bridge, disposable Test Lab saves and separate input/runtime/display settings.
+It checks the supported XBE and sealed build before launch, records executable
+and compatibility identities, and recycles only its disposable partition images.
+Its asynchronous ReadProcessMemory observations measure actor update holds,
+not rendered frames, monitor scanout or Internet latency. Window captures are
+limited to the test processes. Benchmark fixture junctions are staged locally
+as five manifest files, then checked by the normal fixture validator.
+
+Launcher changelog publication: tests/test_launcher_release.py covers explicit
+previous stable launcher selection across paginated game/launcher history,
+initial-release notes and refusal of incomplete history. It remains registered
+in the existing Windows/Mac launcher build workflow. These are offline publisher
+tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
+Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
+mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
+file-list refusal in the same existing dual-host test route.
+
+Game changelog baselines: tests/test_publish_release.py covers first-Stable
+bootstrap from the latest earlier published alpha, subsequent Stable baselines
+across minor versions, mixed launcher/draft history and ancestor restrictions.
+The suite is already registered for both hosts in the release checks; these
+offline publisher fixtures need no game or launcher rebuild.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows
@@ -854,7 +886,81 @@ exercise frame normalization for all four slots in loading/gameplay, plus the
 D7550 pump, non-Story and invalid-backlink fallbacks. The four-peer load probe requires every human team to be1;
 matching each local team alone does not pass this gate.
 
-Human-team contracts bind originalD7570 direct initialization evidence and
-exercise frame normalization for all four slots in loading/gameplay, plus the
-D7550 pump, non-Story and invalid-backlink fallbacks. The four-peer load probe requires every human team to be1;
-matching each local team alone does not pass this gate.
+## Weapon-slot selection checks
+
+`tests/test_weapon_slots.py` compiles the shared key-state and production guest
+selector fixture on Windows/macOS. It covers press edges, held/focus/menu input,
+expiry, empty slots, grouped weapon variants and local-player/state guards.
+The supported Windows build also runs `tests/pc_settings.c` for migration and
+last-slot rebinding/persistence. Launcher settings tests cover defaults, custom
+conflicts, explicit Unbound, moving keys and reset. Original input-hook changes
+require regenerating the guest C through the supported build. These fixtures
+are not a substitute for actual weapon-switch animation/gameplay validation.
+
+## Themed keyboard editor checks
+
+The historical old-controls upgrade fixture excludes keyboard-settings-menu and
+keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+final full-stack upgrade must contain the capture pump, two-binding limit and
+weapon-slot sampling/guest hook, so both new patches are still validated.
+
+`tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
+input release, one event per press, cancel/focus/timeout, complete action
+coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
+`test_weapon_slots.py` and `test_quit_menu.py`. Supported game Build checks
+exercise native settings persistence and two-slot bounds; launcher settings
+tests cover importing legacy four-binding profiles, rejecting a third slot,
+and saving two slots. Live acceptance must separately check main/pause access,
+binding capture without shortcut leakage, conflict/clear/defaults, mouse
+sensitivity, two-column layout and return to gameplay.
+
+## Storage selection checks
+
+Run test_storage_menu.py for actual Windows volume queries, bounded labels,
+free/total formatting, atomic selection, routing rollback, unavailable paths, preserved
+profile files and test-session locks. test_fov_settings.py exercises inline drive
+rows, alphabetical drive-letter/volume-name ordering independent of the active drive, no child menu, failure/success feedback, console
+index isolation, profile-list refresh and original save dispatch. Its Mac-only compile contracts
+cover the production menu and prompts/storage translation units. The Windows and
+Mac bounded runners set TSFP_SAVE_LOCATION_LOCK=1; use temporary test folders for
+persistence checks rather than selecting a real save drive in automated play.
+For a user-requested manual drive-selection session, the Windows runner accepts
+`--play --allow-save-drive-changes`. This explicit option disables that launch's
+lock and respects save-location.txt beside its isolated controls file. Selecting
+a drive activates it immediately and persists the choice; future manual launches
+use the same preference. Preparation preserves this preference and never copies
+the Test Lab fixture onto the selected external drive. Ordinary automated sessions
+stay locked regardless of inherited environment settings.
+Mac runtime/UI validation remains separate from shared fixtures and Windows builds.
+
+Unlocked Test Lab fixtures use their game-created directory ID 1AD19156651F,
+not the original Player 1 seed folder. prepare_run remaps legacy fixtures and
+backs up only untouched seeded copies outside UserData. Modified legacy profiles
+require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
+Player 1 without deleting a profile or altering personal saves.
+
+
+## Release and launcher validation routes
+
+Channel/version/artwork/build policy and detailed fixture routes are in
+[launcher context](launcher.md), [game releases](../releasing.md) and
+[launcher releases](../launcher-releases.md). Release CI selects release_channels.py,
+release-version.py and test_publish_release.py for identity, legacy history,
+Beta publication, pushed sources, hotfixes, ancestor notes and prepared reuse.
+Both packagers record identity and omit optional textures from official packages.
+LauncherSharedUiChecks covers grouped channels/preferences/metadata;
+launcher_versions.cs covers paginated discovery. Run build-launcher.ps1 -Test
+and both host checks. GameChannelPickerPage.cs uses shared *Page.cs compilation.
+--render-preview is synthetic, with no preferences/GitHub changes.
+Windows artwork selection uses explicit arguments, hash-verified cache, then
+legacy private art; fetch-launcher-art.ps1 recovers pinned art without executing
+it, and -RequireArtwork checks selection. Shared tests/version edits do not prove
+publication, gameplay or host visual/lifecycle acceptance.
+
+Story/main merge (2026-10-23): test_quit_menu.py verifies the relocated Story
+callback padding in the supported US executable. The shared display fixture
+retains pose, keyboard and host drive contracts without duplicate stubs. Bot
+motion mutation fixtures copy pc_character_pose.h with the shared state header
+now required by Story's numeric pose model. Run quit/menu, FOV, guest dispatch,
+bot results, keyboard/storage/weapon fixtures and the supported optimized build.
+Native gameplay/Online and four-peer Story acceptance remain separate checks.

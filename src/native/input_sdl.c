@@ -6,6 +6,7 @@
 #include "settings_macos.h"
 #include "input_bindings.h"
 #include "pc_prompts.h"
+#include "pc_settings.h"
 #include "pc_camera.h"
 #include "pc_mounted.h"
 #include "pc_terminal.h"
@@ -31,7 +32,7 @@ static PcInput camera_input;
 static pthread_mutex_t camera_lock=PTHREAD_MUTEX_INITIALIZER;
 static atomic_int mouse_enabled=1, mouse_invert;
 static _Atomic float mouse_sensitivity=0.10f;
-static int captured;
+static atomic_int captured;
 static int capture_click;
 static atomic_int menu_active, menu_capture_request;
 /* Published under camera_lock; only the SDL thread calls window APIs. */
@@ -40,6 +41,13 @@ static unsigned menu_button_block;
 static float menu_wheel_remainder;
 static Uint64 menu_wheel_at;
 static PcTextInput text_input;
+int pc_controls_weapon_slots_active(void) {
+    pthread_mutex_lock(&camera_lock);
+    int active=atomic_load(&focused) && captured && !atomic_load(&menu_active) && !text_input.owner;
+    pthread_mutex_unlock(&camera_lock);
+    return active;
+}
+
 void pc_controls_text_mode(uint32_t owner) {
     pthread_mutex_lock(&camera_lock);
     if(text_input.owner!=owner) {
@@ -73,6 +81,7 @@ static PcMenuPointer menu_pointer_snapshot(int consume) {
     p.wheel=consume && p.valid && SDL_GetTicks()-menu_wheel_at<250?p.wheel:0;
     if(consume)menu_pointer_state.wheel=0;
     pthread_mutex_unlock(&camera_lock);
+    if(pc_settings_capture_blocked())p.valid=p.left=p.right=p.wheel=0;
     return p;
 }
 PcMenuPointer pc_controls_menu_pointer(void) {return menu_pointer_snapshot(1);}
@@ -159,6 +168,17 @@ static void release_all(void) {
 }
 void tsfp_native_settings_release_input(SDL_Window *window) {release_all();set_capture(window,0);}
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
+int pc_controls_binding_keys(unsigned char down[256]) {
+    memset(down,0,256);
+    int focus=atomic_load(&focused);
+    if(!focus)return 0;
+    for(unsigned i=1;i<256;i++)down[i]=atomic_load(&keys[i]);
+    down[0x10]=down[0xa0]||down[0xa1];down[0x11]=down[0xa2]||down[0xa3];down[0x12]=down[0xa4]||down[0xa5];
+    memset(down+0xa0,0,6);
+    pthread_mutex_lock(&camera_lock);
+    if(SDL_GetTicks()-menu_wheel_at<250) {down[0x86]|=menu_pointer_state.wheel>0;down[0x87]|=menu_pointer_state.wheel<0;}
+    pthread_mutex_unlock(&camera_lock);return 1;
+}
 int tsfp_native_key_down(int vk) {
     if(!atomic_load(&focused)||vk<=0||vk>255)return 0;
     pthread_mutex_lock(&camera_lock);
@@ -210,6 +230,11 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     }
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
+        if(pc_settings_capture_blocked()) {
+            if(vk)atomic_store(&keys[vk],down);
+            if(down && atomic_load(&focused))pc_settings_capture_key(vk);
+            return;
+        }
         pthread_mutex_lock(&camera_lock);
         int typing=text_input.owner && pc_text_key((unsigned)vk);
         if(typing && down && atomic_load(&focused))
@@ -258,6 +283,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         int vk=e->button.button==SDL_BUTTON_LEFT?1:e->button.button==SDL_BUTTON_RIGHT?2:
                e->button.button==SDL_BUTTON_MIDDLE?4:e->button.button==SDL_BUTTON_X1?5:e->button.button==SDL_BUTTON_X2?6:0;
         if(vk)atomic_store(&keys[vk],e->type==SDL_EVENT_MOUSE_BUTTON_DOWN);
+        if(down && atomic_load(&focused))pc_settings_capture_key(vk);
     }
     if(e->type==SDL_EVENT_MOUSE_WHEEL && atomic_load(&menu_active) && atomic_load(&focused)) {
         float delta=e->wheel.direction==SDL_MOUSEWHEEL_FLIPPED?-e->wheel.y:e->wheel.y;
@@ -268,6 +294,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
             menu_wheel_remainder+=fmaxf(-8,fminf(8,delta));
             int steps=(int)menu_wheel_remainder;menu_wheel_remainder-=steps;
             if(steps) {
+                pc_settings_capture_key(steps>0?0x86:0x87);
                 if((steps>0)!=(menu_pointer_state.wheel>0))menu_pointer_state.wheel=0;
                 menu_pointer_state.wheel+=steps;
                 if(menu_pointer_state.wheel>8)menu_pointer_state.wheel=8;

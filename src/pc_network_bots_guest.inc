@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "pc_network_bots.h"
+#include "pc_network_bot_motion.h"
 static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsigned maximum)
 {
     const char *text=getenv(name);char *end;unsigned long value;
@@ -297,6 +298,8 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     static uint32_t last_tick;static int sent;
     static uint32_t seen_shots[16];
     static int16_t seen_kills[16][16];
+    static PcNetworkBotMotion motion[16];
+    static uint32_t motion_match,motion_pool,motion_host;
     const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
     unsigned role=*(uint32_t *)((uintptr_t)0x0076B140u+g_xbox_mem_offset);
     const unsigned humans=config[0],bots=config[2];
@@ -307,6 +310,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         pc_network_bots_context(0,0,0,0,0);sent=0;
         memset(pc_network_bot_shots,0,sizeof pc_network_bot_shots);memset(seen_shots,0,sizeof seen_shots);
         memset(pc_network_bot_bounds,0,sizeof pc_network_bot_bounds);
+        memset(motion,0,sizeof motion);
         memset(seen_kills,0,sizeof seen_kills);return;
     }
     pool=*(uint32_t *)((uintptr_t)0x007356D8u+g_xbox_mem_offset);
@@ -319,6 +323,10 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         host_ip=*(uint32_t *)((uintptr_t)(0x0066648Cu+host_peer*16u)+g_xbox_mem_offset);
     }
     match=config[0x99]|((uint32_t)config[0x54]<<8)|((uint32_t)config[0x55]<<16)|((uint32_t)config[0x56]<<24);
+    if(role!=2u || motion_match!=match || motion_pool!=pool || motion_host!=host_ip) {
+        memset(motion,0,sizeof motion);
+        motion_match=match;motion_pool=pool;motion_host=host_ip;
+    }
     tick=*(uint32_t *)((uintptr_t)0x007DE318u+g_xbox_mem_offset);
     pc_network_bots_context(role,host_ip,match,humans,bots);
     if(role==1u) {
@@ -334,8 +342,13 @@ static void pc_network_bots_guest_frame(void (*original)(void))
         uint8_t *actor=(uint8_t *)((uintptr_t)(pool+index*0xea0u)+g_xbox_mem_offset);
         uint8_t *body=(uint8_t *)((uintptr_t)entity+g_xbox_mem_offset);
         PcNetworkBotState state;
-        if(role==2u && pc_network_bots_receive(index,&state) &&
-           pc_network_bot_state_valid(&state,humans,bots)) {
+        if(role==2u) {
+            PcNetworkBotState received;
+            double now=pc_network_bots_time();
+            if(pc_network_bots_receive(index,&received) &&
+               pc_network_bot_state_valid(&received,humans,bots))
+                pc_network_bot_motion_push(&motion[index],&received,now);
+            if(!pc_network_bot_motion_sample(&motion[index],now,&state)) continue;
             unsigned killer;
             /* Scores outlive bodies. Apply the confirmed NPC victim column
                even when the host has already removed its corpse. */

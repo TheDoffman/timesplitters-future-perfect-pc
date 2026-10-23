@@ -366,6 +366,22 @@ with builder `0x001A8DA0` and tick `0x001A8D30`. Its existing Options and charac
 actions still enter the ordinary multiplayer menus. Story lobby replacement is
 pending; a connected bridge is not evidence of Story loading or replication.
 
+Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
+`pc_network_bots_guest_frame` hook. The transport still consumes each validated
+host snapshot once. The guest caches it and updates the displayed body, spatial
+bounds and matching animation frame times every frame over a 50 ms span, retargeting
+from the current display pose when arrivals vary. Discrete vitals, scores, shots,
+absence and spawn transitions retain host values; no guest AI or extrapolation
+is enabled. A gap over 250 ms snaps to the next received host state. Match,
+host, actor-pool and inactive-state changes clear presentation history. The
+Windows QPC adapter supplies monotonic seconds independently of guest game time.
+Human controller replication and the host's three-tick send interval are unchanged.
+Native Mac fallback remains original until its network adapter exists (MAC-052).
+Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cycle;
+the other animation channels and crossfade controls stay atomic. US `5CEF0`
+can promote the secondary clip during zero-advance evaluation, so mixing fade
+duration/elapsed with another snapshot's clip identity can select an invalid clip.
+
 Camera and perspective corrections use `pc_display_memory.h` to retain one
 OS-validated writable region only after their original guest routine returns.
 The stack-local snapshot expires when the correction returns; no guest calls,
@@ -672,3 +688,85 @@ a peer to leave. Host/guest captures show the authored cinematic, not accepted
 co-op readiness. The new cinematic-ready adapter runs only original transport
 startup while skipping its gameplay actor loop, restoring all cinematic state
 afterward. Long intro stability and the changed handoff still need validation.
+
+## Direct keyboard inventory slots
+
+`pc_weapon_slots.def` appends host-only actions after the 24 Xbox controls;
+`pc_weapon_slots.h` owns press edges and expiring requests. `pc_bindings.inc`
+loads/saves them through the normal binding editor and migrates only missing
+slots. Stock White=1 and Black=2 move to free Z/X keys; existing custom and
+explicitly unbound actions remain intact. No migration writes until Save.
+Both Win32 and SDL gate requests on focus, mouse capture, menus and text input.
+
+The additive keyboard-weapon-slots patch wraps US `sub_001BF140`, the original
+player weapon-input routine. `pc_weapon_slots_guest.inc` runs on that guest
+thread after ordinary input, using the ordered table at `0x4FC888`, the original
+variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
+`sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
+weapon groups, checks local input slot zero rather than network player ID, and
+never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
+slots, defaulting to 1–9/0. The separate 70-entry internal table bound covers
+weapon IDs and variants; it does not add settings rows.
+
+## Themed live keyboard and mouse editor
+
+`pc_keyboard_menu.inc` is included by `pc_display_menu.c`, adding Keyboard and
+Mouse to both main Settings and paused Options. It uses the original menu
+builders, callbacks, highlights and footer navigation. The controller-style
+bindings pages draw a keyboard/mouse diagram with primary/alternate columns;
+`pc_keyboard_menu_model.h` partitions all 34 actions across short pages.
+`PC_BINDING_SLOTS` is two in the shared model and native dialogs; old keyboard
+profiles use their first two sources without modifying disk until saved.
+Controller profiles keep their existing source capacity.
+
+`pc_binding_capture.h` handles opening-input release, capture, final-input
+release, Escape cancellation, focus loss and timeout. `pc_bindings.inc` owns
+its lock/state; Windows and SDL supply raw physical keys and wheel pulses, latching press
+events so quick taps are retained between polling ticks.
+While capturing, controller polling and menu pointer dispatch are suppressed,
+so E/F/Y and mouse clicks bind without activating menu commands. Assignments
+use the existing atomic settings save/conflict API. Mouse sensitivity previews
+live, debounces writes, flushes on exit, and restores previous values on error.
+
+Capture starts once in the new page update. Native descriptor +12 is a per-frame
+callback, not a destructor; installing capture cleanup there cancels it every
+frame. The callback fixture in `tests/fov_settings.c` exercises both native
+per-frame callbacks and requires a selectable capture instruction row.
+
+## Host storage choices in Create Profile
+
+`pc_storage_menu.inc` injects mounted host drive rows at native storage-button
+site 001944C3, directly in Select Storage Device. Rows sort by drive letter on Windows and case-insensitive volume name on Mac;
+Rows show only volume names and drive letters, with no game/save role suffix.
+Native menu sizing is widened before its
+title at 0019440B. Labels are ASCII-safe for the guest font. Windows lists mounted
+drive letters; Mac lists the startup volume and /Volumes mounts. Neither lists
+unmounted partitions. The native 00192770 update and 00191470 icon adapter keep
+host indices away from the console device table. Selection delegates to original
+00192E60 with console index zero, preserving the save/overwrite state machine.
+After a drive change, synchronous 00024EC0/00190F70 enumeration rebuilds the native
+profile list (74F9FC) before duplicate-name validation against the new location.
+
+`pc_storage.inc` supplies actual volume metadata, cached five seconds for original
+storage-text replacements. `pc_storage_routes.inc` validates a writable save
+folder, prepares UserData/45410066 for the native free-space query, and atomically
+saves save-location.txt beside RECOMP_INPUT_CONFIG. Changes immediately redirect
+future UDATA opens through the registered kernel adapter; failed persistence
+rolls that route back. Existing handles, caches and partition devices stay put.
+Startup also honors the preference; profiles are neither moved nor deleted.
+An unavailable configured location fails explicitly instead of silently
+creating a new profile elsewhere. TSFP_SAVE_LOCATION_LOCK protects isolated test
+sessions from changing real drive preferences. Windows resolves junctions and
+volume identities; drive metadata retains executable-volume identity internally.
+The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
+provides attribute structures but not that function declaration. The production
+pc_prompts.c compile contract checks this include order in Mac CI.
+
+
+Story/main merge (2026-10-23): Story chooser callbacks now use verified unused
+US INT3 bytes 0x1237b..0x1237e, distinct from keyboard callbacks 0x1201c..0x1201f
+and drive callbacks 0x12379..0x1237a. The shared button hook retains both Story
+interception and drive-dialog handling. The common display fixture executes
+both Story pose preservation and host storage tests after resolving duplicates.
+Main's bot presentation helper remains alongside the separate Story replica path.
+No new OS adapter is introduced; native Online remains limited by MAC-013.
