@@ -32,6 +32,26 @@ The nested source ZIP also omits compiled textures. Source launches can continue
 to use `assets/textures` when present. Building never enables Enhanced or changes
 personal settings. Players still supply their original game data.
 
+## Developer upload timing
+
+For a bounded developer investigation, set `TSFP_TEXTURE_UPLOAD_TRACE` to an
+isolated CSV path before launching. Common RHI and legacy GL record each fresh
+replacement attempt's key, texture mode, outcome and monotonic nanosecond
+boundaries. `open_end-read_begin` measures opening the file;
+`read_end-open_end` includes seeking, allocation, transfer and close;
+`validated-read_end` covers parsing and acceptance. Image and view begin/end
+fields measure CPU calls into the graphics backend, not GPU completion. GL has
+one texture-upload span and no separate view. Zero fields mean a stage was not
+reached. Key calculation precedes tracing; release/dump/cleanup can contribute
+to total elapsed time outside the named stages.
+
+The trace is off by default, stops at 8,192 rows/below 4 MiB and does not change
+Classic/Enhanced behavior. CSV writes occur after each measured attempt and
+flush every 64 records, so they can perturb later frames. Retain source/build
+identity and separate these diagnostics from clean performance runs. Use a
+fresh process to restart a completed or failed trace; do not use personal save
+or settings paths for automated tests.
+
 ## Publishing optional pack updates
 
 1. Audit and hydrate the committed `assets/textures` pack. Keep private source art

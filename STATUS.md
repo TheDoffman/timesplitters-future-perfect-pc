@@ -1,3 +1,23 @@
+## 2026-10-22 — Opt-in texture-upload timing
+
+A focused diagnostic branch from main `acf4464` adds per-attempt monotonic
+CPU timestamps for file open, transfer/allocation, validation, image creation
+and view creation. The shared collector covers common RHI and legacy GL;
+Classic preloading, live switching, original texels, fallback and resource
+budgets remain unchanged. It is disabled unless `TSFP_TEXTURE_UPLOAD_TRACE`
+names an output file, bounded to 8,192 rows/below 4 MiB, and emits no clocks or
+file I/O when disabled. Trace output itself can perturb frame pacing.
+
+This follows sampled texture-file work in slow frames on the separate PR307
+vehicle integration build. The new branch is based on main and does not contain
+that unmerged vehicle work; do not compare its FPS as a single-change vehicle
+benchmark. No hitch or performance improvement is claimed by instrumentation.
+Forty-eight focused texture runtime/tool tests pass locally in 6.37 seconds,
+including disabled/failed/bounded output and real-loader stage/fallback checks.
+The existing both-host runtime workflow includes the expanded test module.
+Full Windows build and live stage correlation are pending. Actual native Mac
+trace/gameplay validation remains pending under MAC-060.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical

@@ -3655,6 +3655,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Texture-upload timing diagnostic (2026-10-22, `diagnostic/texture-upload-timing`):** Shared
+  `texture_pack_trace.h` and traced reader expose opt-in bounded CPU wall spans
+  for the common-RHI loader and legacy GL adapter. Windows uses QPC, POSIX uses
+  CLOCK_MONOTONIC; texture behavior/budgets/defaults are unchanged. Disabled,
+  failed-output, bounded-output and loader stage tests run in the existing
+  both-host workflow. Windows focused tests pass; full build/live correlation
+  and actual native Mac trace/gameplay remain awaiting validation. This is
+  diagnostic instrumentation, not a fix for the reported high-refresh hitches.
+
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already

@@ -25,6 +25,15 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Texture-upload trace tests compile the real loader and collector through the
+existing both-host `tests/test_texture_runtime.py` registration. They verify
+disabled clock/file inactivity, failed output, bounded output, ordered stages,
+cached switches and missing/invalid/view-failure fallback. Use an isolated CSV
+path and compare raw monotonic timestamps with Present intervals for live
+diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
+clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
+can change frame timing. Actual native Mac gameplay remains a separate check.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

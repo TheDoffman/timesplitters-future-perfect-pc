@@ -20,6 +20,20 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+## Texture-upload timing diagnostic
+
+`texture_pack_trace.h` records bounded opt-in CPU wall spans when
+`TSFP_TEXTURE_UPLOAD_TRACE` names a CSV. The common-RHI loader and legacy GL
+adapter share it, including the traced reader in `texture_pack_io.h`.
+The disabled collector performs no clock/file work; normal per-texture cached
+uploads produce no new records. Rows identify key, backend, mode, dimensions,
+outcome and monotonic nanosecond boundaries for open, transfer/allocation,
+validation, image creation and (common RHI) view creation. This is CPU elapsed
+time, not GPU completion. Reading/validation/fallback and live texture switching
+are unchanged. Logging occurs after the measured end, can perturb subsequent
+frames and is capped at 8,192 rows/below 4 MiB; do not use it as clean pacing data.
+See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
+
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
 | Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |
