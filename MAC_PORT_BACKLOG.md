@@ -3660,8 +3660,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   name when `RECOMP_TRACE_ONLY` is absent/empty. Enabled matching/hit limits and
   all other diagnostics retain their behavior. No host adapter is needed.
   Six actual-function/mutation cases are registered for both hosts and pass on
-  Windows. Full build/gameplay and actual Mac validation remain pending; removed
-  scan counts do not establish an FPS gain. See STATUS for the measured scope.
+  Windows. Supported Windows build/built-in checks and a bounded ten-bot Venice
+  session pass at `7b5f042`; foreground routing skips and gameplay remains in a
+  visible background window. Actual Mac validation remains pending; removed scan
+  counts and this uncontrolled run do not establish an FPS gain. See STATUS.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing

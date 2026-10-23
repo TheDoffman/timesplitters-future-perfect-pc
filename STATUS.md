@@ -20,9 +20,31 @@ with MSVC `/O2`: five alternating 20-million-call trials give median 2.296 ns pe
 disabled call before and 0.959 ns after. This hot-label microbenchmark is not a
 game FPS measurement (`logs/trace-filter-component-bench.json`). The complete
 fresh-checkout and repeated-build patch transition passes (20.15 seconds).
-Build, live gameplay
-and native Mac acceptance remain pending. Eliminating these scans is verified;
-a measurable game FPS gain and the reported 110 FPS slowdown remain unverified.
+The supported Windows build at `7b5f042` and built-in checks pass; virtual-pad
+foreground routing explicitly skips because Windows refused focus. Candidate
+SHA-256 is `0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`.
+
+The isolated 165-second ten-bot Venice/unlimited session completes with player
+movement, firing, damage/death and respawn observations. The strict 50-second
+window beginning five seconds after spawn contains 7,162 successful guest
+presents: 143.281 interval FPS, minimum rolling five-second FPS 137.6,
+p99 interval 8.392 ms and maximum 24.227 ms (Present call 0.097 ms). Twenty
+intervals exceed 9 ms; one exceeds 16.67 ms. The recorder reaches its 20,000-row
+cap later, 16.7 seconds after the analysis window; endpoint coverage and continuous
+frame IDs verify the complete measured window. No CPU/stack/native/texture
+tracing or capture ran; Present CSV and one-second window/roster reads remained.
+All 50 observations confirm ten bots and a visible, nonminimized window, but zero
+foreground observations. Renderer configuration is Classic/3440x1440/FOV73 at
+native 144; the client measures 1920x1060. AI/deaths are nondeterministic, and the
+older normal binary differs beyond this fix, so this is not a controlled speedup
+comparison or foreground play acceptance. Presents do not establish GPU completion.
+
+Evidence: `logs/trace-filter-build.log`, `logs/trace-filter-fullscreen-144.log`
+and `logs/trace-filter-window-analysis.json`. Profile bytes/signatures and the
+canonical fixture remain unchanged; disposable disks are recycled and the normal
+playable executable/symbol pair is restored. Native Mac gameplay remains pending.
+Eliminating the disabled scans is verified; a measurable game FPS gain and the
+reported 110 FPS slowdown remain unverified.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
