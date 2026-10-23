@@ -3661,6 +3661,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   identify its cause. This is instrumented diagnostic evidence, not a performance
   improvement. No runtime/adapter changes. Native Mac gameplay and pacing remain
   unverified; see STATUS for measurements, exclusions and next check.
+  Subsequent Windows saved-stack diagnostics catch synchronous texture-file
+  work in slow frames even in Classic mode. An isolated no-pack control avoids
+  that path, but differing bot outcomes and sampler overhead prevent a causal
+  FPS claim. No texture behavior is changed; per-upload timing remains next.
 
 - **Integrated crowd pacing (2026-10-22, PR #307):** Windows `20dc25d`
   averages 143.803 guest presents/sec against playable `4adb6b0` 143.901 in the

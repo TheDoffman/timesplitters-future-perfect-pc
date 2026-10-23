@@ -25,8 +25,8 @@ one set flush-bit sample followed by cleared samples. This does not establish
 handshake latency or exclude short waits missed by the nominal 4-ms sampler;
 it supplies no basis for changing acknowledgement policy. Native-frame GPU
 timing is not supplied by `pc_gpu_timing.inc`, whose begin hook is only in the
-retired interpolated redraw path. A timestamped main-thread stack/wait trace
-around an actually reproduced large gap is the next discriminating check.
+retired interpolated redraw path. The stack follow-up below narrows the next
+check without attributing the original large gap.
 
 Both sessions exit cleanly, preserve signed isolated profiles and the canonical
 fixture, and recycle disposable disks. Normal playable SHA `0072d5b4...efc7ab`
@@ -35,6 +35,50 @@ rebuild. Evidence: the named runs, `logs/respawn-thread-analysis.json` and
 `logs/respawn-mmio-analysis.json`. All selected runtime, upgrades, transitions,
 launcher and issue CI checks pass at `128fa06`; native Mac gameplay/performance
 and the broader high-refresh goal remain unverified.
+
+### Timestamped stack follow-up
+
+Three further bounded 165-second sessions retain that executable and route.
+An external diagnostic samples only the owned initial guest thread in active
+scene 46/state 7, with QPC, health, roster and up to 16 native frames. Each resolves
+all collected samples to at least three frames. The first version unwinds while
+suspended; its selected-window median pause is 0.4553 ms, totaling 5.001 seconds
+over 50 seconds. That overhead is substantial. The replacement copies up to
+128 KiB of stack while suspended, resumes immediately and unwinds the copy.
+Controlled sleeping-thread checks recover the expected call chain. These are
+diagnostics, not clean benchmarks; even the revised sampler consumes CPU and
+can perturb scheduling. Symbol labels can be the nearest available public
+symbol, especially when the displacement is large.
+
+| Diagnostic | Selected-window samples | Median / p99 suspension ms | Worst Present interval ms |
+| --- | ---: | ---: | ---: |
+| `vehicle-integrated-respawn-stack` | 10,682 | 0.4553 / 0.6587 | 17.194 |
+| `vehicle-integrated-respawn-snapshot` | 10,802 | 0.0188 / 0.1344 | 12.701 |
+| `vehicle-integrated-respawn-nopack` | 10,801 | 0.0184 / 0.1320 | 9.456 |
+
+The revised with-pack run catches `NtReadFile` beneath `tsfp_texture_upload`
+in the 12.701-ms frame, 38.105 ms after E with observed health 1.75. Suspension
+accounts for 0.0965 ms inside that interval; another sample is in the original
+GPU-flush path. The earlier 17.194-ms frame also contains a texture-file open.
+The loader intentionally reads/caches replacement views even in Classic mode
+to support live switching. Its log has 131 loads/127 distinct keys in the revised
+run, so most are first loads rather than repeated loads of the same replacement.
+
+The final control empties only the disposable child's optional-pack/dump
+environment paths. It has no replacement-load log entries or sampled
+`tsfp_texture_upload` frames. Installed files/settings stay intact. This
+strengthens the synchronous texture-loading lead but does not measure each
+upload's duration, establish a causal FPS gain, reproduce the 25.856-ms event
+or eliminate other hitches: bot outcomes differ between runs. Do not remove
+texture support or change GPU acknowledgement policy on this evidence. Next
+measure file-read and GPU-resource creation durations per texture upload.
+
+All three sessions preserve valid isolated profiles, exit cleanly, recycle
+disposable disks and restore the normal playable executable. Raw stacks,
+symbol tables and helper/build hashes are retained in each named run; analyses
+are `logs/respawn-{stack,snapshot,nopack}-analysis.json`. No runtime change or
+game rebuild. All selected CI passes at `44b9c76`. Actual Mac gameplay/performance
+and broad high-refresh acceptance remain open.
 
 ## 2026-10-22 — Integrated physics crowded-match pacing
 
@@ -272,7 +316,7 @@ failure. No production physics change was made from these observations.
 The prior six-bot replay's alternate path occurred at144, not120; keep both
 records instead of treating either short replay as complete handling acceptance.
 
-All four bounded sessions exit cleanly, retain health1.75 and unchanged valid
+All four bounded sessions exit cleanly, retain health 1.75 and unchanged valid
 profile signatures, and pass stationary settled pause (119 / 114 / 114 / 114
 samples for 60/120/144/60-repeat). Disposable disks are recycled and the normal
 playable executable is restored. Evidence: isolated

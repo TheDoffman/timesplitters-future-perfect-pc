@@ -6495,3 +6495,11 @@ not reproduce the larger event. These instrumented runs preserve isolated
 profiles and verify the ten-bot roster, but neither identifies a causal routine
 or proves an FPS improvement. Keep the hitch open; STATUS records the CPU
 counter limitations, raw evidence and need for a timestamped stack/wait trace.
+
+That follow-up now captures texture-file I/O beneath `tsfp_texture_upload`
+in slow frames. A revised saved-stack sampler reduces median suspension to
+0.0188 ms from 0.4553 ms; it remains diagnostic. Its worst selected interval is
+12.701 ms versus 9.456 ms in one isolated no-pack control, with differing bot
+outcomes. Neither reproduces the 25.856-ms event or proves a performance fix.
+Preserve Classic/Enhanced and live switching; measure individual upload stages
+before changing the loader. STATUS records all three runs and their limits.

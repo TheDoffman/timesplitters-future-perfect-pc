@@ -42,6 +42,16 @@ samples cannot identify a wait reason. These instrumented runs are separate
 from clean pacing acceptance. The existing `pc_gpu_timing.inc` starts only from
 `xbox_D3D8InterpBegin`, so it does not measure fresh native guest-frame GPU time.
 
+Timestamped external stack sampling must report its suspension cost. Unwinding
+while suspended materially perturbs this workload; snapshotting bounded stack
+bytes and resuming before unwind lowers that cost, but observer CPU still makes
+it a diagnostic. Preserve the initial process/thread identity, matching PDB,
+raw addresses, QPC intervals and depth/row/time bounds. Nearest public-symbol
+labels with large offsets are not exact function attribution. An isolated
+empty optional-pack path can test the texture-loader lead; never remove the
+installed pack or change personal settings for that control. Classic normally
+still preloads replacement views for live switching. STATUS records the limits.
+
 Vehicle exit probes must verify the delivered logical action before treating a
 failed departure as a timing defect. With the default Windows bindings and
 Test Lab profile, Y delivers exit bit 0x40; F delivers0x20 and R delivers0x10.
