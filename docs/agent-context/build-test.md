@@ -527,6 +527,13 @@ Player 1 without deleting a profile or altering personal saves.
 
 ## Texture streaming regression checks
 
+The Windows native-runtime CI job installs requirements-release.txt before its
+Online HTTPS tests, using the same pinned certificate provider as the packaged
+companion. Without it, the suite fell back to the runner's Git OpenSSL, which
+timed out during certificate creation on 9bf5630. This changes test dependency
+setup, not the production hosting fallback. Changes to those pins trigger the
+workflow and select native checks; Mac's selected suite does not run that test.
+
 `tests/test_texture_runtime.py` compiles the actual shared queue, common RHI
 loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
 It runs on both CI hosts. A deliberately stalled reader checks nonblocking
@@ -552,8 +559,12 @@ bodies, verifies exactly one queue completion per presentation (none for a skip)
 and finishes real DDS loads through Swap. It fails against the Present-only
 prototype. Replay mode deliberately suppresses host shortcuts in pc_controls_message;
 neither guest F10 injection nor posting PC_TEXTURE_MODE_COMMAND validates live
-switching during replay. Use the in-game settings route or a non-replay session,
-and confirm actual mode log transitions. The ineffective window command was removed.
+switching during replay. Use the in-game settings route or a non-replay session.
+The host toggle logs transitions, but the menu's explicit tsfp_texture_set_4k
+setter does not. For menu validation inspect staged/applied captures, Apply's
+disabled state, and the actual value after closing/reopening the page (which
+reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately from
+frame-time measurements. The ineffective window command was removed.
 
 ## Game release channels and maintenance publication (2026-10-22)
 

@@ -27,8 +27,8 @@ Venice 144-FPS Enhanced run completed 132 uploads across 128 keys, with maximum
 recorded replacement residency 136,053,628 bytes. Two inspected gameplay captures
 showed no obvious blank/corrupt surfaces; this is not full asset acceptance.
 Capture/texture tracing were enabled, so this run is excluded from performance
-comparisons. Corrected 60/120/144 comparisons, final-head CI and Mac scene
-validation remain pending. The
+comparisons. Corrected rate checks and live switching are recorded below;
+broader comparisons, final-head CI and Mac scene validation remain pending. The
 normal playable executable/symbol pair was restored and profiles/fixture preserved.
 No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
 
@@ -60,8 +60,50 @@ monitor scanout. Sparse level-clock observations do not establish animation,
 physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
 test-save directories and texture-stream-86b-comparison.json. Both sessions
 completed and restored the normal playable pair; fixture/profiles were preserved.
-Repeat ordering, Original 60/native120, live texture switching and foreground
-gameplay remain outstanding.
+Reverse-order repeats, broader rate/scene coverage and foreground gameplay remain
+outstanding. The following checks extend this same executable's Windows coverage.
+
+Corrected Enhanced Venice runs at Original 60 and native120 completed with ten
+bots and isolated Test Lab profiles. Same resolution/FOV/client and instrumentation
+limits as the Hotel runs above; these are rate checks, not paired combat parity.
+Original 60 explicitly disabled native timing with target=0/cap=60. Each result
+uses a complete 50-second successful guest-Present window, spawn+5 to spawn+55:
+
+| Measurement | Original 60 | Native 120 |
+| --- | ---: | ---: |
+| Average successful Present rate | 59.9997 FPS | 120.0025 FPS |
+| Lowest rolling five-second rate | 59.8 FPS | 119.8 FPS |
+| 99th-percentile frame interval | 18.015 ms | 9.505 ms |
+| Maximum frame interval | 18.682 ms | 11.204 ms |
+| Observed level-clock ticks/second | 59.989 | 59.988 |
+
+Both were visible but foreground in zero of 50 samples. Death observations were
+30.0%/40.4%, so these runs cannot establish equivalent encounters or animation,
+weapon and movement behavior. Capture/texture trace were off; the actual Enhanced
+delivery check remains the separate traced run. Evidence directories:
+texture-stream-86b-venice-original60 and texture-stream-86b-venice120. Both restored
+the normal playable binary and preserved the fixture/profile signatures.
+
+The separate texture-stream-86b-menu-switch-views run exercised actual paused
+Video Options at native144 in Venice. Classic selection enabled Apply; applying
+grayed it out. Resumed gameplay had paused=0; reopening the page read Classic
+from the effective mode, with Apply disabled. Enhanced was then selected/applied,
+Apply returned to gray, and gameplay resumed with paused=0. Inspected Classic and
+Enhanced gameplay stills showed no obvious blank/corrupt surfaces; different
+death-camera poses prevent a pixel-matched art-quality comparison. The run
+completed 126 replacement uploads and preserved profiles/fixture. These
+capture/trace-enabled runs are excluded from performance comparisons. The
+explicit menu setter does not log mode changes; only the host toggle does.
+This validates the Windows in-session menu route, not physical F10 delivery,
+restart persistence (selection is session-only), Mac scenes or full asset coverage.
+
+CI follow-up: Windows native runtime at merge 9bf5630 failed one online-host test
+because missing cryptography caused fallback to Git OpenSSL, whose certificate
+generation timed out after 30 seconds (471 passed, 83 skipped, 18 subtests).
+Mac runtime and both patch-upgrade jobs passed. The Windows job now installs the
+existing requirements-release.txt pins used by the packaged companion; pin-only
+changes select native checks and trigger the workflow. Production hosting code
+is unchanged. Local online-host/scope checks pass (77 tests); fresh CI is pending.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

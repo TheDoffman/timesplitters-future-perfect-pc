@@ -364,3 +364,8 @@ The common renderer pumps from present_resolve, shared by Swap and Present.
 The initial Present-only prototype never delivered replacements in this title;
 its apparent pacing gains are invalid evidence. Actual DDS upload records and
 rendered Enhanced scenes are required alongside queue unit tests.
+
+The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
+setter. Unlike the host toggle, that setter does not emit a mode log line.
+Reopening Video Options reads the effective mode; a pending row label alone is
+not evidence that the change was applied. Texture selection is session-only.

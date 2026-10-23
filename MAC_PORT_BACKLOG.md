@@ -1243,9 +1243,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   legacy GL already funnels Swap through its Present adapter. Production-body
   tests fail before this correction and pass after it. Windows D3D11 build
   86b2c1c completed 132 replacement uploads in a bounded Venice Enhanced run;
-  two reviewed frames showed no obvious blank/corrupt surfaces. Live switching
-  was not exercised because replay suppresses host shortcuts. Mac scene checks,
-  broader Windows coverage and live switching remain **Awaiting validation**.
+  two reviewed frames showed no obvious blank/corrupt surfaces. A later actual
+  Windows Video Options run applied Classic, reopened the page to confirm the
+  effective value, then applied Enhanced and resumed gameplay in both modes.
+  Apply disabled after each commit; inspected stills had no obvious blank/corrupt
+  surfaces. Original60/native120 Venice pacing checks also completed; see STATUS
+  for limitations. Replay still suppresses host shortcuts. Mac scene checks,
+  broader Windows coverage and physical shortcut testing remain **Awaiting validation**.
 
 - Background texture reads (commit carrying this entry): `texture_pack_stream.h`
   shares queue, cancellation and staging policy between common RHI and legacy
