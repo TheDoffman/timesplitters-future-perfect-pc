@@ -1,3 +1,20 @@
+## 2026-10-22 — Background texture loading under validation
+
+A bounded Hotel diagnostic on GPU-worker candidate bf4b755 captured optional
+texture fopen/CreateFile and per-texture log writes inside one 22.090-ms guest
+frame (Present/Swap 0.085 ms). Four stack snapshots stayed within that same frame;
+maximum thread suspension was 0.0564 ms. This identifies work inside a hitch,
+not its complete cost or the cause of every crowded-map slowdown.
+
+Independent branch perf/texture-pack-streaming from main acf4464 moves replacement
+DDS reads into a shared bounded worker, retaining original views while loading
+and uploading at most one ready replacement per frame. Routine texture logging
+is opt-in. GPU-worker PR #310 is not included in this branch. Queue capacity,
+blocked-reader cancellation, owner reuse, cached modes, mipmaps, failures and
+GL binding preservation pass local tests: 55 passed, two host-only skips.
+Windows game build, comparative pacing and actual Mac GPU/scenes are pending.
+The 144-FPS goal remains incomplete; see MAC-011 and MAC-060.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical

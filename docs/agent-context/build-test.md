@@ -524,3 +524,16 @@ not the original Player 1 seed folder. prepare_run remaps legacy fixtures and
 backs up only untouched seeded copies outside UserData. Modified legacy profiles
 require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
 Player 1 without deleting a profile or altering personal saves.
+
+## Texture streaming regression checks
+
+`tests/test_texture_runtime.py` compiles the actual shared queue, common RHI
+loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
+It runs on both CI hosts. A deliberately stalled reader checks nonblocking
+pump/cancellation, owner reuse, queue backpressure, staging limits and cleanup.
+Both synchronous and background modes exercise cached switching, fallback and
+resource failure; GL checks mip uploads and binding restoration. These are
+asset-free CPU/adapter tests, not GPU or scene acceptance. Run fresh/repeated and
+historical Mac patch upgrades for the new Present hook. Real pacing and texture
+pop-in still need bounded gameplay comparisons; default 60 and native120/144
+settings must be reported separately.

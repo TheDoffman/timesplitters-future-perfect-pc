@@ -141,6 +141,13 @@
       ]
     },
     {
+      "name": "texture-upload-streaming.patch",
+      "sha256": "3247ac4af1abe84774996cfeb2e98b979c2fb1613bca3419ca5d99133b37484b",
+      "targets": [
+        "src/d3d/d3d8_device.c\r"
+      ]
+    },
+    {
       "name": "zz-pc-network.patch",
       "sha256": "ef7f95291d224cc90533c04ba04edf06d32278479756d9b79a29f9fc5489c821",
       "targets": [

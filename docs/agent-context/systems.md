@@ -27,7 +27,7 @@ Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 | Auto-look / camera / cutscene | `src/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
 | Display model and native UI | `src/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/test_pc_display_modes.py`, `test_debug_settings_model.py` |
 | GPU clear / screen copies / sampling | `src/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/shared-platform.md` |
-| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
+| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_pack_stream.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
 | Texture production and audit | `tools/texture-worklist.py`, `tools/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures.md` |
 | System Link / online / bots | `src/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/online.py` | `tests/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
 | Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/test_discord_presence.py`, `test_discord_macos.py` |
@@ -343,3 +343,19 @@ volume identities; drive metadata retains executable-volume identity internally.
 The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
 provides attribute structures but not that function declaration. The production
 pc_prompts.c compile contract checks this include order in Mac CI.
+
+## Background replacement texture reads
+
+`texture_pack_stream.h` owns a shared single-reader queue for common RHI and
+legacy GL. The worker reads/validates DDS data without touching texture owners or
+GPU resources. Submit/cancel/pump run on the renderer thread; release and content
+changes cancel pending owners before reuse. A full 64-slot queue retries when the
+texture is next bound. Two completed payloads and one read bound CPU staging to
+72 MiB; the existing 512-MiB GPU budget and DDS/alpha rules still apply.
+
+Original views remain usable during loading. Each Present pumps at most one
+nonempty payload into GPU resources; F10 switches cached views immediately. The
+GL adapter restores the previous texture binding after upload. Shutdown joins
+the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
+selects the synchronous diagnostic fallback. Per-texture messages now require
+`TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.

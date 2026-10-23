@@ -253,11 +253,11 @@ def texture_branch_patches(tmp_path):
 
 
 def main_branch_patches(tmp_path):
-    """Model main without the optional active toggle, regardless of this branch."""
+    """Model historical main before the toggle and its streaming dependency."""
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name != 'texture-toggle.patch':
+        if patch.name not in ('texture-toggle.patch', 'texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
     shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
     return patches
