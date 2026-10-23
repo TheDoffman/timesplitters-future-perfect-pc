@@ -1,7 +1,7 @@
 /* Opt-in render-thread diagnostics, shared by common RHI and legacy GL.
  * CPU wall spans include scheduling/I/O waits, not GPU completion. Logging
  * follows the measured end and can perturb subsequent frames. No clock/file
- * work when disabled; cached texture uploads never enter this collector. */
+ * work when disabled. Hashing is measured even on a cached upload. */
 #ifndef TSFP_TEXTURE_PACK_TRACE_H
 #define TSFP_TEXTURE_PACK_TRACE_H
 #include <stdint.h>
@@ -22,7 +22,7 @@
 typedef struct {
     int active, enhanced;
     const char *backend;
-    uint64_t key, begin, read_begin, open_end, read_end, validated;
+    uint64_t key, begin, hash_begin, hash_end, read_begin, open_end, read_end, validated;
     uint64_t image_begin, image_end, view_begin, view_end;
     uint32_t width, height, source_bytes;
 } TsfpTextureTrace;
@@ -57,7 +57,7 @@ static TsfpTextureTrace tsfp_texture_trace_begin(uint64_t key,uint32_t w,
         if(path && *path) {
             FILE *f=fopen(path,"wb");tsfp_texture_trace_state.file=f;
             if(f) {
-                const char *header="key,backend,enhanced,width,height,source_bytes,replacement_bytes,outcome,begin_ns,read_begin_ns,open_end_ns,read_end_ns,validated_ns,image_begin_ns,image_end_ns,view_begin_ns,view_end_ns,end_ns\n";
+                const char *header="key,backend,enhanced,width,height,source_bytes,replacement_bytes,outcome,begin_ns,hash_begin_ns,hash_end_ns,read_begin_ns,open_end_ns,read_end_ns,validated_ns,image_begin_ns,image_end_ns,view_begin_ns,view_end_ns,end_ns\n";
                 setvbuf(f,NULL,_IOFBF,64u*1024u);
                 int bytes=fprintf(f,"%s",header);
                 if(bytes<0)tsfp_texture_trace_close();
@@ -78,9 +78,9 @@ static void tsfp_texture_trace_finish(TsfpTextureTrace *t,const char *outcome,ui
     int n=fprintf(tsfp_texture_trace_state.file,
         "%016" PRIx64 ",%s,%d,%u,%u,%u,%" PRIu64 ",%s,%" PRIu64
         ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64
-        ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
+        ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "\n",
         t->key,t->backend,t->enhanced,t->width,t->height,t->source_bytes,bytes,outcome,
-        t->begin,t->read_begin,t->open_end,t->read_end,t->validated,
+        t->begin,t->hash_begin,t->hash_end,t->read_begin,t->open_end,t->read_end,t->validated,
         t->image_begin,t->image_end,t->view_begin,t->view_end,end);
     if(n<0) {tsfp_texture_trace_close();return;}
     tsfp_texture_trace_state.bytes+=(unsigned)n;

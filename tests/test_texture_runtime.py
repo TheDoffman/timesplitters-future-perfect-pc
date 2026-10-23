@@ -81,16 +81,24 @@ def test_texture_upload_stages(texture_executables, tmp_path, mode):
                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
     rows = list(csv.DictReader(path.open()))
-    # Twenty cached switches must not add I/O/upload records. Preserve fallback
-    # and failure cleanup, including a rejected view followed by a good retry.
-    assert [r['outcome'] for r in rows] == [
+    # Cached switches still hash their source, but must not read/recreate the
+    # replacement. Keep both that work and failed attempts in the diagnostic.
+    cached = [r for r in rows if r['outcome'] == 'cached']
+    assert len(cached) == 20 and all(r['key'] == rows[0]['key'] for r in cached)
+    assert [r['outcome'] for r in rows if r['outcome'] != 'cached'] == [
         'loaded', 'read_rejected', 'read_rejected', 'view_failed', 'loaded', 'read_rejected']
     assert rows[0]['enhanced'] == str(int(mode == '4k'))
     for r in rows:
-        marks = [int(r[k]) for k in ('begin_ns', 'read_begin_ns', 'open_end_ns',
+        marks = [int(r[k]) for k in ('begin_ns', 'hash_begin_ns', 'hash_end_ns', 'read_begin_ns', 'open_end_ns',
             'read_end_ns', 'validated_ns', 'image_begin_ns', 'image_end_ns', 'view_begin_ns', 'view_end_ns', 'end_ns')]
         present = [n for n in marks if n]
         assert present == sorted(present) and present[0] > 0
+        assert int(r['hash_begin_ns']) > 0 and int(r['hash_end_ns']) > 0
+        if r['outcome'] == 'cached':
+            assert all(int(r[k]) == 0 for k in ('read_begin_ns', 'open_end_ns',
+                'read_end_ns', 'validated_ns', 'image_begin_ns', 'image_end_ns',
+                'view_begin_ns', 'view_end_ns'))
+            assert int(r['replacement_bytes']) == 24
         if r['outcome'] in ('loaded', 'view_failed'):
             assert all(marks) and int(r['replacement_bytes']) == 24
         else:

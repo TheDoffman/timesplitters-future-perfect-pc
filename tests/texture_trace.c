@@ -26,6 +26,7 @@ int main(int argc,char **argv){
     int enabled=!strcmp(argv[1],"enabled"),failed=!strcmp(argv[1],"unwritable");
     for(unsigned i=0;i<TSFP_TEXTURE_TRACE_ROWS+10;i++){
         TsfpTextureTrace t=tsfp_texture_trace_begin(i,4,4,8,"fixture");
+        TSFP_TEXTURE_STAMP(&t,hash_begin);TSFP_TEXTURE_STAMP(&t,hash_end);
         TSFP_TEXTURE_STAMP(&t,read_begin);TSFP_TEXTURE_STAMP(&t,open_end);
         TSFP_TEXTURE_STAMP(&t,read_end);TSFP_TEXTURE_STAMP(&t,validated);
         TSFP_TEXTURE_STAMP(&t,image_begin);TSFP_TEXTURE_STAMP(&t,image_end);

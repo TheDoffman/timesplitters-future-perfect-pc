@@ -3667,6 +3667,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   slow intervals contain none. Key hashing/cached calls and trace-output cost
   remain outside the spans. This is diagnostic evidence, not a hitch fix; see
   STATUS for scope and the main-based executable's provenance.
+  Follow-up source now measures source-key hashing on both RHI and legacy GL,
+  including cached upload calls, with the same disabled/bounded contract.
+  Forty-eight focused local tests pass, including real-loader hash ordering and
+  no file/resource work on cached calls. The new hash fields are not present in
+  the earlier `2230901` evidence. Full build/live hash correlation and actual
+  native Mac tracing remain pending for this extension.
 
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**

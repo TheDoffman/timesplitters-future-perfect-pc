@@ -38,6 +38,11 @@ attempt begin/end timestamps with each Present interval. The first live trace
 accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
 without attempts. Hashing/cached-call costs and trace output are outside these
 attempt spans; broader frame work remains open. STATUS retains the evidence.
+The follow-up collector starts before source-key hashing and emits `cached`
+rows as well. Loader tests require nonzero ordered hash boundaries and zero
+read/resource stages on all twenty cached calls while retaining existing load
+and fallback counts. The 8,192-row bound still applies; verify coverage before
+using a live window. The earlier `2230901` data retains its narrower scope.
 
 Crowded-map performance checks must record actual window state as well as the
 configured render resolution. `stability_transitions_game.py --minimized` hides

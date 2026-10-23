@@ -10,12 +10,19 @@ static void native_pack_upload(GLTexture *t) {
     const char *root=getenv("TSFP_TEXTURE_PACK_DIR");
     if(!root||!*root||t->usage||!d3d8_format_is_compressed(t->format))return;
     uint32_t bytes=d3d8_row_pitch(t->format,t->width)*((t->height+3)/4);
-    uint64_t key=tsfp_texture_key(t->format,t->width,t->height,t->sys_mem,bytes);
-    if(t->pack_checked&&t->pack_key==key)return;
-    native_pack_release(t);t->pack_checked=1;t->pack_key=key;
-    char path[4096];if(snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",root,key)>=(int)sizeof path)return;
-    TsfpTextureTrace trace=tsfp_texture_trace_begin(key,t->width,t->height,bytes,"gl");
+    TsfpTextureTrace trace=tsfp_texture_trace_begin(0,t->width,t->height,bytes,"gl");
     if(trace.active)trace.enhanced=tsfp_texture_is_4k();
+    TSFP_TEXTURE_STAMP(&trace,hash_begin);
+    uint64_t key=tsfp_texture_key(t->format,t->width,t->height,t->sys_mem,bytes);
+    TSFP_TEXTURE_STAMP(&trace,hash_end);
+    trace.key=key;
+    if(t->pack_checked&&t->pack_key==key) {
+        tsfp_texture_trace_finish(&trace,"cached",t->pack_bytes);return;
+    }
+    native_pack_release(t);t->pack_checked=1;t->pack_key=key;
+    char path[4096];if(snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",root,key)>=(int)sizeof path) {
+        tsfp_texture_trace_finish(&trace,"path_rejected",0);return;
+    }
     TsfpDDS dds;unsigned char *data=tsfp_pack_read_traced(path,t->width,t->height,TSFP_PACK_RESIDENT_BUDGET-native_pack_resident,&dds,&trace);
     if(!data){tsfp_texture_trace_finish(&trace,"read_rejected",0);return;}
     /* This legacy adapter only uploads BC formats. The common parser also

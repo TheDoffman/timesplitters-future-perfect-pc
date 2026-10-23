@@ -1,3 +1,38 @@
+## 2026-10-22 — Crowded-scene CPU accounting and hash trace coverage
+
+The unchanged playable `4adb6b0` baseline was exercised in two further bounded,
+isolated Venice/ten-bot native 144 runs with 3440x1440 rendering. Both retained
+the visible fullscreen 1920x1060 client, with no foreground observations.
+`crowd-fullscreen-thread-4adb-144` adds read-only thread CPU/cycle counters at a
+nominal 4 ms interval. Its slowest nearly-five-second window records 135.919 FPS
+and 96.02% main-thread CPU use (7.065 CPU ms per present); an overlapping window
+records 135.971 FPS and 97.31% CPU. Present calls total 43.584/44.010 ms across
+those five-second windows. Faster windows near 144 FPS use about 76% CPU. These
+counters include busy waits and cannot identify exact routines, but implicate
+main-thread CPU budget rather than spending most of the slowdown off-CPU.
+
+`crowd-fullscreen-stack-4adb-144` adds external saved-stack sampling. It does
+not reproduce the sustained dip: minimum rolling five-second FPS is 143.4.
+It does capture a 27.450-ms respawn interval (Present call 0.092 ms), with six
+samples spanning it. Two land in texture-upload code and two in texture-file
+opening. The measured suspension overlap is 0.181 ms; across the active 50-second
+window median suspension is 0.0175 ms, p99 0.139 ms and total 322.627 ms. This remains
+perturbed diagnostic evidence, not causal stage duration. Both runs exit cleanly
+with valid unchanged profiles/fixture and recycled disposable disks; the normal
+playable executable is unchanged. Per-run thread/window/stack JSON and raw CSVs
+retain the observations. The roughly 110 FPS user report remains unreproduced.
+
+The existing upload collector omitted source-key hashing and cached calls. The
+follow-up shared RHI/legacy-GL source now adds hash begin/end timestamps and a
+`cached` outcome with no read/image/view work. This closes a measurement gap;
+it does not change the key, loader behavior, texels, resource reuse or budgets.
+Disabled tracing still performs no clock/file work; the row/byte cap is unchanged.
+Forty-eight focused texture runtime/tool tests pass in 6.32 seconds, including
+all twenty cached hashes, stage ordering, unchanged fallback/resource counts
+and disabled/failed/bounded collection. Full build/live hash correlation is
+pending; actual native Mac gameplay is unverified. Earlier trace evidence below
+uses the original narrower schema and must not be reinterpreted as hash timing.
+
 ## 2026-10-22 — Opt-in texture-upload timing
 
 A focused diagnostic branch from main `acf4464` adds per-attempt monotonic

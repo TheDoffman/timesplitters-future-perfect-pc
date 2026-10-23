@@ -72,10 +72,15 @@ void tsfp_texture_upload(D3D8Texture *tex) {
     if(tex->usage || tex->screen_copy || !tex->sys_mem) return;
     bytes=tsfp_texture_base_bytes(tex->d3d8_format,tex->width,tex->height);
     if(!bytes) return;
-    key=tsfp_texture_key(tex->d3d8_format,tex->width,tex->height,tex->sys_mem,bytes);
-    if(tex->pack_checked && tex->pack_key==key) return;
-    TsfpTextureTrace trace=tsfp_texture_trace_begin(key,tex->width,tex->height,bytes,"rhi");
+    TsfpTextureTrace trace=tsfp_texture_trace_begin(0,tex->width,tex->height,bytes,"rhi");
     if(trace.active)trace.enhanced=tsfp_texture_is_4k();
+    TSFP_TEXTURE_STAMP(&trace,hash_begin);
+    key=tsfp_texture_key(tex->d3d8_format,tex->width,tex->height,tex->sys_mem,bytes);
+    TSFP_TEXTURE_STAMP(&trace,hash_end);
+    trace.key=key;
+    if(tex->pack_checked && tex->pack_key==key) {
+        tsfp_texture_trace_finish(&trace,"cached",tex->pack_bytes);return;
+    }
     tsfp_texture_release(tex);tex->pack_key=key;tex->pack_checked=1;
     dump_original(tex,key,bytes);
     if(!pack_root[0]) {tsfp_texture_trace_finish(&trace,"dump_only",0);return;}
