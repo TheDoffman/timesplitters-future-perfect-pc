@@ -1,5 +1,6 @@
 """Compile the actual DDS parser and loader/mode code without game assets."""
 import os
+import re
 from pathlib import Path
 import subprocess
 
@@ -18,6 +19,13 @@ def texture_executables(tmp_path_factory):
     sync = 'void tsfp_texture_sync_bindings(void)' + device.split(
         'void tsfp_texture_sync_bindings(void)', 1)[1].split('\n}', 1)[0] + '\n}\n'
     (folder / 'texture_binding_sync.inc').write_text(sync, encoding='utf-8')
+    frames = []
+    for function in ('present_resolve', 'dev_Swap', 'dev_Present'):
+        match = re.search(r'^static [^\n]*\b' + function + r'\([^\n]*\)\n\{.*?\n\}',
+                          device, re.M | re.S)
+        assert match, function
+        frames.append(match.group())
+    (folder / 'texture_frame_dispatch.inc').write_text('\n'.join(frames), encoding='utf-8')
     executables = {}
     for name, sources in {
         'format': [ROOT / 'tests/texture_pack_format.c'],

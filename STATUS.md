@@ -1,50 +1,29 @@
-## 2026-10-22 — Background texture loading (PR #311)
+## 2026-10-23 — Texture streaming integration correction (PR #311)
 
-A bounded Hotel diagnostic on GPU-worker candidate bf4b755 captured optional
-texture fopen/CreateFile and per-texture log writes inside one 22.090-ms guest
-frame (Present/Swap 0.085 ms). Four same-frame snapshots had maximum suspension
-0.0564 ms. This identifies work inside a hitch, not its complete cost or the
-cause of every crowded-map slowdown.
+The initial background-loading candidate 25e0059 is not accepted. Its Enhanced
+visual run recorded zero completed replacements: Future Perfect calls host Swap,
+while the queue pump was attached only to the older Present path. Earlier Hotel
+FPS gains and Venice 60/120 measurements therefore do not validate the intended
+loader and are withdrawn from performance/compatibility conclusions. Original
+views remained visible, which allowed the mistake to evade the earlier smoke runs.
 
-Independent perf/texture-pack-streaming from main acf4464 moves replacement DDS
-reads into a bounded shared worker. Original views remain available; at most one
-ready replacement uploads per frame. Completion/cancellation refreshes persistent
-bindings. Per-texture logging is opt-in. PR #310's GPU-worker optimization and
-PR #309's trace filter are not included in this branch.
+The pump now lives in common present_resolve, used by Swap, Present and the public
+frame helper. The skipped-Swap branch returns before it. The regression fixture
+executes the actual production frame bodies, checks exactly one completion per
+presented frame and none for skips, and delivers real DDS loads through Swap.
+Both selected modes failed before repair; all 15 texture tests pass afterward.
+Legacy GL already delegates Swap to its Present adapter and needs no second pump.
 
-Windows build and built-in checks pass at 25e0059 (foreground virtual-pad routing
-skipped). Fifteen final loader/queue/GL-adapter tests pass; 88 scope/context/backlog
-checks pass. Ten fresh/repeated/historical transition cases pass (505.46 seconds),
-plus the corrected controls-only historical upgrade (24.67 seconds). That fixture
-must omit streaming until its texture prerequisites arrive, then verify both
-Present and binding-revision hooks. The initial standalone test include failure
-and the Linux patch-index line-ending mismatch are repaired.
+The visual probe also exposed a harness limitation: guest F10 key-state injection
+does not invoke the host shortcut. The bounded runner now offers an explicit
+texture-toggle window command through the existing host menu handler; real mode
+log transitions must confirm delivery. The old captures are not proof of switching.
 
-Four bounded ten-bot Hotel runs use the same executable (runtime 63771be, build
-25e0059), Classic 3440x1440/FOV73 and native144. Each strict 50-second post-spawn
-window has continuous guest Present coverage. The reverse-order repeat pair ran
-without local builds/test suites during its measured windows:
-
-| Background reads | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval | Frames >9 ms | Main CPU | Game ticks/s |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Off, repeat | 142.159 | 132.6 | 9.014 / 16.047 ms | 76 | 80.19% | 59.989 |
-| On, repeat | 144.002 | 143.8 | 8.152 / 12.540 ms | 2 | 78.48% | 60.012 |
-
-Actual client1920x1060; all 50 window observations in each run were visible,
-nonminimized and nonforeground. Death samples differ 31.1% off /29.3% on; process
-CPU was 1.417/1.303 core equivalents. AI/deaths and other system activity remain
-uncontrolled. These are API-present diagnostic intervals with read-only counters,
-not GPU completion/scanout, clean foreground benchmarks or full-game acceptance.
-The first pair (on143.378/min139.0, off137.940/min108.8) is excluded from performance
-conclusions because a local patch test overlapped the off run. All four sessions
-preserve profiles/fixture, recycle test partitions and restore the playable pair.
-
-Mac runtime CI at c4baddf passes: 446 tests, 76 skips, 18 subtests plus asset-free
-common-RHI GPU contracts. Mac runtime and corrected upgrade CI also pass at
-680acf0; Windows jobs were still running when this record was written. Final-head
-CI, actual Enhanced arrivals, native60/120 loader gameplay, other maps and native
-Mac scenes remain outstanding. Sparse clock observations do not audit every
-simulation system. The full high-refresh goal stays incomplete (MAC-011/MAC-060).
+The shared queue/cancellation/format tests and prior build/CI results retain only
+their stated CPU/compile scope. Rebuild, actual Enhanced completion, corrected
+60/120/144 comparisons, final-head CI and Mac scene validation are pending. The
+normal playable executable/symbol pair was restored and profiles/fixture preserved.
+No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

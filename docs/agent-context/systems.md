@@ -359,3 +359,8 @@ GL adapter restores the previous texture binding after upload. Shutdown joins
 the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
 selects the synchronous diagnostic fallback. Per-texture messages now require
 `TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+
+The common renderer pumps from present_resolve, shared by Swap and Present.
+The initial Present-only prototype never delivered replacements in this title;
+its apparent pacing gains are invalid evidence. Actual DDS upload records and
+rendered Enhanced scenes are required alongside queue unit tests.

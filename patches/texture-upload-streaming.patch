@@ -1,15 +1,15 @@
 --- a/src/d3d/d3d8_device.c
 +++ b/src/d3d/d3d8_device.c
-@@ -792,6 +792,9 @@
+@@ -295,6 +295,9 @@
  
- static HRESULT __stdcall dev_Present(IDirect3DDevice8 *self, const RECT *src, const RECT *dst, HWND hWnd, void *pDirty)
+ static void present_resolve(void)
  {
 +#ifdef TSFP_TEXTURE_PACK
 +    tsfp_texture_frame_complete();
 +#endif
-     static DWORD frame_count = 0;
-     static DWORD last_tick = 0;
-     (void)self; (void)src; (void)dst; (void)hWnd; (void)pDirty;
+     follow_vrr();
+     two_d_tag_frame();
+     present_scene();
 @@ -1626,9 +1629,11 @@
  void tsfp_texture_sync_bindings(void)
  {

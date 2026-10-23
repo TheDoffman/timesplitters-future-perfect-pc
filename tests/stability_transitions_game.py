@@ -363,6 +363,9 @@ def main():
                     key_events.append(dict(key=key,down_ns=down_ns,up_ns=time.perf_counter_ns()))
                     time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
+                # Host shortcut, not a guest input key: PC_TEXTURE_MODE_COMMAND
+                # from pc_settings.h. Route through the real window handler.
+                if command.get('window')=='texture-toggle':user.PostMessageW(window,0x111,0x7e24,0)
                 if command.get('window')=='focus':
                     user.ShowWindow(window,6);time.sleep(1)
                     lost=user.GetForegroundWindow()!=window

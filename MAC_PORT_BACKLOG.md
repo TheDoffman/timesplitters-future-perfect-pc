@@ -1235,6 +1235,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-23 streaming integration correction (commit carrying this entry):
+  the initial common-renderer Present-only pump missed Future Perfect's Swap
+  route. Earlier background-on gameplay measurements did not include completed
+  replacements and are withdrawn. Completion now belongs to shared present_resolve;
+  legacy GL already funnels Swap through its Present adapter. Production-body
+  tests fail before this correction and pass after it. Actual rebuilt Enhanced
+  delivery and Windows/Mac scene validation remain **Awaiting validation**.
+
 - Background texture reads (commit carrying this entry): `texture_pack_stream.h`
   shares queue, cancellation and staging policy between common RHI and legacy
   GL; thin Windows event/lock and POSIX pthread adapters run disk work. GPU

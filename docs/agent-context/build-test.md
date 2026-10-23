@@ -546,3 +546,10 @@ Both routes default to background loading when no diagnostic override is set.
 Historical controls-only and pre-toggle snapshots omit streaming along with its
 texture prerequisites. Full-stack migration must install both the Present pump
 and binding-revision hook, which the controls-upgrade test explicitly checks.
+
+The texture fixture now compiles actual present_resolve, dev_Swap and dev_Present
+bodies, verifies exactly one queue completion per presentation (none for a skip),
+and finishes real DDS loads through Swap. It fails against the Present-only
+prototype. In stability_transitions_game, window=texture-toggle posts the existing
+PC_TEXTURE_MODE_COMMAND to the owned window. Guest key-state injection of F10
+does not exercise this host shortcut; mode log transitions must confirm delivery.

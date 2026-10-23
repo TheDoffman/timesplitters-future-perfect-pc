@@ -28,11 +28,35 @@ static unsigned rebinds;
 static struct {void *image;} *g_cur_rt;
 static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
 #include "texture_binding_sync.inc"
+static unsigned frame_completions, host_presents;
+static BOOL g_skip_guest_present;
+static UINT g_present_interval=1;
+static DWORD g_d3d_begin_count,g_d3d_end_count,g_d3d_clear_count,g_d3d_draw_count;
+static DWORD g_d3d_settransform_count,g_d3d_setrs_count,g_d3d_settexture_count;
+static void follow_vrr(void) {}
+static void two_d_tag_frame(void) {}
+static void present_scene(void) {}
+static void d3d8_display_frame_done(void) {}
+void rhi_pump_events(void) {}
+int32_t rhi_present_kind(uint32_t interval,uint32_t kind)
+{if(interval!=1 || kind!=RHI_PRESENT_GUEST)abort();host_presents++;return 0;}
+static DWORD texture_test_tick(void) {return 1;}
+static void texture_test_complete(void) {frame_completions++;tsfp_texture_frame_complete();}
+#define GetTickCount texture_test_tick
+#define tsfp_texture_frame_complete texture_test_complete
+#include "texture_frame_dispatch.inc"
+#undef tsfp_texture_frame_complete
+#undef GetTickCount
 #endif
 static int finish(D3D8Texture *texture)
 {
     for(int i=0;i<2000;i++) {
+#ifdef TSFP_TEST_BINDING_SYNC
+        /* Future Perfect uses Swap, rather than the older Present entry. */
+        if(dev_Swap(NULL,0)!=S_OK)return 0;
+#else
         tsfp_texture_frame_complete();
+#endif
         if(texture->pack_checked<2)return 1;
         (void)tsfp_texture_view(texture); /* retry a saturated queue */
 #ifdef _WIN32
@@ -76,6 +100,12 @@ int main(int argc,char **argv)
     char path[4096]; int initial, cached_allocations;
     RhiView *cached;
     CHECK(argc==3);
+#ifdef TSFP_TEST_BINDING_SYNC
+    CHECK(dev_Swap(NULL,0)==S_OK && frame_completions==1 && host_presents==1);
+    g_skip_guest_present=TRUE;
+    CHECK(dev_Swap(NULL,0)==S_OK && frame_completions==1 && host_presents==1);
+    CHECK(dev_Present(NULL,NULL,NULL,NULL,NULL)==S_OK && frame_completions==2 && host_presents==2);
+#endif
     if(!getenv("TSFP_TEXTURE_STREAMING"))_putenv_s("TSFP_TEXTURE_STREAMING","1");
     _putenv_s("TSFP_TEXTURE_DUMP_DIR","");
     _putenv_s("TSFP_TEXTURE_PACK_DIR",!strcmp(argv[2],"missing") ? "" : argv[1]);
