@@ -43,6 +43,9 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         if case == 'surface_spatial_gpu.inc':
             offset = config.va_to_file_offset(0x4bbe20)
             (tmp_path / 'first.bin').write_bytes(image[offset:offset + 240])
+            offset = config.va_to_file_offset(0x4bbb90)
+            assert int.from_bytes(image[offset:offset + 4], 'little') == 0x62078
+            (tmp_path / 'vertex.bin').write_bytes(image[offset:offset + 4 + 6 * 16])
         if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
             import struct
             from tools.recomp.translator import FunctionTranslator
@@ -67,7 +70,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     include = ['/I' + str(p) for p in
                (ROOT / 'src', ROOT / 'tests', RUNTIME, RUNTIME / 'd3d', RUNTIME / 'config')]
 
-    def run(args, environment=env):
+    isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+    isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
+                    TSFP_DISPLAY_CONFIG=str(tmp_path / 'display.ini'), RECOMP_SAVE_DIR=str(tmp_path / 'saves'))
+
+    def run(args, environment=isolated):
         result = subprocess.run(args, cwd=tmp_path, env=environment,
                                 capture_output=True, text=True, timeout=90)
         assert result.returncode == 0, result.stdout + result.stderr
@@ -94,6 +101,23 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         assert 'Stage 6' in first
         with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
             header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
+
+    if case == 'surface_spatial_gpu.inc':
+        vertex_translator = (RUNTIME / 'd3d/d3d8_vsh.c').read_text(encoding='utf-8')
+        end = vertex_translator.index('/* ================================================================\n * Input Layout Management')
+        start = vertex_translator.index('int d3d8_vsh_hor_plus_reg(void)\n{')
+        helper = vertex_translator[start:vertex_translator.index('\n}', start) + 2]
+        vertex_source = tmp_path / 'vertex_translate.c'
+        vertex_source.write_text(vertex_translator[:end] + '\n' + helper + '\n' +
+                                (ROOT / 'tests/surface_vertex_definition.c').read_text(), encoding='utf-8')
+        vertex_generator = tmp_path / 'vertex_translate.exe'
+        run([compiler, '/nologo', '/std:c11', '/O2', *include, str(vertex_source),
+             str(RUNTIME / 'kernel/nv2a_vsh.c'), str(RUNTIME / 'config/recomp_config.c'),
+             '/Fe:' + str(vertex_generator)])
+        vertex_hlsl = run([str(vertex_generator)])
+        assert 'Program body (6 instructions)' in vertex_hlsl
+        with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
+            header.write('static const char surface_vertex_hlsl[]=' + json.dumps(vertex_hlsl) + ';\n')
 
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
@@ -133,9 +157,6 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     run([compiler, '/nologo', '/std:c11', '/O2', '/W3', *include, *map(str, sources),
          '/Fe:' + str(exe), '/link', 'd3d11.lib', 'dxgi.lib', 'dxguid.lib',
          'd3dcompiler.lib', 'user32.lib', 'gdi32.lib'])
-    isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
-    isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
-                    TSFP_DISPLAY_CONFIG=str(tmp_path / 'display.ini'), RECOMP_SAVE_DIR=str(tmp_path / 'saves'))
     if mutation:
         result = subprocess.run([str(exe)], cwd=tmp_path, env=isolated,
                                 capture_output=True, text=True, timeout=90)

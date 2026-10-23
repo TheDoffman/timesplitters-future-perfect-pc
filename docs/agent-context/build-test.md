@@ -613,3 +613,11 @@ its numeric comparison. Resources are reused inside the fixture; this is not a
 game runtime integration or a performance test. Existing byte
 storage differences remain asserted. These GPU cases require the supported
 private XBE and Windows WARP; hosted skips are not Mac GPU/gameplay acceptance.
+
+The spatial fixture now translates and executes the supported XBE's original
+six-instruction water vertex program as well as both pixel programs. Its input
+triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
+`surface_vertex_definition.c` reads private microcode and uses the current
+production parser/emitter. Translation helpers also receive isolated runtime
+configuration. Single-pass and gradient-only byte-storage controls isolate
+rounding contributions; none is an accepted replacement for the original map.

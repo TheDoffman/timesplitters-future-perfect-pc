@@ -3660,8 +3660,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
   GPU transform shader bodies preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
   No game hook calls this candidate; normal water and legacy GL are unchanged.
-  Existing native-timing CI includes its asset-free CPU fixture on both hosts.
-  Windows WARP covers GPU transforms and fresh reconstruction every update;
+  Existing native-timing CI includes its asset-free CPU fixture on both hosts;
+  both native jobs pass for PR #316 head 67f9663. This verifies the CPU contract,
+  not Mac water rendering.
+  Windows WARP covers GPU transforms, fresh reconstruction every update, and
+  the original water vertex/pixel programs with synthetic input geometry;
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

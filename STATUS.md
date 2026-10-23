@@ -35,6 +35,19 @@ and runtime integration remain pending under MAC-060. No personal saves/settings
 were used. Evidence: logs/water-coupling-gpu-suite.log and the detailed coupled
 operator section in docs/native-high-refresh-regressions.md.
 
+The follow-up fixture executes the original six-instruction water vertex program
+through the production translator and WARP, preserving the existing results.
+Synthetic input geometry remains a limit. Three mixed-storage controls show that
+first-pass-only byte rounding, second-pass-only byte rounding and gradient-only
+rounding all differ from the original both-byte field (RMS blue differences
+0.012476, 0.045231 and 0.041304). The first-only result includes repeated rounding
+of copied velocity/displacement; gradient rounding alone does not reproduce it.
+These controls reject simple partial-format fixes, not solve nonlinear rounding.
+All eight updated GPU cases pass in 31.96 seconds. See the detailed regression
+table and logs/water-original-vertex.log. PR #316 head 67f9663 passed all selected
+Windows/Mac native, transition and ancillary CI checks; the newer fixture
+follow-up requires its own CI run. Mac game/GPU water acceptance remains open.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical

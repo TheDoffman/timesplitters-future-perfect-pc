@@ -5898,8 +5898,46 @@ cases pass in 30.74 seconds, including the three expected-failure mutations. Exi
 No supported game rebuild is needed for these currently uncalled helpers/tests.
 
 Outstanding: original byte-feedback appearance/rounding, clipping, smoothing,
-disturbance timing, original vertex-coordinate execution, runtime ownership/state restoration for the GPU
+disturbance timing, original guest geometry/viewport submission, runtime ownership/state restoration for the GPU
 transform resources, runtime integration, live-rate transitions, actual
 frame-time cost and native Mac GPU/gameplay acceptance. Do not enable the water
 experiment solely from these controlled results. Evidence is local in
 logs/water-coupling-gpu-suite.log; shader bytes and game assets are not tracked.
+
+### Original vertex program and rounding isolation
+
+The updated WARP fixture extracts the vertex program at US 0x4BBB90 (header
+0x00062078, six instructions) and translates it with the unmodified production
+vertex parser/emitter. The original program consumes v1/v2/v3, copies position,
+swizzles color and adds c17-c20 to UVs. It now runs on the GPU alongside both
+original pixel programs. The fixture still supplies a synthetic fullscreen
+triangle/NDC position and texel-centered UVs; this does not validate the game's
+actual vertex submission or viewport/half-texel handling. All controlled spatial
+results are unchanged. Translation helpers use isolated runtime configuration.
+
+Three added one-second Original-60 controls isolate byte rounding. Each pass
+renders to its selected actual GPU storage format. The gradient-only control
+retains the first pass's byte red result but explicitly restores copied green/
+blue channels from the float input before pass two. This is an intentional
+ablation, not game behavior. Each mixed path must remain distinct from the
+original both-byte result (RMS blue difference > 0.005).
+
+| Storage control | Mean blue | Blue standard deviation | RMS blue vs both-byte 60 |
+| --- | ---: | ---: | ---: |
+| Both passes byte (reference) | 0.604052758 | 0.024023703 | 0 |
+| First pass byte, second float | 0.595155834 | 0.023109208 | 0.012476170 |
+| First pass float, second byte | 0.562469389 | 0.009027910 | 0.045231253 |
+| First gradient byte, copied G/B and second pass float | 0.570406683 | 0.001638243 | 0.041304309 |
+
+The closer first-byte-only result cannot be attributed solely to rounding the
+spatial gradient: it also repeatedly rounds the carried velocity/displacement.
+Keeping only the quantized gradient loses that result. Mean signed rounding
+errors are recorded per pass/channel, rather than treating quantization as
+zero-mean noise. For the both-byte reference, first red mean error is
++0.000151594 and second green mean error is +0.000358667 per update. These are
+state-dependent observations, not constants to add to the fractional solver.
+Neither changing one target format nor rounding only the gradient preserves
+the original byte feedback in this field. Full nonlinear/state-rounding behavior
+remains unresolved. Evidence: logs/water-original-vertex.log and
+logs/water-quantization-ablation.log; no game asset bytes are committed. All
+eight updated GPU cases pass in 31.96 seconds (logs/water-coupling-gpu-followup.log).

@@ -1,6 +1,7 @@
 /* Controlled 64x64 feedback field. The original pixel programs are translated
- * unchanged. Explicit diagonal offsets follow callback 0x2BF10; this does not
- * execute the original vertex program, disturbance or smoothing passes. */
+ * unchanged, together with the original vertex program. Explicit diagonal
+ * offsets follow callback 0x2BF10; guest geometry/viewport submission and
+ * disturbance/smoothing passes are not executed. */
 static float field_a[64*64*4],field_b[64*64*4],reference_fields[3][64*64*4];
 /* Orthonormal DCT-II diagonalizes the clamped diagonal-neighbor stencil.
  * CPU transforms are an independent reference for the GPU transform probes;
@@ -62,19 +63,29 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     RhiView *none[3]={0};rhi_set_textures(0,3,none);rhi_set_render_target(NULL,NULL);
 }
 /* SPATIAL_MAIN */
-    RhiShader *field_vs[2];
-    const char *vertex_prefix=
-        "struct O {float4 pos:SV_POSITION;float4 c0:COLOR0;float4 c1:COLOR1;"
-        "float4 t0:TEXCOORD0;float4 t1:TEXCOORD1;float4 t2:TEXCOORD2;float4 t3:TEXCOORD3;float fog:TEXCOORD4;};"
-        "O main(uint id:SV_VertexID) {O o=(O)0;o.pos=float4(id==2?3:-1,id==1?3:-1,0,1);"
-        "float2 uv=float2(o.pos.x+1,1-o.pos.y)*.5;o.t0=float4(uv,0,1);";
-    char vertex_text[2048];
-    snprintf(vertex_text,sizeof vertex_text,"%so.t1=float4(uv+float2(-1,-1)/64,0,1);"
-        "o.t2=float4(uv+float2(1,-1)/64,0,1);o.t3=float4(uv+float2(1,1)/64,0,1);return o;}",vertex_prefix);
-    field_vs[0]=shader(RHI_STAGE_VERTEX,vertex_text,"vs_5_0");
-    snprintf(vertex_text,sizeof vertex_text,"%so.t1=float4(uv+float2(-1,1)/64,0,1);"
-        "o.t2=o.t3=o.t0;return o;}",vertex_prefix);
-    field_vs[1]=shader(RHI_STAGE_VERTEX,vertex_text,"vs_5_0");
+    /* Execute the original six-instruction vertex program. Only input geometry
+     * is synthetic: NDC fullscreen triangle, texel-centered UVs and the offsets
+     * observed in guest callback 2BF10. Guest viewport/vertex submission remains
+     * a separate scene validation requirement. */
+    char vertex_text[65536];
+    snprintf(vertex_text,sizeof vertex_text,"#define main original_vertex\n%s\n#undef main\n"
+        "VS_OUT main(uint id:SV_VertexID) {VS_IN v=(VS_IN)0;"
+        "v.v1=float4(id==2?3:-1,id==1?3:-1,0,1);v.v2=float4(1,1,1,1);"
+        "v.v3=float4(float2(v.v1.x+1,1-v.v1.y)*.5,0,1);return original_vertex(v);}",surface_vertex_hlsl);
+    RhiShader *field_vs=shader(RHI_STAGE_VERTEX,vertex_text,"vs_5_0");
+    float vertex_constants[2][192][4]={0},vertex_screenspace[12]={0},vertex_inputs[20][4]={0};
+    vertex_inputs[16][1]=vertex_inputs[16][2]=vertex_inputs[16][3]=1;
+    vertex_constants[0][18][0]=vertex_constants[0][18][1]=-1.f/64;
+    vertex_constants[0][19][0]=1.f/64;vertex_constants[0][19][1]=-1.f/64;
+    vertex_constants[0][20][0]=vertex_constants[0][20][1]=1.f/64;
+    vertex_constants[1][18][0]=-1.f/64;vertex_constants[1][18][1]=1.f/64;
+    RhiBufferDesc vertex_desc={sizeof vertex_constants[0],RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
+    RhiBuffer *vertex_buffers[3];
+    vertex_buffers[0]=rhi_buffer_create(&vertex_desc,vertex_constants[0]);
+    vertex_desc.size=sizeof vertex_screenspace;vertex_buffers[1]=rhi_buffer_create(&vertex_desc,vertex_screenspace);
+    vertex_desc.size=sizeof vertex_inputs;vertex_buffers[2]=rhi_buffer_create(&vertex_desc,vertex_inputs);
+    CHECK(vertex_buffers[0] && vertex_buffers[1] && vertex_buffers[2]);
+    rhi_set_uniform_buffers(RHI_STAGE_VERTEX,1,3,vertex_buffers);
     RhiShader *field_ps[2]={shader(RHI_STAGE_PIXEL,first_hlsl,"ps_5_0"),
         shader(RHI_STAGE_PIXEL,surface_hlsl,"ps_5_0")};
     DWORD definitions[2][60];
@@ -89,7 +100,11 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     const unsigned rates[]={60,120,144};
     const float authored[3]={.105f,.65f,.98f};
     for(unsigned i=0;i<3;i++)CHECK(pc_surface_packed_coefficient(authored[i])==packed_coefficients[0][i]/255.f);
-    for(unsigned storage=0;storage<3;storage++)for(unsigned rate=0;rate<3;rate++) {
+    /* Controls 3/4 quantize only one pass, isolating intermediate-gradient
+     * rounding from the persistent velocity/displacement rounding. */
+    for(unsigned storage=0;storage<6;storage++)for(unsigned rate=0;rate<(storage<3?3u:1u);rate++) {
+        unsigned first_storage=storage<3?storage:storage==4?0:2;
+        unsigned second_storage=storage<3?storage:storage==4?2:0;
         unsigned fps=rates[rate];float delta=60.f/fps,precise[3];pc_surface_coefficients(delta,authored,precise);
         float k=pc_surface_packed_coefficient(.17f),bias=pc_surface_bias(delta);
         float first_vectors[3][4]={{k,k,k,k}};
@@ -107,50 +122,68 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         CHECK(inputs[0] && inputs[1]);
         RhiView *input_views[2]={rhi_view_create(inputs[0],RHI_VIEW_SAMPLED,NULL),rhi_view_create(inputs[1],RHI_VIEW_SAMPLED,NULL)};
         CHECK(input_views[0] && input_views[1]);
-        td.format=formats[storage];td.bind=RHI_BIND_RENDER_TARGET;
-        RhiImage *output=rhi_image_create(&td,NULL);CHECK(output);
-        RhiView *output_view=rhi_view_create(output,RHI_VIEW_RENDER_TARGET,NULL);CHECK(output_view);
-        rhi_set_render_target(output_view,NULL);
+        RhiImage *outputs[2];RhiView *output_views[2];
+        for(unsigned pass=0;pass<2;pass++) {
+            td.format=formats[pass?second_storage:first_storage];td.bind=RHI_BIND_RENDER_TARGET;
+            outputs[pass]=rhi_image_create(&td,NULL);CHECK(outputs[pass]);
+            output_views[pass]=rhi_view_create(outputs[pass],RHI_VIEW_RENDER_TARGET,NULL);CHECK(output_views[pass]);
+        }
         RhiSampler *samplers[4]={sampler,sampler,sampler,sampler};rhi_set_samplers(0,4,samplers);
         float max_error=0;unsigned changed=0;
-        const float tolerance=!storage?.000004f:storage==1?.0005f:.501f/255.f;
+        const float tolerances[]={.000004f,.0005f,.501f/255.f};
+        double quantization_error[2][3]={{0}};
         for(unsigned step=0;step<fps;step++) {
             rhi_image_update(inputs[0],0,NULL,field_a,64*4*sizeof(float),sizeof field_a);
             RhiView *views[4]={input_views[0],input_views[0],input_views[0],input_views[0]};
-            rhi_set_textures(0,4,views);rhi_set_shader(RHI_STAGE_VERTEX,field_vs[0]);rhi_set_shader(RHI_STAGE_PIXEL,field_ps[0]);
-            rhi_buffer_update(uniforms,&constants[0]);rhi_draw(3,0);field_read(output,storage,field_b);
+            rhi_set_textures(0,4,views);rhi_set_shader(RHI_STAGE_VERTEX,field_vs);rhi_buffer_update(vertex_buffers[0],vertex_constants[0]);rhi_set_shader(RHI_STAGE_PIXEL,field_ps[0]);
+            rhi_set_render_target(output_views[0],NULL);
+            rhi_buffer_update(uniforms,&constants[0]);rhi_draw(3,0);field_read(outputs[0],first_storage,field_b);
             for(int y=0;y<64;y++)for(int x=0;x<64;x++) {
                 unsigned i=field_index(x,y,0);float b=field_a[i+2];
                 float gradient=(128/255.f-b)*k+field_a[field_index(x-1,y-1,2)]+field_a[field_index(x+1,y-1,2)]+field_a[field_index(x+1,y+1,2)]-3*b;
                 float expected[3]={gradient+128/255.f,field_a[i+1],b};
                 for(unsigned c=0;c<3;c++) {CHECK(expected[c]>0 && expected[c]<1);
-                    float e=fabsf(field_b[i+c]-expected[c]);if(e>max_error)max_error=e;CHECK(e<tolerance);}
+                    float e=fabsf(field_b[i+c]-expected[c]);if(e>max_error)max_error=e;CHECK(e<tolerances[first_storage]);
+                    quantization_error[0][c]+=field_b[i+c]-expected[c];}
+            }
+            /* Control 5 keeps only the first pass's gradient quantization;
+             * its copied G/B channels retain full precision. This prevents
+             * attributing repeated state rounding to the gradient alone. */
+            if(storage==5)for(unsigned i=0;i<64*64;i++) {
+                field_b[i*4+1]=field_a[i*4+1];field_b[i*4+2]=field_a[i*4+2];
             }
             /* t0 is the first pass result; t1 is the old persistent image. */
             rhi_image_update(inputs[1],0,NULL,field_b,64*4*sizeof(float),sizeof field_b);
             views[0]=input_views[1];views[1]=input_views[0];views[2]=views[3]=NULL;
-            rhi_set_textures(0,4,views);rhi_set_shader(RHI_STAGE_VERTEX,field_vs[1]);rhi_set_shader(RHI_STAGE_PIXEL,field_ps[1]);
+            rhi_set_textures(0,4,views);rhi_set_shader(RHI_STAGE_VERTEX,field_vs);rhi_buffer_update(vertex_buffers[0],vertex_constants[1]);rhi_set_shader(RHI_STAGE_PIXEL,field_ps[1]);
+            rhi_set_render_target(output_views[1],NULL);
             rhi_buffer_update(uniforms,&constants[1]);rhi_draw(3,0);
-            static float next[64*64*4];field_read(output,storage,next);unsigned fresh=0;
+            static float next[64*64*4];field_read(outputs[1],second_storage,next);unsigned fresh=0;
             for(int y=0;y<64;y++)for(int x=0;x<64;x++) {
                 unsigned i=field_index(x,y,0);
                 float v=field_b[i+1]-.5f+precise[0]*(field_b[i]-.5f+field_a[field_index(x-1,y+1,2)]-field_b[i+2]);
                 float expected[2]={v+bias,precise[2]*(field_b[i+2]+precise[1]*v)};
                 for(unsigned c=0;c<2;c++) {CHECK(expected[c]>0 && expected[c]<1);
-                    float e=fabsf(next[i+c+1]-expected[c]);if(e>max_error)max_error=e;CHECK(e<tolerance);
+                    float e=fabsf(next[i+c+1]-expected[c]);if(e>max_error)max_error=e;CHECK(e<tolerances[second_storage]);
+                    quantization_error[1][c]+=next[i+c+1]-expected[c];
                     fresh|=next[i+c+1]!=field_a[i+c+1];}
             }
             changed+=fresh;memcpy(field_a,next,sizeof field_a);
         }
-        if(!rate)memcpy(reference_fields[storage],field_a,sizeof field_a);
+        if(!rate && storage<3)memcpy(reference_fields[storage],field_a,sizeof field_a);
         double sum=0,sum2=0,difference=0;
-        for(unsigned i=0;i<64*64;i++) {double b=field_a[i*4+2],d=b-reference_fields[storage][i*4+2];sum+=b;sum2+=b*b;difference+=d*d;}
+        for(unsigned i=0;i<64*64;i++) {double b=field_a[i*4+2],d=b-reference_fields[storage<3?storage:2][i*4+2];sum+=b;sum2+=b*b;difference+=d*d;}
         double mean=sum/(64*64),std=sqrt(fmax(0,sum2/(64*64)-mean*mean)),rms=sqrt(difference/(64*64));
         printf("spatial storage=%u fps=%u meanB=%.9f stdB=%.9f rms_to_60=%.9f changed=%u/%u max_error=%.9f\n",storage,fps,mean,std,rms,changed,fps,max_error);
         CHECK(changed>0);if(rate && !storage)CHECK(rms>.0001);
+        if(storage>=3)CHECK(rms>.005);
+        if(!rate)printf("spatial-rounding first=%u second=%u preserve_gb=%u mean_error_first_RGB=%.9g,%.9g,%.9g mean_error_second_GB=%.9g,%.9g\n",
+            first_storage,second_storage,storage==5,quantization_error[0][0]/(fps*4096),
+            quantization_error[0][1]/(fps*4096),quantization_error[0][2]/(fps*4096),
+            quantization_error[1][0]/(fps*4096),quantization_error[1][1]/(fps*4096));
         RhiView *none[4]={0};rhi_set_textures(0,4,none);rhi_set_render_target(NULL,NULL);
         for(unsigned i=0;i<2;i++){rhi_view_destroy(input_views[i]);rhi_image_destroy(inputs[i]);}
-        rhi_view_destroy(output_view);rhi_image_destroy(output);
+        for(unsigned pass=0;pass<2;pass++) {rhi_view_destroy(output_views[pass]);rhi_image_destroy(outputs[pass]);}
     }
     /* Exercise every spectral mode through the actual common-RHI GPU adapter.
      * Compare reconstructed G/B with the unmodified original shader pair's
@@ -310,7 +343,9 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     puts("PASS: original translated feedback shader pair matched by coupled spectral GPU steps (float32 only)");
     puts("PASS: original translated feedback shader pair verifies spatial coupling and storage gaps");
     rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);
-    for(unsigned i=0;i<2;i++){rhi_shader_destroy(field_vs[i]);rhi_shader_destroy(field_ps[i]);}
+    rhi_shader_destroy(field_vs);
+    for(unsigned i=0;i<2;i++)rhi_shader_destroy(field_ps[i]);
+    for(unsigned i=0;i<3;i++)rhi_buffer_destroy(vertex_buffers[i]);
     rhi_buffer_destroy(uniforms);rhi_buffer_destroy(parameters);rhi_sampler_destroy(sampler);
     rhi_view_destroy(srv);rhi_image_destroy(texture);rhi_view_destroy(rtv);rhi_image_destroy(target);
     rhi_shader_destroy(ps);rhi_shader_destroy(vs);rhi_raster_state_destroy(raster);
