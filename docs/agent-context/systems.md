@@ -213,8 +213,15 @@ and discard queued text on focus loss or owner changes.
 `src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
 character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
 Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
-`0x004D8D78` misses it. The original guest insertion/edit/Done routines retain
-selection replacement, limits and save behavior. Escape queues the owning menu's
+`0x004D8D78` misses it. The callback-row scan reuses one writable OS region only within
+that synchronous traversal (no guest calls), checking every row's bounds and
+querying again on a region change. It expires before dispatch, including nested
+menus; no row identity or permission survives a tick. Large non-keyboard menus
+therefore avoid a VM query per row. `test_menu_text.py` checks descending links,
+query counts, permission expiry, partial/invalid rows and cycles; eager-query and
+stale-region mutations must fail. Windows/Mac use their existing VM adapters.
+Original insertion/edit/Done routines retain selection replacement, limits and
+save behavior. Escape queues the owning menu's
 Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
 is excluded. Supported input follows the original Latin-1 tables; paste and
 arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry

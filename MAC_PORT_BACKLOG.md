@@ -4842,6 +4842,12 @@ See STATUS for exact measurements and the corrected reference scope.
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 
 - **Status:** Awaiting validation
+- **2026-10-24 follow-up (this revision on `fix/native-water-rounding`):** The shared
+  keyboard-row scanner reuses an OS-validated writable region within one traversal,
+  expiring it before any guest dispatch. Windows uses VirtualQuery and native Mac
+  uses the existing Mach VM adapter. No input-model/OS-event adaptation is needed.
+  Shared scan and original text-edit tests pass on Windows; Mac execution and
+  menu/gameplay pacing remain unverified. See the crowded-menu STATUS record.
 - **PC behavior:** Physical letters, numbers, supported Latin-1 accents and spaces
   feed the original on-screen keyboard insertion routine. Backspace/Delete,
   Left/Right, Home/End, Ctrl+A, Enter and Escape edit/accept/cancel. Original

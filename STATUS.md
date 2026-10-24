@@ -1,3 +1,80 @@
+## 2026-10-24 — Crowded-menu scan overhead and ten-bot measurements
+
+On `fix/native-water-rounding`, `pc_menu_text.inc` now reuses a writable OS
+region within each synchronous keyboard-row search. Previously, large ordinary
+menus repeated a VM query for every row on every keyboard-detection pass. The
+new scan still validates each row's bounds, re-queries on a region change and
+discards the region before returning to guest dispatch. It retains original
+callbacks, edit limits and the 256-row traversal bound. No simulation rate,
+NPC behavior or input binding changed. Shared Windows/Mac VM adapters are used;
+native Mac execution remains unverified (MAC-059).
+
+The tracked `crowd-venice` route configures ten bots and replays movement,
+firing and respawn inputs. The runner records roster and actual window state,
+allows explicit resolution/FOV and clean Present profiling without per-update
+traces. Its optional existing 200Hz CPU sampler is diagnostic only. Before the
+fix, the complete 50s cumulative guest-main sample contained 4,429 VM-query
+leaves out of 8,646 samples; dispatch/menu-label/choice chains dominated those
+queries. Static functions resolve to nearest public symbols, so those names
+alone do not identify exact source functions. Source inspection and the scan
+fixture establish the repeated row-query work.
+
+Supported Windows build and bundled tests pass. Focused menu/text/FOV/layout
+and context/backlog checks: **41 passed, 2 Mac-only skips** (27.57s). The tests
+include actual supported-US text-edit routines, 200 descending rows with one
+query, mapping/protection changes, partial/invalid rows and cyclic lists. Both
+eager-query and stale-cache mutations fail. No patch changed; the complete
+builder/patch loader is used. Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207,
+D3D11, RTX 4070 SUPER, driver 32.0.16.1742. Built from `db58eec` plus the
+`pc_menu_text.inc` change; executable SHA-256:
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+
+At 3440x1440 rendered resolution, FOV73, Classic textures, native144, no captures
+or per-update/stack trace, the matching 1.4s input-free ten-bot menu window changes
+from **63.29 FPS / 18.899ms worst** to **143.99 FPS / 8.241ms worst** (88/200
+complete intervals). Both windows are visible, non-minimized, unfocused and have
+640x480 clients. These are short sequential samples, not full-menu acceptance.
+The initial after-build run (`crowd-menu-scan-144`) overlapped pytest in the menu
+and first second of gameplay (test log completed at run+86.7s). It is retained
+but excluded from these final numbers. `crowd-menu-clean-144` repeats the route
+after all test/build activity ended, with no concurrent diagnostic sampler.
+
+The clean native144 gameplay window (spawn+5..+55s) has **7,199 guest
+presents, 144.0021 FPS, 6.980ms median, 7.313ms p95, 7.512ms p99, 8.875ms worst**,
+zero interpolated presents and zero intervals above 33.33ms. The lowest rolling
+one-second count is 144. Spawn-to-combat-six game-clock/wall ratio is 0.999976;
+all active checkpoints retain Venice scene46, match state7, unpaused and roster
+655617 (one human/ten configured bots). The run exits cleanly and preserves
+signed profiles/canonical fixture; disposable disks are recycled.
+
+The post-fix **Original60** run (`--native-fps 0`, same route/device/FOV) has
+2,999 guest presents, 60.0006 FPS, median16.669ms, p9517.042ms, p9917.171ms,
+worst17.528ms, no interpolated/over33.33ms intervals, rolling minimum60 and
+game-clock/wall ratio0.999976 in the corresponding 50s window. It also exits
+cleanly with the ten-bot checkpoints and unchanged signed profiles/fixture.
+This validates sampled clock rate and route behavior, not exact combat parity.
+
+Before this change, the same background route averaged 143.961 FPS but included
+one **22.857ms** interval, 47.24ms after an E-key input. A separate verified
+foreground/fullscreen run averaged 143.9999 FPS, worst8.935ms. Its client was
+1920x1060 while the device rendered 3440x1440. The post-window screenshot showed
+a death camera and a nearby character. Window modes, combat outcomes, RNG and
+assets differ; these are not causal gameplay speedup or identical-mechanics
+comparisons. Ten configured bots does not prove ten visible bots. Neither
+before nor after reproduced the reported 110 FPS sustained dip. The intermittent
+respawn hitch and broader crowded-match/online/other-map acceptance remain open.
+Present timestamps measure successful host calls, not GPU completion, scanout
+or input latency. This does not complete the native-high-refresh goal.
+
+Evidence: `logs/crowd-menu-build.log`, `logs/crowd-menu-tests.log`,
+`logs/crowd-menu-clean-comparison.json`,
+`logs/crowd_beta_analyze.py`, `logs/crowd_menu_compare.py`, isolated
+`crowd-beta-current-{144,60}`, `crowd-beta-active-144`, `crowd-beta-cpu-144`, and
+`crowd-menu-scan-{144,60}` and `crowd-menu-clean-144` directories. Each retains executable/runner hashes,
+commands, state checkpoints and bounded timing records. PR #322 is reverified
+merged into main at base `2252af1`; this branch has no separate PR. Work stays
+grouped on the same branch.
+
 ## 2026-10-24 — Continuous water enabled with native beta presets
 
 On `fix/native-water-rounding`, common-RHI 120/144 beta presets now enable the

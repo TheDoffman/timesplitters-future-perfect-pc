@@ -50,10 +50,14 @@ def main():
     parser.add_argument('--native-fps',type=int,choices=(0,60,120,144),
         help='0 selects Original60; 60, 120 and 144 select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')
+    parser.add_argument('--fov',type=int,choices=range(40,101),default=55)
+    parser.add_argument('--no-native-trace',action='store_true',help='Disable per-update CSV when measuring capture-free pacing')
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
     parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
+    parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
@@ -70,8 +74,9 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice'])
     args=parser.parse_args()
+    if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
     if args.scenario=='surface-native-switch' and not (args.native_fps==144 and args.native_surfaces and args.trace_surface_images and args.trace_surface_switches):
@@ -103,7 +108,7 @@ def main():
     # In-session restarts retain any preference saved by the menu under test.
     (run/'pc-frame-rate.ini').unlink(missing_ok=True)
     (run/'runtime.ini').write_text('frame_target = 144\nframe_cap = 60\nframe_interp = 1\nfullscreen = 0\nvrr = 1\n')
-    (run/'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
+    (run/'display.ini').write_text(f'TSFP_DISPLAY_V2 {args.display_size[0]} {args.display_size[1]} {args.fov}\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     commands=run/'commands.jsonl';commands.write_text('')
     if args.scenario=='weapon-set':
@@ -112,6 +117,9 @@ def main():
             dict(keys=[69],label='weapons',wait=20),
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    if args.scenario=='crowd-venice':
+        route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
         route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
@@ -142,7 +150,7 @@ def main():
             env.pop(key,None)
     if args.native_fps is not None:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
-                   TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
+                   **({} if args.no_native_trace else dict(TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))))
     env['TSFP_SURFACE_TRACE_SWITCHES']='1' if args.trace_surface_switches else '0'
     env['TSFP_SURFACE_LIVE_TEST']='1' if args.live_surfaces else '0'
     env['TSFP_SURFACE_BIAS_TEST']='1' if args.bias_surfaces else '0'
@@ -152,6 +160,9 @@ def main():
         env.update(RECOMP_WATCH_VA='0x6B9408', RECOMP_TRACE_ONLY='sub_00042830,sub_00042870,sub_000428D0', RECOMP_TRACE_ONLY_MAX='32')
     if args.trace_vehicle_contact:
         env.update(RECOMP_TRACE_ONLY='sub_0017CAE0,sub_0017BC90,sub_00174EC0',RECOMP_TRACE_ONLY_MAX='64')
+    if args.profile_cpu:
+        env.update(RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH='8',
+                   RECOMP_SAMPLE_DUMP=str(run/'cpu-sample.txt'))
     if args.manual_start: replay.write_text('')
     def profiles():
         result={}
@@ -249,6 +260,15 @@ def main():
                                        health=floats(entity+0x1cc,1)))
         return dict(state=word(0x76b1a4),role=word(0x76b140),human_slots=humans,bot_slots=bots,
                     peers=[i for i in range(16) if word(0x666040+i*4)],actors=actors)
+    user.GetClientRect.argtypes=[c.c_void_p,c.POINTER(ui.w.RECT)]
+    user.IsWindowVisible.argtypes=[c.c_void_p]
+    user.IsIconic.argtypes=[c.c_void_p]
+    def window_snapshot():
+        rect=ui.w.RECT()
+        readable=bool(user.GetClientRect(window,c.byref(rect)))
+        return dict(visible=bool(user.IsWindowVisible(window)),minimized=bool(user.IsIconic(window)),
+            foreground=user.GetForegroundWindow()==window,
+            client_size=[rect.right-rect.left,rect.bottom-rect.top] if readable else None)
     def snapshot():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
@@ -256,6 +276,7 @@ def main():
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
+            roster=word(0x7de400),window=window_snapshot(),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
@@ -347,6 +368,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
@@ -406,6 +428,14 @@ def main():
                     command=command,key_events=key_events,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
                 if 'label' in command:capture(command['label'])
+                if args.profile_cpu and command.get('label') in ('ten-bots','spawn','combat-four'):
+                    source=run/'cpu-sample.txt'
+                    if source.exists():
+                        with source.open('rb') as stream: diagnostic=stream.read(4*1024*1024+1)
+                        assert len(diagnostic)<=4*1024*1024,'CPU diagnostic exceeded snapshot limit'
+                        # The sampler rewrites this file; a snapshot can be partial.
+                        # Check completeness before comparing cumulative reports.
+                        (run/(command['label']+'-cpu.txt')).write_bytes(diagnostic)
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)
             time.sleep(.1)
@@ -428,6 +458,14 @@ def main():
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
+    if args.scenario=='crowd-venice':
+        checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
+        assert len(checkpoints)==4,'Incomplete crowd route'
+        for item in checkpoints:
+            assert item['scene']==46 and item['match_state']==7 and not item['paused'],item
+            assert item['roster'] is not None and (item['roster']>>16)&255==10,item
+        print('PASS: Venice active checkpoints retain ten configured bots; inspect window and pacing evidence',flush=True)
+
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
         captured=(run/'feedback.bin').read_bytes()
         assert captured[:8]==b'TSWATER1' and len(captured)==8+16*(92+3*128*128*4)

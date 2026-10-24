@@ -48,6 +48,7 @@ void sub_0007C410(void){g_esp+=4;}
 void sub_0007C300(void){g_esp+=4;}
 void sub_0007C390(void){g_esp+=4;}
 #endif
+#include "menu_guest_region.h"
 #include "pc_menu_text.inc"
 static void setup(void){
     memset(memory,0,sizeof memory);queue=(PcTextInput){0};g_xbox_mem_offset=(ptrdiff_t)memory;
@@ -69,6 +70,35 @@ static void setup(void){
 }
 static void process(void){menu_text_events(MENU);CHECK(g_eax==11 && g_ebx==12 && g_ecx==13 && g_edx==14 && g_esi==15 && g_esp==0x700000);}
 int main(void){
+    /* Repeated keyboard detection on large non-keyboard menus must not make
+     * one OS query per row. Non-monotonic links exercise full region reuse. */
+    g_xbox_mem_offset=(ptrdiff_t)memory;
+    for(unsigned i=0;i<200;i++) {
+        uint32_t row=0x10000+(199-i)*0x110;
+        if(!i)MEM32(MENU+0x178)=row;
+        MEM32(row+4)=i==199?0:row-0x110;
+    }
+    region_queries=0;
+    CHECK(!menu_text_row(MENU,0x7db20,UINT32_MAX) && region_queries==1);
+    MEM32(0x10000+0x38)=0x7db20;MEM32(0x10000+0x14)=17;
+    CHECK(menu_text_row(MENU,0x7db20,17)==0x10000 && region_queries==2);
+    CHECK(!menu_text_row(MENU,0x7db20,18));
+    /* Never carry permission facts across scans, accept a partial row, or
+     * follow an invalid pointer. Cyclic lists remain bounded. */
+    region_writable=0;CHECK(!menu_text_row(MENU,0x7db20,17));region_writable=1;
+    MEM32(MENU+0x178)=0x10000;region_limit=0x1010b;
+    CHECK(!menu_text_row(MENU,0x7db20,17));region_limit=sizeof memory;
+    CHECK(menu_text_row(MENU,0x7db20,17)==0x10000);
+    MEM32(0x10000+4)=0xfffffff0;CHECK(!menu_text_row(MENU,0x1234,17));
+    MEM32(0x10000+4)=sizeof memory;CHECK(!menu_text_row(MENU,0x1234,17));
+    MEM32(0x10000+4)=0x10000;region_queries=0;
+    CHECK(!menu_text_row(MENU,0x1234,17) && region_queries==1);
+    MEM32(MENU+0x178)=0x10000;MEM32(0x10000+4)=0x20000;
+    MEM32(0x20000+0x38)=0x1234;MEM32(0x20000+0x14)=17;
+    region_split=0x18000;region_queries=0;
+    CHECK(menu_text_row(MENU,0x1234,17)==0x20000 && region_queries==2);
+    region_second_writable=0;CHECK(!menu_text_row(MENU,0x1234,17));
+    region_split=0;region_second_writable=1;
     PcTextInput q={0};pc_text_character(&q,'a');CHECK(!q.count);
     pc_text_session(&q,1);pc_text_utf8(&q,"Efy 9\xc3\xa9\xf0\x9f\x98\x80");
     const unsigned expected[]={'E','f','y',' ','9',233};

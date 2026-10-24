@@ -121,12 +121,11 @@ not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
 
-Integration of #308 and #311 carries per-request timing records through the
-bounded queue. The reader only stamps its owned record; CSV initialization and
-completion stay on the renderer thread. Run stage-order tests with streaming
-both enabled and disabled. Total request duration includes queue/frame waits;
-read stages are worker spans and image/view stages are renderer spans. Cancelled
-requests are discarded without dereferencing their owner or logging on the worker.
+Texture timing records travel through the bounded queue. The worker stamps its
+own record; CSV initialization/completion stay on the renderer thread. Test stage
+order with streaming on/off. Total duration includes queue/frame waits; read spans
+are worker work, image/view spans renderer work. Cancelled requests neither
+dereference their owner nor log on the worker.
 
 Texture-upload trace tests compile the real loader and collector through the
 existing both-host `tests/test_texture_runtime.py` registration. They verify
@@ -147,18 +146,22 @@ read/resource stages on all twenty cached calls while retaining existing load
 and fallback counts. The 8,192-row bound still applies; verify coverage before
 using a live window. The earlier `2230901` data retains its narrower scope.
 
-Crowded-map performance checks must record actual window state as well as the
-configured render resolution. `stability_transitions_game.py --minimized` hides
-the owned child; successful presents in that state do not establish foreground
-performance. A fullscreen toggle also does not prove focus: the latest bounded
-baseline runs observed visible clients at 640x480 and fullscreen 1920x1060 while
-the device rendered 3440x1440, and Windows granted neither foreground focus.
-Record client size, visibility, minimization, foreground state, scene and bot
-roster alongside complete Present intervals. STATUS records the 143.898/142.006
-interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
-prevent treating the two runs as a causal window-mode comparison. Keep native,
-texture, capture and CPU/stack diagnostics off for this observation unless their
-specific attribution is the question under test.
+`stability_transitions_game.py --scenario crowd-venice --native-fps 144
+--display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
+--no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
+Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
+ten configured bots; it does not prove every bot is simultaneously visible.
+Roster and window visibility/focus/client size are recorded separately from
+render resolution; verify device size in the runtime log. Unfocused/minimized
+results are not foreground acceptance. Analyze complete spawn+5..+55s Present
+intervals with clock neighbors and scene/pause/game-clock evidence. Keep images
+and tracing off for clean pacing; bot outcomes differ between runs. `--profile-cpu`
+enables the existing 200Hz sampler, saving bounded cumulative snapshots at menu,
+spawn and combat labels. Concurrent rewrites can yield partial snapshots: inspect
+completeness before differencing. Sampled runs are diagnostic, not clean pacing.
+`test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
+original text editing; eager-query/stale-cache mutations must fail. Both hosts'
+existing runtime CI includes it. STATUS retains measured performance and limits.
 `tests/test_trace_filter.py` compiles the actual runtime name-filter function,
 checks zero label scans for absent/empty filters, and retains exact matching,
 independent hit limits and zero/negative caps. Its eager-scan mutation must fail.
