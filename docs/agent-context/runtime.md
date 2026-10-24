@@ -24,6 +24,12 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
+through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
+read each operand once, including fused and separated branches. Indirect, narrow,
+segmented and TEST operands retain original behavior. Regenerate guest C after
+applying it. The shared title policy opts in only audited addresses/sites.
+
 `zz-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
 hook after entry tracing and before input loads. Explicit return tracing and
 forced-return diagnostics keep the generated body. US policy selects only151E80;

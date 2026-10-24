@@ -3845,6 +3845,22 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Combined main integration (2026-10-24, PR #328):** Main fcaedfe3's reload
+  timing repair is combined with the guarded model-transform implementation.
+  Windows build/bundled checks,161 combined regression cases and all21 patch
+  upgrades pass. One isolated Windows session applies240/180/Original60/120
+  live and passes12 pause/reload ammo checks. Shared code requires no new
+  adapter; this is not native Mac execution evidence or full-game acceptance.
+  See the PR #328 integration entry in STATUS.
+
+- **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
+  `zzzz-global-compare-load.patch` let advancing native frames consume reload
+  edges even when raw/game whole-tick phases differ after pause. Original60,
+  paused-time blocking and original weapon/binding checks are retained.
+  Windows original-decoder/reload integration and asset-free branch/mutation
+  tests pass. No Mac adapter is needed; native Mac compilation and live reload
+  checks after pause at 120/180/240 remain pending. See the #337 STATUS entry.
+
 - **Model transform entry (2026-10-24, PR #328):** A shared
   default-off generated entry hook selects only the audited US151E80 leaf,
   after callbacks. Portable C keeps bounded disjoint transforms in local

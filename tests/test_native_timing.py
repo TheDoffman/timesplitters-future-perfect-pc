@@ -164,6 +164,63 @@ def test_global_store_observation_scope(encoding, observed):
     assert ('RECOMP_STORE_GLOBAL_U32(0x1000, 0x7DE318,' in code)==observed
 
 
+@pytest.mark.parametrize('encoding,observed', [
+    ('833d44794e0001', True),  # cmp dword [absolute],1
+    ('3b0544794e00', True),    # cmp eax,[absolute]
+    ('833b01', False),         # cmp dword [ebx],1
+    ('803d44794e0001', False), # byte
+    ('66833d44794e0001', False), # word
+    ('64833d0000000001', False), # fs segment
+    ('83f801', False),         # register
+    ('f70544794e0001000000', False), # TEST is not CMP
+])
+def test_global_compare_load_scope(encoding, observed):
+    sys.path.insert(0, str(ROOT / 'external/ts3FPrecomp'))
+    from tools.recomp.disasm import Disassembler
+    from tools.recomp.lifter import Lifter
+    raw=bytes.fromhex(encoding)
+    instruction=Disassembler().disassemble_function(raw,0x1000,0x1000+len(raw))[0]
+    code='\n'.join(Lifter().lift_instruction(instruction))
+    # Count executable expressions only, not the generated explanatory comment.
+    expressions='\n'.join(line.split('/*')[0] for line in code.splitlines())
+    assert expressions.count('RECOMP_LOAD_GLOBAL_U32(')==int(observed)
+
+
+@pytest.mark.parametrize('separated', [False, True])
+@pytest.mark.parametrize('mutation', [None, 'whole-tick-policy', 'unhooked-compare'])
+def test_reload_compare_gate(tmp_path, separated, mutation):
+    """Asset-free generated CMP/JL plus the production policy, also in CI."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    previous=dict(vars(config))
+    base=0x1c2f09
+    image=bytes.fromhex('833d44794e0001'+('90' if separated else '')+'7c06b801000000c331c0c3')
+    try:
+        config._install([config.Section('.text',base,len(image),0,len(image),True)],base,base,'reload-gate-test')
+        info={'end':base+len(image),'name':'reload_gate'}
+        code=FunctionTranslator(image,{base:info}).translate_function(base,info)
+    finally:
+        vars(config).update(previous)
+    policy=(ROOT/'src/pc_native_numeric.h').read_text(encoding='utf-8')
+    policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
+    if mutation=='whole-tick-policy':
+        assert policy.count('site == 0x1C2F09u')==1
+        policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
+    if mutation=='unhooked-compare':
+        assert 'RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))' in code
+        code=code.replace('RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)')
+    (tmp_path/'numeric.h').write_text(policy,encoding='utf-8')
+    harness=(ROOT/'tests/native_reload_gate.c').read_text(encoding='utf-8')
+    harness=harness.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(tmp_path / "numeric.h").as_posix()}"')
+    source=harness.replace('/* GENERATED_GATE */',code)
+    if mutation:
+        with pytest.raises(AssertionError,match='accepted==expected'):
+            compile_and_run(tmp_path,source)
+    else:
+        compile_and_run(tmp_path,source)
+
+
 def test_native_update_statistics():
     sys.path.insert(0,str(ROOT/'tools'))
     from native_update_stats import summarize
@@ -335,6 +392,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
     ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                               (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
+    ('native_reload_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d),(0x1c2e80,0x1c30f3),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_weapon_cooldown.c', [(0x1c320c,0x1c3274)]),
     ('native_weapon_fire.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                              (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
@@ -394,7 +452,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name=='native_analog_input.c':
+        if harness_name in ('native_analog_input.c','native_reload_input.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -610,13 +668,14 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(ROOT/'tests'/harness_name).read_text()
-    if harness_name=='native_analog_input.c':
+    if harness_name in ('native_analog_input.c','native_reload_input.c'):
         wrapper=(ROOT/'src/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
         harness=harness.replace('/* INPUT_WRAPPER */',wrapper[start:end])
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+                           .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
                            .replace('/* FIRE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* PROJECTILE_POLICY */',

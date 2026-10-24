@@ -24,6 +24,13 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
+weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
+Input edges follow raw whole ticks; pause can offset those from game whole ticks,
+so the old gate dropped a valid press. Eligibility, binding lookup, animation and
+ammo checks remain original; zero-time pause and Original60 remain unchanged.
+The generic CMP hook is documented in runtime.md. No host-specific adapter.
+
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
 It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
 binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
