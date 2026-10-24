@@ -1,3 +1,41 @@
+## 2026-10-24 — Reload input timing investigation (#337)
+
+Branch `337-bug-reload-key-sometimes-not-working`, base `e0386672`, Windows
+x64/MSVC. The original US reload/mode consumer
+`1C2E80` checks whole game ticks at `1C2F09`, while the input wrapper publishes
+button edges on whole raw ticks. Those clocks can differ in phase after pause;
+a press then expires without reaching reload. The shared numeric policy now
+admits this consumer on positive fractional game time. Original binding,
+weapon readiness, ammo and animation behavior remain in charge. Original60
+and zero-time pause are unchanged.
+
+The additive generic CMP patch routes only absolute unsegmented 32-bit operands
+through the existing global-read policy. It preserves one-time flag snapshots;
+indirect/narrow/segmented comparisons and TEST are unchanged. Generated C is
+regenerated, never edited. Both Windows/Mac use this path.
+
+The original-routine reload regression failed before correction and passes
+with it. It executes the verified US decoder/getters/reload consumer and real
+input wrapper/clock through offset raw/game phases, 60/120/144/180/240, remapped
+reload, pause, disabled input, busy/dead state and guest ABI. Animation/ammo
+services are controlled boundaries. Asset-free generated branch tests include
+fused/separated comparisons, read-scope exclusions and independent old-policy /
+missing-hook mutations. Timing and float-join suites: 110 passed on Windows.
+
+Live limitation: all 44 pre-fix reload attempts succeeded in bounded isolated
+first-mission runs (60 FPS delayed/immediate, native120 delayed/after pause,
+20–2000 ms R presses). These runs did not reproduce the reporter's exact
+intermittent failure. The fix addresses the demonstrated timing condition;
+weapon/FPS details or a failing live capture are still needed to establish
+whether it accounts for every case in #337. Personal saves/settings are intact.
+The supported Windows build and built-in tests passed (`logs/issue337-build.log`).
+The corrected native120 build completed the same 185-second pause/reload replay:
+all 11 reloads replenished the magazine and consumed the expected reserve ammo.
+This is a smoke check, not live reproduction of the failing clock phase.
+Patch update/tracking tests: 35 passed (including branch reversals/CRLF).
+Context/backlog tests: 21 passed; context freshness and whitespace checks passed.
+Native Mac build/gameplay remain pending (MAC-060).
+
 ## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
 
 Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state
