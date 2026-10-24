@@ -349,7 +349,11 @@ Both adapters now create a local `PcGuestRegion` after input replay/focus gating
 and share it through terminal, mounted and ordinary camera `_in_region` helpers.
 `pc_guest_memory_in_region` reuses bounds/permissions only during that host mouse
 operation, which invokes no guest callbacks or allocation. Every subsequent
-update starts empty. Region changes and read-to-write checks retain OS validation;
+update queries afresh. `pc_camera_mouse_region` seeds the snapshot at the lower
+of the player and FOV field: Windows returns a forward span from the queried page,
+so this avoids querying twice when the camera precedes the player in one mapping.
+Separate mappings still fall back to individual checks (a lower read-only FOV
+can require three queries). Region changes and read-to-write checks retain OS validation;
 read access cannot grant writes. Standalone helper entry points create their own
 snapshot. This removes duplicate player queries without retaining memory facts
 across frames or changing motion, capture, terminal clicks or timing policy.

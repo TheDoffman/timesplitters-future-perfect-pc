@@ -1,3 +1,43 @@
+## 2026-10-24 — Avoid a duplicate mouse mapping query
+
+PR #325 merged into main at `28f5400`; this follow-up starts from that main on
+`perf/mouse-memory-order`. Windows VirtualQuery returns a forward span from the
+queried page. The shared mouse update now queries the lower player/FOV address
+first, allowing terminal/mounted/ordinary camera guards to reuse that fresh span.
+All bounds and write checks remain; no snapshot survives an update or guest call.
+Separate mappings still require fallback queries, and a lower read-only FOV can
+require three rather than two. This is not a universal mapping-query reduction.
+
+Supported Windows build and built-in checks pass. Executable SHA256:
+`e6e098e6ca5c003a059411d1c5dc01da4485daa127217a04c6e5ef0088c74449`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11/RTX 4070 SUPER. Thirteen input tests
+pass, including both adapter bodies, forward spans, split/protected maps, stale
+permission/uncached/unordered negative controls, and actual Windows protection
+changes. Another 22 refresh/context checks pass. Mac execution remains pending
+(MAC-001); the helper and regression fixtures are shared, with existing Mach VM
+and Windows VM adapters. Runtime CI already runs the expanded mounted suite.
+
+The bounded `mouse-mapping-order-240` Hotel route completes in about 120 seconds
+with ten bots, movement, firing and two injected mouse turns. Saves/signatures
+are unchanged and the temporary partition is recycled. Read-only OS mapping
+observations found the lower camera and player in the same writable span for all
+2250 ordinary-state samples: 1315 menu and 935 Hotel-player samples. This confirms
+the layout that allows one query instead of two; it is not synchronous per-update
+query instrumentation. Actual client was 640x480, foreground, configured 1280x720;
+the run establishes neither sustained 240 FPS nor physical input latency.
+
+A controlled 500,000-call Windows adapter benchmark with a private 8 MiB RW
+allocation uses 1,000,000 queries before and 500,000 after for the lower camera;
+both versions use 500,000 when the player is lower. Seven alternating repetitions
+give lower-camera medians 1191.020 / 900.757 ms. Host timing varies; this is local
+adapter work, not a gameplay FPS comparison. A separate static-image allocation
+exposed distinct mapping spans and an extra query, retained as a counterexample.
+The reported 144-to-110 crowd dip is still not reproduced or claimed fixed.
+
+Evidence: `logs/mouse-region-order-build.log`, `logs/mouse-region-context-tests.log`,
+`logs/mouse-region-isolated-benchmark.json`, `private/pipeline/mouse-region-benchmark`,
+and `private/test-saves/mouse-mapping-order-240` (mapping observations and report).
+
 ## 2026-10-24 — Reliable test-input publication and repeated180 walking
 
 The bounded transition runner rewrote `input-state.txt` in place. Its host

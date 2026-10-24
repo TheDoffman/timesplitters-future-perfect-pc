@@ -698,7 +698,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - Mouse mapping reuse (commit carrying this entry): `pc_guest_memory.h`,
   `pc_camera.h`, `pc_terminal.h`, `pc_mounted.h` and both host input adapters
   share an OS mapping snapshot only within one mouse update. Bounds/write
-  permissions remain checked and the next update starts empty. No Mac-specific
+  permissions remain checked and the next update queries afresh. The follow-up
+  on `perf/mouse-memory-order` seeds at the lower player/FOV field so forward
+  VM spans cover either address order. Both adapters use the shared helper;
+  split/read-only/inaccessible mappings retain fallback validation. The registered
+  mounted pytest suite now includes real host protection changes and an unordered
+  negative control. Native Mac execution remains awaiting validation. No Mac-specific
   feature work is needed; Darwin still uses its existing Mach VM query.
   Windows executes both adapter bodies with controlled maps, plus actual guarded
   terminal/mounted fixtures. Physical Mac aiming/capture and native execution

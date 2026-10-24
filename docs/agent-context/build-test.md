@@ -493,9 +493,10 @@ handoff and untouched player angles. Old-clock/batch mutations must fail.
 These controlled-field tests do not certify live turret rendering/input.
 Consult STATUS for current build hashes, not historical candidate paths.
 `mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
-one query for aiming, read-only FOV maps, expiry, terminal routing and bounds.
-Persistent/uncached mutations fail in mounted pytest/CI on both hosts; mocked
-locks/events are not physical-host validation. `auto_look_region.c` similarly
+one query for either address order, forward page spans, split/read-only/inaccessible
+FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered
+mutations must fail. `camera_region_host.c` validates real OS protection changes
+on Windows/macOS. Mocked locks/events are not physical input. `auto_look_region.c`
 checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
 expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
 `tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
