@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--native-fps',type=int,choices=(0,60,120,144),
         help='0 selects Original60; 60, 120 and 144 select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--fullscreen',action='store_true',help='Start this isolated session borderless on its monitor; actual client size is reported separately')
     parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')
     parser.add_argument('--fov',type=int,choices=range(40,101),default=55)
     parser.add_argument('--no-native-trace',action='store_true',help='Disable per-update CSV when measuring capture-free pacing')
@@ -119,7 +120,7 @@ def main():
     # This owned, unlocked test directory starts from the requested CLI rate.
     # In-session restarts retain any preference saved by the menu under test.
     (run/'pc-frame-rate.ini').unlink(missing_ok=True)
-    (run/'runtime.ini').write_text('frame_target = 144\nframe_cap = 60\nframe_interp = 1\nfullscreen = 0\nvrr = 1\n')
+    (run/'runtime.ini').write_text(f'frame_target = 144\nframe_cap = 60\nframe_interp = 1\nfullscreen = {int(args.fullscreen)}\nvrr = 1\n')
     (run/'display.ini').write_text(f'TSFP_DISPLAY_V2 {args.display_size[0]} {args.display_size[1]} {args.fov}\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     commands=run/'commands.jsonl';commands.write_text('')
@@ -177,7 +178,7 @@ def main():
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
     env.update(TSFP_PC_INPUT_REPLAY=str(replay),TSFP_PC_INPUT_STATE=str(state),
-        RECOMP_WINDOW_BACKGROUND='1',RECOMP_PC_MOUSE='1',TSFP_DISCORD_CONFIG=str(run/'discord.ini'),
+        RECOMP_WINDOW_BACKGROUND='0' if args.fullscreen else '1',RECOMP_PC_MOUSE='1',TSFP_DISCORD_CONFIG=str(run/'discord.ini'),
         RECOMP_HLE_D3D8_DUMP=str(run/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='30',
         RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3',RECOMP_FPS='5',RECOMP_INTERP_DEBUG='1')
     if args.no_captures:
@@ -407,7 +408,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        display_size=list(args.display_size),fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
+        display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))

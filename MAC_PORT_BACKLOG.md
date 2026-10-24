@@ -3749,6 +3749,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **PR #325 foreground comparison (2026-10-24):** Windows Hotel ten-bot
+  Original60/native144 runs on the same binary measured60.000835/143.920524 fresh
+  Presents/s with correct aggregate game speed; see STATUS for display and
+  coverage limits. The Windows-only test runner now makes its fullscreen request
+  explicit. Shared runtime source is unchanged. Native Mac runtime CI passed at
+  `4655d8a`; Mac gameplay/performance acceptance remains **Awaiting validation**.
+
 - **Recorded playback scheduler (2026-10-24, this revision):** Shared
   `pc_native_demo_playback_guest.inc` pairs with the recorder correction below.
   Exact raw phases schedule original decoding and fractional clock publication;

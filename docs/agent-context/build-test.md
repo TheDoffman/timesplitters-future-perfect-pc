@@ -156,8 +156,9 @@ ten configured bots; it does not prove every bot is simultaneously visible.
 `crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
 use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
 Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
-Record roster, foreground state and client/device sizes. `--watch-actors` uses
-bounded position/health reads with pool rechecks; proximity is not visibility.
+`--fullscreen` starts borderless via isolated settings and records the request.
+Check actual client size/foreground state. `--watch-actors` reads position/health
+with pool rechecks; proximity is not visibility.
 Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
 scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
 the 20,000-row cap; record it in provenance and verify endpoint coverage.

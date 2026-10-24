@@ -1,3 +1,52 @@
+## 2026-10-24 — Consolidated PR and foreground Hotel comparison
+
+PR #324 is remotely verified merged at `6ddc8a0`. Related follow-ups are now
+together in draft PR #325 (`perf/crowd-callers`); no further PR should open until
+this one merges. Both native-runtime and patch-upgrade CI jobs passed on Windows
+and Mac at `4655d8a`; patch-transition jobs were still running when inspected.
+Those checks do not establish full-game or native Mac gameplay acceptance.
+
+The isolated Windows runner now accepts `--fullscreen`, writes that choice to
+its own runtime settings and disables its background-start flag for that mode.
+Previously background startup deliberately bypassed fullscreen. The request is
+recorded alongside observed client size; no personal configuration is changed.
+Two setup attempts were stopped and excluded before this correction. Both final
+runs completed their route and cleanup normally, preserving the canonical fixture
+and recycling disposable partitions.
+
+Measured the existing Hotel ten-bot Recommended-weapons move/fire/respawn route
+with Enhanced textures, FOV73, original60 versus native144, the same executable
+SHA256 `c045f372678ad39e753cb01731e83bc7668cd4a7ed91bb662f49bb2fb62a7931`, and
+190-second session bounds. Native/CPU/texture traces and captures were disabled;
+Present recording began60seconds after its first successful call. Analysis uses
+the preselected complete interval window from spawn+5 to spawn+55seconds.
+
+| Preset | Fresh Presents | Measured FPS | Median / p95 / p99 ms | Worst ms | Minimum rolling 1s count | Game / wall time |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Original60 | 2,999 | 60.000835 | 16.665 / 17.022 / 17.109 | 17.802 | 60 | 1.000065648 |
+| Native144 | 7,196 | 143.920524 | 6.984 / 7.292 / 7.486 | 9.915 | 142 | 1.000083880 |
+
+Both runs had zero interpolated Presents and no intervals above33.33ms. All33
+combat command observations per run had scene39, active/unpaused match7, ten bots,
+foreground/visible/nonminimized windows and client1920x1060. The game logged a
+3440x1440 D3D device, but the monitor/fullscreen request reported1920x1080 at60Hz.
+This tests the ultrawide render workload, not physical144Hz display smoothness.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER host as in the preceding build.
+Maximum living bots within10/20/30 world units while the player was alive were
+3/4/8 at60 and4/7/7 at144. These asynchronous reads do not establish visibility;
+random bot motion prevents a controlled mechanics comparison. The reported
+144-to110 crowd slowdown remains unreproduced and unresolved. Host Presents do
+not measure GPU completion, scanout or physical input latency.
+
+Evidence: ignored `private/test-saves/crowd-fullscreen{60,144}` provenance,
+report/states, Present CSV, crowd/actor metrics, and matching `logs/` summaries.
+Runner source is this commit; runtime source is unchanged from `4655d8a`.
+Local context/CI-scope/profile checks: **99 passed**,3.34s; context freshness
+(`--base 6ddc8a0`) and whitespace checks passed. Current-head CI remains required
+after pushing this test-runner/documentation update; no runtime rebuild needed.
+Live recording-file playback, sustained overload, Online, broad mechanics and
+native Mac gameplay remain open. The overall goal remains incomplete.
+
 ## 2026-10-24 — Recorded playback uses fractional native time
 
 The recorder correction is now paired with a shared playback scheduler in
