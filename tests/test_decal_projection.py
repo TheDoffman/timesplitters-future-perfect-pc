@@ -106,8 +106,27 @@ int main(void)
     compile_and_run(tmp_path, source, fails=mutation!='none')
 
 
-def test_display_memory_protection(tmp_path):
-    compile_and_run(tmp_path, (ROOT/'tests/display_memory.c').read_text())
+@pytest.mark.parametrize('adapter', ['shared', 'production', 'retained-production'])
+def test_display_memory_protection(tmp_path, adapter):
+    source=(ROOT/'tests/display_memory.c').read_text()
+    if adapter!='shared':
+        function=re.search(r'static int guest_writable\(.*?\n\}',
+                           (ROOT/'src/pc_display_menu.c').read_text(),re.S)
+        assert function
+        body=function.group()
+        if adapter=='retained-production':
+            assert 'PcGuestRegion region={0,0,0};' in body
+            body=body.replace('PcGuestRegion region={0,0,0};','static PcGuestRegion region={0,0,0};')
+        production='''
+static ptrdiff_t g_xbox_mem_offset;
+'''+body+'''
+static int production_writable(PcGuestRegion *ignored,uintptr_t offset,uint32_t address,size_t bytes)
+{ (void)ignored;g_xbox_mem_offset=offset;return guest_writable(address,bytes); }
+#define pc_display_writable production_writable
+int main(void)
+'''
+        source=source.replace('int main(void)',production)
+    compile_and_run(tmp_path,source,fails=adapter=='retained-production')
 
 
 @pytest.mark.parametrize('mapped', [False, True])

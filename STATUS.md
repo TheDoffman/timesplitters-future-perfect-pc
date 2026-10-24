@@ -1,3 +1,53 @@
+## 2026-10-24 — Fresh validation for HUD and general display accesses
+
+The remaining `pc_display_menu.c::guest_writable` used a separate full-region
+VirtualQuery for each known-size HUD/camera/menu/network-display access. It now
+delegates to `pc_display_writable` with a newly zeroed snapshot on every call.
+Windows uses the tested resident-page path where applicable; multi-page and
+cold/guarded accesses retain full-region fallback. No permissions cross guest
+callbacks. Darwin uses real Mach bounds/protection instead of the compatibility
+stub's synthetic 4 KiB writable extent. No placement, FOV, drawing or game-clock
+arithmetic changes.
+
+Production-helper tests now execute its extracted body against actual OS
+protection, overflow and multi-page cases. A retained-snapshot mutation must
+fail. Projection/cutscene/FOV tests pass 24 with two Mac-only skips; the final
+projection/context/backlog group passes 37. The supported Windows build and
+built-in checks pass on Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER.
+Executable SHA256:
+`33161470197e0be656d5d740d68132ef7fea8c02b760d53c99012f60d9f1fa31`.
+Native Mac CI and physical UI/gameplay acceptance remain pending (MAC-001).
+
+A preceding 240-FPS diagnostic of `3ebc3c5` completed. Its 80s→120s window is
+excluded because local test compilation overlapped its start. The later complete
+120s→160s window contains 6,725 samples, 6,379 on-CPU, 37.9s CPU and 804 VM leaves.
+However 4,501 call chains were dropped at the fixed capacity, so retained chains
+are incomplete and cannot rank all costs. They corroborate HUD/view/camera and
+auto-look queries already identified at 144. This is neither clean pacing nor a
+complete explanation of the prior 240 result. Evidence:
+`crowd-text-page-disco-240-profile`, `combat-four-cpu.txt`→`cpu-sample.txt`, and
+`logs/text-page-disco-240-profile-summary.json`.
+
+The first clean ten-bot Disco240 run of the HUD candidate completes, preserving
+saves and recycling its partition. The complete spawn+5..50s window contains
+10,215 fresh guest presentations: 227.035 FPS, lowest one-second count 164,
+lowest five-second rate 192.4, p99 6.533 ms and worst 8.575 ms. No interval exceeds
+9 ms; game/wall ratio is 1.000060 and no frames are interpolated. Conditions remain
+Classic, FOV73, 3440x1440 render target and foreground 1920x1060 client on a 60 Hz
+desktop. This improves on the preceding single run's 185.046/p99 10.128 ms, but
+different bot outcomes still prevent a controlled causal claim. Evidence:
+`crowd-hud-page-disco-240`, its report/provenance/CSV and complete-window summary.
+
+An independent repeat with the identical setup completes cleanly: 10,511 fresh
+guest intervals, 233.604 FPS, lowest one-second count 186, lowest five-second
+rate 203.4, p99 5.799 ms and worst 7.838 ms. Game/wall ratio is 1.000254; again
+no interval exceeds 9 ms and no frames are interpolated. Saves/signatures remain
+unchanged and the disposable partition is recycled. Evidence:
+`crowd-hud-page-disco-240-repeat`. Both new measured runs have better averages
+and tails than the preceding single text-only run, but different bot workloads
+still preclude an exact causal speedup claim. Sustained 240, other maps and
+physical high-refresh scanout remain unverified; the broad goal stays open.
+
 ## 2026-10-24 — Page-bounded prompt text validation
 
 A fresh 200 Hz/depth16 Disco profile of `b589a79` confirms the display-query

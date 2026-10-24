@@ -695,6 +695,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- General display guards (commit carrying this entry): `pc_display_menu.c`
+  delegates each `guest_writable` call to a fresh shared bounded check. Windows
+  gains the resident-page fast path; Mac uses real Mach bounds/protection instead
+  of compatibility VirtualQuery's synthetic 4 KiB writable extent. Valid larger
+  spans remain supported through full-region fallback. Production-adapter tests
+  cover protected/boundary/overflow/multi-page accesses and reject retained
+  snapshots. Windows tests pass; new Mac CI and physical UI/gameplay are pending.
+
 - Display memory span queries (commit carrying this entry): `pc_guest_span.h`
   uses fresh Windows resident-page protection for known-size, single-page camera
   and projection accesses; all other cases retain full-region fallback. Shared

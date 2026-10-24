@@ -229,8 +229,13 @@ accesses fall back to the full-region query. A same-page camera/source pair can
 reuse that snapshot; different pages need fresh queries. Darwin retains its Mach
 region query. Unbounded string scans still use the full-region API. This avoids
 Windows scanning a large mapped allocation to find its end on each display guard.
-Other camera/display checks are unchanged. This does not cache matrices, reduce
-updates or change projection arithmetic. `projection_output.c` checks the real
+The general `pc_display_menu.c::guest_writable` also delegates to this adapter,
+with a fresh zeroed snapshot on every call, including calls around guest callbacks.
+HUD, viewports, menus and network display helpers retain their requested bounds;
+multi-page accesses fall back to full-region validation. Darwin now uses real
+Mach protection for these calls instead of the compatibility stub's synthetic
+4 KiB writable extent. This does not cache matrices, reduce updates or change
+projection arithmetic. `projection_output.c` checks the real
 US builder's output extent, arithmetic, canaries and stack; generated C stays local.
 
 The native SDL input self-test ends its synthetic terminal context before

@@ -221,7 +221,8 @@ queries and one same-region camera-source query, including split stack output.
 Retained-source-snapshot mutation must fail. Local `projection_output.c` lifts
 checksum-verified US151CF0, checks 16 writes/math/bounds/stack over 48 lenses;
 missing-store mutation fails. Private-XBE cases skip CI. `display_memory.c`
-tests real host read-only/no-access/boundary/overflow protection (also Win guard).
+tests real host protection/bounds, multi-page spans and the production display
+adapter; retaining its snapshot across calls must fail. Win guard is included.
 `guest_span.c` checks private/mapped pages, permission changes, cold/cross-page
 fallback and released mappings. Windows additionally checks failed page queries
 and disabled-fast-path/write-permission/page-boundary negative controls.
