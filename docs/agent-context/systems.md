@@ -475,3 +475,11 @@ The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
 setter. Unlike the host toggle, that setter does not emit a mode log line.
 Reopening Video Options reads the effective mode; a pending row label alone is
 not evidence that the change was applied. Texture selection is session-only.
+
+Integration #308/#311: upload timing follows the queued request by value. Only
+the renderer opens/writes/closes the bounded CSV; the worker stamps read times
+in its exclusively owned record and publishes it under the queue lock. Completed
+records measure hash, worker read/validation and renderer image/view creation.
+Total duration includes queue/frame scheduling waits, not GPU completion.
+Cancellation discards the record with the payload; a full queue logs its failed
+attempt and starts a new record on retry. Disabled timing takes no clocks/files.

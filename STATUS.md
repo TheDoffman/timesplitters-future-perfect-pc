@@ -1,3 +1,29 @@
+## 2026-10-23 — Combined open-PR integration
+
+Integration branch combines #305, #307, #308, #309, #310, #311 and #313 on
+main 2e3e55a, preserving their heads as merge ancestors. Independent evidence
+and test registrations are retained; the bounded build guide consolidates
+vehicle diagnostics while their detailed history remains here and in the
+native-high-refresh regression record.
+
+Texture diagnostics and background reads overlapped. Per-request timing now
+travels by value through the bounded queue: the renderer owns CSV state, the
+reader only timestamps its request, and the renderer completes the resource
+stages. Cancellation discards the pending record; synchronous reads complete
+before cancellation. Total duration includes queue/frame waits, not GPU time.
+The combined RHI/legacy-GL tests cover both streaming modes, stage ordering,
+resource failures, cancellation, binding preservation and fallback: 22 pass.
+The remaining focused timing/vehicle/trace/filter/panel/UI tests pass (132 plus
+two Windows texture-control compile cases in the initial run); the Mac-only
+adapter fixture skips locally. Full patch application and repository-context
+checks pass. Full build, historical upgrades and combined CI are pending.
+
+PR #307's old Windows CI failure is a missing Tk panedwindow.tcl installation,
+not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
+must pass before merging. Original evidence limits remain: no general FPS or
+full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
+gameplay is unverified. This integration does not publish a release.
+
 ## 2026-10-23 — Coupled fractional water operator candidate
 
 Independent branch `fix/native-water-coupling`, based on main 5c44696. The
