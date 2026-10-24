@@ -18,6 +18,9 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
+Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
+code, fake devices, gain overrides, mute, live volume and voice parity.
+
 `test_controller_profile.py` tests the actual parser/sampler on both CI hosts:
 launcher device switches, slots, custom/unbound maps, release and disconnect.
 Three stock-profile cases fail before #319. Windows Build additionally checks
@@ -25,13 +28,11 @@ the shipped Controller profile with SDL virtual buttons/sticks and focus loss;
 `tsfp_pc_prompts_test` reports physical-pad/foreground skips. Real hardware and
 native Mac gameplay require separate validation.
 
-`test_framebuffer_sampling.py` compiles the complete HLE texture unit against
-fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
-water graphics dependencies with fail-fast assertions; no GPU emulation or
-production hooks are removed. This avoids MSVC unresolved symbols from unused
-water functions. Both normal refresh and the deliberately stale-copy mutation
-must run. Mac tests retain legacy GL and also compile the common RHI branch;
-Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
+`test_framebuffer_sampling.py` compiles the full HLE texture unit with fake
+screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated water
+dependencies with fail-fast stubs; no production hooks are removed. Require
+normal refresh and stale-copy mutation cases. Mac covers GL and common RHI;
+Windows uses RHI. Separate native-surface/GPU tests validate water.
 
 `tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
 20 Hz snapshot stream must produce continuous 60 Hz display transforms, while

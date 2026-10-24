@@ -16,6 +16,10 @@ private source art and original assets stay local. Networking: `src/pc_network*`
 `pc_online*`, runtime HLE/kernel patches and `tools/online.py`. Crash capture:
 `src/pc_crash*`, `pc_hang_policy.h`, runtime crash hooks and launcher diagnostics.
 Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
+`audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
+XAudio applies it once to the master; SDL applies it once per stream. This
+quiets the output at 100% without changing saved Music/Sound sliders, their
+curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->

@@ -2167,6 +2167,14 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
 
+- **Output calibration (2026-10-24, uncommitted):** Shared
+  `RECOMP_AUDIO_DEFAULT_GAIN=0.5` lowers default output approximately 6 dB,
+  retaining original sliders and explicit gain overrides. XAudio master and
+  SDL per-stream application each apply it once. Actual-backend fixtures and
+  timing tests pass on Windows; both host CI jobs include the new fixture.
+  Mac listening and user acceptance of the new default remain pending. This
+  is a loudness adjustment, not a demonstrated distortion/clipping repair.
+
 - **Status:** Awaiting validation
 - **PC behavior:** Stream packets complete against the device's reported
   position even after an underrun; submission, flush and pause preserve the
