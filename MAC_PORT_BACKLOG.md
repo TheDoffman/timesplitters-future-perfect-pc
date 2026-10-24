@@ -2628,6 +2628,14 @@ validation. This version bump alone is not publication evidence.
   early failure restores it, and UI visibility never authorizes update cleanup.
   Windows results are in STATUS.md; native Mac execution remains unverified.
 
+- **Windows menu command labels (#333, uncommitted):** The native owner-drawn
+  menu now reads captions, shortcuts and separator types from its actual items.
+  This fixes the stale positional table that drew Hide Menu Bar over Fullscreen
+  after Textures was inserted. Real HWND tests cover rendered labels/shortcuts,
+  command mnemonics, separators, reordered items and disabled choices. Cocoa
+  does not use this Win32 adapter, so no Mac implementation change is required;
+  these Windows tests do not establish native Mac UI validation.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/pc_menu_theme.h`, `src/pc_dialog_theme.h`, `src/pc_settings.c` and
@@ -3831,6 +3839,9 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   reports, with eager-lookup and executor-disabled negative controls. Both native
   CI jobs register the new suite; Mac execution/gameplay remain pending. STATUS
   records the separate, unshipped idle-delay diagnostic and performance limits.
+  The Windows pushbuffer candidate also completes a ten-bot Temple240 route:
+  229.667039FPS over45s, fresh guest frames and near-unity game/wall time. This
+  is bounded Windows gameplay evidence, not sustained240 or native Mac gameplay.
 
 - **Aim, physics and effects coverage through 240 (2026-10-24, PR #328):**
   Nine more original-US fixtures now include 180/240: player/NPC aim, coupled

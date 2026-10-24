@@ -1,3 +1,43 @@
+## 2026-10-24 — Temple240 gameplay and integration with main
+
+The pushbuffer-policy executable `5304a5d5185d84cdd8586542587c5465749c144c932391f70bf83163301850e7`
+completes the bounded ten-bot Temple route (`crowd-pb-policy-temple-240`).
+The complete45s spawn+5..50 window has10,334 increasing guest-frame intervals,
+no interpolation, 229.667039 FPS, lowest one-second count169, lowest five-second
+rate186.8, p99 6.085ms and worst9.534ms (one interval above9ms). Sampled game/wall
+ratio is1.000077. Classic textures,3440x1440 render,FOV73 and a foreground
+1920x1060 client are recorded. No CPU sampler, captures or update trace ran.
+The fixture retains valid unchanged signatures and disposable partitions are
+recycled. Evidence: run provenance/report/Present CSV and
+`logs/pb-policy-temple-240-summary.json`. This validates sampled gameplay
+progression and pacing on another map, not sustained240 or full visual/mechanical
+acceptance, physical input latency or GPU completion/scanout. No matched causal
+comparison with the older Disco runs is claimed.
+
+A second Disco route on that executable also completes with ten bots and intact
+fixture signatures. An external instruction-pointer probe fails to locate an
+OS thread named "guest main": the built-in sampler assigns that label itself.
+The later corrected probe rejects the child after the bounded route has ended.
+There are no usable PC samples, no new instruction-level attribution and no
+GPU acknowledgement policy change from this probe. Its local helper is not
+shipped; the existing failed direct-clear prototype remains rejected.
+
+Main advances to9a583c15 (#333/#340), making PR328 conflict and preventing new
+PR checks for d805b22a. Integration retains the main menu-command/label fix and
+both documentation histories. Only STATUS and the build-test guide required
+manual conflict resolution. The guide remains under its64KiB limit. The combined
+window-theme/pushbuffer/context/backlog selection has29 passing checks initially;
+its two context failures caused by unresolved markers/guide size pass after
+resolution (31 checks total). Context and whitespace checks pass. Logs:
+`pb-policy-main-merge-tests.log` and `pb-policy-main-merge-context-recheck.log`.
+The supported combined Windows build and built-in checks pass on
+Windows11/MSVC14.44/D3D11 (`pb-policy-main-merge-build.log`). Source is d805b22a
+plus main9a583c15 and these documentation resolutions; executable SHA256:
+`c7ae83a8e976a1d396f27ed9b24ccd1c112600a28fa5c788e93fb3035075d206`.
+The imported menu header/test exactly match main. The Temple observation above
+uses the preceding executable; post-merge gameplay and new-head CI remain
+pending. This does not merge the PR into main or change its review state.
+
 ## 2026-10-24 — Script-event phases and presentation timers through 240
 
 Four original-US fixtures expand preset coverage without changing runtime code.
@@ -547,6 +587,25 @@ The reported 144-to-110 crowd dip is still not reproduced or claimed fixed.
 Evidence: `logs/mouse-region-order-build.log`, `logs/mouse-region-context-tests.log`,
 `logs/mouse-region-isolated-benchmark.json`, `private/pipeline/mouse-region-benchmark`,
 and `private/test-saves/mouse-mapping-order-240` (mapping observations and report).
+
+## 2026-10-24 — Correct PC Settings menu commands (#333)
+
+Windows menu theme labels had fallen one row behind the actual menu after the
+Textures command was added. The theme drew Hide Menu Bar over Fullscreen and
+converted Textures into a separator. `src/pc_menu_theme.h` now reads each native
+item's caption, shortcut and type before owner drawing, preserving command IDs.
+Per-window metadata is released on detach; disabled mnemonics are ignored.
+
+Branch `333-bug-toggle-menu-bar-toggles-fullscreen`, base `2b355bbf`, Windows x64.
+Both window-theme fixtures pass; the added texture-row regression failed before
+the fix. Tests check actual drawn labels/shortcuts, command IDs, separators,
+reordered/additional entries and disabled items. All 21 context/backlog checks
+and supported Windows Build/built-in checks passed (`logs/issue-333-build.log`).
+An isolated 180-second Test Lab run verified mouse-click Hide Menu Bar leaves
+the window windowed, F1 restores its bar, and clicking Fullscreen separately
+enters 1920x1080 fullscreen. Personal saves/configs were not used. Native Cocoa
+menus do not use this Win32 adapter; Mac UI validation was not run (MAC-021).
+
 ## 2026-10-24 — Quieter default audio output (PR #327)
 
 Branch `fix/audio-volume-scaling`, based on main `3baad73`. The user confirmed

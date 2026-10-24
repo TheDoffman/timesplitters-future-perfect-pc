@@ -19,16 +19,17 @@ different evidence; unavailable hardware/private data remain validation gaps.
 `test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
 presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
-Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
-code, fake devices, gain overrides, mute, live volume and voice parity.
+`test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
+
+`test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
+gain overrides, mute, live volume and voice parity.
 
 `test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
 SDL virtual input; physical pads and Mac gameplay require validation.
 
-`test_native_demo_timing.py` covers schedule/read guards, mutations, original
-input/ABI, pause, EOF/cancel, catch-up, live presets and recorder reset/capacity.
-Variable60..240/steady110 check time and input edges.
-Missing XBE skips originals. Live/file/Mac playback and sub60 overload remain open.
+`test_native_demo_timing.py`: schedule/read guards, mutations, input/ABI, pause,
+EOF/cancel, catch-up, presets, recorder lifecycle; variable60..240/steady110.
+Missing XBE skips originals. Live/file/Mac playback and sub60 overload are open.
 
 `test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
 checks refresh/stale copies (Mac GL/RHI, Windows RHI).
