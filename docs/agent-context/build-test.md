@@ -654,3 +654,11 @@ the filter against explicit wrapped neighbors. A zero-offset mutation must fail.
 This reference includes actual byte/half/float storage and mixed-format controls;
 it excludes disturbances, final shading and game RNG. Do not infer gameplay
 equivalence from the controlled float reference.
+
+`surface_final_gpu.inc` executes original effect 22 (callback 2C320, definition
+4BC318) on the captured cardinal offsets. It checks final RGB against explicit
+height differences, through float and actual byte render targets. The candidate
+uses shared `surface_state_shader.h` to materialize alpha-height after each fresh
+inverse transform. A constant-alpha header mutation must fail the final shader
+comparison. Final shader agreement with the float32 reference does not establish
+original byte-storage appearance or scene rendering; both differences are reported.

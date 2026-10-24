@@ -30,7 +30,8 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'transform', 64, False),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, False),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, True),
-    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True)])
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'constant-alpha', 128, True)])
 def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
@@ -49,6 +50,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             (tmp_path / 'first.bin').write_bytes(image[offset:offset + 240])
             offset = config.va_to_file_offset(0x4bbc40)
             (tmp_path / 'filter.bin').write_bytes(image[offset:offset + 240])
+            # Effect 22's authored table entry selects final callback 2C320.
+            offset = config.va_to_file_offset(0x476270 + 22 * 16 + 4)
+            assert int.from_bytes(image[offset:offset + 4], 'little') == 0x2c320
+            offset = config.va_to_file_offset(0x4bc318)
+            (tmp_path / 'final.bin').write_bytes(image[offset:offset + 240])
             offset = config.va_to_file_offset(0x4bbb90)
             assert int.from_bytes(image[offset:offset + 4], 'little') == 0x62078
             (tmp_path / 'vertex.bin').write_bytes(image[offset:offset + 4 + 6 * 16])
@@ -107,9 +113,12 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         assert 'Stage 6' in first
         filtered = run([str(generator), 'filter.bin'])
         assert 'Stage 4' in filtered
+        final = run([str(generator), 'final.bin'])
+        assert 'Stage 5' in final
         with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
             header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
             header.write('static const char filter_hlsl[]=' + json.dumps(filtered) + ';\n')
+            header.write('static const char final_hlsl[]=' + json.dumps(final) + ';\n')
 
     if case == 'surface_spatial_gpu.inc':
         vertex_translator = (RUNTIME / 'd3d/d3d8_vsh.c').read_text(encoding='utf-8')
@@ -144,6 +153,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         helpers = f'#define SURFACE_SMOOTHING {int(smoothing)}\n' + helpers
         if mutation == 'clamped-basis':
             helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
+        helpers += '\n#include "surface_final_gpu.inc"\n'
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
     if mutation == 'smoothing-offset':
@@ -153,7 +163,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     if mutation and mutation not in ('clamped-basis', 'smoothing-offset'):
         # Mutate only a disposable include. Compilation must succeed and the
         # executed GPU comparison must detect the numeric regression.
-        if mutation == 'transform':
+        if mutation == 'constant-alpha':
+            name = 'surface_state_shader.h'
+            needle = '(0,state.x+0.5,state.y,state.y)'
+            replacement = '(0,state.x+0.5,state.y,1)'
+        elif mutation == 'transform':
             name = 'surface_transform_shader.h'
             needle = 'inverse ? surface_basis(i, k) : surface_basis(k, i)'
             replacement = 'surface_basis(k, i)'
@@ -179,6 +193,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
+                    'fabsf(output[field_index(x,y,c)]-expected)<tolerance' if mutation == 'constant-alpha' else
                     'transform_error<.00001' if mutation == 'transform' else
                     'max_error<.00003' if case == 'surface_spatial_gpu.inc' else 'error<.00001f')
         assert result.returncode != 0 and expected in output, output

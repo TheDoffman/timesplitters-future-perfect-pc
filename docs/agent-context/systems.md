@@ -380,5 +380,10 @@ original disturbance/smoothing/storage rules. Float32 equivalence alone does
 not preserve the original byte-feedback appearance. A separate Original60 GPU
 reference now includes cardinal smoothing before feedback; the storage gap
 persists there too. This changes validation coverage, not runtime ownership.
+`graphics/surface_state_shader.h` converts reconstructed signed velocity/height
+to the original texture channels: red scratch, green velocity plus 0.5, blue
+height and **alpha height**. Original effect 22 samples alpha cardinal differences
+for its ripple shading input; constant alpha would erase those slopes. This
+shared encoding is currently exercised only by the GPU fixture, not game hooks.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.

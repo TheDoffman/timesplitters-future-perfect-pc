@@ -3678,6 +3678,9 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   the shared timing suite; native Mac validation of this extension is pending;
   follow-up PR #321 also adds a Windows original-shader reference with captured
   cardinal smoothing. Float/byte divergence persists; no Mac GPU result is inferred.
+  Shared `surface_state_shader.h` now materializes alpha-height for the original
+  final ripple shader; Windows WARP checks that consumer at every candidate
+  frame and through byte output. No runtime hook or Mac GPU acceptance is implied.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

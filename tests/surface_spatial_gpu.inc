@@ -145,6 +145,7 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     RhiBufferDesc constants_desc={sizeof(NV2APSConstants),RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
     RhiBuffer *uniforms=rhi_buffer_create(&constants_desc,NULL);CHECK(uniforms);
     rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&uniforms);
+    FieldFinal final;field_final_init(&final,field_vs,vs,vertex_buffers[0],uniforms);
     RhiShader *filter_ps=NULL;
     NV2APSConstants filter_constants={0};
     float filter_offsets[192][4]={0};
@@ -276,6 +277,31 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         printf("smoothed-original float_byte_rms_GB=%.9g\n",sqrt(sum/(SURFACE_SIDE*SURFACE_SIDE*2)));
         puts("PASS: original translated feedback shader with captured cardinal smoothing");
     }
+    static float final_reference[3][SURFACE_SIDE*SURFACE_SIDE*4];
+    static float final_bytes[3][SURFACE_SIDE*SURFACE_SIDE*4];
+    static float final_output[SURFACE_SIDE*SURFACE_SIDE*4],final_previous[SURFACE_SIDE*SURFACE_SIDE*4];
+    for(unsigned storage=0;storage<3;storage++) {
+        rhi_image_update(final.packed,0,NULL,reference_fields[storage],SURFACE_SIDE*16,sizeof field_a);
+        field_final_run(&final,final.packed_read,0,0,final_reference[storage]);
+        field_final_check(reference_fields[storage],3,final_reference[storage],.00001f);
+        field_final_run(&final,final.packed_read,0,1,final_bytes[storage]);
+        field_final_check(reference_fields[storage],3,final_bytes[storage],.501f/255);
+        double variation=0;
+        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=0;c<2;c++) {
+            double v=final_reference[storage][i*4+c]-128/255.;variation+=v*v;
+        }
+        printf("surface-final smoothing=%u storage=%u rms_RG_from_flat=%.9g\n",
+            SURFACE_SMOOTHING,storage,sqrt(variation/(SURFACE_SIDE*SURFACE_SIDE*2)));
+    }
+    double final_gap=0,final_byte_gap=0;
+    for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=0;c<2;c++) {
+        double v=final_reference[0][i*4+c]-final_reference[2][i*4+c];final_gap+=v*v;
+        v=final_bytes[0][i*4+c]-final_bytes[2][i*4+c];final_byte_gap+=v*v;
+    }
+    printf("surface-final smoothing=%u float_byte_rms_RG=%.9g\n",SURFACE_SMOOTHING,
+        sqrt(final_gap/(SURFACE_SIDE*SURFACE_SIDE*2)));
+    printf("surface-final smoothing=%u byte_target_float_byte_rms_RG=%.9g\n",SURFACE_SMOOTHING,
+        sqrt(final_byte_gap/(SURFACE_SIDE*SURFACE_SIDE*2)));
     if(!SURFACE_SMOOTHING) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     /* Exercise every spectral mode through the actual common-RHI GPU adapter.
@@ -360,7 +386,8 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         CHECK(transform_error<.00001);
     }
     for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rates[rate];
+        unsigned fps=rates[rate];unsigned final_fresh=0;
+        memset(final_previous,0,sizeof final_previous);
         for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
             unsigned i=(y*SURFACE_SIDE+x)*4;
             field_a[i]=0;field_a[i+1]=field_initial(x,y);
@@ -408,6 +435,11 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
                 CHECK(isfinite(field_a[i*4+c]));changed|=field_a[i*4+c]!=field_b[i*4+c];
             }
             world_fresh+=changed;memcpy(field_b,field_a,sizeof field_a);
+            field_final_run(&final,probe_read[1],1,0,final_output);
+            field_final_check(field_a,1,final_output,.00001f);changed=0;
+            for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=0;c<2;c++)
+                changed|=final_output[i*4+c]!=final_previous[i*4+c];
+            final_fresh+=changed;memcpy(final_previous,final_output,sizeof final_output);
         }
         CHECK(fresh==fps && world_fresh==fps);
         double max_error=0,rms=0,byte_rms=0;
@@ -421,6 +453,18 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         printf("spatial-coupled size=%u wrap=%u fps=%u rms_to_float60=%.9g max_error=%.9g rms_to_byte60=%.9g fresh=%u/%u world_fresh=%u/%u\n",
             SURFACE_SIDE,SURFACE_WRAP,fps,rms,max_error,byte_rms,fresh,fps,world_fresh,fps);
         CHECK(max_error<.00003);CHECK(byte_rms>.001);
+        double final_error=0;
+        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=0;c<3;c++)
+            final_error=fmax(final_error,fabs(final_output[i*4+c]-final_reference[0][i*4+c]));
+        printf("surface-final coupled fps=%u max_float_reference_error=%.9g fresh=%u/%u\n",
+            fps,final_error,final_fresh,fps);
+        CHECK(final_error<.00003);CHECK(final_fresh==fps);
+        field_final_run(&final,probe_read[1],1,1,final_output);
+        final_error=0;
+        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=0;c<3;c++)
+            final_error=fmax(final_error,fabs(final_output[i*4+c]-final_bytes[0][i*4+c]));
+        printf("surface-final coupled fps=%u byte_target_max_error=%.9g\n",fps,final_error);
+        CHECK(final_error<1.001/255);
         RhiView *none[3]={0};rhi_set_textures(0,3,none);rhi_set_render_target(NULL,NULL);
         for(unsigned i=0;i<2;i++) {
             rhi_view_destroy(reads[i]);rhi_view_destroy(writes[i]);rhi_image_destroy(states[i]);
@@ -437,6 +481,7 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     puts("PASS: original translated feedback shader pair verifies spatial coupling and storage gaps");
     }
     rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);
+    field_final_destroy(&final);
     rhi_shader_destroy(field_vs);
     if(filter_ps)rhi_shader_destroy(filter_ps);
     for(unsigned i=0;i<2;i++)rhi_shader_destroy(field_ps[i]);

@@ -1,3 +1,28 @@
+## 2026-10-23 — Preserve alpha-height for final ripple generation
+
+PR #321 now follows the candidate's reconstructed field through the original
+final ripple shader. The supported effect-22 table selects callback 0x2C320 and
+pixel definition 0x4BC318; that shader reads **alpha** height from cardinal
+neighbors. The old diagnostic reconstruction's alpha=1 would erase the slopes.
+Shared `graphics/surface_state_shader.h` now materializes the original channel
+contract before the final pass, and a constant-alpha mutation must fail.
+
+Windows x64/MSVC/common-RHI WARP, captured 128x128 wrapped geometry: reconstructed
+final float output matches the float32 Original60 reference within 0.000010908
+at 60/120/144, with fresh ripple output on every tested candidate update. This
+is still an uncalled experimental helper. The final actual-byte target is also
+tested, so final output rounding is distinct from feedback storage precision.
+All 14 GPU cases pass in 72.15 seconds; candidate and float-reference final byte
+RGB are identical in the tested 64/128 clamp and 128-wrap cases at all three rates.
+
+The original-byte feedback discrepancy survives final ripple generation. With
+original smoothing included, final red/green RMS versus the float-state path is
+0.057236962 on a float output and 0.057267247 on an actual byte output. This
+rules out a harmless uniform height offset as the entire remaining difference.
+These are controlled synthetic fields, not scene images or an FPS measurement.
+Runtime integration, storage fidelity and Windows/Mac gameplay acceptance remain
+open. No playable binary or personal data changed.
+
 ## 2026-10-23 — Include original water smoothing in the storage reference
 
 Follow-up PR #321 adds a separate Original60 WARP reference that executes the
