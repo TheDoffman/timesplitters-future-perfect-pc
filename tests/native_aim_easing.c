@@ -41,8 +41,8 @@ int main(void)
     setvbuf(stdout,NULL,_IONBF,0);
     /* ORIGINAL_CONSTANTS */
     MEM32(0x7b0c7c)=PLAYER;
-    const unsigned rates[]={60,60,120,144};
-    for(int mode=0;mode<2;mode++)for(unsigned r=0;r<4;r++)
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(int mode=0;mode<2;mode++)for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)
     for(unsigned slow=1;slow<=4;slow*=4) {
         unsigned fps=rates[r];g_tsfp_native_timing_active=r!=0;raw_delta=60.f/fps;
         for(unsigned c=0;c<4;c++)MEMF(PLAYER+offsets[c])=0;
@@ -111,6 +111,6 @@ int main(void)
         assert(pc_native_multiply(sites[i],2,.1f)==2*.1f);
     }
     free(memory);
-    puts("PASS: original aim/weapon-offset easing, pause, snap and scope at 60/120/144");
+    puts("PASS: original aim/weapon-offset easing, pause, snap and scope at 60/120/144/180/240");
     return 0;
 }

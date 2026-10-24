@@ -124,6 +124,7 @@ int main(void)
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
     const unsigned kinds[]={28,31,45,46};const float speeds[]={180,240,480,240};
+    const unsigned rates[]={60,120,144,180,240};
     /* Byte-identical native-60 arithmetic and callback counts. */
     run(60,0,31,240,1,0);
     unsigned char reference_bytes[0x22c];
@@ -134,8 +135,8 @@ int main(void)
         (void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof(reference_bytes)));
     for(unsigned kind=0;kind<4;kind++) {
         float reference=run(60,0,kinds[kind],speeds[kind],1,1);
-        for(unsigned slow=0;slow<2;slow++)for(unsigned rate=0;rate<3;rate++) {
-            unsigned fps=rate==0?60:rate==1?120:144;
+        for(unsigned slow=0;slow<2;slow++)for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
+            unsigned fps=rates[rate];
             float hit_time=run(fps,1,kinds[kind],speeds[kind],slow?.25f:1,1);
             assert(fabsf(hit_time-reference)<.018f);
             run(fps,1,kinds[kind],speeds[kind],slow?.25f:1,0);

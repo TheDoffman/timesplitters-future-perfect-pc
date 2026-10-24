@@ -71,7 +71,7 @@ def measure_segments(rows, pixels):
     groups = []
     for i, row in enumerate(rows):
         segment, rate = int(row['segment']), int(row['rate'])
-        if int(row['sample']) != i or rate not in (60, 120, 144) or not float(row['delta']) > 0:
+        if int(row['sample']) != i or rate not in (60, 120, 144, 180, 240) or not float(row['delta']) > 0:
             raise ValueError('Invalid segmented sample/rate/time')
         if not groups or segment != groups[-1]['segment']:
             if segment != len(groups) or segment >= 4:
@@ -97,7 +97,7 @@ def main():
     parser.add_argument('csv',type=Path)
     parser.add_argument('--segments',action='store_true')
     parser.add_argument('--switch-cycle',action='store_true',
-                        help='Require the complete 144/120/60/144 cycle, 90 images per segment')
+                        help='Require the complete 240/180/60/120 cycle, 90 images per segment')
     args=parser.parse_args()
     rows,pixels=load_capture(args.csv)
     if args.switch_cycle:
@@ -105,13 +105,15 @@ def main():
     print(json.dumps((measure_segments if args.segments or args.switch_cycle else measure)(rows,pixels),indent=2))
 
 
-def validate_switch_cycle(rows):
+def validate_switch_cycle(rows, rates=(240,180,60,120)):
     """Fail closed on partial navigation; ordinary segmented analysis allows it."""
+    if len(rates)!=4 or any(rate not in (60,120,144,180,240) for rate in rates):
+        raise ValueError('Invalid expected FPS cycle')
     if len(rows)!=360:
         raise ValueError('Incomplete FPS switch cycle: expected four sets of 90 images')
     for i,row in enumerate(rows):
         segment=i//90
-        rate=(144,120,60,144)[segment]
+        rate=rates[segment]
         if (int(row['segment'])!=segment or int(row['rate'])!=rate or
                 int(row['native'])!=int(rate>60)):
             raise ValueError('Unexpected FPS switch cycle order or timing path')

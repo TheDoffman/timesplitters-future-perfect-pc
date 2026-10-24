@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "2025854d6715399f85d893ac4db332b88f496d8e69cedac71db4c87ddf9ecc89",
+  "loaderSha256": "f2044326f247b3b0043b33feffca5e8ffa252dabd33010d4828cb6f56cbb82bf",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -212,10 +212,31 @@
       ]
     },
     {
+      "name": "zz-pushbuffer-diagnostic-policy.patch",
+      "sha256": "7b6c4d99c3b1f470ead7866dad84c49c1bdf60e98b9409776d137af2f9812e24",
+      "targets": [
+        "src/kernel/nv2a_pb_scan.c"
+      ]
+    },
+    {
       "name": "zz-sampler-caller-depth.patch",
       "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
       "targets": [
         "src/kernel/recomp_sample.c"
+      ]
+    },
+    {
+      "name": "zz-shader-source-lookup.patch",
+      "sha256": "d643a9d35f288f6ffb82db34c654a5d798afc533277d11ae65c6b66234fcf0e1",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "zz-texel-sample-lanes.patch",
+      "sha256": "a88ff19bcf29efbc9bc5f7d0be71ea47f7ca38edc1cdb6960d80adc5e9549e2a",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
       ]
     },
     {
@@ -1353,6 +1374,22 @@
       "sha256": "8737f59c9623e28300ab75ec41209f77b0976f28d6215ebd04539ce0883e77c6",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-texture-bind-scan.patch",
+      "sha256": "3d0d8f0856b07d0e9906fe576d1c2881c8a9524aa79d9849f9682f5c035c2c24",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zz-model-transform-entry.patch",
+      "sha256": "2ec16f2b7b176e1a542e49dd648f830dbfb50b1fd8f54ad37b287f184d360d45",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/translator.py"
       ]
     }
   ]

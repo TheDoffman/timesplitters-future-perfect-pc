@@ -1,11 +1,11 @@
 #ifndef TSFP_PC_DISPLAY_MEMORY_H
 #define TSFP_PC_DISPLAY_MEMORY_H
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 
 /* Caller-owned snapshot for one uninterrupted camera/projection correction.
  * Initialize after the original guest call; never retain across guest calls,
  * callbacks, allocations or protection changes. The OS query still supplies
- * the complete mapping bounds and write permission. */
+ * validated bounds and write permission: a bounded page batch or full region. */
 static inline int pc_display_writable(PcGuestRegion *region,uintptr_t offset,
                                       uint32_t address,size_t bytes)
 {
@@ -17,7 +17,7 @@ static inline int pc_display_writable(PcGuestRegion *region,uintptr_t offset,
     if(bytes>UINTPTR_MAX-host) return 0;
     available=pc_guest_region_remaining(region,host,1);
     if(!available || bytes>available) {
-        *region=pc_guest_query_region(host);
+        *region=pc_guest_query_span(host,bytes);
         available=pc_guest_region_remaining(region,host,1);
     }
     return available && bytes<=available;

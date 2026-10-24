@@ -6,6 +6,9 @@
 #include <float.h>
 #include <string.h>
 #include "pc_gpu_ack.h"
+/* Entry callbacks precede this audited US affine-transform fast path. */
+extern int pc_model_transform_entry(void);
+#define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 /* These original integer-to-float reads are continuous motion consumers of

@@ -2,6 +2,7 @@
 import ctypes
 import json
 import os
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -12,6 +13,28 @@ import pytest
 from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize('mutation', ['none', 'retained-region', 'full-query'])
+def test_guest_read_memory(tmp_path, mutation):
+    from test_cutscene_letterbox import compile_and_run
+    if mutation == 'full-query' and os.name != 'nt':
+        pytest.skip('Windows resident-page optimization; Mac retains Mach query')
+    body = re.search(r'static int discord_guest_read\(.*?\n\}',
+                     (ROOT / 'src/pc_display_menu.c').read_text(), re.S)
+    assert body
+    function = body.group()
+    if mutation == 'retained-region':
+        old = 'PcGuestRegion region={0,0,0};'
+        assert old in function
+        function = function.replace(old, 'static ' + old)
+    elif mutation == 'full-query':
+        old = 'pc_guest_memory_in_span(&region,host,bytes,0)'
+        assert old in function
+        function = function.replace(old, 'pc_guest_memory(host,bytes,0)')
+    fixture = (ROOT / 'tests/discord_guest_memory.c').read_text()
+    compile_and_run(tmp_path, fixture.replace('/* PRODUCTION_READ */', function),
+                    fails=mutation != 'none')
 
 
 def compile_client(tmp_path, ipc=False):

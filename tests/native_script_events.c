@@ -65,32 +65,44 @@ static void dispatch(unsigned whole, float delta)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    unsigned missed=0, phase;
+    const unsigned rates[]={60,120,144,180,240};
+    unsigned missed=0;
     assert(memory); g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     MEM32(0x2004)=0x3000; MEM32(0x207c)=0x2200;
     MEM32(0x7b0c7c)=0x6000; MEM32(0x6014)=0x2100; MEM32(0x217c)=0x2300;
     MEM32(0x30d4)=0xa1c; MEM32(0x5110)=0x218910;
     MEM16(0x4006)=1; MEM16(0x4008)=7; MEM16(0x400a)=0x2000;
     MEMF(0x4d1994)=60; MEM32(0x7de45c)=0x8000;
-    for(phase=0;phase<12;phase++) {
+    for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++)
+    for(unsigned slow=1;slow<=4;slow*=4) {
+        unsigned fps=rates[rate],a=60,b=fps*slow;
+        while(b) { unsigned remainder=a%b;a=b;b=remainder; }
+        unsigned phases=fps*slow/a,frames=3*phases;
+        float delta=60.f/(fps*slow);
+        unsigned missed_before=missed;
+        for(unsigned phase=0;phase<phases;phase++)
         for(int native=0;native<2;native++) {
             grants=ammunition=dispatches=0;
             g_tsfp_native_timing_active=native;
-            /* Event frame 7 falls in each phase of the 144:60 cadence.
+            /* Event frame 7 falls in every phase of this raw-tick cadence.
              * This reproduces overwritten event bounds on zero-tick frames. */
-            for(unsigned frame=0;frame<36;frame++) {
-                float before=(6.0f+((int)frame-(int)phase)*5.0f/12.0f)/60.0f;
-                MEMF(0x30e0)=before; MEMF(0x30dc)=before+(5.0f/12.0f)/60.0f;
-                unsigned whole=((frame+1)*5/12)-(frame*5/12);
-                dispatch(whole,5.0f/12.0f);
+            for(unsigned frame=0;frame<frames;frame++) {
+                float before=(6.0f+((int)frame-(int)phase)*delta)/60.0f;
+                MEMF(0x30e0)=before; MEMF(0x30dc)=before+delta/60.0f;
+                unsigned whole=(frame+1)*60/(fps*slow)-frame*60/(fps*slow);
+                dispatch(whole,delta);
             }
             if(native) {
-                assert(grants==1 && ammunition==8 && dispatches==36);
+                assert(grants==1 && ammunition==8 && dispatches==frames);
             } else {
-                assert(grants<=1 && dispatches==15);
+                assert(grants<=1 && dispatches==frames*60/(fps*slow));
                 if(!grants) missed++;
+                if(fps*slow==60)assert(grants==1 && ammunition==8);
             }
         }
+        if(phases>1)assert(missed>missed_before);
+        printf("script_events fps=%u slow=%u phases=%u legacy_misses=%u\n",
+               fps,slow,phases,missed-missed_before);
     }
     assert(missed>0); /* unmodified whole-tick gate reproduces the failure */
     grants=ammunition=dispatches=0;

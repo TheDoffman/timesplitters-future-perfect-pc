@@ -1,0 +1,60 @@
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1417,6 +1417,25 @@
+ }
+ 
+ #if defined(_WIN32) || defined(__APPLE__)
++/* One fresh pass per bind; no retained index or guest-content shortcut. */
++static texture_entry *bound_host_entry(IDirect3DTexture8 *host, int *framebuffer)
++{
++    texture_entry *first = NULL;
++    if (framebuffer) *framebuffer = 0;
++    if (!host) return NULL;
++    for (int i = 0; i < g_texture_count; i++) {
++        texture_entry *entry = &g_textures[i];
++        if (entry->host != host) continue;
++        if (!first) first = entry;
++        if (!framebuffer) break;
++        if (entry->framebuffer) {
++            *framebuffer = 1;
++            break;
++        }
++    }
++    return first;
++}
++
+ static void shadow_set_texture(uint32_t stage, uint32_t texture)
+ {
+     {
+@@ -1450,27 +1469,10 @@
+         }
+         hle_d3d8_note_stage_texels(stage, texture ? HLE_MEM32(texture + 4) & 0x0FFFFFFFu : 0u);
+         g_bound[stage] = host;
+-        g_bound_entry[stage] = NULL;
+-        {
+-            int i;
+-            for (i = 0; host && i < g_texture_count; i++)
+-                if (g_textures[i].host == host) {
+-                    g_bound_entry[stage] = &g_textures[i];
+-                    break;
+-                }
+-        }
+-        if (stage == 0) {
+-            /* Whether this draw is one of the title's full-screen passes over
+-             * its own frame. Nothing else binds the frame buffer as stage 0,
+-             * so it identifies them without matching a shader or a size. */
+-            int i;
+-            g_stage0_framebuffer = 0;
+-            for (i = 0; host && i < g_texture_count; i++)
+-                if (g_textures[i].host == host && g_textures[i].framebuffer) {
+-                    g_stage0_framebuffer = 1;
+-                    break;
+-                }
+-        }
++        /* Resolve both facts together. Aliased host pointers can have distinct
++         * cache entries, so retain the first entry and any framebuffer match. */
++        g_bound_entry[stage] = bound_host_entry(host,
++            stage == 0 ? &g_stage0_framebuffer : NULL);
+         /* The host pixel shader samples every stage whatever its operation
+          * (d3d8_shaders.c), and an unbound D3D11 slot reads as zero, so a
+          * stage with no host texture would turn the draw black once the

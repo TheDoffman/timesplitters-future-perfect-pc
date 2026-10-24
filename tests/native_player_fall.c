@@ -72,12 +72,12 @@ int main(void) {
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     setvbuf(stdout,NULL,_IONBF,0);
     /* ORIGINAL_CONSTANTS */
-    const unsigned rates[]={60,60,120,144};
+    const unsigned rates[]={60,60,120,144,180,240};
     for(int mode=0;mode<2;mode++)for(unsigned slow=1;slow<=4;slow*=4)
     for(unsigned h=0;h<2;h++) {
         float height=h?18.f:3.f;
         double reference_time=0;
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r],frame=0;
             g_tsfp_native_timing_active=r!=0;setup(mode,height);
             while(MEM32(PLAYER+0x114)!=2 && frame<fps*slow*10) {
@@ -113,7 +113,7 @@ int main(void) {
             step(0,1,1.f/slow);
             original_y[f]=MEMF(PLAYER+0xac);original_v[f]=MEMF(BODY+0xb1c);
         }
-        for(unsigned r=1;r<4;r++) {
+        for(unsigned r=1;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r];float max_error=0;
             g_tsfp_native_timing_active=1;setup(0,100);floor_enabled=0;
             for(unsigned f=1;f<=fps*3*slow/2;f++) {

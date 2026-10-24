@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
 #define TSFP_PC_CONTROLS_H
 #define TSFP_PC_PROMPTS_H
 typedef struct PcGuestRegion {uintptr_t base;size_t size;int writable;} PcGuestRegion;
 static unsigned char memory[0x800000];
-static unsigned queries;
+static unsigned queries,span_queries;
 static int readable=1,writable=1,split;
 static PcGuestRegion pc_guest_query_region(uintptr_t address)
 {
@@ -24,6 +25,13 @@ static PcGuestRegion pc_guest_query_region(uintptr_t address)
         }
     }
     return region;
+}
+static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
+{
+    if(bytes!=4 && bytes!=0x1504 && bytes!=3) {
+        fprintf(stderr,"FAIL: unexpected auto-look access extent\n");exit(1);
+    }
+    ++span_queries;return pc_guest_query_region(address);
 }
 /* PRODUCTION_MEMORY_HELPERS */
 static void pc_controls_get_mouse(double *s,int *on,int *invert)
@@ -47,7 +55,7 @@ int main(void)
     WORD(0x7B0C7C)=0x1000;WORD(0x1004)=0;WORD(0x2500)=0x3000;
     memory[0x3002]=0x1f;g_esp=0x9000;
     expected_flag=0;pc_auto_look_camera(original);
-    CHECK(queries==1 && memory[0x3002]==0x9f && calls==1 && g_esp==0x9004);
+    CHECK(queries==1 && span_queries==1 && memory[0x3002]==0x9f && calls==1 && g_esp==0x9004);
     queries=0;readable=0;expected_flag=8;
     pc_auto_look_camera(original);CHECK(queries==1 && memory[0x3002]==0x1f);
     queries=0;readable=1;writable=0;

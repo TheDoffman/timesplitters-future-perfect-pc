@@ -703,10 +703,53 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- Mouse-chain bounded queries (PR #328, commit carrying this entry): shared
+  camera, mounted and terminal helpers use `pc_guest_memory_in_span` on misses.
+  Their original validated extents, mode/ownership checks, input consumption and
+  fresh per-update snapshots remain; only known-size query selection changes.
+  Windows uses resident-page batches; Darwin keeps its Mach adapter. Both host
+  adapter bodies pass controlled-map tests on Windows; real host protection and
+  mounted/terminal suites pass 13 checks. The resident Windows camera case now
+  needs no full-region query. Updated native Mac tests and physical input remain
+  awaiting validation; no platform-specific feature adapter is required.
+
+- Bounded page batches (PR #328, commit carrying this entry): Windows' shared
+  `pc_guest_query_span` checks up to four resident pages per query, including
+  every page's read/write permissions. Auto Lookahead now uses that path while
+  preserving its full player-record extent, temporary bit override and fresh
+  per-call regions. Larger/cold/failed/guarded cases retain full-region fallback;
+  Darwin retains the existing Mach query. Real private/mapped and camera-record
+  fixtures cover intermediate/final protection changes and expiry; mutations
+  reject checking only the first page. Windows tests/build pass. New Mac CI and
+  physical aiming/gameplay remain awaiting validation; no Mac adapter is needed.
+
+- General display guards (commit carrying this entry): `pc_display_menu.c`
+  delegates each `guest_writable` call to a fresh shared bounded check. Windows
+  gains the resident-page fast path; Mac uses real Mach bounds/protection instead
+  of compatibility VirtualQuery's synthetic 4 KiB writable extent. Valid larger
+  spans remain supported through full-region fallback. Production-adapter tests
+  cover protected/boundary/overflow/multi-page accesses and reject retained
+  snapshots. Windows tests pass; new Mac CI and physical UI/gameplay are pending.
+
+- Display memory span queries (commit carrying this entry): `pc_guest_span.h`
+  uses fresh Windows resident-page protection for known-size, single-page camera
+  and projection accesses; all other cases retain full-region fallback. Shared
+  bounds/snapshot policy is unchanged. Darwin retains its existing Mach query;
+  the Windows-specific optimization needs no Mac equivalent for correctness.
+  Private/mapped protection fixtures run through the registered decal suite on
+  both hosts; Windows failure/fast-path mutations are host-specific. Local
+  Windows tests pass; native Mac CI and physical gameplay remain pending.
+
 - Mouse mapping reuse (commit carrying this entry): `pc_guest_memory.h`,
   `pc_camera.h`, `pc_terminal.h`, `pc_mounted.h` and both host input adapters
   share an OS mapping snapshot only within one mouse update. Bounds/write
-  permissions remain checked and the next update starts empty. No Mac-specific
+  permissions remain checked and the next update queries afresh. The follow-up
+  on `perf/mouse-memory-order` seeds at the lower player/FOV field so forward
+  VM spans cover either address order. Both adapters use the shared helper;
+  split/read-only/inaccessible mappings retain fallback validation. The registered
+  mounted pytest suite now includes real host protection changes and an unordered
+  negative control. These fixtures pass native Windows/macOS CI at `1dbd397`;
+  physical Mac gameplay remains awaiting validation. No Mac-specific
   feature work is needed; Darwin still uses its existing Mach VM query.
   Windows executes both adapter bodies with controlled maps, plus actual guarded
   terminal/mounted fixtures. Physical Mac aiming/capture and native execution
@@ -808,6 +851,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
+
+- Fresh text chunks (commit carrying this entry): `pc_text_read_scope.h` uses
+  the shared page-span adapter for bounded reads. Strings walk successive
+  validated chunks; `pc_prompts_read_span` validates whole argument frames,
+  including those crossing pages. Scope expiry and fresh scratch-write checks
+  remain unchanged. Windows uses resident-page queries; Darwin retains Mach
+  region queries. Focused tests and Windows Build pass; updated Mac CI and
+  physical prompt/menu validation remain pending. No new Mac adapter is needed.
 
 - **#319 (2026-10-24, branch `fix/319-controller-input`):** Shared runtime supplies pad defaults when
   Controller is selected over a keyboard-only launcher map, without changing
@@ -1235,6 +1286,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-009 — Intro and in-game movie playback
 
 - **Status:** Queued
+- **240 FPS decoder coverage (2026-10-24, PR #328):** The Windows real-file
+  fixture now compares EA and Free Radical intros at native60/120/144/180/240,
+  with Original60 as the controlled-clock reference. Decoded picture/timestamp/
+  PCM hashes match exactly; existing duration, polling and cleanup checks pass.
+  GPU/audio-device output remains mocked. This adds no Mac decoder adapter or
+  evidence of movie color/audible synchronization. See STATUS for results.
 - **Native-rate pacing follow-up (`3c2fcc2`, local):** `pc_native_movie_pacing.h`
   provides per-playback 60/120/144 polling through the existing platform clock/
   wait interface. The additive `*-native-movie-pacing.patch` connects it to the
@@ -3788,6 +3845,23 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Temple crowd acceptance (2026-10-24, PR #328):** Source925f9f72's Windows
+  binary completes isolated ten-bot Temple runs at Original60/native180/240.
+  Complete45-second windows measure60.00054/179.99977/239.91279FPS with fresh
+  guest frames and game/wall ratios within0.02% of unity. The240 minimum
+  one-second rate is236. These are bounded Windows host-Present observations;
+  native Mac gameplay, physical latency and every-map acceptance remain open.
+  Mac native CI passes on925f9f72; no additional adapter is introduced.
+  See the Temple STATUS entry for provenance, exclusions and visual evidence.
+
+- **Combined main integration (2026-10-24, PR #328):** Main fcaedfe3's reload
+  timing repair is combined with the guarded model-transform implementation.
+  Windows build/bundled checks,161 combined regression cases and all21 patch
+  upgrades pass. One isolated Windows session applies240/180/Original60/120
+  live and passes12 pause/reload ammo checks. Shared code requires no new
+  adapter; this is not native Mac execution evidence or full-game acceptance.
+  See the PR #328 integration entry in STATUS.
+
 - **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
   `zzzz-global-compare-load.patch` let advancing native frames consume reload
   edges even when raw/game whole-tick phases differ after pause. Original60,
@@ -3795,6 +3869,149 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Windows original-decoder/reload integration and asset-free branch/mutation
   tests pass. No Mac adapter is needed; native Mac compilation and live reload
   checks after pause at 120/180/240 remain pending. See the #337 STATUS entry.
+
+- **Model transform entry (2026-10-24, PR #328):** A shared
+  default-off generated entry hook selects only the audited US151E80 leaf,
+  after callbacks. Portable C keeps bounded disjoint transforms in local
+  binary32 temporaries; rejected inputs retain the generated body. Both build
+  paths compile the same helper; no Mac adapter is deferred. Ten Windows
+  model tests pass, including original-US routines, four rounding modes,
+  disabled-fast control and mutations. Public cases are registered on both
+  CI hosts; current Mac execution and physical gameplay remain pending.
+  Windows build/bundled checks pass. Isolated ten-bot runs measure 228.36FPS
+  at native240 and 60.00015FPS at Original60, retaining game speed; reviewed
+  native240 captures show intact scene/models. This does not prove Mac
+  behavior or sustained240. See STATUS for numeric and measurement limits.
+
+- **Texture binding scan (2026-10-24, PR #328):** Shared HLE now combines
+  first-entry lookup and any-framebuffer-alias detection in one fresh pass.
+  No platform adapter, content-check or copy-lifetime changes. Windows full-module
+  alias/refresh regression checks pass, including negative controls. Mac GL/RHI
+  execute the same registered fixture in CI. All14 checks pass on85ccf0bd,
+  including both native hosts and upgrade/transition suites; physical Mac
+  gameplay remains pending. See STATUS for build/live evidence.
+
+- **Demo preset lifecycle coverage (2026-10-24, PR #328):** Original-US
+  fixtures now execute eight pause-offset recording cases and32playback
+  transitions through Original60 across120/144/180/240 with one/four
+  controllers. Existing byte, timestamp, edge, lifecycle and mutation assertions
+  remain;105 demo checks pass on Windows. No runtime adapter changes. Public
+  CI skips private-XBE cases, so native Mac/live file playback remains pending.
+  See STATUS for evidence and the bounded unsuccessful packaged-file search.
+
+- **Weapon-menu acceptance (2026-10-24, PR #328):** Current Windows
+  e9195841/ed07ee3d preserves issue#105's menu repair at Original60/native240.
+  Reviewed captured routes and separate capture-free Present windows confirm
+  navigation/rendered screens and approximately60/240FPS, with intact saves.
+  Native240's recorder cap excludes the final back-out window; no missing
+  window is treated as passed. Mac native CI passes the surface-fixture repair,
+  but physical Mac menu/gameplay validation remains pending. See STATUS.
+
+- **Surface fixture repair (2026-10-24, PR #328):** Mac CI33d7bf4f caught the
+  portable trace fixture's obsolete144/120/60/144 cycle. It now matches the
+  strict240/180/Original60/120 validator and records rate-appropriate deltas.
+  The failure reproduces and passes after repair on Windows without weakening
+  lifecycle/capture checks. Shared CI confirmation remains pending; no runtime
+  or platform adapter changed. See STATUS for the validation logs.
+
+- **Four-preset water cycle (2026-10-24, PR #328 follow-up):** The Windows
+  integration route now switches240/180/Original60/120 using default native
+  water. Portable image analysis accepts180/240 while retaining strict bounds,
+  identity, original/native-path and complete-cycle checks.32 analysis checks
+  pass locally; the suite remains registered on both CI hosts. One Windows
+  run captures90 images per rate with89/89 changed pairs in every segment,
+  reuses the same owner across the cycle and verifies menu labels/gray Apply
+  in reviewed captures. Runtime/shader bytes are unchanged. This is bounded
+  Windows visual/resource evidence; Mac GPU/gameplay and full-scene acceptance
+  remain pending. See STATUS for provenance and measurement limits.
+
+- **Discord sampling guards (2026-10-24, PR #328 follow-up):** Shared
+  `pc_display_menu.c` validates each decoder read with a fresh bounded span.
+  Fields, cadence, event cache and IPC behavior remain unchanged. Windows
+  resident reads avoid full-mapping queries; Mac keeps real Mach bounds with
+  no new adapter. Production-callback tests cover exact copies, protection
+  changes, read-only/noaccess, overflow and fallback; Windows passes27 related
+  checks with8 Mac-only skips, plus the supported build. Existing dual-host
+  Discord suite registration includes the new cases. Mac execution of this
+  follow-up and physical gameplay remain pending. The Windows45s ten-bot240
+  run averages235.244550FPS (lowest1s199, p995.299ms), with fresh guest frames
+  and game/wall0.999985. It is not sustained240 or Mac gameplay. See STATUS.
+
+- **Texture survey lanes (2026-10-24, PR #328 follow-up):** Shared
+  `zz-texel-sample-lanes.patch` groups four existing independent checksum lanes
+  while retaining exact sampled bytes/order and checksums. It changes no texture
+  update/upload policy or OS adapter. Windows production-code checks include
+  scalar/footprint/bounds parity and tail/overread negative controls; both native
+  CI jobs register them. Native Mac execution/gameplay remains unverified for
+  this follow-up. The Windows build and bounded ten-bot Original60/native240
+  routes pass with fresh frames/near-unity game speed, averaging60.000371 and
+  226.507835FPS over45s. The latter is not sustained240 or a demonstrated total
+  FPS gain; only the isolated checksum workload is measurably faster. See STATUS.
+  Mac CI898ee923 subsequently fails compilation of the fixture's three variants.
+  The follow-up avoids redefining libc copy macros, exposes compiler stderr and
+  passes five Windows checks including macro-preservation/redefinition controls.
+  Native Mac runtime CI passes on15cb9fba after that repair; physical gameplay
+  remains unverified. The runtime is unchanged by the fixture repair.
+
+- **Shader source lookup (2026-10-24, PR #328 follow-up):** The shared HLE cache
+  verifies full current microcode on source-address hints before bypassing its
+  hash. Changed bytes/counts and relocated sources retain the original fallback;
+  shader selection, guest calls and lifetime rules are unchanged. Three Windows
+  checks include stale-address and eager-hash negative controls, registered in
+  both native CI jobs. No Mac adapter change; native Mac execution and physical
+  gameplay still need validation. Windows merged source09f0b7fe passes32 combined
+  checks and the supported build; its complete45s ten-bot Disco240 run averages
+  232.374342FPS with fresh guest frames and near-unity game/wall time. This is
+  bounded Windows evidence, not sustained240 or native Mac gameplay; see STATUS.
+
+- **Script and presentation-event coverage (2026-10-24, PR #328):** Actual US
+  script dispatch now covers every cadence phase through240 at normal/quarter
+  speed, retaining original60 and the legacy missed-handoff negative control.
+  Weapon sounds, camera effects and Arcade countdown fixtures add180/240 with
+  unchanged assertions/tolerances. All four pass on Windows with verified
+  private data. No runtime/adapter changes; existing dual-host registration
+  remains, but private-XBE skips are not native Mac execution. Rendered opening,
+  audible output and physical gameplay remain pending; see STATUS.
+
+- **Acknowledgement-worker diagnostics (2026-10-24, PR #328):** Shared
+  `zz-pushbuffer-diagnostic-policy.patch` caches the survey launch flag alongside
+  the existing executor flag and avoids guest-offset lookup when disabled.
+  No OS adapter or acknowledgement/clock policy changes. Eight Windows checks
+  compile the complete scanner, preserving independent scan/execute modes and
+  reports, with eager-lookup and executor-disabled negative controls. Both native
+  CI jobs register the new suite; Mac execution/gameplay remain pending. STATUS
+  records the separate, unshipped idle-delay diagnostic and performance limits.
+  The Windows pushbuffer candidate also completes a ten-bot Temple240 route:
+  229.667039FPS over45s, fresh guest frames and near-unity game/wall time. This
+  is bounded Windows gameplay evidence, not sustained240 or native Mac gameplay.
+  Merged head74e15bec passes Windows/Mac runtime and patch-transition CI. Its
+  Windows Venice route records239.978339FPS over50s, but onlyfive scene samples
+  fail the generic ten-observation crowd-coverage gate; STATUS retains this limit.
+  A separate guest-only PC probe confirms the emulated busy-poll location with
+  sparse hits, without proving it is the dominant cost. Neither observation
+  establishes native Mac gameplay or supports changing acknowledgement policy.
+
+- **Aim, physics and effects coverage through 240 (2026-10-24, PR #328):**
+  Nine more original-US fixtures now include 180/240: player/NPC aim, coupled
+  projectile motion, beam geometry, camera tracks, player fall/force and object
+  rocking/bounce. All nine pass on Windows, retaining behavioral tolerances.
+  Mounted-mouse packet/cadence coverage also includes 180/240; its 11-test host
+  suite passes, including legacy-clock/consumption negative controls. These
+  are shared test changes only, with no runtime/adapter changes. Public CI
+  skips original-US cases without private data; updated native Mac host tests
+  and physical gameplay remain awaiting validation. STATUS records scope.
+  The same batch adds 180/240 to original light, network correction, screen/strip
+  distortion, escort recovery and menu fixtures, plus portable mouse cadence
+  and coupled-surface math: all eight selected tests pass on Windows. Surface
+  math is not live water acceptance; the same Mac/private-data limits apply.
+
+- **Additional mechanics fixtures through 240 (2026-10-24, PR #328):** Six
+  original-US NPC, velocity, projectile, beam, camera and HUD fixtures now run
+  at 180/240 as well as existing rates, retaining assertions and tolerances.
+  All six pass on Windows with verified private XBE data. No runtime/adapter
+  changes are needed. The suite is already registered on both CI hosts, but
+  private-XBE skips do not validate these routines on Mac. Physical Mac and
+  broader gameplay acceptance remain pending; see the latest STATUS record.
 
 - **Vehicle coverage through 240 (2026-10-24, PR #325):** Existing shared
   vehicle/contact fixtures now cover 180/240 alongside Original60 and 120/144.

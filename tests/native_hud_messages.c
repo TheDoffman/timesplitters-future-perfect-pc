@@ -45,8 +45,8 @@ int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned mode=0;mode<4;mode++) {
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         if(mode==0 && slow!=1)continue;
         unsigned fps=rates[mode];g_tsfp_native_timing_active=mode!=0;
         memset(memory,0,0x800000);sounds=0;playing=0;
@@ -97,7 +97,7 @@ int main(void)
     /* Scotland uses type 6 with a five-second lifetime. Exercise that queue
      * policy with a representative twenty-second delay; live scripts choose
      * their delay independently. */
-    for(unsigned mode=0;mode<4;mode++) {
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode];g_tsfp_native_timing_active=mode!=0;
         memset(memory,0,0x800000);sounds=0;
         /* ORIGINAL_CONSTANTS */
@@ -132,6 +132,6 @@ int main(void)
     assert(pc_native_global_load(0x14a5ceu,0x4e7944,0)==0);
     g_tsfp_native_timing_active=0;
     assert(pc_native_global_load(0x14a5cdu,0x4e7944,0)==0);
-    puts("PASS: original HUD message clocks, queueing, sound and pause at 60/120/144");
+    puts("PASS: original HUD message clocks, queueing, sound and pause at 60/120/144/180/240");
     free(memory);return 0;
 }

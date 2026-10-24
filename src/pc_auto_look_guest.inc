@@ -3,7 +3,7 @@
  * Override only that read, never the stored profile/controller preference. */
 #include "pc_controls.h"
 #include "pc_prompts.h"
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 
 static uintptr_t pc_auto_look_memory(uint32_t address,size_t bytes,int writing)
 {
@@ -20,7 +20,8 @@ static uintptr_t pc_auto_look_memory_in_regions(PcGuestRegion regions[2],
     /* Keep the current-player global's map: settings may return to that map
        after the player record in high guest RAM. The second slot is bounded. */
     PcGuestRegion *region=regions[0].size?&regions[1]:&regions[0];
-    return pc_guest_memory_in_region(region,p,bytes,writing)?p:0;
+    *region=pc_guest_query_span(p,bytes);
+    return bytes<=pc_guest_region_remaining(region,p,writing)?p:0;
 }
 static uint32_t pc_auto_look_word(uintptr_t address)
 {

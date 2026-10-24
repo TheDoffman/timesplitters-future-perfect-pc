@@ -99,7 +99,7 @@ static void check_sound(unsigned flags)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,60,120,144},flags[]={0,0x40,0x20,0x200,0x260,0x220};
+    const unsigned rates[]={60,60,120,144,180,240},flags[]={0,0x40,0x20,0x200,0x260,0x220};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
@@ -108,7 +108,7 @@ int main(void)
     for(unsigned tilt=0;tilt<2;tilt++) for(unsigned kind=0;kind<6;kind++) {
         Sound reference[128];unsigned reference_sounds=0,reference_tick=0;
         float reference_velocity=0;
-        for(unsigned slow=1;slow<=4;slow*=4) for(unsigned rate=0;rate<4;rate++) {
+        for(unsigned slow=1;slow<=4;slow*=4) for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             unsigned fps=rates[rate],frames=0;
             prepare(flags[kind],tilt);g_tsfp_native_timing_active=rate!=0;
             while(MEM32(ENTITY+0x16c) && frames<fps*slow*20) {

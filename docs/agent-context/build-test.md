@@ -1,25 +1,30 @@
 # Build, run and validation map
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies pinned
-patches, checks wrapper fingerprints, regenerates, builds MSVC x64 and tests.
-Output: `build/windows/Release/futureperfect_recomp.exe`. Fix the first error;
-never bypass failures with generated-source edits.
-Mac: `tools/build-native-mac.py`; `--generate` for stale guest code, `--setup`
-for explicit setup. Output: `build/macos/futureperfect_recomp`. Renderer auto
-selects Vulkan on supported macOS26+, otherwise GL. `config/vulkan-sdk.json`
-pins the SDK; `tools/vulkan_sdk.py` and `BUILD.json` own driver provenance.
-Bounded isolated gameplay: `tools/testing_profile.py --play --seconds 120`
-(Windows), `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac).
-Use the host .venv Python. Root AGENTS owns asset, isolation and storage rules.
-Source checks, builds, menu startup and gameplay are separate evidence;
-unavailable hardware/private data remain explicit validation gaps.
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
+checks fingerprints, regenerates, builds and tests MSVC x64. Output:
+`build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
+Mac: `tools/build-native-mac.py` (`--generate` for stale code, `--setup` for setup).
+Output: `build/macos/futureperfect_recomp`. Auto selects Vulkan on macOS26+,
+otherwise GL. SDK pin: `config/vulkan-sdk.json`; driver provenance:
+`tools/vulkan_sdk.py` and `BUILD.json`.
+Isolated gameplay: `tools/testing_profile.py --play --seconds 120` (Windows),
+`tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
+Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
 Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
 on both CI hosts. `native_reload_input.c` additionally executes the local verified
 US input decoder, timing wrapper and reload consumer across pause-offset phases,
 60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
+
+`test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
+callback mutations. Fast results and finite fallback results are bit-exact;
+fallback arithmetic destinations allow quiet-NaN payload variation (also seen
+with fast entry disabled). Rejected inputs leave all bits/FP flags unchanged.
+Public fixtures/mutations run on both hosts; US-body tests need the private XBE.
+Camera/mothership/spawn/rigid fixtures include the shared helper.
 
 Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
 helper death and the portable ring; `test_native_crash.py` checks Darwin output.
@@ -28,49 +33,63 @@ runtime/launcher CI runs these on both hosts.
 
 ## Choose the cheapest relevant check
 
-`test_window_theme.py` checks actual menu drawing, command mnemonics, inserted texture rows and reordered items (#333).
+`test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
+presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
-Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
-code, fake devices, gain overrides, mute, live volume and voice parity.
+`test_window_theme.py`: menu drawing, mnemonics, inserted/reordered rows (#333).
 
-`test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
-SDL virtual input; physical pads and Mac gameplay require validation.
+`test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
+gain overrides, mute, live volume and voice parity.
 
-`test_native_demo_timing.py` covers schedule/read guards, mutations, original
-input/ABI, pause, EOF/cancel, catch-up, live presets and recorder reset/capacity.
-Variable60..240/steady110 check time and input edges.
-Missing XBE skips originals. Live/file/Mac playback and sub60 overload remain open.
+`test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
+physical pads/Mac gameplay remain unverified.
+
+`test_native_demo_timing.py`: guards, mutations, ABI, pause/EOF/cancel, catch-up;
+eight recording-phase and32native/Original60/resume cases through240. Missing
+XBE skips originals; live/file/Mac playback and sub60 remain open.
+
+`test_native_movie_file.py`: two XMV intros, Original60/native60..240 including144;
+exact decoded pictures/timestamps/PCM and duration. Controlled
+and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
+fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
 `test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
-checks refresh/stale copies (Mac GL/RHI, Windows RHI).
+checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
+the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
 diagnostics, budget, idle callback and bypass-removal mutation.
 
-180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
-checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
-procedural interval switches and demo round trips. These contracts do not prove sustained240 FPS. Legacy144 migration is tested.
+180/240 coverage includes settings, clocks, input, animation, weapons, networking,
+movies, demos and legacy144 migration, not sustained FPS. `test_native_timing.py`
+covers original-US movement/aim/physics/projectiles, effects/menus/cameras/lights,
+network/recovery/HUD, weapon sounds and countdowns through240. Script events cover
+every cadence phase at normal/quarter speed, retaining the legacy missed-event
+control. Keep references/tolerances and verify rate coverage when extending.
+Mouse cadence/surface math cover240; math is not live water. Mounted/terminal
+tests check permissions, bounded queries, 125..8000Hz input and clock/cache/consume
+mutations. Private-XBE skips do not establish Mac execution of lifted routines.
 
-`test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
-counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
-Mac does not execute Windows stack walking.
-The runner records `--profile-depth 1..32` (default8), `--texture-mode`
-(`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
+`test_sample_chains.py`: depth/saturation/counts and mutation controls on both
+hosts; Mac does not execute Windows stack walking.
+Runner timing includes16ms test-input polling; normal play does not. Its
+`replay_tick` file opens are harness overhead.
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
-60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
+60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
-Windows Online host/guest pair with Test Lab saves and loopback discovery.
-It verifies supported XBE/build identities and recycles disposable partitions.
-Asynchronous ReadProcessMemory observations measure update holds, not rendered
-frames or Internet/physical-input latency. Five local benchmark fixture
-manifests are checked with the normal validator; the canonical fixture stays intact.
+Windows `tools/test-online-bot-motion.py --tag <name> --seconds 60` uses isolated
+Test Lab host/guest saves and loopback. It verifies XBE/build identities,
+recycles partitions and validates five fixtures without changing the canonical
+one. Asynchronous position reads measure holds, not frames or input/Internet latency.
 
-Release notes: dual-host `test_launcher_release.py` checks paginated stable
-history, first-release notes, mixed PR inclusion, exclusions, merge ranges,
-renames and incomplete-history/file-list refusal. `test_publish_release.py`
-checks first-Stable alpha bootstrap, later stable baselines and ancestry.
-These offline publisher tests need no game or launcher rebuild.
+Dual-host `test_launcher_release.py` / `test_publish_release.py` cover
+Stable/alpha baselines, pagination/completeness, notes and scope/merge/rename/
+ancestry. Offline publisher tests need no game/UI rebuild.
+
+`test_auto_look.py`: real records/permission expiry. `test_decal_projection.py`:
+four-page batches, larger fallback, permissions and mutation controls.
+`test_discord_presence.py`: production read bounds/copies, fresh permissions,
+read-only/noaccess, large/cold fallback and retained/full-query mutations.
 
 ### Native vehicle integration and diagnostic checks
 
@@ -146,30 +165,17 @@ not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
 
-Texture timing records travel through the bounded queue. The worker stamps its
-own record; CSV initialization/completion stay on the renderer thread. Test stage
-order with streaming on/off. Total duration includes queue/frame waits; read spans
-are worker work, image/view spans renderer work. Cancelled requests neither
-dereference their owner nor log on the worker.
-
-Texture-upload trace tests compile the real loader and collector through the
-existing both-host `tests/test_texture_runtime.py` registration. They verify
-disabled clock/file inactivity, failed output, bounded output, ordered stages,
-cached switches and missing/invalid/view-failure fallback. Use an isolated CSV
-path and compare raw monotonic timestamps with Present intervals for live
-diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
-clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
-can change frame timing. Actual native Mac gameplay remains a separate check.
-Do not attribute a whole slow frame to a sampled upload: intersect the actual
-attempt begin/end timestamps with each Present interval. The first live trace
-accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
-without attempts. Hashing/cached-call costs and trace output are outside these
-attempt spans; broader frame work remains open. STATUS retains the evidence.
-The follow-up collector starts before source-key hashing and emits `cached`
-rows as well. Loader tests require nonzero ordered hash boundaries and zero
-read/resource stages on all twenty cached calls while retaining existing load
-and fallback counts. The 8,192-row bound still applies; verify coverage before
-using a live window. The earlier `2230901` data retains its narrower scope.
+Texture traces use a bounded queue: workers stamp reads; the renderer owns CSV
+and image/view stages. Total spans include waits. Cancelled requests neither
+dereference owners nor log on workers. Both-host `test_texture_runtime.py` tests
+streaming stage order, disabled clocks/files, output failure/bounds, cached
+switches and load/view fallbacks. Current rows include key hashing and cached
+calls; cached rows must have zero read/resource stages. Verify the 8,192-row
+coverage before analysis. Earlier `2230901` traces excluded hashing/cache work.
+Use isolated CSVs and intersect attempt timestamps with Present intervals;
+QPC/CLOCK_MONOTONIC share the host presentation clock domain. These spans measure
+CPU work/waits, not GPU completion, and tracing perturbs timing. STATUS records
+partial slow-frame attribution; native Mac gameplay remains separate acceptance.
 
 `stability_transitions_game.py --scenario crowd-venice --native-fps 144
 --display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
@@ -212,20 +218,16 @@ suite compiles/runs this fixture with the actual compatibility layer on Mac; Win
 regenerate/build, then test the previously failing match-loading route before
 measuring performance.
 
-`tests/test_text_read_scope.py` checks query reuse for ascending and descending
-addresses within the same OS region, both mapping boundaries, nested layouts
-and expiry between operations. `tests/pc_prompts.c` retains real Windows
-protection/guard-page and scratch-write tests in the supported build. A passing
-query-count fixture is not an FPS measurement; compare bounded gameplay runs
-with captures disabled and identical resolution, FOV and bot settings.
-The same Python suite extracts the production outlined-text wrapper and tests
-both host feature defines, all five draws, guest ABI, invalidation and fresh
-scratch writes. Removing the outer scope is a required failing mutation.
-The panel variant extracts `pc_panel_text_original` and `sub_0012E3F0` too.
-It models the panel's three measurement/fit calls and two outlined labels,
-reducing same-region read queries from five to one while retaining all three
-measurements, ten draws and thirteen fresh scratch-write checks. The mutation
-removes only the panel scope; outlined scopes remain. Placement callbacks
+`test_text_read_scope.py` checks ascending/descending reuse, boundaries, minimum
+spans, nesting and expiry. `guest_span.c` covers real page/cross-page reads;
+`pc_prompts.c` checks crossing strings/argument frames, guard/protection changes
+and scratch-write ABI in Windows Build. Compare capture-free gameplay with
+matched resolution/FOV/bots; query counts alone do not measure FPS.
+The suite extracts outlined-text wrappers for both host defines, checking five
+draws, ABI, invalidation and fresh scratch writes; removing the scope must fail.
+Panel coverage extracts `pc_panel_text_original`/`sub_0012E3F0`: three fit calls,
+two outlined labels, one read query, ten draws and thirteen scratch-write checks.
+Its mutation removes only the panel scope, retaining outlined scopes. Placement callbacks
 assert they run outside the reused mapping lifetime. This is a boundary/ABI
 fixture, not execution of the full original panel or a rendered comparison.
 The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
@@ -241,7 +243,11 @@ queries and one same-region camera-source query, including split stack output.
 Retained-source-snapshot mutation must fail. Local `projection_output.c` lifts
 checksum-verified US151CF0, checks 16 writes/math/bounds/stack over 48 lenses;
 missing-store mutation fails. Private-XBE cases skip CI. `display_memory.c`
-tests real host read-only/no-access/boundary/overflow protection (also Win guard).
+tests real host protection/bounds, multi-page spans and the production display
+adapter; retaining its snapshot across calls must fail. Win guard is included.
+`guest_span.c` checks private/mapped pages, permission changes, cold/cross-page
+fallback and released mappings. Windows additionally checks failed page queries
+and disabled-fast-path/write-permission/page-boundary negative controls.
 Registered projection/cutscene suites cover both hosts; query savings alone
 do not establish FPS improvement.
 
@@ -279,9 +285,8 @@ already registered issue-form and launcher workflows; native Mac builds consume
 the same `DiagnosticIssueDraft.cs` URL policy.
 The mocked version-refresh PR creation check also verifies that the generated
 description preserves Ideas routing instead of referring to a removed form.
-The v1.2.23 release bump changes only shared version metadata; existing launcher
-release-policy, compatibility and both-host package checks remain the acceptance
-route. The optional-pack policy no longer hydrates LFS for version-only changes. A version bump alone is not evidence of a published update.
+Version-only bumps use launcher release-policy, compatibility and both-host
+package checks without LFS hydration. They do not prove publication.
 
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;
@@ -395,18 +400,19 @@ interactive launchers or persistent user settings.
 
 ## Bounded Arcade weapon-set route
 
-On Windows, `tests/stability_transitions_game.py --run-name issue105 --scenario
-weapon-set` reuses the isolated Test Lab runner, visits Arcade/Deathmatch/Vietnam,
-opens weapon set, changes selection and backs out, then exits in about 100 seconds.
-Review its named captures to confirm screen identity. `weapon_set_metrics` checks
-settled five-second guest-swap windows against 50 FPS, saving JSON results.
-The complete repair passes this unchanged threshold on Windows; partial cache
-variants failed it. Counters measure guest swaps, not GPU completion or scanout.
-`tests/test_text_read_scope.py` exercises query reduction, nesting, boundaries,
-scope invalidation and actual prompt-hook ABI/fallbacks. `tests/test_frame_clock.py`
-extracts the real Arm body for cheap/late/no-signal pacing contracts. Both run in
-runtime CI. Mac runtime checks remain
-unavailable on this Windows host.
+Windows `tests/stability_transitions_game.py --run-name issue105 --scenario
+weapon-set` uses isolated Test Lab saves and visits Vietnam's Arcade weapon-set
+menu. Captures identify screens; `weapon_set_metrics` checks settled five-second
+guest-swap windows against 50 FPS. The repair passes; partial caches failed.
+Counters do not measure GPU completion or scanout.
+`test_text_read_scope.py` checks query reduction, nesting, boundaries, invalidation
+and prompt-hook ABI/fallbacks. `test_frame_clock.py` extracts the Arm body for
+cheap/late/no-signal pacing checks. Both run in runtime CI.
+`test_shader_source_lookup.py` checks fresh shader contents and avoided hashing.
+`test_texel_sample_lanes.py` checks scalar checksum/read-footprint parity across
+lengths, strides and unaligned sources. Both extract production code, require
+negative controls on both CI hosts; neither proves rendered parity. Sample-load
+instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
 
@@ -499,9 +505,10 @@ handoff and untouched player angles. Old-clock/batch mutations must fail.
 These controlled-field tests do not certify live turret rendering/input.
 Consult STATUS for current build hashes, not historical candidate paths.
 `mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
-one query for aiming, read-only FOV maps, expiry, terminal routing and bounds.
-Persistent/uncached mutations fail in mounted pytest/CI on both hosts; mocked
-locks/events are not physical-host validation. `auto_look_region.c` similarly
+one query for either address order, forward page spans, split/read-only/inaccessible
+FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered
+mutations must fail. `camera_region_host.c` validates real OS protection changes
+on Windows/macOS. Mocked locks/events are not physical input. `auto_look_region.c`
 checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
 expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
 `tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
@@ -958,11 +965,11 @@ metadata, finite values and both states within 32 float epsilons; original byte
 endpoints remain exact. A missing capture skips; an existing runtime capture
 without its sidecar fails. Per-sample creation/readback precludes speed claims.
 
-`--scenario surface-native-switch --native-fps 144 --native-surfaces
+`--scenario surface-native-switch --native-fps 240
 --trace-surface-images --trace-surface-switches --seconds 230` runs the committed
-`scotland_switch` route through Video Options (before Keyboard and Mouse), then
-requires 90 images each at 144/120/Original60/144 using the strict cycle validator.
-The last segment may retain its initial image until its first authored boundary.
-`native_surface_render_guest.c` also checks resuming between ticks, local time
-mismatch and constructor cleanup; cache tests distinguish suspend/reuse without
-allocations from full scene destruction. Image capture is not switch-latency proof.
+`scotland_switch` Video Options route with default water policy. It requires
+90 images each at240/180/Original60/120. Historical144 cycles require explicit
+expected rates in `validate_switch_cycle`; partial/misordered cycles still fail.
+After re-enabling, the image may hold until the first authored tick. Guest/cache
+tests cover between-tick resumption, time mismatch, constructor cleanup and
+suspend/reuse versus destruction. Images do not measure switch latency.

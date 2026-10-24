@@ -688,7 +688,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
-                           .replace('/* GENERATED_ROUTINES */',code))
+                           .replace('/* GENERATED_ROUTINES */',
+                                    (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
+                                     if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     if harness_name=='native_escort_recovery.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
@@ -708,11 +710,19 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_escort_recovery.c':print(output)
+    if harness_name=='native_script_events.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('script_events ')]
+        assert len(rows)==10,output
+        assert {(int(r['fps']),int(r['slow'])) for r in rows}=={
+            (fps,slow) for fps in (60,120,144,180,240) for slow in (1,4)},output
+        print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('coupled_projectile ')]
-        assert len(rows)==16,output
+        assert len(rows)==24,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for homing in ('0','1'):
             reference=next(r for r in rows if r['native']=='0' and r['homing']==homing)
             for r in rows:
@@ -728,7 +738,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
-        assert len(rows)==33,output
+        assert len(rows)==49,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for mode in range(3):
             for slow in (1,4):
                 base=next(r for r in rows if int(r['mode'])==mode and int(r['slow'])==slow and r['fps']=='60' and r['opened']=='0' and r['rare']=='0')
@@ -750,7 +761,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('rocking_audit ')]
-        assert len(rows)==8,output
+        assert len(rows)==12,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         if any(int(r['frozen']) for r in rows if r['native']=='1'):
             raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':

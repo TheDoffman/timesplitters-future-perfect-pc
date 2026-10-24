@@ -1,6 +1,6 @@
 #ifndef TSFP_PC_TERMINAL_H
 #define TSFP_PC_TERMINAL_H
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 #include "pc_input.h"
 #include <math.h>
 
@@ -10,7 +10,7 @@
 static inline uintptr_t pc_terminal_read(uint32_t address,ptrdiff_t offset,size_t size,PcGuestRegion *region)
 {
     uintptr_t p=(uintptr_t)address+offset;
-    return address && pc_guest_memory_in_region(region,p,size,0)?p:0;
+    return address && pc_guest_memory_in_span(region,p,size,0)?p:0;
 }
 
 /* -1: ordinary camera; 0/1: terminal handled without/with pointer movement.
@@ -35,7 +35,7 @@ static inline int pc_terminal_mouse_in_region(PcInput *input,uint64_t now,float 
     entity=pc_terminal_read(*(const uint32_t*)slot,offset,0x80,region);
     if(!entity)return 0;
     t=pc_terminal_read(*(const uint32_t*)(entity+0x7c),offset,0x60,region);
-    if(!t || !pc_guest_memory_in_region(region,t,0x60,1) ||
+    if(!t || !pc_guest_memory_in_span(region,t,0x60,1) ||
        *(const uint32_t*)(t+0x14)!=player || *(const uint32_t*)(t+0x58))return 0;
     descriptor=pc_terminal_read(*(const uint32_t*)(t+0x30),offset,0x18,region);
     ticks=pc_terminal_read(native_timing?0x004E794C:0x004E7944,offset,4,region);

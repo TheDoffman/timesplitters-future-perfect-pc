@@ -87,8 +87,8 @@ int main(int argc,char **argv)
 {
     legacy=argc>1?(!strcmp(argv[1],"legacy-clock")?1:2):0;setbuf(stdout,NULL);
     guest=calloc(1,0x800000);CHECK(guest);offset=(ptrdiff_t)guest;
-    const unsigned rates[]={60,120,144},packets[]={125,1000,8000};
-    for(unsigned r=0;r<3;r++)for(unsigned p=0;p<3;p++)for(unsigned slow=1;slow<=4;slow*=4)
+    const unsigned rates[]={60,120,144,180,240},packets[]={125,1000,8000};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)for(unsigned p=0;p<3;p++)for(unsigned slow=1;slow<=4;slow*=4)
         for(int jitter=0;jitter<2;jitter++)cadence(rates[r],packets[p],slow,jitter);
     gates();free(guest);puts("PASS: mounted mouse routing at native cadence, pause and handoff");return 0;
 }

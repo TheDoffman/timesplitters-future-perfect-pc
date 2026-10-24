@@ -6,6 +6,86 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current Temple crowd coverage (2026-10-24)
+
+The925f9f72 Windows binary completes separate ten-bot Temple sessions at
+Original60/native180/240. Complete45-second host-clock windows measure
+60.00054/179.99977/239.91279FPS; minimum one-second rates are60/180/236,
+and p99 intervals17.145/6.038/4.849ms. All sampled checkpoints remain active
+and foreground, guest frame IDs advance, and game/wall ratios stay within
+0.02% of unity. Clean windows exclude captures, tracing, CPU profiling and
+concurrent local builds/tests; automated input polling remains overhead.
+Signed profiles and the canonical fixture are preserved. A separate desktop
+capture verifies Temple scene/HUD/weapon/effect appearance in sampled combat.
+This broadens current crowded-map coverage; it does not prove simultaneous
+visibility of all bots, locked240, physical latency or full-game/Mac acceptance.
+See [STATUS](../STATUS.md) for exact binary, settings, traces and limits.
+
+## Current diagnostic144 crowded-match check (2026-10-24)
+
+The ed07ee3d Windows build completes the current ten-bot Disco route with
+143.999013FPS across45seconds, minimum one/five-second rates144, p997.372ms
+and worst8.241ms. All6,479 guest IDs advance;19foreground active checkpoints
+retain game/wall1.0002459. No captures, CPU profiler or per-update trace;
+automated input polling remains. This current-build result supports the
+original144FPS crowd target in that sampled match, not all maps or sustained240.
+Diagnostic144 remains outside the four player-facing presets. See STATUS for
+provenance and limits. No runtime change was justified by the trace-hook
+microbenchmark examined alongside this run.
+
+## Weapon-menu repair preserved at the current presets (2026-10-24)
+
+Issue#105's prior fixed60 repair now has current-build Original60/native240
+coverage on e9195841/ed07ee3d. Reviewed captures show entering the Vietnam Arcade
+weapon list, selecting its third slot with the correct shotgun preview, and
+backing out. Separate capture-free windows average59.999–60.000 and
+239.999–240.016FPS with consecutive guest-frame IDs and no interpolation.
+Native p99 stays below4.82ms in the three complete five-second menu windows.
+The recorder cap excludes the native back-out window; only its separate swap
+log reports240.0FPS. All four routes exit cleanly with profiles preserved.
+This verifies that specific menu regression on Windows, not combat pacing,
+full animation/texture fidelity or Mac gameplay. Input automation remains
+active; see [STATUS](../STATUS.md) for capture overhead, timing and host limits.
+
+## Expanded presets and original mechanics (2026-10-24)
+
+Player-facing choices are exactly Original60 and native120/180/240 Beta;
+native60/144 remain diagnostic comparisons. Six original-US fixtures extend
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD clocks to 180/240 without relaxing assertions/tolerances. All six pass
+with verified private XBE data on Windows. Public CI skips absent private data;
+native Mac execution and broader gameplay remain unverified.
+
+The follow-up adds nine original-US fixtures at 180/240: player/NPC aiming,
+coupled homing projectiles, beam geometry, camera tracks, falling/force regions
+and rocking/bouncing objects. All nine pass with existing tolerances, preserving
+their pause, lifecycle, damage/event and original-reference checks. Mounted
+mouse tests also cover the new rates with 125/1000/8000 Hz packets, jitter and
+legacy clock/consumption controls; the host suite passes all 11 tests. Controlled
+targets/collisions/effect spies and packet injection are bounded evidence, not
+full live combat, rendered-pose or physical input-latency acceptance.
+Light decisions, network correction, screen/strip distortion, escort recovery
+and menu motion also pass their original-US fixtures at 180/240. Portable
+mouse-cadence and coupled-surface math checks pass; the latter does not validate
+visible water integration. Existing tolerances remain unchanged throughout.
+
+Script event delivery now covers every phase of the 60/120/144/180/240 cadence
+at normal and quarter speed. The actual handoff dispatcher grants the weapon
+and eight rounds exactly once; the disabled native path still reproduces missed
+events on fractional phases. Original60, pause/resume, timer globals and ABI
+checks remain. Original weapon sounds, camera effects and Arcade countdowns
+also pass at180/240 with their existing timer, sound-count, collision/decay and
+input-release assertions. These four original-code tests pass on Windows with
+verified private data. They are not rendered opening-sequence or audible-output
+acceptance, and their public CI skips do not validate Mac gameplay.
+
+The current `4e16421` executable's complete ten-bot Disco windows measure
+60.000418, 119.933859 and 167.835127 FPS at Original60/120/180. Two preceding
+240 windows on that same executable measure 227.035 and 233.604. Fresh guest
+IDs and near-unity game/wall ratios support sampled cadence/speed, not locked
+180/240 or full-game acceptance. See [STATUS](../STATUS.md) for windows,
+provenance, tails, nondeterministic workload and physical-display limitations.
+
 ## Crowded multiplayer preset coverage (2026-10-22)
 
 PR #295 (`252e72e`, implementation head `4a40569`) reduces repeated memory
@@ -25,7 +105,9 @@ with their distinct scope in [STATUS](../STATUS.md#2026-10-22--crowded-multiplay
 All selected Windows/macOS CI checks pass for that implementation head;
 native Mac gameplay, online human matches, remaining animation/physics audits,
 texture-fluidity acceptance and representative full-game coverage remain open.
-The earlier live 144-to-60 handoff gap also remains a separate pacing target.
+The earlier live 144-to-60 handoff gap was subsequently repaired; see
+[the handoff evidence](#native-start-return-to-original-60-2026-10-22).
+That bounded result does not establish every rate/scene transition.
 
 ## Fresh analogue input at native cadence (2026-10-21)
 

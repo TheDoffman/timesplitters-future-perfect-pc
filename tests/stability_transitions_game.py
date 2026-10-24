@@ -90,8 +90,8 @@ def main():
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
-    if args.scenario=='surface-native-switch' and not (args.native_fps==144 and args.native_surfaces and args.trace_surface_images and args.trace_surface_switches):
-        parser.error('surface-native-switch requires native144, native-surfaces and both surface trace flags')
+    if args.scenario=='surface-native-switch' and not (args.native_fps==240 and args.native_surfaces is not False and args.trace_surface_images and args.trace_surface_switches):
+        parser.error('surface-native-switch requires native240, default/enabled native water and both surface trace flags')
     if args.native_surfaces and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('--native-surfaces cannot combine with older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
@@ -408,6 +408,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        input_transport='startup replay plus polled state file',input_poll_ms=16,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
@@ -529,7 +530,7 @@ def main():
         assert len(creations)==1 and creations[0]<int(rows[0]['frame']),creations
         results['owner_creations']=creations
         (run/'surface-results.json').write_text(json.dumps(results,indent=2)+'\n')
-        print('PASS: complete native144/native120/Original60/native144 image cycle',flush=True)
+        print('PASS: complete native240/native180/Original60/native120 image cycle',flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

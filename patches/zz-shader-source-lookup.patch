@@ -1,0 +1,53 @@
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -857,6 +857,7 @@
+ #define SLOT_PROGRAM_CACHE 96
+ 
+ typedef struct SlotProgram {
++    uint32_t source; /* lookup hint only; current bytes must still match */
+     uint32_t hash;
+     int      count;
+     DWORD    host;
+@@ -886,6 +887,23 @@
+             host_vsh_same_microcode(g_slot_programs[i].host, microcode, count))
+             return i;
+     return -1;
++}
++
++/* Avoid hashing unchanged programs at their usual source address. A guest
++ * address is only a hint: compare all current microcode against the immutable
++ * host copy on every hit, including reused or modified guest allocations. */
++static int slot_program_lookup(uint32_t source, int count,
++                               const DWORD *microcode, uint32_t *hash)
++{
++    int i;
++    for (i = 0; i < g_slot_program_count; i++)
++        if (g_slot_programs[i].source == source && g_slot_programs[i].count == count &&
++            host_vsh_same_microcode(g_slot_programs[i].host, microcode, count))
++            return i;
++    *hash = microcode_hash(microcode, count);
++    i = slot_program_find(*hash, count, microcode);
++    if (i >= 0) g_slot_programs[i].source = source;
++    return i;
+ }
+ 
+ static int slot_program_cached(DWORD host)
+@@ -2965,8 +2983,8 @@
+         HRESULT hr = E_FAIL;
+ 
+         if (valid) {
+-            uint32_t hash = microcode_hash(microcode, count);
+-            int i = slot_program_find(hash, count, microcode);
++            uint32_t hash = 0;
++            int i = slot_program_lookup(function, count, microcode, &hash);
+ 
+             if (i >= 0) {
+                 host = g_slot_programs[i].host;
+@@ -2976,6 +2994,7 @@
+                 hr = host_vsh_create_shader(microcode, count, &host);
+                 if (SUCCEEDED(hr) && g_slot_program_count < SLOT_PROGRAM_CACHE) {
+                     SlotProgram *sp = &g_slot_programs[g_slot_program_count++];
++                    sp->source = function;
+                     sp->hash = hash;
+                     sp->count = count;
+                     sp->host = host;
