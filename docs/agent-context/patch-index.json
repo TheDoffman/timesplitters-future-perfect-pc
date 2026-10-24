@@ -226,6 +226,13 @@
       ]
     },
     {
+      "name": "zz-shader-source-lookup.patch",
+      "sha256": "d643a9d35f288f6ffb82db34c654a5d798afc533277d11ae65c6b66234fcf0e1",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
       "name": "zzz-mac-renderer.patch",
       "sha256": "e0aeb83038f92d837f4cf6d010f5eca7d0f608c7f9cef0dd1f44920022dbee74",
       "targets": [

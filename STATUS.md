@@ -1,3 +1,90 @@
+## 2026-10-24 — Jittered crowd profile and shader source lookup
+
+On Windows 11 x64 / RTX 4070 SUPER / D3D11, the unchanged 74e15bec executable
+(`c7ae83a8...5075d206`) completes `crowd-jitter-flush-pc`, a bounded ten-bot
+Disco240 route using Classic textures, 3440x1440 render settings and FOV73
+(actual foreground client 1920x1060). Fixture signatures remain unchanged.
+The external guest-only probe now uses a high-resolution timer with 3–10ms
+jitter, records all PCs, and measures GetThreadTimes deltas. In 30.003030s it
+collects 4,449 samples, with zero context failures/already-suspended observations.
+Intervals range 3.0756–10.586ms, median6.7148ms, p95 9.9355ms. Guest CPU time
+is22.890625s (1.984375 kernel,20.906250 user); suspend/context/resume API spans
+sum0.090668s, maximum0.6078ms. The worker is never suspended by this probe.
+
+Only15 samples land in the emulated busy-poll function. This does not support
+changing acknowledgement ordering based on the earlier all-thread profile.
+The node renderer has180 leaf samples; shader-program loading has109, of which
+102 lie in the compiled FNV byte-hash loop (102 samples at offsets0x197/199/19f).
+These are wall-time PC snapshots, not attributed CPU percentages; different
+bot outcomes and observer overhead prohibit causal FPS comparisons. Some DLL
+symbols are only nearest exported names. Local PDBs are hash-matched to the
+executable, and sampled instruction boundaries identify the hash multiply.
+Evidence: the named run's provenance, `flush-pc.json`, `jitter-summary.json`
+and retained disassembly. No Present pacing claim comes from this probe.
+
+`zz-shader-source-lookup.patch` adds source-address hints to the existing shared
+shader cache, still comparing the full current microcode against immutable host
+code on every hinted hit. Mismatched bytes/counts fall back to content hashing,
+collision checking and original creation. Original guest calls, slot rebinding,
+declarations and lifetimes remain intact. Three Windows checks pass, including
+negative controls for stale address reuse and eager hashing; 21 context/backlog
+checks pass. Both native CI jobs register the new fixture. Supported MSVC14.44
+Windows Build -SkipTextures and built-in checks pass; candidate SHA256 is
+`813edab01e5be64cbb4b5315a9a1f9c871f7e914ea78da1831381aac25fea128`.
+The candidate's `crowd-shader-source-pc` probe captures4,445 samples in30.002293s
+with zero context failures: onlyseven shader-load samples, none in its hash
+loop, versus109/102 previously. CPU time is20.812500s, API spans0.091947s,
+maximum0.5286ms. This supports removal of the observed repeated hashing;
+bot outcomes differ, so neither CPU-time nor total FPS improvement is causal.
+Native Mac execution and broad visual acceptance remain unverified. This does
+not claim sustained240 in crowded maps.
+
+## 2026-10-24 — Merged-build Venice pacing and instruction-level wait probe
+
+Runtime/PR head74e15bec has passing Windows and Mac CI, including native runtime
+and patch-transition/upgrade checks. The supported merged executable remains
+`c7ae83a8e976a1d396f27ed9b24ccd1c112600a28fa5c788e93fb3035075d206`.
+No production code changes accompany these observations.
+
+`crowd-merged-venice-240` completes with ten configured bots and unchanged valid
+fixture signatures. Its complete50s spawn+5..55 Present window has11,998 fresh
+guest intervals:239.978339FPS, lowest1s count239, lowest5s rate239.8, p99 4.934ms,
+worst8.061ms, no intervals above9ms and no interpolation. The sampled game/wall
+ratio is0.999791. Classic/3440x1440/FOV73 and foreground1920x1060 client are
+recorded; no CPU sampler, captures or update trace ran. However, Venice's route
+takes roughly10-second observations: onlyfive fall inside the window. The generic
+crowd checker correctly rejects its ten-observation coverage requirement. The
+independent complete-window Present statistics are retained with that failed
+coverage gate explicitly marked in `pacing-with-sparse-observations.json`.
+Do not report this as passing the generic crowd checker or infer continuous
+actor/scene coverage from sparse observations. It is also not a matched causal
+comparison with other maps, GPU-completion/scanout or physical-latency evidence.
+
+The matching crash-symbol archive contains the private PDB. After verifying its
+packaged executable hash against the running candidate, the local helper resolves
+`sub_003D6690` to RVA29191024 and obtains its726-byte range from the linked x64
+unwind table (the public symbol has sizezero). Disassembly identifies the emulated
+PFB busy poll at function offsets0x1f0..0x207. In `crowd-merged-flush-pc`, a bounded
+external sampler briefly suspends only the primary guest thread, never the
+acknowledgement worker, and makes no register or guest-memory writes. It captures
+1,926 samples in30.0096s, with no context failures or already-suspended observations.
+Exactly31 land in that function, all in the identified poll (offset counts:
+0x1f0=23,0x1f3=1,0x200=1,0x203=2,0x207=4). The summed suspend/context/resume API
+spans are0.092085s, maximum0.1684ms; these include API overhead, not an exact CPU
+pause measurement. The route completes and preserves fixture signatures.
+
+This confirms the sampled instruction location but does not reproduce the large
+share suggested by the earlier all-thread profiler. The external sample cadence
+is about64Hz despite a requested10ms sleep; fixed-period aliasing, different
+observer overhead and bot outcomes limit comparisons. The probe has no per-thread
+CPU-time delta and does not classify addresses outside the target. Do not convert
+31/1926 into a CPU-time percentage or claim an acknowledgement fix. A future
+measurement needs jittered sampling and all-address/CPU-time accounting before
+altering acknowledgement order. This diagnostic is excluded from pacing claims.
+Evidence is under the named runs plus `logs/flush-native-bounds.json`,
+`logs/flush-native-code.txt` and `logs/merged-flush-pc-sampler.log`. Local helpers
+and symbols remain ignored. Both runs recycle their disposable partitions.
+
 ## 2026-10-24 — Temple240 gameplay and integration with main
 
 The pushbuffer-policy executable `5304a5d5185d84cdd8586542587c5465749c144c932391f70bf83163301850e7`

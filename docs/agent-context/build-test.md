@@ -380,18 +380,18 @@ interactive launchers or persistent user settings.
 
 ## Bounded Arcade weapon-set route
 
-On Windows, `tests/stability_transitions_game.py --run-name issue105 --scenario
-weapon-set` reuses the isolated Test Lab runner, visits Arcade/Deathmatch/Vietnam,
-opens weapon set, changes selection and backs out, then exits in about 100 seconds.
-Review its named captures to confirm screen identity. `weapon_set_metrics` checks
-settled five-second guest-swap windows against 50 FPS, saving JSON results.
-The complete repair passes this unchanged threshold on Windows; partial cache
-variants failed it. Counters measure guest swaps, not GPU completion or scanout.
-`tests/test_text_read_scope.py` exercises query reduction, nesting, boundaries,
-scope invalidation and actual prompt-hook ABI/fallbacks. `tests/test_frame_clock.py`
-extracts the real Arm body for cheap/late/no-signal pacing contracts. Both run in
-runtime CI. Mac runtime checks remain
-unavailable on this Windows host.
+Windows `tests/stability_transitions_game.py --run-name issue105 --scenario
+weapon-set` uses isolated Test Lab saves and visits Vietnam's Arcade weapon-set
+menu. Captures identify screens; `weapon_set_metrics` checks settled five-second
+guest-swap windows against 50 FPS. The repair passes; partial caches failed.
+Counters do not measure GPU completion or scanout.
+`test_text_read_scope.py` checks query reduction, nesting, boundaries, invalidation
+and prompt-hook ABI/fallbacks. `test_frame_clock.py` extracts the Arm body for
+cheap/late/no-signal pacing checks. Both run in runtime CI.
+`test_shader_source_lookup.py` compiles actual
+HLE cache code and checks changed/reused sources, lengths, relocation, collisions
+and avoided hashing. Stale-source and eager-hash mutations must fail. Both host
+CI jobs run it; the fixture does not validate rendered shader output.
 
 ## Compatibility repair controller
 

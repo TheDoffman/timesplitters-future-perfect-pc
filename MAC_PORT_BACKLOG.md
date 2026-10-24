@@ -3822,6 +3822,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Shader source lookup (2026-10-24, PR #328 follow-up):** The shared HLE cache
+  verifies full current microcode on source-address hints before bypassing its
+  hash. Changed bytes/counts and relocated sources retain the original fallback;
+  shader selection, guest calls and lifetime rules are unchanged. Three Windows
+  checks include stale-address and eager-hash negative controls, registered in
+  both native CI jobs. No Mac adapter change; native Mac execution and physical
+  gameplay still need validation. See STATUS for Windows build/live evidence.
+
 - **Script and presentation-event coverage (2026-10-24, PR #328):** Actual US
   script dispatch now covers every cadence phase through240 at normal/quarter
   speed, retaining original60 and the legacy missed-handoff negative control.
@@ -3842,6 +3850,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   The Windows pushbuffer candidate also completes a ten-bot Temple240 route:
   229.667039FPS over45s, fresh guest frames and near-unity game/wall time. This
   is bounded Windows gameplay evidence, not sustained240 or native Mac gameplay.
+  Merged head74e15bec passes Windows/Mac runtime and patch-transition CI. Its
+  Windows Venice route records239.978339FPS over50s, but onlyfive scene samples
+  fail the generic ten-observation crowd-coverage gate; STATUS retains this limit.
+  A separate guest-only PC probe confirms the emulated busy-poll location with
+  sparse hits, without proving it is the dominant cost. Neither observation
+  establishes native Mac gameplay or supports changing acknowledgement policy.
 
 - **Aim, physics and effects coverage through 240 (2026-10-24, PR #328):**
   Nine more original-US fixtures now include 180/240: player/NPC aim, coupled

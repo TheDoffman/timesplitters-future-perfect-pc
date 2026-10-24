@@ -35,6 +35,14 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-shader-source-lookup.patch` adds a guest source-address hint to the existing
+HLE slot-program cache. Every hinted hit still compares the full current
+microcode with the immutable host copy and requires the same instruction count.
+Misses use the original content hash, collision check and creation path; guest
+calls, selected-slot rebinding, declarations and host-program lifetime remain
+unchanged. Relocated identical code updates the hint. This avoids repeated byte
+hashing without treating guest addresses as immutable shader identities.
+
 `zz-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
 RECOMP_PB_SCAN and RECOMP_PB_EXEC once, on its first scan call. These are launch
 diagnostics; presence (even empty/"0") retains the original opt-in semantics.
