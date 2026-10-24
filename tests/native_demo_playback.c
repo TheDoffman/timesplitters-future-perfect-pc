@@ -12,6 +12,8 @@
 #define RECOMP_ITAIL(address) assert(!"Unexpected demo switch target")
 ptrdiff_t g_xbox_mem_offset;
 int g_tsfp_native_timing_active;
+#include "@TIMING@"
+PcNativeStep g_tsfp_native_step;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
@@ -85,6 +87,69 @@ static void setup(unsigned char *memory,unsigned channels,unsigned raw,unsigned 
     call(sub_00069E80);
     assert(seeds==1 && MEM32(0x6b98a4)==1 && MEM32(0x6b98a8)==channels);
     assert(MEM32(0x6b94c0)==0x10140 && MEM32(0x6b98ac)==0);
+}
+/* Execute the original writer, then the original initializer/reader on those
+ * bytes. A synthetic pre-filled stream alone misses zero-tick records emitted
+ * by the native writer. Half the recording is paused, while raw time advances.
+ * File IO and the full level simulation are outside this fixture. */
+static void record_roundtrips(unsigned char *memory)
+{
+    const unsigned rates[]={60,120,144};
+    for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned r=0;r<3;r++) for(unsigned p=0;p<3;p++) {
+        unsigned rate=rates[r], playback=rates[p];
+        setup(memory,channels,1,1);
+        g_tsfp_native_timing_active=rate!=60;
+        MEM32(0x6b98a4)=3;
+        PcNativeTiming clock={0};
+        pc_native_timing_step(&clock,0,72000000,rate,0);
+        unsigned level=0,raw_clock=0;
+        for(unsigned n=0;n<rate;n++) {
+            PcNativeStep step=pc_native_timing_step(&clock,
+                (n+1)*72000000LL/rate,72000000,rate,n>=rate/2);
+            g_tsfp_native_step=step;
+            MEM32(0x4e7940)=step.raw_ticks; MEM32(0x4e7944)=step.game_ticks;
+            MEMF(0x4e7948)=step.raw_delta; MEMF(0x4e794c)=step.game_delta;
+            MEM32(0x7de318)=level; raw_clock+=step.raw_ticks;
+            MEM32(0x7497b0)=raw_clock;
+            call(sub_000438B0);
+            level+=step.game_ticks;
+            /* Recording must not change live simulation time. */
+            assert(MEM32(0x4e7940)==step.raw_ticks && MEM32(0x4e7944)==step.game_ticks);
+            assert(MEMF(0x4e7948)==step.raw_delta && MEMF(0x4e794c)==step.game_delta);
+        }
+        unsigned bytes=MEM32(0x6b94c0)-0x10140, groups=bytes/(14*channels);
+        assert(bytes && bytes%(14*channels)==0 && level==30 && raw_clock==60);
+        for(unsigned c=0;c<channels;c++) {
+            unsigned raw=0,game=0;
+            for(unsigned n=0;n<groups;n++) {
+                unsigned packet=0x10140+(n*channels+c)*14;
+                raw+=MEM8(packet); game+=MEM8(packet+1);
+            }
+            assert(raw==60 && game==30); /* Check actual original writer bytes. */
+        }
+        MEM32(0x1000c)=bytes;
+        g_tsfp_native_timing_active=playback!=60;
+        call(sub_00069E80);
+        clock=(PcNativeTiming){0}; pc_native_timing_step(&clock,0,72000000,playback,0);
+        double raw_time=0,game_time=0,finish_time=0;
+        for(unsigned n=0;n<playback;n++) {
+            PcNativeStep step=pc_native_timing_step(&clock,
+                (n+1)*72000000LL/playback,72000000,playback,0);
+            g_tsfp_native_step=step;
+            MEM32(0x4e7940)=step.raw_ticks; MEM32(0x4e7944)=step.game_ticks;
+            MEMF(0x4e7948)=step.raw_delta; MEMF(0x4e794c)=step.game_delta;
+            call(sub_000438B0);
+            /* Exclude the following exit UI's raw timer from stream time. */
+            if(MEM32(0x6b98a4)==1) {
+                raw_time+=MEMF(0x4e7948)/60.; game_time+=MEMF(0x4e794c)/60.;
+            }
+            if(!finish_time && MEM32(0x6b94c0)-0x10140==bytes)
+                finish_time=(n+1.)/playback;
+        }
+        printf("ROUNDTRIP %u %u %u %.9f %.9f %.9f\n",
+            rate,playback,channels,raw_time,game_time,finish_time);
+    }
 }
 int main(void) {
     unsigned char *memory=calloc(1,0x800000); assert(memory);
@@ -175,6 +240,7 @@ int main(void) {
         if(mode==2) assert(restored==1 && released==channels && seeds==2);
         else assert(MEM32(0x6b98a4)==4 && MEM32(0x1000c)==0);
     }
+    record_roundtrips(memory);
     free(memory);
     puts("PASS: original initializer, input dispatcher, controller bytes/edges, ABI and EOF; timing checked separately");
     return 0;

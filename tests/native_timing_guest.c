@@ -135,10 +135,16 @@ static void frame(void)
     assert(WORD(0x563918)==123); /* ISR state was never used as a fake frame counter. */
     if(!g_tsfp_native_timing_active) {
         assert(!g_tsfp_native_step.units_per_tick && !g_tsfp_native_step.game_units &&
-               !g_tsfp_native_step.game_phase);
+               !g_tsfp_native_step.game_phase && !g_tsfp_native_step.raw_units &&
+               !g_tsfp_native_step.raw_phase);
     } else {
         assert(g_tsfp_native_step.game_ticks==WORD(0x4E7944));
         assert(g_tsfp_native_step.game_delta==FLOAT(0x4E794C));
+        assert(g_tsfp_native_step.raw_ticks==WORD(0x4E7940));
+        assert(g_tsfp_native_step.raw_delta==FLOAT(0x4E7948));
+        assert(g_tsfp_native_step.raw_units>=0 && g_tsfp_native_step.raw_phase>=0);
+        assert(g_tsfp_native_step.raw_ticks==(g_tsfp_native_step.raw_phase+
+            g_tsfp_native_step.raw_units)/g_tsfp_native_step.units_per_tick);
     }
     frames++;
 }
@@ -250,6 +256,8 @@ int main(void)
         frame();distance+=FLOAT(0x4E794C);
         assert(g_tsfp_native_step.units_per_tick==144000000);
         assert(g_tsfp_native_step.game_phase==exact_units%144000000);
+        assert(g_tsfp_native_step.raw_phase==g_tsfp_native_step.game_phase);
+        assert(g_tsfp_native_step.raw_units==g_tsfp_native_step.game_units);
         exact_units+=g_tsfp_native_step.game_units;
     }
     assert(exact_units==60LL*144000000);
@@ -272,9 +280,13 @@ int main(void)
     for(unsigned i=0;i<144;i++) {
         frame();assert(FLOAT(0x4E794C)==0 && WORD(0x4E7944)==0);
         assert(!g_tsfp_native_step.game_units && !g_tsfp_native_step.game_ticks);
+        assert(g_tsfp_native_step.raw_phase==exact_units%144000000);
+        assert(g_tsfp_native_step.raw_units>0);
+        exact_units+=g_tsfp_native_step.raw_units;
     }
     assert(paused_calls==1 && resume_calls==0);
     assert(WORD(0x7497B0)==120);
+    assert(exact_units==120LL*144000000);
     WORD(0x7497B4)=UINT32_MAX; frame();
     assert(resume_calls==1 && WORD(0x7497B4)==0 && FLOAT(0x4E794C)>0);
     assert(original_calls==3 && frames==293);

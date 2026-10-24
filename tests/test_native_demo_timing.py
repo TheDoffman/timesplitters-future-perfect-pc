@@ -73,6 +73,7 @@ def demo_source():
         "@NUMERIC@": (ROOT / "src/pc_native_numeric.h").as_posix(),
         "@VISUAL@": (ROOT / "src/pc_native_visual_time_guest.inc").as_posix(),
         "@DEMO@": (ROOT / "src/pc_native_demo_guest.inc").as_posix(),
+        "@TIMING@": (ROOT / "src/pc_native_timing.h").as_posix(),
         "/* ORIGINAL_CODE */": generated,
         "/* ORIGINAL_CONSTANTS */": constants,
     }.items():
@@ -82,16 +83,50 @@ def demo_source():
 
 
 @pytest.fixture(scope="module")
-def playback_results(demo_source, tmp_path_factory):
+def playback_output(demo_source, tmp_path_factory):
     from test_recomp_float_joins import compile_and_run
-    output = compile_and_run(tmp_path_factory.mktemp("demo-playback"), demo_source)
+    return compile_and_run(tmp_path_factory.mktemp("demo-playback"), demo_source)
+
+
+@pytest.fixture(scope="module")
+def playback_results(playback_output):
     rows = {}
-    for line in output.splitlines():
+    for line in playback_output.splitlines():
         if line.startswith("RESULT "):
             rate, channels, raw, game, raw_time, game_time = map(float, line.split()[1:])
             rows[tuple(map(int, (rate, channels, raw, game)))] = (raw_time, game_time)
-    assert len(rows) == 24, output
+    assert len(rows) == 24, playback_output
     return rows
+
+
+@pytest.fixture(scope="module")
+def roundtrip_results(playback_output):
+    rows = {}
+    for line in playback_output.splitlines():
+        if line.startswith("ROUNDTRIP "):
+            rate, playback, channels, raw_time, game_time, finish = map(float, line.split()[1:])
+            rows[int(rate), int(playback), int(channels)] = raw_time, game_time, finish
+    assert len(rows) == 18, playback_output
+    return rows
+
+
+@pytest.mark.parametrize("recording,playback", [
+    (60, 60), (120, 120), (144, 144),
+    # Recording at high refresh creates zero-tick packets. A decoder that
+    # assumes every packet lasts 1/60 s cannot round-trip these streams.
+    *[pytest.param(recording, playback, marks=pytest.mark.xfail(
+        raises=DemoTimingMismatch, strict=True,
+        reason="Recorded packet cadence depends on recording and playback rates"))
+      for recording, playback in [(60,120), (60,144), (120,60), (120,144), (144,60), (144,120)]],
+])
+@pytest.mark.parametrize("channels", [1,4])
+def test_recorded_pause_roundtrip(roundtrip_results, recording, playback, channels):
+    raw, game, finish = roundtrip_results[recording, playback, channels]
+    if abs(raw-1.) > 1e-5 or abs(game-.5) > 1e-5 or abs(finish-1.) > 1.01/playback:
+        raise DemoTimingMismatch(
+            f"record {recording}, playback {playback}, controllers {channels}: "
+            f"after 1 wall second stream raw/game={raw}/{game}s, last packet at {finish}s; "
+            "expected 1.0/0.5s and completion near 1s")
 
 
 @pytest.mark.parametrize("mutation", ["timer", "raw-clock"])

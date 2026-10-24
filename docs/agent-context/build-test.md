@@ -18,12 +18,12 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_native_demo_timing.py` tests asset-free scope nesting/fallback and lifts
-US demo initialization/input/playback: wait/exit, controllers, clocks,
-zero time, EOF, ABI and timer/restore mutations. Eight Original60 packet cases
-pass; sixteen native packet cases strictly xfail only on `DemoTimingMismatch`.
-Packet cadence/live playback remain open. No private XBE means skip.
-Player-dispatch tests reject stray demo-policy calls.
+`test_native_demo_timing.py`: asset-free scope/nesting plus original US
+initialization, writer/reader, wait/exit, input, EOF, ABI and mutations.
+Same-rate round trips preserve 1s raw/0.5s paused game time. Cross-rate completion
+time is checked, not just final totals. Sixteen playback and twelve cross-rate
+cases strictly xfail only on `DemoTimingMismatch`; cadence/live playback remain
+open. Missing private XBE skips originals. Player fixtures reject stray demo calls.
 
 `test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
 copies and failing unused-water stubs. Run refresh and stale-copy mutation;
@@ -887,11 +887,11 @@ Controlled UVs replace RNG. Initial draws verify additive green and preserved
 red/blue/alpha; duplicate candidate noise must fail boundary equality. Queued
 splashes, live submission and whole-scene rendering remain separate acceptance.
 
-`native_surface_interval.c` (dual-host timing suite) checks exact conservation
-and boundary counts across three counter frequencies, presets, jitter, pause,
-catch-up, reset, invalid nonmutation and the four-piece maximum. Reset-phase
-mutation must fail. The real guest fixture checks publication, paused zero time
-and Original-mode clearing; exact metadata avoids float-sum boundary loss.
+`native_surface_interval.c` checks exact game/raw conservation and boundaries
+across frequencies, presets, jitter, pause, catch-up, resets and invalid input.
+Reset-phase mutation must fail. Guest tests check publication and Original60
+clearing. Exact raw metadata retains all60 boundaries during paused144;
+summing float deltas loses one. Both hosts run these CPU tests.
 
 `native_surface_mode.c`, in the same dual-host suite, checks immutable mode
 packing against the existing affine operator and independent one-tick equations,

@@ -1,3 +1,43 @@
+## 2026-10-24 — Exact raw clock and recording round-trip evidence
+
+`PcNativeStep` now publishes raw counter units and the interval's starting
+remainder, matching its existing exact game-time metadata. Raw time continues
+during pause. This is shared host metadata; guest memory, saves, original60,
+game-speed arithmetic and pacing are unchanged. Sampling rounded float deltas
+at144 loses an authored boundary after one second even with a double sum;
+the exact raw interval retains all60, including while game time is paused.
+
+The hash-verified original writer (`43220` state3), full input dispatcher and
+playback initializer/reader now run recording-to-playback checks at all nine
+60/120/144 rate pairs with one/four controllers. A one-second recording has
+half a second of game time followed by half a second paused. Tests verify actual
+written raw/game totals, preserved live deltas, playback totals and time of last
+packet consumption. Final totals alone would miss accelerated completion.
+Same-rate cases pass; twelve cross-rate cases fail strictly on measured timing.
+Together with the prior packet fixture: **18 passed, 28 expected failures**
+(`logs/demo-roundtrip-tests.log`, Windows/MSVC, base `eaabfbf` plus this change).
+These expected failures are unresolved defects, not acceptance.
+
+An ignored prototype correctly resampled pre-filled60-packet streams at120/144,
+including mixed ticks and a144-to120 switch, but fails the new round-trip test.
+The current writer emits144 packet groups per second at144, including84 zero-raw
+groups. The prototype consumes only0.416666663s of such a recording in one wall
+second, even replaying at144. It was therefore **not integrated**. Repair must
+cover recording and playback together, plus zero-time startup, lifecycle resets,
+button events, pauses, catch-up and live switches to/from Original60.
+Logs: `demo-recording-probe.log`, `demo-prototype-roundtrip.log` (private generated
+test code stays ignored). File IO/full level playback and Mac execution remain
+unverified; the native smoothness goal remains incomplete. No new PR opened.
+
+Five focused clock/guest/surface tests pass (73 unrelated cases deselected),
+including exact raw metadata through pause and mode reset; context/CI-scope
+tests pass88 cases. Context freshness and whitespace checks pass. The supported
+Windows build verifies the full patch stack and passes its native checks:
+`logs/demo-raw-clock-build.log`, Windows11Pro x64 10.0.26300/MSVC14.44.35207.
+Executable SHA256:
+`f5b434f1f98841c2b8b8ccf21a8f5997ab4d104ecc3274bacefbef2338f9afd6`.
+No new gameplay/performance or native Mac validation is claimed for this change.
+
 ## 2026-10-24 — Demo wait and exit timers use fractional time
 
 Original recorded-input states2 (exit) and5 (wait) clamp elapsed raw time to

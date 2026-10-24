@@ -35,6 +35,8 @@ static void compare_rates(int rate, int64_t frequency)
         PcNativeStep step = pc_native_timing_step(&clock, now, frequency, rate, 0);
         assert(step.game_delta > 0 && step.game_delta < 1.01f);
         assert(step.game_ticks == step.raw_ticks);
+        assert(step.raw_units==step.game_units && step.raw_phase==step.game_phase);
+        assert(step.raw_ticks==(step.raw_phase+step.raw_units)/frequency);
         distance += step.game_delta * 2.5;
         ticks += step.game_ticks;
     }
@@ -57,6 +59,8 @@ int main(void)
     for (int i = 1; i <= 432; i++) {
         int paused = i > 144 && i <= 288;
         PcNativeStep step = pc_native_timing_step(&clock, i * 1000, 144000, 144, paused);
+        assert(step.raw_units==60000);
+        assert(step.raw_phase==((int64_t)(i-1)*60000)%144000);
         raw += step.raw_ticks; game += step.game_ticks;
         if (paused) assert(step.game_ticks == 0 && step.game_delta == 0);
         else assert(step.game_delta > .416f && step.game_delta < .417f);
@@ -64,10 +68,12 @@ int main(void)
     assert(raw == 180 && game == 120);
     PcNativeStep stalled = pc_native_timing_step(&clock, 144000 * 100LL, 144000, 144, 0);
     assert(stalled.raw_ticks == 3 && stalled.raw_delta == 3);
+    assert(stalled.raw_units==432000);
     PcNativeStep resumed = pc_native_timing_step(&clock, 144000 * 100LL + 1000, 144000, 144, 0);
     assert(resumed.raw_delta < .417f);
     PcNativeStep reversed = pc_native_timing_step(&clock, 1, 144000, 144, 0);
     assert(reversed.raw_ticks == 0 && reversed.raw_delta == 0);
+    assert(reversed.raw_units==0 && reversed.raw_phase==clock.raw_remainder);
     assert(pc_native_timing_step(&clock, 100, 0, 144, 0).raw_delta == 0);
     puts("Native fractional timing: movement, timers, pause, stalls and counter precision passed");
     return 0;

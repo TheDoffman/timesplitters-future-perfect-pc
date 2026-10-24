@@ -30,6 +30,14 @@ but restore incoming raw whole/float time. Original60 keeps original behavior,
 including its multi-controller multi-tick asymmetry. Packet playback/recording
 cadence is unchanged and remains an open high-refresh regression.
 
+`PcNativeStep` now exposes exact `raw_units/raw_phase` alongside game units,
+using `units_per_tick`. Both phases describe the interval's start. Raw units
+advance during pause; reset/Original60 clear the metadata. Guest fields, clocks,
+save formats and pacing are unchanged. Playback sampling must use exact raw
+time rather than summing float deltas, but packet duration cannot be assumed:
+the current native recorder also emits zero-whole-tick packets. The original
+writer/reader round-trip fixture covers this unresolved rate dependency.
+
 Native vehicle/physics candidate (`fix/native-vehicle-physics`):
 `pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
 `0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains

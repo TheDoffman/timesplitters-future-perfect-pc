@@ -3749,6 +3749,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Raw-clock metadata and recording regression (2026-10-24, this revision):**
+  Shared `PcNativeStep` publishes exact raw units/start phase, including pause.
+  No guest ABI, file format, timing arithmetic or OS adapter changes. Windows
+  CPU tests/build verify publication, reset, rate switches and interval splitting;
+  native Mac execution remains pending. The original writer/reader fixture now
+  also exposes twelve cross-rate round-trip failures. No playback resampler is
+  shipped: a fixed60-packet prototype slows native recordings. See
+  [evidence](STATUS.md#2026-10-24--exact-raw-clock-and-recording-round-trip-evidence).
+
 - **Demo wait/exit clock correction (2026-10-24, commit carrying this entry):**
   Shared `pc_native_demo_guest.inc` and numeric sites `433E2/43473` remove the
   minimum-one-tick timer step at native rates. The wrapper preserves the input
