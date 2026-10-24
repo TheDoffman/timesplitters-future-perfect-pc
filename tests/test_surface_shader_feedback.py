@@ -32,7 +32,7 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, True),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'constant-alpha', 128, True)])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False, rounding=False):
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False, rounding=False, rounding_profile=0):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -155,7 +155,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
         helpers += '\n#include "surface_final_gpu.inc"\n'
         if rounding:
-            helpers += '#include "surface_rounding_gpu.inc"\n'
+            helpers += f'#define SURFACE_ROUNDING_PROFILE {rounding_profile}\n#include "surface_rounding_gpu.inc"\n'
             needle = '    for(unsigned rate=0;rate<3;rate++) {\n        unsigned fps=rates[rate];unsigned final_fresh=0;'
             assert fixture.count(needle) == 1
             fixture = fixture.replace(needle, '    field_rounding_cases(&final,field_ps);\n' + needle)
@@ -176,6 +176,10 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             name = 'surface_coupled_shader.h'
             needle = '(row0.w,row1.w)*residual'
             replacement = '(row0.w,row1.w)*0'
+        elif mutation == 'rounding-clipped-gradient':
+            name = 'surface_gradient_shader.h'
+            needle = 'return gradient;'
+            replacement = 'return clamp(gradient,0.0,1.0);'
         elif mutation == 'constant-alpha':
             name = 'surface_state_shader.h'
             needle = '(0,state.x+0.5,state.y,state.y)'
@@ -206,7 +210,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('boundary_error<1e-7f' if mutation == 'rounding-raw' else
-                    'worst==0' if mutation == 'rounding-unforced' else
+                    'worst==0' if mutation in ('rounding-unforced', 'rounding-clipped-gradient') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
                     'fabsf(output[field_index(x,y,c)]-expected)<tolerance' if mutation == 'constant-alpha' else
                     'transform_error<.00001' if mutation == 'transform' else
@@ -229,7 +233,9 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
-@pytest.mark.parametrize('mutation', [False, 'rounding-raw', 'rounding-unforced'])
-def test_original_byte_rounding_flow(tmp_path, mutation):
+@pytest.mark.parametrize('mutation,profile', [
+    (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
+    (False, 1), ('rounding-clipped-gradient', 1)])
+def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
-        'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True)
+        'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

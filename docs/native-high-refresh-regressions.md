@@ -6762,15 +6762,15 @@ has zero maximum difference in the tested 64/128 clamp and 128-wrap fields at
 The follow-up keeps the first-pass quantization event at its original boundary,
 while the coupled field evolves at each native frame. Starting from byte G/B,
 the first pass's copied channels already have the correct precision. Its red
-rounding residual `e = byte_red - float_red` is an additional spatial forcing
+residual `e = byte_red - unclipped_linear_red` is an additional spatial forcing
 input. The one-tick contribution is `(a*e, d*b*a*e)`; the fractional response
 comes from the same affine operator. Shared `pc_surface_coupled_forced_step`
 stores this response in the fourth component of its two rows, and
 `TSFP_SURFACE_FORCED_SHADER` applies the transformed residual. That input stays
 fixed until the next authored boundary; it is not re-rounded every native frame.
 
-`surface_rounding_gpu.inc` executes both original first-pass formats to measure
-the residual on the GPU, transforms it and the live state, and advances each
+`surface_rounding_gpu.inc` executes the original first-pass byte format and the
+shared unclipped gradient to measure the residual on the GPU, transforms it and the live state, and advances each
 fractional piece. A 144-Hz frame crossing a 60-Hz boundary splits into two pieces.
 At the boundary the persistent state is written to an actual byte target.
 Original smoothing, when selected, executes at authored boundaries too. The
@@ -6818,3 +6818,35 @@ on `fix/native-water-rounding`, rebased onto 2252af1, with no new PR yet.
 Applying the full integrated patch stack updates nine runtime files; repeating
 the GPU suite then passes all 17 cases in 82.79 seconds, and the focused native
 coupled check passes in 1.15 seconds. Evidence: logs/water-rounding-main-suite.log.
+
+### Strong first-pass clipping and mixed frame rates
+
+A stronger initial field (height 0.5 with +0.45 at (1,3), -0.45 at (96,23),
+zero signed velocity, encoded into an actual byte target) exposed missing
+first-pass clipping. The earlier residual subtracted the already-clipped float
+shader result and therefore corrected only rounding. It diverged immediately:
+tick 0, cell 385 green was 0.313725501 versus 0.407843143. Over one second,
+maximum byte-state error reached 0.192156881 and final byte RGB error 0.450980425
+(`logs/water-impulse-before.log`).
+
+`surface_gradient_shader.h` now computes the unclipped linear gradient used by
+the coupled operator. Actual byte red minus that gradient includes clipping as
+well as rounding. The strong and original mild fields both match every authored
+G/B boundary and final byte RGB at 60/120/144, smoothing off/on. A mutation that
+clamps the shared gradient again must fail the original-byte comparison.
+
+The fixture also uses a 720-unit clock to run 37 frames at 144, 30 at 120, 15 at
+60, then 35 at 144: 117 frames over one second. All three changes occur with an
+authored tick partly elapsed. Phase and held residual survive these changes;
+all 60 boundaries and final byte RGB match, and all 117 final byte ripple frames
+are fresh for both fields and both smoothing choices. Across all 16 field/rate/
+smoothing combinations, maximum pre-quantization disagreement is 3.21865082e-6.
+The five focused cases pass in 33.83 seconds (`logs/water-impulse-switch.log`).
+The full shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`).
+
+This tests synthetic initial impulses, not the game's disturbance shader or
+arbitrary velocity/height saturation in the second pass. The integer fixture
+clock does not validate the host-counter clock's runtime integration. Shared
+helpers remain uncalled by the game; resource ownership, actual live setting
+changes, GPU cost, scene behavior and Mac execution are still pending.

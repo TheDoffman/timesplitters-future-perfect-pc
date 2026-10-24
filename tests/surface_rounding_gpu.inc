@@ -1,4 +1,4 @@
-/* Measured first-pass rounding is held over each authored interval. Fractional
+/* Measured first-pass clipping and rounding are held over each authored interval. Fractional
  * dynamics still execute on every frame. Both quantization points use actual
  * byte render targets, not a CPU approximation to UNORM conversion. */
 typedef struct RoundTarget { RhiImage *image;RhiView *read,*write; } RoundTarget;
@@ -44,8 +44,20 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     RhiShader *filter=shader(RHI_STAGE_PIXEL,filter_hlsl,"ps_5_0");
     RhiShader *unpack=shader(RHI_STAGE_PIXEL,"Texture2D source:register(t0);"
         "float4 main(float4 p:SV_POSITION):SV_TARGET {float4 s=source.Load(int3(p.xy,0));return float4(s.g-.5,s.b,0,1);}","ps_5_0");
-    RhiShader *residual=shader(RHI_STAGE_PIXEL,"Texture2D rounded:register(t0);Texture2D ideal:register(t1);"
-        "float4 main(float4 p:SV_POSITION):SV_TARGET {int3 at=int3(p.xy,0);return float4(rounded.Load(at).r-ideal.Load(at).r,0,0,1);}","ps_5_0");
+#define TSFP_SURFACE_VEC3 "float3"
+#include "graphics/surface_gradient_shader.h"
+    const char residual_prefix[]="Texture2D rounded:register(t0);Texture2D source:register(t1);"
+        TSFP_SURFACE_GRADIENT_SHADER;
+    char residual_source[4096];snprintf(residual_source,sizeof residual_source,
+        "%sfloat4 main(float4 p:SV_POSITION):SV_TARGET {int2 size=int2(%u,%u),at=int2(p.xy);"
+        "float h=source.Load(int3(at,0)).b;float3 n=float3("
+        "source.Load(int3((at+size+int2(-1,-1))%%size,0)).b,"
+        "source.Load(int3((at+size+int2(1,-1))%%size,0)).b,"
+        "source.Load(int3((at+size+int2(1,1))%%size,0)).b);"
+        "return float4(rounded.Load(int3(at,0)).r-surface_gradient(h,n,43.0/255.0),0,0,1);}",
+        residual_prefix,SURFACE_SIDE,SURFACE_SIDE);
+    RhiShader *residual=shader(RHI_STAGE_PIXEL,residual_source,"ps_5_0");
+#undef TSFP_SURFACE_VEC3
 #define TSFP_SURFACE_VEC2 "float2"
 #define TSFP_SURFACE_VEC3 "float3"
 #define TSFP_SURFACE_VEC4 "float4"
@@ -91,8 +103,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     static float initial[SURFACE_SIDE*SURFACE_SIDE*4],normal[SURFACE_SIDE*SURFACE_SIDE*4],exact[SURFACE_SIDE*SURFACE_SIDE*4];
     for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
         unsigned at=(y*SURFACE_SIDE+x)*4;initial[at]=0;initial[at+1]=field_initial(x,y);initial[at+2]=0;initial[at+3]=1;
+        if(SURFACE_ROUNDING_PROFILE==1)initial[at+1]=.5f+
+            ((x==1 && y==3)?.45f:0)-((x==96 && y==23)?.45f:0);
     }
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,0};
     for(unsigned smoothing=0;smoothing<2;smoothing++) {
         rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
         round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);unsigned current=0;
@@ -107,14 +121,19 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             round_draw(f,feedback[1],&offsets[1][0][0],&cb[1],inputs,2,&bytes[current^1]);current^=1;
             field_read(bytes[current].image,2,references+tick*SURFACE_SIDE*SURFACE_SIDE*4);
         }
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<4;rate++) {
             unsigned fps=rates[rate],phase=0,ticks=0,fresh=0;double worst=0,arithmetic_error=0;
-            RoundTarget rows[61][2]={0};
+            /* 720-Hz test clock represents all presets exactly: one authored
+             * tick is 12 units. The mixed schedule switches at nonzero phase,
+             * so resetting phase or residuals on a rate change cannot pass. */
+            unsigned frames=fps?fps:117;
+            RoundTarget rows[13][2]={0};
             rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
             round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);current=0;
             memset(normal,0,sizeof normal);
-            for(unsigned frame=0;frame<fps;frame++) {
-                unsigned left=60;
+            for(unsigned frame=0;frame<frames;frame++) {
+                unsigned frame_rate=fps?fps:(frame<37?144:frame<67?120:frame<82?60:144);
+                unsigned left=720/frame_rate;
                 while(left) {
                     RhiView *inputs[4];
                     if(!phase) {
@@ -122,14 +141,13 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                             round_draw(f,filter,&offsets[2][0][0],&cb[2],inputs,4,&bytes[current^1]);current^=1;}
                         for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
                         round_draw(f,feedback[0],&offsets[0][0][0],&cb[0],inputs,4,&first_byte);
-                        round_draw(f,feedback[0],&offsets[0][0][0],&cb[0],inputs,4,&first_float);
-                        inputs[0]=first_byte.read;inputs[1]=first_float.read;
+                        inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
                         round_draw(f,residual,NULL,NULL,inputs,2,&rounding);
                         field_gpu_transform(rounding.read,force_spectrum.write,0);
                         round_draw(f,unpack,NULL,NULL,&bytes[current].read,1,&world);
                         field_gpu_transform(world.read,states[0].write,0);
                     }
-                    unsigned piece=left<fps-phase?left:fps-phase;
+                    unsigned piece=left<12-phase?left:12-phase;
                     if(!rows[piece][0].image) {
                         rows[piece][0]=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
                         rows[piece][1]=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
@@ -137,7 +155,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                             for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
                                 double dc=(!x && !y)?SURFACE_SIDE:0;PcSurfaceCoupledStep m;
                                 CHECK(pc_surface_coupled_forced_step(a,b,d,k+pc_surface_stencil_shift(SURFACE_SIDE,SURFACE_SIDE,x,y,PC_SURFACE_WRAP),
-                                    dc*(c-.5+k*c),dc*(c-.5),(double)piece/fps,&m));
+                                    dc*(c-.5+k*c),dc*(c-.5),(double)piece/12,&m));
                                 memcpy(field_a+(y*SURFACE_SIDE+x)*4,m.row[row],16);
                             }
                             rhi_image_update(rows[piece][row].image,0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
@@ -148,7 +166,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                     RoundTarget swap=states[0];states[0]=states[1];states[1]=swap;
                     field_gpu_transform(states[0].read,world.write,1);
                     phase+=piece;left-=piece;
-                    if(phase==fps) {
+                    if(phase==12) {
                         inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
                         round_draw(f,feedback[1],&offsets[1][0][0],&cb[1],inputs,2,&first_float);
                         field_read(first_float.image,0,exact);field_read(world.image,0,field_b);
@@ -177,10 +195,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             field_final_run(f,f->packed_read,0,1,field_b);double final_error=0;
             for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<3;channel++)
                 final_error=fmax(final_error,fabs(field_a[i*4+channel]-field_b[i*4+channel]));
-            printf("rounded-flow smoothing=%u fps=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",smoothing,fps,ticks,fresh,worst,arithmetic_error,final_error);
-            CHECK(ticks==60 && fresh==fps);CHECK(worst==0);
+            printf("rounded-flow profile=%u smoothing=%u fps=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,ticks,fresh,worst,arithmetic_error,final_error);
+            CHECK(ticks==60 && phase==0 && fresh==frames);CHECK(worst==0);
             CHECK(final_error==0);
-            for(unsigned piece=0;piece<=60;piece++)if(rows[piece][0].image){round_destroy(&rows[piece][0]);round_destroy(&rows[piece][1]);}
+            for(unsigned piece=0;piece<=12;piece++)if(rows[piece][0].image){round_destroy(&rows[piece][0]);round_destroy(&rows[piece][1]);}
         }
     }
     free(references);for(unsigned i=0;i<2;i++){round_destroy(&bytes[i]);round_destroy(&states[i]);}

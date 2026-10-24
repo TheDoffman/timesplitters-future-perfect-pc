@@ -1,3 +1,27 @@
+## 2026-10-23 — Retain water-gradient clipping across fractional updates
+
+Continuing on `fix/native-water-rounding`, a strong signed initial height pulse
+exposed missing first-pass clipping in the candidate. Subtracting the original
+float shader output measured rounding only, because that output was already
+clipped. Shared `surface_gradient_shader.h` now supplies the unclipped gradient;
+subtracting it from actual byte red retains both effects as held forcing.
+The old path differed at tick 0 and reached 0.192156881 byte-state error.
+
+The corrected Windows common-RHI/WARP fixture matches every authored G/B
+boundary and final byte ripple RGB for mild and strong initial fields at
+60/120/144, with smoothing off/on. It also matches through 144/120/60/144
+switches made within authored ticks: all 117 final byte frames remain fresh.
+Maximum pre-quantization disagreement across these 16 combinations is 3.219e-6.
+All five focused cases pass (33.83 s), including deliberate removal of clipping
+correction. Evidence: logs/water-impulse-before.log, logs/water-impulse-switch.log.
+The complete updated shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`); repository context and whitespace checks pass.
+
+No new PR or game binary. This candidate is still uncalled by gameplay. Actual
+disturbance shaders, other saturation cases, runtime integration, capture-free
+GPU cost and Mac GPU/gameplay remain unverified. MAC-060 remains awaiting
+validation; the broad high-refresh goal is not complete.
+
 ## 2026-10-23 — Preserve authored rounding during fractional water updates
 
 After PR #321 reached main through integration PR #322, follow-up branch

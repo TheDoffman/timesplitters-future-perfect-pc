@@ -3727,6 +3727,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   boundary policy. Existing dual-host CPU tests cover forcing composition;
   Windows WARP compares the original byte trajectory, while native Mac GPU,
   scheduling/resource integration, disturbances and scene acceptance remain pending.
+  On `fix/native-water-rounding`, shared `surface_gradient_shader.h` adds the
+  unclipped gradient needed to retain first-pass clipping as well as rounding.
+  Windows fixtures now cover strong initial signed height impulses and mixed
+  frame rates switching within an authored tick. The shared body needs only a
+  vector syntax adapter; these Windows tests do not verify Mac GPU execution.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

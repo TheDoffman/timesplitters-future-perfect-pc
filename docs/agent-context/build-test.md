@@ -841,12 +841,17 @@ original byte-storage appearance or scene rendering; both differences are report
 
 `test_original_byte_rounding_flow` adds an independent 60-Hz original-shader
 reference starting from an actual byte target. `surface_rounding_gpu.inc` holds
-the first-pass quantization residual over each authored interval, executes GPU
+the first-pass clipping/quantization residual over each authored interval, executes GPU
 fractional transforms/steps at every frame, and writes original byte state only
 at interval boundaries. The frame schedule splits steps that cross a boundary.
 It compares every boundary's G/B and final byte ripple RGB, with and without
-original smoothing, at 60/120/144. Missing forcing and missing ambiguity handling
-are required failing mutations. Direct guard cases reject a distant replacement
+original smoothing, at 60/120/144 and a mixed 144/120/60/144 sequence. The test
+clock uses 720 integer units per second; the mixed sequence switches at nonzero
+authored phase and produces 117 frames over 60 ticks. This fixture clock is not
+the game's host-counter scheduler. Mild and strong signed initial height pulses
+are covered. Missing forcing, missing ambiguity handling and omission of the
+gradient clipping contribution are required failing mutations.
+Direct guard cases reject a distant replacement
 and preserve an unambiguous value. This is controlled trajectory validation,
 not runtime integration or measured game performance. The portable coupled CPU
 test also checks held forcing across split steps and rejected-output preservation.
