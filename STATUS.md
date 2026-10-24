@@ -1,4 +1,41 @@
-## 2026-10-24 — Actual GPU exposes a water-candidate mismatch
+## 2026-10-24 — Water candidate now passes RTX hardware checks
+
+Two distinct corrections were needed. The standalone hardware diagnostic had
+skipped initialization of the four captured wrap samplers when omitting older
+storage probes. Binding them at common setup removes its first-tick mismatch.
+That initial failure and its timings below were confounded by fixture setup.
+The correctly configured run then failed at tick 21: the RTX converts nearby
+float outputs to different bytes at 0.649169921875, while the old correction
+assumed the ideal half-byte threshold 0.649019607843137. A direct GPU sweep
+reproduces that transition (logs/water-hardware-quantizer.log).
+
+The shared boundary shader now uses the original shader's value whenever their
+arithmetic disagreement fits the existing 32-float-epsilon guard (3.815e-6),
+without guessing the GPU's conversion threshold. Larger differences remain
+untouched; fractional frames still execute the candidate's own evolution.
+No tolerance was increased. Direct checks cover the observed pair and reject
+a larger difference; an unconditional-copy mutation must fail.
+
+All 40 RTX 4070 SUPER field/rate/smoothing combinations now match every original
+byte G/B boundary and final ripple RGB, including 120/144, mid-tick rate changes,
+jitter and pause/resume. Every higher-rate advancing frame produces fresh final
+output. Maximum prequantization difference is 3.219e-6. Evidence:
+logs/water-hardware-canonical.log and water-hardware-canonical-{1,2,3}.log.
+This is controlled original-shader validation, not live scene acceptance.
+
+With no parallel tests, the noise-profile timestamp run passes all endpoint
+checks. At 144, mean candidate GPU span is 0.075883 ms without smoothing and
+0.076961 ms with it; p95 is 0.140288/0.143360 ms. Original 60-Hz passes average
+0.010121/0.011844 ms; candidate 60 averages 0.107264/0.108201 ms. These are
+isolated 128-square field costs including submission bubbles, not game frame
+times or a measured game speedup (logs/water-hardware-canonical-cost.log).
+Resource lifecycle/hooks, queued splashes, actual event delivery, Mac GPU checks
+and scene/performance acceptance remain open. No new PR or playable binary.
+The complete WARP suite passes 26 cases in 146.83 seconds, including the new
+unguarded-copy mutation (logs/water-hardware-canonical-suite.log). Context and
+whitespace checks pass. These results do not enable the unintegrated candidate.
+
+## 2026-10-24 — Initial hardware probe (superseded by corrections above)
 
 The same follow-up branch now has explicit D3D11 hardware correctness and timing
 commands. On this Windows host's NVIDIA GeForce RTX 4070 SUPER (10de:2783,

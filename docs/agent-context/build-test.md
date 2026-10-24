@@ -856,8 +856,8 @@ ambiguity handling, omission of gradient clipping, unlimited acceleration and
 missing authored boundary limits are required failing mutations. Saturated
 60-Hz final-color repeats must match the independently measured original count;
 the higher-rate and mixed schedules still require fresh final colors every frame.
-Direct guard cases reject a distant replacement
-and preserve an unambiguous value. This is controlled trajectory validation,
+Direct guard cases reject a distant replacement and canonicalize nearby values
+even away from ideal byte thresholds. This is controlled trajectory validation,
 not runtime integration or measured game performance. The portable coupled CPU
 test also checks held forcing across split steps and rejected-output preservation.
 
@@ -902,6 +902,14 @@ mismatch. It does not report unsampled intermediate accuracy as passing.
 `surface_timing_gpu.h` brackets each frame, reads disjoint/timestamp queries only
 after submission, rejects invalid clocks and bounds query waits to ten seconds.
 Reported spans include submission bubbles, exclude setup/readback, and are not
-whole-game frame times. Adapter identity is printed. Both commands currently
-fail on RTX 4070 SUPER: the first authored boundary differs, independently of
-timing instrumentation. See STATUS; do not treat WARP success as hardware parity.
+whole-game frame times. Adapter identity is printed. All entry points bind the
+four captured wrap samplers before any original draw; the initial hardware-only
+path omitted this initialization when it skipped older storage probes.
+With that fixed, RTX 4070 SUPER exposed a later byte-conversion transition away
+from the ideal half-byte threshold. The shared correction now uses only its
+unchanged arithmetic-distance guard; actual target conversion owns thresholds.
+Replacing the conditional with an unconditional original value must fail the
+direct guard test. A narrow hardware sweep reports the observed transition
+without assuming other GPUs use the same threshold. Hardware checks now pass
+all four profiles and ten schedules each; benchmark endpoint checks also pass.
+This validates this adapter, not other GPUs or game integration. See STATUS.

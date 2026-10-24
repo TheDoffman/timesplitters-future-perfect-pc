@@ -7006,7 +7006,7 @@ The full updated GPU suite passes all 25 cases in 141.24 seconds, including the
 new matrix-diagonal mutation (logs/water-mode-full-suite.log). Repository context
 and staged whitespace checks pass. The byte ambiguity guard was not widened.
 
-### D3D11 hardware gate (2026-10-24)
+### Initial D3D11 hardware gate (2026-10-24; superseded below)
 
 The candidate's WARP comparisons do not establish hardware correctness. Running
 `python tests/test_surface_shader_feedback.py --hardware-check --profile 0` on
@@ -7037,3 +7037,60 @@ rejects disjoint/zero clocks or ten-second query timeout. The full WARP suite
 still passes 25 cases in 141.81 seconds (logs/water-hardware-harness-suite.log).
 Resource/hook integration is deferred until the first hardware step is correct;
 queued splashes, actual event delivery, Mac GPUs and scene coverage remain open.
+
+### Hardware sampler and conversion corrections (2026-10-24)
+
+The initial hardware-only fixture reused sampler creation but skipped the older
+storage loop that bound the four wrap samplers. This was an invalid reference
+configuration, not evidence of a first-step production shader defect. All entry
+points now bind those samplers in common setup. This removes the first-tick
+failure, but the correctly configured mild trajectory still failed at tick 21,
+cell 1146, blue: 165/255 versus 166/255. Candidate prequantized value was
+0.649169504642487, original float result 0.649170935153961. Error was within the
+existing arithmetic guard, but neither value was near the ideal 165.5/255
+threshold, so the old correction did nothing.
+
+A direct passthrough-shader sweep to the same hardware byte target observes a
+transition between inputs 0.649169862270355 and 0.649169921875. The ideal
+threshold is 0.649019607843137. This establishes the old threshold assumption
+was false on this GPU; it does not establish a universal hardware conversion
+algorithm. The probe remains a bounded optional diagnostic and reports actual
+transitions without asserting other GPUs share them.
+
+Shared `surface_rounding_shader.h` now canonicalizes to the original shader's
+arithmetic only if disagreement is <=32*FLT_EPSILON, independent of predicted
+byte thresholds. This correction still runs only at authored boundaries;
+fractional evolution remains independent. The tolerance is unchanged, and a
+larger disagreement is preserved for failure detection. Direct cases exercise
+the observed nearby pair and a larger rejected difference. An unconditional
+copy mutation must fail; existing missing-forcing, incorrect matrix, clipping,
+noise and raw-rounding controls remain.
+
+All four profiles pass on RTX 4070 SUPER (driver 32.0.16.1742), ten schedules
+each with smoothing off/on, 60/120/144, mixed nonzero-phase switches, jitter and
+mid-motion pause. Every authored G/B byte boundary and final RGB byte matches
+the independently executed original reference. Maximum arithmetic error is
+3.21865082e-6; original saturated/noise repeat counts differ from WARP, but the
+candidate preserves this adapter's counts at 60 and all higher/mixed schedules
+remain fresh every advancing frame. Logs: water-hardware-canonical.log and
+water-hardware-canonical-{1,2,3}.log.
+
+The corrected, capture-free noise-profile benchmark passes every final-image
+check, running without parallel tests. Hardware timestamp means (ms) are:
+
+| Path | Smoothing off | Smoothing on |
+| --- | ---: | ---: |
+| Original 60 | 0.010121 | 0.011844 |
+| Candidate 60 | 0.107264 | 0.108201 |
+| Candidate 120 | 0.070852 | 0.072243 |
+| Candidate 144 | 0.075883 | 0.076961 |
+
+Candidate 144 p95 is 0.140288/0.143360 ms; some frames cross authored boundaries
+and execute additional transforms. Log: water-hardware-canonical-cost.log.
+This single bounded run includes submission bubbles and covers one 128-square
+field; it is not game FPS, a sustained pacing measurement, other-GPU evidence,
+or a speedup over Original. Resource ownership/hooks, queued splashes, runtime
+event order, scene acceptance and native Mac execution remain required.
+The full WARP regression suite passes all 26 cases in 146.83 seconds, including
+the unconditional-copy negative control (logs/water-hardware-canonical-suite.log).
+Repository context and whitespace checks pass; no game build was replaced.

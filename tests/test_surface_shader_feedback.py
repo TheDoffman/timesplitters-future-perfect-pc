@@ -248,6 +248,10 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             name = 'surface_rounding_shader.h'
             needle = 'surface_round_channel(state.y,exact.b)'
             replacement = 'state.y'
+        elif mutation == 'rounding-unguarded':
+            name = 'surface_rounding_shader.h'
+            needle = 'abs(value-exact)<=guard ? exact : value'
+            replacement = 'exact'
         elif mutation == 'rounding-unforced':
             name = 'surface_evolve_shader.h'
             needle = 'fixed.zw*residual'
@@ -297,7 +301,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         result = subprocess.run([str(exe)], cwd=tmp_path, env=isolated,
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
-        expected = ('boundary_error<1e-7f' if mutation == 'rounding-raw' else
+        expected = ('boundary_error<1e-7f' if mutation in ('rounding-raw', 'rounding-unguarded') else
                     'worst==0' if mutation in ('mode-diagonal', 'noise-duplicate', 'rounding-unforced', 'rounding-clipped-gradient',
                                               'rounding-unlimited-acceleration', 'rounding-unlimited-boundary') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
@@ -326,7 +330,7 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
     (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
     (False, 1), ('rounding-clipped-gradient', 1), (False, 2),
     ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2),
-    (False, 3), ('noise-duplicate', 3), ('mode-diagonal', 0)])
+    (False, 3), ('noise-duplicate', 3), ('mode-diagonal', 0), ('rounding-unguarded', 0)])
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

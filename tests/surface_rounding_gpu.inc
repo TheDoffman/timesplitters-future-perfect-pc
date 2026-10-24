@@ -113,13 +113,13 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     RoundTarget world=round_target(RHI_FORMAT_R32G32B32A32_FLOAT),rounding=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
     RoundTarget force_spectrum=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
     RoundTarget states[2]={round_target(RHI_FORMAT_R32G32B32A32_FLOAT),round_target(RHI_FORMAT_R32G32B32A32_FLOAT)};
-    /* Exercise both guards before the long trajectory: only a nearby original
-     * result at a byte threshold may resolve ambiguity. Never replace a distant
-     * state or perturb an unambiguous value merely because a reference exists. */
-    const float test_value[]={.5f,.5f,.52f,1.5f,-.5f};
-    const float test_exact[]={.500001f,.75f,.520001f,.5f,0};
+    /* Canonicalization is allowed only within the arithmetic guard, including
+     * values away from ideal byte thresholds. Actual GPU conversion owns those
+     * thresholds. Large errors must remain visible to trajectory comparisons. */
+    const float test_value[]={.5f,.5f,.52f,1.5f,-.5f,.6491695f,.6491695f};
+    const float test_exact[]={.500001f,.75f,.520001f,.5f,0,.6491709f,.64918f};
     for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++) {
-        unsigned test=i%5;field_a[i*4]=test_value[test]-.5f;field_a[i*4+1]=test_value[test];
+        unsigned test=i%7;field_a[i*4]=test_value[test]-.5f;field_a[i*4+1]=test_value[test];
         field_a[i*4+2]=0;field_a[i*4+3]=1;
         for(unsigned c=0;c<4;c++)field_b[i*4+c]=test_exact[test];
     }
@@ -128,10 +128,22 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     RhiView *guard_inputs[2]={world.read,first_float.read};
     round_draw(f,guard,NULL,NULL,guard_inputs,2,&rounding);field_read(rounding.image,0,field_a);
     for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=1;channel<4;channel++) {
-        unsigned test=i%5;float expected=test==0?test_exact[test]:test_value[test];
+        unsigned test=i%7;float expected=(test==0 || test==2 || test==5)?test_exact[test]:test_value[test];
         float boundary_error=fabsf(field_a[i*4+channel]-expected);CHECK(boundary_error<1e-7f);
     }
     float *references=malloc(60*sizeof field_a);CHECK(references);
+    if(surface_timing_device) {
+        /* Report the actual conversion around the observed RTX transition.
+         * This is diagnostic evidence, not a portable threshold assumption. */
+        RhiShader *copy=shader(RHI_STAGE_PIXEL,"Texture2D source:register(t0);float4 main(float4 p:SV_POSITION):SV_TARGET{return source.Load(int3(p.xy,0));}","ps_5_0");
+        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<4;channel++)
+            field_a[i*4+channel]=.649169921875f+((int)i-8192)*1e-9f;
+        rhi_image_update(world.image,0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
+        round_draw(f,copy,NULL,NULL,&world.read,1,&bytes[0]);field_read(bytes[0].image,2,field_b);
+        for(unsigned i=1;i<SURFACE_SIDE*SURFACE_SIDE;i++)if(field_b[i*4]!=field_b[(i-1)*4])
+            printf("quantizer-transition input=%.15g..%.15g output=%.9g..%.9g ideal-half=%.15g\n",field_a[(i-1)*4],field_a[i*4],field_b[(i-1)*4],field_b[i*4],165.5/255);
+        rhi_shader_destroy(copy);
+    }
     static float initial[SURFACE_SIDE*SURFACE_SIDE*4],normal[SURFACE_SIDE*SURFACE_SIDE*4],exact[SURFACE_SIDE*SURFACE_SIDE*4];
     for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
         unsigned at=(y*SURFACE_SIDE+x)*4;initial[at]=0;initial[at+1]=field_initial(x,y);initial[at+2]=0;initial[at+3]=1;

@@ -471,9 +471,12 @@ loses the clipping contribution and fails strong initial impulses.
 clamp after adding the fourth diagonal neighbor. `surface_limit_boundary`
 applies final velocity bounds and the height cap before damping at authored
 boundaries; it does not clip the internal state after every fractional piece.
-`surface_rounding_shader.h` resolves
-only nearby byte-threshold ambiguities with original shader arithmetic evaluated
-at that boundary; both threshold distance and arithmetic disagreement are guarded.
+`surface_rounding_shader.h` canonicalizes nearby values with original shader
+arithmetic evaluated at that boundary, only within 32 float epsilons. It does
+not predict byte thresholds: a hardware probe found an RTX transition away
+from the ideal half-byte value. The earlier threshold-distance condition missed
+that transition. Larger disagreements remain untouched and detectable; fractional
+frames never use this authored-boundary correction.
 The fixture requires byte initial/persistent state. No runtime scheduler/resource
 owner calls this policy yet. The fixture covers mild/strong initial fields,
 near-limit signed velocities/heights and
