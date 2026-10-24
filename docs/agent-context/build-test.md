@@ -18,30 +18,31 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_framebuffer_sampling.py` compiles the complete HLE texture unit against
-fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
-water graphics dependencies with fail-fast assertions; no GPU emulation or
-production hooks are removed. This avoids MSVC unresolved symbols from unused
-water functions. Both normal refresh and the deliberately stale-copy mutation
-must run. Mac tests retain legacy GL and also compile the common RHI branch;
-Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
+`test_native_demo_timing.py`: asset-free scope/schedule/read guards and mutations;
+original US writer/reader, input, ABI, pause, EOF/cancel, catch-up,120/144/60handoff,
+startup, old zero-tick streams and recorder capacity/reset. All rate pairs pass;
+no expected failures. Missing private XBE skips originals. Full-game/file/Mac
+playback and sustained sub60 overload remain open.
 
-`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
-20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
-jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
-Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
-mutation must fail the atomic clip-transition assertion. Frame sampling also
-covers native 120/144 Hz without changing the simulation clock. Existing Windows
-and macOS CI invoke this suite; the helper itself has no OS dependencies.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
-bounded production Online host/guest pair through a loopback directory/browser/
-bridge, disposable Test Lab saves and separate input/runtime/display settings.
-It checks the supported XBE and sealed build before launch, records executable
-and compatibility identities, and recycles only its disposable partition images.
-Its asynchronous ReadProcessMemory observations measure actor update holds,
-not rendered frames, monitor scanout or Internet latency. Window captures are
-limited to the test processes. Benchmark fixture junctions are staged locally
-as five manifest files, then checked by the normal fixture validator.
+`test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
+copies and failing unused-water stubs. Run refresh and stale-copy mutation;
+Mac covers GL/RHI, Windows RHI.
+
+`test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
+counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
+Mac does not execute Windows stack walking.
+The runner records `--profile-depth 1..32` (default8), `--texture-mode`
+(`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
+
+`tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
+60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
+transitions, including cadence/crossfade mutations. Both CI hosts run it.
+`tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
+Windows Online host/guest pair with Test Lab saves and loopback discovery.
+It verifies supported XBE/build identities and recycles disposable partitions.
+Asynchronous ReadProcessMemory observations measure update holds, not rendered
+frames or Internet/physical-input latency. Five local benchmark fixture
+manifests are checked with the normal validator; the canonical fixture stays intact.
 
 Launcher changelog publication: tests/test_launcher_release.py covers explicit
 previous stable launcher selection across paginated game/launcher history,
@@ -152,16 +153,18 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 --no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` (scene39) and `crowd-disco` (scene56) use frequent move/fire/respawn
-input. Crowd routes focus their window after startup; still verify focus below.
-Record roster/window state separately from device resolution; unfocused/minimized
-runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
-health with pool rechecks; asynchronous proximity is not visibility. Analyze
-complete spawn+5..+55s intervals (Disco +5..+50s, within the 20,000-row cap) with
-clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
-enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
-can yield partial snapshots: check before differencing. `--trace-textures` enables
-bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
+`crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
+use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
+Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
+Record roster, foreground state and client/device sizes. `--watch-actors` uses
+bounded position/health reads with pool rechecks; proximity is not visibility.
+Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
+scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
+the 20,000-row cap; record it in provenance and verify endpoint coverage.
+The present-metrics fixture checks parsing, delayed intervals and cap/disable behavior.
+Disable images/tracing for pacing. `--profile-cpu` enables 200Hz diagnostic
+snapshots; concurrent rewrites may be partial. `--trace-textures` records bounded
+upload-stage timing. Check completeness before differencing either diagnostic.
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.
@@ -883,11 +886,11 @@ Controlled UVs replace RNG. Initial draws verify additive green and preserved
 red/blue/alpha; duplicate candidate noise must fail boundary equality. Queued
 splashes, live submission and whole-scene rendering remain separate acceptance.
 
-`native_surface_interval.c` (dual-host timing suite) checks exact conservation
-and boundary counts across three counter frequencies, presets, jitter, pause,
-catch-up, reset, invalid nonmutation and the four-piece maximum. Reset-phase
-mutation must fail. The real guest fixture checks publication, paused zero time
-and Original-mode clearing; exact metadata avoids float-sum boundary loss.
+`native_surface_interval.c` checks exact game/raw conservation and boundaries
+across frequencies, presets, jitter, pause, catch-up, resets and invalid input.
+Reset-phase mutation must fail. Guest tests check publication and Original60
+clearing. Exact raw metadata retains all60 boundaries during paused144;
+summing float deltas loses one. Both hosts run these CPU tests.
 
 `native_surface_mode.c`, in the same dual-host suite, checks immutable mode
 packing against the existing affine operator and independent one-tick equations,

@@ -7,7 +7,7 @@
 
 static void sequence(int64_t frequency,int jitter)
 {
-    PcNativeTiming clock={0};int64_t now=0,total=0;unsigned ended=0,started=0;
+    PcNativeTiming clock={0};int64_t now=0,total=0,raw_total=0;unsigned ended=0,started=0;
     pc_native_timing_step(&clock,now,frequency,144,0);
     const unsigned rates[]={144,120,60,144};
     for(unsigned frame=0;frame<1440;frame++) {
@@ -17,10 +17,12 @@ static void sequence(int64_t frequency,int jitter)
         if(frame==913)elapsed=frequency; /* Bounded catch-up, not a 60-tick burst. */
         int paused=frame>=103 && frame<160;
         now+=elapsed;
-        int64_t expected_units=paused?0:(elapsed>frequency/20?frequency/20:elapsed)*60;
+        int64_t raw_units=(elapsed>frequency/20?frequency/20:elapsed)*60;
+        int64_t expected_units=paused?0:raw_units;
         PcNativeStep step=pc_native_timing_step(&clock,now,frequency,rate,paused);
         assert(step.units_per_tick==frequency && step.game_phase==total%frequency);
         assert(step.game_units==expected_units);
+        assert(step.raw_units==raw_units && step.raw_phase==raw_total%frequency);
         PcSurfaceInterval interval;
         assert(pc_surface_interval_split(step.units_per_tick,step.game_phase,step.game_units,&interval));
         int64_t consumed=0,phase=total%frequency;unsigned frame_ended=0;
@@ -39,6 +41,16 @@ static void sequence(int64_t frequency,int jitter)
         assert(frame_ended==step.game_ticks && ended==(unsigned)(total/frequency));
         assert(started==ended+(interval.end_phase!=0));
         if(paused)assert(interval.count==0);
+        PcSurfaceInterval raw_interval;
+        assert(pc_surface_interval_split(frequency,step.raw_phase,step.raw_units,&raw_interval));
+        int64_t raw_consumed=0; unsigned raw_ticks=0;
+        for(unsigned i=0;i<raw_interval.count;i++) {
+            raw_consumed+=raw_interval.pieces[i].units;
+            raw_ticks+=raw_interval.pieces[i].ends_tick;
+        }
+        raw_total+=raw_units;
+        assert(raw_consumed==raw_units && raw_ticks==step.raw_ticks);
+        assert(raw_interval.end_phase==raw_total%frequency);
     }
 }
 int main(void)
@@ -58,6 +70,20 @@ int main(void)
         for(unsigned i=0;i<interval.count;i++)ticks+=interval.pieces[i].ends_tick;
     }
     assert((unsigned)naive==59 && ticks==60);
+    /* A recorded-input sampler cannot substitute game units: they stop on
+     * pause while raw time continues. Float raw_delta still loses a boundary. */
+    clock=(PcNativeTiming){0};
+    pc_native_timing_step(&clock,0,frequency,144,1);
+    double raw_naive=0; unsigned raw_ticks=0;
+    for(unsigned frame=1;frame<=144;frame++) {
+        PcNativeStep step=pc_native_timing_step(&clock,frame*(frequency/144),frequency,144,1);
+        PcSurfaceInterval interval;
+        assert(!step.game_units && !step.game_ticks);
+        assert(pc_surface_interval_split(frequency,step.raw_phase,step.raw_units,&interval));
+        raw_naive+=step.raw_delta;
+        for(unsigned i=0;i<interval.count;i++)raw_ticks+=interval.pieces[i].ends_tick;
+    }
+    assert((unsigned)raw_naive==59 && raw_ticks==60);
     PcSurfaceInterval result;
     assert(pc_surface_interval_split(100,1,300,&result));
     assert(result.count==4 && result.end_phase==1);
@@ -77,7 +103,8 @@ int main(void)
     assert(!memcmp(&clock,&unchanged,sizeof clock));
     assert(!pc_native_timing_step(NULL,0,100,144,0).units_per_tick);
     PcNativeStep reset=pc_native_timing_step(&clock,99,100,144,0);
-    assert(reset.units_per_tick==100 && !reset.game_units && !reset.game_phase);
+    assert(reset.units_per_tick==100 && !reset.game_units && !reset.game_phase &&
+           !reset.raw_units && !reset.raw_phase);
     printf("PASS: exact surface intervals across rates, jitter, pause and stalls; float accumulation %.12f vs %u ticks\n",naive,ticks);
     return 0;
 }

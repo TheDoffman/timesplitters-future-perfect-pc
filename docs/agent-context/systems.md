@@ -20,6 +20,49 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Recorded-input wait/exit timing: `pc_native_demo_guest.inc` captures the incoming
+raw interval around original `43220`, with nested TLS restoration. Numeric
+multiplies `433E2/43473` use that interval instead of the original minimum-one
+tick. State2 overwrites raw time while looping controllers; the scope prevents
+later controllers from inheriting that overwrite. The executed exit site is
+remembered across cleanup changing the mode. Exit/EOF retain game pause
+but restore incoming raw whole/float time. Original60 keeps original behavior,
+including its multi-controller multi-tick asymmetry.
+
+Recording state3 now serializes only on raw whole-tick frames. Scoped mode load
+`433A0` skips that writer branch on intervening native frames; device polling
+and lifecycle checks still run. Pending game ticks survive offset phases after
+pause and a live return to Original60. After the original writer, the wrapper
+corrects only its newly written records' game byte/start timestamp, preserving
+live globals, input bytes and the14-byte format. Buffer identity/cursor bounds
+guard those writes; `42535` clears host state on same-buffer initialization.
+Unexpected level-clock rebases also clear pending history. An untouched
+Original60 recording retains its original path.
+
+`pc_native_demo_playback_guest.inc` schedules authored input groups with exact
+raw units, retaining fractional phase across120/144 and a live60handoff. It calls
+the original decoder on the selected group, then publishes fractional raw/game
+intervals and matching `PcNativeStep` metadata. `pc_native_visual_rebase` preserves
+the level clock's fractional offset. Recorded raw timestamps are interval-END
+values; level timestamps are interval-START values. Zero-time polling keeps
+prior held buttons and suppresses packet consumption. `42535` resets playback
+as well as recording; identity changes invalidate history. Fresh bounded VM
+reads precede decoding; unreadable/partial groups reach original EOF.
+
+Old native zero-tick groups fold into the following positive group, including
+pending game ticks. A leading zero activates that repair in Original60; ordinary
+console recordings retain their Original60 decoder. Catch-up consumes at most
+one authored group per update to preserve presses, repaying at most three ticks
+of pending time on subsequent frames. Sustained sub60 playback can outrun that
+budget; full-game/file playback, overload and native Mac acceptance remain open.
+
+`PcNativeStep` now exposes exact `raw_units/raw_phase` alongside game units,
+using `units_per_tick`. Both phases describe the interval's start. Raw units
+advance during pause; reset/Original60 clear the metadata. Guest fields, clocks,
+save formats and pacing are unchanged. Playback sampling must use exact raw
+time rather than summing float deltas. Catch-up packets retain their original
+multi-tick bytes; the round-trip fixture covers recorder/reader rate dependency.
+
 Native vehicle/physics candidate (`fix/native-vehicle-physics`):
 `pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
 `0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains
@@ -130,6 +173,14 @@ for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
 native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
+
+The shared `graphics/present_metrics.h` recorder accepts optional
+`TSFP_FRAME_PROFILE_DELAY_MS` (0..600000, default0; malformed values use0).
+Only CSV rows are delayed from the first successful Present. Counters and the
+last-success timestamp keep advancing, preserving skipped/failed gaps without
+turning the startup delay into a false hitch. The 20,000-row cap is unchanged.
+No delay environment lookup occurs without a profile path. Common RHI and native
+GL share this behavior; native Mac execution remains pending (MAC-003).
 
 `pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
 current-player, player-record and control-setting accesses before the guest call.

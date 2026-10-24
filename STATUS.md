@@ -1,3 +1,437 @@
+## 2026-10-24 — Recorded playback uses fractional native time
+
+The recorder correction is now paired with a shared playback scheduler in
+`pc_native_demo_playback_guest.inc`, reached by the existing43220 wrapper.
+It uses exact raw counter units to select authored input groups, calls the
+original decoder every advancing update, then publishes fractional raw/game
+time, integer carries and matching procedural-surface metadata. Normal120/144
+updates stay fractional. This is fresh simulation time, not rendered-frame
+interpolation. `pc_native_visual_rebase` retains fractional level-clock phase.
+
+The original recorder's raw timestamp describes the END of its interval, while
+the level timestamp describes its START. The scheduler treats them separately.
+Zero-time startup/polling cannot consume the first recorded press. Fractional
+position survives144->60->120, including the zero-length new clock update.
+Same-buffer initialization clears history; cursor/buffer identity changes reset
+it. Unreadable or incomplete groups enter original EOF through bounded fresh
+memory reads; mapped-region permissions are not retained across guest calls.
+
+Older native zero-tick groups fold into the next positive group, carrying their
+game ticks. A leading zero also enables this repair when opened at Original60;
+normal console recordings keep their original60 decoder. The fixture exercises
+one/four controllers and native120/144 recordings with both recorded pause and
+game ticks falling on zero-raw frames, replayed at all three presets. The format,
+personal settings and saves are unchanged.
+
+All18 record/playback rate/controller combinations and the prior24 packet cases
+now pass, resolving the recorder-only intermediate regression. Original-program
+tests also check held/pressed/released inputs, six analog bytes, ABI, wait/exit,
+zero polling, cancellation, pause, one three-tick stall, clock/visual continuity,
+bounded reads and live rate handoff. Catch-up advances at most one input group
+per update, with bounded debt repaid by later native updates; the tested stall
+recovers without skipped packets or elapsed-time loss. Sustained playback below
+60updates/s can exceed its three-tick debt budget and remains a fidelity gap.
+
+Windows/MSVC native/demo suite: **128 passed**,112.61s
+(`demo-playback-native-suite.log`). Three further asset-free mutations of phase,
+raw timestamp and zero-time gating are rejected (**5 shared cases passed**,
+48 deselected,9.29s; `demo-playback-shared-mutations.log`). No expected failures
+remain in this module. Source base907dfde plus this change. Tests requiring the
+supported US XBE use its verified hash; CI without it skips original routines,
+while the new shared schedule/read-boundary fixture still runs. Full live game/
+recording-file playback, physical latency, sustained overload and native Mac
+execution remain unverified. This is not full-game high-refresh acceptance.
+
+The supported Windows build verifies the full patch stack and passes its native
+checks (`logs/demo-playback-build.log`); test partitions were recycled. Final
+executable SHA256:
+`c045f372678ad39e753cb01731e83bc7668cd4a7ed91bb662f49bb2fb62a7931`.
+Host: Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests,
+context freshness and whitespace checks pass. No new PR or live game session.
+
+## 2026-10-24 — Native recordings retain authored-tick cadence
+
+The original recorder wrote a packet on every native update, including zero-
+whole-tick frames. One second recorded at144 therefore needed144 updates to
+replay, taking2.4seconds on Original60. The shared demo scope now suppresses
+only serialization on those fractional frames; original device and lifecycle
+calls still execute. Offset game ticks after pause are carried into the next
+record, along with their starting timestamp. The correction touches only bytes
+just written by the original, under buffer identity/cursor bounds; live timing,
+input bytes, saves and the14-byte recording format remain unchanged. Catch-up
+retains original multi-tick records. Original60 keeps its untouched path, apart
+from flushing a pending native recording interval during a live handoff.
+
+The existing numeric hooks select the writer branch at433A0 and observe cursor
+initialization at42535. Same-buffer restarts and unexpected level-clock rebases
+discard pending history. No extra patch, guest wrapper or generated edit.
+The original writer/reader fixture now verifies correct1s raw/0.5s paused game
+time when recordings from **all three presets** replay at60. Recorder checks
+cover one/four controllers, zero startup, pause away from tick boundaries,
+three-tick catch-up, exact input/analog bytes, pending-tick60handoff, same-buffer
+reset and a full buffer stopping partway through the controller loop. Removing
+the write gate, carry or reset each fails its designated assertion.
+
+Windows/MSVC native/demo suite: **99 passed,28 expected failures**,110.54s
+(`logs/demo-recording-native-suite.log`). After adding the level-clock rebase
+guard, zero-startup and partial-capacity cases, the final demo suite reports
+**21 passed,28 expected failures**,17.20s (`logs/demo-recording-final-tests.log`).
+The expected failures still represent native playback: it consumes one packet
+per update. The recorder repair makes native-to60 correct; playback at120/144
+still needs repair, including previously produced zero-tick recordings. No full
+game-loop/file playback or native Mac validation is claimed. Source base6c1abaa
+plus this correction; the overall smoothness goal remains incomplete.
+
+**Interim candidate, not ready to merge alone:** native-to-native round trips
+previously matched duration because both writer and reader ran too often.
+Normalizing only the writer makes those cases finish too early too. The writer
+and playback scheduler must land together. An ignored combined prototype now
+passes all18 rate/controller round trips (`demo-prototype-normalized-roundtrip.log`),
+but zero-time playback, reset identity/memory validation, catch-up input events,
+old zero-tick recordings and native-to60 playback handoff remain unresolved.
+The prototype is not in the executable; no PR was opened for this intermediate work.
+
+Supported Windows build and native checks pass (`demo-recording-build.log`),
+with the full patch stack verified. Final executable SHA256:
+`e38e78475d4dc8a90b0f64d9f22241bb8c587ed699f5dfab6bf12064bcf2b5ff`.
+Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests pass;
+context freshness/whitespace pass. No new live game session was launched.
+
+## 2026-10-24 — Exact raw clock and recording round-trip evidence
+
+`PcNativeStep` now publishes raw counter units and the interval's starting
+remainder, matching its existing exact game-time metadata. Raw time continues
+during pause. This is shared host metadata; guest memory, saves, original60,
+game-speed arithmetic and pacing are unchanged. Sampling rounded float deltas
+at144 loses an authored boundary after one second even with a double sum;
+the exact raw interval retains all60, including while game time is paused.
+
+The hash-verified original writer (`43220` state3), full input dispatcher and
+playback initializer/reader now run recording-to-playback checks at all nine
+60/120/144 rate pairs with one/four controllers. A one-second recording has
+half a second of game time followed by half a second paused. Tests verify actual
+written raw/game totals, preserved live deltas, playback totals and time of last
+packet consumption. Final totals alone would miss accelerated completion.
+Same-rate cases pass; twelve cross-rate cases fail strictly on measured timing.
+Together with the prior packet fixture: **18 passed, 28 expected failures**
+(`logs/demo-roundtrip-tests.log`, Windows/MSVC, base `eaabfbf` plus this change).
+These expected failures are unresolved defects, not acceptance.
+
+An ignored prototype correctly resampled pre-filled60-packet streams at120/144,
+including mixed ticks and a144-to120 switch, but fails the new round-trip test.
+The current writer emits144 packet groups per second at144, including84 zero-raw
+groups. The prototype consumes only0.416666663s of such a recording in one wall
+second, even replaying at144. It was therefore **not integrated**. Repair must
+cover recording and playback together, plus zero-time startup, lifecycle resets,
+button events, pauses, catch-up and live switches to/from Original60.
+Logs: `demo-recording-probe.log`, `demo-prototype-roundtrip.log` (private generated
+test code stays ignored). File IO/full level playback and Mac execution remain
+unverified; the native smoothness goal remains incomplete. No new PR opened.
+
+Five focused clock/guest/surface tests pass (73 unrelated cases deselected),
+including exact raw metadata through pause and mode reset; context/CI-scope
+tests pass88 cases. Context freshness and whitespace checks pass. The supported
+Windows build verifies the full patch stack and passes its native checks:
+`logs/demo-raw-clock-build.log`, Windows11Pro x64 10.0.26300/MSVC14.44.35207.
+Executable SHA256:
+`f5b434f1f98841c2b8b8ccf21a8f5997ab4d104ecc3274bacefbef2338f9afd6`.
+No new gameplay/performance or native Mac validation is claimed for this change.
+
+## 2026-10-24 — Demo wait and exit timers use fractional time
+
+Original recorded-input states2 (exit) and5 (wait) clamp elapsed raw time to
+at least one tick. At native rates this accelerates their countdowns. State2
+also writes raw time back to one while visiting the first controller, exposing
+that value to later controllers and the rest of the update.
+
+The shared `pc_native_demo_guest.inc` wrapper captures the incoming raw interval
+in a nested thread-local scope. Numeric sites `433E2/43473` use it for those
+two countdowns; exit/EOF restore the incoming raw whole/float values while
+retaining the original zero game time. The wrapper remembers execution of the
+exit site, so cancellation still restores time if cleanup changes demo mode.
+Original60 arithmetic and state changes
+remain original, including the old multi-controller/multi-tick asymmetry.
+The new patch wraps `43220` on both hosts and requires guest regeneration.
+
+The original-program fixture now executes completion of both transitions at
+60/120/144 with one/four controllers, checks one/two-tick interval scaling,
+zero-time frames, EOF, raw-clock publication and stack/register preservation.
+Timer and restoration mutations must fail separately. This repairs transitions;
+it does **not** fix record consumption. The sixteen strict packet-timing expected
+failures remain, and neither live demo playback nor native Mac execution is
+verified. MAC-060 records the shared implementation and remaining host checks.
+
+On Windows11Pro x64 10.0.26300/MSVC14.44.35207, the final focused suite reports
+**12 passed, 16 expected failures** (`demo-transition-cancel-tests.log`). This
+includes the asset-free nested-scope/fallback check and two rejected mutations.
+The context/CI-scope recheck passes88 cases; context freshness and whitespace
+pass. Both supported Windows builds pass their native checks. The final
+executable SHA256 is
+`1f45acfbcb85decb56e0c997e5d889bac70c5c7106b71a8622c098bb3b7219d9`.
+Source is `333cb5f` plus this correction.
+The broad native/patch-upgrade suite finished with123 passed,16 expected failures
+and one player-dispatch fixture link failure (991.50s). That fixture's variable-
+site arithmetic checks needed a failing stub for the new, unrelated demo helper.
+Adding it preserves rejection of accidental demo-policy routing; the affected
+test now passes (1 passed,77 deselected,2.80s). Fresh/repeated patch application
+and historical upgrade checks passed in the broad run. Logs:
+`demo-transition-suite.log`, `demo-transition-player-recheck.log`.
+
+Before the cancellation follow-up, an isolated180s Hotel native144 integration
+run (`demo-transition-normal-144`) exited zero: all four named active-match
+checkpoints retained ten bots;33 active observations include24 player positions
+and19 zero-whole-tick intervals. Signed profiles/fixture were preserved and
+disposable partitions removed. Enhanced/FOV73, 3440x1440 render request,
+foreground640x480 client; no captures, CPU/Present or per-update trace. Binary
+`e020983bb49940e5a48e760eded65b747e8b83736bc12d117596c1cc783c3795`.
+This checks normal input integration in that candidate, not final-build live
+demo lifecycle, visible correctness, latency or crowd performance. D3D11,
+RTX4070SUPER driver32.0.16.1742; the executable reports native144 timing active.
+
+## 2026-10-24 — Recorded-input playback timing regression reproduced offline
+
+The verified US XBE's original playback initializer (`69E80 -> 431F0 -> 42510`)
+and full input dispatcher (`438B0 -> 43220`) now run in a repeatable local
+regression fixture. Synthetic recording bytes and controlled physical-device/
+lifecycle services are the test boundaries. Initialization, one/four-controller
+held/pressed/released values and six analog bytes, guest stack/callee-saved
+registers, the menu scene gate and end-of-stream transition all pass.
+
+With unit raw/game tick records, one nominal wall second consumes 1.0 seconds
+of recorded time at60 calls/s, 2.0 at120 and 2.4 at144. The input dispatcher
+reaches playback on fractional frames too. Source inspection traces the normal
+offline input path through `3559A0 -> 438B0`; its PC bot wrapper calls the
+original unconditionally. This is stronger than calling playback in isolation,
+but is not a live recording/file or full game-loop reproduction.
+
+`tests/test_native_demo_timing.py` reports **8 passed, 16 expected failures**.
+Only the measured timing mismatch may strictly xfail; build, initialization,
+input and ABI failures cannot be hidden by that mark. Multi-tick and zero-game
+records compare with the same synthetic Original60 path, not an asserted
+variable-duration recording wall-clock contract. Generation stays local and
+requires the hash-verified private XBE; CI without it skips these cases.
+Windows/MSVC checked on source `d4c0c02` plus this test change; native Mac and
+live playback remain unverified. No runtime repair is claimed. Next: establish
+record consumption/clock rebasing across fractional frames, pause, EOF and
+live rate changes before changing the playback path. No new PR opened.
+
+## 2026-10-24 — Later combat pacing and delayed bounded capture
+
+The previous 20,000-row Present recorder spent much of its allowance on menus.
+The common recorder now accepts optional `TSFP_FRAME_PROFILE_DELAY_MS` in
+0..600000 (default0; invalid values fall back to0). CSV rows start after that
+delay from the first successful Present. Counters and last-success timestamps
+continue throughout, so the delay does not create an artificial long interval.
+Skipped/failed gaps and the same 20,000-row cap remain. Disabled recording adds
+no delay environment lookup. This improves diagnostic coverage, not game FPS.
+The runner records `--profile-delay-seconds` and adds `--crowd-weapons rockets`
+using the calibrated normal weapon-menu selection. No saves, AI or health are
+modified by these options. Shared RHI/GL use the same implementation (MAC-003).
+
+The production recorder passes delayed-boundary CSV, full counters, failure/
+skip gaps, cap/close, disabled-path and malformed/overflow-input tests.
+The relevant renderer, frame-statistics and context/backlog suite reports
+49 passed, 1 skipped (Mac CoreText adapter) in 20.52s; the supported Windows
+builder and native checks pass. Logs: `crowd-delayed-profile-{tests,build}.log`.
+Native Mac execution remains pending. No new PR has been opened.
+
+An isolated captured Hotel calibration checked weapon presets: six right presses
+from Recommended selects Rockets; Custom1 (nine right presses) is all Unarmed in
+the local fixture. The unarmed experiment reached scene39 with ten bots and
+ordinary deaths/respawns, but ended against a wall and did not establish a dense
+visible fight. Reject it as pacing acceptance; capture overhead also applies.
+
+Clean Enhanced Hotel Rocket runs used 3440x1440 rendering, FOV73 and a foreground,
+visible, nonminimized 1920x1060 client. Window toggles occur before match setup;
+all input is normal menu/movement/fire/respawn input on isolated Test Lab copies.
+Host: Windows11Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver
+32.0.16.1742. CPU sampling, captures and texture/per-update tracing were off.
+Present logging and bounded asynchronous actor observations stayed on.
+
+| Run | Predeclared window | Guest intervals / FPS | Median / p95 / p99 ms | Worst ms | Minimum rolling 1s | Game/wall |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| `crowd-rockets-144` | spawn+5..35s | 4319 / 143.999897 | 6.968 / 7.295 / 7.449 | 12.398 | 144 | 0.999851 |
+| `crowd-rockets-120` | spawn+5..35s | 3599 / 120.000731 | 8.328 / 8.703 / 8.827 | 12.442 | 120 | 1.000103 |
+| `crowd-rockets-long-144` | spawn+5..125s | 17263 / 143.867096 | 6.988 / 7.316 / 7.547 | 11.497 | 137 | 0.999969 |
+| `crowd-rockets-long-60` | spawn+5..125s | 7199 / 60.000373 | 16.668 / 17.029 / 17.140 | 17.449 | 60 | 0.999986 |
+
+The short runs used the prior executable
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`.
+Runner hashes: 144=`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`;
+120=`164a956b2dd1414b2a092db352d131ac4db75def9408a873b2b01c1c74e6811b`.
+The long run used source `42bcffb` plus the delayed-recorder change, executable
+`47f187793a120ca4533f864dce9f7d33f72dc425a1db1868663cd0561adf880a`,
+runner `66d679a0abd32e5b097e8cfacf1a612bd2d0755c1c21d5318475f3b4630ca680`.
+It extended movement/fire to64 blocks, turning900 horizontal input units every
+six blocks, and delayed recording90s. CSV spans elapsed90002.837..228996.163ms,
+exactly20,000 rows /1,158,625 bytes, with both measurement endpoints covered.
+
+The long run's 65 actor checkpoints include43 living-player observations;
+34 lie inside the measurement window. Maximum living bots within10/20/30 units
+inside that window are3/7/9. The short144 run's whole-route maximum4/7/9 was
+outside its measurement window; inside it the maximum is2/4/7 (120:2/4/6).
+Do not present the whole-route peak as measured crowded-frame acceptance.
+The lowest rolling count137 ends170.348s after runner start, bracketed by living
+player at169.296s and dead player at171.606s. Nearby reads do not establish
+rendered visibility or whether death/effects caused the dip. No interval exceeds
+33.33ms and all measured Presents are fresh guest frames. This reveals a modest
+later pacing dip, not the reported110 FPS case, nor a performance improvement.
+
+All runs exited zero, retained signed profiles/canonical fixture and recycled
+disposable partitions. Evidence is under ignored `private/test-saves/` with
+the run names above; the long run includes `later-window-summary.json`.
+Random bot paths prevent paired mechanical/causal comparisons. Presents do not
+measure GPU completion, scanout or input latency. The reported crowd issue,
+broader gameplay and Mac acceptance remain open.
+
+The completed Original60 long-combat control uses the same executable/runner
+hashes and identical normal-input command file as long144. Its predeclared
+window is covered, with no interval above33.33ms and only fresh guest Presents.
+All measured window observations are foreground, visible and nonminimized at
+1920x1060 client size (3440x1440 render request). Of65 actor checkpoints,
+45 observe a living player; 36 fall inside the window, with nearby living-bot
+maxima3/5/10 at10/20/30 world units. These are proximity, not visibility counts.
+The bounded run exited zero, preserved signed profiles/fixture and left no
+disposable partition images. Evidence: `crowd-rockets-long-60` under the same
+ignored test directory. This supplies the missing60 control, not a causal
+explanation for native dips or proof of the user's reported110 FPS case.
+
+## 2026-10-24 — Enhanced Temple comparison at Original60 and native144
+
+The isolated crowd runner now supports `--texture-mode classic|enhanced`
+(Classic remains the default) and a calibrated `crowd-temple` route. The latter
+selects menu index3 and requires scene49, active match7, no pause and ten bots at
+all four named gameplay checkpoints. Texture mode is recorded in provenance.
+These are validation changes, not a runtime performance fix.
+
+An initial captured Temple calibration confirmed the temple environment and
+Enhanced delivery: 147 replacements loaded, 173,452,828 replacement bytes, and
+154 rejected reads retaining original textures. All 301 trace rows selected
+Enhanced. Captures and texture logging exclude this calibration from pacing
+acceptance. This does not establish complete replacement coverage or parity.
+
+Separate clean `crowd-temple-enhanced-{60,144}` runs used source `8677d88` plus
+the runner changes, Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and
+RTX4070SUPER driver32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`.
+Both selected Enhanced, FOV73 and 3440x1440 rendering (confirmed at D3D device
+creation). Each isolated command file toggled fullscreen after focusing and
+before match setup. All 33 active observations were foreground, visible and
+nonminimized with a 1920x1060 client; this is not physical ultrawide acceptance.
+CPU sampling, per-update CSV, texture logging and captures were disabled.
+Present recording and bounded asynchronous actor reads remained enabled.
+
+The predeclared spawn+5..50s window fits the 20,000-row recorder cap:
+
+| Mode | Fresh guest intervals | FPS | Median / p95 / p99 (ms) | Worst (ms) | Minimum rolling 1s | Game/wall time |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Original60 | 2,699 | 60.000377 | 16.668 / 17.038 / 17.164 | 19.754 | 60 | 0.999916 |
+| Native144 | 6,479 | 143.999419 | 6.985 / 7.292 / 7.417 | 10.128 | 144 | 1.000096 |
+
+Neither window contained an interval over 33.33ms or interpolated Presents.
+Both observed a living player at 26/33 checkpoints. Maximum living bots within
+10/20/30 world units were 1/3/4 at60 and 1/3/3 at144. This is less dense than
+the Hotel route: reject Temple as proof of the reported heavy-crowd case.
+Asynchronous proximity does not establish visibility, and random bot outcomes
+are not deterministic mechanical equivalence. Successful Presents do not
+measure GPU completion, monitor scanout or input latency.
+
+Both runs exited zero and preserved signed profiles and the canonical fixture;
+disposable partitions were recycled. Twenty repository-context tests passed;
+context/index validation against `6ddc8a0` and whitespace checks passed. The
+runtime binary was unchanged, so no game rebuild was needed. Evidence remains under ignored
+`private/test-saves/crowd-temple-{calibrate-144,enhanced-60,enhanced-144}` and
+matching `logs/` files. The crowd dip, wider gameplay and native Mac acceptance
+remain open. Related work stays on `perf/crowd-callers`; no new PR was opened.
+
+## 2026-10-24 — Deeper crowd caller attribution
+
+The opt-in Windows CPU sampler walked eight frames by default but retained only
+six in its caller-chain keys and reports. That cut off the gameplay parents of
+expensive host memory checks. `zz-sampler-caller-depth.patch` retains all captured
+frames up to the existing 32-frame walk limit, clamps the reported requested
+depth, and reports dropped new chains when the unchanged 8,192-key table fills.
+Existing keys still accumulate after saturation. On x64 the bounded chain table
+is now 2.0625 MiB per sampled thread (previously 0.4375 MiB); it is allocated only
+with the sampler enabled. Normal gameplay gains no allocations or checks from
+this diagnostic change. The bounded runner adds `--profile-depth` and provenance.
+
+The actual insertion function passes caller-depth, short-stack, saturation and
+retained-count tests; mutations restoring six frames or hiding overflow fail.
+98 focused/context/CI-selection checks pass in 15.70s, and fresh patch installation
+plus repeated application passes in 20.81s. The supported Windows builder and its
+native checks pass (`logs/crowd-callers-{tests,patch-test,build}.log`). The existing
+Win32 suspension/DbgHelp adapter remains Windows-only; portable key tests are
+registered for both CI hosts. Mac live profiling remains absent (MAC-003).
+
+A bounded Hotel diagnostic used source `625699f` plus this sampler patch,
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and RTX4070SUPER
+32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`40ec20c2af64bf6c6216412b7328f24c6f9f42c2a3527ebfbb5b5e04fa508860`.
+The isolated route used native144, Classic, FOV73, 3440x1440 render configuration,
+foreground 1920x1060 client, 200Hz requested sampling and twelve frames. No
+per-update CSV, texture tracing or captures were enabled. Ten bots remained
+configured; 28/33 observations had a living player, with maximum 2/4/6 living
+bots within 10/20/30 units. Proximity is not visibility.
+
+Complete cumulative110s-to150s guest-thread snapshots contain 6,832 samples,
+3,858 classified on-CPU, 24.1s thread CPU and 1,077 VM-query samples. Caller
+coverage reports depth12 and zero dropped keys; independent leaf/chain totals
+match. The final dump is 825,944 bytes, below the runner's 4MiB snapshot bound.
+Deeper chains now identify panel `12E3F0` behind 223 text-query samples, decal
+paths `112EA0/115A40` behind 160/69, and aiming-overlay validation behind69.
+These are sampled counts, not call counts or causal FPS improvements. Existing
+panel scopes and source-only decal checks already cover those paths; no checks
+were removed based solely on the profile. Nearest public symbols still misname
+some static helpers. Sampling perturbs timing and random bot paths differ from
+previous runs, so CPU-time differences are not evidence of a performance gain.
+
+Evidence is in ignored `private/test-saves/crowd-callers-profile-144` and
+`logs/crowd-callers-profile-144.log`. The runner exited zero, preserved profiles
+and the canonical fixture, and recycled its partitions. The reported crowd dip
+and broader native-refresh gameplay acceptance remain open. This diagnostic
+work stays grouped with the next performance changes; no successor PR is open.
+
+## 2026-10-24 — Clean final-runtime Hotel crowd sample
+
+PR #324 merged into main as `6ddc8a0` after all 14 checks passed for head
+`1872a68`. Windows runtime CI: 545 passed, 120 skipped, 18 subtests passed;
+release contracts: 150 passed, 3 subtests passed. Mac native-runtime/GPU and
+both framebuffer fixture variants passed. CI does not certify Mac game scenes.
+
+After the fixture-only PR #324 repair, a bounded Windows Hotel run used the
+unchanged final runtime executable `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`
+(f51d514 runtime source; subsequent changes are documentation/test fixtures).
+Host remains Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11,
+RTX 4070 SUPER driver 32.0.16.1742. Runner SHA256:
+`d77628e191222a06538030e2f6dd719ec67d512913f9d2c7ae67dcaad1cc0c9f`.
+The isolated crowd-hotel route selected native144, Classic, FOV73 and
+3440x1440 rendering; an inserted command toggled fullscreen before match setup.
+All 33 active checkpoints were visible/foreground/nonminimized with a
+1920x1060 client. This is not physical 3440x1440 monitor acceptance.
+
+The predeclared spawn+5..50-second interval fits the recorder's 20,000-row cap.
+Its 6,479 complete fresh-guest Present intervals give 144.000079 FPS, median
+6.976 ms, p95 7.295 ms, p99 7.449 ms and worst 9.317 ms; minimum rolling
+one-second count is 144. Game/wall clock ratio is 1.000151. CPU sampling,
+per-update CSV, texture tracing and captures were disabled. Bounded asynchronous
+actor observations remain: 25/33 checkpoints have a living player; maximum
+living bots within 10/20/30 world units are 3/5/7. Ten configured bots does not
+mean ten visible bots, and these observations are not an alive-time fraction.
+
+The test exited zero, preserved signed profiles and the canonical fixture,
+and recycled disposable partitions. Evidence: ignored
+`private/test-saves/crowd-final-fullscreen-144/{provenance,report,crowd-metrics,actor-metrics,acceptance-window}.json`
+and `logs/crowd-final-fullscreen-144.log`. Successful host Presents are not GPU
+completion, scanout or physical input latency. This nondeterministic route did
+not reproduce the reported 144-to-110 drop and does not establish its resolution.
+The earlier Original60/native120 comparisons retain their separate conditions;
+this is additional current-runtime coverage, not a controlled before/after gain.
+
 ## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
 
 PR #324 groups water, Classic texture deferral and scoped input/menu/camera
