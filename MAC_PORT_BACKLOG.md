@@ -3677,7 +3677,6 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-<<<<<<< HEAD
 - **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
   GPU transform shader bodies preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
@@ -3691,7 +3690,6 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.
 
-=======
 - **Respawn diagnostic (2026-10-22, PR #307):** Read-only Windows CPU/health
   observations reproduce a 25.856-ms gap after health restoration; a follow-up
   sampling emulated GPU handshake words does not reproduce the large gap or
@@ -3874,7 +3872,29 @@ See STATUS for exact measurements and the corrected reference scope.
   Siberia contact and passes pause/resume; it does not measure impact strength.
   The current retained diagnostic build is `60e5b36`; playable `4adb6b0`
   remains restored. These Windows results do not establish Mac execution.
->>>>>>> origin/fix/native-vehicle-physics
+- **Texture-upload timing diagnostic (2026-10-22, `diagnostic/texture-upload-timing`):** Shared
+  `texture_pack_trace.h` and traced reader expose opt-in bounded CPU wall spans
+  for the common-RHI loader and legacy GL adapter. Windows uses QPC, POSIX uses
+  CLOCK_MONOTONIC; texture behavior/budgets/defaults are unchanged. Disabled,
+  failed-output, bounded-output and loader stage tests run in the existing
+  both-host workflow. Windows full build and stage correlation pass at `2230901`
+  (PR #308), with one explicit virtual-pad focus skip. All selected both-host
+  CI passes; actual native Mac trace/gameplay remains awaiting validation.
+  The worst 12.639-ms interval includes 2.215 ms of recorded attempts, while other
+  slow intervals contain none. Key hashing/cached calls and trace-output cost
+  remain outside the spans. This is diagnostic evidence, not a hitch fix; see
+  STATUS for scope and the main-based executable's provenance.
+  Follow-up source now measures source-key hashing on both RHI and legacy GL,
+  including cached upload calls, with the same disabled/bounded contract.
+  Forty-eight focused local tests pass, including real-loader hash ordering and
+  no file/resource work on cached calls. The new hash fields are not present in
+  the earlier `2230901` evidence. Windows build/built-in checks pass at `018f2be`
+  (virtual-pad focus skipped). The live 50-second window records only 0.710 ms
+  hashing, with no uploads in its four slowest intervals; no hashing optimization
+  is justified. No live cached calls occurred; the fixture covers that outcome.
+  Actual native Mac tracing remains pending for this extension.
+
+
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing
   bypasses the gate. First return to Original 60 can consume the tick already

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## 2026-10-23 — Coupled fractional water operator candidate
 
 Independent branch `fix/native-water-coupling`, based on main 5c44696. The
@@ -48,7 +47,6 @@ All eight updated GPU cases pass in 31.96 seconds. See the detailed regression
 table and logs/water-original-vertex.log. PR #316 head 67f9663 passed all selected
 Windows/Mac native, transition and ancillary CI checks; the newer fixture
 follow-up requires its own CI run. Mac game/GPU water acceptance remains open.
-=======
 ## 2026-10-22 — Respawn hitch diagnostic, cause still open
 
 Two bounded Windows diagnostics use the unchanged integrated `20dc25d` binary
@@ -671,7 +669,148 @@ This proves callback entry, not the taken branch, impulse magnitude or driving
 parity. The retained candidate is now `private/build-recovery/vehicle-60e5b36`;
 the previous `3e1ee87` pair was recycled and playable `4adb6b0` restored with
 its hash verified. See the regression record for evidence and remaining limits.
->>>>>>> origin/fix/native-vehicle-physics
+## 2026-10-22 — Crowded-scene CPU accounting and hash trace coverage
+
+The unchanged playable `4adb6b0` baseline was exercised in two further bounded,
+isolated Venice/ten-bot native 144 runs with 3440x1440 rendering. Both retained
+the visible fullscreen 1920x1060 client, with no foreground observations.
+`crowd-fullscreen-thread-4adb-144` adds read-only thread CPU/cycle counters at a
+nominal 4 ms interval. Its slowest nearly-five-second window records 135.919 FPS
+and 96.02% main-thread CPU use (7.065 CPU ms per present); an overlapping window
+records 135.971 FPS and 97.31% CPU. Present calls total 43.584/44.010 ms across
+those five-second windows. Faster windows near 144 FPS use about 76% CPU. These
+counters include busy waits and cannot identify exact routines, but implicate
+main-thread CPU budget rather than spending most of the slowdown off-CPU.
+
+`crowd-fullscreen-stack-4adb-144` adds external saved-stack sampling. It does
+not reproduce the sustained dip: minimum rolling five-second FPS is 143.4.
+It does capture a 27.450-ms respawn interval (Present call 0.092 ms), with six
+samples spanning it. Two land in texture-upload code and two in texture-file
+opening. The measured suspension overlap is 0.181 ms; across the active 50-second
+window median suspension is 0.0175 ms, p99 0.139 ms and total 322.627 ms. This remains
+perturbed diagnostic evidence, not causal stage duration. Both runs exit cleanly
+with valid unchanged profiles/fixture and recycled disposable disks; the normal
+playable executable is unchanged. Per-run thread/window/stack JSON and raw CSVs
+retain the observations. The roughly 110 FPS user report remains unreproduced.
+
+The existing upload collector omitted source-key hashing and cached calls. The
+follow-up shared RHI/legacy-GL source now adds hash begin/end timestamps and a
+`cached` outcome with no read/image/view work. This closes a measurement gap;
+it does not change the key, loader behavior, texels, resource reuse or budgets.
+Disabled tracing still performs no clock/file work; the row/byte cap is unchanged.
+Forty-eight focused texture runtime/tool tests pass in 6.32 seconds, including
+all twenty cached hashes, stage ordering, unchanged fallback/resource counts
+and disabled/failed/bounded collection. The supported Windows build and built-in
+checks pass at `018f2be`, with the virtual-pad focus route explicitly skipped.
+Actual native Mac gameplay is unverified. Earlier trace evidence below
+uses the original narrower schema and must not be reinterpreted as hash timing.
+
+The bounded `texture-hash-fullscreen-144` run on that main-based diagnostic build
+records 279 calls (127 loaded, 152 rejected reads), with no cached calls observed;
+cached coverage is supplied by the loader fixture. The CSV is 52,795 bytes,
+well below both caps. All 50 window observations verify ten bots, active Venice,
+visible/non-minimized 1920x1060 client and no foreground focus. In the strict
+spawn+5..55-second window, 43 calls total 0.710 ms hashing, 2.254 ms opening,
+2.338 ms transfer, 0.002 ms validation, 3.841 ms image creation and 0.065 ms views.
+The four worst intervals (14.420/14.019/12.734/11.794 ms) contain no upload calls.
+An interval of 10.813 ms overlaps eight calls totaling 2.237 ms, including 0.100 ms
+hashing. The earlier 27.450-ms event is not reproduced, and this run does not
+justify a hashing optimization. It remains a stage diagnostic, not clean pacing
+or a single-change comparison against the older playable baseline. The EXE hash
+is `a9a6737f3645928ae98ee5d9a283ec80607372f83c1a05db34e2a09819a58c5c`.
+The session exits cleanly with valid unchanged profiles/fixture, recycled disks
+and the normal playable EXE restored. Evidence: per-run CSVs/JSON/provenance and
+`logs/texture-hash-fullscreen-analysis.json`. Main-thread CPU pressure during the
+sustained dips remains the next focus; neither cause nor full-game coverage is
+resolved by the texture measurements.
+
+## 2026-10-22 — Opt-in texture-upload timing
+
+A focused diagnostic branch from main `acf4464` adds per-attempt monotonic
+CPU timestamps for file open, transfer/allocation, validation, image creation
+and view creation. The shared collector covers common RHI and legacy GL;
+Classic preloading, live switching, original texels, fallback and resource
+budgets remain unchanged. It is disabled unless `TSFP_TEXTURE_UPLOAD_TRACE`
+names an output file, bounded to 8,192 rows/below 4 MiB, and emits no clocks or
+file I/O when disabled. Trace output itself can perturb frame pacing.
+
+This follows sampled texture-file work in slow frames on the separate PR307
+vehicle integration build. The new branch is based on main and does not contain
+that unmerged vehicle work; do not compare its FPS as a single-change vehicle
+benchmark. No hitch or performance improvement is claimed by instrumentation.
+Forty-eight focused texture runtime/tool tests pass locally in 6.37 seconds,
+including disabled/failed/bounded output and real-loader stage/fallback checks.
+The existing both-host runtime workflow includes the expanded test module.
+The supported Windows build and built-in checks pass at `2230901`; virtual-pad
+foreground routing explicitly skips because Windows refused focus. All selected
+runtime, transition, launcher-compatibility and issue CI passes on Windows/Mac;
+patch upgrades and launcher builds are out of scope/skipped for this source-only
+change. Actual native Mac trace/gameplay remains unverified under MAC-060.
+
+The bounded, minimized `texture-upload-main-144` run uses the established configured ten-bot
+Venice route, native 144, Classic 3440x1440/FOV73, isolated Test Lab saves/settings,
+no captures and no stack/CPU sampler. Spawn and combat checkpoints verify active
+scene 46/state 7/unpaused; there is no fresh roster sample. EXE SHA256 is
+`4ddb452a1ec1aa7bcab68a179cd06e98627cd5fb1fa11aab142d3334bb141930`.
+Its 44,677-byte CSV contains 280 attempts: 129 loaded and 151 rejected reads. All 129
+successful-load log entries have records; the row/byte limit is not approached.
+
+In the strict complete-interval spawn+5..55-second window, 46 attempts comprise
+15 loads and 31 rejected reads. Cumulative recorded time is 2.867 ms opening,
+4.590 ms transfer/allocation/close, 0.003 ms validation, 4.339 ms image creation
+and 0.079 ms view creation. The longest single active-window attempt is 1.237 ms.
+The worst 12.639-ms Present interval overlaps eight attempts totaling 2.215 ms;
+its Present call is 0.087 ms. Subsequent 12.462/12.428/11.942-ms intervals have no
+recorded uploads. The original 25.856-ms event is not reproduced. This directly
+limits the texture-loading hypothesis: these fresh attempts add some work but
+do not account for most observed slow-frame time. Key hashing and cached calls
+precede this collector, while CSV output follows its end; those costs and other
+frame work remain outside these spans. No loader optimization or FPS gain is
+justified by this run alone.
+
+The session exits cleanly with unchanged valid profiles, preserved fixture and
+recycled disposable disks. The normal playable executable is restored. Evidence:
+per-run source provenance, upload/Present CSVs and
+`logs/texture-upload-main-analysis.json`. This is diagnostic CPU wall timing,
+not GPU completion, scanout, a clean pacing benchmark or full-game acceptance.
+
+### Window-state follow-up on the playable baseline
+
+All selected CI checks pass at diagnostic head `bb8f3ad`, including Windows/Mac
+runtime and patch transitions; scope-selected skips remain skips. A follow-up
+audit found the earlier crowded-map timing runs used `--minimized`. Their
+evidence cannot establish normal foreground gameplay performance.
+
+Two bounded Windows runs of the unchanged playable `4adb6b0` executable
+(`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`)
+retain the same configured Venice route, ten bots, native 144, Classic,
+3440x1440 render resolution/FOV73 and isolated Test Lab data. Neither enables
+native/texture traces, captures or CPU/stack sampling. The shared Present CSV
+and one-second read-only window/roster observations remain enabled. Both verify
+active scene 46/state 7 and ten bots throughout the strict spawn+5..55-second
+window. Render-device initialization confirms 3440x1440; client dimensions below
+describe the window, not the render target.
+
+`crowd-visible-4adb-144` records 7,194 successful guest presents, 143.898 interval
+FPS, minimum rolling five-second 143.6 FPS, p99 8.193 ms and maximum 20.808 ms.
+Its 50 observations are visible/non-minimized, with a 640x480 client and no
+foreground samples. `crowd-fullscreen-4adb-144` confirms the fullscreen flag,
+with 50 visible/non-minimized 1920x1060 client observations, also no foreground
+samples despite a focus request. It records 7,099 successful guest presents,
+142.006 interval FPS, minimum rolling five-second 132.6 FPS, p99 8.995 ms and
+maximum 28.385 ms. Guest-swap logs also dip to 136.3/134.6/134.5 FPS in late combat
+windows. The worst interval's Present call itself takes 0.092 ms.
+
+This exposes a larger sustained dip than the small-window run, but does not
+isolate window mode as its cause: bot encounters/deaths are nondeterministic,
+Windows did not grant foreground focus, and the user's roughly 110 FPS drop is
+still unreproduced. Neither run measures GPU completion or scanout. Next compare
+work versus pacing/wait time during the observed slower combat windows; do not
+infer a texture fix or locked 144 from a near-cap average. Both runs exit normally,
+preserve valid profiles/fixture and recycle disposable disks. The playable EXE
+hash remains unchanged. Local evidence is each run's `window-analysis.json`,
+`window-observations.jsonl`, report, Present CSV and provenance. Native Mac
+foreground gameplay remains unverified.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

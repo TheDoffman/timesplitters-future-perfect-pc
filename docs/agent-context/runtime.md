@@ -26,13 +26,11 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
-<<<<<<< HEAD
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.
 `src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
 The existing title integration includes it through `pc_network_bots_guest.inc`.
 Apply the complete patch stack and use the supported builder as usual.
-=======
 Vehicle exit uses the original logical input mask 0x40 in `D2470` (`D254F`
 queries `427B0`, `D255B` sets driver input+0x18). `17DAF1` consumes that action
 and respects vehicle data+0x58 flag 0x10 before routing `17C740`. Do not infer
@@ -164,7 +162,6 @@ player collision `C4A3F` and queued `16C126` deliver it. Queue production
 post-update in `A7870`. `native_vehicle_actor_impact.c` couples original
 publication with direct/queued callback, contact construction and suspension
 impulse response; geometry/motion and final effects remain controlled.
->>>>>>> origin/fix/native-vehicle-physics
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |

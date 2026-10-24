@@ -6467,7 +6467,6 @@ CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
 All sessions exit cleanly with unchanged valid profile signatures, preserved
 fixtures, recycled disposable disks and no personal game left open.
 
-<<<<<<< HEAD
 ## Coupled fractional water operator (2026-10-23)
 
 The earlier controlled tests isolate two independent problems: fractional
@@ -6578,7 +6577,6 @@ the original byte feedback in this field. Full nonlinear/state-rounding behavior
 remains unresolved. Evidence: logs/water-original-vertex.log and
 logs/water-quantization-ablation.log; no game asset bytes are committed. All
 eight updated GPU cases pass in 31.96 seconds (logs/water-coupling-gpu-followup.log).
-=======
 ### Integrated vehicle-physics build: crowded-match pacing
 
 The later `20dc25d` build is compared with normal playable `4adb6b0` using the
@@ -6615,4 +6613,3 @@ in slow frames. A revised saved-stack sampler reduces median suspension to
 outcomes. Neither reproduces the 25.856-ms event or proves a performance fix.
 Preserve Classic/Enhanced and live switching; measure individual upload stages
 before changing the loader. STATUS records all three runs and their limits.
->>>>>>> origin/fix/native-vehicle-physics

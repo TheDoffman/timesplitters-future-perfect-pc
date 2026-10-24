@@ -25,7 +25,6 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
-<<<<<<< HEAD
 `tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
 20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
 jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
@@ -58,7 +57,6 @@ across minor versions, mixed launcher/draft history and ancestor restrictions.
 The suite is already registered for both hosts in the release checks; these
 offline publisher fixtures need no game or launcher rebuild.
 
-=======
 For integrated crowd pacing, use capture-free Present CSVs and the strict
 `native_frame_stats.summarize_clock_window` analyzer. Retain complete intervals
 inside spawn-observation+5..+55 seconds, clock neighbors outside the boundaries,
@@ -301,7 +299,38 @@ reported normal/vector velocity while body motion stays consistent. Negative
 `legacy-contact-velocity` and `legacy-character-contact` controls independently
 restore the missed gate and fail at native120. These private-XBE cases skip on
 asset-free CI; CI registration is not evidence of their execution on Mac.
->>>>>>> origin/fix/native-vehicle-physics
+Texture-upload trace tests compile the real loader and collector through the
+existing both-host `tests/test_texture_runtime.py` registration. They verify
+disabled clock/file inactivity, failed output, bounded output, ordered stages,
+cached switches and missing/invalid/view-failure fallback. Use an isolated CSV
+path and compare raw monotonic timestamps with Present intervals for live
+diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
+clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
+can change frame timing. Actual native Mac gameplay remains a separate check.
+Do not attribute a whole slow frame to a sampled upload: intersect the actual
+attempt begin/end timestamps with each Present interval. The first live trace
+accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
+without attempts. Hashing/cached-call costs and trace output are outside these
+attempt spans; broader frame work remains open. STATUS retains the evidence.
+The follow-up collector starts before source-key hashing and emits `cached`
+rows as well. Loader tests require nonzero ordered hash boundaries and zero
+read/resource stages on all twenty cached calls while retaining existing load
+and fallback counts. The 8,192-row bound still applies; verify coverage before
+using a live window. The earlier `2230901` data retains its narrower scope.
+
+Crowded-map performance checks must record actual window state as well as the
+configured render resolution. `stability_transitions_game.py --minimized` hides
+the owned child; successful presents in that state do not establish foreground
+performance. A fullscreen toggle also does not prove focus: the latest bounded
+baseline runs observed visible clients at 640x480 and fullscreen 1920x1060 while
+the device rendered 3440x1440, and Windows granted neither foreground focus.
+Record client size, visibility, minimization, foreground state, scene and bot
+roster alongside complete Present intervals. STATUS records the 143.898/142.006
+interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
+prevent treating the two runs as a causal window-mode comparison. Keep native,
+texture, capture and CPU/stack diagnostics off for this observation unless their
+specific attribution is the question under test.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

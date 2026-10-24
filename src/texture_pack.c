@@ -72,28 +72,41 @@ void tsfp_texture_upload(D3D8Texture *tex) {
     if(tex->usage || tex->screen_copy || !tex->sys_mem) return;
     bytes=tsfp_texture_base_bytes(tex->d3d8_format,tex->width,tex->height);
     if(!bytes) return;
+    TsfpTextureTrace trace=tsfp_texture_trace_begin(0,tex->width,tex->height,bytes,"rhi");
+    if(trace.active)trace.enhanced=tsfp_texture_is_4k();
+    TSFP_TEXTURE_STAMP(&trace,hash_begin);
     key=tsfp_texture_key(tex->d3d8_format,tex->width,tex->height,tex->sys_mem,bytes);
-    if(tex->pack_checked && tex->pack_key==key) return;
+    TSFP_TEXTURE_STAMP(&trace,hash_end);
+    trace.key=key;
+    if(tex->pack_checked && tex->pack_key==key) {
+        tsfp_texture_trace_finish(&trace,"cached",tex->pack_bytes);return;
+    }
     tsfp_texture_release(tex);tex->pack_key=key;tex->pack_checked=1;
     dump_original(tex,key,bytes);
-    if(!pack_root[0]) return;
+    if(!pack_root[0]) {tsfp_texture_trace_finish(&trace,"dump_only",0);return;}
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",pack_root,key);
-    data=tsfp_pack_read(path,tex->width,tex->height,PACK_BUDGET-resident_bytes,&dds);
-    if(!data)return;
+    data=tsfp_pack_read_traced(path,tex->width,tex->height,PACK_BUDGET-resident_bytes,&dds,&trace);
+    if(!data){tsfp_texture_trace_finish(&trace,"read_rejected",0);return;}
     if(!tsfp_texture_alpha_compatible(tex->d3d8_format,dds.format)) {
         fprintf(stderr,"[TEXTURE-PACK] rejected incompatible alpha: %s\n",path);
-        free(data);return;
+        free(data);tsfp_texture_trace_finish(&trace,"alpha_rejected",dds.bytes);return;
     }
     desc.type=RHI_IMAGE_2D;desc.width=dds.width;desc.height=dds.height;desc.depth=1;
     desc.mip_levels=dds.levels;desc.format=d3d8_to_dxgi_format((D3DFORMAT)dds.format);
     desc.samples=1;desc.usage=RHI_USAGE_DEFAULT;desc.bind=RHI_BIND_SAMPLED;
     for(i=0;i<dds.levels;i++) {initial[i].data=data+dds.offset[i];initial[i].row_pitch=dds.pitch[i];initial[i].slice_pitch=dds.size[i];}
-    tex->pack_image=rhi_image_create(&desc,initial);free(data);
-    if(!tex->pack_image) return;
+    TSFP_TEXTURE_STAMP(&trace,image_begin);
+    tex->pack_image=rhi_image_create(&desc,initial);
+    TSFP_TEXTURE_STAMP(&trace,image_end);free(data);
+    if(!tex->pack_image) {tsfp_texture_trace_finish(&trace,"image_failed",dds.bytes);return;}
     view.format=desc.format;view.dim=RHI_VIEW_DIM_2D;view.mip_count=dds.levels;
+    TSFP_TEXTURE_STAMP(&trace,view_begin);
     tex->pack_srv=rhi_view_create(tex->pack_image,RHI_VIEW_SAMPLED,&view);
-    if(!tex->pack_srv) {rhi_image_destroy(tex->pack_image);tex->pack_image=NULL;return;}
+    TSFP_TEXTURE_STAMP(&trace,view_end);
+    if(!tex->pack_srv) {rhi_image_destroy(tex->pack_image);tex->pack_image=NULL;
+        tsfp_texture_trace_finish(&trace,"view_failed",dds.bytes);return;}
     tex->pack_bytes=dds.bytes;resident_bytes+=dds.bytes;
     fprintf(stderr,"[TEXTURE-PACK] loaded %016" PRIx64 " %ux%u -> %ux%u mips=%u resident=%" PRIu64 "\n",
         key,tex->width,tex->height,dds.width,dds.height,dds.levels,resident_bytes);
+    tsfp_texture_trace_finish(&trace,"loaded",dds.bytes);
 }
