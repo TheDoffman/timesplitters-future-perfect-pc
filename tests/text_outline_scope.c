@@ -5,6 +5,8 @@
 #include <string.h>
 #define TSFP_PC_PROMPTS_H
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
+#define pc_guest_query_span(address,minimum) pc_guest_query_region(address)
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL: %s\n",#x);exit(1);}} while(0)
 static unsigned char memory[16384];
 static uint32_t g_esp,g_eax;
@@ -29,6 +31,7 @@ static PcTextReadScope scope;
 void pc_prompts_layout_begin(void){pc_text_read_begin(&scope);}
 void pc_prompts_layout_end(void){pc_text_read_end(&scope);}
 size_t pc_prompts_read_region(uintptr_t a){return pc_text_read_region(&scope,a);}
+size_t pc_prompts_read_span(uintptr_t a,size_t n){return pc_text_read_span(&scope,a,n);}
 int pc_prompts_rewrite(const char *source,char *out,size_t capacity)
 {CHECK(!strcmp(source,"label"));if(!translate)return 0;CHECK(capacity>1);strcpy(out,"E");return 1;}
 #include "pc_prompt_guest.inc"

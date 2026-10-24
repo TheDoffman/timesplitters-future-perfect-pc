@@ -816,6 +816,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- Fresh text chunks (commit carrying this entry): `pc_text_read_scope.h` uses
+  the shared page-span adapter for bounded reads. Strings walk successive
+  validated chunks; `pc_prompts_read_span` validates whole argument frames,
+  including those crossing pages. Scope expiry and fresh scratch-write checks
+  remain unchanged. Windows uses resident-page queries; Darwin retains Mach
+  region queries. Focused tests and Windows Build pass; updated Mac CI and
+  physical prompt/menu validation remain pending. No new Mac adapter is needed.
+
 - **#319 (2026-10-24, branch `fix/319-controller-input`):** Shared runtime supplies pad defaults when
   Controller is selected over a keyboard-only launcher map, without changing
   saved keys or custom pad maps. Portable actual-parser/sampler coverage is

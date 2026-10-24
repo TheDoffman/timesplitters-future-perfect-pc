@@ -20,6 +20,7 @@ static BOOL counted_page_query(HANDLE process,PVOID data,DWORD bytes)
 #include "pc_guest_span.h"
 #undef pc_guest_query_region
 #include "pc_display_memory.h"
+#include "pc_text_read_scope.h"
 #ifndef GUEST_SPAN_MAPPED
 #define GUEST_SPAN_MAPPED 0
 #endif
@@ -62,6 +63,12 @@ int main(void)
     region=(PcGuestRegion){0};full_queries=0;
     CHECK(pc_display_writable(&region,offset,0x1000+(uint32_t)page-16,32));
     CHECK(full_queries==1); /* Whole access needs more than one page. */
+    PcTextReadScope text_scope={0};
+    pc_text_read_begin(&text_scope);
+    CHECK(pc_text_read_region(&text_scope,(uintptr_t)memory+page-16)>=16);
+    /* A prior single-page snapshot cannot reject a valid crossing call frame. */
+    CHECK(pc_text_read_span(&text_scope,(uintptr_t)memory+page-16,32)>=32);
+    pc_text_read_end(&text_scope);
     CHECK(protect(memory+page,page,1));
     region=(PcGuestRegion){0};
     CHECK(!pc_display_writable(&region,offset,0x1000+(uint32_t)page,4));
@@ -71,6 +78,11 @@ int main(void)
     CHECK(pc_guest_region_remaining(&readable,(uintptr_t)memory+page,0)>=4);
     CHECK(!pc_guest_region_remaining(&readable,(uintptr_t)memory+page,1));
     CHECK(protect(memory+page,page,0));
+    pc_text_read_begin(&text_scope);
+    CHECK(pc_text_read_region(&text_scope,(uintptr_t)memory+page-16)>=16);
+    CHECK(!pc_text_read_span(&text_scope,(uintptr_t)memory+page-16,32));
+    CHECK(!pc_text_read_region(&text_scope,(uintptr_t)memory+page));
+    pc_text_read_end(&text_scope);
     region=(PcGuestRegion){0};
     CHECK(!pc_display_writable(&region,offset,0x1000+(uint32_t)page,4));
 #ifdef _WIN32

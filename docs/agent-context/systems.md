@@ -258,14 +258,17 @@ symbols, semantics and sanitized measured conclusions instead.
 
 ## Prompt text layout read scopes
 
-`pc_prompt_guest.inc` reads through `pc_prompts_read_region`; the bounded
-thread-local `pc_text_read_scope.h` cache uses existing OS VM query adapters.
+`pc_prompt_guest.inc` scans successive chunks through `pc_prompts_read_region`;
+`pc_prompts_read_span` validates the complete argument frame before dereferencing
+it. The bounded thread-local `pc_text_read_scope.h` cache uses fresh single-page
+Windows queries with full-region fallback; Darwin retains its Mach query.
 It is valid only during synchronous text layout, with no mapping/protection
 changes or event dispatch. Nested scopes retain intervals; the next outer scope
 clears them. Scratch writes still use a fresh protection query.
-The cached interval covers the full OS-validated region, so descending guest
-stack reads and earlier labels in the same mapping reuse one query. It never
-extends beyond that region or survives the outer layout scope.
+Cached intervals cover only the OS-validated page/region. Descending reads reuse
+them only when the requested minimum fits; crossing argument frames query again.
+Strings continue at the next validated chunk, preserving cross-page text. No
+interval extends beyond its bounds or survives the outer layout scope.
 The US outlined-label wrapper (`sub_00041E30`) retains this same scope over
 its four outline draws and foreground pass, then expires it at return.
 Scope wrapping, label construction/drawing and nested prompt measurement use the shared

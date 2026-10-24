@@ -1,3 +1,62 @@
+## 2026-10-24 — Page-bounded prompt text validation
+
+A fresh 200 Hz/depth16 Disco profile of `b589a79` confirms the display-query
+change reaches live gameplay. Complete 80s→120s snapshots contain 6,848 main
+samples, 4,897 on-CPU samples, 27.4s CPU and no dropped chains. VM-query leaves
+fall from the earlier 1,143 to 801; decal-projection chains account for only five
+versus 319 previously. This is diagnostic sampling across different bot outcomes,
+not a matched timing comparison. Prompt reads now account for 301 VM leaves,
+making them the largest identified caller. Evidence:
+`crowd-page-span-disco-profile`, its diagnostic summary and
+`logs/page-span-profile-callers.json`.
+
+The follow-up changes `pc_text_read_scope.h` to consume fresh validated chunks
+through the shared page-span adapter. Strings continue across chunk boundaries.
+New `pc_prompts_read_span` requires the whole argument frame before reading it;
+cross-page frames query the complete span even after a smaller cached chunk.
+Existing scope expiry and independent scratch-write protection remain intact.
+Darwin retains its full Mach query. No glyph/layout arithmetic or text contents
+change, and no permission snapshot persists between layout operations.
+
+Twenty-four text-scope/projection/page tests pass. The supported Windows build
+and built-in tests also pass, including translated argument frames across pages,
+straddling strings, inaccessible/guarded memory and scratch-write protection.
+Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER; executable SHA256:
+`394381ef8b8fd9611b9e094e28129de50b8d44487abb0962f0130900211330ee`.
+New Mac CI and physical prompt/gameplay acceptance remain pending (MAC-002).
+
+The first capture-free ten-bot Disco144 run with this change holds 144.001 FPS
+over the complete spawn+5..50s window (6,479 intervals), with lowest one-second
+and five-second rates both 144. p99 is 7.487 ms and worst 9.229 ms, versus
+9.418/15.686 ms in the preceding display-only candidate. Every presentation has
+a newer guest-frame ID; game/wall ratio is 1.000086 and there are no interpolated
+frames. Save signatures are preserved and disposable partitions recycled.
+Same Classic/3440x1440/FOV73 setup, foreground 1920x1060 client on a 60 Hz desktop.
+This is one encouraging run with varying bot outcomes, not full-game acceptance
+or proof of a matched causal FPS gain. Evidence: `crowd-text-page-disco-144`
+provenance, report, Present CSV and complete-window summary. Another 22 context,
+backlog and FOV tests pass, with two Mac-only skips.
+
+The same capture-free route at 240 records 8,325 intervals in its complete 45s
+window: 185.046 FPS, lowest one-second count 98, lowest five-second rate 136.6,
+p99 10.128 ms and worst 13.196 ms. Game/wall ratio is 0.999864; guest IDs increase,
+no frames are interpolated, saves are preserved and partitions recycled. This is
+worse than the preceding candidate's 213.871 average/p99 8.376 ms, despite the
+better 144 run. Different combat/death/respawn outcomes prevent attributing that
+change to this optimization or dismissing it as harmless variation. Sustained
+240 performance remains unresolved. Evidence: `crowd-text-page-disco-240`.
+
+A second bounded diagnostic (`crowd-text-page-disco-profile`) checks the actual
+query path rather than assuming the clean-run difference is causal. Complete
+80s→120s snapshots contain 6,721 samples, 4,661 on-CPU, 26.1s CPU and no dropped
+chains. Total VM leaves are 600; only 11 retained VM chains pass through the
+original text measure/draw wrappers, versus 301 prompt-read samples before.
+All eleven use the page-query path. This supports reduced text-validation work,
+but is not a matched FPS comparison. Folded/nearest symbols such as
+`pc_storage_set_profile_router` must not be mistaken for the enclosing source
+operation. All non-skipped CI checks passed preceding head `b589a79`; this
+follow-up still needs updated Windows/macOS CI.
+
 ## 2026-10-24 — Fresh page queries for display memory checks
 
 Continuation of PR #328 on `perf/mouse-memory-order`, based on `7098fe6`.

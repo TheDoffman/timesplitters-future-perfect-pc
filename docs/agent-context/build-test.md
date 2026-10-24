@@ -196,12 +196,11 @@ suite compiles/runs this fixture with the actual compatibility layer on Mac; Win
 regenerate/build, then test the previously failing match-loading route before
 measuring performance.
 
-`tests/test_text_read_scope.py` checks query reuse for ascending and descending
-addresses within the same OS region, both mapping boundaries, nested layouts
-and expiry between operations. `tests/pc_prompts.c` retains real Windows
-protection/guard-page and scratch-write tests in the supported build. A passing
-query-count fixture is not an FPS measurement; compare bounded gameplay runs
-with captures disabled and identical resolution, FOV and bot settings.
+`test_text_read_scope.py` checks ascending/descending reuse, boundaries, minimum
+spans, nesting and expiry. `guest_span.c` covers real page/cross-page reads;
+`pc_prompts.c` checks crossing strings/argument frames, guard/protection changes
+and scratch-write ABI in Windows Build. Compare capture-free gameplay with
+matched resolution/FOV/bots; query counts alone do not measure FPS.
 The suite extracts outlined-text wrappers for both host defines, checking five
 draws, ABI, invalidation and fresh scratch writes; removing the scope must fail.
 Panel coverage extracts `pc_panel_text_original`/`sub_0012E3F0`: three fit calls,
