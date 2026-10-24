@@ -353,8 +353,11 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
 }
 /* Smooth only the final visual sway value passed to weapon updates. Keep the
  * integer sine crossing and its random-amplitude event unchanged. */
+extern float pc_native_demo_timer_multiply(uint32_t site,float left,float right);
 #define RECOMP_F32_MUL_AT(site, left, right) \
-    ((site)==0x1C4539u && g_tsfp_native_timing_active ? \
+    (((site)==0x433E2u || (site)==0x43473u) ? \
+     pc_native_demo_timer_multiply((uint32_t)(site),(float)(left),(float)(right)) : \
+     (site)==0x1C4539u && g_tsfp_native_timing_active ? \
      pc_native_weapon_sway((float)(left))*(float)(right) : \
      pc_native_multiply((uint32_t)(site), (float)(left), (float)(right)))
 /* Scripted camera direction closes 1 / remaining_ticks of the angular gap

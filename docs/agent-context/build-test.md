@@ -18,11 +18,11 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_native_demo_timing.py` lifts original initialization `69E80/431F0/42510`
-and input/playback `438B0/43220` from the verified US XBE. Synthetic recordings
-cover 1/4 controllers, raw1/2 and game0/1 ticks, edges, ABI, scene gate and EOF.
-Eight Original60 cases pass; sixteen native cases strictly xfail only on
-`DemoTimingMismatch`. No runtime fix/live-file acceptance; no XBE means skip.
+`test_native_demo_timing.py` tests asset-free scope nesting/fallback and lifts
+US demo initialization/input/playback. Check wait/exit duration, controllers, clocks,
+zero time, EOF, ABI and timer/restore mutations. Eight Original60 packet cases
+pass; sixteen native packet cases strictly xfail only on `DemoTimingMismatch`.
+Packet cadence/live playback remain open. No private XBE means skip.
 
 `test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
 copies and failing unused-water stubs. Run refresh and stale-copy mutation;

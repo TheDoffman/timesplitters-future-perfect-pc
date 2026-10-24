@@ -26,6 +26,12 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`zz-native-demo-timing.patch` follows the native surface stack and wraps US
+`43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is
+`sub_00043220_gen`. Timer multiplies `433E2/43473` use the wrapper's raw-time
+scope; other arithmetic stays original. Historical pre-native upgrade fixtures
+exclude this dependent patch. Recorded packet cadence is still unresolved.
+
 `zz-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
 existing 32-frame walk limit instead of silently truncating at six. The opt-in
 Windows sampler keeps its 8,192-key per-thread cap, reports dropped new chains,

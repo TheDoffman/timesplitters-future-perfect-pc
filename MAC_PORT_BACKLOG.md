@@ -3749,6 +3749,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Demo wait/exit clock correction (2026-10-24, commit carrying this entry):**
+  Shared `pc_native_demo_guest.inc` and numeric sites `433E2/43473` remove the
+  minimum-one-tick timer step at native rates. The wrapper preserves the input
+  interval across controllers and restores raw time after exit/EOF overrides,
+  retaining the original game pause. `zz-native-demo-timing.patch` connects the
+  same guest wrapper on both hosts; no OS adapter is needed. Windows original-
+  program fixtures cover duration, zero time, one/four controllers, completion
+  and mutations; native Mac execution and live demo lifecycle remain pending.
+  Recorded packet cadence is still unresolved, tracked by sixteen strict
+  expected failures. [Evidence](STATUS.md#2026-10-24--demo-wait-and-exit-timers-use-fractional-time).
+
 - **Water beta default (2026-10-24, `fix/native-water-rounding`, this revision):**
   Common-RHI native120/144 enables the shared persistent field without a test
   flag. Original60 and legacy GL retain original output; explicit environment

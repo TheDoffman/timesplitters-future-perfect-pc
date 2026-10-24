@@ -1,3 +1,48 @@
+## 2026-10-24 — Demo wait and exit timers use fractional time
+
+Original recorded-input states2 (exit) and5 (wait) clamp elapsed raw time to
+at least one tick. At native rates this accelerates their countdowns. State2
+also writes raw time back to one while visiting the first controller, exposing
+that value to later controllers and the rest of the update.
+
+The shared `pc_native_demo_guest.inc` wrapper captures the incoming raw interval
+in a nested thread-local scope. Numeric sites `433E2/43473` use it for those
+two countdowns; exit/EOF restore the incoming raw whole/float values while
+retaining the original zero game time. The wrapper remembers execution of the
+exit site, so cancellation still restores time if cleanup changes demo mode.
+Original60 arithmetic and state changes
+remain original, including the old multi-controller/multi-tick asymmetry.
+The new patch wraps `43220` on both hosts and requires guest regeneration.
+
+The original-program fixture now executes completion of both transitions at
+60/120/144 with one/four controllers, checks one/two-tick interval scaling,
+zero-time frames, EOF, raw-clock publication and stack/register preservation.
+Timer and restoration mutations must fail separately. This repairs transitions;
+it does **not** fix record consumption. The sixteen strict packet-timing expected
+failures remain, and neither live demo playback nor native Mac execution is
+verified. MAC-060 records the shared implementation and remaining host checks.
+
+On Windows11Pro x64 10.0.26300/MSVC14.44.35207, the final focused suite reports
+**12 passed, 16 expected failures** (`demo-transition-cancel-tests.log`). This
+includes the asset-free nested-scope/fallback check and two rejected mutations.
+The context/CI-scope recheck passes88 cases; context freshness and whitespace
+pass. Both supported Windows builds pass their native checks. The final
+executable SHA256 is
+`1f45acfbcb85decb56e0c997e5d889bac70c5c7106b71a8622c098bb3b7219d9`.
+Source is `333cb5f` plus this correction.
+The broad native/patch-upgrade suite is still running; no all-checks-pass claim.
+
+Before the cancellation follow-up, an isolated180s Hotel native144 integration
+run (`demo-transition-normal-144`) exited zero: all four named active-match
+checkpoints retained ten bots;33 active observations include24 player positions
+and19 zero-whole-tick intervals. Signed profiles/fixture were preserved and
+disposable partitions removed. Enhanced/FOV73, 3440x1440 render request,
+foreground640x480 client; no captures, CPU/Present or per-update trace. Binary
+`e020983bb49940e5a48e760eded65b747e8b83736bc12d117596c1cc783c3795`.
+This checks normal input integration in that candidate, not final-build live
+demo lifecycle, visible correctness, latency or crowd performance. D3D11,
+RTX4070SUPER driver32.0.16.1742; the executable reports native144 timing active.
+
 ## 2026-10-24 — Recorded-input playback timing regression reproduced offline
 
 The verified US XBE's original playback initializer (`69E80 -> 431F0 -> 42510`)

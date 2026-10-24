@@ -17,14 +17,23 @@ RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 #include "@VISUAL@"
-static unsigned polls, seeds;
+#define RECOMP_MANUAL_TLS RECOMP_TLS
+#include "@DEMO@"
+static unsigned polls, seeds, released, restored;
+static int cancel_requested;
 static void inert(void) { g_eax=0; g_esp+=4; }
 void sub_00190340(void) { inert(); }
-void sub_00190520(void) { inert(); }
+void sub_00190520(void) { g_eax=cancel_requested; g_esp+=4; }
 void sub_0035E960(void) { inert(); }
 void sub_001CCE70(void) { inert(); }
 void sub_001CCF80(void) { inert(); }
 void sub_00153B80(void) { assert(MEM32(g_esp+4)==1); ++seeds; inert(); }
+void sub_000389B0(void) { assert(MEM32(g_esp+4)<4); ++released; inert(); }
+/* The real service reaches level/frontend initialization via 65470/668F0.
+ * Model a mode-changing callback boundary so restoration cannot rely on mode2
+ * still being published afterward; this is not live cancellation coverage. */
+void sub_00069ED0(void) { ++restored; MEM32(0x6b98a4)=0; inert(); }
+void sub_00150230(void) { g_eax=1; g_esp+=4; }
 void sub_0018FF70(void) {
     unsigned record=MEM32(g_esp+4), slot=MEM32(g_esp+8);
     assert(slot<4 && record==0x6b93d0+slot*0x3c);
@@ -34,18 +43,17 @@ void sub_0018FF70(void) {
     ++polls; inert();
 }
 #define UNEXPECTED(address) void sub_##address(void) { assert(!"Unexpected service " #address); }
-UNEXPECTED(000389B0)
-UNEXPECTED(000425A0)
 UNEXPECTED(00042640)
 UNEXPECTED(00069620)
 UNEXPECTED(00069E60)
-UNEXPECTED(00069ED0)
-UNEXPECTED(00150230)
 UNEXPECTED(001CDAE0)
 UNEXPECTED(00356800)
 void sub_00042510(void); void sub_000431F0(void);
 void sub_00043220(void); void sub_000438B0(void);
 void sub_00069E70(void); void sub_00069E80(void);
+void sub_000425A0(void); void sub_00069EA0(void);
+void sub_00043220_gen(void);
+void sub_00043220(void) { pc_native_demo_guest(sub_00043220_gen); }
 /* ORIGINAL_CODE */
 
 static void call(void (*function)(void)) {
@@ -58,7 +66,8 @@ static void call(void (*function)(void)) {
     assert(g_esp==0x7004 && g_ebx==11 && g_esi==22 && g_edi==33 && g_ebp==44);
 }
 static void setup(unsigned char *memory,unsigned channels,unsigned raw,unsigned game) {
-    memset(memory,0,0x800000); polls=seeds=0;
+    memset(memory,0,0x800000); polls=seeds=released=restored=0;
+    cancel_requested=0;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x6f1e10)=0x10000;
     MEM32(0x1000c)=1000*channels*14; MEM8(0x10010)=channels;
@@ -72,6 +81,7 @@ static void setup(unsigned char *memory,unsigned channels,unsigned raw,unsigned 
     for(unsigned c=0;c<4;c++) MEM32(0x6b93c0+c*4)=c;
     MEM32(0x6b9888)=1; /* Suppress human cancellation for this controlled stream. */
     MEM32(0x79094c)=39;
+    MEM32(0x4e8cec)=60;
     call(sub_00069E80);
     assert(seeds==1 && MEM32(0x6b98a4)==1 && MEM32(0x6b98a8)==channels);
     assert(MEM32(0x6b94c0)==0x10140 && MEM32(0x6b98ac)==0);
@@ -113,7 +123,58 @@ int main(void) {
     assert(MEM32(0x6b94c0)==0x10140); /* Menu scene gate remains original. */
     MEM32(0x79094c)=39; MEM32(0x6b98a0)=14;
     call(sub_000438B0); assert(MEM32(0x6b98a4)==1);
+    MEM32(0x4e7940)=0; MEMF(0x4e7948)=60.f/144;
     call(sub_000438B0); assert(MEM32(0x6b98a4)==2 && MEMF(0x4e794c)==0);
+    assert(MEM32(0x4e7940)==0 && MEMF(0x4e7948)==60.f/144);
+    for(unsigned k=0;k<3;k++) for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned mode=2;mode<=5;mode+=3) for(unsigned scale=1;scale<=2;scale++) {
+        unsigned rate=rates[k];
+        setup(memory,channels,1,1); g_tsfp_native_timing_active=k!=0;
+        MEM32(0x6b98a4)=mode; MEMF(0x6b98b0)=10.f;
+        for(unsigned n=0;n<rate;n++) {
+            unsigned ticks=(n+1)*60*scale/rate-n*60*scale/rate;
+            float delta=60.f*scale/rate;
+            MEM32(0x4e7940)=MEM32(0x4e7944)=ticks;
+            MEMF(0x4e7948)=MEMF(0x4e794c)=delta;
+            call(sub_000438B0);
+            assert(MEM32(0x6b98a4)==mode);
+            assert(MEMF(0x4e794c)==(mode==2?0.f:delta));
+            assert(MEMF(0x4e7948)==(mode==2 && !k?1.f:delta));
+            assert(MEM32(0x4e7940)==(mode==2 && !k?1u:ticks));
+            assert(pc_native_demo_timer_multiply(0x43473u,3.f,4.f)==12.f);
+        }
+        /* Original state2 changes raw delta to one after controller 0, so
+         * preserve that legacy multi-controller/multi-tick behavior at60. */
+        float expected=10.f-(mode==2 && !k ? (float)(scale+channels-1) : (float)(scale*channels));
+        assert(fabsf(MEMF(0x6b98b0)-expected)<0.0002f);
+    }
+    for(unsigned mode=2;mode<=5;mode+=3) {
+        setup(memory,4,1,1); g_tsfp_native_timing_active=1;
+        MEM32(0x6b98a4)=mode; MEMF(0x6b98b0)=10.f;
+        MEM32(0x4e7940)=0; MEMF(0x4e7948)=0.f;
+        call(sub_000438B0);
+        assert(MEMF(0x6b98b0)==10.f && MEMF(0x4e7948)==0.f);
+    }
+    setup(memory,1,1,1); g_tsfp_native_timing_active=1; cancel_requested=1;
+    MEM32(0x4e7940)=0; MEMF(0x4e7948)=60.f/144;
+    call(sub_000438B0);
+    assert(restored==1 && MEM32(0x6b98a4)==0);
+    assert(MEM32(0x4e7940)==0 && MEMF(0x4e7948)==60.f/144);
+    assert(MEMF(0x4e794c)==0.f);
+    for(unsigned k=0;k<3;k++) for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned mode=2;mode<=5;mode+=3) {
+        unsigned rate=rates[k], frames=0;
+        setup(memory,channels,1,1); g_tsfp_native_timing_active=k!=0;
+        MEM32(0x6b98a4)=mode; MEMF(0x6b98b0)=0.5f;
+        while((mode==2?MEM32(0x6b98ac)==0:MEM32(0x6b98a4)==5) && frames<rate) {
+            MEM32(0x4e7940)=(frames+1)*60/rate-frames*60/rate;
+            MEMF(0x4e7948)=60.f/rate;
+            call(sub_000438B0); ++frames;
+        }
+        assert(fabs((double)frames/rate-0.5/channels)<1.01/rate);
+        if(mode==2) assert(restored==1 && released==channels && seeds==2);
+        else assert(MEM32(0x6b98a4)==4 && MEM32(0x1000c)==0);
+    }
     free(memory);
     puts("PASS: original initializer, input dispatcher, controller bytes/edges, ABI and EOF; timing checked separately");
     return 0;

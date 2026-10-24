@@ -20,6 +20,16 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Recorded-input wait/exit timing: `pc_native_demo_guest.inc` captures the incoming
+raw interval around original `43220`, with nested TLS restoration. Numeric
+multiplies `433E2/43473` use that interval instead of the original minimum-one
+tick. State2 overwrites raw time while looping controllers; the scope prevents
+later controllers from inheriting that overwrite. The executed exit site is
+remembered across cleanup changing the mode. Exit/EOF retain game pause
+but restore incoming raw whole/float time. Original60 keeps original behavior,
+including its multi-controller multi-tick asymmetry. Packet playback/recording
+cadence is unchanged and remains an open high-refresh regression.
+
 Native vehicle/physics candidate (`fix/native-vehicle-physics`):
 `pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
 `0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains

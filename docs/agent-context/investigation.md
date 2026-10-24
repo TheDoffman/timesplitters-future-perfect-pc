@@ -116,6 +116,9 @@ after that boundary. It no longer assumes fixed-60/pacing are the final two
 patches. This is a navigation-order contract; runtime/build tests establish
 application and behavior separately.
 
+The demo-timer wrapper extends that tail after native surface rendering.
+The index-order regression now checks this final dependency explicitly.
+
 The 2026-10-22 root texture policy retains original character selection/profile
 icons via `config/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
