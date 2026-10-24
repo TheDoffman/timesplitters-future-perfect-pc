@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef TSFP_TEST_FORTIFIED_COPY
+static void *fortified_copy(void *dst,const void *src,size_t size) { return memcpy(dst,src,size); }
+#undef memcpy
+#define memcpy(dst,src,size) fortified_copy(dst,src,size)
+#endif
 typedef int D3DFORMAT;
 typedef struct { uint32_t fmt,width,height,levels,guest_pitch;int linear;uint32_t phys,bytes; } texture_layout;
 static unsigned char *memory;
@@ -21,9 +26,7 @@ static void *checked_copy(void *dst,const void *src,size_t size)
     reads[read_count++]=offset-start;
     return memcpy(dst,src,size);
 }
-#define memcpy checked_copy
 /* PRODUCTION_SAMPLE */
-#undef memcpy
 
 /* Frozen scalar recurrence from the original four-lane implementation. */
 static uint32_t reference(const unsigned char *p,uint32_t n)

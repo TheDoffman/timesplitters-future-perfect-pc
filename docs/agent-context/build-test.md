@@ -264,9 +264,8 @@ already registered issue-form and launcher workflows; native Mac builds consume
 the same `DiagnosticIssueDraft.cs` URL policy.
 The mocked version-refresh PR creation check also verifies that the generated
 description preserves Ideas routing instead of referring to a removed form.
-The v1.2.23 release bump changes only shared version metadata; existing launcher
-release-policy, compatibility and both-host package checks remain the acceptance
-route. The optional-pack policy no longer hydrates LFS for version-only changes. A version bump alone is not evidence of a published update.
+Version-only bumps use launcher release-policy, compatibility and both-host
+package checks without LFS hydration. They do not prove publication.
 
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;
@@ -391,7 +390,8 @@ cheap/late/no-signal pacing checks. Both run in runtime CI.
 `test_shader_source_lookup.py` checks fresh shader contents and avoided hashing.
 `test_texel_sample_lanes.py` checks scalar checksum/read-footprint parity across
 lengths, strides and unaligned sources. Both extract production code, require
-negative controls and run on both CI hosts; neither proves rendered parity.
+negative controls on both CI hosts; neither proves rendered parity. Sample-load
+instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
 

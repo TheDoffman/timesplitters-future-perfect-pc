@@ -3841,6 +3841,10 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   routes pass with fresh frames/near-unity game speed, averaging60.000371 and
   226.507835FPS over45s. The latter is not sustained240 or a demonstrated total
   FPS gain; only the isolated checksum workload is measurably faster. See STATUS.
+  Mac CI898ee923 subsequently fails compilation of the fixture's three variants.
+  The follow-up avoids redefining libc copy macros, exposes compiler stderr and
+  passes five Windows checks including macro-preservation/redefinition controls.
+  Native Mac confirmation is pending; the runtime remains unchanged.
 
 - **Shader source lookup (2026-10-24, PR #328 follow-up):** The shared HLE cache
   verifies full current microcode on source-address hints before bypassing its

@@ -1,3 +1,39 @@
+## 2026-10-24 — Texture fixture portability and frame-aligned profiling
+
+Mac native CI for898ee923 fails while compiling allthree texture-survey fixture
+variants;586 other tests pass,213 skip and18 subtests pass. Captured compiler
+stderr is hidden by the CalledProcessError summary. The fixture redefines libc's
+`memcpy`, which can conflict with fortified headers under warnings-as-errors.
+Instrumentation now rewrites only the five intended production sample-load
+calls, leaving system copy macros untouched. Compiler failures expose stdout/
+stderr in the assertion. A predefined-copy-macro case passes; deliberately
+restoring the redefinition fails compilation. Allfive cases pass on Windows
+with /W4 /WX, including existing tail/overread controls. This reproduces the
+portability hazard locally; native Mac confirmation remains pending. Runtime
+code and the cbcd0bfc executable are unchanged. Log: texel-macro-portability-tests.
+
+`crowd-interval-profile-240` adds exact QPC origins and each sampling API span to
+the private guest-only probe. Joining these against Present timestamps accepts
+6,693 of6,698 samples over45.003340s; four cross a frame boundary and one falls
+in a partial edge frame, so allfive are excluded. Guest CPU time is36.125s;
+sampling API spans total0.140869s, maximum0.6433ms. Frames under4.5ms contain
+4,191 samples, 4.5–6ms contain2,373, and122 frames at least6ms contain129 samples.
+The last group has17 NtQueryVirtualMemory leaves, while fast frames frequently
+sample NtWaitForSingleObject (1,064/4,191). Small slow-bin counts and observer
+cost prevent a causal CPU-share or clean-pacing claim. The route completes with
+ten bots and unchanged fixture signatures; disposable partitions are recycled.
+Evidence: the named run and logs/crowd-interval-profile-summary.json.
+
+A second bounded route, `crowd-query-stack-240`, captures at most eight frames
+only at the prior observed +0x14 return sites in NtQueryVirtualMemory/NtCreateFile,
+after resolving the target symbols and verifying their return opcode. It records
+6,701 samples/45.001500s and45 stacks, with no truncation. API spans total0.153956s,
+maximum1.4261ms. No acknowledgement-worker suspension or game-memory/register
+writes occur. The route completes with intact signatures. Some returned symbol
+names are nearest public names rather than exact static-function identities;
+caller addresses need linked-code/source validation before changing guards.
+This diagnostic does not measure uninstrumented FPS or prove a specific fix.
+
 ## 2026-10-24 — Texture survey lane scheduling
 
 The retained crowd shader profile has61 samples in `texel_sample` (92 in its
