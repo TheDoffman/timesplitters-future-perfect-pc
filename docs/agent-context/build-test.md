@@ -1,22 +1,23 @@
 # Build, run and validation map
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies pinned
-patches, checks wrapper fingerprints, regenerates, builds MSVC x64 and tests.
-Output: `build/windows/Release/futureperfect_recomp.exe`. Fix the first error;
-never bypass failures with generated-source edits.
-Mac: `tools/build-native-mac.py`; `--generate` for stale guest code, `--setup`
-for explicit setup. Output: `build/macos/futureperfect_recomp`. Renderer auto
-selects Vulkan on supported macOS26+, otherwise GL. `config/vulkan-sdk.json`
-pins the SDK; `tools/vulkan_sdk.py` and `BUILD.json` own driver provenance.
-Bounded isolated gameplay: `tools/testing_profile.py --play --seconds 120`
-(Windows), `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac).
-Use the host .venv Python. Root AGENTS owns asset, isolation and storage rules.
-Source checks, builds, menu startup and gameplay are separate evidence;
-unavailable hardware/private data remain explicit validation gaps.
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
+checks fingerprints, regenerates, builds and tests MSVC x64. Output:
+`build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
+Mac: `tools/build-native-mac.py` (`--generate` for stale code, `--setup` for setup).
+Output: `build/macos/futureperfect_recomp`. Auto selects Vulkan on macOS26+,
+otherwise GL. SDK pin: `config/vulkan-sdk.json`; driver provenance:
+`tools/vulkan_sdk.py` and `BUILD.json`.
+Isolated gameplay: `tools/testing_profile.py --play --seconds 120` (Windows),
+`tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
+Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
 ## Choose the cheapest relevant check
+
+`test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
+presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 
 Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
 code, fake devices, gain overrides, mute, live volume and voice parity.

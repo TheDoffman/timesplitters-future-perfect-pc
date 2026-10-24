@@ -3814,6 +3814,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Acknowledgement-worker diagnostics (2026-10-24, PR #328):** Shared
+  `zz-pushbuffer-diagnostic-policy.patch` caches the survey launch flag alongside
+  the existing executor flag and avoids guest-offset lookup when disabled.
+  No OS adapter or acknowledgement/clock policy changes. Eight Windows checks
+  compile the complete scanner, preserving independent scan/execute modes and
+  reports, with eager-lookup and executor-disabled negative controls. Both native
+  CI jobs register the new suite; Mac execution/gameplay remain pending. STATUS
+  records the separate, unshipped idle-delay diagnostic and performance limits.
+
 - **Aim, physics and effects coverage through 240 (2026-10-24, PR #328):**
   Nine more original-US fixtures now include 180/240: player/NPC aim, coupled
   projectile motion, beam geometry, camera tracks, player fall/force and object

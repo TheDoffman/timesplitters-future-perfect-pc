@@ -35,6 +35,16 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
+RECOMP_PB_SCAN and RECOMP_PB_EXEC once, on its first scan call. These are launch
+diagnostics; presence (even empty/"0") retains the original opt-in semantics.
+Disabled or empty/reversed intervals return before obtaining guest memory.
+Enabled decoding, independent executor mode and report output stay intact.
+The complete production scanner is compiled in `test_pushbuffer_policy.py`,
+including eager-environment and executor-disabled negative controls. This
+removes repeated environment lookup from the acknowledgement worker; it does
+not change busy-bit acknowledgement, fences, clocks, or idle/wake policy.
+
 `zz-native-trace-quiet.patch` applies after native timing. With an explicit
 nonpositive trace budget and no watch/dump/filter/profile environment switch,
 `recomp_trace_enter/exit` bypass disabled diagnostic dispatch. The entry guard

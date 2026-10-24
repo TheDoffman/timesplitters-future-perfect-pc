@@ -1,3 +1,50 @@
+## 2026-10-24 — Acknowledgement-worker diagnostic overhead
+
+The latest Disco240 CPU profile on `5a322e67` redirects investigation from
+shader hashing to emulated GPU waits. The late stored snapshots (sampler ages
+113..155s) contain 3,160 samples, 3,159 classified on-CPU and 40.1s guest-main
+CPU, with no dropped chains. `sub_003D6690` has 957 leaf samples; its leading
+chains come through indexed draws and Swap. Generated code confirms the existing
+post-store wake hook before the PFB busy poll. Function-level sampling does not
+identify individual instructions or prove a physical GPU stall. The worker's
+full-run profile also includes repeated environment scanning under `nv2a_pb_scan`.
+
+`zz-pushbuffer-diagnostic-policy.patch` reads the pushbuffer survey flag once,
+matching its existing executor launch policy. Disabled diagnostics now return
+before requesting the guest-memory offset. Enabled survey decoding, executor-only
+mode, report contents and presence semantics (including empty/"0") remain.
+The shared implementation applies to Windows and Mac. Busy-bit/DMA/fence order,
+notification and idle policy, clocks and player presets are unchanged.
+
+Eight asset-free Windows checks pass in 1.48s, compiling the complete production
+scanner with observable environment/memory/executor boundaries. They cover
+disabled/scan/executor/both modes, increasing/nonincreasing methods, jump termination,
+report separation, and mutations restoring repeated lookup or disabling execution.
+The new suite is registered in both native CI jobs. Another21 context/backlog
+checks pass, as do repository context and whitespace checks. The supported
+Windows build and built-in checks pass (Windows11/MSVC14.44/D3D11). Executable
+SHA256: `5304a5d5185d84cdd8586542587c5465749c144c932391f70bf83163301850e7`;
+source `5a322e67` plus this follow-up. Logs: `pushbuffer-policy-tests.log`,
+`pushbuffer-policy-context-tests.log`, `pushbuffer-policy-build.log`.
+All non-skipped CI checks passed preceding head5a322e67, including Windows/Mac
+native and transition suites. This follow-up needs its own CI. Live validation
+of the new build is pending: another checkout has an active game session, which
+was left undisturbed. Native Mac execution/gameplay remain pending. Removing
+known environment scans is not evidence of a measured FPS gain.
+
+A separate same-binary diagnostic, `crowd-ack-noidle-disco-240`, disables only the
+existing worker idle delay (`RECOMP_NV2A_ACK_IDLE_US=0`) in its isolated child.
+The complete 45s combat window has 9,807 fresh guest intervals: 217.954238 FPS,
+lowest one-second count154, lowest five-second rate166.6, p99 6.818ms, worst12.334ms,
+three intervals above9ms, game/wall0.999781. No interpolation, CPU sampler,
+captures or update trace ran. Classic/3440x1440/FOV73, ten configured bots,
+foreground1920x1060 client on60Hz desktop; signatures preserved and disks recycled.
+This provides no reason to change default idle policy. Different bot outcomes
+prevent a causal comparison with the earlier default229.509FPS run. Present
+timing does not establish GPU completion, scanout or physical input latency.
+Source/build/diagnostic provenance and full statistics are under the named run
+and `logs/crowd-ack-noidle-disco-240-summary.json`; the override is not persisted.
+
 ## 2026-10-24 — Bounded mouse-chain memory validation
 
 The previous complete Disco diagnostic retained 278 VM-query samples under

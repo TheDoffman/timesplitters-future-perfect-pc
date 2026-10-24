@@ -212,6 +212,13 @@
       ]
     },
     {
+      "name": "zz-pushbuffer-diagnostic-policy.patch",
+      "sha256": "7b6c4d99c3b1f470ead7866dad84c49c1bdf60e98b9409776d137af2f9812e24",
+      "targets": [
+        "src/kernel/nv2a_pb_scan.c"
+      ]
+    },
+    {
       "name": "zz-sampler-caller-depth.patch",
       "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
       "targets": [
