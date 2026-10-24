@@ -502,8 +502,21 @@ using current state, held residual and a delta/scale uniform. Unlike the earlier
 fixture's per-delta coefficient-image cache, varying elapsed time requires only
 a 16-byte buffer update and no coefficient-image allocation/upload. Real,
 repeated and complex roots share this representation; CPU validation covers all
-three and authored GPU trajectories use the complex branch. This is still an
-uncalled candidate, not a renderer resource owner or a measured speedup.
+three and authored GPU trajectories use the complex branch.
+`graphics/surface_gpu.h` now owns the coupled kernel's RHI images/views, shaders,
+buffer and raster/depth/blend states. Create it on the render thread with fixed
+coefficients/extent; begin from full single-mip float state/residual views, then
+advance by each positive fractional piece. Zero time preserves output. Reset
+invalidates the interval and the output accessor until a new begin; destroy before the device. Inputs
+with incompatible storage/shape or hazardous internal aliases are rejected.
+Creation failure unwinds every owned handle. It saves/restores output targets
+and all viewports, including an empty list, and unbinds temporary textures and
+its step buffer. It may leave other draw state changed under the RHI contract.
+This owner now executes the GPU fixture trajectories; no game hook calls it.
+Original disturbances/smoothing/byte boundaries remain caller-owned. Per-guest
+resource identity, local time scopes and actual event ordering still need wiring.
+The eight 128-square float4 images contain 2 MiB of pixels per owner; this is not
+a total VRAM or in-game performance measurement.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

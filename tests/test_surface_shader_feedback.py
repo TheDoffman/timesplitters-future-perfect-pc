@@ -117,7 +117,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
 
     compiler, env = native_compiler(tmp_path)
     include = ['/I' + str(p) for p in
-               (ROOT / 'src', ROOT / 'tests', RUNTIME, RUNTIME / 'd3d', RUNTIME / 'config')]
+               (tmp_path, ROOT / 'src', ROOT / 'tests', RUNTIME, RUNTIME / 'd3d', RUNTIME / 'config')]
 
     isolated = {k: v for k, v in env.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
     isolated.update(RECOMP_SHADER_CACHE='0', RECOMP_DISPLAY_CONFIG=str(tmp_path / 'runtime.ini'),
@@ -260,6 +260,14 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             name = 'surface_evolve_shader.h'
             needle = 'scale*(center+amount*mode.x)'
             replacement = '1.0'
+        elif mutation == 'owner-output-restore':
+            name = 'surface_gpu.h'
+            needle = 'rhi_output_restore(output);'
+            replacement = '(void)output;'
+        elif mutation == 'owner-reset':
+            name = 'surface_gpu.h'
+            needle = 'if(s)s->ready=0;'
+            replacement = '(void)s;'
         elif mutation == 'rounding-clipped-gradient':
             name = 'surface_gradient_shader.h'
             needle = 'return gradient;'
@@ -302,6 +310,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('boundary_error<1e-7f' if mutation in ('rounding-raw', 'rounding-unguarded') else
+                    'actual.color==expected->color && actual.depth==expected->depth' if mutation == 'owner-output-restore' else
+                    '!pc_surface_gpu_advance(surface,.5)' if mutation == 'owner-reset' else
                     'worst==0' if mutation in ('mode-diagonal', 'noise-duplicate', 'rounding-unforced', 'rounding-clipped-gradient',
                                               'rounding-unlimited-acceleration', 'rounding-unlimited-boundary') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
@@ -330,7 +340,8 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
     (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
     (False, 1), ('rounding-clipped-gradient', 1), (False, 2),
     ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2),
-    (False, 3), ('noise-duplicate', 3), ('mode-diagonal', 0), ('rounding-unguarded', 0)])
+    (False, 3), ('noise-duplicate', 3), ('mode-diagonal', 0), ('rounding-unguarded', 0),
+    ('owner-output-restore', 0), ('owner-reset', 0)])
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

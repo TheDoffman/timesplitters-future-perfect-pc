@@ -913,3 +913,16 @@ direct guard test. A narrow hardware sweep reports the observed transition
 without assuming other GPUs use the same threshold. Hardware checks now pass
 all four profiles and ten schedules each; benchmark endpoint checks also pass.
 This validates this adapter, not other GPUs or game integration. See STATUS.
+
+The rounding fixture now runs transforms/evolution through the shared
+`graphics/surface_gpu.h` owner. `surface_owner_gpu.inc` checks external input
+copying, rejected storage/aliases/time, paused output, reset/reinitialization,
+color/depth and multiple/empty viewport restoration, texture/step-buffer
+unbinding and preservation of a sentinel target. Removing output restoration
+or reset invalidation must fail. These are D3D11 lifecycle checks, not Vulkan
+validation. The existing dual-host native timing group now includes
+`native_surface_gpu_owner.c`; its fake RHI fails each of 32 allocation stages,
+checks complete typed-handle cleanup, and recreates successfully. It performs
+no shader execution and does not replace real GPU coverage. The existing test
+compiler now includes the RHI header directory and the shader harness searches
+its disposable mutation directory first, including nested owner headers.

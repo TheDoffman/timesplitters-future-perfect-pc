@@ -1,3 +1,37 @@
+## 2026-10-24 — Shared ownership for the coupled GPU water kernel
+
+`graphics/surface_gpu.h` now owns the candidate's mode/basis/state/forcing/world/
+scratch images, shaders, time buffer and draw states. The GPU fixture uses this
+shared owner instead of managing those resources itself. Creation unwinds on
+failure; reset requires initialization before more updates. Each operation
+restores color/depth targets and viewports and clears temporary bindings.
+Original disturbances, smoothing and byte-boundary passes are still separate;
+there is no game resource registry or enabled guest hook yet.
+
+All 40 RTX field/rate/smoothing trajectories still match the original byte
+boundaries and final output. Lifecycle checks additionally verify reset and
+external input copying, invalid input/time/alias rejection, zero-time preservation,
+multiple and empty viewport restoration, color/depth identity, temporary texture
+and buffer unbinding, and an untouched sentinel target. The CPU failure fixture
+cleans up every one of 32 injected RHI allocation failures and recreates.
+The asset-free timing group passes 20 cases in 25.48 s; the GPU suite passes 28
+in 159.55 s, including deliberately broken reset and output-restoration controls.
+The final empty-viewport and invalidated-output additions pass the hardware
+profile-0 check separately (water-owner-final-lifecycle.log).
+Logs: water-owner-host-suite.log, water-owner-gpu-suite.log,
+water-owner-lifecycle.log, water-owner-empty-viewport.log,
+water-owner-hardware-{1,2,3}.log.
+
+Timing remains sensitive to the isolated workload: two capture-free runs pass
+their endpoint checks but show 144-Hz means from 0.075534 to 0.739911 ms across
+smoothing/run conditions. Read-only telemetry during the repeat observes GPU
+clocks moving between low-power states and 2520 MHz; it does not identify the
+clock at every measured frame. This is not a controlled regression/speedup result
+or a game frame-time measurement. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. No GPU settings were changed.
+Live hook/event integration, sustained scene profiling and Mac execution remain
+open. No new PR or playable binary was produced.
+
 ## 2026-10-24 — Water candidate now passes RTX hardware checks
 
 Two distinct corrections were needed. The standalone hardware diagnostic had

@@ -16,7 +16,7 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_gpu_owner.c',
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
@@ -24,7 +24,7 @@ class ObjectRockingQuantization(AssertionError):
 def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
-    includes = [runtime, runtime / 'config', ROOT / 'src']
+    includes = [runtime, runtime / 'config', runtime / 'd3d', ROOT / 'src']
     output = tmp_path / ('native-timing.exe' if os.name == 'nt' else 'native-timing')
     source_path = ROOT / 'tests' / source
     if mutation == 'reset-phase':

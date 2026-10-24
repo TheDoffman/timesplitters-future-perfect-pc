@@ -3758,7 +3758,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   arithmetic guard without guessing UNORM thresholds. All 40 RTX 4070 SUPER
   trajectories now pass, with high-rate output fresh every frame. D3D11 timing
   diagnostics are test-only; a Mac timing adapter and actual GPU correctness
-  remain pending. Neither host has a production resource owner/hook yet.
+  remain pending. Shared `graphics/surface_gpu.h` now owns the coupled RHI kernel
+  and restores output state; Windows hardware trajectories use it. Its allocation
+  failure fixture is registered for both host compilers. Native Mac execution,
+  Vulkan lifecycle checks and guest resource/event hooks remain pending. The
+  original event, smoothing and byte-boundary passes are still caller-owned;
+  this does not enable a new in-game water path on either host.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

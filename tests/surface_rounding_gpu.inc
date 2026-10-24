@@ -3,7 +3,7 @@
  * byte render targets, not a CPU approximation to UNORM conversion. */
 #include "pc_native_timing.h"
 #include "graphics/surface_interval.h"
-#include "graphics/surface_mode.h"
+#include "graphics/surface_gpu.h"
 typedef struct RoundTarget { RhiImage *image;RhiView *read,*write; } RoundTarget;
 static RoundTarget round_target(unsigned format) {
     RhiImageDesc d={0};d.width=d.height=SURFACE_SIDE;d.depth=d.mip_levels=d.samples=1;
@@ -15,6 +15,7 @@ static RoundTarget round_target(unsigned format) {
 static void round_destroy(RoundTarget *t) {
     rhi_view_destroy(t->read);rhi_view_destroy(t->write);rhi_image_destroy(t->image);
 }
+#include "surface_owner_gpu.inc"
 static void round_draw(FieldFinal *f,RhiShader *pixel,const float *offsets,
     const NV2APSConstants *constants,RhiView **inputs,unsigned count,RoundTarget *to) {
     RhiView *none[4]={0};rhi_set_textures(0,4,none);rhi_set_render_target(to->write,NULL);
@@ -74,27 +75,6 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
 #define TSFP_SURFACE_VEC2 "float2"
 #define TSFP_SURFACE_VEC3 "float3"
 #define TSFP_SURFACE_VEC4 "float4"
-#include "graphics/surface_evolve_shader.h"
-    const char forced_source[]="Texture2D state:register(t0);Texture2D eigen:register(t1);"
-        "Texture2D fixed:register(t2);Texture2D residual:register(t3);"
-        "cbuffer SurfaceStep:register(b1){float4 surface_step;}"
-        TSFP_SURFACE_EVOLVE_SHADER
-        "float4 main(float4 p:SV_POSITION):SV_TARGET {int3 at=int3(p.xy,0);"
-        "return float4(surface_evolve(state.Load(at).xy,eigen.Load(at),fixed.Load(at),residual.Load(at).x,surface_step.x,surface_step.y),0,1);}";
-    RhiShader *forced=shader(RHI_STAGE_PIXEL,forced_source,"ps_5_0");
-    RoundTarget mode[2]={round_target(RHI_FORMAT_R32G32B32A32_FLOAT),round_target(RHI_FORMAT_R32G32B32A32_FLOAT)};
-    for(unsigned row=0;row<2;row++) {
-        for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
-            double dc=(!x && !y)?SURFACE_SIDE:0;PcSurfaceMode m;
-            CHECK(pc_surface_mode(a,b,d,k+pc_surface_stencil_shift(SURFACE_SIDE,SURFACE_SIDE,x,y,PC_SURFACE_WRAP),
-                dc*(c-.5+k*c),dc*(c-.5),&m));
-            memcpy(field_a+(y*SURFACE_SIDE+x)*4,row?m.fixed:m.eigen,16);
-        }
-        rhi_image_update(mode[row].image,0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
-    }
-    RhiBufferDesc step_desc={16,RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
-    RhiBuffer *step_buffer=rhi_buffer_create(&step_desc,NULL);CHECK(step_buffer);
-    rhi_set_uniform_buffers(RHI_STAGE_PIXEL,1,1,&step_buffer);
 #include "graphics/surface_rounding_shader.h"
     const char boundary_source[]="Texture2D state:register(t0);Texture2D exact:register(t1);"
         TSFP_SURFACE_ROUNDING_SHADER
@@ -110,9 +90,12 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
 #undef TSFP_SURFACE_VEC4
     RoundTarget bytes[2]={round_target(RHI_FORMAT_R8G8B8A8_UNORM),round_target(RHI_FORMAT_R8G8B8A8_UNORM)};
     RoundTarget first_byte=round_target(RHI_FORMAT_R8G8B8A8_UNORM),first_float=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
-    RoundTarget world=round_target(RHI_FORMAT_R32G32B32A32_FLOAT),rounding=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
-    RoundTarget force_spectrum=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
-    RoundTarget states[2]={round_target(RHI_FORMAT_R32G32B32A32_FLOAT),round_target(RHI_FORMAT_R32G32B32A32_FLOAT)};
+    PcSurfaceGpuConfig config={SURFACE_SIDE,a,b,d,k,c};char errors[4096]={0};
+    PcSurfaceGpu *surface=pc_surface_gpu_create(&config,errors,sizeof errors);
+    if(!surface)fprintf(stderr,"Surface owner creation: %s\n",errors);CHECK(surface);
+    field_owner_lifecycle(surface);
+    RoundTarget world={surface->world.image,surface->world.read,surface->world.write};
+    RoundTarget rounding=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
     /* Canonicalization is allowed only within the arithmetic guard, including
      * values away from ideal byte thresholds. Actual GPU conversion owns those
      * thresholds. Large errors must remain visible to trajectory comparisons. */
@@ -230,16 +213,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                         round_draw(f,feedback[0],&offsets[0][0][0],&cb[0],inputs,4,&first_byte);
                         inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
                         round_draw(f,residual,NULL,NULL,inputs,2,&rounding);
-                        field_gpu_transform(rounding.read,force_spectrum.write,0);
                         round_draw(f,unpack,NULL,NULL,&bytes[current].read,1,&world);
-                        field_gpu_transform(world.read,states[0].write,0);
+                        CHECK(pc_surface_gpu_begin(surface,world.read,rounding.read));
                     }
-                    float step_uniform[4]={(float)part->delta,(float)pow(d,part->delta*.5),0,0};
-                    rhi_buffer_update(step_buffer,step_uniform);
-                    inputs[0]=states[0].read;inputs[1]=mode[0].read;inputs[2]=mode[1].read;inputs[3]=force_spectrum.read;
-                    round_draw(f,forced,NULL,NULL,inputs,4,&states[1]);
-                    RoundTarget swap=states[0];states[0]=states[1];states[1]=swap;
-                    field_gpu_transform(states[0].read,world.write,1);
+                    CHECK(pc_surface_gpu_advance(surface,part->delta));
                     if(part->ends_tick) {
                         inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
                         round_draw(f,feedback[1],&offsets[1][0][0],&cb[1],inputs,2,&first_float);
@@ -295,12 +272,11 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             CHECK(final_error==0);
         }
     }
-    free(references);for(unsigned i=0;i<2;i++){round_destroy(&bytes[i]);round_destroy(&states[i]);}
-    RhiBuffer *no_buffer=NULL;rhi_set_uniform_buffers(RHI_STAGE_PIXEL,1,1,&no_buffer);
-    rhi_buffer_destroy(step_buffer);round_destroy(&mode[0]);round_destroy(&mode[1]);
+    free(references);for(unsigned i=0;i<2;i++)round_destroy(&bytes[i]);
+    pc_surface_gpu_destroy(surface);
 #if SURFACE_ROUNDING_PROFILE == 3
     field_noise_destroy(&noise);
 #endif
-    round_destroy(&first_byte);round_destroy(&first_float);round_destroy(&world);round_destroy(&rounding);round_destroy(&force_spectrum);
-    rhi_shader_destroy(filter);rhi_shader_destroy(unpack);rhi_shader_destroy(residual);rhi_shader_destroy(forced);rhi_shader_destroy(boundary);rhi_shader_destroy(guard);
+    round_destroy(&first_byte);round_destroy(&first_float);round_destroy(&rounding);
+    rhi_shader_destroy(filter);rhi_shader_destroy(unpack);rhi_shader_destroy(residual);rhi_shader_destroy(boundary);rhi_shader_destroy(guard);
 }

@@ -7094,3 +7094,50 @@ event order, scene acceptance and native Mac execution remain required.
 The full WARP regression suite passes all 26 cases in 146.83 seconds, including
 the unconditional-copy negative control (logs/water-hardware-canonical-suite.log).
 Repository context and whitespace checks pass; no game build was replaced.
+
+### Coupled GPU resource ownership (2026-10-24)
+
+The trajectory fixture now uses shared `graphics/surface_gpu.h` for the coupled
+kernel's resource lifecycle and draws. Each instance owns immutable mode/basis
+textures, two spectral states, held forcing, world and scratch fields, shaders,
+a 16-byte step buffer and raster/depth/blend states. At 128x128 its eight float4
+images contain 2 MiB of pixel data, excluding other resources and driver overhead.
+No per-duration cache is allocated. Original event, smoothing, quantization and
+final shading passes remain caller-owned; guest resource/event integration is
+still absent.
+
+Create/begin/advance/reset/destroy are render-thread operations. Begin accepts
+full single-mip sampled float4 fields of matching shape, copies external state,
+and rejects internal aliases that would be overwritten. Zero time changes no
+pixels; invalid time/storage/aliases leave the state untouched. Reset blocks
+advancement and invalidates the output accessor until initialization. Destruction
+must precede device destruction. Each draw scope preserves color/depth targets
+and all viewports and clears texture slots 0-3 and its temporary step buffer.
+The current RHI restore adapter skips an empty viewport list, so the owner
+explicitly restores zero viewports too. Other pipeline bindings may change,
+as allowed by the RHI's normal-draw rebinding contract.
+
+`surface_owner_gpu.inc` verifies these behaviors on WARP/hardware, including two
+distinct reset/input cycles, multiple/empty viewport lists, target identities,
+an untouched sentinel color target and actual D3D11 binding queries. Missing
+reset/output restoration mutations must fail. `native_surface_gpu_owner.c`
+injects failure at each of 32 RHI allocation calls, requires complete typed-handle
+cleanup, then recreates the owner. That asset-free fixture is registered in the
+existing dual-host timing group; it does not execute GPU shaders.
+
+All 40 RTX original-byte trajectories still pass through this owner. The full
+GPU suite passes 28 cases in 159.55 s and the asset-free timing group passes 20
+in 25.48 s. Final empty-viewport/output-accessor checks additionally pass the
+hardware profile-0 run. Logs: water-owner-lifecycle.log,
+water-owner-final-lifecycle.log, water-owner-hardware-{1,2,3}.log,
+water-owner-gpu-suite.log and water-owner-host-suite.log. No native Mac execution
+or game build is claimed.
+
+Two isolated no-readback timing runs pass endpoint comparisons but show variable
+144-Hz means (0.075534 to 0.739911 ms across conditions). A read-only 100-ms GPU
+clock trace during the repeat observes P8/P5 low-clock states and P0 at 2520 MHz;
+it cannot assign a clock to each measured frame. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. These short workloads are
+not a controlled before/after performance comparison. No power/clock setting was
+changed. Sustained scene measurements, caller hooks and actual queued disturbance
+delivery remain required before enabling this path.
