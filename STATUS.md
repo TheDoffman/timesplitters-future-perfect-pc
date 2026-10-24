@@ -1,3 +1,24 @@
+## 2026-10-23 — Include original water smoothing in the storage reference
+
+Follow-up PR #321 adds a separate Original60 WARP reference that executes the
+original cardinal smoothing shader before both original feedback passes. The
+128x128 wrapped quad and +/-1-texel cardinal offsets match the retained Scotland
+draw capture. Every smoothing output is compared with an explicit four-neighbor
+calculation; a zero-radius mutation must fail. This is additional reference
+coverage, not a candidate implementation or gameplay change.
+
+With the same center/edge input, one second of float32 smoothing plus feedback
+produces mean blue 0.576436446 and standard deviation 0.000468331. Original byte
+storage produces 0.562230514 and 0.023116937. Combined G/B RMS difference is
+0.019286352. Smoothing therefore does not remove the nonlinear storage gap.
+The mixed-format controls also diverge (blue RMS 0.07635..0.08011); here the
+smoothing target uses the first-feedback target's selected format. Unlike the
+earlier feedback-only ablation, these are three-pass format controls.
+
+No game rebuild or enablement; Mac GPU/gameplay and full-scene validation remain
+pending. All 13 GPU cases pass in 58.56 seconds, including the new missing-offset
+negative control. Details are in the high-refresh regression record.
+
 ## 2026-10-23 — Match water solver boundaries to captured gameplay
 
 Follow-up branch `fix/native-water-boundaries` is based on main 2e3e55a after

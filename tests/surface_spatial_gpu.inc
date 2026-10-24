@@ -1,12 +1,16 @@
 /* Controlled feedback field at diagnostic and authored sizes. Original pixel
  * and vertex programs are translated unchanged. The wrapped fixture mirrors
  * captured geometry/viewport inputs; it does not replay guest submission code
- * or execute disturbance/smoothing passes. Offsets follow callback 0x2BF10. */
+ * or disturbances. A separate Original60 control includes captured cardinal
+ * smoothing. Feedback-only candidate offsets follow callback 0x2BF10. */
 #ifndef SURFACE_SIDE
 #define SURFACE_SIDE 64
 #endif
 #ifndef SURFACE_WRAP
 #define SURFACE_WRAP 0
+#endif
+#ifndef SURFACE_SMOOTHING
+#define SURFACE_SMOOTHING 0
 #endif
 #ifndef SURFACE_BASIS_WRAP
 #define SURFACE_BASIS_WRAP SURFACE_WRAP
@@ -141,6 +145,21 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     RhiBufferDesc constants_desc={sizeof(NV2APSConstants),RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
     RhiBuffer *uniforms=rhi_buffer_create(&constants_desc,NULL);CHECK(uniforms);
     rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&uniforms);
+    RhiShader *filter_ps=NULL;
+    NV2APSConstants filter_constants={0};
+    float filter_offsets[192][4]={0};
+    if(SURFACE_SMOOTHING) {
+        DWORD definition[60];FILE *f=fopen("filter.bin","rb");CHECK(f);
+        CHECK(fread(definition,4,60,f)==60);fclose(f);
+        CHECK(definition[13]==0x80808080u);
+        for(unsigned i=0;i<4;i++)filter_constants.tex_scale[i][0]=filter_constants.tex_scale[i][1]=1;
+        for(unsigned c=0;c<4;c++)filter_constants.c0[3][c]=128/255.f;
+        filter_offsets[17][1]=-1.f/SURFACE_SIDE;
+        filter_offsets[18][0]=1.f/SURFACE_SIDE;
+        filter_offsets[19][1]=1.f/SURFACE_SIDE;
+        filter_offsets[20][0]=-1.f/SURFACE_SIDE;
+        filter_ps=shader(RHI_STAGE_PIXEL,filter_hlsl,"ps_5_0");
+    }
     const uint32_t formats[]={RHI_FORMAT_R32G32B32A32_FLOAT,RHI_FORMAT_R16G16B16A16_FLOAT,RHI_FORMAT_R8G8B8A8_UNORM};
     const unsigned rates[]={60,120,144};
     const float authored[3]={.105f,.65f,.98f};
@@ -148,6 +167,7 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     /* Controls 3/4 quantize only one pass, isolating intermediate-gradient
      * rounding from the persistent velocity/displacement rounding. */
     for(unsigned storage=0;storage<6;storage++)for(unsigned rate=0;rate<(storage<3?3u:1u);rate++) {
+        if(SURFACE_SMOOTHING && rate)continue; /* Original60 reference only. */
         unsigned first_storage=storage<3?storage:storage==4?0:2;
         unsigned second_storage=storage<3?storage:storage==4?2:0;
         unsigned fps=rates[rate];float delta=60.f/fps,precise[3];pc_surface_coefficients(delta,authored,precise);
@@ -177,7 +197,25 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         float max_error=0;unsigned changed=0;
         const float tolerances[]={.000004f,.0005f,.501f/255.f};
         double quantization_error[2][3]={{0}};
+        double smoothing_error=0;
         for(unsigned step=0;step<fps;step++) {
+            if(SURFACE_SMOOTHING) {
+                rhi_image_update(inputs[0],0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
+                RhiView *sampled[4]={input_views[0],input_views[0],input_views[0],input_views[0]};
+                rhi_set_textures(0,4,sampled);rhi_set_shader(RHI_STAGE_VERTEX,field_vs);
+                rhi_buffer_update(vertex_buffers[0],filter_offsets);
+                rhi_set_shader(RHI_STAGE_PIXEL,filter_ps);rhi_set_render_target(output_views[0],NULL);
+                rhi_buffer_update(uniforms,&filter_constants);rhi_draw(4,0);
+                field_read(outputs[0],first_storage,field_b);
+                for(int y=0;y<SURFACE_SIDE;y++)for(int x=0;x<SURFACE_SIDE;x++)for(unsigned c=0;c<3;c++) {
+                    float average=(field_a[field_index(x,y-1,c)]+field_a[field_index(x+1,y,c)]+
+                        field_a[field_index(x,y+1,c)]+field_a[field_index(x-1,y,c)])*.25f;
+                    float expected=fminf(1,average-.5f+128/255.f)*(254/255.f);
+                    double error=fabs(field_b[field_index(x,y,c)]-expected);
+                    smoothing_error=fmax(smoothing_error,error);CHECK(error<tolerances[first_storage]);
+                }
+                memcpy(field_a,field_b,sizeof field_a);
+            }
             rhi_image_update(inputs[0],0,NULL,field_a,SURFACE_SIDE*4*sizeof(float),sizeof field_a);
             RhiView *views[4]={input_views[0],input_views[0],input_views[0],input_views[0]};
             rhi_set_textures(0,4,views);rhi_set_shader(RHI_STAGE_VERTEX,field_vs);rhi_buffer_update(vertex_buffers[0],vertex_constants[0]);rhi_set_shader(RHI_STAGE_PIXEL,field_ps[0]);
@@ -222,6 +260,7 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         printf("spatial storage=%u fps=%u meanB=%.9f stdB=%.9f rms_to_60=%.9f changed=%u/%u max_error=%.9f\n",storage,fps,mean,std,rms,changed,fps,max_error);
         CHECK(changed>0);if(rate && !storage)CHECK(rms>.0001);
         if(storage>=3)CHECK(rms>.005);
+        if(SURFACE_SMOOTHING)printf("smoothed-original storage=%u max_filter_error=%.9g\n",storage,smoothing_error);
         if(!rate)printf("spatial-rounding first=%u second=%u preserve_gb=%u mean_error_first_RGB=%.9g,%.9g,%.9g mean_error_second_GB=%.9g,%.9g\n",
             first_storage,second_storage,storage==5,quantization_error[0][0]/(fps*SURFACE_SIDE*SURFACE_SIDE),
             quantization_error[0][1]/(fps*SURFACE_SIDE*SURFACE_SIDE),quantization_error[0][2]/(fps*SURFACE_SIDE*SURFACE_SIDE),
@@ -230,6 +269,14 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         for(unsigned i=0;i<2;i++){rhi_view_destroy(input_views[i]);rhi_image_destroy(inputs[i]);}
         for(unsigned pass=0;pass<2;pass++) {rhi_view_destroy(output_views[pass]);rhi_image_destroy(outputs[pass]);}
     }
+    if(SURFACE_SMOOTHING) {
+        double sum=0;for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned c=1;c<3;c++) {
+            double d=reference_fields[0][i*4+c]-reference_fields[2][i*4+c];sum+=d*d;
+        }
+        printf("smoothed-original float_byte_rms_GB=%.9g\n",sqrt(sum/(SURFACE_SIDE*SURFACE_SIDE*2)));
+        puts("PASS: original translated feedback shader with captured cardinal smoothing");
+    }
+    if(!SURFACE_SMOOTHING) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     /* Exercise every spectral mode through the actual common-RHI GPU adapter.
      * Compare reconstructed G/B with the unmodified original shader pair's
@@ -388,8 +435,10 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
     rhi_shader_destroy(spectral_ps);
     puts("PASS: original translated feedback shader pair matched by coupled spectral GPU steps (float32 only)");
     puts("PASS: original translated feedback shader pair verifies spatial coupling and storage gaps");
+    }
     rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);
     rhi_shader_destroy(field_vs);
+    if(filter_ps)rhi_shader_destroy(filter_ps);
     for(unsigned i=0;i<2;i++)rhi_shader_destroy(field_ps[i]);
     for(unsigned i=0;i<3;i++)rhi_buffer_destroy(vertex_buffers[i]);
     rhi_buffer_destroy(uniforms);rhi_buffer_destroy(parameters);rhi_sampler_destroy(sampler);

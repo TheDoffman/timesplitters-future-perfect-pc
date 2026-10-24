@@ -3676,6 +3676,8 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   quad/viewport/screen-space undo and uses shared real Hartley weights. Earlier
   clamped DCT evidence remains diagnostic only. New basis CPU checks are in
   the shared timing suite; native Mac validation of this extension is pending;
+  follow-up PR #321 also adds a Windows original-shader reference with captured
+  cardinal smoothing. Float/byte divergence persists; no Mac GPU result is inferred.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

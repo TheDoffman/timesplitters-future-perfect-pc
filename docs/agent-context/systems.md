@@ -377,5 +377,8 @@ the game does not call them and no normal-play or legacy-GL policy changes.
 The matrix's restoring coefficient belongs to a spatial eigenmode, not an
 independent world texel. A runtime integration needs spatial transforms and the
 original disturbance/smoothing/storage rules. Float32 equivalence alone does
-not preserve the original byte-feedback appearance. See the coupled-operator
+not preserve the original byte-feedback appearance. A separate Original60 GPU
+reference now includes cardinal smoothing before feedback; the storage gap
+persists there too. This changes validation coverage, not runtime ownership.
+See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.

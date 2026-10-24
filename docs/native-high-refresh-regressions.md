@@ -6004,3 +6004,40 @@ and logs/water-authored-size.log. These remain controlled float32 results: byte
 rounding/clipping, actual smoothing/disturbance inputs, runtime resource/state
 integration, live rate changes, gameplay frame-time cost, other surfaces and
 native Mac GPU/gameplay acceptance remain open. Normal play is unchanged.
+
+### Original smoothing plus feedback storage reference
+
+Follow-up PR #321 adds an Original60-only reference with the observed cardinal
+smoothing pass before both feedback passes. It translates shader 0x4BBC40
+unchanged and uses the original vertex program with the captured +/-1/128
+cardinal offsets, pixel-space quad and wrapped linear sampling. Input remains
+the controlled center Gaussian plus seam pulse; random disturbances and final
+normal/shading are excluded. The fractional candidate comparison remains the
+separate feedback-only contract, not a claim to match this fuller reference.
+
+At each of 60 updates, all RGB smoothing output is checked against the explicit
+wrapped four-neighbor average and the shader's nonidentity centering/color
+factor. Float32 maximum filter error is 5.96046448e-8; byte error is bounded by
+half a byte step. A mutation zeros all smoothing offsets and must fail the
+neighbor calculation, so the test distinguishes smoothing from a copy.
+
+| Original60 three-pass storage | Mean blue | Blue standard deviation | RMS blue vs both-byte |
+| --- | ---: | ---: | ---: |
+| All float32 | 0.576436446 | 0.000468331 | — |
+| All half float | 0.559374392 | 0.001727153 | — |
+| All byte | 0.562230514 | 0.023116937 | 0 |
+| Smoothing and first feedback byte, second float | 0.629445438 | 0.040056530 | 0.080110445 |
+| Smoothing and first feedback float, second byte | 0.631365151 | 0.019306744 | 0.076352467 |
+
+Combined float32/byte G/B RMS is 0.0192863519. Thus smoothing changes the field
+but does not explain away the storage difference; the full nonlinear byte
+behavior still needs treatment before candidate gameplay integration. Mixed
+controls use the first-feedback format for smoothing too, and are not identical
+to the earlier two-pass ablations. With byte smoothing, the gradient-only
+control's copied G/B are already quantized, explaining its identical result to
+the first mixed row. No constant drift correction is inferred from these means.
+
+Windows x64/MSVC/common-RHI WARP evidence is in logs/water-smoothed-reference.log
+and logs/water-smoothed-suite.log; all 13 GPU cases pass in 58.56 seconds,
+including the missing-offset negative control. This is controlled original-shader coverage;
+no new game binary or native Mac GPU/gameplay result is claimed.

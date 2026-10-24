@@ -647,5 +647,10 @@ must fail the original-shader comparison. `native_surface_basis.c` checks shared
 basis orthonormality and diagonal-neighbor eigenvalues at sizes 1/7/64/128 under
 both boundary rules, plus invalid input, through existing Windows/Mac timing CI.
 Live draw evidence and its binary/source provenance are recorded in the high
-refresh regression guide; shader test input fields still exclude game RNG and
-smoothing. Do not infer gameplay equivalence from the controlled float reference.
+refresh regression guide. The fractional candidate comparison still excludes
+smoothing. `test_original_smoothed_surface_feedback` separately executes the
+captured cardinal smoothing and both original feedback passes at 60 Hz, checking
+the filter against explicit wrapped neighbors. A zero-offset mutation must fail.
+This reference includes actual byte/half/float storage and mixed-format controls;
+it excludes disturbances, final shading and game RNG. Do not infer gameplay
+equivalence from the controlled float reference.

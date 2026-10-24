@@ -1,8 +1,9 @@
-"""Run the original water feedback shader on WARP, including zero-step drift.
+"""Run original water shaders on WARP, including spatial and storage controls.
 
 The shader definition comes from the pinned local XBE; its HLSL is generated
-by the current production translator. This isolates shader arithmetic from
-texture filtering, storage rounding, random disturbances and scene rendering.
+by the current production translator. Separate fixtures cover arithmetic,
+wrapped filtering, storage rounding and original smoothing/feedback order.
+They exclude random disturbances and full scene rendering.
 """
 import hashlib
 import json
@@ -30,7 +31,7 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, False),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, True),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True)])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap):
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -46,6 +47,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         if case == 'surface_spatial_gpu.inc':
             offset = config.va_to_file_offset(0x4bbe20)
             (tmp_path / 'first.bin').write_bytes(image[offset:offset + 240])
+            offset = config.va_to_file_offset(0x4bbc40)
+            (tmp_path / 'filter.bin').write_bytes(image[offset:offset + 240])
             offset = config.va_to_file_offset(0x4bbb90)
             assert int.from_bytes(image[offset:offset + 4], 'little') == 0x62078
             (tmp_path / 'vertex.bin').write_bytes(image[offset:offset + 4 + 6 * 16])
@@ -102,8 +105,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     if case == 'surface_spatial_gpu.inc':
         first = run([str(generator), 'first.bin'])
         assert 'Stage 6' in first
+        filtered = run([str(generator), 'filter.bin'])
+        assert 'Stage 4' in filtered
         with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
             header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
+            header.write('static const char filter_hlsl[]=' + json.dumps(filtered) + ';\n')
 
     if case == 'surface_spatial_gpu.inc':
         vertex_translator = (RUNTIME / 'd3d/d3d8_vsh.c').read_text(encoding='utf-8')
@@ -135,11 +141,16 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     if case == 'surface_spatial_gpu.inc':
         helpers, fixture = fixture.split('/* SPATIAL_MAIN */')
         helpers = f'#define SURFACE_SIDE {extent}\n#define SURFACE_WRAP {int(wrap)}\n' + helpers
+        helpers = f'#define SURFACE_SMOOTHING {int(smoothing)}\n' + helpers
         if mutation == 'clamped-basis':
             helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
-    if mutation and mutation != 'clamped-basis':
+    if mutation == 'smoothing-offset':
+        needle = 'rhi_buffer_update(vertex_buffers[0],filter_offsets);'
+        assert fixture.count(needle) == 1
+        fixture = fixture.replace(needle, 'memset(filter_offsets,0,sizeof filter_offsets);' + needle)
+    if mutation and mutation not in ('clamped-basis', 'smoothing-offset'):
         # Mutate only a disposable include. Compilation must succeed and the
         # executed GPU comparison must detect the numeric regression.
         if mutation == 'transform':
@@ -167,7 +178,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         result = subprocess.run([str(exe)], cwd=tmp_path, env=isolated,
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
-        expected = ('transform_error<.00001' if mutation == 'transform' else
+        expected = ('error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
+                    'transform_error<.00001' if mutation == 'transform' else
                     'max_error<.00003' if case == 'surface_spatial_gpu.inc' else 'error<.00001f')
         assert result.returncode != 0 and expected in output, output
         print(f'PASS: mutation {mutation} fails the GPU reference comparison')
@@ -175,3 +187,12 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
     output = run([str(exe)], isolated)
     print(output)
     assert 'PASS: original translated feedback shader' in output
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
+@pytest.mark.parametrize('mutation', [False, 'smoothing-offset'])
+def test_original_smoothed_surface_feedback(tmp_path, mutation):
+    # Captured Original60 order: cardinal smoothing, then both feedback passes.
+    # This is the nonlinear reference, not a fractional solver acceptance test.
+    test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
+        'surface_spatial_gpu.inc', 7, mutation, 128, True, smoothing=True)
