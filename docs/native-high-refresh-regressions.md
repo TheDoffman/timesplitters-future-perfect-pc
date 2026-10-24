@@ -6,6 +6,18 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current diagnostic144 crowded-match check (2026-10-24)
+
+The ed07ee3d Windows build completes the current ten-bot Disco route with
+143.999013FPS across45seconds, minimum one/five-second rates144, p997.372ms
+and worst8.241ms. All6,479 guest IDs advance;19foreground active checkpoints
+retain game/wall1.0002459. No captures, CPU profiler or per-update trace;
+automated input polling remains. This current-build result supports the
+original144FPS crowd target in that sampled match, not all maps or sustained240.
+Diagnostic144 remains outside the four player-facing presets. See STATUS for
+provenance and limits. No runtime change was justified by the trace-hook
+microbenchmark examined alongside this run.
+
 ## Weapon-menu repair preserved at the current presets (2026-10-24)
 
 Issue#105's prior fixed60 repair now has current-build Original60/native240

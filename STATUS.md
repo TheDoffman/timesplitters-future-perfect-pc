@@ -1,3 +1,38 @@
+## 2026-10-24 — Current crowded Disco check at diagnostic144
+
+The unchanged ed07ee3d Windows executable completes crowd-current-disco144
+with ten configured bots, intact Test Lab profiles and recycled partitions.
+Its complete45-second host-clock window contains6,479 fresh guest intervals,
+averages143.999013FPS and has minimum one/five-second rates144/144.0.
+p99 is7.372ms, worst8.241ms; no interval exceeds9ms. Nineteen sampled
+checkpoints retain active unpaused combat and foreground/nonminimized state;
+game/wall is1.0002459. Original console interrupts remain60Hz.
+
+This uses diagnostic144, not a restored menu preset. Classic3440x1440/FOV73,
+actual1920x1060 client; no captures, per-update trace or CPU profiler. Automated
+input still polls a state file every16ms. Ten configured bots do not prove all
+ten were simultaneously visible. These are successful Present intervals,
+not scanout/input latency, identical bot paths or every-map acceptance. This
+narrows the original144FPS crowd report on the current build without claiming
+native240 is sustained. Evidence: the named run's crowd-pacing-summary.json
+and logs/crowd-current-disco144-summary.json.
+
+Read-only inspection of the earlier same-binary crowd profile confirms samples
+inside disabled trace guards. Two private candidates split diagnostic bodies
+or separate their cached initialization. A same-translation-unit benchmark
+initially suggested a gain; the corrected benchmark uses separate caller/runtime
+translation units, like the game. Seven alternating20-million-pair runs have
+medians47.647ms baseline,47.889ms body split and47.517ms cached initializer.
+These differences do not justify a runtime change. The original1/256 idle
+callback count is preserved in every experiment; no candidate is shipped.
+Evidence: private/pipeline/trace-dispatch-experiment/results.json and generated
+assembly. Isolated call timing is not whole-game FPS or CPU-share evidence.
+
+All14 CI checks passed e9195841, including both native runtimes and patch
+upgrades/transitions. The subsequent2e408c89 documentation-only head passes
+Mac runtime/upgrades and launchers; Windows validation is still running at this
+checkpoint. Avoid interrupting it with another documentation-only push.
+
 ## 2026-10-24 — Weapon-menu regression at Original60 and native240
 
 On source e9195841, unchanged Windows executable ed07ee3d, four isolated
