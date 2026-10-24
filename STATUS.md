@@ -1,3 +1,49 @@
+## 2026-10-24 — Reliable test-input publication and repeated180 walking
+
+The bounded transition runner rewrote `input-state.txt` in place. Its host
+adapter polls no sooner than16ms and treats an empty/failed read as key release,
+so a read during truncation can interrupt a held input. This is an integration
+harness flaw; physical keyboard handling is unchanged. New shared Python helper
+`testing_profile.publish_input_state` writes a complete sibling temporary file,
+then atomically replaces the state. Transient Windows reader-sharing failures
+retry for at most0.5s; permanent failures retain the old state, clean the temporary
+file and fail the test. All five writes in `stability_transitions_game.py` now
+use it, and key-down timestamps follow successful publication.
+
+**102 local tests pass**, 3.55s, including13 profile tests and existing context/
+backlog/CI-scope checks. New cases observe old/new bytes at replacement, simulate
+reader-sharing retries, and check failure preservation, cleanup and path bounds.
+They use the existing Windows/macOS CI registration. Syntax/context/whitespace
+checks pass. Runtime/game executable remains unchanged at SHA256
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+
+Two bounded Siberia runs repeat jeep entry/drive/exit and four one-second walking
+commands with the corrected writer at Original60/native180. They preserve saves,
+health1.75, no-bot roster257, exit weapon/camera and on-foot pause/resume. A new
+read-only observer samples the decoded pad/position at roughly1ms after vehicle
+entry, with before/after frame IDs and read timestamps. Analysis keeps22,852 /
+23,003 frame-bracketed observations; gaps around the walking commands reach at
+most4.177ms. Every command has one continuous observed nonneutral input interval.
+These reads bound publication transitions, not exact consumed simulation updates.
+
+Original60 forward endpoints:7.999975 /7.999975 world units; native180:
+8.001167 /8.000927. Original60 backward endpoints:7.916621 /7.916621;
+native180:7.915228 /7.914225. Maximum like-direction difference is0.031%.
+The prior1.88% shortfall does not reproduce. It remains inappropriate to change
+movement policy from that earlier asynchronous result; this comparison does not
+prove its cause, since captures/per-update tracing were also disabled here.
+No gameplay timing code changed. High-rate memory sampling and contact tracing
+make these diagnostic runs, not clean pacing or physical-input measurements.
+
+Evidence: `private/test-saves/vehicle-integrated-input-{original60,180}` with
+`input-boundaries.csv`/`input-analysis.json`, matching logs, and
+`logs/vehicle-input-current-comparison.json`. Ignored adapters are
+`private/pipeline/vehicle-input-{current,analysis}.py`. Both processes exit
+normally and disposable disk images are recycled. Host remains Windows11Pro x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER;1280x720 render, observed640x480 nonforeground
+client, Classic/FOV55. Native Mac gameplay and broad high-refresh acceptance
+remain open. All14 checks passed parent28509ef before this test-only repair.
+
 ## 2026-10-24 — Current-build live vehicle comparison at Original60/180/240
 
 Three bounded, isolated Siberia no-bot runs use the same Windows executable

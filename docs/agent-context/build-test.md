@@ -107,6 +107,13 @@ are invalid original-clock evidence. Default Y delivers logical exit bit0x40;
 F/R deliver0x20/0x10. Verify camera24->0, weapon restoration, on-foot movement,
 pause/resume and unchanged saves. In Siberia choose LEFT from Recommended to
 None, verify roster257, and allow six seconds for vehicle entry before steering.
+`testing_profile.publish_input_state` publishes runner input with a same-directory
+atomic replacement, retrying transient Windows reader sharing for at most0.5s.
+Never truncate a live input-state file: the adapter polls no sooner than16ms and treats
+an empty read as key release. Writer timestamps are publication times, not guest
+consumption times. `test_testing_profile.py` covers complete-state publication,
+sharing retries, failure preservation and temporary-file cleanup on both hosts.
+
 Camera/body observations need frame brackets and camera identity checks: the
 global camera can temporarily differ from the player camera within one frame.
 Compare the same player-camera pointer, retain excluded records, and report

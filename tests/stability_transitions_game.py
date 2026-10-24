@@ -21,7 +21,7 @@ from PIL import Image
 import pc_settings_game as ui
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
-from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE
+from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE,publish_input_state
 
 def weapon_set_metrics(run):
     """Check settled five-second guest-swap windows, excluding transitions.
@@ -174,7 +174,7 @@ def main():
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     env.pop('TSFP_SURFACE_NATIVE_TEST',None)
     if args.native_surfaces is not None:env['TSFP_SURFACE_NATIVE_TEST']='1' if args.native_surfaces else '0'
-    state=run/'input-state.txt';state.write_text('0 0\n')
+    state=run/'input-state.txt';publish_input_state(ROOT,state,'0 0\n')
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
     env.update(TSFP_PC_INPUT_REPLAY=str(replay),TSFP_PC_INPUT_STATE=str(state),
@@ -350,7 +350,7 @@ def main():
         except Exception as exc:motion_errors.append(repr(exc))
     def launch(index):
         nonlocal process,handle,window,motion_thread
-        state.write_text('0 0\n')
+        publish_input_state(ROOT,state,'0 0\n')
         if args.trace_surface_images:
             env['TSFP_SURFACE_TRACE']=str(run/f'run{index}-surface.csv')
         if args.profile_presents:
@@ -441,12 +441,12 @@ def main():
                     assert process.returncode==0,'Game did not exit cleanly'
                     index+=1;assert index<=3;launch(index)
                 if motion is not None:
-                    state.write_text(f'0 0 {seen} {motion[0]} {motion[1]}\n')
+                    publish_input_state(ROOT,state,f'0 0 {seen} {motion[0]} {motion[1]}\n')
                     time.sleep(.1)
                 hold_samples=[];key_events=[]
                 for key in command.get('keys',[]):
+                    publish_input_state(ROOT,state,f'{key} 1\n')
                     down_ns=time.perf_counter_ns()
-                    state.write_text(f'{key} 1\n')
                     held_at=time.perf_counter()
                     if command.get('sample_hold'):
                         while time.perf_counter()-held_at<hold:
@@ -455,7 +455,7 @@ def main():
                                 **snapshot()))
                             time.sleep(min(.05,max(0,hold-(time.perf_counter()-held_at))))
                     else:time.sleep(hold)
-                    state.write_text('0 0\n')
+                    publish_input_state(ROOT,state,'0 0\n')
                     key_events.append(dict(key=key,down_ns=down_ns,up_ns=time.perf_counter_ns()))
                     time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
