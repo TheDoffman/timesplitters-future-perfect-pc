@@ -10,6 +10,7 @@ on:
       - tools/**
       - config/**
       - requirements.txt
+      - requirements-release.txt
       - tsfp.ps1
       - AGENTS.md
       - docs/agent-context/**
@@ -173,6 +174,9 @@ jobs:
                   if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja=='))]
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
+      - name: Install pinned Online certificate dependencies
+        if: needs.plan.outputs.native == 'true' && runner.os == 'Windows'
+        run: python -m pip install -r requirements-release.txt
       - name: Test native runtime, rendering and input regressions
         if: needs.plan.outputs.native == 'true'
         run: |
@@ -182,7 +186,7 @@ jobs:
             tests/texture_nonpak.py tests/texture_variants.py
             tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py
-            tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
+            tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_native_effect_trace.py tests/test_surface_shader_feedback.py tests/test_combiner_constants.py tests/test_surface_preservation.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
@@ -190,7 +194,7 @@ jobs:
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_pc_display_modes.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
-            tests/test_fov_settings.py tests/test_storage_menu.py tests/test_text_read_scope.py
+            tests/test_fov_settings.py tests/test_storage_menu.py tests/test_text_read_scope.py tests/test_trace_filter.py tests/test_gpu_flush_ack.py
             tests/test_menu_sampling.py
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
             tests/test_frame_replay.py

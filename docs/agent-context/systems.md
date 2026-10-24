@@ -20,6 +20,74 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Native vehicle/physics candidate (`fix/native-vehicle-physics`):
+`pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
+`0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains
+the rest timer's authored raw/game cadence at byte load `0x176673`. The same
+policy now applies at rigid-body memory DEC `0x171F83`, preventing resting
+bodies from sleeping 2/2.4 times too soon at 120/144.
+Rigid-clock loads `0x171FB9/0x17208E/0x172119` select `ceil(game_delta)` solver
+substeps; multiply `0x172099` uses the live interval instead of a fifteen-frame
+average. Original 60 remains on its existing arithmetic. On native-to-original
+handoff, `pc_native_timing_guest.inc` rebases that old history at the first
+advancing interval, deferring across pause. Routine tests establish elapsed-time
+and timer behavior. Original body integration now has force/drag/rotation and
+controlled support-contact checks at all three rates. The original entity
+publisher and bounds transform, sleep/wake and vehicle component integration
+now run in that fixture. Real broadphase geometry, model/render
+notification and Mac gameplay remain unverified. The scoped
+RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
+from advancing the shared sequence through contact/constraint shuffle sites;
+controlled three-contact tests verify its cadence. `17164F` also prevents a
+rounding-induced ninth secondary solve. These results do not certify arbitrary
+contact geometry or vehicle handling. A subsequent Windows build runs actual
+Siberia jeep driving at all presets, but matched throttle replays expose lower
+travel at native rates; see STATUS for measurements and limits. The playable
+combined crowd build was restored while this discrepancy is investigated.
+The original driver dispatcher `17DA00` independently retained a whole-tick
+gate at `17DA03`, dropping throttle on intervening native updates. Its numeric
+policy now uses positive game time, matching the vehicle consumer's cadence.
+The original trigger producer `172EE0` checks forward, reverse, braking and
+release on fractional frames; seat weapons and live handling remain unverified.
+The rebuilt live replay now matches initial acceleration within 0.1% across
+the three presets, but later terrain contact differs. Do not infer collision
+parity or measured 144 FPS from that corrected throttle window.
+The subsequent `166899` correction keeps character contact velocity fresh
+on fractional updates. Original contact math and the body callback forwarding
+path verify the fix. In the controlled co-moving support case, body motion
+was already correct; the previously stale normal/vector notification changes.
+Character movement and world geometry remain fixture inputs, not live coverage.
+The object-spawn gate `172AB5` now retains animation-derived initial motion
+on fractional events. The original history copy and spawn/setter path test
+linear velocity and angular momentum, including a rotated owner transform,
+an offset model vertex, pause, absent history and allocation failure. This is
+shared numeric policy; live visual/physics and native Mac acceptance are pending.
+Windows candidate `3e1ee87` builds and passes its built-in checks with both
+contact and spawn fixes; it is retained separately from normal playable `4adb6b0`.
+Actor/vehicle impact divide `17CBD6` now preserves the native 60 conversion
+factor: actor entity velocity is already normalized by the post-update.
+Original mode and contact dispatch cadence remain unchanged. Original
+publication, event queue, contact construction, impulse selection and actual
+suspension component changes are covered by `native_vehicle_actor_impact.c`.
+This establishes response to controlled individual contacts, not repeated
+contact dynamics or live driving acceptance.
+## Texture-upload timing diagnostic
+
+`texture_pack_trace.h` records bounded opt-in CPU wall spans when
+`TSFP_TEXTURE_UPLOAD_TRACE` names a CSV. The common-RHI loader and legacy GL
+adapter share it, including the traced reader in `texture_pack_io.h`.
+The disabled collector performs no clock/file work. Rows identify key, backend,
+mode, dimensions, outcome and monotonic nanosecond boundaries for source-key
+hashing (including `cached` calls), open, transfer/allocation,
+validation, image creation and (common RHI) view creation. This is CPU elapsed
+time, not GPU completion. Reading/validation/fallback and live texture switching
+are unchanged. Logging occurs after the measured end, can perturb subsequent
+frames and is capped at 8,192 rows/below 4 MiB; do not use it as clean pacing data.
+Cached rows have zero read/image/view stages and retain the same loaded resources.
+The legacy GL path also closes a trace with `path_rejected` for an oversized path.
+Older `2230901` traces began after hashing and excluded cached calls.
+See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
+
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
 | Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |
@@ -27,7 +95,7 @@ Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 | Auto-look / camera / cutscene | `src/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
 | Display model and native UI | `src/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/test_pc_display_modes.py`, `test_debug_settings_model.py` |
 | GPU clear / screen copies / sampling | `src/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/shared-platform.md` |
-| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
+| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_pack_stream.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
 | Texture production and audit | `tools/texture-worklist.py`, `tools/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures.md` |
 | System Link / online / bots | `src/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/online.py` | `tests/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
 | Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/test_discord_presence.py`, `test_discord_macos.py` |
@@ -40,6 +108,13 @@ Names in this table are entry points, not a complete call graph. Read the
 applicable adapter plus one relevant test. Tests may encode historical migration
 or compatibility behavior, so confirm current defaults in root instructions and
 effective source. Preserve unknown/unsupported saved settings across hosts.
+
+The shared title header `pc_gpu_ack.h` selects the audited PFB flush store through
+the generated `RECOMP_AFTER_STORE32` hook. It is included by the existing title
+policy header for both Windows and Mac, independent of native timing activation.
+The runtime validates the request and wakes its existing acknowledgement worker;
+game input, clock policy, frame target and saved settings are unchanged. See the
+runtime guide for register guards and the required regeneration boundary.
 
 Ghost Gun living-actor reveal alignment (#181/#241) is handled by
 `pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
@@ -365,13 +440,58 @@ pc_prompts.c compile contract checks this include order in Mac CI.
 `graphics/surface_coupled.h` computes a fractional power of the coupled affine
 velocity/displacement step, anchored to the existing one-tick coefficients.
 `graphics/surface_coupled_shader.h` supplies one shader body with vector-type
-adapters. `graphics/surface_transform_shader.h` supplies separable 64x64
-DCT-II/inverse passes with texture-load and vector syntax adapters. The current
+adapters. `graphics/surface_transform_shader.h` supplies separable transforms with an
+explicit axis extent. `graphics/surface_basis.h` owns clamped DCT-II and wrapped
+real Hartley weights and the corresponding diagonal-stencil eigenvalues, bounded
+to 128 texels per axis. The captured game path uses 128x128 **wrap**, so the
+earlier clamped DCT result is only a diagnostic. Texture-load/vector adapters
+remain separate from shared spectral policy. The current
 common-RHI fixture reuses its basis and scratch resources and reconstructs the
 world field on the GPU after every fractional update. These are experimental helpers exercised by CPU/common-RHI fixtures;
 the game does not call them and no normal-play or legacy-GL policy changes.
 The matrix's restoring coefficient belongs to a spatial eigenmode, not an
 independent world texel. A runtime integration needs spatial transforms and the
 original disturbance/smoothing/storage rules. Float32 equivalence alone does
-not preserve the original byte-feedback appearance. See the coupled-operator
+not preserve the original byte-feedback appearance. A separate Original60 GPU
+reference now includes cardinal smoothing before feedback; the storage gap
+persists there too. This changes validation coverage, not runtime ownership.
+`graphics/surface_state_shader.h` converts reconstructed signed velocity/height
+to the original texture channels: red scratch, green velocity plus 0.5, blue
+height and **alpha height**. Original effect 22 samples alpha cardinal differences
+for its ripple shading input; constant alpha would erase those slopes. This
+shared encoding is currently exercised only by the GPU fixture, not game hooks.
+See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
+## Background replacement texture reads
+
+`texture_pack_stream.h` owns a shared single-reader queue for common RHI and
+legacy GL. The worker reads/validates DDS data without touching texture owners or
+GPU resources. Submit/cancel/pump run on the renderer thread; release and content
+changes cancel pending owners before reuse. A full 64-slot queue retries when the
+texture is next bound. Two completed payloads and one read bound CPU staging to
+72 MiB; the existing 512-MiB GPU budget and DDS/alpha rules still apply.
+
+Original views remain usable during loading. Each Present pumps at most one
+nonempty payload into GPU resources; F10 switches cached views immediately. The
+GL adapter restores the previous texture binding after upload. Shutdown joins
+the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
+selects the synchronous diagnostic fallback. Per-texture messages now require
+`TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+
+The common renderer pumps from present_resolve, shared by Swap and Present.
+The initial Present-only prototype never delivered replacements in this title;
+its apparent pacing gains are invalid evidence. Actual DDS upload records and
+rendered Enhanced scenes are required alongside queue unit tests.
+
+The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
+setter. Unlike the host toggle, that setter does not emit a mode log line.
+Reopening Video Options reads the effective mode; a pending row label alone is
+not evidence that the change was applied. Texture selection is session-only.
+
+Integration #308/#311: upload timing follows the queued request by value. Only
+the renderer opens/writes/closes the bounded CSV; the worker stamps read times
+in its exclusively owned record and publishes it under the queue lock. Completed
+records measure hash, worker read/validation and renderer image/view creation.
+Total duration includes queue/frame scheduling waits, not GPU completion.
+Cancellation discards the record with the payload; a full queue logs its failed
+attempt and starts a new record on retry. Disabled timing takes no clocks/files.

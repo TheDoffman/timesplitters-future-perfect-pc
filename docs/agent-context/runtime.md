@@ -31,6 +31,166 @@ it adds no guest wrapper, wire field, generated-code edit or patch dependency.
 `src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
 The existing title integration includes it through `pc_network_bots_guest.inc`.
 Apply the complete patch stack and use the supported builder as usual.
+Vehicle exit uses the original logical input mask 0x40 in `D2470` (`D254F`
+queries `427B0`, `D255B` sets driver input+0x18). `17DAF1` consumes that action
+and respects vehicle data+0x58 flag 0x10 before routing `17C740`. Do not infer
+logical masks from Xbox analog indices: the default keyboard Y delivers this
+exit action, while F/R deliver 0x20/0x10. See the live exit scope in STATUS;
+this audit changes no input binding or exit mechanics.
+
+Original contact-term routine `168720` sets penetration escape velocity using
+the authored 60-Hz constant times 0.2 and clamped overlap (0..0.1 world units),
+then combines it with restitution at contact+0x20. That output is a velocity,
+not per-frame displacement. Do not multiply it by the render target. The full
+rigid-motion fixture checks nonzero depth, rebound and quantized normals against
+an independent impulse equation; source/fixture evidence does not replace live
+contact generation and terrain coverage.
+
+`pc_native_contact_guest.inc` observes exact `172114 -> 171560` solver entry
+before the RNG scope changes. It runs in Original and native modes when explicitly
+enabled. `pc_native_contact_trace.h` reads the current generated arena and selected
+pointer array, retaining each list separately with body pose/velocity and solver
+intervals. The CSV's `generated` rows mean allocated arena records as they exist
+at solver entry: selection `167540` may already have merged/changed records, so
+these are not untouched producer outputs or a trace of each selection decision.
+`171FB0` resets the arena after solving; asynchronous empty-arena reads
+cannot establish absence of contacts. The shared host adapter checks readable VM
+spans with `pc_guest_memory.h`, discarding its mapping cache before guest execution.
+The optional diagnostic writes no guest state and does not measure pacing.
+
+The rigid-motion fixture checks original contact solver `16FC00` and integrator
+`16CA00` against analytical static-contact impulses across signed axes, eccentric
+points, inverse masses and native intervals. Keep authored linear drag in the
+expected bound. This protects impulse/time units but controls contact generation
+and selection; the live pillar outcome remains unresolved. Original `170500`
+calls `16D380` and additionally `175510` for vehicle class `0x400000`;
+`170690` selects contacts.
+These boundaries need separate geometry evidence before changing mechanics.
+
+Vehicle chase camera `CA040` (modes 24/32) uses physics-history average
+`165650` for elapsed time. Its entry whole-tick gate now follows positive
+live game time. The `CA424` count load retains carried groups of five spring
+substeps, but supplies one group on an advancing zero-whole interval to avoid
+zero division/loop underflow. Original60, authored coefficients, target/world
+geometry and multi-tick groups retain the original code. Pause rejects stale
+whole counts at entry. The full-original `native_vehicle_camera.c` fixture
+controls collision services/history/targets and host CRT math; it is not live
+terrain acceptance. See STATUS for frame-bracketed live camera/body readings;
+these asynchronous observations are not exact completed-update traces.
+
+The candidate `-native-vehicle-physics.patch` adds a default-identity
+`RECOMP_LOAD_U8_AT(site, value)` hook to register MOVs from byte memory and
+the input of byte-memory DECs. The latter keeps its flag snapshot on the
+actual stored result, with CF unchanged. Title policy changes only US vehicle
+rest load `176673` and rigid sleep DEC `171F83`; other loads/decrements retain
+their original value. Their clocks use the slower raw/game authored cadence,
+including phase-shifted carried ticks. The loader places it after the numeric policy
+and before `-native-surface-live.patch`. Historical pre-native stacks exclude
+this dependent patch; current full-stack application and unwind remain required.
+See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
+original vehicle/rigid-clock fixtures. The original solver/body math and a
+controlled support-contact path now run in `native_rigid_motion.c`, followed by
+the original `1719E0/165A40/9E840` entity publication/bounds path and
+`1677E0/167880` sleep/wake. The vehicle-specific component updater `1753A0`
+also runs with controlled parameters. Material, world geometry, damage and
+model notification remain service boundaries; driver/handling is unverified.
+`pc_native_physics_guest.h` wraps `171FB0` with a nested, thread-local scope.
+Call `172114 -> 171560` assigns carried whole primary steps to the original
+shared RNG; extra primary steps use a private advancing sequence only at
+shuffle calls `1715A0/170E51 -> 153B40`. The original generator still runs;
+its two seed words and count are restored after private draws. Other gameplay
+RNG calls stay original. The three-contact routine fixture checks fresh
+substeps and identical shared seeds at 60/120/144. Numeric ADDSS site `17164F`
+snaps the accumulated secondary time to `8*step` only within four float epsilons
+of that boundary; otherwise rounding could run a ninth solve. Original timing
+is unchanged. The added manual `171FB0` wrapper requires supported guest
+regeneration before building. Its `_gen` extern must be a standalone declaration: the
+generator's manual scanner does not recognize comma-separated declarations.
+The corrected `ba4f0bf` Windows build links and drives the Siberia jeep, but
+matched throttle replays reveal less travel at native rates. Full handling/
+collision acceptance remains pending, and the prior playable binary is restored.
+The live jeep callback at vehicle-data `+0x68` is `177AE0`; dispatcher `17E680`
+calls it before `174860` force and `174D60` component-force preparation. Treat
+these as investigation entry points, not a proven acceleration root cause.
+The subsequent original driver fixture proves `17DA03` still skipped positive
+fractional intervals while `17E680` cleared throttle/brake fields `+530/+534`.
+The shared numeric gate now admits every advancing native interval there too.
+`17DA00 -> 172EE0` runs in `native_vehicle_driver.c` with controlled action,
+model and wake services; original mode and zero-float pause retain their gates.
+Steering easing in `172EE0` computes a speed-dependent target, multiplies its
+error by live game time at `173062`, then by 0.07 at `17306A`, and publishes
+the result to eligible wheel components. The latter site now shares the
+existing aim-easing coefficient subdivision so fractional raw intervals retain
+the original one-tick response at the current game speed. Whole/catch-up steps
+and overshooting weights retain original arithmetic. This is separate from
+the unresolved real-terrain trajectory differences.
+Build `67c1864` passes and matched live initial acceleration now agrees within
+0.1% at the three presets. Later pillar/bank contact diverges, so full handling
+acceptance remains separate. That historical candidate was superseded by `vehicle-d0116a7`;
+the earlier candidate binary was recycled and the playable crowd pair restored.
+Contact-velocity gate `166899` is now also keyed by positive live game time:
+the original `1667C0` otherwise omits a character's displacement-derived
+velocity on zero-whole native updates. Its temporary EDI is immediately
+restored and the guarded division already uses float game time. Static and
+rigid-body contacts are unchanged. `native_contact_velocity.c` runs original
+`1667C0/166060`; the motion fixture also executes original `16E780/16DA90` up
+to a controlled body callback, checking the reported relative velocity. Its
+zero material coefficients disable actual damage/effects. This does not
+establish live character collision or explain the static-pillar trajectory.
+Spawn gate `172AB5` now also uses advancing game time. Original `1727A0`
+creates a body from a model joint and optionally inherits its movement; this
+is a one-time spawn, not a continuously updated collider. Its existing
+`172B01` division already uses fractional time, but the integer gate dropped
+initial velocity/momentum on fractional spawns. `57040` copies joint history
+from the model matrices (called at `A7425`); `native_spawn_motion.c` runs that
+original copy, spawn, matrix math and `167CE0/167C00/167AE0` setters with
+controlled allocation/model services. Caller `2107E8` supplies a nonzero
+inheritance factor; `1FA7B2` explicitly disables it. Live spawn/rendering
+acceptance remains separate from this routine evidence.
+The supported Windows `3e1ee87` build passes with both contact and spawn
+changes. Its candidate EXE/PDB are retained in `vehicle-3e1ee87`; the older
+`vehicle-67c1864` pair was recycled, and the normal playable pair restored.
+No live contact/spawn check of this new build has run yet.
+The next actor/vehicle contact correction changes only divide `17CBD6`:
+`A7360` already publishes actor `+F8/+FC/+100` in units per authored tick,
+so native `17CAE0` needs a constant 60 conversion to units/second. Dividing
+by the event interval again doubled the reported speed on carried-tick120
+frames while leaving zero-whole frames correct. Gate `17CBAF` is deliberately
+unchanged. Registration `182C04 -> A5CE0` stores the callback at `+170`;
+player collision `C4A3F` and queued `16C126` deliver it. Queue production
+`1709F0/170B53 -> 16C070` drains through `171FB0 -> 16C0D0` before entity
+post-update in `A7870`. `native_vehicle_actor_impact.c` couples original
+publication with direct/queued callback, contact construction and suspension
+impulse response; geometry/motion and final effects remain controlled.
+`trace-filter-disabled-scan.patch` moves the function-name length calculation in
+runtime `recomp_trace.c:trace_only_match` after the empty-filter return. Lifted
+function entries therefore do not scan diagnostic labels when
+`RECOMP_TRACE_ONLY` is absent/empty. Enabled exact-name matching and per-filter
+hit limits retain the original implementation; watch/dump/profile, trace budget
+and renderer-idle behavior are unchanged. This applies to both host builds.
+`tests/test_trace_filter.py` compiles the actual patched function and requires a
+restored-eager-scan mutation to fail. Removed scan counts are not an FPS result.
+`gpu-pfb-flush-ack.patch` adds a default-no-op `RECOMP_AFTER_STORE32` hook to
+ordinary 32-bit MOV memory stores. It runs after the original write, excludes
+segmented/narrow/register operations, and preserves existing numeric hooks.
+The title policy (`pc_gpu_ack.h`, included by `pc_native_numeric.h`) selects only
+verified US instruction `0x3D66C3`, before its PFB flush poll at `0x3D66D0`.
+Runtime `xbox_Nv2aNotifyPfbFlush` signals an auto-reset event after validating
+that exact register and the active service. The caller changes no guest word;
+the existing worker retains its busy-bit/DMA/fence pass and 500-us idle fallback.
+Windows waits on the event plus its existing high-resolution timer. The native
+adapter `w32_WaitForEventMicroseconds` waits on the event condition variable with
+a monotonic deadline (relative pthread wait on Mac), avoiding multi-wait polling.
+Both hosts retain the existing 50-ms maximum wait for large diagnostic idle
+values. The new native declaration precedes CreateEventA, preserving the old
+SetEvent/timer context used by historical Mac patch upgrades.
+Queued requests coalesce without an explicit reset. Shutdown publishes stop,
+drains notifier users, wakes/joins the worker, then closes the event; thread-start
+failure closes it too. Event creation failure retains polling. The cached
+`RECOMP_PFB_WAKE_ACK=0` switch disables notifications for same-binary diagnostics.
+No clock/settings policy changes. Regenerate after applying the patch. The former
+direct-clear prototype stalled loading and is rejected; this rework requires
+fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
@@ -52,6 +212,11 @@ New HLE declarations/manual wrapper names can require generation even when a
 small function-body change only needs compilation. Follow the builder's check.
 
 ## Patch lifecycle
+
+The combined vehicle/main stack keeps surface coefficients before preservation,
+vehicle physics before live surface support, then full-float preservation and
+flip handoff. Numeric addition dispatch retains both physics secondary-step
+rounding and Escort recovery; neither replaces the other during integration.
 
 Top-level `patches/*.patch` is the active stack. The legacy subdirectory contains
 migration inputs only. The loader moves networking ahead of native boot, build
@@ -189,6 +354,14 @@ and performs no AI, animation, rendering-quality or frame-rate throttling.
 The mapping cache remains read-only; prompt scratch writes query live protection.
 Adding the manual wrapper requires the normal guest regeneration/build route.
 
+`*-text-panel-scope.patch` extends reuse across the original shared HUD panel
+`sub_0012E3F0_gen`: width/fit measurements and subsequent label draws share
+one read scope. `pc_panel_text_original` is passed into the existing placement
+wrapper, so its pre/post sprite flushes execute outside the cached lifetime.
+Font metrics, label contents and all original drawing remain live; this caches
+mapping metadata only. The panel's font/colour setup is synchronous and does
+not change VM protection. Scratch writes retain fresh writable checks.
+
 ## Experimental water coefficient precision
 
 `*-native-surface-coefficients.patch` follows `*-native-surface-constants.patch`
@@ -249,3 +422,29 @@ their backing. Both entry points register this adapter with shared storage polic
 It accepts an existing absolute directory, rejects invalid paths, and accepts an
 empty string to clear the override. save_paths/native_paths cover UDATA aliases,
 unchanged other routes, rejection and override removal.
+
+## Replacement texture frame completion
+
+`patches/texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
+`present_resolve`, guarded by TSFP_TEXTURE_PACK. This covers the title
+`dev_Swap` path, the older `dev_Present` path and the public frame helper. Legacy GL calls
+the same shared queue pump from its own Present adapter. This completes
+background CPU reads on the renderer thread with one replacement upload per
+frame. It does not change guest texture dimensions/data, update clocks or frame
+rate selection. Source lives in `texture_pack_stream.h` and the existing loader
+adapters; no generated guest edits or new renderer thread owns GPU resources.
+
+Replacement completion/cancellation increments a binding revision. The common
+renderer checks that revision alongside mode before draws, so textures left
+bound across frames see arrivals and queue-full retries without rebinding every
+draw. The streaming patch must follow texture-toggle.patch, which creates this
+binding helper. The texture runtime fixture compiles that actual patched helper.
+
+Keep this patch LF on disk before refreshing its index. A CRLF working copy
+produced a different hash/target spelling from the normalized Git blob; the
+Linux CI context check exposed it. Runtime behavior was unaffected.
+
+Future Perfect reaches host_Swap from its HLE shadow frame boundary. A pump in
+dev_Present alone does not run for that path. Keep the completion call in the
+common resolve function, after the skipped-Swap guard; tests execute both actual
+entry bodies and verify one completion per presented frame, none for a skip.

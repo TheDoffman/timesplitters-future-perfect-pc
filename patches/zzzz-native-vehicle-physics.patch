@@ -1,0 +1,60 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -1965,6 +1965,10 @@
+                 ops[1].mem_size == 4 and not ops[1].mem_base and
+                 not ops[1].mem_index and not ops[1].mem_seg):
+             src = f"RECOMP_LOAD_GLOBAL_U32(0x{insn.address:X}, {_fmt_mem(ops[1])}, {src})"
++        # Byte loads can feed title-owned discrete timers. The generic
++        # default preserves the original load, with single evaluation.
++        if ops[0].type == "reg" and ops[1].type == "mem" and ops[1].mem_size == 1:
++            src = f"RECOMP_LOAD_U8_AT(0x{insn.address:X}, {src})"
+         # Title-owned observation of direct 32-bit global stores. The
+         # policy returns the value to write; default semantics are unchanged.
+         if (ops[0].type == "mem" and ops[0].mem_size == 4 and
+@@ -2156,7 +2160,10 @@
+                 "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp"):
+             out = [f"{val}{'++' if m == 'inc' else '--'};"]
+         else:
+-            out = [_fmt_operand_write(ops[0], f"{val} {op_char} {delta}")]
++            source = val
++            if m == "dec" and ops[0].type == "mem" and ops[0].mem_size == 1:
++                source = f"RECOMP_LOAD_U8_AT(0x{insn.address:X}, {val})"
++            out = [_fmt_operand_write(ops[0], f"{source} {op_char} {delta}")]
+         size = _operand_width(ops[0]) or 4
+         mask, sx = self._SNAP_MASK[size], self._SNAP_SX[size]
+         overflow_result = (1 << (size * 8 - 1)) - (m == "dec")
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -65,6 +65,9 @@
+ #endif
+ #ifndef RECOMP_LOAD_GLOBAL_U32
+ #define RECOMP_LOAD_GLOBAL_U32(site, address, value) (value)
++#endif
++#ifndef RECOMP_LOAD_U8_AT
++#define RECOMP_LOAD_U8_AT(site, value) (value)
+ #endif
+ #ifndef RECOMP_PUSH_IMM_U32_AT
+ #define RECOMP_PUSH_IMM_U32_AT(site, value) (value)
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -104,6 +104,20 @@
+ #include "pc_native_timing_guest.inc"
+ extern void sub_001538C0_gen(void);
+ void sub_001538C0(void) { pc_native_timing_guest(sub_001538C0_gen); }
++
++/* Fractional physics keeps contact-order RNG separate from gameplay draws. */
++#include "pc_native_contact_guest.inc"
++#include "pc_native_physics_guest.h"
++extern void sub_00171FB0_gen(void);
++extern void sub_00171560(void),sub_00153B40(void);
++void sub_00171FB0(void)
++{ pc_native_physics_guest(sub_00171FB0_gen); }
++void pc_native_physics_solver(void)
++{ pc_native_physics_solver_guest(sub_00171560); }
++void pc_native_physics_random(void)
++{ pc_native_physics_random_guest(sub_00153B40); }
++
++
+ extern void sub_0018FF70_gen(void);
+ void sub_0018FF70(void) { pc_native_input_guest(sub_0018FF70_gen); }
+ #include "pc_native_weapon_guest.h"

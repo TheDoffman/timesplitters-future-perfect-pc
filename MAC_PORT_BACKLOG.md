@@ -787,6 +787,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **HUD panel performance follow-up (2026-10-22, candidate `4a4aa02`):**
+  The shared `text-panel-scope` patch reuses read mapping checks across the
+  original panel's width/fit/draw sequence, inside the existing placement
+  wrapper. Windows and native prompt feature definitions pass the same modeled
+  panel fixture: five read queries become one; all measurements/draws, fresh
+  scratch writes, operation expiry and placement boundaries remain covered.
+  No OS adapter change is needed. Windows full build/built-in checks pass;
+  a bounded native144 Venice run shows readable RANK/ordinal labels and
+  preserves the isolated profile. Hosted Windows/Mac runtime CI passes at
+  `c580949`, including Mac asset-free graphics contracts. Initial Windows
+  before/after pacing results are mixed; no FPS benefit is established.
+  Full rendered comparison and native Mac gameplay/performance remain pending;
+  see STATUS.md.
+
 - **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
   text read cache now keeps the complete OS-validated interval, avoiding repeat
   queries when guest stack reads descend or labels visit earlier addresses in
@@ -1235,6 +1249,34 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac implementation and evidence:** Existing implementation unchanged. In the final bounded run, paused Options opened Display Settings, previewed 2560x1440, displayed the countdown and automatically restored 1920x1080 after 15 seconds. The isolated saved mode remained 1920x1080, and the run returned to visible first-mission gameplay. Apply/Keep/reopen and explicit Revert remain pending. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-011 — Real texture-pack gameplay coverage
+
+- 2026-10-23 streaming integration correction (commit carrying this entry):
+  the initial common-renderer Present-only pump missed Future Perfect's Swap
+  route. Earlier background-on gameplay measurements did not include completed
+  replacements and are withdrawn. Completion now belongs to shared present_resolve;
+  legacy GL already funnels Swap through its Present adapter. Production-body
+  tests fail before this correction and pass after it. Windows D3D11 build
+  86b2c1c completed 132 replacement uploads in a bounded Venice Enhanced run;
+  two reviewed frames showed no obvious blank/corrupt surfaces. A later actual
+  Windows Video Options run applied Classic, reopened the page to confirm the
+  effective value, then applied Enhanced and resumed gameplay in both modes.
+  Apply disabled after each commit; inspected stills had no obvious blank/corrupt
+  surfaces. Original60/native120 Venice pacing checks also completed; see STATUS
+  for limitations. Replay still suppresses host shortcuts. Mac scene checks,
+  broader Windows coverage and physical shortcut testing remain **Awaiting validation**.
+
+- Background texture reads (commit carrying this entry): `texture_pack_stream.h`
+  shares queue, cancellation and staging policy between common RHI and legacy
+  GL; thin Windows event/lock and POSIX pthread adapters run disk work. GPU
+  creation remains on each renderer thread; the GL adapter restores binding.
+  Windows loader/queue/GL-stub and related native tools: 55 passed, two host-only
+  skips. Native Mac CI at c4baddf executes the queue/loader fixtures successfully
+  within 446 passing runtime tests (76 host/feature skips, 18 subtests); common-RHI
+  asset-free GPU contracts also pass. Actual texture arrival GPU behavior, scene
+  transitions and Enhanced appearance remain **Awaiting validation**. No new Mac feature
+  duplication is needed. Acceptance includes Classic/Enhanced switching during
+  queued loads, owner destruction/content changes, bounded memory and 60/120/144
+  scene pacing on both Mac renderers; see STATUS.md.
 
 - PR #289 upgrade follow-up: shared `Core.InstallPending` now consumes packaged
   retired-icon hashes and transactionally removes only unchanged bundled pairs.
@@ -3665,16 +3707,254 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 
 - **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
-  GPU transform shader bodies preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
+  GPU transform shader bodies and `graphics/surface_basis.h` preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
   No game hook calls this candidate; normal water and legacy GL are unchanged.
   Existing native-timing CI includes its asset-free CPU fixture on both hosts;
   both native jobs pass for PR #316 head 67f9663. This verifies the CPU contract,
   not Mac water rendering.
   Windows WARP covers GPU transforms, fresh reconstruction every update, and
-  the original water vertex/pixel programs with synthetic input geometry;
+  the original water vertex/pixel programs. A later Original60 runtime capture
+  establishes 128x128 wrapped sampling; the test now mirrors its pixel-space
+  quad/viewport/screen-space undo and uses shared real Hartley weights. Earlier
+  clamped DCT evidence remains diagnostic only. New basis CPU checks are in
+  the shared timing suite; native Mac validation of this extension is pending;
+  follow-up PR #321 also adds a Windows original-shader reference with captured
+  cardinal smoothing. Float/byte divergence persists; no Mac GPU result is inferred.
+  Shared `surface_state_shader.h` now materializes alpha-height for the original
+  final ripple shader; Windows WARP checks that consumer at every candidate
+  frame and through byte output. No runtime hook or Mac GPU acceptance is implied.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.
+
+- **Respawn diagnostic (2026-10-22, PR #307):** Read-only Windows CPU/health
+  observations reproduce a 25.856-ms gap after health restoration; a follow-up
+  sampling emulated GPU handshake words does not reproduce the large gap or
+  identify its cause. This is instrumented diagnostic evidence, not a performance
+  improvement. No runtime/adapter changes. Native Mac gameplay and pacing remain
+  unverified; see STATUS for measurements, exclusions and next check.
+  Subsequent Windows saved-stack diagnostics catch synchronous texture-file
+  work in slow frames even in Classic mode. An isolated no-pack control avoids
+  that path, but differing bot outcomes and sampler overhead prevent a causal
+  FPS claim. No texture behavior is changed; per-upload timing remains next.
+
+- **Integrated crowd pacing (2026-10-22, PR #307):** Windows `20dc25d`
+  averages 143.803 guest presents/sec against playable `4adb6b0` 143.901 in the
+  same configured ten-bot Venice route. Both contain isolated slow frames;
+  neither establishes locked 144 FPS or removes the reported 110-FPS dips. These are
+  capture-free minimized host Present intervals, with nondeterministic bots,
+  not scanout or Mac performance acceptance. No runtime/adapter change. See
+  STATUS for complete-window checks, clock ratios, hashes and respawn correlation.
+
+- **Vehicle-exit acceptance (2026-10-22, PR #307):** Same Windows `20dc25d`
+  executable passes the Siberia jeep drive/exit/walk/pause route at genuine
+  Original60, native120 and native144. Y delivers the original exit action; weapon and
+  walking camera return, and on-foot movement separates player from stationary
+  jeep. Earlier E/F/R attempts used incorrect actions and are excluded. This is
+  captured synthetic-input evidence, not physical-device or pacing acceptance.
+  No runtime or OS adapter changed. Native Mac gameplay and other vehicles/
+  seats remain awaiting validation; see STATUS and the regression record.
+
+- **Corner-contact follow-up (2026-10-22, PR #307):** Windows `20dc25d`
+  completes a new native144 walking detour and jeep probe. Solver-entry records
+  show side-facing contacts at144 versus front-facing contacts in the genuine
+  Original60 run, with small approach differences. The different outcome is
+  not proof of skipped solver work; broader handling remains unverified. The
+  existing rigid fixture adds 576 overlap/restitution/quantized-normal cases
+  against independent impulses; all 19 vehicle tests pass locally. These
+  private-XBE cases skip in asset-free CI. No runtime change or new OS adapter;
+  actual Mac gameplay is still pending. See STATUS for measurements and limits.
+
+**Live vehicle reference correction:** the vehicle camera/steering/terrain
+recordings labeled 60 used native60, not Original60. Startup logs and the new
+solver flag confirm this. Their measured values remain valid, but original-clock
+live parity is unverified by those runs. Offline Original60 fixtures are separate
+and unaffected. See STATUS for the explicit evidence correction.
+
+The optional solver-entry contact trace is shared by both hosts through
+`pc_native_contact_trace.h` / `pc_native_contact_guest.inc`; the VM-read adapter
+uses the existing Windows/Darwin `pc_guest_memory.h` implementation. It separates
+generated and selected lists before the original arena reset, with bounded CSV
+output and no guest writes. Asset-free filter/list/writer checks are registered
+in the existing both-host timing suite. Windows `20dc25d` builds successfully;
+the foreground virtual-pad check explicitly skips. New original60/native60/
+native120 traces independently verify the timing mode, capture selected pillar
+contacts and stop at the pillar; the native144 walking approach fails to reach
+the jeep and is excluded. Actual native Mac execution remains pending. This
+diagnostic does not resolve the earlier pillar outcome or certify handling parity.
+See STATUS for exact measurements and the corrected reference scope.
+
+- **Controlled contact audit (2026-10-22, PR #307):** The existing shared
+  `native_rigid_motion.c` fixture now passes 864 static-contact impulse cases
+  against independent mechanics, with a missing-solve mutation. No production
+  policy/adapter change. Windows vehicle suite passes 19 tests; this requires
+  the private US XBE and skips in asset-free CI. Actual Mac execution, contact
+  generation and the live pillar discrepancy remain unverified; see STATUS.
+
+- **Vehicle obstacle follow-up (2026-10-22, built source `fb261e1`, PR #307):**
+  Straight no-bot Windows runs stop at the Siberia pillar at60/144, while120
+  reaches the bank. A second native60 run also stops with a different pose.
+  Small approach differences remain; STATUS records observations and limits.
+  No new production fix or Mac parity claim follows. Controlled contact,
+  broader handling and actual Mac gameplay acceptance remain outstanding.
+
+- **Vehicle chase camera (2026-10-22, source `24d0ad5`, PR #307):** Shared numeric policy
+  admits fractional chase updates at `CA040` and nonzero spring groups at
+  `CA424`. No new OS adapter. Full-original camera tests reproduce the old
+  lag and pass after correction; registered asset-free load-lowering tests
+  cover both hosts. Integrated `fb261e1` passes the full Windows build and
+  selected Windows/Mac CI. Bounded no-bot Windows driving at 60/120/144 removes
+  the large pre-fix camera-distance mismatch and passes steering/pause checks;
+  see STATUS for measurements, asynchronous scope and binary provenance.
+  Actual Mac gameplay, broader geometry and pacing acceptance remain pending.
+
+- **Integrated vehicle build (2026-10-22):** Draft PR #307, source `d0116a7`,
+  incorporates main `7545d4b`. Windows full build/built-in checks, 147 combined
+  source checks, four patch upgrades and 88 repository checks pass. Selected
+  Windows/Mac runtime CI jobs pass at this head; workflow completion is tracked
+  in the PR. Private-XBE original routine checks remain distinct from asset-free
+  CI. Short no-bot Windows runs at all three presets pass signed steering and
+  pause checks; rejected setup runs and asynchronous timing limits are recorded
+  in STATUS. Exact handling and actual Mac gameplay remain unverified.
+  Shared policy requires no new platform adapter. Status remains Awaiting validation.
+
+- **Vehicle steering follow-up (2026-10-22, WIP):** Shared numeric policy adds
+  original coefficient site `17306A` to the existing fractional easing rule.
+  No host adapter is needed. Original driver/steering tests reproduce slower
+  native120 response before correction and pass afterward, including signed
+  steering/release, speed target clamp, wheel eligibility and time variations.
+  Both-host CI registration already includes the extended vehicle test file
+  and its new asset-free SSE case. Windows build `464f850` and its built-in
+  checks pass. Live handling and Mac execution of this follow-up remain
+  pending; see STATUS.md. This does not
+  establish the cause of the earlier pillar/bank trajectory divergence.
+
+- **Vehicle/rigid-clock candidate (2026-10-22):** WIP branch
+  `fix/native-vehicle-physics`; shared `src/pc_native_numeric.h`,
+  `src/pc_native_timing_guest.inc`, and `patches/zzzz-native-vehicle-physics.patch`.
+  No OS-specific behavior or new adapter. Native intervals reach the original
+  rigid solver and spring updater; linear adjustment and byte rest timer retain
+  authored time units. Original-clock handoff rebases its timestep history.
+  Windows timing suite: 67 passed; final focused four, companion114 and patch
+  install/upgrade four also passed. Both-host CI registration includes an
+  asset-free lifted byte-timer check; original routine tests require the private
+  supported XBE. The extended four-case file also passes on Windows with the
+  original moving-body/force/drag/rotation pipeline and a controlled support
+  contact. `src/pc_native_physics_guest.h` now isolates extra-step shuffle RNG;
+  three-contact checks retain the same shared seed at 60/120/144. A scoped
+  floating addition correction also prevents a ninth secondary solve at some
+  fractional step sizes. Both helpers use portable C with host thread-local
+  spelling, not a new platform adapter. Original-routine fast/slow/irregular
+  checks and an asset-free nesting/isolation case pass on Windows. Final local
+  suites pass 70 timing/vehicle, 115 companion and four patch-upgrade cases.
+  These host results do not replace Mac execution. Mac
+  compilation/execution and live driving, actual collision geometry,
+  pause/catch-up and preset switching remain pending. This remains a WIP
+  candidate, not verified Mac support or a shipped gameplay fix.
+
+  Follow-up publication checks execute the original body-to-entity position/
+  velocity, bounds, vehicle-component integration and sleep/wake routines.
+  Shared byte-load policy now also covers the direct memory DEC at `171F83`;
+  original/default flags and unrelated sites retain their behavior. Focused
+  Windows checks restore the same sleep duration at 60/120/144, including slow
+  and fast game speed, and verify immediate fractional wake motion. Mac tests,
+  live driving and rendered model behavior remain pending; no adapter change.
+  The shared manual wrapper uses a standalone `_gen` declaration so both host
+  generators retain its original body. The first Windows link caught the
+  comma-declaration defect; a scanner regression now covers this requirement.
+  Corrected Windows build `ba4f0bf` passes generation/link/build checks. Actual
+  Siberia jeep driving works at the three presets, but a matched throttle
+  replay travels substantially less at native rates (see STATUS). Candidate
+  acceptance still requires resolving that technical discrepancy.
+  The prior playable Windows executable is restored; native Mac validation
+  and full handling acceptance remain pending.
+
+  Driver follow-up (same WIP branch): shared gate `17DA03` now admits positive
+  fractional game intervals, replenishing inputs consumed by the vehicle each
+  update. Original `17DA00/172EE0` tests reproduce missing native throttle before
+  the fix and cover forward/reverse/braking/release, pause, speeds and ABI.
+  No host adapter change; native Mac execution and live handling remain pending.
+  Windows build `67c1864` and 112 timing/vehicle/translator/generation checks
+  pass. Matched initial jeep acceleration now agrees within 0.1% across the
+  presets, while later pillar/bank contact still differs. This is Windows input
+  validation, not full handling acceptance or native Mac verification.
+
+  Character-contact follow-up (same WIP branch): shared `166899` numeric gate
+  now preserves displacement-derived relative velocity on fractional updates.
+  Windows original `1667C0/166060` fixtures and the coupled solver plus
+  `16E780/16DA90` callback path pass; old-gate controls fail at native120.
+  Static/rigid contact paths and original mode retain their behavior. The
+  controlled support body's motion was already correct; the fix changes stale
+  impact information. No new platform adapter. Full game build/live contact
+  and Mac execution of this addition remain pending; source tests require XBE.
+
+  Spawn-motion follow-up (same WIP branch, commit titled `Preserve inherited motion on fractional object spawns`): shared gate `172AB5`
+  now preserves initial joint-derived velocity/momentum on fractional spawns.
+  Original history-copy, spawn and setter tests pass at 60/120/144 with
+  rotated transforms, signed inheritance, offset vertices and failure/pause
+  paths. The old gate fails at native120. No platform-specific code or adapter;
+  Windows full build `3e1ee87` and built-in checks pass, including the previous
+  character-contact addition. Native Mac execution and live spawn/contact
+  acceptance remain pending. Candidate provenance and limits are in STATUS.
+
+  Actor/vehicle impact follow-up (`60e5b36`, same WIP branch): native divide
+  `17CBD6` no longer normalizes already normalized entity velocity a second
+  time. Original60 and callback cadence are preserved. Original publication,
+  registration, queue delivery, contact construction and suspension response
+  pass controlled direct/queued checks; old division and opening only the
+  gate both fail at120. No host adapter change. Windows full build and its
+  built-in checks pass, along with 115 timing/vehicle/generation regressions.
+  Live vehicle-actor acceptance and native Mac validation remain pending.
+  A bounded Windows native144 probe reaches the actor callback in live
+  Siberia contact and passes pause/resume; it does not measure impact strength.
+  The current retained diagnostic build is `60e5b36`; playable `4adb6b0`
+  remains restored. These Windows results do not establish Mac execution.
+- **Texture-upload timing diagnostic (2026-10-22, `diagnostic/texture-upload-timing`):** Shared
+  `texture_pack_trace.h` and traced reader expose opt-in bounded CPU wall spans
+  for the common-RHI loader and legacy GL adapter. Windows uses QPC, POSIX uses
+  CLOCK_MONOTONIC; texture behavior/budgets/defaults are unchanged. Disabled,
+  failed-output, bounded-output and loader stage tests run in the existing
+  both-host workflow. Windows full build and stage correlation pass at `2230901`
+  (PR #308), with one explicit virtual-pad focus skip. All selected both-host
+  CI passes; actual native Mac trace/gameplay remains awaiting validation.
+  The worst 12.639-ms interval includes 2.215 ms of recorded attempts, while other
+  slow intervals contain none. Key hashing/cached calls and trace-output cost
+  remain outside the spans. This is diagnostic evidence, not a hitch fix; see
+  STATUS for scope and the main-based executable's provenance.
+  Follow-up source now measures source-key hashing on both RHI and legacy GL,
+  including cached upload calls, with the same disabled/bounded contract.
+  Forty-eight focused local tests pass, including real-loader hash ordering and
+  no file/resource work on cached calls. The new hash fields are not present in
+  the earlier `2230901` evidence. Windows build/built-in checks pass at `018f2be`
+  (virtual-pad focus skipped). The live 50-second window records only 0.710 ms
+  hashing, with no uploads in its four slowest intervals; no hashing optimization
+  is justified. No live cached calls occurred; the fixture covers that outcome.
+  Actual native Mac tracing remains pending for this extension.
+
+- **Disabled trace-filter work (2026-10-22, `perf/disabled-trace-name-scan`):**
+  Shared `trace-filter-disabled-scan.patch` avoids scanning every guest function
+  name when `RECOMP_TRACE_ONLY` is absent/empty. Enabled matching/hit limits and
+  all other diagnostics retain their behavior. No host adapter is needed.
+  Six actual-function/mutation cases are registered for both hosts and pass on
+  Windows. Supported Windows build/built-in checks and a bounded ten-bot Venice
+  session pass at `7b5f042`; foreground routing skips and gameplay remains in a
+  visible background window. Actual Mac validation remains pending; removed scan
+  counts and this uncontrolled run do not establish an FPS gain. See STATUS.
+- **PFB worker notification rework (2026-10-22, `perf/gpu-flush-ack`,
+  PR #310):** Shared exact-store notification wakes the original worker, keeping
+  its register/DMA/fence service and activity accounting. Windows event/timer
+  wait and native Mac condition-variable wait retain the 500-us idle fallback
+  and 50-ms diagnostic ceiling. The former `92ffa8b` direct-clear loading stall
+  is absent in four bounded Windows runs of `bf4b755`: Original60, native120 and
+  native144 (notification on/off). Paired144 main-thread CPU falls 78.57% to
+  58.44%, p99 interval 8.291 to 7.513 ms. A second Hotel pair improves typical
+  pacing and main-thread CPU but retains an isolated43.776-ms hitch. Windows
+  are nonforeground and combat varies. This does not resolve all reported crowded-map drops. Nineteen final
+  Windows offline cases pass (Mac-only case skips); native runtime CI at
+  `af96547` passes the real Mac event fixture. A declaration-placement conflict
+  in historical Mac upgrade context is repaired; fresh/repeated and historical
+  upgrade tests pass locally, with current-head CI pending. Native Mac gameplay, foreground pacing and broad campaign/mode
+  coverage remain awaiting validation. See STATUS for exact evidence and limits.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing

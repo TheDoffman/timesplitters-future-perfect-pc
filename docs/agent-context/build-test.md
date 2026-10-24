@@ -57,6 +57,128 @@ across minor versions, mixed launcher/draft history and ancestor restrictions.
 The suite is already registered for both hosts in the release checks; these
 offline publisher fixtures need no game or launcher rebuild.
 
+### Native vehicle integration and diagnostic checks
+
+`tests/test_native_vehicle_timing.py` runs portable byte-load, physics-scope,
+partition and lowering contracts on both CI hosts. With the verified private US
+XBE it also lifts the original dispatcher, spring/linear/rest routines, rigid
+clock/solver/integrator, final publisher, bounds, sleep/wake, camera and driver.
+Private-XBE skips on CI do not certify those routines on Mac.
+
+- `native_rigid_motion.c` checks forces, drag, quaternion/position publication,
+  controlled support contacts, RNG isolation and secondary-step boundaries at
+  60/120/144, slow/fast/irregular time and pause. Static contact cases compare an
+  independent impulse equation, including penetration escape velocity. Mutations
+  independently remove gates, timers, contacts, RNG and boundary corrections.
+  Geometry, room/model notifications and broadphase services remain controlled.
+- `native_vehicle_driver.c` checks original `17DA00/172EE0` throttle, brake,
+  reverse/release and steering recurrence, including wheel eligibility, speed
+  clamps and ABI. `legacy-driver` and `legacy-steering` must fail independently.
+- `native_vehicle_camera.c` executes full `CA040` plus original spring/history
+  helpers. Check fresh updates, aligned camera checkpoints, pause and ABI;
+  gate/count mutations must fail before entering a zero-count decrement loop.
+- `native_spawn_motion.c` executes original joint-history and spawn routines
+  through real velocity/momentum setters. Check all carried-clock phases,
+  signed/rotated inheritance, missing history/allocation and pause. The legacy
+  mutation fails at native120; controlled services do not certify live models.
+- `native_vehicle_actor_impact.c` connects original velocity publication to
+  queued actor contact, impact and suspension helpers. Old division/gate-only
+  mutations fail; geometry/effect callbacks are controlled.
+- `native_contact_velocity.c` checks rotating-body/static/character contacts,
+  axes, time scales and nullable output. Both legacy gate mutations must fail.
+- `tests/test_native_timing.py` retains both physics-history handoff and boost
+  resource cases alongside the coupled-surface fixture. Historical upgrade
+  fixtures exclude the later vehicle/texture/panel patches where their earlier
+  dependencies are absent; the current full stack must include all of them.
+
+For live driving, use `--native-fps 0` for true Original60 and verify `native=0`
+in a solver trace. `--native-fps 60` means native60: older `vehicle-*-60` labels
+are invalid original-clock evidence. Default Y delivers logical exit bit0x40;
+F/R deliver0x20/0x10. Verify camera24->0, weapon restoration, on-foot movement,
+pause/resume and unchanged saves. In Siberia choose LEFT from Recommended to
+None, verify roster257, and allow six seconds for vehicle entry before steering.
+Camera/body observations need frame brackets; asynchronous captures alone are
+not synchronized trajectories. Preserved live pillar/bank counterexamples and
+corrected Windows acceptance records are in STATUS and
+`docs/native-high-refresh-regressions.md`; neither proves broad handling parity.
+
+Contact tracing requires isolated `TSFP_CONTACT_TRACE` path, pool slot0..1023
+and finite inclusive `TSFP_CONTACT_TRACE_Z=min,max`. It records generated and
+selected lists separately, including empty snapshots, up to16,000 rows/8MiB.
+Discard capped partial snapshots. The allocated arena is observed after selection;
+its normals can already be merged. `native_contact_trace.c` tests identity,
+filters, invalid/unreadable values and limits; physics scope covers nesting and
+Original/native paths. `--trace-vehicle-contact` separately enables bounded
+original entry traces, incompatible with `--watch-input`; entries do not prove
+impulse magnitude. Inherited diagnostic environment is stripped by the runner.
+
+Pacing observations use complete capture-free Present intervals in
+spawn+5..+55 seconds with clock neighbors and scene/pause checkpoints. Record
+actual window visibility, foreground/client size and bot roster. Successful
+presents are not GPU completion or scanout. External stack sampling reports
+suspension cost and remains diagnostic; health restoration/keypress timing does
+not identify hitch cause. An empty optional-pack control must not remove an
+installed pack or edit personal settings. Performance evidence and exclusions
+remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
+
+Integration of #308 and #311 carries per-request timing records through the
+bounded queue. The reader only stamps its owned record; CSV initialization and
+completion stay on the renderer thread. Run stage-order tests with streaming
+both enabled and disabled. Total request duration includes queue/frame waits;
+read stages are worker spans and image/view stages are renderer spans. Cancelled
+requests are discarded without dereferencing their owner or logging on the worker.
+
+Texture-upload trace tests compile the real loader and collector through the
+existing both-host `tests/test_texture_runtime.py` registration. They verify
+disabled clock/file inactivity, failed output, bounded output, ordered stages,
+cached switches and missing/invalid/view-failure fallback. Use an isolated CSV
+path and compare raw monotonic timestamps with Present intervals for live
+diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
+clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
+can change frame timing. Actual native Mac gameplay remains a separate check.
+Do not attribute a whole slow frame to a sampled upload: intersect the actual
+attempt begin/end timestamps with each Present interval. The first live trace
+accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
+without attempts. Hashing/cached-call costs and trace output are outside these
+attempt spans; broader frame work remains open. STATUS retains the evidence.
+The follow-up collector starts before source-key hashing and emits `cached`
+rows as well. Loader tests require nonzero ordered hash boundaries and zero
+read/resource stages on all twenty cached calls while retaining existing load
+and fallback counts. The 8,192-row bound still applies; verify coverage before
+using a live window. The earlier `2230901` data retains its narrower scope.
+
+Crowded-map performance checks must record actual window state as well as the
+configured render resolution. `stability_transitions_game.py --minimized` hides
+the owned child; successful presents in that state do not establish foreground
+performance. A fullscreen toggle also does not prove focus: the latest bounded
+baseline runs observed visible clients at 640x480 and fullscreen 1920x1060 while
+the device rendered 3440x1440, and Windows granted neither foreground focus.
+Record client size, visibility, minimization, foreground state, scene and bot
+roster alongside complete Present intervals. STATUS records the 143.898/142.006
+interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
+prevent treating the two runs as a causal window-mode comparison. Keep native,
+texture, capture and CPU/stack diagnostics off for this observation unless their
+specific attribution is the question under test.
+`tests/test_trace_filter.py` compiles the actual runtime name-filter function,
+checks zero label scans for absent/empty filters, and retains exact matching,
+independent hit limits and zero/negative caps. Its eager-scan mutation must fail.
+It is registered in both-host native runtime CI. For changes to this function,
+apply the complete patch stack first; passing scan-count checks establish the
+removed work, not a gameplay FPS improvement.
+`tests/test_gpu_flush_ack.py` compiles the actual patched notifier and lifted
+store. It checks post-write notification, exact instruction/register selection,
+untouched guest words and lifecycle guards. Omitted/reordered notifications and
+a direct-clear mutation must fail. Lifter cases include absolute/indexed/immediate
+stores and excluded loads, narrow/segmented stores and register moves. The actual
+worker wait is exercised with both host adapters, missing-event/timer-failure
+fallback, the 50-ms diagnostic timeout ceiling and the original one-millisecond
+busy window. Native `native_platform.c`
+also tests real event timeout, prequeued/consumed signals, delayed thread wake and
+manual-reset behavior through the microsecond adapter. The registered Python
+suite compiles/runs this fixture with the actual compatibility layer on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,
+regenerate/build, then test the previously failing match-loading route before
+measuring performance.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows
@@ -66,6 +188,20 @@ with captures disabled and identical resolution, FOV and bot settings.
 The same Python suite extracts the production outlined-text wrapper and tests
 both host feature defines, all five draws, guest ABI, invalidation and fresh
 scratch writes. Removing the outer scope is a required failing mutation.
+The panel variant extracts `pc_panel_text_original` and `sub_0012E3F0` too.
+It models the panel's three measurement/fit calls and two outlined labels,
+reducing same-region read queries from five to one while retaining all three
+measurements, ten draws and thirteen fresh scratch-write checks. The mutation
+removes only the panel scope; outlined scopes remain. Placement callbacks
+assert they run outside the reused mapping lifetime. This is a boundary/ABI
+fixture, not execution of the full original panel or a rendered comparison.
+The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
+the original panel now runs inside that callback. Other placement targets keep
+their direct original callbacks. The scope suite verifies callback execution.
+The first native144 Venice panel comparison is recorded in STATUS: average FPS
+and tail intervals move in different directions, so query savings alone must
+not be reported as a pacing improvement. Exclude a measurement window when
+another game starts during it, even if that run reports a better average.
 
 `tests/test_decal_projection.py` checks the production projection wrapper's
 guest ABI and all matrix elements, plus one VM query per same-region correction.
@@ -557,6 +693,46 @@ backs up only untouched seeded copies outside UserData. Modified legacy profiles
 require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
 Player 1 without deleting a profile or altering personal saves.
 
+## Texture streaming regression checks
+
+The Windows native-runtime CI job installs requirements-release.txt before its
+Online HTTPS tests, using the same pinned certificate provider as the packaged
+companion. Without it, the suite fell back to the runner's Git OpenSSL, which
+timed out during certificate creation on 9bf5630. This changes test dependency
+setup, not the production hosting fallback. Changes to those pins trigger the
+workflow and select native checks; Mac's selected suite does not run that test.
+
+`tests/test_texture_runtime.py` compiles the actual shared queue, common RHI
+loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
+It runs on both CI hosts. A deliberately stalled reader checks nonblocking
+pump/cancellation, owner reuse, queue backpressure, staging limits and cleanup.
+Both synchronous and background modes exercise cached switching, fallback and
+resource failure; GL checks mip uploads and binding restoration. These are
+asset-free CPU/adapter tests, not GPU or scene acceptance. Run fresh/repeated and
+historical Mac patch upgrades for the new Present hook. Real pacing and texture
+pop-in still need bounded gameplay comparisons; default 60 and native120/144
+settings must be reported separately.
+
+The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
+patched binding helper into its temporary include directory. The CMake loader
+fixture runs without that extra helper; it requires no pytest-generated files.
+Both routes default to background loading when no diagnostic override is set.
+
+Historical controls-only and pre-toggle snapshots omit streaming along with its
+texture prerequisites. Full-stack migration must install both the Present pump
+and binding-revision hook, which the controls-upgrade test explicitly checks.
+
+The texture fixture now compiles actual present_resolve, dev_Swap and dev_Present
+bodies, verifies exactly one queue completion per presentation (none for a skip),
+and finishes real DDS loads through Swap. It fails against the Present-only
+prototype. Replay mode deliberately suppresses host shortcuts in pc_controls_message;
+neither guest F10 injection nor posting PC_TEXTURE_MODE_COMMAND validates live
+switching during replay. Use the in-game settings route or a non-replay session.
+The host toggle logs transitions, but the menu's explicit tsfp_texture_set_4k
+setter does not. For menu validation inspect staged/applied captures, Apply's
+disabled state, and the actual value after closing/reopening the page (which
+reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately from
+frame-time measurements. The ineffective window command was removed.
 
 ## Game release channels and maintenance publication (2026-10-22)
 
@@ -638,3 +814,27 @@ triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
 production parser/emitter. Translation helpers also receive isolated runtime
 configuration. Single-pass and gradient-only byte-storage controls isolate
 rounding contributions; none is an accepted replacement for the original map.
+
+The surface spatial fixture also runs at 128x128, matching the observed game
+feedback target. Its wrapped case mirrors the live quad, viewport, screen-space
+undo and linear wrapped sampling. A seam-adjacent impulse distinguishes the
+periodic real Hartley basis from the clamped DCT control; forcing a clamped basis
+must fail the original-shader comparison. `native_surface_basis.c` checks shared
+basis orthonormality and diagonal-neighbor eigenvalues at sizes 1/7/64/128 under
+both boundary rules, plus invalid input, through existing Windows/Mac timing CI.
+Live draw evidence and its binary/source provenance are recorded in the high
+refresh regression guide. The fractional candidate comparison still excludes
+smoothing. `test_original_smoothed_surface_feedback` separately executes the
+captured cardinal smoothing and both original feedback passes at 60 Hz, checking
+the filter against explicit wrapped neighbors. A zero-offset mutation must fail.
+This reference includes actual byte/half/float storage and mixed-format controls;
+it excludes disturbances, final shading and game RNG. Do not infer gameplay
+equivalence from the controlled float reference.
+
+`surface_final_gpu.inc` executes original effect 22 (callback 2C320, definition
+4BC318) on the captured cardinal offsets. It checks final RGB against explicit
+height differences, through float and actual byte render targets. The candidate
+uses shared `surface_state_shader.h` to materialize alpha-height after each fresh
+inverse transform. A constant-alpha header mutation must fail the final shader
+comparison. Final shader agreement with the float32 reference does not establish
+original byte-storage appearance or scene rendering; both differences are reported.
