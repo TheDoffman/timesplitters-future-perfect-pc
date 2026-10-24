@@ -18,16 +18,19 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_framebuffer_sampling.py` compiles the full HLE texture unit with fake
-screen-copy callbacks. `framebuffer_surface_stubs.h` resolves unused water APIs
-with failing stubs, preserving production hooks. Run normal refresh and the
-stale-copy mutation. Mac covers GL and common RHI; Windows covers common RHI.
-Water behavior has separate native-surface/GPU tests.
+`test_native_demo_timing.py` lifts original initialization `69E80/431F0/42510`
+and input/playback `438B0/43220` from the verified US XBE. Synthetic recordings
+cover 1/4 controllers, raw1/2 and game0/1 ticks, edges, ABI, scene gate and EOF.
+Eight Original60 cases pass; sixteen native cases strictly xfail only on
+`DemoTimingMismatch`. No runtime fix/live-file acceptance; no XBE means skip.
 
-`test_sample_chains.py` extracts the patched sampler's actual insertion function:
-verify deep caller separation, short stacks, saturation reporting and retained
-counts. Six-frame and hidden-overflow mutations must fail. Both CI hosts run
-this portable fixture; it does not execute Windows stack walking on Mac.
+`test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
+copies and failing unused-water stubs. Run refresh and stale-copy mutation;
+Mac covers GL/RHI, Windows RHI. Water has separate native-surface/GPU tests.
+
+`test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
+counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
+Mac does not execute Windows stack walking.
 The runner records `--profile-depth 1..32` (default8), `--texture-mode`
 (`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
 

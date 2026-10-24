@@ -1,3 +1,30 @@
+## 2026-10-24 — Recorded-input playback timing regression reproduced offline
+
+The verified US XBE's original playback initializer (`69E80 -> 431F0 -> 42510`)
+and full input dispatcher (`438B0 -> 43220`) now run in a repeatable local
+regression fixture. Synthetic recording bytes and controlled physical-device/
+lifecycle services are the test boundaries. Initialization, one/four-controller
+held/pressed/released values and six analog bytes, guest stack/callee-saved
+registers, the menu scene gate and end-of-stream transition all pass.
+
+With unit raw/game tick records, one nominal wall second consumes 1.0 seconds
+of recorded time at60 calls/s, 2.0 at120 and 2.4 at144. The input dispatcher
+reaches playback on fractional frames too. Source inspection traces the normal
+offline input path through `3559A0 -> 438B0`; its PC bot wrapper calls the
+original unconditionally. This is stronger than calling playback in isolation,
+but is not a live recording/file or full game-loop reproduction.
+
+`tests/test_native_demo_timing.py` reports **8 passed, 16 expected failures**.
+Only the measured timing mismatch may strictly xfail; build, initialization,
+input and ABI failures cannot be hidden by that mark. Multi-tick and zero-game
+records compare with the same synthetic Original60 path, not an asserted
+variable-duration recording wall-clock contract. Generation stays local and
+requires the hash-verified private XBE; CI without it skips these cases.
+Windows/MSVC checked on source `d4c0c02` plus this test change; native Mac and
+live playback remain unverified. No runtime repair is claimed. Next: establish
+record consumption/clock rebasing across fractional frames, pause, EOF and
+live rate changes before changing the playback path. No new PR opened.
+
 ## 2026-10-24 — Later combat pacing and delayed bounded capture
 
 The previous 20,000-row Present recorder spent much of its allowance on menus.
@@ -36,6 +63,7 @@ Present logging and bounded asynchronous actor observations stayed on.
 | `crowd-rockets-144` | spawn+5..35s | 4319 / 143.999897 | 6.968 / 7.295 / 7.449 | 12.398 | 144 | 0.999851 |
 | `crowd-rockets-120` | spawn+5..35s | 3599 / 120.000731 | 8.328 / 8.703 / 8.827 | 12.442 | 120 | 1.000103 |
 | `crowd-rockets-long-144` | spawn+5..125s | 17263 / 143.867096 | 6.988 / 7.316 / 7.547 | 11.497 | 137 | 0.999969 |
+| `crowd-rockets-long-60` | spawn+5..125s | 7199 / 60.000373 | 16.668 / 17.029 / 17.140 | 17.449 | 60 | 0.999986 |
 
 The short runs used the prior executable
 `b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`.
@@ -64,7 +92,19 @@ disposable partitions. Evidence is under ignored `private/test-saves/` with
 the run names above; the long run includes `later-window-summary.json`.
 Random bot paths prevent paired mechanical/causal comparisons. Presents do not
 measure GPU completion, scanout or input latency. The reported crowd issue,
-Original60 long-combat control, broader gameplay and Mac acceptance remain open.
+broader gameplay and Mac acceptance remain open.
+
+The completed Original60 long-combat control uses the same executable/runner
+hashes and identical normal-input command file as long144. Its predeclared
+window is covered, with no interval above33.33ms and only fresh guest Presents.
+All measured window observations are foreground, visible and nonminimized at
+1920x1060 client size (3440x1440 render request). Of65 actor checkpoints,
+45 observe a living player; 36 fall inside the window, with nearby living-bot
+maxima3/5/10 at10/20/30 world units. These are proximity, not visibility counts.
+The bounded run exited zero, preserved signed profiles/fixture and left no
+disposable partition images. Evidence: `crowd-rockets-long-60` under the same
+ignored test directory. This supplies the missing60 control, not a causal
+explanation for native dips or proof of the user's reported110 FPS case.
 
 ## 2026-10-24 — Enhanced Temple comparison at Original60 and native144
 
