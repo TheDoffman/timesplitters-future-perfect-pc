@@ -690,6 +690,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- Mouse mapping reuse (commit carrying this entry): `pc_guest_memory.h`,
+  `pc_camera.h`, `pc_terminal.h`, `pc_mounted.h` and both host input adapters
+  share an OS mapping snapshot only within one mouse update. Bounds/write
+  permissions remain checked and the next update starts empty. No Mac-specific
+  feature work is needed; Darwin still uses its existing Mach VM query.
+  Windows executes both adapter bodies with controlled maps, plus actual guarded
+  terminal/mounted fixtures. Physical Mac aiming/capture and native execution
+  remain **Awaiting validation**; see STATUS for available-host evidence.
+
 - **Themed keyboard editor (2026-10-22, uncommitted; native validation pending):**
   Shared native-menu builders expose every action and mouse option in main Settings
   and pause Options, with a keyboard/mouse diagram and two binding columns.

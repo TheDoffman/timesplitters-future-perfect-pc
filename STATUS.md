@@ -1,3 +1,66 @@
+## 2026-10-24 — Reuse memory validation within one mouse update
+
+The shared terminal, mounted-gun and ordinary-camera routing now accepts a
+caller-owned mapping snapshot. Windows and SDL input adapters create it afresh
+for every mouse update, after replay/focus setup. Consecutive accesses can reuse
+the OS-validated bounds and permission; changing mappings requires a new query,
+and read access cannot grant writes. The cache never crosses a guest callback,
+another input update or frame. Standalone helpers create their own local scope.
+Sensitivity, raw motion consumption, native timing, terminal clicks, gun limits
+and player eligibility remain unchanged. This is shared code with host VM
+adapters; actual Mac execution remains outstanding (MAC-001).
+
+`tests/mouse_region.c` compiles the actual Windows/SDL mouse-adapter bodies with
+controlled OS maps. Ordinary aiming uses one query instead of four; separate
+read-only FOV maps use two. Read-only/inaccessible player updates, interval bounds,
+integer overflow and terminal/native-pause behavior are checked. Deliberately
+retaining the snapshot between updates and disabling reuse both fail the tests.
+Together with existing guarded terminal/mounted, camera/decal and text-scope
+fixtures, 29 distinct checks pass; context/backlog checks pass 21. The supported
+full Windows build and its native tests pass, including the actual Windows input
+adapter. Controlled SDL adapter bodies are not native Mac event/capture tests.
+
+Before this change, `crowd-deferred-profile-144` repeated the focused ten-bot
+Hotel route on `8baa45d` with CPU sampling. Complete 110s/150s cumulative guest-main
+reports yield 6,876 samples and 28.4s CPU over 40s; 1,438 samples have VM-query
+leaves. Mouse handling accounts for 77 samples in one such chain; decal projection
+and text measurement remain larger contributors. Nearest-public names can
+misidentify static functions. `diagnostic-summary.json` aggregates duplicate
+resolved chains and verifies raw leaf/chain totals against each report header.
+Actor observations found 28/33 living-player checkpoints, at most 2/4/8 living
+bots within 10/20/30 units. This diagnostic is not clean pacing evidence or proof
+that the reported crowd slowdown is resolved.
+
+The new Windows executable is built from `8baa45d` plus this mouse change,
+SHA-256 `54208feccbca764d06dd27daec4fe65eed2dc6914da3e307f164e54c06674a44`.
+Host remains Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11,
+RTX4070SUPER driver32.0.16.1742. See the bounded live results below.
+
+`crowd-mouse-region-{144,60}` run the same active Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. Each of 33 gameplay
+checkpoints is foreground, visible and non-minimized; client640x480, not fullscreen.
+The complete spawn+5..55s windows contain:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9999 | 2,999 / 60.0005 |
+| Median / p95 interval, ms | 6.976 / 7.281 | 16.666 / 17.034 |
+| p99 / worst interval, ms | 7.407 / 8.454 | 17.151 / 17.441 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 0.999811 | 0.999921 |
+| Living-player checkpoints | 26/33 | 27/33 |
+| Maximum nearby living bots at 10/20/30 units | 3/6/6 | 3/5/6 |
+
+Mouse turns, movement, fire and respawn inputs complete with active scene39,
+ten configured bots and no pause at all gameplay checkpoints. Both children exit
+cleanly; signed saves/canonical fixture checks pass and disposable disks are
+recycled. Exact observations remain in each run's `crowd-metrics.json` and
+`actor-metrics.json`. These are successful guest host presents, not GPU completion,
+scanout or physical-input latency, and contain no interpolated presents. Changing
+combat/spawns and lower nearby density than the earlier 114-FPS window prevent
+a causal frame-time improvement claim. Full-game, denser crowd, Online and Mac
+acceptance remain open; no complete crowd-slowdown fix is claimed.
+
 ## 2026-10-24 — Defer unused replacement work in Classic
 
 On `fix/native-water-rounding`, common RHI and legacy GL now defer new optional

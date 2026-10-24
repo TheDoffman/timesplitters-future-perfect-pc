@@ -281,6 +281,15 @@ in Windows and SDL, with zero-whole positive time, paused stale whole time,
 live return to Original60 and return to on-foot controls. Windows execution
 passes; native SDL self-test execution remains a host validation requirement.
 
+Both adapters now create a local `PcGuestRegion` after input replay/focus gating
+and share it through terminal, mounted and ordinary camera `_in_region` helpers.
+`pc_guest_memory_in_region` reuses bounds/permissions only during that host mouse
+operation, which invokes no guest callbacks or allocation. Every subsequent
+update starts empty. Region changes and read-to-write checks retain OS validation;
+read access cannot grant writes. Standalone helper entry points create their own
+snapshot. This removes duplicate player queries without retaining memory facts
+across frames or changing motion, capture, terminal clicks or timing policy.
+
 ## Unified Video Options and native presets (PR #285)
 
 `pc_display_menu.c` stages resolution (including Auto), aspect, vertical FOV,
