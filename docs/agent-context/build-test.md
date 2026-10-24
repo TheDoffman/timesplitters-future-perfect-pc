@@ -953,11 +953,11 @@ metadata, finite values and both states within 32 float epsilons; original byte
 endpoints remain exact. A missing capture skips; an existing runtime capture
 without its sidecar fails. Per-sample creation/readback precludes speed claims.
 
-`--scenario surface-native-switch --native-fps 144 --native-surfaces
+`--scenario surface-native-switch --native-fps 240
 --trace-surface-images --trace-surface-switches --seconds 230` runs the committed
-`scotland_switch` route through Video Options (before Keyboard and Mouse), then
-requires 90 images each at 144/120/Original60/144 using the strict cycle validator.
-The last segment may retain its initial image until its first authored boundary.
-`native_surface_render_guest.c` also checks resuming between ticks, local time
-mismatch and constructor cleanup; cache tests distinguish suspend/reuse without
-allocations from full scene destruction. Image capture is not switch-latency proof.
+`scotland_switch` Video Options route with default water policy. It requires
+90 images each at240/180/Original60/120. Historical144 cycles require explicit
+expected rates in `validate_switch_cycle`; partial/misordered cycles still fail.
+After re-enabling, the image may hold until the first authored tick. Guest/cache
+tests cover between-tick resumption, time mismatch, constructor cleanup and
+suspend/reuse versus destruction. Images do not measure switch latency.

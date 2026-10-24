@@ -210,7 +210,7 @@
       "hold": 0.25,
       "gap": 0.65,
       "wait": 1,
-      "label": "video144"
+      "label": "video240"
     },
     {
       "keys": [
@@ -226,7 +226,7 @@
       "hold": 0.25,
       "gap": 0.65,
       "wait": 2,
-      "label": "apply120"
+      "label": "apply180"
     },
     {
       "keys": [
@@ -236,7 +236,7 @@
       "hold": 0.25,
       "gap": 1,
       "wait": 6,
-      "label": "playing120"
+      "label": "playing180"
     },
     {
       "keys": [
@@ -247,7 +247,7 @@
       "hold": 0.25,
       "gap": 0.65,
       "wait": 1,
-      "label": "video120"
+      "label": "video180"
     },
     {
       "keys": [
@@ -255,6 +255,7 @@
         40,
         40,
         40,
+        37,
         37,
         40,
         40,
@@ -293,7 +294,6 @@
         40,
         40,
         39,
-        39,
         40,
         40,
         69
@@ -301,7 +301,7 @@
       "hold": 0.25,
       "gap": 0.65,
       "wait": 2,
-      "label": "apply144"
+      "label": "apply120"
     },
     {
       "keys": [
@@ -311,7 +311,7 @@
       "hold": 0.25,
       "gap": 1,
       "wait": 6,
-      "label": "playing144"
+      "label": "playing120"
     },
     {
       "stop": true

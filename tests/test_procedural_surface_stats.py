@@ -33,23 +33,27 @@ def segmented_capture():
     return rows,pixels
 
 
-def test_segments_do_not_count_the_rate_switch_as_a_fresh_frame():
-    rows,pixels=segmented_capture();result=measure_segments(rows,pixels)
-    assert [r['rate'] for r in result['segments']]==[144,60]
+@pytest.mark.parametrize('rate', [120,144,180,240])
+def test_segments_do_not_count_the_rate_switch_as_a_fresh_frame(rate):
+    rows,pixels=segmented_capture()
+    for row in rows[:2]:row['rate']=rate
+    result=measure_segments(rows,pixels)
+    assert [r['rate'] for r in result['segments']]==[rate,60]
     assert all(r['comparisons']==1 and r['changed_images']==0 for r in result['segments'])
 
 
 @pytest.mark.parametrize('mutation',['none','partial','order','segment','original-path'])
-def test_complete_switch_cycle_requires_all_presets_and_original_60(mutation):
-    rows=[dict(segment=i//90,rate=(144,120,60,144)[i//90],native=int(i//90!=2))
+@pytest.mark.parametrize('rates', [(240,180,60,120),(144,120,60,144)])
+def test_complete_switch_cycle_requires_all_presets_and_original_60(mutation,rates):
+    rows=[dict(segment=i//90,rate=rates[i//90],native=int(i//90!=2))
           for i in range(360)]
     if mutation=='partial':rows=rows[:180]
     if mutation=='order':rows[180]['rate']=120
     if mutation=='segment':rows[270]['segment']=1
     if mutation=='original-path':rows[180]['native']=1
-    if mutation=='none':validate_switch_cycle(rows)
+    if mutation=='none':validate_switch_cycle(rows,rates)
     else:
-        with pytest.raises(ValueError):validate_switch_cycle(rows)
+        with pytest.raises(ValueError):validate_switch_cycle(rows,rates)
 
 
 @pytest.mark.parametrize('mutation',['sample','segment','mixed-rate','rate','time','path','gap'])
@@ -63,6 +67,14 @@ def test_invalid_segmented_evidence(mutation):
     if mutation=='path':rows[0]['native']=0
     if mutation=='gap':rows[3]['frame']+=1
     with pytest.raises(ValueError):measure_segments(rows,pixels)
+
+
+def test_current_cycle_does_not_accept_legacy_presets_by_default():
+    rows=[dict(segment=i//90,rate=(240,180,60,120)[i//90],native=int(i//90!=2))
+          for i in range(360)]
+    validate_switch_cycle(rows)
+    for i,row in enumerate(rows):row['rate']=(144,120,60,144)[i//90]
+    with pytest.raises(ValueError):validate_switch_cycle(rows)
 
 
 @pytest.mark.parametrize('mutation',['short','hash','gap','resource','nan','scene'])

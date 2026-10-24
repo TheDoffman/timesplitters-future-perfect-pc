@@ -1,3 +1,35 @@
+## 2026-10-24 — Current four-preset water and live Apply validation
+
+The old surface-switch route/validator still required144/120/60/144 and rejected
+180/240 image segments. They now exercise240/180/Original60/120 with default
+native-water policy. Four complete90-image segments, original/native flags,
+consecutive frames, unchanged resource identity and a single owner creation
+remain required. Historical144 captures can be checked with explicit expected
+rates; the current default rejects the old cycle.32 image-analysis checks pass,
+including gaps, stale images, partial/misordered cycles and wrong timing paths.
+21 context/backlog checks pass after condensing the guide to its size limit.
+The original combined run caught that documentation-size violation; no image
+assertion or capture limit was weakened. No game/runtime/shader code changed.
+
+`water-current-four-presets` completes on unchanged Windows executable
+ed07ee3de98ecd9db961141ec5dea137e30202e08a52472944cdaa514d4dd1a7.
+All360 GPU images validate; each of the four segments has89/89 changed pairs
+and nonflat green/blue channels. Resource82962910 has exactly one owner creation
+at frame8083, before capture, and is reused through Original60 and native120.
+The final isolated saved preference is120. Reviewed video240/apply180/apply60/
+apply120 captures show the intended labels (Beta above60) and gray Apply;
+playing180/60/120 shoreline stills retain visible water and normal scene output.
+The same process handles all changes, preserving signed profiles/canonical
+fixture and recycling disposable partitions on clean exit.
+
+Configured1280x720/Classic/FOV55; actual1920x1060 client, nonminimized but not
+foreground. GPU readback, renderer captures, update tracing and test-input file
+polling are active. This is bounded image/menu/resource evidence, not pacing,
+physical scanout, identical wave trajectories or full-level visual/mechanics
+acceptance. Native Mac gameplay and additional water scenes remain unverified.
+Evidence: logs/water-current-cycle-tests.log, -context-recheck.log,
+water-current-four-presets.log and that run's surface-results.json/captures.
+
 ## 2026-10-24 — File-open attribution and benchmark scope
 
 On unchanged7c8bc2db/ed07ee3d, crowd-file-stack-240 completes the ten-bot route

@@ -3831,6 +3831,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Four-preset water cycle (2026-10-24, PR #328 follow-up):** The Windows
+  integration route now switches240/180/Original60/120 using default native
+  water. Portable image analysis accepts180/240 while retaining strict bounds,
+  identity, original/native-path and complete-cycle checks.32 analysis checks
+  pass locally; the suite remains registered on both CI hosts. One Windows
+  run captures90 images per rate with89/89 changed pairs in every segment,
+  reuses the same owner across the cycle and verifies menu labels/gray Apply
+  in reviewed captures. Runtime/shader bytes are unchanged. This is bounded
+  Windows visual/resource evidence; Mac GPU/gameplay and full-scene acceptance
+  remain pending. See STATUS for provenance and measurement limits.
+
 - **Discord sampling guards (2026-10-24, PR #328 follow-up):** Shared
   `pc_display_menu.c` validates each decoder read with a fresh bounded span.
   Fields, cadence, event cache and IPC behavior remain unchanged. Windows
