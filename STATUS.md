@@ -1,3 +1,31 @@
+## 2026-10-24 — Script-event phases and presentation timers through 240
+
+Four original-US fixtures expand preset coverage without changing runtime code.
+The script handoff test derives the rational tick cadence for each of
+60/120/144/180/240 at normal and quarter speed, places the authored event in every
+phase, and checks exactly one weapon grant and eight rounds. The actual native
+dispatcher runs every live interval; the original whole-tick path continues to
+miss events in fractional phases. Original60, pause/resume, untouched timers and
+ABI guards remain. This extends the old144-only phase reproduction of the
+opening handoff regression; it is not a rendered opening-sequence test.
+
+Weapon-sound, camera-effect and Arcade-countdown fixtures add180/240 while
+retaining one-shot/repeat/pause parameters, timer/decay/collision assertions,
+184-console-tick countdown duration, four announcements/sounds and input release.
+All **four checks pass** in5.90s on Windows with the verified private US XBE;
+74 unrelated cases were deselected (`native-240-events-tests.log`). Original
+references and tolerances are unchanged. Python also requires all ten script
+rate/speed combinations in the emitted results. Another21 context/backlog checks
+pass in3.42s; repository context and whitespace checks pass. The fixtures use the existing dual-host suite
+registration; public private-data skips do not establish native Mac execution.
+
+The built runtime is unchanged from the preceding pushbuffer-policy entry.
+Its new-build gameplay validation is still pending while another checkout's
+game is active; that session was left undisturbed. Currentd2343fbf Mac native
+and upgrade checks pass; Windows native/upgrade CI remained running when checked.
+Audible output, rendered animations, physical input/scanout and full-game coverage
+remain distinct, unproven requirements.
+
 ## 2026-10-24 — Acknowledgement-worker diagnostic overhead
 
 The latest Disco240 CPU profile on `5a322e67` redirects investigation from

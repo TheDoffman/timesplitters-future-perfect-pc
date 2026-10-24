@@ -649,6 +649,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_escort_recovery.c':print(output)
+    if harness_name=='native_script_events.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('script_events ')]
+        assert len(rows)==10,output
+        assert {(int(r['fps']),int(r['slow'])) for r in rows}=={
+            (fps,slow) for fps in (60,120,144,180,240) for slow in (1,4)},output
+        print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
         rows=[dict(field.split('=',1) for field in line.split()[1:])

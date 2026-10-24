@@ -51,7 +51,7 @@ static void check(int condition,const char *message)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4f9bac)=TABLE;MEM32(0x4e8cec)=60;
@@ -62,7 +62,7 @@ int main(void)
        has not yet carried a whole tick. It must still produce only one sound. */
     for(int native=0;native<=1;native++) {
         g_tsfp_native_timing_active=native;
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             unsigned before=sounds;
             call(0,60.f/rates[rate],0,POSITION);
             check(sounds==before+(native?1:0),"fractional one-shot dispatch");
@@ -92,7 +92,7 @@ int main(void)
     }
     /* Repeating timers consume every live interval; preserve the original
        reset-at-trigger behavior and its one-update threshold quantization. */
-    for(unsigned rate=0;rate<3;rate++) for(unsigned slow=1;slow<=4;slow*=4) {
+    for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) for(unsigned slow=1;slow<=4;slow*=4) {
         unsigned fps=rates[rate],before=sounds;
         float delta=60.f/(fps*slow);
         MEMF(WEAPON+0xfc)=0;MEMF(SOUND+8)=10;
@@ -117,6 +117,6 @@ int main(void)
     g_tsfp_native_timing_active=0;
     assert(RECOMP_LOAD_GLOBAL_U32(0x1b6ff0,0x4e7944,3)==3);
     free(memory);
-    puts("PASS: original weapon sound dispatch, elapsed repeat timer, pause and parameters at 60/120/144");
+    puts("PASS: original weapon sound dispatch, elapsed repeat timer, pause and parameters at 60/120/144/180/240");
     return 0;
 }

@@ -35,16 +35,15 @@ checks refresh/stale copies (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
 diagnostics, budget, idle callback and bypass-removal mutation.
 
-180/240 coverage includes live settings, clocks, input, animation, weapons,
-networking, movies, demo round trips and legacy144 migration, not sustained FPS.
-`test_native_timing.py` extends original-US movement/aim/physics/projectile,
-effect/menu/camera/lighting/network/recovery and HUD fixtures through240.
-Keep original references/tolerances and check row counts/rates when extending.
-Portable mouse cadence and surface math also cover240; math is not live water
-validation. `test_mounted_mouse.py` / `test_terminal_mouse.py` check bounded
-queries, permissions, 125..8000Hz input and clock/consume/cache mutations through240.
-Private-XBE cases skip without verified
-data; public CI is not Mac execution evidence for lifted routines.
+180/240 coverage includes settings, clocks, input, animation, weapons, networking,
+movies, demos and legacy144 migration, not sustained FPS. `test_native_timing.py`
+covers original-US movement/aim/physics/projectiles, effects/menus/cameras/lights,
+network/recovery/HUD, weapon sounds and countdowns through240. Script events cover
+every cadence phase at normal/quarter speed, retaining the legacy missed-event
+control. Keep references/tolerances and verify rate coverage when extending.
+Mouse cadence/surface math cover240; math is not live water. Mounted/terminal
+tests check permissions, bounded queries, 125..8000Hz input and clock/cache/consume
+mutations. Private-XBE skips do not establish Mac execution of lifted routines.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

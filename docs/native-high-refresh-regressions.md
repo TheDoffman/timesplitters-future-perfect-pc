@@ -28,6 +28,16 @@ and menu motion also pass their original-US fixtures at 180/240. Portable
 mouse-cadence and coupled-surface math checks pass; the latter does not validate
 visible water integration. Existing tolerances remain unchanged throughout.
 
+Script event delivery now covers every phase of the 60/120/144/180/240 cadence
+at normal and quarter speed. The actual handoff dispatcher grants the weapon
+and eight rounds exactly once; the disabled native path still reproduces missed
+events on fractional phases. Original60, pause/resume, timer globals and ABI
+checks remain. Original weapon sounds, camera effects and Arcade countdowns
+also pass at180/240 with their existing timer, sound-count, collision/decay and
+input-release assertions. These four original-code tests pass on Windows with
+verified private data. They are not rendered opening-sequence or audible-output
+acceptance, and their public CI skips do not validate Mac gameplay.
+
 The current `4e16421` executable's complete ten-bot Disco windows measure
 60.000418, 119.933859 and 167.835127 FPS at Original60/120/180. Two preceding
 240 windows on that same executable measure 227.035 and 233.604. Fresh guest

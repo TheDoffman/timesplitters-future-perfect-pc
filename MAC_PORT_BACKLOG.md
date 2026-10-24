@@ -3814,6 +3814,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Script and presentation-event coverage (2026-10-24, PR #328):** Actual US
+  script dispatch now covers every cadence phase through240 at normal/quarter
+  speed, retaining original60 and the legacy missed-handoff negative control.
+  Weapon sounds, camera effects and Arcade countdown fixtures add180/240 with
+  unchanged assertions/tolerances. All four pass on Windows with verified
+  private data. No runtime/adapter changes; existing dual-host registration
+  remains, but private-XBE skips are not native Mac execution. Rendered opening,
+  audible output and physical gameplay remain pending; see STATUS.
+
 - **Acknowledgement-worker diagnostics (2026-10-24, PR #328):** Shared
   `zz-pushbuffer-diagnostic-policy.patch` caches the survey launch flag alongside
   the existing executor flag and avoids guest-offset lookup when disabled.
