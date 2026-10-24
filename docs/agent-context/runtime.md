@@ -26,6 +26,13 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`zz-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
+existing 32-frame walk limit instead of silently truncating at six. The opt-in
+Windows sampler keeps its 8,192-key per-thread cap, reports dropped new chains,
+and clamps the displayed requested depth. Normal execution has no new work.
+Portable insertion tests run on both hosts; Mac still lacks this Win32 thread
+suspension/unwind sampler. No guest timing or rendering code is changed.
+
 `zz-native-surface-render.patch` follows capture and connects the native-water
 path, enabled with 120/144 beta on common RHI. `TSFP_SURFACE_NATIVE_TEST=0`
 is a diagnostic opt-out; Original60 and legacy GL keep original feedback. `pc_surface_native_guest.h` forces only the

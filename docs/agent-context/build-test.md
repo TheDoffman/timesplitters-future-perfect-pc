@@ -26,22 +26,22 @@ water functions. Both normal refresh and the deliberately stale-copy mutation
 must run. Mac tests retain legacy GL and also compile the common RHI branch;
 Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
 
-`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
-20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
-jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
-Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
-mutation must fail the atomic clip-transition assertion. Frame sampling also
-covers native 120/144 Hz without changing the simulation clock. Existing Windows
-and macOS CI invoke this suite; the helper itself has no OS dependencies.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
-bounded production Online host/guest pair through a loopback directory/browser/
-bridge, disposable Test Lab saves and separate input/runtime/display settings.
-It checks the supported XBE and sealed build before launch, records executable
-and compatibility identities, and recycles only its disposable partition images.
-Its asynchronous ReadProcessMemory observations measure actor update holds,
-not rendered frames, monitor scanout or Internet latency. Window captures are
-limited to the test processes. Benchmark fixture junctions are staged locally
-as five manifest files, then checked by the normal fixture validator.
+`test_sample_chains.py` extracts the patched sampler's actual insertion function:
+verify deep caller separation, short stacks, saturation reporting and retained
+counts. Six-frame and hidden-overflow mutations must fail. Both CI hosts run
+this portable fixture; it does not execute Windows stack walking on Mac.
+The bounded game runner accepts `--profile-depth 1..32` (default8) and records
+the selected depth in provenance; CPU profiles are not clean pacing evidence.
+
+`tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
+60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
+transitions, including cadence/crossfade mutations. Both CI hosts run it.
+`tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
+Windows Online host/guest pair with Test Lab saves and loopback discovery.
+It verifies supported XBE/build identities and recycles disposable partitions.
+Asynchronous ReadProcessMemory observations measure update holds, not rendered
+frames or Internet/physical-input latency. Five local benchmark fixture
+manifests are checked with the normal validator; the canonical fixture stays intact.
 
 Launcher changelog publication: tests/test_launcher_release.py covers explicit
 previous stable launcher selection across paginated game/launcher history,

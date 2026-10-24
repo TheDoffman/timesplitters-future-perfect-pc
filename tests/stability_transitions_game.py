@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
+    parser.add_argument('--profile-depth',type=int,choices=range(1,33),default=8,help='Captured caller frames for CPU diagnostics (default 8)')
     parser.add_argument('--trace-textures',action='store_true',help='Enable bounded texture-stage CPU timing; diagnostic only')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
@@ -179,7 +180,7 @@ def main():
     if args.trace_vehicle_contact:
         env.update(RECOMP_TRACE_ONLY='sub_0017CAE0,sub_0017BC90,sub_00174EC0',RECOMP_TRACE_ONLY_MAX='64')
     if args.profile_cpu:
-        env.update(RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH='8',
+        env.update(RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH=str(args.profile_depth),
                    RECOMP_SAMPLE_DUMP=str(run/'cpu-sample.txt'))
     if args.trace_textures:env['TSFP_TEXTURE_UPLOAD_TRACE']=str(run/'texture-stages.csv')
     if args.manual_start: replay.write_text('')
@@ -390,7 +391,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
+        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))

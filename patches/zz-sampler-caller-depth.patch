@@ -1,0 +1,98 @@
+--- a/src/kernel/recomp_sample.c
++++ b/src/kernel/recomp_sample.c
+@@ -60,10 +60,10 @@
+     unsigned  count;
+ } SampleSlot;
+ 
+-/* The leaf and the three frames above it, as one key. "getenv is 7% of the
+- * thread" names a cost; this names who pays it, which is what decides the
+- * fix. Kept per thread beside the leaf and inclusive tables. */
+-#define SAMPLE_CHAIN        6
++/* Retain every captured caller up to the bounded stack-walk limit. Shorter
++ * keys hide gameplay callers behind host adapters. Allocated only by the
++ * opt-in sampler; normal game execution has no added allocation or work. */
++#define SAMPLE_CHAIN        SAMPLE_MAX_DEPTH
+ #define SAMPLE_CHAIN_SLOTS  (1u << 13)
+ typedef struct {
+     uintptr_t f[SAMPLE_CHAIN];
+@@ -79,7 +79,7 @@
+     SampleSlot *leaf;        /* exclusive: the instruction pointer */
+     SampleSlot *incl;        /* inclusive: every frame on the stack, once */
+     SampleChain *chain;      /* leaf plus its callers, for the report's "via" lines */
+-    unsigned   leaf_used, incl_used, chain_used;
++    unsigned   leaf_used, incl_used, chain_used, chain_dropped;
+     ULONGLONG  cpu_100ns_at_start;
+ } SampleThread;
+ 
+@@ -113,9 +113,8 @@
+     }
+ }
+ 
+-/* The leaf and up to three callers, keyed together. A full table drops new
+- * chains rather than evicting: the hot ones were there first. */
+-static void chain_add(SampleChain *table, unsigned *used, const uintptr_t *fr, int n)
++/* Keep existing keys when full and report dropped new chains explicitly. */
++static int chain_add(SampleChain *table, unsigned *used, const uintptr_t *fr, int n)
+ {
+     uintptr_t f[SAMPLE_CHAIN];
+     unsigned h = 0, i, k;
+@@ -128,15 +127,16 @@
+     for (k = 0; k < SAMPLE_CHAIN_SLOTS; k++, i = (i + 1) & (SAMPLE_CHAIN_SLOTS - 1)) {
+         if (table[i].count && memcmp(table[i].f, f, sizeof f) == 0) {
+             table[i].count++;
+-            return;
++            return 1;
+         }
+         if (!table[i].count) {
+             memcpy(table[i].f, f, sizeof f);
+             table[i].count = 1;
+             (*used)++;
+-            return;
+-        }
+-    }
++            return 1;
++        }
++    }
++    return 0;
+ }
+ 
+ typedef void (WINAPI *SetThreadDescription_t)(HANDLE, PCWSTR);
+@@ -446,7 +446,7 @@
+ #define AGG_MAX 40000
+ 
+ /* A chain folded to symbol bases, so two samples at different instructions
+- * of the same four functions count together. */
++ * of the same captured functions count together. */
+ typedef struct {
+     uintptr_t b[SAMPLE_CHAIN];
+     const ResolvedAddr *r[SAMPLE_CHAIN];
+@@ -640,6 +640,12 @@
+                 fprintf(dump, "leaf\t%u\t%s\t%s\n", agg[k].count,
+                         agg[k].r->name, agg[k].r->module);
+         }
++
++        if (t->chain_dropped)
++            fprintf(stderr, "      caller chains dropped: %u (table full)\n", t->chain_dropped);
++        if (dump)
++            fprintf(dump, "# chain coverage: depth=%d capacity=%u dropped=%u\n",
++                    s_depth, SAMPLE_CHAIN_SLOTS, t->chain_dropped);
+ 
+         /* Who pays for each of the hottest leaves: the callers above it,
+          * folded to symbols. A leaf in the C runtime or the driver is only
+@@ -746,7 +752,7 @@
+                 continue;
+             t->samples++;
+             slot_add(t->leaf, &t->leaf_used, frames[0]);
+-            chain_add(t->chain, &t->chain_used, frames, n);
++            t->chain_dropped += !chain_add(t->chain, &t->chain_used, frames, n);
+             for (k = 0; k < n; k++) {
+                 for (j = 0; j < k; j++)
+                     if (frames[j] == frames[k])
+@@ -784,6 +790,7 @@
+     if (v && atof(v) > 0.0) s_report_secs = atof(v);
+     v = getenv("RECOMP_SAMPLE_DEPTH");
+     if (v && atoi(v) > 0) s_depth = atoi(v);
++    if (s_depth > SAMPLE_MAX_DEPTH) s_depth = SAMPLE_MAX_DEPTH;
+ 
+     s_main_tid = GetCurrentThreadId();
+     s_exe = GetModuleHandleW(NULL);

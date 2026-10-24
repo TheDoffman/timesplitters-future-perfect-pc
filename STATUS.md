@@ -1,3 +1,53 @@
+## 2026-10-24 — Deeper crowd caller attribution
+
+The opt-in Windows CPU sampler walked eight frames by default but retained only
+six in its caller-chain keys and reports. That cut off the gameplay parents of
+expensive host memory checks. `zz-sampler-caller-depth.patch` retains all captured
+frames up to the existing 32-frame walk limit, clamps the reported requested
+depth, and reports dropped new chains when the unchanged 8,192-key table fills.
+Existing keys still accumulate after saturation. On x64 the bounded chain table
+is now 2.0625 MiB per sampled thread (previously 0.4375 MiB); it is allocated only
+with the sampler enabled. Normal gameplay gains no allocations or checks from
+this diagnostic change. The bounded runner adds `--profile-depth` and provenance.
+
+The actual insertion function passes caller-depth, short-stack, saturation and
+retained-count tests; mutations restoring six frames or hiding overflow fail.
+98 focused/context/CI-selection checks pass in 15.70s, and fresh patch installation
+plus repeated application passes in 20.81s. The supported Windows builder and its
+native checks pass (`logs/crowd-callers-{tests,patch-test,build}.log`). The existing
+Win32 suspension/DbgHelp adapter remains Windows-only; portable key tests are
+registered for both CI hosts. Mac live profiling remains absent (MAC-003).
+
+A bounded Hotel diagnostic used source `625699f` plus this sampler patch,
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and RTX4070SUPER
+32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`40ec20c2af64bf6c6216412b7328f24c6f9f42c2a3527ebfbb5b5e04fa508860`.
+The isolated route used native144, Classic, FOV73, 3440x1440 render configuration,
+foreground 1920x1060 client, 200Hz requested sampling and twelve frames. No
+per-update CSV, texture tracing or captures were enabled. Ten bots remained
+configured; 28/33 observations had a living player, with maximum 2/4/6 living
+bots within 10/20/30 units. Proximity is not visibility.
+
+Complete cumulative110s-to150s guest-thread snapshots contain 6,832 samples,
+3,858 classified on-CPU, 24.1s thread CPU and 1,077 VM-query samples. Caller
+coverage reports depth12 and zero dropped keys; independent leaf/chain totals
+match. The final dump is 825,944 bytes, below the runner's 4MiB snapshot bound.
+Deeper chains now identify panel `12E3F0` behind 223 text-query samples, decal
+paths `112EA0/115A40` behind 160/69, and aiming-overlay validation behind69.
+These are sampled counts, not call counts or causal FPS improvements. Existing
+panel scopes and source-only decal checks already cover those paths; no checks
+were removed based solely on the profile. Nearest public symbols still misname
+some static helpers. Sampling perturbs timing and random bot paths differ from
+previous runs, so CPU-time differences are not evidence of a performance gain.
+
+Evidence is in ignored `private/test-saves/crowd-callers-profile-144` and
+`logs/crowd-callers-profile-144.log`. The runner exited zero, preserved profiles
+and the canonical fixture, and recycled its partitions. The reported crowd dip
+and broader native-refresh gameplay acceptance remain open. This diagnostic
+work stays grouped with the next performance changes; no successor PR is open.
+
 ## 2026-10-24 — Clean final-runtime Hotel crowd sample
 
 PR #324 merged into main as `6ddc8a0` after all 14 checks passed for head

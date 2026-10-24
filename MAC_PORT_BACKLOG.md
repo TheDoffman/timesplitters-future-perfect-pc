@@ -877,6 +877,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   supply the missing native network provider or complete every overlay check.
   [Evidence](STATUS.md#shared-debug-setting-definitions-2026-10-19).
 
+- **Caller diagnostics (2026-10-24, uncommitted):** The existing Windows-only
+  `recomp_sample.c` profiler now retains all captured caller frames (maximum32)
+  and reports bounded-table overflow via `zz-sampler-caller-depth.patch`.
+  Thread suspension and unwind depend on Win32/DbgHelp; Mac keeps its existing
+  disabled sampler. Portable insertion/mutation tests run on both hosts, but a
+  Mac sampling adapter and live attribution remain unimplemented. Existing Mac
+  overlay/debug behavior is unchanged. This is diagnostic coverage, not FPS gain.
+
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
 - **Status:** Awaiting validation
