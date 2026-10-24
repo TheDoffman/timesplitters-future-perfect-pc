@@ -48,7 +48,7 @@ def fixture_source():
     return fixture.replace('/* PRODUCTION_WRAPPER */', wrapper.group()).replace('/* PRODUCTION_CAMERA */', camera)
 
 
-@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera', 'menu-fov', 'movie-fit', 'movie-inset'])
+@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera', 'menu-fov', 'air-lift-fov', 'movie-fit', 'movie-inset'])
 def test_cutscene_rectangle_filter(tmp_path, mutation):
     source = fixture_source()
     if mutation == 'bars':
@@ -58,6 +58,10 @@ def test_cutscene_rectangle_filter(tmp_path, mutation):
         source = source.replace('zoom=cutscene_camera_zoom();', 'zoom=1.f;')
     elif mutation == 'menu-fov':
         guard = '(int32_t)WORD_AT(0x0079094Cu)>100 ||'
+        assert guard in source
+        source = source.replace(guard, '')
+    elif mutation == 'air-lift-fov':
+        guard = ' &&\n        WORD_AT(actor+0x114)!=0x800'
         assert guard in source
         source = source.replace(guard, '')
     elif mutation == 'movie-fit':
@@ -88,13 +92,15 @@ def test_original_us_cutscene_routines(tmp_path):
     try:
         config.configure_from_xbe(str(xbe))
         functions = {start: {'end': end, 'name': f'sub_{start:08X}'}
-                     for start, end in ((0x6F150, 0x6F3B3), (0x1396B0, 0x139733))}
+                     for start, end in ((0x6F150, 0x6F3B3), (0x1396B0, 0x139733),
+                                       (0xD2CE0, 0xD2D16), (0x225C70, 0x225DEE))}
         functions[0x1EFB0] = {'name': 'sub_0001EFB0_gen', 'call_name': 'sub_0001EFB0'}
         routines = '\n'.join(FunctionTranslator(image, functions).translate_function(start, info)
                              for start, info in functions.items() if 'end' in info)
         assert 'sub_0001EFB0_gen' not in routines, 'Lifted callers must use the wrapper'
         addresses = sorted({int(a, 16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)', routines)
                             if 0x470000 <= int(a, 16) < 0x490000})
+        addresses = sorted(set(addresses) | set(range(0x50D408, 0x50D458, 4)))
         constants = '\n'.join(f'MEM32(0x{a:X}) = 0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08X};'
                               for a in addresses)
         source = '#define ORIGINAL_CUTSCENES\n' + fixture_source()

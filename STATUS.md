@@ -1,3 +1,28 @@
+## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
+
+Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state
+4 but omitted the 0x800 movement state selected by original US `sub_00225C70`.
+The shared Windows/Mac player-camera hook now accepts all three, retaining
+scene/camera ownership and cinematic exclusions. Projection and CPU frustum
+change together; the guest weapon lens and lift physics are unchanged.
+
+The new camera regression failed before the fix. Afterward the cutscene/FOV
+suite passed 9 tests; two Mac-specific settings checks were skipped on Windows.
+An explicit mutation removing the air-lift allowance is detected. The local
+checksum-verified US fixture executes the original region selector and state
+setter for all four Zeppelin lift cylinders, both camera callers, default/90°
+FOV and 4:3/16:9/ultrawide output. It checks ascent and exit to falling against
+production projection/frustum behavior, unchanged lens/state and guest ABI.
+The separate original player-force fixture passes real exit/landing motion.
+Supported Windows Build and built-in tests pass (`logs/issue-339-build.log`).
+All 21 context/backlog tests, context freshness and whitespace checks pass.
+
+A bounded isolated pre-fix Zeppelin run confirmed the custom 90° lens during
+ordinary movement/falling, but did not reach a lift; it is not live reproduction
+or post-fix visual acceptance. Original-routine integration supplies the lift
+regression evidence. Personal saves/settings were preserved. Native Mac build
+and gameplay checks remain pending (MAC-022).
+
 ## 2026-10-24 — Correct PC Settings menu commands (#333)
 
 Windows menu theme labels had fallen one row behind the actual menu after the
