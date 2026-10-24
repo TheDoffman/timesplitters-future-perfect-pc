@@ -463,6 +463,13 @@ weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
 
+Controller selection preserves the launcher's keyboard binding map. Shared
+`input_bindings.c` recognizes an explicitly selected pad with keyboard sources
+and no pad sources, then merges pad-only defaults from that selected slot at
+sampling time. Custom pad mappings (including unbound actions), entirely unbound
+profiles and saved keyboard keys remain intact. Focus/modal gating precedes the
+fallback; keyboard mode retains its existing first-free-pad sharing policy.
+
 `pc_keyboard_menu.inc` is included by `pc_display_menu.c`, adding Keyboard and
 Mouse to both main Settings and paused Options. It uses the original menu
 builders, callbacks, highlights and footer navigation. The controller-style

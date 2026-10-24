@@ -112,9 +112,24 @@ static int virtual_pad_test(void)
     CHECK(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,32767));
     Sleep(3); CHECK(recomp_bindings_sample(0,&output));
     CHECK(output.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255 && !pc_prompts_keyboard_active());
+    CHECK(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_START,true));
+    CHECK(SDL_SetJoystickVirtualButton(joystick,SDL_GAMEPAD_BUTTON_DPAD_DOWN,true));
+    CHECK(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_LEFTX,32767));
+    CHECK(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_RIGHTY,32767));
+    Sleep(3); CHECK(recomp_bindings_sample(0,&output));
+    CHECK((output.wButtons&(XBOX_GAMEPAD_START|XBOX_GAMEPAD_DPAD_DOWN))==
+          (XBOX_GAMEPAD_START|XBOX_GAMEPAD_DPAD_DOWN));
+    CHECK(output.sThumbLX==32767 && output.sThumbRY==-32767);
     SendMessage(window,WM_LBUTTONDOWN,MK_LBUTTON,0);
     CHECK(pc_prompts_keyboard_active());
     SendMessage(window,WM_LBUTTONUP,0,0);
+    ShowWindow(window,SW_HIDE);
+    CHECK(!pc_controls_accept_pad());
+    CHECK(recomp_bindings_sample(0,&output));
+    {
+        XBOX_GAMEPAD neutral={0};
+        CHECK(!memcmp(&output,&neutral,sizeof output));
+    }
     CHECK(SDL_SetJoystickVirtualAxis(joystick,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,-32768));
     SDL_CloseJoystick(joystick);
     CHECK(SDL_DetachVirtualJoystick(id));
@@ -130,10 +145,15 @@ int main(int argc,char **argv)
     PcSettings settings;
     int keys[PC_ACTION_COUNT];
     char text[512];
-    CHECK(argc==2);
+    CHECK(argc==2 || argc==3);
     _putenv_s("RECOMP_INPUT_CONFIG",argv[1]);
     _putenv_s("RECOMP_PAD_API","sdl");
     _putenv_s("TSFP_PC_INPUT_REPLAY","");
+    if(argc==3) {
+        CHECK(!strcmp(argv[2],"controller-profile"));
+        pc_prompts_reset();
+        return virtual_pad_test();
+    }
     pc_settings_defaults(&settings);
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
     pc_prompts_reset();

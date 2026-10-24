@@ -1,3 +1,71 @@
+## 2026-10-24 — Preserve main's controller fix in the high-refresh branch
+
+Merged main `3baad73` (#319/#326) into the existing PR #325 branch. The only
+conflicts were overlapping STATUS and build/test guide additions; both the
+controller repair and native-refresh contracts remain. The regenerated patch
+index and complete patch stack validate. No movement policy was changed.
+
+The supported Windows build and its native tests pass on the combined tree
+(parents `9a9ac82` and `3baad73`, merge not yet committed at build time), including
+the shipped Controller profile through SDL virtual controls. Executable SHA256:
+`b03d7860c8b6169e48bb041106d3857596f0a36f492014b80c1e47335a61789b`.
+Controller-profile/context/backlog/CI-scope tests: **104 passed**, 5.73 seconds.
+Original-program analog-input and walking fixtures: **2 passed**, 5.04 seconds.
+The historical-controls patch-upgrade case passes, 29.92 seconds
+(`high-refresh-main-controller-upgrade.log`). Context freshness and whitespace pass.
+Logs: `high-refresh-main-controller-build.log`,
+`high-refresh-main-controller-tests.log`, `high-refresh-main-movement-fixtures.log`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11; native Mac gameplay and physical
+controller acceptance remain unverified. This build does not relabel the
+following observations, which used the earlier `24da8a98` executable.
+
+Before the merge, four forward/backward quarter-second input pairs per preset
+completed the same safe rooftop route with decoded-pad and position observation:
+
+| Preset | Forward distance range | Backward distance range |
+| --- | --- | --- |
+| Original 60 | 1.562501 | 1.546218 |
+| Native 120 | 1.559877–1.563314 | 1.545611–1.547557 |
+| Native 144 | 1.560292–1.603581 | 1.542822–1.586870 |
+
+The earlier 120-FPS outlier was not reproduced; a consistent 120-FPS speed
+increase is unsupported by these repeated observations. Each move had one
+observed nonneutral pad interval and the expected forward/backward axis, with
+health 35 throughout. Input duration is still uncertain: the external observer's
+largest sample gaps were 16.629/31.057/17.021 ms at 60/120/144. Its requested 2-ms
+wait did not produce a 2-ms cadence. Reads are asynchronous and may miss shorter
+transitions. The 144-FPS spread and the original outlier are not explained or
+declared fixed; exact integration parity needs completed-update input traces.
+
+All three bounded sessions exit cleanly, preserve signed profiles/canonical
+fixture and recycle temporary partitions. Captures/native CSV were disabled;
+this independent observer is diagnostic, not a clean performance measurement.
+Evidence: `private/test-saves/input-boundaries-{60,120,144}` and matching logs;
+ignored `check-input-boundaries.py` / `analyze-input-boundaries.py` in
+`private/pipeline` record the route, raw observations and uncertainty bounds.
+
+## 2026-10-24 — #319 controller profile routing (fix/319-controller-input)
+
+Branch `fix/319-controller-input`, based on main `6ddc8a0`. Selecting Controller
+in the launcher changes the device but retains keyboard-only bindings. The
+runtime detected the pad and changed prompts while mapping no pad controls.
+The shared `controller-profile-routing` patch supplies pad defaults for that
+specific profile shape, after focus/modal gating. It preserves saved keyboard
+bindings, selected pad slots, custom pad maps and entirely unbound profiles.
+
+The real parser/sampler regression failed for gamepad:0, gamepad:2 and xinput:1
+before the fix. Controller/keyboard/weapon-slot/context/backlog checks now pass
+(39 tests). The supported Windows Build passed all built-in checks, including
+real SDL virtual-pad buttons, triggers, sticks, keyboard prompt switching and
+focus loss with both keyboard and launcher-style Controller profiles; no virtual
+pad skips occurred. Evidence: ignored `logs/issue319-build.log` and
+`logs/issue319-investigation.md`. Broad patch/context/backlog validation passed
+55 checks; its historical controls fixture needed to omit this dependent patch
+from the old snapshot, then require it after upgrade. That corrected case passed
+separately (26.97s); see `logs/issue319-old-controls.log`.
+Native Mac gameplay and physical Xbox/Steam controllers remain unverified;
+portable regression coverage is registered in both host runtime CI jobs.
+
 ## 2026-10-24 — Controlled later-mission pause at all three presets
 
 Original 60, native 120 and native 144 completed isolated **Breaking and
