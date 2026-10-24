@@ -16,8 +16,8 @@ resource failures, cancellation, binding preservation and fallback: 22 pass.
 The remaining focused timing/vehicle/trace/filter/panel/UI tests pass (132 plus
 two Windows texture-control compile cases in the initial run); the Mac-only
 adapter fixture skips locally. Full patch application and repository-context
-checks pass. Supported Windows build fd40ce7 and built-in checks pass; virtual-pad
-foreground routing skips. Later merge c1f5aed adds #321's uncalled water helpers
+checks pass. Supported Windows build fd40ce7 and built-in checks pass, including
+virtual SDL controller/keyboard routing. Later merge c1f5aed adds #321's uncalled water helpers
 and tests only, with no gameplay hook. Its GPU/CPU checks, historical upgrades
 and final combined CI are pending.
 
