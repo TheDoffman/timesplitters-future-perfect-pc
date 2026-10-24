@@ -1,3 +1,73 @@
+## 2026-10-24 — Remove redundant projection-output checks; extend crowd coverage
+
+On `fix/native-water-rounding`, `pc_display_perspective_projection` no longer
+queries output permissions after the original US151CF0 builder successfully
+writes the entire 64-byte matrix. That routine has no guest calls or conditional
+output path. Weapon/character-preview corrections now need zero OS queries;
+decal corrections retain fresh camera/source validation, needing one query when
+those sources share a region even with a separate guest-stack output. Projection
+math, timing, caller selection and source guards are unchanged. No permissions
+are retained between invocations. Shared Mac code needs no new adapter, but
+native validation remains pending (MAC-026).
+
+Nine projection checks pass, including both platform wrappers, missing camera,
+alternating outputs, original/ultrawide/narrow aspects, real host VM protection,
+and a retained-source-snapshot mutation. A local checksum-verified original-US
+fixture covers 48 lens combinations, all 16 values, output canaries and stack
+balance; removing one original store makes it fail. Private lifted code stays
+local and those two XBE cases skip CI without assets. Seven affected cutscene
+checks also pass, as do 21 context/backlog checks and the full supported Windows
+builder/native tests. The first test run exposed two obsolete mutation cases:
+with no camera, there are now no queries to retain. Those no-op mutation cases
+were removed; ordinary missing-camera coverage remains on both platform defines.
+
+Executable SHA-256 `5613d5a92d86de077baabfc66a7333b60e8c88107efb3e169dc1c14e2160f68b`
+is built from `8b90d08` plus this projection change. Host: Windows11Pro x64
+10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+`logs/projection-output-build.log` retains the build result.
+
+The bounded visual scout verified Disco (menu index4 after Vietnam/Hotel/Venice/
+Temple, scene56), including visible combat. The runner now provides `crowd-disco`
+with the existing ten-bot active move/fire/respawn route; all crowd routes focus
+their window after startup. `crowd-projection-disco-{144,60}` use Classic,
+3440x1440 device output/FOV73, with captures, CPU/texture/update traces disabled.
+All 33 gameplay checkpoints per run are foreground/visible/non-minimized,
+window client640x480. Configuration resolution is not window size or fullscreen.
+
+The 144 recorder hits its bounded 20,000-row limit before spawn+55s. Both rates
+therefore use the complete common spawn+5..50s window (45 seconds), selected from
+coverage rather than frame-time values, with clock evidence on both sides:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Fresh guest presents / mean FPS | 6,479 / 144.0020 | 2,699 / 60.0003 |
+| Median / p95 interval, ms | 6.980 / 7.307 | 16.655 / 17.047 |
+| p99 / worst interval, ms | 7.486 / 10.335 | 17.135 / 17.503 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000125 | 1.000145 |
+| Living-player checkpoints | 28/33 | 26/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/5/9 | 2/6/10 |
+
+These successful host presents are fresh guest frames, without interpolated
+presents; they do not measure GPU completion, monitor scanout or physical input
+latency. Actor proximity is asynchronous and is not visibility. Different combat
+outcomes prevent a causal speedup claim. Both runs exit cleanly, preserve signed
+profiles/canonical fixtures and recycle disposable disks. Reports, commands,
+`crowd-metrics.json` and `actor-metrics.json` remain in their isolated run roots.
+This does not reproduce or resolve the reported 144-to-110 drop across maps;
+full-game, denser crowd, Online and native Mac coverage remain incomplete.
+
+`crowd-projection-fullscreen-144` repeats that route after an explicit window
+toggle immediately following initial focus (exact command retained in the run).
+All 33 gameplay checkpoints report fullscreen and foreground, client1920x1060;
+the device still renders3440x1440. This is not native3440x1440 monitor acceptance.
+The same complete +5..50s window has 6,479 fresh guest presents, 143.9998FPS,
+median6.980/p95 7.300/p99 7.442/worst11.623ms, minimum rolling count144 and game
+clock/wall ratio1.000115. There are 27/33 living-player checkpoints and at most
+3/5/7 nearby living bots. It exits cleanly, preserves fixtures/profiles and
+recycles its disposable disks. No owned game process remains. This extends
+Windows coverage; it does not prove a causal gain or eliminate the crowd report.
+
 ## 2026-10-24 — Reuse memory validation within one mouse update
 
 The shared terminal, mounted-gun and ordinary-camera routing now accepts a

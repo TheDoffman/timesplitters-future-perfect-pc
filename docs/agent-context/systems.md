@@ -147,17 +147,17 @@ the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
 duration/elapsed with another snapshot's clip identity can select an invalid clip.
 
-Camera and perspective corrections use `pc_display_memory.h` to retain one
-OS-validated writable region only after their original guest routine returns.
-The stack-local snapshot expires when the correction returns; no guest calls,
-allocations or protection changes may occur while it is reused. Bounds,
-overflow, read-only and guard/no-access rejection remain enforced. Other
-display/menu validation still uses its existing checks. This avoids repeating
-the VM query for camera, output and source matrices within the same region;
-it does not cache matrices, reduce updates or change projection arithmetic.
-Decal corrections validate the camera and its source matrix before the output
-because the original callers build their temporary output on the guest stack.
-Separate camera/stack regions therefore need two queries, not three.
+Camera and perspective corrections use `pc_display_memory.h` with a stack-local
+region after the original guest routine returns; no guest calls, allocations or
+protection changes may occur while it is reused. Bounds, overflow, read-only and
+guard/no-access rejection remain enforced. `pc_display_perspective_projection`
+does not re-query its output: supported US `151CF0` writes all 16 floats without
+guest callbacks before returning. Weapon/preview correction therefore needs no
+VM query; decals still validate their camera and source matrix afresh (one query
+when those share a region, independent of the output's guest-stack region).
+Other camera/display checks are unchanged. This does not cache matrices, reduce
+updates or change projection arithmetic. `projection_output.c` checks the real
+US builder's output extent, arithmetic, canaries and stack; generated C stays local.
 
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case

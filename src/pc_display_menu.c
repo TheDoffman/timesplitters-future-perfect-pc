@@ -196,6 +196,10 @@ void pc_display_perspective_projection(void (*original)(void))
     const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
     uint32_t camera, matrix;
     original();
+    /* US 151CF0 unconditionally writes all 16 destination floats before
+       returning, with no guest callbacks. Its successful return establishes
+       this output's writable extent; do not query it again below. Camera
+       sources still need a fresh, correction-local permission check. */
     PcGuestRegion region={0,0,0};
     /* US sub_001B73F0 builds the first-person weapon lens; sub_002C44D0
        rebuilds the character picker lens, including when models change.
@@ -203,10 +207,8 @@ void pc_display_perspective_projection(void (*original)(void))
        matrix, rather than copying the world camera's different FOV/zoom or
        adjusting a retained matrix repeatedly while a new character loads. */
     if(caller==0x001B7482u || caller==0x002C46EFu) {
-        if(pc_display_writable(&region,g_xbox_mem_offset,destination,64)) {
-            float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
-            projection[0]/=pc_display_camera_factor();
-        }
+        float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
+        projection[0]/=pc_display_camera_factor();
         return;
     }
     /* These two US decal passes rebuild a perspective matrix with biased
@@ -218,10 +220,7 @@ void pc_display_perspective_projection(void (*original)(void))
     camera=WORD_AT(0x007B0CC0u);
     if(!pc_display_writable(&region,g_xbox_mem_offset,camera,0x208)) return;
     matrix=WORD_AT(camera+0x204u);
-    /* Validate the camera's matrix before the temporary output: decal callers
-       use a guest-stack destination in a different region from camera RAM. */
-    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64) ||
-       !pc_display_writable(&region,g_xbox_mem_offset,destination,64)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64)) return;
     WORD_AT(destination)=WORD_AT(matrix);
     WORD_AT(destination+0x14u)=WORD_AT(matrix+0x14u);
 }

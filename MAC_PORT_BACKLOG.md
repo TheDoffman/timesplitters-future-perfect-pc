@@ -2973,6 +2973,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
   platform defines pass the source wrapper tests. No new OS/graphics adapter is
   required; native execution and visual fidelity are unverified.
+- **Shared follow-up (2026-10-24):** `fix/native-water-rounding` removes the
+  duplicate destination VM query after US151CF0's unconditional matrix writes.
+  Camera-source checks remain local/fresh. Both wrapper defines and the local
+  original-US output fixture pass on Windows; no new Mac adapter is needed.
+  Native performance and visual validation remain pending.
 - **Remaining:** Build and visually validate on Apple Silicon. Other-device
   synchronization is unverified; Windows captures do not establish Mac support.
 - **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without

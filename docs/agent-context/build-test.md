@@ -151,12 +151,13 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 --no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` uses scene39 and frequent move/fire/respawn input to reduce dead time.
+`crowd-hotel` (scene39) and `crowd-disco` (scene56) use frequent move/fire/respawn
+input. Crowd routes focus their window after startup; still verify focus below.
 Record roster/window state separately from device resolution; unfocused/minimized
 runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
 health with pool rechecks; asynchronous proximity is not visibility. Analyze
-complete spawn+5..+55s Present intervals with clock neighbors and scene/pause/game
-clock evidence. Disable images/tracing for clean pacing. `--profile-cpu`
+complete spawn+5..+55s intervals (Disco +5..+50s, within the 20,000-row cap) with
+clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
 enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
 can yield partial snapshots: check before differencing. `--trace-textures` enables
 bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
@@ -207,16 +208,14 @@ and tail intervals move in different directions, so query savings alone must
 not be reported as a pacing improvement. Exclude a measurement window when
 another game starts during it, even if that run reports a better average.
 
-`tests/test_decal_projection.py` checks the production projection wrapper's
-guest ABI and all matrix elements, plus one VM query per same-region correction.
-Its split camera/stack case requires two queries and covers the actual decal
-callers' temporary stack output ordering.
-A retained-snapshot mutation must fail, proving each invocation queries afresh.
-`tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
-no-access, boundary-crossing and overflow rejection (Windows also guard pages).
-The existing registered projection/cutscene CI suites run these checks on both
-hosts. The cutscene fixture shares a controlled query adapter for geometry;
-neither query counts nor successful geometry tests establish FPS improvement.
+`test_decal_projection.py` checks ABI/all matrix values, zero weapon/preview
+queries and one same-region camera-source query, including split stack output.
+Retained-source-snapshot mutation must fail. Local `projection_output.c` lifts
+checksum-verified US151CF0, checks 16 writes/math/bounds/stack over 48 lenses;
+missing-store mutation fails. Private-XBE cases skip CI. `display_memory.c`
+tests real host read-only/no-access/boundary/overflow protection (also Win guard).
+Registered projection/cutscene suites cover both hosts; query savings alone
+do not establish FPS improvement.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused

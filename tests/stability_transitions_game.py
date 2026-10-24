@@ -76,7 +76,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco'])
     args=parser.parse_args()
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
@@ -120,12 +120,13 @@ def main():
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
-    if args.scenario in ('crowd-venice','crowd-hotel'):
+    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
-        if args.scenario=='crowd-hotel':
-            # Verified level list: Vietnam, Hotel, Venice. Remaining setup is shared.
+        if args.scenario in ('crowd-hotel','crowd-disco'):
+            # Verified list: Vietnam, Hotel, Venice, Temple, Disco.
             assert route[1]['label']=='match-setup'
-            route[1]['keys']=[40,69,69,69,40,69]
+            moves=4 if args.scenario=='crowd-disco' else 1
+            route[1]['keys']=[40,69,69,69]+[40]*moves+[69]
             assert route[7]['label']=='spawn'
             # Five-second idle waits usually observe a death camera. Keep
             # ordinary movement/fire/respawn input frequent without editing health.
@@ -136,6 +137,7 @@ def main():
                 if block and block%6==0:step['mouse']=[180,0]
                 route.append(step)
             route.append(dict(stop=True))
+        route.insert(1,dict(window='focus',wait=1))
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
         route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
@@ -478,8 +480,8 @@ def main():
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
-    if args.scenario in ('crowd-venice','crowd-hotel'):
-        scene=39 if args.scenario=='crowd-hotel' else 46
+    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco'):
+        scene={'crowd-hotel':39,'crowd-venice':46,'crowd-disco':56}[args.scenario]
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
         assert len(checkpoints)==4,'Incomplete crowd route'
         for item in checkpoints:
