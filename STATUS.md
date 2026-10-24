@@ -1,3 +1,39 @@
+## 2026-10-24 — Clean final-runtime Hotel crowd sample
+
+PR #324 merged into main as `6ddc8a0` after all 14 checks passed for head
+`1872a68`. Windows runtime CI: 545 passed, 120 skipped, 18 subtests passed;
+release contracts: 150 passed, 3 subtests passed. Mac native-runtime/GPU and
+both framebuffer fixture variants passed. CI does not certify Mac game scenes.
+
+After the fixture-only PR #324 repair, a bounded Windows Hotel run used the
+unchanged final runtime executable `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`
+(f51d514 runtime source; subsequent changes are documentation/test fixtures).
+Host remains Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11,
+RTX 4070 SUPER driver 32.0.16.1742. Runner SHA256:
+`d77628e191222a06538030e2f6dd719ec67d512913f9d2c7ae67dcaad1cc0c9f`.
+The isolated crowd-hotel route selected native144, Classic, FOV73 and
+3440x1440 rendering; an inserted command toggled fullscreen before match setup.
+All 33 active checkpoints were visible/foreground/nonminimized with a
+1920x1060 client. This is not physical 3440x1440 monitor acceptance.
+
+The predeclared spawn+5..50-second interval fits the recorder's 20,000-row cap.
+Its 6,479 complete fresh-guest Present intervals give 144.000079 FPS, median
+6.976 ms, p95 7.295 ms, p99 7.449 ms and worst 9.317 ms; minimum rolling
+one-second count is 144. Game/wall clock ratio is 1.000151. CPU sampling,
+per-update CSV, texture tracing and captures were disabled. Bounded asynchronous
+actor observations remain: 25/33 checkpoints have a living player; maximum
+living bots within 10/20/30 world units are 3/5/7. Ten configured bots does not
+mean ten visible bots, and these observations are not an alive-time fraction.
+
+The test exited zero, preserved signed profiles and the canonical fixture,
+and recycled disposable partitions. Evidence: ignored
+`private/test-saves/crowd-final-fullscreen-144/{provenance,report,crowd-metrics,actor-metrics,acceptance-window}.json`
+and `logs/crowd-final-fullscreen-144.log`. Successful host Presents are not GPU
+completion, scanout or physical input latency. This nondeterministic route did
+not reproduce the reported 144-to-110 drop and does not establish its resolution.
+The earlier Original60/native120 comparisons retain their separate conditions;
+this is additional current-runtime coverage, not a controlled before/after gain.
+
 ## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
 
 PR #324 groups water, Classic texture deferral and scoped input/menu/camera
