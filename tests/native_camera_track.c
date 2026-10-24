@@ -70,8 +70,8 @@ int main(void)
 {
     void *memory=calloc(1,0x800000);
     assert(memory); g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
-    const unsigned rates[]={60,120,144};
-    for(unsigned r=0;r<3;r++) for(unsigned slow=1;slow<=4;slow+=3) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(unsigned slow=1;slow<=4;slow+=3) {
         unsigned fps=rates[r]; setup(); g_tsfp_native_timing_active=1;
         for(unsigned f=0;f<fps;f++) {
             float time=(f+1)/(float)(fps*slow);

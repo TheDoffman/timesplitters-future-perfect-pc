@@ -30,6 +30,12 @@ read each operand once, including fused and separated branches. Indirect, narrow
 segmented and TEST operands retain original behavior. Regenerate guest C after
 applying it. The shared title policy opts in only audited addresses/sites.
 
+`zz-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
+hook after entry tracing and before input loads. Explicit return tracing and
+forced-return diagnostics keep the generated body. US policy selects only151E80;
+other titles/addresses retain the original path. A zero result must leave guest
+state unchanged; success includes exact registers, memory and stack return.
+
 `dsound-output-headroom.patch` defines the shared default host gain in
 `src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
 `src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.
@@ -40,6 +46,37 @@ profiles enables pad defaults after platform focus checks. It follows the
 keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
+
+`zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture
+binding resolves the first matching cache entry and any framebuffer alias in
+one fresh scan. Null bindings clear both outputs; nonzero stages request only
+an entry. No retained index, checksum/upload or framebuffer-copy policy changes.
+The full-module framebuffer fixture compares all cache sizes through512 against
+the original two searches and rejects first-only/last-entry regressions.
+
+`zz-texel-sample-lanes.patch` groups the texture survey's four independent hash
+lanes. Sample addresses/order, all checksum bits, small-input handling and tails
+match the original scalar recurrence. It changes neither sampling/full-check
+frequency nor upload/invalidation policy. Tests compare actual production code
+with the frozen scalar reference, including exact word-read footprints/bounds.
+
+`zz-shader-source-lookup.patch` adds a guest source-address hint to the existing
+HLE slot-program cache. Every hinted hit still compares the full current
+microcode with the immutable host copy and requires the same instruction count.
+Misses use the original content hash, collision check and creation path; guest
+calls, selected-slot rebinding, declarations and host-program lifetime remain
+unchanged. Relocated identical code updates the hint. This avoids repeated byte
+hashing without treating guest addresses as immutable shader identities.
+
+`zz-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
+RECOMP_PB_SCAN and RECOMP_PB_EXEC once, on its first scan call. These are launch
+diagnostics; presence (even empty/"0") retains the original opt-in semantics.
+Disabled or empty/reversed intervals return before obtaining guest memory.
+Enabled decoding, independent executor mode and report output stay intact.
+The complete production scanner is compiled in `test_pushbuffer_policy.py`,
+including eager-environment and executor-disabled negative controls. This
+removes repeated environment lookup from the acknowledgement worker; it does
+not change busy-bit acknowledgement, fences, clocks, or idle/wake policy.
 
 `zz-native-trace-quiet.patch` applies after native timing. With an explicit
 nonpositive trace budget and no watch/dump/filter/profile environment switch,

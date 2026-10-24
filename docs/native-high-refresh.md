@@ -188,12 +188,14 @@ order, not the full-game acceptance scope below.
 ### Goal and acceptance criteria
 
 The goal is a smooth, modern feel across the full game at a native 144 FPS
-target, with correct gameplay speed. The user's expanded scope includes texture
+target, expanded to selectable 60/120/180/240 presets, with correct gameplay
+speed. Native 60/144 remain diagnostic comparisons. The scope includes texture
 fluidity, animation smoothness, and keeping previously addressed bugs resolved.
 These requirements remain part of the active goal until verified:
 
 - Animation: compare player hands, weapon equip/fire/reload, character movement,
-  camera motion, effects and cinematics at original 60 FPS and native 60/120/144.
+  camera motion, effects and cinematics at original 60 FPS and native
+  60/120/144/180/240.
   They must progress smoothly, finish correctly and retain their original
   duration, event timing and interaction with pause/resume.
 - Texture fluidity: check animated and scrolling textures, water, moving surface
@@ -231,7 +233,7 @@ progression remain unverified. See the
 and the prior-fix checklist.
 
 Run `python -m pytest tests/test_native_timing.py` after applying the complete
-patch stack. It checks elapsed-time integration at all three target rates,
+patch stack. It checks elapsed-time integration across supported/diagnostic rates,
 integer timers, pause/resume, stalls, ABI stack balance, numeric conversions,
 the original fallback, and fractional animation-time restoration.
 

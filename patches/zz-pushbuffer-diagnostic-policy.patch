@@ -1,0 +1,39 @@
+--- a/src/kernel/nv2a_pb_scan.c
++++ b/src/kernel/nv2a_pb_scan.c
+@@ -47,6 +47,7 @@
+ extern void nv2a_pb_exec_method(uint32_t subch, uint32_t method, uint32_t param);
+ extern void nv2a_pb_exec_report(void);
+ static int s_exec_enabled = -1;
++static int s_scan_enabled = -1; /* launch policy, like s_exec_enabled */
+ 
+ static void note(uint32_t subch, uint32_t method)
+ {
+@@ -138,7 +139,7 @@
+ 
+     if (s_exec_enabled > 0)
+         nv2a_pb_exec_report();
+-    if (!s_seen_count || !getenv("RECOMP_PB_SCAN"))
++    if (!s_seen_count || s_scan_enabled <= 0)
+         return;
+     fprintf(stderr, "[PB] %u segments, %u words, %u jumps, %u unrecognised"
+                     " -- %d distinct (subchannel, method) pairs\n",
+@@ -153,14 +154,17 @@
+ 
+ void nv2a_pb_scan(uint32_t start_va, uint32_t end_va)
+ {
+-    const uint8_t *mem = (const uint8_t *)xbox_GetMemoryOffset();
++    const uint8_t *mem;
+     uint32_t va = start_va;
+     uint32_t words = 0, jumps = 0, unknown = 0;
+ 
+     if (s_exec_enabled < 0)
+         s_exec_enabled = getenv("RECOMP_PB_EXEC") != NULL;
+-    if (!(getenv("RECOMP_PB_SCAN") || s_exec_enabled) || end_va <= start_va)
++    if (s_scan_enabled < 0)
++        s_scan_enabled = getenv("RECOMP_PB_SCAN") != NULL;
++    if (!(s_scan_enabled || s_exec_enabled) || end_va <= start_va)
+         return;
++    mem = (const uint8_t *)xbox_GetMemoryOffset();
+     if (end_va - start_va > 0x400000u)        /* a sane single-frame bound */
+         end_va = start_va + 0x400000u;
+ 

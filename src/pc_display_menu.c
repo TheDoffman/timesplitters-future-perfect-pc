@@ -74,13 +74,10 @@ static void push(uint32_t word)
 
 static int guest_writable(uint32_t address,size_t bytes)
 {
-    MEMORY_BASIC_INFORMATION m;
-    uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
-    if(!address || bytes>UINT32_MAX-address ||
-       !VirtualQuery((const void *)host,&m,sizeof m) || m.State!=MEM_COMMIT ||
-       (m.Protect&(PAGE_GUARD|PAGE_NOACCESS))) return 0;
-    return (m.Protect&(PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|PAGE_EXECUTE_WRITECOPY)) &&
-        host+bytes>=host && host+bytes<=(uintptr_t)m.BaseAddress+m.RegionSize;
+    /* Every caller supplies a known extent. Query it afresh: these checks may
+     * occur on either side of guest callbacks and cannot share VM snapshots. */
+    PcGuestRegion region={0,0,0};
+    return pc_display_writable(&region,g_xbox_mem_offset,address,bytes);
 }
 
 static float cutscene_camera_zoom(void)
@@ -137,8 +134,12 @@ static float gameplay_fov_scale(uint32_t caller)
 static int discord_guest_read(void *context,uint32_t address,void *out,size_t bytes)
 {
     uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
+    /* Each decoder read has a known extent. Validate it afresh without walking
+     * the end of the whole guest mapping for every string byte. */
+    PcGuestRegion region={0,0,0};
     (void)context;
-    if(!address || bytes>UINT32_MAX-address || !pc_guest_memory(host,bytes,0)) return 0;
+    if(!address || bytes>UINT32_MAX-address ||
+       !pc_guest_memory_in_span(&region,host,bytes,0)) return 0;
     memcpy(out,(const void *)host,bytes);return 1;
 }
 #endif

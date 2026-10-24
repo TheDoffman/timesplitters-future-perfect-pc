@@ -69,13 +69,13 @@ static void step(unsigned whole,float delta,int advancing)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     MEMF(0x475c78)=1;
     MEM32(0x7b4cc0)=ENTITY;MEM32(ENTITY)=SECOND;
     MEM32(ENTITY+0x20)=MEM32(SECOND+0x20)=1;
     for(int native=0;native<=1;native++)
-        for(unsigned rate=0;rate<3;rate++)
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++)
             for(unsigned slow=1;slow<=4;slow*=4) {
                 unsigned fps=rates[rate];
                 g_tsfp_native_timing_active=native;
@@ -93,6 +93,6 @@ int main(void)
     g_tsfp_native_timing_active=0;
     assert(RECOMP_LOAD_GLOBAL_U32(0xa75e7,0x4e7944,3)==3);
     free(memory);
-    puts("PASS: original entity velocity and list dispatch at 60/120/144, slow time, pause and catch-up");
+    puts("PASS: original entity velocity and list dispatch at 60/120/144/180/240, slow time, pause and catch-up");
     return 0;
 }

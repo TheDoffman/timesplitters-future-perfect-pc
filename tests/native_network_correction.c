@@ -54,8 +54,8 @@ int main(void)
     MEM32(0x7b0c7c)=PLAYER;MEM32(PLAYER)=0;MEM32(PLAYER+4)=UINT32_MAX;
     MEM32(PLAYER+0x14)=ENTITY;MEM32(RECORD+4)=PEER;MEM32(PEER)=1;
     MEM32(RECORD+0x120)=1;MEM32(0x4e8cec)=60;
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned r=0;r<4;r++) for(unsigned slow=1;slow<=4;slow*=4) {
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(unsigned slow=1;slow<=4;slow*=4) {
         unsigned fps=rates[r],changed=0;float delta=60.f/(fps*slow);
         g_tsfp_native_timing_active=r!=0;origin();
         for(unsigned f=0;f<fps/2;f++) {

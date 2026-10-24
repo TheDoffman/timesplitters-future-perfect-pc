@@ -85,8 +85,8 @@ int main(void) {
         colors[t]=step(1,1,t);deadlines[t]=MEM32(PARAMS+44);rng[t]=random_calls;
         memcpy(rgb[t],(void *)(g_xbox_mem_offset+0x7ac88c),sizeof rgb[t]);
     }
-    const unsigned rates[]={60,120,144};
-    for(unsigned r=0;r<3;r++)for(unsigned slow=1;slow<=4;slow*=4) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)for(unsigned slow=1;slow<=4;slow*=4) {
         setup(3);MEM32(PARAMS+44)=0;g_tsfp_native_timing_active=1;
         unsigned n=rates[r]*slow*8,prev=0,retained=0;
         for(unsigned f=1;f<=n;f++) {
@@ -117,6 +117,6 @@ int main(void) {
         assert(!memcmp(expected,actual,sizeof expected) && random_calls==expected_rng);
         assert(!memcmp(expected_rgb,(void *)(g_xbox_mem_offset+0x7ac88c),sizeof expected_rgb));
     }
-    puts("PASS: original light flicker decisions, RNG, colors and paused/fractional retention at 60/120/144");
+    puts("PASS: original light flicker decisions, RNG, colors and paused/fractional retention at 60/120/144/180/240");
     free(memory);return 0;
 }

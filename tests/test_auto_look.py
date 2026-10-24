@@ -31,10 +31,11 @@ def test_auto_look_regions(tmp_path, mutation):
 
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')
-def test_auto_look(tmp_path):
+@pytest.mark.parametrize('fixture', ['auto_look', 'auto_look_span'])
+def test_auto_look(tmp_path, fixture):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / ('auto-look.exe' if os.name == 'nt' else 'auto-look')
-    sources = [str(ROOT / 'tests/auto_look.c')]
+    sources = [str(ROOT / 'tests' / (fixture+'.c'))]
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/W4',
                    '/I' + str(ROOT / 'src'), *sources, '/Fe:' + str(exe)]

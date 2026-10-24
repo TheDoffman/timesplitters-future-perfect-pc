@@ -76,12 +76,12 @@ int main(void) {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;setvbuf(stdout,NULL,_IONBF,0);
     /* ORIGINAL_CONSTANTS */
-    const unsigned rates[]={60,60,120,144};
+    const unsigned rates[]={60,60,120,144,180,240};
     /* Constant-force comparisons expose drag independently of the moving
      * region boundary. Then the real selector supplies the force below. */
     for(unsigned slow=1;slow<=4;slow*=4)for(unsigned force=0;force<3;force++) {
         float reference_y=0,reference_v=0;
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r];g_tsfp_native_timing_active=r!=0;setup(100);
             MEMF(BODY+0xb20)=force*.5f;
             for(unsigned f=0;f<fps*slow*2;f++) {
@@ -106,7 +106,7 @@ int main(void) {
     const float speeds[]={1.5f,2.f,3.f};
     for(unsigned speed=0;speed<3;speed++)for(unsigned force=0;force<2;force++) {
         float reference_y=0,reference_v=0;
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r];float raw=60.f/fps;
             g_tsfp_native_timing_active=r!=0;setup(100);MEMF(BODY+0xb20)=(float)force;
             for(unsigned f=0;f<fps*2;f++)movement(raw,raw*speeds[speed],0,0);
@@ -120,7 +120,7 @@ int main(void) {
     }
     for(unsigned slow=1;slow<=4;slow*=4) {
         float reference_y[361],reference_v[361];
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r];g_tsfp_native_timing_active=r!=0;setup(2);
             float max_y=0,max_v=0;
             for(unsigned f=1;f<=fps*slow*6;f++) {
@@ -145,7 +145,7 @@ int main(void) {
      * to falling, then land using the original falling routine. */
     for(unsigned slow=1;slow<=4;slow*=4) {
         double reference_exit=0,reference_land=0;
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r],enters=0,exits=0,landed=0;
             double exit_time=0,land_time=0;
             g_tsfp_native_timing_active=r!=0;setup(2);floor_enabled=1;
@@ -173,7 +173,7 @@ int main(void) {
      * at shared wall-clock instants rather than matching update counts. */
     for(unsigned speed=0;speed<3;speed++) {
         float reference_y[73]={0},reference_v[73]={0};
-        for(unsigned r=0;r<4;r++) {
+        for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
             unsigned fps=rates[r];float raw=60.f/fps,max_y=0,max_v=0;
             g_tsfp_native_timing_active=r!=0;setup(2);
             for(unsigned f=1;f<=fps*6;f++) {

@@ -72,8 +72,8 @@ int main(void)
     MEMF(0x475c98)=-3.1415927410125732f;
     MEMF(0x475c94)=6.2831854820251465f;
     MEMF(0x475c90)=3.1415927410125732f;
-    const unsigned rates[]={60,120,144};
-    for(unsigned r=0;r<3;r++) for(int native=0;native<2;native++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(int native=0;native<2;native++) {
         unsigned fps=rates[r]; g_tsfp_native_timing_active=native;
         memset(memory+CAMERA,0,0x1000); collisions=0;
         MEMF(TARGET)=100; MEMF(TARGET+4)=MEMF(TARGET+8)=0;
@@ -102,7 +102,7 @@ int main(void)
     }
     g_tsfp_native_timing_active=1;
     /* Quarter-speed time and catch-up use game time, not the host rate. */
-    for(unsigned r=0;r<3;r++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         unsigned fps=rates[r];
         vector(CAMERA+0x334,0,0); vector(TARGET,1,.3f);
         for(unsigned f=0;f<fps;f++)
@@ -131,6 +131,6 @@ int main(void)
     assert(RECOMP_LOAD_GLOBAL_U32(0xc7610,0x4e7944,3)==3);
     assert(RECOMP_F32_DIV_AT(0xc7651,1,60)==1.0f/60);
     free(memory);
-    puts("PASS: original camera translation and angular easing at 60/120/144");
+    puts("PASS: original camera translation and angular easing at 60/120/144/180/240");
     return 0;
 }

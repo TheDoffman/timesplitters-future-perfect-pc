@@ -18,6 +18,8 @@ size_t pc_prompts_read_region(uintptr_t address)
  sizeof memory-(address-(uintptr_t)memory):0;}
 static int pc_guest_memory(uintptr_t address,size_t bytes,int writing)
 {CHECK(writing);++writes;return bytes<=pc_prompts_read_region(address);}
+size_t pc_prompts_read_span(uintptr_t address,size_t minimum)
+{size_t n=pc_prompts_read_region(address);return n>=minimum?n:0;}
 int pc_prompts_rewrite(const char *source,char *out,size_t capacity)
 {(void)source;CHECK(capacity>=2);if(!translate)return 0;strcpy(out,"E");return 1;}
 #include "pc_prompt_guest.inc"

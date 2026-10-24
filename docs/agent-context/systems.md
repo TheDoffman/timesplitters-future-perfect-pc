@@ -31,6 +31,15 @@ so the old gate dropped a valid press. Eligibility, binding lookup, animation an
 ammo checks remain original; zero-time pause and Original60 remain unchanged.
 The generic CMP hook is documented in runtime.md. No host-specific adapter.
 
+`pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
+It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
+binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
+Overlap/nonfinite/large inputs use the unchanged generated body. Entry callbacks
+precede all reads; no state persists across calls, no host adapter is needed.
+`pc_model_transform_guest.c` includes the generated type header and builds once
+for either host. Fallback NaN result payloads depend on host compiler allocation;
+rejection itself preserves every guest bit and floating-point exception flag.
+
 ## Crash breadcrumbs and capture health
 
 `pc_breadcrumbs.h` owns a 64-slot atomic numeric history shared by the Windows
@@ -220,12 +229,15 @@ GL share this behavior; native Mac execution remains pending (MAC-003).
 `pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
 current-player, player-record and control-setting accesses before the guest call.
 It retains the global's region while visiting high-RAM player data, so settings
-in the first region reuse validation. Same-map access needs one query; this
-split-map path needs two, previously three. Read permissions cannot grant writes.
+in the first region reuse validation. Bounded misses use `pc_guest_query_span`;
+the complete 0x1504-byte player record remains validated. Windows checks its
+pages in one bounded batch; Mach/full-region results may cover additional fields.
+Read permissions cannot grant writes.
 Snapshots are never consulted after guest execution or
 retained for the next invocation. The original bit-3 save/restore and controller,
 local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavior
-plus controlled split/read-only maps, expiry and uncached/persistent mutations.
+plus real multi-page records, split/read-only maps, expiry and uncached/persistent
+mutations. Controller and menu paths retain their original preference behavior.
 
 Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
 `pc_network_bots_guest_frame` hook. The transport still consumes each validated
@@ -249,11 +261,31 @@ protection changes may occur while it is reused. Bounds, overflow, read-only and
 guard/no-access rejection remain enforced. `pc_display_perspective_projection`
 does not re-query its output: supported US `151CF0` writes all 16 floats without
 guest callbacks before returning. Weapon/preview correction therefore needs no
-VM query; decals still validate their camera and source matrix afresh (one query
-when those share a region, independent of the output's guest-stack region).
-Other camera/display checks are unchanged. This does not cache matrices, reduce
-updates or change projection arithmetic. `projection_output.c` checks the real
+VM query; decals still validate their camera and source matrix afresh, independent
+of the output's guest-stack region. `pc_guest_span.h` supplies a fresh Windows
+resident-page query for known-size accesses spanning at most four OS pages.
+Every page must be valid/readable; writes require all pages writable. Failed,
+cold, guarded or larger spans fall back to the full-region query. Camera/source pairs can
+reuse that snapshot; different pages need fresh queries. Darwin retains its Mach
+region query. Unbounded string scans still use the full-region API. This avoids
+Windows scanning a large mapped allocation to find its end on each display guard.
+The general `pc_display_menu.c::guest_writable` also delegates to this adapter,
+with a fresh zeroed snapshot on every call, including calls around guest callbacks.
+HUD, viewports, menus and network display helpers retain their requested bounds;
+spans beyond four pages fall back to full-region validation. Darwin uses real
+Mach protection for these calls instead of the compatibility stub's synthetic
+4 KiB writable extent. This does not cache matrices, reduce updates or change
+projection arithmetic. `projection_output.c` checks the real
 US builder's output extent, arithmetic, canaries and stack; generated C stays local.
+
+Discord's `pc_display_menu.c::discord_guest_read` also uses a fresh local bounded
+span for each requested read, including individual string bytes. No permission
+snapshot survives the callback. Decoder fields, one-second sampling cadence,
+event-name cache and IPC submission remain unchanged. Windows resident reads
+avoid full-allocation queries; cold/large reads retain fallback and Mac retains
+Mach validation. `test_discord_presence.py::test_guest_read_memory` executes the
+production callback with real protection changes, exact copied bytes, rejected
+reads leaving output intact, fallback and retained/full-query negative controls.
 
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
@@ -280,14 +312,17 @@ symbols, semantics and sanitized measured conclusions instead.
 
 ## Prompt text layout read scopes
 
-`pc_prompt_guest.inc` reads through `pc_prompts_read_region`; the bounded
-thread-local `pc_text_read_scope.h` cache uses existing OS VM query adapters.
+`pc_prompt_guest.inc` scans successive chunks through `pc_prompts_read_region`;
+`pc_prompts_read_span` validates the complete argument frame before dereferencing
+it. The bounded thread-local `pc_text_read_scope.h` cache uses fresh single-page
+Windows queries with full-region fallback; Darwin retains its Mach query.
 It is valid only during synchronous text layout, with no mapping/protection
 changes or event dispatch. Nested scopes retain intervals; the next outer scope
 clears them. Scratch writes still use a fresh protection query.
-The cached interval covers the full OS-validated region, so descending guest
-stack reads and earlier labels in the same mapping reuse one query. It never
-extends beyond that region or survives the outer layout scope.
+Cached intervals cover only the OS-validated page/region. Descending reads reuse
+them only when the requested minimum fits; crossing argument frames query again.
+Strings continue at the next validated chunk, preserving cross-page text. No
+interval extends beyond its bounds or survives the outer layout scope.
 The US outlined-label wrapper (`sub_00041E30`) retains this same scope over
 its four outline draws and foreground pass, then expires it at return.
 Scope wrapping, label construction/drawing and nested prompt measurement use the shared
@@ -379,9 +414,13 @@ passes; native SDL self-test execution remains a host validation requirement.
 
 Both adapters now create a local `PcGuestRegion` after input replay/focus gating
 and share it through terminal, mounted and ordinary camera `_in_region` helpers.
-`pc_guest_memory_in_region` reuses bounds/permissions only during that host mouse
+`pc_guest_memory_in_span` reuses bounds/permissions only during that host mouse
 operation, which invokes no guest callbacks or allocation. Every subsequent
-update starts empty. Region changes and read-to-write checks retain OS validation;
+update queries afresh. `pc_camera_mouse_region` seeds the snapshot at the lower
+of the player and FOV field using their known extents (0x118 and 4 bytes).
+Misses use bounded resident-page queries on Windows, or the existing full-region
+fallback/Mach query. Only an actual returned span may cover another field;
+separate pages/maps get individual checks. Region changes and read-to-write checks retain OS validation;
 read access cannot grant writes. Standalone helper entry points create their own
 snapshot. This removes duplicate player queries without retaining memory facts
 across frames or changing motion, capture, terminal clicks or timing policy.

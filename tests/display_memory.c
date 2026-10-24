@@ -24,6 +24,7 @@ int main(void)
     PcGuestRegion region={0,0,0};
     CHECK(pc_display_writable(&region,offset,0x1000+64,64));
     CHECK(pc_display_writable(&region,offset,0x1000,64));
+    CHECK(pc_display_writable(&region,offset,0x1000,page*3));
     CHECK(!pc_display_writable(&region,offset,0,4));
     CHECK(!pc_display_writable(&region,offset,UINT32_MAX-1,4));
     CHECK(!pc_display_writable(&region,UINTPTR_MAX-2,0x1000,4));
