@@ -141,6 +141,13 @@
       ]
     },
     {
+      "name": "trace-filter-disabled-scan.patch",
+      "sha256": "8599c1a44b4ad15260513a71353ff18b3b4d99da2693272584827949ef94cb0a",
+      "targets": [
+        "src/kernel/recomp_trace.c"
+      ]
+    },
+    {
       "name": "zz-pc-network.patch",
       "sha256": "ef7f95291d224cc90533c04ba04edf06d32278479756d9b79a29f9fc5489c821",
       "targets": [

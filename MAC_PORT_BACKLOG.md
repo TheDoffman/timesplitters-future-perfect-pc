@@ -3894,6 +3894,15 @@ See STATUS for exact measurements and the corrected reference scope.
   is justified. No live cached calls occurred; the fixture covers that outcome.
   Actual native Mac tracing remains pending for this extension.
 
+- **Disabled trace-filter work (2026-10-22, `perf/disabled-trace-name-scan`):**
+  Shared `trace-filter-disabled-scan.patch` avoids scanning every guest function
+  name when `RECOMP_TRACE_ONLY` is absent/empty. Enabled matching/hit limits and
+  all other diagnostics retain their behavior. No host adapter is needed.
+  Six actual-function/mutation cases are registered for both hosts and pass on
+  Windows. Supported Windows build/built-in checks and a bounded ten-bot Venice
+  session pass at `7b5f042`; foreground routing skips and gameplay remains in a
+  visible background window. Actual Mac validation remains pending; removed scan
+  counts and this uncontrolled run do not establish an FPS gain. See STATUS.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing

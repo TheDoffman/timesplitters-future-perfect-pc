@@ -330,6 +330,12 @@ interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
 prevent treating the two runs as a causal window-mode comparison. Keep native,
 texture, capture and CPU/stack diagnostics off for this observation unless their
 specific attribution is the question under test.
+`tests/test_trace_filter.py` compiles the actual runtime name-filter function,
+checks zero label scans for absent/empty filters, and retains exact matching,
+independent hit limits and zero/negative caps. Its eager-scan mutation must fail.
+It is registered in both-host native runtime CI. For changes to this function,
+apply the complete patch stack first; passing scan-count checks establish the
+removed work, not a gameplay FPS improvement.
 
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts

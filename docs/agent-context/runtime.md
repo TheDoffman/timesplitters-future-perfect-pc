@@ -162,6 +162,14 @@ player collision `C4A3F` and queued `16C126` deliver it. Queue production
 post-update in `A7870`. `native_vehicle_actor_impact.c` couples original
 publication with direct/queued callback, contact construction and suspension
 impulse response; geometry/motion and final effects remain controlled.
+`trace-filter-disabled-scan.patch` moves the function-name length calculation in
+runtime `recomp_trace.c:trace_only_match` after the empty-filter return. Lifted
+function entries therefore do not scan diagnostic labels when
+`RECOMP_TRACE_ONLY` is absent/empty. Enabled exact-name matching and per-filter
+hit limits retain the original implementation; watch/dump/profile, trace budget
+and renderer-idle behavior are unchanged. This applies to both host builds.
+`tests/test_trace_filter.py` compiles the actual patched function and requires a
+restored-eager-scan mutation to fail. Removed scan counts are not an FPS result.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
