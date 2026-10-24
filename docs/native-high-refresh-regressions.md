@@ -6813,3 +6813,8 @@ are 60/60, 120/120 and 144/144 with smoothing both off and on, so freshness is
 checked after final byte conversion as well as in the internal float field.
 The two new required-failure controls pass, and the focused portable coupled
 test passes in 1.77 seconds. No full game build or frame-time claim follows.
+PR #321 subsequently reached main through #322. The held-rounding follow-up is
+on `fix/native-water-rounding`, rebased onto 2252af1, with no new PR yet.
+Applying the full integrated patch stack updates nine runtime files; repeating
+the GPU suite then passes all 17 cases in 82.79 seconds, and the focused native
+coupled check passes in 1.15 seconds. Evidence: logs/water-rounding-main-suite.log.

@@ -28,6 +28,11 @@ All 17 GPU cases pass in 83.64 seconds. The six schedules also match final byte
 ripple RGB exactly and produce fresh byte ripple output on every frame (60/60,
 120/120, 144/144, with smoothing off and on). The focused portable forcing test
 passes. Evidence: logs/water-rounding-flow-suite.log.
+After rebasing onto integrated main 2252af1, the complete patch stack verifies
+and updates nine runtime files. The repeated GPU suite passes all 17 cases in
+82.79 seconds against that runtime; the focused native coupled test passes
+(1.15 seconds). See logs/water-rounding-main-suite.log. This branch checkpoint
+has no new PR yet, and no new Mac or gameplay result is inferred.
 
 ## 2026-10-23 — Combined open-PR integration
 
