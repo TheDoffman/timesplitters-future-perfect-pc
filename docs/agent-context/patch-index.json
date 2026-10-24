@@ -153,6 +153,13 @@
       ]
     },
     {
+      "name": "texture-upload-streaming.patch",
+      "sha256": "b24c42f30f2fd87286aa65ac149ee38b7ced762cd3c15c2ff24b3033096b86f0",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
       "name": "trace-filter-disabled-scan.patch",
       "sha256": "8599c1a44b4ad15260513a71353ff18b3b4d99da2693272584827949ef94cb0a",
       "targets": [

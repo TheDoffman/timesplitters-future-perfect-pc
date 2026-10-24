@@ -95,7 +95,7 @@ See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
 | Auto-look / camera / cutscene | `src/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
 | Display model and native UI | `src/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/test_pc_display_modes.py`, `test_debug_settings_model.py` |
 | GPU clear / screen copies / sampling | `src/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/shared-platform.md` |
-| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
+| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_pack_stream.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
 | Texture production and audit | `tools/texture-worklist.py`, `tools/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures.md` |
 | System Link / online / bots | `src/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/online.py` | `tests/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
 | Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/test_discord_presence.py`, `test_discord_macos.py` |
@@ -450,3 +450,28 @@ independent world texel. A runtime integration needs spatial transforms and the
 original disturbance/smoothing/storage rules. Float32 equivalence alone does
 not preserve the original byte-feedback appearance. See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
+## Background replacement texture reads
+
+`texture_pack_stream.h` owns a shared single-reader queue for common RHI and
+legacy GL. The worker reads/validates DDS data without touching texture owners or
+GPU resources. Submit/cancel/pump run on the renderer thread; release and content
+changes cancel pending owners before reuse. A full 64-slot queue retries when the
+texture is next bound. Two completed payloads and one read bound CPU staging to
+72 MiB; the existing 512-MiB GPU budget and DDS/alpha rules still apply.
+
+Original views remain usable during loading. Each Present pumps at most one
+nonempty payload into GPU resources; F10 switches cached views immediately. The
+GL adapter restores the previous texture binding after upload. Shutdown joins
+the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
+selects the synchronous diagnostic fallback. Per-texture messages now require
+`TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+
+The common renderer pumps from present_resolve, shared by Swap and Present.
+The initial Present-only prototype never delivered replacements in this title;
+its apparent pacing gains are invalid evidence. Actual DDS upload records and
+rendered Enhanced scenes are required alongside queue unit tests.
+
+The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
+setter. Unlike the host toggle, that setter does not emit a mode log line.
+Reopening Video Options reads the effective mode; a pending row label alone is
+not evidence that the change was applied. Texture selection is session-only.

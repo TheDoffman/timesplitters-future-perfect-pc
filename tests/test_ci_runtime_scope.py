@@ -105,6 +105,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/apply-patches.py'], set(scope.SUITES)),
     (['tests/fixtures/launcher-patch-stacks.json'], set(scope.SUITES)),
     (['tsfp.ps1', 'requirements.txt'], set(scope.SUITES)),
+    (['requirements-release.txt'], {'native'}),
     (['.github/workflows/runtime-patches.yml'], set(scope.SUITES)),
     (['tools/issue-forms.py', 'tests/test_issue_resolution.py'], set()),
     (['README.md', 'docs/textures.md', 'MAC_PORT_BACKLOG.md'], set()),
@@ -166,6 +167,8 @@ def test_parallel_workers_preserve_required_check_contract():
         assert 'os: [windows-latest, macos-latest]' in worker
     assert 'needs: patches' not in native
     assert 'python tools/apply-patches.py external/ts3FPrecomp patches' in native
+    assert "needs.plan.outputs.native == 'true' && runner.os == 'Windows'" in native
+    assert 'python -m pip install -r requirements-release.txt' in native
     assert "needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'" in native
     assert 'name: Patch transitions (${{ matrix.os }})' in gate
     assert 'needs: [plan, patches, native]' in gate and 'if: always()' in gate

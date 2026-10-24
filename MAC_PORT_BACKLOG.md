@@ -1250,6 +1250,34 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-23 streaming integration correction (commit carrying this entry):
+  the initial common-renderer Present-only pump missed Future Perfect's Swap
+  route. Earlier background-on gameplay measurements did not include completed
+  replacements and are withdrawn. Completion now belongs to shared present_resolve;
+  legacy GL already funnels Swap through its Present adapter. Production-body
+  tests fail before this correction and pass after it. Windows D3D11 build
+  86b2c1c completed 132 replacement uploads in a bounded Venice Enhanced run;
+  two reviewed frames showed no obvious blank/corrupt surfaces. A later actual
+  Windows Video Options run applied Classic, reopened the page to confirm the
+  effective value, then applied Enhanced and resumed gameplay in both modes.
+  Apply disabled after each commit; inspected stills had no obvious blank/corrupt
+  surfaces. Original60/native120 Venice pacing checks also completed; see STATUS
+  for limitations. Replay still suppresses host shortcuts. Mac scene checks,
+  broader Windows coverage and physical shortcut testing remain **Awaiting validation**.
+
+- Background texture reads (commit carrying this entry): `texture_pack_stream.h`
+  shares queue, cancellation and staging policy between common RHI and legacy
+  GL; thin Windows event/lock and POSIX pthread adapters run disk work. GPU
+  creation remains on each renderer thread; the GL adapter restores binding.
+  Windows loader/queue/GL-stub and related native tools: 55 passed, two host-only
+  skips. Native Mac CI at c4baddf executes the queue/loader fixtures successfully
+  within 446 passing runtime tests (76 host/feature skips, 18 subtests); common-RHI
+  asset-free GPU contracts also pass. Actual texture arrival GPU behavior, scene
+  transitions and Enhanced appearance remain **Awaiting validation**. No new Mac feature
+  duplication is needed. Acceptance includes Classic/Enhanced switching during
+  queued loads, owner destruction/content changes, bounded memory and 60/120/144
+  scene pacing on both Mac renderers; see STATUS.md.
+
 - PR #289 upgrade follow-up: shared `Core.InstallPending` now consumes packaged
   retired-icon hashes and transactionally removes only unchanged bundled pairs.
   Custom pairs survive; recovery/rollback restore removals. Both package builders

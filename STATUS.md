@@ -987,6 +987,133 @@ playable executable/symbol pair. A clean runner exit does not pass scene
 acceptance. Direct acknowledgement is rejected pending rework of the full
 worker handshake; Original 60 and Mac gameplay tests are deferred until the
 loading regression is resolved. The draft PR explicitly records this failure.
+## 2026-10-23 — Texture streaming integration correction (PR #311)
+
+The initial background-loading candidate 25e0059 is not accepted. Its Enhanced
+visual run recorded zero completed replacements: Future Perfect calls host Swap,
+while the queue pump was attached only to the older Present path. Earlier Hotel
+FPS gains and Venice 60/120 measurements therefore do not validate the intended
+loader and are withdrawn from performance/compatibility conclusions. Original
+views remained visible, which allowed the mistake to evade the earlier smoke runs.
+
+The pump now lives in common present_resolve, used by Swap, Present and the public
+frame helper. The skipped-Swap branch returns before it. The regression fixture
+executes the actual production frame bodies, checks exactly one completion per
+presented frame and none for skips, and delivers real DDS loads through Swap.
+Both selected modes failed before repair; all 15 texture tests pass afterward.
+Legacy GL already delegates Swap to its Present adapter and needs no second pump.
+
+The visual probe also exposed a harness limitation: replay mode deliberately
+suppresses host shortcuts. Neither guest F10 injection nor the attempted host
+window command switches texture modes during replay. The ineffective command was
+removed; captures labeled Classic/Enhanced are both Enhanced and are not proof of
+switching. Live switching remains unverified by this probe.
+
+The shared queue/cancellation/format tests and prior build/CI results retain only
+their stated CPU/compile scope. The supported Windows build at 86b2c1c and its
+built-in checks passed (foreground virtual-pad routing skipped). The bounded
+Venice 144-FPS Enhanced run completed 132 uploads across 128 keys, with maximum
+recorded replacement residency 136,053,628 bytes. Two inspected gameplay captures
+showed no obvious blank/corrupt surfaces; this is not full asset acceptance.
+Capture/texture tracing were enabled, so this run is excluded from performance
+comparisons. Corrected rate checks and live switching are recorded below;
+broader comparisons, final-head CI and Mac scene validation remain pending. The
+normal playable executable/symbol pair was restored and profiles/fixture preserved.
+No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
+
+Corrected-build Hotel comparison: Windows x64/MSVC 17.14.40/D3D11, source
+86b2c1c, executable SHA-256
+998adf71af5d69ecf3c6311fabb92ca01e128a692a4cb00770e1c59f2054ee1c.
+Both bounded runs used Enhanced textures, native 144, ten bots, requested
+3440x1440/FOV73 and observed 1920x1060 client area. Each measured the complete
+50-second window from spawn+5 to spawn+55, with successful guest Present records,
+captures/texture tracing off, read-only CPU observations on, and no concurrent
+local builds/test suites. Source 86b2c1c passed selected Windows/Mac runtime,
+patch-upgrade/transition and launcher CI checks; this is not Mac scene acceptance.
+
+| Measurement | Background reads | Synchronous reads |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.24 FPS | 142.06 FPS |
+| Lowest rolling five-second rate | 139.8 FPS | 132.8 FPS |
+| 99th-percentile frame interval | 8.467 ms | 8.738 ms |
+| Maximum frame interval | 11.653 ms | 11.493 ms |
+| Frames over 9 ms | 26 | 45 |
+| Frames over 16.67 ms | 0 | 0 |
+| Observed level-clock ticks/second | 59.989 | 60.013 |
+
+These are a single on/off pair with nondeterministic AI and deaths (36.7% versus
+37.8% of health observations), not causal proof or a full gameplay comparison.
+Both windows were visible but foreground in zero of 50 samples; requested
+fullscreen did not establish foreground ownership. API presents do not measure
+monitor scanout. Sparse level-clock observations do not establish animation,
+physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
+test-save directories and texture-stream-86b-comparison.json. Both sessions
+completed and restored the normal playable pair; fixture/profiles were preserved.
+A reverse-order repeat (synchronous first, then background) used the same
+executable, settings, strict 50-second window and instrumentation. No local
+build/test suites ran alongside either measurement. Results:
+
+| Measurement | Background repeat | Synchronous repeat |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.18 FPS | 142.64 FPS |
+| Lowest rolling five-second rate | 136.0 FPS | 136.2 FPS |
+| 99th-percentile frame interval | 8.477 ms | 8.661 ms |
+| Maximum frame interval | 10.323 ms | 18.655 ms |
+| Frames over 9 ms | 17 | 30 |
+| Frames over 16.67 ms | 0 | 1 |
+| Observed level-clock ticks/second | 60.014 | 60.011 |
+
+Both pairs favor background loading in average rate and >9-ms frame counts,
+but the minimum rolling five-second rate does not consistently improve. These
+four samples support a modest scoped pacing improvement, not locked 144 FPS or
+a complete fix for NPC-related dips. Death observations in the repeat were
+28.6%/25.3%; AI events remain unpaired. All 50 window samples were visible and
+none foreground. Evidence: texture-stream-86b-hotel144-off-repeat/on-repeat.
+Both sessions preserved profiles and restored the normal playable binary.
+Broader rate/scene coverage and foreground gameplay remain outstanding.
+The following checks extend this same executable's Windows coverage.
+
+Corrected Enhanced Venice runs at Original 60 and native120 completed with ten
+bots and isolated Test Lab profiles. Same resolution/FOV/client and instrumentation
+limits as the Hotel runs above; these are rate checks, not paired combat parity.
+Original 60 explicitly disabled native timing with target=0/cap=60. Each result
+uses a complete 50-second successful guest-Present window, spawn+5 to spawn+55:
+
+| Measurement | Original 60 | Native 120 |
+| --- | ---: | ---: |
+| Average successful Present rate | 59.9997 FPS | 120.0025 FPS |
+| Lowest rolling five-second rate | 59.8 FPS | 119.8 FPS |
+| 99th-percentile frame interval | 18.015 ms | 9.505 ms |
+| Maximum frame interval | 18.682 ms | 11.204 ms |
+| Observed level-clock ticks/second | 59.989 | 59.988 |
+
+Both were visible but foreground in zero of 50 samples. Death observations were
+30.0%/40.4%, so these runs cannot establish equivalent encounters or animation,
+weapon and movement behavior. Capture/texture trace were off; the actual Enhanced
+delivery check remains the separate traced run. Evidence directories:
+texture-stream-86b-venice-original60 and texture-stream-86b-venice120. Both restored
+the normal playable binary and preserved the fixture/profile signatures.
+
+The separate texture-stream-86b-menu-switch-views run exercised actual paused
+Video Options at native144 in Venice. Classic selection enabled Apply; applying
+grayed it out. Resumed gameplay had paused=0; reopening the page read Classic
+from the effective mode, with Apply disabled. Enhanced was then selected/applied,
+Apply returned to gray, and gameplay resumed with paused=0. Inspected Classic and
+Enhanced gameplay stills showed no obvious blank/corrupt surfaces; different
+death-camera poses prevent a pixel-matched art-quality comparison. The run
+completed 126 replacement uploads and preserved profiles/fixture. These
+capture/trace-enabled runs are excluded from performance comparisons. The
+explicit menu setter does not log mode changes; only the host toggle does.
+This validates the Windows in-session menu route, not physical F10 delivery,
+restart persistence (selection is session-only), Mac scenes or full asset coverage.
+
+CI follow-up: Windows native runtime at merge 9bf5630 failed one online-host test
+because missing cryptography caused fallback to Git OpenSSL, whose certificate
+generation timed out after 30 seconds (471 passed, 83 skipped, 18 subtests).
+Mac runtime and both patch-upgrade jobs passed. The Windows job now installs the
+existing requirements-release.txt pins used by the packaged companion; pin-only
+changes select native checks and trigger the workflow. Production hosting code
+is unchanged. Local online-host/scope checks pass (77 tests); fresh CI is pending.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

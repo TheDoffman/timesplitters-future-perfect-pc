@@ -422,3 +422,29 @@ their backing. Both entry points register this adapter with shared storage polic
 It accepts an existing absolute directory, rejects invalid paths, and accepts an
 empty string to clear the override. save_paths/native_paths cover UDATA aliases,
 unchanged other routes, rejection and override removal.
+
+## Replacement texture frame completion
+
+`patches/texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
+`present_resolve`, guarded by TSFP_TEXTURE_PACK. This covers the title
+`dev_Swap` path, the older `dev_Present` path and the public frame helper. Legacy GL calls
+the same shared queue pump from its own Present adapter. This completes
+background CPU reads on the renderer thread with one replacement upload per
+frame. It does not change guest texture dimensions/data, update clocks or frame
+rate selection. Source lives in `texture_pack_stream.h` and the existing loader
+adapters; no generated guest edits or new renderer thread owns GPU resources.
+
+Replacement completion/cancellation increments a binding revision. The common
+renderer checks that revision alongside mode before draws, so textures left
+bound across frames see arrivals and queue-full retries without rebinding every
+draw. The streaming patch must follow texture-toggle.patch, which creates this
+binding helper. The texture runtime fixture compiles that actual patched helper.
+
+Keep this patch LF on disk before refreshing its index. A CRLF working copy
+produced a different hash/target spelling from the normalized Git blob; the
+Linux CI context check exposed it. Runtime behavior was unaffected.
+
+Future Perfect reaches host_Swap from its HLE shadow frame boundary. A pump in
+dev_Present alone does not run for that path. Keep the completion call in the
+common resolve function, after the skipped-Swap guard; tests execute both actual
+entry bodies and verify one completion per presented frame, none for a skip.

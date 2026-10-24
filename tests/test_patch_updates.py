@@ -141,6 +141,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     for patch in sorted(PATCHES.glob('*.patch')):
         if patch.name.endswith('-text-panel-scope.patch'):
             continue  # Depends on the later shared panel/display wrapper.
+        if patch.name == 'texture-upload-streaming.patch':
+            continue  # The historical state has neither texture-pack nor toggle.
         if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
             continue  # Depends on display/viewport hooks installed by the complete migration.
         if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):
@@ -199,6 +201,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'pc_weapon_keys_sample' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()
+    assert b'tsfp_texture_frame_complete();' in device
+    assert b'tsfp_texture_binding_revision();' in device
     assert b'pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);' in device
     assert b'pc_display_camera' in manual.read_bytes()
     assert b'pc_prompt_guest' in manual.read_bytes()
@@ -255,11 +259,11 @@ def texture_branch_patches(tmp_path):
 
 
 def main_branch_patches(tmp_path):
-    """Model main without the optional active toggle, regardless of this branch."""
+    """Model historical main before the toggle and its streaming dependency."""
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name != 'texture-toggle.patch':
+        if patch.name not in ('texture-toggle.patch', 'texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
     shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
     return patches
