@@ -1,3 +1,27 @@
+## 2026-10-23 — Original water-noise input in fractional validation
+
+Continuing on `fix/native-water-rounding`, the saved Original60 Scotland capture
+and pinned game code establish noise before smoothing/feedback, with additive
+ONE/ONE RGB blending and a 128-square immutable A8L8 source. The expanded GPU
+fixture uses the original effect-19 pixel and four-instruction vertex programs,
+that source texture, captured sampler/blend state, and controlled UV offsets.
+Queued gameplay splash geometry and actual RNG scheduling remain separate work.
+
+The two focused cases pass in 14.56 seconds: every authored byte G/B boundary
+and final byte ripple RGB match at 60/120/144 and mixed rates, with smoothing
+off/on. Maximum arithmetic disagreement for this input is 2.563e-6. Original
+smoothed 60-Hz output changes on 27/60 frames and the candidate matches that;
+all higher/mixed-rate outputs change every frame. Duplicating a noise draw only
+in the candidate must fail. Evidence: logs/water-noise-integration.log and
+private/pipeline/water-disturbance-draw-state.json.
+The full updated suite passes 24 cases in 132.19 seconds, including the added
+channel-preservation check (`logs/water-noise-full-suite.log`). No cases skipped
+on this machine. Repository context and staged whitespace checks pass.
+
+No runtime source or playable build changed. Noise tests require the private
+capture and explicitly skip without it. Mac GPU, queued splashes, runtime
+ownership, scene coverage and game GPU cost remain pending. No new PR opened.
+
 ## 2026-10-23 — Preserve second-pass water saturation
 
 On the same `fix/native-water-rounding` branch, near-limit initial velocities

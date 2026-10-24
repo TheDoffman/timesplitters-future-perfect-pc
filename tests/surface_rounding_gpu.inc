@@ -23,8 +23,17 @@ static void round_draw(FieldFinal *f,RhiShader *pixel,const float *offsets,
     rhi_draw(offsets?4:3,0);rhi_set_textures(0,4,none);rhi_set_render_target(NULL,NULL);
     rhi_set_shader(RHI_STAGE_VERTEX,f->fullscreen);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
 }
+#if SURFACE_ROUNDING_PROFILE == 3
+#include "surface_noise_gpu.inc"
+#ifndef SURFACE_NOISE_REPEATS
+#define SURFACE_NOISE_REPEATS 1
+#endif
+#endif
 static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     CHECK(SURFACE_SIDE==128 && SURFACE_WRAP);
+#if SURFACE_ROUNDING_PROFILE == 3
+    FieldNoise noise;field_noise_init(&noise);
+#endif
     const double a=26./255,b=165./255,d=249./255,k=43./255,c=128./255;
     DWORD definitions[3][60];const char *names[]={"first.bin","feedback.bin","filter.bin"};
     for(unsigned i=0;i<3;i++){FILE *file=fopen(names[i],"rb");CHECK(file);CHECK(fread(definitions[i],4,60,file)==60);fclose(file);}
@@ -124,6 +133,9 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
         /* Independent original 60-Hz path with real byte initial/feedback state. */
         for(unsigned tick=0;tick<60;tick++) {
             RhiView *inputs[4];
+#if SURFACE_ROUNDING_PROFILE == 3
+            field_noise_apply(&noise,f,&bytes[current],tick);
+#endif
             if(smoothing) {for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
                 round_draw(f,filter,&offsets[2][0][0],&cb[2],inputs,4,&bytes[current^1]);current^=1;}
             for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
@@ -152,6 +164,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                 while(left) {
                     RhiView *inputs[4];
                     if(!phase) {
+#if SURFACE_ROUNDING_PROFILE == 3
+                        for(unsigned repeat=0;repeat<SURFACE_NOISE_REPEATS;repeat++)
+                            field_noise_apply(&noise,f,&bytes[current],ticks);
+#endif
                         if(smoothing) {for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
                             round_draw(f,filter,&offsets[2][0][0],&cb[2],inputs,4,&bytes[current^1]);current^=1;}
                         for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
@@ -219,12 +235,15 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
              * Preserve those repeats at 60; higher rates must add fresh frames.
              * Mild/impulse cases retain the stricter every-frame requirement. */
             CHECK(fps==60?fresh==reference_fresh:fresh>reference_fresh);
-            if(SURFACE_ROUNDING_PROFILE!=2 || fps!=60)CHECK(fresh==frames);
+            if(SURFACE_ROUNDING_PROFILE<2 || fps!=60)CHECK(fresh==frames);
             CHECK(final_error==0);
             for(unsigned piece=0;piece<=12;piece++)if(rows[piece][0].image){round_destroy(&rows[piece][0]);round_destroy(&rows[piece][1]);}
         }
     }
     free(references);for(unsigned i=0;i<2;i++){round_destroy(&bytes[i]);round_destroy(&states[i]);}
+#if SURFACE_ROUNDING_PROFILE == 3
+    field_noise_destroy(&noise);
+#endif
     round_destroy(&first_byte);round_destroy(&first_float);round_destroy(&world);round_destroy(&rounding);round_destroy(&force_spectrum);
     rhi_shader_destroy(filter);rhi_shader_destroy(unpack);rhi_shader_destroy(residual);rhi_shader_destroy(forced);rhi_shader_destroy(boundary);rhi_shader_destroy(guard);
 }

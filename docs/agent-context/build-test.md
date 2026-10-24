@@ -858,3 +858,15 @@ Direct guard cases reject a distant replacement
 and preserve an unambiguous value. This is controlled trajectory validation,
 not runtime integration or measured game performance. The portable coupled CPU
 test also checks held forcing across split steps and rejected-output preservation.
+
+Rounding profile 3 adds `surface_noise_gpu.inc`: original effect-19 pixel/vertex
+programs, captured immutable A8L8 source converted to RGBA, linear wrap sampling,
+and captured ONE/ONE RGB-only blending before smoothing at each authored tick.
+`surface_vertex_definition.c` checks the noise program's four instructions and
+input mask 0x010e, separately from the feedback vertex program. The profile
+requires the preserved local Original60 Scotland frame-3600 capture; without it
+the two noise cases explicitly skip. A skip is not noise coverage. No game bytes
+are tracked. UV offsets follow a controlled sequence, not the game's RNG. First
+draws independently verify nonzero additive green and unchanged red/blue/alpha;
+a candidate-only duplicate noise draw must fail the boundary comparison. This
+does not validate queued splashes, live submission or whole-scene rendering.

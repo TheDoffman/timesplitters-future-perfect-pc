@@ -3736,6 +3736,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   acceleration clamp and pre-damping height cap at authored boundaries. Windows
   tests cover near-limit velocity/height fields and reject removing either limit.
   This extends common policy; no new OS-specific logic or Mac GPU result is added.
+  The Windows fixture now also runs original effect-19 noise shaders with the
+  captured immutable source and additive blend before each authored update.
+  Constant/mixed-rate byte equivalence uses controlled texture offsets; game RNG,
+  queued splash draws and live submission remain unverified. The extra cases
+  require a private capture and skip without it. No Mac result is inferred.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

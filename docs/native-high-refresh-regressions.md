@@ -6886,3 +6886,41 @@ The complete shader suite passes all 22 cases in 117.52 seconds
 This is controlled saturation coverage, not actual disturbance or game-scene
 validation. The helper remains uncalled by gameplay; no runtime scheduler,
 resource owner, Mac GPU or game performance claim follows from these results.
+
+### Original texture-noise input before smoothing and feedback
+
+Pinned dispatcher `1956A0` swaps the current target, calls queued disturbances
+`1953B0`, then texture noise `1952D0`, smoothing `1950B0`, feedback `195110`
+and final output `195280`. The noise callback resolves texture 0x365, consumes
+two RNG results for UV offsets and draws effect 19 (`2BE30`). That effect uses
+pixel definition `4BBD30` and the four-instruction vertex program at `4BBBF8`.
+The vertex input mask is 0x010e; input 8 supplies unused secondary UVs, captured
+as (0,0,0,1). This differs from the feedback program's mask 0x000e.
+
+The preserved Original60 Scotland frame-3600 capture includes the noise draw.
+Its source is immutable texture ID 4, Xbox A8L8 format 0x1a, 128x128, usage 0;
+unlike feedback target snapshots, its captured system-memory texels are usable
+source data. State is ONE/ONE additive RGB blending, RGB write mask 7, linear
+wrap sampling. The pixel shader multiplies source RGB by (0,1,0), so the draw
+adds luminance to green and preserves red, blue and alpha. Observed UV origin
+is (0.506488204,0.382273525), with a full pixel-space quad. Private evidence:
+private/pipeline/water-disturbance-draw-state.json and its inspection script.
+
+`surface_noise_gpu.inc` executes the original translated pixel/vertex programs
+with that texture and state before smoothing at each authored boundary. The
+test varies UV offsets deterministically; it does not claim to reproduce the
+game's RNG sequence. A candidate-only duplicate draw is a required failing
+mutation. Initial draws additionally check nonzero additive green and unchanged
+red/blue/alpha. The asset is read from the private capture into temporary test
+files, never tracked. Missing captures cause an explicit skip, not a pass.
+
+The two focused cases pass in 14.56 seconds (logs/water-noise-integration.log).
+All eight noise trajectories match every original byte G/B boundary and final
+byte RGB, with maximum pre-quantization disagreement 2.56299973e-6. Freshness is
+60/60 without smoothing and 27/60 with it at original 60 Hz, identically in the
+candidate; high and mixed rates produce 120/120,144/144,117/117 changed outputs.
+These are shader/input/order checks, not queued gameplay splash geometry, actual
+RNG scheduling, runtime integration, scene acceptance or game GPU performance.
+The complete updated suite passes all 24 cases in 132.19 seconds with no skips
+(logs/water-noise-full-suite.log), including the nonzero-green/channel-preservation
+checks. Repository context and staged whitespace checks pass.

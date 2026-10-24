@@ -58,6 +58,40 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             offset = config.va_to_file_offset(0x4bbb90)
             assert int.from_bytes(image[offset:offset + 4], 'little') == 0x62078
             (tmp_path / 'vertex.bin').write_bytes(image[offset:offset + 4 + 6 * 16])
+            if rounding_profile == 3:
+                offset = config.va_to_file_offset(0x476270 + 19 * 16 + 4)
+                assert int.from_bytes(image[offset:offset + 4], 'little') == 0x2be30
+                offset = config.va_to_file_offset(0x4bbd30)
+                (tmp_path / 'noise.bin').write_bytes(image[offset:offset + 240])
+                offset = config.va_to_file_offset(0x4bbbf8)
+                assert int.from_bytes(image[offset:offset + 4], 'little') == 0x42078
+                (tmp_path / 'noise_vertex.bin').write_bytes(image[offset:offset + 68])
+                # Immutable source texture from the preserved Original60 capture.
+                # Render-target snapshots in this format are NOT live GPU pixels.
+                capture = ROOT / 'private/test-saves/water-runtime-state/water.d3dcap'
+                if not capture.is_file():
+                    pytest.skip('Original60 Scotland capture required for noise-source pixels')
+                import struct
+                blob = capture.read_bytes()
+                assert struct.unpack_from('<8s6I', blob) == (b'XBRD3D8\0', 9, 32, 3600, 640, 480, 4874)
+                cursor = 32
+                noise_pixels = None
+                while cursor + 8 <= len(blob):
+                    kind, length = struct.unpack_from('<2I', blob, cursor)
+                    payload = blob[cursor + 8:cursor + 8 + length]
+                    assert len(payload) == length
+                    cursor += 8 + (length + 3) // 4 * 4
+                    if kind == 11 and struct.unpack_from('<I', payload)[0] == 4:
+                        assert struct.unpack_from('<6I', payload) == (4, 26, 128, 128, 1, 0)
+                        pitch, rows, size = struct.unpack_from('<3I', payload, 24)
+                        assert pitch == 256 and rows == 128 and size == 32768
+                        data = payload[36:]
+                        assert len(data) == size
+                        noise_pixels = bytes(c for i in range(0, size, 2)
+                                             for c in (data[i], data[i], data[i], data[i + 1]))
+                        break
+                assert noise_pixels is not None
+                (tmp_path / 'noise.rgba').write_bytes(noise_pixels)
         if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
             import struct
             from tools.recomp.translator import FunctionTranslator
@@ -119,6 +153,10 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             header.write('static const char first_hlsl[]=' + json.dumps(first) + ';\n')
             header.write('static const char filter_hlsl[]=' + json.dumps(filtered) + ';\n')
             header.write('static const char final_hlsl[]=' + json.dumps(final) + ';\n')
+            if rounding_profile == 3:
+                noise = run([str(generator), 'noise.bin'])
+                assert 'Stage 0' in noise and 'Stage 1' not in noise
+                header.write('static const char noise_hlsl[]=' + json.dumps(noise) + ';\n')
 
     if case == 'surface_spatial_gpu.inc':
         vertex_translator = (RUNTIME / 'd3d/d3d8_vsh.c').read_text(encoding='utf-8')
@@ -136,6 +174,11 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         assert 'Program body (6 instructions)' in vertex_hlsl
         with (tmp_path / 'surface_shader.h').open('a', encoding='utf-8') as header:
             header.write('static const char surface_vertex_hlsl[]=' + json.dumps(vertex_hlsl) + ';\n')
+            if rounding_profile == 3:
+                (tmp_path / 'vertex.bin').write_bytes((tmp_path / 'noise_vertex.bin').read_bytes())
+                noise_vertex = run([str(vertex_generator), 'noise'])
+                assert 'Program body (4 instructions)' in noise_vertex
+                header.write('static const char noise_vertex_hlsl[]=' + json.dumps(noise_vertex) + ';\n')
 
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
@@ -155,6 +198,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
         helpers += '\n#include "surface_final_gpu.inc"\n'
         if rounding:
+            if mutation == 'noise-duplicate':
+                helpers += '#define SURFACE_NOISE_REPEATS 2\n'
             helpers += f'#define SURFACE_ROUNDING_PROFILE {rounding_profile}\n#include "surface_rounding_gpu.inc"\n'
             needle = '    for(unsigned rate=0;rate<3;rate++) {\n        unsigned fps=rates[rate];unsigned final_fresh=0;'
             assert fixture.count(needle) == 1
@@ -165,7 +210,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         needle = 'rhi_buffer_update(vertex_buffers[0],filter_offsets);'
         assert fixture.count(needle) == 1
         fixture = fixture.replace(needle, 'memset(filter_offsets,0,sizeof filter_offsets);' + needle)
-    if mutation and mutation not in ('clamped-basis', 'smoothing-offset'):
+    if mutation and mutation not in ('clamped-basis', 'smoothing-offset', 'noise-duplicate'):
         # Mutate only a disposable include. Compilation must succeed and the
         # executed GPU comparison must detect the numeric regression.
         if mutation == 'rounding-raw':
@@ -218,7 +263,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('boundary_error<1e-7f' if mutation == 'rounding-raw' else
-                    'worst==0' if mutation in ('rounding-unforced', 'rounding-clipped-gradient',
+                    'worst==0' if mutation in ('noise-duplicate', 'rounding-unforced', 'rounding-clipped-gradient',
                                               'rounding-unlimited-acceleration', 'rounding-unlimited-boundary') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
                     'fabsf(output[field_index(x,y,c)]-expected)<tolerance' if mutation == 'constant-alpha' else
@@ -245,7 +290,8 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
 @pytest.mark.parametrize('mutation,profile', [
     (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
     (False, 1), ('rounding-clipped-gradient', 1), (False, 2),
-    ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2)])
+    ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2),
+    (False, 3), ('noise-duplicate', 3)])
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

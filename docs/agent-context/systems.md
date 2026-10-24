@@ -479,6 +479,13 @@ owner calls this policy yet. The fixture covers mild/strong initial fields,
 near-limit signed velocities/heights and
 mixed-rate steps, including nonzero-phase switches; actual disturbance shaders,
 full scene saturation coverage and live game scheduling remain acceptance work.
+The original dispatcher `1956A0` calls queued disturbances `1953B0`, texture
+noise `1952D0`, smoothing `1950B0`, feedback `195110`, then final output `195280`.
+Effect 19 (`2BE30`) uses pixel definition `4BBD30` and vertex program `4BBBF8`.
+Its captured noise draw adds the immutable A8L8 texture into green with ONE/ONE
+blend and RGB writes, before smoothing. The candidate fixture now executes
+those unchanged shaders at authored boundaries with controlled UV offsets;
+queued splash geometry and actual runtime RNG/event delivery remain unverified.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads
