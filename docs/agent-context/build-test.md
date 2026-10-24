@@ -18,6 +18,13 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
+`test_controller_profile.py` tests the actual parser/sampler on both CI hosts:
+launcher device switches, slots, custom/unbound maps, release and disconnect.
+Three stock-profile cases fail before #319. Windows Build additionally checks
+the shipped Controller profile with SDL virtual buttons/sticks and focus loss;
+`tsfp_pc_prompts_test` reports physical-pad/foreground skips. Real hardware and
+native Mac gameplay require separate validation.
+
 `test_framebuffer_sampling.py` compiles the complete HLE texture unit against
 fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
 water graphics dependencies with fail-fast assertions; no GPU emulation or
@@ -646,30 +653,24 @@ Python cases; there is no game or native launcher behavior change.
 
 ## Weapon-slot selection checks
 
-`tests/test_weapon_slots.py` compiles the shared key-state and production guest
-selector fixture on Windows/macOS. It covers press edges, held/focus/menu input,
-expiry, empty slots, grouped weapon variants and local-player/state guards.
-The supported Windows build also runs `tests/pc_settings.c` for migration and
-last-slot rebinding/persistence. Launcher settings tests cover defaults, custom
-conflicts, explicit Unbound, moving keys and reset. Original input-hook changes
-require regenerating the guest C through the supported build. These fixtures
-are not a substitute for actual weapon-switch animation/gameplay validation.
+`test_weapon_slots.py` checks shared key state and guest selection on both hosts:
+press/held/focus/menu input, expiry, empty/grouped slots and local-player guards.
+Windows Build's `pc_settings.c` checks migration and last-slot persistence;
+launcher tests cover defaults, conflicts, Unbound, moving keys and reset.
+Input-hook edits require supported regeneration; animations need gameplay checks.
 
 ## Themed keyboard editor checks
 
-The historical old-controls upgrade fixture excludes keyboard-settings-menu and
-keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+The historical old-controls fixture excludes keyboard-settings-menu,
+keyboard-weapon-slots and controller-profile-routing until shared-input dependencies exist. The
 final full-stack upgrade must contain the capture pump, two-binding limit and
 weapon-slot sampling/guest hook, so both new patches are still validated.
 
-`tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
-input release, one event per press, cancel/focus/timeout, complete action
-coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
-`test_weapon_slots.py` and `test_quit_menu.py`. Supported game Build checks
-exercise native settings persistence and two-slot bounds; launcher settings
-tests cover importing legacy four-binding profiles, rejecting a third slot,
-and saving two slots. Live acceptance must separately check main/pause access,
-binding capture without shortcut leakage, conflict/clear/defaults, mouse
+`test_keyboard_menu.py` checks capture/page release, single presses,
+cancel/focus/timeout, action coverage and sensitivity. Run with menu_mouse,
+weapon_slots and quit_menu tests. Build checks native persistence/two-slot bounds;
+launcher checks legacy four-slot import, third-slot rejection and two-slot save.
+Live checks cover main/pause access, shortcut-free capture, conflict/clear/default,
 sensitivity, two-column layout and return to gameplay.
 
 ## Storage selection checks

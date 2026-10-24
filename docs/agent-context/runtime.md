@@ -24,6 +24,11 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+The additive `controller-profile-routing` patch repairs #319 in shared
+`src/input/input_bindings.c`: parse-time classification of keyboard-only pad
+profiles enables pad defaults after platform focus checks. It follows the
+keyboard-settings/weapon-slots patches; no generated guest hook is needed.
+
 ## Source ownership and execution
 
 `zz-native-surface-render.patch` follows capture and connects the native-water
