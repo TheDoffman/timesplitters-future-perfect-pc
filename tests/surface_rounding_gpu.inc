@@ -280,6 +280,9 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             CHECK(final_error==0);
         }
     }
+#ifdef SURFACE_LIVE_CAPTURE
+#include "surface_capture_gpu.inc"
+#endif
     free(references);for(unsigned i=0;i<2;i++)round_destroy(&bytes[i]);
     pc_surface_gpu_cache_clear(&cache);
 #if SURFACE_ROUNDING_PROFILE == 3

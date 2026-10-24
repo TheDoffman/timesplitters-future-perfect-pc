@@ -437,6 +437,19 @@ pc_prompts.c compile contract checks this include order in Mac CI.
 
 ## Experimental coupled water operator
 
+`pc_surface_capture.h` defines the copied original-feedback snapshot and validates
+the guest resource's input/first-pass/output indices and texture records.
+`pc_surface_capture_guest.h` validates mapped memory, calls the original feedback
+once, and submits eligible Scotland samples. `pc_surface_capture_hle.inc` reads
+the existing RHI images at that point in the deferred command stream. It writes
+at most 16 records to the explicitly requested `TSFP_SURFACE_CAPTURE` file,
+normalizes BGRA to RGBA, and stops on unsupported identity/storage or I/O failure.
+No image state is replaced. The older fractional/float experiments disable the
+probe. Each TSWATER1 record contains 23 little-endian metadata words plus three
+128-square RGBA8 images (input, first pass, second pass). GPU readback stalls
+make these diagnostic runs unsuitable for performance claims. Common RHI is
+supported by the source; legacy GL intentionally performs no capture.
+
 `graphics/surface_coupled.h` computes a fractional power of the coupled affine
 velocity/displacement step, anchored to the existing one-tick coefficients.
 `graphics/surface_coupled_shader.h` supplies one shader body with vector-type

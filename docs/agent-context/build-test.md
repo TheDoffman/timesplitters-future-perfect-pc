@@ -790,6 +790,22 @@ alpha/beta ordering separately from the new publication policy.
 
 ## Coupled water operator checks
 
+`tests/stability_transitions_game.py --scenario surface-feedback --run-name
+water-live-feedback --seconds 100 --no-captures` replays the committed Scotland
+route and requests 16 completed GPU feedback triplets, with isolated Test Lab
+saves/settings and executable/XBE provenance. Add `--native-fps 144` for the
+native clock while retaining the original water feedback. `--no-captures` skips
+ordinary screenshots; this scenario still explicitly reads its feedback fields.
+`test_captured_live_feedback` in `tests/test_surface_shader_feedback.py` compares
+that local capture with the original translated shaders and coupled one-tick,
+two-half-tick and three-piece updates on local hardware. Capture Original60 in
+`water-live-feedback-original` with `--native-fps 0` for the second case. Hardware
+byte captures must not be used as WARP goldens: UNORM conversion differs between
+those adapters, and the WARP suite uses its own original shader reference. Missing local capture
+is a skip, never proof. `native_surface_capture.c` is in the dual-host CPU timing
+group and verifies copied source order/identities and rejection without partial
+publication. Actual Mac RHI readback and game execution remain separate checks.
+
 The existing native-timing suite compiles `native_surface_coupled.c` on both CI
 hosts without game assets: 65 controlled modes, split-step composition,
 60/120/144 trajectories, identity and invalid-input nonmutation, plus

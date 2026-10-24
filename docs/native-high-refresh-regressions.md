@@ -7171,3 +7171,52 @@ authored byte boundaries/final output through the cache. Logs:
 `water-cache-host-suite.log`, `water-cache-gpu-suite.log` and
 `water-cache-hardware-{0,1,2,3}.log`. No performance comparison was run for this
 change; the previously documented isolated-clock confound remains unresolved.
+
+### Completed gameplay feedback captures (2026-10-24)
+
+`TSFP_SURFACE_CAPTURE` observes original feedback `195110` using a copied guest
+identity snapshot and a callback in the same HLE deferred stream, immediately
+after the original two draws. The callback matches already-rendered host textures
+by VA/data/format/size and reads their actual RHI pixels. No guest pointer is
+retained or texture created by the capture. Unsupported storage/identity/readback
+or file I/O stops the probe; captures are bounded to 16 records. This closes the
+specific evidence gap caused by stale CPU copies of render targets in older D3D
+captures. It does not install the new solver as a game update.
+
+The supported Windows builder passes with executable SHA-256
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`, from base
+`0cec704` plus this capture change. Both bounded, isolated Scotland routes
+complete cleanly with unchanged valid Test Lab profiles. `water-live-feedback`
+uses native144 and captures host frames 6822-6858; `water-live-feedback-original`
+uses Original60 and captures 3034-3049. Both cover level ticks 300-315 and have
+16 distinct input fields. Metadata stores the actual authored coefficients
+(0.17, 0.105, 0.65, 0.98); the translated byte constants remain 43, 26, 165, 249.
+Each 3,147,208-byte TSWATER1 file contains input/first/output RGBA8 triplets.
+Hashes and source/executable provenance are retained locally, with the summary
+in `private/pipeline/live-water-feedback-validation.json`.
+
+On RTX 4070 SUPER, original-shader replay matches first-pass red and second-pass
+green/blue/alpha exactly on all 32 fields. The shared coupled GPU owner also
+matches each captured endpoint under 1, 1/2 + 1/2, and 5/12 + 5/12 + 1/6 steps.
+Both capture cases pass in 12.13 s (`water-live-gpu-final.log`). An initial WARP
+replay differed from these hardware bytes by one byte; cross-adapter UNORM
+transitions are already known to differ. Hardware capture tests therefore use
+local hardware; the separate WARP suite keeps its own original shader reference.
+The failed cross-adapter comparison remains in `water-live-gpu.log`, and no
+numerical tolerance or candidate algorithm was changed to hide it.
+
+The CPU collector test verifies copied input/first/output order and safe rejection
+without partially publishing a snapshot. The asset-free group passes 22 cases
+in 27.50 s. GPU readback and extra tests synchronize/stall the GPU: these sessions
+are not evidence of in-game speed or pacing. Captured fields include whatever
+original disturbances/smoothing preceded them, but the run does not establish
+queued splash coverage or equal event/RNG ordering across FPS choices. Runtime
+fractional updates/final shading, local time scopes, resource resets, performance
+and native Mac validation still need integration and acceptance checks.
+
+All 21 patch-update scenarios pass in 542.79 s (`water-live-patches.log`),
+including historical upgrades and branch switching. The capture patch follows
+the existing surface patches explicitly; historical test stacks exclude it
+until its dependencies are present. The supported Windows build's bundled
+settings/save-path checks also pass. These host checks do not establish native
+Mac compilation or rendering of the capture extension.

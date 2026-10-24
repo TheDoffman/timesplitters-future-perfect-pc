@@ -3770,6 +3770,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   host compilers; Windows CPU/GPU fixtures exercise it. Mac compilation/execution
   and guest/HLE reset/generation wiring remain pending; no separate Mac policy
   is needed because the cache uses the common RHI image reference contract.
+  The opt-in `TSFP_SURFACE_CAPTURE` hook now records completed original feedback
+  through the common RHI in deferred command order. The collector is shared and
+  in the dual-host CPU suite; native Mac compilation/readback remain unverified.
+  Legacy GL deliberately produces no capture because it lacks these RHI images.
+  This diagnostic does not enable the fractional solver or change default water.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

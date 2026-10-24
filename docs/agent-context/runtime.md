@@ -26,6 +26,17 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`zz-native-surface-capture.patch` runs after the existing native surface tail.
+It wraps the original `195110` feedback call with `pc_surface_capture_guest.h`
+and includes `pc_surface_capture_hle.inc` beside the HLE texture cache. The
+optional `TSFP_SURFACE_CAPTURE` diagnostic copies resource/texture identities
+and coefficients before the guest call, then queues a readback after its two
+draws. It resolves existing host textures by the copied full identity; it neither
+creates textures nor calls guest code from the deferred queue. The original
+feedback, RNG calls and guest ABI remain unchanged. This observes completed GPU
+pixels, unlike capture records containing stale render-target system-memory
+copies. The probe is bounded to 16 Scotland samples and is not a pacing test.
+
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.
 `src/pc_network_bot_motion.h` owns replica presentation between host snapshots.

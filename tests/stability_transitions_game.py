@@ -67,8 +67,10 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback'])
     args=parser.parse_args()
+    if args.scenario=='surface-feedback' and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
+        parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
         parser.error('--watch-input and --trace-vehicle-contact select different bounded function traces; run them separately')
     if args.trace_surface_switches and not args.trace_surface_images:
@@ -104,6 +106,15 @@ def main():
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    if args.scenario=='surface-feedback':
+        route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+        env['TSFP_SURFACE_CAPTURE']=str(run/'feedback.bin')
+        (run/'feedback.bin').unlink(missing_ok=True)
+        (run/'capture-provenance.json').write_text(json.dumps(dict(
+            executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
+            xbe_sha256=XBE_SHA256,native_fps=args.native_fps,
+            scope='Synchronous completed GPU feedback capture, not a performance measurement'),indent=2))
     state=run/'input-state.txt';state.write_text('0 0\n')
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
@@ -396,10 +407,15 @@ def main():
         text=log.read_text(errors='replace')
         assert '[SURFACE-TRACE] Failed:' not in text and '[SURFACE-TRACE] Cannot open' not in text,log
         assert '[SURFACE-FLOAT] Unsupported' not in text,log
+        assert '[SURFACE-CAPTURE] Stopped:' not in text,log
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
+    if args.scenario=='surface-feedback':
+        captured=(run/'feedback.bin').read_bytes()
+        assert captured[:8]==b'TSWATER1' and len(captured)==8+16*(92+3*128*128*4)
+        print('Captured 16 completed GPU feedback triplets; shader comparison still required',flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

@@ -1,3 +1,39 @@
+## 2026-10-24 — Coupled water validated against completed gameplay feedback
+
+The opt-in `TSFP_SURFACE_CAPTURE` hook now copies the original feedback input,
+first pass and second pass from actual GPU images after their queued draws.
+Earlier D3D capture files contained stale system-memory copies of render targets;
+those copies cannot validate the solver against live fields. The new bounded
+probe leaves guest passes/state unchanged and uses isolated test output files.
+
+Windows build and its bundled checks passed from `0cec704` plus the capture
+changes. Executable SHA-256:
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`.
+Two bounded Scotland routes, Original60 and native144, captured 16 distinct input
+fields each at level ticks 300-315. Both exited cleanly, exercised movement and
+pause/resume, retained profile hashes/signatures and recycled disposable disks.
+These diagnostics synchronize the GPU and are not frame-pacing measurements.
+
+The RTX 4070 SUPER replay matches the captured original first-pass red and
+second-pass green/blue/alpha exactly for all 32 fields. The coupled solver also
+matches all 32 endpoints with steps of 1, two halves, and 5/12 + 5/12 + 1/6
+(96 endpoint comparisons). The capture tests pass in 12.13 s. An initial attempt
+to compare these hardware bytes directly against WARP differed by one byte;
+that cross-adapter comparison is not an exact golden. Existing WARP tests use
+their own original shader reference; no solver tolerance was relaxed here.
+The asset-free timing group passes 22 cases in 27.50 s. All 21 patch-update cases
+pass in 542.79 s, including fresh/repeated application, historical upgrades,
+branch switches, line endings and conflict preservation (`water-live-patches.log`).
+
+Evidence: `logs/water-live-capture-build.log`, `water-live-host.log`,
+`water-live-feedback.log`, `water-live-feedback-original.log`,
+`water-live-gpu.log` (initial cross-adapter difference), `water-live-gpu-final.log`;
+local capture provenance and fields are under `private/test-saves/water-live-feedback*`.
+The new solver still does not drive visible game water. These checks validate
+the operator on real fields, not event cadence, queued splash coverage, scene
+reloads, fractional final-shader integration, performance or Mac execution.
+Those and the broader high-refresh acceptance work remain open. No new PR.
+
 ## 2026-10-24 — Bounded GPU water resource reuse
 
 On `fix/native-water-rounding`, `graphics/surface_gpu_cache.h` now manages up to
