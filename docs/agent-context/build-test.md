@@ -638,3 +638,14 @@ triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
 production parser/emitter. Translation helpers also receive isolated runtime
 configuration. Single-pass and gradient-only byte-storage controls isolate
 rounding contributions; none is an accepted replacement for the original map.
+
+The surface spatial fixture also runs at 128x128, matching the observed game
+feedback target. Its wrapped case mirrors the live quad, viewport, screen-space
+undo and linear wrapped sampling. A seam-adjacent impulse distinguishes the
+periodic real Hartley basis from the clamped DCT control; forcing a clamped basis
+must fail the original-shader comparison. `native_surface_basis.c` checks shared
+basis orthonormality and diagonal-neighbor eigenvalues at sizes 1/7/64/128 under
+both boundary rules, plus invalid input, through existing Windows/Mac timing CI.
+Live draw evidence and its binary/source provenance are recorded in the high
+refresh regression guide; shader test input fields still exclude game RNG and
+smoothing. Do not infer gameplay equivalence from the controlled float reference.

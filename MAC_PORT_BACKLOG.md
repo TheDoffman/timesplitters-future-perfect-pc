@@ -3665,13 +3665,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 
 - **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
-  GPU transform shader bodies preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
+  GPU transform shader bodies and `graphics/surface_basis.h` preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
   No game hook calls this candidate; normal water and legacy GL are unchanged.
   Existing native-timing CI includes its asset-free CPU fixture on both hosts;
   both native jobs pass for PR #316 head 67f9663. This verifies the CPU contract,
   not Mac water rendering.
   Windows WARP covers GPU transforms, fresh reconstruction every update, and
-  the original water vertex/pixel programs with synthetic input geometry;
+  the original water vertex/pixel programs. A later Original60 runtime capture
+  establishes 128x128 wrapped sampling; the test now mirrors its pixel-space
+  quad/viewport/screen-space undo and uses shared real Hartley weights. Earlier
+  clamped DCT evidence remains diagnostic only. New basis CPU checks are in
+  the shared timing suite; native Mac validation of this extension is pending;
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

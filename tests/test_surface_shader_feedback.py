@@ -18,16 +18,19 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
-@pytest.mark.parametrize('address,case,stage,mutation', [
-    (0x4bbf10, 'surface_feedback_gpu.inc', 7, False),
-    (0x4bbc40, 'surface_filter_gpu.inc', 4, False),
-    (0x4bbf10, 'surface_damping_gpu.inc', 7, False),
-    (0x4bbf10, 'surface_coupling_gpu.inc', 7, False),
-    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False),
-    (0x4bbf10, 'surface_coupling_gpu.inc', 7, True),
-    (0x4bbf10, 'surface_spatial_gpu.inc', 7, True),
-    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'transform')])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation):
+@pytest.mark.parametrize('address,case,stage,mutation,extent,wrap', [
+    (0x4bbf10, 'surface_feedback_gpu.inc', 7, False, 64, False),
+    (0x4bbc40, 'surface_filter_gpu.inc', 4, False, 64, False),
+    (0x4bbf10, 'surface_damping_gpu.inc', 7, False, 64, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, False, 64, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 64, False),
+    (0x4bbf10, 'surface_coupling_gpu.inc', 7, True, 64, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, True, 64, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'transform', 64, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, False),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, True),
+    (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True)])
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -131,9 +134,12 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             '#include "rhi.h"\n#include "graphics/surface_coupled.h"')
     if case == 'surface_spatial_gpu.inc':
         helpers, fixture = fixture.split('/* SPATIAL_MAIN */')
+        helpers = f'#define SURFACE_SIDE {extent}\n#define SURFACE_WRAP {int(wrap)}\n' + helpers
+        if mutation == 'clamped-basis':
+            helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
-    if mutation:
+    if mutation and mutation != 'clamped-basis':
         # Mutate only a disposable include. Compilation must succeed and the
         # executed GPU comparison must detect the numeric regression.
         if mutation == 'transform':

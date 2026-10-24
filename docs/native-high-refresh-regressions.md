@@ -5941,3 +5941,66 @@ the original byte feedback in this field. Full nonlinear/state-rounding behavior
 remains unresolved. Evidence: logs/water-original-vertex.log and
 logs/water-quantization-ablation.log; no game asset bytes are committed. All
 eight updated GPU cases pass in 31.96 seconds (logs/water-coupling-gpu-followup.log).
+
+### Captured periodic boundary and authored target size
+
+A single bounded Original60 Scotland run (`water-runtime-state`) used the
+preserved source-4adb6b0 executable, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab, with the verified
+US XBE and isolated Test Lab settings/saves. Host frame 3600 was recorded in a
+9,220,188-byte version-9 D3D capture. The run completed cleanly without changed
+profile hashes; signatures and fixture remain valid, and disposable partitions
+were recycled. This binary does not contain the experimental solver.
+
+The capture identifies four water draws by vertex-microcode SHA-256
+363fd81ebd9f0567bbcbea7fafab686241707d85396df0a8abef78ce79bf0425, matching the
+supported XBE's six-instruction program. In particular, the feedback pair uses:
+
+- 128x128, Xbox format 6, single-level render targets and sampled inputs;
+- U/V address mode 1 (wrap), min/mag filter 2 (linear);
+- a four-vertex triangle strip, stride 24, positions (0,0), (0,128),
+  (128,0), (128,128), Z 0.001 and UVs (0,0)..(1,1);
+- viewport (0,0,128,128), depth 0..1;
+- enabled screen-space undo, scale (64,-64,16777215,1), offset (64,64,0,0);
+- the same first-pass diagonal and second-pass southwest UV offsets as the
+  callback-derived fixture, now observed at +/-1/128.
+
+Recorded pixel tokens are host handles, **not** guest shader addresses. The
+inspection therefore selects the verified vertex program and inspects offsets,
+bindings and pass order, rather than equating a host token with 0x4BBE20/0x4BBF10.
+The capture's system-memory texture copies are not live feedback pixels; only
+its state/geometry is used here. Private evidence: the run's water.d3dcap,
+capture-provenance.json, report.json, and private/pipeline/water-runtime-draw-state.json.
+No game data is committed.
+
+The observed wrapping invalidates direct gameplay use of the earlier clamped
+DCT basis. `graphics/surface_basis.h` now owns both policies: DCT-II for clamp
+controls and real orthonormal Hartley weights `(cos(2*pi*k*x/N) + sin(2*pi*k*x/N))
+/ sqrt(N)` for wrap. Periodic restoring shift is
+`4 - 4*cos(2*pi*kx/width)*cos(2*pi*ky/height)`. The shared shader takes the axis
+extent, and resources/basis weights must match it; the shared policy accepts
+extents 1..128 and rejects invalid coordinates/boundary values.
+
+The 128x128 wrapped GPU case mirrors the observed quad, normalized UVs, viewport,
+screen-space undo and linear wrap sampler through the original vertex/pixel
+programs. Its synthetic initial field includes a small edge pulse in addition
+to the center Gaussian. This crosses the seam immediately and exposes the old
+boundary error; substituting a clamped basis fails the numeric comparison.
+The basis and coupled updates remain on the GPU, with a fresh reconstruction
+after every fractional step.
+
+| Periodic candidate FPS | RMS G/B vs original float32 60 | Maximum error | RMS G/B vs original byte 60 | Fresh reconstructed updates |
+| --- | ---: | ---: | ---: | ---: |
+| 60 | 0.0000006489 | 0.0000016690 | 0.03692987 | 60/60 |
+| 120 | 0.0000007953 | 0.0000019074 | 0.03693001 | 120/120 |
+| 144 | 0.0000007933 | 0.0000019074 | 0.03693000 | 144/144 |
+
+The asset-free shared-basis fixture checks orthonormality and actual neighbor
+stencils for both boundaries at 1/7/64/128; maximum error is 4.623e-14. It is
+registered in the existing Windows/Mac native-timing suite. All 11 WARP cases
+pass in 48.61 seconds, including the new boundary negative control and the
+previous retention/transpose controls. Evidence: logs/water-wrapped-suite.log
+and logs/water-authored-size.log. These remain controlled float32 results: byte
+rounding/clipping, actual smoothing/disturbance inputs, runtime resource/state
+integration, live rate changes, gameplay frame-time cost, other surfaces and
+native Mac GPU/gameplay acceptance remain open. Normal play is unchanged.

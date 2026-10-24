@@ -1,3 +1,33 @@
+## 2026-10-23 — Match water solver boundaries to captured gameplay
+
+On `fix/native-water-coupling` / draft PR #316, a bounded Original60 Scotland
+run on the preserved playable binary (source 4adb6b0, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab) captured host
+frame 3600. Four draws use the verified original six-instruction water vertex
+program. Their targets are 128x128 byte textures, with **wrapped** U/V and linear
+filtering. The feedback quad spans 0..128 with UVs 0..1 and enabled screen-space
+undo. This contradicts applying the earlier clamped DCT prototype directly to
+this game path; its old results remain controlled clamp evidence only.
+
+The shared transform now accepts an axis extent. New `graphics/surface_basis.h`
+provides the real orthonormal Hartley basis and periodic stencil coefficients,
+while retaining clamp/DCT as a diagnostic. The GPU fixture adds 128x128 checks
+and mirrors the captured quad, viewport, screen-space conversion and wrapped
+sampling. A seam-adjacent pulse makes a deliberate clamped-basis substitution
+fail. Correct periodic 60/120/144 results match the original shader pair's float32
+reference within 0.000001908, with every reconstructed frame fresh. Original
+byte-feedback RMS remains approximately 0.036930 in this field and is unresolved.
+
+Windows x64/MSVC/common-RHI WARP: all 11 GPU cases pass in 48.61 seconds.
+The new asset-free basis test passes for both boundaries at 1/7/64/128, including
+orthonormality, neighbor-stencil eigenvalues and invalid inputs (maximum error
+4.623e-14). Mac CI of this extension is pending; no water GPU/gameplay acceptance
+on Mac is claimed. No candidate hook is enabled or new game binary built.
+The bounded observation ended cleanly, signed profiles/fixture were preserved,
+and disposable partition images were recycled. One 9,220,188-byte private draw
+capture is retained; it establishes host draw state, not live feedback pixels
+or performance. See the detailed regression record and logs/water-wrapped-suite.log.
+
 ## 2026-10-23 — Coupled fractional water operator candidate
 
 Independent branch `fix/native-water-coupling`, based on main 5c44696. The
