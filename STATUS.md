@@ -1,3 +1,78 @@
+## 2026-10-24 — Active Hotel route reproduces a short 114-FPS window
+
+The unchanged `8eb2d05` playable runtime was tested on a second multiplayer map,
+Hotel (scene39). The old input route left the player dead at five of eight
+gameplay checkpoints. `stability_transitions_game.py --scenario crowd-hotel`
+now uses frequent ordinary movement/fire/respawn inputs, retains the original
+eight-second startup wait and does not edit health, AI or game memory. Both
+accepted native144 and Original60 runs observe a living player at **26 of 33**
+command checkpoints. These counts are not alive-time percentages.
+
+`--watch-actors` observes bounded actor-slot positions/health and rechecks the
+pool pointer; the existing network observer shares the reader and retains its
+fields. Reads can cross updates. Proximity does not establish visibility or
+line of sight. Native144 observed at most 5/6/7 living bots within 10/20/30 guest
+world units while the player was alive; Original60 observed 4/5/8. All accepted
+gameplay checkpoints retain one human/ten configured bots, scene39, active match
+state7 and no pause. A separate captured setup verified the map selection and
+Hotel gameplay; its screenshots are not performance measurements.
+
+The same executable SHA-256 is
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207-built D3D11 runtime, RTX4070SUPER
+driver32.0.16.1742. Both runs render3440x1440, FOV73, Classic textures, with no
+captures, per-update traces or CPU sampler. Windows are visible/non-minimized,
+unfocused, client640x480; foreground/fullscreen acceptance remains separate.
+The following complete host-clock windows are spawn+5..+55s:
+
+| Metric | Native144 | Original60 (`--native-fps 0`) |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,146 / 142.9438 | 2,999 / 60.0002 |
+| Median / p95 interval, ms | 6.996 / 7.393 | 16.672 / 17.027 |
+| p99 / worst interval, ms | 8.598 / 12.989 | 17.139 / 17.658 |
+| Lowest rolling one-second present count | **114** | 60 |
+| Sampled game-clock / wall-time ratio | 1.000084 | 1.000138 |
+
+No interpolated presents are counted. The native slow window starts16.453s after
+the spawn checkpoint, about103ms after an E press. The neighboring observations
+show death, then respawn with the same dual-pistol loadout. This locates a useful
+reproduction near the reported110FPS dip; it does **not** prove its cause or that
+five bots were visible during that second. GPU completion/scanout, exact combat
+parity, other maps/online and Mac acceptance remain unverified. No runtime fix or
+performance improvement is claimed by this test-only change.
+
+The first active-route attempt (`crowd-hotel-active-144`) shortened the startup
+wait to four seconds and failed the unchanged active-state assertion because
+the spawn checkpoint was still in countdown state5. It is excluded from the
+accepted comparison. The original wait was restored before both accepted runs.
+All test children exit cleanly and preserve signed saves/canonical fixtures;
+disposable disks are recycled. Offline execution of the actual observer functions
+checks local/network field shape and invalid pool/entity bounds. Runtime source
+and binary are unchanged; no rebuild or new PR was needed.
+
+Evidence: isolated `crowd-dense-setup`, `crowd-hotel-current-144` (old inputs),
+`crowd-hotel-ready-{144,60}` directories and corresponding logs. `crowd-metrics.json`
+and `actor-metrics.json` retain exact intervals/observations; native `slow-window.json`
+retains the114-frame window and neighboring input/state evidence. The ignored
+analysis scripts are `logs/crowd_beta_analyze.py` and `logs/crowd_actor_analysis.py`.
+`--trace-textures` exposes the existing bounded upload-stage trace for the next
+diagnostic pass; it and CPU sampling must not be treated as clean pacing evidence.
+
+The completed `crowd-hotel-profile-144` diagnostic retains 409 texture rows, below
+the 8,192 cap, with coverage beyond the measured window. That window contains 13
+successful Classic-mode replacement uploads totaling 12,845,180 bytes, plus 35
+rejected reads. Image/view CPU spans total 4.496ms, largest 1.2125ms; queued request
+duration and GPU completion are different measurements. This confirms unused
+replacement work but does not attribute the 114-FPS window to it. Between complete
+110s and 150s CPU reports, guest-main CPU time grows 28.4s; VM-query leaves account
+for 1,253 of 6,910 samples. Prompt measurement and perspective/camera paths remain
+visible in the chains. Nearest-public-symbol names are not precise static function
+identities. The prompt hook already scopes reads, and `sub_000405C0` only calls it
+once; another scope around that helper would not remove its required queries.
+`diagnostic-summary.json` retains counts and chains. No sampled timing is added
+to the clean comparison above. Context/backlog checks pass (21 tests, 3.35s), and
+the context/whitespace checks pass. The gameplay slowdown remains unresolved.
+
 ## 2026-10-24 — Crowded-menu scan overhead and ten-bot measurements
 
 On `fix/native-water-rounding`, `pc_menu_text.inc` now reuses a writable OS

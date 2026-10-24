@@ -151,14 +151,15 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 --no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
-Roster and window visibility/focus/client size are recorded separately from
-render resolution; verify device size in the runtime log. Unfocused/minimized
-results are not foreground acceptance. Analyze complete spawn+5..+55s Present
-intervals with clock neighbors and scene/pause/game-clock evidence. Keep images
-and tracing off for clean pacing; bot outcomes differ between runs. `--profile-cpu`
-enables the existing 200Hz sampler, saving bounded cumulative snapshots at menu,
-spawn and combat labels. Concurrent rewrites can yield partial snapshots: inspect
-completeness before differencing. Sampled runs are diagnostic, not clean pacing.
+`crowd-hotel` uses scene39 and frequent move/fire/respawn input to reduce dead time.
+Record roster/window state separately from device resolution; unfocused/minimized
+runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
+health with pool rechecks; asynchronous proximity is not visibility. Analyze
+complete spawn+5..+55s Present intervals with clock neighbors and scene/pause/game
+clock evidence. Disable images/tracing for clean pacing. `--profile-cpu`
+enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
+can yield partial snapshots: check before differencing. `--trace-textures` enables
+bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.

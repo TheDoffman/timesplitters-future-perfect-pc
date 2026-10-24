@@ -58,8 +58,10 @@ def main():
     parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
+    parser.add_argument('--trace-textures',action='store_true',help='Enable bounded texture-stage CPU timing; diagnostic only')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
+    parser.add_argument('--watch-actors',action='store_true',help='Observe local actor positions/health; proximity is not visibility and readings can cross an update')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
     surfaces=parser.add_mutually_exclusive_group()
     surfaces.add_argument('--native-surfaces',action='store_true',default=None,help='Explicitly enable native water (the common-renderer beta default)')
@@ -74,7 +76,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel'])
     args=parser.parse_args()
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
@@ -118,8 +120,22 @@ def main():
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
-    if args.scenario=='crowd-venice':
+    if args.scenario in ('crowd-venice','crowd-hotel'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
+        if args.scenario=='crowd-hotel':
+            # Verified level list: Vietnam, Hotel, Venice. Remaining setup is shared.
+            assert route[1]['label']=='match-setup'
+            route[1]['keys']=[40,69,69,69,40,69]
+            assert route[7]['label']=='spawn'
+            # Five-second idle waits usually observe a death camera. Keep
+            # ordinary movement/fire/respawn input frequent without editing health.
+            route=route[:8]
+            for block in range(32):
+                step=dict(keys=[69,87,1],hold=.6,gap=.1,wait=.1)
+                if block in (0,14,28):step['label']={0:'combat-one',14:'combat-four',28:'combat-six'}[block]
+                if block and block%6==0:step['mouse']=[180,0]
+                route.append(step)
+            route.append(dict(stop=True))
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
         route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
@@ -163,6 +179,7 @@ def main():
     if args.profile_cpu:
         env.update(RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH='8',
                    RECOMP_SAMPLE_DUMP=str(run/'cpu-sample.txt'))
+    if args.trace_textures:env['TSFP_TEXTURE_UPLOAD_TRACE']=str(run/'texture-stages.csv')
     if args.manual_start: replay.write_text('')
     def profiles():
         result={}
@@ -249,17 +266,19 @@ def main():
                 disturbances=word(address+0xf4)))
         result['pool_after']=word(0x742350)
         return result
-    def network_snapshot():
+    def actor_snapshot():
         actors=[];pool=word(0x7356d8);roster=word(0x7de400) or 0
         humans,bots=roster&255,(roster>>16)&255
-        if pool is not None and 0x80000000<=pool<0x84000000:
+        if pool is not None and 0x80000000<=pool<=0x84000000-16*0xea0:
             for slot in range(min(16,humans+bots)):
                 entity=word(pool+slot*0xea0)
-                if entity is not None and 0x80000000<=entity<0x84000000:
+                if entity is not None and 0x80000000<=entity<=0x84000000-0x1d0:
                     actors.append(dict(slot=slot,entity=entity,position=floats(entity+0x64,3),
                                        health=floats(entity+0x1cc,1)))
-        return dict(state=word(0x76b1a4),role=word(0x76b140),human_slots=humans,bot_slots=bots,
-                    peers=[i for i in range(16) if word(0x666040+i*4)],actors=actors)
+        return dict(pool=pool,pool_after=word(0x7356d8),human_slots=humans,bot_slots=bots,actors=actors)
+    def network_snapshot():
+        return dict(state=word(0x76b1a4),role=word(0x76b140),
+                    peers=[i for i in range(16) if word(0x666040+i*4)],**actor_snapshot())
     user.GetClientRect.argtypes=[c.c_void_p,c.POINTER(ui.w.RECT)]
     user.IsWindowVisible.argtypes=[c.c_void_p]
     user.IsIconic.argtypes=[c.c_void_p]
@@ -277,6 +296,7 @@ def main():
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
             roster=word(0x7de400),window=window_snapshot(),
+            **(dict(actors=actor_snapshot()) if args.watch_actors else {}),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
@@ -368,7 +388,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,
+        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
@@ -458,13 +478,14 @@ def main():
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
-    if args.scenario=='crowd-venice':
+    if args.scenario in ('crowd-venice','crowd-hotel'):
+        scene=39 if args.scenario=='crowd-hotel' else 46
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
         assert len(checkpoints)==4,'Incomplete crowd route'
         for item in checkpoints:
-            assert item['scene']==46 and item['match_state']==7 and not item['paused'],item
+            assert item['scene']==scene and item['match_state']==7 and not item['paused'],item
             assert item['roster'] is not None and (item['roster']>>16)&255==10,item
-        print('PASS: Venice active checkpoints retain ten configured bots; inspect window and pacing evidence',flush=True)
+        print(f'PASS: {args.scenario} active checkpoints retain ten configured bots; inspect window and pacing evidence',flush=True)
 
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
         captured=(run/'feedback.bin').read_bytes()
