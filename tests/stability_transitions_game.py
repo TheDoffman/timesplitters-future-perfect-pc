@@ -68,10 +68,12 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch'])
     args=parser.parse_args()
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
+    if args.scenario=='surface-native-switch' and not (args.native_fps==144 and args.native_surfaces and args.trace_surface_images and args.trace_surface_switches):
+        parser.error('surface-native-switch requires native144, native-surfaces and both surface trace flags')
     if args.native_surfaces and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('--native-surfaces cannot combine with older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
@@ -120,8 +122,9 @@ def main():
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             xbe_sha256=XBE_SHA256,native_fps=args.native_fps,
             scope='Synchronous completed GPU feedback capture, not a performance measurement'),indent=2))
-    if args.scenario=='surface-native':
-        route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
+    if args.scenario in ('surface-native','surface-native-switch'):
+        key='scotland_switch' if args.scenario=='surface-native-switch' else 'scotland'
+        route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())[key]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     env.pop('TSFP_SURFACE_NATIVE_TEST',None)
     if args.native_surfaces:env['TSFP_SURFACE_NATIVE_TEST']='1'
@@ -430,6 +433,20 @@ def main():
             computed=(run/'feedback.bin.gpu').read_bytes()
             assert computed[:8]==b'TSWGPU1\0' and len(computed)==8+16*(92+2*128*128*16)
             print('Captured 16 live GPU solver midpoint/endpoint pairs; independent comparison still required',flush=True)
+    if args.scenario=='surface-native-switch':
+        from procedural_surface_stats import load_capture,validate_switch_cycle,measure_segments
+        rows,pixels=load_capture(run/'run0-surface.csv')
+        validate_switch_cycle(rows)
+        results=measure_segments(rows,pixels)
+        resource=int(rows[0]['resource'])
+        assert all(int(row['resource'])==resource for row in rows),'Water resource changed during preset cycle'
+        creations=[int(frame) for identity,frame in re.findall(
+            r'\[SURFACE-NATIVE\] Created owner resource=([0-9A-F]+) frame=(\d+)',
+            (run/'run0.err').read_text(errors='replace')) if int(identity,16)==resource]
+        assert len(creations)==1 and creations[0]<int(rows[0]['frame']),creations
+        results['owner_creations']=creations
+        (run/'surface-results.json').write_text(json.dumps(results,indent=2)+'\n')
+        print('PASS: complete native144/native120/Original60/native144 image cycle',flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

@@ -159,5 +159,162 @@
     {
       "stop": true
     }
+  ],
+  "scotland_switch": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        69
+      ],
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "gap": 0.8,
+      "wait": 2
+    },
+    {
+      "keys": [
+        69,
+        69
+      ],
+      "gap": 2,
+      "wait": 12
+    },
+    {
+      "keys": [
+        27
+      ],
+      "label": "start",
+      "wait": 12
+    },
+    {
+      "mouse": [
+        900,
+        0
+      ],
+      "label": "turn-right",
+      "wait": 1
+    },
+    {
+      "keys": [
+        27,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 1,
+      "label": "video144"
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        40,
+        37,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 2,
+      "label": "apply120"
+    },
+    {
+      "keys": [
+        70,
+        27
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 6,
+      "label": "playing120"
+    },
+    {
+      "keys": [
+        27,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 1,
+      "label": "video120"
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        40,
+        37,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 2,
+      "label": "apply60"
+    },
+    {
+      "keys": [
+        70,
+        27
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 6,
+      "label": "playing60"
+    },
+    {
+      "keys": [
+        27,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 1,
+      "label": "video60"
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        40,
+        39,
+        39,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.65,
+      "wait": 2,
+      "label": "apply144"
+    },
+    {
+      "keys": [
+        70,
+        27
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 6,
+      "label": "playing144"
+    },
+    {
+      "stop": true
+    }
   ]
 }

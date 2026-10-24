@@ -1,3 +1,45 @@
+## 2026-10-24 — Preserve water resources across live FPS changes
+
+The opt-in native water path now suspends its timing/output state on switching
+to Original60, retaining the bounded GPU owners and source identities. Returning
+to native reinitializes from the next authored input without rebuilding identical
+images and shaders. Constructor/scene and device teardown still release owners;
+Original60 performs no coupled updates. This removes unnecessary resource work,
+not a measured guarantee about switch latency. The original initialization rule
+still permits a held image before the first authored tick after re-enabling.
+
+The committed `scotland_switch` route applies 144/120/Original60/144 in one
+process and requires all four 90-image segments. Its first run caught outdated
+navigation into Keyboard and Mouse and correctly failed complete-cycle validation;
+that run contributes no preset-switch evidence. The corrected initial cycle
+(`water-native-cycle`) completed: fresh pairs were 89/89, 89/89, 89/89 and 88/89.
+The last segment's sole repeated pair precedes its first whole tick. All segments
+retain nonflat variation; reviewed menu captures show applied presets/gray Apply,
+and shoreline screenshots show ordinary water at 60 and 144. These different-time
+captures do not prove matching wave trajectories or switch latency.
+
+The shared guest/cache checks pass (3 cases, 3.41 s), including suspension without
+allocation/stale output, native resumption, local time mismatch and constructor
+cleanup. The image-analysis suite passes 23 cases. Supported Windows/MSVC/D3D11
+build and bundled checks pass. Executable SHA-256:
+`f30a158ef95936849c546e76d99f88b2f75b098ffb1d992ef4a01e64bc663137`, built from
+`595668c` plus these source changes. No patch/hook layout or shader algorithm
+changed. Logs: `water-native-suspend-build.log`, `water-native-suspend-cpu.log`,
+`water-native-cycle-analysis.log`. Native Mac execution remains unverified.
+
+The rebuilt retained-owner cycle (`water-native-retained-cycle`) also completes
+all four segments: 89/89, 89/89, 89/89 and 88/89 changed pairs. The tracked resource
+`82962910` is created once at frame 5578 before capture and is never recreated
+through the cycle. The current runner's resource-identity/creation assertions
+also pass when applied to that completed run. The sole held pair remains before
+the first authored return tick; resource retention does not change that timing
+rule. The final saved preset is 144. Profiles/signatures and the canonical fixture
+are unchanged, disposable partitions recycled, and the process exits cleanly.
+Logs: `water-native-retained-cycle.log`; captures/results/provenance are under
+its isolated run directory. These image-readback runs exclude switch-latency and
+pacing claims. Full-game dynamics/visual parity, long-run behavior and native Mac
+remain open; the new water path is still opt-in. No new PR was opened.
+
 ## 2026-10-24 — Opt-in continuous water reaches the original ripple shader
 
 On `fix/native-water-rounding`, the persistent coupled field now drives the

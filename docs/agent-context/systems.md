@@ -590,11 +590,19 @@ then evolves the remainder and intervening fractional frames. This places the
 cosmetic field one authored tick behind the original completed feedback, retaining
 original event/RNG ordering. It does not add input latency to gameplay. Duplicate
 frames do not advance; missing intervals, changed scopes and new identities wait
-for an authored update. Pause preserves phase; Original60 and constructor resets
-clear owners. `pc_surface_native_hle.inc` resolves copied full texture identities,
+for an authored update. Pause preserves phase. Original60 suspends the clocks and invalidates field
+readiness while retaining bounded GPU owners; constructor/device reset releases
+them. Returning to native waits for an authored boundary before reusing an owner. `pc_surface_native_hle.inc` resolves copied full texture identities,
 uses the five-entry retained-image cache, packs alpha-height through
 `pc_surface_gpu_pack`, and borrows that view only during the original final shader.
 No per-frame readback or queue flush belongs to this path. Older fractional/float/
 live experiments are mutually exclusive. Native Mac common-RHI execution remains
 unverified and legacy GL uses original output. Bounded Windows Scotland captures at 120/144 produce fresh final images on
 partial frames; sustained pacing, broader visual acceptance and Mac remain open.
+
+`pc_surface_gpu_cache_suspend` invalidates every output without freeing images,
+shaders or retained identities. The deferred `hle_d3d8_surface_native_suspend`
+clears the borrowed view and clocks, avoiding shader/resource recreation across
+an Original60 round trip. Original60 still performs no coupled updates. Full
+scene/device cleanup remains distinct. The opt-in creation log identifies actual
+new owners; unchanged identity reuse emits no allocation notice.

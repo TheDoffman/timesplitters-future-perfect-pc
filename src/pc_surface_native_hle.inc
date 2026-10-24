@@ -35,6 +35,13 @@ static void pc_surface_native_finish_execute(const void *unused) {
     RhiView *none[4]={0};rhi_set_textures(0,4,none);
 #endif
 }
+static void pc_surface_native_suspend_execute(const void *unused) {
+    pc_surface_native_finish_execute(unused);
+#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+    pc_surface_gpu_cache_suspend(&pc_surface_native_cache);
+    memset(pc_surface_native_clocks,0,sizeof pc_surface_native_clocks);
+#endif
+}
 static void pc_surface_native_prepare_execute(const void *argument) {
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
     const PcSurfaceNativeSample *sample=argument;
@@ -63,6 +70,7 @@ static void pc_surface_native_prepare_execute(const void *argument) {
         static unsigned failures;if(failures++<4)fprintf(stderr,"[SURFACE-NATIVE] Original-path fallback: %s\n",errors);
         return;
     }
+    if(previous!=gpu)fprintf(stderr,"[SURFACE-NATIVE] Created owner resource=%08X frame=%u\n",sample->feedback.resource,sample->feedback.frame);
     d3d8_surface_cleanup(pc_surface_native_clear);
     for(unsigned i=0;i<PC_SURFACE_GPU_CACHE_SIZE;i++)if(pc_surface_native_cache.entries[i].gpu==gpu) {
         PcSurfaceNativeClock *clock=&pc_surface_native_clocks[i],next;
@@ -100,4 +108,9 @@ void hle_d3d8_surface_native_reset(void) {
     unsigned unused=0;
     if(hle_d3d8_defer_recording())hle_d3d8_defer_op(pc_surface_native_reset_execute,&unused,sizeof unused);
     else pc_surface_native_reset_execute(NULL);
+}
+void hle_d3d8_surface_native_suspend(void) {
+    unsigned unused=0;
+    if(hle_d3d8_defer_recording())hle_d3d8_defer_op(pc_surface_native_suspend_execute,&unused,sizeof unused);
+    else pc_surface_native_suspend_execute(NULL);
 }

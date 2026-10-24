@@ -3705,6 +3705,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Water FPS round trips (2026-10-24, `fix/native-water-rounding`):**
+  Shared GPU-cache suspend now invalidates timing/output while retaining owners
+  across Original60, avoiding reconstruction on return to native. Constructor
+  and device teardown still free resources. Actual guest/cache CPU checks and a
+  committed full preset-cycle route cover Windows behavior; native Mac execution
+  and transition pacing remain awaiting validation. No platform-specific policy
+  or legacy GL rendering change is introduced. See STATUS for measured scope.
 - **Persistent visible water candidate (`fix/native-water-rounding`, 2026-10-24):**
   `pc_surface_native*.h`/`.inc`, shared GPU packing, and
   `zz-native-surface-render.patch` connect exact native intervals to the original

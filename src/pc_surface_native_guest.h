@@ -14,6 +14,7 @@
 extern void hle_d3d8_surface_native_prepare(const PcSurfaceNativeSample *sample);
 extern void hle_d3d8_surface_native_finish(void);
 extern void hle_d3d8_surface_native_reset(void);
+extern void hle_d3d8_surface_native_suspend(void);
 static struct { unsigned active,used;uint32_t whole; } pc_surface_native_scope;
 static int pc_surface_native_requested(void) {
     static int checked,enabled;
@@ -40,7 +41,7 @@ static void pc_surface_native_simulation(void (*original)(void)) {
     uint32_t whole=PC_SURFACE_WORD(0x4e7944u);
     float delta=PC_SURFACE_VALUE(0x4e794cu);
     if(!g_tsfp_native_timing_active || pc_native_rate()<=60) {
-        if(pc_surface_native_scope.used)hle_d3d8_surface_native_reset();
+        if(pc_surface_native_scope.used)hle_d3d8_surface_native_suspend();
         pc_surface_native_scope.used=0;original();return;
     }
     if(!(delta>0) || delta!=step->game_delta || whole!=step->game_ticks ||

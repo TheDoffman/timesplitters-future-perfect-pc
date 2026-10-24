@@ -20,11 +20,12 @@ static char *test_getenv(const char *name){return !strcmp(name,"TSFP_SURFACE_NAT
 #include "pc_native_surface_guest.h"
 #include "pc_surface_capture_guest.h"
 PcNativeStep g_tsfp_native_step;
-static unsigned events,feedback,smoothing,finals,prepares,finishes,resets,captures;
+static unsigned events,feedback,smoothing,finals,prepares,finishes,resets,suspends,captures;
 static PcSurfaceNativeSample submitted;
 void hle_d3d8_surface_native_prepare(const PcSurfaceNativeSample *s){submitted=*s;prepares++;}
 void hle_d3d8_surface_native_finish(void){finishes++;}
 void hle_d3d8_surface_native_reset(void){resets++;}
+void hle_d3d8_surface_native_suspend(void){suspends++;}
 void hle_d3d8_surface_capture(const PcSurfaceCapture *s){(void)s;captures++;}
 void hle_d3d8_surface_bias_step(float d){(void)d;assert(0);}
 void hle_d3d8_surface_coefficients(float a,float b,float d){(void)a;(void)b;(void)d;assert(0);}
@@ -65,8 +66,32 @@ int main(void) {
     assert(finals==144 && prepares==144 && finishes==144 && !captures);
     unsigned before=prepares;PC_SURFACE_VALUE(0x4e794cu)=0;PC_SURFACE_WORD(0x4e7944u)=0;
     g_esp=0x18000;pc_surface_native_simulation(dispatch);assert(prepares==before);
-    rate=60;pc_surface_native_simulation(dispatch);assert(resets==1);
-    pc_surface_native_simulation(dispatch);assert(resets==1);
+    rate=60;pc_surface_native_simulation(dispatch);assert(suspends==1 && resets==0);
+    pc_surface_native_simulation(dispatch);assert(suspends==1 && resets==0);
+    /* Resume on an intervening high-rate frame, then cross one original
+     * boundary. A local time override must never force an extra event/final. */
+    rate=120;g_tsfp_native_timing_active=1;
+    g_tsfp_native_step=(PcNativeStep){.game_delta=.5f,.game_ticks=0,
+        .game_units=36000000,.game_phase=0,.units_per_tick=72000000};
+    PC_SURFACE_VALUE(0x4e794cu)=.5f;PC_SURFACE_WORD(0x4e7944u)=0;
+    before=prepares;unsigned old_events=events;
+    g_esp=0x18000;pc_surface_native_simulation(dispatch);
+    assert(prepares==before+1 && events==old_events && g_esp==0x18004);
+    PC_SURFACE_VALUE(0x4e794cu)=.25f;before=prepares;
+    g_esp=0x18000;pc_surface_native_simulation(dispatch);
+    assert(prepares==before && events==old_events && g_esp==0x18004);
+    rate=144;g_tsfp_native_step.game_phase=36000000;
+    g_tsfp_native_step.game_ticks=1;PC_SURFACE_WORD(0x4e7944u)=1;
+    PC_SURFACE_VALUE(0x4e794cu)=.5f;
+    g_esp=0x18000;pc_surface_native_simulation(dispatch);
+    assert(prepares==before+1 && events==old_events+2 && g_esp==0x18004);
+    assert(submitted.feedback.whole==1 && submitted.start_phase==36000000);
+    /* Scene construction releases the previous owner before the original
+     * constructor runs, even when the older precision experiment is disabled. */
+    before=resets;g_esp=0x18000;PC_SURFACE_WORD(g_esp+4)=0;
+    pc_surface_native_constructor(final);assert(resets==before+1 && g_esp==0x18004);
+    g_esp=0x18000;PC_SURFACE_WORD(g_esp+4)=1;
+    pc_surface_native_constructor(final);assert(resets==before+1 && g_esp==0x18004);
     puts("PASS: native water keeps authored events, ABI, pause and Original60 recovery");
     return 0;
 }

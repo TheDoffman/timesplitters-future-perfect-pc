@@ -23,6 +23,11 @@ static inline void pc_surface_gpu_entry_clear(PcSurfaceGpuEntry *entry) {
     for(unsigned i=0;i<4;i++)if(entry->images[i])rhi_image_destroy(entry->images[i]);
     memset(entry,0,sizeof *entry);
 }
+/* Suspend timing without recompiling/reallocating on an FPS round trip.
+ * Borrowed output becomes invalid. Scene/device destruction still uses clear. */
+static inline void pc_surface_gpu_cache_suspend(PcSurfaceGpuCache *cache) {
+    if(cache)for(unsigned i=0;i<PC_SURFACE_GPU_CACHE_SIZE;i++)pc_surface_gpu_reset(cache->entries[i].gpu);
+}
 static inline void pc_surface_gpu_cache_clear(PcSurfaceGpuCache *cache) {
     if(cache)for(unsigned i=0;i<PC_SURFACE_GPU_CACHE_SIZE;i++)pc_surface_gpu_entry_clear(&cache->entries[i]);
 }

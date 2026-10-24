@@ -16,6 +16,11 @@ int main(void) {
         PcSurfaceGpu *same=pc_surface_gpu_cache_acquire(&cache,100,1,&config,images,errors,sizeof errors);
         assert(same==first && same->ready && attempt==allocations);
     }
+    pc_surface_gpu_cache_suspend(&cache);
+    assert(!first->ready && !pc_surface_gpu_output(first) && attempt==allocations);
+    assert(pc_surface_gpu_cache_acquire(&cache,100,1,&config,images,errors,sizeof errors)==first);
+    assert(!first->ready && attempt==allocations); /* A new begin is required. */
+    first->ready=1;
     for(unsigned i=0;i<4;i++)assert(lookup(images[i],IMAGE)->refs==2);
     /* Failed replacement retains old identity, but must not return its owner. */
     unsigned original_live=live,creation_allocations=attempt-4;

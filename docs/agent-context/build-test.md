@@ -950,3 +950,12 @@ Its `feedback.bin.gpu` stores 16 TSWGPU1 records: 92-byte identity plus two
 metadata, finite values and both states within 32 float epsilons; original byte
 endpoints remain exact. A missing capture skips; an existing runtime capture
 without its sidecar fails. Per-sample creation/readback precludes speed claims.
+
+`--scenario surface-native-switch --native-fps 144 --native-surfaces
+--trace-surface-images --trace-surface-switches --seconds 230` runs the committed
+`scotland_switch` route through Video Options (before Keyboard and Mouse), then
+requires 90 images each at 144/120/Original60/144 using the strict cycle validator.
+The last segment may retain its initial image until its first authored boundary.
+`native_surface_render_guest.c` also checks resuming between ticks, local time
+mismatch and constructor cleanup; cache tests distinguish suspend/reuse without
+allocations from full scene destruction. Image capture is not switch-latency proof.
