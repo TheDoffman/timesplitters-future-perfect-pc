@@ -2585,6 +2585,14 @@ validation. This version bump alone is not publication evidence.
   early failure restores it, and UI visibility never authorizes update cleanup.
   Windows results are in STATUS.md; native Mac execution remains unverified.
 
+- **Windows menu command labels (#333, uncommitted):** The native owner-drawn
+  menu now reads captions, shortcuts and separator types from its actual items.
+  This fixes the stale positional table that drew Hide Menu Bar over Fullscreen
+  after Textures was inserted. Real HWND tests cover rendered labels/shortcuts,
+  command mnemonics, separators, reordered items and disabled choices. Cocoa
+  does not use this Win32 adapter, so no Mac implementation change is required;
+  these Windows tests do not establish native Mac UI validation.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/pc_menu_theme.h`, `src/pc_dialog_theme.h`, `src/pc_settings.c` and
@@ -2831,6 +2839,15 @@ validation. This version bump alone is not publication evidence.
 ### MAC-022 — Configurable gameplay FOV (issue #29)
 
 - **Status:** Awaiting validation
+
+- **Issue #339 follow-up (2026-10-24, commit carrying this entry):** Shared
+  `src/pc_display_menu.c` also retains custom FOV in Zeppelin air-lift state
+  0x800. `tests/test_cutscene_letterbox.py` checks default/custom FOV, transitions,
+  menu/cinematic exclusions and the original US lift routines with local assets.
+  Windows regressions and supported build pass (see STATUS.md). No Mac adapter
+  is needed; native compilation and Zeppelin lift/exit/landing gameplay remain
+  pending. Check all four lifts, relative weapon zoom and unchanged authored
+  menu/cutscene/terminal lenses.
 
 - **Issue #66 follow-up (2026-10-16, commit `df3bc2e`,
   [PR #72](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/72)):**
