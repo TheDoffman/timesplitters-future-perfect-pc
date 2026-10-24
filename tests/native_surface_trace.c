@@ -53,7 +53,7 @@ static void original(void) {
     if(whole && delta>0) {g_esp-=4;pc_surface_final_guest(final);}
     g_esp+=4;
 }
-static void step(unsigned positive) {whole=positive;delta=.4166667f;g_esp=0x1000;frame++;tick+=positive;pc_surface_dispatch_guest(original);assert(g_esp==0x1004);}
+static void step(unsigned positive) {whole=positive;delta=g_tsfp_native_timing_active?60.0f/rate:1.0f;g_esp=0x1000;frame++;tick+=positive;pc_surface_dispatch_guest(original);assert(g_esp==0x1004);}
 int main(int argc,char **argv) {
     assert(argc==2);
     if(!strcmp(argv[1],"disabled")) {
@@ -61,7 +61,7 @@ int main(int argc,char **argv) {
     }
     assert(getenv("TSFP_SURFACE_TRACE"));
     if(!strcmp(argv[1],"switches")) {
-        const int rates[4]={144,120,0,144};
+        const int rates[4]={240,180,0,120};
         for(unsigned section=0;section<4;section++) {
             rate=rates[section];g_tsfp_native_timing_active=rate>60;
             unsigned paused_locks=locks,paused_rows=pc_surface_trace.rows;

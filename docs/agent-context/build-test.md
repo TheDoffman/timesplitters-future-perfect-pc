@@ -24,12 +24,17 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 `test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
 gain overrides, mute, live volume and voice parity.
 
-`test_controller_profile.py`: devices/maps/disconnect; Windows Build uses SDL
-virtual input. Physical pads and Mac gameplay remain unverified.
+`test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
+physical pads/Mac gameplay remain unverified.
 
-`test_native_demo_timing.py`: schedule/read guards, mutations, input/ABI, pause,
-EOF/cancel, catch-up, presets, recorder lifecycle; variable60..240/steady110.
-Missing XBE skips originals. Live/file/Mac playback and sub60 overload are open.
+`test_native_demo_timing.py`: scheduling, guards, mutations, ABI, pause/EOF/cancel,
+catch-up, presets/lifecycle at60..240/steady110. Missing XBE skips originals;
+live/file/Mac playback and sub60 remain open.
+
+`test_native_movie_file.py`: two real XMV intros, Original60/native60..240
+(including144), exact decoded pictures/timestamps/PCM and duration. Controlled
+and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
+fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
 `test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
 checks refresh/stale copies (Mac GL/RHI, Windows RHI).
@@ -55,16 +60,13 @@ does not. Do not attribute its `replay_tick` file opens to player input overhead
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
-Windows Online host/guest pair with Test Lab saves and loopback discovery.
-It verifies supported XBE/build identities and recycles disposable partitions.
-Asynchronous ReadProcessMemory observations measure update holds, not rendered
-frames or Internet/physical-input latency. Five local benchmark fixture
-manifests are checked with the normal validator; the canonical fixture stays intact.
+Windows `tools/test-online-bot-motion.py --tag <name> --seconds 60` uses isolated
+Test Lab host/guest saves and loopback. It verifies XBE/build identities,
+recycles partitions and validates five fixtures without changing the canonical
+one. Asynchronous position reads measure holds, not frames or input/Internet latency.
 
-Publisher suites `test_launcher_release.py` / `test_publish_release.py` run on
-both hosts: Stable/alpha baselines, pagination/completeness, initial notes,
-scope/merge/rename/ancestry rules. No game/UI rebuild is needed.
+Dual-host publisher suites check Stable/alpha baselines, pagination/completeness,
+notes, scope/merge/rename/ancestry; no game/UI rebuild.
 
 `test_auto_look.py`: real records/permission expiry. `test_decal_projection.py`:
 four-page batches, larger fallback, permissions and mutation controls.

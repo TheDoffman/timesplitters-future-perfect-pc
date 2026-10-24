@@ -1278,6 +1278,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-009 — Intro and in-game movie playback
 
 - **Status:** Queued
+- **240 FPS decoder coverage (2026-10-24, PR #328):** The Windows real-file
+  fixture now compares EA and Free Radical intros at native60/120/144/180/240,
+  with Original60 as the controlled-clock reference. Decoded picture/timestamp/
+  PCM hashes match exactly; existing duration, polling and cleanup checks pass.
+  GPU/audio-device output remains mocked. This adds no Mac decoder adapter or
+  evidence of movie color/audible synchronization. See STATUS for results.
 - **Native-rate pacing follow-up (`3c2fcc2`, local):** `pc_native_movie_pacing.h`
   provides per-playback 60/120/144 polling through the existing platform clock/
   wait interface. The additive `*-native-movie-pacing.patch` connects it to the
@@ -3830,6 +3836,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Surface fixture repair (2026-10-24, PR #328):** Mac CI33d7bf4f caught the
+  portable trace fixture's obsolete144/120/60/144 cycle. It now matches the
+  strict240/180/Original60/120 validator and records rate-appropriate deltas.
+  The failure reproduces and passes after repair on Windows without weakening
+  lifecycle/capture checks. Shared CI confirmation remains pending; no runtime
+  or platform adapter changed. See STATUS for the validation logs.
 
 - **Four-preset water cycle (2026-10-24, PR #328 follow-up):** The Windows
   integration route now switches240/180/Original60/120 using default native

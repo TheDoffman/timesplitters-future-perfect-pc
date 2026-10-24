@@ -1,3 +1,28 @@
+## 2026-10-24 — Real movie coverage through 240 and surface-fixture CI repair
+
+The real-file movie test now compares both EA and Free Radical intros across
+Original60 and native60/120/144/180/240 with controlled time, plus every native
+rate with the Windows clock. Exact decoded image, timestamp and PCM hashes
+match at every rate: EA has88 pictures/511912 PCM bytes; Free Radical has81
+pictures/717240 PCM bytes. Controlled completion stays within the existing34ms
+poll-boundary tolerance. Timer cleanup and polling bounds remain enforced.
+All27 movie/stop/context/backlog checks pass. GPU presentation and audio-device
+output are mocked: these results do not establish tint, audible sync, display
+cadence or Mac movie playback. Evidence: movie-current-presets-validation.log.
+
+Windows/Mac native CI on33d7bf4f found an overlooked surface-trace fixture
+still emitting144/120/Original60/144 against the new strict validator. The
+failure reproduces locally. Its cycle now emits240/180/Original60/120 and
+records the matching fractional delta. Capture bounds, paused updates, skipped
+tails, balanced references and stack checks are unchanged. The fixture passes
+locally, as do all78 native-timing checks and53 image-analysis/context/backlog
+checks. No runtime code changes
+or rebuild are needed; current-head cross-host CI must confirm the repair.
+Patch-transition jobs also fail their required native-result gate on that head,
+not patch application.
+Evidence: surface-cycle-ci-repro.log, surface-cycle-ci-repair.log and
+movie-surface-current-contracts.log and native-timing-current-presets.log.
+
 ## 2026-10-24 — Current four-preset water and live Apply validation
 
 The old surface-switch route/validator still required144/120/60/144 and rejected
