@@ -260,6 +260,43 @@ static void publish(PcNativeStep step)
     MEM32(0x4e7940)=step.raw_ticks;MEM32(0x4e7944)=step.game_ticks;
     MEMF(0x4e7948)=step.raw_delta;MEMF(0x4e794c)=step.game_delta;
 }
+/* Target refresh is not delivered cadence: exercise the reported 110-update
+ * load and a fluctuating 60..240 cadence without skipping recorded edges. */
+static void playback_variable_cadence(unsigned char *memory)
+{
+    const int64_t f=79200000; /* Exact intervals for every rate below. */
+    const unsigned cadence[]={240,110,60,144,180,120};
+    for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned pattern=0;pattern<2;pattern++) {
+        setup(memory,channels,1,1);g_tsfp_native_timing_active=1;
+        PcNativeTiming clock={0};int64_t now=0;
+        pc_native_timing_step(&clock,0,f,240,0);
+        double elapsed=0;unsigned previous=0;
+        for(unsigned n=0;n<360;n++) {
+            unsigned rate=pattern?cadence[n%6]:110;
+            now+=f/rate;
+            publish(pc_native_timing_step(&clock,now,f,240,0));
+            call(sub_000438B0);
+            unsigned selected=(MEM32(0x6b94c0)-0x10140)/(14*channels);
+            assert(selected>=previous && selected<=previous+1);
+            for(unsigned c=0;c<channels;c++) {
+                unsigned record=0x6b93d0+c*0x3c;
+                unsigned held=(((selected-1)&1)?1u:2u)<<c;
+                unsigned prior=previous?(((previous-1)&1)?1u:2u)<<c:0;
+                assert(MEM32(record+12)==held);
+                assert(MEM32(record+16)==(held&~prior));
+                assert(MEM32(record+20)==(prior&~held));
+            }
+            elapsed+=MEMF(0x4e794c);
+            assert(fabs(elapsed-(double)now*60/f)<0.0001);
+            assert(!pc_native_demo_playback.debt);
+            previous=selected;
+        }
+        printf("VARIABLE_CADENCE %u %u %.9f %.9f\n",channels,pattern,
+               (double)now/f,elapsed/60);
+    }
+}
+
 static void playback_lifecycle(unsigned char *memory)
 {
     const int64_t f=72000000;
@@ -476,6 +513,7 @@ int main(void) {
     record_roundtrips(memory);
     record_phase_cases(memory);
     playback_lifecycle(memory);
+    playback_variable_cadence(memory);
     playback_old_native(memory);
     free(memory);
     puts("PASS: original initializer, input dispatcher, controller bytes/edges, ABI and EOF; timing checked separately");

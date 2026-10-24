@@ -23,8 +23,9 @@ custom/unbound maps, release/disconnect. Windows Build tests SDL virtual input;
 physical pads and native Mac gameplay need separate validation.
 
 `test_native_demo_timing.py` covers schedule/read guards, mutations, original
-input/ABI, pause, EOF/cancel, catch-up, preset changes and recorder reset/capacity.
-Missing XBE skips original routines. File/Mac playback and overload remain open.
+input/ABI, pause, EOF/cancel, catch-up, live presets and recorder reset/capacity.
+Variable60..240/steady110 check time and input edges.
+Missing XBE skips originals. Live/file/Mac playback and sub60 overload remain open.
 
 `test_online_theme.py` isolates each Tk lifecycle in a bounded child; failures
 remain failures. `test_framebuffer_sampling.py` checks refresh/stale-copy guards
@@ -32,8 +33,7 @@ with fake HLE callbacks; Mac covers GL/RHI, Windows RHI.
 
 180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
 checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
-procedural interval switches and demo round trips. These are bounded behavioral
-contracts, not proof every scene sustains240 FPS. Legacy144 migration is tested.
+procedural interval switches and demo round trips. These contracts do not prove sustained240 FPS. Legacy144 migration is tested.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

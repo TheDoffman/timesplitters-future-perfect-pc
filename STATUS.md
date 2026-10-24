@@ -1,3 +1,35 @@
+## 2026-10-24 — Playback under delivered-rate variation
+
+On source `74f9fe1`, the original-game playback fixture now checks a native
+240 target delivered steadily at 110 updates/s and alternating intervals from
+60, 110, 120, 144, 180 and 240 updates/s. Each of 360 updates checks elapsed game
+time against exact elapsed host-counter time and all press/release transitions
+for one and four controllers. All four cases pass, with no catch-up debt or
+skipped packet. The complete demo suite has **103 passed**, 28.46 seconds on
+Windows x64/MSVC; `logs/native-demo-variable-cadence-tests.log`. These are
+controlled input/clock fixtures, not rendered crowd-performance measurements.
+Runtime and executable are unchanged from the preceding 240 build.
+
+An ignored original-code diagnostic also forced two seconds of sustained
+30/45/55 updates/s. Both the unwrapped original decoder and native scheduler
+advanced recorded game time by 1.0/1.5/1.833333 seconds respectively. Native
+recovery at 240 updates/s for a further second reaches
+2.033333/2.533333/2.866667 seconds: only two retained ticks are recovered, so
+previously discarded backlog is not repaid. Input packets remain ordered. This
+quantifies an existing limitation; it is not a speed-fidelity pass or a fix.
+The unwrapped decoder is only a baseline at or below its normal 60-update rate;
+forcing it faster is not original-mode runtime behavior. The diagnostic has no
+rendering, file IO or full-level simulation. Evidence:
+`private/pipeline/check-demo-overload.py`, `logs/native-demo-overload-probe.log`.
+
+Changing only packet selection to catch up would discard intervening input
+edges. Preserving those edges while advancing faster requires investigating
+simulation-step dispatch; increasing the debt cap alone cannot fix sustained
+sub60 speed. No such policy change was made. The reported multiplayer crowd dip
+and full-game overload behavior remain unresolved. Native Mac execution of this
+new original-game fixture is unverified; it uses the existing cross-host test
+route and requires the supported private XBE.
+
 ## 2026-10-24 — 60-step FPS presets through 240 (PR #325)
 
 The shared Video Options menu and launcher now offer Original 60 and Beta

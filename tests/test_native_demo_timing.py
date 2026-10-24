@@ -228,3 +228,11 @@ def test_recorded_time_matches_original60(playback_results, rate, channels, raw,
             f"{rate} updates/s, {channels} controllers, record {raw}/{game} ticks: "
             f"1 wall second consumed raw/game {measured_raw}/{measured_game}s; "
             f"expected {expected_raw}/{expected_game}s")
+
+
+def test_recorded_time_under_variable_cadence(playback_output):
+    rows = [line.split()[1:] for line in playback_output.splitlines()
+            if line.startswith("VARIABLE_CADENCE ")]
+    assert {(int(c), int(p)) for c, p, _, _ in rows} == {(1, 0), (1, 1), (4, 0), (4, 1)}
+    for _, _, wall, game in rows:
+        assert abs(float(wall)-float(game)) < 1e-5
