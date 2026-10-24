@@ -18,6 +18,11 @@ Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
 on both CI hosts. `native_reload_input.c` additionally executes the local verified
 US input decoder, timing wrapper and reload consumer across pause-offset phases,
 60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
+`reload_phase_sweep.h` shares 864 schedules across both layers: pause/press phases,
+holds, jitter, stalls, zero time and native/Original60 transitions. Each requires
+two presses without repeats. Removing the original compare hook must fail at a
+timing mismatch. CI runs asset-free schedules on both hosts; private-XBE, physical
+keys, sub-poll taps and full ammo/animation behavior remain separate checks.
 
 `test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
 callback mutations. Fast results and finite fallback results are bit-exact;

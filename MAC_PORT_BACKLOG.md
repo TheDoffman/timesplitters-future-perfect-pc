@@ -3869,6 +3869,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Windows original-decoder/reload integration and asset-free branch/mutation
   tests pass. No Mac adapter is needed; native Mac compilation and live reload
   checks after pause at 120/180/240 remain pending. See the #337 STATUS entry.
+  Follow-up tests share 864 press/clock schedules between the asset-free gate
+  and local original-decoder integration, including jitter, stalls and live
+  timing-mode transitions. The missing-hook control must fail at a timing
+  mismatch. No new host adapter or gameplay behavior is introduced; CI's
+  asset-free schedules do not establish physical Mac keyboard/gameplay parity.
 
 - **Model transform entry (2026-10-24, PR #328):** A shared
   default-off generated entry hook selects only the audited US151E80 leaf,
