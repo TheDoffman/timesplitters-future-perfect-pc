@@ -78,7 +78,7 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
+        if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
             shutil.copyfile(patch,prior/patch.name)
     assert installer.apply_patches(checkout,prior)
     assert 'pc_native_rate()' in (checkout/'src/hle/hle_d3d8_interp.c').read_text()
@@ -139,6 +139,10 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
+        if patch.name.endswith('-text-panel-scope.patch'):
+            continue  # Depends on the later shared panel/display wrapper.
+        if patch.name == 'texture-upload-streaming.patch':
+            continue  # The historical state has neither texture-pack nor toggle.
         if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
             continue  # Depends on display/viewport hooks installed by the complete migration.
         if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):
@@ -183,7 +187,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch')):
             continue  # Needs shared-input locks/display wrappers absent in the old snapshot.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
@@ -197,6 +201,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'pc_weapon_keys_sample' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()
+    assert b'tsfp_texture_frame_complete();' in device
+    assert b'tsfp_texture_binding_revision();' in device
     assert b'pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);' in device
     assert b'pc_display_camera' in manual.read_bytes()
     assert b'pc_prompt_guest' in manual.read_bytes()
@@ -222,7 +228,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
-                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
+                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch')):
             continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
                               'zzzzzzzzzzzzzzz-pc-network-movement.patch',
@@ -253,11 +259,11 @@ def texture_branch_patches(tmp_path):
 
 
 def main_branch_patches(tmp_path):
-    """Model main without the optional active toggle, regardless of this branch."""
+    """Model historical main before the toggle and its streaming dependency."""
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name != 'texture-toggle.patch':
+        if patch.name not in ('texture-toggle.patch', 'texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
     shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
     return patches

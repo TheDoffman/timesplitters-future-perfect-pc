@@ -23,7 +23,10 @@ def test_ui_layout(tmp_path,fixture):
 def test_guest_placement_hooks():
     manual=(ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c').read_text()
     for address in (0x1334d0,0x133ab0,0x1358a0,0x12e3f0,0x12f670,0x14b930,0x1409c0,0x13fc50):
-        assert f'pc_display_ui(sub_{address:08X}_gen,0x{address:08X}u)' in manual
+        # The shared panel's callback reuses text mappings inside the same
+        # placement boundary. Its execution/lifetime is tested by the scope suite.
+        callback='pc_panel_text_original' if address==0x12e3f0 else f'sub_{address:08X}_gen'
+        assert f'pc_display_ui({callback},0x{address:08X}u)' in manual
     assert 'if(FP_MEM32(g_esp)==0x001341B7u)pc_display_radar_begin();' in manual
     for address,name in ((0x1476f0,'tutorial'),(0x40f00,'tutorial_wrap'),(0x41dc0,'tutorial_text')):
         assert f'pc_display_{name}(sub_{address:08X}_gen);' in manual

@@ -49,6 +49,8 @@ def affected(paths, *, full=False):
             # Patches can change arbitrary upstream source/CMake. Preserve
             # migration and rendering coverage on both hosts, not launcher builds.
             selected.update(('transitions', 'native', 'gpu'))
+        elif path == 'requirements-release.txt':
+            selected.add('native')  # Online HTTPS tests use the packaged certificate provider.
         elif path in RELEASE_INPUTS:
             selected.add('release')
         elif path in CPU_TOOLS or (

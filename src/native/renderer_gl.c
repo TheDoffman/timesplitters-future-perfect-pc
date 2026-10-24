@@ -684,6 +684,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
                                      HWND hwnd, void *dirty)
 { NATIVE_GL_SCOPE;
     (void)s;(void)src;(void)dst;(void)hwnd;(void)dirty;
+    tsfp_stream_pump();
     native_scene_present();
     Uint64 swap_start=SDL_GetTicksNS();
     if(!native_swap_window()) {
@@ -883,6 +884,7 @@ static void bind_texture0(void)
     const int enhanced=tsfp_texture_is_4k();
     for(int stage=0;stage<4;stage++) {
         GLTexture *t=(GLTexture*)g.textures[stage];
+        if(t && t->pack_checked==3 && !t->usage && !t->screen_copy && t->sys_mem)native_pack_request(t);
         const int replacement=enhanced && t && !t->usage && !t->screen_copy && t->pack_texture;
         glActiveTexture(GL_TEXTURE0+stage);glBindSampler(stage,native_samplers[stage]);used[stage]=t && t->gl_tex;
         glBindTexture(GL_TEXTURE_2D,used[stage]?(replacement?t->pack_texture:t->gl_tex):g.fallback_texture);

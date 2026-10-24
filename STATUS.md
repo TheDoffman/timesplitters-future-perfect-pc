@@ -1,3 +1,108 @@
+## 2026-10-23 — Combined open-PR integration
+
+Integration branch combines #305, #307, #308, #309, #310, #311, #313 and #321 on
+main 2e3e55a, preserving their heads as merge ancestors. Independent evidence
+and test registrations are retained; the bounded build guide consolidates
+vehicle diagnostics while their detailed history remains here and in the
+native-high-refresh regression record.
+
+Texture diagnostics and background reads overlapped. Per-request timing now
+travels by value through the bounded queue: the renderer owns CSV state, the
+reader only timestamps its request, and the renderer completes the resource
+stages. Cancellation discards the pending record; synchronous reads complete
+before cancellation. Total duration includes queue/frame waits, not GPU time.
+The combined RHI/legacy-GL tests cover both streaming modes, stage ordering,
+resource failures, cancellation, binding preservation and fallback: 22 pass.
+The remaining focused timing/vehicle/trace/filter/panel/UI tests pass (132 plus
+two Windows texture-control compile cases in the initial run); the Mac-only
+adapter fixture skips locally. Full patch application and repository-context
+checks pass. Supported Windows build fd40ce7 and built-in checks pass, including
+virtual SDL controller/keyboard routing. Later merge c1f5aed adds #321's uncalled water helpers
+and tests only, with no gameplay hook. Its GPU/CPU checks, historical upgrades
+and final combined CI are pending.
+
+PR #307's old Windows CI failure is a missing Tk panedwindow.tcl installation,
+not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
+must pass before merging. Original evidence limits remain: no general FPS or
+full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
+gameplay is unverified. This integration does not publish a release.
+## 2026-10-23 — Preserve alpha-height for final ripple generation
+
+PR #321 now follows the candidate's reconstructed field through the original
+final ripple shader. The supported effect-22 table selects callback 0x2C320 and
+pixel definition 0x4BC318; that shader reads **alpha** height from cardinal
+neighbors. The old diagnostic reconstruction's alpha=1 would erase the slopes.
+Shared `graphics/surface_state_shader.h` now materializes the original channel
+contract before the final pass, and a constant-alpha mutation must fail.
+
+Windows x64/MSVC/common-RHI WARP, captured 128x128 wrapped geometry: reconstructed
+final float output matches the float32 Original60 reference within 0.000010908
+at 60/120/144, with fresh ripple output on every tested candidate update. This
+is still an uncalled experimental helper. The final actual-byte target is also
+tested, so final output rounding is distinct from feedback storage precision.
+All 14 GPU cases pass in 72.15 seconds; candidate and float-reference final byte
+RGB are identical in the tested 64/128 clamp and 128-wrap cases at all three rates.
+
+The original-byte feedback discrepancy survives final ripple generation. With
+original smoothing included, final red/green RMS versus the float-state path is
+0.057236962 on a float output and 0.057267247 on an actual byte output. This
+rules out a harmless uniform height offset as the entire remaining difference.
+These are controlled synthetic fields, not scene images or an FPS measurement.
+Runtime integration, storage fidelity and Windows/Mac gameplay acceptance remain
+open. No playable binary or personal data changed.
+
+## 2026-10-23 — Include original water smoothing in the storage reference
+
+Follow-up PR #321 adds a separate Original60 WARP reference that executes the
+original cardinal smoothing shader before both original feedback passes. The
+128x128 wrapped quad and +/-1-texel cardinal offsets match the retained Scotland
+draw capture. Every smoothing output is compared with an explicit four-neighbor
+calculation; a zero-radius mutation must fail. This is additional reference
+coverage, not a candidate implementation or gameplay change.
+
+With the same center/edge input, one second of float32 smoothing plus feedback
+produces mean blue 0.576436446 and standard deviation 0.000468331. Original byte
+storage produces 0.562230514 and 0.023116937. Combined G/B RMS difference is
+0.019286352. Smoothing therefore does not remove the nonlinear storage gap.
+The mixed-format controls also diverge (blue RMS 0.07635..0.08011); here the
+smoothing target uses the first-feedback target's selected format. Unlike the
+earlier feedback-only ablation, these are three-pass format controls.
+
+No game rebuild or enablement; Mac GPU/gameplay and full-scene validation remain
+pending. All 13 GPU cases pass in 58.56 seconds, including the new missing-offset
+negative control. Details are in the high-refresh regression record.
+
+## 2026-10-23 — Match water solver boundaries to captured gameplay
+
+Follow-up branch `fix/native-water-boundaries` is based on main 2e3e55a after
+PR #316 merged. During the original investigation, a bounded Original60 Scotland
+run on the preserved playable binary (source 4adb6b0, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab) captured host
+frame 3600. Four draws use the verified original six-instruction water vertex
+program. Their targets are 128x128 byte textures, with **wrapped** U/V and linear
+filtering. The feedback quad spans 0..128 with UVs 0..1 and enabled screen-space
+undo. This contradicts applying the earlier clamped DCT prototype directly to
+this game path; its old results remain controlled clamp evidence only.
+
+The shared transform now accepts an axis extent. New `graphics/surface_basis.h`
+provides the real orthonormal Hartley basis and periodic stencil coefficients,
+while retaining clamp/DCT as a diagnostic. The GPU fixture adds 128x128 checks
+and mirrors the captured quad, viewport, screen-space conversion and wrapped
+sampling. A seam-adjacent pulse makes a deliberate clamped-basis substitution
+fail. Correct periodic 60/120/144 results match the original shader pair's float32
+reference within 0.000001908, with every reconstructed frame fresh. Original
+byte-feedback RMS remains approximately 0.036930 in this field and is unresolved.
+
+Windows x64/MSVC/common-RHI WARP: all 11 GPU cases pass in 48.61 seconds.
+The new asset-free basis test passes for both boundaries at 1/7/64/128, including
+orthonormality, neighbor-stencil eigenvalues and invalid inputs (maximum error
+4.623e-14). Mac CI of this extension is pending; no water GPU/gameplay acceptance
+on Mac is claimed. No candidate hook is enabled or new game binary built.
+The bounded observation ended cleanly, signed profiles/fixture were preserved,
+and disposable partition images were recycled. One 9,220,188-byte private draw
+capture is retained; it establishes host draw state, not live feedback pixels
+or performance. See the detailed regression record and logs/water-wrapped-suite.log.
+
 ## 2026-10-23 — Coupled fractional water operator candidate
 
 Independent branch `fix/native-water-coupling`, based on main 5c44696. The
@@ -47,6 +152,1073 @@ All eight updated GPU cases pass in 31.96 seconds. See the detailed regression
 table and logs/water-original-vertex.log. PR #316 head 67f9663 passed all selected
 Windows/Mac native, transition and ancillary CI checks; the newer fixture
 follow-up requires its own CI run. Mac game/GPU water acceptance remains open.
+## 2026-10-22 — Respawn hitch diagnostic, cause still open
+
+Two bounded Windows diagnostics use the unchanged integrated `20dc25d` binary
+and the same native144, ten-bot Venice, Classic 3440x1440/FOV73 setup below.
+Read-only observations bracket initial guest-thread cycles/CPU time, guest
+frame, health and roster with QPC. No stack suspension is used. These polling
+runs are diagnostic evidence, not clean pacing benchmarks or a performance fix.
+
+`vehicle-integrated-respawn-thread` records 34,914 observations, including
+16,433 active-route observations confirming ten bots and four health
+restorations. The largest interval in spawn+5..55 seconds is 25.856 ms, ending
+83.418 ms after E key-down and about 65 ms after health has already returned.
+The Present call takes 0.070 ms. A surrounding 26.323-ms CPU observation bracket
+contains 35,207,451 cycles and 15.625 ms of coarse CPU time; the largest query
+takes 0.0402 ms. Reduced cycle growth in the middle does not establish a wait
+reason, precise CPU utilization or the responsible routine. Other gaps are
+unrelated to respawn, so a single cause remains unproven.
+
+`vehicle-integrated-respawn-mmio` adds read-only samples of the emulated PFB
+flush bit and DMA PUT/GET words. It records 34,871 observations, 16,423 in the
+active route, ten bots and five health restorations. The larger hitch does not
+recur: the worst selected interval is 14.332 ms, with no pending handshake in
+its six surrounding samples. A 10.646-ms interval shortly after respawn contains
+one set flush-bit sample followed by cleared samples. This does not establish
+handshake latency or exclude short waits missed by the nominal 4-ms sampler;
+it supplies no basis for changing acknowledgement policy. Native-frame GPU
+timing is not supplied by `pc_gpu_timing.inc`, whose begin hook is only in the
+retired interpolated redraw path. The stack follow-up below narrows the next
+check without attributing the original large gap.
+
+Both sessions exit cleanly, preserve signed isolated profiles and the canonical
+fixture, and recycle disposable disks. Normal playable SHA `0072d5b4...efc7ab`
+is restored; candidate SHA remains `f6f5cd1a...a4f610`. No runtime change or
+rebuild. Evidence: the named runs, `logs/respawn-thread-analysis.json` and
+`logs/respawn-mmio-analysis.json`. All selected runtime, upgrades, transitions,
+launcher and issue CI checks pass at `128fa06`; native Mac gameplay/performance
+and the broader high-refresh goal remain unverified.
+
+### Timestamped stack follow-up
+
+Three further bounded 165-second sessions retain that executable and route.
+An external diagnostic samples only the owned initial guest thread in active
+scene 46/state 7, with QPC, health, roster and up to 16 native frames. Each resolves
+all collected samples to at least three frames. The first version unwinds while
+suspended; its selected-window median pause is 0.4553 ms, totaling 5.001 seconds
+over 50 seconds. That overhead is substantial. The replacement copies up to
+128 KiB of stack while suspended, resumes immediately and unwinds the copy.
+Controlled sleeping-thread checks recover the expected call chain. These are
+diagnostics, not clean benchmarks; even the revised sampler consumes CPU and
+can perturb scheduling. Symbol labels can be the nearest available public
+symbol, especially when the displacement is large.
+
+| Diagnostic | Selected-window samples | Median / p99 suspension ms | Worst Present interval ms |
+| --- | ---: | ---: | ---: |
+| `vehicle-integrated-respawn-stack` | 10,682 | 0.4553 / 0.6587 | 17.194 |
+| `vehicle-integrated-respawn-snapshot` | 10,802 | 0.0188 / 0.1344 | 12.701 |
+| `vehicle-integrated-respawn-nopack` | 10,801 | 0.0184 / 0.1320 | 9.456 |
+
+The revised with-pack run catches `NtReadFile` beneath `tsfp_texture_upload`
+in the 12.701-ms frame, 38.105 ms after E with observed health 1.75. Suspension
+accounts for 0.0965 ms inside that interval; another sample is in the original
+GPU-flush path. The earlier 17.194-ms frame also contains a texture-file open.
+The loader intentionally reads/caches replacement views even in Classic mode
+to support live switching. Its log has 131 loads/127 distinct keys in the revised
+run, so most are first loads rather than repeated loads of the same replacement.
+
+The final control empties only the disposable child's optional-pack/dump
+environment paths. It has no replacement-load log entries or sampled
+`tsfp_texture_upload` frames. Installed files/settings stay intact. This
+strengthens the synchronous texture-loading lead but does not measure each
+upload's duration, establish a causal FPS gain, reproduce the 25.856-ms event
+or eliminate other hitches: bot outcomes differ between runs. Do not remove
+texture support or change GPU acknowledgement policy on this evidence. Next
+measure file-read and GPU-resource creation durations per texture upload.
+
+All three sessions preserve valid isolated profiles, exit cleanly, recycle
+disposable disks and restore the normal playable executable. Raw stacks,
+symbol tables and helper/build hashes are retained in each named run; analyses
+are `logs/respawn-{stack,snapshot,nopack}-analysis.json`. No runtime change or
+game rebuild. All selected CI passes at `44b9c76`. Actual Mac gameplay/performance
+and broad high-refresh acceptance remain open.
+
+## 2026-10-22 — Integrated physics crowded-match pacing
+
+Capture-free Windows runs compare the integrated physics/camera build `20dc25d`
+with the normal playable `4adb6b0` executable. Both use the established ten-bot
+Venice setup route, unlimited score, native144, Classic textures, 3440x1440 and
+FOV 73. Earlier separate setup captures verify the menu sequence; these new runs
+do not include a roster sampler. No competing TSFP process or owned build, test or CPU profiler runs
+during their measurement windows; other background OS/app activity is uncontrolled. Each uses isolated Test Lab saves/settings,
+exits cleanly and preserves valid profile signatures. Disposable disks are
+recycled and the normal executable is restored.
+
+| Build | Guest presents | Mean FPS | p95 / p99 ms | Worst ms | Slowest full second |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Integrated `20dc25d` | 7,189 | 143.803 | 7.737 / 8.116 | 27.428 | 141 |
+| Playable `4adb6b0` | 7,194 | 143.901 | 7.782 / 8.195 | 34.091 | 141 |
+
+The strict analyzer includes complete successful-present intervals between
+spawn-observation+5 and +55 seconds, with consecutive clock evidence bracketing
+the window. All presentations are fresh guest frames, none interpolated. Scene 46,
+active match state 7 and unpaused checkpoints cover the window. Game-clock/wall
+ratios across the longer combat checkpoints are 0.999959 / 0.999937. These are
+minimized host Present measurements, not GPU completion, scanout or physical
+input acceptance. Hardware is the same Windows x64 i7-13700K / RTX 4070 SUPER
+host used for earlier crowd tests. Bots/death/respawn outcomes differ, so this
+supports no substantial integration slowdown in this route, not a speedup,
+exact gameplay parity, elimination of the reported 110-FPS dips or locked 144 FPS.
+The separate unproven HUD-panel optimization from PR305 is absent from both.
+
+The largest gap in each new run ends 67.273 / 47.697 ms after an E key-down whose
+preceding checkpoint has zero health; the measured Present bodies themselves
+are only 0.069 / 0.068 ms. This is a respawn correlation, not a proven wait/CPU/GPU
+cause. Other slow frames do not share it, including the previously retained
+60.555-ms outlier. Keep that broader hitch investigation open.
+
+Candidate EXE SHA is `f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+playable SHA is `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+Evidence: `vehicle-integrated-crowd-144`, `crowd-playable-compare-144`, their
+source provenance/Present CSVs and `logs/integrated-crowd-comparison.json`.
+No runtime change or rebuild is made for this validation. All selected CI passes
+at preceding head `ba23126`; native Mac gameplay/performance remain unverified.
+
+## 2026-10-22 — Vehicle exit and return to on-foot controls
+
+Same-build Windows probes on `20dc25d` now verify jeep entry, three seconds of
+throttle, five seconds of settling, exit, walking and on-foot pause/resume at
+genuine Original60, native120 and native144. All three restore weapon 4 and camera mode 0 from
+vehicle mode 24. One second of forward input moves the player 7.988814 / 8.001610 / 7.990989
+world units; the jeep does not move during that walking interval. Player/jeep
+separation grows from about 1.9 to 8.35–8.37 units. Each run contains 114 settled pause
+observations with zero game delta and unchanged body/camera positions.
+
+The default vehicle-exit key is **Y**, delivering logical input 0x40. Original
+`D2470` tests that pressed mask and passes it to `17DA00`. Earlier E/F/R probes
+are excluded: they did not issue the required exit action, and stayed seated
+in Original60. F and R explicitly delivered 0x20/0x10. Raw Xbox analog button
+indices must not be treated as guest logical action bits. No binding or runtime
+mechanic changed; the control guide now lists the confirmed key.
+
+All three accepted runs have zero bots, health 1.75, unchanged signed Test Lab saves,
+isolated settings and reviewed exit/movement captures. Solver summaries
+independently verify native=0/native=1, and trace output stays below both limits.
+Evidence is in `vehicle-integrated-exit-y-{original60,120,144}` and
+`logs/vehicle-exit-comparison.json`. EXE SHA-256 remains
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+host/toolchain are Windows x64, MSVC 14.44 / SDK 10.0.26100, common D3D11 renderer.
+These short captured synthetic-input runs do not measure pacing, physical input,
+all seat/vehicle types or exact trajectories. Broader terrain/contact handling,
+campaign/multiplayer and native Mac acceptance remain open. No rebuild needed.
+All selected CI passes at preceding test/evidence head `05009b1`.
+
+## 2026-10-22 — Native144 corner-contact evidence and overlap checks
+
+The same `20dc25d` Windows executable completes a new bounded native144 run.
+Normal walking inputs detour through X/Z (30,35) and (0,20) around the column
+that blocked the prior approach; jeep inputs remain unchanged. Entry, throttle,
+pause/resume and profile-preservation checks pass. The trace independently
+verifies native mode and records 241 solver entries, 660 allocated target
+records and 655 selected records while the jeep is within Z60..80. The vehicle
+continues onto the bank, ending near X-8.420/Z105.204; the capture confirms this.
+
+The first object contact differs from genuine Original60: native144 touches a
+side-facing plane near body Z67.488, normal (-0.9962,-0.0654,+0.0573), whereas
+Original60 touches the front near Z67.118, normal (-0.0551,0,-0.9921). Within
+the recorded window, the native144 allocated object records contain four
+side-facing normals and no front-facing ones; Original60 has 28 front-facing
+records. Selection can already have merged these arena records. They establish
+different geometry entering the solver, not untouched producer output. Small
+position/yaw differences exist before contact. This supports a corner-grazing
+explanation and does not demonstrate a skipped solver contact; it does not yet
+isolate all sources of the trajectory difference or certify broader handling.
+
+The native144 run has 3,516 asynchronous body observations, zero steering,
+zero bots and 114 stationary settled-pause samples. Its frame-bracketed camera
+distance near Z30 is 10.01738 units versus 10.15778 in the genuine Original60
+run (valid ownership/mode24/FOV55; native144 read 0.105 ms). This is short-route
+behavior evidence with synthetic inputs and captures, not pacing or scanout
+acceptance. The normal playable executable is restored. The failed earlier144
+approach remains excluded; evidence is in `vehicle-integrated-solver-144-detour`
+and the updated `logs/vehicle-solver-comparison.json` / camera check.
+
+Original `168720` already specifies penetration escape velocity in world units
+per second: 60 * 0.2 * clamp(-depth,0,0.1), combined with restitution. It does
+not need an FPS multiplier. The rigid-motion fixture now checks 576 additional
+cases against an independent generalized impulse equation: four signed/capped
+depths, three restitution values, unit/quantized normals, centered/eccentric
+points, static contact kinds0/2 and Original60/native120/native144/irregular
+intervals. These closing contacts use speed12, inverse mass0.5 and unit inverse
+inertia. Linear tolerance includes authored drag; angular response and kinetic
+energy have separate checks. Removing only the penetration term fails the new
+assertion. Maximum linear/angular errors are 0.000034368 / 0.000008169.
+
+All 19 vehicle tests pass in 44.82 seconds, including prior counterfactuals.
+The new checks require the supported private US XBE; asset-free hosted CI skips
+those original-routine cases. No runtime mechanics change or new game build was
+made for this audit. Native Mac gameplay, full terrain handling and pacing
+remain open. All selected CI passes at preceding head `fcdbad2`; fresh test/docs
+head checks must be tracked separately.
+
+## 2026-10-22 — Correction to live vehicle reference-clock labels
+
+The solver trace exposed a validation-label error: prior live `vehicle-*-60`
+runs supplied `--native-fps 60`, which activates the native clock at 60 Hz.
+Their saved provenance and `[NATIVE-TIMING] 60 fresh` log messages confirm this;
+the new solver trace reports `native=1`. They are native60 comparisons, not
+Original60. This applies to vehicle-live/driver, integrated camera/camfix,
+settled-steering and terrain/terrain-repeat evidence. The observed values remain
+valid for those runs, but their former Original60 labels and any implied live
+original-clock parity are withdrawn. Offline fixtures explicitly disabling the
+native policy still exercise Original60 and are unaffected. A real original
+clock run must explicitly select zero/disabled native timing and verify it.
+
+The bounded runner now accepts `--native-fps 0` explicitly. The new
+`vehicle-integrated-solver-original60` run independently verifies `native=0`
+in every solver record; its native60/native120 controls verify `native=1`.
+This corrects the reference for this contact probe only, not every historical
+camera, steering or terrain comparison.
+
+## 2026-10-22 — Synchronous vehicle contact diagnostic
+
+The read-only background contact probe at native120 observed 534 stable arena
+reads, all with 500 free entries and no contacts. Original `171FB0` resets that
+arena immediately after solving; these observations cannot establish that no
+contact was generated. This repeat stopped at the pillar, unlike the earlier120
+run, with changed instrumentation and a slightly different approach. Neither
+outcome alone isolates a frame-rate-dependent collision failure.
+
+An opt-in shared diagnostic now captures generated and selected contact lists
+at the exact `172114 -> 171560` solver entry, alongside body state and time
+intervals. It validates memory spans, body identity and finite values, writes no
+guest state, and caps output at 16,000 rows or 8 MiB. Disabled builds take only
+the cached enable check. This is investigation infrastructure, not a collision
+fix or performance evidence. All 86 local timing/vehicle checks, four full-stack
+and historical upgrades, and 21 context/backlog checks pass. Supported Windows
+build `20dc25d` passes; the virtual-pad routing check explicitly skips because
+Windows refuses foreground activation. EXE SHA-256 is
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`.
+No production collision mechanics changed. Native Mac gameplay remains pending.
+All selected Windows/Mac runtime, upgrade, transition, launcher and issue CI
+checks pass at code head `20dc25d`; the subsequent runner/evidence revision must
+be tracked separately from that verified head.
+
+On that same executable, original60/native60/native120 probes record
+453 / 663 / 870 solver entries, with 945 / 1,385 / 1,750 selected target contacts.
+Each includes contacts with the pillar, followed by reduced forward velocity;
+all three stop near Z67.946 / 68.027 / 67.622. Reviewed captures agree. The
+allocated `generated` arena is captured after selection can merge records;
+it is not an untouched contact-generation trace. Every recorded selected address
+belongs to that entry's allocated arena, and these runs are below output caps.
+First-contact positions, normals, penetration depths and approach velocities
+differ, so this does not isolate the earlier pass-through or prove exact handling.
+The native144 attempt gets stuck on the walking approach and never enters the
+jeep; it is excluded from contact acceptance.
+
+Each accepted run has 114 stationary settled-pause samples and unchanged valid
+profiles. Separate frame-bracketed camera/body samples near Z30 measure
+10.15778 / 10.13406 / 10.03145 world units at original60/native60/native120,
+with valid camera ownership/mode24/FOV55; reads take at most 0.120 ms. These are
+asynchronous diagnostics with captures and synthetic controls, not pacing or
+scanout measurements. Evidence: `logs/vehicle-solver-comparison.json`,
+`logs/vehicle-solver-camera-check.json` and per-run trace/provenance/captures.
+The normal playable executable is restored and verified. Full handling, broader
+original-versus144 comparisons, physical input and Mac acceptance remain open.
+
+## 2026-10-22 — Controlled contact impulse audit
+
+The original rigid-motion fixture now supplies identical zero-depth static
+contacts to the original solver and integrator, independently of the live
+approach. All 864 combinations pass: three normal axes, both signs, centered
+and positive/negative eccentric points, three inverse masses, closing speeds
+4/12, separating speed4, rest, Original60, native120/144 and irregular native
+intervals. Expected linear/angular response comes from the independent
+frictionless inelastic impulse equation with unit inverse inertia. Kinetic
+energy must not increase and all unused vector components must remain zero
+within roundoff. The `missing-wall` mutation removes the original contact solve
+only in these cases and fails their analytical response assertion.
+
+Maximum linear difference is 0.000133514 velocity units and angular difference
+0.000000954. The linear bound includes the original integrator's verified
+0.001*v drag over one authored tick plus 0.00002 roundoff; an initial assertion
+that ignored drag correctly needed its physical expectation corrected.
+Separating/resting contacts need no impact notification, so that counter is
+required only for closing cases. The full vehicle suite passes 19 tests in
+48.77 seconds, including its existing and new mutations. Evidence:
+`logs/native-wall-contact-test.log` and `logs/native-contact-regressions.log`.
+
+This narrows the live obstacle investigation; it does not resolve the pillar
+outcome. Geometry generation, contact selection and world-space contact offsets
+remain controlled by this fixture. The original call path `170500 -> 16D380`,
+with an additional `175510` call for vehicle class `0x400000`, and selection
+`170690` are investigation targets. No production physics change or new game
+build follows from passing these checks. The fixture requires the supported
+private US XBE; asset-free hosted CI skips it. Actual Mac execution and broader
+vehicle handling remain unverified under MAC-060.
+
+## 2026-10-22 — Straight vehicle obstacle comparison remains unresolved
+
+The same corrected `fb261e1` Windows executable was tested against the Siberia
+ice pillar with no bots, six seconds for vehicle entry, no steering commands,
+and the same three-second throttle plus two further three-second bursts.
+Read-only observations include body position, quaternion and velocity, with
+matching frame brackets. Steering remains below 0.001 magnitude throughout.
+Native60 and native144 stop at the pillar near Z67.987 and Z67.912; native120
+continues onto the bank near Z109.037. Reviewed captures confirm those outcomes.
+A repeat native60 run also stops, near Z67.568, with a different final pose.
+
+The approach is still not identical. Near Z66, sampled X values at 60/120/144
+are -11.38515 / -11.41138 / -11.17424; quaternion-derived yaw is approximately
+2.168 / 1.943 / 2.192 degrees. The repeated native60 sample is X-11.30164,
+yaw2.087 degrees. The divergence occurs around the pillar edge near Z67;
+the 120 run retains forward velocity while the other runs turn and stop.
+This reproduces an unresolved terrain outcome on the current executable,
+but does not isolate its cause to collision code or establish a rate-specific
+failure. No production physics change was made from these observations.
+The prior six-bot replay's alternate path occurred at144, not120; keep both
+records instead of treating either short replay as complete handling acceptance.
+
+All four bounded sessions exit cleanly, retain health 1.75 and unchanged valid
+profile signatures, and pass stationary settled pause (119 / 114 / 114 / 114
+samples for 60/120/144/60-repeat). Disposable disks are recycled and the normal
+playable executable is restored. Evidence: isolated
+`vehicle-integrated-terrain-{60,120,144,60-repeat}` reports/captures/provenance
+and `logs/vehicle-terrain-comparison.json`. These are asynchronous observations
+with captures and synthetic input, not exact trajectories or frame-pacing
+measurements. A controlled obstacle/contact comparison is needed before a
+mechanics change. Full terrain handling and native Mac gameplay remain open.
+All selected CI checks pass at documentation head `a2c9db6`; these checks do
+not resolve the observed live difference. PR #307 remains draft.
+
+## 2026-10-22 — Vehicle chase-camera fractional time correction
+
+The camera-distance suspicion is now reproduced independently of image age.
+Bounded no-bot Siberia runs of integrated code `d0116a7` read the jeep and
+active camera positions together, retain matching frame-counter brackets and
+verify the player's camera link, chase mode 24 and FOV 55. At vehicle Z near
+30, camera/body separation is 10.445 world units at native60 and 15.133 at
+native144. Each selected read completes within 0.247 ms; capture cadence is
+approximately 0.2 seconds at both presets. These are behavior diagnostics,
+not pacing or monitor-scanout measurements. Evidence:
+`logs/vehicle-camera-before.json` and isolated `vehicle-integrated-camera-*`.
+
+Original chase update `CA040` gates on whole game ticks, while its elapsed
+interval comes from physics history through `165650`. Fractional frames are
+therefore discarded. A second whole-tick load at `CA424` controls five spring
+substeps per tick. The shared numeric correction admits every positive live
+interval at entry and supplies one substep group when that interval has no
+whole tick. The original duration is divided among those substeps; authored
+spring constants, target construction, collisions and whole/catch-up groups
+remain in the original routine. Original60 behavior stays unchanged.
+
+A full-original camera fixture reproduces the tracking deficit before the fix
+and passes afterward. It includes the original history average, spring,
+orientation helpers and publication, with unobstructed collision services,
+controlled history windows/targets and host CRT math. Comparisons cover both
+horizontal axes, reversal, quarter/normal/triple speed, 60/120/144, irregular
+intervals, fresh fractional updates, stale-whole pause and ABI. Two-second
+checkpoints align carried-tick phases. Moving-target tolerance is one authored
+sample's travel plus 0.03 units of integration margin, scaled for fast time;
+maximum observed error is 0.144440 units. Independently removing either gate
+or substep-count correction fails (the latter is checked before entering a
+zero-count loop). Three asset-free tests exercise actual global-load lowering
+at both sites and an unrelated address. The registered both-host suite runs
+these without game assets; full-original cases require the verified US XBE.
+
+The combined timing/physics/generation/frame-clock/input/projection suite
+passes 151 tests in 174.45 seconds; 21 context/backlog checks also pass.
+Source fix `24d0ad5` is integrated with main `acf4464` (keyboard/storage
+changes), preserving both historical-fixture exclusions. The integrated
+vehicle/input/menu/storage/fixture/context selection passes 60 tests with two
+Mac-only local skips; four current/historical patch upgrades pass. Integrated
+`fb261e1` passes the supported full Windows build and built-in checks (MSVC
+14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Its EXE SHA-256 is
+`992d6788a3357c8e02c67762b0731c65d53020a2b6c6dbd8dae1b65594f96289`.
+The normal playable executable is restored and hash-verified after each test.
+Native Mac gameplay and broader geometry remain unverified under MAC-060.
+This fix does not establish full vehicle or full-game fidelity.
+
+The corrected executable completes the same bounded, no-bot Siberia route at
+Native60, native120 and native144. Frame-bracketed observations retain valid
+camera ownership, mode24 and FOV55. Camera/body distances in world units at
+matched vehicle positions are:
+
+| Vehicle Z | Native60 | Native120 | Native144 |
+| --- | ---: | ---: | ---: |
+| Near 10 | 7.82404 | 7.93013 | 7.79685 |
+| Near 20 | 10.03926 | 9.93714 | 9.86945 |
+| Near 30 | 10.10340 | 10.10925 | 9.97361 |
+
+This removes the large pre-fix lag in this route; it is not exact trajectory
+parity. Each preset has one short run, asynchronous 20 ms reads, synthetic
+inputs and renderer captures approximately every 0.2 seconds. The largest
+selected-read duration is 0.479 ms. Captures show the expected chase view;
+their pose age is not treated as synchronized. All presets pass both signed
+steering windows and stationary settled pause (115 / 114 / 115 samples with
+zero game delta and XYZ span). Total observations are 3,502 / 3,532 / 3,518.
+Profiles remain unchanged with valid signatures; disposable disks are recycled.
+Evidence: `vehicle-integrated-camfix-{60,120,144}` reports, captures and
+provenance, and `logs/vehicle-camera-comparison.json`. All selected runtime,
+upgrade, transition, launcher and issue CI checks pass at built source
+`fb261e1`. Native Mac gameplay, terrain/contact, physical input, exit and frame
+pacing remain separate acceptance requirements.
+
+## 2026-10-22 — Vehicle integration with main
+
+Vehicle candidate `d0116a7` integrates main `7545d4b`, including its
+mounted-input, boost-resource, crowded-map and clock-handoff fixes. Conflict
+resolution retains both physics history and boost-clock tests and both numeric
+policy helpers. The patch sequence retains coefficient precision before surface
+preservation, vehicle physics before live surface support, then full-float
+surface support and native flip handoff. Historical fixtures exclude the full
+dependent set. The complete patch sequence applies. Combined Windows timing,
+physics, generation, frame-clock, mounted/terminal-input, text-scope and
+projection checks pass: 147 tests in 195.31 seconds. Four fresh/repeated and
+historical upgrade checks pass in 106.87 seconds; 88 context/backlog/scope
+checks also pass. The supported full Windows build and built-in checks pass
+(MSVC 14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Candidate
+EXE SHA-256 is
+`30d1e377a38e33f20c7ba9bee2430e74bd9239be8d4ff31e2bbdbb41fe8e0747`.
+Draft PR #307 contains this integration; broader live handling and actual Mac
+gameplay acceptance remain pending.
+
+The initial integrated 144 live run shows jeep entry/driving and pause/resume,
+but its private observer confused a body handle with a pointer and produced
+no steering data. A corrected observer collected 1,967 samples in the next
+run, but the player died before jeep entry; exclude it from driving comparison.
+The subsequent native60 run collected 1,957 samples and showed signed
+steering, eligible wheel response and throttle. Its 128 settled pause samples
+have zero game delta and no position change. Despite the run name ending
+`60-empty`, six bots remained enabled; it is not an empty-map reference.
+These asynchronous observations and captures are neither completed-update
+traces nor frame-pacing measurements. Evidence and exclusions are retained in
+`logs/vehicle-integrated-live-summary.json` and each disposable run's provenance.
+
+The corrected, no-bot Siberia route completes at native60, native120 and
+native144 using the same `d0116a7` executable and isolated settings. The normal
+None bot preset is confirmed by roster and captures. A bounded normal-input
+approach accounts for the different spawn, then waits six seconds for entry
+before testing right/left steering, release, three-second throttle and pause.
+Both signed steering windows exceed 0.9 magnitude at every preset; live
+observations total 3,502 / 3,507 / 3,536 samples. Settled pause windows contain
+128 / 128 / 129 observations, all with zero game delta and zero XYZ span.
+Profiles/signatures remain unchanged and disposable partitions are recycled.
+
+These are single short diagnostic runs per preset, with 20 ms asynchronous
+reads and synthetic inputs. Nearest half-second right-steering samples are
+-0.88718 / -0.86954 / -0.88497; left samples are 0.87706 / 0.85964 / 0.87013.
+Sampled displacement during throttle is 29.959 / 29.571 / 29.660 world units;
+window endpoints are asynchronous, so this is not exact trajectory parity.
+The driving images show a possible camera-distance difference, but the
+180-frame capture cadence is different in wall time at each preset. A
+synchronized camera check is required before assigning a regression.
+Vehicle exit was not verified. Terrain/contact, exact response timing,
+physical input, pacing and native Mac gameplay remain open. Evidence:
+`private/test-saves/vehicle-integrated-settled-{60,120,144}` and
+`logs/vehicle-nobots-comparison.json`. Earlier no-bot setup probes that missed
+the jeep or sent right input during the entry animation are excluded from
+matched steering acceptance.
+
+All selected CI checks pass for code commit `d0116a7`, including both host
+runtime, upgrade and transition jobs in workflow 39851684749. A subsequent
+documentation commit must be tracked separately from that verified code head.
+
+The current candidate pair is retained in `private/build-recovery/vehicle-d0116a7`;
+its older `464f850` and `60e5b36` executable/symbol pairs were superseded and
+recycled, with their diagnostic evidence preserved. The normal playable
+`4adb6b0` pair is restored between owned tests; its hash is verified. Generated
+code and object files correspond to `d0116a7`, so preserve the normal pair and
+force a fresh link for any further build.
+
+## 2026-10-22 — Vehicle steering response candidate
+
+The WIP `fix/native-vehicle-physics` branch now preserves the original steering
+easing response on fractional updates. Original `172EE0` multiplies steering
+error by live game time and then 0.07. Linear subdivision makes the remaining
+error decay more slowly at native rates. The shared coefficient rule now covers
+only site `17306A`, retaining the speed-dependent steering target, wheel
+eligibility, Original60, whole/catch-up and overshooting-weight behavior.
+
+The expanded full-original driver fixture fails before this correction at
+native120, then passes with the correction and rejects the `legacy-steering`
+negative control. It checks left/right/released steering, vehicle speed and its
+target clamp, quarter/normal/triple time, 60/120/144, irregular intervals, fresh
+wheel output, pause and ABI. Two asset-free synthetic SSE checks also pass,
+including an unrelated site and preserved upper lanes. Physics and world
+geometry remain controlled boundaries. All 117 timing/physics/translator/
+generation checks pass in 153.58 seconds, plus 77 context/backlog/scope checks.
+The 135 steering stage comparisons differ from their Original60 reference by
+at most 0.000000238. Supported Windows build `464f850` and all built-in checks
+pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend).
+This historical candidate was superseded by integrated `d0116a7`; its
+EXE SHA-256 is
+`a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
+The prior playable `4adb6b0` executable was restored and its hash verified.
+Live handling acceptance remains pending; current-main integration is recorded above.
+This is not an established fix for the earlier pillar/bank trajectory difference.
+See MAC-060 and the steering audit in the high-refresh regression record.
+
+## 2026-10-22 — Vehicle and rigid-body timing candidate
+
+On `fix/native-vehicle-physics` (WIP candidate), original-routine tests exposed
+another native timing gap: at steady 120/144 FPS the rigid-body clock and vehicle
+spring update consumed only 0.5/0.4167 seconds per second. The candidate processes
+every advancing interval, splits long rigid-body intervals into bounded substeps,
+and preserves the vehicle's linear adjustment and integer rest-timer cadence.
+Returning to Original 60 rebases its old averaged timestep after pause, avoiding
+native-sized history temporarily slowing original physics.
+
+Windows validation: 67 timing tests passed, followed by four focused checks
+covering slow/fast motion, catch-up, the original secondary solver-step
+selection and history handoff. All 114 translator/context/backlog companion
+checks and four full-stack install/upgrade checks also passed. The extended
+four-case vehicle test file now also passes with the original moving-body,
+force/drag, quaternion/matrix and single support-contact routines. At 144 versus
+60, one-second forced X displacement is 8.977188 versus 8.948050 units; final
+velocity is 11.995511 versus 11.995525. A supported body stops at all three rates,
+and negative controls reject both the old clock and missing contact resolution.
+
+A separate original two-contact diagnostic found 480/960/1152 shared random
+draws at 60/120/144. The candidate now gives additional primary solves a private
+advancing sequence at the two shuffle sites, while authored steps retain their
+shared effects. Three-contact original-routine checks produce the same 960
+shared draws and final seed at all three rates. Expanded fast-motion checks
+also exposed a rounding-induced ninth collision substep (3.375 simulated
+seconds for 3 requested); a bounded eighth-step correction restores 3 seconds.
+Final Windows validation passes 70 timing/vehicle tests, including the
+20,000-partition rounding contract, 115 translator/generation/context/backlog
+companions, and four full-stack patch install/upgrade cases.
+
+The subsequent original entity-publication test exposed a second sleep timer:
+ten counts expired in 0.1667/0.0833/0.0694 seconds at 60/120/144. The candidate
+now preserves authored ticks at its direct byte-memory decrement. Full
+original publication, bounds, sleep/wake and vehicle-component routines pass
+focused checks: ten-count sleep lasts 0.1667 seconds at every rate, or 0.6667
+at quarter speed; wake resumes on the next fractional update. Position and
+velocity are published each advancing frame. The follow-up passes 110 timing,
+vehicle and generation regressions and four fresh/install/upgrade cases;
+live driving and rendering are still separate acceptance work.
+The first full build exposed a missing generated physics body at link time:
+the manual scanner did not recognize a comma-separated `_gen` declaration.
+The declaration is now standalone and a production-scanner regression passes.
+The corrected Windows build at `ba4f0bf` passes supported generation, linking
+and build tests. Bounded Siberia sessions at all three presets verify entry,
+visible driving, terrain contact and pause/resume, but expose an unresolved
+acceleration discrepancy. The same roughly 2.97-second sampled throttle window
+travels 29.96 game units at native60, versus 19.88/22.39 at requested 120/144;
+starting positions are nearly identical, health stays unchanged and authored
+time advances 179/178/178 ticks. These captured runs are not pacing benchmarks
+or full handling acceptance. Further driver/force/contact investigation is
+required. The candidate executable is retained locally for diagnosis; the
+previous tested crowd-performance executable was restored for normal play.
+Shared implementation and tests are registered for both CI hosts; native Mac
+execution is pending (MAC-060). No PR/release published for this candidate.
+
+Driver follow-up identifies a concrete missing input update: original dispatcher
+`17DA00` skips fractional frames at `17DA03`, even though vehicle simulation
+consumes and clears throttle/brake inputs on them. A new original-routine
+fixture reproduces 60 throttle updates and half the intended integrated power
+at native120. The shared gate correction supplies fresh input on every advancing
+native interval. Original60 remains unchanged; forward/reverse/braking, release,
+pause and slow/fast/irregular timing are covered. This fixes the proven input
+defect. Supported Windows build `67c1864` passes, and fresh matched live throttle
+windows now travel 29.695/29.678/29.674 units at requested 60/120/144, a spread
+below 0.1%. All use 178 authored ticks, unchanged health and near-identical
+starting positions. Later terrain contact diverges: 60/120 stop against the
+pillar while 144 proceeds onto the bank. Collision acceptance therefore remains
+open; these capture-enabled runs do not establish locked frame rates. All exit
+cleanly with fixture/profile signatures unchanged. The latest candidate EXE/PDB
+are retained locally, and the prior playable crowd build is restored.
+Windows validation passes 112 timing/vehicle/translator/generation cases and
+77 repository-context/backlog/CI-scope cases after this correction.
+
+Further contact audit finds `1667C0` discards character velocity at gate
+`166899` on zero-whole native updates. The shared policy now uses positive
+fractional game time there. Original contact math passes body/static/character,
+rotation, speeds, pause and ABI cases; old-gate controls fail at native120.
+The original solver plus `16E780/16DA90` forwarding path demonstrates the
+corrected normal/vector velocity reaches a body callback. In that controlled
+moving-support case body motion was already correct; this fixes contact
+information, not a proven terrain-trajectory cause. Windows validation passes
+113 timing/vehicle/translator/generation cases, followed by the expanded
+original-notification case. Full game build/live character-contact and native
+Mac validation of this last correction are pending. The existing playable
+binary and retained `67c1864` candidate remain unchanged.
+
+Spawn follow-up corrects `172AB5`: object creation previously skipped inherited
+joint velocity and angular momentum on fractional native frames. Original
+history-copy, spawn, setters and matrix math now pass at 60/120/144; restoring
+the old gate fails at native120. Controlled services supply allocation, model
+orientation and owner transforms. Pause, disabled inheritance, missing history
+and allocation failure are covered. This is a one-time spawn fix, not a change
+to continuous animation colliders. All 114 timing/vehicle/translator/generation
+regressions and 77 context/backlog/scope checks pass. Supported Windows build
+`3e1ee87` and its built-in tests also pass, covering both the character-contact
+and spawn-motion source additions. Candidate EXE/PDB are retained under
+`private/build-recovery/vehicle-3e1ee87`; executable SHA-256 is
+`6cfe6c7a5b5fe71b0f128b520e1e08affd1e50e3fbd672de783c34f21387c42e`.
+The previous `67c1864` binary pair was recycled and the normal playable
+`4adb6b0` pair restored with its hash verified. No live gameplay was launched
+for these two additions; live spawn/contact and native Mac acceptance remain
+pending. Build evidence is `logs/native-spawn-motion-build.log`.
+
+Actor/vehicle callback follow-up finds a separate conversion error: entity
+post-update already publishes velocity per authored tick, but `17CAE0` divides
+it by the event's fractional interval again on carried-tick frames. A linked
+original-routine fixture reproduces the same contact reporting 5.2 then 10.4
+units/second at120. Native divide `17CBD6` now retains the constant 60 conversion
+to units/second; its gate and original-mode behavior stay unchanged. Direct
+and queued event delivery now agree across60/120/144, including the original
+suspension impulse response. This is controlled single-contact evidence,
+not a live character/vehicle or static-terrain acceptance result.
+The combined timing, vehicle, numeric-join and generation suite passes all
+115 tests (146.56 seconds); 77 context/backlog/scope checks also pass.
+Supported Windows build `60e5b36` and its built-in checks pass
+(`logs/native-actor-impact-build.log`). Live acceptance remains pending.
+A bounded 144 FPS Siberia probe walks into the parked jeep and records the
+original actor callback `17CAE0` from player collision (`C4A41` return).
+Pause/resume passes, health remains 1.75 and the isolated profile is unchanged.
+This proves callback entry, not the taken branch, impulse magnitude or driving
+parity. The retained candidate is now `private/build-recovery/vehicle-60e5b36`;
+the previous `3e1ee87` pair was recycled and playable `4adb6b0` restored with
+its hash verified. See the regression record for evidence and remaining limits.
+## 2026-10-22 — Crowded-scene CPU accounting and hash trace coverage
+
+The unchanged playable `4adb6b0` baseline was exercised in two further bounded,
+isolated Venice/ten-bot native 144 runs with 3440x1440 rendering. Both retained
+the visible fullscreen 1920x1060 client, with no foreground observations.
+`crowd-fullscreen-thread-4adb-144` adds read-only thread CPU/cycle counters at a
+nominal 4 ms interval. Its slowest nearly-five-second window records 135.919 FPS
+and 96.02% main-thread CPU use (7.065 CPU ms per present); an overlapping window
+records 135.971 FPS and 97.31% CPU. Present calls total 43.584/44.010 ms across
+those five-second windows. Faster windows near 144 FPS use about 76% CPU. These
+counters include busy waits and cannot identify exact routines, but implicate
+main-thread CPU budget rather than spending most of the slowdown off-CPU.
+
+`crowd-fullscreen-stack-4adb-144` adds external saved-stack sampling. It does
+not reproduce the sustained dip: minimum rolling five-second FPS is 143.4.
+It does capture a 27.450-ms respawn interval (Present call 0.092 ms), with six
+samples spanning it. Two land in texture-upload code and two in texture-file
+opening. The measured suspension overlap is 0.181 ms; across the active 50-second
+window median suspension is 0.0175 ms, p99 0.139 ms and total 322.627 ms. This remains
+perturbed diagnostic evidence, not causal stage duration. Both runs exit cleanly
+with valid unchanged profiles/fixture and recycled disposable disks; the normal
+playable executable is unchanged. Per-run thread/window/stack JSON and raw CSVs
+retain the observations. The roughly 110 FPS user report remains unreproduced.
+
+The existing upload collector omitted source-key hashing and cached calls. The
+follow-up shared RHI/legacy-GL source now adds hash begin/end timestamps and a
+`cached` outcome with no read/image/view work. This closes a measurement gap;
+it does not change the key, loader behavior, texels, resource reuse or budgets.
+Disabled tracing still performs no clock/file work; the row/byte cap is unchanged.
+Forty-eight focused texture runtime/tool tests pass in 6.32 seconds, including
+all twenty cached hashes, stage ordering, unchanged fallback/resource counts
+and disabled/failed/bounded collection. The supported Windows build and built-in
+checks pass at `018f2be`, with the virtual-pad focus route explicitly skipped.
+Actual native Mac gameplay is unverified. Earlier trace evidence below
+uses the original narrower schema and must not be reinterpreted as hash timing.
+
+The bounded `texture-hash-fullscreen-144` run on that main-based diagnostic build
+records 279 calls (127 loaded, 152 rejected reads), with no cached calls observed;
+cached coverage is supplied by the loader fixture. The CSV is 52,795 bytes,
+well below both caps. All 50 window observations verify ten bots, active Venice,
+visible/non-minimized 1920x1060 client and no foreground focus. In the strict
+spawn+5..55-second window, 43 calls total 0.710 ms hashing, 2.254 ms opening,
+2.338 ms transfer, 0.002 ms validation, 3.841 ms image creation and 0.065 ms views.
+The four worst intervals (14.420/14.019/12.734/11.794 ms) contain no upload calls.
+An interval of 10.813 ms overlaps eight calls totaling 2.237 ms, including 0.100 ms
+hashing. The earlier 27.450-ms event is not reproduced, and this run does not
+justify a hashing optimization. It remains a stage diagnostic, not clean pacing
+or a single-change comparison against the older playable baseline. The EXE hash
+is `a9a6737f3645928ae98ee5d9a283ec80607372f83c1a05db34e2a09819a58c5c`.
+The session exits cleanly with valid unchanged profiles/fixture, recycled disks
+and the normal playable EXE restored. Evidence: per-run CSVs/JSON/provenance and
+`logs/texture-hash-fullscreen-analysis.json`. Main-thread CPU pressure during the
+sustained dips remains the next focus; neither cause nor full-game coverage is
+resolved by the texture measurements.
+
+## 2026-10-22 — Opt-in texture-upload timing
+
+A focused diagnostic branch from main `acf4464` adds per-attempt monotonic
+CPU timestamps for file open, transfer/allocation, validation, image creation
+and view creation. The shared collector covers common RHI and legacy GL;
+Classic preloading, live switching, original texels, fallback and resource
+budgets remain unchanged. It is disabled unless `TSFP_TEXTURE_UPLOAD_TRACE`
+names an output file, bounded to 8,192 rows/below 4 MiB, and emits no clocks or
+file I/O when disabled. Trace output itself can perturb frame pacing.
+
+This follows sampled texture-file work in slow frames on the separate PR307
+vehicle integration build. The new branch is based on main and does not contain
+that unmerged vehicle work; do not compare its FPS as a single-change vehicle
+benchmark. No hitch or performance improvement is claimed by instrumentation.
+Forty-eight focused texture runtime/tool tests pass locally in 6.37 seconds,
+including disabled/failed/bounded output and real-loader stage/fallback checks.
+The existing both-host runtime workflow includes the expanded test module.
+The supported Windows build and built-in checks pass at `2230901`; virtual-pad
+foreground routing explicitly skips because Windows refused focus. All selected
+runtime, transition, launcher-compatibility and issue CI passes on Windows/Mac;
+patch upgrades and launcher builds are out of scope/skipped for this source-only
+change. Actual native Mac trace/gameplay remains unverified under MAC-060.
+
+The bounded, minimized `texture-upload-main-144` run uses the established configured ten-bot
+Venice route, native 144, Classic 3440x1440/FOV73, isolated Test Lab saves/settings,
+no captures and no stack/CPU sampler. Spawn and combat checkpoints verify active
+scene 46/state 7/unpaused; there is no fresh roster sample. EXE SHA256 is
+`4ddb452a1ec1aa7bcab68a179cd06e98627cd5fb1fa11aab142d3334bb141930`.
+Its 44,677-byte CSV contains 280 attempts: 129 loaded and 151 rejected reads. All 129
+successful-load log entries have records; the row/byte limit is not approached.
+
+In the strict complete-interval spawn+5..55-second window, 46 attempts comprise
+15 loads and 31 rejected reads. Cumulative recorded time is 2.867 ms opening,
+4.590 ms transfer/allocation/close, 0.003 ms validation, 4.339 ms image creation
+and 0.079 ms view creation. The longest single active-window attempt is 1.237 ms.
+The worst 12.639-ms Present interval overlaps eight attempts totaling 2.215 ms;
+its Present call is 0.087 ms. Subsequent 12.462/12.428/11.942-ms intervals have no
+recorded uploads. The original 25.856-ms event is not reproduced. This directly
+limits the texture-loading hypothesis: these fresh attempts add some work but
+do not account for most observed slow-frame time. Key hashing and cached calls
+precede this collector, while CSV output follows its end; those costs and other
+frame work remain outside these spans. No loader optimization or FPS gain is
+justified by this run alone.
+
+The session exits cleanly with unchanged valid profiles, preserved fixture and
+recycled disposable disks. The normal playable executable is restored. Evidence:
+per-run source provenance, upload/Present CSVs and
+`logs/texture-upload-main-analysis.json`. This is diagnostic CPU wall timing,
+not GPU completion, scanout, a clean pacing benchmark or full-game acceptance.
+
+### Window-state follow-up on the playable baseline
+
+All selected CI checks pass at diagnostic head `bb8f3ad`, including Windows/Mac
+runtime and patch transitions; scope-selected skips remain skips. A follow-up
+audit found the earlier crowded-map timing runs used `--minimized`. Their
+evidence cannot establish normal foreground gameplay performance.
+
+Two bounded Windows runs of the unchanged playable `4adb6b0` executable
+(`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`)
+retain the same configured Venice route, ten bots, native 144, Classic,
+3440x1440 render resolution/FOV73 and isolated Test Lab data. Neither enables
+native/texture traces, captures or CPU/stack sampling. The shared Present CSV
+and one-second read-only window/roster observations remain enabled. Both verify
+active scene 46/state 7 and ten bots throughout the strict spawn+5..55-second
+window. Render-device initialization confirms 3440x1440; client dimensions below
+describe the window, not the render target.
+
+`crowd-visible-4adb-144` records 7,194 successful guest presents, 143.898 interval
+FPS, minimum rolling five-second 143.6 FPS, p99 8.193 ms and maximum 20.808 ms.
+Its 50 observations are visible/non-minimized, with a 640x480 client and no
+foreground samples. `crowd-fullscreen-4adb-144` confirms the fullscreen flag,
+with 50 visible/non-minimized 1920x1060 client observations, also no foreground
+samples despite a focus request. It records 7,099 successful guest presents,
+142.006 interval FPS, minimum rolling five-second 132.6 FPS, p99 8.995 ms and
+maximum 28.385 ms. Guest-swap logs also dip to 136.3/134.6/134.5 FPS in late combat
+windows. The worst interval's Present call itself takes 0.092 ms.
+
+This exposes a larger sustained dip than the small-window run, but does not
+isolate window mode as its cause: bot encounters/deaths are nondeterministic,
+Windows did not grant foreground focus, and the user's roughly 110 FPS drop is
+still unreproduced. Neither run measures GPU completion or scanout. Next compare
+work versus pacing/wait time during the observed slower combat windows; do not
+infer a texture fix or locked 144 from a near-cap average. Both runs exit normally,
+preserve valid profiles/fixture and recycle disposable disks. The playable EXE
+hash remains unchanged. Local evidence is each run's `window-analysis.json`,
+`window-observations.jsonl`, report, Present CSV and provenance. Native Mac
+foreground gameplay remains unverified.
+## 2026-10-22 — Skip diagnostic name scans when filtering is disabled
+
+The focused `perf/disabled-trace-name-scan` branch starts from main `acf4464`.
+Runtime `trace_only_match` calculated `strlen(name)` before checking whether a
+name filter was configured. Every traced guest-function entry therefore scanned
+its diagnostic label during normal play, even with `RECOMP_TRACE_ONLY` absent.
+Saved Windows crowded-map samples include `strlen` beneath `recomp_trace_enter`.
+The additive shared patch moves this calculation below the existing empty-filter
+return. It retains enabled matching, hit caps, trace budgets, watch/dump/profile
+hooks and renderer-idle callbacks. No game updates, AI or rendering are throttled.
+
+The full patch stack applies. Six actual-function checks cover absent/empty
+filters (zero scans across 10,000 entries), enabled exact-name and per-filter hit
+limits, zero/negative limits, and a required failing eager-scan mutation.
+Together with runtime-scope tests, 73 checks pass locally in 6.62 seconds. The new
+suite runs in the existing Windows/macOS runtime workflow. A further 35 context,
+backlog and patch-tracking checks pass in 10.40 seconds. A local component-only
+benchmark compiles the actual before/after filter in separate translation units
+with MSVC `/O2`: five alternating 20-million-call trials give median 2.296 ns per
+disabled call before and 0.959 ns after. This hot-label microbenchmark is not a
+game FPS measurement (`logs/trace-filter-component-bench.json`). The complete
+fresh-checkout and repeated-build patch transition passes (20.15 seconds).
+The supported Windows build at `7b5f042` and built-in checks pass; virtual-pad
+foreground routing explicitly skips because Windows refused focus. Candidate
+SHA-256 is `0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`.
+
+The isolated 165-second ten-bot Venice/unlimited session completes with player
+movement, firing, damage/death and respawn observations. The strict 50-second
+window beginning five seconds after spawn contains 7,162 successful guest
+presents: 143.281 interval FPS, minimum rolling five-second FPS 137.6,
+p99 interval 8.392 ms and maximum 24.227 ms (Present call 0.097 ms). Twenty
+intervals exceed 9 ms; one exceeds 16.67 ms. The recorder reaches its 20,000-row
+cap later, 16.7 seconds after the analysis window; endpoint coverage and continuous
+frame IDs verify the complete measured window. No CPU/stack/native/texture
+tracing or capture ran; Present CSV and one-second window/roster reads remained.
+All 50 observations confirm ten bots and a visible, nonminimized window, but zero
+foreground observations. Renderer configuration is Classic/3440x1440/FOV73 at
+native 144; the client measures 1920x1060. AI/deaths are nondeterministic, and the
+older normal binary differs beyond this fix, so this is not a controlled speedup
+comparison or foreground play acceptance. Presents do not establish GPU completion.
+
+Evidence: `logs/trace-filter-build.log`, `logs/trace-filter-fullscreen-144.log`
+and `logs/trace-filter-window-analysis.json`. Profile bytes/signatures and the
+canonical fixture remain unchanged; disposable disks are recycled and the normal
+playable executable/symbol pair is restored. Native Mac gameplay remains pending.
+Eliminating the disabled scans is verified; a measurable game FPS gain and the
+reported 110 FPS slowdown remain unverified.
+## 2026-10-22 — PFB worker wake rework
+
+Runtime `bf4b755` replaces the rejected direct-clear shortcut with a notification
+to the existing worker, retaining its busy-bit/DMA/fence service and activity
+accounting. Queued auto-reset event requests survive arrival before the wait.
+Windows waits on the event plus its high-resolution timer. Native Mac uses a
+condition-variable event wait with a monotonic deadline. A follow-up retains
+the original 50-ms ceiling for diagnostic idle values above 50,000 us; the
+normal 500-us path and compiled Windows behavior are unchanged. Shutdown drains
+notifier users before releasing the event. Missing event creation and diagnostic
+`RECOMP_PFB_WAKE_ACK=0` retain polling. No console/game clock changes.
+
+The supported Windows regeneration/build and built-in tests pass (foreground
+virtual-pad routing skipped). Retained binary SHA-256:
+`2da9e5b31c4b63df90824a1dd240535f9edeeb235f68c55bc56072f820d9cb8c`.
+Four bounded ten-bot Venice runs at Classic 3440x1440/FOV73 complete loading,
+combat/respawns and the strict 50-second post-spawn measurement window. All
+recorded intervals are successful guest Present calls, with continuous frame
+IDs and recorder coverage beyond both endpoints.
+
+| Configuration | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval (ms) | Main-thread CPU | Process CPU cores | Observed game ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native144, notification off | 143.982 | 143.6 | 8.291 / 12.327 | 78.57% | 1.347 | 59.990 |
+| Native144, notification on | 144.000 | 143.8 | 7.513 / 10.041 | 58.44% | 1.036 | 59.990 |
+| Original60, notification on | 60.001 | 59.8 | 17.249 / 18.681 | 29.35% | 0.519 | 59.986 |
+| Native120, notification on | 120.000 | 119.8 | 8.875 / 10.923 | 51.10% | 0.962 | 60.013 |
+
+The paired 144 runs use the same executable and settings except notification.
+Main-thread CPU time falls 25.6% (39.281 to 29.219 seconds over about 50 seconds),
+and intervals above 9 ms fall from 15 to 4. Combat is nondeterministic: dead-state
+observations differ (30.3% off, 35.3% on). All 50 window observations per run are
+visible/nonminimized but nonforeground; client size is 1920x1060. Read-only 4-ms
+CPU counters and 1-Hz window/roster observations remain enabled. These measurements
+support this bounded improvement, not a clean foreground benchmark, GPU completion,
+scanout or resolution of the user's 110-FPS crowded-match report. Sparse level
+clock observations do not certify every simulation system or complete playability.
+
+Runs `gpu-wake-{on,off}-bf4-144`, `gpu-wake-on-bf4-original60` and
+`gpu-wake-on-bf4-120` preserve profile bytes/signatures and the canonical fixture,
+recycle disposable disk images, and restore the normal executable/symbol pair
+(hash `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`).
+Logs include per-run window analyses, CPU summaries and exact adapter provenance.
+
+The second paired map, Hotel (verified scene39, ten bots), also completes with
+the same binary and settings. In `gpu-wake-{on,off}-bf4-hotel144`, on/off results
+are 143.840/142.260 interval FPS, minimum rolling five-second 142.8/127.6 FPS,
+p99 7.533/8.895 ms, main-thread CPU 49.98%/82.57%, total process 0.864/1.361
+cores, and game clock 59.990/60.013 ticks/s. Intervals over9 ms number3/55.
+Dead-state observations differ (29.5%/39.4%); foreground observations remain0.
+Profiles/fixture are unchanged and normal binaries restored after both runs.
+
+**Residual outliers remain:** the enabled Hotel run's maximum interval is
+43.776 ms, worse than the control's 18.558 ms, despite improved typical pacing.
+The 43.776-ms frame ends59.3 ms after a read-only observed dead-to-alive transition;
+its Present/Swap span is only0.088 ms. Another24.537-ms interval occurs2.2 seconds
+after an observed respawn. These correlations do not identify a cause. Preserve
+`logs/gpu-wake-hotel-hitch.json` and the underlying CPU/window/Present records;
+next investigate the slow frame's actual wait/stack before changing more timing.
+The worker-notification change is not an all-hitches fix.
+
+Final Windows notifier/lifter/mutation/wait-selection checks: 19 pass, one
+Mac-only check skips. Native runtime CI at `af96547` passes, including the actual
+Mac event adapter's queued/consumed signals, timeout, delayed wake and manual
+reset checks. This is native host-unit evidence, not Mac gameplay. Its historical
+Mac-stack upgrade check exposed declaration placement inside old patch context;
+the declaration is moved before CreateEventA so the old SetEvent/timer context
+remains intact. The fresh/repeated and historical Mac-stack upgrade tests both
+pass locally (46.32 seconds); final-head CI is pending. Full-game and native Mac gameplay
+acceptance remain outstanding; PR #310 remains draft/unmerged.
+
+## 2026-10-22 — PFB flush acknowledgement investigation
+
+Same-binary (`7b5f042`, SHA-256
+`0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`)
+bounded ten-bot Venice runs compare `RECOMP_NV2A_ACK_IDLE_US=0` against the
+default 500. Both complete with valid, unchanged isolated profiles and preserved
+fixture; disposable disks are recycled and the normal executable/symbol pair is
+restored. In the fully covered 50-second post-spawn windows, no-sleep/default
+respectively measure 144.000/143.939 interval FPS, p99 7.423/8.229 ms, maximum
+9.301/12.602 ms, and main-thread CPU 53.57%/82.41%. Total process CPU rises from
+1.323 to 1.559 core equivalents without sleep. Dead-state observations differ
+(47.8% versus 42.8%); combat is nondeterministic. All window observations are
+visible/nonminimized but nonforeground. These asynchronous CPU/Present diagnostics
+support investigating acknowledgement latency; they do not prove the cause of
+the user's 110 FPS drops or justify a permanently spinning worker. No setting
+was changed outside the disposable child environment. Evidence is retained in
+`logs/ack-comparison.json` and the two `ack-*-7b5-144` test directories.
+
+Source inspection and disassembly of the verified supported XBE identify the
+PFB flush write at `0x3D66C3` and busy-bit poll at `0x3D66D0`. The existing
+runtime worker clears the same `0x10000` bit in plain-memory register
+`0xFD100410`; its idle wait defaults to 500 microseconds. A main-based prototype
+on `perf/gpu-flush-ack` adds a post-store callback at exactly that instruction,
+servicing the same acknowledgement immediately while retaining the worker for
+other duties. Exact-address/lifecycle guards and atomic bit preservation keep
+other registers, interrupt delivery, DMA, host GPU work and the console clock
+outside its scope. The generic lifter retains default no-op behavior for other
+titles. Regeneration and the supported Windows build at `92ffa8b` pass, including
+built-in checks (foreground virtual-pad routing explicitly skips). Candidate
+SHA-256 is `702cca547d8b05797c985cc2bd7b0e174aee82a646779890907c3ee129213620`.
+The prototype fails live gameplay validation and must remain unmerged.
+
+The initial prototype passes 80 focused acknowledgement, timing and generation
+checks (86.20 seconds), plus the full fresh/repeated-stack check (20.17 seconds).
+An explicit cached `RECOMP_PFB_SYNC_ACK=0` diagnostic fallback then adds
+same-binary on/off comparison capability without saved-settings changes. Its
+final 15 lifting/actual-runtime/mutation cases pass, with 21 context/backlog
+checks passing after refreshing the stale patch index. Omitted/reordered
+callbacks and clearing unrelated register bits are required failing mutations.
+
+Same-binary disabled control `gpu-ack-off-92f-144` completes the ten-bot route:
+143.901 interval FPS, p99 8.256 ms, main-thread CPU 83.06%, total process 1.376
+core equivalents, and observed level-clock rate 59.99 ticks/second. The enabled
+run `gpu-ack-on-92f-144` stops presenting after 72.446 seconds while loading the
+match; scene stays 101 and level ticks stop at 4275. Its measurement-window
+assertion fails, so no enabled gameplay FPS result is accepted. A second bounded
+run (`gpu-ack-load-stack-92f`) reproduces the stall. Its 6,992 saved-stack samples
+show the later `sub_003D65B0` wait under `sub_003D6870`/Swap; this routine polls
+the GPU tag at `[device+0x934]+0x400B10` against the completion-counter bits at
+`*[device+0x30]`. It is not still waiting for the first PFB busy bit.
+
+The stack run suspends briefly to copy a stack before resuming/unwinding; maximum
+suspension is 1.0552 ms. It establishes the persistent wait location, not clean
+frame pacing. All three runs terminate within their bounds, preserve profile
+bytes/signatures and fixture, recycle disposable disks, and restore the normal
+playable executable/symbol pair. A clean runner exit does not pass scene
+acceptance. Direct acknowledgement is rejected pending rework of the full
+worker handshake; Original 60 and Mac gameplay tests are deferred until the
+loading regression is resolved. The draft PR explicitly records this failure.
+## 2026-10-23 — Texture streaming integration correction (PR #311)
+
+The initial background-loading candidate 25e0059 is not accepted. Its Enhanced
+visual run recorded zero completed replacements: Future Perfect calls host Swap,
+while the queue pump was attached only to the older Present path. Earlier Hotel
+FPS gains and Venice 60/120 measurements therefore do not validate the intended
+loader and are withdrawn from performance/compatibility conclusions. Original
+views remained visible, which allowed the mistake to evade the earlier smoke runs.
+
+The pump now lives in common present_resolve, used by Swap, Present and the public
+frame helper. The skipped-Swap branch returns before it. The regression fixture
+executes the actual production frame bodies, checks exactly one completion per
+presented frame and none for skips, and delivers real DDS loads through Swap.
+Both selected modes failed before repair; all 15 texture tests pass afterward.
+Legacy GL already delegates Swap to its Present adapter and needs no second pump.
+
+The visual probe also exposed a harness limitation: replay mode deliberately
+suppresses host shortcuts. Neither guest F10 injection nor the attempted host
+window command switches texture modes during replay. The ineffective command was
+removed; captures labeled Classic/Enhanced are both Enhanced and are not proof of
+switching. Live switching remains unverified by this probe.
+
+The shared queue/cancellation/format tests and prior build/CI results retain only
+their stated CPU/compile scope. The supported Windows build at 86b2c1c and its
+built-in checks passed (foreground virtual-pad routing skipped). The bounded
+Venice 144-FPS Enhanced run completed 132 uploads across 128 keys, with maximum
+recorded replacement residency 136,053,628 bytes. Two inspected gameplay captures
+showed no obvious blank/corrupt surfaces; this is not full asset acceptance.
+Capture/texture tracing were enabled, so this run is excluded from performance
+comparisons. Corrected rate checks and live switching are recorded below;
+broader comparisons, final-head CI and Mac scene validation remain pending. The
+normal playable executable/symbol pair was restored and profiles/fixture preserved.
+No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
+
+Corrected-build Hotel comparison: Windows x64/MSVC 17.14.40/D3D11, source
+86b2c1c, executable SHA-256
+998adf71af5d69ecf3c6311fabb92ca01e128a692a4cb00770e1c59f2054ee1c.
+Both bounded runs used Enhanced textures, native 144, ten bots, requested
+3440x1440/FOV73 and observed 1920x1060 client area. Each measured the complete
+50-second window from spawn+5 to spawn+55, with successful guest Present records,
+captures/texture tracing off, read-only CPU observations on, and no concurrent
+local builds/test suites. Source 86b2c1c passed selected Windows/Mac runtime,
+patch-upgrade/transition and launcher CI checks; this is not Mac scene acceptance.
+
+| Measurement | Background reads | Synchronous reads |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.24 FPS | 142.06 FPS |
+| Lowest rolling five-second rate | 139.8 FPS | 132.8 FPS |
+| 99th-percentile frame interval | 8.467 ms | 8.738 ms |
+| Maximum frame interval | 11.653 ms | 11.493 ms |
+| Frames over 9 ms | 26 | 45 |
+| Frames over 16.67 ms | 0 | 0 |
+| Observed level-clock ticks/second | 59.989 | 60.013 |
+
+These are a single on/off pair with nondeterministic AI and deaths (36.7% versus
+37.8% of health observations), not causal proof or a full gameplay comparison.
+Both windows were visible but foreground in zero of 50 samples; requested
+fullscreen did not establish foreground ownership. API presents do not measure
+monitor scanout. Sparse level-clock observations do not establish animation,
+physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
+test-save directories and texture-stream-86b-comparison.json. Both sessions
+completed and restored the normal playable pair; fixture/profiles were preserved.
+A reverse-order repeat (synchronous first, then background) used the same
+executable, settings, strict 50-second window and instrumentation. No local
+build/test suites ran alongside either measurement. Results:
+
+| Measurement | Background repeat | Synchronous repeat |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.18 FPS | 142.64 FPS |
+| Lowest rolling five-second rate | 136.0 FPS | 136.2 FPS |
+| 99th-percentile frame interval | 8.477 ms | 8.661 ms |
+| Maximum frame interval | 10.323 ms | 18.655 ms |
+| Frames over 9 ms | 17 | 30 |
+| Frames over 16.67 ms | 0 | 1 |
+| Observed level-clock ticks/second | 60.014 | 60.011 |
+
+Both pairs favor background loading in average rate and >9-ms frame counts,
+but the minimum rolling five-second rate does not consistently improve. These
+four samples support a modest scoped pacing improvement, not locked 144 FPS or
+a complete fix for NPC-related dips. Death observations in the repeat were
+28.6%/25.3%; AI events remain unpaired. All 50 window samples were visible and
+none foreground. Evidence: texture-stream-86b-hotel144-off-repeat/on-repeat.
+Both sessions preserved profiles and restored the normal playable binary.
+Broader rate/scene coverage and foreground gameplay remain outstanding.
+The following checks extend this same executable's Windows coverage.
+
+Corrected Enhanced Venice runs at Original 60 and native120 completed with ten
+bots and isolated Test Lab profiles. Same resolution/FOV/client and instrumentation
+limits as the Hotel runs above; these are rate checks, not paired combat parity.
+Original 60 explicitly disabled native timing with target=0/cap=60. Each result
+uses a complete 50-second successful guest-Present window, spawn+5 to spawn+55:
+
+| Measurement | Original 60 | Native 120 |
+| --- | ---: | ---: |
+| Average successful Present rate | 59.9997 FPS | 120.0025 FPS |
+| Lowest rolling five-second rate | 59.8 FPS | 119.8 FPS |
+| 99th-percentile frame interval | 18.015 ms | 9.505 ms |
+| Maximum frame interval | 18.682 ms | 11.204 ms |
+| Observed level-clock ticks/second | 59.989 | 59.988 |
+
+Both were visible but foreground in zero of 50 samples. Death observations were
+30.0%/40.4%, so these runs cannot establish equivalent encounters or animation,
+weapon and movement behavior. Capture/texture trace were off; the actual Enhanced
+delivery check remains the separate traced run. Evidence directories:
+texture-stream-86b-venice-original60 and texture-stream-86b-venice120. Both restored
+the normal playable binary and preserved the fixture/profile signatures.
+
+The separate texture-stream-86b-menu-switch-views run exercised actual paused
+Video Options at native144 in Venice. Classic selection enabled Apply; applying
+grayed it out. Resumed gameplay had paused=0; reopening the page read Classic
+from the effective mode, with Apply disabled. Enhanced was then selected/applied,
+Apply returned to gray, and gameplay resumed with paused=0. Inspected Classic and
+Enhanced gameplay stills showed no obvious blank/corrupt surfaces; different
+death-camera poses prevent a pixel-matched art-quality comparison. The run
+completed 126 replacement uploads and preserved profiles/fixture. These
+capture/trace-enabled runs are excluded from performance comparisons. The
+explicit menu setter does not log mode changes; only the host toggle does.
+This validates the Windows in-session menu route, not physical F10 delivery,
+restart persistence (selection is session-only), Mac scenes or full asset coverage.
+
+CI follow-up: Windows native runtime at merge 9bf5630 failed one online-host test
+because missing cryptography caused fallback to Git OpenSSL, whose certificate
+generation timed out after 30 seconds (471 passed, 83 skipped, 18 subtests).
+Mac runtime and both patch-upgrade jobs passed. The Windows job now installs the
+existing requirements-release.txt pins used by the packaged companion; pin-only
+changes select native checks and trigger the workflow. Production hosting code
+is unchanged. Local online-host/scope checks pass (77 tests); fresh CI is pending.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
@@ -166,6 +1338,70 @@ before recording Mac fixture success. Gameplay source is unchanged by this
 test-only follow-up, so the retained Windows candidate still has the fix.
 The focused input, Mac-tooling and repository companion suite passes 116
 tests with one unavailable-host skip on Windows (10.43 seconds).
+## 2026-10-22 — HUD panel text validation overhead (candidate)
+
+On `perf/arcade-panel-text-scope`, the shared HUD panel now reuses the existing
+read-only mapping scope across its width/fit measurements and text draws.
+Its placement flushes stay outside the scope; scratch writes still query live
+protection. The original font sizing, labels, rendering and gameplay cadence
+are unchanged. The preceding crowded-Venice CPU profile identifies text
+validation as remaining work, but is not an isolated FPS comparison.
+
+The complete patch stack applies. Ten focused scope tests pass on Windows,
+including both host feature configurations and a failing no-panel-scope
+mutation. A modeled panel falls from five read queries to one, retaining three
+measurements, ten draws, thirteen translated scratch-write checks and fresh
+validation on the next operation. Supported Windows build `4a4aa02` and built-in
+checks pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend). A bounded
+native144 Venice/10-bot run at 3440x1440, FOV 73, Classic reaches match state 7;
+reviewed captures show readable RANK/ordinal labels during death/respawn. This
+is a rendering smoke check, not a pixel comparison or FPS benchmark: another
+game session remained open, and capture/test overhead was present. The profile
+and canonical fixture remained valid and unchanged; disposable partitions were
+cleaned. Full rendered comparison and native Mac gameplay remain pending.
+Broader patch-upgrade/context/backlog/CI-scope validation passes:
+109 tests in 588.40 seconds. See MAC-002.
+
+Initial Mac CI found one stale placement-source assertion expecting the direct
+panel callback. The assertion now requires its scoped callback at the same
+placement tag; the existing behavioral scope tests still verify execution and
+lifetime. No runtime change or game rebuild is needed for that test correction.
+
+At repair head `c580949`, hosted native runtime CI passes on Windows (461 passed,
+82 skipped, 18 subtests) and Mac (436 passed, 74 skipped, 18 subtests). Mac's
+asset-free RHI HLSL/menu-pixel/readback/present checks also pass. These do not
+establish native Mac gameplay or complete rendering fidelity.
+Both hosts' patch-upgrade/transition jobs and all other selected PR checks
+also pass at that repair head.
+
+The first isolated pacing comparison is mixed, so no FPS improvement is claimed.
+Windows 11 x64, i7-13700K, RTX 4070 SUPER, driver 32.0.16.1742, D3D11;
+Venice, ten bots, Classic, 3440x1440, vertical FOV 73, target 144. Both minimized
+runs disable captures and CPU sampling and cover the same 50-second window,
+five seconds after the spawn observation. The normal `4adb6b0` binary has
+identical `src/` and `patches/` to base main `31052eb`.
+
+| Build | Mean FPS | p95 interval | p99 interval | Maximum interval |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline `4adb6b0` | 143.32 | 8.134 ms | 8.972 ms | 25.334 ms |
+| Candidate `4a4aa02` | 143.59 | 8.240 ms | 9.127 ms | 27.790 ms |
+
+These are successful host guest-present intervals, not GPU completion or scanout.
+Bots, deaths and respawns vary between runs, and both runs are close to the cap.
+Local repair checks ended about two seconds before the initial baseline window.
+A baseline repeat was excluded from the clean comparison because another game
+opened before its measurement window; further candidate repeats are deferred
+while that session runs. The candidate run preserved the fixture/profile and
+cleaned its disposable partitions. Raw evidence is retained locally in
+`private/test-saves/panel-{base,candidate}-144` and
+`logs/panel-144-comparison.json`; the latter also labels the excluded repeat.
+PR #305 remains a draft pending stronger performance evidence.
+
+Candidate EXE/PDB retained in `private/build-recovery/panel-4a4aa02`, EXE SHA256
+`55440352d61716a05c4237acc788a258020aca636d7ac46c899e24b4219e3d82`.
+The normal playable `4adb6b0` executable is restored with its hash verified.
+This branch starts at main `31052eb`; mounted-input PR #304 and the separate
+vehicle-physics candidate are not incorporated into this performance candidate.
 
 ## 2026-10-22 — Pending PR integration
 
