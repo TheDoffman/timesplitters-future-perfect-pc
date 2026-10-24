@@ -695,6 +695,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- Mouse-chain bounded queries (PR #328, commit carrying this entry): shared
+  camera, mounted and terminal helpers use `pc_guest_memory_in_span` on misses.
+  Their original validated extents, mode/ownership checks, input consumption and
+  fresh per-update snapshots remain; only known-size query selection changes.
+  Windows uses resident-page batches; Darwin keeps its Mach adapter. Both host
+  adapter bodies pass controlled-map tests on Windows; real host protection and
+  mounted/terminal suites pass 13 checks. The resident Windows camera case now
+  needs no full-region query. Updated native Mac tests and physical input remain
+  awaiting validation; no platform-specific feature adapter is required.
+
 - Bounded page batches (PR #328, commit carrying this entry): Windows' shared
   `pc_guest_query_span` checks up to four resident pages per query, including
   every page's read/write permissions. Auto Lookahead now uses that path while

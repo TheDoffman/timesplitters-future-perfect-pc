@@ -1,3 +1,63 @@
+## 2026-10-24 — Bounded mouse-chain memory validation
+
+The previous complete Disco diagnostic retained 278 VM-query samples under
+`VirtualQuery -> pc_controls_apply_mouse`. The shared camera, terminal and
+mounted helpers still used full-region queries despite knowing every access
+extent. They now use `pc_guest_memory_in_span`: reuse a caller-owned snapshot
+within one uninterrupted mouse operation, otherwise query the exact bounded
+extent through `pc_guest_query_span`. The seed uses 0x118 bytes for the player
+or four bytes for a lower FOV field. Subsequent fields must fit the returned
+span or get their own check. Permissions are never kept across updates.
+Validated record extents, ownership/mode checks, sensitivity, inversion, raw
+mouse displacement, native pause rules and input consumption are unchanged.
+Windows uses bounded resident-page batches; Darwin retains its Mach query.
+
+Controlled Windows and SDL adapter bodies retain cache/order/permission-expiry
+negative controls. Real OS camera checks now require zero full-region queries
+for resident fields while retaining read-only FOV acceptance and protected-player
+rejection. Mounted/terminal tests pass **13 checks** in 15.80s, including native
+cadence and legacy clock/consumption controls. Another 21 context/backlog tests
+pass; repository context and whitespace checks pass. Logs:
+`mouse-page-span-tests.log`. Native Mac execution/physical input remain pending.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER. Source is `8ddec4f6` plus this follow-up;
+executable SHA256:
+`9b56f00e2a4dc22e440866ccb7b7239ab5b88cc64c96b6ae63cef9e7ce66bc63`.
+Build log: `mouse-page-span-build.log`. No physical-input latency or sustained
+FPS claim follows from the memory checks or build alone.
+
+The native144 ten-bot Disco diagnostic `crowd-mouse-page-span-profile` completes,
+preserving fixture signatures and recycling disposable partitions. The complete
+80s-to-120s interval has 6,798 samples, 3,826 on-CPU samples, 24.1s CPU and no
+dropped chains. Spawn is observed at 86.583s, so the interval includes the match
+transition. VM-query leaves decrease from the preceding candidate's 298 to 33;
+the previous 278-sample `VirtualQuery -> pc_controls_apply_mouse` chain is absent
+from this window. Nineteen VM chains still contain full VirtualQuery beneath
+display-camera callers, and 14 contain QueryWorkingSetEx. Three other retained
+chains mention the mouse adapter (configuration lookup/general code).
+This supports removal of the targeted query work, not zero total input cost or
+an exact causal FPS gain; bot outcomes and sample attribution still vary.
+Evidence: run provenance/report/CPU snapshots and
+`logs/mouse-page-span-profile-summary.json`. A clean pacing run is separate.
+
+The clean Disco240 run `crowd-mouse-page-span-disco-240` completes with the same
+Classic/3440x1440/FOV73 setup, foreground 1920x1060 client on a 60 Hz desktop,
+and ten configured bots. The complete spawn+5..50s window contains 10,327 fresh
+guest intervals: 229.508907 FPS, lowest one-second count 168, lowest five-second
+rate 184.4, p99 6.077 ms and worst 8.912 ms. Game/wall ratio is 0.999969;
+no interval exceeds 9 ms and no frames are interpolated. There is no CPU
+profiler, capture or per-update trace; Present CSV and bounded actor reads remain.
+Fixture signatures are preserved and disposable partitions recycled. Evidence:
+run provenance/report/CSV and `crowd-pacing-summary.json`.
+This still does not sustain 240 and is within the earlier HUD candidate's
+varying 227.035/233.604 averages; do not claim a matched FPS gain. The sampled
+memory-query reduction does not explain all remaining crowd frame-time spikes.
+Physical scanout/latency, other maps/modes and Mac gameplay remain unverified.
+
+All non-skipped Windows/macOS CI checks pass preceding head `8ddec4f6`, including
+native runtime and patch transitions. This mouse-chain follow-up needs new CI.
+
 ## 2026-10-24 — Bounded page batches for camera validation
 
 The Auto Lookahead camera guard still validated its full 0x1504-byte player

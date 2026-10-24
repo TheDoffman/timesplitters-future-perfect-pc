@@ -24,7 +24,9 @@ def test_mouse_update_regions(tmp_path, adapter, mutation):
         body = body.replace(seed.group(), 'PcGuestRegion region={0};')
     memory = (ROOT / 'src/pc_guest_memory.h').read_text()
     helpers = '\n'.join(re.search(r'static inline [^\n]*\b' + name + r'\(.*?\n\}', memory, re.S).group()
-                        for name in ('pc_guest_region_remaining', 'pc_guest_memory_in_region'))
+                        for name in ('pc_guest_region_remaining',))
+    span = (ROOT / 'src/pc_guest_span.h').read_text()
+    helpers += '\n' + re.search(r'static inline int pc_guest_memory_in_span\(.*?\n\}', span, re.S).group()
     if mutation == 'uncached':
         helpers = helpers.replace('if(bytes<=pc_guest_region_remaining', 'if(0 && bytes<=pc_guest_region_remaining')
     fixture = (ROOT / 'tests/mouse_region.c').read_text().replace('/* PRODUCTION_MEMORY_HELPERS */', helpers)

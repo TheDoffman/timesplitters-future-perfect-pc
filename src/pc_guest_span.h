@@ -50,4 +50,14 @@ static inline PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
 #endif
     return pc_guest_query_region(address);
 }
+/* Same uninterrupted-operation lifetime as pc_guest_memory_in_region, with
+ * a bounded known-size query on misses. Never carry this through guest calls. */
+static inline int pc_guest_memory_in_span(PcGuestRegion *region,
+                                         uintptr_t address,size_t bytes,int writing)
+{
+    if(bytes>UINTPTR_MAX-address)return 0;
+    if(bytes<=pc_guest_region_remaining(region,address,writing))return 1;
+    *region=pc_guest_query_span(address,bytes);
+    return bytes<=pc_guest_region_remaining(region,address,writing);
+}
 #endif

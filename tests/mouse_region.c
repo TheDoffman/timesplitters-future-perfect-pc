@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
 typedef struct PcGuestRegion {uintptr_t base;size_t size;int writable;} PcGuestRegion;
 static unsigned char guest[0x800000];
 static unsigned queries;
@@ -29,6 +30,8 @@ static PcGuestRegion pc_guest_query_region(uintptr_t address)
     }
     return r;
 }
+static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
+{ (void)bytes;return pc_guest_query_region(address); }
 /* PRODUCTION_MEMORY_HELPERS */
 #include "pc_camera.h"
 #include "pc_terminal.h"
@@ -105,9 +108,9 @@ int main(void)
     blocked_low=0;split=0;
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;
-    CHECK(pc_guest_memory_in_region(&region,end-4,4,1));
-    CHECK(!pc_guest_memory_in_region(&region,end-4,8,1));
-    CHECK(!pc_guest_memory_in_region(&region,UINTPTR_MAX-2,8,0));
+    CHECK(pc_guest_memory_in_span(&region,end-4,4,1));
+    CHECK(!pc_guest_memory_in_span(&region,end-4,8,1));
+    CHECK(!pc_guest_memory_in_span(&region,UINTPTR_MAX-2,8,0));
     puts("PASS: ordered mouse mappings, split regions, permission expiry, terminal routing and bounds");
     return 0;
 }

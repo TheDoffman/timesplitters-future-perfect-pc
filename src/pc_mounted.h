@@ -1,13 +1,13 @@
 #ifndef TSFP_PC_MOUNTED_H
 #define TSFP_PC_MOUNTED_H
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 #include "pc_input.h"
 #include <math.h>
 
 static inline uintptr_t pc_mounted_read(uint32_t address,ptrdiff_t offset,size_t size,PcGuestRegion *region)
 {
     uintptr_t p=(uintptr_t)address+offset;
-    return address && pc_guest_memory_in_region(region,p,size,0)?p:0;
+    return address && pc_guest_memory_in_span(region,p,size,0)?p:0;
 }
 
 /* US sub_00258A20: equal limits lock an axis, a full revolution wraps it,
@@ -56,7 +56,7 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
     gun=pc_mounted_read(gun_address,offset,0x80,region);
     if(!gun)return 0;
     data=pc_mounted_read(*(const uint32_t*)(gun+0x7c),offset,0x6c,region);
-    if(!data || !pc_guest_memory_in_region(region,data,0x6c,1) ||
+    if(!data || !pc_guest_memory_in_span(region,data,0x6c,1) ||
        *(const uint32_t*)data!=gun_address || *(const uint32_t*)(data+4)!=0x4147554e ||
        *(const uint32_t*)(data+0x68)!=owner)return 0;
     state=*(const uint32_t*)(data+0x10);

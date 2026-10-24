@@ -40,8 +40,9 @@ networking, movies, demo round trips and legacy144 migration, not sustained FPS.
 effect/menu/camera/lighting/network/recovery and HUD fixtures through240.
 Keep original references/tolerances and check row counts/rates when extending.
 Portable mouse cadence and surface math also cover240; math is not live water
-validation. `test_mounted_mouse.py` covers 125/1000/8000 Hz packets and legacy
-clock/consume mutations through240. Private-XBE cases skip without verified
+validation. `test_mounted_mouse.py` / `test_terminal_mouse.py` check bounded
+queries, permissions, 125..8000Hz input and clock/consume/cache mutations through240.
+Private-XBE cases skip without verified
 data; public CI is not Mac execution evidence for lifted routines.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
@@ -60,10 +61,9 @@ Asynchronous ReadProcessMemory observations measure update holds, not rendered
 frames or Internet/physical-input latency. Five local benchmark fixture
 manifests are checked with the normal validator; the canonical fixture stays intact.
 
-Publisher tests run on both hosts without a game/UI rebuild:
-`test_launcher_release.py` covers stable selection, pagination/completeness,
-initial notes, scope/merge/rename rules; `test_publish_release.py` covers alpha
-bootstrap, cross-minor Stable baselines, mixed histories and ancestry.
+Publisher suites `test_launcher_release.py` / `test_publish_release.py` run on
+both hosts: Stable/alpha baselines, pagination/completeness, initial notes,
+scope/merge/rename/ancestry rules. No game/UI rebuild is needed.
 
 `test_auto_look.py` checks real multi-page records and permission expiry.
 `test_decal_projection.py` checks bounded four-page batches, larger-span fallback,

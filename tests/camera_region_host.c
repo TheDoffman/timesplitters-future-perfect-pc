@@ -1,6 +1,14 @@
 /* Real OS protection boundaries, independent of the controlled query fixture. */
+#include "pc_guest_memory.h"
+static unsigned full_queries;
+static PcGuestRegion counted_region(uintptr_t address)
+{ ++full_queries;return pc_guest_query_region(address); }
+#define pc_guest_query_region counted_region
+#include "pc_guest_span.h"
+#undef pc_guest_query_region
 #include "pc_camera.h"
 #include <stdio.h>
+#include <string.h>
 #ifdef __APPLE__
 #include <sys/mman.h>
 #include <unistd.h>
@@ -29,12 +37,15 @@ int main(void)
     ptrdiff_t offset=(ptrdiff_t)guest;
     uint32_t player=(uint32_t)(page*3),camera=(uint32_t)page;
     float *yaw,*pitch,fov;
+    memset(guest+player,0,0x118);
     *(float*)(guest+camera+0x384)=55;
     PcGuestRegion region=pc_camera_mouse_region(player,camera,offset);
-    CHECK(pc_guest_region_remaining(&region,(uintptr_t)guest+player,1)>=0x108);
     CHECK(pc_guest_region_remaining(&region,(uintptr_t)guest+camera+0x384,0)>=4);
     CHECK(pc_camera_fields_in_region(player,camera,offset,&yaw,&pitch,&fov,&region));
     CHECK(fov==55 && yaw==(float*)(guest+player+0x100) && pitch==yaw+1);
+#ifndef __APPLE__
+    CHECK(full_queries==0); /* Every required field uses fresh resident-page checks. */
+#endif
     /* Refresh at every operation; a prior writable span must never survive
      * a protection change. A read-only FOV is still legal with a writable player. */
     CHECK(protect(guest+camera,page,1));
