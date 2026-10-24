@@ -30,8 +30,8 @@ Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
 verify deep caller separation, short stacks, saturation reporting and retained
 counts. Six-frame and hidden-overflow mutations must fail. Both CI hosts run
 this portable fixture; it does not execute Windows stack walking on Mac.
-The bounded game runner accepts `--profile-depth 1..32` (default8) and records
-the selected depth in provenance; CPU profiles are not clean pacing evidence.
+The runner records `--profile-depth 1..32` (default8) and `--texture-mode`
+(`classic` default or `enhanced`). CPU profiles are not clean pacing evidence.
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
@@ -152,12 +152,13 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 --no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` (scene39) and `crowd-disco` (scene56) use frequent move/fire/respawn
-input. Crowd routes focus their window after startup; still verify focus below.
+`crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
+use frequent move/fire/respawn input. Routes focus their window after startup;
+still verify focus below.
 Record roster/window state separately from device resolution; unfocused/minimized
 runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
 health with pool rechecks; asynchronous proximity is not visibility. Analyze
-complete spawn+5..+55s intervals (Disco +5..+50s, within the 20,000-row cap) with
+complete spawn+5..+55s intervals (Disco/Temple +5..+50s, within the 20,000-row cap) with
 clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
 enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
 can yield partial snapshots: check before differencing. `--trace-textures` enables

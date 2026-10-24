@@ -59,6 +59,7 @@ def main():
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
     parser.add_argument('--profile-depth',type=int,choices=range(1,33),default=8,help='Captured caller frames for CPU diagnostics (default 8)')
+    parser.add_argument('--texture-mode',choices=('classic','enhanced'),default='classic',help='Texture selection in this isolated session')
     parser.add_argument('--trace-textures',action='store_true',help='Enable bounded texture-stage CPU timing; diagnostic only')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
@@ -77,7 +78,7 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
@@ -103,6 +104,7 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'tools/network-identity.py'),'--verify',
                         '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    env['TSFP_TEXTURE_MODE']='4k' if args.texture_mode=='enhanced' else 'classic'
     if args.lan_role:
         env.update(TSFP_NETWORK='1',
                    TSFP_NET_BIND='127.0.0.2' if args.lan_role=='host' else '127.0.0.3',
@@ -121,12 +123,12 @@ def main():
             dict(keys=[40,40,40],label='weapons-selection',wait=10),
             dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco'):
+    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         route=json.loads((ROOT/'tests/fixtures/crowd-venice-commands.json').read_text())
-        if args.scenario in ('crowd-hotel','crowd-disco'):
+        if args.scenario in ('crowd-hotel','crowd-disco','crowd-temple'):
             # Verified list: Vietnam, Hotel, Venice, Temple, Disco.
             assert route[1]['label']=='match-setup'
-            moves=4 if args.scenario=='crowd-disco' else 1
+            moves={'crowd-hotel':1,'crowd-temple':3,'crowd-disco':4}[args.scenario]
             route[1]['keys']=[40,69,69,69]+[40]*moves+[69]
             assert route[7]['label']=='spawn'
             # Five-second idle waits usually observe a death camera. Keep
@@ -391,7 +393,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        display_size=list(args.display_size),fov=args.fov,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
+        display_size=list(args.display_size),fov=args.fov,texture_mode=args.texture_mode,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
@@ -481,8 +483,8 @@ def main():
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
-    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco'):
-        scene={'crowd-hotel':39,'crowd-venice':46,'crowd-disco':56}[args.scenario]
+    if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
+        scene={'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
         checkpoints=[i for i in report if i.get('command',{}).get('label') in ('spawn','combat-one','combat-four','combat-six')]
         assert len(checkpoints)==4,'Incomplete crowd route'
         for item in checkpoints:

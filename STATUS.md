@@ -1,3 +1,53 @@
+## 2026-10-24 — Enhanced Temple comparison at Original60 and native144
+
+The isolated crowd runner now supports `--texture-mode classic|enhanced`
+(Classic remains the default) and a calibrated `crowd-temple` route. The latter
+selects menu index3 and requires scene49, active match7, no pause and ten bots at
+all four named gameplay checkpoints. Texture mode is recorded in provenance.
+These are validation changes, not a runtime performance fix.
+
+An initial captured Temple calibration confirmed the temple environment and
+Enhanced delivery: 147 replacements loaded, 173,452,828 replacement bytes, and
+154 rejected reads retaining original textures. All 301 trace rows selected
+Enhanced. Captures and texture logging exclude this calibration from pacing
+acceptance. This does not establish complete replacement coverage or parity.
+
+Separate clean `crowd-temple-enhanced-{60,144}` runs used source `8677d88` plus
+the runner changes, Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and
+RTX4070SUPER driver32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`.
+Both selected Enhanced, FOV73 and 3440x1440 rendering (confirmed at D3D device
+creation). Each isolated command file toggled fullscreen after focusing and
+before match setup. All 33 active observations were foreground, visible and
+nonminimized with a 1920x1060 client; this is not physical ultrawide acceptance.
+CPU sampling, per-update CSV, texture logging and captures were disabled.
+Present recording and bounded asynchronous actor reads remained enabled.
+
+The predeclared spawn+5..50s window fits the 20,000-row recorder cap:
+
+| Mode | Fresh guest intervals | FPS | Median / p95 / p99 (ms) | Worst (ms) | Minimum rolling 1s | Game/wall time |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Original60 | 2,699 | 60.000377 | 16.668 / 17.038 / 17.164 | 19.754 | 60 | 0.999916 |
+| Native144 | 6,479 | 143.999419 | 6.985 / 7.292 / 7.417 | 10.128 | 144 | 1.000096 |
+
+Neither window contained an interval over 33.33ms or interpolated Presents.
+Both observed a living player at 26/33 checkpoints. Maximum living bots within
+10/20/30 world units were 1/3/4 at60 and 1/3/3 at144. This is less dense than
+the Hotel route: reject Temple as proof of the reported heavy-crowd case.
+Asynchronous proximity does not establish visibility, and random bot outcomes
+are not deterministic mechanical equivalence. Successful Presents do not
+measure GPU completion, monitor scanout or input latency.
+
+Both runs exited zero and preserved signed profiles and the canonical fixture;
+disposable partitions were recycled. Twenty repository-context tests passed;
+context/index validation against `6ddc8a0` and whitespace checks passed. The
+runtime binary was unchanged, so no game rebuild was needed. Evidence remains under ignored
+`private/test-saves/crowd-temple-{calibrate-144,enhanced-60,enhanced-144}` and
+matching `logs/` files. The crowd dip, wider gameplay and native Mac acceptance
+remain open. Related work stays on `perf/crowd-callers`; no new PR was opened.
+
 ## 2026-10-24 — Deeper crowd caller attribution
 
 The opt-in Windows CPU sampler walked eight frames by default but retained only
