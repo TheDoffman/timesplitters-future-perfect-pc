@@ -1,3 +1,31 @@
+## 2026-10-23 — Exact intervals for authored water boundaries
+
+On `fix/native-water-rounding`, the actual timing producer demonstrates why the
+water candidate must not accumulate float deltas: one second at 144 Hz sums to
+59.999998569489 ticks even in a double, missing a boundary if truncated. New
+host-only `PcNativeStep` fields preserve exact elapsed units, starting phase and
+units per tick. The shared guest hook publishes them during native updates and
+clears them in Original mode, without changing guest timing words or pacing.
+
+Shared `graphics/surface_interval.h` splits these units into fractional pieces
+at authored boundaries, with at most four pieces for existing three-tick catch-up.
+Zero-time pauses produce none. Four focused checks pass (5.37 s), including a
+required failing phase-reset mutation; the entire asset-free native timing group
+passes 18 cases (23.70 s). Tests cover mixed presets, odd counter frequencies,
+jitter, pause/resume, stalls, frequency reset and rejected-input nonmutation.
+Evidence: logs/water-exact-interval.log, logs/water-clock-host-suite.log.
+The frame-clock suite passes nine cases (10.48 s), and all 24 original-shader
+GPU cases pass with the shared splitter and pause check (133.40 s). All 32
+field/rate/smoothing trajectories retain exact byte boundaries/final colors;
+pause output is unchanged. Logs: water-clock-flip-gate.log and
+water-clock-gpu-suite.log. Repository context and staged whitespace checks pass.
+
+The GPU water fixture now uses this production clock/splitter rather than its
+private rational clock and checks frozen output across a mid-motion pause.
+Resource initialization, actual guest time scopes, gameplay hook integration,
+queued splashes, GPU cost and Mac execution remain unfinished. No new PR or
+playable build; the metadata does not enable the experimental water path.
+
 ## 2026-10-23 — Original water-noise input in fractional validation
 
 Continuing on `fix/native-water-rounding`, the saved Original60 Scotland capture

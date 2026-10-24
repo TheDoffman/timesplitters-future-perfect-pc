@@ -846,9 +846,11 @@ fractional transforms/steps at every frame, and writes original byte state only
 at interval boundaries. The frame schedule splits steps that cross a boundary.
 It compares every boundary's G/B and final byte ripple RGB, with and without
 original smoothing, at 60/120/144 and a mixed 144/120/60/144 sequence. The test
-clock uses 720 integer units per second; the mixed sequence switches at nonzero
-authored phase and produces 117 frames over 60 ticks. This fixture clock is not
-the game's host-counter scheduler. Mild and strong signed initial height pulses
+clock now uses the production `pc_native_timing_step` with a controlled
+72-MHz counter and `pc_surface_interval_split`; the mixed sequence switches at
+nonzero phase and produces 117 advancing frames over 60 ticks. A half-second
+pause inserted during motion must produce no slices and identical final output.
+This is not live host scheduling or resource integration. Mild and strong signed initial height pulses
 plus near-limit velocity/height fields are covered. Missing forcing, missing
 ambiguity handling, omission of gradient clipping, unlimited acceleration and
 missing authored boundary limits are required failing mutations. Saturated
@@ -870,3 +872,11 @@ are tracked. UV offsets follow a controlled sequence, not the game's RNG. First
 draws independently verify nonzero additive green and unchanged red/blue/alpha;
 a candidate-only duplicate noise draw must fail the boundary comparison. This
 does not validate queued splashes, live submission or whole-scene rendering.
+
+`native_surface_interval.c` is registered in the existing dual-host native timing
+suite. It covers exact conservation/boundary counts across three counter
+frequencies, changing presets, jitter, pause/resume, catch-up, frequency reset,
+invalid nonmutation and the four-piece maximum. A reset-phase mutation must fail.
+The real guest-hook fixture also checks publication, paused zero time and
+Original-mode clearing. Summing its float deltas at 144 Hz gives 59.999998569489
+ticks in one second; exact metadata and splitting produce all 60 boundaries.

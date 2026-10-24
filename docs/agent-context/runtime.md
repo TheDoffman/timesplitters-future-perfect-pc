@@ -342,6 +342,12 @@ remaining native update/surface patches. Original 60 remains the default;
 and HLE skips the original flip gate while native timing is active. Keep both
 `test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
 validates the combined stack. Water precision experiments remain off by default.
+`PcNativeStep` additionally carries exact host-side game units, start phase and
+units per tick. The shared guest timing hook publishes `g_tsfp_native_step`
+on native updates and clears it on Original-mode updates. This does not change
+guest word layout, float deltas, whole ticks, ISR or pacing policy. The metadata
+is a snapshot before guest-local time overrides; a future procedural consumer
+must honor those scopes and its own resource initialization/reset lifecycle.
 
 ## Outlined text read scope
 

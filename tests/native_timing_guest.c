@@ -133,6 +133,13 @@ static void frame(void)
     pc_native_timing_guest(original);
     assert(g_esp==0x1004 && WORD(0x1000)==0x12345678);
     assert(WORD(0x563918)==123); /* ISR state was never used as a fake frame counter. */
+    if(!g_tsfp_native_timing_active) {
+        assert(!g_tsfp_native_step.units_per_tick && !g_tsfp_native_step.game_units &&
+               !g_tsfp_native_step.game_phase);
+    } else {
+        assert(g_tsfp_native_step.game_ticks==WORD(0x4E7944));
+        assert(g_tsfp_native_step.game_delta==FLOAT(0x4E794C));
+    }
     frames++;
 }
 static void live_rates(void)
@@ -238,7 +245,14 @@ int main(void)
     setting="240"; frame(); assert(original_calls==3);
     setting="144"; frame();
     double distance=0;
-    for(unsigned i=0;i<144;i++) { frame(); distance+=FLOAT(0x4E794C); }
+    int64_t exact_units=0;
+    for(unsigned i=0;i<144;i++) {
+        frame();distance+=FLOAT(0x4E794C);
+        assert(g_tsfp_native_step.units_per_tick==144000000);
+        assert(g_tsfp_native_step.game_phase==exact_units%144000000);
+        exact_units+=g_tsfp_native_step.game_units;
+    }
+    assert(exact_units==60LL*144000000);
     assert(WORD(0x7497B0)==60 && WORD(0x74914C)==60);
     assert(distance>59.999 && distance<60.001);
     assert(WORD(0x7497B8)==145);
@@ -255,7 +269,10 @@ int main(void)
     pc_native_restore_animation_delta(saved_delta);
     assert(FLOAT(0x4E794C)==.4166667f);
     WORD(0x7497B4)=1;
-    for(unsigned i=0;i<144;i++) { frame(); assert(FLOAT(0x4E794C)==0 && WORD(0x4E7944)==0); }
+    for(unsigned i=0;i<144;i++) {
+        frame();assert(FLOAT(0x4E794C)==0 && WORD(0x4E7944)==0);
+        assert(!g_tsfp_native_step.game_units && !g_tsfp_native_step.game_ticks);
+    }
     assert(paused_calls==1 && resume_calls==0);
     assert(WORD(0x7497B0)==120);
     WORD(0x7497B4)=UINT32_MAX; frame();

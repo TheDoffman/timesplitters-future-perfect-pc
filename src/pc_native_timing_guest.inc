@@ -9,6 +9,9 @@
 extern uint64_t xbox_ReadTimeStampCounter(void);
 extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
+/* Shared host-side interval for future procedural consumers. Original mode
+ * publishes zero; the existing guest timing words retain their exact layout. */
+PcNativeStep g_tsfp_native_step;
 #define NT_WORD(va) (*(volatile uint32_t *)((uintptr_t)(va) + g_xbox_mem_offset))
 #define NT_FLOAT(va) (*(float *)((uintptr_t)(va) + g_xbox_mem_offset))
 #include "pc_native_pose_trace.h"
@@ -99,6 +102,7 @@ static void pc_native_timing_guest(void (*original)(void))
     recomp_config_commit_native_rate();
     int rate = pc_native_rate();
     if (!rate) {
+        g_tsfp_native_step=(PcNativeStep){0};
         if (g_tsfp_native_timing_active) {
             /* The original waits relative to 7A58B0. Rebase to the real ISR
              * counter so a stale native/menu deadline cannot cause catch-up. */
@@ -152,6 +156,7 @@ static void pc_native_timing_guest(void (*original)(void))
     int32_t pause = (int32_t)NT_WORD(0x7497B4u);
     PcNativeStep step = pc_native_timing_step(&clock, now.QuadPart,
         frequency.QuadPart, rate, pause > 0);
+    g_tsfp_native_step=step;
     if (!announced) {
         announced = 1;
         fprintf(stderr,

@@ -486,6 +486,13 @@ Its captured noise draw adds the immutable A8L8 texture into green with ONE/ONE
 blend and RGB writes, before smoothing. The candidate fixture now executes
 those unchanged shaders at authored boundaries with controlled UV offsets;
 queued splash geometry and actual runtime RNG/event delivery remain unverified.
+`graphics/surface_interval.h` splits exact host-side intervals into at most four
+pieces (the existing maximum three-tick catch-up can cross four partial pieces).
+Each piece marks authored start/end boundaries; zero elapsed time produces none.
+It consumes `PcNativeStep` metadata without rounding float deltas or resetting
+phase on rate changes. The GPU fixture uses this producer/splitter, including
+a pause during motion. It is not yet a resource owner or an enabled game hook;
+new resources and guest-local time overrides require explicit synchronization.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

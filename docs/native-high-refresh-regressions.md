@@ -6924,3 +6924,39 @@ RNG scheduling, runtime integration, scene acceptance or game GPU performance.
 The complete updated suite passes all 24 cases in 132.19 seconds with no skips
 (logs/water-noise-full-suite.log), including the nonzero-green/channel-preservation
 checks. Repository context and staged whitespace checks pass.
+
+### Exact clock intervals and pause-preserving splits
+
+The production native clock publishes float deltas for guest motion and integer
+ticks for timers. Summing those float deltas into a double still yields only
+59.999998569489 after one second at exactly 144 Hz, so deriving authored
+boundaries from that sum would miss the 60th tick. `PcNativeStep` now also carries
+scaled host counter units, starting game phase and units per tick. The shared
+guest wrapper publishes that snapshot as `g_tsfp_native_step`, clearing it in
+Original mode. No guest field, ISR, float delta or whole-tick policy changes.
+Invalid/null clocks and unrealistically large frequencies are rejected before
+mutation, keeping the bounded scaled arithmetic within int64 range.
+
+Shared `pc_surface_interval_split` consumes exact units, marks starts/ends and
+emits zero to four fractional pieces. A pause emits no pieces and retains phase;
+rate changes require no phase reset. Four pieces cover a three-tick catch-up
+that begins inside a tick. The portable test independently accounts for consumed
+units/boundaries at three frequencies, with jitter, changing presets, pause,
+stall clamping, frequency reset and rejected-output preservation. Resetting phase
+on entry is a required failing mutation. Four focused tests pass in 5.37 seconds,
+and all 18 asset-free timing cases pass in 23.70 seconds.
+
+The original-shader GPU fixture now obtains pieces from this production clock
+and splitter, using a controlled 72-MHz source. It inserts a half-second pause
+during motion and requires zero slices plus bit-identical final ripple output,
+then resumes the existing boundary/color/freshness comparisons. Counter jitter
+is tested on the CPU; live scheduling and resource lifecycle are not implied.
+The snapshot precedes guest-local time overrides, so a future runtime consumer
+must respect those scopes and initialize held input/state for newly created or
+reset resources. There is still no enabled coupled-water game hook.
+All 24 GPU cases pass in 133.40 seconds with this producer/splitter and pause
+check (logs/water-clock-gpu-suite.log); all 32 field/rate/smoothing trajectories
+retain byte-exact authored boundaries/final colors. The separate frame-clock
+suite passes nine cases in 10.48 seconds (logs/water-clock-flip-gate.log).
+Repository context and staged whitespace checks pass. These are Windows results;
+the new shared CPU test is registered for Mac CI, not locally verified on Mac.

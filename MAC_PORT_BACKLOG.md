@@ -3741,6 +3741,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Constant/mixed-rate byte equivalence uses controlled texture offsets; game RNG,
   queued splash draws and live submission remain unverified. The extra cases
   require a private capture and skip without it. No Mac result is inferred.
+  `PcNativeStep` now publishes exact host-side interval metadata from the shared
+  timing hook; guest memory/timing policy remain unchanged. Portable
+  `graphics/surface_interval.h` splits it at authored boundaries and is covered
+  by the dual-host timing suite. Windows tests cover jitter/pause/stalls and GPU
+  flow through that splitter; native Mac execution of this extension is pending.
+  Resource lifecycle and guest-local time-scope integration are still required.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.
