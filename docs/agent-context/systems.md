@@ -24,6 +24,15 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+`pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
+It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
+binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
+Overlap/nonfinite/large inputs use the unchanged generated body. Entry callbacks
+precede all reads; no state persists across calls, no host adapter is needed.
+`pc_model_transform_guest.c` includes the generated type header and builds once
+for either host. Fallback NaN result payloads depend on host compiler allocation;
+rejection itself preserves every guest bit and floating-point exception flag.
+
 ## Crash breadcrumbs and capture health
 
 `pc_breadcrumbs.h` owns a 64-slot atomic numeric history shared by the Windows

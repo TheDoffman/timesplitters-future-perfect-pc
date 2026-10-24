@@ -1,3 +1,115 @@
+## 2026-10-24 — Integrate the guarded model transform
+
+The shared US151E80 point-transform helper keeps intermediate values in local
+binary32 temporaries instead of repeatedly accessing emulated SSE registers.
+A default-off generated entry hook runs after the original trace/renderer-idle
+callback. Only this audited leaf is selected; explicit return tracing and forced
+return diagnostics retain the generated body. Success preserves the full guest
+return state, including the middle-row product in xmm4. Overlapping buffers,
+address wrapping, nonfinite values and magnitudes above 2^33 reject the fast path
+without changing memory, registers or floating-point exception flags. Both host
+build paths compile the same helper; no new platform adapter is needed.
+
+Ten model checks pass on Windows (18.83s), including 40,000 comparisons in each
+of the portable, original-US and disabled-fast cases, four rounding modes,
+callback mutation, and six deliberate regressions. Fast results, finite fallback
+results, and all untouched memory/register lanes are compared bit-for-bit.
+Fallback arithmetic destinations allow quiet-NaN payload variation: the original
+generated body produced fff2073c versus ffd67f1d with fast entry ALWAYS disabled
+in the private control. The preceding branch changes compiler allocation;
+rejection preserves input bits, but compiled NaN output payloads are not promised.
+This exception is confined to fallback arithmetic outputs, not fast results.
+
+The broader generation/native-timing run passed 108 cases and exposed seven
+vehicle-test plumbing errors from an overbroad include insertion. Those were
+repaired; all vehicle cases then passed. Actual camera/mothership/spawn/rigid
+consumers execute the shared helper. The full patch suite passed 20 cases and
+failed a historical Mac fixture that incorrectly included the dependent patch.
+After correction, fresh/repeated, historical-controls and historical-Mac upgrades
+all pass (3 cases, 75.03s). Twenty-one context/backlog checks pass, as do
+repository-context and whitespace checks. Public model tests are registered in
+both host CI jobs; private-XBE comparisons skip when that asset is unavailable.
+
+The supported Windows build and bundled checks pass with MSVC 14.44, Windows11
+x64/D3D11/RTX4070SUPER. Initial integration builds caught a manual-TU register
+declaration mismatch, then an incorrect generated-header include; the dedicated
+shared TU and gen/recomp_types.h resolve both. Executable SHA256:
+cf965c1798f2f13fddc456278b14e458ab8237996651f3be4a1d6cd710d9d641.
+Source is 85ccf0bd plus this implementation; the prior all-14-green CI result
+belongs to 85ccf0bd, not the new implementation.
+
+The isolated ten-bot Disco240 run completes with intact signed profiles and
+recycled partitions. Its complete 45-second window averages 228.355915 FPS,
+minimum one/five-second rates 169/181.8, p99 6.051ms and worst 10.699ms.
+All 10,275 guest intervals are fresh, with no interpolated frames; all 19
+checkpoints are active and foreground. Game/wall ratio is 0.99982377. It does
+not sustain 240. Independent bot/death/view paths vary, so the earlier 208.54
+and 235.24 runs do not establish a causal speedup or regression. Configuration
+is Classic/3440x1440/FOV73, actual client1920x1060 on a 60Hz desktop. No compiler,
+tests, CPU sampler, captures or per-update CSV ran during the measured window;
+automated input still polls its state file every16ms. Present is not GPU completion,
+scanout or physical input latency.
+
+The same-binary Original60 run also completes with intact profiles. Its complete
+45-second window measures 60.000151 FPS, minimum one/five-second rates60/60,
+p99 17.108ms, worst17.278ms and game/wall1.00000085. All2,699 guest intervals
+are fresh and all19 checkpoints are active/foreground. A later attempted desktop
+snapshot found the test window already closed; it provides no visual evidence.
+A separate renderer-capture run is used for visual inspection, not pacing.
+Reviewed combat-one/combat-four images from crowd-model-transform-visual240
+show intact weapon/hand geometry, enemy models, scenery, muzzle flashes and
+ejected casings in the Disco match. This is a bounded visual smoke check,
+not proof of animation cadence or full-game rendering equivalence.
+
+Evidence: logs/model-transform-{final-tests,final-build,upgrade-recheck,context-tests}.log,
+logs/model-transform240-summary.json and private/test-saves/crowd-model-transform240.
+Original60 measurements are in logs/model-transform60-summary.json; selected
+visuals remain in private/test-saves/crowd-model-transform-visual240.
+Physical Mac gameplay and broader native-high-refresh acceptance remain open.
+
+## 2026-10-24 — Current-head CI and slow-frame attribution
+
+All14 CI checks pass on85ccf0bd, including native Windows/Mac, patch upgrades
+and transitions, both launchers and complete-package verification. The runtime
+and executable remain de9ee95d / ffa9c843; this follow-up changes no game code.
+
+The isolated `crowd-bind-waits240` diagnostic completes with intact profiles and
+recycled partitions. A hash-matched guest-thread-only sampler takes6,701 snapshots
+in45.0005393s, with no failed or already-suspended observations. Its API spans
+total0.1961068s (max2.5717ms); thread user/kernel time totals35.09375s. Profiling
+perturbs execution, so these are not clean FPS measurements or CPU shares.
+
+The same-clock join accepts6,699 samples and rejects two spans crossing frame
+boundaries. Frames under4.5ms contain1,170 wait-leaf snapshots;4.5..6ms contain273;
+frames at least6ms contain just one. All128 captured wait stacks lead to return
+RVA0x6929, immediately after the native pacing timer's WaitForSingleObject call.
+The linked IAT/disassembly confirms SetWaitableTimer / wait / QueryPerformanceCounter;
+its nearest public name `pc_native_rocking_sub` is misleading. Capturing every
+eighth wait reaches the128-stack cap;53 later eligible stacks are omitted.
+This evidence does not justify changing GPU acknowledgement or the frame limiter.
+
+Of986 slow-frame snapshots,57 name the model-node renderer sub_0018EA90_gen.
+Across all snapshots,124 name the small affine point transform sub_00151E80;
+its linked code repeatedly loads/stores emulated SSE registers. An offline
+prototype keeps those temporaries local, preserving guest state at return.
+The unrestricted version fails a bitwise comparison at an overlapping-matrix
+NaN case (original ffc00000 versus local7fdc6136); it is rejected, not shipped.
+A guarded candidate falls back for matrix/vector overlap or input magnitudes
+above2^33 (including nonfinite values). It passes50,000 whole-memory/register
+comparisons, including12,518 fast cases and37,482 fallbacks. Separate-caller-TU
+MSVC/O2 benchmark medians are119.8472ms original /51.0515ms candidate over2million
+calls, seven alternating pairs, with matching output checksums. This57.40% lower
+synthetic kernel time is not a game FPS gain. Default Windows floating-point
+mode only; Mac, rounding modes and runtime integration remain unverified.
+
+No prototype is wired into the game. Integration must preserve the entry trace/
+renderer-idle callback before reading guest inputs, one trace per call, exact
+return registers and exceptional-input fallback. A callback-safe entry hook
+needs validation before replacing the current body. Evidence stays under
+private/pipeline/model-transform-prototype and private/test-saves/crowd-bind-waits240;
+linked call-site and frame-bin summaries are in logs/crowd-bind-wait-callsite.asm
+and logs/crowd-bind-waits240-frames.json. The high-refresh goal remains open.
+
 ## 2026-10-24 — Combine texture binding cache searches
 
 The hash-matched ed07 crowd profile samples both consecutive texture-binding

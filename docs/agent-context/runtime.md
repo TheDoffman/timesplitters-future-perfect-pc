@@ -24,6 +24,12 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zz-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
+hook after entry tracing and before input loads. Explicit return tracing and
+forced-return diagnostics keep the generated body. US policy selects only151E80;
+other titles/addresses retain the original path. A zero result must leave guest
+state unchanged; success includes exact registers, memory and stack return.
+
 `dsound-output-headroom.patch` defines the shared default host gain in
 `src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
 `src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.

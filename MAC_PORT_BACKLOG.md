@@ -3845,12 +3845,26 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Model transform entry (2026-10-24, PR #328):** A shared
+  default-off generated entry hook selects only the audited US151E80 leaf,
+  after callbacks. Portable C keeps bounded disjoint transforms in local
+  binary32 temporaries; rejected inputs retain the generated body. Both build
+  paths compile the same helper; no Mac adapter is deferred. Ten Windows
+  model tests pass, including original-US routines, four rounding modes,
+  disabled-fast control and mutations. Public cases are registered on both
+  CI hosts; current Mac execution and physical gameplay remain pending.
+  Windows build/bundled checks pass. Isolated ten-bot runs measure 228.36FPS
+  at native240 and 60.00015FPS at Original60, retaining game speed; reviewed
+  native240 captures show intact scene/models. This does not prove Mac
+  behavior or sustained240. See STATUS for numeric and measurement limits.
+
 - **Texture binding scan (2026-10-24, PR #328):** Shared HLE now combines
   first-entry lookup and any-framebuffer-alias detection in one fresh pass.
   No platform adapter, content-check or copy-lifetime changes. Windows full-module
   alias/refresh regression checks pass, including negative controls. Mac GL/RHI
-  execute the same registered fixture in CI; current-head host confirmation and
-  physical gameplay remain pending. See STATUS for build/live evidence.
+  execute the same registered fixture in CI. All14 checks pass on85ccf0bd,
+  including both native hosts and upgrade/transition suites; physical Mac
+  gameplay remains pending. See STATUS for build/live evidence.
 
 - **Demo preset lifecycle coverage (2026-10-24, PR #328):** Original-US
   fixtures now execute eight pause-offset recording cases and32playback

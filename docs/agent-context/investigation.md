@@ -19,6 +19,11 @@ relevant guide when changing its system, regenerate the patch index for indexed
 patch changes, and run the context checker against the task base.
 <!-- packet:end -->
 
+The generated-entry optimization follows texture-bind-scan in the patch order;
+historical controls omit both until renderer context is installed. Candidate
+math must preserve callback order and exceptional-input behavior, not only
+ordinary output coordinates. Local-register prototypes alone are not integration.
+
 ## Working note (not committed)
 
 Create this only for substantial tasks; tiny edits do not need a diary. Limit it

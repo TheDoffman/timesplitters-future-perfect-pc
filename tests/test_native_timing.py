@@ -629,7 +629,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
-                           .replace('/* GENERATED_ROUTINES */',code))
+                           .replace('/* GENERATED_ROUTINES */',
+                                    (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
+                                     if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     if harness_name=='native_escort_recovery.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
