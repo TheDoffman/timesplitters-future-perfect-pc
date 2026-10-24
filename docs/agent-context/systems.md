@@ -440,15 +440,27 @@ pc_prompts.c compile contract checks this include order in Mac CI.
 `graphics/surface_coupled.h` computes a fractional power of the coupled affine
 velocity/displacement step, anchored to the existing one-tick coefficients.
 `graphics/surface_coupled_shader.h` supplies one shader body with vector-type
-adapters. `graphics/surface_transform_shader.h` supplies separable 64x64
-DCT-II/inverse passes with texture-load and vector syntax adapters. The current
+adapters. `graphics/surface_transform_shader.h` supplies separable transforms with an
+explicit axis extent. `graphics/surface_basis.h` owns clamped DCT-II and wrapped
+real Hartley weights and the corresponding diagonal-stencil eigenvalues, bounded
+to 128 texels per axis. The captured game path uses 128x128 **wrap**, so the
+earlier clamped DCT result is only a diagnostic. Texture-load/vector adapters
+remain separate from shared spectral policy. The current
 common-RHI fixture reuses its basis and scratch resources and reconstructs the
 world field on the GPU after every fractional update. These are experimental helpers exercised by CPU/common-RHI fixtures;
 the game does not call them and no normal-play or legacy-GL policy changes.
 The matrix's restoring coefficient belongs to a spatial eigenmode, not an
 independent world texel. A runtime integration needs spatial transforms and the
 original disturbance/smoothing/storage rules. Float32 equivalence alone does
-not preserve the original byte-feedback appearance. See the coupled-operator
+not preserve the original byte-feedback appearance. A separate Original60 GPU
+reference now includes cardinal smoothing before feedback; the storage gap
+persists there too. This changes validation coverage, not runtime ownership.
+`graphics/surface_state_shader.h` converts reconstructed signed velocity/height
+to the original texture channels: red scratch, green velocity plus 0.5, blue
+height and **alpha height**. Original effect 22 samples alpha cardinal differences
+for its ripple shading input; constant alpha would erase those slopes. This
+shared encoding is currently exercised only by the GPU fixture, not game hooks.
+See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads
 

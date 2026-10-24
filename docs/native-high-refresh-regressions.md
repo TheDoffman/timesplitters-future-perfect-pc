@@ -6613,3 +6613,146 @@ in slow frames. A revised saved-stack sampler reduces median suspension to
 outcomes. Neither reproduces the 25.856-ms event or proves a performance fix.
 Preserve Classic/Enhanced and live switching; measure individual upload stages
 before changing the loader. STATUS records all three runs and their limits.
+
+### Captured periodic boundary and authored target size
+
+A single bounded Original60 Scotland run (`water-runtime-state`) used the
+preserved source-4adb6b0 executable, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab, with the verified
+US XBE and isolated Test Lab settings/saves. Host frame 3600 was recorded in a
+9,220,188-byte version-9 D3D capture. The run completed cleanly without changed
+profile hashes; signatures and fixture remain valid, and disposable partitions
+were recycled. This binary does not contain the experimental solver.
+
+The capture identifies four water draws by vertex-microcode SHA-256
+363fd81ebd9f0567bbcbea7fafab686241707d85396df0a8abef78ce79bf0425, matching the
+supported XBE's six-instruction program. In particular, the feedback pair uses:
+
+- 128x128, Xbox format 6, single-level render targets and sampled inputs;
+- U/V address mode 1 (wrap), min/mag filter 2 (linear);
+- a four-vertex triangle strip, stride 24, positions (0,0), (0,128),
+  (128,0), (128,128), Z 0.001 and UVs (0,0)..(1,1);
+- viewport (0,0,128,128), depth 0..1;
+- enabled screen-space undo, scale (64,-64,16777215,1), offset (64,64,0,0);
+- the same first-pass diagonal and second-pass southwest UV offsets as the
+  callback-derived fixture, now observed at +/-1/128.
+
+Recorded pixel tokens are host handles, **not** guest shader addresses. The
+inspection therefore selects the verified vertex program and inspects offsets,
+bindings and pass order, rather than equating a host token with 0x4BBE20/0x4BBF10.
+The capture's system-memory texture copies are not live feedback pixels; only
+its state/geometry is used here. Private evidence: the run's water.d3dcap,
+capture-provenance.json, report.json, and private/pipeline/water-runtime-draw-state.json.
+No game data is committed.
+
+The observed wrapping invalidates direct gameplay use of the earlier clamped
+DCT basis. `graphics/surface_basis.h` now owns both policies: DCT-II for clamp
+controls and real orthonormal Hartley weights `(cos(2*pi*k*x/N) + sin(2*pi*k*x/N))
+/ sqrt(N)` for wrap. Periodic restoring shift is
+`4 - 4*cos(2*pi*kx/width)*cos(2*pi*ky/height)`. The shared shader takes the axis
+extent, and resources/basis weights must match it; the shared policy accepts
+extents 1..128 and rejects invalid coordinates/boundary values.
+
+The 128x128 wrapped GPU case mirrors the observed quad, normalized UVs, viewport,
+screen-space undo and linear wrap sampler through the original vertex/pixel
+programs. Its synthetic initial field includes a small edge pulse in addition
+to the center Gaussian. This crosses the seam immediately and exposes the old
+boundary error; substituting a clamped basis fails the numeric comparison.
+The basis and coupled updates remain on the GPU, with a fresh reconstruction
+after every fractional step.
+
+| Periodic candidate FPS | RMS G/B vs original float32 60 | Maximum error | RMS G/B vs original byte 60 | Fresh reconstructed updates |
+| --- | ---: | ---: | ---: | ---: |
+| 60 | 0.0000006489 | 0.0000016690 | 0.03692987 | 60/60 |
+| 120 | 0.0000007953 | 0.0000019074 | 0.03693001 | 120/120 |
+| 144 | 0.0000007933 | 0.0000019074 | 0.03693000 | 144/144 |
+
+The asset-free shared-basis fixture checks orthonormality and actual neighbor
+stencils for both boundaries at 1/7/64/128; maximum error is 4.623e-14. It is
+registered in the existing Windows/Mac native-timing suite. All 11 WARP cases
+pass in 48.61 seconds, including the new boundary negative control and the
+previous retention/transpose controls. Evidence: logs/water-wrapped-suite.log
+and logs/water-authored-size.log. These remain controlled float32 results: byte
+rounding/clipping, actual smoothing/disturbance inputs, runtime resource/state
+integration, live rate changes, gameplay frame-time cost, other surfaces and
+native Mac GPU/gameplay acceptance remain open. Normal play is unchanged.
+
+### Original smoothing plus feedback storage reference
+
+Follow-up PR #321 adds an Original60-only reference with the observed cardinal
+smoothing pass before both feedback passes. It translates shader 0x4BBC40
+unchanged and uses the original vertex program with the captured +/-1/128
+cardinal offsets, pixel-space quad and wrapped linear sampling. Input remains
+the controlled center Gaussian plus seam pulse; random disturbances and final
+normal/shading are excluded. The fractional candidate comparison remains the
+separate feedback-only contract, not a claim to match this fuller reference.
+
+At each of 60 updates, all RGB smoothing output is checked against the explicit
+wrapped four-neighbor average and the shader's nonidentity centering/color
+factor. Float32 maximum filter error is 5.96046448e-8; byte error is bounded by
+half a byte step. A mutation zeros all smoothing offsets and must fail the
+neighbor calculation, so the test distinguishes smoothing from a copy.
+
+| Original60 three-pass storage | Mean blue | Blue standard deviation | RMS blue vs both-byte |
+| --- | ---: | ---: | ---: |
+| All float32 | 0.576436446 | 0.000468331 | — |
+| All half float | 0.559374392 | 0.001727153 | — |
+| All byte | 0.562230514 | 0.023116937 | 0 |
+| Smoothing and first feedback byte, second float | 0.629445438 | 0.040056530 | 0.080110445 |
+| Smoothing and first feedback float, second byte | 0.631365151 | 0.019306744 | 0.076352467 |
+
+Combined float32/byte G/B RMS is 0.0192863519. Thus smoothing changes the field
+but does not explain away the storage difference; the full nonlinear byte
+behavior still needs treatment before candidate gameplay integration. Mixed
+controls use the first-feedback format for smoothing too, and are not identical
+to the earlier two-pass ablations. With byte smoothing, the gradient-only
+control's copied G/B are already quantized, explaining its identical result to
+the first mixed row. No constant drift correction is inferred from these means.
+
+Windows x64/MSVC/common-RHI WARP evidence is in logs/water-smoothed-reference.log
+and logs/water-smoothed-suite.log; all 13 GPU cases pass in 58.56 seconds,
+including the missing-offset negative control. This is controlled original-shader coverage;
+no new game binary or native Mac GPU/gameplay result is claimed.
+
+### Final ripple consumer and alpha-height encoding
+
+The supported executable's effect table at `0x476270 + 22*16` selects callback
+0x2C320, used by final routine 0x195280. That callback binds pixel definition
+0x4BC318 and the same six-instruction vertex program, uploads packed .6 red/
+green strength and selects left/right/down/up texel offsets. This matches the
+fourth water draw in the retained Original60 capture. The final shader derives
+its slopes from **texture alpha**, not directly from the blue height channel.
+
+The spectral fixture previously reconstructed `(velocity,height,0,1)` solely
+for numeric inspection. Feeding that texture directly to the original final
+pass would make its alpha differences zero. Shared `surface_state_shader.h`
+materializes `(0,velocity+0.5,height,height)`; red is scratch regenerated by the
+first feedback pass. It does not replace the original final shader or clamp
+the stored state. The storage adapter owns precision. No game hook uses it yet.
+
+`surface_final_gpu.inc` executes the unmodified production-translated final
+shader and original vertex program. An independent calculation checks its
+cardinal alpha differences, staged clamping, packed strength and centering.
+Float output tolerance is 1e-5; actual byte target tolerance is half a byte
+step (0.501/255). Replacing alpha-height with alpha=1 must fail after successful
+compilation. The fixture also materializes and executes final ripple generation
+after **every** candidate fractional update, checking fresh red/green output.
+
+The 128x128 wrapped feedback-only candidate's final float-reference maximum
+errors at 60/120/144 are 1.084805e-5, 1.090765e-5 and 1.031160e-5 respectively.
+Fresh final outputs are 60/60, 120/120 and 144/144. This extends the controlled
+linear comparison through its original consumer; it does not solve byte feedback.
+
+For the Original60 smoothing-plus-feedback reference, final red/green RMS from
+the flat encoded slope is 0.000786400 (float feedback), 0.004454691 (half) and
+0.057356713 (byte). Float/byte final-output RMS is 0.057236962, and remains
+0.057267247 when both final outputs use an actual byte render target. Thus the
+remaining storage difference affects the generated ripple shading input and is
+not solely a uniform height offset. Full material/scene visibility, disturbances,
+runtime resource/state handling and capture-free GPU cost remain unverified.
+Evidence: logs/water-final-initial.log and logs/water-final-controls.log;
+the latter passes three cases, including the constant-alpha negative control.
+The complete updated suite passes all 14 cases in 72.15 seconds
+(`logs/water-final-suite.log`). Candidate versus float-reference final byte RGB
+has zero maximum difference in the tested 64/128 clamp and 128-wrap fields at
+60/120/144. This equality compares float feedback paths, not original-byte state.

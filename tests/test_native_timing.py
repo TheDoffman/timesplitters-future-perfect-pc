@@ -17,7 +17,7 @@ class ObjectRockingQuantization(AssertionError):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_precision.c', 'native_surface_coupled.c')
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh')])
 def test_native_timing(source, mutation, tmp_path):

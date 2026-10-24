@@ -814,3 +814,27 @@ triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
 production parser/emitter. Translation helpers also receive isolated runtime
 configuration. Single-pass and gradient-only byte-storage controls isolate
 rounding contributions; none is an accepted replacement for the original map.
+
+The surface spatial fixture also runs at 128x128, matching the observed game
+feedback target. Its wrapped case mirrors the live quad, viewport, screen-space
+undo and linear wrapped sampling. A seam-adjacent impulse distinguishes the
+periodic real Hartley basis from the clamped DCT control; forcing a clamped basis
+must fail the original-shader comparison. `native_surface_basis.c` checks shared
+basis orthonormality and diagonal-neighbor eigenvalues at sizes 1/7/64/128 under
+both boundary rules, plus invalid input, through existing Windows/Mac timing CI.
+Live draw evidence and its binary/source provenance are recorded in the high
+refresh regression guide. The fractional candidate comparison still excludes
+smoothing. `test_original_smoothed_surface_feedback` separately executes the
+captured cardinal smoothing and both original feedback passes at 60 Hz, checking
+the filter against explicit wrapped neighbors. A zero-offset mutation must fail.
+This reference includes actual byte/half/float storage and mixed-format controls;
+it excludes disturbances, final shading and game RNG. Do not infer gameplay
+equivalence from the controlled float reference.
+
+`surface_final_gpu.inc` executes original effect 22 (callback 2C320, definition
+4BC318) on the captured cardinal offsets. It checks final RGB against explicit
+height differences, through float and actual byte render targets. The candidate
+uses shared `surface_state_shader.h` to materialize alpha-height after each fresh
+inverse transform. A constant-alpha header mutation must fail the final shader
+comparison. Final shader agreement with the float32 reference does not establish
+original byte-storage appearance or scene rendering; both differences are reported.

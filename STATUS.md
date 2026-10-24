@@ -23,6 +23,82 @@ not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
 must pass before merging. Original evidence limits remain: no general FPS or
 full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
 gameplay is unverified. This integration does not publish a release.
+## 2026-10-23 — Preserve alpha-height for final ripple generation
+
+PR #321 now follows the candidate's reconstructed field through the original
+final ripple shader. The supported effect-22 table selects callback 0x2C320 and
+pixel definition 0x4BC318; that shader reads **alpha** height from cardinal
+neighbors. The old diagnostic reconstruction's alpha=1 would erase the slopes.
+Shared `graphics/surface_state_shader.h` now materializes the original channel
+contract before the final pass, and a constant-alpha mutation must fail.
+
+Windows x64/MSVC/common-RHI WARP, captured 128x128 wrapped geometry: reconstructed
+final float output matches the float32 Original60 reference within 0.000010908
+at 60/120/144, with fresh ripple output on every tested candidate update. This
+is still an uncalled experimental helper. The final actual-byte target is also
+tested, so final output rounding is distinct from feedback storage precision.
+All 14 GPU cases pass in 72.15 seconds; candidate and float-reference final byte
+RGB are identical in the tested 64/128 clamp and 128-wrap cases at all three rates.
+
+The original-byte feedback discrepancy survives final ripple generation. With
+original smoothing included, final red/green RMS versus the float-state path is
+0.057236962 on a float output and 0.057267247 on an actual byte output. This
+rules out a harmless uniform height offset as the entire remaining difference.
+These are controlled synthetic fields, not scene images or an FPS measurement.
+Runtime integration, storage fidelity and Windows/Mac gameplay acceptance remain
+open. No playable binary or personal data changed.
+
+## 2026-10-23 — Include original water smoothing in the storage reference
+
+Follow-up PR #321 adds a separate Original60 WARP reference that executes the
+original cardinal smoothing shader before both original feedback passes. The
+128x128 wrapped quad and +/-1-texel cardinal offsets match the retained Scotland
+draw capture. Every smoothing output is compared with an explicit four-neighbor
+calculation; a zero-radius mutation must fail. This is additional reference
+coverage, not a candidate implementation or gameplay change.
+
+With the same center/edge input, one second of float32 smoothing plus feedback
+produces mean blue 0.576436446 and standard deviation 0.000468331. Original byte
+storage produces 0.562230514 and 0.023116937. Combined G/B RMS difference is
+0.019286352. Smoothing therefore does not remove the nonlinear storage gap.
+The mixed-format controls also diverge (blue RMS 0.07635..0.08011); here the
+smoothing target uses the first-feedback target's selected format. Unlike the
+earlier feedback-only ablation, these are three-pass format controls.
+
+No game rebuild or enablement; Mac GPU/gameplay and full-scene validation remain
+pending. All 13 GPU cases pass in 58.56 seconds, including the new missing-offset
+negative control. Details are in the high-refresh regression record.
+
+## 2026-10-23 — Match water solver boundaries to captured gameplay
+
+Follow-up branch `fix/native-water-boundaries` is based on main 2e3e55a after
+PR #316 merged. During the original investigation, a bounded Original60 Scotland
+run on the preserved playable binary (source 4adb6b0, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab) captured host
+frame 3600. Four draws use the verified original six-instruction water vertex
+program. Their targets are 128x128 byte textures, with **wrapped** U/V and linear
+filtering. The feedback quad spans 0..128 with UVs 0..1 and enabled screen-space
+undo. This contradicts applying the earlier clamped DCT prototype directly to
+this game path; its old results remain controlled clamp evidence only.
+
+The shared transform now accepts an axis extent. New `graphics/surface_basis.h`
+provides the real orthonormal Hartley basis and periodic stencil coefficients,
+while retaining clamp/DCT as a diagnostic. The GPU fixture adds 128x128 checks
+and mirrors the captured quad, viewport, screen-space conversion and wrapped
+sampling. A seam-adjacent pulse makes a deliberate clamped-basis substitution
+fail. Correct periodic 60/120/144 results match the original shader pair's float32
+reference within 0.000001908, with every reconstructed frame fresh. Original
+byte-feedback RMS remains approximately 0.036930 in this field and is unresolved.
+
+Windows x64/MSVC/common-RHI WARP: all 11 GPU cases pass in 48.61 seconds.
+The new asset-free basis test passes for both boundaries at 1/7/64/128, including
+orthonormality, neighbor-stencil eigenvalues and invalid inputs (maximum error
+4.623e-14). Mac CI of this extension is pending; no water GPU/gameplay acceptance
+on Mac is claimed. No candidate hook is enabled or new game binary built.
+The bounded observation ended cleanly, signed profiles/fixture were preserved,
+and disposable partition images were recycled. One 9,220,188-byte private draw
+capture is retained; it establishes host draw state, not live feedback pixels
+or performance. See the detailed regression record and logs/water-wrapped-suite.log.
 
 ## 2026-10-23 — Coupled fractional water operator candidate
 
