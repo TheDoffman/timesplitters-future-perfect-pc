@@ -26,7 +26,7 @@ source. Inspect the resulting runtime function and its callers, not every patch.
 Later patches supersede earlier behavior. `patches/legacy/` is unwind-only.
 The final fixed-60 patch retains dependencies on historical presentation patches;
 do not delete them because their feature was retired. Default is original
-60 FPS / 60 Hz; launcher native 120/144 beta choices need compatible game builds,
+60 FPS / 60 Hz; launcher native 120/180/240 beta choices need compatible game builds,
 not the retired interpolation engine. Never edit generated C or invent addresses.
 
 Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build`; native Mac:

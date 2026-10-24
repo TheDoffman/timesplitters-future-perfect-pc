@@ -69,11 +69,11 @@ int main(int argc,char **argv) {
     legacy_count=argc>1 && !strcmp(argv[1],"legacy-camera-count");
     unsigned char *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    const unsigned rates[]={60,60,120,144,120};
+    const unsigned rates[]={60,60,120,144,120,180,240};
     const float speeds[]={.25f,1.f,3.f};
     const float jitter[]={.2f,.8f,.4f,.6f};
     float reference[6][3],worst=0;
-    for(unsigned speed=0;speed<3;speed++)for(unsigned axis=0;axis<2;axis++)for(unsigned mode=0;mode<5;mode++) {
+    for(unsigned speed=0;speed<3;speed++)for(unsigned axis=0;axis<2;axis++)for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
       unsigned fps=rates[mode];reset();advanced=0;g_tsfp_native_timing_active=mode!=0;
       printf("camera fps=%u mode=%u speed=%.2f axis=%u\n",fps,mode,speeds[speed],axis);fflush(stdout);
       double ticks=0;unsigned count=0;

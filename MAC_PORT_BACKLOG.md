@@ -855,6 +855,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-003 — Debug settings and on-screen performance information
 
+- **Delayed Present capture (2026-10-24, commit carrying this entry):** Shared
+  `src/graphics/present_metrics.h` adds opt-in `TSFP_FRAME_PROFILE_DELAY_MS` so
+  bounded recordings can cover later fights instead of menus. Common RHI and
+  fallback GL already consume the same recorder; no new Mac adapter is needed.
+  The production-recorder fixture passes on Windows for delayed intervals,
+  preserved skipped/failed gaps, disabled recording, malformed limits and the
+  unchanged row cap. Native Mac compilation/execution remains pending; verify
+  this fixture and a delayed gameplay CSV there before marking it validated.
+
 - **Status:** Awaiting validation
 - **PC behavior:** F12 opens debug settings; F9 toggles FPS. Options show guest/shown FPS, frame intervals, issue counters and recent logs, with bounded optional performance logging.
 - **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
@@ -882,6 +891,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   on each host in CI; Windows dialog execution remains pending. This does not
   supply the missing native network provider or complete every overlay check.
   [Evidence](STATUS.md#shared-debug-setting-definitions-2026-10-19).
+
+- **Caller diagnostics (2026-10-24, uncommitted):** The existing Windows-only
+  `recomp_sample.c` profiler now retains all captured caller frames (maximum32)
+  and reports bounded-table overflow via `zz-sampler-caller-depth.patch`.
+  Thread suspension and unwind depend on Win32/DbgHelp; Mac keeps its existing
+  disabled sampler. Portable insertion/mutation tests run on both hosts, but a
+  Mac sampling adapter and live attribution remain unimplemented. Existing Mac
+  overlay/debug behavior is unchanged. This is diagnostic coverage, not FPS gain.
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
@@ -3737,6 +3754,84 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Vehicle coverage through 240 (2026-10-24, PR #325):** Existing shared
+  vehicle/contact fixtures now cover 180/240 alongside Original60 and 120/144.
+  All 19 checks pass on Windows with the supported private US XBE. No runtime
+  or adapter changed. Asset-free contracts run on both CI hosts; private-XBE
+  skips do not validate native Mac vehicles. Live Mac acceptance remains pending;
+  see STATUS for scope and the earlier physics-mutation checkpoint.
+
+- **Quiet trace dispatch (2026-10-24, PR #325):** Shared
+  `zz-native-trace-quiet.patch` bypasses disabled diagnostic helpers when the
+  launcher supplies a nonpositive trace budget and no watch/dump/filter/profile
+  switch. Renderer-idle callbacks and explicit diagnostics remain. No Mac
+  adapter is needed; the existing cross-host trace test compiles the actual
+  module. Windows build/tests pass; native Mac execution is awaiting validation.
+  Gameplay/performance evidence and limits are recorded in STATUS.
+
+
+- **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
+  the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
+  Shared rate parsing and deferred live apply accept180/240; saved144 preferences
+  load as120 without an implicit write. Direct144 overrides remain for old
+  regression comparisons. No platform adapter is needed. Windows build, expanded
+  timing contracts and minimized180/240 gameplay checks are recorded in STATUS;
+  native Mac gameplay at the new targets remains **Awaiting validation**.
+
+- **Playback exit metadata (2026-10-24, PR #325):** Shared demo scope clears
+  game delta/ticks/exact units when original EOF/cancellation pauses guest time,
+  preserving raw time and phases. Shared regression and original-US cancellation/
+  EOF checks pass on Windows; the shared mutation rejects stale metadata.
+  No new OS adapter is needed. Native Mac execution remains **Awaiting validation**.
+
+- **PR #325 foreground comparison (2026-10-24):** Windows Hotel ten-bot
+  Original60/native144 runs on the same binary measured60.000835/143.920524 fresh
+  Presents/s with correct aggregate game speed; see STATUS for display and
+  coverage limits. The Windows-only test runner now makes its fullscreen request
+  explicit. Shared runtime source is unchanged. Native Mac runtime CI passed at
+  `4655d8a`; Mac gameplay/performance acceptance remains **Awaiting validation**.
+
+- **Recorded playback scheduler (2026-10-24, this revision):** Shared
+  `pc_native_demo_playback_guest.inc` pairs with the recorder correction below.
+  Exact raw phases schedule original decoding and fractional clock publication;
+  `pc_native_visual_rebase` retains fractional level time. Bounded fresh reads use
+  the existing Windows/Mach memory adapter. No new Mac adapter or file format.
+  CPU tests cover all rate pairs, legacy zero-tick groups, pause, zero input,
+  catch-up, cancellation and live60handoff; asset-free schedule/mutation cases
+  run in existing dual-host CI. Windows original fixtures pass; native Mac and
+  full-game/file playback remain awaiting validation. This supersedes the
+  recorder-only native round-trip regression. [Evidence](STATUS.md#2026-10-24--recorded-playback-uses-fractional-native-time).
+
+- **Native recorder tick cadence (2026-10-24, this revision):** Shared
+  `pc_native_demo_guest.inc` skips fractional-frame serialization while keeping
+  device/lifecycle calls. It carries offset game ticks and patches only newly
+  written records, preserving live globals and the original format. Numeric
+  sites `433A0/42535` provide branch selection/reset on both hosts. No OS adapter
+  is needed; native Mac execution remains pending. Original-program tests cover
+  pause, input bytes, capacity, restart and Original60 handoff. Native playback
+  cadence and old zero-tick recordings are still unresolved. See
+  [evidence](STATUS.md#2026-10-24--native-recordings-retain-authored-tick-cadence).
+
+- **Raw-clock metadata and recording regression (2026-10-24, this revision):**
+  Shared `PcNativeStep` publishes exact raw units/start phase, including pause.
+  No guest ABI, file format, timing arithmetic or OS adapter changes. Windows
+  CPU tests/build verify publication, reset, rate switches and interval splitting;
+  native Mac execution remains pending. The original writer/reader fixture now
+  also exposes twelve cross-rate round-trip failures. No playback resampler is
+  shipped: a fixed60-packet prototype slows native recordings. See
+  [evidence](STATUS.md#2026-10-24--exact-raw-clock-and-recording-round-trip-evidence).
+
+- **Demo wait/exit clock correction (2026-10-24, commit carrying this entry):**
+  Shared `pc_native_demo_guest.inc` and numeric sites `433E2/43473` remove the
+  minimum-one-tick timer step at native rates. The wrapper preserves the input
+  interval across controllers and restores raw time after exit/EOF overrides,
+  retaining the original game pause. `zz-native-demo-timing.patch` connects the
+  same guest wrapper on both hosts; no OS adapter is needed. Windows original-
+  program fixtures cover duration, zero time, one/four controllers, completion
+  and mutations; native Mac execution and live demo lifecycle remain pending.
+  Recorded packet cadence is still unresolved, tracked by sixteen strict
+  expected failures. [Evidence](STATUS.md#2026-10-24--demo-wait-and-exit-timers-use-fractional-time).
 
 - **Water beta default (2026-10-24, `fix/native-water-rounding`, this revision):**
   Common-RHI native120/144 enables the shared persistent field without a test

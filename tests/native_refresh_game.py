@@ -116,7 +116,7 @@ def opening_firearm_check(samples):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--fps', type=int, choices=(60, 120, 144), required=True)
+    parser.add_argument('--fps', type=int, choices=(60, 120, 144, 180, 240), required=True)
     parser.add_argument('--native', action='store_true',
                         help='test native updates; omit for the original 60 FPS reference')
     parser.add_argument('--label', default='', help='optional evidence label (letters, digits and hyphens)')
@@ -144,7 +144,7 @@ def main():
     parser.add_argument('--windowed', action='store_true')
     args = parser.parse_args()
     if not args.native and args.fps!=60:
-        parser.error('The original timing reference is fixed at 60 FPS; use --native for 120/144.')
+        parser.error('The original timing reference is fixed at 60 FPS; use --native for higher rates.')
     if args.label and not re.fullmatch(r'[a-zA-Z0-9-]{1,32}',args.label):
         parser.error('--label must contain 1-32 letters, digits or hyphens')
     runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()

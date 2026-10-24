@@ -131,13 +131,13 @@ static void equal(Snapshot a,Snapshot b)
 }
 static void check_scoped(void)
 {
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     unsigned scenarios=0;
     for(unsigned side=0;side<2;side++) for(unsigned selected_mode=0;selected_mode<3;selected_mode++)
     for(unsigned repeat=0;repeat<2;repeat++) for(unsigned pellets=1;pellets<=3;pellets+=2)
     for(unsigned slow=1;slow<=4;slow*=4) for(unsigned pool=0;pool<=2;pool+=2) {
         Snapshot reference={0};
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             prepare(side,selected_mode,repeat,pellets);
             MEM32(TABLE+0x18)=pool;
             scoped=rate!=0;g_tsfp_native_timing_active=rate!=0;
@@ -230,11 +230,11 @@ int main(void)
 {
     setvbuf(stdout,NULL,_IONBF,0);
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4f9bac)=TABLE;MEM32(0x4e8cec)=60;
-    for(scoped=0;scoped<2;scoped++) for(unsigned rate=0;rate<3;rate++) {
+    for(scoped=0;scoped<2;scoped++) for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
         unsigned fps=rates[rate];
         prepare(0,0,0,1);g_tsfp_native_timing_active=rate!=0;
         for(unsigned frame=0;frame<fps;frame++)

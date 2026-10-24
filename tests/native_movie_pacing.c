@@ -31,8 +31,8 @@ int main(void) {
     PcNativeMoviePacing p={0};host_counter=123;
     setting=NULL;pc_native_movie_pacing_wait(&p);assert(host_counter==123 && !creates);
     setting="144x";pc_native_movie_pacing_wait(&p);assert(host_counter==123 && !creates);
-    const char *rates[]={"60","120","144"};
-    for(unsigned r=0;r<3;r++)for(unsigned f=0;f<2;f++) {
+    const char *rates[]={"60","120","144","180","240"};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)for(unsigned f=0;f<2;f++) {
         host_frequency=f?1000000003:10000000;setting=rates[r];host_counter=123;
         pc_native_movie_pacing_wait(&p);assert(host_counter==123);
         for(unsigned i=1;i<=p.clock.rate*10u;i++) {

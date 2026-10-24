@@ -9,6 +9,8 @@ import shutil
 import struct
 import subprocess
 import threading
+import tempfile
+import time
 
 ROOT=Path(__file__).resolve().parents[1]
 XBE_SHA256='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
@@ -229,6 +231,30 @@ def recycle_disks(root,run):
         operation=FileOperation(None,3,'\0'.join(paths)+'\0\0',None,0x454,False,None,None)
         result=ctypes.windll.shell32.SHFileOperationW(ctypes.byref(operation))
         if result or operation.aborted:raise OSError(f'Test disk recycling failed: {result}')
+
+
+
+def publish_input_state(root, path, text):
+    """Publish one complete input state; never expose a truncated held key."""
+    path = contained(root, path, 'private/test-saves')
+    descriptor, temporary = tempfile.mkstemp(prefix=path.name + '.', suffix='.tmp', dir=path.parent)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as stream:
+            stream.write(text)
+        # Windows CRT readers may briefly deny replacement while fopen holds
+        # the old file. Keep the previous complete state and retry boundedly.
+        deadline = time.monotonic() + .5
+        while True:
+            try:
+                os.replace(temporary, path)
+                return
+            except PermissionError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.002)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def main():

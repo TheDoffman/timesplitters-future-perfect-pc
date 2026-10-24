@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Original contact relative velocity, including rotating rigid bodies and a
  * character whose displacement is supplied by the movement service. */
 #include <assert.h>
@@ -69,8 +70,8 @@ int main(int argc,char **argv)
     void *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    for(unsigned rate=0;rate<3;rate++)for(unsigned mode=0;mode<3;mode++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++)for(unsigned mode=0;mode<3;mode++) {
+        unsigned fps=test_rates[rate];
         unsigned frames=fps*(mode==1?4:1),multiplier=mode==2?3:1;
         g_tsfp_native_timing_active=rate!=0;reset();
         printf("contact_velocity fps=%u mode=%u\n",fps,mode);

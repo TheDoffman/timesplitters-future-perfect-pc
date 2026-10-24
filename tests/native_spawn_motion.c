@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Original model-joint history -> object creation -> inherited motion.
  * Allocation, model orientation extraction, owner transform and wake/bounds
  * are controlled services. Original spawn and velocity/momentum setters run.
@@ -114,14 +115,14 @@ int main(int argc,char **argv)
     setbuf(stdout,NULL);legacy=argc>1 && !strcmp(argv[1],"legacy-spawn-motion");
     void *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    for(unsigned fps=60;fps<=144;fps=fps==60?120:144) {
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate];
         printf("spawn_motion fps=%u\n",fps);g_tsfp_native_timing_active=fps!=60;
         for(rotated=0;rotated<2;rotated++)for(unsigned frame=0;frame<fps;frame++)
             for(unsigned vertex=0;vertex<2;vertex++)for(int sign=-1;sign<=1;sign++) {
                 unsigned whole=(frame+1)*60/fps-frame*60/fps;
                 check(whole,60.f/fps,(float)sign,1,vertex,0);
             }
-        if(fps==144)break;
     }
     for(rotated=0;rotated<2;rotated++) {
         check(0,.125f,3.66f,1,1,0);check(3,3,3.66f,1,1,0);

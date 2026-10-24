@@ -204,7 +204,7 @@ source repository alone does not install a playable game.
 ## Native frame-rate selection (upcoming launcher update)
 
 Open **Game settings → Graphics & resolution → Frame rate** to select
-**60 FPS (Original)**, **120 FPS (Beta)**, or **144 FPS (Beta)**, then save.
+**60 FPS (Original)**, **120 FPS (Beta)**, **180 FPS (Beta)**, or **240 FPS (Beta)**, then save.
 The original 60 FPS path is the default and the recovery option. High-refresh
 mode requires a game build containing the `feature/native-144-fps` runtime;
 installing this launcher alone does not add that capability to older games.
@@ -219,7 +219,8 @@ problems occur.
 
 The launcher shares `pc-frame-rate.ini` with the new in-game frame-rate menu,
 beside `pc-display.ini` in the installation's settings folder. Its versioned
-format is `TSFP_FRAME_RATE_V1 0`, `120`, or `144` (zero selects original timing).
+format is `TSFP_FRAME_RATE_V1 0`, `120`, `180`, or `240` (zero selects original timing).
+An older `144` preference loads as `120`; reading it does not rewrite the file.
 Reopen launcher settings after changing the choice in the game. Concurrent
 changes are rejected instead of overwritten, and the preference participates
 in the existing backup and multi-file rollback transaction. Cancel leaves it

@@ -101,7 +101,7 @@ unverified. Movie playback and native multiplayer remain unfinished.
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
-| **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/144 FPS beta settings](docs/native-high-refresh.md). |
+| **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
 | **Online Multiplayer** | Player-hosted Online and LAN matches with Bot support. (Windows only) |
 | **Extras** | Optional [Discord Rich Presence](docs/discord-presence.md), FPS overlays and local crash diagnostics. |
@@ -110,7 +110,7 @@ Availability depends on your platform and installed game version. Check the
 launcher's **Release notes**, [Mac status](#mac-apple-silicon) and
 [measured progress](STATUS.md) for support and known limits.
 
-Development source also enables continuous water updates with the 120/144 FPS
+Development source also enables continuous water updates with the high-refresh
 beta presets on the common renderer. **60 FPS (Original)** remains the recovery
 option; full-game and native Mac high-refresh validation remain incomplete.
 

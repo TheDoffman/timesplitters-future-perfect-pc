@@ -14,9 +14,10 @@ that `Data`, `Settings`, `Saves`, `Bin` and root checkout paths are interchangea
 `DownloadTransfer.cs`: transfers; `InstallationMaintenance.cs`: repairs;
 `GameSessions.cs`: game launch/lifetime; `GameSettings.cs`/`SettingsPage.cs`:
 settings; `TexturePack.cs`/`TextureDownload.cs`: optional textures.
-`GameSettings.NativeFps` stores original(0)/120/144 beta selection in a separate
+`GameSettings.NativeFps` stores original(0)/120/180/240 beta selection in a separate
 `pc-frame-rate.ini` and exports `TSFP_NATIVE_FPS`; it needs a compatible game
 build and does not revive interpolation or change the console interrupt clock.
+Legacy144 sidecars load as120 without writes; explicit save uses the new preset.
 Launcher version and game version are separate. A source commit is not a
 published release. Use `tools/launcher-compatibility.py --local` for API-free
 shared checks, plus affected host lifecycle/build checks. Never start publishing

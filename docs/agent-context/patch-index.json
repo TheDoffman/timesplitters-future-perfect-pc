@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "ad4a3f94646bef3891e4861d751f4a504f00c63ab89c4c1c5806e35cece7b956",
+  "loaderSha256": "2025854d6715399f85d893ac4db332b88f496d8e69cedac71db4c87ddf9ecc89",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -201,6 +201,13 @@
         "src/platform/win32_compat.h",
         "titles/futureperfect/CMakeLists.txt",
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-sampler-caller-depth.patch",
+      "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
+      "targets": [
+        "src/kernel/recomp_sample.c"
       ]
     },
     {
@@ -1316,6 +1323,20 @@
         "src/d3d/d3d8_internal.h",
         "src/d3d/d3d8_resources.c",
         "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-native-trace-quiet.patch",
+      "sha256": "7766d9430ae33f7c3535937559a324784352f9535a13674a43024306d5a5275a",
+      "targets": [
+        "src/kernel/recomp_trace.c"
+      ]
+    },
+    {
+      "name": "zz-native-demo-timing.patch",
+      "sha256": "8737f59c9623e28300ab75ec41209f77b0976f28d6215ebd04539ce0883e77c6",
+      "targets": [
         "titles/futureperfect/src/recomp_manual.c"
       ]
     }

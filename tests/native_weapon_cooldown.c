@@ -40,10 +40,10 @@ static void call(unsigned whole,float delta)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144},delays[]={1,7,30,60};
+    const unsigned rates[]={60,120,144,180,240},delays[]={1,7,30,60};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     MEM32(0x4f9bac)=TABLE;expected_mode=PRIMARY;
-    for(int native=0;native<=1;native++) for(unsigned rate=0;rate<3;rate++)
+    for(int native=0;native<=1;native++) for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++)
     for(unsigned slow=1;slow<=4;slow*=4) for(unsigned d=0;d<4;d++) {
         unsigned fps=rates[rate],delay=delays[d],before=callbacks;
         MEM32(STATE+0x110)=delay;

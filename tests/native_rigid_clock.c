@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -70,8 +71,8 @@ int main(int argc,char **argv)
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
     MEM32(0x4e8cec)=60;
-    for(unsigned r=0;r<3;r++) {
-        unsigned fps=r==0?60:r==1?120:144;
+    for(unsigned r=0;r<sizeof test_rates/sizeof test_rates[0];r++) {
+        unsigned fps=test_rates[r];
         g_tsfp_native_timing_active=r!=0;
         MEM32(0x74c450)=0;
         for(unsigned i=0;i<15;i++)MEMF(0x74c414+4*i)=1;
