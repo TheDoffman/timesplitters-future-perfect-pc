@@ -1,3 +1,42 @@
+## 2026-10-24 — Remaining preset measurements and mechanics coverage
+
+The current HUD candidate `4e16421` was tested at Original60 (`--native-fps 0`),
+native120 and native180 using the same executable SHA256
+`33161470197e0be656d5d740d68132ef7fea8c02b760d53c99012f60d9f1fa31`.
+Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER; ten-bot Disco, Classic,
+3440x1440 render target, FOV73, foreground 1920x1060 client on a 60 Hz desktop.
+Complete spawn+5..50s windows exclude setup. No CPU profiling, captures or
+per-update trace ran; successful-Present CSV and bounded actor reads remained.
+
+| Target | Intervals | FPS | Lowest 1s | Lowest 5s | p99 ms | Worst ms | Game/wall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 2699 | 60.000418 | 60 | 60.0 | 17.188 | 17.608 | 0.999870 |
+| 120 | 5396 | 119.933859 | 117 | 119.4 | 9.033 | 10.803 | 1.000141 |
+| 180 | 7552 | 167.835127 | 130 | 137.6 | 8.065 | 10.121 | 0.999518 |
+
+Every recorded presentation has an increasing guest-frame ID; none is
+interpolated. Sessions exit successfully, preserve fixture signatures and recycle
+disposable partitions. Evidence: `crowd-hud-page-disco-original60`,
+`crowd-hud-page-disco-120`, `crowd-hud-page-disco-180` and each run's provenance,
+report, Present CSV and `crowd-pacing-summary.json`. Original60 holds its target;
+120 is close, while 180 is not sustained. Prior 240 observations remain below.
+Varying AI/death paths prevent direct causal or monotonic rate comparisons.
+Host Present intervals do not prove GPU completion, scanout or input latency.
+Other maps, full-game behavior and physical Mac validation remain open.
+
+Six original-US fixtures now extend their existing rate matrices to 180/240:
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD messages. Existing assertions/tolerances, original paths, slow-time,
+pause and catch-up coverage remain. Projectile checks retain swept hits/damage
+and byte-identical native60 comparison; HUD checks retain delayed objectives.
+The separate HUD audio-bound subcase remains at diagnostic144.
+`test_native_timing.py` selected fixtures pass **6 tests, 72 deselected** in
+8.59s using verified private US XBE data (`logs/native-240-coverage-tests.log`).
+This follow-up changes tests/docs only; no rebuild is needed. Public CI skips
+private-XBE cases, so this does not certify their execution on Mac. All
+non-skipped CI checks pass for runtime head `4e16421`, including Windows/Mac
+native suites and patch transitions; the new test/docs head needs its own CI.
+
 ## 2026-10-24 — Fresh validation for HUD and general display accesses
 
 The remaining `pc_display_menu.c::guest_writable` used a separate full-region

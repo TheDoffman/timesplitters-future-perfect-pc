@@ -3794,6 +3794,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Additional mechanics fixtures through 240 (2026-10-24, PR #328):** Six
+  original-US NPC, velocity, projectile, beam, camera and HUD fixtures now run
+  at 180/240 as well as existing rates, retaining assertions and tolerances.
+  All six pass on Windows with verified private XBE data. No runtime/adapter
+  changes are needed. The suite is already registered on both CI hosts, but
+  private-XBE skips do not validate these routines on Mac. Physical Mac and
+  broader gameplay acceptance remain pending; see the latest STATUS record.
+
 - **Vehicle coverage through 240 (2026-10-24, PR #325):** Existing shared
   vehicle/contact fixtures now cover 180/240 alongside Original60 and 120/144.
   All 19 checks pass on Windows with the supported private US XBE. No runtime

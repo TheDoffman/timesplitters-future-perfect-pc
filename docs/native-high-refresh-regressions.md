@@ -6,6 +6,22 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Expanded presets and original mechanics (2026-10-24)
+
+Player-facing choices are exactly Original60 and native120/180/240 Beta;
+native60/144 remain diagnostic comparisons. Six original-US fixtures extend
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD clocks to 180/240 without relaxing assertions/tolerances. All six pass
+with verified private XBE data on Windows. Public CI skips absent private data;
+native Mac execution and broader gameplay remain unverified.
+
+The current `4e16421` executable's complete ten-bot Disco windows measure
+60.000418, 119.933859 and 167.835127 FPS at Original60/120/180. Two preceding
+240 windows on that same executable measure 227.035 and 233.604. Fresh guest
+IDs and near-unity game/wall ratios support sampled cadence/speed, not locked
+180/240 or full-game acceptance. See [STATUS](../STATUS.md) for windows,
+provenance, tails, nondeterministic workload and physical-display limitations.
+
 ## Crowded multiplayer preset coverage (2026-10-22)
 
 PR #295 (`252e72e`, implementation head `4a40569`) reduces repeated memory
@@ -25,7 +41,9 @@ with their distinct scope in [STATUS](../STATUS.md#2026-10-22--crowded-multiplay
 All selected Windows/macOS CI checks pass for that implementation head;
 native Mac gameplay, online human matches, remaining animation/physics audits,
 texture-fluidity acceptance and representative full-game coverage remain open.
-The earlier live 144-to-60 handoff gap also remains a separate pacing target.
+The earlier live 144-to-60 handoff gap was subsequently repaired; see
+[the handoff evidence](#native-start-return-to-original-60-2026-10-22).
+That bounded result does not establish every rate/scene transition.
 
 ## Fresh analogue input at native cadence (2026-10-21)
 

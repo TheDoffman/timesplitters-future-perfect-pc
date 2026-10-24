@@ -37,6 +37,11 @@ diagnostics, budget, idle callback and bypass-removal mutation.
 180/240 tests cover persistence/live apply, launcher UI, clocks, input, animation,
 walking, weapons, networking, movies, interval switches, demo round trips and
 legacy144 migration. They do not establish sustained240 FPS.
+`test_native_timing.py -k original_fractional_dispatch` additionally checks
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD clocks at 180/240 with unchanged original-US assertions/tolerances.
+Private-XBE cases skip without verified data; public CI is not Mac execution
+evidence for these lifted routines.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
@@ -54,20 +59,12 @@ Asynchronous ReadProcessMemory observations measure update holds, not rendered
 frames or Internet/physical-input latency. Five local benchmark fixture
 manifests are checked with the normal validator; the canonical fixture stays intact.
 
-Launcher changelog publication: tests/test_launcher_release.py covers explicit
-previous stable launcher selection across paginated game/launcher history,
-initial-release notes and refusal of incomplete history. It remains registered
-in the existing Windows/Mac launcher build workflow. These are offline publisher
-tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
-Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
-mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
-file-list refusal in the same existing dual-host test route.
-
-Game changelog baselines: tests/test_publish_release.py covers first-Stable
-bootstrap from the latest earlier published alpha, subsequent Stable baselines
-across minor versions, mixed launcher/draft history and ancestor restrictions.
-The suite is already registered for both hosts in the release checks; these
-offline publisher fixtures need no game or launcher rebuild.
+Publisher fixtures run in existing Windows/Mac release checks without rebuilding
+the game/UI. `tests/test_launcher_release.py` covers paginated previous-stable
+selection, initial notes, incomplete-history refusal, scope filtering, mixed PRs,
+merge ranges, renamed paths and complete file lists. `tests/test_publish_release.py`
+covers first-Stable bootstrap from published alpha, later cross-minor baselines,
+mixed launcher/draft history and ancestor restrictions.
 
 ### Native vehicle integration and diagnostic checks
 
