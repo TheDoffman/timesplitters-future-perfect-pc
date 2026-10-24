@@ -1,3 +1,56 @@
+## 2026-10-24 — Expanded aim, physics and effects rate coverage
+
+Continued the high-refresh audit on `e9feea43` without changing runtime code.
+Nine more original-US fixtures now exercise native180/240 in addition to their
+existing Original60/native60/120/144 comparisons where applicable:
+
+- Player aim/weapon offsets retain the original response curve, pause, snap
+  and catch-up checks; NPC aim retains fresh changes and exact random-event
+  counts/ticks at normal and quarter speed. NPC post-aim firing is outside scope.
+- Coupled kind-35 projectiles retain native60 byte equality, homing/straight
+  motion, scan/RNG cadence, effect positioning, impact/expiry/cleanup and damage
+  callback checks. Controlled collision/effect/damage spies are not full live
+  combat or rendered-effect validation.
+- Beam geometry retains construction, alpha onset/fade, visibility and lifetime
+  checks. Camera tracks retain fractional sampling, pause, external clock,
+  endpoint/loop and hard-cut checks; the special edge cases keep their existing
+  diagnostic intervals.
+- Player fall/force fixtures retain landing times, damage, terminal velocity,
+  view damping, force-region transitions and existing position error bounds.
+  Object rocking retains exact original endpoints and rejects frozen native
+  updates; bouncing retains contact sounds, settling and pause behavior.
+
+Existing assertions/tolerances are unchanged. Row validators now require the
+expanded output counts and all five diagnostic/native rates. Windows 11 x64,
+MSVC14.44.35207 with verified private US XBE: selected aim/projectile checks
+pass **3 tests, 75 deselected** in 6.74s; motion/effects checks pass **6 tests,
+72 deselected** in 9.00s. Logs: `native-240-aim-projectile-tests.log` and
+`native-240-motion-tests.log`. No skips or expected failures in those runs.
+
+Mounted-mouse cadence now also exercises 180/240 with 125/1000/8000 Hz packet
+delivery, normal/quarter speed and jitter. The host suite passes **11 tests**
+in 13.03s (`native-240-mounted-tests.log`), including failing legacy-clock and
+legacy-consumption controls. These are controlled packet tests, not physical
+input-latency measurements. Test entry points remain registered on both CI
+hosts, but public CI skips private-XBE cases; updated Mac execution and full
+gameplay acceptance remain unverified. No build or new live gameplay is claimed
+for this tests-only follow-up. The previous crowd measurements still apply to
+the unchanged executable, including the unresolved 180/240 target dips.
+
+The same batch also extends six original-US light-preview, network-correction,
+screen/strip-distortion, escort-recovery and menu-motion fixtures to 180/240,
+plus portable mouse-cadence and coupled-surface-math cases. All **8 selected
+tests pass, 70 deselected**, in 13.29s (`native-240-visual-tests.log`). Original
+light/RNG decisions, menu texture alternation, paused frontend/raw-time behavior,
+distortion whole-tick references and escort recovery controls retain their
+assertions; no visual tolerance was widened. Mouse injection covers up to
+8000 Hz. Coupled surface math retains independent original equations across
+spatial modes/damping, but does not establish visible water integration.
+
+This batch therefore extends 15 original-US fixtures and three portable/host
+fixtures; focused groups total 28 passing tests including existing mounted
+host checks. No new gameplay/performance claim follows from these tests.
+
 ## 2026-10-24 — Remaining preset measurements and mechanics coverage
 
 The current HUD candidate `4e16421` was tested at Original60 (`--native-fps 0`),

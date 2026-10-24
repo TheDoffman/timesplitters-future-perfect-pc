@@ -68,7 +68,7 @@ static void interruptions(void)
 
 int main(void)
 {
-    const unsigned rates[] = {60, 120, 144};
+    const unsigned rates[] = {60, 120, 144, 180, 240};
     const unsigned packets[] = {125, 500, 1000, 8000};
     unsigned failures = 0;
     for (unsigned i = 0; i < sizeof rates / sizeof *rates; ++i)

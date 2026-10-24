@@ -34,14 +34,15 @@ checks refresh/stale copies (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
 diagnostics, budget, idle callback and bypass-removal mutation.
 
-180/240 tests cover persistence/live apply, launcher UI, clocks, input, animation,
-walking, weapons, networking, movies, interval switches, demo round trips and
-legacy144 migration. They do not establish sustained240 FPS.
-`test_native_timing.py -k original_fractional_dispatch` additionally checks
-NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
-and HUD clocks at 180/240 with unchanged original-US assertions/tolerances.
-Private-XBE cases skip without verified data; public CI is not Mac execution
-evidence for these lifted routines.
+180/240 coverage includes live settings, clocks, input, animation, weapons,
+networking, movies, demo round trips and legacy144 migration, not sustained FPS.
+`test_native_timing.py` extends original-US movement/aim/physics/projectile,
+effect/menu/camera/lighting/network/recovery and HUD fixtures through240.
+Keep original references/tolerances and check row counts/rates when extending.
+Portable mouse cadence and surface math also cover240; math is not live water
+validation. `test_mounted_mouse.py` covers 125/1000/8000 Hz packets and legacy
+clock/consume mutations through240. Private-XBE cases skip without verified
+data; public CI is not Mac execution evidence for lifted routines.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

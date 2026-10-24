@@ -117,8 +117,8 @@ int main(void) {
     Snapshot *reference=calloc(481,sizeof *reference);assert(reference);
     setup(.75f);probe=0;g_tsfp_native_timing_active=0;
     for(unsigned t=0;t<=480;t++)reference[t]=step(t,1,1,(float)t);
-    const unsigned rates[]={60,120,144};
-    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned k=0;k<3;k++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned k=0;k<sizeof rates/sizeof rates[0];k++) {
         unsigned n=rates[k]*slow*8,repeats[3]={0},prev=0;
         for(probe=0;probe<=2;probe++) {
             g_tsfp_native_timing_active=1;setup(.75f);

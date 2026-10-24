@@ -15,6 +15,19 @@ and HUD clocks to 180/240 without relaxing assertions/tolerances. All six pass
 with verified private XBE data on Windows. Public CI skips absent private data;
 native Mac execution and broader gameplay remain unverified.
 
+The follow-up adds nine original-US fixtures at 180/240: player/NPC aiming,
+coupled homing projectiles, beam geometry, camera tracks, falling/force regions
+and rocking/bouncing objects. All nine pass with existing tolerances, preserving
+their pause, lifecycle, damage/event and original-reference checks. Mounted
+mouse tests also cover the new rates with 125/1000/8000 Hz packets, jitter and
+legacy clock/consumption controls; the host suite passes all 11 tests. Controlled
+targets/collisions/effect spies and packet injection are bounded evidence, not
+full live combat, rendered-pose or physical input-latency acceptance.
+Light decisions, network correction, screen/strip distortion, escort recovery
+and menu motion also pass their original-US fixtures at 180/240. Portable
+mouse-cadence and coupled-surface math checks pass; the latter does not validate
+visible water integration. Existing tolerances remain unchanged throughout.
+
 The current `4e16421` executable's complete ten-bot Disco windows measure
 60.000418, 119.933859 and 167.835127 FPS at Original60/120/180. Two preceding
 240 windows on that same executable measure 227.035 and 233.604. Fresh guest

@@ -3794,6 +3794,20 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Aim, physics and effects coverage through 240 (2026-10-24, PR #328):**
+  Nine more original-US fixtures now include 180/240: player/NPC aim, coupled
+  projectile motion, beam geometry, camera tracks, player fall/force and object
+  rocking/bounce. All nine pass on Windows, retaining behavioral tolerances.
+  Mounted-mouse packet/cadence coverage also includes 180/240; its 11-test host
+  suite passes, including legacy-clock/consumption negative controls. These
+  are shared test changes only, with no runtime/adapter changes. Public CI
+  skips original-US cases without private data; updated native Mac host tests
+  and physical gameplay remain awaiting validation. STATUS records scope.
+  The same batch adds 180/240 to original light, network correction, screen/strip
+  distortion, escort recovery and menu fixtures, plus portable mouse cadence
+  and coupled-surface math: all eight selected tests pass on Windows. Surface
+  math is not live water acceptance; the same Mac/private-data limits apply.
+
 - **Additional mechanics fixtures through 240 (2026-10-24, PR #328):** Six
   original-US NPC, velocity, projectile, beam, camera and HUD fixtures now run
   at 180/240 as well as existing rates, retaining assertions and tolerances.
