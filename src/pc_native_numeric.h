@@ -146,7 +146,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * Spawn gate 172AB5 similarly guards joint-displacement inheritance:
      * skipping a fractional spawn permanently loses its initial motion.
      * EAX is overwritten, and 172B01 already divides by live game time. */
-    if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* The reload/mode input consumer compares the whole tick directly.
+     * Press edges expire after this update, so an advancing fractional frame
+     * must enter it too. Its animation timer already uses fractional time. */
+    if ((site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||

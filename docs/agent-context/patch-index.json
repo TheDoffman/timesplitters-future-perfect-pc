@@ -238,6 +238,13 @@
       ]
     },
     {
+      "name": "zzzz-global-compare-load.patch",
+      "sha256": "fad5684ca9c16bdb143063e9075957103a7b6e6ca821c57e9b1fc038497a174e",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
       "name": "zzzz-mac-input.patch",
       "sha256": "5223249905a0463f903ef81c95c43c94115c17870227abfab9a92d347cc38b73",
       "targets": [

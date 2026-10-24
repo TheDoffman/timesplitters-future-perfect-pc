@@ -16,6 +16,11 @@ Source checks, builds, menu startup and gameplay are separate evidence;
 unavailable hardware/private data remain explicit validation gaps.
 <!-- packet:end -->
 
+Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
+on both CI hosts. `native_reload_input.c` additionally executes the local verified
+US input decoder, timing wrapper and reload consumer across pause-offset phases,
+60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
+
 Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
 helper death and the portable ring; `test_native_crash.py` checks Darwin output.
 Shared UI tests cover health identity/failures and bounded ZIP export. Existing
@@ -61,16 +66,11 @@ Asynchronous ReadProcessMemory observations measure update holds, not rendered
 frames or Internet/physical-input latency. Five local benchmark fixture
 manifests are checked with the normal validator; the canonical fixture stays intact.
 
-Launcher changelog publication: `test_launcher_release.py` checks paginated
-stable history, initial/incomplete history, game/docs/housekeeping exclusion,
-mixed PRs, merge ranges, renamed paths and complete file lists. These offline
-publisher tests run in both-host launcher CI; they need no game/UI rebuild.
-
-Game changelog baselines: tests/test_publish_release.py covers first-Stable
-bootstrap from the latest earlier published alpha, subsequent Stable baselines
-across minor versions, mixed launcher/draft history and ancestor restrictions.
-The suite is already registered for both hosts in the release checks; these
-offline publisher fixtures need no game or launcher rebuild.
+Release notes: dual-host `test_launcher_release.py` checks paginated stable
+history, first-release notes, mixed PR inclusion, exclusions, merge ranges,
+renames and incomplete-history/file-list refusal. `test_publish_release.py`
+checks first-Stable alpha bootstrap, later stable baselines and ancestry.
+These offline publisher tests need no game or launcher rebuild.
 
 ### Native vehicle integration and diagnostic checks
 
@@ -920,21 +920,13 @@ coefficient textures keyed by fractional duration. A fifth schedule alternates
 profile includes that jitter, smoothing off/on and pause preservation. Replacing
 the evolve shader's first diagonal entry with 1 must fail the byte comparison.
 
-Windows D3D11 hardware diagnostics: `python tests/test_surface_shader_feedback.py
---hardware-check --profile 0` checks all authored boundaries/freshness;
-`--benchmark --profile 3` measures timestamp spans without per-frame readback,
-checking each sequence's final byte image. Normal pytest uses WARP. Hardware
-paths skip WARP-specific storage tolerances, print adapter identity and bind the
-four captured wrap samplers before original draws. `surface_timing_gpu.h` reads
-disjoint/timestamp queries after submission with a ten-second wait bound;
-spans include submission bubbles, exclude setup/readback and are not game FPS.
-RTX4070 SUPER exposed a byte conversion transition away from the ideal half-byte
-threshold. Keep the shared arithmetic-distance guard; actual target conversion
-owns thresholds. Unconditional replacement must fail the direct guard test.
-Hardware profiles/schedules and endpoint checks passed on that adapter only;
-see STATUS for measurements. They do not establish other-GPU or game acceptance.
+Windows GPU checks: `tests/test_surface_shader_feedback.py --hardware-check
+--profile 0` verifies boundaries; `--benchmark --profile 3` measures GPU spans,
+not game FPS. Default pytest uses WARP. RTX4070 SUPER results are in STATUS;
+other GPUs/Mac remain unverified. Preserve the arithmetic-distance guard and
+its removal mutation: hardware conversion thresholds differ from ideal rounding.
 
-The rounding fixture uses the shared GPU owner. `surface_owner_gpu.inc` checks
+The rounding fixture uses the GPU owner. `surface_owner_gpu.inc` checks
 input rejection, reset, packed alpha-height, sentinel target preservation,
 color/depth and multiple/empty viewport restoration, plus binding cleanup.
 Removing reset/output restoration fails. `native_surface_gpu_owner.c` injects

@@ -3788,6 +3788,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
+  `zzzz-global-compare-load.patch` let advancing native frames consume reload
+  edges even when raw/game whole-tick phases differ after pause. Original60,
+  paused-time blocking and original weapon/binding checks are retained.
+  Windows original-decoder/reload integration and asset-free branch/mutation
+  tests pass. No Mac adapter is needed; native Mac compilation and live reload
+  checks after pause at 120/180/240 remain pending. See the #337 STATUS entry.
+
 - **Vehicle coverage through 240 (2026-10-24, PR #325):** Existing shared
   vehicle/contact fixtures now cover 180/240 alongside Original60 and 120/144.
   All 19 checks pass on Windows with the supported private US XBE. No runtime

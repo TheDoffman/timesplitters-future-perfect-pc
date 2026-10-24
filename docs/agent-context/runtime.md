@@ -24,6 +24,12 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
+through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
+read each operand once, including fused and separated branches. Indirect, narrow,
+segmented and TEST operands retain original behavior. Regenerate guest C after
+applying it. The shared title policy opts in only audited addresses/sites.
+
 `dsound-output-headroom.patch` defines the shared default host gain in
 `src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
 `src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.
