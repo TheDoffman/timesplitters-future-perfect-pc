@@ -47,8 +47,8 @@ def weapon_set_metrics(run):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
-    parser.add_argument('--native-fps',type=int,choices=(0,60,120,144),
-        help='0 selects Original60; 60, 120 and 144 select the native fractional clock')
+    parser.add_argument('--native-fps',type=int,choices=(0,60,120,144,180,240),
+        help='0 selects Original60; positive rates select the native fractional clock')
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--fullscreen',action='store_true',help='Start this isolated session borderless on its monitor; actual client size is reported separately')
     parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')

@@ -104,9 +104,9 @@ static void setup(unsigned char *memory,unsigned channels,unsigned raw,unsigned 
  * File IO and the full level simulation are outside this fixture. */
 static void record_roundtrips(unsigned char *memory)
 {
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     for(unsigned channels=1;channels<=4;channels+=3)
-    for(unsigned r=0;r<3;r++) for(unsigned p=0;p<3;p++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(unsigned p=0;p<sizeof rates/sizeof rates[0];p++) {
         unsigned rate=rates[r], playback=rates[p];
         setup(memory,channels,1,1);
         g_tsfp_native_timing_active=rate!=60;
@@ -145,7 +145,7 @@ static void record_roundtrips(unsigned char *memory)
         call(sub_00069E80);
         clock=(PcNativeTiming){0}; pc_native_timing_step(&clock,0,72000000,playback,0);
         double raw_time=0,game_time=0,finish_time=0;
-        for(unsigned n=0;n<playback;n++) {
+        for(unsigned n=0;n<=playback;n++) {
             PcNativeStep step=pc_native_timing_step(&clock,
                 (n+1)*72000000LL/playback,72000000,playback,0);
             g_tsfp_native_step=step;
@@ -156,8 +156,11 @@ static void record_roundtrips(unsigned char *memory)
             if(MEM32(0x6b98a4)==1) {
                 raw_time+=MEMF(0x4e7948)/60.; game_time+=MEMF(0x4e794c)/60.;
             }
-            if(!finish_time && MEM32(0x6b94c0)-0x10140==bytes)
-                finish_time=(n+1.)/playback;
+            /* The decoder cursor reaches the buffer end when it selects the
+             * final packet, before that packet's fractional interval finishes.
+             * Observe EOF on the following update, excluding the exit UI time. */
+            if(!finish_time && MEM32(0x6b98a4)==2)
+                finish_time=(double)n/playback;
         }
         printf("ROUNDTRIP %u %u %u %.9f %.9f %.9f\n",
             rate,playback,channels,raw_time,game_time,finish_time);
@@ -345,10 +348,10 @@ static void playback_lifecycle(unsigned char *memory)
 }
 static void playback_old_native(unsigned char *memory)
 {
-    const unsigned rates[]={60,120,144};const int64_t f=72000000;
+    const unsigned rates[]={60,120,144,180,240};const int64_t f=72000000;
     for(unsigned channels=1;channels<=4;channels+=3)
     for(unsigned recorded=120;recorded<=144;recorded+=24)
-    for(unsigned r=0;r<3;r++) for(unsigned offset=0;offset<2;offset++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(unsigned offset=0;offset<2;offset++) {
         unsigned rate=rates[r];setup(memory,channels,1,1);
         unsigned raw_total=0,game_total=0;
         for(unsigned n=0;n<recorded;n++) {
@@ -382,8 +385,8 @@ static void playback_old_native(unsigned char *memory)
 int main(void) {
     unsigned char *memory=calloc(1,0x800000); assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)memory;
-    const unsigned rates[]={60,120,144};
-    for(unsigned k=0;k<3;k++) for(unsigned channels=1;channels<=4;channels+=3)
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned k=0;k<sizeof rates/sizeof rates[0];k++) for(unsigned channels=1;channels<=4;channels+=3)
     for(unsigned raw=1;raw<=2;raw++) for(unsigned game=0;game<=1;game++) {
         unsigned rate=rates[k], previous=0; double raw_time=0,game_time=0;
         setup(memory,channels,raw,game); g_tsfp_native_timing_active=k!=0;
@@ -421,7 +424,7 @@ int main(void) {
     MEM32(0x4e7940)=0; MEMF(0x4e7948)=60.f/144;
     call(sub_000438B0); assert(MEM32(0x6b98a4)==2 && MEMF(0x4e794c)==0);
     assert(MEM32(0x4e7940)==0 && MEMF(0x4e7948)==60.f/144);
-    for(unsigned k=0;k<3;k++) for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned k=0;k<sizeof rates/sizeof rates[0];k++) for(unsigned channels=1;channels<=4;channels+=3)
     for(unsigned mode=2;mode<=5;mode+=3) for(unsigned scale=1;scale<=2;scale++) {
         unsigned rate=rates[k];
         setup(memory,channels,1,1); g_tsfp_native_timing_active=k!=0;
@@ -456,7 +459,7 @@ int main(void) {
     assert(restored==1 && MEM32(0x6b98a4)==0);
     assert(MEM32(0x4e7940)==0 && MEMF(0x4e7948)==60.f/144);
     assert(MEMF(0x4e794c)==0.f);
-    for(unsigned k=0;k<3;k++) for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned k=0;k<sizeof rates/sizeof rates[0];k++) for(unsigned channels=1;channels<=4;channels+=3)
     for(unsigned mode=2;mode<=5;mode+=3) {
         unsigned rate=rates[k], frames=0;
         setup(memory,channels,1,1); g_tsfp_native_timing_active=k!=0;

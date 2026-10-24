@@ -47,7 +47,9 @@ static void compare_rates(int rate, int64_t frequency)
 
 int main(void)
 {
-    for (int rate = 60; rate <= 144; rate += rate == 60 ? 60 : 24) {
+    const int rates[] = {60, 120, 144, 180, 240};
+    for (unsigned r = 0; r < sizeof rates / sizeof rates[0]; r++) {
+        int rate = rates[r];
         compare_rates(rate, 10000000);
         compare_rates(rate, 1000000003);
         pacing(rate,10000000);

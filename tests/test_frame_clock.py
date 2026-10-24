@@ -59,10 +59,12 @@ def test_player_frame_rate_startup_preference(tmp_path):
     subprocess.run(command,cwd=tmp_path,env=environment,check=True)
     display=tmp_path/'display.ini'
     display.write_text('TSFP_DISPLAY_V2 1920 1080 75\n')
-    for before,after in [(144,120),(120,144),(144,0),(0,120)]:
+    for before,after in [(144,120),(120,180),(180,240),(240,0),(0,120)]:
         subprocess.run([str(output),str(display),str(before),str(after)],check=True,timeout=10)
         assert display.read_text()=='TSFP_DISPLAY_V2 1920 1080 75\n'
     preference=tmp_path/'pc-frame-rate.ini'
-    for invalid in ['TSFP_FRAME_RATE_V1 240','TSFP_FRAME_RATE_V1 120 extra','TSFP_FRAME_RATE_V2 120']:
+    preference.write_text('TSFP_FRAME_RATE_V1 144\n')
+    subprocess.run([str(output),str(display),'120','240'],check=True,timeout=10)
+    for invalid in ['TSFP_FRAME_RATE_V1 300','TSFP_FRAME_RATE_V1 120 extra','TSFP_FRAME_RATE_V2 120']:
         preference.write_text(invalid)
         subprocess.run([str(output),str(display),'144','0'],check=True,timeout=10)

@@ -13,7 +13,7 @@ static atomic_int pc_rate_pending=-1, pc_rate_active=-1;
 #endif
 int recomp_config_request_native_rate(int rate)
 {
-    if(rate!=0 && rate!=120 && rate!=144)return 0;
+    if(rate!=0 && rate!=120 && rate!=144 && rate!=180 && rate!=240)return 0;
     RATE_EXCHANGE(&pc_rate_pending,rate);
     return 1;
 }
@@ -28,6 +28,8 @@ static const char *pc_frame_rate_live_value(void)
     case 0:return "0";
     case 120:return "120";
     case 144:return "144";
+    case 180:return "180";
+    case 240:return "240";
     default:return NULL;
     }
 }

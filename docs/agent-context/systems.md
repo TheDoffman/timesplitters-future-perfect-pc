@@ -442,6 +442,16 @@ small `textures.retired` migration, without any DDS/JSON payload or LFS access.
 This preserves the original-icon fix using the existing shared launcher consumer;
 ordinary missing texture files never cause removal of an installed pack.
 
+## Frame-rate preset range
+
+`pc_frame_rate_settings.h` and launcher `GameSettings` expose Original60 plus
+120/180/240 Beta. Legacy144 sidecars load as120 without rewriting; direct144
+environment timing remains for regression comparison. `pc_native_rate.h` accepts
+180/240, and `pc_frame_rate_live.inc` publishes their immutable strings at the
+next guest update. Save/apply rollback and the 60-Hz console clock are unchanged.
+The overlay already labels every native target above60 Beta and displays actual
+measured FPS rather than rounding it to the preset interval.
+
 ## Direct keyboard inventory slots
 
 `pc_weapon_slots.def` appends host-only actions after the 24 Xbox controls;

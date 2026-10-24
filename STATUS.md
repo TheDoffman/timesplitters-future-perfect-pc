@@ -1,3 +1,55 @@
+## 2026-10-24 — 60-step FPS presets through 240 (PR #325)
+
+The shared Video Options menu and launcher now offer Original 60 and Beta
+120, 180 and 240 FPS. Apply uses the existing deferred live switch; restarting
+is unnecessary. The counter still reports actual measured FPS. Old saved 144
+preferences load as 120 without rewriting the file; direct 144 diagnostic
+launches remain available for regression comparisons. Original 60 stays default.
+
+Supported Windows Build passes on `89c49ee` plus this change. Executable SHA256:
+`630954c7891f0c2d05967e92b900324509d1003d85b9b5f8da305f1d9fc2a646`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11/RTX 4070 SUPER. The final targeted
+clock/menu/native timing/demo/context/backlog/CI-scope suite has **279 passed,
+2 skipped**, 150.38 seconds; skips are Darwin-only menu/prompt compile checks.
+Expanded fixtures include original-game movement, analog input, animation,
+weapons/NPC fire, network/movie clocks, procedural intervals and 50 recording/
+playback rate/controller combinations. The round-trip fixture now observes EOF
+rather than treating selection of the last packet as completed playback; no
+runtime playback policy was changed. Logs: `native-240-build.log` and
+`native-240-final-tests.log`.
+
+The Windows launcher compiles; base and shared UI checks pass, including every
+new preset, legacy migration and save rollback. Standalone settings checks:
+**38 passed**. The full launcher run stops at the texture installer's running-game
+guard because another session is active; that session was left untouched.
+Remaining full-suite checks were not run in that invocation. Logs:
+`native-240-launcher.log`, `native-240-launcher-settings.log`.
+
+Separate bounded Breaking and Entering runs at 180 and 240 preserve pause,
+paused mouse suppression, resume and heading changes (91 to 31 to 1 degrees),
+with health 35 throughout. Position, level ticks and HUD timing freeze while
+paused. Native traces contain 2935/3513 fractional positive game updates at
+180/240 respectively. Signed profiles/canonical fixture remain unchanged;
+both sessions exit normally and recycle temporary partitions. Evidence:
+`private/test-saves/new-presets-{180,240}`, matching logs and
+`private/pipeline/new-presets-comparison.json`. These minimized, capture-enabled
+sessions run alongside another game and do not measure sustained 180/240 FPS,
+GPU completion or physical refresh. Full gameplay coverage remains open.
+
+The isolated live-menu route `fps-menu-240-v2` switches Original 60 to
+120, 180, 240 and back to Original 60 within PID 12844. Runtime logs confirm
+all four applied clocks; reviewed captures show the matching labels, enabled
+Apply while staged and gray Apply after saving. Final sidecar contains zero;
+profiles remain unchanged. The first route navigated incorrectly after Apply
+reset selection to the top and verified only 120. The corrected route verifies
+all choices; its final nominal resume step still remains in the menu and is
+not counted as resume evidence. Separate gameplay routes above cover resume.
+
+All 14 checks passed on parent `89c49ee`; this does not validate the new commit.
+New-head CI and native Mac gameplay are pending. Policy is shared, with no new
+host adapter; see MAC-060. Crowd dips and sustained playback overload remain
+unresolved. Earlier observations below retain their original binary identities.
+
 ## 2026-10-24 — Preserve main's controller fix in the high-refresh branch
 
 Merged main `3baad73` (#319/#326) into the existing PR #325 branch. The only

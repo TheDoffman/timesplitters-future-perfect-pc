@@ -73,7 +73,9 @@ int main(void)
 {
     memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)memory;
     const int64_t f=72000000;
-    for(unsigned rate=120;rate<=144;rate+=24)for(unsigned channels=1;channels<=4;channels+=3) {
+    const unsigned rates[]={120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)for(unsigned channels=1;channels<=4;channels+=3) {
+        unsigned rate=rates[r];
         setup(channels);g_tsfp_native_timing_active=1;
         PcNativeTiming clock={0};publish(pc_native_timing_step(&clock,0,f,rate,0));
         pc_native_demo_guest(decoder);

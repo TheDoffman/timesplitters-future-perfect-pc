@@ -135,7 +135,7 @@ def playback_results(playback_output):
         if line.startswith("RESULT "):
             rate, channels, raw, game, raw_time, game_time = map(float, line.split()[1:])
             rows[tuple(map(int, (rate, channels, raw, game)))] = (raw_time, game_time)
-    assert len(rows) == 24, playback_output
+    assert len(rows) == 40, playback_output
     return rows
 
 
@@ -146,12 +146,12 @@ def roundtrip_results(playback_output):
         if line.startswith("ROUNDTRIP "):
             rate, playback, channels, raw_time, game_time, finish = map(float, line.split()[1:])
             rows[int(rate), int(playback), int(channels)] = raw_time, game_time, finish
-    assert len(rows) == 18, playback_output
+    assert len(rows) == 50, playback_output
     return rows
 
 
 @pytest.mark.parametrize("recording,playback", [
-    (recording,playback) for recording in (60,120,144) for playback in (60,120,144)])
+    (recording,playback) for recording in (60,120,144,180,240) for playback in (60,120,144,180,240)])
 @pytest.mark.parametrize("channels", [1,4])
 def test_recorded_pause_roundtrip(roundtrip_results, recording, playback, channels):
     raw, game, finish = roundtrip_results[recording, playback, channels]
@@ -185,7 +185,7 @@ def test_demo_transition_regressions_are_detected(demo_source, tmp_path, mutatio
 def test_demo_wait_and_exit_timing(playback_results):
     # The shared original-code executable asserts native wait/exit timer and
     # published raw-clock parity, pause, EOF and restoration outside the scope.
-    assert len(playback_results) == 24
+    assert len(playback_results) == 40
 
 
 @pytest.mark.parametrize("mutation", ["record-gate", "record-carry", "record-reset"])
@@ -212,7 +212,7 @@ def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation
         compile_and_run(tmp_path, demo_source.replace(path.as_posix(), mutated.as_posix()))
 
 
-@pytest.mark.parametrize("rate", [60,120,144])
+@pytest.mark.parametrize("rate", [60,120,144,180,240])
 @pytest.mark.parametrize("channels", [1, 4])
 @pytest.mark.parametrize("raw,game", [(1, 1), (1, 0), (2, 1), (2, 0)])
 def test_recorded_time_matches_original60(playback_results, rate, channels, raw, game):

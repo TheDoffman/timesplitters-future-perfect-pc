@@ -248,7 +248,7 @@ int main(void)
     assert(RECOMP_I32_TO_F32(0x4E7944,1)==1);
     assert(RECOMP_I32_TO_F64(0x4E7944,1)==1);
     setting="144oops"; frame(); assert(original_calls==2);
-    setting="240"; frame(); assert(original_calls==3);
+    setting="300"; frame(); assert(original_calls==3);
     setting="144"; frame();
     double distance=0;
     int64_t exact_units=0;

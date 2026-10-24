@@ -3755,6 +3755,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
+  the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
+  Shared rate parsing and deferred live apply accept180/240; saved144 preferences
+  load as120 without an implicit write. Direct144 overrides remain for old
+  regression comparisons. No platform adapter is needed. Windows build, expanded
+  timing contracts and minimized180/240 gameplay checks are recorded in STATUS;
+  native Mac gameplay at the new targets remains **Awaiting validation**.
+
 - **Playback exit metadata (2026-10-24, PR #325):** Shared demo scope clears
   game delta/ticks/exact units when original EOF/cancellation pauses guest time,
   preserving raw time and phases. Shared regression and original-US cancellation/

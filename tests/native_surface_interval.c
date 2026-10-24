@@ -9,9 +9,9 @@ static void sequence(int64_t frequency,int jitter)
 {
     PcNativeTiming clock={0};int64_t now=0,total=0,raw_total=0;unsigned ended=0,started=0;
     pc_native_timing_step(&clock,now,frequency,144,0);
-    const unsigned rates[]={144,120,60,144};
+    const unsigned rates[]={144,120,60,180,240,144};
     for(unsigned frame=0;frame<1440;frame++) {
-        int rate=rates[(frame/37)%4];
+        int rate=rates[(frame/37)%(sizeof rates/sizeof rates[0])];
         int64_t elapsed=frequency/rate;
         if(jitter)elapsed+=((int)(frame%7)-3)*(frequency/4000);
         if(frame==913)elapsed=frequency; /* Bounded catch-up, not a 60-tick burst. */

@@ -64,8 +64,8 @@ int main(void)
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     setvbuf(stdout,NULL,_IONBF,0);
     /* ORIGINAL_CONSTANTS */
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned r=0;r<4;r++)for(unsigned slow=1;slow<=4;slow*=4)
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)for(unsigned slow=1;slow<=4;slow*=4)
     for(int loop=0;loop<=1;loop++)for(int reverse=0;reverse<=1;reverse++) {
         unsigned fps=rates[r],events=0,wraps=0,holds=0;
         g_tsfp_native_timing_active=r!=0;

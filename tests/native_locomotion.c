@@ -71,8 +71,8 @@ int main(int argc,char **argv) {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned boosted=0;boosted<2;boosted++) for(unsigned mode=0;mode<4;mode++) {
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned boosted=0;boosted<2;boosted++) for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode];g_tsfp_native_timing_active=mode!=0;setup(boosted);
         for(unsigned f=0;f<fps;f++)step((f+1)*60/fps-f*60/fps,60.f/fps,60.f/fps,0,1);
         printf("walk boosted=%u native=%u fps=%u x=%.7f z=%.7f charge=%.7f collisions=%u\n",
@@ -85,7 +85,7 @@ int main(int argc,char **argv) {
     /* Equal active-original-update budgets at quarter and triple speed.
        The real parent dispatcher skips original zero-whole-tick updates;
        its gate has a separate actual-source fixture. */
-    for(unsigned mode=0;mode<4;mode++) for(unsigned speed=0;speed<2;speed++) {
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) for(unsigned speed=0;speed<2;speed++) {
         unsigned fps=rates[mode],previous=0;
         float scale=speed?3.f:.25f;
         g_tsfp_native_timing_active=mode!=0;setup(1);
@@ -118,7 +118,7 @@ int main(int argc,char **argv) {
     }
     /* Combined sideways/forward input respects the same speed cap. Stop
        and reversal samples exercise the complete displacement/collision path. */
-    for(unsigned mode=0;mode<4;mode++) {
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode];g_tsfp_native_timing_active=mode!=0;setup(0);
         for(unsigned f=0;f<fps;f++) {
             float direction=f<fps/4?1.f:f<fps/2?0.f:-.5f;
@@ -129,7 +129,7 @@ int main(int argc,char **argv) {
     }
     /* Depletion retains the original threshold/overshoot, within one
        original update of boost duration and travel distance. */
-    for(unsigned mode=0;mode<4;mode++) {
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode],f=0;g_tsfp_native_timing_active=mode!=0;setup(1);
         MEMF(ENTITY+0x1d0)=1;
         while(MEMF(ENTITY+0x1d0)>0 && f<fps*5) {

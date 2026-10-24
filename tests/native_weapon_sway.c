@@ -94,8 +94,8 @@ int main(void) {
     for(unsigned t=1;t<=720;t++) {
         reference[t]=step(60+t,1,1);reference_events[t]=rng_calls;
     }
-    const unsigned rates[]={60,120,144};
-    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned r=0;r<3;r++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         unsigned fps=rates[r],previous=60,repeats=0;
         g_tsfp_native_timing_active=1;setup();float last=step(60,0,0);
         for(unsigned f=1;f<=fps*12;f++) {

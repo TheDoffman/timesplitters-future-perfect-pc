@@ -138,13 +138,13 @@ static void prepare(unsigned mode,unsigned repeat,unsigned pellets,unsigned phas
 }
 static void check_scenarios(void)
 {
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     unsigned scenarios=0;
     for(unsigned slow=1;slow<=4;slow*=4) for(unsigned mode=0;mode<3;mode++)
     for(unsigned repeat=0;repeat<2;repeat++) for(unsigned pellets=1;pellets<=3;pellets+=2)
     for(unsigned phase=0;phase<2;phase++) for(unsigned interval=0;interval<2;interval++) {
         Snapshot reference={0};
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             unsigned fps=rates[rate];
             prepare(mode,repeat,pellets,phase,interval?.1f:0);
             g_tsfp_native_timing_active=rate!=0;
@@ -184,7 +184,7 @@ static void check_scenarios(void)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4f9bac)=TABLE;MEM32(0x4e8cec)=60;
@@ -196,7 +196,7 @@ int main(void)
     MEM32(MODE+0x34)=0x123;MEM32(MODE+0x38)=0x124;
     MEMF(MODE+0x3c)=.1f;
     for(unsigned burst=0;burst<2;burst++) for(unsigned gate=0;gate<2;gate++)
-    for(unsigned rate=0;rate<3;rate++) {
+    for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
         unsigned fps=rates[rate];
         memset((void *)((uintptr_t)WEAPON+g_xbox_mem_offset),0,0x130);
         MEM32(WEAPON+0xec)=STATE;

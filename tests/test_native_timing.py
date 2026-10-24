@@ -698,7 +698,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         print(output)
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_fire_audit ')]
-        assert len(rows)==6,output
+        assert len(rows)==10,output
+        assert {int(row['fps']) for row in rows}=={60,120,144,180,240},output
         reference=next(r for r in rows if r['fps']=='60' and r['scoped']=='0')
         failures=[r for r in rows if r['scoped']=='1' and
                   (r['shots']!=reference['shots'] or r['sounds']!=reference['sounds'] or
@@ -708,7 +709,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_weapon_fire.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('fire_audit ')]
-        assert len(rows)==12,output
+        assert len(rows)==20,output
         failures=[]
         for row in rows:
             if row['native']=='0' or row['open_gate']=='1':

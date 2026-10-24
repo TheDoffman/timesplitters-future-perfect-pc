@@ -18,23 +18,22 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_controller_profile.py` tests the actual parser/sampler on both CI hosts:
-launcher device switches, slots, custom/unbound maps, release and disconnect.
-Three stock-profile cases fail before #319. Windows Build additionally checks
-the shipped Controller profile with SDL virtual buttons/sticks and focus loss;
-`tsfp_pc_prompts_test` reports physical-pad/foreground skips. Real hardware and
-native Mac gameplay require separate validation.
+`test_controller_profile.py` covers parser/sampler device switches, slots,
+custom/unbound maps, release/disconnect. Windows Build tests SDL virtual input;
+physical pads and native Mac gameplay need separate validation.
 
-`test_native_demo_timing.py`: shared scope/schedule/read guards and mutations;
-original US input, ABI, pause, EOF/cancel metadata, catch-up, preset changes,
-old streams and recorder capacity/reset. Missing XBE skips originals. All rate
-pairs pass; full-game/file/Mac playback and sustained sub60 overload remain open.
+`test_native_demo_timing.py` covers schedule/read guards, mutations, original
+input/ABI, pause, EOF/cancel, catch-up, preset changes and recorder reset/capacity.
+Missing XBE skips original routines. File/Mac playback and overload remain open.
 
-`test_online_theme.py` runs each real Tk lifecycle in a bounded child process;
-missing Tcl/Tk or failed widget/DWM assertions still fail the test.
+`test_online_theme.py` isolates each Tk lifecycle in a bounded child; failures
+remain failures. `test_framebuffer_sampling.py` checks refresh/stale-copy guards
+with fake HLE callbacks; Mac covers GL/RHI, Windows RHI.
 
-`test_framebuffer_sampling.py`: HLE fake-copy/unused-water stubs; refresh and
-stale-copy mutation. Mac covers GL/RHI, Windows RHI.
+180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
+checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
+procedural interval switches and demo round trips. These are bounded behavioral
+contracts, not proof every scene sustains240 FPS. Legacy144 migration is tested.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

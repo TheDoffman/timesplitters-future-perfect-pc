@@ -109,13 +109,13 @@ static void hit(void) {
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory); g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x7b0c7c)=0x1000; MEM32(0x1014)=0x3000; MEM32(0x307c)=0x4000;
     MEM32(0x1004)=0xffffffff; MEM32(0x4e8cec)=60;
     MEMF(0x475c78)=1; MEMF(0x475cd4)=.5f;
-    for(unsigned r=0;r<3;r++) for(int native=0;native<2;native++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(int native=0;native<2;native++) {
         unsigned fps=rates[r];
         MEMF(0x4b30)=0; MEMF(0x2008)=1;
         g_tsfp_native_timing_active=native;

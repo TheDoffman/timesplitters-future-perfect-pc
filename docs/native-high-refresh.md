@@ -1,27 +1,30 @@
 # Native high refresh development
 
 The `feature/native-144-fps` branch adds an opt-in path that runs the title's
-own update and rendering loop at a 60, 120 or 144 FPS target. Without a saved
+own update and rendering loop at a 60, 120, 180 or 240 FPS target. Without a saved
 FPS preference, normal play keeps main's fixed-60 default. The old interpolated presentation engine and Smooth
 motion setting remain retired.
 The initial branch was merged into main through PR #285 (`8f3b422`);
 focused follow-up branches retain the same high-refresh goal and beta status.
 
 Build this branch with the normal `tsfp.ps1 -Action Build` workflow. On Windows,
-open `Play-Native.cmd` for the 144 FPS target. `Play-Native.cmd 120` selects 120;
+open `Play-Native.cmd` for the 120 FPS target. Add `180` or `240` for those targets;
 `Play-Native.cmd 60` provides a native timing comparison at the original rate.
 These launch defaults do not rewrite saved graphics preferences.
 
 In **Settings → Video Options** (also in paused Options),
-choose **60 FPS (Original)**, **120 FPS (Beta)** or **144 FPS (Beta)**, select
+choose **60 FPS (Original)**, **120 FPS (Beta)**, **180 FPS (Beta)** or
+**240 FPS (Beta)**, then select
 **Apply**. The change takes effect on the next game update without
-restarting, and the FPS counter reflects the active target. The 120/144 choices retain their Beta labels. Original
+restarting, and the FPS counter reflects the active target. All targets above 60 retain their Beta labels. The counter displays actual measured FPS, not rounded preset steps. Original
 60 FPS is the compatibility fallback. Back discards an unapplied choice; a
 save failure leaves the active rate unchanged.
 The selection lives in `pc-frame-rate.ini` beside `pc-display.ini` (or beside
 input settings when no display path is specified), independently of resolution,
 FOV, texture choices and saves. A valid saved choice takes precedence over
 launcher/environment defaults on the next startup, including `Play-Native.cmd`.
+Saved 144 FPS preferences load as 120 FPS without rewriting the file until an explicit save.
+The legacy 144 environment override remains available for regression comparisons.
 Invalid/missing preferences retain the existing launch behavior. Automated
 rate comparisons must use isolated settings directories without a saved FPS
 choice unless they are explicitly testing preference precedence.
@@ -41,21 +44,22 @@ now uses Video Options and the native profile save mechanism. Texture style stay
 guest menu serves Windows and Mac; native Mac visual validation is pending.
 This is a development checkout entry point, not an installed release update.
 
-The FPS overlay shows `target 120 (Beta)` or `target 144 (Beta)` alongside
+The FPS overlay shows `target 120 (Beta)`, `target 180 (Beta)` or
+`target 240 (Beta)` alongside
 measured FPS for the high-refresh presets. Native 60 shows `target 60` and
 original timing shows `cap 60`, without a beta label. Network RTT appears only
 when a network mode is active; offline play hides the latency readout.
 
-For a direct game launch on either host, set `TSFP_NATIVE_FPS=144` or put
-`native_fps = 144` in its isolated runtime display configuration. Supported
-values are 60, 120 and 144; absent, zero and invalid values retain original
+For a direct game launch on either host, set `TSFP_NATIVE_FPS=240` or put
+`native_fps = 240` in its isolated runtime display configuration. Supported
+values are 60, 120, 180 and 240 (plus legacy diagnostic 144); absent, zero and invalid values retain original
 timing. Legacy presentation settings retain main's fixed migration values.
 Leave the console interrupt clock at 60 Hz. Do not use
 `RECOMP_VBLANK_HZ=144` to enable this feature.
 
 ## Water at beta frame rates
 
-Current development source enables continuous water updates with native120/144
+Current development source enables continuous water updates at native beta rates
 on the common renderer. The original disturbance and byte-feedback simulation
 still runs on authored ticks; intermediate frames evolve the cosmetic field
 before the original ripple shader draws it. The field follows one authored tick
