@@ -35,6 +35,12 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-texel-sample-lanes.patch` groups the texture survey's four independent hash
+lanes. Sample addresses/order, all checksum bits, small-input handling and tails
+match the original scalar recurrence. It changes neither sampling/full-check
+frequency nor upload/invalidation policy. Tests compare actual production code
+with the frozen scalar reference, including exact word-read footprints/bounds.
+
 `zz-shader-source-lookup.patch` adds a guest source-address hint to the existing
 HLE slot-program cache. Every hinted hit still compares the full current
 microcode with the immutable host copy and requires the same instruction count.

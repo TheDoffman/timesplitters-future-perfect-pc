@@ -1,3 +1,66 @@
+## 2026-10-24 — Texture survey lane scheduling
+
+The retained crowd shader profile has61 samples in `texel_sample` (92 in its
+pre-shader baseline). The original texture survey maintains four independent
+checksum lanes but updates one dynamically indexed lane per iteration.
+`zz-texel-sample-lanes.patch` explicitly processes each four-sample group,
+retaining the same positions/order, recurrence and final mixing. Remaining
+one/two/three samples use the original tail, and inputs below eight bytes keep
+their original byte hash. No sampling frequency, full-check interval, mip hash,
+texture invalidation/upload, guest timing or renderer policy changes.
+
+The production-code fixture compares against the frozen scalar recurrence,
+checking both result bits and exact word-read positions/order/bounds. Coverage
+includes every byte length0..32775, step boundaries through64MiB, unaligned
+sources, modified bytes and synthetic linear/compressed row layouts. Deliberate
+tail-lane and overread mutations fail. Allthree Windows checks pass;21 context/
+backlog checks and context/whitespace validation pass. Both native CI hosts
+register the fixture; native Mac execution remains pending for this follow-up.
+
+An isolated MSVC14.44 /O2 microbenchmark uses200,000 calls per round on warmed
+256KiB inputs, changes the first byte each call, consumes results and alternates
+method order across six rounds. Median old time0.1095095s versus new0.0829925s
+(about24.2% less time for this checksum workload). Prototype equality also passes
+50,000 lengths. This is not a full-game FPS gain or a hardware-independent result.
+Evidence: `logs/texel-lanes-prototype.log`, `logs/texel-sample-lanes-tests.log`,
+`logs/texel-lanes-context-tests.log`; private benchmark sources are ignored.
+
+Supported Windows Build -SkipTextures and built-in checks pass on Windows11x64,
+MSVC14.44 / D3D11 / RTX4070SUPER. Candidate SHA256:
+`cbcd0bfcf258a13bbcaf04655d1da62d09e209c84799ff5bb453ca379b22d2ff`.
+`crowd-texel-lanes-60` completes the ten-bot Disco route with19 active foreground
+checkpoints. Its full45s spawn+5..50 window contains2,699 fresh guest intervals:
+60.000371FPS, minimum1s/5s rates60, p99 17.272ms, worst17.657ms, sampled game/wall
+1.000322 and no interpolation. No CPU sampler, captures or per-update trace ran;
+fixture signatures remain intact and disposable partitions are recycled.
+
+The first240 route also completes with19 checkpoints but a local compiler/test
+command overlaps the beginning of its predeclared window (log completion at
+run+94.221s). Its full45s numbers are retained as confounded observations:
+10,134 intervals,225.229290FPS, minimum1s147/minimum5s169.2,p99 6.782ms,worst9.797ms.
+Do not attribute this difference to the patch or use it as a clean comparison.
+Both the run summary and `logs/texel-lanes-240-overlap-summary.json` mark the
+overlap. Idle MSBuild worker CPU counters do not
+change between the two pre-repeat observations; no workers are terminated.
+
+The separate `crowd-texel-lanes-clean240` repeat completes without a local build/
+test workload in its window. All19 active foreground checkpoints pass; its full
+45s window has10,192 fresh guest intervals,226.507835FPS, minimum1s150/minimum5s180,
+p99 6.789ms,worst9.728ms and three intervals above9ms. Sampled game/wall is1.000082,
+with no interpolation/CPU sampler/captures/update trace. Both modes use Classic,
+3440x1440 render/FOV73 and actual1920x1060 foreground clients. Fixture signatures
+remain valid/unchanged and disposable partitions are recycled. The average is
+lower than the preceding shader build's232.374342; nondeterministic bots and
+host conditions prevent causal comparison. This validates bounded gameplay and
+the measured interval distribution, not a full-game FPS benefit. The checksum
+microbenchmark establishes only the targeted computation improvement. Evidence:
+`logs/texel-lanes-original-summary.json` and `logs/texel-lanes-clean240-summary.json`.
+
+The published shader head8c172ff3 passes all14 Windows/Mac CI checks, including
+native runtime and patch upgrades/transitions. This confirms that earlier head,
+not the pending texture follow-up or physical Mac gameplay. Full-game visual/
+mechanical acceptance and sustained crowded240 remain unverified.
+
 ## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
 
 Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state

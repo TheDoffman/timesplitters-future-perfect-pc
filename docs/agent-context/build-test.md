@@ -388,10 +388,10 @@ Counters do not measure GPU completion or scanout.
 `test_text_read_scope.py` checks query reduction, nesting, boundaries, invalidation
 and prompt-hook ABI/fallbacks. `test_frame_clock.py` extracts the Arm body for
 cheap/late/no-signal pacing checks. Both run in runtime CI.
-`test_shader_source_lookup.py` compiles actual
-HLE cache code and checks changed/reused sources, lengths, relocation, collisions
-and avoided hashing. Stale-source and eager-hash mutations must fail. Both host
-CI jobs run it; the fixture does not validate rendered shader output.
+`test_shader_source_lookup.py` checks fresh shader contents and avoided hashing.
+`test_texel_sample_lanes.py` checks scalar checksum/read-footprint parity across
+lengths, strides and unaligned sources. Both extract production code, require
+negative controls and run on both CI hosts; neither proves rendered parity.
 
 ## Compatibility repair controller
 

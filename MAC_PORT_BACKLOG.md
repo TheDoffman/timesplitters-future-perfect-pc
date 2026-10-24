@@ -3831,6 +3831,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Texture survey lanes (2026-10-24, PR #328 follow-up):** Shared
+  `zz-texel-sample-lanes.patch` groups four existing independent checksum lanes
+  while retaining exact sampled bytes/order and checksums. It changes no texture
+  update/upload policy or OS adapter. Windows production-code checks include
+  scalar/footprint/bounds parity and tail/overread negative controls; both native
+  CI jobs register them. Native Mac execution/gameplay remains unverified for
+  this follow-up. The Windows build and bounded ten-bot Original60/native240
+  routes pass with fresh frames/near-unity game speed, averaging60.000371 and
+  226.507835FPS over45s. The latter is not sustained240 or a demonstrated total
+  FPS gain; only the isolated checksum workload is measurably faster. See STATUS.
+
 - **Shader source lookup (2026-10-24, PR #328 follow-up):** The shared HLE cache
   verifies full current microcode on source-address hints before bypassing its
   hash. Changed bytes/counts and relocated sources retain the original fallback;

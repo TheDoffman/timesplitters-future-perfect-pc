@@ -196,7 +196,7 @@ jobs:
             tests/test_cutscene_letterbox.py tests/test_pc_display_modes.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
             tests/test_fov_settings.py tests/test_storage_menu.py tests/test_text_read_scope.py tests/test_trace_filter.py tests/test_sample_chains.py tests/test_gpu_flush_ack.py
-            tests/test_menu_sampling.py tests/test_pushbuffer_policy.py tests/test_shader_source_lookup.py
+            tests/test_menu_sampling.py tests/test_pushbuffer_policy.py tests/test_shader_source_lookup.py tests/test_texel_sample_lanes.py
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
             tests/test_frame_replay.py
             tests/test_debug_settings_model.py
