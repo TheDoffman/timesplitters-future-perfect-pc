@@ -924,23 +924,21 @@ without assuming other GPUs use the same threshold. Hardware checks now pass
 all four profiles and ten schedules each; benchmark endpoint checks also pass.
 This validates this adapter, not other GPUs or game integration. See STATUS.
 
-The rounding fixture now runs transforms/evolution through the shared
-`graphics/surface_gpu.h` owner. `surface_owner_gpu.inc` checks external input
-copying, rejected storage/aliases/time, paused output, reset/reinitialization,
-color/depth and multiple/empty viewport restoration, texture/step-buffer
-unbinding and preservation of a sentinel target. Removing output restoration
-or reset invalidation must fail. These are D3D11 lifecycle checks, not Vulkan
-validation. The existing dual-host native timing group now includes
-`native_surface_gpu_owner.c`; its fake RHI fails each of 37 allocation stages,
-checks complete typed-handle cleanup, and recreates successfully. It performs
-no shader execution and does not replace real GPU coverage. The existing test
-compiler now includes the RHI header directory and the shader harness searches
-its disposable mutation directory first, including nested owner headers.
-
-`native_surface_gpu_cache.c` checks identity reuse, replacement failures,
-retained image references, invalid/full-cache rejection and scene clear/recreation
-in the dual-host group. GPU trajectories reacquire each frame, replace generation
-between smoothing runs and release caller references before cache cleanup.
+The rounding fixture uses the shared GPU owner. `surface_owner_gpu.inc` checks
+input rejection, reset, packed alpha-height, sentinel target preservation,
+color/depth and multiple/empty viewport restoration, plus binding cleanup.
+Removing reset/output restoration fails. `native_surface_gpu_owner.c` injects
+failure at every allocation; `native_surface_gpu_cache.c` checks retained image
+identity, transactional replacement, capacity and clear/recreation. These run
+in the dual-host CPU suite; Windows shader checks do not prove Vulkan behavior.
+`native_surface_native.c` checks exact phase, authored boundaries, pauses,
+duplicates and gaps. `native_surface_render_guest.c` exercises the actual guest
+adapters with 144 updates/60 events, stack discipline and Original60 recovery.
+The bounded runner's `--scenario surface-native --native-surfaces` uses the
+Scotland route with the persistent output hook; `--trace-surface-images` captures
+final GPU images for freshness checks, excluding pacing claims. Omit the native
+flag for a baseline. Constructor resets and renderer cleanup are in the shared
+patch, loaded after capture; historical patch fixtures exclude both tail patches.
 
 Rounding trajectories now use `pc_surface_gpu_begin_bytes`; original-shader and
 broken-gradient controls still test residual/clipping behavior. Captured replay

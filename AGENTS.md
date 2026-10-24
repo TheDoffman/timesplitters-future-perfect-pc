@@ -55,6 +55,11 @@ providers, perform handoffs or limit themselves to advisory work.
   `mac-port` work can remain there until integrated, but new Mac tasks should
   also use focused branches. Preserve other devices' separate work. Do not
   merge into `main` unless the user explicitly instructs it.
+- For the continuing native-high-refresh effort, group related changes into the
+  current PR. The user requires that PR to be merged into `main` before opening
+  another PR for this effort (2026-10-24). Add repairs and follow-ups to the same
+  PR while it remains open; verify the remote merge state before starting its
+  successor. This does not waive required checks or authorize unrelated merges.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
   Desktop, not the old Documents location. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive

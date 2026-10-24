@@ -16,7 +16,7 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),

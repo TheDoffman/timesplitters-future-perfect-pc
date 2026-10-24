@@ -3705,6 +3705,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Persistent visible water candidate (`fix/native-water-rounding`, 2026-10-24):**
+  `pc_surface_native*.h`/`.inc`, shared GPU packing, and
+  `zz-native-surface-render.patch` connect exact native intervals to the original
+  ripple shader with retained owners and scene/device cleanup. Common RHI uses
+  the same implementation on Windows and native Mac; legacy GL remains original.
+  Opt-in only, with a one-authored-tick cosmetic phase delay to preserve event/RNG
+  ordering. CPU timing/guest checks run in the shared test group. Native Mac GPU,
+  pause/switch/scene behavior and performance still require host validation.
+  See the latest STATUS entry for measured Windows scope; no Mac result inferred.
+
 - **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
   GPU transform shader bodies and `graphics/surface_basis.h` preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.

@@ -21,7 +21,7 @@ static void pc_surface_capture_feedback_guest(void (*original)(void)) {
         if(old && old[0]=='1')enabled=0;
         checked=1;
     }
-    PcSurfaceCapture sample;int ready=enabled && pc_surface_capture_collect(pc_surface_capture_read,g_esi,&sample);
+    PcSurfaceCapture sample;int ready=enabled && !PC_SURFACE_NATIVE_PARTIAL() && pc_surface_capture_collect(pc_surface_capture_read,g_esi,&sample);
     pc_surface_feedback_guest(original);
     if(ready && sample.scene==4 && sample.level==7 && sample.level_ticks>=300)
         hle_d3d8_surface_capture(&sample);

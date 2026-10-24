@@ -538,9 +538,8 @@ generation, coefficients and four retained RHI image identities. Unchanged draws
 reuse their owner without allocation; replacement is transactional and a full
 registry returns NULL without evicting live entries. Clear before scene/device
 reset and advance generation for in-place reinitialization. Invalid or failed
-requests return NULL, never a stale owner. This registry runs in the fixtures;
-guest/HLE reset hooks, local time scopes and actual event ordering still need wiring.
-The nine 128-square float4 images contain 2.25 MiB of pixels per owner; this is not
+requests return NULL, never a stale owner. The opt-in native render hook now uses this registry.
+The ten 128-square float4 images contain 2.5 MiB of pixels per owner; this is not
 a total VRAM or in-game performance measurement.
 `TSFP_SURFACE_GPU_CAPTURE=1` extends the bounded capture with shared-kernel
 execution on the renderer thread. Each sample initializes from its actual GPU
@@ -584,3 +583,18 @@ records measure hash, worker read/validation and renderer image/view creation.
 Total duration includes queue/frame scheduling waits, not GPU completion.
 Cancellation discards the record with the payload; a full queue logs its failed
 attempt and starts a new record on retry. Disabled timing takes no clocks/files.
+
+`pc_surface_native.h` schedules the persistent cosmetic field from exact native
+clock metadata. It begins from post-event/smoothing byte input on authored updates,
+then evolves the remainder and intervening fractional frames. This places the
+cosmetic field one authored tick behind the original completed feedback, retaining
+original event/RNG ordering. It does not add input latency to gameplay. Duplicate
+frames do not advance; missing intervals, changed scopes and new identities wait
+for an authored update. Pause preserves phase; Original60 and constructor resets
+clear owners. `pc_surface_native_hle.inc` resolves copied full texture identities,
+uses the five-entry retained-image cache, packs alpha-height through
+`pc_surface_gpu_pack`, and borrows that view only during the original final shader.
+No per-frame readback or queue flush belongs to this path. Older fractional/float/
+live experiments are mutually exclusive. Native Mac common-RHI execution remains
+unverified and legacy GL uses original output. Bounded Windows Scotland captures at 120/144 produce fresh final images on
+partial frames; sustained pacing, broader visual acceptance and Mac remain open.

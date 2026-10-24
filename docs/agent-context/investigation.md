@@ -142,3 +142,10 @@ changes within validated existing AUTO blocks. It compares the rest of the file
 against the base unchanged and rejects empty-list regressions, malformed/duplicate
 markers and arbitrary inserted content. Deleted/new forms and all implementation
 or workflow changes retain ordinary guide requirements.
+
+## Native high-refresh PR sequence (2026-10-24)
+
+Root AGENTS records the user's request to consolidate related native-high-refresh
+work into the current PR and verify it has merged into main before opening a
+successor. Keep repairs on the existing PR; branch history or a local merge alone
+is not proof of the remote PR's merge state. Required checks remain in force.

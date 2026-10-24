@@ -57,6 +57,7 @@ def main():
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
+    parser.add_argument('--native-surfaces',action='store_true',help='Enable persistent coupled water output; original events retain their schedule')
     parser.add_argument('--live-surfaces',action='store_true',help='Switch experimental water precision with the FPS preset; requires all three surface experiments')
     parser.add_argument('--bias-surfaces',action='store_true',help='Correct experimental water centering; requires float and fractional surfaces')
     parser.add_argument('--float-surfaces',action='store_true',help='Use experimental half-float feedback intermediates independently of timestep conversion')
@@ -67,10 +68,12 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu'])
+    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native'])
     args=parser.parse_args()
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
+    if args.native_surfaces and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
+        parser.error('--native-surfaces cannot combine with older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
         parser.error('--watch-input and --trace-vehicle-contact select different bounded function traces; run them separately')
     if args.trace_surface_switches and not args.trace_surface_images:
@@ -117,6 +120,11 @@ def main():
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             xbe_sha256=XBE_SHA256,native_fps=args.native_fps,
             scope='Synchronous completed GPU feedback capture, not a performance measurement'),indent=2))
+    if args.scenario=='surface-native':
+        route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())['scotland']
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
+    env.pop('TSFP_SURFACE_NATIVE_TEST',None)
+    if args.native_surfaces:env['TSFP_SURFACE_NATIVE_TEST']='1'
     state=run/'input-state.txt';state.write_text('0 0\n')
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
@@ -334,7 +342,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

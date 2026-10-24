@@ -53,9 +53,15 @@ static void field_owner_lifecycle(PcSurfaceGpu *surface) {
         CHECK(!memcmp(field_a,field_b,sizeof field_a));
         CHECK(pc_surface_gpu_advance(surface,.375));field_owner_restored(surface,&expected);
         field_read(surface->world.image,0,field_b);CHECK(memcmp(field_a,field_b,sizeof field_a));
+        CHECK(pc_surface_gpu_pack(surface)==surface->packed.read);field_owner_restored(surface,&expected);
+        field_read(surface->packed.image,0,field_a);
+        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++) {
+            CHECK(field_a[i*4]==0 && field_a[i*4+1]==field_b[i*4]+.5f);
+            CHECK(field_a[i*4+2]==field_b[i*4+1] && field_a[i*4+3]==field_b[i*4+1]);
+        }
         memcpy(field_a,field_b,sizeof field_a);
         pc_surface_gpu_reset(surface);CHECK(!pc_surface_gpu_advance(surface,.5));
-        CHECK(!pc_surface_gpu_output(surface));
+        CHECK(!pc_surface_gpu_output(surface) && !pc_surface_gpu_pack(surface));
         field_read(surface->world.image,0,field_b);CHECK(!memcmp(field_a,field_b,sizeof field_a));
     }
     field_read(sentinel.image,2,field_a);

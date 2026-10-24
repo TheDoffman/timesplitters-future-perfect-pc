@@ -1,0 +1,87 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -142,9 +142,11 @@
+ extern void sub_001956A0_gen(void);
+ extern void sub_00195280_gen(void);
+ extern RECOMP_MANUAL_TLS uint32_t g_esi;
++#include "pc_surface_native_guest.h"
+ #include "pc_native_surface_guest.h"
+ static void pc_surface_simulation_call(void) { pc_surface_simulation_guest(sub_001956A0_gen); }
+-void sub_001956A0(void) { pc_surface_dispatch_guest(pc_surface_simulation_call); }
++static void pc_surface_native_call(void) { pc_surface_native_simulation(pc_surface_simulation_call); }
++void sub_001956A0(void) { pc_surface_dispatch_guest(pc_surface_native_call); }
+ extern void sub_001953B0_gen(void);
+ extern void sub_001952D0_gen(void);
+ extern void sub_00195110_gen(void);
+@@ -154,10 +156,12 @@
+ #include "pc_surface_capture_guest.h"
+ void sub_00195110(void) { pc_surface_capture_feedback_guest(sub_00195110_gen); }
+ void sub_001950B0(void) { pc_surface_smoothing_guest(sub_001950B0_gen); }
+-void sub_00195280(void) { pc_surface_final_guest(sub_00195280_gen); }
++static void pc_surface_final_call(void) { pc_surface_final_guest(sub_00195280_gen); }
++void sub_00195280(void) { pc_surface_native_final(pc_surface_final_call); }
+ #include "pc_surface_precision_guest.h"
+ extern void sub_00194A10_gen(void);
+-void sub_00194A10(void) { pc_surface_precision_guest(sub_00194A10_gen); }
++static void pc_surface_constructor_call(void) { pc_surface_precision_guest(sub_00194A10_gen); }
++void sub_00194A10(void) { pc_surface_native_constructor(pc_surface_constructor_call); }
+ 
+ 
+ /* Fractional kind-35 projectile motion, scoped to the original updater. */
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1291,6 +1291,7 @@
+ }
+ 
+ #include "pc_surface_capture_hle.inc"
++#include "pc_surface_native_hle.inc"
+ 
+ /* 1x1 opaque white, created once, never evicted. */
+ static IDirect3DTexture8 *white_texture(IDirect3DDevice8 *dev)
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -333,6 +333,10 @@
+ /* Initialize a new feedback target from live GPU content, including capture bytes. */
+ HRESULT d3d8_PreserveFeedbackTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src);
+ RhiView  *d3d8_base_srv(IDirect3DBaseTexture8 *texture);
++/* Scoped borrowed water view; cleanup executes before device destruction. */
++void d3d8_surface_field(IDirect3DBaseTexture8 *texture,RhiView *view);
++void d3d8_surface_cleanup(void (*cleanup)(void));
++void d3d8_surface_shutdown(void);
+ RhiImage *d3d8_base_resource(IDirect3DBaseTexture8 *texture);
+ 
+ /* Read the D3DFORMAT of any base texture. */
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -1702,7 +1702,21 @@
+         fprintf(stderr, "D3D8: internal base-texture layout mismatch\n");
+ }
+ 
++static IDirect3DBaseTexture8 *g_surface_texture;
++static RhiView *g_surface_view;
++static void (*g_surface_cleanup)(void);
++void d3d8_surface_field(IDirect3DBaseTexture8 *texture,RhiView *view)
++{ g_surface_texture=texture;g_surface_view=view; }
++void d3d8_surface_cleanup(void (*cleanup)(void)) { g_surface_cleanup=cleanup; }
++void d3d8_surface_shutdown(void)
++{
++    d3d8_surface_field(NULL,NULL);
++    if(g_surface_cleanup)g_surface_cleanup();
++    g_surface_cleanup=NULL;
++}
++
+ RhiView *d3d8_base_srv(IDirect3DBaseTexture8 *texture)
+ {
+     if (!texture) return NULL;
++    if(texture==g_surface_texture && g_surface_view)return g_surface_view;
+     d3d8_check_overlay();
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -718,6 +718,7 @@
+     LONG ref = InterlockedDecrement(&g_device_state.ref_count);
+     if (ref <= 0) {
+         /* Cleanup subsystems first */
++        d3d8_surface_shutdown();
+         up_ring_shutdown();
+ #ifdef TSFP_PC_DISPLAY
+         pc_clear_shutdown();

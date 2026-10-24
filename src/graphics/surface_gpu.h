@@ -17,8 +17,8 @@ typedef struct PcSurfaceGpuImage { RhiImage *image;RhiView *read,*write; } PcSur
 typedef struct PcSurfaceGpuConfig { unsigned side;double a,b,d,k,center; } PcSurfaceGpuConfig;
 typedef struct PcSurfaceGpu {
     PcSurfaceGpuConfig config;
-    PcSurfaceGpuImage mode[2],basis,state[2],forcing,world,scratch,input_residual;
-    RhiShader *vertex,*copy,*evolve,*unpack,*residual,*transform[2][2];
+    PcSurfaceGpuImage mode[2],basis,state[2],forcing,world,scratch,input_residual,packed;
+    RhiShader *vertex,*copy,*evolve,*unpack,*residual,*pack,*transform[2][2];
     RhiBuffer *step;
     RhiRasterState *raster;
     RhiDepthState *depth;
@@ -41,11 +41,13 @@ static inline void pc_surface_gpu_destroy(PcSurfaceGpu *s) {
     pc_surface_gpu_image_destroy(&s->basis);pc_surface_gpu_image_destroy(&s->forcing);
     pc_surface_gpu_image_destroy(&s->world);pc_surface_gpu_image_destroy(&s->scratch);
     pc_surface_gpu_image_destroy(&s->input_residual);
+    pc_surface_gpu_image_destroy(&s->packed);
     if(s->vertex)rhi_shader_destroy(s->vertex);
     if(s->copy)rhi_shader_destroy(s->copy);
     if(s->evolve)rhi_shader_destroy(s->evolve);
     if(s->unpack)rhi_shader_destroy(s->unpack);
     if(s->residual)rhi_shader_destroy(s->residual);
+    if(s->pack)rhi_shader_destroy(s->pack);
     if(s->step)rhi_buffer_destroy(s->step);
     if(s->raster)rhi_raster_state_destroy(s->raster);
     if(s->depth)rhi_depth_state_destroy(s->depth);
@@ -74,6 +76,7 @@ static inline RhiShader *pc_surface_gpu_shader(unsigned stage,const char *text,c
 #include "graphics/surface_evolve_shader.h"
 #include "graphics/surface_transform_shader.h"
 #include "graphics/surface_gradient_shader.h"
+#include "graphics/surface_state_shader.h"
 static inline PcSurfaceGpu *pc_surface_gpu_create(const PcSurfaceGpuConfig *config,char *errors,size_t capacity) {
     PcSurfaceMode check;
     if(!config || !config->side || config->side>PC_SURFACE_MAX_EXTENT || !isfinite(config->center) ||
@@ -96,8 +99,8 @@ static inline PcSurfaceGpu *pc_surface_gpu_create(const PcSurfaceGpuConfig *conf
         pixels[at+1]=pixels[at+2]=pixels[at+3]=0;
     }
     if(!pc_surface_gpu_image_create(&s->basis,side,0,pixels))goto fail;
-    PcSurfaceGpuImage *fields[]={&s->state[0],&s->state[1],&s->forcing,&s->world,&s->scratch,&s->input_residual};
-    for(unsigned i=0;i<6;i++)if(!pc_surface_gpu_image_create(fields[i],side,1,NULL))goto fail;
+    PcSurfaceGpuImage *fields[]={&s->state[0],&s->state[1],&s->forcing,&s->world,&s->scratch,&s->input_residual,&s->packed};
+    for(unsigned i=0;i<7;i++)if(!pc_surface_gpu_image_create(fields[i],side,1,NULL))goto fail;
     s->vertex=pc_surface_gpu_shader(RHI_STAGE_VERTEX,
         "float4 main(uint id:SV_VertexID):SV_POSITION{return float4(id==2?3.0:-1.0,id==1?3.0:-1.0,0,1);}",errors,capacity);
     s->copy=pc_surface_gpu_shader(RHI_STAGE_PIXEL,
@@ -129,7 +132,10 @@ static inline PcSurfaceGpu *pc_surface_gpu_create(const PcSurfaceGpuConfig *conf
         residual_prefix,side,side,config->k);
     if(length<0 || (size_t)length>=sizeof program)goto fail;
     s->residual=pc_surface_gpu_shader(RHI_STAGE_PIXEL,program,errors,capacity);
-    if(!s->unpack || !s->residual)goto fail;
+    s->pack=pc_surface_gpu_shader(RHI_STAGE_PIXEL,
+        "Texture2D source:register(t0);" TSFP_SURFACE_STATE_SHADER
+        "float4 main(float4 p:SV_POSITION):SV_TARGET {return surface_state(source.Load(int3(p.xy,0)).xy);}",errors,capacity);
+    if(!s->unpack || !s->residual || !s->pack)goto fail;
     for(unsigned inverse=0;inverse<2;inverse++)for(unsigned axis=0;axis<2;axis++) {
         int size=snprintf(program,sizeof program,"%sfloat4 main(float4 p:SV_POSITION):SV_TARGET{return float4(surface_transform(int2(p.xy),%u,%u,%u),0,1);}",prefix,axis,inverse,side);
         if(size<0 || (size_t)size>=sizeof program)goto fail;
@@ -189,11 +195,18 @@ static inline int pc_surface_gpu_input(PcSurfaceGpu *s,RhiView *view) {
 static inline int pc_surface_gpu_internal(PcSurfaceGpu *s,RhiView *view) {
     RhiImage *image=rhi_view_image(view);
     return image==s->state[0].image || image==s->state[1].image || image==s->forcing.image ||
-        image==s->scratch.image || image==s->input_residual.image || image==s->basis.image || image==s->mode[0].image || image==s->mode[1].image;
+        image==s->packed.image || image==s->scratch.image || image==s->input_residual.image || image==s->basis.image || image==s->mode[0].image || image==s->mode[1].image;
 }
 static inline void pc_surface_gpu_reset(PcSurfaceGpu *s) {if(s)s->ready=0;}
 /* Borrowed only until reset/destruction; never expose stale output as ready. */
 static inline RhiView *pc_surface_gpu_output(PcSurfaceGpu *s) {return s && s->ready?s->world.read:NULL;}
+/* Borrowed packed view for the original final shader (alpha is height). */
+static inline RhiView *pc_surface_gpu_pack(PcSurfaceGpu *s) {
+    if(!s || !s->ready)return NULL;
+    RhiOutputState output;pc_surface_gpu_scope_begin(s,&output);
+    pc_surface_gpu_draw(s->pack,&s->world.read,1,s->packed.write);
+    pc_surface_gpu_scope_end(&output);return s->packed.read;
+}
 static inline int pc_surface_gpu_begin(PcSurfaceGpu *s,RhiView *state,RhiView *residual) {
     if(!pc_surface_gpu_input(s,state) || !pc_surface_gpu_input(s,residual))return 0;
     if(pc_surface_gpu_internal(s,state) || pc_surface_gpu_internal(s,residual) || rhi_view_image(residual)==s->world.image)return 0;

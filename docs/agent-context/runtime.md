@@ -26,6 +26,19 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`zz-native-surface-render.patch` follows capture and connects the opt-in
+`TSFP_SURFACE_NATIVE_TEST=1` path. `pc_surface_native_guest.h` forces only the
+outer dispatcher on positive matching native intervals; nested event/smoothing/
+feedback calls skip partial frames with the original stack return. Whole frames
+retain their original calls, including the single feedback update on catch-up.
+Final-pass prepare/finish and constructor reset are copied deferred operations.
+`d3d8_surface_field` overrides the sampled view only for that final pass;
+`d3d8_surface_shutdown` invokes the registered owner cleanup before device teardown.
+Original byte targets and guest identities are never replaced by float storage.
+Legacy GL keeps its original rendering; this candidate needs common RHI access.
+The sampled-view hunk anchors only common frontend code, so stacks without the
+optional texture-pack override can still apply and reverse the same patch.
+
 `zz-native-surface-capture.patch` runs after the existing native surface tail.
 It wraps the original `195110` feedback call with `pc_surface_capture_guest.h`
 and includes `pc_surface_capture_hle.inc` beside the HLE texture cache. The
@@ -40,8 +53,8 @@ The optional `TSFP_SURFACE_GPU_CAPTURE=1` branch of that existing callback now
 executes `pc_surface_gpu_begin_bytes` and fractional shared-kernel updates using
 the actual source views. It releases all diagnostic GPU resources before
 returning and keeps the original visible feedback/final passes. No further patch
-or guest wrapper was added for this extension. Persistent resource/reset hooks
-and the event/fractional-time integration are still required for normal use.
+or guest wrapper was added for this extension. That diagnostic still preserves original visible output; the separate native
+render hook above supplies persistent owners and event/fractional integration.
 
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.

@@ -2,11 +2,11 @@
 #include "rhi.h"
 enum { IMAGE=1,VIEW,SHADER,BUFFER,RASTER,DEPTH,BLEND };
 typedef struct FakeSurfaceHandle {void *pointer;unsigned kind,refs;RhiImageDesc image;} FakeSurfaceHandle;
-static FakeSurfaceHandle handles[256];
+static FakeSurfaceHandle handles[512];
 static unsigned attempt,fail_at,live;
 static void *allocate(unsigned kind) {
     if(++attempt==fail_at)return NULL;
-    for(unsigned i=0;i<256;i++)if(!handles[i].pointer) {
+    for(unsigned i=0;i<512;i++)if(!handles[i].pointer) {
         handles[i].pointer=malloc(1);assert(handles[i].pointer);handles[i].kind=kind;handles[i].refs=1;live++;
         return handles[i].pointer;
     }
@@ -14,7 +14,7 @@ static void *allocate(unsigned kind) {
 }
 static void release(void *pointer,unsigned kind) {
     assert(pointer);
-    for(unsigned i=0;i<256;i++)if(handles[i].pointer==pointer) {
+    for(unsigned i=0;i<512;i++)if(handles[i].pointer==pointer) {
         assert(handles[i].kind==kind && handles[i].refs);
         if(--handles[i].refs)return;
         free(pointer);handles[i].pointer=NULL;live--;return;
@@ -22,7 +22,7 @@ static void release(void *pointer,unsigned kind) {
     assert(0);
 }
 static FakeSurfaceHandle *lookup(void *pointer,unsigned kind) {
-    for(unsigned i=0;i<256;i++)if(handles[i].pointer==pointer) {
+    for(unsigned i=0;i<512;i++)if(handles[i].pointer==pointer) {
         assert(handles[i].kind==kind && handles[i].refs);return &handles[i];
     }
     assert(0);return NULL;

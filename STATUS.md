@@ -1,3 +1,56 @@
+## 2026-10-24 — Opt-in continuous water reaches the original ripple shader
+
+On `fix/native-water-rounding`, the persistent coupled field now drives the
+original final water shader under `TSFP_SURFACE_NATIVE_TEST=1`. The guest retains
+original whole-tick disturbance/RNG, smoothing and byte-feedback calls, then the
+render thread advances the cosmetic field using exact native phase. Between
+whole updates, the field advances and the final shader draws again. This is a
+one-authored-tick cosmetic phase delay relative to completed original feedback;
+it does not delay gameplay input. Original60 and default settings are unchanged.
+Owners persist across frames, reset at constructor/scene/device boundaries, and
+release before the RHI device. There are no per-frame readbacks in normal use.
+
+Windows/MSVC/D3D11 supported build and bundled checks pass. The 14 surface CPU
+cases pass, including actual guest adapter cadence/stack checks and every owner
+allocation failure. All 31 GPU cases pass in 187.99 s, including packed alpha
+height, output restoration and existing original-shader/byte controls. Binary
+SHA-256: `56ce178a050b3c6d3a604e74610b5bc8d0d5b0e6e326eb017e18310b8a26be50`
+(base `61301df` plus the persistent-water source changes).
+
+Bounded isolated Scotland runs at native120 and native144 both produce 360 final
+GPU images with 359/359 changed consecutive pairs. Their captures include 176
+and 200 frames respectively with zero whole ticks. Neither collapsed to a flat
+image. The routes also complete movement, pause and resume, preserve valid
+profiles/the fixture, and recycle disposable disks. Reviewed screenshots show
+normal shoreline rendering. Synchronous readback changes workload: these results
+are image freshness, not measured 120/144 frame pacing or full-game parity.
+Logs: `water-visible-build.log`, `water-visible-surface-cpu.log`,
+`water-visible-gpu.log`, `water-visible-game.log`, `water-visible-120-game.log`.
+Images/stats live in `private/test-saves/water-visible-{120,144}`.
+
+A separate capture-free native144 ordered pair uses the same executable and
+1280x720 minimized Scotland route on RTX 4070 SUPER (driver 617.42). In the eight
+seconds ending at the stationary start label, each run records 1,152 guest
+presents: baseline/new mean 6.94459/6.94452 ms (both ~144 FPS), p95
+7.313/7.339 ms, p99 7.484/7.542 ms, maximum 7.851/8.488 ms. These are host
+Present intervals, not GPU execution or scanout. Background patch tests were
+running, and one ordered pair cannot isolate marginal cost. Both complete
+movement/pause/resume and profile-preservation checks. Evidence:
+`private/test-saves/water-cost-native/paired-pacing.json` and paired runner logs.
+
+Patch compatibility checks passed in two stages: 19 cases on the initial full
+run, then both texture/main branch-switch cases (119.64 s) after removing an
+unnecessary optional-texture context dependency from the new patch. Reapplying
+the complete stack changed zero runtime files. Context/index and whitespace
+checks pass. Logs: `water-visible-patches.log`, `water-visible-patch-switch.log`.
+The user's related-PR merge order is now recorded in root `AGENTS.md`.
+
+The path stays opt-in. Sustained pacing, first-use allocation/shader hitches,
+visual comparison against Original60,
+local time overrides, FPS switches, broader scene/event coverage and native Mac
+GPU execution remain acceptance gaps. Legacy GL keeps original output. No new
+PR was opened; related work remains on the same branch.
+
 ## 2026-10-24 — Shared water solver executes inside the game renderer
 
 `pc_surface_gpu_begin_bytes` now initializes the shared GPU owner directly from

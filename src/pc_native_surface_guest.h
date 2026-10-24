@@ -18,6 +18,9 @@ extern void hle_d3d8_surface_precision_rate(int high_rate);
 #ifndef PC_SURFACE_VALUE
 #define PC_SURFACE_VALUE(va) (*(float *)((uintptr_t)(va)+g_xbox_mem_offset))
 #endif
+#ifndef PC_SURFACE_NATIVE_PARTIAL
+#define PC_SURFACE_NATIVE_PARTIAL() 0
+#endif
 static struct { int active;float delta;uint32_t whole; } pc_surface_step;
 static int pc_surface_fractional_requested(void)
 {
@@ -41,11 +44,13 @@ static void pc_surface_simulation_guest(void (*original)(void))
 }
 static void pc_surface_disturbance_guest(void (*original)(void))
 {
+    if(PC_SURFACE_NATIVE_PARTIAL()){g_esp+=4;return;}
     if(pc_surface_step.active && !pc_surface_step.whole) {g_esp+=4;return;}
     original();
 }
 static void pc_surface_feedback_guest(void (*original)(void))
 {
+    if(PC_SURFACE_NATIVE_PARTIAL()){g_esp+=4;return;}
     if(!pc_surface_step.active) {original();return;}
     uint32_t params=PC_SURFACE_WORD(g_esi+0x1cu);
     float acceleration=PC_SURFACE_VALUE(params+0x14u);
@@ -68,6 +73,7 @@ static void pc_surface_feedback_guest(void (*original)(void))
 }
 static void pc_surface_smoothing_guest(void (*original)(void))
 {
+    if(PC_SURFACE_NATIVE_PARTIAL()){g_esp+=4;return;}
     if(!pc_surface_step.active || pc_surface_step.whole) {original();return;}
     /* The caller has just swapped current (+24) and destination (+28), and
      * will swap them again after this call. Cancel that second swap so the
