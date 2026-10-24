@@ -25,11 +25,14 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
 extern uint32_t pc_native_visual_store(uint32_t site,uint32_t value);
 extern float pc_native_visual_sample(uint32_t value);
 extern float pc_native_weapon_sway(float original);
+extern uint32_t pc_native_demo_cursor_reset(uint32_t value);
+extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
 /* Observe only the level clock's direct stores, without changing their
  * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
-    ((address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
+    ((site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
+     (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
 #define RECOMP_I32_TO_F32_AT(site,address,value) \
     (((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
      pc_native_visual_sample((uint32_t)(value)) : RECOMP_I32_TO_F32((address),(value)))
@@ -276,7 +279,8 @@ static inline float pc_native_boost_drain(float left,float charge)
     (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
+    ((site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
+    (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))

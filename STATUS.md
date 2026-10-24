@@ -1,3 +1,51 @@
+## 2026-10-24 — Native recordings retain authored-tick cadence
+
+The original recorder wrote a packet on every native update, including zero-
+whole-tick frames. One second recorded at144 therefore needed144 updates to
+replay, taking2.4seconds on Original60. The shared demo scope now suppresses
+only serialization on those fractional frames; original device and lifecycle
+calls still execute. Offset game ticks after pause are carried into the next
+record, along with their starting timestamp. The correction touches only bytes
+just written by the original, under buffer identity/cursor bounds; live timing,
+input bytes, saves and the14-byte recording format remain unchanged. Catch-up
+retains original multi-tick records. Original60 keeps its untouched path, apart
+from flushing a pending native recording interval during a live handoff.
+
+The existing numeric hooks select the writer branch at433A0 and observe cursor
+initialization at42535. Same-buffer restarts and unexpected level-clock rebases
+discard pending history. No extra patch, guest wrapper or generated edit.
+The original writer/reader fixture now verifies correct1s raw/0.5s paused game
+time when recordings from **all three presets** replay at60. Recorder checks
+cover one/four controllers, zero startup, pause away from tick boundaries,
+three-tick catch-up, exact input/analog bytes, pending-tick60handoff, same-buffer
+reset and a full buffer stopping partway through the controller loop. Removing
+the write gate, carry or reset each fails its designated assertion.
+
+Windows/MSVC native/demo suite: **99 passed,28 expected failures**,110.54s
+(`logs/demo-recording-native-suite.log`). After adding the level-clock rebase
+guard, zero-startup and partial-capacity cases, the final demo suite reports
+**21 passed,28 expected failures**,17.20s (`logs/demo-recording-final-tests.log`).
+The expected failures still represent native playback: it consumes one packet
+per update. The recorder repair makes native-to60 correct; playback at120/144
+still needs repair, including previously produced zero-tick recordings. No full
+game-loop/file playback or native Mac validation is claimed. Source base6c1abaa
+plus this correction; the overall smoothness goal remains incomplete.
+
+**Interim candidate, not ready to merge alone:** native-to-native round trips
+previously matched duration because both writer and reader ran too often.
+Normalizing only the writer makes those cases finish too early too. The writer
+and playback scheduler must land together. An ignored combined prototype now
+passes all18 rate/controller round trips (`demo-prototype-normalized-roundtrip.log`),
+but zero-time playback, reset identity/memory validation, catch-up input events,
+old zero-tick recordings and native-to60 playback handoff remain unresolved.
+The prototype is not in the executable; no PR was opened for this intermediate work.
+
+Supported Windows build and native checks pass (`demo-recording-build.log`),
+with the full patch stack verified. Final executable SHA256:
+`e38e78475d4dc8a90b0f64d9f22241bb8c587ed699f5dfab6bf12064bcf2b5ff`.
+Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests pass;
+context freshness/whitespace pass. No new live game session was launched.
+
 ## 2026-10-24 — Exact raw clock and recording round-trip evidence
 
 `PcNativeStep` now publishes raw counter units and the interval's starting

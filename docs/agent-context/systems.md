@@ -27,16 +27,26 @@ tick. State2 overwrites raw time while looping controllers; the scope prevents
 later controllers from inheriting that overwrite. The executed exit site is
 remembered across cleanup changing the mode. Exit/EOF retain game pause
 but restore incoming raw whole/float time. Original60 keeps original behavior,
-including its multi-controller multi-tick asymmetry. Packet playback/recording
-cadence is unchanged and remains an open high-refresh regression.
+including its multi-controller multi-tick asymmetry. Native playback cadence
+remains an open regression.
+
+Recording state3 now serializes only on raw whole-tick frames. Scoped mode load
+`433A0` skips that writer branch on intervening native frames; device polling
+and lifecycle checks still run. Pending game ticks survive offset phases after
+pause and a live return to Original60. After the original writer, the wrapper
+corrects only its newly written records' game byte/start timestamp, preserving
+live globals, input bytes and the14-byte format. Buffer identity/cursor bounds
+guard those writes; `42535` clears host state on same-buffer initialization.
+Unexpected level-clock rebases also clear pending history. An untouched
+Original60 recording retains its original path. Old native recordings with
+zero-tick packets and native playback scheduling still need acceptance.
 
 `PcNativeStep` now exposes exact `raw_units/raw_phase` alongside game units,
 using `units_per_tick`. Both phases describe the interval's start. Raw units
 advance during pause; reset/Original60 clear the metadata. Guest fields, clocks,
 save formats and pacing are unchanged. Playback sampling must use exact raw
-time rather than summing float deltas, but packet duration cannot be assumed:
-the current native recorder also emits zero-whole-tick packets. The original
-writer/reader round-trip fixture covers this unresolved rate dependency.
+time rather than summing float deltas. Catch-up packets retain their original
+multi-tick bytes; the round-trip fixture covers recorder/reader rate dependency.
 
 Native vehicle/physics candidate (`fix/native-vehicle-physics`):
 `pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment

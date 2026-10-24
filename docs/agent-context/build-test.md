@@ -19,11 +19,11 @@ unavailable hardware/private data remain explicit validation gaps.
 ## Choose the cheapest relevant check
 
 `test_native_demo_timing.py`: asset-free scope/nesting plus original US
-initialization, writer/reader, wait/exit, input, EOF, ABI and mutations.
-Same-rate round trips preserve 1s raw/0.5s paused game time. Cross-rate completion
-time is checked, not just final totals. Sixteen playback and twelve cross-rate
-cases strictly xfail only on `DemoTimingMismatch`; cadence/live playback remain
-open. Missing private XBE skips originals. Player fixtures reject stray demo calls.
+writer/reader, wait/exit, input, EOF and ABI. Recorder tests cover offset pause,
+catch-up, startup, restart, capacity,60handoff and gate/carry/reset mutations.
+Recordings from all presets replay correctly at60. Sixteen packet and twelve
+native round-trip cases strictly xfail only on `DemoTimingMismatch`, including
+early completion. Live playback is open; missing private XBE skips originals.
 
 `test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
 copies and failing unused-water stubs. Run refresh and stale-copy mutation;

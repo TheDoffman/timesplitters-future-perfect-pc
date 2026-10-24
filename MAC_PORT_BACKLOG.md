@@ -3749,6 +3749,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Native recorder tick cadence (2026-10-24, this revision):** Shared
+  `pc_native_demo_guest.inc` skips fractional-frame serialization while keeping
+  device/lifecycle calls. It carries offset game ticks and patches only newly
+  written records, preserving live globals and the original format. Numeric
+  sites `433A0/42535` provide branch selection/reset on both hosts. No OS adapter
+  is needed; native Mac execution remains pending. Original-program tests cover
+  pause, input bytes, capacity, restart and Original60 handoff. Native playback
+  cadence and old zero-tick recordings are still unresolved. See
+  [evidence](STATUS.md#2026-10-24--native-recordings-retain-authored-tick-cadence).
+
 - **Raw-clock metadata and recording regression (2026-10-24, this revision):**
   Shared `PcNativeStep` publishes exact raw units/start phase, including pause.
   No guest ABI, file format, timing arithmetic or OS adapter changes. Windows

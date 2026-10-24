@@ -29,8 +29,10 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 `zz-native-demo-timing.patch` follows the native surface stack and wraps US
 `43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is
 `sub_00043220_gen`. Timer multiplies `433E2/43473` use the wrapper's raw-time
-scope; other arithmetic stays original. Historical pre-native upgrade fixtures
-exclude this dependent patch. Recorded packet cadence is still unresolved.
+scope. Numeric load `433A0` can skip only the writer branch; cursor reset store
+`42535` resets recorder history. Both use the existing numeric macros; no new
+wrapper/patch or generated-code edit. Historical pre-native upgrade fixtures
+exclude the dependent demo patch. Native playback cadence remains unresolved.
 
 `zz-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
 existing 32-frame walk limit instead of silently truncating at six. The opt-in

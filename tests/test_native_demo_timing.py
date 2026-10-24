@@ -111,13 +111,13 @@ def roundtrip_results(playback_output):
 
 
 @pytest.mark.parametrize("recording,playback", [
-    (60, 60), (120, 120), (144, 144),
-    # Recording at high refresh creates zero-tick packets. A decoder that
-    # assumes every packet lasts 1/60 s cannot round-trip these streams.
+    (60, 60), (120, 60), (144, 60),
+    # The writer now emits authored-tick packets at every preset. The reader
+    # still consumes them per render update, so native playback remains fast.
     *[pytest.param(recording, playback, marks=pytest.mark.xfail(
         raises=DemoTimingMismatch, strict=True,
-        reason="Recorded packet cadence depends on recording and playback rates"))
-      for recording, playback in [(60,120), (60,144), (120,60), (120,144), (144,60), (144,120)]],
+        reason="Original playback consumes one authored packet per native update"))
+      for recording, playback in [(60,120), (60,144), (120,120), (120,144), (144,120), (144,144)]],
 ])
 @pytest.mark.parametrize("channels", [1,4])
 def test_recorded_pause_roundtrip(roundtrip_results, recording, playback, channels):
@@ -152,6 +152,29 @@ def test_demo_wait_and_exit_timing(playback_results):
     # The shared original-code executable asserts native wait/exit timer and
     # published raw-clock parity, pause, EOF and restoration outside the scope.
     assert len(playback_results) == 24
+
+
+@pytest.mark.parametrize("mutation", ["record-gate", "record-carry", "record-reset"])
+def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation):
+    from test_recomp_float_joins import compile_and_run
+    path = ROOT / "src/pc_native_demo_guest.inc"
+    source = path.read_text()
+    if mutation == "record-gate":
+        before = "return value==3u && pc_native_demo_skip_record ? 0u : value;"
+        after = "return value;"
+        message = "groups==60"
+    elif mutation == "record-carry":
+        before, after = "pc_native_demo_record.game+=game;", "pc_native_demo_record.game=game;"
+        message = "MEM8(packet+1)==game_total-recorded_game"
+    else:
+        before = "pc_native_demo_cursor_reset(uint32_t value)\n{\n    pc_native_demo_record.valid=0;"
+        after = "pc_native_demo_cursor_reset(uint32_t value)\n{"
+        message = "MEM8(0x10140+c*14+1)==0"
+    assert source.count(before) == 1
+    mutated = tmp_path / "demo_record_mutation.inc"
+    mutated.write_text(source.replace(before, after))
+    with pytest.raises(AssertionError, match=r"Assertion failed:.*"+re.escape(message)):
+        compile_and_run(tmp_path, demo_source.replace(path.as_posix(), mutated.as_posix()))
 
 
 @pytest.mark.parametrize("rate", [60, *[
