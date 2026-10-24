@@ -24,6 +24,19 @@ shared checks, plus affected host lifecycle/build checks. Never start publishing
 or change credentials just to validate a launcher edit.
 <!-- packet:end -->
 
+## Capture health diagnostics
+
+Both launch adapters pass the persistent session ID as `TSFP_CAPTURE_SESSION`.
+`GameSessions.CaptureSession` positively verifies the game PID/start-time pair.
+`CrashReports.CaptureHealth` shares storage probing, bounded record parsing,
+session/PID matching, 15-second freshness and helper lifetime checks across hosts.
+It distinguishes missing helper, unverified old game, stopped/stale helper,
+unwritable storage and live armed/unarmed capture. File presence alone never
+establishes support. Diagnostics refresh is explicit; it does not run a test crash.
+The ordinary Diagnostics report and Windows live-hang view include this summary.
+Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
+`breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
+
 ## Flow and ownership
 
 Read [launcher usage](../launcher.md), [Windows launcher](../windows-launcher.md),
@@ -180,7 +193,6 @@ and normalize on Save; loading does not rewrite the player's configuration.
 The native runtime dialogs use the matching `PC_BINDING_SLOTS`. The in-game
 themed editor applies bindings live through the shared runtime settings API;
 launcher Save retains its existing close-game requirement.
-
 
 ## Stable and named preview releases (2026-10-22)
 

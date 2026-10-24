@@ -532,7 +532,7 @@ namespace TimeSplitters.Launcher
         async Task RefreshDiagnostics()
         {
             if(gameMonitoring) {
-                diagnosticsPage.Report.Text="Game hang diagnostics\n\n"+CrashReports.Summary(root)+"\n\nThe game is still running. You can wait for recovery or close it yourself. Nothing was uploaded.";
+                diagnosticsPage.Report.Text="Game hang diagnostics\n\n"+CrashReports.CaptureHealth(root)+"\n\n"+CrashReports.Summary(root)+"\n\nThe game is still running. You can wait for recovery or close it yourself. Nothing was uploaded.";
                 diagnosticsPage.Status("Hang report available locally. Open or export it while the game remains running.");
                 diagnosticsReady=true;return;
             }
@@ -942,6 +942,7 @@ namespace TimeSplitters.Launcher
                     string session=null;
                     try {session=GameSessions.Begin(root,tag);}
                     catch(Exception ex) {Program.Log(root,"Session tracking unavailable: "+ex.GetType().Name);}
+                    process.StartInfo.EnvironmentVariables["TSFP_CAPTURE_SESSION"]=session??"";
                     try {process.Start();}
                     catch {
                         try {if(session!=null)GameSessions.CancelLaunch(root,session);}catch(Exception ex){Program.Log(root,"Session launch cancellation: "+ex.GetType().Name);}

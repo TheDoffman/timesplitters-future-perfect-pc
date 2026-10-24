@@ -14,6 +14,11 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
+Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
+helper death and the portable ring; `test_native_crash.py` checks Darwin output.
+Shared UI tests cover health identity/failures and bounded ZIP export. Existing
+runtime/launcher CI runs these on both hosts.
+
 ## Choose the cheapest relevant check
 
 `test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
@@ -65,8 +70,9 @@ Test Lab host/guest saves and loopback. It verifies XBE/build identities,
 recycles partitions and validates five fixtures without changing the canonical
 one. Asynchronous position reads measure holds, not frames or input/Internet latency.
 
-Dual-host publisher suites check Stable/alpha baselines, pagination/completeness,
-notes, scope/merge/rename/ancestry; no game/UI rebuild.
+Dual-host `test_launcher_release.py` / `test_publish_release.py` cover
+Stable/alpha baselines, pagination/completeness, notes and scope/merge/rename/
+ancestry. Offline publisher tests need no game/UI rebuild.
 
 `test_auto_look.py`: real records/permission expiry. `test_decal_projection.py`:
 four-page batches, larger fallback, permissions and mutation controls.

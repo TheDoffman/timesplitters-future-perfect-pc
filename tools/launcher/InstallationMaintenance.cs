@@ -180,6 +180,7 @@ namespace TimeSplitters.Launcher
             } catch { text.AppendLine("Saved graphics: unreadable or unsupported; files retained."); }
             text.AppendLine(); text.AppendLine("Last game verification:\n"+(game==null?"Not checked this session.":game.ToString()));
             text.AppendLine(); text.AppendLine("Last launcher verification:\n"+(launcher==null?"Not checked this session.":launcher.ToString()));
+            text.AppendLine(); text.AppendLine(CrashReports.CaptureHealth(root));
             text.AppendLine(); text.AppendLine("Latest game incident:\n"+CrashReports.Summary(root));
             text.AppendLine(); text.AppendLine("Recent launcher errors (types only):\n"+RecentErrors(root));
             text.AppendLine(); text.AppendLine("Report excludes raw logs, personal paths, file contents, saves and ISO information. Nothing is uploaded automatically.");
