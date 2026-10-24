@@ -18,6 +18,9 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
+Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
+code, fake devices, gain overrides, mute, live volume and voice parity.
+
 `test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
 SDL virtual input; physical pads and Mac gameplay require validation.
 
