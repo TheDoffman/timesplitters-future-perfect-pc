@@ -166,6 +166,70 @@ before recording Mac fixture success. Gameplay source is unchanged by this
 test-only follow-up, so the retained Windows candidate still has the fix.
 The focused input, Mac-tooling and repository companion suite passes 116
 tests with one unavailable-host skip on Windows (10.43 seconds).
+## 2026-10-22 — HUD panel text validation overhead (candidate)
+
+On `perf/arcade-panel-text-scope`, the shared HUD panel now reuses the existing
+read-only mapping scope across its width/fit measurements and text draws.
+Its placement flushes stay outside the scope; scratch writes still query live
+protection. The original font sizing, labels, rendering and gameplay cadence
+are unchanged. The preceding crowded-Venice CPU profile identifies text
+validation as remaining work, but is not an isolated FPS comparison.
+
+The complete patch stack applies. Ten focused scope tests pass on Windows,
+including both host feature configurations and a failing no-panel-scope
+mutation. A modeled panel falls from five read queries to one, retaining three
+measurements, ten draws, thirteen translated scratch-write checks and fresh
+validation on the next operation. Supported Windows build `4a4aa02` and built-in
+checks pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend). A bounded
+native144 Venice/10-bot run at 3440x1440, FOV 73, Classic reaches match state 7;
+reviewed captures show readable RANK/ordinal labels during death/respawn. This
+is a rendering smoke check, not a pixel comparison or FPS benchmark: another
+game session remained open, and capture/test overhead was present. The profile
+and canonical fixture remained valid and unchanged; disposable partitions were
+cleaned. Full rendered comparison and native Mac gameplay remain pending.
+Broader patch-upgrade/context/backlog/CI-scope validation passes:
+109 tests in 588.40 seconds. See MAC-002.
+
+Initial Mac CI found one stale placement-source assertion expecting the direct
+panel callback. The assertion now requires its scoped callback at the same
+placement tag; the existing behavioral scope tests still verify execution and
+lifetime. No runtime change or game rebuild is needed for that test correction.
+
+At repair head `c580949`, hosted native runtime CI passes on Windows (461 passed,
+82 skipped, 18 subtests) and Mac (436 passed, 74 skipped, 18 subtests). Mac's
+asset-free RHI HLSL/menu-pixel/readback/present checks also pass. These do not
+establish native Mac gameplay or complete rendering fidelity.
+Both hosts' patch-upgrade/transition jobs and all other selected PR checks
+also pass at that repair head.
+
+The first isolated pacing comparison is mixed, so no FPS improvement is claimed.
+Windows 11 x64, i7-13700K, RTX 4070 SUPER, driver 32.0.16.1742, D3D11;
+Venice, ten bots, Classic, 3440x1440, vertical FOV 73, target 144. Both minimized
+runs disable captures and CPU sampling and cover the same 50-second window,
+five seconds after the spawn observation. The normal `4adb6b0` binary has
+identical `src/` and `patches/` to base main `31052eb`.
+
+| Build | Mean FPS | p95 interval | p99 interval | Maximum interval |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline `4adb6b0` | 143.32 | 8.134 ms | 8.972 ms | 25.334 ms |
+| Candidate `4a4aa02` | 143.59 | 8.240 ms | 9.127 ms | 27.790 ms |
+
+These are successful host guest-present intervals, not GPU completion or scanout.
+Bots, deaths and respawns vary between runs, and both runs are close to the cap.
+Local repair checks ended about two seconds before the initial baseline window.
+A baseline repeat was excluded from the clean comparison because another game
+opened before its measurement window; further candidate repeats are deferred
+while that session runs. The candidate run preserved the fixture/profile and
+cleaned its disposable partitions. Raw evidence is retained locally in
+`private/test-saves/panel-{base,candidate}-144` and
+`logs/panel-144-comparison.json`; the latter also labels the excluded repeat.
+PR #305 remains a draft pending stronger performance evidence.
+
+Candidate EXE/PDB retained in `private/build-recovery/panel-4a4aa02`, EXE SHA256
+`55440352d61716a05c4237acc788a258020aca636d7ac46c899e24b4219e3d82`.
+The normal playable `4adb6b0` executable is restored with its hash verified.
+This branch starts at main `31052eb`; mounted-input PR #304 and the separate
+vehicle-physics candidate are not incorporated into this performance candidate.
 
 ## 2026-10-22 — Pending PR integration
 
