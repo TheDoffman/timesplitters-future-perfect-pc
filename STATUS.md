@@ -1,3 +1,28 @@
+## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
+
+Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state
+4 but omitted the 0x800 movement state selected by original US `sub_00225C70`.
+The shared Windows/Mac player-camera hook now accepts all three, retaining
+scene/camera ownership and cinematic exclusions. Projection and CPU frustum
+change together; the guest weapon lens and lift physics are unchanged.
+
+The new camera regression failed before the fix. Afterward the cutscene/FOV
+suite passed 9 tests; two Mac-specific settings checks were skipped on Windows.
+An explicit mutation removing the air-lift allowance is detected. The local
+checksum-verified US fixture executes the original region selector and state
+setter for all four Zeppelin lift cylinders, both camera callers, default/90°
+FOV and 4:3/16:9/ultrawide output. It checks ascent and exit to falling against
+production projection/frustum behavior, unchanged lens/state and guest ABI.
+The separate original player-force fixture passes real exit/landing motion.
+Supported Windows Build and built-in tests pass (`logs/issue-339-build.log`).
+All 21 context/backlog tests, context freshness and whitespace checks pass.
+
+A bounded isolated pre-fix Zeppelin run confirmed the custom 90° lens during
+ordinary movement/falling, but did not reach a lift; it is not live reproduction
+or post-fix visual acceptance. Original-routine integration supplies the lift
+regression evidence. Personal saves/settings were preserved. Native Mac build
+and gameplay checks remain pending (MAC-022).
+
 ## 2026-10-24 — Jittered crowd profile and shader source lookup
 
 On Windows 11 x64 / RTX 4070 SUPER / D3D11, the unchanged 74e15bec executable
@@ -38,6 +63,17 @@ maximum0.5286ms. This supports removal of the observed repeated hashing;
 bot outcomes differ, so neither CPU-time nor total FPS improvement is causal.
 Native Mac execution and broad visual acceptance remain unverified. This does
 not claim sustained240 in crowded maps.
+
+The candidate Disco route completes, preserving fixture signatures and recycling
+its disposable partitions. Main e0386672's Zeppelin air-lift FOV repair (#339/#341)
+is then merged into this branch; only STATUS conflicts, resolved by retaining
+both histories. The actor-state guard retains the bounded-memory path and adds
+main's state0x800 alongside2/4. All32 cutscene/shader/context/backlog checks pass,
+as do repository-context/whitespace checks and the supported Windows build with
+built-in tests. Merged executable SHA256:
+`d9c5c0d753191d020958a88f08ecb993c3d72965d2b5e3fe50b15057fa885149`.
+Its clean Present-cadence route is pending; this is an integration build claim,
+not a claim that the earlier profile was taken on the merged binary.
 
 ## 2026-10-24 — Merged-build Venice pacing and instruction-level wait probe
 

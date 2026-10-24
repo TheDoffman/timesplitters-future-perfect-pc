@@ -434,11 +434,11 @@ The Windows-specific fixture compiles the model against deterministic
 monitor/window adapters: secondary fullscreen desktop size, windowed resize,
 minimize/query failure, allocation rollback/retry, persistence and preview
 rollback, manual override, and Auto ratio filtering. `tests/pc_display.c` retains
-existing manual scene/camera/HUD tests. `test_cutscene_letterbox.py` exercises
-the effective-output hook after the complete patch stack is applied. Launcher
-settings checks cover Auto UI/filter/save, fresh defaults, existing manual
-settings, and older package capability gating. Native Cocoa's graphics self-test
-recognizes the Auto choice; physical Retina/multi-display validation needs Mac.
+manual scene/camera/HUD tests. `test_cutscene_letterbox.py` checks effective
+output and air-lift FOV (#339), including a guard-removal mutation. With a local
+US XBE it executes all four lift regions through the production camera hook.
+Launcher tests cover Auto UI/filter/save, defaults and older packages. Cocoa's
+self-test recognizes Auto; physical Retina/multi-display checks need Mac.
 
 The historical controls-only fixture in `test_patch_updates.py` excludes
 `-auto-display.patch` until the complete-stack migration installs its display,
