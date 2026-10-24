@@ -28,6 +28,9 @@ later controllers from inheriting that overwrite. The executed exit site is
 remembered across cleanup changing the mode. Exit/EOF retain game pause
 but restore incoming raw whole/float time. Original60 keeps original behavior,
 including its multi-controller multi-tick asymmetry.
+When that path pauses both guest game-time fields, it also clears the published
+game delta/ticks/exact units. Raw metadata and clock phases stay intact, so
+procedural consumers cannot advance using the earlier pre-exit interval.
 
 Recording state3 now serializes only on raw whole-tick frames. Scoped mode load
 `433A0` skips that writer branch on intervening native frames; device polling

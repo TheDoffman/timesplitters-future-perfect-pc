@@ -28,7 +28,7 @@ def test_shared_demo_playback_schedule(tmp_path):
     compile_and_run(tmp_path, source)
 
 
-@pytest.mark.parametrize("mutation", ["phase", "raw-end", "zero-time"])
+@pytest.mark.parametrize("mutation", ["phase", "raw-end", "zero-time", "exit-metadata"])
 def test_shared_demo_playback_regressions(tmp_path, mutation):
     from test_recomp_float_joins import compile_and_run
     parent = (ROOT / "src/pc_native_demo_guest.inc").read_text()
@@ -44,11 +44,16 @@ def test_shared_demo_playback_regressions(tmp_path, mutation):
         assert playback.count(before) == 1
         playback = playback.replace(before, "ND_WORD(0x7497B0u)=plan->packet.raw_time;")
         message = "WORD(0x7497b0)==(n+1)*60/rate"
-    else:
+    elif mutation == "zero-time":
         before = "if(value==1u && pc_native_demo_skip_playback)return 0u;"
         assert parent.count(before) == 1
         parent = parent.replace(before, "/* zero-time gate removed */")
         message = "WORD(0x6b94c0)==0x10000 && !FLOAT(0x4e794c)"
+    else:
+        before = "g_tsfp_native_step.game_units=0;"
+        assert parent.count(before) == 1
+        parent = parent.replace(before, "/* stale advancing game metadata */")
+        message = "g_tsfp_native_step.game_delta==0"
     playback_path = tmp_path / "playback_mutation.inc"
     playback_path.write_text(playback.replace('"pc_native_timing.h"',
         '"'+(ROOT / "src/pc_native_timing.h").as_posix()+'"'))

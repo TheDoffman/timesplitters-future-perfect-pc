@@ -135,6 +135,15 @@ static void pc_native_demo_guest(void (*original)(void))
     if(active && (entry_mode==2u || pc_native_demo_exit_seen || (entry_mode==1u && *mode==2u))) {
         *raw_ticks=ticks;
         *raw_delta=interval;
+        /* The original exit/EOF path pauses game time after the clock has
+         * published this update. Procedural consumers use the exact metadata,
+         * so freeze it too; keep the incoming raw interval and phase intact. */
+        if(*(uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset)==0u &&
+           *(float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset)==0.f) {
+            g_tsfp_native_step.game_delta=0.f;
+            g_tsfp_native_step.game_ticks=0;
+            g_tsfp_native_step.game_units=0;
+        }
     }
     pc_native_demo_raw_interval=previous_interval;
     pc_native_demo_interval_active=previous_active;

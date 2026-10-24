@@ -18,11 +18,10 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_native_demo_timing.py`: asset-free scope/schedule/read guards and mutations;
-original US writer/reader, input, ABI, pause, EOF/cancel, catch-up,120/144/60handoff,
-startup, old zero-tick streams and recorder capacity/reset. All rate pairs pass;
-no expected failures. Missing private XBE skips originals. Full-game/file/Mac
-playback and sustained sub60 overload remain open.
+`test_native_demo_timing.py`: shared scope/schedule/read guards and mutations;
+original US input, ABI, pause, EOF/cancel metadata, catch-up, preset changes,
+old streams and recorder capacity/reset. Missing XBE skips originals. All rate
+pairs pass; full-game/file/Mac playback and sustained sub60 overload remain open.
 
 `test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
 copies and failing unused-water stubs. Run refresh and stale-copy mutation;

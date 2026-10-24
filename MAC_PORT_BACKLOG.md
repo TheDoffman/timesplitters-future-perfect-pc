@@ -3749,6 +3749,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Playback exit metadata (2026-10-24, PR #325):** Shared demo scope clears
+  game delta/ticks/exact units when original EOF/cancellation pauses guest time,
+  preserving raw time and phases. Shared regression and original-US cancellation/
+  EOF checks pass on Windows; the shared mutation rejects stale metadata.
+  No new OS adapter is needed. Native Mac execution remains **Awaiting validation**.
+
 - **PR #325 foreground comparison (2026-10-24):** Windows Hotel ten-bot
   Original60/native144 runs on the same binary measured60.000835/143.920524 fresh
   Presents/s with correct aggregate game speed; see STATUS for display and

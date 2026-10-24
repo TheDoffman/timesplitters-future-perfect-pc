@@ -1,3 +1,36 @@
+## 2026-10-24 — Playback exit pauses procedural timing metadata
+
+The original playback EOF/cancellation path sets guest game time to zero after
+the native clock has published the update. The shared demo wrapper restored raw
+time correctly but left the earlier advancing game interval in `PcNativeStep`.
+Procedural consumers could therefore receive nonzero time during that pause.
+The wrapper now clears game delta, whole ticks and exact units when both guest
+game-time fields are paused; incoming raw time and clock phases remain intact.
+Normal playback and the Original60 path are unchanged.
+
+A new asset-free EOF assertion failed on the prior source with stale game units.
+After the correction, **54 playback tests pass**,27.23s, including original-US
+cancellation/EOF paths with one/four controllers and a mutation that removes the
+metadata correction. Four affected surface interval/render/runtime checks pass,
+5.31s;88 context/CI-scope checks pass,3.55s. Context freshness and whitespace pass.
+Logs: `demo-eof-metadata-before.log`, `demo-eof-metadata-tests.log`,
+`demo-eof-surface-consumers.log`, `demo-eof-context-tests.log`.
+
+The supported Windows build compiled and passed native checks, then initially
+failed in the final Recycle Bin cleanup with "This function is not supported on
+this system". Retrying the same contained-directory recycling operation worked;
+the unchanged full build then passed, recycled its test data and completed
+network identity/crash-symbol processing (`demo-eof-metadata-build-retry.log`).
+This intermittent cleanup error is recorded, not claimed fixed by the game patch.
+Final executable SHA256:
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+
+Source base `a21f51c` plus this change, shared policy under PR #325/MAC-060;
+Windows11Pro x64/MSVC14.44.35207. No live game/file-playback or native Mac scene
+claim follows from these checks. Previous Hotel measurements used the earlier
+binary and are not relabeled as measurements of this fix. Broad gameplay,
+physical latency, sustained overload and native Mac acceptance remain incomplete.
+
 ## 2026-10-24 — Consolidated PR and foreground Hotel comparison
 
 PR #324 is remotely verified merged at `6ddc8a0`. Related follow-ups are now

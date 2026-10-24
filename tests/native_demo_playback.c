@@ -324,6 +324,11 @@ static void playback_lifecycle(unsigned char *memory)
         call(sub_000438B0);
         assert(MEM32(0x6b98a4)==0 && !pc_native_demo_playback.valid);
         assert(MEMF(0x4e7948)==input.raw_delta && MEMF(0x4e794c)==0);
+        assert(g_tsfp_native_step.game_delta==0 && g_tsfp_native_step.game_ticks==0 &&
+               g_tsfp_native_step.game_units==0);
+        assert(g_tsfp_native_step.raw_units==input.raw_units &&
+               g_tsfp_native_step.raw_phase==input.raw_phase &&
+               g_tsfp_native_step.game_phase==input.game_phase);
     }
     /* An inaccessible or truncated controller group reaches original EOF,
      * never a speculative decode/read beyond the validated buffer. */
@@ -334,6 +339,8 @@ static void playback_lifecycle(unsigned char *memory)
         if(denied)deny_demo_read=1;else MEM32(0x6b98a0)=14;
         call(sub_000438B0);
         assert(MEM32(0x6b98a4)==2 && MEMF(0x4e794c)==0);
+        assert(g_tsfp_native_step.game_delta==0 && g_tsfp_native_step.game_ticks==0 &&
+               g_tsfp_native_step.game_units==0);
     }
 }
 static void playback_old_native(unsigned char *memory)

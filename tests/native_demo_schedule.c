@@ -93,6 +93,10 @@ int main(void)
         publish(pc_native_timing_step(&clock,f+f/rate,f,rate,0));
         float delta=FLOAT(0x4e7948);pc_native_demo_guest(decoder);
         assert(WORD(0x6b98a4)==2 && FLOAT(0x4e794c)==0 && FLOAT(0x4e7948)==delta);
+        assert(g_tsfp_native_step.game_delta==0 && g_tsfp_native_step.game_ticks==0 &&
+               g_tsfp_native_step.game_units==0);
+        assert(g_tsfp_native_step.raw_delta==delta &&
+               g_tsfp_native_step.raw_ticks==WORD(0x4e7940));
         /* A permission change must be checked after successful prior reads. */
         setup(channels);clock=(PcNativeTiming){0};pc_native_timing_step(&clock,0,f,rate,0);
         publish(pc_native_timing_step(&clock,f/rate,f,rate,0));pc_native_demo_guest(decoder);
