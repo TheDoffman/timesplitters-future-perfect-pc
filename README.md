@@ -2,14 +2,14 @@
 
 # TimeSplitters: Future Perfect
 
-Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
+Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
 
 <sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
 
-**[Windows setup](#windows)** · **[Mac setup](#mac-apple-silicon)** · [Launcher guides](#guides--support) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
+**[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
 
 <sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
 
@@ -20,91 +20,66 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 <p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; Stable is the default game channel; named previews are opt-in with launcher 1.3.0+.</sub></p>
 
 > [!IMPORTANT]
-> You need your own supported **US Xbox ISO or extracted game data**. Import it
-> through the Windows launcher, or follow the [Mac game-data setup](docs/macos.md).
+> You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.
 > Original game files are not included. Neither version needs an emulator.
-> Windows has a downloadable game runtime; Mac currently requires a source build.
 
 ## Start playing
 
 Use the Windows or Mac download button above to get the latest stable launcher
-ZIP for your computer, then follow its setup steps below. See the
+ZIP for your computer. Windows and Mac use the same installation steps below. See the
 [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)
 for release notes and checksums.
 
-### Windows
-
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64**. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
-| **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. Choose a preview only when opting into testing. The launcher downloads and verifies the published PC runtime. |
+| **01** | **[Download the launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64** or **Download Mac (Apple Silicon)** for your computer. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. |
+| **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
-| **05** | **Press Play Game.** The launcher minimizes when the game window appears and returns when you finish. |
+| **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |
 
-**Next time:** open **TimeSplitters Launcher.exe → Play Game**. Installed play
-remains available offline.
-
-New Windows game builds include a dedicated TSFP game icon. Existing game
-downloads receive it with a new game release; a launcher-only update keeps
-the installed game executable. See the [game icon build notes](docs/windows-launcher.md#windows-game-icon).
-
-Launcher v1.2.14 adds recovery when Windows interrupts startup, with **Retry**,
-**Open launcher folder** and **View logs**. See the
-[Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup).
+**Next time:** open the launcher and choose **Play Game**. Installed play remains
+available offline. Use **Check updates → Update release** to install a newer game
+build when available. Launcher and game versions are separate.
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
 
-- **Windows 10/11 x64** with **.NET Framework 4.8**.
+- **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
+- **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
+  current shared Vulkan game renderer requires macOS 26+. See the
+  [Mac guide](docs/macos.md) for the legacy OpenGL fallback on older systems.
 - Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/building.md#inputs-and-generated-files).
 - Internet access for the initial runtime download; about **5 GB** for the game,
   plus space for update staging, rollback and any optional textures.
-- **Stable** is the default game channel. choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
-  Launcher and game versions are separate.
+- **Stable** is the default game channel. Choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
 
-Python, Git and Visual Studio are not required to play the published Windows build.
+Published builds do not require Python, Git or developer tools. The Mac launcher
+includes .NET and does not need CrossOver or the .NET SDK.
 
 </details>
 
+### Windows
+
+If Windows interrupts launcher startup, use **Retry**, **Open launcher folder**
+or **View logs**. See the
+[Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup)
+and [Windows launcher guide](docs/launcher.md).
+
 ### Mac (Apple Silicon)
 
-The native **Mac launcher is available now** for Apple Silicon (M1 or newer).
-It shares the Windows launcher's pages, settings, release notes and diagnostics.
-The launcher app includes .NET; it does not need CrossOver, Python or the .NET SDK
-to open. Intel Macs are not supported by this native build.
-
-> [!IMPORTANT]
-> The Mac launcher download does **not** include the game runtime. A published
-> Mac game package is not available yet. Build the native game from source using
-> the guide below; the Mac launcher cannot install or run the Windows game ZIP.
-
-| Step | Installation |
-| :---: | --- |
-| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Mac (Apple Silicon)**. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
-| **02** | **Set up the native game.** Follow the [Mac source-build guide](docs/macos.md) for developer tools, your supported US Xbox game data and the native build. Keep `default.xbe`, `pak` and `xmv` together in the checkout's `private/game` folder. |
-| **03** | **Open the launcher for your checkout.** Use the command below, replacing both example paths with your extracted app and checkout folders. Then choose **Play Game**. |
-
-```sh
-open '/path/to/TimeSplitters Launcher.app' --args --root '/path/to/timesplitters-future-perfect-pc'
-```
-
-For an existing native checkout, `./Play-Native-Mac.command` is also available;
-`./Play-Native-Mac.command --check` checks prerequisites without starting the game.
+The native Mac launcher downloads and installs Mac game builds using the shared
+steps above. Intel Macs are not supported. For development checkouts, follow the
+[Mac source-build guide](docs/macos.md); release installation and self-updates
+are disabled there to preserve source and local builds.
 
 If the release launcher reports a read-only `AppTranslocation` path, follow the
 [Mac launcher folder recovery instructions](docs/mac-launcher.md#shared-behavior-and-distribution).
 Keep the `.app` and `Support` folder together.
-Development checkouts disable release installation and self-updates to preserve
-your source and local builds. Keep `private/game`, `private/saves`, `config` and
-`private/native-settings` when updating the checkout.
-
-The launcher targets **macOS 12+**. The current shared Vulkan game renderer
-requires **macOS 26+**; the [Mac guide](docs/macos.md) documents the legacy OpenGL
-fallback for older systems. The app currently uses ad-hoc signing; Developer ID
+The app currently uses ad-hoc signing; Developer ID
 signing, notarization and clean-machine installation remain pending.
 Mac launcher v1.2.19 has a reported damaged-app rejection and an unsealed app
 bundle; see [the signing correction and one-time migration](docs/launcher-releases.md#mac-application-signing-and-the-v1219-migration)
@@ -116,310 +91,109 @@ settings; **F11** toggles fullscreen. Use **Fn** with function keys if macOS
 reserves them. See the [full Mac controls](docs/macos.md) and
 [native launcher guide](docs/mac-launcher.md).
 
-**Current Mac status:** native menus, movement, mouse aiming, firing and
-pause/resume have been checked, with additional bounded first-mission, Khallos
-and Mansion scene checks recorded in [measured progress](STATUS.md).
-Rendering and simulation use the original **60 FPS / 60 Hz** path on both hosts.
-Full campaign completion, save/load and complete rendering/audio fidelity remain
-unverified. Movie playback, native multiplayer and standalone game delivery
-remain unfinished. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
+**Current Mac status:** Full campaign completion, save/load and complete rendering/audio fidelity remain
+unverified. Movie playback and native multiplayer remain unfinished.
+[Track remaining Mac work →](MAC_PORT_BACKLOG.md)
 
 ## PC features
 
-Feature availability depends on the platform and installed game build. The
-Windows details below do not establish Mac parity; see [current Mac status](#mac-apple-silicon).
-
-Current source defaults to 60 FPS on Windows and Mac. Experimental interpolation,
-prediction, uncapped pacing and automatic monitor refresh controls have been
-removed. Older timing preferences are ignored by the runtime and normalized
-when launcher settings are saved; unrelated preferences remain intact.
-Your desktop refresh rate stays unchanged. Published builds require an update
-containing these changes.
-
-The `feature/native-144-fps` development branch also provides
-[`Play-Native.cmd`](docs/native-high-refresh.md) for experimental fresh game
-updates at up to 144 FPS with interpolation disabled. Game-speed and
-full-campaign validation remain incomplete; this mode is an explicit opt-in.
-
-Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#native-frame-rate-selection-upcoming-launcher-update):
-60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
-an accompanying game build with the new native high-refresh runtime; older
-published games do not gain high-FPS support from the launcher alone.
-Development source now enables continuous water updates with the 120/144 beta
-presets on the common renderer. **60 FPS (Original)** remains the recovery option.
-Full-game and native Mac high-refresh validation remain incomplete.
-
-
-Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
-current game mode and session timer. Enable it in **Game settings → Discord**
-with the Discord desktop app running. Fresh installs leave it off.
-
-<table>
-<tr>
-<td width="50%" valign="top"><strong>Mouse aiming</strong><br>Direct camera control, zoom-aware sensitivity and normalized WASD movement. Rebind actions and adjust sensitivity with <strong>F2</strong>.</td>
-<td width="50%" valign="top"><strong>Resolution and aspect ratio</strong><br>Native <strong>1080p, 1440p and 4K</strong> rendering, monitor-reported ultrawide modes and proportional cutscene and startup-video framing that fills ultrawide displays without side bars.</td>
-</tr>
-<tr>
-<td valign="top"><strong>Input prompts</strong><br>Formatted menu and HUD prompts follow your bindings and switch back to controller icons when you use a controller.</td>
-<td valign="top"><strong>Online and LAN multiplayer</strong><br>Experimental player-hosted Online matches, invitations, private join codes and compatible-build browsing, plus LAN System Link.</td>
-</tr>
-<tr>
-<td valign="top"><strong>Launcher</strong><br>Install releases, import game data, check updates and press <strong>Play Game</strong>. Roll back an update when a previous release is available. Current source adds a <a href="docs/launcher.md#compare-specific-game-versions-upcoming-launcher-update">game version picker</a> for testing published older builds.</td>
-<td valign="top"><strong>Performance diagnostics</strong><br>Optional FPS, frame-time and network-latency displays. Use <strong>F9</strong> for the FPS overlay and <strong>F12</strong> for debug settings.</td>
-</tr>
-</table>
-
-Recent fixes improve pickup-range checks, controller sensitivity adjustment,
-story audio transitions, Khallos Express scenery rendering and multiplayer
-movement updates. The current Windows source also restores full-body ghosts
-revealed by the Ghost Gun; this is separate from the floating-skull fix. [See measured progress →](STATUS.md)
-
-### Windows controls and settings
-
-**Game settings** in launcher v1.2.0 lets you set keybinds and graphics before
-playing. Resolution selectors use your primary display's reported modes, include
-the console default, and provide left/right arrows. Saved custom modes are retained.
-
-Launcher v1.2.11 adds **What's new** for game/launcher release notes,
-installed and available versions, and published known issues inside the main window.
-
-Windows and native Mac compile the same launcher pages and shared theme sources.
-Changes to those shared buttons, labels, layouts and page behavior reach both builds;
-OS integrations use host adapters. See [launcher development](docs/shared-platform.md#launcher-changes-that-reach-both-builds).
-
-| Controls | Display | Launcher |
-| --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Video Options** (or paused **Options**) puts aspect ratio, resolution, vertical FOV (40–100°, default 55°), texture style, subtitles and frame rate on one page. Choose **60 FPS (Original)** or beta **120/144 FPS**. One **Apply** button enables when settings change and applies the batch without restarting; resolution changes require confirmation within **15 seconds**. Back discards pending changes. Texture style lasts for the current session. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
-
-In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** to select and
-**right-click** to go back. Use the **mouse wheel** to move up/down through
-menu rows, including the level-selection list; click to activate a level.
-Scrolling takes priority over hover until you briefly pause the gesture; clicks
-remain immediate.
-In Windows **Audio Options**, click either Music Volume or Sound Volume bar
-to set its level, or hold left-click and drag. This works from Settings and Pause.
-**Accept** saves the changes; **Cancel** restores the previous levels.
-Click either arrow beside a menu choice to change its value. In multiplayer
-lobbies, the **Options** and **Select Character** footer prompts are clickable.
-In character selection, click a portrait (including adjacent variants) to preview
-it, use the wheel to browse, then **Select** to confirm. **Back** or right-click
-cancels without replacing the previously confirmed character.
-The team chooser supports its left/right arrows and **Select/Back** footer;
-**WASD** also supplies directional-pad input while menus are open.
-
-Text-entry dialogs (such as **Enter Name**) accept the physical keyboard.
-Type letters, numbers, spaces and supported accented characters; use
-**Backspace/Delete**, **Left/Right**, **Home/End**, and **Ctrl+A** to edit,
-**Enter** for Done, and **Escape** to cancel. The original character and width
-limits still apply. Mouse/controller selection of the on-screen keyboard also
-remains available. Arbitrary Unicode and clipboard paste are not supported.
-
-The **Controls** sensitivity bar and **Video Options** FOV bar also support
-clicking and dragging. Sensitivity changes the selected player's controller
-setting; mouse sensitivity remains in PC Settings. FOV changes stay pending
-until **Apply**; **Back** discards them.
-Visible, enabled prompts along the bottom (Select, Back, Player Progress and
-other shortcuts) turn light blue on hover and accept left-click. This also applies
-to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
-keep their normal appearance. The main-menu footer, decorative strips and animated
-blue backdrop fill widescreen and ultrawide displays while labels and buttons
-stay proportional. The in-game Objectives header/footer bars also fill wide
-screens. Full-screen transition fades, menu background tints and story blackouts
-also cover the output without changing their original opacity or timing. Loading-picture
-fades and their top/bottom borders span the same full width. The loading label
-uses proportional UI scaling and follows the left screen edge on wide displays.
-Older, conventional and futuristic weapon-scope masks extend to the output edges while the
-aperture and reticle keep their proportions. The Sci-Fi Sniper extends its translucent tint instead
-of adding opaque margins. Shared aim reticles keep their projected aim point while their shapes fit
-the display; zoom gauges follow the left/right edges and full-view aiming lines span the output.
-Lock-on indicator pieces scale around their target. Special scope gradients and screen effects
-reach the display edges while their ring artwork retains its proportions.
-The main Story/Arcade menu uses a smaller font so its list
-clears the logo and scrolling description. Click the Options/Status headings to switch pause or Objectives
-tabs; available headings highlight on hover. Keyboard and controller navigation
-still work.
-
-Auto Lookahead is automatically OFF in gameplay and the Controls menu while
-keyboard/mouse controls are active and mouse aiming is enabled. Its saved
-controller preference returns when controller input becomes active.
-
-Closing Pause or Objectives restores gameplay mouse control automatically;
-no extra click is needed. **Escape** pauses and releases the pointer. Use
-**Alt+Enter** for fullscreen. Settings saved in-game remain in place for your
-next launcher session.
-**Quit to Desktop** is available below Extras in the main menu and at the bottom
-of Pause. It opens a confirmation with **Cancel** selected. The pause menu's
-existing Quit still returns to the game menus.
-
-<details>
-<summary><strong>Default keyboard and mouse controls</strong></summary>
-
-| Action | Windows control |
+| Feature | Details |
 | --- | --- |
-| Move / look | W A S D / mouse |
+| **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
+| **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
+| **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/144 FPS beta settings](docs/native-high-refresh.md). |
+| **Launcher** | Game installation, updates, repair, rollback and settings. |
+| **Online Multiplayer** | Player-hosted Online and LAN matches with Bot support. (Windows only) |
+| **Extras** | Optional [Discord Rich Presence](docs/discord-presence.md), FPS overlays and local crash diagnostics. |
+
+Availability depends on your platform and installed game version. Check the
+launcher's **Release notes**, [Mac status](#mac-apple-silicon) and
+[measured progress](STATUS.md) for support and known limits.
+
+Development source also enables continuous water updates with the 120/144 FPS
+beta presets on the common renderer. **60 FPS (Original)** remains the recovery
+option; full-game and native Mac high-refresh validation remain incomplete.
+
+## Controls and settings
+
+Set bindings and graphics before playing in the launcher's **Game settings**.
+Use **F2** in-game for keyboard and mouse settings, and **Settings → Video
+Options** for resolution, aspect ratio, FOV and frame rate.
+
+| Action | Default control |
+| --- | --- |
+| Move / look | WASD / mouse |
 | Fire / aim | Left / right mouse button |
 | Use / confirm | E, Space or Enter |
 | Reload / crouch | R / Ctrl or C |
-| Leave vehicle | Y |
-| Melee / menu back | F, middle mouse or Backspace |
-| Throw grenade | G or mouse button 5 |
 | Change weapon | Mouse wheel or left/right arrows |
-| Weapon mode / scope zoom in | Q or Up / Page Up |
-| Change grenade / scope zoom out | V or Down / Page Down |
+| Pause / release mouse | Escape |
 | Keyboard and mouse settings | F2 |
-| Fullscreen | Alt+Enter |
-| Show / hide the PC menu bar | F1 |
-| FPS overlay / debug settings | F9 / F12 |
+| Fullscreen | Alt+Enter (Windows), F11 (Mac) |
 
-The original game has no jump action; Space is a confirm/action binding. Aim
-and crouch behavior follows your in-game profile settings. F2 blocks gameplay
-input but does not pause the simulation. Prompts baked into artwork retain their
-original appearance. [Full controls and display guide →](docs/windows-settings.md)
-
-</details>
+The original game has no jump action. For all bindings and platform-specific
+settings, see [Windows controls](docs/windows-settings.md) or
+[Mac controls](docs/macos.md). On Mac, use **Fn** with function keys if needed.
 
 ## Multiplayer
 
-These setup instructions apply to **Windows**. Native Mac System Link and Online
-multiplayer are not implemented yet; see [the Mac backlog](MAC_PORT_BACKLOG.md).
+On Windows, choose **Online / System Link → Online** to host or join a match,
+or **System Link** for LAN play. Everyone needs matching game builds and data.
+Online hosts need port forwarding; guests join using the host's invitation.
+Follow the [multiplayer guide](docs/multiplayer.md) for setup, ports and bots.
 
-Everyone needs the same game build and matching game data. In the game, choose
-**Online / System Link → Online**.
+Online is experimental;
+Story co-op and native Mac multiplayer are not supported yet.
 
-- **Host:** forward **TCP 30820** and **UDP 30821** to your PC and allow them
-  through Windows Firewall. Leave automatic hosting enabled, click **Start New
-  Match**, and send friends the full invitation. Return to the game and select
-  **Start New Match** to choose the map and mode.
-- **Join:** paste the host's invitation into **Invitation / lobby code**, click
-  **Join by code**, then select the host's match in the game and **Ready**.
-  The host selects **Go**. Guests do not need to forward ports.
-- **On the same local network:** choose **System Link** instead.
+## Enhanced textures
 
-Experimental bots are configured through the host's **Options → Bot Set**.
-The lobby shows players, admitted bots and the selected map/mode capacity.
-Humans take priority; excess selected bots wait for space without changing
-the saved bot set. The host sees how many are waiting.
+The partial texture overhaul is an optional launcher download for Windows and
+Mac.
+**Classic** textures remain the default.
 
-> [!NOTE]
-> Online is experimental. Router setup is not automatic; real internet routing
-> and sustained cross-machine play still need validation. Campaign co-op is not
-> yet supported.
+When the optional pack is available, use **Game settings → Graphics & resolution
+→ Check texture downloads**, then **Download / update textures**. Enable and save
+**Use enhanced textures (Beta)** to use it on future launches. See the
+[texture guide](docs/textures.md) for availability, coverage and known issues.
 
-**[Host or join a match →](docs/multiplayer.md)**
-
-## In development
-
-**Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
-surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. The **2,046-texture alpha pack** (about 1.72 GiB
-installed) is moving to an **optional launcher download** on Windows and Mac.
-New game packages omit it; existing installed packs remain usable.
-In the updated launcher, open **Game settings → Graphics & resolution →
-Check texture downloads**, then **Download / update textures**. Save **Use enhanced
-textures (Beta)** to use the pack on future launches. Classic remains the default;
-in-game changes remain session-only.
-Updates reuse matching installed files and add or replace changed texture keys.
-Unrelated custom textures are retained. Downloads require confirmation, including
-when automatic update checks are enabled. Compiled assets remain tracked in Git
-LFS; publishing the optional pack and updated launcher is a separate release step.
-This is a partial overhaul; 4K output does not imply native 4K source detail.
-[Texture guide →](docs/textures.md)
-
-> [!NOTE]
-> This is an experimental port. A full campaign playthrough and complete
-> rendering fidelity remain unverified; periodic multiplayer frame-rate drops
-> remain under investigation. Mac full-level completion and save/load are also
-> unverified. Features describe current source and the published launcher—check
-> **Release notes** for your installed game version.
+This is an experimental port. Full campaign completion and complete rendering
+and audio fidelity remain unverified. See [measured progress](STATUS.md) and the
+[Mac backlog](MAC_PORT_BACKLOG.md) for validation and remaining work.
 
 ## Guides & support
 
-For repository work, start with the [agent repository map](docs/agent-context/README.md)
-for source ownership, patch/symbol lookup, subsystem guides and context maintenance.
-
-| Player guides | Developer guides |
+| Playing | Development |
 | --- | --- |
-| [Windows launcher](docs/launcher.md) — installation, updates and recovery | [Build guide](docs/building.md) — prerequisites, setup and patch workflow |
-| [Controls & display](docs/windows-settings.md) — bindings, resolution and diagnostics | [Release publishing](docs/releasing.md) — package, validate and publish |
-| [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
-| [Mac launcher](docs/mac-launcher.md) — native app, settings and diagnostics | [Native Mac build](docs/macos.md) — Apple Silicon setup, controls and validation |
-| [Mac quick start](#mac-apple-silicon) — download and current support | [Project rules](AGENTS.md) — reproducibility and data preservation |
-| [Mac renderer development](docs/macos.md#common-renderer-development-probe) — shared game renderer and asset-free checks | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
+| [Windows launcher](docs/launcher.md) | [Build from source](docs/building.md) |
+| [Mac launcher](docs/mac-launcher.md) | [Native Mac build](docs/macos.md) |
+| [Controls & display](docs/windows-settings.md) | [Shared Windows/Mac architecture](docs/shared-platform.md) |
+| [Multiplayer](docs/multiplayer.md) | [Release publishing](docs/releasing.md) |
+| [Textures](docs/textures.md) | [Isolated gameplay testing](docs/testing-profile.md) |
+| [Crash reports](docs/windows-crash-logger.md) | [Repository map for agents](docs/agent-context/README.md) |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
-or **[suggest an enhancement in Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas)**.
-For bugs, enter your installed versions and platform, then describe the problem. For an
-improvement, check [existing Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)
-and start a separate discussion for each suggestion. Screenshots and logs
-are optional. The bug form's published version references stay up to date
-automatically, and bug reports receive labels automatically.
-[Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
-keep personal saves and game data private.
+with your installed versions, platform and steps to reproduce. The launcher's
+**Diagnostics** page provides local reports and logs; nothing uploads automatically.
+Keep personal saves and game data private.
 
-Want to help? Read the [contributing guide](CONTRIBUTING.md) and
-[code of conduct](CODE_OF_CONDUCT.md). For security vulnerabilities, follow the
-[security policy](SECURITY.md) to report privately instead of opening a public issue.
+Suggest improvements in **[Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)**.
+To contribute, read the [contributing guide](CONTRIBUTING.md),
+[project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
+Report security vulnerabilities privately using the [security policy](SECURITY.md).
 
----
-
-### Faster gameplay testing
-
-Use the local Test Lab profile for unlocked levels, characters and challenges,
-with collectible progress left fresh. A bounded isolated Windows session also
-skips startup videos: `python tools/testing_profile.py --play --seconds 120`.
-See [testing profile setup and isolation](docs/testing-profile.md).
-
-### Credits
+## Credits & license
 
 Built on **[nemonicicon/ts3FPrecomp](https://github.com/nemonicicon/ts3FPrecomp)**,
-with local runtime patches and platform adapters. This community project
-statically recompiles the Xbox executable into native code; it does not recover
-the original C/C++ source. [Pinned upstream and licensing →](docs/building.md#upstream-and-licensing)
+with local runtime patches and platform adapters. The project statically
+recompiles the Xbox executable into native code; it does not recover the
+original C/C++ source. See [upstream and licensing](docs/building.md#upstream-and-licensing).
 
-This repository contains port code, patches and tooling. Original game assets,
-the Xbox executable, generated game code, personal settings and saves remain
-local. Retain the applicable upstream and third-party licenses with builds.
+Original project code and documentation are licensed under **GPL-3.0-only**,
+except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+When distributing GPL-covered binaries, provide corresponding source and build
+instructions and preserve the required notices. Upstream and third-party
+components retain their own [licenses and credits](LICENSES/README.md).
 
-### License
-
-This project's original port code, launcher, tools, tests, configuration and
-documentation are licensed under the **GNU General Public License v3.0 only
-(`GPL-3.0-only`)**, except where a file states different terms. See
-[LICENSE](LICENSE) for the full license and [NOTICE](NOTICE) for scope and credits.
-
-You may use, modify and share the GPL-covered code, including commercially.
-If you distribute GPL-covered binaries or modified versions, preserve the
-notices, license the covered work under GPLv3, and provide its corresponding
-source and build instructions as the license requires. Private changes do not
-have to be published.
-
-**This does not license the original TimeSplitters game.** The original Xbox
-executable, game logic translated from it, artwork, music, levels, branding and
-other game assets remain subject to their owners' rights. You still need to
-supply your own supported game files. Generated game code does not become GPL
-just because these tools produced it, and is not included in this repository.
-
-Upstream and third-party components retain their own copyrights and licenses.
-The pinned runtime's GPL, MIT, LGPL, attribution and contributor files are
-preserved in [LICENSES](LICENSES/README.md); the existing icon lettering credits
-and dependency notices remain in place. Keep these notices when redistributing.
-
-## Windows game crash reports
-
-The Windows runtime writes bounded crash dumps and summaries through a separate
-helper. It also captures suspected freezes after 60 seconds without frame
-progress, with startup grace and modal/background suppression. A hang report
-leaves the game running and is available in launcher Diagnostics immediately. The launcher opens Diagnostics after a new crash and offers local report
-open/export actions. Nothing uploads automatically. Keep the exact executable/PDB
-bundle for each release. See [capture, tests and symbol verification](docs/windows-crash-logger.md).
-
-The launcher also records unfinished game sessions. After a nonzero exit or a
-restart with an abandoned session, Diagnostics can flag an unexpected exit even
-when no dump was captured. These reports can be exported locally; an unobserved
-exit has an unknown cause and can also follow a reboot or interrupted launcher.
-
-Launcher maintenance: [automatic Windows/Mac compatibility checks](docs/launcher-compatibility.md)
-validate both hosts in GitHub Actions without an AI API key. An optional dedicated
-Mac worker uses ChatGPT sign-in to propose repair PRs for failed compatibility
-checks. It requires installation on the chosen awake, online Mac; review and
-merging remain manual.
+**This license does not cover the original TimeSplitters game or its assets.**
+You must supply your own supported game files. Original game data, generated
+game code, personal settings and saves are not included in this repository.
