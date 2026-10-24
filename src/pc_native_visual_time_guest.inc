@@ -1,5 +1,10 @@
 #include "pc_native_visual_time.h"
 static PcNativeVisualTime pc_native_level_visual_time;
+void pc_native_visual_rebase(uint32_t value,double fraction)
+{
+    pc_native_level_visual_time=(PcNativeVisualTime){fraction,value,
+        g_tsfp_native_timing_active && isfinite(fraction) && fraction>=0 && fraction<1};
+}
 uint32_t pc_native_visual_store(uint32_t site,uint32_t value)
 {
     /* The six ordinary stores belong to mutually exclusive level-update

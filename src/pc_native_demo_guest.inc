@@ -7,6 +7,8 @@ static RECOMP_MANUAL_TLS float pc_native_demo_raw_interval;
 static RECOMP_MANUAL_TLS int pc_native_demo_interval_active;
 static RECOMP_MANUAL_TLS int pc_native_demo_exit_seen;
 static RECOMP_MANUAL_TLS int pc_native_demo_skip_record;
+static RECOMP_MANUAL_TLS int pc_native_demo_skip_playback;
+static void pc_native_demo_playback_reset(void);
 static RECOMP_MANUAL_TLS unsigned pc_native_demo_generation;
 static RECOMP_MANUAL_TLS struct {
     uint32_t base,size,cursor,channels,game,start,next;
@@ -19,6 +21,8 @@ uint32_t pc_native_demo_cursor_reset(uint32_t value)
 {
     pc_native_demo_record.valid=0;
     pc_native_demo_skip_record=0;
+    pc_native_demo_skip_playback=0;
+    pc_native_demo_playback_reset();
     ++pc_native_demo_generation;
     return value;
 }
@@ -27,6 +31,7 @@ uint32_t pc_native_demo_dispatch_mode(uint32_t value)
 {
     /* Skip only serialization. Original device polling, cancellation and
      * lifecycle services still execute on every native update. */
+    if(value==1u && pc_native_demo_skip_playback)return 0u;
     return value==3u && pc_native_demo_skip_record ? 0u : value;
 }
 
@@ -90,6 +95,9 @@ static void pc_native_demo_record_end(int active,unsigned generation)
     }
     if(!active || ND_WORD(0x6B98A4u)!=3u)pc_native_demo_record.valid=0;
 }
+#define ND_FLOAT(a) (*(float *)((uintptr_t)(a)+g_xbox_mem_offset))
+#include "pc_native_demo_playback_guest.inc"
+#undef ND_FLOAT
 #undef ND_WORD
 
 float pc_native_demo_timer_multiply(uint32_t site, float left, float right)
@@ -107,6 +115,7 @@ static void pc_native_demo_guest(void (*original)(void))
     int previous_active=pc_native_demo_interval_active;
     int previous_exit=pc_native_demo_exit_seen;
     int previous_skip=pc_native_demo_skip_record;
+    int previous_playback_skip=pc_native_demo_skip_playback;
     uint32_t ticks=*raw_ticks, entry_mode=*mode;
     int active=g_tsfp_native_timing_active && isfinite(interval) && interval>=0.f;
     pc_native_demo_interval_active=active;
@@ -115,8 +124,11 @@ static void pc_native_demo_guest(void (*original)(void))
     int recording=pc_native_demo_record_begin(active,entry_mode,ticks);
     unsigned generation=pc_native_demo_generation;
     pc_native_demo_skip_record=recording && active && !ticks;
+    PcNativeDemoPlan playback=pc_native_demo_playback_begin(active,entry_mode,ticks,interval);
+    pc_native_demo_skip_playback=playback.valid && playback.zero;
     original();
     if(recording)pc_native_demo_record_end(active,generation);
+    pc_native_demo_playback_end(&playback);
     /* Exit cleanup can reinitialize the level and replace the demo mode.
      * Remember the executed exit site as well as the entry/EOF state. Keep
      * its game pause while UI/audio raw time stays at native pace. */
@@ -128,4 +140,5 @@ static void pc_native_demo_guest(void (*original)(void))
     pc_native_demo_interval_active=previous_active;
     pc_native_demo_exit_seen=previous_exit;
     pc_native_demo_skip_record=previous_skip;
+    pc_native_demo_skip_playback=previous_playback_skip;
 }

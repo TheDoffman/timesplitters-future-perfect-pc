@@ -1,3 +1,54 @@
+## 2026-10-24 — Recorded playback uses fractional native time
+
+The recorder correction is now paired with a shared playback scheduler in
+`pc_native_demo_playback_guest.inc`, reached by the existing43220 wrapper.
+It uses exact raw counter units to select authored input groups, calls the
+original decoder every advancing update, then publishes fractional raw/game
+time, integer carries and matching procedural-surface metadata. Normal120/144
+updates stay fractional. This is fresh simulation time, not rendered-frame
+interpolation. `pc_native_visual_rebase` retains fractional level-clock phase.
+
+The original recorder's raw timestamp describes the END of its interval, while
+the level timestamp describes its START. The scheduler treats them separately.
+Zero-time startup/polling cannot consume the first recorded press. Fractional
+position survives144->60->120, including the zero-length new clock update.
+Same-buffer initialization clears history; cursor/buffer identity changes reset
+it. Unreadable or incomplete groups enter original EOF through bounded fresh
+memory reads; mapped-region permissions are not retained across guest calls.
+
+Older native zero-tick groups fold into the next positive group, carrying their
+game ticks. A leading zero also enables this repair when opened at Original60;
+normal console recordings keep their original60 decoder. The fixture exercises
+one/four controllers and native120/144 recordings with both recorded pause and
+game ticks falling on zero-raw frames, replayed at all three presets. The format,
+personal settings and saves are unchanged.
+
+All18 record/playback rate/controller combinations and the prior24 packet cases
+now pass, resolving the recorder-only intermediate regression. Original-program
+tests also check held/pressed/released inputs, six analog bytes, ABI, wait/exit,
+zero polling, cancellation, pause, one three-tick stall, clock/visual continuity,
+bounded reads and live rate handoff. Catch-up advances at most one input group
+per update, with bounded debt repaid by later native updates; the tested stall
+recovers without skipped packets or elapsed-time loss. Sustained playback below
+60updates/s can exceed its three-tick debt budget and remains a fidelity gap.
+
+Windows/MSVC native/demo suite: **128 passed**,112.61s
+(`demo-playback-native-suite.log`). Three further asset-free mutations of phase,
+raw timestamp and zero-time gating are rejected (**5 shared cases passed**,
+48 deselected,9.29s; `demo-playback-shared-mutations.log`). No expected failures
+remain in this module. Source base907dfde plus this change. Tests requiring the
+supported US XBE use its verified hash; CI without it skips original routines,
+while the new shared schedule/read-boundary fixture still runs. Full live game/
+recording-file playback, physical latency, sustained overload and native Mac
+execution remain unverified. This is not full-game high-refresh acceptance.
+
+The supported Windows build verifies the full patch stack and passes its native
+checks (`logs/demo-playback-build.log`); test partitions were recycled. Final
+executable SHA256:
+`c045f372678ad39e753cb01731e83bc7668cd4a7ed91bb662f49bb2fb62a7931`.
+Host: Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests,
+context freshness and whitespace checks pass. No new PR or live game session.
+
 ## 2026-10-24 — Native recordings retain authored-tick cadence
 
 The original recorder wrote a packet on every native update, including zero-

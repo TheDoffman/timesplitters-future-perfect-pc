@@ -13,7 +13,10 @@
 static unsigned char *memory;
 static ptrdiff_t g_xbox_mem_offset;
 static int g_tsfp_native_timing_active;
+#define PC_NATIVE_DEMO_READ(address,out,bytes) 0
+void pc_native_visual_rebase(uint32_t value,double fraction) { (void)value;(void)fraction; }
 #include "../src/pc_native_demo_guest.inc"
+PcNativeStep g_tsfp_native_step;
 #define WORD(a) (*(uint32_t *)(memory+(a)))
 #define FLOAT(a) (*(float *)(memory+(a)))
 static float observed;

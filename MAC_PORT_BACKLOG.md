@@ -3749,6 +3749,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Recorded playback scheduler (2026-10-24, this revision):** Shared
+  `pc_native_demo_playback_guest.inc` pairs with the recorder correction below.
+  Exact raw phases schedule original decoding and fractional clock publication;
+  `pc_native_visual_rebase` retains fractional level time. Bounded fresh reads use
+  the existing Windows/Mach memory adapter. No new Mac adapter or file format.
+  CPU tests cover all rate pairs, legacy zero-tick groups, pause, zero input,
+  catch-up, cancellation and live60handoff; asset-free schedule/mutation cases
+  run in existing dual-host CI. Windows original fixtures pass; native Mac and
+  full-game/file playback remain awaiting validation. This supersedes the
+  recorder-only native round-trip regression. [Evidence](STATUS.md#2026-10-24--recorded-playback-uses-fractional-native-time).
+
 - **Native recorder tick cadence (2026-10-24, this revision):** Shared
   `pc_native_demo_guest.inc` skips fractional-frame serialization while keeping
   device/lifecycle calls. It carries offset game ticks and patches only newly

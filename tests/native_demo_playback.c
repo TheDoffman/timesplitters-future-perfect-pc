@@ -20,6 +20,12 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 #include "@VISUAL@"
 #define RECOMP_MANUAL_TLS RECOMP_TLS
+static int deny_demo_read;
+static int demo_read(uint32_t address,void *out,unsigned bytes) {
+    if(deny_demo_read || address<0x10000 || address>0x800000 || bytes>0x800000-address)return 0;
+    memcpy(out,(const void *)((uintptr_t)address+g_xbox_mem_offset),bytes);return 1;
+}
+#define PC_NATIVE_DEMO_READ demo_read
 #include "@DEMO@"
 static unsigned polls, seeds, released, restored;
 static int cancel_requested;
@@ -73,14 +79,14 @@ static void call(void (*function)(void)) {
 }
 static void setup(unsigned char *memory,unsigned channels,unsigned raw,unsigned game) {
     memset(memory,0,0x800000); polls=seeds=released=restored=0;
-    cancel_requested=recording_device=0;
+    cancel_requested=recording_device=deny_demo_read=0;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x6f1e10)=0x10000;
     MEM32(0x1000c)=1000*channels*14; MEM8(0x10010)=channels;
     for(unsigned n=0;n<1000;n++) for(unsigned c=0;c<channels;c++) {
         unsigned a=0x10140+(n*channels+c)*14;
         MEM8(a)=raw; MEM8(a+1)=game;
-        MEM16(a+2)=n*game; MEM16(a+4)=n*raw;
+        MEM16(a+2)=n*game; MEM16(a+4)=(n+1)*raw;
         MEM16(a+6)=((n&1)?1:2)<<c;
         for(unsigned axis=0;axis<6;axis++) MEM8(a+8+axis)=32+c*7+axis;
     }
@@ -245,6 +251,127 @@ static void record_phase_cases(unsigned char *memory)
     }
     for(unsigned n=0;n<28;n++)assert(MEM8(0x10140+28+n)==0xcd);
 }
+static void publish(PcNativeStep step)
+{
+    g_tsfp_native_step=step;
+    MEM32(0x4e7940)=step.raw_ticks;MEM32(0x4e7944)=step.game_ticks;
+    MEMF(0x4e7948)=step.raw_delta;MEMF(0x4e794c)=step.game_delta;
+}
+static void playback_lifecycle(unsigned char *memory)
+{
+    const int64_t f=72000000;
+    for(unsigned channels=1;channels<=4;channels+=3) {
+        setup(memory,channels,1,1);g_tsfp_native_timing_active=1;
+        PcNativeTiming clock={0};int64_t now=0;
+        publish(pc_native_timing_step(&clock,now,f,144,0));call(sub_000438B0);
+        assert(MEM32(0x6b94c0)==0x10140 && MEM32(0x6b98a4)==1);
+        double elapsed=0;unsigned previous=0;
+        for(unsigned n=0;n<144;n++) {
+            /* One bounded stall, then normal pacing repays it without dropping
+             * any intervening packet. Include repeated zero-time polling. */
+            now+=n==7?f/20:f/144;
+            publish(pc_native_timing_step(&clock,now,f,144,0));
+            call(sub_000438B0);
+            unsigned selected=(MEM32(0x6b94c0)-0x10140)/(14*channels);
+            assert(selected>=previous && selected<=previous+1);
+            for(unsigned c=0;c<channels;c++) {
+                unsigned record=0x6b93d0+c*0x3c;
+                unsigned held=(((selected-1)&1)?1:2)<<c;
+                unsigned prior=previous?(((previous-1)&1)?1:2)<<c:0;
+                assert(MEM32(record+12)==held);
+                assert(MEM32(record+16)==(held&~prior));
+                assert(MEM32(record+20)==(prior&~held));
+            }
+            assert(fabs(pc_native_visual_sample(MEM32(0x7de318))-elapsed)<0.0001);
+            elapsed+=MEMF(0x4e794c);
+            assert(MEM32(0x7497b0)==(uint32_t)floor(elapsed+0.00001));
+            MEM32(0x7de318)=pc_native_visual_store(0x688bb,MEM32(0x7de318)+MEM32(0x4e7944));
+            assert(fabs(pc_native_visual_sample(MEM32(0x7de318))-elapsed)<0.0001);
+            previous=selected;
+            publish(pc_native_timing_step(&clock,now,f,144,0));call(sub_000438B0);
+            assert(MEM32(0x6b94c0)==0x10140+selected*14*channels);
+            assert(MEMF(0x4e7948)==0 && MEMF(0x4e794c)==0);
+            for(unsigned c=0;c<channels;c++) {
+                unsigned record=0x6b93d0+c*0x3c;
+                assert(MEM32(record+12)==((((selected-1)&1)?1u:2u)<<c));
+                assert(!MEM32(record+16) && !MEM32(record+20));
+            }
+        }
+        assert(fabs(elapsed-(double)now*60/f)<0.0001);
+        assert(!pc_native_demo_playback.debt);
+        /* Preserve the fractional stream position through 144->60->120,
+         * including the zero-length first update of the new native clock. */
+        for(unsigned n=0;n<5;n++) {
+            g_tsfp_native_timing_active=0;g_tsfp_native_step=(PcNativeStep){0};
+            MEM32(0x4e7940)=MEM32(0x4e7944)=1;
+            MEMF(0x4e7948)=MEMF(0x4e794c)=1.f;call(sub_000438B0);
+            elapsed+=MEMF(0x4e794c);assert(MEMF(0x4e794c)==1.f);
+        }
+        g_tsfp_native_timing_active=1;clock=(PcNativeTiming){0};
+        publish(pc_native_timing_step(&clock,now,f,120,0));call(sub_000438B0);
+        assert(MEMF(0x4e794c)==0);
+        for(unsigned n=0;n<120;n++) {
+            now+=f/120;publish(pc_native_timing_step(&clock,now,f,120,0));
+            call(sub_000438B0);
+            assert(fabs(pc_native_visual_sample(MEM32(0x7de318))-elapsed)<0.0001);
+            elapsed+=MEMF(0x4e794c);
+        }
+        assert(fabs(elapsed-127.5833333333)<0.0001);
+        /* Cancellation after the scheduler is active still restores native
+         * raw time, and the callback may reset demo mode to normal play. */
+        cancel_requested=1;now+=f/120;
+        PcNativeStep input=pc_native_timing_step(&clock,now,f,120,0);publish(input);
+        call(sub_000438B0);
+        assert(MEM32(0x6b98a4)==0 && !pc_native_demo_playback.valid);
+        assert(MEMF(0x4e7948)==input.raw_delta && MEMF(0x4e794c)==0);
+    }
+    /* An inaccessible or truncated controller group reaches original EOF,
+     * never a speculative decode/read beyond the validated buffer. */
+    for(unsigned denied=0;denied<2;denied++) {
+        setup(memory,4,1,1);g_tsfp_native_timing_active=1;
+        PcNativeTiming clock={0};pc_native_timing_step(&clock,0,f,144,0);
+        publish(pc_native_timing_step(&clock,f/144,f,144,0));
+        if(denied)deny_demo_read=1;else MEM32(0x6b98a0)=14;
+        call(sub_000438B0);
+        assert(MEM32(0x6b98a4)==2 && MEMF(0x4e794c)==0);
+    }
+}
+static void playback_old_native(unsigned char *memory)
+{
+    const unsigned rates[]={60,120,144};const int64_t f=72000000;
+    for(unsigned channels=1;channels<=4;channels+=3)
+    for(unsigned recorded=120;recorded<=144;recorded+=24)
+    for(unsigned r=0;r<3;r++) for(unsigned offset=0;offset<2;offset++) {
+        unsigned rate=rates[r];setup(memory,channels,1,1);
+        unsigned raw_total=0,game_total=0;
+        for(unsigned n=0;n<recorded;n++) {
+            unsigned raw=(n+1)*60/recorded-n*60/recorded;
+            unsigned game=offset?!raw:(n<recorded/2?raw:0);
+            unsigned level=game_total;raw_total+=raw;game_total+=game;
+            for(unsigned c=0;c<channels;c++) {
+                unsigned packet=0x10140+(n*channels+c)*14;
+                MEM8(packet)=raw;MEM8(packet+1)=game;
+                MEM16(packet+2)=level;MEM16(packet+4)=raw_total;
+                MEM16(packet+6)=(raw_total?(raw_total&1?1:2):0)<<c;
+            }
+        }
+        MEM32(0x1000c)=recorded*channels*14;call(sub_00069E80);
+        g_tsfp_native_timing_active=rate!=60;
+        PcNativeTiming clock={0};pc_native_timing_step(&clock,0,f,rate,0);
+        double raw_time=0,game_time=0;
+        for(unsigned n=0;n<rate;n++) {
+            publish(pc_native_timing_step(&clock,(n+1)*f/rate,f,rate,0));
+            call(sub_000438B0);
+            if(rate!=60)assert(fabs(pc_native_visual_sample(MEM32(0x7de318))-game_time)<0.0001);
+            raw_time+=MEMF(0x4e7948);game_time+=MEMF(0x4e794c);
+            assert(MEM32(0x7497b0)==(uint32_t)floor(raw_time+0.0001));
+            unsigned held=((n*60/rate)&1)?2:1;
+            for(unsigned c=0;c<channels;c++)assert(MEM32(0x6b93dc+c*0x3c)==held<<c);
+        }
+        assert(fabs(raw_time-60)<0.0001 && fabs(game_time-game_total)<0.0001);
+        assert(MEM32(0x6b94c0)==0x10140+recorded*channels*14);
+    }
+}
 int main(void) {
     unsigned char *memory=calloc(1,0x800000); assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)memory;
@@ -253,7 +380,9 @@ int main(void) {
     for(unsigned raw=1;raw<=2;raw++) for(unsigned game=0;game<=1;game++) {
         unsigned rate=rates[k], previous=0; double raw_time=0,game_time=0;
         setup(memory,channels,raw,game); g_tsfp_native_timing_active=k!=0;
+        PcNativeTiming clock={0};pc_native_timing_step(&clock,0,72000000,rate,0);
         for(unsigned n=0;n<rate;n++) {
+            g_tsfp_native_step=pc_native_timing_step(&clock,(n+1)*72000000LL/rate,72000000,rate,0);
             unsigned ticks=(n+1)*60/rate-n*60/rate;
             MEM32(0x4e7940)=MEM32(0x4e7944)=ticks;
             MEMF(0x4e7948)=MEMF(0x4e794c)=60.f/rate;
@@ -336,6 +465,8 @@ int main(void) {
     }
     record_roundtrips(memory);
     record_phase_cases(memory);
+    playback_lifecycle(memory);
+    playback_old_native(memory);
     free(memory);
     puts("PASS: original initializer, input dispatcher, controller bytes/edges, ABI and EOF; timing checked separately");
     return 0;

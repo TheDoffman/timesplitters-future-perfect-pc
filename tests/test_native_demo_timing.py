@@ -1,9 +1,4 @@
-"""Original recorded-input lifecycle; local supported XBE required.
-
-Known native playback failures are strict xfails, not passing acceptance.
-Only the measured timing assertion may xfail: generation, ABI, input decoding,
-initialization and boundary failures must fail normally.
-"""
+"""Original recorded-input lifecycle and timing; local supported XBE required."""
 import hashlib
 from pathlib import Path
 import re
@@ -24,6 +19,46 @@ def test_shared_demo_interval_scope(tmp_path):
     source = source.replace("../src/pc_native_demo_guest.inc",
                             (ROOT / "src/pc_native_demo_guest.inc").as_posix())
     compile_and_run(tmp_path, source)
+
+
+def test_shared_demo_playback_schedule(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    source = (ROOT / "tests/native_demo_schedule.c").read_text().replace(
+        "../src/pc_native_demo_guest.inc", (ROOT / "src/pc_native_demo_guest.inc").as_posix())
+    compile_and_run(tmp_path, source)
+
+
+@pytest.mark.parametrize("mutation", ["phase", "raw-end", "zero-time"])
+def test_shared_demo_playback_regressions(tmp_path, mutation):
+    from test_recomp_float_joins import compile_and_run
+    parent = (ROOT / "src/pc_native_demo_guest.inc").read_text()
+    playback = (ROOT / "src/pc_native_demo_playback_guest.inc").read_text()
+    if mutation == "phase":
+        before, after = "plan.phase=pc_native_demo_playback.phase;", "plan.phase=0;"
+        assert playback.count(before) == 1
+        playback = playback.replace(before, after)
+        message = "fabs(visual-expected(n,rate))<0.00001"
+    elif mutation == "raw-end":
+        before = ("ND_WORD(0x7497B0u)=(plan->packet.raw_time-plan->packet.raw+\n"
+                  "        (uint32_t)(phase*plan->packet.raw/f)+ND_WORD(0x4E7940u))&0xffffu;")
+        assert playback.count(before) == 1
+        playback = playback.replace(before, "ND_WORD(0x7497B0u)=plan->packet.raw_time;")
+        message = "WORD(0x7497b0)==(n+1)*60/rate"
+    else:
+        before = "if(value==1u && pc_native_demo_skip_playback)return 0u;"
+        assert parent.count(before) == 1
+        parent = parent.replace(before, "/* zero-time gate removed */")
+        message = "WORD(0x6b94c0)==0x10000 && !FLOAT(0x4e794c)"
+    playback_path = tmp_path / "playback_mutation.inc"
+    playback_path.write_text(playback.replace('"pc_native_timing.h"',
+        '"'+(ROOT / "src/pc_native_timing.h").as_posix()+'"'))
+    parent_path = tmp_path / "demo_mutation.inc"
+    parent_path.write_text(parent.replace('"pc_native_demo_playback_guest.inc"',
+        '"'+playback_path.as_posix()+'"'))
+    source = (ROOT / "tests/native_demo_schedule.c").read_text().replace(
+        "../src/pc_native_demo_guest.inc", parent_path.as_posix())
+    with pytest.raises(AssertionError, match=r"Assertion failed:.*"+re.escape(message)):
+        compile_and_run(tmp_path, source)
 
 
 @pytest.fixture(scope="module")
@@ -111,14 +146,7 @@ def roundtrip_results(playback_output):
 
 
 @pytest.mark.parametrize("recording,playback", [
-    (60, 60), (120, 60), (144, 60),
-    # The writer now emits authored-tick packets at every preset. The reader
-    # still consumes them per render update, so native playback remains fast.
-    *[pytest.param(recording, playback, marks=pytest.mark.xfail(
-        raises=DemoTimingMismatch, strict=True,
-        reason="Original playback consumes one authored packet per native update"))
-      for recording, playback in [(60,120), (60,144), (120,120), (120,144), (144,120), (144,144)]],
-])
+    (recording,playback) for recording in (60,120,144) for playback in (60,120,144)])
 @pytest.mark.parametrize("channels", [1,4])
 def test_recorded_pause_roundtrip(roundtrip_results, recording, playback, channels):
     raw, game, finish = roundtrip_results[recording, playback, channels]
@@ -133,7 +161,8 @@ def test_recorded_pause_roundtrip(roundtrip_results, recording, playback, channe
 def test_demo_transition_regressions_are_detected(demo_source, tmp_path, mutation):
     from test_recomp_float_joins import compile_and_run
     path = ROOT / "src/pc_native_demo_guest.inc"
-    source = path.read_text()
+    source = path.read_text().replace('"pc_native_demo_playback_guest.inc"',
+        '"'+(ROOT / "src/pc_native_demo_playback_guest.inc").as_posix()+'"')
     if mutation == "timer":
         before = "pc_native_demo_interval_active ? pc_native_demo_raw_interval : right"
         after = "right"
@@ -158,7 +187,8 @@ def test_demo_wait_and_exit_timing(playback_results):
 def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation):
     from test_recomp_float_joins import compile_and_run
     path = ROOT / "src/pc_native_demo_guest.inc"
-    source = path.read_text()
+    source = path.read_text().replace('"pc_native_demo_playback_guest.inc"',
+        '"'+(ROOT / "src/pc_native_demo_playback_guest.inc").as_posix()+'"')
     if mutation == "record-gate":
         before = "return value==3u && pc_native_demo_skip_record ? 0u : value;"
         after = "return value;"
@@ -177,11 +207,7 @@ def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation
         compile_and_run(tmp_path, demo_source.replace(path.as_posix(), mutated.as_posix()))
 
 
-@pytest.mark.parametrize("rate", [60, *[
-    pytest.param(rate, marks=pytest.mark.xfail(
-        raises=DemoTimingMismatch, strict=True,
-        reason="Original demo dispatcher consumes one packet group per render update"))
-    for rate in (120, 144)]])
+@pytest.mark.parametrize("rate", [60,120,144])
 @pytest.mark.parametrize("channels", [1, 4])
 @pytest.mark.parametrize("raw,game", [(1, 1), (1, 0), (2, 1), (2, 0)])
 def test_recorded_time_matches_original60(playback_results, rate, channels, raw, game):
