@@ -18,6 +18,8 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
+`test_window_theme.py` checks actual menu drawing, command mnemonics, inserted texture rows and reordered items (#333).
+
 Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
 code, fake devices, gain overrides, mute, live volume and voice parity.
 

@@ -24,6 +24,11 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Windows `pc_menu_theme.h` snapshots each native menu item's caption, tab-separated
+shortcut and separator type before owner drawing. Command IDs stay untouched;
+do not reintroduce positional label tables when adding PC Settings options.
+The per-window metadata is freed on detach. Cocoa menus do not use this adapter.
+
 Recorded-input wait/exit timing: `pc_native_demo_guest.inc` captures the incoming
 raw interval around original `43220`, with nested TLS restoration. Numeric
 multiplies `433E2/43473` use that interval instead of the original minimum-one
