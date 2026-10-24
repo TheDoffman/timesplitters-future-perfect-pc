@@ -21,6 +21,11 @@ on both CI hosts. `native_reload_input.c` additionally executes the local verifi
 US input decoder, timing wrapper and reload consumer across pause-offset phases,
 60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
 
+Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
+helper death and the portable ring; `test_native_crash.py` checks Darwin output.
+Shared UI tests cover health identity/failures and bounded ZIP export. Existing
+runtime/launcher CI runs these on both hosts.
+
 ## Choose the cheapest relevant check
 
 `test_window_theme.py` checks actual menu drawing, command mnemonics, inserted texture rows and reordered items (#333).

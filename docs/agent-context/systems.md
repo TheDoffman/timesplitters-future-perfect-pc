@@ -31,6 +31,22 @@ so the old gate dropped a valid press. Eligibility, binding lookup, animation an
 ammo checks remain original; zero-time pause and Original60 remain unchanged.
 The generic CMP hook is documented in runtime.md. No host-specific adapter.
 
+## Crash breadcrumbs and capture health
+
+`pc_breadcrumbs.h` owns a 64-slot atomic numeric history shared by the Windows
+`pc_crash.c` packet and Darwin `native/crash_posix.c` mapping. Producer calls
+never allocate, wait or write files; helper snapshots omit interrupted slots.
+`pc_display_camera` forwards scene/mode/menu/pause/network/cutscene values from
+the existing safe one-second guest sampler, even with Discord presence disabled.
+Capture/guest lifecycle and modal-depth events come from the host adapters.
+The helper formats `breadcrumbs.txt` during a crash/hang; it is sampled context,
+not a reconstructed call stack or guaranteed checkpoint/load-event history.
+`pc_capture_health.h` validates the launcher session token and defines the small
+heartbeat JSON. Each helper atomically replaces `capture-health.json` every two
+seconds in its safe report directory. No valid token means no health file.
+Windows packet schema is now3; a mismatched older helper cannot claim readiness.
+
+
 Windows `pc_menu_theme.h` snapshots each native menu item's caption, tab-separated
 shortcut and separator type before owner drawing. Command IDs stay untouched;
 do not reintroduce positional label tables when adding PC Settings options.

@@ -36,6 +36,43 @@ Patch update/tracking tests: 35 passed (including branch reversals/CRLF).
 Context/backlog tests: 21 passed; context freshness and whitespace checks passed.
 Native Mac build/gameplay remain pending (MAC-060).
 
+## 2026-10-24 — Gameplay breadcrumbs and launcher capture health
+
+Crash/hang reports now include a bounded 64-event numeric breadcrumb history:
+capture/guest lifetime, modal depth and sampled scene, game/menu mode, pause,
+network mode and cutscene state. Shared lock-free fields let the helper read
+completed slots even if a producer stops mid-write. Sampling uses the existing
+safe guest snapshot once per second; brief transitions can be missed. No player
+names, chat, input history or paths are recorded in breadcrumbs. Windows and
+native Mac adapters use the same ring and format; launcher export caps the file
+at 8 KiB and preserves the existing allowlist.
+
+Both launcher launch paths supply a fresh session token. The helper atomically
+updates a small health record every two seconds. Shared Diagnostics verifies
+writable report storage, the current game PID/start time, matching session,
+freshness and the helper process lifetime before reporting capture health.
+Missing helpers, older games without a handshake, stale records and unavailable
+storage get explicit status text. This is a refresh-time diagnostic snapshot,
+not a guarantee that every possible exit can produce a dump.
+
+Local Windows validation: supported native Build passed; actual executable crash
+checks resolved deliberate main/worker/concurrent faults to
+`tsfp_crash_test_site` with matching PDB identity. All nine hang scenarios passed,
+including symbol resolution to `tsfp_hang_test_site`. Executable SHA256:
+`c59fc5c323b6ea402501fe65ee6a6c66a6c81bcbefb6c8cf9fc957a23295851a`.
+Focused source checks: 90 passed, 10 Darwin-only skipped, 26 subtests passed.
+The Windows launcher regression suite includes 19 shared UI groups, with health
+identity/freshness/failure cases and bounded breadcrumb export. Native test
+fixtures verify heartbeat updates, helper death, blocked storage, missing helper,
+invalid session and interrupted breadcrumb producers. Logs are under
+`logs/crash-breadcrumb-*`; no personal saves/settings or game assets are committed.
+Actual launcher/game crash and live-hang integrations pass, including health
+handshake and breadcrumb ZIP contents. The integration fixture waits briefly for
+helper teardown before deleting its own validated directory. Context guides use
+LF checkout endings so their existing byte-size bounds agree across hosts.
+Mac capture and shared launcher checks are registered in existing CI; native Mac
+gameplay and real gameplay transition coverage remain unverified locally.
+
 ## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
 
 Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state

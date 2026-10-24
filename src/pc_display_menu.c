@@ -9,6 +9,7 @@ static uint32_t kb_caption(void);
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
+#include "pc_breadcrumbs.h"
 #include "pc_guest_memory.h"
 #ifdef _WIN32
 #include "pc_network.h"
@@ -157,6 +158,7 @@ void pc_display_camera(void (*original)(void))
         network=pc_network_latency(&latency,&peers);
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
+        pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);
         pc_discord_submit(&sample);discord_sampled=now;
     }
 #endif
