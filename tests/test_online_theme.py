@@ -1,12 +1,28 @@
 """Theme real Tk widgets without changing the user's Windows preferences."""
 import sys
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
+def run_tk_check(name, *args):
+    # Each Online application owns one Tcl interpreter. Repeated Tk teardown
+    # in pytest's long-lived process can break later Tcl initialization;
+    # keep real widgets/assertions, but give each lifecycle its own process.
+    result = subprocess.run([
+        sys.executable, '-c',
+        'import json,runpy,sys; runpy.run_path(sys.argv[1])[sys.argv[2]](*json.loads(sys.argv[3]))',
+        str(Path(__file__).resolve()), name, json.dumps(args),
+    ], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows Online adapter')
 @pytest.mark.parametrize('original_theme', [None, 'clam'])
 def test_online_theme_switch_and_close(original_theme):
+    run_tk_check('_check_online_theme_switch_and_close', original_theme)
+
+def _check_online_theme_switch_and_close(original_theme):
     import tkinter as tk
     from tkinter import ttk
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
@@ -36,6 +52,9 @@ def test_online_theme_switch_and_close(original_theme):
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows DWM adapter')
 def test_caption_after_map_reshow_and_native_reset():
+    run_tk_check('_check_caption_after_map_reshow_and_native_reset')
+
+def _check_caption_after_map_reshow_and_native_reset():
     import ctypes
     from ctypes import wintypes as w
     import tkinter as tk

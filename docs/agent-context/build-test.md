@@ -23,9 +23,11 @@ original US input, ABI, pause, EOF/cancel metadata, catch-up, preset changes,
 old streams and recorder capacity/reset. Missing XBE skips originals. All rate
 pairs pass; full-game/file/Mac playback and sustained sub60 overload remain open.
 
-`test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
-copies and failing unused-water stubs. Run refresh and stale-copy mutation;
-Mac covers GL/RHI, Windows RHI.
+`test_online_theme.py` runs each real Tk lifecycle in a bounded child process;
+missing Tcl/Tk or failed widget/DWM assertions still fail the test.
+
+`test_framebuffer_sampling.py`: HLE fake-copy/unused-water stubs; refresh and
+stale-copy mutation. Mac covers GL/RHI, Windows RHI.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

@@ -1,3 +1,50 @@
+## 2026-10-24 — Isolate Online GUI tests and compare a later mission
+
+PR #325 Windows runtime CI at `36204e9` reported552passed,168skipped and18
+subtests, but failed two Online theme tests while creating Tk roots: Tcl could
+not load `init.tcl` or `tk.tcl`. The preceding root lifecycle passed. Repeating
+the unchanged three cases eight times in one local pytest process reproduced
+two later-root startup failures (22passed,2failed; `online-theme-repeated-before.log`).
+The local error was `invalid command name "tcl_findLibrary"`; this establishes
+the repeated-interpreter failure class, not the precise underlying Tcl defect.
+
+Each real Tk test lifecycle now runs in its own60-second-bounded Python child,
+matching the separate Online application's interpreter lifetime. All existing
+widget, theme, caption, popup and cleanup assertions remain; child errors/timeouts
+fail rather than skip. No application or game code changes. The three tests pass
+in1.06s, and the same24-case repetition passes in8.00s
+(`online-theme-isolated.log`, `online-theme-isolated-repeated.log`). Remote
+Windows CI on this repair is still required. The tests remain Windows-only;
+native Mac runtime/gameplay support is unchanged.
+
+Separately, isolated Original60/native144 runs selected **Breaking and Entering**
+(mission6/scene6) on the same `36204e9` runtime, executable SHA256
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+Reviewed captures confirm the selected level and rooftop gameplay at both rates.
+Both start at identical coordinates/91-degree heading and end the initial
+three-second forward/600-count mouse input at31degrees. Displacements including
+the descent were20.268466 and20.258855 world units; endpoints differ0.011211units.
+Health remains35 at that checkpoint. This is a short movement/look/fall result,
+not a deterministic full-physics or animation-frame comparison.
+
+The carried device has no ammunition/reload counter, so this route does not
+verify firing/reloading. Guards then damage and kill the player at different
+times. Original60 is already dead before the nominal pause step and restarts on
+the next input; native144 pauses alive, resumes, then dies. Those later steps
+are **not comparable pause/resume or damage-cadence acceptance**. The native
+trace has731scene6 rows with zero game time across5.556raw seconds, including
+pause/death; this is not a pure pause-duration measurement. No performance claim
+is made from capture-enabled runs. Both sessions exited normally, retained
+unchanged signed test profiles/canonical fixture, and recycled temporary disks.
+Personal settings/saves were not used.
+
+Evidence: ignored `private/test-saves/breaking-entry-{60,144}`, corresponding
+logs and `private/pipeline/breaking-entry-comparison.json`; coordinator
+`private/pipeline/check-breaking-entry.py` records the fixed initial route.
+Windows11Pro x64/MSVC14.44.35207/D3D11, rendered1280x720/client640x480. No live
+mission completion, physical latency, native Mac scene or broad gameplay parity
+is claimed. All repairs stay in PR #325; the overall goal remains incomplete.
+
 ## 2026-10-24 — Playback exit pauses procedural timing metadata
 
 The original playback EOF/cancellation path sets guest game time to zero after
