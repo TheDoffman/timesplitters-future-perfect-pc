@@ -26,26 +26,34 @@ incorrect write permission and ignored page boundaries. Native Mac CI for this
 candidate and physical Mac gameplay remain pending (MAC-001). All non-skipped
 Windows/macOS PR checks passed preceding head `7098fe6`.
 
-The capture-free ten-bot Disco144 check completes with saves/signatures unchanged
+The capture-free ten-bot Disco 144 check completes with saves/signatures unchanged
 and its disposable partition recycled. At the same 3440x1440/FOV73/Classic setup,
 the complete spawn+5..50s window records 6,317 fresh guest presentations:
-140.400 FPS, lowest one-second count109, lowest five-second rate118.0,
-p99 9.418 ms, worst15.686 ms. Game/wall ratio is0.999991; no interpolated frames
-or intervals above16.67 ms. Foreground client remains1920x1060 on60Hz desktop.
-Compared with the earlier137.466 average, tail results are mixed and bot outcomes
+140.400 FPS, lowest one-second count 109, lowest five-second rate 118.0,
+p99 9.418 ms, worst 15.686 ms. Game/wall ratio is 0.999991; no interpolated frames
+or intervals above 16.67 ms. Foreground client remains 1920x1060 on a 60 Hz desktop.
+Compared with the earlier 137.466 average, tail results are mixed and bot outcomes
 differ: no reliable gameplay improvement or solved crowd deficit is claimed.
 Evidence: `crowd-page-span-disco-144`, its provenance/report/Present CSV and
 `crowd-pacing-summary.json`, using the complete-clock-window analyzer.
 
-The same bounded Disco route at native240 also completes and preserves saves.
-Its complete45s window records9,623 fresh guest frames:213.871 FPS, lowest
-one-second count120, lowest five-second rate129.0, p99 8.376 ms, worst12.297 ms.
-Game/wall ratio1.000084, no interpolated frames or intervals above16.67 ms.
+The same bounded Disco route at native 240 also completes and preserves saves.
+Its complete 45s window records 9,623 fresh guest frames: 213.871 FPS, lowest
+one-second count 120, lowest five-second rate 129.0, p99 8.376 ms, worst 12.297 ms.
+Game/wall ratio 1.000084, no interpolated frames or intervals above 16.67 ms.
 Evidence is `crowd-page-span-disco-240` with the same provenance/summary layout.
-This validates a working240 preset, not sustained240 across this scene. Both
-runs measure successful host Presents, not GPU completion or60Hz scanout.
-The21 repository-context/Mac-backlog checks pass; context validation against
+This validates a working 240 preset, not sustained 240 across this scene. Both
+runs measure successful host Presents, not GPU completion or 60 Hz scanout.
+The 21 repository-context/Mac-backlog checks pass; context validation against
 28f5400 and whitespace checks pass. Current crowd-performance work remains open.
+
+Main's audio calibration (`2b355bb`) was merged at `56d4938`, preserving both
+validation histories. The combined supported Windows build/built-in checks pass;
+projection/cutscene/FOV/audio/context/backlog suites pass 68 tests with two
+Mac-only skips. Combined executable SHA256:
+`674f5be8cf239a1ade6f3461e131899cf3b8dc339dcd3aa3b80d07c2a328120e`.
+The crowd measurements above use the pre-merge candidate hash, not this rebuilt
+audio-calibrated executable. Updated Windows/macOS CI remains pending.
 
 ## 2026-10-24 — Crowded gameplay at 144/240: Hotel holds, Disco still dips
 
