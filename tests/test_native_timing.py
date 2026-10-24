@@ -213,12 +213,15 @@ def test_reload_compare_gate(tmp_path, separated, mutation):
     (tmp_path/'numeric.h').write_text(policy,encoding='utf-8')
     harness=(ROOT/'tests/native_reload_gate.c').read_text(encoding='utf-8')
     harness=harness.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(tmp_path / "numeric.h").as_posix()}"')
-    source=harness.replace('/* GENERATED_GATE */',code)
+    source=(harness.replace('/* GENERATED_GATE */',code)
+            .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
+            .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text()))
     if mutation:
-        with pytest.raises(AssertionError,match='accepted==expected'):
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
             compile_and_run(tmp_path,source)
     else:
-        compile_and_run(tmp_path,source)
+        output=compile_and_run(tmp_path,source)
+        assert 'reload_sweep trials=864 presses=1728' in output,output
 
 
 def test_native_update_statistics():
@@ -674,7 +677,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
         harness=harness.replace('/* INPUT_WRAPPER */',wrapper[start:end])
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
-    output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+    source=(harness.replace('/* NUMERIC_POLICY */',policy)
+                           .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text())
                            .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
                            .replace('/* FIRE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
@@ -689,6 +693,16 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
+    output=compile_and_run(tmp_path,source)
+    if harness_name=='native_reload_input.c':
+        assert 'reload_sweep trials=864 presses=1728' in output,output
+        needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
+        expressions='\n'.join(line.split('/*')[0] for line in source.splitlines())
+        assert expressions.count(needle)==1
+        mutated=source.replace(needle,'MEM32(0x4E7944)').replace('/* SWEEP_ONLY */','goto temporal;')
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
+            compile_and_run(tmp_path,mutated)
+        print(output)
     if harness_name=='native_escort_recovery.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
