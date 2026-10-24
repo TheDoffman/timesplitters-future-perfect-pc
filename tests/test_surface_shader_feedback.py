@@ -180,6 +180,14 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             name = 'surface_gradient_shader.h'
             needle = 'return gradient;'
             replacement = 'return clamp(gradient,0.0,1.0);'
+        elif mutation == 'rounding-unlimited-acceleration':
+            name = 'surface_gradient_shader.h'
+            needle = 'clamp(red-0.5+diagonal-height,-1.0,1.0)'
+            replacement = '(red-0.5+diagonal-height)'
+        elif mutation == 'rounding-unlimited-boundary':
+            name = 'surface_rounding_shader.h'
+            needle = '(clamp(state.x,-0.5,0.5),clamp(state.y,0.0,damping))'
+            replacement = '(state.x,state.y)'
         elif mutation == 'constant-alpha':
             name = 'surface_state_shader.h'
             needle = '(0,state.x+0.5,state.y,state.y)'
@@ -210,7 +218,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('boundary_error<1e-7f' if mutation == 'rounding-raw' else
-                    'worst==0' if mutation in ('rounding-unforced', 'rounding-clipped-gradient') else
+                    'worst==0' if mutation in ('rounding-unforced', 'rounding-clipped-gradient',
+                                              'rounding-unlimited-acceleration', 'rounding-unlimited-boundary') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
                     'fabsf(output[field_index(x,y,c)]-expected)<tolerance' if mutation == 'constant-alpha' else
                     'transform_error<.00001' if mutation == 'transform' else
@@ -235,7 +244,8 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows WARP shader execution')
 @pytest.mark.parametrize('mutation,profile', [
     (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
-    (False, 1), ('rounding-clipped-gradient', 1)])
+    (False, 1), ('rounding-clipped-gradient', 1), (False, 2),
+    ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2)])
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

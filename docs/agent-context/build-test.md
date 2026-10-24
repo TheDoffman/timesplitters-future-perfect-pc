@@ -849,8 +849,11 @@ original smoothing, at 60/120/144 and a mixed 144/120/60/144 sequence. The test
 clock uses 720 integer units per second; the mixed sequence switches at nonzero
 authored phase and produces 117 frames over 60 ticks. This fixture clock is not
 the game's host-counter scheduler. Mild and strong signed initial height pulses
-are covered. Missing forcing, missing ambiguity handling and omission of the
-gradient clipping contribution are required failing mutations.
+plus near-limit velocity/height fields are covered. Missing forcing, missing
+ambiguity handling, omission of gradient clipping, unlimited acceleration and
+missing authored boundary limits are required failing mutations. Saturated
+60-Hz final-color repeats must match the independently measured original count;
+the higher-rate and mixed schedules still require fresh final colors every frame.
 Direct guard cases reject a distant replacement
 and preserve an unambiguous value. This is controlled trajectory validation,
 not runtime integration or measured game performance. The portable coupled CPU

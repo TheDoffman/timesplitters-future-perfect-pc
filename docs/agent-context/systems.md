@@ -467,13 +467,18 @@ first-pass residual at authored boundaries. `surface_gradient_shader.h` supplies
 the unclipped linear gradient: subtracting this from actual byte red retains
 both clipping and rounding. Subtracting the already-clipped float shader output
 loses the clipping contribution and fails strong initial impulses.
+`surface_feedback_residual` also includes the second pass's signed acceleration
+clamp after adding the fourth diagonal neighbor. `surface_limit_boundary`
+applies final velocity bounds and the height cap before damping at authored
+boundaries; it does not clip the internal state after every fractional piece.
 `surface_rounding_shader.h` resolves
 only nearby byte-threshold ambiguities with original shader arithmetic evaluated
 at that boundary; both threshold distance and arithmetic disagreement are guarded.
 The fixture requires byte initial/persistent state. No runtime scheduler/resource
-owner calls this policy yet. The fixture covers mild/strong initial fields and
+owner calls this policy yet. The fixture covers mild/strong initial fields,
+near-limit signed velocities/heights and
 mixed-rate steps, including nonzero-phase switches; actual disturbance shaders,
-arbitrary intermediate saturation and live game scheduling remain acceptance work.
+full scene saturation coverage and live game scheduling remain acceptance work.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

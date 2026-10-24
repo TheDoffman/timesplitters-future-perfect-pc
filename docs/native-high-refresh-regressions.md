@@ -6850,3 +6850,39 @@ arbitrary velocity/height saturation in the second pass. The integer fixture
 clock does not validate the host-counter clock's runtime integration. Shared
 helpers remain uncalled by the game; resource ownership, actual live setting
 changes, GPU cost, scene behavior and Mac execution are still pending.
+
+### Second-pass acceleration and height limits
+
+A third initial field uses signed velocity +0.49 and height 0.98 on one half
+of the 128-square map, -0.49 and height 0.02 on the other. The existing candidate
+failed at tick 0: green 0.843137264 versus 0.890196085, growing to maximum byte
+state error 0.976470590 and final byte RGB error 1. The unchanged production
+translation shows a signed [-1,1] clamp after adding the fourth neighbor to the
+first-pass red acceleration, and an upper height clamp before damping.
+Evidence: logs/water-saturation-before.log.
+
+Shared `surface_feedback_residual` now computes the difference between that
+clamped acceleration and the unclipped linear stencil. The coupled field
+integrates this held residual. At authored boundaries, `surface_limit_boundary`
+caps signed velocity to [-0.5,0.5] and height to [0,damping], before guarded byte
+rounding. The height upper bound represents the original pre-damping clip;
+clipping only to 1 after damping is not equivalent. These limits do not run
+after each fractional piece. The original reference shaders remain unchanged.
+
+All 24 trajectories (three fields, four rate schedules, smoothing off/on) match
+every authored byte G/B boundary and final byte RGB. The extreme field repeats
+some final colors at 60 Hz: 53 changed frames without smoothing, 52 with it,
+matching the independently executed original exactly. Every 120/144/mixed-rate
+frame still changes the final byte ripple output (120/120,144/144,117/117).
+The freshness test now measures the original instead of requiring artificial
+color changes on its saturated 60-Hz frames. Mild and impulse fields retain
+the every-frame requirement at all rates.
+
+Removing the acceleration clamp or authored boundary limits must fail the byte
+comparison, independently of the existing rounding/clipping controls. The eight
+focused GPU cases pass in 54.18 seconds (logs/water-saturation-controls.log).
+The complete shader suite passes all 22 cases in 117.52 seconds
+(logs/water-saturation-full-suite.log). Context and whitespace checks pass.
+This is controlled saturation coverage, not actual disturbance or game-scene
+validation. The helper remains uncalled by gameplay; no runtime scheduler,
+resource owner, Mac GPU or game performance claim follows from these results.

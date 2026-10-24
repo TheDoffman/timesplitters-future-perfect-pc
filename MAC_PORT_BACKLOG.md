@@ -3732,6 +3732,10 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Windows fixtures now cover strong initial signed height impulses and mixed
   frame rates switching within an authored tick. The shared body needs only a
   vector syntax adapter; these Windows tests do not verify Mac GPU execution.
+  The same shared shader bodies now retain the second feedback pass's signed
+  acceleration clamp and pre-damping height cap at authored boundaries. Windows
+  tests cover near-limit velocity/height fields and reject removing either limit.
+  This extends common policy; no new OS-specific logic or Mac GPU result is added.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

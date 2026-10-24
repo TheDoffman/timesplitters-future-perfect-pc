@@ -1,3 +1,26 @@
+## 2026-10-23 — Preserve second-pass water saturation
+
+On the same `fix/native-water-rounding` branch, near-limit initial velocities
+and heights exposed two more missing original limits: signed acceleration after
+the fourth neighbor contribution, and height clipping before damping. The
+shared residual now includes the acceleration clamp; a shared boundary helper
+caps height at the authored damping value and bounds velocity. Limits apply at
+original boundaries, preserving fractional evolution between them.
+
+Eight focused Windows common-RHI/WARP cases pass in 54.18 seconds. All 24
+field/rate/smoothing trajectories match every original byte G/B boundary and
+final byte ripple RGB. Removing either new limit must fail. The extreme field's
+60-Hz ripple output changes on 53/60 frames without smoothing, 52/60 with it,
+exactly matching the original; 120/144 and mixed-rate output changes on every
+frame. Evidence: logs/water-saturation-before.log and
+logs/water-saturation-controls.log.
+The complete shader suite passes all 22 cases in 117.52 seconds
+(`logs/water-saturation-full-suite.log`); context and whitespace checks pass.
+
+This remains an uncalled candidate, not a new playable build. Actual disturbance
+submission, runtime ownership/scheduling, GPU cost, scene coverage and Mac
+execution remain pending under MAC-060. No additional PR opened.
+
 ## 2026-10-23 — Retain water-gradient clipping across fractional updates
 
 Continuing on `fix/native-water-rounding`, a strong signed initial height pulse
