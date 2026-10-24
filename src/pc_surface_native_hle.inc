@@ -5,10 +5,15 @@
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
 #include "graphics/surface_gpu_cache.h"
 static PcSurfaceGpuCache pc_surface_native_cache;
+static unsigned pc_surface_native_failed;
 static PcSurfaceNativeClock pc_surface_native_clocks[PC_SURFACE_GPU_CACHE_SIZE];
 static void pc_surface_native_clear(void) {
     d3d8_surface_field(NULL,NULL);
-    RhiView *none[4]={0};rhi_set_textures(0,4,none);
+    /* Original60, before any native use, must not alter renderer bindings. */
+    unsigned owned=0;
+    for(unsigned i=0;i<PC_SURFACE_GPU_CACHE_SIZE;i++)owned|=pc_surface_native_cache.entries[i].gpu!=NULL;
+    if(owned){RhiView *none[4]={0};rhi_set_textures(0,4,none);}
+    pc_surface_native_failed=0;
     pc_surface_gpu_cache_clear(&pc_surface_native_cache);
     memset(pc_surface_native_clocks,0,sizeof pc_surface_native_clocks);
 }
@@ -44,6 +49,7 @@ static void pc_surface_native_suspend_execute(const void *unused) {
 }
 static void pc_surface_native_prepare_execute(const void *argument) {
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+    if(pc_surface_native_failed)return;
     const PcSurfaceNativeSample *sample=argument;
     D3D8Texture *textures[4];RhiImage *images[4];
     d3d8_surface_field(NULL,NULL);
@@ -64,14 +70,15 @@ static void pc_surface_native_prepare_execute(const void *argument) {
     if(!sample->feedback.whole && !entry)return; /* Wait for an authored boundary. */
     PcSurfaceGpu *previous=entry?entry->gpu:NULL;
     char errors[1024]={0};
+    d3d8_surface_cleanup(pc_surface_native_clear);
     PcSurfaceGpu *gpu=pc_surface_gpu_cache_acquire(&pc_surface_native_cache,sample->feedback.resource,
         ((uint64_t)sample->feedback.scene<<32)|sample->feedback.level,&config,images,errors,sizeof errors);
     if(!gpu) {
-        static unsigned failures;if(failures++<4)fprintf(stderr,"[SURFACE-NATIVE] Original-path fallback: %s\n",errors);
+        pc_surface_native_failed=1;
+        fprintf(stderr,"[SURFACE-NATIVE] Original-path fallback until scene/device reset: %s\n",errors);
         return;
     }
     if(previous!=gpu)fprintf(stderr,"[SURFACE-NATIVE] Created owner resource=%08X frame=%u\n",sample->feedback.resource,sample->feedback.frame);
-    d3d8_surface_cleanup(pc_surface_native_clear);
     for(unsigned i=0;i<PC_SURFACE_GPU_CACHE_SIZE;i++)if(pc_surface_native_cache.entries[i].gpu==gpu) {
         PcSurfaceNativeClock *clock=&pc_surface_native_clocks[i],next;
         if(previous!=gpu)memset(clock,0,sizeof *clock);

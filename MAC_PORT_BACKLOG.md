@@ -3705,6 +3705,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Water beta default (2026-10-24, `fix/native-water-rounding`, this revision):**
+  Common-RHI native120/144 enables the shared persistent field without a test
+  flag. Original60 and legacy GL retain original output; explicit environment
+  opt-out remains. Shared HLE failure latching avoids per-frame allocation retries
+  until scene/device reset. `tests/native_surface_runtime.c` exercises that real
+  adapter in dual-host CPU CI. Native Mac GPU execution/performance and scene
+  acceptance remain awaiting validation; Windows results do not establish parity.
+
 - **Water FPS round trips (2026-10-24, `fix/native-water-rounding`):**
   Shared GPU-cache suspend now invalidates timing/output while retaining owners
   across Original60, avoiding reconstruction on return to native. Constructor

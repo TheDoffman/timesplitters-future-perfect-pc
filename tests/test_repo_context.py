@@ -32,7 +32,9 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     assert position('-late-frame-pacing.patch') == position('-fixed-60-fps.patch') + 1
     assert position('-late-frame-pacing.patch') < position('-native-numeric-policy.patch')
     assert position('-native-surface-live.patch') < position('-native-flip-handoff.patch')
-    assert names[-1].endswith('-native-flip-handoff.patch')
+    assert position('-native-flip-handoff.patch') < position('-native-surface-capture.patch')
+    assert position('-native-surface-capture.patch') < position('-native-surface-render.patch')
+    assert names[-1].endswith('-native-surface-render.patch')
 
     assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])

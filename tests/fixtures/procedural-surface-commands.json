@@ -316,5 +316,86 @@
     {
       "stop": true
     }
+  ],
+  "scotland_long": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        69
+      ],
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "gap": 0.8,
+      "wait": 2
+    },
+    {
+      "keys": [
+        69,
+        69
+      ],
+      "gap": 2,
+      "wait": 12
+    },
+    {
+      "keys": [
+        27
+      ],
+      "label": "start",
+      "wait": 12
+    },
+    {
+      "mouse": [
+        900,
+        0
+      ],
+      "label": "turn-right",
+      "wait": 1
+    },
+    {
+      "wait": 10,
+      "label": "water-stable-start"
+    },
+    {
+      "wait": 30
+    },
+    {
+      "wait": 30
+    },
+    {
+      "wait": 30,
+      "label": "water-stable-end"
+    },
+    {
+      "keys": [
+        1
+      ],
+      "hold": 2,
+      "wait": 2,
+      "label": "water-fire"
+    },
+    {
+      "keys": [
+        27
+      ],
+      "wait": 3,
+      "label": "water-paused"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "wait": 5,
+      "label": "water-resumed"
+    },
+    {
+      "stop": true
+    }
   ]
 }

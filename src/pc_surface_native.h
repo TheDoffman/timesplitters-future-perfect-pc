@@ -3,6 +3,13 @@
 #include "pc_surface_capture.h"
 #include "graphics/surface_interval.h"
 
+/* Common renderers use native water with the high-refresh beta presets.
+ * Explicit 0 is the diagnostic recovery path; older experiments stay separate. */
+static inline int pc_surface_native_policy(int supported,const char *override,
+    const char *fractional,const char *floating,const char *live) {
+    if(!supported || (override && override[0] && strcmp(override,"1")))return 0;
+    return !(fractional && fractional[0]=='1') && !(floating && floating[0]=='1') && !(live && live[0]=='1');
+}
 /* Cosmetic field follows the last authored event boundary. Original feedback
  * remains authoritative: events/RNG never move to an earlier native frame. */
 typedef struct PcSurfaceNativeSample {

@@ -604,5 +604,12 @@ partial frames; sustained pacing, broader visual acceptance and Mac remain open.
 shaders or retained identities. The deferred `hle_d3d8_surface_native_suspend`
 clears the borrowed view and clocks, avoiding shader/resource recreation across
 an Original60 round trip. Original60 still performs no coupled updates. Full
-scene/device cleanup remains distinct. The opt-in creation log identifies actual
+scene/device cleanup remains distinct. The creation log identifies actual
 new owners; unchanged identity reuse emits no allocation notice.
+
+Native water defaults on for common-RHI 120/144 beta presets; Original60 and
+legacy GL remain original. `pc_surface_native_policy` accepts an explicit
+`TSFP_SURFACE_NATIVE_TEST=0` recovery override and excludes old experiments.
+The HLE adapter latches allocation/shader failure until constructor/device reset,
+so fallback does not retry expensive setup each frame. Cleanup is registered
+before first allocation; empty resets do not alter RHI texture bindings.

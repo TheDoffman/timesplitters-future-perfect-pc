@@ -149,3 +149,7 @@ Root AGENTS records the user's request to consolidate related native-high-refres
 work into the current PR and verify it has merged into main before opening a
 successor. Keep repairs on the existing PR; branch history or a local merge alone
 is not proof of the remote PR's merge state. Required checks remain in force.
+
+The repository-context order test includes the post-handoff surface capture/render
+tail, with render last. Preserve dependency assertions when extending the loader;
+a stale last-patch assertion is not evidence of a loader failure.

@@ -129,7 +129,7 @@ remain unfinished. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
 Feature availability depends on the platform and installed game build. The
 Windows details below do not establish Mac parity; see [current Mac status](#mac-apple-silicon).
 
-Current source uses fixed 60 FPS on Windows and Mac. Experimental interpolation,
+Current source defaults to 60 FPS on Windows and Mac. Experimental interpolation,
 prediction, uncapped pacing and automatic monitor refresh controls have been
 removed. Older timing preferences are ignored by the runtime and normalized
 when launcher settings are saved; unrelated preferences remain intact.
@@ -145,6 +145,9 @@ Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#nat
 60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
 an accompanying game build with the new native high-refresh runtime; older
 published games do not gain high-FPS support from the launcher alone.
+Development source now enables continuous water updates with the 120/144 beta
+presets on the common renderer. **60 FPS (Original)** remains the recovery option.
+Full-game and native Mac high-refresh validation remain incomplete.
 
 
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the

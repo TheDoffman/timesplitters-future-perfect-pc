@@ -19,9 +19,15 @@ static struct { unsigned active,used;uint32_t whole; } pc_surface_native_scope;
 static int pc_surface_native_requested(void) {
     static int checked,enabled;
     if(!checked) {
-        const char *s=getenv("TSFP_SURFACE_NATIVE_TEST");enabled=s && s[0]=='1';
-        const char *conflicts[]={"TSFP_SURFACE_FRACTIONAL_TEST","TSFP_SURFACE_FLOAT_TEST","TSFP_SURFACE_LIVE_TEST"};
-        for(unsigned i=0;i<3;i++){s=getenv(conflicts[i]);if(s && s[0]=='1')enabled=0;}
+#ifndef PC_SURFACE_NATIVE_SUPPORTED
+#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+#define PC_SURFACE_NATIVE_SUPPORTED 1
+#else
+#define PC_SURFACE_NATIVE_SUPPORTED 0
+#endif
+#endif
+        enabled=pc_surface_native_policy(PC_SURFACE_NATIVE_SUPPORTED,getenv("TSFP_SURFACE_NATIVE_TEST"),
+            getenv("TSFP_SURFACE_FRACTIONAL_TEST"),getenv("TSFP_SURFACE_FLOAT_TEST"),getenv("TSFP_SURFACE_LIVE_TEST"));
         checked=1;
     }
     return enabled;

@@ -14,7 +14,8 @@ static int pc_native_rate(void){return rate;}
 static int pc_guest_memory(uintptr_t p,size_t size,int write) {
     (void)write;return p>=(uintptr_t)memory && size<=sizeof memory && p-(uintptr_t)memory<=sizeof memory-size;
 }
-static char *test_getenv(const char *name){return !strcmp(name,"TSFP_SURFACE_NATIVE_TEST")?"1":NULL;}
+static char *test_getenv(const char *name){(void)name;return NULL;}
+#define PC_SURFACE_NATIVE_SUPPORTED 1
 #define getenv test_getenv
 #include "pc_surface_native_guest.h"
 #include "pc_native_surface_guest.h"

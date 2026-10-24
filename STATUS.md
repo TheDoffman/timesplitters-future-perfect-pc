@@ -1,3 +1,63 @@
+## 2026-10-24 — Continuous water enabled with native beta presets
+
+On `fix/native-water-rounding`, common-RHI 120/144 beta presets now enable the
+persistent water field without a test flag. Original60 and legacy GL keep
+original output. `TSFP_SURFACE_NATIVE_TEST=0` remains a diagnostic opt-out;
+older experimental paths stay separate. Allocation/shader setup failure latches
+original output until scene/device reset, avoiding repeated setup attempts on
+every frame. Empty resets do not change renderer texture bindings. Algorithms,
+original byte feedback, event ordering and the one-authored-tick cosmetic delay
+are unchanged from the previously captured opt-in implementation.
+
+Three focused CPU tests pass (3.23s), covering default/override policy, actual
+guest dispatch/ABI and the real HLE adapter's failure/retry behavior. The new
+adapter fixture runs in the existing dual-host native-timing CI group. The
+supported Windows build and bundled checks pass; complete patch loader reports
+zero runtime-file changes. No patch or shader changed in this revision. Repository checks found a stale
+last-patch assertion from before the capture/render tail; the test now checks
+the complete handoff/capture/render order. Guide text was condensed to preserve
+the enforced 64-KiB file limit.
+Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11, RTX 4070 SUPER driver
+32.0.16.1742. Built from `2b03306` plus this revision's three native-water source
+changes; executable SHA-256:
+`e551214b38d0337bcba398ba554511afceff80d3e2acc0776e245ad678de7549`.
+
+Two sequential isolated Scotland runs use this same executable, 1280x720,
+minimized, default water policy, no image readback. Native144 and true Original60
+(`--native-fps 0`) complete the committed `surface-native-long` route. A 90.306s
+stationary dwell has matching sampled position/look/health and authored clock
+rates 59.99615/59.99580 ticks per wall second. Both spend four pistol rounds in
+the two-second firing hold, pause (only 9/8 ticks between pre-pause observation
+and the paused checkpoint), then resume (332/334 ticks by the next checkpoint).
+Native logs show creation/use of the field; Original60 creates no native owners.
+Both exit cleanly, preserve signed profiles/canonical fixture, and recycle disks.
+
+| Complete intervals in the same 60-second host-clock window | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents | 8,639 | 3,599 |
+| Mean FPS | 144.0005 | 60.0004 |
+| Median / p95 interval (ms) | 6.957 / 7.319 | 16.656 / 17.034 |
+| p99 / worst interval (ms) | 7.474 / 8.610 | 17.147 / 17.411 |
+| Interpolated presents / intervals above 33.33ms | 0 / 0 | 0 / 0 |
+
+These are host Present intervals, not GPU completion, scanout or input latency.
+The recorder's 20,000-frame cap excludes the end of the native run; only a fully
+covered central minute is analyzed, while game-clock behavior uses the full
+90-second dwell. One ordered pair, unmatched RNG and no new frame captures do
+not prove identical wave trajectories, all-scene appearance, first-use hitch
+cost or crowded-match performance. Prior unchanged-kernel image/GPU evidence is
+recorded below. Native Mac GPU/gameplay, broader scenes and full-game correctness
+remain incomplete. This beta-default change does not complete the active goal.
+
+Repository context/backlog checks pass (21 tests, 3.28s); context against base
+`2252af1` and whitespace checks pass.
+
+Evidence: `logs/water-beta-{build,policy-cpu}.log`,
+`logs/water-beta-long-{144,60}.log`, and the corresponding isolated directories;
+`water-beta-long-144/comparison.json` contains exact clock windows/metrics.
+No new PR was opened. The preceding integration PR #322 is verified merged into
+main at this branch's base `2252af1`; follow-ups remain grouped on this branch.
+
 ## 2026-10-24 — Preserve water resources across live FPS changes
 
 The opt-in native water path now suspends its timing/output state on switching

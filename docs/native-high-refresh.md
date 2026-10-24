@@ -53,6 +53,17 @@ timing. Legacy presentation settings retain main's fixed migration values.
 Leave the console interrupt clock at 60 Hz. Do not use
 `RECOMP_VBLANK_HZ=144` to enable this feature.
 
+## Water at beta frame rates
+
+Current development source enables continuous water updates with native120/144
+on the common renderer. The original disturbance and byte-feedback simulation
+still runs on authored ticks; intermediate frames evolve the cosmetic field
+before the original ripple shader draws it. The field follows one authored tick
+behind to preserve event ordering. Original60 and legacy GL keep original water.
+For diagnosis, `TSFP_SURFACE_NATIVE_TEST=0` disables the new field. If GPU setup
+fails, original output remains until scene/device reset permits another attempt.
+The shared implementation still needs native Mac GPU/gameplay validation.
+
 ## Timing and motion
 
 The original US timing routine waits for an integer console tick and clamps

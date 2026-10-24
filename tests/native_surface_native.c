@@ -3,6 +3,15 @@
 #include "pc_surface_native.h"
 #include "pc_native_timing.h"
 int main(void) {
+    assert(pc_surface_native_policy(1,NULL,NULL,NULL,NULL));
+    assert(pc_surface_native_policy(1,"",NULL,NULL,NULL));
+    assert(pc_surface_native_policy(1,"1",NULL,NULL,NULL));
+    assert(!pc_surface_native_policy(1,"0",NULL,NULL,NULL));
+    assert(!pc_surface_native_policy(1,"invalid",NULL,NULL,NULL));
+    assert(!pc_surface_native_policy(0,"1",NULL,NULL,NULL));
+    assert(!pc_surface_native_policy(1,NULL,"1",NULL,NULL));
+    assert(!pc_surface_native_policy(1,NULL,NULL,"1",NULL));
+    assert(!pc_surface_native_policy(1,NULL,NULL,NULL,"1"));
     for(unsigned rate=120;rate<=144;rate+=24) {
         PcNativeTiming producer={0};PcSurfaceNativeClock clock={0},next;
         unsigned begins=0,continues=0;double delta,total=0;

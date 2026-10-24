@@ -871,25 +871,20 @@ even away from ideal byte thresholds. This is controlled trajectory validation,
 not runtime integration or measured game performance. The portable coupled CPU
 test also checks held forcing across split steps and rejected-output preservation.
 
-Rounding profile 3 adds `surface_noise_gpu.inc`: original effect-19 pixel/vertex
-programs, captured immutable A8L8 source converted to RGBA, linear wrap sampling,
-and captured ONE/ONE RGB-only blending before smoothing at each authored tick.
-`surface_vertex_definition.c` checks the noise program's four instructions and
-input mask 0x010e, separately from the feedback vertex program. The profile
-requires the preserved local Original60 Scotland frame-3600 capture; without it
-the two noise cases explicitly skip. A skip is not noise coverage. No game bytes
-are tracked. UV offsets follow a controlled sequence, not the game's RNG. First
-draws independently verify nonzero additive green and unchanged red/blue/alpha;
-a candidate-only duplicate noise draw must fail the boundary comparison. This
-does not validate queued splashes, live submission or whole-scene rendering.
+Rounding profile 3 (`surface_noise_gpu.inc`) runs original effect-19 vertex/pixel
+programs on captured A8L8-to-RGBA source with linear wrap and ONE/ONE RGB-only
+blending before smoothing. `surface_vertex_definition.c` checks the four vertex
+instructions/input mask 0x010e. Both noise cases explicitly skip without the
+private Original60 Scotland frame-3600 capture; no game bytes are tracked.
+Controlled UVs replace RNG. Initial draws verify additive green and preserved
+red/blue/alpha; duplicate candidate noise must fail boundary equality. Queued
+splashes, live submission and whole-scene rendering remain separate acceptance.
 
-`native_surface_interval.c` is registered in the existing dual-host native timing
-suite. It covers exact conservation/boundary counts across three counter
-frequencies, changing presets, jitter, pause/resume, catch-up, frequency reset,
-invalid nonmutation and the four-piece maximum. A reset-phase mutation must fail.
-The real guest-hook fixture also checks publication, paused zero time and
-Original-mode clearing. Summing its float deltas at 144 Hz gives 59.999998569489
-ticks in one second; exact metadata and splitting produce all 60 boundaries.
+`native_surface_interval.c` (dual-host timing suite) checks exact conservation
+and boundary counts across three counter frequencies, presets, jitter, pause,
+catch-up, reset, invalid nonmutation and the four-piece maximum. Reset-phase
+mutation must fail. The real guest fixture checks publication, paused zero time
+and Original-mode clearing; exact metadata avoids float-sum boundary loss.
 
 `native_surface_mode.c`, in the same dual-host suite, checks immutable mode
 packing against the existing affine operator and independent one-tick equations,
@@ -901,28 +896,19 @@ coefficient textures keyed by fractional duration. A fifth schedule alternates
 profile includes that jitter, smoothing off/on and pause preservation. Replacing
 the evolve shader's first diagonal entry with 1 must fail the byte comparison.
 
-Run `python tests/test_surface_shader_feedback.py --hardware-check --profile 0`
-for the same rounding candidate on the default D3D11 hardware adapter, or
-`--benchmark --profile 3` for GPU timestamp spans without per-frame pixel
-readbacks. These explicit Windows diagnostics reuse resource setup and skip the
-older WARP-only storage-tolerance probes. Normal pytest cases still use WARP.
-The hardware check retains every authored boundary/freshness comparison;
-benchmark mode checks the final byte image after each sequence and fails on a
-mismatch. It does not report unsampled intermediate accuracy as passing.
-`surface_timing_gpu.h` brackets each frame, reads disjoint/timestamp queries only
-after submission, rejects invalid clocks and bounds query waits to ten seconds.
-Reported spans include submission bubbles, exclude setup/readback, and are not
-whole-game frame times. Adapter identity is printed. All entry points bind the
-four captured wrap samplers before any original draw; the initial hardware-only
-path omitted this initialization when it skipped older storage probes.
-With that fixed, RTX 4070 SUPER exposed a later byte-conversion transition away
-from the ideal half-byte threshold. The shared correction now uses only its
-unchanged arithmetic-distance guard; actual target conversion owns thresholds.
-Replacing the conditional with an unconditional original value must fail the
-direct guard test. A narrow hardware sweep reports the observed transition
-without assuming other GPUs use the same threshold. Hardware checks now pass
-all four profiles and ten schedules each; benchmark endpoint checks also pass.
-This validates this adapter, not other GPUs or game integration. See STATUS.
+Windows D3D11 hardware diagnostics: `python tests/test_surface_shader_feedback.py
+--hardware-check --profile 0` checks all authored boundaries/freshness;
+`--benchmark --profile 3` measures timestamp spans without per-frame readback,
+checking each sequence's final byte image. Normal pytest uses WARP. Hardware
+paths skip WARP-specific storage tolerances, print adapter identity and bind the
+four captured wrap samplers before original draws. `surface_timing_gpu.h` reads
+disjoint/timestamp queries after submission with a ten-second wait bound;
+spans include submission bubbles, exclude setup/readback and are not game FPS.
+RTX4070 SUPER exposed a byte conversion transition away from the ideal half-byte
+threshold. Keep the shared arithmetic-distance guard; actual target conversion
+owns thresholds. Unconditional replacement must fail the direct guard test.
+Hardware profiles/schedules and endpoint checks passed on that adapter only;
+see STATUS for measurements. They do not establish other-GPU or game acceptance.
 
 The rounding fixture uses the shared GPU owner. `surface_owner_gpu.inc` checks
 input rejection, reset, packed alpha-height, sentinel target preservation,
@@ -931,14 +917,19 @@ Removing reset/output restoration fails. `native_surface_gpu_owner.c` injects
 failure at every allocation; `native_surface_gpu_cache.c` checks retained image
 identity, transactional replacement, capacity and clear/recreation. These run
 in the dual-host CPU suite; Windows shader checks do not prove Vulkan behavior.
-`native_surface_native.c` checks exact phase, authored boundaries, pauses,
-duplicates and gaps. `native_surface_render_guest.c` exercises the actual guest
-adapters with 144 updates/60 events, stack discipline and Original60 recovery.
-The bounded runner's `--scenario surface-native --native-surfaces` uses the
-Scotland route with the persistent output hook; `--trace-surface-images` captures
-final GPU images for freshness checks, excluding pacing claims. Omit the native
-flag for a baseline. Constructor resets and renderer cleanup are in the shared
-patch, loaded after capture; historical patch fixtures exclude both tail patches.
+`native_surface_native.c` checks phase, boundaries, pause/gaps and default/override
+policy. `native_surface_render_guest.c` tests the actual default-enabled guest
+adapters at 144 updates/60 events, ABI and Original60 recovery.
+`native_surface_runtime.c` injects allocation failure into the real HLE adapter:
+no repeated setup until scene/device reset, no bindings changed by empty reset.
+All three run in dual-host native timing CI; this is not Mac GPU evidence.
+`--scenario surface-native` uses Scotland. Native water is the common-RHI beta
+default; `--original-surfaces` forces baseline water, `--native-surfaces` forces
+on. `--native-fps 0` selects true Original60. `--trace-surface-images` reads final
+GPU images for freshness, not pacing. `surface-native-long` adds a 90-second
+stationary window then fire/pause/resume; use `--profile-presents --no-captures
+--seconds 230` for host Present timings. Provenance records the explicit/default
+policy. Historical patch fixtures exclude both tail surface patches.
 
 Rounding trajectories now use `pc_surface_gpu_begin_bytes`; original-shader and
 broken-gradient controls still test residual/clipping behavior. Captured replay

@@ -26,8 +26,9 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
-`zz-native-surface-render.patch` follows capture and connects the opt-in
-`TSFP_SURFACE_NATIVE_TEST=1` path. `pc_surface_native_guest.h` forces only the
+`zz-native-surface-render.patch` follows capture and connects the native-water
+path, enabled with 120/144 beta on common RHI. `TSFP_SURFACE_NATIVE_TEST=0`
+is a diagnostic opt-out; Original60 and legacy GL keep original feedback. `pc_surface_native_guest.h` forces only the
 outer dispatcher on positive matching native intervals; nested event/smoothing/
 feedback calls skip partial frames with the original stack return. Whole frames
 retain their original calls, including the single feedback update on catch-up.
