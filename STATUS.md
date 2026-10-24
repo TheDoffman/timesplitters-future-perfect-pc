@@ -1,3 +1,71 @@
+## 2026-10-24 — Later combat pacing and delayed bounded capture
+
+The previous 20,000-row Present recorder spent much of its allowance on menus.
+The common recorder now accepts optional `TSFP_FRAME_PROFILE_DELAY_MS` in
+0..600000 (default0; invalid values fall back to0). CSV rows start after that
+delay from the first successful Present. Counters and last-success timestamps
+continue throughout, so the delay does not create an artificial long interval.
+Skipped/failed gaps and the same 20,000-row cap remain. Disabled recording adds
+no delay environment lookup. This improves diagnostic coverage, not game FPS.
+The runner records `--profile-delay-seconds` and adds `--crowd-weapons rockets`
+using the calibrated normal weapon-menu selection. No saves, AI or health are
+modified by these options. Shared RHI/GL use the same implementation (MAC-003).
+
+The production recorder passes delayed-boundary CSV, full counters, failure/
+skip gaps, cap/close, disabled-path and malformed/overflow-input tests.
+The relevant renderer, frame-statistics and context/backlog suite reports
+49 passed, 1 skipped (Mac CoreText adapter) in 20.52s; the supported Windows
+builder and native checks pass. Logs: `crowd-delayed-profile-{tests,build}.log`.
+Native Mac execution remains pending. No new PR has been opened.
+
+An isolated captured Hotel calibration checked weapon presets: six right presses
+from Recommended selects Rockets; Custom1 (nine right presses) is all Unarmed in
+the local fixture. The unarmed experiment reached scene39 with ten bots and
+ordinary deaths/respawns, but ended against a wall and did not establish a dense
+visible fight. Reject it as pacing acceptance; capture overhead also applies.
+
+Clean Enhanced Hotel Rocket runs used 3440x1440 rendering, FOV73 and a foreground,
+visible, nonminimized 1920x1060 client. Window toggles occur before match setup;
+all input is normal menu/movement/fire/respawn input on isolated Test Lab copies.
+Host: Windows11Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver
+32.0.16.1742. CPU sampling, captures and texture/per-update tracing were off.
+Present logging and bounded asynchronous actor observations stayed on.
+
+| Run | Predeclared window | Guest intervals / FPS | Median / p95 / p99 ms | Worst ms | Minimum rolling 1s | Game/wall |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| `crowd-rockets-144` | spawn+5..35s | 4319 / 143.999897 | 6.968 / 7.295 / 7.449 | 12.398 | 144 | 0.999851 |
+| `crowd-rockets-120` | spawn+5..35s | 3599 / 120.000731 | 8.328 / 8.703 / 8.827 | 12.442 | 120 | 1.000103 |
+| `crowd-rockets-long-144` | spawn+5..125s | 17263 / 143.867096 | 6.988 / 7.316 / 7.547 | 11.497 | 137 | 0.999969 |
+
+The short runs used the prior executable
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`.
+Runner hashes: 144=`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`;
+120=`164a956b2dd1414b2a092db352d131ac4db75def9408a873b2b01c1c74e6811b`.
+The long run used source `42bcffb` plus the delayed-recorder change, executable
+`47f187793a120ca4533f864dce9f7d33f72dc425a1db1868663cd0561adf880a`,
+runner `66d679a0abd32e5b097e8cfacf1a612bd2d0755c1c21d5318475f3b4630ca680`.
+It extended movement/fire to64 blocks, turning900 horizontal input units every
+six blocks, and delayed recording90s. CSV spans elapsed90002.837..228996.163ms,
+exactly20,000 rows /1,158,625 bytes, with both measurement endpoints covered.
+
+The long run's 65 actor checkpoints include43 living-player observations;
+34 lie inside the measurement window. Maximum living bots within10/20/30 units
+inside that window are3/7/9. The short144 run's whole-route maximum4/7/9 was
+outside its measurement window; inside it the maximum is2/4/7 (120:2/4/6).
+Do not present the whole-route peak as measured crowded-frame acceptance.
+The lowest rolling count137 ends170.348s after runner start, bracketed by living
+player at169.296s and dead player at171.606s. Nearby reads do not establish
+rendered visibility or whether death/effects caused the dip. No interval exceeds
+33.33ms and all measured Presents are fresh guest frames. This reveals a modest
+later pacing dip, not the reported110 FPS case, nor a performance improvement.
+
+All runs exited zero, retained signed profiles/canonical fixture and recycled
+disposable partitions. Evidence is under ignored `private/test-saves/` with
+the run names above; the long run includes `later-window-summary.json`.
+Random bot paths prevent paired mechanical/causal comparisons. Presents do not
+measure GPU completion, scanout or input latency. The reported crowd issue,
+Original60 long-combat control, broader gameplay and Mac acceptance remain open.
+
 ## 2026-10-24 — Enhanced Temple comparison at Original60 and native144
 
 The isolated crowd runner now supports `--texture-mode classic|enhanced`

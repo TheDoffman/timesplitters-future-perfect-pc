@@ -18,20 +18,18 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_framebuffer_sampling.py` compiles the complete HLE texture unit against
-fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
-water graphics dependencies with fail-fast assertions; no GPU emulation or
-production hooks are removed. This avoids MSVC unresolved symbols from unused
-water functions. Both normal refresh and the deliberately stale-copy mutation
-must run. Mac tests retain legacy GL and also compile the common RHI branch;
-Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
+`test_framebuffer_sampling.py` compiles the full HLE texture unit with fake
+screen-copy callbacks. `framebuffer_surface_stubs.h` resolves unused water APIs
+with failing stubs, preserving production hooks. Run normal refresh and the
+stale-copy mutation. Mac covers GL and common RHI; Windows covers common RHI.
+Water behavior has separate native-surface/GPU tests.
 
 `test_sample_chains.py` extracts the patched sampler's actual insertion function:
 verify deep caller separation, short stacks, saturation reporting and retained
 counts. Six-frame and hidden-overflow mutations must fail. Both CI hosts run
 this portable fixture; it does not execute Windows stack walking on Mac.
-The runner records `--profile-depth 1..32` (default8) and `--texture-mode`
-(`classic` default or `enhanced`). CPU profiles are not clean pacing evidence.
+The runner records `--profile-depth 1..32` (default8), `--texture-mode`
+(`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
@@ -153,16 +151,17 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
 `crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
-use frequent move/fire/respawn input. Routes focus their window after startup;
-still verify focus below.
-Record roster/window state separately from device resolution; unfocused/minimized
-runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
-health with pool rechecks; asynchronous proximity is not visibility. Analyze
-complete spawn+5..+55s intervals (Disco/Temple +5..+50s, within the 20,000-row cap) with
-clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
-enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
-can yield partial snapshots: check before differencing. `--trace-textures` enables
-bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
+use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
+Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
+Record roster, foreground state and client/device sizes. `--watch-actors` uses
+bounded position/health reads with pool rechecks; proximity is not visibility.
+Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
+scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
+the 20,000-row cap; record it in provenance and verify endpoint coverage.
+The present-metrics fixture checks parsing, delayed intervals and cap/disable behavior.
+Disable images/tracing for pacing. `--profile-cpu` enables 200Hz diagnostic
+snapshots; concurrent rewrites may be partial. `--trace-textures` records bounded
+upload-stage timing. Check completeness before differencing either diagnostic.
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.

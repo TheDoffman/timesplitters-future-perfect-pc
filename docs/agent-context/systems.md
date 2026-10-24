@@ -131,6 +131,14 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+The shared `graphics/present_metrics.h` recorder accepts optional
+`TSFP_FRAME_PROFILE_DELAY_MS` (0..600000, default0; malformed values use0).
+Only CSV rows are delayed from the first successful Present. Counters and the
+last-success timestamp keep advancing, preserving skipped/failed gaps without
+turning the startup delay into a false hitch. The 20,000-row cap is unchanged.
+No delay environment lookup occurs without a profile path. Common RHI and native
+GL share this behavior; native Mac execution remains pending (MAC-003).
+
 `pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
 current-player, player-record and control-setting accesses before the guest call.
 It retains the global's region while visiting high-RAM player data, so settings

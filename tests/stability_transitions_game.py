@@ -60,8 +60,10 @@ def main():
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
     parser.add_argument('--profile-depth',type=int,choices=range(1,33),default=8,help='Captured caller frames for CPU diagnostics (default 8)')
     parser.add_argument('--texture-mode',choices=('classic','enhanced'),default='classic',help='Texture selection in this isolated session')
+    parser.add_argument('--crowd-weapons',choices=('recommended','rockets'),default='recommended',help='Weapon preset selected through the normal crowd-match menu')
     parser.add_argument('--trace-textures',action='store_true',help='Enable bounded texture-stage CPU timing; diagnostic only')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
+    parser.add_argument('--profile-delay-seconds',type=int,choices=range(601),default=0,help='Delay Present CSV rows after first successful Present; requires a compatible build')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--watch-actors',action='store_true',help='Observe local actor positions/health; proximity is not visibility and readings can cross an update')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
@@ -80,6 +82,10 @@ def main():
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
+    if args.profile_delay_seconds and not args.profile_presents:
+        parser.error('--profile-delay-seconds requires --profile-presents')
+    if args.crowd_weapons!='recommended' and not (args.scenario or '').startswith('crowd-'):
+        parser.error('--crowd-weapons requires a crowd scenario')
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
@@ -104,6 +110,7 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'tools/network-identity.py'),'--verify',
                         '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    env['TSFP_FRAME_PROFILE_DELAY_MS']=str(args.profile_delay_seconds*1000)
     env['TSFP_TEXTURE_MODE']='4k' if args.texture_mode=='enhanced' else 'classic'
     if args.lan_role:
         env.update(TSFP_NETWORK='1',
@@ -140,6 +147,13 @@ def main():
                 if block and block%6==0:step['mouse']=[180,0]
                 route.append(step)
             route.append(dict(stop=True))
+        if args.crowd_weapons=='rockets':
+            # Calibrated from Recommended: six right presses select Rockets.
+            # Return to GO before continuing the existing score/bot setup.
+            route[2:2]=[
+                dict(keys=[38,38,69],gap=.3,wait=.7,label='weapon-menu'),
+                dict(keys=[39]*6,gap=.3,wait=.7,label='rocket-set'),
+                dict(keys=[70,40,40],gap=.3,wait=.7,label='rocket-setup')]
         route.insert(1,dict(window='focus',wait=1))
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario in ('surface-feedback','surface-feedback-gpu'):
@@ -393,8 +407,9 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        display_size=list(args.display_size),fov=args.fov,texture_mode=args.texture_mode,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
+        display_size=list(args.display_size),fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
+        profile_delay_seconds=args.profile_delay_seconds,
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:

@@ -849,6 +849,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-003 — Debug settings and on-screen performance information
 
+- **Delayed Present capture (2026-10-24, commit carrying this entry):** Shared
+  `src/graphics/present_metrics.h` adds opt-in `TSFP_FRAME_PROFILE_DELAY_MS` so
+  bounded recordings can cover later fights instead of menus. Common RHI and
+  fallback GL already consume the same recorder; no new Mac adapter is needed.
+  The production-recorder fixture passes on Windows for delayed intervals,
+  preserved skipped/failed gaps, disabled recording, malformed limits and the
+  unchanged row cap. Native Mac compilation/execution remains pending; verify
+  this fixture and a delayed gameplay CSV there before marking it validated.
+
 - **Status:** Awaiting validation
 - **PC behavior:** F12 opens debug settings; F9 toggles FPS. Options show guest/shown FPS, frame intervals, issue counters and recent logs, with bounded optional performance logging.
 - **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
