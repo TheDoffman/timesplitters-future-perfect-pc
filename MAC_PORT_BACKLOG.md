@@ -362,6 +362,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   `tests/auto_look.c` and `tests/test_auto_look.py`.
 - **Mac support:** Shared guest wrappers use existing native prompt-device and
   mouse-enable APIs. No new OS adapter is required; Mac execution is unverified.
+- **Shared optimization (2026-10-24):** `fix/native-water-rounding` reuses two
+  local permission slots for the pre-call player/settings accesses. Reuse never
+  crosses guest execution or input updates. Windows host and controlled map/
+  mutation tests pass; shared source needs no new Mac adapter. Native scene
+  acceptance below remains pending.
 - **Remaining and acceptance:** Run the native regression and build on macOS;
   verify a tilted view stays put while walking with keyboard/mouse, OFF is
   displayed in frontend and paused Controls, controller input restores the

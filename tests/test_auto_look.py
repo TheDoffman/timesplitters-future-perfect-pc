@@ -3,11 +3,31 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import re
 
 import pytest
 from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize('mutation', ['none', 'persistent', 'uncached'])
+def test_auto_look_regions(tmp_path, mutation):
+    from test_cutscene_letterbox import compile_and_run
+    memory = (ROOT/'src/pc_guest_memory.h').read_text()
+    helpers = '\n'.join(re.search(r'static inline [^\n]*\b'+name+r'\(.*?\n\}', memory, re.S).group()
+                        for name in ('pc_guest_region_remaining', 'pc_guest_region',
+                                     'pc_guest_memory', 'pc_guest_memory_in_region'))
+    body = (ROOT/'src/pc_auto_look_guest.inc').read_text()
+    if mutation == 'persistent':
+        assert 'PcGuestRegion regions[2]={{0}};' in body
+        body = body.replace('PcGuestRegion regions[2]={{0}};', 'static PcGuestRegion regions[2]={{0}};')
+    if mutation == 'uncached':
+        body = body.replace('if(bytes<=pc_guest_region_remaining', 'if(0 && bytes<=pc_guest_region_remaining')
+        helpers = helpers.replace('if(bytes<=pc_guest_region_remaining', 'if(0 && bytes<=pc_guest_region_remaining')
+    source = (ROOT/'tests/auto_look_region.c').read_text()
+    source = source.replace('/* PRODUCTION_MEMORY_HELPERS */', helpers).replace('/* PRODUCTION_AUTO_LOOK */', body)
+    compile_and_run(tmp_path, source, fails=mutation!='none')
 
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')

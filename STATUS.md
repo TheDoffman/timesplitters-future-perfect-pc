@@ -1,3 +1,73 @@
+## 2026-10-24 — Reuse auto-look validation across low/high guest mappings
+
+`pc_auto_look_camera` now keeps two permission snapshots only during the host
+accesses preceding its original guest call. The current-player global and saved
+control settings share low guest RAM, while the player record is in high RAM.
+Retaining both avoids re-querying the first mapping for settings. Same-region
+accesses need one query instead of three; the observed low/high/low path needs
+two. Reads cannot grant writes, and each invocation starts empty. Stored
+preferences, bit-3 restoration, input-device selection, local-slot eligibility,
+mouse sensitivity and menu logic remain unchanged. No shared helper or timing
+rule changed; native Mac validation is still pending under MAC-043.
+
+The pre-change `crowd-projection-profile-144` Hotel run on `aa868b3` completed
+with ten bots at 3440x1440/FOV73/Classic. Its complete 110..150s cumulative CPU
+reports contain 6,898 samples, 5,158 on-CPU samples, 29.1 CPU seconds and 1,262
+VM-query leaves. The auto-look call chain accounts for 105 samples; text and
+decal validation remain larger contributors. The run has 25/33 living-player
+checkpoints, at most 3/6/9 living bots within 10/20/30 units. A 200Hz sampler
+perturbs timing; different combat outcomes prevent causal performance claims.
+The retained analysis aggregates duplicate chain labels and normalizes unnamed
+DLL offsets to their module, matching the sampler's actual bucket key. Both
+raw and delta leaf/chain totals must match the report headers.
+
+A read-only live `VirtualQueryEx` observation in the diagnostic run verifies
+the low/high/low mapping pattern (`auto-look-maps.json`): global guest7B0C7C,
+player81F7C360, settings7BEDC4, all committed/read-write. Settings lies within
+the first returned interval. This evidence rejected the initial one-slot
+candidate, which loses that region after reading the player. It does not
+authorize retaining permissions through guest execution or between frames.
+
+Four final auto-look tests pass, including the actual host-memory behavior and
+controlled split/read-only maps, per-call expiry and preference restoration.
+Uncached and persistent-snapshot mutations fail. The eight existing mounted/
+mouse checks also pass; 21 context/backlog checks passed during this change.
+Tests remain in the existing registered Windows/macOS suite; running them on
+Windows does not establish native Mac gameplay behavior.
+
+The final supported Windows build and its native tests pass. One preceding
+builder run compiled successfully but failed Debug-dialog Save with
+`FAIL 192: driven && !timed_out`; the unchanged standalone Debug test and full
+builder then passed. The failed log is retained (`auto-look-region-build-failed.log`),
+and the intermittent save failure is not claimed resolved. Final executable
+SHA-256 is `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`,
+built from `aa868b3` plus this auto-look change on Windows11Pro x64 10.0.26300,
+MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+
+`crowd-auto-look-clean-120` runs the ten-bot Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. All 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480/windowed.
+The complete spawn+5..55s window contains 5,999 fresh guest presents at
+120.0001FPS; median8.331/p95 8.684/p99 8.792/worst11.052ms. Lowest rolling
+one-second count is120, sampled game-clock/wall ratio1.000128. There are 27/33
+living-player checkpoints and at most 2/6/10 nearby living bots within10/20/30
+units. It exits cleanly, preserves signed profiles/fixture and recycles disks.
+Host presents do not measure GPU completion/scanout/input latency; actor proximity
+does not establish visibility. This extends preset coverage, not a causal
+optimization gain or proof that the reported 144-to-110 crowd drop is fixed.
+
+`crowd-auto-look-final-profile-144` completes the same Hotel route on the final
+build. Complete 110..150s reports contain 6,912 samples, 4,070 on-CPU samples,
+20.5 CPU seconds and 1,145 VM-query leaves. The auto-look caller chain has127
+samples versus105 before, despite the fixture-proven query removal. Thus this
+sampling comparison does not demonstrate lower auto-look CPU cost, and the
+different combat/render load prevents attributing the lower total CPU time to
+this change. There are 27/33 living-player checkpoints, at most2/7/8 nearby
+living bots; all33 are foreground/windowed640x480. The child exits cleanly,
+signatures/fixture checks pass, disposable disks are recycled and no owned game
+remains. `diagnostic-summary.json` and `actor-metrics.json` retain the evidence.
+Full-game, concentrated crowd, Online and native Mac acceptance remain open.
+
 ## 2026-10-24 — Remove redundant projection-output checks; extend crowd coverage
 
 On `fix/native-water-rounding`, `pc_display_perspective_projection` no longer

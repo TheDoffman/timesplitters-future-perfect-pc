@@ -470,11 +470,12 @@ jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
 handoff and untouched player angles. Old-clock/batch mutations must fail.
 These controlled-field tests do not certify live turret rendering/input.
 Consult STATUS for current build hashes, not historical candidate paths.
-`mouse_region.c` executes both adapters' actual mouse bodies with controlled
-OS maps. It checks one query for ordinary aiming, separate read-only FOV maps,
-fresh permissions each update, terminal routing and bounds. Persistent-cache
-and uncached mutations fail. The existing mounted pytest/CI route runs it on
-both hosts; adapter lock/event mocks do not replace physical-host validation.
+`mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
+one query for aiming, read-only FOV maps, expiry, terminal routing and bounds.
+Persistent/uncached mutations fail in mounted pytest/CI on both hosts; mocked
+locks/events are not physical-host validation. `auto_look_region.c` similarly
+checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
+expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
 `tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
 mode through the actual adapters, changing the native rate without recreating
 input capture. The focused Windows `tsfp_pc_controls_test` target passes with

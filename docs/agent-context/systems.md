@@ -131,6 +131,16 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+`pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
+current-player, player-record and control-setting accesses before the guest call.
+It retains the global's region while visiting high-RAM player data, so settings
+in the first region reuse validation. Same-map access needs one query; this
+split-map path needs two, previously three. Read permissions cannot grant writes.
+Snapshots are never consulted after guest execution or
+retained for the next invocation. The original bit-3 save/restore and controller,
+local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavior
+plus controlled split/read-only maps, expiry and uncached/persistent mutations.
+
 Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
 `pc_network_bots_guest_frame` hook. The transport still consumes each validated
 host snapshot once. The guest caches it and updates the displayed body, spatial
