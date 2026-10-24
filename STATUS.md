@@ -57,6 +57,38 @@ Present intervals are not GPU completion, scanout or physical input latency.
 The native run is not locked240; differing AI/death/view paths prevent attributing
 its FPS difference from earlier runs to this optimization.
 
+## 2026-10-24 — Reload timing follow-up tests (#337)
+
+Follow-up to merged PR #342, based on `fcaedfe3`. No runtime code changes.
+The shared reload schedule fixture now covers 864 deterministic combinations
+and 1,728 presses: Original60 and native60/120/144/180/240, eight pause/press
+offsets, three hold lengths, uneven frame intervals, clamped stalls, repeated
+pauses, native/Original60/native transitions and zero-time polls. It requires
+one dispatch per press, no held repeats, and successful release/re-press.
+The same schedule runs against the asset-free generated gate and the verified
+US input decoder plus original reload consumer. Removing the compare hook in
+the original-routine fixture must fail at an identified timing mismatch;
+compile errors and unrelated assertion failures cannot satisfy that control.
+
+This validates the timing correction, not every possible cause of the reporter's
+intermittent symptom. Input presses span at least one 60 Hz poll; physical key
+delivery and sub-poll taps are not established. The integration fixture retains
+controlled weapon animation/ammo boundaries. Native Mac private-XBE and live
+gameplay validation remain pending under MAC-060. CI runs the asset-free layer
+on both hosts through the existing native timing test selection.
+
+Windows x64/MSVC: native timing, float joins and context/backlog suites passed
+all 131 checks. Context freshness and whitespace checks passed. A bounded
+185-second isolated first-mission replay used the existing corrected binary
+(SHA-256 `b213f743a6907a95428def64ac336ca55a71239dc2117e6554e9f827c2e1ff99`)
+at the native240 target: pause/resume was observed, and all 11 R reloads
+(20–2000 ms presses) refilled 14 to 16 rounds while consuming two reserve rounds.
+This is target240, not a sustained240 performance claim. Source runtime code
+is unchanged from PR #342; no new game binary was needed for this test-only PR.
+The runner stopped its owned child at the time limit and recycled its isolated
+partitions; personal saves/settings and the canonical Test Lab fixture remained
+untouched. This smoke check still does not reproduce the original live failure.
+
 ## 2026-10-24 — Current-build Temple crowd acceptance
 
 Source925f9f72, Windows11 x64/MSVC14.44/D3D11/RTX4070SUPER, executable

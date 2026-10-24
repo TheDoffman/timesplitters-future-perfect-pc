@@ -57,6 +57,28 @@ static void call(unsigned whole,float delta,unsigned pressed)
     assert(g_esp==STACK+4 && g_esi==0x1234 && g_edi==0x5678 && g_ebp==0x8765);
     assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==delta);
 }
+/* PHASE_SWEEP */
+static void reset_poll(void)
+{
+    memset((void *)(g_xbox_mem_offset+0x6b93d0),0,0x3c);
+    buttons=0;
+}
+static unsigned poll_edge(PcNativeStep step,unsigned down)
+{
+    buttons=(uint16_t)down;
+    MEM32(0x4e7940)=step.raw_ticks; g_esp=STACK;
+    MEM32(STACK+4)=0x6b93d0; MEM32(STACK+8)=0;
+    pc_native_input_guest(sub_0018FF70);
+    assert(g_esp==STACK+4);
+    return MEM32(0x6b93e0);
+}
+static unsigned consume_edge(PcNativeStep step,unsigned edge)
+{
+    unsigned before=reloads;
+    MEM32(STATE+0x44)=1;
+    call(step.game_ticks,step.game_delta,edge);
+    return reloads-before;
+}
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
@@ -66,6 +88,7 @@ int main(void)
     MEM32(PLAYER+0x24)=16;MEM32(PLAYER+0x4c)=32;
     /* ORIGINAL_CONSTANTS */
     const unsigned rates[]={60,120,144,180,240};
+    /* SWEEP_ONLY */
     for(int native=0;native<=1;native++) for(unsigned r=0;r<5;r++) {
         unsigned fps=rates[r];g_tsfp_native_timing_active=native;
         for(unsigned frame=0;frame<fps;frame++) {
@@ -99,11 +122,14 @@ int main(void)
     /* The host decoder publishes button edges on RAW whole ticks. Pausing
      * advances raw time but freezes game time, so their phases can differ.
      * Execute the real decoder/wrapper, timing model and reload consumer. */
+temporal:
     MEM32(0x74d0fc)=1;MEM32(0x74d100)=0x100;
     for(unsigned axis=0;axis<4;axis++)MEM16(0x74d098+0xd+axis*2)=65535;
     MEM8(0x74d098+0xb)=MEM8(0x74d098+0xc)=255;
     MEM16(0x74d098+0x15)=65535;MEM16(0x74d098+0x17)=32767;
     MEM32(PLAYER+0x24)=16; /* Original X/reload binding. */
+    reload_phase_sweep(reset_poll,poll_edge,consume_edge);
+    g_tsfp_native_timing_active=1;
     for(unsigned r=1;r<5;r++) {
         unsigned fps=rates[r],seen=0;
         PcNativeTiming clock={0};

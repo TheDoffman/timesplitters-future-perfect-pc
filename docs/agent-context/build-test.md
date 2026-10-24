@@ -14,14 +14,17 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
-`test_zero_base_indices.py` compares the production HLE driver with its previous
-body: fresh index bytes/ranges, failures and stream dispatch, plus copy/rebase/
-cleanup mutations. Both native CI hosts run it; host draws are mocked.
+`test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
+dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
 on both CI hosts. `native_reload_input.c` additionally executes the local verified
 US input decoder, timing wrapper and reload consumer across pause-offset phases,
 60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
+`reload_phase_sweep.h`: 864 schedules cover pause/press phases, holds, jitter,
+stalls, zero time and live mode changes; two presses, no repeats. Missing-hook
+controls must fail on timing. Physical keys, sub-poll taps and full ammo/animation
+behavior remain separate from both hosts' asset-free CI.
 
 `test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
 callback mutations. Fast results and finite fallback results are bit-exact;
