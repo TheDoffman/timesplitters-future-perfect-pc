@@ -30,7 +30,13 @@ pass. Both supported Windows builds pass their native checks. The final
 executable SHA256 is
 `1f45acfbcb85decb56e0c997e5d889bac70c5c7106b71a8622c098bb3b7219d9`.
 Source is `333cb5f` plus this correction.
-The broad native/patch-upgrade suite is still running; no all-checks-pass claim.
+The broad native/patch-upgrade suite finished with123 passed,16 expected failures
+and one player-dispatch fixture link failure (991.50s). That fixture's variable-
+site arithmetic checks needed a failing stub for the new, unrelated demo helper.
+Adding it preserves rejection of accidental demo-policy routing; the affected
+test now passes (1 passed,77 deselected,2.80s). Fresh/repeated patch application
+and historical upgrade checks passed in the broad run. Logs:
+`demo-transition-suite.log`, `demo-transition-player-recheck.log`.
 
 Before the cancellation follow-up, an isolated180s Hotel native144 integration
 run (`demo-transition-normal-144`) exited zero: all four named active-match

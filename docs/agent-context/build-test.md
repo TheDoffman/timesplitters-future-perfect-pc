@@ -19,14 +19,15 @@ unavailable hardware/private data remain explicit validation gaps.
 ## Choose the cheapest relevant check
 
 `test_native_demo_timing.py` tests asset-free scope nesting/fallback and lifts
-US demo initialization/input/playback. Check wait/exit duration, controllers, clocks,
+US demo initialization/input/playback: wait/exit, controllers, clocks,
 zero time, EOF, ABI and timer/restore mutations. Eight Original60 packet cases
 pass; sixteen native packet cases strictly xfail only on `DemoTimingMismatch`.
 Packet cadence/live playback remain open. No private XBE means skip.
+Player-dispatch tests reject stray demo-policy calls.
 
 `test_framebuffer_sampling.py` compiles the HLE texture unit with fake screen
 copies and failing unused-water stubs. Run refresh and stale-copy mutation;
-Mac covers GL/RHI, Windows RHI. Water has separate native-surface/GPU tests.
+Mac covers GL/RHI, Windows RHI.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
