@@ -122,10 +122,13 @@ static float gameplay_fov_scale(uint32_t caller)
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
        !guest_writable(actor,0x118) ||
-       (WORD_AT(actor+0x114)!=2 && WORD_AT(actor+0x114)!=4) ||
+       (WORD_AT(actor+0x114)!=2 && WORD_AT(actor+0x114)!=4 &&
+        WORD_AT(actor+0x114)!=0x800) ||
        WORD_AT(actor+8)!=WORD_AT(0x007B0CC0u)) return 1.f;
     /* US sub_00258F50 enters state 4 when ground contact is lost; the
-       landing path returns to state 2. Both retain the player's own lens. */
+       landing path returns to state 2. US sub_00225C70 enters state 0x800
+       inside Zeppelin air lifts and returns to 4 on exit. All three states
+       retain the player's own lens, including weapon zoom. */
     return pc_display_fov_scale();
 }
 

@@ -2832,6 +2832,15 @@ validation. This version bump alone is not publication evidence.
 
 - **Status:** Awaiting validation
 
+- **Issue #339 follow-up (2026-10-24, commit carrying this entry):** Shared
+  `src/pc_display_menu.c` also retains custom FOV in Zeppelin air-lift state
+  0x800. `tests/test_cutscene_letterbox.py` checks default/custom FOV, transitions,
+  menu/cinematic exclusions and the original US lift routines with local assets.
+  Windows regressions and supported build pass (see STATUS.md). No Mac adapter
+  is needed; native compilation and Zeppelin lift/exit/landing gameplay remain
+  pending. Check all four lifts, relative weapon zoom and unchanged authored
+  menu/cutscene/terminal lenses.
+
 - **Issue #66 follow-up (2026-10-16, commit `df3bc2e`,
   [PR #72](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/72)):**
   `66-bug-fov-returns-to-default-when-falling-from-a-ledge` updates

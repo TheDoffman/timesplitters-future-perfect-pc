@@ -363,6 +363,20 @@ read access cannot grant writes. Standalone helper entry points create their own
 snapshot. This removes duplicate player queries without retaining memory facts
 across frames or changing motion, capture, terminal clicks or timing policy.
 
+## Player FOV through Zeppelin air lifts (#339)
+
+`gameplay_fov_scale` in `src/pc_display_menu.c` recognizes grounded (2), falling
+(4) and air-lift (0x800) movement. Original US `sub_00225C70` selects 0x800 in
+Zeppelin's four lift cylinders and returns to 4 outside them. Both player-camera
+callers retain the selected FOV; the projection and CPU frustum scale together.
+The scene, camera-owner, story and letterbox guards still apply, and the guest
+weapon lens is not rewritten. The shared hook needs no platform adapter.
+`test_cutscene_letterbox.py` covers lift/ascent/fall/landing, excluded cameras and
+a regression mutation. With the supported local XBE it also executes the original
+lift/state routines and all four region records through the production camera
+hook at default/90-degree FOV and three aspect ratios. The separate
+`test_native_timing.py` player-force fixture checks original exit/landing motion.
+
 ## Unified Video Options and native presets (PR #285)
 
 `pc_display_menu.c` stages resolution (including Auto), aspect, vertical FOV,

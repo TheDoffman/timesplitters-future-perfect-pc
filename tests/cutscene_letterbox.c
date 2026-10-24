@@ -23,7 +23,7 @@ static int guest_writable(uint32_t address,size_t size)
 ptrdiff_t g_xbox_mem_offset;
 #include "display_memory_mock.h"
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp, g_seh_ebp;
-RECOMP_TLS RecompXmm g_xmm0, g_xmm1;
+RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top;
 #define FP_MEM32(va) MEM32(va)
@@ -88,22 +88,23 @@ static void camera_tests(void)
        Rebuilding each frame prevents scaling from accumulating. */
     MEM32(0x7B0C7C)=0x6000; MEM32(0x6008)=0x4000; MEM32(0x6114)=2;
     fov_scale=2.f;
-    const unsigned states[]={2,4,4,2}; /* Grounded, falling, falling, landed. */
+    const unsigned states[]={2,0x800,0x800,4,2}; /* Ground, air lift, ascent, fall, land. */
     const unsigned callers[]={0xCCBED,0xCDD35};
     /* The frontend also owns a state-2 player and uses these camera callers.
        Change scenes without clearing that actor, as on return to the menu. */
-    const unsigned scenes[]={1,100,101,102,103,104,105,106,107,1};
+    const unsigned scenes[]={1,52,100,101,102,103,104,105,106,107,1};
+    const unsigned movement_states[]={2,4,0x800};
     const float settings[]={1.f,tanf(90.f*.00872664626f)/tanf(55.f*.00872664626f)};
     for(unsigned c=0;c<2;c++)for(unsigned s=0;s<2;s++)
-    for(unsigned a=0;a<2;a++)for(unsigned i=0;i<sizeof scenes/sizeof *scenes;i++) {
-        MEM32(0x10000)=callers[c]; MEM32(0x6114)=a ? 4 : 2;
+    for(unsigned a=0;a<3;a++)for(unsigned i=0;i<sizeof scenes/sizeof *scenes;i++) {
+        MEM32(0x10000)=callers[c]; MEM32(0x6114)=movement_states[a];
         MEM32(0x79094C)=scenes[i]; fov_scale=settings[s];
         MEMF(0x4384)=55.f;
         camera_check(scenes[i]>100 ? 1.f : 1.f/fov_scale);
-        CHECK(MEM32(0x6114)==(a ? 4u : 2u) && MEMF(0x4384)==55.f);
+        CHECK(MEM32(0x6114)==movement_states[a] && MEMF(0x4384)==55.f);
     }
     MEM32(0x79094C)=1; fov_scale=2.f;
-    for(unsigned c=0;c<2;c++)for(unsigned i=0;i<4;i++) {
+    for(unsigned c=0;c<2;c++)for(unsigned i=0;i<sizeof states/sizeof *states;i++) {
         MEM32(0x6114)=states[i];
         MEMF(0x4384)=55.f; /* Original gameplay/weapon lens must not be rewritten. */
         g_esp=0x10000; MEM32(g_esp)=callers[c];
@@ -123,7 +124,7 @@ static void camera_tests(void)
     for(unsigned i=0;i<sizeof excluded/sizeof *excluded;i++) {
         MEM32(0x6114)=excluded[i]; camera_check(1); /* Non-gameplay/terminal unchanged. */
     }
-    MEM32(0x6114)=2;
+    MEM32(0x6114)=0x800; /* Air lifts still respect camera/cinematic ownership. */
     MEM32(0x6008)=0; camera_check(1); /* Other cameras unchanged. */
     MEM32(0x6008)=0x4000;
     MEM32(0x10000)=0xC999E; camera_check(1); /* Story caller unchanged. */
@@ -164,6 +165,46 @@ void sub_000F8BB0(void) { abort(); } /* Unused depth-of-field branch. */
 void sub_000F8ED0(void) { abort(); }
 void sub_003C848C(void) { abort(); }
 /* ORIGINAL_ROUTINES */
+
+/* Run the original US region selector and state setter against all four
+ * original Zeppelin lift cylinders, then project through the production hook.
+ * Only positions are supplied here; the guest routine chooses 0x800 and 4. */
+static void original_air_lifts(void)
+{
+    /* ORIGINAL_CONSTANTS */
+    MEM32(0x7B0C48)=MEM32(0x7B0C7C)=0x6000; MEM32(0x790950)=1;
+    MEM32(0x6014)=0x8000; MEM32(0x807C)=0x9000; MEM32(0x6008)=0x4000;
+    MEM32(0x7B0CC0)=0x4000; MEM32(0x79094C)=52;
+    MEM32(0x7DE458)=MEM32(0x7490E8)=0; MEMF(0x7490EC)=0;
+    const PcDisplayMode shapes[]={{1280,960},{1920,1080},{3440,1440}};
+    const float settings[]={1.f,tanf(90.f*.00872664626f)/tanf(55.f*.00872664626f)};
+    const uint32_t callers[]={0xCCBED,0xCDD35};
+    for(unsigned shape=0;shape<3;shape++)for(unsigned setting=0;setting<2;setting++)
+    for(unsigned caller=0;caller<2;caller++)for(unsigned lift=0;lift<4;lift++) {
+        uint32_t region=0x50D408+20*lift;
+        mode=shapes[shape];fov_scale=settings[setting];
+        MEM32(0x6114)=2;MEMF(0x4384)=55.f;
+        MEM32(0x10000)=callers[caller];camera_check(1.f/fov_scale);
+        for(unsigned step=0;step<3;step++) {
+            MEMF(0x60A8)=MEMF(region)+(step==2 ? 3.f : 0.f);
+            MEMF(0x60AC)=MEMF(region+4)+(step==0 ? 1.f : 10.f);
+            MEMF(0x60B0)=MEMF(region+8);
+            g_esp=0x10000;MEM32(g_esp)=0xDEADBEEF;
+            g_ebx=0x123;g_esi=0x456;
+            sub_00225C70();
+            CHECK(g_esp==0x10004 && g_ebx==0x123 && g_esi==0x456);
+            uint32_t state=step==2 ? 4 : 0x800;
+            CHECK(MEM32(0x6114)==state);
+            CHECK(step==2 ? MEMF(0x9B20)==0 : MEMF(0x9B20)>0);
+            MEM32(0x10000)=callers[caller];camera_check(1.f/fov_scale);
+            CHECK(MEM32(0x6114)==state && MEMF(0x4384)==55.f);
+        }
+        /* Landing is covered by the separate original player-force fixture;
+         * here verify the camera again after the state returns to grounded. */
+        MEM32(0x6114)=2;camera_check(1.f/fov_scale);
+    }
+    puts("PASS: all four original US air lifts preserve default/custom FOV");
+}
 
 static void run_original(void (*routine)(void), unsigned expected)
 {
@@ -307,6 +348,9 @@ int main(void)
     original_scenes();
 #endif
     camera_tests();
+#ifdef ORIGINAL_CUTSCENES
+    original_air_lifts();
+#endif
     {
         const unsigned displays[][2] = {{640,480},{1920,1080},{1920,1200},
             {3440,1440},{5120,1440},{3840,2160},{1080,1920},{0,0}};
