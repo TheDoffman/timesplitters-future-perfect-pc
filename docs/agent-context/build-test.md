@@ -838,3 +838,15 @@ uses shared `surface_state_shader.h` to materialize alpha-height after each fres
 inverse transform. A constant-alpha header mutation must fail the final shader
 comparison. Final shader agreement with the float32 reference does not establish
 original byte-storage appearance or scene rendering; both differences are reported.
+
+`test_original_byte_rounding_flow` adds an independent 60-Hz original-shader
+reference starting from an actual byte target. `surface_rounding_gpu.inc` holds
+the first-pass quantization residual over each authored interval, executes GPU
+fractional transforms/steps at every frame, and writes original byte state only
+at interval boundaries. The frame schedule splits steps that cross a boundary.
+It compares every boundary's G/B and final byte ripple RGB, with and without
+original smoothing, at 60/120/144. Missing forcing and missing ambiguity handling
+are required failing mutations. Direct guard cases reject a distant replacement
+and preserve an unambiguous value. This is controlled trajectory validation,
+not runtime integration or measured game performance. The portable coupled CPU
+test also checks held forcing across split steps and rejected-output preservation.

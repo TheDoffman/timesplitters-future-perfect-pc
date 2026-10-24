@@ -6756,3 +6756,60 @@ The complete updated suite passes all 14 cases in 72.15 seconds
 (`logs/water-final-suite.log`). Candidate versus float-reference final byte RGB
 has zero maximum difference in the tested 64/128 clamp and 128-wrap fields at
 60/120/144. This equality compares float feedback paths, not original-byte state.
+
+### Held rounding input and authored byte boundaries
+
+The follow-up keeps the first-pass quantization event at its original boundary,
+while the coupled field evolves at each native frame. Starting from byte G/B,
+the first pass's copied channels already have the correct precision. Its red
+rounding residual `e = byte_red - float_red` is an additional spatial forcing
+input. The one-tick contribution is `(a*e, d*b*a*e)`; the fractional response
+comes from the same affine operator. Shared `pc_surface_coupled_forced_step`
+stores this response in the fourth component of its two rows, and
+`TSFP_SURFACE_FORCED_SHADER` applies the transformed residual. That input stays
+fixed until the next authored boundary; it is not re-rounded every native frame.
+
+`surface_rounding_gpu.inc` executes both original first-pass formats to measure
+the residual on the GPU, transforms it and the live state, and advances each
+fractional piece. A 144-Hz frame crossing a 60-Hz boundary splits into two pieces.
+At the boundary the persistent state is written to an actual byte target.
+Original smoothing, when selected, executes at authored boundaries too. The
+fixture starts by encoding its initial Gaussian/edge pulse into a real byte
+target and computes an independent original 60-step reference. Unlike earlier
+storage ablations, the first input here is already byte-representable.
+
+The initial raw GPU attempt diverged at authored tick 14: blue was
+0.566666483879089 versus original arithmetic 0.566667437553406, straddling a byte
+midpoint. The small numerical difference became a full byte step and grew over
+later iterations. Private evidence: logs/water-rounding-flow-unresolved.log.
+An independent double-precision numerical model matched the byte-initialized
+trajectory, with and without smoothing; that model is supporting evidence only,
+not the GPU acceptance result or an implementation used by the game.
+
+Shared `surface_rounding_shader.h` guards ambiguous conversion. It uses original
+second-pass arithmetic evaluated from the held first-pass byte result and the
+interval's input state **at the boundary**. It substitutes that scalar only
+when both `abs(candidate-original)` and distance to a half-byte threshold are
+within `32 * FLT_EPSILON` (3.814697265625e-6 in normalized units). Other values
+remain the integrated candidate; the render target performs the byte conversion.
+This is a bounded numerical rounding decision, not an unconditional state reset
+or interpolation of saved frames. Direct cases check close ambiguity, rejection
+of a distant replacement, preservation away from thresholds and out-of-range
+values. Removing this handling or the held residual must fail.
+
+The initial GPU run matches original byte G/B exactly at **every** authored
+boundary in all six schedules (60/120/144, smoothing off/on). Maximum arithmetic
+disagreement before conversion is 3.09944153e-6. CPU tests independently compose
+held forcing through 5/12 + 5/12 + 2/12 pieces for 65 modes and three signed
+residuals, and check invalid-output preservation. This is progress on the storage
+gap in one controlled field; disturbances, intermediate clipping, live-rate
+transitions, runtime resource/state ownership, game GPU cost and Mac GPU/gameplay
+remain unverified. Existing normal-play water is unchanged.
+
+The complete updated WARP suite passes 17 cases in 83.64 seconds
+(`logs/water-rounding-flow-suite.log`). All six held-rounding schedules also
+match the original final byte ripple RGB exactly. Fresh byte ripple outputs
+are 60/60, 120/120 and 144/144 with smoothing both off and on, so freshness is
+checked after final byte conversion as well as in the internal float field.
+The two new required-failure controls pass, and the focused portable coupled
+test passes in 1.77 seconds. No full game build or frame-time claim follows.

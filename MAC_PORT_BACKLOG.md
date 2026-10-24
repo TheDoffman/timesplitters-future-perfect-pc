@@ -3723,6 +3723,10 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Shared `surface_state_shader.h` now materializes alpha-height for the original
   final ripple shader; Windows WARP checks that consumer at every candidate
   frame and through byte output. No runtime hook or Mac GPU acceptance is implied.
+  The held-rounding follow-up shares forced-step coefficients and guarded byte
+  boundary policy. Existing dual-host CPU tests cover forcing composition;
+  Windows WARP compares the original byte trajectory, while native Mac GPU,
+  scheduling/resource integration, disturbances and scene acceptance remain pending.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

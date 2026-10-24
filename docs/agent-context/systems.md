@@ -460,6 +460,15 @@ to the original texture channels: red scratch, green velocity plus 0.5, blue
 height and **alpha height**. Original effect 22 samples alpha cardinal differences
 for its ripple shading input; constant alpha would erase those slopes. This
 shared encoding is currently exercised only by the GPU fixture, not game hooks.
+`pc_surface_coupled_forced_step` stores the fractional response to a held forcing
+input in each row's fourth component; `TSFP_SURFACE_FORCED_SHADER` applies that
+input in the same spectral basis. The rounding fixture refreshes the measured
+first-pass residual at authored boundaries. `surface_rounding_shader.h` resolves
+only nearby byte-threshold ambiguities with original shader arithmetic evaluated
+at that boundary; both threshold distance and arithmetic disagreement are guarded.
+The fixture requires byte initial/persistent state. No runtime scheduler/resource
+owner calls this policy yet; live-rate changes, disturbances and clipping remain
+separate acceptance work.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

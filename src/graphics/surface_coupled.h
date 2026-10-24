@@ -62,4 +62,20 @@ static inline int pc_surface_coupled_step(double acceleration, double travel,
     *out=result;
     return 1;
 }
+/* The fourth row component is the response to one unit of additional forcing
+ * held through an authored interval. A caller may supply the original first
+ * pass's measured rounding residual per spatial mode. It must refresh that
+ * residual at the authored boundary, not recompute it on every fractional step.
+ * This does not itself quantize, schedule events, or handle intermediate clips. */
+static inline int pc_surface_coupled_forced_step(double acceleration,double travel,
+    double damping,double restoring,double forcing,double bias,double delta,
+    PcSurfaceCoupledStep *out)
+{
+    if(!out)return 0;
+    PcSurfaceCoupledStep base,response;
+    if(!pc_surface_coupled_step(acceleration,travel,damping,restoring,forcing,bias,delta,&base) ||
+       !pc_surface_coupled_step(acceleration,travel,damping,restoring,1,0,delta,&response))return 0;
+    base.row[0][3]=response.row[0][2];base.row[1][3]=response.row[1][2];
+    *out=base;return 1;
+}
 #endif

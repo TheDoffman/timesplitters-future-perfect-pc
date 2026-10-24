@@ -1,3 +1,34 @@
+## 2026-10-23 — Preserve authored rounding during fractional water updates
+
+After PR #321 reached main through integration PR #322, follow-up branch
+`fix/native-water-rounding` (base 2252af1) tests a held-input treatment of rounding.
+No new PR is opened yet; the remaining work will stay together on this branch.
+It measures the first feedback pass's rounding residual, holds it for the authored
+interval, and advances the coupled GPU field on every native frame. Steps split
+at original 60-Hz boundaries; the original smoothing and persistent byte write
+occur at those boundaries. It does not interpolate between saved frame outputs.
+
+Raw fractional transforms can differ from the original arithmetic by about one
+millionth. Near a byte midpoint that changed the rounded state and later ripples:
+the first observed mismatch was tick 14, blue 0.566666484 versus 0.566667438.
+A shared boundary shader resolves only these close decisions using original
+second-pass arithmetic evaluated at the boundary. Both proximity to the midpoint
+and disagreement with that arithmetic must fit 32 float epsilons; a distant
+state is never substituted. Normal play is still unchanged.
+
+Windows x64/MSVC/common-RHI WARP verifies all 60 authored boundaries
+with zero byte G/B difference at 60/120/144, with and without original smoothing.
+Largest measured pre-quantization arithmetic difference is 3.100e-6. Tests start
+from an actual byte target, matching the captured format. They also reject
+missing residual forcing and missing boundary handling. This resolves the
+previous storage gap for this controlled trajectory, not all water inputs:
+disturbances, clipping, live rate changes, runtime resources, game GPU cost and
+Mac GPU/gameplay remain open. No new game binary or personal-data change.
+All 17 GPU cases pass in 83.64 seconds. The six schedules also match final byte
+ripple RGB exactly and produce fresh byte ripple output on every frame (60/60,
+120/120, 144/144, with smoothing off and on). The focused portable forcing test
+passes. Evidence: logs/water-rounding-flow-suite.log.
+
 ## 2026-10-23 — Combined open-PR integration
 
 Integration branch combines #305, #307, #308, #309, #310, #311, #313 and #321 on
@@ -26,6 +57,7 @@ not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
 must pass before merging. Original evidence limits remain: no general FPS or
 full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
 gameplay is unverified. This integration does not publish a release.
+
 ## 2026-10-23 — Preserve alpha-height for final ripple generation
 
 PR #321 now follows the candidate's reconstructed field through the original
