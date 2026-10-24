@@ -1,3 +1,48 @@
+## 2026-10-24 — Current-build Temple crowd acceptance
+
+Source925f9f72, Windows11 x64/MSVC14.44/D3D11/RTX4070SUPER, executable
+975f69dc61571d04680c032b8aeff1f348221ad52e07c7e6d5e607ed26ff47f1.
+The isolated ten-bot Temple route broadens the current build's crowded-map
+coverage beyond Disco. Configuration is Classic/3440x1440/FOV73; actual client
+1920x1060 on a60Hz desktop. The predeclared45-second window starts five seconds
+after the spawn observation. Scene49, active match, ten configured bots and
+foreground/unminimized state are required throughout its19 checkpoints.
+
+`crowd-temple-clean180` completes with179.999766FPS, minimum one/five-second
+rates180/180, p996.038ms, worst6.631ms and8,099 fresh guest intervals. There are
+no interpolated frames or intervals above16.67ms. Sampled game/wall ratio is
+0.99982853. No image capture, per-update trace, CPU sampler or concurrent local
+build/test runs during this window; automated state-file polling every16ms
+remains test overhead. Profiles/signatures and the canonical fixture are intact;
+disposable partitions recycled. Summary: `logs/temple-clean180-summary.json`.
+
+The same-binary `crowd-temple-clean60` Original60 reference also completes.
+Its complete45-second window measures60.000541FPS, minimum one/five-second
+rates60/60, p9917.145ms, worst17.392ms, and2,699 fresh guest intervals. All19
+checkpoints satisfy the same active/foreground/roster checks; game/wall ratio
+is1.00019688. No intervals exceed33.33ms. Identical capture/profiler exclusions
+and profile-preservation checks apply. Summary: `logs/temple-clean60-summary.json`.
+
+`crowd-temple-clean240` completes with239.912790FPS, minimum one/five-second
+rates236/239.2, p994.849ms, worst7.360ms and10,795 fresh guest intervals.
+Game/wall ratio is1.00009273, with19 valid checkpoints and no interpolation.
+Its recorder starts65s after first Present to keep the complete measured window
+inside the20,000-row cap; the60/180 runs use45s. Profiles/fixture/signatures
+remain intact and partitions are recycled. No clean run overlaps another game,
+local build, tests or profiler. Summary: `logs/temple-clean240-summary.json`.
+The result approaches240 in this Temple workload; it is not locked240. Separate
+bot/respawn paths make cross-run numbers descriptive, not causal comparisons.
+
+The preceding `crowd-temple-current180` run is visual evidence only: a desktop
+capture during combat shows the Temple scene, dual weapons, HUD, waterfall,
+fire and actors. Its early ready snapshot was still loading; the later spawn
+and scene49 checkpoints confirm that navigation succeeded. It is excluded
+from clean timing claims because of the capture. All reported Present intervals
+measure host API cadence, not GPU completion, scanout or physical input latency.
+Ten configured bots do not establish simultaneous visibility. This bounded
+Temple result does not establish sustained180/240 on every map, causal speedup,
+complete gameplay/animation fidelity or native Mac gameplay.
+
 ## 2026-10-24 — Integrate main's reload fix into PR #328
 
 Combined source is 7b30610c plus main fcaedfe3 (#342). Documentation conflicts

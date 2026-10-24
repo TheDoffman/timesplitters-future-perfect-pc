@@ -3845,6 +3845,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Temple crowd acceptance (2026-10-24, PR #328):** Source925f9f72's Windows
+  binary completes isolated ten-bot Temple runs at Original60/native180/240.
+  Complete45-second windows measure60.00054/179.99977/239.91279FPS with fresh
+  guest frames and game/wall ratios within0.02% of unity. The240 minimum
+  one-second rate is236. These are bounded Windows host-Present observations;
+  native Mac gameplay, physical latency and every-map acceptance remain open.
+  Mac native CI passes on925f9f72; no additional adapter is introduced.
+  See the Temple STATUS entry for provenance, exclusions and visual evidence.
+
 - **Combined main integration (2026-10-24, PR #328):** Main fcaedfe3's reload
   timing repair is combined with the guarded model-transform implementation.
   Windows build/bundled checks,161 combined regression cases and all21 patch

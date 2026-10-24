@@ -6,6 +6,21 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current Temple crowd coverage (2026-10-24)
+
+The925f9f72 Windows binary completes separate ten-bot Temple sessions at
+Original60/native180/240. Complete45-second host-clock windows measure
+60.00054/179.99977/239.91279FPS; minimum one-second rates are60/180/236,
+and p99 intervals17.145/6.038/4.849ms. All sampled checkpoints remain active
+and foreground, guest frame IDs advance, and game/wall ratios stay within
+0.02% of unity. Clean windows exclude captures, tracing, CPU profiling and
+concurrent local builds/tests; automated input polling remains overhead.
+Signed profiles and the canonical fixture are preserved. A separate desktop
+capture verifies Temple scene/HUD/weapon/effect appearance in sampled combat.
+This broadens current crowded-map coverage; it does not prove simultaneous
+visibility of all bots, locked240, physical latency or full-game/Mac acceptance.
+See [STATUS](../STATUS.md) for exact binary, settings, traces and limits.
+
 ## Current diagnostic144 crowded-match check (2026-10-24)
 
 The ed07ee3d Windows build completes the current ten-bot Disco route with
