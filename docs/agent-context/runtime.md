@@ -24,6 +24,10 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`dsound-output-headroom.patch` defines the shared default host gain in
+`src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
+`src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.
+
 The additive `controller-profile-routing` patch repairs #319 in shared
 `src/input/input_bindings.c`: parse-time classification of keyboard-only pad
 profiles enables pad defaults after platform focus checks. It follows the

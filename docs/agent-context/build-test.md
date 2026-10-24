@@ -18,6 +18,9 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
+Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
+code, fake devices, gain overrides, mute, live volume and voice parity.
+
 `test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
 SDL virtual input; physical pads and Mac gameplay require validation.
 
@@ -31,9 +34,9 @@ checks refresh/stale copies (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
 diagnostics, budget, idle callback and bypass-removal mutation.
 
-180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
-checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
-procedural interval switches and demo round trips. These contracts do not prove sustained240 FPS. Legacy144 migration is tested.
+180/240 tests cover persistence/live apply, launcher UI, clocks, input, animation,
+walking, weapons, networking, movies, interval switches, demo round trips and
+legacy144 migration. They do not establish sustained240 FPS.
 
 `test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
 counts and six-frame/hidden-overflow mutations. Both CI hosts run it;

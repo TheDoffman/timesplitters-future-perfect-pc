@@ -11,6 +11,14 @@
       ]
     },
     {
+      "name": "dsound-output-headroom.patch",
+      "sha256": "fbecc56980dbb1bfcad954290bdfced1eea75746e7a99d6ef312cac32d633df2",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp"
+      ]
+    },
+    {
       "name": "dsound-stream-lifecycle.patch",
       "sha256": "60a2605a7f37ec583e522b5c0442ac6c5613f68101c071a590a44c41193bbdc7",
       "targets": [
