@@ -3837,6 +3837,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Weapon-menu acceptance (2026-10-24, PR #328):** Current Windows
+  e9195841/ed07ee3d preserves issue#105's menu repair at Original60/native240.
+  Reviewed captured routes and separate capture-free Present windows confirm
+  navigation/rendered screens and approximately60/240FPS, with intact saves.
+  Native240's recorder cap excludes the final back-out window; no missing
+  window is treated as passed. Mac native CI passes the surface-fixture repair,
+  but physical Mac menu/gameplay validation remains pending. See STATUS.
+
 - **Surface fixture repair (2026-10-24, PR #328):** Mac CI33d7bf4f caught the
   portable trace fixture's obsolete144/120/60/144 cycle. It now matches the
   strict240/180/Original60/120 validator and records rate-appropriate deltas.

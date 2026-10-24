@@ -6,6 +6,20 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Weapon-menu repair preserved at the current presets (2026-10-24)
+
+Issue#105's prior fixed60 repair now has current-build Original60/native240
+coverage on e9195841/ed07ee3d. Reviewed captures show entering the Vietnam Arcade
+weapon list, selecting its third slot with the correct shotgun preview, and
+backing out. Separate capture-free windows average59.999–60.000 and
+239.999–240.016FPS with consecutive guest-frame IDs and no interpolation.
+Native p99 stays below4.82ms in the three complete five-second menu windows.
+The recorder cap excludes the native back-out window; only its separate swap
+log reports240.0FPS. All four routes exit cleanly with profiles preserved.
+This verifies that specific menu regression on Windows, not combat pacing,
+full animation/texture fidelity or Mac gameplay. Input automation remains
+active; see [STATUS](../STATUS.md) for capture overhead, timing and host limits.
+
 ## Expanded presets and original mechanics (2026-10-24)
 
 Player-facing choices are exactly Original60 and native120/180/240 Beta;

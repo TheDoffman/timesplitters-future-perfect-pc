@@ -1,3 +1,41 @@
+## 2026-10-24 — Weapon-menu regression at Original60 and native240
+
+On source e9195841, unchanged Windows executable ed07ee3d, four isolated
+Vietnam Arcade weapon-set routes complete with unchanged valid profiles and
+recycled disposable partitions. The captured Original60/native240 routes show
+the expected setup, weapon list, third-slot shotgun selection and back-out
+screens. Their existing50FPS regression gate passes, but renderer dumps cause
+periodic long frames: measured windows average58.0–58.3 and204.9–205.9FPS.
+Those diagnostic runs are not clean performance measurements.
+
+Repeating the verified route without captures, per-update tracing or CPU
+profiling yields these complete five-second host-clock windows:
+
+| Window | Original60 FPS | Native240 FPS | Original60 p99/worst ms | Native240 p99/worst ms |
+| --- | ---: | ---: | ---: | ---: |
+| Before weapons | 59.999 | 240.016 | 17.182/17.459 | 4.787/5.051 |
+| Weapons | 60.000 | 240.011 | 17.119/17.386 | 4.725/5.082 |
+| Third-slot selection | 59.999 | 239.999 | 17.306/17.417 | 4.818/5.276 |
+| After backing out | 59.999 | unavailable | 17.265/17.314 | unavailable |
+
+Every recorded guest-frame ID is consecutive; no interpolated presents occur.
+The native240 Present recorder reaches its cap before the final window, which
+is explicitly unavailable; the separate five-second swap log reports240.0FPS
+after backing out. The strict clock-window analyzer initially rejected the
+missing window, and its coverage gate remains unchanged. Original60 covers
+all four windows. These results preserve the issue#105 menu repair in this
+route; they do not establish sustained240 in combat, physical input latency,
+scanout, animation speed or Mac menu performance. Automated state-file input
+still polls every16ms. Both rates use Classic1280x720/FOV55, actual1920x1060
+client, visible/nonminimized but not foreground. Host/workload variation remains.
+
+Evidence: private/test-saves/weapon-menu-{current240,current-original,clean240,
+clean-original}, matching logs, and logs/weapon-menu-current-comparison.json.
+Both Windows and Mac native CI now pass e9195841's surface-fixture repair;
+Windows patch upgrades are still running at this checkpoint.21 local context/
+backlog checks and repository-context/whitespace checks pass for these records.
+No runtime code changed here.
+
 ## 2026-10-24 — Real movie coverage through 240 and surface-fixture CI repair
 
 The real-file movie test now compares both EA and Free Radical intros across
