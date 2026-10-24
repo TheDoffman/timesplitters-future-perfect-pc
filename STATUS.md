@@ -858,6 +858,135 @@ canonical fixture remain unchanged; disposable disks are recycled and the normal
 playable executable/symbol pair is restored. Native Mac gameplay remains pending.
 Eliminating the disabled scans is verified; a measurable game FPS gain and the
 reported 110 FPS slowdown remain unverified.
+## 2026-10-22 — PFB worker wake rework
+
+Runtime `bf4b755` replaces the rejected direct-clear shortcut with a notification
+to the existing worker, retaining its busy-bit/DMA/fence service and activity
+accounting. Queued auto-reset event requests survive arrival before the wait.
+Windows waits on the event plus its high-resolution timer. Native Mac uses a
+condition-variable event wait with a monotonic deadline. A follow-up retains
+the original 50-ms ceiling for diagnostic idle values above 50,000 us; the
+normal 500-us path and compiled Windows behavior are unchanged. Shutdown drains
+notifier users before releasing the event. Missing event creation and diagnostic
+`RECOMP_PFB_WAKE_ACK=0` retain polling. No console/game clock changes.
+
+The supported Windows regeneration/build and built-in tests pass (foreground
+virtual-pad routing skipped). Retained binary SHA-256:
+`2da9e5b31c4b63df90824a1dd240535f9edeeb235f68c55bc56072f820d9cb8c`.
+Four bounded ten-bot Venice runs at Classic 3440x1440/FOV73 complete loading,
+combat/respawns and the strict 50-second post-spawn measurement window. All
+recorded intervals are successful guest Present calls, with continuous frame
+IDs and recorder coverage beyond both endpoints.
+
+| Configuration | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval (ms) | Main-thread CPU | Process CPU cores | Observed game ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native144, notification off | 143.982 | 143.6 | 8.291 / 12.327 | 78.57% | 1.347 | 59.990 |
+| Native144, notification on | 144.000 | 143.8 | 7.513 / 10.041 | 58.44% | 1.036 | 59.990 |
+| Original60, notification on | 60.001 | 59.8 | 17.249 / 18.681 | 29.35% | 0.519 | 59.986 |
+| Native120, notification on | 120.000 | 119.8 | 8.875 / 10.923 | 51.10% | 0.962 | 60.013 |
+
+The paired 144 runs use the same executable and settings except notification.
+Main-thread CPU time falls 25.6% (39.281 to 29.219 seconds over about 50 seconds),
+and intervals above 9 ms fall from 15 to 4. Combat is nondeterministic: dead-state
+observations differ (30.3% off, 35.3% on). All 50 window observations per run are
+visible/nonminimized but nonforeground; client size is 1920x1060. Read-only 4-ms
+CPU counters and 1-Hz window/roster observations remain enabled. These measurements
+support this bounded improvement, not a clean foreground benchmark, GPU completion,
+scanout or resolution of the user's 110-FPS crowded-match report. Sparse level
+clock observations do not certify every simulation system or complete playability.
+
+Runs `gpu-wake-{on,off}-bf4-144`, `gpu-wake-on-bf4-original60` and
+`gpu-wake-on-bf4-120` preserve profile bytes/signatures and the canonical fixture,
+recycle disposable disk images, and restore the normal executable/symbol pair
+(hash `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`).
+Logs include per-run window analyses, CPU summaries and exact adapter provenance.
+
+The second paired map, Hotel (verified scene39, ten bots), also completes with
+the same binary and settings. In `gpu-wake-{on,off}-bf4-hotel144`, on/off results
+are 143.840/142.260 interval FPS, minimum rolling five-second 142.8/127.6 FPS,
+p99 7.533/8.895 ms, main-thread CPU 49.98%/82.57%, total process 0.864/1.361
+cores, and game clock 59.990/60.013 ticks/s. Intervals over9 ms number3/55.
+Dead-state observations differ (29.5%/39.4%); foreground observations remain0.
+Profiles/fixture are unchanged and normal binaries restored after both runs.
+
+**Residual outliers remain:** the enabled Hotel run's maximum interval is
+43.776 ms, worse than the control's 18.558 ms, despite improved typical pacing.
+The 43.776-ms frame ends59.3 ms after a read-only observed dead-to-alive transition;
+its Present/Swap span is only0.088 ms. Another24.537-ms interval occurs2.2 seconds
+after an observed respawn. These correlations do not identify a cause. Preserve
+`logs/gpu-wake-hotel-hitch.json` and the underlying CPU/window/Present records;
+next investigate the slow frame's actual wait/stack before changing more timing.
+The worker-notification change is not an all-hitches fix.
+
+Final Windows notifier/lifter/mutation/wait-selection checks: 19 pass, one
+Mac-only check skips. Native runtime CI at `af96547` passes, including the actual
+Mac event adapter's queued/consumed signals, timeout, delayed wake and manual
+reset checks. This is native host-unit evidence, not Mac gameplay. Its historical
+Mac-stack upgrade check exposed declaration placement inside old patch context;
+the declaration is moved before CreateEventA so the old SetEvent/timer context
+remains intact. The fresh/repeated and historical Mac-stack upgrade tests both
+pass locally (46.32 seconds); final-head CI is pending. Full-game and native Mac gameplay
+acceptance remain outstanding; PR #310 remains draft/unmerged.
+
+## 2026-10-22 — PFB flush acknowledgement investigation
+
+Same-binary (`7b5f042`, SHA-256
+`0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`)
+bounded ten-bot Venice runs compare `RECOMP_NV2A_ACK_IDLE_US=0` against the
+default 500. Both complete with valid, unchanged isolated profiles and preserved
+fixture; disposable disks are recycled and the normal executable/symbol pair is
+restored. In the fully covered 50-second post-spawn windows, no-sleep/default
+respectively measure 144.000/143.939 interval FPS, p99 7.423/8.229 ms, maximum
+9.301/12.602 ms, and main-thread CPU 53.57%/82.41%. Total process CPU rises from
+1.323 to 1.559 core equivalents without sleep. Dead-state observations differ
+(47.8% versus 42.8%); combat is nondeterministic. All window observations are
+visible/nonminimized but nonforeground. These asynchronous CPU/Present diagnostics
+support investigating acknowledgement latency; they do not prove the cause of
+the user's 110 FPS drops or justify a permanently spinning worker. No setting
+was changed outside the disposable child environment. Evidence is retained in
+`logs/ack-comparison.json` and the two `ack-*-7b5-144` test directories.
+
+Source inspection and disassembly of the verified supported XBE identify the
+PFB flush write at `0x3D66C3` and busy-bit poll at `0x3D66D0`. The existing
+runtime worker clears the same `0x10000` bit in plain-memory register
+`0xFD100410`; its idle wait defaults to 500 microseconds. A main-based prototype
+on `perf/gpu-flush-ack` adds a post-store callback at exactly that instruction,
+servicing the same acknowledgement immediately while retaining the worker for
+other duties. Exact-address/lifecycle guards and atomic bit preservation keep
+other registers, interrupt delivery, DMA, host GPU work and the console clock
+outside its scope. The generic lifter retains default no-op behavior for other
+titles. Regeneration and the supported Windows build at `92ffa8b` pass, including
+built-in checks (foreground virtual-pad routing explicitly skips). Candidate
+SHA-256 is `702cca547d8b05797c985cc2bd7b0e174aee82a646779890907c3ee129213620`.
+The prototype fails live gameplay validation and must remain unmerged.
+
+The initial prototype passes 80 focused acknowledgement, timing and generation
+checks (86.20 seconds), plus the full fresh/repeated-stack check (20.17 seconds).
+An explicit cached `RECOMP_PFB_SYNC_ACK=0` diagnostic fallback then adds
+same-binary on/off comparison capability without saved-settings changes. Its
+final 15 lifting/actual-runtime/mutation cases pass, with 21 context/backlog
+checks passing after refreshing the stale patch index. Omitted/reordered
+callbacks and clearing unrelated register bits are required failing mutations.
+
+Same-binary disabled control `gpu-ack-off-92f-144` completes the ten-bot route:
+143.901 interval FPS, p99 8.256 ms, main-thread CPU 83.06%, total process 1.376
+core equivalents, and observed level-clock rate 59.99 ticks/second. The enabled
+run `gpu-ack-on-92f-144` stops presenting after 72.446 seconds while loading the
+match; scene stays 101 and level ticks stop at 4275. Its measurement-window
+assertion fails, so no enabled gameplay FPS result is accepted. A second bounded
+run (`gpu-ack-load-stack-92f`) reproduces the stall. Its 6,992 saved-stack samples
+show the later `sub_003D65B0` wait under `sub_003D6870`/Swap; this routine polls
+the GPU tag at `[device+0x934]+0x400B10` against the completion-counter bits at
+`*[device+0x30]`. It is not still waiting for the first PFB busy bit.
+
+The stack run suspends briefly to copy a stack before resuming/unwinding; maximum
+suspension is 1.0552 ms. It establishes the persistent wait location, not clean
+frame pacing. All three runs terminate within their bounds, preserve profile
+bytes/signatures and fixture, recycle disposable disks, and restore the normal
+playable executable/symbol pair. A clean runner exit does not pass scene
+acceptance. Direct acknowledgement is rejected pending rework of the full
+worker handshake; Original 60 and Mac gameplay tests are deferred until the
+loading regression is resolved. The draft PR explicitly records this failure.
 
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 

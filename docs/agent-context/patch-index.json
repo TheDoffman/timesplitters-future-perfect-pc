@@ -18,6 +18,18 @@
       ]
     },
     {
+      "name": "gpu-pfb-flush-ack.patch",
+      "sha256": "57e2b78f8c7735ecc0d08f25e8c0f6c8b5bd4172243bdab4d5dac3970a79d7df",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h",
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
       "name": "mac-platform.patch",
       "sha256": "1c4ebb79cf61cd3434851ae809e397532e104480e81ff278d20b75e8ef434639",
       "targets": [

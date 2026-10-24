@@ -3903,6 +3903,21 @@ See STATUS for exact measurements and the corrected reference scope.
   session pass at `7b5f042`; foreground routing skips and gameplay remains in a
   visible background window. Actual Mac validation remains pending; removed scan
   counts and this uncontrolled run do not establish an FPS gain. See STATUS.
+- **PFB worker notification rework (2026-10-22, `perf/gpu-flush-ack`,
+  PR #310):** Shared exact-store notification wakes the original worker, keeping
+  its register/DMA/fence service and activity accounting. Windows event/timer
+  wait and native Mac condition-variable wait retain the 500-us idle fallback
+  and 50-ms diagnostic ceiling. The former `92ffa8b` direct-clear loading stall
+  is absent in four bounded Windows runs of `bf4b755`: Original60, native120 and
+  native144 (notification on/off). Paired144 main-thread CPU falls 78.57% to
+  58.44%, p99 interval 8.291 to 7.513 ms. A second Hotel pair improves typical
+  pacing and main-thread CPU but retains an isolated43.776-ms hitch. Windows
+  are nonforeground and combat varies. This does not resolve all reported crowded-map drops. Nineteen final
+  Windows offline cases pass (Mac-only case skips); native runtime CI at
+  `af96547` passes the real Mac event fixture. A declaration-placement conflict
+  in historical Mac upgrade context is repaired; fresh/repeated and historical
+  upgrade tests pass locally, with current-head CI pending. Native Mac gameplay, foreground pacing and broad campaign/mode
+  coverage remain awaiting validation. See STATUS for exact evidence and limits.
 
 - **Native-start clock handoff (2026-10-22, `fix/live-fps-clock-handoff`):**
   Shared HLE Swap/Present paths observe the last real vblank while native pacing

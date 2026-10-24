@@ -336,6 +336,19 @@ independent hit limits and zero/negative caps. Its eager-scan mutation must fail
 It is registered in both-host native runtime CI. For changes to this function,
 apply the complete patch stack first; passing scan-count checks establish the
 removed work, not a gameplay FPS improvement.
+`tests/test_gpu_flush_ack.py` compiles the actual patched notifier and lifted
+store. It checks post-write notification, exact instruction/register selection,
+untouched guest words and lifecycle guards. Omitted/reordered notifications and
+a direct-clear mutation must fail. Lifter cases include absolute/indexed/immediate
+stores and excluded loads, narrow/segmented stores and register moves. The actual
+worker wait is exercised with both host adapters, missing-event/timer-failure
+fallback, the 50-ms diagnostic timeout ceiling and the original one-millisecond
+busy window. Native `native_platform.c`
+also tests real event timeout, prequeued/consumed signals, delayed thread wake and
+manual-reset behavior through the microsecond adapter. The registered Python
+suite compiles/runs this fixture with the actual compatibility layer on Mac; Windows adapter mocks do not establish Mac execution. Apply all patches,
+regenerate/build, then test the previously failing match-loading route before
+measuring performance.
 
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts

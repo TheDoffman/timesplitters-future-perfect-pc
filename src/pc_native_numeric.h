@@ -5,6 +5,7 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
+#include "pc_gpu_ack.h"
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 /* These original integer-to-float reads are continuous motion consumers of

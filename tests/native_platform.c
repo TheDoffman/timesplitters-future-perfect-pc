@@ -15,6 +15,13 @@ static DWORD WINAPI signal_event(void *event)
     return 0;
 }
 
+static DWORD WINAPI delayed_signal_event(void *event)
+{
+    Sleep(10);
+    SetEvent(event);
+    return 0;
+}
+
 int main(void)
 {
     const DWORD size = 64u * 1024u * 1024u;
@@ -71,7 +78,27 @@ int main(void)
     CHECK(WaitForSingleObject(event, 2000) == WAIT_OBJECT_0);
     CHECK(WaitForSingleObject(thread, 2000) == WAIT_OBJECT_0);
     CHECK(CloseHandle(thread));
+    /* A queued notification survives until consumed; auto reset consumes once.
+     * A sleeping waiter is interruptible without the multi-wait polling loop. */
+    CHECK(w32_WaitForEventMicroseconds(event, 500) == WAIT_TIMEOUT);
+    CHECK(SetEvent(event));
+    CHECK(w32_WaitForEventMicroseconds(event, 0) == WAIT_OBJECT_0);
+    CHECK(w32_WaitForEventMicroseconds(event, 0) == WAIT_TIMEOUT);
+    thread = CreateThread(NULL, 0, delayed_signal_event, event, 0, NULL);
+    CHECK(thread != NULL);
+    CHECK(w32_WaitForEventMicroseconds(event, 2000000) == WAIT_OBJECT_0);
+    CHECK(WaitForSingleObject(thread, 2000) == WAIT_OBJECT_0);
+    CHECK(CloseHandle(thread));
+    CHECK(w32_WaitForEventMicroseconds(event, 0) == WAIT_TIMEOUT);
     CHECK(CloseHandle(event));
+    event = CreateEventW(NULL, TRUE, TRUE, NULL);
+    CHECK(event != NULL);
+    CHECK(w32_WaitForEventMicroseconds(event, 0) == WAIT_OBJECT_0);
+    CHECK(w32_WaitForEventMicroseconds(event, 0) == WAIT_OBJECT_0);
+    CHECK(ResetEvent(event));
+    CHECK(w32_WaitForEventMicroseconds(event, 500) == WAIT_TIMEOUT);
+    CHECK(CloseHandle(event));
+    CHECK(w32_WaitForEventMicroseconds(NULL, 0) == WAIT_FAILED);
     HANDLE timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
     CHECK(timer != NULL);
     CHECK(WaitForSingleObject(timer, 0) == WAIT_TIMEOUT);
