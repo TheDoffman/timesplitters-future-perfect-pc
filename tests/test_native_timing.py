@@ -16,17 +16,26 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
-     ('native_network_cadence.c', 'render-refresh')])
+     ('native_network_cadence.c', 'render-refresh'),
+     ('native_surface_interval.c', 'reset-phase')])
 def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
-    includes = [runtime, runtime / 'config', ROOT / 'src']
+    includes = [runtime, runtime / 'config', runtime / 'd3d', ROOT / 'src']
     output = tmp_path / ('native-timing.exe' if os.name == 'nt' else 'native-timing')
     source_path = ROOT / 'tests' / source
-    if mutation:
+    if mutation == 'reset-phase':
+        adapter = (ROOT / 'src/graphics/surface_interval.h').read_text(encoding='utf-8')
+        needle = 'PcSurfaceInterval result={0};'
+        assert adapter.count(needle) == 1
+        (tmp_path / 'graphics').mkdir()
+        (tmp_path / 'graphics/surface_interval.h').write_text(adapter.replace(needle, needle+' phase=0;'))
+        source_path = tmp_path / source
+        source_path.write_text((ROOT / 'tests' / source).read_text())
+    elif mutation:
         # Reject changing network clock units to rendered-frame counts. Keep
         # production files intact; mutate only this disposable translation unit.
         adapter = (ROOT / 'src/pc_network_guest.inc').read_text(encoding='utf-8')
@@ -117,7 +126,8 @@ def test_native_timing(source, mutation, tmp_path):
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
         assert result.returncode != 0
-        expected = 'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40'
+        expected = ('p->begins_tick' if mutation == 'reset-phase' else
+                    'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40')
         assert expected in result.stderr, result.stdout + result.stderr
 
 

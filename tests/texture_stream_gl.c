@@ -51,7 +51,8 @@ static void put(unsigned char *p,uint32_t x)
 {p[0]=(unsigned char)x;p[1]=(unsigned char)(x>>8);p[2]=(unsigned char)(x>>16);p[3]=(unsigned char)(x>>24);}
 int main(int argc,char **argv)
 {
-    CHECK(argc==2);_putenv_s("TSFP_TEXTURE_PACK_DIR",argv[1]);
+    CHECK(argc==3);_putenv_s("TSFP_TEXTURE_PACK_DIR",argv[1]);
+    _putenv_s("TSFP_TEXTURE_MODE",argv[2]);
     unsigned char data[8]={0,1,2,3,4,5,6,7},changed[8]={9,1,2,3,4,5,6,7},dds[152]={0};
     GLTexture t={0};t.width=t.height=4;t.format=12;t.sys_mem=data;
     char path[4096];snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",argv[1],tsfp_texture_key(12,4,4,data,8));
@@ -59,6 +60,17 @@ int main(int argc,char **argv)
     put(dds+76,32);put(dds+80,4);put(dds+84,0x31545844);
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fwrite(dds,1,sizeof dds,f)==sizeof dds);CHECK(!fclose(f));
     native_pack_upload(&t);
+    if(!strcmp(argv[2],"classic")) {
+        CHECK(t.pack_checked==3 && !created && !native_pack_resident);
+        for(int i=0;i<20;i++) {native_pack_request(&t);tsfp_stream_pump();}
+        CHECK(t.pack_checked==3 && !created && !native_pack_resident);
+        uint64_t old_key=t.pack_key;
+        t.sys_mem=changed;native_pack_upload(&t);
+        CHECK(t.pack_checked==3 && t.pack_key!=old_key && !created);
+        t.sys_mem=data;native_pack_upload(&t);
+        CHECK(t.pack_checked==3 && t.pack_key==old_key && !created);
+        tsfp_texture_set_4k(1);native_pack_request(&t);
+    }
     if(strcmp(getenv("TSFP_TEXTURE_STREAMING"),"0"))CHECK(!created && !t.pack_texture);
     finish(&t);CHECK(created==1 && !destroyed && mips==3 && t.pack_bytes==24);
     CHECK(binding==77 && native_pack_resident==24);

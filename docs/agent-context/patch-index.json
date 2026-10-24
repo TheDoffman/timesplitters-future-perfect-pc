@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "0a61fe21ba31378eae0b5004b54b7f53f76efb791b33da204198342cd07b48a2",
+  "loaderSha256": "ad4a3f94646bef3891e4861d751f4a504f00c63ab89c4c1c5806e35cece7b956",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1291,6 +1291,25 @@
         "src/hle/hle_d3d8.c",
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "zz-native-surface-capture.patch",
+      "sha256": "7ee3d1a062600a9d8e6ce7b3504aeeef6411270042ce9f209ff5c3cc36a3cdb5",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-native-surface-render.patch",
+      "sha256": "730daaec33b28497ce63b88ba223d200b498e1dbbc72eeda23b19108912f8c48",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c",
+        "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     }
   ]

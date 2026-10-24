@@ -96,6 +96,10 @@ static void field_gpu_transform(RhiView *source,RhiView *destination,unsigned in
         sd.address_u=sd.address_v=sd.address_w=RHI_ADDRESS_WRAP;
         sampler=rhi_sampler_create(&sd);CHECK(sampler);
     }
+    /* All entry points, including the standalone hardware diagnostic, need
+     * the captured sampler state before any original shader executes. */
+    RhiSampler *field_samplers[4]={sampler,sampler,sampler,sampler};
+    rhi_set_samplers(0,4,field_samplers);
     /* Execute the original six-instruction vertex program with captured inputs
      * for wrap, or a synthetic NDC triangle for the clamp diagnostic. Actual
      * guest submission and scene output still require runtime validation. */

@@ -69,15 +69,16 @@ def test_background_texture_reads(texture_executables, tmp_path, mode):
 
 
 @pytest.mark.parametrize('streaming', ['0', '1'])
-def test_legacy_gl_background_textures(texture_executables, tmp_path, streaming):
+@pytest.mark.parametrize('mode', ['classic', '4k'])
+def test_legacy_gl_background_textures(texture_executables, tmp_path, streaming, mode):
     path = tmp_path / 'gl-uploads.csv'
     environment = dict(os.environ, TSFP_TEXTURE_STREAMING=streaming, TSFP_TEXTURE_UPLOAD_TRACE=str(path))
-    result = subprocess.run([str(texture_executables['stream_gl']), str(tmp_path)],
+    result = subprocess.run([str(texture_executables['stream_gl']), str(tmp_path), mode],
                             cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stdout + result.stderr
     assert not list(tmp_path.glob('*.dds'))
     rows = list(csv.DictReader(path.open()))
-    expected = ['loaded', 'cached', 'image_failed']
+    expected = (['deferred'] * 3 if mode == 'classic' else []) + ['loaded', 'cached', 'image_failed']
     if streaming == '0':
         expected += ['loaded']  # Completed before cancellation in synchronous mode.
     expected += ['read_rejected']
@@ -88,9 +89,12 @@ def test_legacy_gl_background_textures(texture_executables, tmp_path, streaming)
             'read_begin_ns', 'open_end_ns', 'read_end_ns', 'validated_ns',
             'image_begin_ns', 'image_end_ns', 'end_ns')]
         nonzero = [n for n in marks if n]
-        assert nonzero == sorted(nonzero) and all(marks[:3])
+        assert nonzero == sorted(nonzero) and marks[0]
+        assert all(marks[1:3]) == (int(row['source_bytes']) > 0)
         if row['outcome'] in ('loaded', 'image_failed'):
-            assert all(marks) and row['replacement_bytes'] == '24'
+            assert all(marks[3:]) and row['replacement_bytes'] == '24'
+        if row['outcome'] == 'deferred':
+            assert row['enhanced'] == '0' and not any(marks[3:-1])
         assert row['view_begin_ns'] == row['view_end_ns'] == '0'
 
 
@@ -136,7 +140,7 @@ def test_texture_upload_stages(texture_executables, tmp_path, mode, streaming):
     # replacement. Keep both that work and failed attempts in the diagnostic.
     cached = [r for r in rows if r['outcome'] == 'cached']
     assert len(cached) == 20 and all(r['key'] == rows[0]['key'] for r in cached)
-    expected = ['loaded', 'read_rejected', 'read_rejected', 'view_failed', 'loaded']
+    expected = (['deferred'] * 3 if mode == 'classic' else []) + ['loaded', 'read_rejected', 'read_rejected', 'view_failed', 'loaded']
     if streaming == '0':
         expected += ['read_rejected', 'loaded']  # These complete before cancellation.
     expected += ['read_rejected']
@@ -147,14 +151,16 @@ def test_texture_upload_stages(texture_executables, tmp_path, mode, streaming):
             'read_end_ns', 'validated_ns', 'image_begin_ns', 'image_end_ns', 'view_begin_ns', 'view_end_ns', 'end_ns')]
         present = [n for n in marks if n]
         assert present == sorted(present) and present[0] > 0
-        assert int(r['hash_begin_ns']) > 0 and int(r['hash_end_ns']) > 0
+        assert (int(r['hash_begin_ns']) > 0 and int(r['hash_end_ns']) > 0) == (int(r['source_bytes']) > 0)
+        if r['outcome'] == 'deferred':
+            assert r['enhanced'] == '0' and not any(marks[3:-1])
         if r['outcome'] == 'cached':
             assert all(int(r[k]) == 0 for k in ('read_begin_ns', 'open_end_ns',
                 'read_end_ns', 'validated_ns', 'image_begin_ns', 'image_end_ns',
                 'view_begin_ns', 'view_end_ns'))
             assert int(r['replacement_bytes']) == 24
         if r['outcome'] in ('loaded', 'view_failed'):
-            assert all(marks) and int(r['replacement_bytes']) == 24
+            assert all(marks[3:]) and int(r['replacement_bytes']) == 24
         else:
             assert int(r['image_begin_ns']) == 0
     assert not list(tmp_path.glob('*.dds'))

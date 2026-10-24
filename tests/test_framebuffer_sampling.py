@@ -13,7 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'),
                     reason='HLE renderer is compiled on Windows and macOS')
 @pytest.mark.parametrize('break_refresh', [False, True], ids=['fixed', 'detect-stale-copy'])
-def test_framebuffer_sampling_passes(tmp_path, break_refresh):
+@pytest.mark.parametrize('common_renderer', [False, True] if sys.platform == 'darwin' else [True],
+                         ids=lambda common: 'rhi' if common else 'legacy-gl')
+def test_framebuffer_sampling_passes(tmp_path, break_refresh, common_renderer):
     compiler, environment = native_compiler(tmp_path)
     source = ROOT / 'external/ts3FPrecomp/src'
     includes = [source, ROOT / 'src', *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
@@ -38,6 +40,8 @@ def test_framebuffer_sampling_passes(tmp_path, break_refresh):
                     '/link', '/OPT:REF']
     else:
         command = [compiler, '-std=gnu11', '-O2', '-Wl,-dead_strip']
+        if common_renderer:
+            command += ['-DTSFP_RHI_RENDERER=1']
         command += ['-I' + str(path) for path in includes]
         command += [str(fixture), '-o', str(exe)]
     result = subprocess.run(command, cwd=tmp_path, env=environment,

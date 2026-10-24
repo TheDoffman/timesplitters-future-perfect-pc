@@ -1,29 +1,30 @@
 # Build, run and validation map
 
 <!-- packet:start -->
-Windows entry point is `tsfp.ps1` (Setup/Extract/Test/Generate/Build/Run/SmokeTest);
-`setup.ps1` orchestrates first setup. Use `powershell -NoProfile -File tsfp.ps1
--Action Build` from the checkout. The builder uses pinned upstream and `.venv`,
-applies the full patch stack, checks guest-generation fingerprints/wrappers,
-regenerates when needed, configures MSVC x64 and builds/tests native targets.
-Output: `build/windows/Release/futureperfect_recomp.exe`. Do not bypass a failed
-patch phase with direct edits or suppress the first compiler/linker diagnostic.
-
-Mac: `.venv/bin/python tools/build-native-mac.py`; `--generate` for stale guest
-code, `--setup` only for explicit setup. Output `build/macos/futureperfect_recomp`.
-Default renderer auto chooses common Vulkan on supported macOS26+ and GL on
-older hosts; pinned SDK `config/vulkan-sdk.json`, loader `tools/vulkan_sdk.py`.
-`BUILD.json` records selected driver/provenance. Do not copy Windows build trees.
-
-Routine bounded Windows gameplay: `.venv/Scripts/python.exe tools/testing_profile.py
---play --seconds 120`; Mac: `.venv/bin/python tools/test-native-mac.py
---unlocked-profile --seconds 120`. Both use disposable fixture copies, not
-personal saves. Source-only tests do not certify gameplay. Missing supported
-game data or an unavailable host is a reported validation gap, not a reason to
-invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies pinned
+patches, checks wrapper fingerprints, regenerates, builds MSVC x64 and tests.
+Output: `build/windows/Release/futureperfect_recomp.exe`. Fix the first error;
+never bypass failures with generated-source edits.
+Mac: `tools/build-native-mac.py`; `--generate` for stale guest code, `--setup`
+for explicit setup. Output: `build/macos/futureperfect_recomp`. Renderer auto
+selects Vulkan on supported macOS26+, otherwise GL. `config/vulkan-sdk.json`
+pins the SDK; `tools/vulkan_sdk.py` and `BUILD.json` own driver provenance.
+Bounded isolated gameplay: `tools/testing_profile.py --play --seconds 120`
+(Windows), `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac).
+Use the host .venv Python. Root AGENTS owns asset, isolation and storage rules.
+Source checks, builds, menu startup and gameplay are separate evidence;
+unavailable hardware/private data remain explicit validation gaps.
 <!-- packet:end -->
 
 ## Choose the cheapest relevant check
+
+`test_framebuffer_sampling.py` compiles the complete HLE texture unit against
+fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
+water graphics dependencies with fail-fast assertions; no GPU emulation or
+production hooks are removed. This avoids MSVC unresolved symbols from unused
+water functions. Both normal refresh and the deliberately stale-copy mutation
+must run. Mac tests retain legacy GL and also compile the common RHI branch;
+Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
 
 `tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
 20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
@@ -121,12 +122,11 @@ not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
 
-Integration of #308 and #311 carries per-request timing records through the
-bounded queue. The reader only stamps its owned record; CSV initialization and
-completion stay on the renderer thread. Run stage-order tests with streaming
-both enabled and disabled. Total request duration includes queue/frame waits;
-read stages are worker spans and image/view stages are renderer spans. Cancelled
-requests are discarded without dereferencing their owner or logging on the worker.
+Texture timing records travel through the bounded queue. The worker stamps its
+own record; CSV initialization/completion stay on the renderer thread. Test stage
+order with streaming on/off. Total duration includes queue/frame waits; read spans
+are worker work, image/view spans renderer work. Cancelled requests neither
+dereference their owner nor log on the worker.
 
 Texture-upload trace tests compile the real loader and collector through the
 existing both-host `tests/test_texture_runtime.py` registration. They verify
@@ -147,18 +147,24 @@ read/resource stages on all twenty cached calls while retaining existing load
 and fallback counts. The 8,192-row bound still applies; verify coverage before
 using a live window. The earlier `2230901` data retains its narrower scope.
 
-Crowded-map performance checks must record actual window state as well as the
-configured render resolution. `stability_transitions_game.py --minimized` hides
-the owned child; successful presents in that state do not establish foreground
-performance. A fullscreen toggle also does not prove focus: the latest bounded
-baseline runs observed visible clients at 640x480 and fullscreen 1920x1060 while
-the device rendered 3440x1440, and Windows granted neither foreground focus.
-Record client size, visibility, minimization, foreground state, scene and bot
-roster alongside complete Present intervals. STATUS records the 143.898/142.006
-interval FPS and remaining 132.6 rolling-window dip; nondeterministic encounters
-prevent treating the two runs as a causal window-mode comparison. Keep native,
-texture, capture and CPU/stack diagnostics off for this observation unless their
-specific attribution is the question under test.
+`stability_transitions_game.py --scenario crowd-venice --native-fps 144
+--display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
+--no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
+Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
+ten configured bots; it does not prove every bot is simultaneously visible.
+`crowd-hotel` (scene39) and `crowd-disco` (scene56) use frequent move/fire/respawn
+input. Crowd routes focus their window after startup; still verify focus below.
+Record roster/window state separately from device resolution; unfocused/minimized
+runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
+health with pool rechecks; asynchronous proximity is not visibility. Analyze
+complete spawn+5..+55s intervals (Disco +5..+50s, within the 20,000-row cap) with
+clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
+enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
+can yield partial snapshots: check before differencing. `--trace-textures` enables
+bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
+`test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
+original text editing; eager-query/stale-cache mutations must fail. Both hosts'
+existing runtime CI includes it. STATUS retains measured performance and limits.
 `tests/test_trace_filter.py` compiles the actual runtime name-filter function,
 checks zero label scans for absent/empty filters, and retains exact matching,
 independent hit limits and zero/negative caps. Its eager-scan mutation must fail.
@@ -203,16 +209,14 @@ and tail intervals move in different directions, so query savings alone must
 not be reported as a pacing improvement. Exclude a measurement window when
 another game starts during it, even if that run reports a better average.
 
-`tests/test_decal_projection.py` checks the production projection wrapper's
-guest ABI and all matrix elements, plus one VM query per same-region correction.
-Its split camera/stack case requires two queries and covers the actual decal
-callers' temporary stack output ordering.
-A retained-snapshot mutation must fail, proving each invocation queries afresh.
-`tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
-no-access, boundary-crossing and overflow rejection (Windows also guard pages).
-The existing registered projection/cutscene CI suites run these checks on both
-hosts. The cutscene fixture shares a controlled query adapter for geometry;
-neither query counts nor successful geometry tests establish FPS improvement.
+`test_decal_projection.py` checks ABI/all matrix values, zero weapon/preview
+queries and one same-region camera-source query, including split stack output.
+Retained-source-snapshot mutation must fail. Local `projection_output.c` lifts
+checksum-verified US151CF0, checks 16 writes/math/bounds/stack over 48 lenses;
+missing-store mutation fails. Private-XBE cases skip CI. `display_memory.c`
+tests real host read-only/no-access/boundary/overflow protection (also Win guard).
+Registered projection/cutscene suites cover both hosts; query savings alone
+do not establish FPS improvement.
 
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused
@@ -462,17 +466,17 @@ pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
 paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
 both tests. Physical turret aiming/firing and native host delivery remain
 separate gameplay checks; see #182 in STATUS and MAC-001.
-`native_mounted_mouse.c` in that same registered suite checks 60/120/144
-updates with 125/1000/8000 Hz packet streams, regular/jittered intervals and
-quarter-speed game time. It asserts integrated raw displacement and fresh
-aim on every update carrying motion, plus paused/invalid clocks, no replay,
-mode handoff and untouched player angles. Separate old-clock and old-batch
-counterfactuals must fail. It executes shared host input logic with controlled
-guest fields; it does not establish live turret rendering or physical input.
-Windows source `a5e0dc2` passes the supported build and built-in checks, plus
-159 broader regressions. Its candidate binary is retained separately; the
-normal playable executable is restored. Consult STATUS for hashes before
-testing and force a fresh link after preserving the playable pair on rebuild.
+`native_mounted_mouse.c` checks 60/120/144 with 125/1000/8000 Hz packets,
+jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
+handoff and untouched player angles. Old-clock/batch mutations must fail.
+These controlled-field tests do not certify live turret rendering/input.
+Consult STATUS for current build hashes, not historical candidate paths.
+`mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
+one query for aiming, read-only FOV maps, expiry, terminal routing and bounds.
+Persistent/uncached mutations fail in mounted pytest/CI on both hosts; mocked
+locks/events are not physical-host validation. `auto_look_region.c` similarly
+checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
+expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
 `tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
 mode through the actual adapters, changing the native rate without recreating
 input capture. The focused Windows `tsfp_pc_controls_test` target passes with
@@ -706,12 +710,11 @@ workflow and select native checks; Mac's selected suite does not run that test.
 loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
 It runs on both CI hosts. A deliberately stalled reader checks nonblocking
 pump/cancellation, owner reuse, queue backpressure, staging limits and cleanup.
-Both synchronous and background modes exercise cached switching, fallback and
-resource failure; GL checks mip uploads and binding restoration. These are
-asset-free CPU/adapter tests, not GPU or scene acceptance. Run fresh/repeated and
-historical Mac patch upgrades for the new Present hook. Real pacing and texture
-pop-in still need bounded gameplay comparisons; default 60 and native120/144
-settings must be reported separately.
+Both modes check Classic deferral without reads/allocations, content changes,
+late Enhanced activation, cached switching and failures; GL also checks mips
+and binding restoration. Deferred traces omit I/O; late requests omit hashing.
+These are CPU/adapter tests, not GPU/scene acceptance. Run patch upgrades for
+Present hook changes; measure pacing/pop-in separately at Original60/120/144.
 
 The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
 patched binding helper into its temporary include directory. The CMake loader
@@ -790,30 +793,40 @@ alpha/beta ordering separately from the new publication policy.
 
 ## Coupled water operator checks
 
-The existing native-timing suite compiles `native_surface_coupled.c` on both CI
-hosts without game assets: 65 controlled modes, split-step composition,
-60/120/144 trajectories, identity and invalid-input nonmutation, plus
-positive/repeated/complex eigenvalue cases against independent original equations. The existing
-original-shader suite extends its fixed-neighbor and 64x64 spatial cases with
-the shared coupled step, comparing actual WARP results against the unmodified
-game shaders' one-second float32 output. Temporary-header mutations remove the
-velocity correction and must fail those GPU comparisons after successful build.
-The spatial diagnostic now uses shared GPU DCT/inverse passes around per-mode
-GPU matrices, with a fresh reconstructed field after every update. CPU DCT is
-only an independent reference for asymmetric corners, checkerboard and noise.
-A third disposable-header mutation breaks the inverse transpose and must fail
-its numeric comparison. Resources are reused inside the fixture; this is not a
-game runtime integration or a performance test. Existing byte
-storage differences remain asserted. These GPU cases require the supported
-private XBE and Windows WARP; hosted skips are not Mac GPU/gameplay acceptance.
+`tests/stability_transitions_game.py --scenario surface-feedback --run-name
+water-live-feedback --seconds 100 --no-captures` replays the committed Scotland
+route and requests 16 completed GPU feedback triplets, with isolated Test Lab
+saves/settings and executable/XBE provenance. Add `--native-fps 144` for the
+native clock while retaining the original water feedback. `--no-captures` skips
+ordinary screenshots; this scenario still explicitly reads its feedback fields.
+`test_captured_live_feedback` in `tests/test_surface_shader_feedback.py` compares
+that local capture with the original translated shaders and coupled one-tick,
+two-half-tick and three-piece updates on local hardware. Capture Original60 in
+`water-live-feedback-original` with `--native-fps 0` for the second case. Hardware
+byte captures must not be used as WARP goldens: UNORM conversion differs between
+those adapters, and the WARP suite uses its own original shader reference. Missing local capture
+is a skip, never proof. `native_surface_capture.c` is in the dual-host CPU timing
+group and verifies copied source order/identities and rejection without partial
+publication. Actual Mac RHI readback and game execution remain separate checks.
 
-The spatial fixture now translates and executes the supported XBE's original
-six-instruction water vertex program as well as both pixel programs. Its input
-triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
-`surface_vertex_definition.c` reads private microcode and uses the current
-production parser/emitter. Translation helpers also receive isolated runtime
-configuration. Single-pass and gradient-only byte-storage controls isolate
-rounding contributions; none is an accepted replacement for the original map.
+`native_surface_coupled.c` runs on both CI hosts without assets: 65 controlled
+modes, split composition, 60/120/144 trajectories, invalid-input nonmutation,
+and positive/repeated/complex roots against independent original equations.
+`test_original_surface_shader_feedback` compares fixed-neighbor and 64-square
+spatial GPU cases with the unmodified game's float32 output. Separate controls
+retain byte-storage differences. Shared GPU forward/inverse transforms are checked
+against CPU asymmetric-corner, checkerboard and noise references. Removing the
+velocity correction or breaking the inverse transpose must fail after compilation.
+These are operator checks, not runtime/performance or Mac GPU acceptance.
+
+`surface_vertex_definition.c` uses the production parser/emitter on private
+microcode: the supported XBE's six-instruction vertex program and both original
+pixel programs run with synthetic geometry and callback-2BF10 c17-c20 offsets.
+Translation helpers use isolated configuration. Single-pass and gradient-only
+byte controls isolate rounding; no controlled scalar/storage test alone establishes
+a replacement for the original map. The pinned private XBE and Windows WARP are
+required; missing-asset skips are not validation. Detailed history is in the
+high-refresh regression guide.
 
 The surface spatial fixture also runs at 128x128, matching the observed game
 feedback target. Its wrapped case mirrors the live quad, viewport, screen-space
@@ -838,3 +851,105 @@ uses shared `surface_state_shader.h` to materialize alpha-height after each fres
 inverse transform. A constant-alpha header mutation must fail the final shader
 comparison. Final shader agreement with the float32 reference does not establish
 original byte-storage appearance or scene rendering; both differences are reported.
+
+`test_original_byte_rounding_flow` adds an independent 60-Hz original-shader
+reference starting from an actual byte target. `surface_rounding_gpu.inc` holds
+the first-pass clipping/quantization residual over each authored interval, executes GPU
+fractional transforms/steps at every frame, and writes original byte state only
+at interval boundaries. The frame schedule splits steps that cross a boundary.
+It compares every boundary's G/B and final byte ripple RGB, with and without
+original smoothing, at 60/120/144 and a mixed 144/120/60/144 sequence. The test
+clock now uses the production `pc_native_timing_step` with a controlled
+72-MHz counter and `pc_surface_interval_split`; the mixed sequence switches at
+nonzero phase and produces 117 advancing frames over 60 ticks. A half-second
+pause inserted during motion must produce no slices and identical final output.
+This is not live host scheduling or resource integration. Mild and strong signed initial height pulses
+plus near-limit velocity/height fields are covered. Missing forcing, missing
+ambiguity handling, omission of gradient clipping, unlimited acceleration and
+missing authored boundary limits are required failing mutations. Saturated
+60-Hz final-color repeats must match the independently measured original count;
+the higher-rate and mixed schedules still require fresh final colors every frame.
+Direct guard cases reject a distant replacement and canonicalize nearby values
+even away from ideal byte thresholds. This is controlled trajectory validation,
+not runtime integration or measured game performance. The portable coupled CPU
+test also checks held forcing across split steps and rejected-output preservation.
+
+Rounding profile 3 (`surface_noise_gpu.inc`) runs original effect-19 vertex/pixel
+programs on captured A8L8-to-RGBA source with linear wrap and ONE/ONE RGB-only
+blending before smoothing. `surface_vertex_definition.c` checks the four vertex
+instructions/input mask 0x010e. Both noise cases explicitly skip without the
+private Original60 Scotland frame-3600 capture; no game bytes are tracked.
+Controlled UVs replace RNG. Initial draws verify additive green and preserved
+red/blue/alpha; duplicate candidate noise must fail boundary equality. Queued
+splashes, live submission and whole-scene rendering remain separate acceptance.
+
+`native_surface_interval.c` (dual-host timing suite) checks exact conservation
+and boundary counts across three counter frequencies, presets, jitter, pause,
+catch-up, reset, invalid nonmutation and the four-piece maximum. Reset-phase
+mutation must fail. The real guest fixture checks publication, paused zero time
+and Original-mode clearing; exact metadata avoids float-sum boundary loss.
+
+`native_surface_mode.c`, in the same dual-host suite, checks immutable mode
+packing against the existing affine operator and independent one-tick equations,
+including real/repeated/complex roots, irregular split composition and rejected
+output preservation. The GPU rounding fixture now uses the shared evolve shader
+with two immutable mode textures and a 16-byte time uniform; it no longer creates
+coefficient textures keyed by fractional duration. A fifth schedule alternates
+144-Hz intervals by +/-0.1 ms while retaining one second of active time. Every
+profile includes that jitter, smoothing off/on and pause preservation. Replacing
+the evolve shader's first diagonal entry with 1 must fail the byte comparison.
+
+Windows D3D11 hardware diagnostics: `python tests/test_surface_shader_feedback.py
+--hardware-check --profile 0` checks all authored boundaries/freshness;
+`--benchmark --profile 3` measures timestamp spans without per-frame readback,
+checking each sequence's final byte image. Normal pytest uses WARP. Hardware
+paths skip WARP-specific storage tolerances, print adapter identity and bind the
+four captured wrap samplers before original draws. `surface_timing_gpu.h` reads
+disjoint/timestamp queries after submission with a ten-second wait bound;
+spans include submission bubbles, exclude setup/readback and are not game FPS.
+RTX4070 SUPER exposed a byte conversion transition away from the ideal half-byte
+threshold. Keep the shared arithmetic-distance guard; actual target conversion
+owns thresholds. Unconditional replacement must fail the direct guard test.
+Hardware profiles/schedules and endpoint checks passed on that adapter only;
+see STATUS for measurements. They do not establish other-GPU or game acceptance.
+
+The rounding fixture uses the shared GPU owner. `surface_owner_gpu.inc` checks
+input rejection, reset, packed alpha-height, sentinel target preservation,
+color/depth and multiple/empty viewport restoration, plus binding cleanup.
+Removing reset/output restoration fails. `native_surface_gpu_owner.c` injects
+failure at every allocation; `native_surface_gpu_cache.c` checks retained image
+identity, transactional replacement, capacity and clear/recreation. These run
+in the dual-host CPU suite; Windows shader checks do not prove Vulkan behavior.
+`native_surface_native.c` checks phase, boundaries, pause/gaps and default/override
+policy. `native_surface_render_guest.c` tests the actual default-enabled guest
+adapters at 144 updates/60 events, ABI and Original60 recovery.
+`native_surface_runtime.c` injects allocation failure into the real HLE adapter:
+no repeated setup until scene/device reset, no bindings changed by empty reset.
+All three run in dual-host native timing CI; this is not Mac GPU evidence.
+`--scenario surface-native` uses Scotland. Native water is the common-RHI beta
+default; `--original-surfaces` forces baseline water, `--native-surfaces` forces
+on. `--native-fps 0` selects true Original60. `--trace-surface-images` reads final
+GPU images for freshness, not pacing. `surface-native-long` adds a 90-second
+stationary window then fire/pause/resume; use `--profile-presents --no-captures
+--seconds 230` for host Present timings. Provenance records the explicit/default
+policy. Historical patch fixtures exclude both tail surface patches.
+
+Rounding trajectories now use `pc_surface_gpu_begin_bytes`; original-shader and
+broken-gradient controls still test residual/clipping behavior. Captured replay
+keeps independent unpack/residual setup. The Windows runner's
+`--scenario surface-feedback-gpu --run-name water-runtime-gpu --native-fps 144
+--seconds 100 --no-captures` invokes the shared solver in the deferred renderer.
+Its `feedback.bin.gpu` stores 16 TSWGPU1 records: 92-byte identity plus two
+128-square float4 fields. The third captured-feedback test checks matching
+metadata, finite values and both states within 32 float epsilons; original byte
+endpoints remain exact. A missing capture skips; an existing runtime capture
+without its sidecar fails. Per-sample creation/readback precludes speed claims.
+
+`--scenario surface-native-switch --native-fps 144 --native-surfaces
+--trace-surface-images --trace-surface-switches --seconds 230` runs the committed
+`scotland_switch` route through Video Options (before Keyboard and Mouse), then
+requires 90 images each at 144/120/Original60/144 using the strict cycle validator.
+The last segment may retain its initial image until its first authored boundary.
+`native_surface_render_guest.c` also checks resuming between ticks, local time
+mismatch and constructor cleanup; cache tests distinguish suspend/reuse without
+allocations from full scene destruction. Image capture is not switch-latency proof.

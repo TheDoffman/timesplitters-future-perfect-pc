@@ -1,14 +1,17 @@
 """Execute the production guest wrapper with isolated camera and stack memory."""
 import re
+import hashlib
+import struct
+import sys
 
 import pytest
 
 from test_cutscene_letterbox import ROOT, RUNTIME, compile_and_run
 
 
-@pytest.mark.parametrize('camera_available', [True, False])
+@pytest.mark.parametrize(('camera_available', 'mutation'), [
+    (True, 'none'), (False, 'none'), (True, 'retained-snapshot')])
 @pytest.mark.parametrize('platform_define', ['TSFP_PC_CONTROLS', 'TSFP_NATIVE_DISPLAY'])
-@pytest.mark.parametrize('mutation', ['none', 'retained-snapshot'])
 def test_decal_projection(tmp_path, camera_available, platform_define, mutation):
     manual = (RUNTIME / 'titles/futureperfect/src/recomp_manual.c').read_text()
     wrapper = re.search(r'void sub_00151CF0\(void\)\n\{.*?\n\}', manual, re.S)
@@ -64,7 +67,7 @@ int main(void)
             g_esp=0x10000;WORD_AT(g_esp)=callers[j];WORD_AT(g_esp+4)=0x6000;
             unsigned before=display_region_queries;
             sub_00151CF0();
-            CHECK(display_region_queries-before==(CAMERA_AVAILABLE && j<2 ? 1u+display_split_regions : 0u));
+            CHECK(display_region_queries-before==(CAMERA_AVAILABLE && j<2 ? 1u : 0u));
             CHECK(g_esp==0x10004 && g_eax==0x12345678);
             for(k=0;k<16;k++) {
                 float expected=CAMERA_AVAILABLE && j<2 && (k==0 || k==5) ? active[k] : original[k];
@@ -87,7 +90,7 @@ int main(void)
                 g_esp=0x10000;WORD_AT(g_esp)=models[j];WORD_AT(g_esp+4)=destination;
                 unsigned before=display_region_queries;
                 sub_00151CF0();
-                CHECK(display_region_queries-before==1);
+                CHECK(display_region_queries-before==0);
                 CHECK(g_esp==0x10004 && g_eax==0x12345678);
                 for(k=0;k<16;k++)CHECK(model[k]==(k==0?original[k]/factor:original[k]));
             }
@@ -105,3 +108,32 @@ int main(void)
 
 def test_display_memory_protection(tmp_path):
     compile_and_run(tmp_path, (ROOT/'tests/display_memory.c').read_text())
+
+
+@pytest.mark.parametrize('mutation', ['none', 'missing-output-store'])
+def test_original_projection_output(tmp_path, mutation):
+    """The destination-check removal depends on the real builder writing 64 bytes."""
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Local supported US XBE required; never included in CI')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    sys.path.insert(0, str(RUNTIME))
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        info = {'end': 0x151D92, 'name': 'sub_00151CF0_gen'}
+        routine = FunctionTranslator(image, {0x151CF0: info}).translate_function(0x151CF0, info)
+        addresses = sorted({int(a, 16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)', routine)})
+        constants = '\n'.join(f'MEM32(0x{a:X})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08X};' for a in addresses)
+        if mutation == 'missing-output-store':
+            store = 'MEMF(eax + 0x3C) = xmm0.f[0];'
+            assert store in routine
+            routine = routine.replace(store, '')
+        source = (ROOT/'tests/projection_output.c').read_text()
+        source = source.replace('/* ORIGINAL_ROUTINE */', routine).replace('/* ORIGINAL_CONSTANTS */', constants)
+        compile_and_run(tmp_path, source, fails=mutation!='none')
+    finally:
+        vars(config).update(previous)

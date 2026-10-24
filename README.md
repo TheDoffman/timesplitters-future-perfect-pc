@@ -110,6 +110,10 @@ Availability depends on your platform and installed game version. Check the
 launcher's **Release notes**, [Mac status](#mac-apple-silicon) and
 [measured progress](STATUS.md) for support and known limits.
 
+Development source also enables continuous water updates with the 120/144 FPS
+beta presets on the common renderer. **60 FPS (Original)** remains the recovery
+option; full-game and native Mac high-refresh validation remain incomplete.
+
 ## Controls and settings
 
 Set bindings and graphics before playing in the launcher's **Game settings**.

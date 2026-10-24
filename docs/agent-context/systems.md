@@ -83,7 +83,7 @@ validation, image creation and (common RHI) view creation. This is CPU elapsed
 time, not GPU completion. Reading/validation/fallback and live texture switching
 are unchanged. Logging occurs after the measured end, can perturb subsequent
 frames and is capped at 8,192 rows/below 4 MiB; do not use it as clean pacing data.
-Cached rows have zero read/image/view stages and retain the same loaded resources.
+Cached rows have zero read/image/view stages and retain existing request/cache state.
 The legacy GL path also closes a trace with `path_rejected` for an oversized path.
 Older `2230901` traces began after hashing and excluded cached calls.
 See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
@@ -131,6 +131,16 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+`pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
+current-player, player-record and control-setting accesses before the guest call.
+It retains the global's region while visiting high-RAM player data, so settings
+in the first region reuse validation. Same-map access needs one query; this
+split-map path needs two, previously three. Read permissions cannot grant writes.
+Snapshots are never consulted after guest execution or
+retained for the next invocation. The original bit-3 save/restore and controller,
+local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavior
+plus controlled split/read-only maps, expiry and uncached/persistent mutations.
+
 Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
 `pc_network_bots_guest_frame` hook. The transport still consumes each validated
 host snapshot once. The guest caches it and updates the displayed body, spatial
@@ -147,17 +157,17 @@ the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
 duration/elapsed with another snapshot's clip identity can select an invalid clip.
 
-Camera and perspective corrections use `pc_display_memory.h` to retain one
-OS-validated writable region only after their original guest routine returns.
-The stack-local snapshot expires when the correction returns; no guest calls,
-allocations or protection changes may occur while it is reused. Bounds,
-overflow, read-only and guard/no-access rejection remain enforced. Other
-display/menu validation still uses its existing checks. This avoids repeating
-the VM query for camera, output and source matrices within the same region;
-it does not cache matrices, reduce updates or change projection arithmetic.
-Decal corrections validate the camera and its source matrix before the output
-because the original callers build their temporary output on the guest stack.
-Separate camera/stack regions therefore need two queries, not three.
+Camera and perspective corrections use `pc_display_memory.h` with a stack-local
+region after the original guest routine returns; no guest calls, allocations or
+protection changes may occur while it is reused. Bounds, overflow, read-only and
+guard/no-access rejection remain enforced. `pc_display_perspective_projection`
+does not re-query its output: supported US `151CF0` writes all 16 floats without
+guest callbacks before returning. Weapon/preview correction therefore needs no
+VM query; decals still validate their camera and source matrix afresh (one query
+when those share a region, independent of the output's guest-stack region).
+Other camera/display checks are unchanged. This does not cache matrices, reduce
+updates or change projection arithmetic. `projection_output.c` checks the real
+US builder's output extent, arithmetic, canaries and stack; generated C stays local.
 
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
@@ -213,8 +223,15 @@ and discard queued text on focus loss or owner changes.
 `src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
 character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
 Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
-`0x004D8D78` misses it. The original guest insertion/edit/Done routines retain
-selection replacement, limits and save behavior. Escape queues the owning menu's
+`0x004D8D78` misses it. The callback-row scan reuses one writable OS region only within
+that synchronous traversal (no guest calls), checking every row's bounds and
+querying again on a region change. It expires before dispatch, including nested
+menus; no row identity or permission survives a tick. Large non-keyboard menus
+therefore avoid a VM query per row. `test_menu_text.py` checks descending links,
+query counts, permission expiry, partial/invalid rows and cycles; eager-query and
+stale-region mutations must fail. Windows/Mac use their existing VM adapters.
+Original insertion/edit/Done routines retain selection replacement, limits and
+save behavior. Escape queues the owning menu's
 Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
 is excluded. Supported input follows the original Latin-1 tables; paste and
 arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry
@@ -273,6 +290,15 @@ Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
 in Windows and SDL, with zero-whole positive time, paused stale whole time,
 live return to Original60 and return to on-foot controls. Windows execution
 passes; native SDL self-test execution remains a host validation requirement.
+
+Both adapters now create a local `PcGuestRegion` after input replay/focus gating
+and share it through terminal, mounted and ordinary camera `_in_region` helpers.
+`pc_guest_memory_in_region` reuses bounds/permissions only during that host mouse
+operation, which invokes no guest callbacks or allocation. Every subsequent
+update starts empty. Region changes and read-to-write checks retain OS validation;
+read access cannot grant writes. Standalone helper entry points create their own
+snapshot. This removes duplicate player queries without retaining memory facts
+across frames or changing motion, capture, terminal clicks or timing policy.
 
 ## Unified Video Options and native presets (PR #285)
 
@@ -437,6 +463,19 @@ pc_prompts.c compile contract checks this include order in Mac CI.
 
 ## Experimental coupled water operator
 
+`pc_surface_capture.h` defines the copied original-feedback snapshot and validates
+the guest resource's input/first-pass/output indices and texture records.
+`pc_surface_capture_guest.h` validates mapped memory, calls the original feedback
+once, and submits eligible Scotland samples. `pc_surface_capture_hle.inc` reads
+the existing RHI images at that point in the deferred command stream. It writes
+at most 16 records to the explicitly requested `TSFP_SURFACE_CAPTURE` file,
+normalizes BGRA to RGBA, and stops on unsupported identity/storage or I/O failure.
+No image state is replaced. The older fractional/float experiments disable the
+probe. Each TSWATER1 record contains 23 little-endian metadata words plus three
+128-square RGBA8 images (input, first pass, second pass). GPU readback stalls
+make these diagnostic runs unsuitable for performance claims. Common RHI is
+supported by the source; legacy GL intentionally performs no capture.
+
 `graphics/surface_coupled.h` computes a fractional power of the coupled affine
 velocity/displacement step, anchored to the existing one-tick coefficients.
 `graphics/surface_coupled_shader.h` supplies one shader body with vector-type
@@ -460,6 +499,81 @@ to the original texture channels: red scratch, green velocity plus 0.5, blue
 height and **alpha height**. Original effect 22 samples alpha cardinal differences
 for its ripple shading input; constant alpha would erase those slopes. This
 shared encoding is currently exercised only by the GPU fixture, not game hooks.
+`pc_surface_coupled_forced_step` stores the fractional response to a held forcing
+input in each row's fourth component; `TSFP_SURFACE_FORCED_SHADER` applies that
+input in the same spectral basis. The rounding fixture refreshes the measured
+first-pass residual at authored boundaries. `surface_gradient_shader.h` supplies
+the unclipped linear gradient: subtracting this from actual byte red retains
+both clipping and rounding. Subtracting the already-clipped float shader output
+loses the clipping contribution and fails strong initial impulses.
+`surface_feedback_residual` also includes the second pass's signed acceleration
+clamp after adding the fourth diagonal neighbor. `surface_limit_boundary`
+applies final velocity bounds and the height cap before damping at authored
+boundaries; it does not clip the internal state after every fractional piece.
+`surface_rounding_shader.h` canonicalizes nearby values with original shader
+arithmetic evaluated at that boundary, only within 32 float epsilons. It does
+not predict byte thresholds: a hardware probe found an RTX transition away
+from the ideal half-byte value. The earlier threshold-distance condition missed
+that transition. Larger disagreements remain untouched and detectable; fractional
+frames never use this authored-boundary correction.
+The fixture requires byte initial/persistent state. No runtime scheduler/resource
+owner calls this policy yet. The fixture covers mild/strong initial fields,
+near-limit signed velocities/heights and
+mixed-rate steps, including nonzero-phase switches; actual disturbance shaders,
+full scene saturation coverage and live game scheduling remain acceptance work.
+The original dispatcher `1956A0` calls queued disturbances `1953B0`, texture
+noise `1952D0`, smoothing `1950B0`, feedback `195110`, then final output `195280`.
+Effect 19 (`2BE30`) uses pixel definition `4BBD30` and vertex program `4BBBF8`.
+Its captured noise draw adds the immutable A8L8 texture into green with ONE/ONE
+blend and RGB writes, before smoothing. The candidate fixture now executes
+those unchanged shaders at authored boundaries with controlled UV offsets;
+queued splash geometry and actual runtime RNG/event delivery remain unverified.
+`graphics/surface_interval.h` splits exact host-side intervals into at most four
+pieces (the existing maximum three-tick catch-up can cross four partial pieces).
+Each piece marks authored start/end boundaries; zero elapsed time produces none.
+It consumes `PcNativeStep` metadata without rounding float deltas or resetting
+phase on rate changes. The GPU fixture uses this producer/splitter, including
+a pause during motion. It is not yet a resource owner or an enabled game hook;
+new resources and guest-local time overrides require explicit synchronization.
+`graphics/surface_mode.h` packs each spatial mode's immutable eigenvalue and
+fixed-point data into two float4s. `surface_evolve_shader.h` advances that mode
+using current state, held residual and a delta/scale uniform. Unlike the earlier
+fixture's per-delta coefficient-image cache, varying elapsed time requires only
+a 16-byte buffer update and no coefficient-image allocation/upload. Real,
+repeated and complex roots share this representation; CPU validation covers all
+three and authored GPU trajectories use the complex branch.
+`graphics/surface_gpu.h` now owns the coupled kernel's RHI images/views, shaders,
+buffer and raster/depth/blend states. Create it on the render thread with fixed
+coefficients/extent; begin from full single-mip float state/residual views, then
+advance by each positive fractional piece. Zero time preserves output. Reset
+invalidates the interval and the output accessor until a new begin; destroy before the device. Inputs
+with incompatible storage/shape or hazardous internal aliases are rejected.
+Creation failure unwinds every owned handle. It saves/restores output targets
+and all viewports, including an empty list, and unbinds temporary textures and
+its step buffer. It may leave other draw state changed under the RHI contract.
+The owner executes the GPU fixture trajectories and the opt-in live GPU probe.
+`pc_surface_gpu_begin_bytes` initializes from completed original input/first-pass
+sampled byte views, retaining first-pass clipping/rounding and second-pass
+acceleration saturation. It requires the authored center (128/255) and rejects
+aliases or incompatible storage before drawing. Its unpack/residual shaders and
+temporary residual image are owner-managed; ordinary float input remains supported.
+Original disturbances/smoothing/byte boundaries remain caller-owned.
+`graphics/surface_gpu_cache.h` provides a zero-initialized, render-thread registry
+bounded to the constructor's five resources. It keys owners by resource ID,
+generation, coefficients and four retained RHI image identities. Unchanged draws
+reuse their owner without allocation; replacement is transactional and a full
+registry returns NULL without evicting live entries. Clear before scene/device
+reset and advance generation for in-place reinitialization. Invalid or failed
+requests return NULL, never a stale owner. The opt-in native render hook now uses this registry.
+The ten 128-square float4 images contain 2.5 MiB of pixels per owner; this is not
+a total VRAM or in-game performance measurement.
+`TSFP_SURFACE_GPU_CAPTURE=1` extends the bounded capture with shared-kernel
+execution on the renderer thread. Each sample initializes from its actual GPU
+views, advances 5/12 + 5/12 + 1/6, and writes the first-piece/full-tick float
+fields to a `.gpu` sidecar. It creates/releases the owner within that callback,
+so no diagnostic resources survive scene/device teardown. This allocation and
+readback-heavy probe is not the eventual persistent gameplay path and does not
+replace visible water or alter guest event/RNG order.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads
@@ -478,6 +592,14 @@ the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
 selects the synchronous diagnostic fallback. Per-texture messages now require
 `TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
 
+Classic now defers new replacement requests in both adapters (`pack_checked=3`).
+Binding in Enhanced starts the deferred request; until completion the original
+remains visible. Returning to Classic retains cached replacements and permits
+already submitted requests to finish. Hash/content invalidation, cancellation
+and explicit original dumps still run. Deferred bindings in Classic perform no
+replacement I/O, GPU allocation or repeated trace writes. A `deferred` trace
+records the initial hash only; late activation has zero hash/source-byte fields.
+
 The common renderer pumps from present_resolve, shared by Swap and Present.
 The initial Present-only prototype never delivered replacements in this title;
 its apparent pacing gains are invalid evidence. Actual DDS upload records and
@@ -495,3 +617,33 @@ records measure hash, worker read/validation and renderer image/view creation.
 Total duration includes queue/frame scheduling waits, not GPU completion.
 Cancellation discards the record with the payload; a full queue logs its failed
 attempt and starts a new record on retry. Disabled timing takes no clocks/files.
+
+`pc_surface_native.h` schedules the persistent cosmetic field from exact native
+clock metadata. It begins from post-event/smoothing byte input on authored updates,
+then evolves the remainder and intervening fractional frames. This places the
+cosmetic field one authored tick behind the original completed feedback, retaining
+original event/RNG ordering. It does not add input latency to gameplay. Duplicate
+frames do not advance; missing intervals, changed scopes and new identities wait
+for an authored update. Pause preserves phase. Original60 suspends the clocks and invalidates field
+readiness while retaining bounded GPU owners; constructor/device reset releases
+them. Returning to native waits for an authored boundary before reusing an owner. `pc_surface_native_hle.inc` resolves copied full texture identities,
+uses the five-entry retained-image cache, packs alpha-height through
+`pc_surface_gpu_pack`, and borrows that view only during the original final shader.
+No per-frame readback or queue flush belongs to this path. Older fractional/float/
+live experiments are mutually exclusive. Native Mac common-RHI execution remains
+unverified and legacy GL uses original output. Bounded Windows Scotland captures at 120/144 produce fresh final images on
+partial frames; sustained pacing, broader visual acceptance and Mac remain open.
+
+`pc_surface_gpu_cache_suspend` invalidates every output without freeing images,
+shaders or retained identities. The deferred `hle_d3d8_surface_native_suspend`
+clears the borrowed view and clocks, avoiding shader/resource recreation across
+an Original60 round trip. Original60 still performs no coupled updates. Full
+scene/device cleanup remains distinct. The creation log identifies actual
+new owners; unchanged identity reuse emits no allocation notice.
+
+Native water defaults on for common-RHI 120/144 beta presets; Original60 and
+legacy GL remain original. `pc_surface_native_policy` accepts an explicit
+`TSFP_SURFACE_NATIVE_TEST=0` recovery override and excludes old experiments.
+The HLE adapter latches allocation/shader failure until constructor/device reset,
+so fallback does not retry expensive setup each frame. Cleanup is registered
+before first allocation; empty resets do not alter RHI texture bindings.

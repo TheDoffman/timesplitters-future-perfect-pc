@@ -121,6 +121,7 @@ int main(int argc,char **argv)
     texture.srv=(RhiView *)(uintptr_t)1;
     snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",argv[1],tsfp_texture_key(12,4,4,data,8));
     CHECK(fixture(path,1));
+    if(!initial && strcmp(argv[2],"missing"))CHECK(remove(path)==0);
     tsfp_texture_upload(&texture);
     if(!strcmp(argv[2],"missing")) {
         CHECK(!images && !views && !texture.pack_srv);
@@ -128,6 +129,22 @@ int main(int argc,char **argv)
         CHECK(tsfp_texture_view(&texture)==texture.srv);
         CHECK(remove(path)==0);
         puts("PASS: absent pack falls back to Classic in both modes"); return 0;
+    }
+    if(!initial) {
+        CHECK(texture.pack_checked==3 && !images && !views && !allocations);
+        for(int i=0;i<20;i++) {
+            tsfp_texture_frame_complete();
+            CHECK(tsfp_texture_view(&texture)==texture.srv && texture.pack_checked==3);
+        }
+        uint64_t old_key=texture.pack_key;
+        texture.sys_mem=changed;tsfp_texture_upload(&texture);
+        CHECK(texture.pack_checked==3 && texture.pack_key!=old_key && !allocations);
+        texture.sys_mem=data;tsfp_texture_upload(&texture);
+        CHECK(texture.pack_checked==3 && texture.pack_key==old_key && !allocations);
+        /* If Classic tried the absent file, this later activation would retain
+         * a failed check instead of loading the newly available fixture. */
+        CHECK(fixture(path,1));tsfp_texture_set_4k(1);
+        (void)tsfp_texture_view(&texture);
     }
     if(strcmp(getenv("TSFP_TEXTURE_STREAMING"),"0")) {
         CHECK(!images && !views && !texture.pack_srv);
@@ -140,7 +157,7 @@ int main(int argc,char **argv)
 #endif
     CHECK(images==1 && views==1 && texture.pack_bytes==24);
     cached=texture.pack_srv;cached_allocations=allocations;
-    CHECK(tsfp_texture_view(&texture)==(initial?cached:texture.srv));
+    CHECK(tsfp_texture_view(&texture)==cached);
     tsfp_texture_set_4k(1);tsfp_texture_set_4k(1);
     CHECK(tsfp_texture_view(&texture)==cached);
     tsfp_texture_set_4k(0);tsfp_texture_set_4k(0);

@@ -26,6 +26,37 @@ hunk; never delete the ledger, reset the runtime or remove dependency patches.
 
 ## Source ownership and execution
 
+`zz-native-surface-render.patch` follows capture and connects the native-water
+path, enabled with 120/144 beta on common RHI. `TSFP_SURFACE_NATIVE_TEST=0`
+is a diagnostic opt-out; Original60 and legacy GL keep original feedback. `pc_surface_native_guest.h` forces only the
+outer dispatcher on positive matching native intervals; nested event/smoothing/
+feedback calls skip partial frames with the original stack return. Whole frames
+retain their original calls, including the single feedback update on catch-up.
+Final-pass prepare/finish and constructor reset are copied deferred operations.
+`d3d8_surface_field` overrides the sampled view only for that final pass;
+`d3d8_surface_shutdown` invokes the registered owner cleanup before device teardown.
+Original byte targets and guest identities are never replaced by float storage.
+Legacy GL keeps its original rendering; this candidate needs common RHI access.
+The sampled-view hunk anchors only common frontend code, so stacks without the
+optional texture-pack override can still apply and reverse the same patch.
+
+`zz-native-surface-capture.patch` runs after the existing native surface tail.
+It wraps the original `195110` feedback call with `pc_surface_capture_guest.h`
+and includes `pc_surface_capture_hle.inc` beside the HLE texture cache. The
+optional `TSFP_SURFACE_CAPTURE` diagnostic copies resource/texture identities
+and coefficients before the guest call, then queues a readback after its two
+draws. It resolves existing host textures by the copied full identity; it neither
+creates textures nor calls guest code from the deferred queue. The original
+feedback, RNG calls and guest ABI remain unchanged. This observes completed GPU
+pixels, unlike capture records containing stale render-target system-memory
+copies. The probe is bounded to 16 Scotland samples and is not a pacing test.
+The optional `TSFP_SURFACE_GPU_CAPTURE=1` branch of that existing callback now
+executes `pc_surface_gpu_begin_bytes` and fractional shared-kernel updates using
+the actual source views. It releases all diagnostic GPU resources before
+returning and keeps the original visible feedback/final passes. No further patch
+or guest wrapper was added for this extension. That diagnostic still preserves original visible output; the separate native
+render hook above supplies persistent owners and event/fractional integration.
+
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.
 `src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
@@ -342,6 +373,12 @@ remaining native update/surface patches. Original 60 remains the default;
 and HLE skips the original flip gate while native timing is active. Keep both
 `test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
 validates the combined stack. Water precision experiments remain off by default.
+`PcNativeStep` additionally carries exact host-side game units, start phase and
+units per tick. The shared guest timing hook publishes `g_tsfp_native_step`
+on native updates and clears it on Original-mode updates. This does not change
+guest word layout, float deltas, whole ticks, ISR or pacing policy. The metadata
+is a snapshot before guest-local time overrides; a future procedural consumer
+must honor those scopes and its own resource initialization/reset lifecycle.
 
 ## Outlined text read scope
 

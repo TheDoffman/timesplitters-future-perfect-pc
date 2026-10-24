@@ -362,6 +362,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   `tests/auto_look.c` and `tests/test_auto_look.py`.
 - **Mac support:** Shared guest wrappers use existing native prompt-device and
   mouse-enable APIs. No new OS adapter is required; Mac execution is unverified.
+- **Shared optimization (2026-10-24):** `fix/native-water-rounding` reuses two
+  local permission slots for the pre-call player/settings accesses. Reuse never
+  crosses guest execution or input updates. Windows host and controlled map/
+  mutation tests pass; shared source needs no new Mac adapter. Native scene
+  acceptance below remains pending.
 - **Remaining and acceptance:** Run the native regression and build on macOS;
   verify a tilted view stays put while walking with keyboard/mouse, OFF is
   displayed in frontend and paused Controls, controller input restores the
@@ -689,6 +694,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 
 ### MAC-001 — Direct-camera mouse look
+
+- Mouse mapping reuse (commit carrying this entry): `pc_guest_memory.h`,
+  `pc_camera.h`, `pc_terminal.h`, `pc_mounted.h` and both host input adapters
+  share an OS mapping snapshot only within one mouse update. Bounds/write
+  permissions remain checked and the next update starts empty. No Mac-specific
+  feature work is needed; Darwin still uses its existing Mach VM query.
+  Windows executes both adapter bodies with controlled maps, plus actual guarded
+  terminal/mounted fixtures. Physical Mac aiming/capture and native execution
+  remain **Awaiting validation**; see STATUS for available-host evidence.
 
 - **Themed keyboard editor (2026-10-22, uncommitted; native validation pending):**
   Shared native-menu builders expose every action and mouse option in main Settings
@@ -1249,6 +1263,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac implementation and evidence:** Existing implementation unchanged. In the final bounded run, paused Options opened Display Settings, previewed 2560x1440, displayed the countdown and automatically restored 1920x1080 after 15 seconds. The isolated saved mode remained 1920x1080, and the run returned to visible first-mission gameplay. Apply/Keep/reopen and explicit Revert remain pending. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-011 — Real texture-pack gameplay coverage
+
+- Classic request deferral (commit carrying this entry): `src/texture_pack.c`
+  and `src/native/gl_texture_pack.inc` leave new replacements unrequested until
+  Enhanced binds them. Cached switching, original fallback and content-change
+  cancellation remain. No new Mac adapter is needed; both renderers implement
+  the policy. Windows CPU/adapter tests pass all 24 cases, including deferred
+  content changes and late activation in synchronous/background modes. Actual
+  Mac gameplay, mode switching and pacing remain **Awaiting validation**.
 
 - 2026-10-23 streaming integration correction (commit carrying this entry):
   the initial common-renderer Present-only pump missed Future Perfect's Swap
@@ -2956,6 +2978,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
   platform defines pass the source wrapper tests. No new OS/graphics adapter is
   required; native execution and visual fidelity are unverified.
+- **Shared follow-up (2026-10-24):** `fix/native-water-rounding` removes the
+  duplicate destination VM query after US151CF0's unconditional matrix writes.
+  Camera-source checks remain local/fresh. Both wrapper defines and the local
+  original-US output fixture pass on Windows; no new Mac adapter is needed.
+  Native performance and visual validation remain pending.
 - **Remaining:** Build and visually validate on Apple Silicon. Other-device
   synchronization is unverified; Windows captures do not establish Mac support.
 - **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without
@@ -3705,6 +3732,31 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Water beta default (2026-10-24, `fix/native-water-rounding`, this revision):**
+  Common-RHI native120/144 enables the shared persistent field without a test
+  flag. Original60 and legacy GL retain original output; explicit environment
+  opt-out remains. Shared HLE failure latching avoids per-frame allocation retries
+  until scene/device reset. `tests/native_surface_runtime.c` exercises that real
+  adapter in dual-host CPU CI. Native Mac GPU execution/performance and scene
+  acceptance remain awaiting validation; Windows results do not establish parity.
+
+- **Water FPS round trips (2026-10-24, `fix/native-water-rounding`):**
+  Shared GPU-cache suspend now invalidates timing/output while retaining owners
+  across Original60, avoiding reconstruction on return to native. Constructor
+  and device teardown still free resources. Actual guest/cache CPU checks and a
+  committed full preset-cycle route cover Windows behavior; native Mac execution
+  and transition pacing remain awaiting validation. No platform-specific policy
+  or legacy GL rendering change is introduced. See STATUS for measured scope.
+- **Persistent visible water candidate (`fix/native-water-rounding`, 2026-10-24):**
+  `pc_surface_native*.h`/`.inc`, shared GPU packing, and
+  `zz-native-surface-render.patch` connect exact native intervals to the original
+  ripple shader with retained owners and scene/device cleanup. Common RHI uses
+  the same implementation on Windows and native Mac; legacy GL remains original.
+  Opt-in only, with a one-authored-tick cosmetic phase delay to preserve event/RNG
+  ordering. CPU timing/guest checks run in the shared test group. Native Mac GPU,
+  pause/switch/scene behavior and performance still require host validation.
+  See the latest STATUS entry for measured Windows scope; no Mac result inferred.
+
 - **Coupled water operator candidate (2026-10-23, `fix/native-water-coupling`):**
   Shared portable `graphics/surface_coupled.h`, coupled shader and separable
   GPU transform shader bodies and `graphics/surface_basis.h` preserve the coupled float32 feedback map in controlled CPU/WARP checks at 60/120/144.
@@ -3723,6 +3775,64 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Shared `surface_state_shader.h` now materializes alpha-height for the original
   final ripple shader; Windows WARP checks that consumer at every candidate
   frame and through byte output. No runtime hook or Mac GPU acceptance is implied.
+  The held-rounding follow-up shares forced-step coefficients and guarded byte
+  boundary policy. Existing dual-host CPU tests cover forcing composition;
+  Windows WARP compares the original byte trajectory, while native Mac GPU,
+  scheduling/resource integration, disturbances and scene acceptance remain pending.
+  On `fix/native-water-rounding`, shared `surface_gradient_shader.h` adds the
+  unclipped gradient needed to retain first-pass clipping as well as rounding.
+  Windows fixtures now cover strong initial signed height impulses and mixed
+  frame rates switching within an authored tick. The shared body needs only a
+  vector syntax adapter; these Windows tests do not verify Mac GPU execution.
+  The same shared shader bodies now retain the second feedback pass's signed
+  acceleration clamp and pre-damping height cap at authored boundaries. Windows
+  tests cover near-limit velocity/height fields and reject removing either limit.
+  This extends common policy; no new OS-specific logic or Mac GPU result is added.
+  The Windows fixture now also runs original effect-19 noise shaders with the
+  captured immutable source and additive blend before each authored update.
+  Constant/mixed-rate byte equivalence uses controlled texture offsets; game RNG,
+  queued splash draws and live submission remain unverified. The extra cases
+  require a private capture and skip without it. No Mac result is inferred.
+  `PcNativeStep` now publishes exact host-side interval metadata from the shared
+  timing hook; guest memory/timing policy remain unchanged. Portable
+  `graphics/surface_interval.h` splits it at authored boundaries and is covered
+  by the dual-host timing suite. Windows tests cover jitter/pause/stalls and GPU
+  flow through that splitter; native Mac execution of this extension is pending.
+  Resource lifecycle and guest-local time-scope integration are still required.
+  Shared `surface_mode.h` and `surface_evolve_shader.h` now support changing
+  fractional intervals with immutable mode textures instead of per-delta image
+  construction. The portable mode-packing fixture is in the existing dual-host
+  timing suite. Windows WARP includes 144-Hz jitter and original-byte comparisons;
+  native Mac GPU/CPU execution of this extension and game performance are pending.
+  The first explicit Windows hardware check omitted sampler initialization;
+  fixing that exposed a genuine later RTX byte-conversion threshold difference.
+  Shared boundary correction now canonicalizes only within the unchanged
+  arithmetic guard without guessing UNORM thresholds. All 40 RTX 4070 SUPER
+  trajectories now pass, with high-rate output fresh every frame. D3D11 timing
+  diagnostics are test-only; a Mac timing adapter and actual GPU correctness
+  remain pending. Shared `graphics/surface_gpu.h` now owns the coupled RHI kernel
+  and restores output state; Windows hardware trajectories use it. Its allocation
+  failure fixture is registered for both host compilers. Native Mac execution,
+  Vulkan lifecycle checks and guest resource/event hooks remain pending. The
+  original event, smoothing and byte-boundary passes are still caller-owned;
+  this does not enable a new in-game water path on either host.
+  Shared `graphics/surface_gpu_cache.h` now retains four source image identities
+  per owner in a five-resource registry, with allocation-free reuse and
+  transactional replacement. `native_surface_gpu_cache.c` is registered for both
+  host compilers; Windows CPU/GPU fixtures exercise it. Mac compilation/execution
+  and guest/HLE reset/generation wiring remain pending; no separate Mac policy
+  is needed because the cache uses the common RHI image reference contract.
+  The opt-in `TSFP_SURFACE_CAPTURE` hook now records completed original feedback
+  through the common RHI in deferred command order. The collector is shared and
+  in the dual-host CPU suite; native Mac compilation/readback remain unverified.
+  Legacy GL deliberately produces no capture because it lacks these RHI images.
+  The base capture does not change visible/default water.
+  `pc_surface_gpu_begin_bytes` now shares original byte input/residual initialization
+  with the runtime GPU probe; the owner has 37 tested allocation-failure stages.
+  `TSFP_SURFACE_GPU_CAPTURE=1` invokes it inside the existing deferred capture
+  callback and releases it before returning. Windows live midpoint/endpoint
+  comparisons pass; native Mac shader compilation/execution of this extension
+  remains pending. The solver still does not drive visible water on either host.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.
@@ -4759,6 +4869,12 @@ See STATUS for exact measurements and the corrected reference scope.
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 
 - **Status:** Awaiting validation
+- **2026-10-24 follow-up (this revision on `fix/native-water-rounding`):** The shared
+  keyboard-row scanner reuses an OS-validated writable region within one traversal,
+  expiring it before any guest dispatch. Windows uses VirtualQuery and native Mac
+  uses the existing Mach VM adapter. No input-model/OS-event adaptation is needed.
+  Shared scan and original text-edit tests pass on Windows; Mac execution and
+  menu/gameplay pacing remain unverified. See the crowded-menu STATUS record.
 - **PC behavior:** Physical letters, numbers, supported Latin-1 accents and spaces
   feed the original on-screen keyboard insertion routine. Backspace/Delete,
   Left/Right, Home/End, Ctrl+A, Enter and Escape edit/accept/cancel. Original

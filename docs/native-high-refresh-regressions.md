@@ -6756,3 +6756,517 @@ The complete updated suite passes all 14 cases in 72.15 seconds
 (`logs/water-final-suite.log`). Candidate versus float-reference final byte RGB
 has zero maximum difference in the tested 64/128 clamp and 128-wrap fields at
 60/120/144. This equality compares float feedback paths, not original-byte state.
+
+### Held rounding input and authored byte boundaries
+
+The follow-up keeps the first-pass quantization event at its original boundary,
+while the coupled field evolves at each native frame. Starting from byte G/B,
+the first pass's copied channels already have the correct precision. Its red
+residual `e = byte_red - unclipped_linear_red` is an additional spatial forcing
+input. The one-tick contribution is `(a*e, d*b*a*e)`; the fractional response
+comes from the same affine operator. Shared `pc_surface_coupled_forced_step`
+stores this response in the fourth component of its two rows, and
+`TSFP_SURFACE_FORCED_SHADER` applies the transformed residual. That input stays
+fixed until the next authored boundary; it is not re-rounded every native frame.
+
+`surface_rounding_gpu.inc` executes the original first-pass byte format and the
+shared unclipped gradient to measure the residual on the GPU, transforms it and the live state, and advances each
+fractional piece. A 144-Hz frame crossing a 60-Hz boundary splits into two pieces.
+At the boundary the persistent state is written to an actual byte target.
+Original smoothing, when selected, executes at authored boundaries too. The
+fixture starts by encoding its initial Gaussian/edge pulse into a real byte
+target and computes an independent original 60-step reference. Unlike earlier
+storage ablations, the first input here is already byte-representable.
+
+The initial raw GPU attempt diverged at authored tick 14: blue was
+0.566666483879089 versus original arithmetic 0.566667437553406, straddling a byte
+midpoint. The small numerical difference became a full byte step and grew over
+later iterations. Private evidence: logs/water-rounding-flow-unresolved.log.
+An independent double-precision numerical model matched the byte-initialized
+trajectory, with and without smoothing; that model is supporting evidence only,
+not the GPU acceptance result or an implementation used by the game.
+
+Shared `surface_rounding_shader.h` guards ambiguous conversion. It uses original
+second-pass arithmetic evaluated from the held first-pass byte result and the
+interval's input state **at the boundary**. It substitutes that scalar only
+when both `abs(candidate-original)` and distance to a half-byte threshold are
+within `32 * FLT_EPSILON` (3.814697265625e-6 in normalized units). Other values
+remain the integrated candidate; the render target performs the byte conversion.
+This is a bounded numerical rounding decision, not an unconditional state reset
+or interpolation of saved frames. Direct cases check close ambiguity, rejection
+of a distant replacement, preservation away from thresholds and out-of-range
+values. Removing this handling or the held residual must fail.
+
+The initial GPU run matches original byte G/B exactly at **every** authored
+boundary in all six schedules (60/120/144, smoothing off/on). Maximum arithmetic
+disagreement before conversion is 3.09944153e-6. CPU tests independently compose
+held forcing through 5/12 + 5/12 + 2/12 pieces for 65 modes and three signed
+residuals, and check invalid-output preservation. This is progress on the storage
+gap in one controlled field; disturbances, intermediate clipping, live-rate
+transitions, runtime resource/state ownership, game GPU cost and Mac GPU/gameplay
+remain unverified. Existing normal-play water is unchanged.
+
+The complete updated WARP suite passes 17 cases in 83.64 seconds
+(`logs/water-rounding-flow-suite.log`). All six held-rounding schedules also
+match the original final byte ripple RGB exactly. Fresh byte ripple outputs
+are 60/60, 120/120 and 144/144 with smoothing both off and on, so freshness is
+checked after final byte conversion as well as in the internal float field.
+The two new required-failure controls pass, and the focused portable coupled
+test passes in 1.77 seconds. No full game build or frame-time claim follows.
+PR #321 subsequently reached main through #322. The held-rounding follow-up is
+on `fix/native-water-rounding`, rebased onto 2252af1, with no new PR yet.
+Applying the full integrated patch stack updates nine runtime files; repeating
+the GPU suite then passes all 17 cases in 82.79 seconds, and the focused native
+coupled check passes in 1.15 seconds. Evidence: logs/water-rounding-main-suite.log.
+
+### Strong first-pass clipping and mixed frame rates
+
+A stronger initial field (height 0.5 with +0.45 at (1,3), -0.45 at (96,23),
+zero signed velocity, encoded into an actual byte target) exposed missing
+first-pass clipping. The earlier residual subtracted the already-clipped float
+shader result and therefore corrected only rounding. It diverged immediately:
+tick 0, cell 385 green was 0.313725501 versus 0.407843143. Over one second,
+maximum byte-state error reached 0.192156881 and final byte RGB error 0.450980425
+(`logs/water-impulse-before.log`).
+
+`surface_gradient_shader.h` now computes the unclipped linear gradient used by
+the coupled operator. Actual byte red minus that gradient includes clipping as
+well as rounding. The strong and original mild fields both match every authored
+G/B boundary and final byte RGB at 60/120/144, smoothing off/on. A mutation that
+clamps the shared gradient again must fail the original-byte comparison.
+
+The fixture also uses a 720-unit clock to run 37 frames at 144, 30 at 120, 15 at
+60, then 35 at 144: 117 frames over one second. All three changes occur with an
+authored tick partly elapsed. Phase and held residual survive these changes;
+all 60 boundaries and final byte RGB match, and all 117 final byte ripple frames
+are fresh for both fields and both smoothing choices. Across all 16 field/rate/
+smoothing combinations, maximum pre-quantization disagreement is 3.21865082e-6.
+The five focused cases pass in 33.83 seconds (`logs/water-impulse-switch.log`).
+The full shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`).
+
+This tests synthetic initial impulses, not the game's disturbance shader or
+arbitrary velocity/height saturation in the second pass. The integer fixture
+clock does not validate the host-counter clock's runtime integration. Shared
+helpers remain uncalled by the game; resource ownership, actual live setting
+changes, GPU cost, scene behavior and Mac execution are still pending.
+
+### Second-pass acceleration and height limits
+
+A third initial field uses signed velocity +0.49 and height 0.98 on one half
+of the 128-square map, -0.49 and height 0.02 on the other. The existing candidate
+failed at tick 0: green 0.843137264 versus 0.890196085, growing to maximum byte
+state error 0.976470590 and final byte RGB error 1. The unchanged production
+translation shows a signed [-1,1] clamp after adding the fourth neighbor to the
+first-pass red acceleration, and an upper height clamp before damping.
+Evidence: logs/water-saturation-before.log.
+
+Shared `surface_feedback_residual` now computes the difference between that
+clamped acceleration and the unclipped linear stencil. The coupled field
+integrates this held residual. At authored boundaries, `surface_limit_boundary`
+caps signed velocity to [-0.5,0.5] and height to [0,damping], before guarded byte
+rounding. The height upper bound represents the original pre-damping clip;
+clipping only to 1 after damping is not equivalent. These limits do not run
+after each fractional piece. The original reference shaders remain unchanged.
+
+All 24 trajectories (three fields, four rate schedules, smoothing off/on) match
+every authored byte G/B boundary and final byte RGB. The extreme field repeats
+some final colors at 60 Hz: 53 changed frames without smoothing, 52 with it,
+matching the independently executed original exactly. Every 120/144/mixed-rate
+frame still changes the final byte ripple output (120/120,144/144,117/117).
+The freshness test now measures the original instead of requiring artificial
+color changes on its saturated 60-Hz frames. Mild and impulse fields retain
+the every-frame requirement at all rates.
+
+Removing the acceleration clamp or authored boundary limits must fail the byte
+comparison, independently of the existing rounding/clipping controls. The eight
+focused GPU cases pass in 54.18 seconds (logs/water-saturation-controls.log).
+The complete shader suite passes all 22 cases in 117.52 seconds
+(logs/water-saturation-full-suite.log). Context and whitespace checks pass.
+This is controlled saturation coverage, not actual disturbance or game-scene
+validation. The helper remains uncalled by gameplay; no runtime scheduler,
+resource owner, Mac GPU or game performance claim follows from these results.
+
+### Original texture-noise input before smoothing and feedback
+
+Pinned dispatcher `1956A0` swaps the current target, calls queued disturbances
+`1953B0`, then texture noise `1952D0`, smoothing `1950B0`, feedback `195110`
+and final output `195280`. The noise callback resolves texture 0x365, consumes
+two RNG results for UV offsets and draws effect 19 (`2BE30`). That effect uses
+pixel definition `4BBD30` and the four-instruction vertex program at `4BBBF8`.
+The vertex input mask is 0x010e; input 8 supplies unused secondary UVs, captured
+as (0,0,0,1). This differs from the feedback program's mask 0x000e.
+
+The preserved Original60 Scotland frame-3600 capture includes the noise draw.
+Its source is immutable texture ID 4, Xbox A8L8 format 0x1a, 128x128, usage 0;
+unlike feedback target snapshots, its captured system-memory texels are usable
+source data. State is ONE/ONE additive RGB blending, RGB write mask 7, linear
+wrap sampling. The pixel shader multiplies source RGB by (0,1,0), so the draw
+adds luminance to green and preserves red, blue and alpha. Observed UV origin
+is (0.506488204,0.382273525), with a full pixel-space quad. Private evidence:
+private/pipeline/water-disturbance-draw-state.json and its inspection script.
+
+`surface_noise_gpu.inc` executes the original translated pixel/vertex programs
+with that texture and state before smoothing at each authored boundary. The
+test varies UV offsets deterministically; it does not claim to reproduce the
+game's RNG sequence. A candidate-only duplicate draw is a required failing
+mutation. Initial draws additionally check nonzero additive green and unchanged
+red/blue/alpha. The asset is read from the private capture into temporary test
+files, never tracked. Missing captures cause an explicit skip, not a pass.
+
+The two focused cases pass in 14.56 seconds (logs/water-noise-integration.log).
+All eight noise trajectories match every original byte G/B boundary and final
+byte RGB, with maximum pre-quantization disagreement 2.56299973e-6. Freshness is
+60/60 without smoothing and 27/60 with it at original 60 Hz, identically in the
+candidate; high and mixed rates produce 120/120,144/144,117/117 changed outputs.
+These are shader/input/order checks, not queued gameplay splash geometry, actual
+RNG scheduling, runtime integration, scene acceptance or game GPU performance.
+The complete updated suite passes all 24 cases in 132.19 seconds with no skips
+(logs/water-noise-full-suite.log), including the nonzero-green/channel-preservation
+checks. Repository context and staged whitespace checks pass.
+
+### Exact clock intervals and pause-preserving splits
+
+The production native clock publishes float deltas for guest motion and integer
+ticks for timers. Summing those float deltas into a double still yields only
+59.999998569489 after one second at exactly 144 Hz, so deriving authored
+boundaries from that sum would miss the 60th tick. `PcNativeStep` now also carries
+scaled host counter units, starting game phase and units per tick. The shared
+guest wrapper publishes that snapshot as `g_tsfp_native_step`, clearing it in
+Original mode. No guest field, ISR, float delta or whole-tick policy changes.
+Invalid/null clocks and unrealistically large frequencies are rejected before
+mutation, keeping the bounded scaled arithmetic within int64 range.
+
+Shared `pc_surface_interval_split` consumes exact units, marks starts/ends and
+emits zero to four fractional pieces. A pause emits no pieces and retains phase;
+rate changes require no phase reset. Four pieces cover a three-tick catch-up
+that begins inside a tick. The portable test independently accounts for consumed
+units/boundaries at three frequencies, with jitter, changing presets, pause,
+stall clamping, frequency reset and rejected-output preservation. Resetting phase
+on entry is a required failing mutation. Four focused tests pass in 5.37 seconds,
+and all 18 asset-free timing cases pass in 23.70 seconds.
+
+The original-shader GPU fixture now obtains pieces from this production clock
+and splitter, using a controlled 72-MHz source. It inserts a half-second pause
+during motion and requires zero slices plus bit-identical final ripple output,
+then resumes the existing boundary/color/freshness comparisons. Counter jitter
+is tested on the CPU; live scheduling and resource lifecycle are not implied.
+The snapshot precedes guest-local time overrides, so a future runtime consumer
+must respect those scopes and initialize held input/state for newly created or
+reset resources. There is still no enabled coupled-water game hook.
+All 24 GPU cases pass in 133.40 seconds with this producer/splitter and pause
+check (logs/water-clock-gpu-suite.log); all 32 field/rate/smoothing trajectories
+retain byte-exact authored boundaries/final colors. The separate frame-clock
+suite passes nine cases in 10.48 seconds (logs/water-clock-flip-gate.log).
+Repository context and staged whitespace checks pass. These are Windows results;
+the new shared CPU test is registered for Mac CI, not locally verified on Mac.
+
+### Immutable mode data for variable frame intervals
+
+The prior GPU fixture constructed two complete coefficient images per distinct
+fractional duration. That finite cache worked for controlled constant presets,
+but real host intervals vary. Using it directly in a runtime owner could rebuild
+thousands of coefficients and allocate/upload images whenever a duration changed.
+`surface_mode.h` now packs each mode's eigenvalue data and fixed points once.
+`surface_evolve_shader.h` forms the fractional matrix and held-forcing response
+on the GPU from those immutable values and a per-step delta/scale uniform.
+
+The two 128x128 float4 mode images contain 512 KiB of coefficient pixels; each
+step changes only a 16-byte buffer (delta and damping^(delta/2)). The CPU no
+longer constructs a matrix for every mode on each new duration. Positive packed
+angle selects complex roots, negative selects real roots, and zero selects the
+repeated-root limit. Both fixed points retain the original affine centering and
+additional held residual. Existing clipping, quantization and authored-event
+boundaries remain unchanged. No interpolation of stored future frames is used.
+
+The portable fixture checks all three eigenvalue branches against the existing
+operator and independent one-tick equations, including irregular .413/.001/.407/
+.179 pieces. It observes maximum error 2.02655792e-6 and rejects invalid/overflowing
+packed outputs without mutation. Four focused CPU checks pass in 5.47 seconds;
+the final packing case including overflow rejection passes in 1.20 seconds.
+
+The GPU fixture executes the shared shader for all four fields and adds a fifth
+schedule: 144 frames with alternating +/-0.1-ms intervals, totaling one second.
+All 40 field/rate/smoothing combinations match every original byte G/B boundary
+and final byte ripple RGB. All high/mixed/jitter schedules retain fresh final
+output every advancing frame, and the mid-motion pause remains unchanged.
+Maximum pre-quantization disagreement remains 3.21865082e-6. Ten focused GPU
+cases pass in 72.16 seconds (logs/water-mode-gpu.log). Held-residual removal
+mutates the new shader; a separate diagonal-entry mutation targets its matrix.
+
+This removes coefficient reconstruction/allocation from the candidate's update
+loop; it does not establish a measured game speedup or acceptable total GPU cost.
+The direct spatial transforms and their integration cost still require profiling.
+The RHI explicitly permits a self-contained pass to leave shaders, layouts,
+state objects, uniform buffers and samplers changed because game draws rebind
+them; output targets/viewports must be restored and temporary textures unbound.
+Resource lifecycle, original queued disturbances and the supported gameplay hook
+remain unfinished, as do native Mac execution and scene acceptance.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including the
+new matrix-diagonal mutation (logs/water-mode-full-suite.log). Repository context
+and staged whitespace checks pass. The byte ambiguity guard was not widened.
+
+### Initial D3D11 hardware gate (2026-10-24; superseded below)
+
+The candidate's WARP comparisons do not establish hardware correctness. Running
+`python tests/test_surface_shader_feedback.py --hardware-check --profile 0` on
+the NVIDIA GeForce RTX 4070 SUPER (vendor 10de, device 2783, feature level b000)
+fails the existing boundary comparison at tick 0, cell 0, green: 127/255 versus
+the independently executed original's 128/255. Candidate prequantized green is
+0.500199913978577 versus original float-target 0.500999629497528. Across the
+first 60-tick trajectory, maximum byte G/B error is 0.0901961029, arithmetic
+error 0.00759711862 and final byte RGB error 0.615686297. The original-noise
+profile also fails from that first cell, with final RGB error 1. Root cause is
+not established; this is neither accumulated clock drift nor a reason to widen
+the arithmetic guard. See logs/water-hardware-current-check.log and
+logs/water-hardware-check.log. The first broader hardware attempt also failed
+an older float/half storage probe before reaching the candidate; that control
+is tuned for WARP. Explicit hardware modes now select only candidate setup and
+its reference, while regular pytest continues to run all the original probes.
+
+`--benchmark --profile 3` uses hardware timestamp/disjoint queries, recorded
+around the same original/candidate draw sequences. Query creation and all query
+polling happen outside the measured sequence; first-noise and per-frame image
+readbacks are omitted only in this mode. It still checks final byte output and
+exits unsuccessfully if mismatched. The initial run measured 0.009899 ms mean
+original and 0.106240 ms candidate GPU timestamp span at 60; it failed final
+output and therefore never measured 120/144. Spans include submission bubbles,
+exclude initialization/readback, are not game frame times, and do not establish
+acceptable production cost. The bounded helper records adapter identity and
+rejects disjoint/zero clocks or ten-second query timeout. The full WARP suite
+still passes 25 cases in 141.81 seconds (logs/water-hardware-harness-suite.log).
+Resource/hook integration is deferred until the first hardware step is correct;
+queued splashes, actual event delivery, Mac GPUs and scene coverage remain open.
+
+### Hardware sampler and conversion corrections (2026-10-24)
+
+The initial hardware-only fixture reused sampler creation but skipped the older
+storage loop that bound the four wrap samplers. This was an invalid reference
+configuration, not evidence of a first-step production shader defect. All entry
+points now bind those samplers in common setup. This removes the first-tick
+failure, but the correctly configured mild trajectory still failed at tick 21,
+cell 1146, blue: 165/255 versus 166/255. Candidate prequantized value was
+0.649169504642487, original float result 0.649170935153961. Error was within the
+existing arithmetic guard, but neither value was near the ideal 165.5/255
+threshold, so the old correction did nothing.
+
+A direct passthrough-shader sweep to the same hardware byte target observes a
+transition between inputs 0.649169862270355 and 0.649169921875. The ideal
+threshold is 0.649019607843137. This establishes the old threshold assumption
+was false on this GPU; it does not establish a universal hardware conversion
+algorithm. The probe remains a bounded optional diagnostic and reports actual
+transitions without asserting other GPUs share them.
+
+Shared `surface_rounding_shader.h` now canonicalizes to the original shader's
+arithmetic only if disagreement is <=32*FLT_EPSILON, independent of predicted
+byte thresholds. This correction still runs only at authored boundaries;
+fractional evolution remains independent. The tolerance is unchanged, and a
+larger disagreement is preserved for failure detection. Direct cases exercise
+the observed nearby pair and a larger rejected difference. An unconditional
+copy mutation must fail; existing missing-forcing, incorrect matrix, clipping,
+noise and raw-rounding controls remain.
+
+All four profiles pass on RTX 4070 SUPER (driver 32.0.16.1742), ten schedules
+each with smoothing off/on, 60/120/144, mixed nonzero-phase switches, jitter and
+mid-motion pause. Every authored G/B byte boundary and final RGB byte matches
+the independently executed original reference. Maximum arithmetic error is
+3.21865082e-6; original saturated/noise repeat counts differ from WARP, but the
+candidate preserves this adapter's counts at 60 and all higher/mixed schedules
+remain fresh every advancing frame. Logs: water-hardware-canonical.log and
+water-hardware-canonical-{1,2,3}.log.
+
+The corrected, capture-free noise-profile benchmark passes every final-image
+check, running without parallel tests. Hardware timestamp means (ms) are:
+
+| Path | Smoothing off | Smoothing on |
+| --- | ---: | ---: |
+| Original 60 | 0.010121 | 0.011844 |
+| Candidate 60 | 0.107264 | 0.108201 |
+| Candidate 120 | 0.070852 | 0.072243 |
+| Candidate 144 | 0.075883 | 0.076961 |
+
+Candidate 144 p95 is 0.140288/0.143360 ms; some frames cross authored boundaries
+and execute additional transforms. Log: water-hardware-canonical-cost.log.
+This single bounded run includes submission bubbles and covers one 128-square
+field; it is not game FPS, a sustained pacing measurement, other-GPU evidence,
+or a speedup over Original. Resource ownership/hooks, queued splashes, runtime
+event order, scene acceptance and native Mac execution remain required.
+The full WARP regression suite passes all 26 cases in 146.83 seconds, including
+the unconditional-copy negative control (logs/water-hardware-canonical-suite.log).
+Repository context and whitespace checks pass; no game build was replaced.
+
+### Coupled GPU resource ownership (2026-10-24)
+
+The trajectory fixture now uses shared `graphics/surface_gpu.h` for the coupled
+kernel's resource lifecycle and draws. Each instance owns immutable mode/basis
+textures, two spectral states, held forcing, world and scratch fields, shaders,
+a 16-byte step buffer and raster/depth/blend states. At 128x128 its eight float4
+images contain 2 MiB of pixel data, excluding other resources and driver overhead.
+No per-duration cache is allocated. Original event, smoothing, quantization and
+final shading passes remain caller-owned; guest resource/event integration is
+still absent.
+
+Create/begin/advance/reset/destroy are render-thread operations. Begin accepts
+full single-mip sampled float4 fields of matching shape, copies external state,
+and rejects internal aliases that would be overwritten. Zero time changes no
+pixels; invalid time/storage/aliases leave the state untouched. Reset blocks
+advancement and invalidates the output accessor until initialization. Destruction
+must precede device destruction. Each draw scope preserves color/depth targets
+and all viewports and clears texture slots 0-3 and its temporary step buffer.
+The current RHI restore adapter skips an empty viewport list, so the owner
+explicitly restores zero viewports too. Other pipeline bindings may change,
+as allowed by the RHI's normal-draw rebinding contract.
+
+`surface_owner_gpu.inc` verifies these behaviors on WARP/hardware, including two
+distinct reset/input cycles, multiple/empty viewport lists, target identities,
+an untouched sentinel color target and actual D3D11 binding queries. Missing
+reset/output restoration mutations must fail. `native_surface_gpu_owner.c`
+injects failure at each of 32 RHI allocation calls, requires complete typed-handle
+cleanup, then recreates the owner. That asset-free fixture is registered in the
+existing dual-host timing group; it does not execute GPU shaders.
+
+All 40 RTX original-byte trajectories still pass through this owner. The full
+GPU suite passes 28 cases in 159.55 s and the asset-free timing group passes 20
+in 25.48 s. Final empty-viewport/output-accessor checks additionally pass the
+hardware profile-0 run. Logs: water-owner-lifecycle.log,
+water-owner-final-lifecycle.log, water-owner-hardware-{1,2,3}.log,
+water-owner-gpu-suite.log and water-owner-host-suite.log. No native Mac execution
+or game build is claimed.
+
+Two isolated no-readback timing runs pass endpoint comparisons but show variable
+144-Hz means (0.075534 to 0.739911 ms across conditions). A read-only 100-ms GPU
+clock trace during the repeat observes P8/P5 low-clock states and P0 at 2520 MHz;
+it cannot assign a clock to each measured frame. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. These short workloads are
+not a controlled before/after performance comparison. No power/clock setting was
+changed. Sustained scene measurements, caller hooks and actual queued disturbance
+delivery remain required before enabling this path.
+
+### Bounded GPU water resource identity (2026-10-24)
+
+`graphics/surface_gpu_cache.h` supplies a render-thread registry for the five
+resources allocated by the guest constructor. An entry retains the four source
+RHI images, preventing freed pointer addresses from masquerading as the old
+identity. Repeated resource/generation/configuration/image requests reuse an
+owner with no allocations. Changed identity builds a replacement before releasing
+the old owner; any failure returns NULL and leaves the old entry intact. The
+caller must fall back for that failed request, not use the mismatched old state.
+The registry refuses a sixth resource rather than evicting a potentially active
+one. Start zeroed, clear before scene/device reset, and advance generation when
+initializing a resource in place.
+
+The asset-free cache fixture checks reuse, generation/configuration/source
+replacement, every allocation failure during replacement, image retention,
+capacity rejection and clear/recreation. The shared fake RHI has no shader
+emulation. The actual GPU trajectory fixture reacquires every frame, replaces
+the generation between smoothing runs and releases caller references before
+cache cleanup. These are resource-lifetime checks, not actual level-reload or
+gameplay evidence. Guest/HLE construction/reset and deferred-command integration,
+original event delivery and local timing remain unwired. No new game build or
+Mac run is claimed.
+
+Validation: the asset-free timing group passes 21 cases in 25.68 s and the WARP
+suite passes 28 in 160.72 s. All 40 RTX 4070 SUPER trajectories pass with exact
+authored byte boundaries/final output through the cache. Logs:
+`water-cache-host-suite.log`, `water-cache-gpu-suite.log` and
+`water-cache-hardware-{0,1,2,3}.log`. No performance comparison was run for this
+change; the previously documented isolated-clock confound remains unresolved.
+
+### Completed gameplay feedback captures (2026-10-24)
+
+`TSFP_SURFACE_CAPTURE` observes original feedback `195110` using a copied guest
+identity snapshot and a callback in the same HLE deferred stream, immediately
+after the original two draws. The callback matches already-rendered host textures
+by VA/data/format/size and reads their actual RHI pixels. No guest pointer is
+retained or texture created by the capture. Unsupported storage/identity/readback
+or file I/O stops the probe; captures are bounded to 16 records. This closes the
+specific evidence gap caused by stale CPU copies of render targets in older D3D
+captures. It does not install the new solver as a game update.
+
+The supported Windows builder passes with executable SHA-256
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`, from base
+`0cec704` plus this capture change. Both bounded, isolated Scotland routes
+complete cleanly with unchanged valid Test Lab profiles. `water-live-feedback`
+uses native144 and captures host frames 6822-6858; `water-live-feedback-original`
+uses Original60 and captures 3034-3049. Both cover level ticks 300-315 and have
+16 distinct input fields. Metadata stores the actual authored coefficients
+(0.17, 0.105, 0.65, 0.98); the translated byte constants remain 43, 26, 165, 249.
+Each 3,147,208-byte TSWATER1 file contains input/first/output RGBA8 triplets.
+Hashes and source/executable provenance are retained locally, with the summary
+in `private/pipeline/live-water-feedback-validation.json`.
+
+On RTX 4070 SUPER, original-shader replay matches first-pass red and second-pass
+green/blue/alpha exactly on all 32 fields. The shared coupled GPU owner also
+matches each captured endpoint under 1, 1/2 + 1/2, and 5/12 + 5/12 + 1/6 steps.
+Both capture cases pass in 12.13 s (`water-live-gpu-final.log`). An initial WARP
+replay differed from these hardware bytes by one byte; cross-adapter UNORM
+transitions are already known to differ. Hardware capture tests therefore use
+local hardware; the separate WARP suite keeps its own original shader reference.
+The failed cross-adapter comparison remains in `water-live-gpu.log`, and no
+numerical tolerance or candidate algorithm was changed to hide it.
+
+The CPU collector test verifies copied input/first/output order and safe rejection
+without partially publishing a snapshot. The asset-free group passes 22 cases
+in 27.50 s. GPU readback and extra tests synchronize/stall the GPU: these sessions
+are not evidence of in-game speed or pacing. Captured fields include whatever
+original disturbances/smoothing preceded them, but the run does not establish
+queued splash coverage or equal event/RNG ordering across FPS choices. Runtime
+fractional updates/final shading, local time scopes, resource resets, performance
+and native Mac validation still need integration and acceptance checks.
+
+All 21 patch-update scenarios pass in 542.79 s (`water-live-patches.log`),
+including historical upgrades and branch switching. The capture patch follows
+the existing surface patches explicitly; historical test stacks exclude it
+until its dependencies are present. The supported Windows build's bundled
+settings/save-path checks also pass. These host checks do not establish native
+Mac compilation or rendering of the capture extension.
+
+### Shared solver in the live deferred renderer (2026-10-24)
+
+`pc_surface_gpu_begin_bytes` moves byte unpacking and the original first-pass
+residual into shared owner-managed shaders and storage. It validates source and
+first-pass sampled views before drawing, rejects aliases/unsupported storage,
+and requires the authored 128/255 center. The ordinary float-input API remains.
+The owner now has nine float4 images (2.25 MiB of pixel payload at 128 square)
+and 37 allocation stages, all covered by failure cleanup and cache replacement
+tests. Controlled GPU trajectories call the new entry directly; captured replay
+keeps its independent setup to check it.
+
+`TSFP_SURFACE_GPU_CAPTURE=1` invokes the owner using actual source views after
+the original feedback in the deferred stream. It initializes and advances
+5/12 + 5/12 + 1/6, reading the first-piece and full-tick results into a TSWGPU1
+sidecar. Creation/destruction stay inside each diagnostic callback. This is a
+bounded integration proof, not the persistent cache path or visible-water
+replacement. The original guest events and GPU feedback/final passes still run.
+
+The supported Windows build and bundled checks pass. The source is `15d774c`
+plus the shared byte-input/probe extension; executable SHA-256 is
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`.
+`water-runtime-gpu` ran the bounded native144 Scotland route, exited cleanly,
+preserved profile hashes/signatures and recycled disposable disks. Sixteen
+records span host frames 6837-6864 and level ticks 300-317. The source byte file
+is 3,147,208 bytes and the paired float file is 8,390,088 bytes; hashes and exact
+source identities are in its local `capture-provenance.json`.
+
+The 31-case GPU suite passes in 182.59 s. Its live runtime case checks copied
+metadata, finite values, and 32 intermediate/endpoint fields against the
+independent replay within the unchanged 32-float-epsilon arithmetic bound.
+This is float-field agreement, not a claim that the raw runtime float field was
+byte-identical without boundary conversion. Existing original shader/byte
+comparisons remain exact. CPU owner/cache tests pass in 2.84 s and inject every
+one of the new 37 allocation failures. Logs: `water-byte-entry-gpu.log`,
+`water-runtime-owner-cpu.log`, `water-runtime-gpu-build.log`,
+`water-runtime-gpu-game.log`.
+
+The probe allocates and synchronizes readbacks per sample, so its frame times
+are excluded from performance claims. Actual native time-scope/event scheduling,
+persistent resource reset/reuse, final-shader hookup, visible motion acceptance,
+sustained performance and native Mac execution are still required. No new PR.
+
+The 16 captured local whole counts match the clock trace, and local deltas match
+its printed values within 5e-10 (`clock-scope-comparison.json`). This observes
+one route, not every guest-local time scope. The allocation/readback probe causes
+one three-tick catch-up: original `1956A0` gates on nonzero ticks but executes its
+feedback pair only once. Consequently the one-tick probe comparison is not proof
+of correct elapsed-time integration during stalls. The normal runtime connection
+must explicitly handle that distinction and preserve event/RNG call counts.

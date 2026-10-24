@@ -63,6 +63,27 @@ int main(void)
         }
     }
     PcSurfaceCoupledStep identity,untouched,before;
+    /* Original first-pass rounding is a held input. Verify both state entries
+     * against an independent full-step equation, across authored spatial modes.
+     * Recompute the fractional operator for pieces that cross a 144-Hz frame. */
+    for(unsigned mode=0;mode<65;mode++) {
+        double restore=43./255+8.*mode/64,force=.5*restore;
+        for(unsigned variant=0;variant<3;variant++) {
+            double residual=(variant-1.)/510.;
+            double value[2]={.01,.61},expected[2];
+            double v=value[0]+a*(force+residual-restore*value[1]);
+            expected[0]=v+bias;expected[1]=d*(value[1]+b*v);
+            const double pieces[]={5./12,5./12,2./12};
+            for(unsigned i=0;i<3;i++) {
+                PcSurfaceCoupledStep m;
+                CHECK(pc_surface_coupled_forced_step(a,b,d,restore,force,bias,pieces[i],&m));
+                double old[2]={value[0],value[1]};
+                for(unsigned c=0;c<2;c++)value[c]=m.row[c][0]*old[0]+m.row[c][1]*old[1]+
+                    m.row[c][2]+m.row[c][3]*residual;
+            }
+            CHECK(fabs(value[0]-expected[0])<1e-6 && fabs(value[1]-expected[1])<1e-6);
+        }
+    }
     CHECK(pc_surface_coupled_step(a,b,d,1,.5,bias,0,&identity));
     CHECK(identity.row[0][0]==1 && identity.row[1][1]==1 && identity.row[0][2]==0);
     memset(&untouched,0x5a,sizeof untouched);before=untouched;
@@ -71,6 +92,8 @@ int main(void)
     CHECK(!pc_surface_coupled_step(a,b,d,0,.5,bias,.5,&untouched));
     CHECK(!pc_surface_coupled_step(a,b,d,100,.5,bias,.5,&untouched));
     CHECK(!pc_surface_coupled_step(a,b,d,1,.5,bias,1.1,&untouched));
+    CHECK(!memcmp(&untouched,&before,sizeof before));
+    CHECK(!pc_surface_coupled_forced_step(a,b,d,1,.5,bias,NAN,&untouched));
     CHECK(!memcmp(&untouched,&before,sizeof before));
     printf("PASS: coupled fractional steps preserve 65 controlled modes; max error %.9g\n",max_error);
     return 0;

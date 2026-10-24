@@ -1,0 +1,23 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -151,7 +151,8 @@
+ extern void sub_001950B0_gen(void);
+ void sub_001953B0(void) { pc_surface_disturbance_guest(sub_001953B0_gen); }
+ void sub_001952D0(void) { pc_surface_disturbance_guest(sub_001952D0_gen); }
+-void sub_00195110(void) { pc_surface_feedback_guest(sub_00195110_gen); }
++#include "pc_surface_capture_guest.h"
++void sub_00195110(void) { pc_surface_capture_feedback_guest(sub_00195110_gen); }
+ void sub_001950B0(void) { pc_surface_smoothing_guest(sub_001950B0_gen); }
+ void sub_00195280(void) { pc_surface_final_guest(sub_00195280_gen); }
+ #include "pc_surface_precision_guest.h"
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1290,6 +1290,8 @@
+     return e->host;
+ }
+ 
++#include "pc_surface_capture_hle.inc"
++
+ /* 1x1 opaque white, created once, never evicted. */
+ static IDirect3DTexture8 *white_texture(IDirect3DDevice8 *dev)
+ {

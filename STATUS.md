@@ -1,3 +1,952 @@
+## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
+
+PR #324 groups water, Classic texture deferral and scoped input/menu/camera
+validation work. Main `843dd10` was merged as `e3cc50d`, preserving the unified
+launcher README. On that head the combined Windows runtime suite passed all
+165 checks in 332.06s; patch migration/context/backlog passed 42 in 558.97s.
+Mac native-runtime/GPU CI, both patch-upgrade jobs and all launcher jobs passed.
+Windows runtime CI exposed two framebuffer-fixture link failures (543 other
+checks passed, 120 skipped, 18 subtests passed); do not treat that head as green.
+
+The fixture includes the complete HLE texture unit, whose new water hooks add
+35 graphics dependencies. Explicit assertion-failing stubs now supply these
+unused APIs. The actual framebuffer cache and its stale-copy mutation remain
+unchanged; both cases pass locally (2 checks, 4.37s, MSVC 14.44.35207/x64 on
+Windows 11). Mac retains its legacy-GL case and adds the common-RHI variant.
+Adjacent ghost-rendering cases also pass; after condensing the guide to its
+size budget, all 21 context/backlog checks pass (3.09s). This is a test-harness
+repair only; the game binary and personal files are unchanged. Updated-head
+cross-platform CI is pending. Earlier gameplay evidence
+and its crowd/Online/full-game/Mac limits remain applicable, not expanded by
+these tests. PR #324 must merge before the next related PR is opened.
+
+## 2026-10-24 — Reuse auto-look validation across low/high guest mappings
+
+`pc_auto_look_camera` now keeps two permission snapshots only during the host
+accesses preceding its original guest call. The current-player global and saved
+control settings share low guest RAM, while the player record is in high RAM.
+Retaining both avoids re-querying the first mapping for settings. Same-region
+accesses need one query instead of three; the observed low/high/low path needs
+two. Reads cannot grant writes, and each invocation starts empty. Stored
+preferences, bit-3 restoration, input-device selection, local-slot eligibility,
+mouse sensitivity and menu logic remain unchanged. No shared helper or timing
+rule changed; native Mac validation is still pending under MAC-043.
+
+The pre-change `crowd-projection-profile-144` Hotel run on `aa868b3` completed
+with ten bots at 3440x1440/FOV73/Classic. Its complete 110..150s cumulative CPU
+reports contain 6,898 samples, 5,158 on-CPU samples, 29.1 CPU seconds and 1,262
+VM-query leaves. The auto-look call chain accounts for 105 samples; text and
+decal validation remain larger contributors. The run has 25/33 living-player
+checkpoints, at most 3/6/9 living bots within 10/20/30 units. A 200Hz sampler
+perturbs timing; different combat outcomes prevent causal performance claims.
+The retained analysis aggregates duplicate chain labels and normalizes unnamed
+DLL offsets to their module, matching the sampler's actual bucket key. Both
+raw and delta leaf/chain totals must match the report headers.
+
+A read-only live `VirtualQueryEx` observation in the diagnostic run verifies
+the low/high/low mapping pattern (`auto-look-maps.json`): global guest7B0C7C,
+player81F7C360, settings7BEDC4, all committed/read-write. Settings lies within
+the first returned interval. This evidence rejected the initial one-slot
+candidate, which loses that region after reading the player. It does not
+authorize retaining permissions through guest execution or between frames.
+
+Four final auto-look tests pass, including the actual host-memory behavior and
+controlled split/read-only maps, per-call expiry and preference restoration.
+Uncached and persistent-snapshot mutations fail. The eight existing mounted/
+mouse checks also pass; 21 context/backlog checks passed during this change.
+Tests remain in the existing registered Windows/macOS suite; running them on
+Windows does not establish native Mac gameplay behavior.
+
+The final supported Windows build and its native tests pass. One preceding
+builder run compiled successfully but failed Debug-dialog Save with
+`FAIL 192: driven && !timed_out`; the unchanged standalone Debug test and full
+builder then passed. The failed log is retained (`auto-look-region-build-failed.log`),
+and the intermittent save failure is not claimed resolved. Final executable
+SHA-256 is `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`,
+built from `aa868b3` plus this auto-look change on Windows11Pro x64 10.0.26300,
+MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+
+`crowd-auto-look-clean-120` runs the ten-bot Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. All 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480/windowed.
+The complete spawn+5..55s window contains 5,999 fresh guest presents at
+120.0001FPS; median8.331/p95 8.684/p99 8.792/worst11.052ms. Lowest rolling
+one-second count is120, sampled game-clock/wall ratio1.000128. There are 27/33
+living-player checkpoints and at most 2/6/10 nearby living bots within10/20/30
+units. It exits cleanly, preserves signed profiles/fixture and recycles disks.
+Host presents do not measure GPU completion/scanout/input latency; actor proximity
+does not establish visibility. This extends preset coverage, not a causal
+optimization gain or proof that the reported 144-to-110 crowd drop is fixed.
+
+`crowd-auto-look-final-profile-144` completes the same Hotel route on the final
+build. Complete 110..150s reports contain 6,912 samples, 4,070 on-CPU samples,
+20.5 CPU seconds and 1,145 VM-query leaves. The auto-look caller chain has127
+samples versus105 before, despite the fixture-proven query removal. Thus this
+sampling comparison does not demonstrate lower auto-look CPU cost, and the
+different combat/render load prevents attributing the lower total CPU time to
+this change. There are 27/33 living-player checkpoints, at most2/7/8 nearby
+living bots; all33 are foreground/windowed640x480. The child exits cleanly,
+signatures/fixture checks pass, disposable disks are recycled and no owned game
+remains. `diagnostic-summary.json` and `actor-metrics.json` retain the evidence.
+Full-game, concentrated crowd, Online and native Mac acceptance remain open.
+
+## 2026-10-24 — Remove redundant projection-output checks; extend crowd coverage
+
+On `fix/native-water-rounding`, `pc_display_perspective_projection` no longer
+queries output permissions after the original US151CF0 builder successfully
+writes the entire 64-byte matrix. That routine has no guest calls or conditional
+output path. Weapon/character-preview corrections now need zero OS queries;
+decal corrections retain fresh camera/source validation, needing one query when
+those sources share a region even with a separate guest-stack output. Projection
+math, timing, caller selection and source guards are unchanged. No permissions
+are retained between invocations. Shared Mac code needs no new adapter, but
+native validation remains pending (MAC-026).
+
+Nine projection checks pass, including both platform wrappers, missing camera,
+alternating outputs, original/ultrawide/narrow aspects, real host VM protection,
+and a retained-source-snapshot mutation. A local checksum-verified original-US
+fixture covers 48 lens combinations, all 16 values, output canaries and stack
+balance; removing one original store makes it fail. Private lifted code stays
+local and those two XBE cases skip CI without assets. Seven affected cutscene
+checks also pass, as do 21 context/backlog checks and the full supported Windows
+builder/native tests. The first test run exposed two obsolete mutation cases:
+with no camera, there are now no queries to retain. Those no-op mutation cases
+were removed; ordinary missing-camera coverage remains on both platform defines.
+
+Executable SHA-256 `5613d5a92d86de077baabfc66a7333b60e8c88107efb3e169dc1c14e2160f68b`
+is built from `8b90d08` plus this projection change. Host: Windows11Pro x64
+10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+`logs/projection-output-build.log` retains the build result.
+
+The bounded visual scout verified Disco (menu index4 after Vietnam/Hotel/Venice/
+Temple, scene56), including visible combat. The runner now provides `crowd-disco`
+with the existing ten-bot active move/fire/respawn route; all crowd routes focus
+their window after startup. `crowd-projection-disco-{144,60}` use Classic,
+3440x1440 device output/FOV73, with captures, CPU/texture/update traces disabled.
+All 33 gameplay checkpoints per run are foreground/visible/non-minimized,
+window client640x480. Configuration resolution is not window size or fullscreen.
+
+The 144 recorder hits its bounded 20,000-row limit before spawn+55s. Both rates
+therefore use the complete common spawn+5..50s window (45 seconds), selected from
+coverage rather than frame-time values, with clock evidence on both sides:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Fresh guest presents / mean FPS | 6,479 / 144.0020 | 2,699 / 60.0003 |
+| Median / p95 interval, ms | 6.980 / 7.307 | 16.655 / 17.047 |
+| p99 / worst interval, ms | 7.486 / 10.335 | 17.135 / 17.503 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000125 | 1.000145 |
+| Living-player checkpoints | 28/33 | 26/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/5/9 | 2/6/10 |
+
+These successful host presents are fresh guest frames, without interpolated
+presents; they do not measure GPU completion, monitor scanout or physical input
+latency. Actor proximity is asynchronous and is not visibility. Different combat
+outcomes prevent a causal speedup claim. Both runs exit cleanly, preserve signed
+profiles/canonical fixtures and recycle disposable disks. Reports, commands,
+`crowd-metrics.json` and `actor-metrics.json` remain in their isolated run roots.
+This does not reproduce or resolve the reported 144-to-110 drop across maps;
+full-game, denser crowd, Online and native Mac coverage remain incomplete.
+
+`crowd-projection-fullscreen-144` repeats that route after an explicit window
+toggle immediately following initial focus (exact command retained in the run).
+All 33 gameplay checkpoints report fullscreen and foreground, client1920x1060;
+the device still renders3440x1440. This is not native3440x1440 monitor acceptance.
+The same complete +5..50s window has 6,479 fresh guest presents, 143.9998FPS,
+median6.980/p95 7.300/p99 7.442/worst11.623ms, minimum rolling count144 and game
+clock/wall ratio1.000115. There are 27/33 living-player checkpoints and at most
+3/5/7 nearby living bots. It exits cleanly, preserves fixtures/profiles and
+recycles its disposable disks. No owned game process remains. This extends
+Windows coverage; it does not prove a causal gain or eliminate the crowd report.
+
+## 2026-10-24 — Reuse memory validation within one mouse update
+
+The shared terminal, mounted-gun and ordinary-camera routing now accepts a
+caller-owned mapping snapshot. Windows and SDL input adapters create it afresh
+for every mouse update, after replay/focus setup. Consecutive accesses can reuse
+the OS-validated bounds and permission; changing mappings requires a new query,
+and read access cannot grant writes. The cache never crosses a guest callback,
+another input update or frame. Standalone helpers create their own local scope.
+Sensitivity, raw motion consumption, native timing, terminal clicks, gun limits
+and player eligibility remain unchanged. This is shared code with host VM
+adapters; actual Mac execution remains outstanding (MAC-001).
+
+`tests/mouse_region.c` compiles the actual Windows/SDL mouse-adapter bodies with
+controlled OS maps. Ordinary aiming uses one query instead of four; separate
+read-only FOV maps use two. Read-only/inaccessible player updates, interval bounds,
+integer overflow and terminal/native-pause behavior are checked. Deliberately
+retaining the snapshot between updates and disabling reuse both fail the tests.
+Together with existing guarded terminal/mounted, camera/decal and text-scope
+fixtures, 29 distinct checks pass; context/backlog checks pass 21. The supported
+full Windows build and its native tests pass, including the actual Windows input
+adapter. Controlled SDL adapter bodies are not native Mac event/capture tests.
+
+Before this change, `crowd-deferred-profile-144` repeated the focused ten-bot
+Hotel route on `8baa45d` with CPU sampling. Complete 110s/150s cumulative guest-main
+reports yield 6,876 samples and 28.4s CPU over 40s; 1,438 samples have VM-query
+leaves. Mouse handling accounts for 77 samples in one such chain; decal projection
+and text measurement remain larger contributors. Nearest-public names can
+misidentify static functions. `diagnostic-summary.json` aggregates duplicate
+resolved chains and verifies raw leaf/chain totals against each report header.
+Actor observations found 28/33 living-player checkpoints, at most 2/4/8 living
+bots within 10/20/30 units. This diagnostic is not clean pacing evidence or proof
+that the reported crowd slowdown is resolved.
+
+The new Windows executable is built from `8baa45d` plus this mouse change,
+SHA-256 `54208feccbca764d06dd27daec4fe65eed2dc6914da3e307f164e54c06674a44`.
+Host remains Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11,
+RTX4070SUPER driver32.0.16.1742. See the bounded live results below.
+
+`crowd-mouse-region-{144,60}` run the same active Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. Each of 33 gameplay
+checkpoints is foreground, visible and non-minimized; client640x480, not fullscreen.
+The complete spawn+5..55s windows contain:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9999 | 2,999 / 60.0005 |
+| Median / p95 interval, ms | 6.976 / 7.281 | 16.666 / 17.034 |
+| p99 / worst interval, ms | 7.407 / 8.454 | 17.151 / 17.441 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 0.999811 | 0.999921 |
+| Living-player checkpoints | 26/33 | 27/33 |
+| Maximum nearby living bots at 10/20/30 units | 3/6/6 | 3/5/6 |
+
+Mouse turns, movement, fire and respawn inputs complete with active scene39,
+ten configured bots and no pause at all gameplay checkpoints. Both children exit
+cleanly; signed saves/canonical fixture checks pass and disposable disks are
+recycled. Exact observations remain in each run's `crowd-metrics.json` and
+`actor-metrics.json`. These are successful guest host presents, not GPU completion,
+scanout or physical-input latency, and contain no interpolated presents. Changing
+combat/spawns and lower nearby density than the earlier 114-FPS window prevent
+a causal frame-time improvement claim. Full-game, denser crowd, Online and Mac
+acceptance remain open; no complete crowd-slowdown fix is claimed.
+
+## 2026-10-24 — Defer unused replacement work in Classic
+
+On `fix/native-water-rounding`, common RHI and legacy GL now defer new optional
+replacement reads/uploads until Enhanced is selected and the texture is bound.
+Originals remain visible while replacements arrive. Existing caches still switch
+immediately; requests already submitted can finish after returning to Classic.
+Content changes still invalidate old requests/resources, and explicit original
+dumping retains its behavior. No game timing, actor logic or personal setting
+changes are part of this fix. It removes confirmed unused work; it does not
+establish the cause or resolution of the Hotel 114-FPS window below.
+
+Windows loader tests pass all 24 cases, covering both streaming modes and both
+adapters, missing/rejected data, failures, Classic content changes, late Enhanced
+activation and cached switching. The supported full Windows builder and its
+native tests pass. Context/backlog tests pass 21 cases. Native Mac execution
+remains unverified (MAC-011); both renderer implementations share the policy.
+
+The executable built from `3cac8e4` plus this change has SHA-256
+`dd5daf3da024e1404cac98c69ce1eca9a7fe6dbc062cc4edacade4f4ac078329`.
+Host: Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER,
+driver32.0.16.1742. `crowd-classic-defer-trace` ran the ten-bot Hotel route at
+native144, 3440x1440, FOV73. Its complete 288-row trace contains only `deferred`
+outcomes, with zero replacement read/image/view stages. The trace stays below
+its cap; this diagnostic is not a pacing measurement. All four gameplay
+checkpoints retain scene39, active match7 and ten bots. Child exit is clean,
+fixture signatures are preserved and disposable disks recycled.
+
+`classic-defer-switch` then exercised the actual Venice pause/Video Options
+Apply route: Classic → Enhanced → Classic → Enhanced → Classic. Inspected menu
+captures show Apply disabled after commits; reopening reads the applied value.
+The trace records 206 deferred rows before the first Apply, then 39 completed
+Enhanced uploads (29,895,748 bytes) across the session, within 367 total rows.
+Reviewed resumed scene captures show no obvious blank/corrupt surfaces; this
+does not certify the pack's artwork or all scenes. The reused command labels
+name the opposite mode because that older route started Enhanced; actual menu
+values and trace stages are authoritative. `switch-results.json` records this
+mapping. This captured run is not performance evidence. Exit/signatures/fixture
+checks pass and disposable disks are recycled.
+
+Clean `crowd-deferred-clean-{144,60}` Hotel runs then use the same route,
+3440x1440/FOV73/Classic, no captures or CPU/texture/update tracing, and bounded
+read-only actor checkpoints. An explicit focus request succeeds: all 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480 (not fullscreen).
+The complete measured windows are spawn+5..55s:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9995 | 2,999 / 60.0001 |
+| Median / p95 interval, ms | 6.979 / 7.278 | 16.665 / 17.041 |
+| p99 / worst interval, ms | 7.411 / 9.551 | 17.160 / 17.693 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000048 | 1.000072 |
+| Living-player checkpoints | 28/33 | 25/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/4/6 | 2/4/7 |
+
+These are successful guest-frame host presents, with zero interpolated presents;
+they do not measure GPU completion, scanout or input latency. The player/AI route
+is nondeterministic, proximity is not visibility, and the earlier slow run was
+unfocused with more close actors. Thus this passing sample does **not** prove the
+reported crowded-match slowdown fixed or quantify this change's speedup. Exit,
+fixture/signature checks and disk recycling pass in both runs. Full-game behavior,
+denser repeat workloads, Online and native Mac validation remain outstanding.
+Per-run `crowd-metrics.json` and `actor-metrics.json` retain exact observations.
+
+## 2026-10-24 — Active Hotel route reproduces a short 114-FPS window
+
+The unchanged `8eb2d05` playable runtime was tested on a second multiplayer map,
+Hotel (scene39). The old input route left the player dead at five of eight
+gameplay checkpoints. `stability_transitions_game.py --scenario crowd-hotel`
+now uses frequent ordinary movement/fire/respawn inputs, retains the original
+eight-second startup wait and does not edit health, AI or game memory. Both
+accepted native144 and Original60 runs observe a living player at **26 of 33**
+command checkpoints. These counts are not alive-time percentages.
+
+`--watch-actors` observes bounded actor-slot positions/health and rechecks the
+pool pointer; the existing network observer shares the reader and retains its
+fields. Reads can cross updates. Proximity does not establish visibility or
+line of sight. Native144 observed at most 5/6/7 living bots within 10/20/30 guest
+world units while the player was alive; Original60 observed 4/5/8. All accepted
+gameplay checkpoints retain one human/ten configured bots, scene39, active match
+state7 and no pause. A separate captured setup verified the map selection and
+Hotel gameplay; its screenshots are not performance measurements.
+
+The same executable SHA-256 is
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207-built D3D11 runtime, RTX4070SUPER
+driver32.0.16.1742. Both runs render3440x1440, FOV73, Classic textures, with no
+captures, per-update traces or CPU sampler. Windows are visible/non-minimized,
+unfocused, client640x480; foreground/fullscreen acceptance remains separate.
+The following complete host-clock windows are spawn+5..+55s:
+
+| Metric | Native144 | Original60 (`--native-fps 0`) |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,146 / 142.9438 | 2,999 / 60.0002 |
+| Median / p95 interval, ms | 6.996 / 7.393 | 16.672 / 17.027 |
+| p99 / worst interval, ms | 8.598 / 12.989 | 17.139 / 17.658 |
+| Lowest rolling one-second present count | **114** | 60 |
+| Sampled game-clock / wall-time ratio | 1.000084 | 1.000138 |
+
+No interpolated presents are counted. The native slow window starts16.453s after
+the spawn checkpoint, about103ms after an E press. The neighboring observations
+show death, then respawn with the same dual-pistol loadout. This locates a useful
+reproduction near the reported110FPS dip; it does **not** prove its cause or that
+five bots were visible during that second. GPU completion/scanout, exact combat
+parity, other maps/online and Mac acceptance remain unverified. No runtime fix or
+performance improvement is claimed by this test-only change.
+
+The first active-route attempt (`crowd-hotel-active-144`) shortened the startup
+wait to four seconds and failed the unchanged active-state assertion because
+the spawn checkpoint was still in countdown state5. It is excluded from the
+accepted comparison. The original wait was restored before both accepted runs.
+All test children exit cleanly and preserve signed saves/canonical fixtures;
+disposable disks are recycled. Offline execution of the actual observer functions
+checks local/network field shape and invalid pool/entity bounds. Runtime source
+and binary are unchanged; no rebuild or new PR was needed.
+
+Evidence: isolated `crowd-dense-setup`, `crowd-hotel-current-144` (old inputs),
+`crowd-hotel-ready-{144,60}` directories and corresponding logs. `crowd-metrics.json`
+and `actor-metrics.json` retain exact intervals/observations; native `slow-window.json`
+retains the114-frame window and neighboring input/state evidence. The ignored
+analysis scripts are `logs/crowd_beta_analyze.py` and `logs/crowd_actor_analysis.py`.
+`--trace-textures` exposes the existing bounded upload-stage trace for the next
+diagnostic pass; it and CPU sampling must not be treated as clean pacing evidence.
+
+The completed `crowd-hotel-profile-144` diagnostic retains 409 texture rows, below
+the 8,192 cap, with coverage beyond the measured window. That window contains 13
+successful Classic-mode replacement uploads totaling 12,845,180 bytes, plus 35
+rejected reads. Image/view CPU spans total 4.496ms, largest 1.2125ms; queued request
+duration and GPU completion are different measurements. This confirms unused
+replacement work but does not attribute the 114-FPS window to it. Between complete
+110s and 150s CPU reports, guest-main CPU time grows 28.4s; VM-query leaves account
+for 1,253 of 6,910 samples. Prompt measurement and perspective/camera paths remain
+visible in the chains. Nearest-public-symbol names are not precise static function
+identities. The prompt hook already scopes reads, and `sub_000405C0` only calls it
+once; another scope around that helper would not remove its required queries.
+`diagnostic-summary.json` retains counts and chains. No sampled timing is added
+to the clean comparison above. Context/backlog checks pass (21 tests, 3.35s), and
+the context/whitespace checks pass. The gameplay slowdown remains unresolved.
+
+## 2026-10-24 — Crowded-menu scan overhead and ten-bot measurements
+
+On `fix/native-water-rounding`, `pc_menu_text.inc` now reuses a writable OS
+region within each synchronous keyboard-row search. Previously, large ordinary
+menus repeated a VM query for every row on every keyboard-detection pass. The
+new scan still validates each row's bounds, re-queries on a region change and
+discards the region before returning to guest dispatch. It retains original
+callbacks, edit limits and the 256-row traversal bound. No simulation rate,
+NPC behavior or input binding changed. Shared Windows/Mac VM adapters are used;
+native Mac execution remains unverified (MAC-059).
+
+The tracked `crowd-venice` route configures ten bots and replays movement,
+firing and respawn inputs. The runner records roster and actual window state,
+allows explicit resolution/FOV and clean Present profiling without per-update
+traces. Its optional existing 200Hz CPU sampler is diagnostic only. Before the
+fix, the complete 50s cumulative guest-main sample contained 4,429 VM-query
+leaves out of 8,646 samples; dispatch/menu-label/choice chains dominated those
+queries. Static functions resolve to nearest public symbols, so those names
+alone do not identify exact source functions. Source inspection and the scan
+fixture establish the repeated row-query work.
+
+Supported Windows build and bundled tests pass. Focused menu/text/FOV/layout
+and context/backlog checks: **41 passed, 2 Mac-only skips** (27.57s). The tests
+include actual supported-US text-edit routines, 200 descending rows with one
+query, mapping/protection changes, partial/invalid rows and cyclic lists. Both
+eager-query and stale-cache mutations fail. No patch changed; the complete
+builder/patch loader is used. Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207,
+D3D11, RTX 4070 SUPER, driver 32.0.16.1742. Built from `db58eec` plus the
+`pc_menu_text.inc` change; executable SHA-256:
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+
+At 3440x1440 rendered resolution, FOV73, Classic textures, native144, no captures
+or per-update/stack trace, the matching 1.4s input-free ten-bot menu window changes
+from **63.29 FPS / 18.899ms worst** to **143.99 FPS / 8.241ms worst** (88/200
+complete intervals). Both windows are visible, non-minimized, unfocused and have
+640x480 clients. These are short sequential samples, not full-menu acceptance.
+The initial after-build run (`crowd-menu-scan-144`) overlapped pytest in the menu
+and first second of gameplay (test log completed at run+86.7s). It is retained
+but excluded from these final numbers. `crowd-menu-clean-144` repeats the route
+after all test/build activity ended, with no concurrent diagnostic sampler.
+
+The clean native144 gameplay window (spawn+5..+55s) has **7,199 guest
+presents, 144.0021 FPS, 6.980ms median, 7.313ms p95, 7.512ms p99, 8.875ms worst**,
+zero interpolated presents and zero intervals above 33.33ms. The lowest rolling
+one-second count is 144. Spawn-to-combat-six game-clock/wall ratio is 0.999976;
+all active checkpoints retain Venice scene46, match state7, unpaused and roster
+655617 (one human/ten configured bots). The run exits cleanly and preserves
+signed profiles/canonical fixture; disposable disks are recycled.
+
+The post-fix **Original60** run (`--native-fps 0`, same route/device/FOV) has
+2,999 guest presents, 60.0006 FPS, median16.669ms, p9517.042ms, p9917.171ms,
+worst17.528ms, no interpolated/over33.33ms intervals, rolling minimum60 and
+game-clock/wall ratio0.999976 in the corresponding 50s window. It also exits
+cleanly with the ten-bot checkpoints and unchanged signed profiles/fixture.
+This validates sampled clock rate and route behavior, not exact combat parity.
+
+Before this change, the same background route averaged 143.961 FPS but included
+one **22.857ms** interval, 47.24ms after an E-key input. A separate verified
+foreground/fullscreen run averaged 143.9999 FPS, worst8.935ms. Its client was
+1920x1060 while the device rendered 3440x1440. The post-window screenshot showed
+a death camera and a nearby character. Window modes, combat outcomes, RNG and
+assets differ; these are not causal gameplay speedup or identical-mechanics
+comparisons. Ten configured bots does not prove ten visible bots. Neither
+before nor after reproduced the reported 110 FPS sustained dip. The intermittent
+respawn hitch and broader crowded-match/online/other-map acceptance remain open.
+Present timestamps measure successful host calls, not GPU completion, scanout
+or input latency. This does not complete the native-high-refresh goal.
+
+Evidence: `logs/crowd-menu-build.log`, `logs/crowd-menu-tests.log`,
+`logs/crowd-menu-clean-comparison.json`,
+`logs/crowd_beta_analyze.py`, `logs/crowd_menu_compare.py`, isolated
+`crowd-beta-current-{144,60}`, `crowd-beta-active-144`, `crowd-beta-cpu-144`, and
+`crowd-menu-scan-{144,60}` and `crowd-menu-clean-144` directories. Each retains executable/runner hashes,
+commands, state checkpoints and bounded timing records. PR #322 is reverified
+merged into main at base `2252af1`; this branch has no separate PR. Work stays
+grouped on the same branch.
+
+## 2026-10-24 — Continuous water enabled with native beta presets
+
+On `fix/native-water-rounding`, common-RHI 120/144 beta presets now enable the
+persistent water field without a test flag. Original60 and legacy GL keep
+original output. `TSFP_SURFACE_NATIVE_TEST=0` remains a diagnostic opt-out;
+older experimental paths stay separate. Allocation/shader setup failure latches
+original output until scene/device reset, avoiding repeated setup attempts on
+every frame. Empty resets do not change renderer texture bindings. Algorithms,
+original byte feedback, event ordering and the one-authored-tick cosmetic delay
+are unchanged from the previously captured opt-in implementation.
+
+Three focused CPU tests pass (3.23s), covering default/override policy, actual
+guest dispatch/ABI and the real HLE adapter's failure/retry behavior. The new
+adapter fixture runs in the existing dual-host native-timing CI group. The
+supported Windows build and bundled checks pass; complete patch loader reports
+zero runtime-file changes. No patch or shader changed in this revision. Repository checks found a stale
+last-patch assertion from before the capture/render tail; the test now checks
+the complete handoff/capture/render order. Guide text was condensed to preserve
+the enforced 64-KiB file limit.
+Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11, RTX 4070 SUPER driver
+32.0.16.1742. Built from `2b03306` plus this revision's three native-water source
+changes; executable SHA-256:
+`e551214b38d0337bcba398ba554511afceff80d3e2acc0776e245ad678de7549`.
+
+Two sequential isolated Scotland runs use this same executable, 1280x720,
+minimized, default water policy, no image readback. Native144 and true Original60
+(`--native-fps 0`) complete the committed `surface-native-long` route. A 90.306s
+stationary dwell has matching sampled position/look/health and authored clock
+rates 59.99615/59.99580 ticks per wall second. Both spend four pistol rounds in
+the two-second firing hold, pause (only 9/8 ticks between pre-pause observation
+and the paused checkpoint), then resume (332/334 ticks by the next checkpoint).
+Native logs show creation/use of the field; Original60 creates no native owners.
+Both exit cleanly, preserve signed profiles/canonical fixture, and recycle disks.
+
+| Complete intervals in the same 60-second host-clock window | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents | 8,639 | 3,599 |
+| Mean FPS | 144.0005 | 60.0004 |
+| Median / p95 interval (ms) | 6.957 / 7.319 | 16.656 / 17.034 |
+| p99 / worst interval (ms) | 7.474 / 8.610 | 17.147 / 17.411 |
+| Interpolated presents / intervals above 33.33ms | 0 / 0 | 0 / 0 |
+
+These are host Present intervals, not GPU completion, scanout or input latency.
+The recorder's 20,000-frame cap excludes the end of the native run; only a fully
+covered central minute is analyzed, while game-clock behavior uses the full
+90-second dwell. One ordered pair, unmatched RNG and no new frame captures do
+not prove identical wave trajectories, all-scene appearance, first-use hitch
+cost or crowded-match performance. Prior unchanged-kernel image/GPU evidence is
+recorded below. Native Mac GPU/gameplay, broader scenes and full-game correctness
+remain incomplete. This beta-default change does not complete the active goal.
+
+Repository context/backlog checks pass (21 tests, 3.28s); context against base
+`2252af1` and whitespace checks pass.
+
+Evidence: `logs/water-beta-{build,policy-cpu}.log`,
+`logs/water-beta-long-{144,60}.log`, and the corresponding isolated directories;
+`water-beta-long-144/comparison.json` contains exact clock windows/metrics.
+No new PR was opened. The preceding integration PR #322 is verified merged into
+main at this branch's base `2252af1`; follow-ups remain grouped on this branch.
+
+## 2026-10-24 — Preserve water resources across live FPS changes
+
+The opt-in native water path now suspends its timing/output state on switching
+to Original60, retaining the bounded GPU owners and source identities. Returning
+to native reinitializes from the next authored input without rebuilding identical
+images and shaders. Constructor/scene and device teardown still release owners;
+Original60 performs no coupled updates. This removes unnecessary resource work,
+not a measured guarantee about switch latency. The original initialization rule
+still permits a held image before the first authored tick after re-enabling.
+
+The committed `scotland_switch` route applies 144/120/Original60/144 in one
+process and requires all four 90-image segments. Its first run caught outdated
+navigation into Keyboard and Mouse and correctly failed complete-cycle validation;
+that run contributes no preset-switch evidence. The corrected initial cycle
+(`water-native-cycle`) completed: fresh pairs were 89/89, 89/89, 89/89 and 88/89.
+The last segment's sole repeated pair precedes its first whole tick. All segments
+retain nonflat variation; reviewed menu captures show applied presets/gray Apply,
+and shoreline screenshots show ordinary water at 60 and 144. These different-time
+captures do not prove matching wave trajectories or switch latency.
+
+The shared guest/cache checks pass (3 cases, 3.41 s), including suspension without
+allocation/stale output, native resumption, local time mismatch and constructor
+cleanup. The image-analysis suite passes 23 cases. Supported Windows/MSVC/D3D11
+build and bundled checks pass. Executable SHA-256:
+`f30a158ef95936849c546e76d99f88b2f75b098ffb1d992ef4a01e64bc663137`, built from
+`595668c` plus these source changes. No patch/hook layout or shader algorithm
+changed. Logs: `water-native-suspend-build.log`, `water-native-suspend-cpu.log`,
+`water-native-cycle-analysis.log`. Native Mac execution remains unverified.
+
+The rebuilt retained-owner cycle (`water-native-retained-cycle`) also completes
+all four segments: 89/89, 89/89, 89/89 and 88/89 changed pairs. The tracked resource
+`82962910` is created once at frame 5578 before capture and is never recreated
+through the cycle. The current runner's resource-identity/creation assertions
+also pass when applied to that completed run. The sole held pair remains before
+the first authored return tick; resource retention does not change that timing
+rule. The final saved preset is 144. Profiles/signatures and the canonical fixture
+are unchanged, disposable partitions recycled, and the process exits cleanly.
+Logs: `water-native-retained-cycle.log`; captures/results/provenance are under
+its isolated run directory. These image-readback runs exclude switch-latency and
+pacing claims. Full-game dynamics/visual parity, long-run behavior and native Mac
+remain open; the new water path is still opt-in. No new PR was opened.
+
+## 2026-10-24 — Opt-in continuous water reaches the original ripple shader
+
+On `fix/native-water-rounding`, the persistent coupled field now drives the
+original final water shader under `TSFP_SURFACE_NATIVE_TEST=1`. The guest retains
+original whole-tick disturbance/RNG, smoothing and byte-feedback calls, then the
+render thread advances the cosmetic field using exact native phase. Between
+whole updates, the field advances and the final shader draws again. This is a
+one-authored-tick cosmetic phase delay relative to completed original feedback;
+it does not delay gameplay input. Original60 and default settings are unchanged.
+Owners persist across frames, reset at constructor/scene/device boundaries, and
+release before the RHI device. There are no per-frame readbacks in normal use.
+
+Windows/MSVC/D3D11 supported build and bundled checks pass. The 14 surface CPU
+cases pass, including actual guest adapter cadence/stack checks and every owner
+allocation failure. All 31 GPU cases pass in 187.99 s, including packed alpha
+height, output restoration and existing original-shader/byte controls. Binary
+SHA-256: `56ce178a050b3c6d3a604e74610b5bc8d0d5b0e6e326eb017e18310b8a26be50`
+(base `61301df` plus the persistent-water source changes).
+
+Bounded isolated Scotland runs at native120 and native144 both produce 360 final
+GPU images with 359/359 changed consecutive pairs. Their captures include 176
+and 200 frames respectively with zero whole ticks. Neither collapsed to a flat
+image. The routes also complete movement, pause and resume, preserve valid
+profiles/the fixture, and recycle disposable disks. Reviewed screenshots show
+normal shoreline rendering. Synchronous readback changes workload: these results
+are image freshness, not measured 120/144 frame pacing or full-game parity.
+Logs: `water-visible-build.log`, `water-visible-surface-cpu.log`,
+`water-visible-gpu.log`, `water-visible-game.log`, `water-visible-120-game.log`.
+Images/stats live in `private/test-saves/water-visible-{120,144}`.
+
+A separate capture-free native144 ordered pair uses the same executable and
+1280x720 minimized Scotland route on RTX 4070 SUPER (driver 617.42). In the eight
+seconds ending at the stationary start label, each run records 1,152 guest
+presents: baseline/new mean 6.94459/6.94452 ms (both ~144 FPS), p95
+7.313/7.339 ms, p99 7.484/7.542 ms, maximum 7.851/8.488 ms. These are host
+Present intervals, not GPU execution or scanout. Background patch tests were
+running, and one ordered pair cannot isolate marginal cost. Both complete
+movement/pause/resume and profile-preservation checks. Evidence:
+`private/test-saves/water-cost-native/paired-pacing.json` and paired runner logs.
+
+Patch compatibility checks passed in two stages: 19 cases on the initial full
+run, then both texture/main branch-switch cases (119.64 s) after removing an
+unnecessary optional-texture context dependency from the new patch. Reapplying
+the complete stack changed zero runtime files. Context/index and whitespace
+checks pass. Logs: `water-visible-patches.log`, `water-visible-patch-switch.log`.
+The user's related-PR merge order is now recorded in root `AGENTS.md`.
+
+The path stays opt-in. Sustained pacing, first-use allocation/shader hitches,
+visual comparison against Original60,
+local time overrides, FPS switches, broader scene/event coverage and native Mac
+GPU execution remain acceptance gaps. Legacy GL keeps original output. No new
+PR was opened; related work remains on the same branch.
+
+## 2026-10-24 — Shared water solver executes inside the game renderer
+
+`pc_surface_gpu_begin_bytes` now initializes the shared GPU owner directly from
+the game's completed input and first-pass byte views. The owned residual field
+preserves clipping, quantization and acceleration saturation; inputs remain
+sampled only. Existing controlled trajectories use this entry point, while the
+capture replay retains an independent unpack/residual setup.
+
+The opt-in `TSFP_SURFACE_GPU_CAPTURE=1` branch runs this solver inside the existing
+deferred capture callback. It records states after 5/12 and after
+5/12 + 5/12 + 1/6, then releases all diagnostic resources before returning.
+The bounded native144 Scotland session completed cleanly with unchanged valid
+profiles and recycled disks. Its 16 samples cover level ticks 300-317; readback
+and per-sample creation disturb pacing, so this is not a performance test.
+
+The full GPU suite passes 31 cases in 182.59 s, including the live runtime's 32
+float fields compared with independent replay within 32 float epsilons
+(3.815e-6). Original shader/byte endpoint comparisons remain exact. The two CPU
+owner/cache cases pass in 2.84 s, covering all 37 allocation-failure stages.
+The supported Windows build and bundled checks pass. Executable SHA-256:
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`, built from
+`15d774c` plus these shared input/probe changes.
+
+Logs: `water-runtime-gpu-build.log`, `water-runtime-owner-cpu.log`,
+`water-byte-entry-gpu.log`, `water-runtime-gpu-game.log`. Copied identities,
+source hashes and fields are in `private/test-saves/water-runtime-gpu`.
+The new solver still does not control visible water. Persistent resource reuse,
+event/fractional-time scheduling, final-shader hookup, sustained pacing and Mac
+execution remain open. The normal game path has no probe allocations or readbacks.
+No new PR was opened.
+
+## 2026-10-24 — Coupled water validated against completed gameplay feedback
+
+The opt-in `TSFP_SURFACE_CAPTURE` hook now copies the original feedback input,
+first pass and second pass from actual GPU images after their queued draws.
+Earlier D3D capture files contained stale system-memory copies of render targets;
+those copies cannot validate the solver against live fields. The new bounded
+probe leaves guest passes/state unchanged and uses isolated test output files.
+
+Windows build and its bundled checks passed from `0cec704` plus the capture
+changes. Executable SHA-256:
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`.
+Two bounded Scotland routes, Original60 and native144, captured 16 distinct input
+fields each at level ticks 300-315. Both exited cleanly, exercised movement and
+pause/resume, retained profile hashes/signatures and recycled disposable disks.
+These diagnostics synchronize the GPU and are not frame-pacing measurements.
+
+The RTX 4070 SUPER replay matches the captured original first-pass red and
+second-pass green/blue/alpha exactly for all 32 fields. The coupled solver also
+matches all 32 endpoints with steps of 1, two halves, and 5/12 + 5/12 + 1/6
+(96 endpoint comparisons). The capture tests pass in 12.13 s. An initial attempt
+to compare these hardware bytes directly against WARP differed by one byte;
+that cross-adapter comparison is not an exact golden. Existing WARP tests use
+their own original shader reference; no solver tolerance was relaxed here.
+The asset-free timing group passes 22 cases in 27.50 s. All 21 patch-update cases
+pass in 542.79 s, including fresh/repeated application, historical upgrades,
+branch switches, line endings and conflict preservation (`water-live-patches.log`).
+
+Evidence: `logs/water-live-capture-build.log`, `water-live-host.log`,
+`water-live-feedback.log`, `water-live-feedback-original.log`,
+`water-live-gpu.log` (initial cross-adapter difference), `water-live-gpu-final.log`;
+local capture provenance and fields are under `private/test-saves/water-live-feedback*`.
+The new solver still does not drive visible game water. These checks validate
+the operator on real fields, not event cadence, queued splash coverage, scene
+reloads, fractional final-shader integration, performance or Mac execution.
+Those and the broader high-refresh acceptance work remain open. No new PR.
+
+## 2026-10-24 — Bounded GPU water resource reuse
+
+On `fix/native-water-rounding`, `graphics/surface_gpu_cache.h` now manages up to
+five coupled-water owners keyed by resource, generation, coefficients and four
+retained source images. Repeated draws reuse GPU resources without allocation;
+changed identity replaces them transactionally. Failure leaves the old entry
+intact and returns NULL for fallback. Scene/device cleanup releases all references.
+The new cache remains fixture-only: guest/HLE reset and event hooks are not wired.
+
+Windows MSVC asset-free timing checks pass 21 cases in 25.68 s, including every
+allocation failure during cache replacement and checks for retained references,
+capacity limits and recreation. The D3D11 WARP suite passes 28 cases in 160.72 s,
+including deliberate broken-implementation controls. All 40 RTX 4070 SUPER
+field/rate/smoothing trajectories pass through the cache with unchanged original
+byte boundaries and final output. Logs: `water-cache-host-suite.log`,
+`water-cache-gpu-suite.log`, `water-cache-hardware-{0,1,2,3}.log`.
+
+These are isolated lifetime and shader checks, not an in-game performance gain
+or level-reload proof. The normal playable build is unchanged. Mac execution,
+actual game integration, sustained frame pacing and broader gameplay acceptance
+remain open under MAC-060. No new PR was opened.
+
+## 2026-10-24 — Shared ownership for the coupled GPU water kernel
+
+`graphics/surface_gpu.h` now owns the candidate's mode/basis/state/forcing/world/
+scratch images, shaders, time buffer and draw states. The GPU fixture uses this
+shared owner instead of managing those resources itself. Creation unwinds on
+failure; reset requires initialization before more updates. Each operation
+restores color/depth targets and viewports and clears temporary bindings.
+Original disturbances, smoothing and byte-boundary passes are still separate;
+there is no game resource registry or enabled guest hook yet.
+
+All 40 RTX field/rate/smoothing trajectories still match the original byte
+boundaries and final output. Lifecycle checks additionally verify reset and
+external input copying, invalid input/time/alias rejection, zero-time preservation,
+multiple and empty viewport restoration, color/depth identity, temporary texture
+and buffer unbinding, and an untouched sentinel target. The CPU failure fixture
+cleans up every one of 32 injected RHI allocation failures and recreates.
+The asset-free timing group passes 20 cases in 25.48 s; the GPU suite passes 28
+in 159.55 s, including deliberately broken reset and output-restoration controls.
+The final empty-viewport and invalidated-output additions pass the hardware
+profile-0 check separately (water-owner-final-lifecycle.log).
+Logs: water-owner-host-suite.log, water-owner-gpu-suite.log,
+water-owner-lifecycle.log, water-owner-empty-viewport.log,
+water-owner-hardware-{1,2,3}.log.
+
+Timing remains sensitive to the isolated workload: two capture-free runs pass
+their endpoint checks but show 144-Hz means from 0.075534 to 0.739911 ms across
+smoothing/run conditions. Read-only telemetry during the repeat observes GPU
+clocks moving between low-power states and 2520 MHz; it does not identify the
+clock at every measured frame. This is not a controlled regression/speedup result
+or a game frame-time measurement. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. No GPU settings were changed.
+Live hook/event integration, sustained scene profiling and Mac execution remain
+open. No new PR or playable binary was produced.
+
+## 2026-10-24 — Water candidate now passes RTX hardware checks
+
+Two distinct corrections were needed. The standalone hardware diagnostic had
+skipped initialization of the four captured wrap samplers when omitting older
+storage probes. Binding them at common setup removes its first-tick mismatch.
+That initial failure and its timings below were confounded by fixture setup.
+The correctly configured run then failed at tick 21: the RTX converts nearby
+float outputs to different bytes at 0.649169921875, while the old correction
+assumed the ideal half-byte threshold 0.649019607843137. A direct GPU sweep
+reproduces that transition (logs/water-hardware-quantizer.log).
+
+The shared boundary shader now uses the original shader's value whenever their
+arithmetic disagreement fits the existing 32-float-epsilon guard (3.815e-6),
+without guessing the GPU's conversion threshold. Larger differences remain
+untouched; fractional frames still execute the candidate's own evolution.
+No tolerance was increased. Direct checks cover the observed pair and reject
+a larger difference; an unconditional-copy mutation must fail.
+
+All 40 RTX 4070 SUPER field/rate/smoothing combinations now match every original
+byte G/B boundary and final ripple RGB, including 120/144, mid-tick rate changes,
+jitter and pause/resume. Every higher-rate advancing frame produces fresh final
+output. Maximum prequantization difference is 3.219e-6. Evidence:
+logs/water-hardware-canonical.log and water-hardware-canonical-{1,2,3}.log.
+This is controlled original-shader validation, not live scene acceptance.
+
+With no parallel tests, the noise-profile timestamp run passes all endpoint
+checks. At 144, mean candidate GPU span is 0.075883 ms without smoothing and
+0.076961 ms with it; p95 is 0.140288/0.143360 ms. Original 60-Hz passes average
+0.010121/0.011844 ms; candidate 60 averages 0.107264/0.108201 ms. These are
+isolated 128-square field costs including submission bubbles, not game frame
+times or a measured game speedup (logs/water-hardware-canonical-cost.log).
+Resource lifecycle/hooks, queued splashes, actual event delivery, Mac GPU checks
+and scene/performance acceptance remain open. No new PR or playable binary.
+The complete WARP suite passes 26 cases in 146.83 seconds, including the new
+unguarded-copy mutation (logs/water-hardware-canonical-suite.log). Context and
+whitespace checks pass. These results do not enable the unintegrated candidate.
+
+## 2026-10-24 — Initial hardware probe (superseded by corrections above)
+
+The same follow-up branch now has explicit D3D11 hardware correctness and timing
+commands. On this Windows host's NVIDIA GeForce RTX 4070 SUPER (10de:2783,
+feature level 11.0), the candidate differs at the first authored boundary;
+the mismatch reproduces with both mild and original-noise input, independently
+of timestamp instrumentation. In the mild case, first-cell green is 127/255
+instead of the original 128/255. Maximum boundary error over 60 ticks is
+0.0901961 and final ripple RGB error is 0.6156863; noise final error reaches 1.
+This contradicts hardware readiness. The candidate remains uncalled by gameplay;
+no new playable binary or PR was produced, and no accuracy guard was widened.
+
+`--hardware-check` retains boundary comparisons and freshness checks. Optional
+`--benchmark` uses disjoint-checked GPU timestamps, with no pixel readback or
+query wait inside the measured submission sequence. It retains the final byte
+comparison and currently exits unsuccessfully on that mismatch, before reaching
+120/144 schedules. Initial noise-profile spans were 0.009899 ms mean for the
+original 60-Hz passes and 0.106240 ms for the candidate at 60. These isolated
+spans include submission bubbles; they do not measure game FPS or establish
+acceptable high-refresh cost. Logs: water-hardware-cost.log,
+water-hardware-check.log, water-hardware-mild.log. Next: isolate the first-step
+hardware difference before resource/hook integration; Mac GPU execution and
+full-game coverage remain unfinished.
+
+The full WARP regression suite passes 25 cases in 141.81 seconds. A test-helper
+return-value warning was removed; the affected base case then passes without
+warnings in 2.80 seconds. Context and whitespace checks pass. Driver version:
+32.0.16.1742. Validation changes are test-only; no production shader was altered.
+
+## 2026-10-24 — Water coefficients for variable frame times
+
+Continuing the same branch, the candidate no longer builds and caches full
+coefficient textures for each distinct frame interval. Shared mode packing
+creates two immutable 128-square float4 textures (512 KiB of coefficient pixel
+data). A shared GPU shader computes the fractional update using that data and
+a 16-byte delta/scale uniform. New intervals need no coefficient image allocation
+or full-image upload. This removes a concrete integration cost, but game frame
+time and GPU performance have not been measured.
+
+The portable fixture covers real, repeated and complex eigenvalues, irregular
+split composition, tiny/full intervals and invalid/overflow rejection; its
+maximum measured arithmetic difference is 2.027e-6. Four focused CPU checks
+pass in 5.47 s; the final packing check including overflow rejection passes in
+1.20 s. Ten focused GPU cases pass in 72.16 s, with all 40 field/rate/smoothing
+trajectories byte-exact at every original boundary and final ripple output.
+The added 144-Hz schedule varies intervals by +/-0.1 ms and retains fresh output
+on every advancing frame. Existing pause and negative controls remain.
+Evidence: logs/water-mode-cpu.log, logs/water-mode-cpu-final.log,
+logs/water-mode-gpu.log.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including
+the new matrix-diagonal mutation (`logs/water-mode-full-suite.log`). Repository
+context and staged whitespace checks pass; the existing byte-error guard is unchanged.
+
+The renderer's RHI contract allows self-contained passes to change shader/state
+bindings but requires output/viewport restoration and texture unbinding. Actual
+resource lifecycle/hook integration, queued splashes, game GPU cost, scene
+coverage and Mac execution remain unfinished. No new PR or playable build.
+
+## 2026-10-23 — Exact intervals for authored water boundaries
+
+On `fix/native-water-rounding`, the actual timing producer demonstrates why the
+water candidate must not accumulate float deltas: one second at 144 Hz sums to
+59.999998569489 ticks even in a double, missing a boundary if truncated. New
+host-only `PcNativeStep` fields preserve exact elapsed units, starting phase and
+units per tick. The shared guest hook publishes them during native updates and
+clears them in Original mode, without changing guest timing words or pacing.
+
+Shared `graphics/surface_interval.h` splits these units into fractional pieces
+at authored boundaries, with at most four pieces for existing three-tick catch-up.
+Zero-time pauses produce none. Four focused checks pass (5.37 s), including a
+required failing phase-reset mutation; the entire asset-free native timing group
+passes 18 cases (23.70 s). Tests cover mixed presets, odd counter frequencies,
+jitter, pause/resume, stalls, frequency reset and rejected-input nonmutation.
+Evidence: logs/water-exact-interval.log, logs/water-clock-host-suite.log.
+The frame-clock suite passes nine cases (10.48 s), and all 24 original-shader
+GPU cases pass with the shared splitter and pause check (133.40 s). All 32
+field/rate/smoothing trajectories retain exact byte boundaries/final colors;
+pause output is unchanged. Logs: water-clock-flip-gate.log and
+water-clock-gpu-suite.log. Repository context and staged whitespace checks pass.
+
+The GPU water fixture now uses this production clock/splitter rather than its
+private rational clock and checks frozen output across a mid-motion pause.
+Resource initialization, actual guest time scopes, gameplay hook integration,
+queued splashes, GPU cost and Mac execution remain unfinished. No new PR or
+playable build; the metadata does not enable the experimental water path.
+
+## 2026-10-23 — Original water-noise input in fractional validation
+
+Continuing on `fix/native-water-rounding`, the saved Original60 Scotland capture
+and pinned game code establish noise before smoothing/feedback, with additive
+ONE/ONE RGB blending and a 128-square immutable A8L8 source. The expanded GPU
+fixture uses the original effect-19 pixel and four-instruction vertex programs,
+that source texture, captured sampler/blend state, and controlled UV offsets.
+Queued gameplay splash geometry and actual RNG scheduling remain separate work.
+
+The two focused cases pass in 14.56 seconds: every authored byte G/B boundary
+and final byte ripple RGB match at 60/120/144 and mixed rates, with smoothing
+off/on. Maximum arithmetic disagreement for this input is 2.563e-6. Original
+smoothed 60-Hz output changes on 27/60 frames and the candidate matches that;
+all higher/mixed-rate outputs change every frame. Duplicating a noise draw only
+in the candidate must fail. Evidence: logs/water-noise-integration.log and
+private/pipeline/water-disturbance-draw-state.json.
+The full updated suite passes 24 cases in 132.19 seconds, including the added
+channel-preservation check (`logs/water-noise-full-suite.log`). No cases skipped
+on this machine. Repository context and staged whitespace checks pass.
+
+No runtime source or playable build changed. Noise tests require the private
+capture and explicitly skip without it. Mac GPU, queued splashes, runtime
+ownership, scene coverage and game GPU cost remain pending. No new PR opened.
+
+## 2026-10-23 — Preserve second-pass water saturation
+
+On the same `fix/native-water-rounding` branch, near-limit initial velocities
+and heights exposed two more missing original limits: signed acceleration after
+the fourth neighbor contribution, and height clipping before damping. The
+shared residual now includes the acceleration clamp; a shared boundary helper
+caps height at the authored damping value and bounds velocity. Limits apply at
+original boundaries, preserving fractional evolution between them.
+
+Eight focused Windows common-RHI/WARP cases pass in 54.18 seconds. All 24
+field/rate/smoothing trajectories match every original byte G/B boundary and
+final byte ripple RGB. Removing either new limit must fail. The extreme field's
+60-Hz ripple output changes on 53/60 frames without smoothing, 52/60 with it,
+exactly matching the original; 120/144 and mixed-rate output changes on every
+frame. Evidence: logs/water-saturation-before.log and
+logs/water-saturation-controls.log.
+The complete shader suite passes all 22 cases in 117.52 seconds
+(`logs/water-saturation-full-suite.log`); context and whitespace checks pass.
+
+This remains an uncalled candidate, not a new playable build. Actual disturbance
+submission, runtime ownership/scheduling, GPU cost, scene coverage and Mac
+execution remain pending under MAC-060. No additional PR opened.
+
+## 2026-10-23 — Retain water-gradient clipping across fractional updates
+
+Continuing on `fix/native-water-rounding`, a strong signed initial height pulse
+exposed missing first-pass clipping in the candidate. Subtracting the original
+float shader output measured rounding only, because that output was already
+clipped. Shared `surface_gradient_shader.h` now supplies the unclipped gradient;
+subtracting it from actual byte red retains both effects as held forcing.
+The old path differed at tick 0 and reached 0.192156881 byte-state error.
+
+The corrected Windows common-RHI/WARP fixture matches every authored G/B
+boundary and final byte ripple RGB for mild and strong initial fields at
+60/120/144, with smoothing off/on. It also matches through 144/120/60/144
+switches made within authored ticks: all 117 final byte frames remain fresh.
+Maximum pre-quantization disagreement across these 16 combinations is 3.219e-6.
+All five focused cases pass (33.83 s), including deliberate removal of clipping
+correction. Evidence: logs/water-impulse-before.log, logs/water-impulse-switch.log.
+The complete updated shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`); repository context and whitespace checks pass.
+
+No new PR or game binary. This candidate is still uncalled by gameplay. Actual
+disturbance shaders, other saturation cases, runtime integration, capture-free
+GPU cost and Mac GPU/gameplay remain unverified. MAC-060 remains awaiting
+validation; the broad high-refresh goal is not complete.
+
+## 2026-10-23 — Preserve authored rounding during fractional water updates
+
+After PR #321 reached main through integration PR #322, follow-up branch
+`fix/native-water-rounding` (base 2252af1) tests a held-input treatment of rounding.
+No new PR is opened yet; the remaining work will stay together on this branch.
+It measures the first feedback pass's rounding residual, holds it for the authored
+interval, and advances the coupled GPU field on every native frame. Steps split
+at original 60-Hz boundaries; the original smoothing and persistent byte write
+occur at those boundaries. It does not interpolate between saved frame outputs.
+
+Raw fractional transforms can differ from the original arithmetic by about one
+millionth. Near a byte midpoint that changed the rounded state and later ripples:
+the first observed mismatch was tick 14, blue 0.566666484 versus 0.566667438.
+A shared boundary shader resolves only these close decisions using original
+second-pass arithmetic evaluated at the boundary. Both proximity to the midpoint
+and disagreement with that arithmetic must fit 32 float epsilons; a distant
+state is never substituted. Normal play is still unchanged.
+
+Windows x64/MSVC/common-RHI WARP verifies all 60 authored boundaries
+with zero byte G/B difference at 60/120/144, with and without original smoothing.
+Largest measured pre-quantization arithmetic difference is 3.100e-6. Tests start
+from an actual byte target, matching the captured format. They also reject
+missing residual forcing and missing boundary handling. This resolves the
+previous storage gap for this controlled trajectory, not all water inputs:
+disturbances, clipping, live rate changes, runtime resources, game GPU cost and
+Mac GPU/gameplay remain open. No new game binary or personal-data change.
+All 17 GPU cases pass in 83.64 seconds. The six schedules also match final byte
+ripple RGB exactly and produce fresh byte ripple output on every frame (60/60,
+120/120, 144/144, with smoothing off and on). The focused portable forcing test
+passes. Evidence: logs/water-rounding-flow-suite.log.
+After rebasing onto integrated main 2252af1, the complete patch stack verifies
+and updates nine runtime files. The repeated GPU suite passes all 17 cases in
+82.79 seconds against that runtime; the focused native coupled test passes
+(1.15 seconds). See logs/water-rounding-main-suite.log. This branch checkpoint
+has no new PR yet, and no new Mac or gameplay result is inferred.
+
 ## 2026-10-23 — Combined open-PR integration
 
 Integration branch combines #305, #307, #308, #309, #310, #311, #313 and #321 on
@@ -26,6 +975,7 @@ not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
 must pass before merging. Original evidence limits remain: no general FPS or
 full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
 gameplay is unverified. This integration does not publish a release.
+
 ## 2026-10-23 — Preserve alpha-height for final ripple generation
 
 PR #321 now follows the candidate's reconstructed field through the original
