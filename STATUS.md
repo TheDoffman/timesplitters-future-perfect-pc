@@ -1,3 +1,54 @@
+## 2026-10-24 — Crowded gameplay at 144/240: Hotel holds, Disco still dips
+
+Current runtime `1dbd397` (executable hash below), Classic textures, 3440x1440
+render target, FOV73, ten configured bots and bounded move/fire/respawn routes.
+Capture and per-update tracing are disabled. The client is foreground and
+1920x1060; the desktop output reports 1920x1080 at 60 Hz. These are successful
+host Present intervals, not GPU completion, physical input latency or scanout.
+
+| Map / target | Measured FPS | Lowest one-second count | 99th-percentile frame | Worst frame |
+| --- | ---: | ---: | ---: | ---: |
+| Hotel / 144 | 144.001 | 144 | 7.435 ms | 9.454 ms |
+| Hotel / 240 | 239.941 | 238 | 4.762 ms | 15.088 ms |
+| Disco / 144 | 137.466 | 115 | 9.195 ms | 11.240 ms |
+
+The complete spawn+5..55-second Hotel windows contain 7,199/11,996 intervals;
+Disco's spawn+5..50 window contains 6,185. Every presentation is a guest frame
+with a strictly increasing guest-frame ID. Game seconds per wall second are
+0.999911 / 1.000035 / 1.000239 respectively. No frame exceeds 16.67 ms in these
+windows. Recorder coverage includes both endpoints, even where the 20,000-row
+cap is reached later. All three sessions finish cleanly, preserve profile hashes
+and signatures, and recycle their disposable partitions.
+
+Disco reproduces a sustained crowd-related deficit close to the user's report:
+its lowest five-second rate is 118.6 FPS, versus 144/239.6 in Hotel. Dips occur
+during multiple combat/death/respawn states; proximity samples do not establish
+visibility or causality. Bot outcomes differ between runs, so Hotel's higher
+result than earlier builds is not attributed to the mouse change alone.
+The larger slowdown remains unresolved; this is not full-game acceptance.
+
+A separate 200 Hz / 16-frame-depth Disco diagnostic completes. Differencing
+its complete 80s and 120s snapshots yields 6,852 main-thread samples, 26.9s CPU,
+and no dropped chains. NtQueryVirtualMemory accounts for 1,143 leaves; prominent
+retained callers are decal perspective correction (319 samples), prompt/text
+reads (221), auto-look (137), and mouse updates (63). Folded/nearest static symbols
+must not be interpreted as exact source functions. This identifies work to
+investigate, not the cause of each slow frame. Snapshot/stack overhead and
+different bot outcomes prevent treating this run as clean pacing evidence.
+Evidence: `crowd-mouse-order-disco-profile`, `diagnostic-summary.json`, and
+`private/pipeline/analyze-disco-crowd-profile.py`.
+
+Evidence: `private/test-saves/crowd-mouse-order-{144,240,disco-144}` reports,
+provenance and `crowd-pacing-summary.json`; matching logs and
+`private/pipeline/summarize-current-crowd.py` use the shared clock-window validator.
+
+All non-skipped PR #328 checks pass at `1dbd397`, including Windows/macOS native
+runtime and patch transitions. This covers the real host protection fixture on
+both CI hosts, not native Mac gameplay. The network bot-motion fixture now also
+checks 180/240 sampling and mixed 60..240 FPS intervals against elapsed-time
+progression, retaining its packet-loss/lifecycle/authority checks and negative
+controls. Six focused Windows checks pass; the new test-only head needs CI.
+
 ## 2026-10-24 — Avoid a duplicate mouse mapping query
 
 PR #325 merged into main at `28f5400`; this follow-up starts from that main on

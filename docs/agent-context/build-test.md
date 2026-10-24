@@ -42,7 +42,7 @@ The runner records `--profile-depth 1..32` (default8), `--texture-mode`
 (`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
-60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
+60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
 `tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
 Windows Online host/guest pair with Test Lab saves and loopback discovery.

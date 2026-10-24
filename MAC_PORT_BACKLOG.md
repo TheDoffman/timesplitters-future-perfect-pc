@@ -703,7 +703,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   VM spans cover either address order. Both adapters use the shared helper;
   split/read-only/inaccessible mappings retain fallback validation. The registered
   mounted pytest suite now includes real host protection changes and an unordered
-  negative control. Native Mac execution remains awaiting validation. No Mac-specific
+  negative control. These fixtures pass native Windows/macOS CI at `1dbd397`;
+  physical Mac gameplay remains awaiting validation. No Mac-specific
   feature work is needed; Darwin still uses its existing Mach VM query.
   Windows executes both adapter bodies with controlled maps, plus actual guarded
   terminal/mounted fixtures. Physical Mac aiming/capture and native execution
