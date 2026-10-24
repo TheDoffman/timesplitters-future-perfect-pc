@@ -1,3 +1,39 @@
+## 2026-10-24 — Controlled later-mission pause at all three presets
+
+Original 60, native 120 and native 144 completed isolated **Breaking and
+Entering** rooftop runs on runtime `36204e9`, executable SHA256
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+The route pauses before entering combat; all eight gameplay observations retain
+health 35, mission/scene 6 and a foreground, nonminimized window. Reviewed pause
+and resume captures show the expected menu/rooftop. This replaces the invalid
+pause comparison below, which crossed different death/restart states.
+
+At all three rates, 600 horizontal mouse counts change heading from 91 to 31
+degrees. During pause, position, heading, level ticks and the observed objective
+HUD timer remain unchanged, including after injected mouse motion. The two
+paused observations span 1.236/1.234/1.344 seconds at 60/120/144 respectively.
+Resume advances the level clock without applying paused motion; a subsequent
+300-count turn reaches 1 degree with zero vertical deflection. This verifies
+this synthetic-input pause route, not physical input latency or every menu.
+
+The additional 0.25-second forward/backward inputs do **not** establish movement
+parity: forward distances were 1.571181/1.719802/1.563154 world units, with final
+return offsets 0.016284/0.175728/0.019034. Requested key holds measured about
+0.251 seconds at the writer, but `pc_controls.c::replay_tick` polls the test
+state file no more often than every 16 ms; actual guest press/release boundaries
+were not traced. The larger 120-FPS endpoint difference remains unexplained;
+neither a speed regression nor input-delivery variation is proven. A longer
+matched movement interval or consumed-input trace is needed before acceptance.
+
+All sessions exit normally, preserve signed test profiles and the canonical
+fixture, and recycle temporary partitions. Windows 11 Pro x64, MSVC 14.44.35207,
+D3D11; render 1280x720, client 640x480, Classic textures/FOV55. Captures and
+native traces were enabled, so these are behavioral checks, not pacing results.
+Evidence: `private/test-saves/breaking-pause-{60,120,144}`, corresponding logs,
+and ignored `private/pipeline/compare-breaking-pause.py` plus its comparison JSON.
+Native Mac scenes, broad gameplay and the reported multiplayer dip remain open.
+No runtime change or rebuild was needed for this comparison.
+
 ## 2026-10-24 — Isolate Online GUI tests and compare a later mission
 
 PR #325 Windows runtime CI at `36204e9` reported552passed,168skipped and18
