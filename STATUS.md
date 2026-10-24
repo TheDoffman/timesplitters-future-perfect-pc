@@ -1,3 +1,69 @@
+## 2026-10-24 — Bounded page batches for camera validation
+
+The Auto Lookahead camera guard still validated its full 0x1504-byte player
+record through a full-region VM query. `pc_guest_query_span` now batches up to
+four resident Windows pages, validates every page's readable/current attributes,
+and grants writes only when all pages are writable. Auto Lookahead uses that
+bounded query on cache misses while preserving the complete record extent and
+two fresh pre-call regions. Larger, failed, cold or guarded queries retain the
+full-region fallback. General region scans and Darwin's Mach adapter are unchanged.
+No mouse sensitivity, camera arithmetic, cadence or saved preference changes.
+
+Private/mapped memory fixtures now check two/four-page success, five-page
+fallback and read-only/inaccessible pages at each intermediate/final position.
+Disabled-fast-path, incorrect-write, truncated-span and first-page-only mutations
+fail as required. The real Auto Lookahead fixture validates a page-crossing
+record with zero full-region queries on Windows, rejects an inaccessible record
+page, observes protection changes between calls and restores the preference.
+Existing controller/menu, split-map and stale/uncached-snapshot controls pass.
+Auto-look/decal tests pass 21 initially; the final added host-record fixture and
+four existing Auto Lookahead tests pass all five. Another 11 text/FOV checks
+pass with two Mac-only skips. Logs: `auto-look-page-batch-tests.log`,
+`auto-look-page-host-tests.log`, `auto-look-page-text-fov-tests.log`.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER. Source is `ed8b8d00` plus this page-batch
+follow-up; executable SHA256:
+`28b2ed8fc8644f22553de5e686ce2da7dbff99552a105e44d7d674d0cee156cc`.
+Build log: `auto-look-page-build.log`. Updated Mac CI and physical gameplay
+remain pending (MAC-001). A passing guard test/build is not a measured FPS gain.
+
+The bounded native144 ten-bot Disco profile `crowd-auto-look-page-profile`
+completes and preserves fixture signatures/recycles disposable partitions.
+The complete 80s-to-120s sampler interval has 6,866 samples, 4,944 on-CPU,
+24.8s CPU and no dropped chains. It includes the match transition (spawn observed
+at 86.570s), so it is not entirely active combat. There are 298 VM-query leaves,
+versus 600 in the earlier text-only diagnostic; intervening HUD changes and
+different bot outcomes prevent attributing that difference to this patch alone.
+Of these 298, 278 retain `VirtualQuery -> pc_controls_apply_mouse`, making that
+the next specific query path to audit. Symbol folding/inlining prevents treating
+the absence of an Auto Lookahead symbol as proof it performs zero queries.
+The later 120s-to-160s interval has 6,861 samples, 4,849 on-CPU, 24.7s CPU and
+291 VM leaves, but drops 1,752 call chains; it cannot rank all callers.
+Evidence: the run's CPU snapshots/provenance/report and ignored
+`logs/auto-look-page-profile-summary.json` / `auto-look-page-profile-late-summary.json`.
+These are diagnostic samples, not clean pacing or physical-input latency.
+
+A separate clean Hotel240 run (`crowd-auto-look-page-hotel-240`) completes with
+ten configured bots, Classic textures, 3440x1440 render/FOV73 and a foreground
+1920x1060 client on a 60 Hz desktop. Its complete spawn+5..55s window records
+11,599 fresh guest intervals: 232.000495 FPS, lowest one-second count 196,
+lowest five-second rate 206.8, p99 5.534 ms and worst 7.786 ms. No interval
+exceeds 9 ms; game/wall ratio is 1.000244 and no frames are interpolated.
+Fixture signatures are preserved and disposable partitions recycled. No CPU
+sampler, screenshots or per-update trace ran during this measurement.
+Evidence: run provenance/report/Present CSV and `crowd-pacing-summary.json`.
+This does not sustain 240, and earlier Hotel candidates held their target in
+different matches. Variable bot/death/respawn paths prevent a matched causal
+comparison; do not dismiss this shortfall or claim a measured FPS gain from
+the page change. Successful Presents are not GPU completion, scanout or physical
+input latency. Broader maps, modes and native Mac gameplay remain unverified.
+
+Final Auto Lookahead, decal/projection, cutscene, context and backlog checks
+pass **50 tests** in 39.81s (`auto-look-page-final-tests.log`). The preceding
+`ed8b8d00` PR head passes every non-skipped Windows/macOS check, including native
+runtime and patch transitions. This runtime follow-up requires its own CI.
+
 ## 2026-10-24 — Expanded aim, physics and effects rate coverage
 
 Continued the high-refresh audit on `e9feea43` without changing runtime code.

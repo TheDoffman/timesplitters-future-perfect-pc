@@ -60,12 +60,14 @@ Asynchronous ReadProcessMemory observations measure update holds, not rendered
 frames or Internet/physical-input latency. Five local benchmark fixture
 manifests are checked with the normal validator; the canonical fixture stays intact.
 
-Publisher fixtures run in existing Windows/Mac release checks without rebuilding
-the game/UI. `tests/test_launcher_release.py` covers paginated previous-stable
-selection, initial notes, incomplete-history refusal, scope filtering, mixed PRs,
-merge ranges, renamed paths and complete file lists. `tests/test_publish_release.py`
-covers first-Stable bootstrap from published alpha, later cross-minor baselines,
-mixed launcher/draft history and ancestor restrictions.
+Publisher tests run on both hosts without a game/UI rebuild:
+`test_launcher_release.py` covers stable selection, pagination/completeness,
+initial notes, scope/merge/rename rules; `test_publish_release.py` covers alpha
+bootstrap, cross-minor Stable baselines, mixed histories and ancestry.
+
+`test_auto_look.py` checks real multi-page records and permission expiry.
+`test_decal_projection.py` checks bounded four-page batches, larger-span fallback,
+each page's permissions and first-page-only/disabled/write/bounds mutations.
 
 ### Native vehicle integration and diagnostic checks
 

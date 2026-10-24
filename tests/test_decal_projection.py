@@ -135,13 +135,14 @@ def test_display_guest_span(tmp_path, mapped):
 
 
 @pytest.mark.skipif(sys.platform!='win32', reason='Resident-page fast path uses Windows PSAPI')
-@pytest.mark.parametrize('mutation', ['disabled', 'write-permission', 'crossing-page'])
+@pytest.mark.parametrize('mutation', ['disabled', 'write-permission', 'crossing-page', 'first-page-only'])
 def test_guest_span_mutations(tmp_path, mutation):
     header=(ROOT/'src/pc_guest_span.h').read_text()
     old,new={
-        'disabled': ('info.VirtualAttributes.Valid &&', '0 && info.VirtualAttributes.Valid &&'),
+        'disabled': ('if(readable)', 'if(0 && readable)'),
         'write-permission': ('(protection&writes)!=0', '1'),
-        'crossing-page': ('if(bytes<=system.dwPageSize-(address-base))', 'if(1)'),
+        'crossing-page': ('size_t pages=(address-base+bytes-1)/system.dwPageSize+1;', 'size_t pages=1;'),
+        'first-page-only': ('for(size_t i=0;i<pages;i++) {', 'for(size_t i=0;i<1;i++) {'),
     }[mutation]
     assert old in header
     source=(ROOT/'tests/guest_span.c').read_text().replace('#include "pc_guest_span.h"', header.replace(old,new))

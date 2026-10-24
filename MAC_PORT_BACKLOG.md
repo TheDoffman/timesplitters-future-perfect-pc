@@ -695,6 +695,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- Bounded page batches (PR #328, commit carrying this entry): Windows' shared
+  `pc_guest_query_span` checks up to four resident pages per query, including
+  every page's read/write permissions. Auto Lookahead now uses that path while
+  preserving its full player-record extent, temporary bit override and fresh
+  per-call regions. Larger/cold/failed/guarded cases retain full-region fallback;
+  Darwin retains the existing Mach query. Real private/mapped and camera-record
+  fixtures cover intermediate/final protection changes and expiry; mutations
+  reject checking only the first page. Windows tests/build pass. New Mac CI and
+  physical aiming/gameplay remain awaiting validation; no Mac adapter is needed.
+
 - General display guards (commit carrying this entry): `pc_display_menu.c`
   delegates each `guest_writable` call to a fresh shared bounded check. Windows
   gains the resident-page fast path; Mac uses real Mach bounds/protection instead

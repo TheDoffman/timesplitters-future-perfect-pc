@@ -38,18 +38,18 @@ int main(void)
 {
 #ifdef _WIN32
     SYSTEM_INFO system;GetSystemInfo(&system);size_t page=system.dwPageSize;
-    HANDLE mapping=GUEST_SPAN_MAPPED?CreateFileMappingW(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,(DWORD)(page*4),NULL):NULL;
+    HANDLE mapping=GUEST_SPAN_MAPPED?CreateFileMappingW(INVALID_HANDLE_VALUE,NULL,PAGE_READWRITE,0,(DWORD)(page*6),NULL):NULL;
     CHECK(!GUEST_SPAN_MAPPED || mapping);
     unsigned char *memory=mapping?MapViewOfFile(mapping,FILE_MAP_ALL_ACCESS,0,0,0):
-        VirtualAlloc(NULL,page*4,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
+        VirtualAlloc(NULL,page*6,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);
     CHECK(memory);
 #else
     size_t page=(size_t)sysconf(_SC_PAGESIZE);
-    unsigned char *memory=mmap(NULL,page*4,PROT_READ|PROT_WRITE,(GUEST_SPAN_MAPPED?MAP_SHARED:MAP_PRIVATE)|MAP_ANON,-1,0);
+    unsigned char *memory=mmap(NULL,page*6,PROT_READ|PROT_WRITE,(GUEST_SPAN_MAPPED?MAP_SHARED:MAP_PRIVATE)|MAP_ANON,-1,0);
     CHECK(memory!=MAP_FAILED);
 #endif
     uintptr_t offset=(uintptr_t)memory-0x1000;
-    for(size_t i=0;i<page*3;i+=page)memory[i]=1;
+    for(size_t i=0;i<page*5;i+=page)memory[i]=1;
     PcGuestRegion region={0};
     CHECK(pc_display_writable(&region,offset,0x1100,64));
 #ifdef _WIN32
@@ -62,7 +62,38 @@ int main(void)
 #endif
     region=(PcGuestRegion){0};full_queries=0;
     CHECK(pc_display_writable(&region,offset,0x1000+(uint32_t)page-16,32));
-    CHECK(full_queries==1); /* Whole access needs more than one page. */
+#ifdef _WIN32
+    CHECK(full_queries==0 && region.size==page*2);
+#else
+    CHECK(full_queries==1);
+#endif
+    region=(PcGuestRegion){0};full_queries=0;
+    CHECK(pc_display_writable(&region,offset,0x1010,page*4-32));
+#ifdef _WIN32
+    CHECK(full_queries==0 && region.size==page*4);
+#endif
+    region=(PcGuestRegion){0};full_queries=0;
+    CHECK(pc_display_writable(&region,offset,0x1000,page*5));
+    CHECK(full_queries==1); /* Bounded stack storage; larger spans fall back. */
+    for(size_t i=1;i<4;i++) {
+        CHECK(protect(memory+i*page,page,1));
+        region=(PcGuestRegion){0};
+        CHECK(!pc_display_writable(&region,offset,0x1000,page*4));
+#ifdef _WIN32
+        PcGuestRegion reads=pc_guest_query_span((uintptr_t)memory,page*4);
+        CHECK(pc_guest_region_remaining(&reads,(uintptr_t)memory,0)>=page*4);
+        CHECK(!pc_guest_region_remaining(&reads,(uintptr_t)memory,1));
+#endif
+        CHECK(protect(memory+i*page,page,0));
+        region=(PcGuestRegion){0};
+        CHECK(!pc_display_writable(&region,offset,0x1000,page*4));
+        PcGuestRegion reads_none=pc_guest_query_span((uintptr_t)memory,page*4);
+        CHECK(pc_guest_region_remaining(&reads_none,(uintptr_t)memory,0)<page*4);
+        CHECK(protect(memory+i*page,page,2));
+        memory[i*page]=1;
+        region=(PcGuestRegion){0};
+        CHECK(pc_display_writable(&region,offset,0x1000,page*4));
+    }
     PcTextReadScope text_scope={0};
     pc_text_read_begin(&text_scope);
     CHECK(pc_text_read_region(&text_scope,(uintptr_t)memory+page-16)>=16);
@@ -96,7 +127,7 @@ int main(void)
     CHECK(pc_display_writable(&region,offset,0x1000+(uint32_t)page,4));
     /* The untouched last committed page is valid even if it is not resident. */
     region=(PcGuestRegion){0};
-    CHECK(pc_display_writable(&region,offset,0x1000+(uint32_t)page*3,64));
+    CHECK(pc_display_writable(&region,offset,0x1000+(uint32_t)page*5,64));
     CHECK(!pc_display_writable(&region,offset,0,4));
     CHECK(!pc_display_writable(&region,offset,UINT32_MAX-1,4));
     CHECK(!pc_display_writable(&region,UINTPTR_MAX-2,0x1000,4));
@@ -106,7 +137,7 @@ int main(void)
     region=(PcGuestRegion){0};
     CHECK(!pc_display_writable(&region,offset,0x1100,4));
 #else
-    CHECK(!munmap(memory,page*4));
+    CHECK(!munmap(memory,page*6));
 #endif
     puts("PASS: fresh page permissions, failed/cold-query fallback, crossing spans and bounds");
     return 0;

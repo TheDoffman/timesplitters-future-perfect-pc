@@ -5,7 +5,7 @@
 /* Caller-owned snapshot for one uninterrupted camera/projection correction.
  * Initialize after the original guest call; never retain across guest calls,
  * callbacks, allocations or protection changes. The OS query still supplies
- * validated bounds and write permission: one resident page or a full region. */
+ * validated bounds and write permission: a bounded page batch or full region. */
 static inline int pc_display_writable(PcGuestRegion *region,uintptr_t offset,
                                       uint32_t address,size_t bytes)
 {

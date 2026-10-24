@@ -192,12 +192,15 @@ GL share this behavior; native Mac execution remains pending (MAC-003).
 `pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
 current-player, player-record and control-setting accesses before the guest call.
 It retains the global's region while visiting high-RAM player data, so settings
-in the first region reuse validation. Same-map access needs one query; this
-split-map path needs two, previously three. Read permissions cannot grant writes.
+in the first region reuse validation. Bounded misses use `pc_guest_query_span`;
+the complete 0x1504-byte player record remains validated. Windows checks its
+pages in one bounded batch; Mach/full-region results may cover additional fields.
+Read permissions cannot grant writes.
 Snapshots are never consulted after guest execution or
 retained for the next invocation. The original bit-3 save/restore and controller,
 local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavior
-plus controlled split/read-only maps, expiry and uncached/persistent mutations.
+plus real multi-page records, split/read-only maps, expiry and uncached/persistent
+mutations. Controller and menu paths retain their original preference behavior.
 
 Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
 `pc_network_bots_guest_frame` hook. The transport still consumes each validated
@@ -223,16 +226,16 @@ does not re-query its output: supported US `151CF0` writes all 16 floats without
 guest callbacks before returning. Weapon/preview correction therefore needs no
 VM query; decals still validate their camera and source matrix afresh, independent
 of the output's guest-stack region. `pc_guest_span.h` supplies a fresh Windows
-resident-page query for known-size accesses contained in one OS page. Its valid
-protection attributes retain read/write checks; failed, cold, guarded or crossing
-accesses fall back to the full-region query. A same-page camera/source pair can
+resident-page query for known-size accesses spanning at most four OS pages.
+Every page must be valid/readable; writes require all pages writable. Failed,
+cold, guarded or larger spans fall back to the full-region query. Camera/source pairs can
 reuse that snapshot; different pages need fresh queries. Darwin retains its Mach
 region query. Unbounded string scans still use the full-region API. This avoids
 Windows scanning a large mapped allocation to find its end on each display guard.
 The general `pc_display_menu.c::guest_writable` also delegates to this adapter,
 with a fresh zeroed snapshot on every call, including calls around guest callbacks.
 HUD, viewports, menus and network display helpers retain their requested bounds;
-multi-page accesses fall back to full-region validation. Darwin now uses real
+spans beyond four pages fall back to full-region validation. Darwin uses real
 Mach protection for these calls instead of the compatibility stub's synthetic
 4 KiB writable extent. This does not cache matrices, reduce updates or change
 projection arithmetic. `projection_output.c` checks the real
