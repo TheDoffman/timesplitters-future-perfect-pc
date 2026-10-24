@@ -1,3 +1,23 @@
+## 2026-10-24 — File-open attribution and benchmark scope
+
+On unchanged7c8bc2db/ed07ee3d, crowd-file-stack-240 completes the ten-bot route
+with intact fixtures and recycled partitions. A guest-only diagnostic extends
+targeted NtCreateFile stacks to24frames (maximum128);6,707 samples/45.000291s
+contain five identical file-open chains, zero context failures/truncation.
+API spans total0.148037s, maximum2.9871ms. No worker suspension or memory/register
+writes. The caller is `pc_controls_key_down` -> `replay_tick`: linked return
+RVA2005ff7 follows the test-state fopen under the16ms gate (cmp0x10).
+
+These opens belong to the opt-in `TSFP_PC_INPUT_STATE` automation transport,
+not normal keyboard handling, settings reloads or save routing. No gameplay
+optimization is justified by those samples. The bounded runner now records
+its startup-replay/state-file transport and16ms polling in provenance. Earlier
+capture-free/CPU-profiler-free pacing runs still include this input harness
+cost; their measured Present intervals remain valid, but do not establish
+unassisted-play performance. Raw input/scanout latency and deterministic causal
+speedups remain unmeasured. Keep this limitation when comparing candidates.
+Evidence: the named run's file-stack-summary.txt and logs/replay-file-open-linked.asm.
+
 ## 2026-10-24 — Bounded Discord status reads
 
 The prior targeted stacks include16 VirtualQuery chains through the camera's

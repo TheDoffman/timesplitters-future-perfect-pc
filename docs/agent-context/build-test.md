@@ -48,8 +48,9 @@ mutations. Private-XBE skips do not establish Mac execution of lifted routines.
 
 `test_sample_chains.py`: depth/saturation/counts and mutation controls on both
 hosts; Mac does not execute Windows stack walking.
-The runner records `--profile-depth 1..32` (default8), `--texture-mode`
-(`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
+The runner records profile depth, texture/weapon choices and its16ms test-input
+file polling. Even capture-free timing includes that harness cost; normal play
+does not. Do not attribute its `replay_tick` file opens to player input overhead.
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip

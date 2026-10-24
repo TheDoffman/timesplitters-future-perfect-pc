@@ -408,6 +408,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        input_transport='startup replay plus polled state file',input_poll_ms=16,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
