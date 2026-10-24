@@ -890,3 +890,18 @@ coefficient textures keyed by fractional duration. A fifth schedule alternates
 144-Hz intervals by +/-0.1 ms while retaining one second of active time. Every
 profile includes that jitter, smoothing off/on and pause preservation. Replacing
 the evolve shader's first diagonal entry with 1 must fail the byte comparison.
+
+Run `python tests/test_surface_shader_feedback.py --hardware-check --profile 0`
+for the same rounding candidate on the default D3D11 hardware adapter, or
+`--benchmark --profile 3` for GPU timestamp spans without per-frame pixel
+readbacks. These explicit Windows diagnostics reuse resource setup and skip the
+older WARP-only storage-tolerance probes. Normal pytest cases still use WARP.
+The hardware check retains every authored boundary/freshness comparison;
+benchmark mode checks the final byte image after each sequence and fails on a
+mismatch. It does not report unsampled intermediate accuracy as passing.
+`surface_timing_gpu.h` brackets each frame, reads disjoint/timestamp queries only
+after submission, rejects invalid clocks and bounds query waits to ten seconds.
+Reported spans include submission bubbles, exclude setup/readback, and are not
+whole-game frame times. Adapter identity is printed. Both commands currently
+fail on RTX 4070 SUPER: the first authored boundary differs, independently of
+timing instrumentation. See STATUS; do not treat WARP success as hardware parity.

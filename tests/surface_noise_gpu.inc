@@ -39,7 +39,7 @@ static void field_noise_init(FieldNoise *n) {
 }
 static void field_noise_apply(FieldNoise *n,FieldFinal *f,RoundTarget *target,unsigned tick) {
     static float before[128*128*4],after[128*128*4];
-    if(!tick)field_read(target->image,2,before);
+    if(!tick && !SURFACE_BENCHMARK)field_read(target->image,2,before);
     float offset[4]={.506488204f+((tick*17)%128)/128.f,.382273525f+((tick*31)%128)/128.f,0,0};
     RhiView *none[4]={0};rhi_set_textures(0,4,none);rhi_set_render_target(target->write,NULL);
     rhi_set_textures(0,1,&n->read);rhi_set_shader(RHI_STAGE_VERTEX,n->vertex);
@@ -49,7 +49,7 @@ static void field_noise_apply(FieldNoise *n,FieldFinal *f,RoundTarget *target,un
     rhi_draw(4,0);rhi_set_blend_state(n->copy,NULL,~0u);
     rhi_set_textures(0,4,none);rhi_set_render_target(NULL,NULL);
     rhi_set_shader(RHI_STAGE_VERTEX,f->fullscreen);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
-    if(!tick) {
+    if(!tick && !SURFACE_BENCHMARK) {
         field_read(target->image,2,after);unsigned increased=0;
         for(unsigned i=0;i<128*128;i++) {
             CHECK(after[i*4]==before[i*4] && after[i*4+2]==before[i*4+2] && after[i*4+3]==before[i*4+3]);

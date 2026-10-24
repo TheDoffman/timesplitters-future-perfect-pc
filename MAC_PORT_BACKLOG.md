@@ -3752,6 +3752,10 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   construction. The portable mode-packing fixture is in the existing dual-host
   timing suite. Windows WARP includes 144-Hz jitter and original-byte comparisons;
   native Mac GPU/CPU execution of this extension and game performance are pending.
+  Explicit Windows hardware checking now exposes a first-boundary mismatch on
+  RTX 4070 SUPER despite passing WARP trajectories. D3D11 timestamp diagnostics
+  are test-only; a Mac timing adapter and actual GPU correctness remain pending.
+  This failure must be resolved before enabling the candidate on either host.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

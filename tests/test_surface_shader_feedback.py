@@ -3,7 +3,10 @@
 The shader definition comes from the pinned local XBE; its HLSL is generated
 by the current production translator. Separate fixtures cover arithmetic,
 wrapped filtering, storage rounding and original smoothing/feedback order.
-They exclude random disturbances and full scene rendering.
+The byte-rounding profile can include captured noise with controlled UV offsets;
+live event delivery and full scene rendering are excluded. Explicit CLI modes
+run hardware correctness or capture-free timestamp diagnostics, never CI timing
+thresholds or whole-game FPS measurements.
 """
 import hashlib
 import json
@@ -32,7 +35,7 @@ RUNTIME = ROOT / 'external/ts3FPrecomp/src'
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, False, 128, True),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'clamped-basis', 128, True),
     (0x4bbf10, 'surface_spatial_gpu.inc', 7, 'constant-alpha', 128, True)])
-def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False, rounding=False, rounding_profile=0):
+def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutation, extent, wrap, smoothing=False, rounding=False, rounding_profile=0, benchmark=False, hardware=False):
     sys.path.insert(0, str(RUNTIME.parent))
     from tools.recomp import config
     xbe = ROOT / 'private/game/default.xbe'
@@ -182,6 +185,21 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
 
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
+    if benchmark or hardware:
+        assert rounding and not mutation
+        setup = setup.replace('D3D_DRIVER_TYPE_WARP', 'D3D_DRIVER_TYPE_HARDWARE')
+        needle = '    CHECK(rhi_d3d11_adopt(warp,context)==0 && rhi_device_ready());'
+        assert setup.count(needle) == 1
+        setup = setup.replace(needle, needle + '''
+    surface_timing_device=warp;surface_timing_context=context;
+    IDXGIDevice *dxgi=NULL;IDXGIAdapter *adapter=NULL;DXGI_ADAPTER_DESC adapter_desc;
+    CHECK(SUCCEEDED(ID3D11Device_QueryInterface(warp,&IID_IDXGIDevice,(void**)&dxgi)));
+    CHECK(SUCCEEDED(IDXGIDevice_GetAdapter(dxgi,&adapter)));
+    CHECK(SUCCEEDED(IDXGIAdapter_GetDesc(adapter,&adapter_desc)));
+    printf("surface-hardware adapter=%ls vendor=%04x device=%04x feature=%x\\n",
+        adapter_desc.Description,adapter_desc.VendorId,adapter_desc.DeviceId,feature);
+    IDXGIAdapter_Release(adapter);IDXGIDevice_Release(dxgi);
+''')
     if case in ('surface_damping_gpu.inc', 'surface_coupling_gpu.inc', 'surface_spatial_gpu.inc'):
         setup = setup.replace('#include "rhi.h"','#include "rhi.h"\n#include "surface_upload.h"')
     setup = setup.replace('#include "rhi.h"',
@@ -198,12 +216,25 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             helpers = '#define SURFACE_BASIS_WRAP 0\n' + helpers
         helpers += '\n#include "surface_final_gpu.inc"\n'
         if rounding:
+            helpers += f'#define SURFACE_BENCHMARK {int(benchmark)}\n#include "surface_timing_gpu.h"\n'
             if mutation == 'noise-duplicate':
                 helpers += '#define SURFACE_NOISE_REPEATS 2\n'
             helpers += f'#define SURFACE_ROUNDING_PROFILE {rounding_profile}\n#include "surface_rounding_gpu.inc"\n'
             needle = '    for(unsigned rate=0;rate<3;rate++) {\n        unsigned fps=rates[rate];unsigned final_fresh=0;'
             assert fixture.count(needle) == 1
-            fixture = fixture.replace(needle, '    field_rounding_cases(&final,field_ps);\n' + needle)
+            if benchmark or hardware:
+                # Reuse the actual resource setup and candidate, excluding old
+                # storage diagnostics whose CPU tolerances target WARP only.
+                prefix = fixture[:fixture.index('    for(unsigned storage=0;storage<6;storage++)')]
+                transform = fixture[fixture.index('    rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);', fixture.index('    if(!SURFACE_SMOOTHING) {')):
+                                    fixture.index('    /* Asymmetric corners, checkerboard')]
+                cleanup = fixture[fixture.index('    rhi_view_destroy(world_read);'):]
+                cleanup = cleanup.replace('    }\n    rhi_set_shader(RHI_STAGE_VERTEX,NULL);', '    rhi_set_shader(RHI_STAGE_VERTEX,NULL);', 1)
+                cleanup = cleanup.replace('    puts("PASS: original translated feedback shader pair verifies spatial coupling and storage gaps");', '')
+                cleanup = cleanup.replace('pair matched by coupled spectral GPU steps (float32 only)', 'hardware diagnostic completed; final byte output checked')
+                fixture = prefix + transform + '    field_rounding_cases(&final,field_ps);\n' + cleanup
+            else:
+                fixture = fixture.replace(needle, '    field_rounding_cases(&final,field_ps);\n' + needle)
         setup = setup.replace('int main(void) {', helpers + '\nint main(void) {')
     source = tmp_path / 'surface.c'
     if mutation == 'smoothing-offset':
@@ -299,3 +330,18 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='Bounded hardware water-pass timing; not game FPS')
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--benchmark', action='store_true')
+    mode.add_argument('--hardware-check', action='store_true')
+    parser.add_argument('--profile', type=int, choices=range(4), default=3)
+    args = parser.parse_args()
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='tsfp-water-timing-') as directory:
+        test_original_surface_shader_feedback(Path(directory), 0x4bbf10,
+            'surface_spatial_gpu.inc', 7, False, 128, True, rounding=True,
+            rounding_profile=args.profile, benchmark=args.benchmark, hardware=True)

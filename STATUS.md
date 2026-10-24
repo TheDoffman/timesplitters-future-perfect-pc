@@ -1,3 +1,32 @@
+## 2026-10-24 — Actual GPU exposes a water-candidate mismatch
+
+The same follow-up branch now has explicit D3D11 hardware correctness and timing
+commands. On this Windows host's NVIDIA GeForce RTX 4070 SUPER (10de:2783,
+feature level 11.0), the candidate differs at the first authored boundary;
+the mismatch reproduces with both mild and original-noise input, independently
+of timestamp instrumentation. In the mild case, first-cell green is 127/255
+instead of the original 128/255. Maximum boundary error over 60 ticks is
+0.0901961 and final ripple RGB error is 0.6156863; noise final error reaches 1.
+This contradicts hardware readiness. The candidate remains uncalled by gameplay;
+no new playable binary or PR was produced, and no accuracy guard was widened.
+
+`--hardware-check` retains boundary comparisons and freshness checks. Optional
+`--benchmark` uses disjoint-checked GPU timestamps, with no pixel readback or
+query wait inside the measured submission sequence. It retains the final byte
+comparison and currently exits unsuccessfully on that mismatch, before reaching
+120/144 schedules. Initial noise-profile spans were 0.009899 ms mean for the
+original 60-Hz passes and 0.106240 ms for the candidate at 60. These isolated
+spans include submission bubbles; they do not measure game FPS or establish
+acceptable high-refresh cost. Logs: water-hardware-cost.log,
+water-hardware-check.log, water-hardware-mild.log. Next: isolate the first-step
+hardware difference before resource/hook integration; Mac GPU execution and
+full-game coverage remain unfinished.
+
+The full WARP regression suite passes 25 cases in 141.81 seconds. A test-helper
+return-value warning was removed; the affected base case then passes without
+warnings in 2.80 seconds. Context and whitespace checks pass. Driver version:
+32.0.16.1742. Validation changes are test-only; no production shader was altered.
+
 ## 2026-10-24 — Water coefficients for variable frame times
 
 Continuing the same branch, the candidate no longer builds and caches full

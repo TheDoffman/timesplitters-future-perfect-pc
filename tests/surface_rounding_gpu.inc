@@ -147,8 +147,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
         unsigned reference_fresh=0;memset(normal,0,sizeof normal);
         rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
         round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);unsigned current=0;
+        SurfaceTiming baseline;surface_timing_begin(&baseline,60);
         /* Independent original 60-Hz path with real byte initial/feedback state. */
         for(unsigned tick=0;tick<60;tick++) {
+            surface_timing_mark(&baseline,tick,0);
             RhiView *inputs[4];
 #if SURFACE_ROUNDING_PROFILE == 3
             field_noise_apply(&noise,f,&bytes[current],tick);
@@ -159,12 +161,18 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             round_draw(f,feedback[0],&offsets[0][0][0],&cb[0],inputs,4,&first_byte);
             inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
             round_draw(f,feedback[1],&offsets[1][0][0],&cb[1],inputs,2,&bytes[current^1]);current^=1;
+            if(SURFACE_BENCHMARK) {
+                field_final_run(f,bytes[current].read,0,1,NULL);
+                surface_timing_mark(&baseline,tick,1);continue;
+            }
             field_read(bytes[current].image,2,references+tick*SURFACE_SIDE*SURFACE_SIDE*4);
             field_final_run(f,bytes[current].read,0,1,field_b);unsigned changed=0;
             for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<2;channel++)
                 changed|=field_b[i*4+channel]!=normal[i*4+channel];
             reference_fresh+=changed;memcpy(normal,field_b,sizeof normal);
         }
+        surface_timing_finish(&baseline,"original",smoothing,60,0);
+        if(SURFACE_BENCHMARK)field_read(bytes[current].image,2,references+59*SURFACE_SIDE*SURFACE_SIDE*4);
         for(unsigned rate=0;rate<5;rate++) {
             unsigned fps=rates[rate],ticks=0,fresh=0;double worst=0,arithmetic_error=0;
             /* Use the actual clock producer and shared interval splitter. This
@@ -176,7 +184,9 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
             round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);current=0;
             memset(normal,0,sizeof normal);
+            SurfaceTiming timing;surface_timing_begin(&timing,frames);
             for(unsigned frame=0;frame<frames;frame++) {
+                surface_timing_mark(&timing,frame,0);
                 unsigned frame_rate=fps?fps:(frame<37?144:frame<67?120:frame<82?60:144);
                 if(frame==10) {
                     now+=frequency/2;
@@ -184,8 +194,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                     PcSurfaceInterval stopped;
                     CHECK(pc_surface_interval_split(paused.units_per_tick,paused.game_phase,paused.game_units,&stopped));
                     CHECK(!stopped.count && stopped.end_phase==clock.game_remainder);
-                    field_final_run(f,world.read,1,1,field_b);
-                    CHECK(!memcmp(normal,field_b,sizeof normal));
+                    if(!SURFACE_BENCHMARK) {
+                        field_final_run(f,world.read,1,1,field_b);
+                        CHECK(!memcmp(normal,field_b,sizeof normal));
+                    }
                 }
                 now+=frequency/frame_rate;
                 if(rate==4)now+=(frame&1)?frequency/10000:-frequency/10000;
@@ -219,42 +231,55 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                     if(part->ends_tick) {
                         inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
                         round_draw(f,feedback[1],&offsets[1][0][0],&cb[1],inputs,2,&first_float);
-                        field_read(first_float.image,0,exact);field_read(world.image,0,field_b);
-                        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=1;channel<3;channel++) {
-                            double limited=fmin(channel==1?1:d,fmax(0,field_b[i*4+channel-1]+(channel==1?.5f:0)));
-                            arithmetic_error=fmax(arithmetic_error,fabs(limited-exact[i*4+channel]));
+                        if(!SURFACE_BENCHMARK) {
+                            field_read(first_float.image,0,exact);field_read(world.image,0,field_b);
+                            for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=1;channel<3;channel++) {
+                                double limited=fmin(channel==1?1:d,fmax(0,field_b[i*4+channel-1]+(channel==1?.5f:0)));
+                                arithmetic_error=fmax(arithmetic_error,fabs(limited-exact[i*4+channel]));
+                            }
                         }
                         inputs[0]=world.read;inputs[1]=first_float.read;
                         round_draw(f,boundary,NULL,NULL,inputs,2,&bytes[current]);
-                        field_read(bytes[current].image,2,field_a);
-                        for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=1;channel<3;channel++) {
-                            double error=fabs(field_a[i*4+channel]-references[(ticks*SURFACE_SIDE*SURFACE_SIDE+i)*4+channel]);
-                            if(error && !worst)printf("first-rounded-difference tick=%u cell=%u channel=%u got=%.9g expected=%.9g candidate_float=%.15g original_float=%.15g\n",
-                                ticks,i,channel,field_a[i*4+channel],references[(ticks*SURFACE_SIDE*SURFACE_SIDE+i)*4+channel],field_b[i*4+channel-1]+(channel==1?.5f:0),exact[i*4+channel]);
-                            worst=fmax(worst,error);
+                        if(!SURFACE_BENCHMARK) {
+                            field_read(bytes[current].image,2,field_a);
+                            for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=1;channel<3;channel++) {
+                                double error=fabs(field_a[i*4+channel]-references[(ticks*SURFACE_SIDE*SURFACE_SIDE+i)*4+channel]);
+                                if(error && !worst)printf("first-rounded-difference tick=%u cell=%u channel=%u got=%.9g expected=%.9g candidate_float=%.15g original_float=%.15g\n",
+                                    ticks,i,channel,field_a[i*4+channel],references[(ticks*SURFACE_SIDE*SURFACE_SIDE+i)*4+channel],field_b[i*4+channel-1]+(channel==1?.5f:0),exact[i*4+channel]);
+                                worst=fmax(worst,error);
+                            }
                         }
                         ticks++;
                         round_draw(f,unpack,NULL,NULL,&bytes[current].read,1,&world);
                     }
+                }
+                if(SURFACE_BENCHMARK) {
+                    field_final_run(f,world.read,1,1,NULL);
+                    surface_timing_mark(&timing,frame,1);continue;
                 }
                 field_final_run(f,world.read,1,1,field_b);unsigned changed=0;
                 for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<2;channel++)
                     changed|=field_b[i*4+channel]!=normal[i*4+channel];
                 fresh+=changed;memcpy(normal,field_b,sizeof normal);
             }
+            surface_timing_finish(&timing,"candidate",smoothing,fps,rate==4);
             field_final_run(f,world.read,1,1,field_a);
             rhi_image_update(f->packed,0,NULL,references+59*SURFACE_SIDE*SURFACE_SIDE*4,SURFACE_SIDE*16,sizeof field_a);
             field_final_run(f,f->packed_read,0,1,field_b);double final_error=0;
             for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<3;channel++)
                 final_error=fmax(final_error,fabs(field_a[i*4+channel]-field_b[i*4+channel]));
-            printf("rounded-flow profile=%u smoothing=%u fps=%u jitter=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,rate==4,ticks,fresh,worst,arithmetic_error,final_error);
+            if(SURFACE_BENCHMARK)
+                printf("surface-timing-endpoint profile=%u smoothing=%u fps=%u jitter=%u final_byte_error=%.9g (intermediate accuracy/freshness not sampled)\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,rate==4,final_error);
+            else printf("rounded-flow profile=%u smoothing=%u fps=%u jitter=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,rate==4,ticks,fresh,worst,arithmetic_error,final_error);
             CHECK(worst==0);CHECK(ticks==60 && clock.game_remainder==0);
-            printf("rounded-freshness reference60=%u candidate=%u frames=%u\n",reference_fresh,fresh,frames);
+            if(!SURFACE_BENCHMARK)printf("rounded-freshness reference60=%u candidate=%u frames=%u\n",reference_fresh,fresh,frames);
             /* A saturated/quantized original field can repeat final colors.
              * Preserve those repeats at 60; higher rates must add fresh frames.
              * Mild/impulse cases retain the stricter every-frame requirement. */
-            CHECK(fps==60?fresh==reference_fresh:fresh>reference_fresh);
-            if(SURFACE_ROUNDING_PROFILE<2 || fps!=60)CHECK(fresh==frames);
+            if(!SURFACE_BENCHMARK) {
+                CHECK(fps==60?fresh==reference_fresh:fresh>reference_fresh);
+                if(SURFACE_ROUNDING_PROFILE<2 || fps!=60)CHECK(fresh==frames);
+            }
             CHECK(final_error==0);
         }
     }

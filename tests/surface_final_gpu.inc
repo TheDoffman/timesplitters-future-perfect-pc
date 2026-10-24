@@ -60,7 +60,7 @@ static void field_final_run(FieldFinal *f,RhiView *source,int encode,int byte_ou
     rhi_buffer_update(f->vertex_buffer,f->offsets);
     rhi_set_shader(RHI_STAGE_PIXEL,f->pixel);rhi_buffer_update(f->pixel_buffer,&f->constants);
     rhi_draw(SURFACE_WRAP?4:3,0);
-    field_read(byte_output?f->byte_target:f->target,byte_output?2:0,output);
+    if(output)field_read(byte_output?f->byte_target:f->target,byte_output?2:0,output);
     rhi_set_textures(0,4,none);rhi_set_render_target(NULL,NULL);
     rhi_set_shader(RHI_STAGE_VERTEX,f->fullscreen);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
 }

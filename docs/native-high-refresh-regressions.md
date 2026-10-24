@@ -7005,3 +7005,35 @@ remain unfinished, as do native Mac execution and scene acceptance.
 The full updated GPU suite passes all 25 cases in 141.24 seconds, including the
 new matrix-diagonal mutation (logs/water-mode-full-suite.log). Repository context
 and staged whitespace checks pass. The byte ambiguity guard was not widened.
+
+### D3D11 hardware gate (2026-10-24)
+
+The candidate's WARP comparisons do not establish hardware correctness. Running
+`python tests/test_surface_shader_feedback.py --hardware-check --profile 0` on
+the NVIDIA GeForce RTX 4070 SUPER (vendor 10de, device 2783, feature level b000)
+fails the existing boundary comparison at tick 0, cell 0, green: 127/255 versus
+the independently executed original's 128/255. Candidate prequantized green is
+0.500199913978577 versus original float-target 0.500999629497528. Across the
+first 60-tick trajectory, maximum byte G/B error is 0.0901961029, arithmetic
+error 0.00759711862 and final byte RGB error 0.615686297. The original-noise
+profile also fails from that first cell, with final RGB error 1. Root cause is
+not established; this is neither accumulated clock drift nor a reason to widen
+the arithmetic guard. See logs/water-hardware-current-check.log and
+logs/water-hardware-check.log. The first broader hardware attempt also failed
+an older float/half storage probe before reaching the candidate; that control
+is tuned for WARP. Explicit hardware modes now select only candidate setup and
+its reference, while regular pytest continues to run all the original probes.
+
+`--benchmark --profile 3` uses hardware timestamp/disjoint queries, recorded
+around the same original/candidate draw sequences. Query creation and all query
+polling happen outside the measured sequence; first-noise and per-frame image
+readbacks are omitted only in this mode. It still checks final byte output and
+exits unsuccessfully if mismatched. The initial run measured 0.009899 ms mean
+original and 0.106240 ms candidate GPU timestamp span at 60; it failed final
+output and therefore never measured 120/144. Spans include submission bubbles,
+exclude initialization/readback, are not game frame times, and do not establish
+acceptable production cost. The bounded helper records adapter identity and
+rejects disjoint/zero clocks or ten-second query timeout. The full WARP suite
+still passes 25 cases in 141.81 seconds (logs/water-hardware-harness-suite.log).
+Resource/hook integration is deferred until the first hardware step is correct;
+queued splashes, actual event delivery, Mac GPUs and scene coverage remain open.
