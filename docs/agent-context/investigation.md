@@ -80,6 +80,11 @@ Never invoke a nested model from a LOCAL ONLY task or an advisory session.
 
 ## Maintenance
 
+Patch-order tests now require `texture-bind-scan` after the native renderer/demo
+series. Historical controls fixtures omit it until the complete-stack upgrade,
+when its cross-platform renderer context is present. Keep both order and upgrade
+contracts when adding dependent patches; do not weaken full-stack validation.
+
 Every change to a covered system must update its guide in the same change. Add
 the changed responsibility, entry point, contract, migration pitfall or test
 route. For an internal change with no architectural impact, record a concise

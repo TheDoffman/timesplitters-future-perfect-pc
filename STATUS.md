@@ -14,7 +14,33 @@ broken first-only/last-entry selection and stale-copy controls. The supported
 Windows Build -SkipTextures and its bundled checks pass; executable SHA256 is
 `a279c1561eb7a7ce54add834392a434706ded3a6217d451a60c0ad7aef8005de`
 from 0f775759 plus this patch. Twenty-one context/backlog checks pass.
-Patch upgrades, current live-scene validation and current-head CI are pending.
+All 25 framebuffer/patch-upgrade cases pass across the full run plus the repaired
+historical-controls retest: the initial run had 24 passes and one old-fixture
+ordering failure; its corrected case passes separately in 27.30s. The fixture
+now omits this renderer-dependent patch until the full-stack upgrade. No runtime
+assertion was relaxed. Main967e734a crash breadcrumbs are merged, preserving both
+documentation histories. The combined supported Windows build passes, with
+SHA256 `ffa9c8439e34a9db94862241da066d35e9811a577572b4a093930e98866b1c6c`
+at de9ee95d. Crash/context/backlog checks: 27 pass, 10 Mac-only skips in21.30s.
+The isolated ten-bot Disco run `crowd-bind-scan240` completes with intact profiles
+and recycled partitions. Its complete45s window has9,384 increasing guest frames,
+208.536855FPS, minimum one/five-second rates138/148.8, p997.468ms and worst11.618ms.
+Nineteen checkpoints retain active foreground gameplay; game/wall is1.00005364.
+Classic3440x1440/FOV73 is configured; actual client1920x1060 on60Hzdesktop. There
+are no interpolated frames, captures, CPU sampling or overlapping build/tests;
+the existing16ms input-file polling remains. This is lower than the earlier
+235.244550 run. Different AI/death/view paths and the main merge prevent causal
+attribution; do not claim a whole-game improvement or sustained240 from this run.
+Host Present intervals do not measure GPU completion, scanout or input latency.
+
+An independent MSVC/O2 microbenchmark compiles the actual new helper and the
+upstream two-loop body separately from their caller (no LTO). Seven alternating
+pairs of2million calls over512entries and513host keys give median ordinary-texture
+370.2068ms before /254.4047ms after (31.28% less), all-framebuffer248.0392/137.8402ms,
+and entry-only126.9207/121.8539ms. Every pair has identical output checksums. These
+synthetic workloads demonstrate lookup cost only, not scene/frame gains. Private
+sources/results: private/pipeline/bind-scan-bench; live provenance and strict
+summary: logs/crowd-bind-scan240-summary.json. Current-head CI remains pending.
 The shared fixture remains registered for Windows RHI and Mac GL/RHI; physical
 Mac gameplay and broad native240 acceptance remain open (MAC-060).
 
