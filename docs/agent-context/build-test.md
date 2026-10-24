@@ -710,12 +710,11 @@ workflow and select native checks; Mac's selected suite does not run that test.
 loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
 It runs on both CI hosts. A deliberately stalled reader checks nonblocking
 pump/cancellation, owner reuse, queue backpressure, staging limits and cleanup.
-Both synchronous and background modes exercise cached switching, fallback and
-resource failure; GL checks mip uploads and binding restoration. These are
-asset-free CPU/adapter tests, not GPU or scene acceptance. Run fresh/repeated and
-historical Mac patch upgrades for the new Present hook. Real pacing and texture
-pop-in still need bounded gameplay comparisons; default 60 and native120/144
-settings must be reported separately.
+Both modes check Classic deferral without reads/allocations, content changes,
+late Enhanced activation, cached switching and failures; GL also checks mips
+and binding restoration. Deferred traces omit I/O; late requests omit hashing.
+These are CPU/adapter tests, not GPU/scene acceptance. Run patch upgrades for
+Present hook changes; measure pacing/pop-in separately at Original60/120/144.
 
 The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
 patched binding helper into its temporary include directory. The CMake loader

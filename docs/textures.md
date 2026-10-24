@@ -21,6 +21,11 @@ when opted into checks on opening Settings. Cancelled updates keep completed par
 and restore the part in progress. Classic remains the default; save the Enhanced
 checkbox separately to enable replacements on launch. See [launcher usage](launcher.md).
 
+Classic defers new replacement reads and uploads. Selecting Enhanced starts
+loading replacements as their textures are used, showing originals until ready.
+Switching back retains the cache, so already loaded replacements switch instantly
+on later toggles. Requests already submitted can finish in Classic.
+
 ## Texture build dependency
 
 Sanitized DDS/JSON remain in `assets/textures`, with DDS stored through Git LFS.
@@ -38,8 +43,11 @@ For a bounded developer investigation, set `TSFP_TEXTURE_UPLOAD_TRACE` to an
 isolated CSV path before launching. Common RHI and legacy GL record each eligible
 upload call's key, texture mode, outcome and monotonic nanosecond boundaries.
 `hash_end-hash_begin` measures source-key calculation, including calls whose
-outcome is `cached`. Those calls retain their replacement and do not reach file
-or graphics-resource stages. `open_end-read_begin` measures opening the file;
+outcome is `cached`. Those calls retain their existing request/cache state and
+do not reach file or graphics-resource stages. `deferred` records a new Classic
+key without requesting a replacement. Late Enhanced requests have zero hash
+and source-byte fields because the original upload already computed the key.
+`open_end-read_begin` measures opening the file;
 `read_end-open_end` includes seeking, allocation, transfer and close;
 `validated-read_end` covers parsing and acceptance. Image and view begin/end
 fields measure CPU calls into the graphics backend, not GPU completion. GL has
@@ -83,10 +91,9 @@ original character icons; custom-modified icon pairs are preserved.
 From a Windows source checkout with a built runtime and an existing pack,
 double-click **Play-Textures.cmd**. It loads replacements from
 `private/texture-remaster/pack`; it does not download or generate a pack.
-In the game's **Settings** (or paused **Options**), open **Display settings**
+In the game's **Settings** (or paused **Options**), open **Video Options**
 and change **Textures** between **Classic** and **Enhanced** with the native
-choice arrows. It takes effect immediately; **Apply settings** is for
-resolution/FOV. The texture choice lasts for this game session and remains in sync
+choice arrows, then select **Apply**. The texture choice lasts for this game session and remains in sync
 with Windows **F10** and **PC Settings > 4K Textures**.
 This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.

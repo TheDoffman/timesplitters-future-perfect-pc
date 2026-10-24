@@ -3,7 +3,8 @@
  * render targets and screen copies are excluded. Overrides use BC1/2/3 or
  * lossless BGRA8 for small gradients and masks.
  * Disk reads run in the shared bounded queue; original views stay available
- * while replacements load. F10 switches cached views live. Restart after
+ * while replacements load. Classic defers new requests until Enhanced is used;
+ * F10 switches already cached views live. Restart after
  * changing pack files on disk.
  * No file I/O when both pack and dump paths are off. */
 #include "d3d8_internal.h"
@@ -27,10 +28,11 @@ void tsfp_texture_frame_complete(void) {tsfp_stream_pump();}
 unsigned tsfp_texture_binding_revision(void) {return binding_revision;}
 
 RhiView *tsfp_texture_view(D3D8Texture *tex) {
-    if(tex->pack_checked==3 && !tex->usage && !tex->screen_copy && tex->sys_mem)
+    int enhanced=tsfp_texture_is_4k();
+    if(enhanced && tex->pack_checked==3 && !tex->usage && !tex->screen_copy && tex->sys_mem)
         request_replacement(tex);
     /* A formerly static texture can become a screen copy. Never override it. */
-    return tsfp_texture_is_4k() && !tex->usage && !tex->screen_copy && tex->pack_srv
+    return enhanced && !tex->usage && !tex->screen_copy && tex->pack_srv
         ? tex->pack_srv : tex->srv;
 }
 
@@ -104,6 +106,11 @@ static void apply_replacement(void *owner,uint64_t key,const unsigned char *data
 }
 
 static void request_replacement_traced(D3D8Texture *tex,TsfpTextureTrace *trace) {
+    /* State 3 is retryable, but never submits or opens a file in Classic.
+     * Hash/content invalidation and explicit original dumps still run normally. */
+    if(!tsfp_texture_is_4k()) {
+        tex->pack_checked=3;tsfp_texture_trace_finish(trace,"deferred",0);return;
+    }
     char path[2304];
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",pack_root,tex->pack_key);
     int queued=tsfp_stream_submit_traced(tex,tex->pack_key,path,tex->width,tex->height,apply_replacement,trace);

@@ -41,6 +41,9 @@ static void native_pack_apply(void *owner,uint64_t key,const unsigned char *data
 static void native_pack_request_traced(GLTexture *t,TsfpTextureTrace *trace) {
     const char *root=getenv("TSFP_TEXTURE_PACK_DIR");
     if(!root||!*root){t->pack_checked=1;tsfp_texture_trace_finish(trace,"no_pack",0);return;}
+    if(!tsfp_texture_is_4k()) {
+        t->pack_checked=3;tsfp_texture_trace_finish(trace,"deferred",0);return;
+    }
     char path[4096];
     if(snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",root,t->pack_key)>=(int)sizeof path){t->pack_checked=1;tsfp_texture_trace_finish(trace,"path_rejected",0);return;}
     int queued=tsfp_stream_submit_traced(t,t->pack_key,path,t->width,t->height,native_pack_apply,trace);
@@ -52,6 +55,7 @@ static void native_pack_request_traced(GLTexture *t,TsfpTextureTrace *trace) {
     }
 }
 static void native_pack_request(GLTexture *t) {
+    if(!tsfp_texture_is_4k())return;
     TsfpTextureTrace trace=tsfp_texture_trace_begin(t->pack_key,t->width,t->height,0,"gl");
     if(trace.active)trace.enhanced=tsfp_texture_is_4k();
     native_pack_request_traced(t,&trace);

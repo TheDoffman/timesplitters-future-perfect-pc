@@ -1250,6 +1250,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Classic request deferral (commit carrying this entry): `src/texture_pack.c`
+  and `src/native/gl_texture_pack.inc` leave new replacements unrequested until
+  Enhanced binds them. Cached switching, original fallback and content-change
+  cancellation remain. No new Mac adapter is needed; both renderers implement
+  the policy. Windows CPU/adapter tests pass all 24 cases, including deferred
+  content changes and late activation in synchronous/background modes. Actual
+  Mac gameplay, mode switching and pacing remain **Awaiting validation**.
+
 - 2026-10-23 streaming integration correction (commit carrying this entry):
   the initial common-renderer Present-only pump missed Future Perfect's Swap
   route. Earlier background-on gameplay measurements did not include completed

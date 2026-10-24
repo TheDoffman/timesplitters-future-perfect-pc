@@ -1,3 +1,67 @@
+## 2026-10-24 — Defer unused replacement work in Classic
+
+On `fix/native-water-rounding`, common RHI and legacy GL now defer new optional
+replacement reads/uploads until Enhanced is selected and the texture is bound.
+Originals remain visible while replacements arrive. Existing caches still switch
+immediately; requests already submitted can finish after returning to Classic.
+Content changes still invalidate old requests/resources, and explicit original
+dumping retains its behavior. No game timing, actor logic or personal setting
+changes are part of this fix. It removes confirmed unused work; it does not
+establish the cause or resolution of the Hotel 114-FPS window below.
+
+Windows loader tests pass all 24 cases, covering both streaming modes and both
+adapters, missing/rejected data, failures, Classic content changes, late Enhanced
+activation and cached switching. The supported full Windows builder and its
+native tests pass. Context/backlog tests pass 21 cases. Native Mac execution
+remains unverified (MAC-011); both renderer implementations share the policy.
+
+The executable built from `3cac8e4` plus this change has SHA-256
+`dd5daf3da024e1404cac98c69ce1eca9a7fe6dbc062cc4edacade4f4ac078329`.
+Host: Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER,
+driver32.0.16.1742. `crowd-classic-defer-trace` ran the ten-bot Hotel route at
+native144, 3440x1440, FOV73. Its complete 288-row trace contains only `deferred`
+outcomes, with zero replacement read/image/view stages. The trace stays below
+its cap; this diagnostic is not a pacing measurement. All four gameplay
+checkpoints retain scene39, active match7 and ten bots. Child exit is clean,
+fixture signatures are preserved and disposable disks recycled.
+
+`classic-defer-switch` then exercised the actual Venice pause/Video Options
+Apply route: Classic → Enhanced → Classic → Enhanced → Classic. Inspected menu
+captures show Apply disabled after commits; reopening reads the applied value.
+The trace records 206 deferred rows before the first Apply, then 39 completed
+Enhanced uploads (29,895,748 bytes) across the session, within 367 total rows.
+Reviewed resumed scene captures show no obvious blank/corrupt surfaces; this
+does not certify the pack's artwork or all scenes. The reused command labels
+name the opposite mode because that older route started Enhanced; actual menu
+values and trace stages are authoritative. `switch-results.json` records this
+mapping. This captured run is not performance evidence. Exit/signatures/fixture
+checks pass and disposable disks are recycled.
+
+Clean `crowd-deferred-clean-{144,60}` Hotel runs then use the same route,
+3440x1440/FOV73/Classic, no captures or CPU/texture/update tracing, and bounded
+read-only actor checkpoints. An explicit focus request succeeds: all 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480 (not fullscreen).
+The complete measured windows are spawn+5..55s:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9995 | 2,999 / 60.0001 |
+| Median / p95 interval, ms | 6.979 / 7.278 | 16.665 / 17.041 |
+| p99 / worst interval, ms | 7.411 / 9.551 | 17.160 / 17.693 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000048 | 1.000072 |
+| Living-player checkpoints | 28/33 | 25/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/4/6 | 2/4/7 |
+
+These are successful guest-frame host presents, with zero interpolated presents;
+they do not measure GPU completion, scanout or input latency. The player/AI route
+is nondeterministic, proximity is not visibility, and the earlier slow run was
+unfocused with more close actors. Thus this passing sample does **not** prove the
+reported crowded-match slowdown fixed or quantify this change's speedup. Exit,
+fixture/signature checks and disk recycling pass in both runs. Full-game behavior,
+denser repeat workloads, Online and native Mac validation remain outstanding.
+Per-run `crowd-metrics.json` and `actor-metrics.json` retain exact observations.
+
 ## 2026-10-24 — Active Hotel route reproduces a short 114-FPS window
 
 The unchanged `8eb2d05` playable runtime was tested on a second multiplayer map,

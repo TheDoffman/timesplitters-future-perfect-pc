@@ -83,7 +83,7 @@ validation, image creation and (common RHI) view creation. This is CPU elapsed
 time, not GPU completion. Reading/validation/fallback and live texture switching
 are unchanged. Logging occurs after the measured end, can perturb subsequent
 frames and is capped at 8,192 rows/below 4 MiB; do not use it as clean pacing data.
-Cached rows have zero read/image/view stages and retain the same loaded resources.
+Cached rows have zero read/image/view stages and retain existing request/cache state.
 The legacy GL path also closes a trace with `path_rejected` for an oversized path.
 Older `2230901` traces began after hashing and excluded cached calls.
 See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
@@ -572,6 +572,14 @@ GL adapter restores the previous texture binding after upload. Shutdown joins
 the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
 selects the synchronous diagnostic fallback. Per-texture messages now require
 `TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+
+Classic now defers new replacement requests in both adapters (`pack_checked=3`).
+Binding in Enhanced starts the deferred request; until completion the original
+remains visible. Returning to Classic retains cached replacements and permits
+already submitted requests to finish. Hash/content invalidation, cancellation
+and explicit original dumps still run. Deferred bindings in Classic perform no
+replacement I/O, GPU allocation or repeated trace writes. A `deferred` trace
+records the initial hash only; late activation has zero hash/source-byte fields.
 
 The common renderer pumps from present_resolve, shared by Swap and Present.
 The initial Present-only prototype never delivered replacements in this title;
