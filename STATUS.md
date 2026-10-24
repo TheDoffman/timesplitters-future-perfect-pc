@@ -1,3 +1,25 @@
+## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
+
+PR #324 groups water, Classic texture deferral and scoped input/menu/camera
+validation work. Main `843dd10` was merged as `e3cc50d`, preserving the unified
+launcher README. On that head the combined Windows runtime suite passed all
+165 checks in 332.06s; patch migration/context/backlog passed 42 in 558.97s.
+Mac native-runtime/GPU CI, both patch-upgrade jobs and all launcher jobs passed.
+Windows runtime CI exposed two framebuffer-fixture link failures (543 other
+checks passed, 120 skipped, 18 subtests passed); do not treat that head as green.
+
+The fixture includes the complete HLE texture unit, whose new water hooks add
+35 graphics dependencies. Explicit assertion-failing stubs now supply these
+unused APIs. The actual framebuffer cache and its stale-copy mutation remain
+unchanged; both cases pass locally (2 checks, 4.37s, MSVC 14.44.35207/x64 on
+Windows 11). Mac retains its legacy-GL case and adds the common-RHI variant.
+Adjacent ghost-rendering cases also pass; after condensing the guide to its
+size budget, all 21 context/backlog checks pass (3.09s). This is a test-harness
+repair only; the game binary and personal files are unchanged. Updated-head
+cross-platform CI is pending. Earlier gameplay evidence
+and its crowd/Online/full-game/Mac limits remain applicable, not expanded by
+these tests. PR #324 must merge before the next related PR is opened.
+
 ## 2026-10-24 — Reuse auto-look validation across low/high guest mappings
 
 `pc_auto_look_camera` now keeps two permission snapshots only during the host

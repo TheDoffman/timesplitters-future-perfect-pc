@@ -1,29 +1,30 @@
 # Build, run and validation map
 
 <!-- packet:start -->
-Windows entry point is `tsfp.ps1` (Setup/Extract/Test/Generate/Build/Run/SmokeTest);
-`setup.ps1` orchestrates first setup. Use `powershell -NoProfile -File tsfp.ps1
--Action Build` from the checkout. The builder uses pinned upstream and `.venv`,
-applies the full patch stack, checks guest-generation fingerprints/wrappers,
-regenerates when needed, configures MSVC x64 and builds/tests native targets.
-Output: `build/windows/Release/futureperfect_recomp.exe`. Do not bypass a failed
-patch phase with direct edits or suppress the first compiler/linker diagnostic.
-
-Mac: `.venv/bin/python tools/build-native-mac.py`; `--generate` for stale guest
-code, `--setup` only for explicit setup. Output `build/macos/futureperfect_recomp`.
-Default renderer auto chooses common Vulkan on supported macOS26+ and GL on
-older hosts; pinned SDK `config/vulkan-sdk.json`, loader `tools/vulkan_sdk.py`.
-`BUILD.json` records selected driver/provenance. Do not copy Windows build trees.
-
-Routine bounded Windows gameplay: `.venv/Scripts/python.exe tools/testing_profile.py
---play --seconds 120`; Mac: `.venv/bin/python tools/test-native-mac.py
---unlocked-profile --seconds 120`. Both use disposable fixture copies, not
-personal saves. Source-only tests do not certify gameplay. Missing supported
-game data or an unavailable host is a reported validation gap, not a reason to
-invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies pinned
+patches, checks wrapper fingerprints, regenerates, builds MSVC x64 and tests.
+Output: `build/windows/Release/futureperfect_recomp.exe`. Fix the first error;
+never bypass failures with generated-source edits.
+Mac: `tools/build-native-mac.py`; `--generate` for stale guest code, `--setup`
+for explicit setup. Output: `build/macos/futureperfect_recomp`. Renderer auto
+selects Vulkan on supported macOS26+, otherwise GL. `config/vulkan-sdk.json`
+pins the SDK; `tools/vulkan_sdk.py` and `BUILD.json` own driver provenance.
+Bounded isolated gameplay: `tools/testing_profile.py --play --seconds 120`
+(Windows), `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac).
+Use the host .venv Python. Root AGENTS owns asset, isolation and storage rules.
+Source checks, builds, menu startup and gameplay are separate evidence;
+unavailable hardware/private data remain explicit validation gaps.
 <!-- packet:end -->
 
 ## Choose the cheapest relevant check
+
+`test_framebuffer_sampling.py` compiles the complete HLE texture unit against
+fake screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated
+water graphics dependencies with fail-fast assertions; no GPU emulation or
+production hooks are removed. This avoids MSVC unresolved symbols from unused
+water functions. Both normal refresh and the deliberately stale-copy mutation
+must run. Mac tests retain legacy GL and also compile the common RHI branch;
+Windows uses common RHI. Water behavior has separate native-surface/GPU tests.
 
 `tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
 20 Hz snapshot stream must produce continuous 60 Hz display transforms, while

@@ -8,6 +8,7 @@ static DWORD test_tick_count(void) { return 0; }
 #include "hle/hle_d3d8_texture.c"
 #undef GetTickCount
 #include <assert.h>
+#include "framebuffer_surface_stubs.h"
 
 static uint8_t memory[4096];
 ptrdiff_t g_xbox_mem_offset;
