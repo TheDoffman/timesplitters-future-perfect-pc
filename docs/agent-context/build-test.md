@@ -23,6 +23,9 @@ runtime/launcher CI runs these on both hosts.
 
 ## Choose the cheapest relevant check
 
+Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
+code, fake devices, gain overrides, mute, live volume and voice parity.
+
 `test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
 SDL virtual input; physical pads and Mac gameplay require validation.
 
@@ -56,14 +59,10 @@ Asynchronous ReadProcessMemory observations measure update holds, not rendered
 frames or Internet/physical-input latency. Five local benchmark fixture
 manifests are checked with the normal validator; the canonical fixture stays intact.
 
-Launcher changelog publication: tests/test_launcher_release.py covers explicit
-previous stable launcher selection across paginated game/launcher history,
-initial-release notes and refusal of incomplete history. It remains registered
-in the existing Windows/Mac launcher build workflow. These are offline publisher
-tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
-Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
-mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
-file-list refusal in the same existing dual-host test route.
+Launcher changelog publication: `test_launcher_release.py` checks paginated
+stable history, initial/incomplete history, game/docs/housekeeping exclusion,
+mixed PRs, merge ranges, renamed paths and complete file lists. These offline
+publisher tests run in both-host launcher CI; they need no game/UI rebuild.
 
 Game changelog baselines: tests/test_publish_release.py covers first-Stable
 bootstrap from the latest earlier published alpha, subsequent Stable baselines

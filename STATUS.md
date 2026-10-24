@@ -35,6 +35,36 @@ LF checkout endings so their existing byte-size bounds agree across hosts.
 Mac capture and shared launcher checks are registered in existing CI; native Mac
 gameplay and real gameplay transition coverage remain unverified locally.
 
+## 2026-10-24 — Quieter default audio output (PR #327)
+
+Branch `fix/audio-volume-scaling`, based on main `3baad73`. The user confirmed
+that Music/Sound at 100% is clean but too loud and both sliders work. Shared
+`RECOMP_AUDIO_DEFAULT_GAIN=0.5` reduces default output by 6.02 dB; XAudio applies
+it once at the master and SDL once per stream. Original slider curves, saved
+profile values, relative voice balance and explicit `RECOMP_AUDIO_GAIN` overrides
+remain unchanged. This is output calibration, not a clipping/distortion repair.
+
+Actual XAudio initialization and SDL adapter fixtures plus audio timing tests:
+25 passed. Fresh-stack/repeated-build and Windows-line-ending upgrades passed.
+Two guide-size failures were corrected by condensing the build guide; all 21
+context/backlog checks then passed. Supported Windows Build and built-in checks
+passed (`logs/audio-volume-build.log`). The isolated Test Lab session reports
+`master_gain=0.500000` in `private/test-saves/quick-test/game.err`; final listening
+acceptance is pending. Both CI hosts include the new backend fixtures, but native
+Mac device/listening validation remains pending under MAC-018.
+
+Autonomous Windows verification used process-only WASAPI loopback, without a
+microphone or other apps' audio. Both Music/Sound bars were set to maximum in
+the isolated Test Lab profile. A 30-second menu sample peaked at -37.59 dBFS
+(RMS -48.60); a 45-second mission-opening sample at -29.83 (RMS -42.84);
+a 60-second opening/gameplay sample including a weapon shot at -20.88
+(RMS -39.24). All had zero full-scale samples and zero capture discontinuities.
+Read-only mixer inspection found the app at 100%, output device at 96%; neither
+was changed. Statistics are in ignored `logs/audio-output-*` files. These are
+sampled output measurements, not acoustic loudness or an all-scenes clipping
+guarantee. The 6.02 dB change is verified by backend gain tests, not a matched
+before/after recording; subjective listening acceptance remains pending.
+
 ## 2026-10-24 — Reliable test-input publication and repeated180 walking
 
 The bounded transition runner rewrote `input-state.txt` in place. Its host
