@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f658df1040c61f4463b0049e0a3c759fe257527273757a535806133646a1cf66",
+  "loaderSha256": "2025854d6715399f85d893ac4db332b88f496d8e69cedac71db4c87ddf9ecc89",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1324,6 +1324,13 @@
         "src/d3d/d3d8_resources.c",
         "src/hle/hle_d3d8_texture.c",
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-native-trace-quiet.patch",
+      "sha256": "44b6413fb634f9e788a6dec2486f3cd296cbb0608db42f40ca5d67a9bcd1ec1d",
+      "targets": [
+        "src/kernel/recomp_trace.c\r"
       ]
     },
     {

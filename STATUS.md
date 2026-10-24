@@ -1,3 +1,52 @@
+## 2026-10-24 — Skip disabled tracing dispatch during normal play
+
+`zz-native-trace-quiet.patch` adds a shared early return in trace entry/exit
+when startup configuration explicitly disables the trace budget and provides
+no watch, dump, name-filter or call-profile switch. Entry still services the
+existing renderer-idle callback before returning. Explicit diagnostics retain
+their original helpers, output and budgets; crash/throw/unimplemented reports
+are untouched. This removes repeated disabled-helper dispatch from every lifted
+function without changing simulation or rendering policy. Runtime startup
+settings remain cached, as before; no live diagnostics-toggle API is introduced.
+
+Supported Windows Build passes on parent `14d9e1c` plus this change. Executable
+SHA256: `ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER. **18 focused tests pass**,
+59.56s: actual tracing-module dispatch/outputs, callback cadence, bypass-removal
+mutation, fresh/repeated patch installation and historical controls upgrade.
+**89 context/backlog/CI-scope tests pass**, 3.35s. The final patch ordering preserves
+the existing demo-tail contract; reapplication updates zero runtime files.
+Logs: `trace-quiet-{build,tests,context-tests,final-patches}.log`.
+The original test failures were missing fixture globals and an initially changed
+patch-tail ordering, corrected without weakening assertions.
+
+A bounded, alternating six-pair MSVC/O2 microbenchmark invokes the uninstrumented
+production entry function20million times per process. With explicit zero budget,
+no diagnostic switches and no idle callback, with entry forced out of line in
+both variants, median QPC elapsed time falls from
+45.6694ms to21.38245ms. The comparison removes only the new guard in the baseline.
+This demonstrates lower diagnostic-dispatch cost, **not a percentage game-FPS
+gain**. Evidence: `private/pipeline/benchmark-trace-quiet.py` and
+`logs/trace-quiet-benchmark.json`.
+
+One bounded Hotel ten-bot run at native240/Classic/FOV73/3440x1440 render output
+uses no CPU sampling, captures, per-update CSV or texture trace. The strict
+spawn+5..55s window contains11,342 fresh guest Presents, zero interpolation,
+**226.854246 FPS**, p95 5.526ms, p99 6.195ms and worst9.885ms. Minimum aligned
+one-second count170; no interval exceeds33.33ms. The asynchronous game/wall
+clock ratio is1.000071. All33 gameplay observations remain foreground and
+nonminimized with ten configured bots, client1920x1060. Signed profiles and
+canonical fixture remain unchanged; the session exits normally and disks recycle.
+Evidence: `private/test-saves/crowd-trace-quiet-240`, matching runner log and
+`logs/crowd-trace-quiet-240-{matrix,stats}.json`.
+
+The prior unchanged-route baseline was216.956966 FPS, but nondeterministic bot
+movement, spawn, visibility, deaths and render load prevent causal attribution
+of that difference. The controlled microbenchmark establishes only the dispatch
+cost reduction. Sustained240, the reported144-to110 crowd dip, physical refresh
+and broad gameplay remain unverified. Native Mac execution is pending; shared
+production-module tests run in the existing cross-host workflow (MAC-060).
+
 ## 2026-10-24 — Current 240-preset crowd baseline
 
 Source `e9cd2ef` (runtime unchanged from `74f9fe1`), Windows 11 Pro x64,

@@ -3755,6 +3755,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Quiet trace dispatch (2026-10-24, PR #325):** Shared
+  `zz-native-trace-quiet.patch` bypasses disabled diagnostic helpers when the
+  launcher supplies a nonpositive trace budget and no watch/dump/filter/profile
+  switch. Renderer-idle callbacks and explicit diagnostics remain. No Mac
+  adapter is needed; the existing cross-host trace test compiles the actual
+  module. Windows build/tests pass; native Mac execution is awaiting validation.
+  Gameplay/performance evidence and limits are recorded in STATUS.
+
+
 - **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
   the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
   Shared rate parsing and deferred live apply accept180/240; saved144 preferences

@@ -31,6 +31,14 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-native-trace-quiet.patch` applies after native timing. With an explicit
+nonpositive trace budget and no watch/dump/filter/profile environment switch,
+`recomp_trace_enter/exit` bypass disabled diagnostic dispatch. The entry guard
+follows the existing renderer-idle callback. Per-thread configuration is read
+once, like existing diagnostic caches; explicit diagnostics retain their original
+budget, initialization and output. Crash/throw/unimplemented reports are untouched.
+
+
 `zz-native-demo-timing.patch` follows the native surface stack and wraps US
 `43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is
 `sub_00043220_gen`. Timer multiplies `433E2/43473` use the wrapper's raw-time

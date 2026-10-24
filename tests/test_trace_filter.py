@@ -39,3 +39,59 @@ def test_trace_filter(tmp_path, setting, limit, mode, mutation):
         assert result.returncode != 0 and 'scans==0' in result.stderr
     else:
         assert result.returncode == 0, result.stdout+result.stderr
+
+
+@pytest.fixture(scope="module")
+def trace_quiet_binaries(tmp_path_factory):
+    folder = tmp_path_factory.mktemp("trace-quiet")
+    text = (ROOT/'external/ts3FPrecomp/src/kernel/recomp_trace.c').read_text()
+    assert text.count('if (trace_quiet()) return;') == 2
+    text = text.replace('#include "xbox_memory_layout.h"', '')
+    # Count entry to original diagnostic helpers, not the new guard itself.
+    for name in ('watch_check', 'dump_va_once', 'trace_only_match', 'prof_enabled', 'trace_budget'):
+        pattern = rf'(static [^\n]+\b{name}\([^\n]*\)\n\{{)'
+        text, count = re.subn(pattern, r'\1\n    ++diagnostic_calls;', text)
+        assert count == 1, name
+    compiler, env = native_compiler(folder)
+    binaries = []
+    for mutation in (False, True):
+        production = text.replace('if (trace_quiet()) return;', '(void)trace_quiet();') if mutation else text
+        source = folder/f'trace-{mutation}.c'
+        source.write_text((ROOT/'tests/trace_quiet.c').read_text().replace('/* PRODUCTION_TRACE */', production))
+        output = folder/(f'trace-{mutation}.exe' if os.name == 'nt' else f'trace-{mutation}')
+        args = ([compiler, '/nologo', '/std:c11', '/O2', str(source), '/Fe:'+str(output)]
+                if os.name == 'nt' else [compiler, '-std=c11', '-O2', str(source), '-o', str(output)])
+        result = subprocess.run(args, cwd=folder, env=env, capture_output=True, text=True, timeout=60)
+        assert result.returncode == 0, result.stdout+result.stderr
+        binaries.append(output)
+    return binaries
+
+
+@pytest.mark.parametrize('settings,mode,marker', [
+    ({'RECOMP_TRACE_BUDGET': '0'}, 'quiet', None),
+    ({'RECOMP_TRACE_BUDGET': '-5'}, 'quiet', None),
+    ({'RECOMP_TRACE_BUDGET': 'invalid'}, 'quiet', None),
+    ({'RECOMP_TRACE_BUDGET': '2'}, 'enabled', '[TRACE]'),
+    ({}, 'enabled', '[TRACE]'),
+    ({'RECOMP_TRACE_BUDGET': '0', 'RECOMP_TRACE_ONLY': 'alpha', 'RECOMP_TRACE_ONLY_MAX': '2'}, 'enabled', '[ONLY]'),
+    ({'RECOMP_TRACE_BUDGET': '0', 'RECOMP_WATCH_VA': '0x100'}, 'enabled', '[WATCH]'),
+    ({'RECOMP_TRACE_BUDGET': '0', 'RECOMP_DUMP_VA': '0x100:1'}, 'enabled', '[DUMP]'),
+    ({'RECOMP_TRACE_BUDGET': '0', 'RECOMP_TRACE_PROFILE': '1'}, 'profile', '[PROFILE]'),
+])
+def test_quiet_trace_dispatch(trace_quiet_binaries, settings, mode, marker):
+    env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_TRACE_', 'RECOMP_DUMP_', 'RECOMP_WATCH_', 'RECOMP_PROFILE_'))}
+    env.update(settings)
+    result = subprocess.run([str(trace_quiet_binaries[0]), mode], env=env, capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout+result.stderr
+    if marker:
+        assert marker in result.stderr
+        if marker == '[ONLY]': assert result.stderr.count('[ONLY] ->') == 2
+    else:
+        assert result.stderr == ''
+
+
+def test_quiet_trace_dispatch_mutation(trace_quiet_binaries):
+    env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_TRACE_', 'RECOMP_DUMP_', 'RECOMP_WATCH_', 'RECOMP_PROFILE_'))}
+    env['RECOMP_TRACE_BUDGET'] = '0'
+    result = subprocess.run([str(trace_quiet_binaries[1]), 'quiet'], env=env, capture_output=True, text=True, timeout=10)
+    assert result.returncode != 0 and 'diagnostic_calls==0' in result.stderr

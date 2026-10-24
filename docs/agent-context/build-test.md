@@ -18,18 +18,18 @@ unavailable hardware/private data remain explicit validation gaps.
 
 ## Choose the cheapest relevant check
 
-`test_controller_profile.py` covers parser/sampler device switches, slots,
-custom/unbound maps, release/disconnect. Windows Build tests SDL virtual input;
-physical pads and native Mac gameplay need separate validation.
+`test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
+SDL virtual input; physical pads and Mac gameplay require validation.
 
 `test_native_demo_timing.py` covers schedule/read guards, mutations, original
 input/ABI, pause, EOF/cancel, catch-up, live presets and recorder reset/capacity.
 Variable60..240/steady110 check time and input edges.
 Missing XBE skips originals. Live/file/Mac playback and sub60 overload remain open.
 
-`test_online_theme.py` isolates each Tk lifecycle in a bounded child; failures
-remain failures. `test_framebuffer_sampling.py` checks refresh/stale-copy guards
-with fake HLE callbacks; Mac covers GL/RHI, Windows RHI.
+`test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
+checks refresh/stale copies (Mac GL/RHI, Windows RHI).
+`test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
+diagnostics, budget, idle callback and bypass-removal mutation.
 
 180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
 checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
