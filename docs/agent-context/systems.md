@@ -20,6 +20,22 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+## Crash breadcrumbs and capture health
+
+`pc_breadcrumbs.h` owns a 64-slot atomic numeric history shared by the Windows
+`pc_crash.c` packet and Darwin `native/crash_posix.c` mapping. Producer calls
+never allocate, wait or write files; helper snapshots omit interrupted slots.
+`pc_display_camera` forwards scene/mode/menu/pause/network/cutscene values from
+the existing safe one-second guest sampler, even with Discord presence disabled.
+Capture/guest lifecycle and modal-depth events come from the host adapters.
+The helper formats `breadcrumbs.txt` during a crash/hang; it is sampled context,
+not a reconstructed call stack or guaranteed checkpoint/load-event history.
+`pc_capture_health.h` validates the launcher session token and defines the small
+heartbeat JSON. Each helper atomically replaces `capture-health.json` every two
+seconds in its safe report directory. No valid token means no health file.
+Windows packet schema is now3; a mismatched older helper cannot claim readiness.
+
+
 Recorded-input wait/exit timing: `pc_native_demo_guest.inc` captures the incoming
 raw interval around original `43220`, with nested TLS restoration. Numeric
 multiplies `433E2/43473` use that interval instead of the original minimum-one

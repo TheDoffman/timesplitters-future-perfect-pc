@@ -3,6 +3,8 @@
  * Hashing, symbolication, log tails and hang samples happen in a separate process. */
 #include "crash_posix.h"
 #include "../pc_hang_policy.h"
+#include "../pc_breadcrumbs.h"
+#include "../pc_capture_health.h"
 #include <CommonCrypto/CommonDigest.h>
 #ifndef TSFP_CRASH_TEST
 #include <CoreGraphics/CoreGraphics.h>
@@ -30,6 +32,7 @@
 typedef struct Capture {
     atomic_int entered,done,armed,focused,inhibited,stopping;
     atomic_ullong frames;
+    PcBreadcrumbs breadcrumbs; uint64_t started_ms;
     int pid,signal;uint32_t guest[8];uint64_t registers[31],pc,sp,address,base;
     unsigned frame_timeout,startup_timeout;
     char root[PATH_MAX],executable[PATH_MAX],log[PATH_MAX];
@@ -63,6 +66,18 @@ static int safe_directory(const char *path){
     }return fd;
 }
 static FILE *new_file(int dir,const char *name){int fd=openat(dir,name,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);return fd<0?NULL:fdopen(fd,"w");}
+static void health(Capture *c){
+    char session[33];if(!pc_capture_session(session))return;
+    int dir=safe_directory(c->root);if(dir<0)return;
+    struct stat st;
+    if(!fstatat(dir,"capture-health.json",&st,AT_SYMLINK_NOFOLLOW) && !S_ISREG(st.st_mode)){close(dir);return;}
+    char temporary[80];snprintf(temporary,sizeof temporary,"health-%d-%llu.tmp",getpid(),(unsigned long long)ticks());
+    FILE *out=new_file(dir,temporary);
+    if(out){pc_capture_health_json(out,session,(unsigned)c->pid,(unsigned)getpid(),atomic_load(&c->armed));
+        int ok=!fflush(out)&&!ferror(out)&&!fsync(fileno(out));if(fclose(out))ok=0;
+        if(ok)renameat(dir,temporary,dir,"capture-health.json");unlinkat(dir,temporary,0);
+    }close(dir);
+}
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 static void executable_hash(const char *path,char hash[65]){
@@ -100,6 +115,7 @@ static void report(Capture *c,int hang){
     }
     int input=open(c->log,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(input>=0){struct stat st;if(!fstat(input,&st)&&S_ISREG(st.st_mode)){lseek(input,st.st_size>65536?st.st_size-65536:0,SEEK_SET);out=new_file(dir,"game-log-tail.txt");if(out){char bytes[65536];ssize_t n=read(input,bytes,sizeof bytes);if(n>0)fwrite(bytes,1,(size_t)n,out);fclose(out);}}close(input);}
     out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native Mac %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
+    out=new_file(dir,"breadcrumbs.txt");if(out){pc_crumb_report(out,&c->breadcrumbs);fclose(out);}
     /* Metadata written last: readers never see a partially populated report. */
     out=new_file(dir,"report.json");if(out){fprintf(out,"{\"schema\":1,\"kind\":\"%s\",\"platform\":\"macos-arm64\",\"pid\":%d,\"signal\":%d,\"exception_code\":\"0x%08x\",\"dump_saved\":false,\"native_capture_saved\":true,\"executable_sha256\":\"%s\",\"frame_sequence\":%llu}\n",hang?"suspected_hang":"unhandled_exception",c->pid,hang?0:c->signal,hang?0:c->signal,hash,atomic_load(&c->frames));fclose(out);}
     flock(locked,LOCK_UN);close(locked);close(dir);
@@ -110,11 +126,13 @@ int tsfp_native_crash_helper(int argc,char **argv){
     long readfd=strtol(argv[3],&end,10);if(*end||readfd<3||readfd>INT_MAX)return 2;
     struct stat st;if(fstat((int)mapfd,&st)||st.st_size!=sizeof(Capture))return 2;
     Capture *c=mmap(NULL,sizeof *c,PROT_READ|PROT_WRITE,MAP_SHARED,(int)mapfd,0);close((int)mapfd);if(c==MAP_FAILED)return 2;
+    health(c);uint64_t last_health=ticks();
     PcHangPolicy policy={0};struct pollfd fd={(int)readfd,POLLIN,0};
     while(!atomic_load(&c->stopping)){
         int ready=poll(&fd,1,250);
         if(atomic_load(&c->entered)==2){report(c,0);atomic_store(&c->done,1);break;}
         if(ready>0 && fd.revents){char byte;if(read(fd.fd,&byte,1)<=0)break;}
+        if(ticks()-last_health>=2000){health(c);last_health=ticks();}
         if(pc_hang_poll(&policy,ticks(),atomic_load(&c->frames),atomic_load(&c->armed),!foreground(c)||atomic_load(&c->inhibited),c->frame_timeout,c->startup_timeout))report(c,1);
     }
     close((int)readfd);munmap(c,sizeof *c);return 0;
@@ -127,6 +145,7 @@ int tsfp_native_crash_init(NativeGuestCapture guest){
     memset(c,0,sizeof *c);uint32_t length=sizeof c->executable;char exe[PATH_MAX];
     if(_NSGetExecutablePath(exe,&length)||!realpath(exe,c->executable)||strlen(root)>=sizeof c->root)goto fail;
     strcpy(c->root,root);const char *log=getenv("RECOMP_LOG_FILE");if(log&&strlen(log)<sizeof c->log)strcpy(c->log,log);
+    c->started_ms=ticks();pc_crumb_add(&c->breadcrumbs,0,PC_CRUMB_STARTED,0);
     c->pid=getpid();c->frame_timeout=60000;c->startup_timeout=180000;atomic_store(&c->focused,1);
 #ifdef TSFP_CRASH_TEST
     c->frame_timeout=500;c->startup_timeout=1500;
@@ -151,10 +170,16 @@ void tsfp_native_crash_signal(int sig,siginfo_t *info,void *context){
     _Exit(128+sig);
 }
 void tsfp_native_crash_frame(void){if(capture)atomic_fetch_add(&capture->frames,1);}
-void tsfp_native_crash_armed(int armed){if(capture)atomic_store(&capture->armed,armed);}
+void tsfp_native_crash_armed(int armed){if(capture){pc_crumb_add(&capture->breadcrumbs,ticks()-capture->started_ms,armed?PC_CRUMB_GUEST_START:PC_CRUMB_GUEST_STOP,0);atomic_store(&capture->armed,armed);}}
 void tsfp_native_crash_focus(int focused){if(capture)atomic_store(&capture->focused,focused);}
-void tsfp_native_crash_inhibit(int entering){if(capture){if(entering)atomic_fetch_add(&capture->inhibited,1);else if(atomic_load(&capture->inhibited)>0)atomic_fetch_sub(&capture->inhibited,1);}}
+void tsfp_native_crash_inhibit(int entering){if(capture){if(entering)atomic_fetch_add(&capture->inhibited,1);else if(atomic_load(&capture->inhibited)>0)atomic_fetch_sub(&capture->inhibited,1);pc_crumb_add(&capture->breadcrumbs,ticks()-capture->started_ms,PC_CRUMB_MODAL,atomic_load(&capture->inhibited));}}
 void tsfp_native_crash_stop(void){if(!capture)return;atomic_store(&capture->stopping,1);close(notify_fd);notify_fd=-1;
     uint64_t end=ticks()+6000;int status;while(waitpid(helper,&status,WNOHANG)==0){if(ticks()>=end){kill(helper,SIGKILL);waitpid(helper,&status,0);break;}usleep(10000);}
     /* Keep mapping until teardown: other game threads may still read it. */
+}
+
+void pc_capture_gameplay(int32_t scene,uint32_t mode,uint32_t menu,int paused,int network,int cutscene){
+    if(!capture)return;
+    const int32_t values[PC_CRUMB_FIELDS]={scene,(int32_t)mode,(int32_t)menu,!!paused,network,!!cutscene};
+    pc_crumb_game(&capture->breadcrumbs,ticks()-capture->started_ms,values);
 }

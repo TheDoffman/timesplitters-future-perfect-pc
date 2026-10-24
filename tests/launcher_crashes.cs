@@ -54,6 +54,7 @@ public static class LauncherCrashChecks
                         }
                         if(hang && !exportedWhileRunning && ((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text.Contains("Hang report saved; the game is still running")) {
                             Require(!task.IsCompleted,"Notification must arrive before the hung game exits.");
+                            Require(CrashReports.CaptureHealth(root).Contains("Helper responding"),"Live hang must retain a current-session health handshake.");
                             Require(((System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost")).Visibility==System.Windows.Visibility.Visible,"Hang opens Diagnostics while game runs.");
                             var button=(System.Windows.Controls.Button)System.Windows.LogicalTreeHelper.FindLogicalNode(ui.Window,"ExportCrashReport");
                             Require(button!=null && button.IsEnabled,"Hang export remains enabled while game runs.");
@@ -73,6 +74,7 @@ public static class LauncherCrashChecks
                 Require(CrashReports.Summary(root).Contains(fallback!=null?"Unexpected exit":hang?"Suspected hang":"0xC0000005"),"Incident metadata is readable by the launcher.");
                 string zip=Path.Combine(root,"native-crash-export.zip");CrashReports.Export(root,latest,zip);
                 using(var archive=ZipFile.OpenRead(zip))Require(fallback!=null?archive.GetEntry("crash.dmp")==null && archive.GetEntry("report.json")!=null:archive.GetEntry("crash.dmp")!=null,"Export must represent whether a native dump was captured.");
+                if(fallback==null)using(var archive=ZipFile.OpenRead(zip))Require(archive.GetEntry("breadcrumbs.txt")!=null,"Native report export must include breadcrumbs.");
                 Require(GameSessions.Recover(root)==null,"Observed exit must not produce a second startup incident.");
                 Console.WriteLine(fallback!=null?"PASS actual launcher/game "+fallback+" produces an exportable unexpected-exit report without a dump.":hang?"PASS launcher detects native hang while game runs, opens Diagnostics, exports the dump before exit and preserves recovery.":"PASS launcher launches actual deliberate crash, announces new report, reads native metadata and exports its dump.");
             } finally { timer.Stop();System.Threading.SynchronizationContext.SetSynchronizationContext(previous);ui.Window.Close(); }
@@ -82,7 +84,14 @@ public static class LauncherCrashChecks
             if(!target.StartsWith(Path.GetFullPath(parent)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase) ||
                 !Path.GetFileName(target).StartsWith("crash-report-tests-") ||
                 (File.GetAttributes(target)&FileAttributes.ReparsePoint)!=0)throw new Exception("Unexpected integration test root.");
-            Directory.Delete(target,true);
+            // The game has exited, but its helper may still be releasing its image.
+            // Retry only this validated, disposable fixture; never stop other processes.
+            for(int attempt=0;;attempt++) {
+                try {Directory.Delete(target,true);break;}
+                catch(IOException){if(attempt>=50)throw;}
+                catch(UnauthorizedAccessException){if(attempt>=50)throw;}
+                System.Threading.Thread.Sleep(100);
+            }
         }
     }
     public static int Run()

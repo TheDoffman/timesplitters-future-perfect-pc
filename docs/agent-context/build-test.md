@@ -16,6 +16,11 @@ Source checks, builds, menu startup and gameplay are separate evidence;
 unavailable hardware/private data remain explicit validation gaps.
 <!-- packet:end -->
 
+Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
+helper death and the portable ring; `test_native_crash.py` checks Darwin output.
+Shared UI tests cover health identity/failures and bounded ZIP export. Existing
+runtime/launcher CI runs these on both hosts.
+
 ## Choose the cheapest relevant check
 
 `test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
