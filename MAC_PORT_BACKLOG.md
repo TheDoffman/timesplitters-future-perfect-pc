@@ -3837,7 +3837,10 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   shader selection, guest calls and lifetime rules are unchanged. Three Windows
   checks include stale-address and eager-hash negative controls, registered in
   both native CI jobs. No Mac adapter change; native Mac execution and physical
-  gameplay still need validation. See STATUS for Windows build/live evidence.
+  gameplay still need validation. Windows merged source09f0b7fe passes32 combined
+  checks and the supported build; its complete45s ten-bot Disco240 run averages
+  232.374342FPS with fresh guest frames and near-unity game/wall time. This is
+  bounded Windows evidence, not sustained240 or native Mac gameplay; see STATUS.
 
 - **Script and presentation-event coverage (2026-10-24, PR #328):** Actual US
   script dispatch now covers every cadence phase through240 at normal/quarter

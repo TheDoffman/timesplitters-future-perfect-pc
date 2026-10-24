@@ -72,8 +72,16 @@ main's state0x800 alongside2/4. All32 cutscene/shader/context/backlog checks pas
 as do repository-context/whitespace checks and the supported Windows build with
 built-in tests. Merged executable SHA256:
 `d9c5c0d753191d020958a88f08ecb993c3d72965d2b5e3fe50b15057fa885149`.
-Its clean Present-cadence route is pending; this is an integration build claim,
-not a claim that the earlier profile was taken on the merged binary.
+`crowd-shader-merged-240` completes the clean ten-bot Disco route and passes the
+generic coverage gate with19 active foreground checkpoints. The complete45s
+spawn+5..50 window contains10,456 fresh guest intervals:232.374342FPS, lowest1s
+count188, lowest5s rate202.6, p99 5.646ms, worst8.513ms and no intervals above9ms.
+Sampled game/wall ratio is1.000000; no interpolation, CPU probe, captures or
+per-update trace runs. Classic/3440x1440/FOV73 and actual1920x1060 client remain.
+Fixture signatures are unchanged and disposable partitions recycled. Evidence:
+`logs/shader-merged-pacing-summary.json` and the named run's provenance/CSV/report.
+This validates bounded merged-build gameplay and pacing, not a matched causal
+FPS gain, sustained240, GPU completion/scanout or full visual parity.
 
 ## 2026-10-24 — Merged-build Venice pacing and instruction-level wait probe
 
