@@ -3831,6 +3831,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Discord sampling guards (2026-10-24, PR #328 follow-up):** Shared
+  `pc_display_menu.c` validates each decoder read with a fresh bounded span.
+  Fields, cadence, event cache and IPC behavior remain unchanged. Windows
+  resident reads avoid full-mapping queries; Mac keeps real Mach bounds with
+  no new adapter. Production-callback tests cover exact copies, protection
+  changes, read-only/noaccess, overflow and fallback; Windows passes27 related
+  checks with8 Mac-only skips, plus the supported build. Existing dual-host
+  Discord suite registration includes the new cases. Mac execution of this
+  follow-up and physical gameplay remain pending. The Windows45s ten-bot240
+  run averages235.244550FPS (lowest1s199, p995.299ms), with fresh guest frames
+  and game/wall0.999985. It is not sustained240 or Mac gameplay. See STATUS.
+
 - **Texture survey lanes (2026-10-24, PR #328 follow-up):** Shared
   `zz-texel-sample-lanes.patch` groups four existing independent checksum lanes
   while retaining exact sampled bytes/order and checksums. It changes no texture
@@ -3844,7 +3856,8 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Mac CI898ee923 subsequently fails compilation of the fixture's three variants.
   The follow-up avoids redefining libc copy macros, exposes compiler stderr and
   passes five Windows checks including macro-preservation/redefinition controls.
-  Native Mac confirmation is pending; the runtime remains unchanged.
+  Native Mac runtime CI passes on15cb9fba after that repair; physical gameplay
+  remains unverified. The runtime is unchanged by the fixture repair.
 
 - **Shader source lookup (2026-10-24, PR #328 follow-up):** The shared HLE cache
   verifies full current microcode on source-address hints before bypassing its

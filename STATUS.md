@@ -1,3 +1,48 @@
+## 2026-10-24 — Bounded Discord status reads
+
+The prior targeted stacks include16 VirtualQuery chains through the camera's
+once-per-second Discord sampler. Hash-matched linked code confirms the camera
+call atRVA1f87e70 targets the sampler at1f871d0, passing reader1f7e610; the
+sampled VirtualQuery return at1f7e675 is in that reader, and1f7e7dd is a string
+table pointer read. The nearest public names reported by the PDB were misleading.
+`discord_guest_read` previously queried full mapping extents for each word/byte.
+It now uses a fresh bounded span per read, preserving guards, decoded content,
+sampling cadence, event-name cache and IPC behavior. No snapshots span callbacks.
+
+Production-callback tests use real host mappings and verify copied bytes,
+fresh permission checks, read-only access, noaccess/cross-boundary rejection,
+unchanged output on rejection, guest overflow and large/failed-query fallback.
+Retained-region and old-full-query controls fail as intended. The related
+Discord/decal suites pass27 checks with8 Mac-only skips on Windows; the supported
+Windows build and built-in checks pass. New executable SHA256:
+ed07ee3de98ecd9db961141ec5dea137e30202e08a52472944cdaa514d4dd1a7.
+Log: discord-bounded-build. New cases run in the existing dual-host Discord CI
+suite; this follow-up's Mac execution remains pending. The diagnostic
+crowd-discord-query-240 completes its ten-bot route with intact fixture signatures
+and recycled partitions. Its6,702 samples/45.006611s include37 targeted syscall
+stacks, zero full VirtualQuery leaves (previously16, all through the camera).
+Sampling API spans total0.155095s, maximum1.4652ms; no context failures or stack
+truncation. This supports removal of the identified query path, not a causal
+FPS/CPU-share result.
+
+The separate crowd-discord-clean240 run passes the complete45s crowd window:
+10,585 fresh guest intervals,235.244550FPS, minimum1s199/minimum5s211.4,
+p995.299ms/worst6.383ms, no intervals above9ms, game/wall0.999985 and19active
+foreground checkpoints. No interpolation, CPU sampler, captures or per-update
+trace. Classic/3440x1440/FOV73, actual1920x1060 client on a60Hz desktop, ten
+configured bots. Fixture signatures remain intact and disposable partitions
+are recycled. The previous clean texture candidate averaged226.507835FPS with
+p996.789ms/worst9.728ms; nondeterministic AI and host conditions prevent a causal
+percentage-gain claim from these separate runs.240 is still not sustained.
+Present intervals do not establish GPU completion, scanout, physical input
+latency, other maps or full-game mechanics/visual acceptance. Evidence:
+logs/crowd-discord-clean240-summary.json and the named isolated run.
+
+All14 CI checks for the previous fixture-only repair15cb9fba now pass, including
+Windows/Mac runtime, upgrades/transitions and launcher checks. This confirms
+the texture-fixture portability repair on Mac; physical gameplay
+and this newer Discord change are separate validation requirements.
+
 ## 2026-10-24 — Texture fixture portability and frame-aligned profiling
 
 Mac native CI for898ee923 fails while compiling allthree texture-survey fixture

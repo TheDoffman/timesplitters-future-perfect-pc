@@ -246,6 +246,15 @@ Mach protection for these calls instead of the compatibility stub's synthetic
 projection arithmetic. `projection_output.c` checks the real
 US builder's output extent, arithmetic, canaries and stack; generated C stays local.
 
+Discord's `pc_display_menu.c::discord_guest_read` also uses a fresh local bounded
+span for each requested read, including individual string bytes. No permission
+snapshot survives the callback. Decoder fields, one-second sampling cadence,
+event-name cache and IPC submission remain unchanged. Windows resident reads
+avoid full-allocation queries; cold/large reads retain fallback and Mac retains
+Mach validation. `test_discord_presence.py::test_guest_read_memory` executes the
+production callback with real protection changes, exact copied bytes, rejected
+reads leaving output intact, fallback and retained/full-query negative controls.
+
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
 otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,

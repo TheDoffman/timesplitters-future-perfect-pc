@@ -24,8 +24,8 @@ presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 `test_audio_output_gain.py` / `test_audio_timing.py`: XAudio/SDL, fake devices,
 gain overrides, mute, live volume and voice parity.
 
-`test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
-SDL virtual input; physical pads and Mac gameplay require validation.
+`test_controller_profile.py`: devices/maps/disconnect; Windows Build uses SDL
+virtual input. Physical pads and Mac gameplay remain unverified.
 
 `test_native_demo_timing.py`: schedule/read guards, mutations, input/ABI, pause,
 EOF/cancel, catch-up, presets, recorder lifecycle; variable60..240/steady110.
@@ -46,9 +46,8 @@ Mouse cadence/surface math cover240; math is not live water. Mounted/terminal
 tests check permissions, bounded queries, 125..8000Hz input and clock/cache/consume
 mutations. Private-XBE skips do not establish Mac execution of lifted routines.
 
-`test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
-counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
-Mac does not execute Windows stack walking.
+`test_sample_chains.py`: depth/saturation/counts and mutation controls on both
+hosts; Mac does not execute Windows stack walking.
 The runner records `--profile-depth 1..32` (default8), `--texture-mode`
 (`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
 
@@ -66,9 +65,10 @@ Publisher suites `test_launcher_release.py` / `test_publish_release.py` run on
 both hosts: Stable/alpha baselines, pagination/completeness, initial notes,
 scope/merge/rename/ancestry rules. No game/UI rebuild is needed.
 
-`test_auto_look.py` checks real multi-page records and permission expiry.
-`test_decal_projection.py` checks bounded four-page batches, larger-span fallback,
-each page's permissions and first-page-only/disabled/write/bounds mutations.
+`test_auto_look.py`: real records/permission expiry. `test_decal_projection.py`:
+four-page batches, larger fallback, permissions and mutation controls.
+`test_discord_presence.py`: production read bounds/copies, fresh permissions,
+read-only/noaccess, large/cold fallback and retained/full-query mutations.
 
 ### Native vehicle integration and diagnostic checks
 
