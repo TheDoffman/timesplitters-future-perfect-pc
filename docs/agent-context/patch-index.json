@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "2025854d6715399f85d893ac4db332b88f496d8e69cedac71db4c87ddf9ecc89",
+  "loaderSha256": "48c43596ec81feea9e94ec1a7a68fb9e281d705812b6c40db94e68a80482d53f",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1367,6 +1367,13 @@
       "sha256": "8737f59c9623e28300ab75ec41209f77b0976f28d6215ebd04539ce0883e77c6",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-texture-bind-scan.patch",
+      "sha256": "3d0d8f0856b07d0e9906fe576d1c2881c8a9524aa79d9849f9682f5c035c2c24",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
       ]
     }
   ]

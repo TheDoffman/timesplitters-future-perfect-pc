@@ -3837,6 +3837,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Texture binding scan (2026-10-24, PR #328):** Shared HLE now combines
+  first-entry lookup and any-framebuffer-alias detection in one fresh pass.
+  No platform adapter, content-check or copy-lifetime changes. Windows full-module
+  alias/refresh regression checks pass, including negative controls. Mac GL/RHI
+  execute the same registered fixture in CI; current-head host confirmation and
+  physical gameplay remain pending. See STATUS for build/live evidence.
+
 - **Demo preset lifecycle coverage (2026-10-24, PR #328):** Original-US
   fixtures now execute eight pause-offset recording cases and32playback
   transitions through Original60 across120/144/180/240 with one/four

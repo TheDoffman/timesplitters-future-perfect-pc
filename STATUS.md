@@ -1,3 +1,23 @@
+## 2026-10-24 — Combine texture binding cache searches
+
+The hash-matched ed07 crowd profile samples both consecutive texture-binding
+searches: first matching host entry, then any framebuffer alias. The new shared
+patch combines those into one fresh pass while retaining both outputs, including
+aliases with different framebuffer flags. Null/nonzero-stage behavior, content
+checks, uploads and copy invalidation remain unchanged. No persistent cache is
+introduced. This removes redundant traversal; it is not a measured FPS gain.
+
+The complete production-module framebuffer fixture compares cache sizes 0..512
+against the original independent searches and checks null/missing/aliased hosts
+and unchanged cache bytes. All four Windows cases pass, including deliberately
+broken first-only/last-entry selection and stale-copy controls. The supported
+Windows Build -SkipTextures and its bundled checks pass; executable SHA256 is
+`a279c1561eb7a7ce54add834392a434706ded3a6217d451a60c0ad7aef8005de`
+from 0f775759 plus this patch. Twenty-one context/backlog checks pass.
+Patch upgrades, current live-scene validation and current-head CI are pending.
+The shared fixture remains registered for Windows RHI and Mac GL/RHI; physical
+Mac gameplay and broad native240 acceptance remain open (MAC-060).
+
 ## 2026-10-24 — Demo pause phases and live preset transitions
 
 The original-US demo fixture's steady cadence already covered higher presets,

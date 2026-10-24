@@ -37,7 +37,8 @@ and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
 `test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
-checks refresh/stale copies (Mac GL/RHI, Windows RHI).
+checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
+the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
 diagnostics, budget, idle callback and bypass-removal mutation.
 
@@ -53,9 +54,8 @@ mutations. Private-XBE skips do not establish Mac execution of lifted routines.
 
 `test_sample_chains.py`: depth/saturation/counts and mutation controls on both
 hosts; Mac does not execute Windows stack walking.
-The runner records profile depth, texture/weapon choices and its16ms test-input
-file polling. Even capture-free timing includes that harness cost; normal play
-does not. Do not attribute its `replay_tick` file opens to player input overhead.
+Runner timing includes16ms test-input polling; normal play does not. Its
+`replay_tick` file opens are harness overhead.
 
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip

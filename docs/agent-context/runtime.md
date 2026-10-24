@@ -35,6 +35,13 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture
+binding resolves the first matching cache entry and any framebuffer alias in
+one fresh scan. Null bindings clear both outputs; nonzero stages request only
+an entry. No retained index, checksum/upload or framebuffer-copy policy changes.
+The full-module framebuffer fixture compares all cache sizes through512 against
+the original two searches and rejects first-only/last-entry regressions.
+
 `zz-texel-sample-lanes.patch` groups the texture survey's four independent hash
 lanes. Sample addresses/order, all checksum bits, small-input handling and tails
 match the original scalar recurrence. It changes neither sampling/full-check
