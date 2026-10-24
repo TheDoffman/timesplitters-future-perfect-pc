@@ -1,3 +1,46 @@
+## 2026-10-24 — Current 240-preset crowd baseline
+
+Source `e9cd2ef` (runtime unchanged from `74f9fe1`), Windows 11 Pro x64,
+MSVC14.44.35207, D3D11/RTX4070SUPER; executable SHA256
+`630954c7891f0c2d05967e92b900324509d1003d85b9b5f8da305f1d9fc2a646`.
+Two bounded Hotel runs use ten bots, native240, Classic textures, FOV73 and
+3440x1440 render configuration. Observed clients are foreground1920x1060;
+physical display/scanout240 is not established. Personal saves remain untouched,
+signed profiles/canonical fixture are unchanged, disks recycled and both games
+exit normally. No game process remains after the runs.
+
+With CPU sampling/captures/native-update/texture tracing disabled, the complete
+spawn+5..55s window contains **10,847 successful fresh guest Presents**, zero
+interpolated Presents, **216.956966 FPS**, median4.409ms, p95 5.965ms,
+p99 6.846ms and worst10.874ms. No interval exceeds33.33ms. The minimum aligned
+one-second frame count is156. The asynchronous gameplay clock/wall ratio is
+0.999825 across combat and respawns, not an animation/weapon parity result.
+All gameplay observations remain foreground/nonminimized with ten configured
+bots. Present CSV and actor snapshots remain enabled. This establishes a
+current 240-target shortfall in this scene; it does not reproduce the user's
+144-to110 dip, prove causality, or measure GPU completion/physical latency.
+Random spawn, bot movement and deaths prevent a controlled before/after claim.
+
+The separate200Hz/depth12 CPU diagnostic's complete110..150s reports contain
+6,766 guest-thread samples, 5,734 classified on-CPU and32.3s thread CPU.
+VM-query leaves account for1,702 samples. Retained chains include panel12E3F0
+text validation278, decal projection112EA0 275, auto-look194 and camera-feed166.
+These are sampled counts, not call counts or durations. The8192-key table drops
+727 new chains in this window; retained6039+dropped727 equals leaf6766.
+Unresolved driver addresses are grouped by module before subtracting cumulative
+reports because their displayed representative addresses change. Static helpers
+still resolve to nearby public symbols, so function labels need source checks.
+Sampling perturbs timing; the diagnostic is not the clean performance run.
+
+Evidence: `private/test-saves/crowd-current-240-{profile,clean}`;
+`logs/crowd-current-240-profile-summary.json`,
+`logs/crowd-current-240-clean-{matrix,stats}.json`, and matching runner logs.
+The clean analysis uses the tracked strict clock-window analyzer. No runtime
+optimization was made from these observations. Existing text-layout and
+projection scopes were confirmed in source; validation checks were not removed.
+Native Mac scenes, sustained240 across modes, crowd-dip reproduction and broader
+high-refresh acceptance remain open.
+
 ## 2026-10-24 — Playback under delivered-rate variation
 
 On source `74f9fe1`, the original-game playback fixture now checks a native
