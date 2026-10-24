@@ -93,7 +93,10 @@ authoritative if a guide is stale; fix the guide as part of the task.
 2. For patch changes, stage only the intended patch files, then run
    `python tools/repo-context.py refresh`. The index intentionally excludes
    untracked experiments; `find` labels those separately. Never stage unrelated
-   patches just to refresh it.
+   patches just to refresh it. Verify new patch worktree bytes use their declared
+   Git line endings before refreshing: Git can stage LF while leaving CRLF in
+   an existing Windows file. The index hashes exact loader bytes, so that mismatch
+   passes locally but fails on fresh CI checkouts. Preserve explicit `-text` patches.
 3. Run `python tools/repo-context.py check` and
    `python tools/repo-context.py check --base <task-base-revision>`.
 4. Include guide updates, generated index and useful measured evidence in the

@@ -1328,9 +1328,9 @@
     },
     {
       "name": "zz-native-trace-quiet.patch",
-      "sha256": "44b6413fb634f9e788a6dec2486f3cd296cbb0608db42f40ca5d67a9bcd1ec1d",
+      "sha256": "7766d9430ae33f7c3535937559a324784352f9535a13674a43024306d5a5275a",
       "targets": [
-        "src/kernel/recomp_trace.c\r"
+        "src/kernel/recomp_trace.c"
       ]
     },
     {
