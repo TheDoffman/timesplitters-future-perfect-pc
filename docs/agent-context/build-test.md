@@ -14,6 +14,10 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
+`test_zero_base_indices.py` compares the production HLE driver with its previous
+body: fresh index bytes/ranges, failures and stream dispatch, plus copy/rebase/
+cleanup mutations. Both native CI hosts run it; host draws are mocked.
+
 Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
 on both CI hosts. `native_reload_input.c` additionally executes the local verified
 US input decoder, timing wrapper and reload consumer across pause-offset phases,

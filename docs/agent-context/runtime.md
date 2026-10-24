@@ -24,6 +24,11 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
+draws with minimum index zero pass their current index bytes directly to the
+synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
+primitive conversion and draw order are unchanged. No retained index cache.
+
 `zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
 through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
 read each operand once, including fused and separated branches. Indirect, narrow,

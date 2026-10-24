@@ -3845,6 +3845,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Zero-based index copies (2026-10-24, PR #328 follow-up):**
+  Shared HLE skips allocating/rebasing an index list whose minimum is already
+  zero. Other ranges, fresh vertex gathering and host draw ordering remain
+  unchanged. No Mac adapter is needed. Four Windows driver/mutation checks
+  pass; both native CI hosts register them. Windows build, all patch upgrades
+  and corrected context checks pass. Reviewed Disco combat shows intact
+  geometry; clean240/Original60 runs measure237.89/60.00070FPS with fresh
+  frames and near-unity game speed. Mac execution of this follow-up remains
+  pending; previous7a796f19 passes all15CI checks. See STATUS for scope/limits.
+
 - **Temple crowd acceptance (2026-10-24, PR #328):** Source925f9f72's Windows
   binary completes isolated ten-bot Temple runs at Original60/native180/240.
   Complete45-second windows measure60.00054/179.99977/239.91279FPS with fresh

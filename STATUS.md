@@ -1,3 +1,62 @@
+## 2026-10-24 — Avoid copying already-zero-based draw indices
+
+The bounded `crowd-current-profile240` Disco diagnostic uses source 7a796f19's
+975f69dc binary with the 200 Hz/depth-12 sampler. Differencing complete spawn and
+combat snapshots yields 6,810 guest-thread leaf/chain samples, zero dropped
+chains and 32 virtual-memory-query leaves. Model rendering appears in 2,893
+chains; allocation stacks include pushed-vertex gathering and index copies.
+These are diagnostic wall-time observations, including waits and observer cost,
+not clean FPS or CPU-share measurements. The run exits normally with signed
+profiles/fixture intact and disposable partitions recycled.
+
+The shared indexed-draw driver always allocated and rewrote indices, even
+when their minimum was zero. `zz-zero-base-indices.patch` skips that redundant
+allocation/copy for zero-based pushed-array draws. Other ranges retain their
+original rebasing and failure path. Vertex gathering, host primitive conversion,
+draw order and ordinary vertex-buffer draws remain unchanged; no index data is
+cached between calls. The same HLE path serves Windows/native Mac.
+
+A private comparison of the actual pre-change and candidate driver passes
+12,000 randomized byte/dispatch comparisons. Its two-million-call, 24-index
+mocked-host benchmark gives median 120 ms original/79 ms candidate at minimum 0,
+and 118/119 ms at minimum 17 across five alternating pairs. This isolates the
+driver's allocation/copy cost, not a measured game FPS gain or the frequency
+of zero-based draws in live combat. Raw evidence is under
+`private/pipeline/zero-index-prototype` and `logs/crowd-current-profile240-summary.json`.
+
+Four public Windows checks pass, including deliberate always-copy, omitted
+rebasing and leaked-index mutations. They compare against the prior shared HLE
+driver, check fresh indices/ranges, explicit extrema/empty/invalid calls,
+ordinary-stream dispatch and allocation failure; host drawing/gathering are
+controlled boundaries. Both native CI hosts register this suite. The supported
+Windows build and bundled checks pass. Executable SHA256:
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36.
+An isolated native240 Disco session completes with signed profiles/fixture
+preserved and partitions recycled. Reviewed combat-one/combat-four captures
+show intact weapon/hand geometry, characters, scenery, muzzle flashes and casings.
+This visual run overlaps compiler-based tests and supplies no clean FPS evidence.
+The combined regression run passes 49 cases, including every patch-upgrade,
+draw and framebuffer case, and fails one old patch-order assertion already
+loaded by pytest before its source was corrected. The current context/backlog
+recheck passes all 21 cases; patch freshness and whitespace checks pass. Logs:
+`logs/zero-index-{regressions,context-recheck,build}.log`. All 15 CI checks pass
+on preceding 7a796f19; that does not establish this follow-up's CI. Mac execution
+and full-game performance remain unverified.
+
+Separate clean, isolated ten-bot Disco runs complete with unchanged signed
+profiles/fixture and recycled partitions. Native240's complete 45-second window
+averages 237.888896 FPS, minimum one/five-second rates 214/222.6, p99 4.931 ms,
+worst 10.608 ms and 10,704 fresh guest intervals. Original60 averages 60.000695 FPS,
+minimum one/five-second rates 60/60, p99 17.132 ms, worst 17.676 ms and 2,699 fresh
+intervals. Both have 19 active foreground checkpoints and no interpolation;
+sampled game/wall ratios are 1.00012194 and 1.00022353. Neither window overlaps
+builds/tests, CPU profiling or captures. Input state polling every 16 ms remains
+test overhead. Classic/3440x1440/FOV73 configuration has actual client1920x1060
+on a60Hz desktop. Summaries are `logs/zero-index-clean{240,60}-summary.json`.
+Present intervals are not GPU completion, scanout or physical input latency.
+The native run is not locked240; differing AI/death/view paths prevent attributing
+its FPS difference from earlier runs to this optimization.
+
 ## 2026-10-24 — Current-build Temple crowd acceptance
 
 Source925f9f72, Windows11 x64/MSVC14.44/D3D11/RTX4070SUPER, executable

@@ -20,7 +20,8 @@ patch changes, and run the context checker against the task base.
 <!-- packet:end -->
 
 The generated-entry optimization follows texture-bind-scan in the patch order;
-historical controls omit both until renderer context is installed. Candidate
+zero-base-indices follows it. Historical controls omit these until renderer
+context is installed. Candidate
 math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
