@@ -3764,6 +3764,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Vulkan lifecycle checks and guest resource/event hooks remain pending. The
   original event, smoothing and byte-boundary passes are still caller-owned;
   this does not enable a new in-game water path on either host.
+  Shared `graphics/surface_gpu_cache.h` now retains four source image identities
+  per owner in a five-resource registry, with allocation-free reuse and
+  transactional replacement. `native_surface_gpu_cache.c` is registered for both
+  host compilers; Windows CPU/GPU fixtures exercise it. Mac compilation/execution
+  and guest/HLE reset/generation wiring remain pending; no separate Mac policy
+  is needed because the cache uses the common RHI image reference contract.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

@@ -513,8 +513,15 @@ Creation failure unwinds every owned handle. It saves/restores output targets
 and all viewports, including an empty list, and unbinds temporary textures and
 its step buffer. It may leave other draw state changed under the RHI contract.
 This owner now executes the GPU fixture trajectories; no game hook calls it.
-Original disturbances/smoothing/byte boundaries remain caller-owned. Per-guest
-resource identity, local time scopes and actual event ordering still need wiring.
+Original disturbances/smoothing/byte boundaries remain caller-owned.
+`graphics/surface_gpu_cache.h` provides a zero-initialized, render-thread registry
+bounded to the constructor's five resources. It keys owners by resource ID,
+generation, coefficients and four retained RHI image identities. Unchanged draws
+reuse their owner without allocation; replacement is transactional and a full
+registry returns NULL without evicting live entries. Clear before scene/device
+reset and advance generation for in-place reinitialization. Invalid or failed
+requests return NULL, never a stale owner. This registry runs in the fixtures;
+guest/HLE reset hooks, local time scopes and actual event ordering still need wiring.
 The eight 128-square float4 images contain 2 MiB of pixels per owner; this is not
 a total VRAM or in-game performance measurement.
 See the coupled-operator

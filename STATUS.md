@@ -1,3 +1,25 @@
+## 2026-10-24 — Bounded GPU water resource reuse
+
+On `fix/native-water-rounding`, `graphics/surface_gpu_cache.h` now manages up to
+five coupled-water owners keyed by resource, generation, coefficients and four
+retained source images. Repeated draws reuse GPU resources without allocation;
+changed identity replaces them transactionally. Failure leaves the old entry
+intact and returns NULL for fallback. Scene/device cleanup releases all references.
+The new cache remains fixture-only: guest/HLE reset and event hooks are not wired.
+
+Windows MSVC asset-free timing checks pass 21 cases in 25.68 s, including every
+allocation failure during cache replacement and checks for retained references,
+capacity limits and recreation. The D3D11 WARP suite passes 28 cases in 160.72 s,
+including deliberate broken-implementation controls. All 40 RTX 4070 SUPER
+field/rate/smoothing trajectories pass through the cache with unchanged original
+byte boundaries and final output. Logs: `water-cache-host-suite.log`,
+`water-cache-gpu-suite.log`, `water-cache-hardware-{0,1,2,3}.log`.
+
+These are isolated lifetime and shader checks, not an in-game performance gain
+or level-reload proof. The normal playable build is unchanged. Mac execution,
+actual game integration, sustained frame pacing and broader gameplay acceptance
+remain open under MAC-060. No new PR was opened.
+
 ## 2026-10-24 — Shared ownership for the coupled GPU water kernel
 
 `graphics/surface_gpu.h` now owns the candidate's mode/basis/state/forcing/world/

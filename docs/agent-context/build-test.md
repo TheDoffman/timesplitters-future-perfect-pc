@@ -926,3 +926,13 @@ checks complete typed-handle cleanup, and recreates successfully. It performs
 no shader execution and does not replace real GPU coverage. The existing test
 compiler now includes the RHI header directory and the shader harness searches
 its disposable mutation directory first, including nested owner headers.
+
+`native_surface_gpu_cache.c` extends that dual-host group with five-resource
+identity/reuse checks. The shared fake RHI tracks source-image references and
+injects every allocation failure during replacement, requiring the old owner
+and its references to survive without leaked new handles. Generation, coefficient
+and image changes replace the owner; identical requests allocate nothing. Full
+capacity and invalid input do not mutate the registry, and scene clear/recreation
+is checked. The GPU rounding fixture now acquires through the cache every frame
+and replaces its generation between smoothing runs; actual RHI references keep
+source images alive until cache cleanup. These checks do not install game hooks.

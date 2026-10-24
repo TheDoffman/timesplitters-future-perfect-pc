@@ -3,7 +3,7 @@
  * byte render targets, not a CPU approximation to UNORM conversion. */
 #include "pc_native_timing.h"
 #include "graphics/surface_interval.h"
-#include "graphics/surface_gpu.h"
+#include "graphics/surface_gpu_cache.h"
 typedef struct RoundTarget { RhiImage *image;RhiView *read,*write; } RoundTarget;
 static RoundTarget round_target(unsigned format) {
     RhiImageDesc d={0};d.width=d.height=SURFACE_SIDE;d.depth=d.mip_levels=d.samples=1;
@@ -91,7 +91,9 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     RoundTarget bytes[2]={round_target(RHI_FORMAT_R8G8B8A8_UNORM),round_target(RHI_FORMAT_R8G8B8A8_UNORM)};
     RoundTarget first_byte=round_target(RHI_FORMAT_R8G8B8A8_UNORM),first_float=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
     PcSurfaceGpuConfig config={SURFACE_SIDE,a,b,d,k,c};char errors[4096]={0};
-    PcSurfaceGpu *surface=pc_surface_gpu_create(&config,errors,sizeof errors);
+    PcSurfaceGpuCache cache={0};
+    RhiImage *identity[4]={bytes[0].image,bytes[1].image,first_byte.image,f->byte_target};
+    PcSurfaceGpu *surface=pc_surface_gpu_cache_acquire(&cache,0x10000,1,&config,identity,errors,sizeof errors);
     if(!surface)fprintf(stderr,"Surface owner creation: %s\n",errors);CHECK(surface);
     field_owner_lifecycle(surface);
     RoundTarget world={surface->world.image,surface->world.read,surface->world.write};
@@ -139,6 +141,11 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     }
     const unsigned rates[]={60,120,144,0,144};
     for(unsigned smoothing=0;smoothing<2;smoothing++) {
+        if(smoothing) {
+            PcSurfaceGpu *replacement=pc_surface_gpu_cache_acquire(&cache,0x10000,2,&config,identity,errors,sizeof errors);
+            CHECK(replacement && replacement!=surface && !pc_surface_gpu_output(replacement));
+            surface=replacement;world.image=surface->world.image;world.read=surface->world.read;world.write=surface->world.write;
+        }
         unsigned reference_fresh=0;memset(normal,0,sizeof normal);
         rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
         round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);unsigned current=0;
@@ -182,6 +189,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             SurfaceTiming timing;surface_timing_begin(&timing,frames);
             for(unsigned frame=0;frame<frames;frame++) {
                 surface_timing_mark(&timing,frame,0);
+                CHECK(pc_surface_gpu_cache_acquire(&cache,0x10000,1+smoothing,&config,identity,errors,sizeof errors)==surface);
                 unsigned frame_rate=fps?fps:(frame<37?144:frame<67?120:frame<82?60:144);
                 if(frame==10) {
                     now+=frequency/2;
@@ -273,7 +281,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
         }
     }
     free(references);for(unsigned i=0;i<2;i++)round_destroy(&bytes[i]);
-    pc_surface_gpu_destroy(surface);
+    pc_surface_gpu_cache_clear(&cache);
 #if SURFACE_ROUNDING_PROFILE == 3
     field_noise_destroy(&noise);
 #endif

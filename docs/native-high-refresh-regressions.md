@@ -7141,3 +7141,33 @@ water-owner-cost-repeat.log, water-owner-clocks.csv. These short workloads are
 not a controlled before/after performance comparison. No power/clock setting was
 changed. Sustained scene measurements, caller hooks and actual queued disturbance
 delivery remain required before enabling this path.
+
+### Bounded GPU water resource identity (2026-10-24)
+
+`graphics/surface_gpu_cache.h` supplies a render-thread registry for the five
+resources allocated by the guest constructor. An entry retains the four source
+RHI images, preventing freed pointer addresses from masquerading as the old
+identity. Repeated resource/generation/configuration/image requests reuse an
+owner with no allocations. Changed identity builds a replacement before releasing
+the old owner; any failure returns NULL and leaves the old entry intact. The
+caller must fall back for that failed request, not use the mismatched old state.
+The registry refuses a sixth resource rather than evicting a potentially active
+one. Start zeroed, clear before scene/device reset, and advance generation when
+initializing a resource in place.
+
+The asset-free cache fixture checks reuse, generation/configuration/source
+replacement, every allocation failure during replacement, image retention,
+capacity rejection and clear/recreation. The shared fake RHI has no shader
+emulation. The actual GPU trajectory fixture reacquires every frame, replaces
+the generation between smoothing runs and releases caller references before
+cache cleanup. These are resource-lifetime checks, not actual level-reload or
+gameplay evidence. Guest/HLE construction/reset and deferred-command integration,
+original event delivery and local timing remain unwired. No new game build or
+Mac run is claimed.
+
+Validation: the asset-free timing group passes 21 cases in 25.68 s and the WARP
+suite passes 28 in 160.72 s. All 40 RTX 4070 SUPER trajectories pass with exact
+authored byte boundaries/final output through the cache. Logs:
+`water-cache-host-suite.log`, `water-cache-gpu-suite.log` and
+`water-cache-hardware-{0,1,2,3}.log`. No performance comparison was run for this
+change; the previously documented isolated-clock confound remains unresolved.
