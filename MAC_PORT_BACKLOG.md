@@ -349,6 +349,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   [Windows design and checks](docs/windows-crash-logger.md); measured Windows
   results are recorded in `STATUS.md`.
 
+- **Breadcrumb/health follow-up (2026-10-24):** Both capture adapters now use
+  `pc_breadcrumbs.h` for bounded numeric history and `pc_capture_health.h` for
+  session-scoped helper heartbeats. Both launcher adapters pass the session token;
+  the shared Diagnostics model checks storage, freshness and process identity.
+  Shared UI and Darwin capture tests cover these paths in CI. Windows native
+  build/report validation is local; native Mac gameplay remains unverified.
+  No separate duplicated gameplay policy or new deferred Mac adapter is added.
+
 ### MAC-043 — Automatic mouse Auto Lookahead override
 
 - **Status:** Awaiting validation

@@ -49,6 +49,16 @@ namespace TimeSplitters.Launcher
                 if(File.Exists(path))File.Replace(temporary,path,null);else File.Move(temporary,path);
             } finally {if(File.Exists(temporary))File.Delete(temporary);}
         }
+        internal static Dictionary<string,object> CaptureSession(string root)
+        {
+            var data=Read(root);
+            if(!Active(data) || Number(data,"game_pid")<=0)return null;
+            try {
+                using(var game=Process.GetProcessById((int)Number(data,"game_pid")))
+                    return !game.HasExited && game.StartTime.ToUniversalTime().Ticks==Number(data,"game_started_ticks")?data:null;
+            } catch(ArgumentException){return null;} catch(InvalidOperationException){return null;}
+            // Access denied is unknown, not a positively verified live session.
+        }
         static bool Active(Dictionary<string,object> data) { return data!=null && Json.String(data,"state")=="active"; }
         static long Number(Dictionary<string,object> data,string key)
         {

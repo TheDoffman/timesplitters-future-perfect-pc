@@ -34,7 +34,7 @@ static LONG WINAPI fatal_exception(EXCEPTION_POINTERS *ep)
 void pc_crash_shutdown(void)
 {
     if (packet) SetUnhandledExceptionFilter(previous_filter);
-    if (packet) InterlockedExchange(&packet->watchdog_armed, 0);
+    if (packet) { pc_crumb_add(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,PC_CRUMB_GUEST_STOP,0); InterlockedExchange(&packet->watchdog_armed, 0); }
     /* A rendering thread may still hold this view during CRT exit. Keep its
      * small mapping alive until process teardown, rather than racing an unmap. */
     packet = NULL;
@@ -65,6 +65,8 @@ int pc_crash_init(PcCrashGuestCapture capture)
     packet = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof *packet);
     if (!packet) goto finish;
     packet->schema = PC_CRASH_SCHEMA;
+    packet->started_ms = GetTickCount64();
+    pc_crumb_add(&packet->breadcrumbs,0,PC_CRUMB_STARTED,0);
     packet->process_id = GetCurrentProcessId();
     packet->hang_timeout_ms = PC_HANG_TIMEOUT_MS;
     packet->startup_timeout_ms = PC_HANG_STARTUP_MS;
@@ -132,12 +134,13 @@ finish:
 void pc_crash_watchdog_start(void)
 {
     if (!packet) return;
+    pc_crumb_add(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,PC_CRUMB_GUEST_START,0);
     packet->watchdog_thread = GetCurrentThreadId();
     InterlockedExchange(&packet->watchdog_armed, 1);
 }
 void pc_crash_watchdog_stop(void)
 {
-    if (packet) InterlockedExchange(&packet->watchdog_armed, 0);
+    if (packet) { pc_crumb_add(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,PC_CRUMB_GUEST_STOP,0); InterlockedExchange(&packet->watchdog_armed, 0); }
 }
 void pc_crash_frame(void)
 {
@@ -165,6 +168,14 @@ void pc_crash_inhibit(int entering)
         do { count = InterlockedCompareExchange(&packet->watchdog_inhibited, 0, 0); }
         while (count > 0 && InterlockedCompareExchange(&packet->watchdog_inhibited, count - 1, count) != count);
     }
+    pc_crumb_add(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,PC_CRUMB_MODAL,packet->watchdog_inhibited);
+}
+
+void pc_capture_gameplay(int32_t scene,uint32_t mode,uint32_t menu,int paused,int network,int cutscene)
+{
+    if(!packet)return;
+    const int32_t values[PC_CRUMB_FIELDS]={scene,(int32_t)mode,(int32_t)menu,!!paused,network,!!cutscene};
+    pc_crumb_game(&packet->breadcrumbs,GetTickCount64()-packet->started_ms,values);
 }
 
 static volatile LONG test_hanging;
