@@ -806,30 +806,24 @@ is a skip, never proof. `native_surface_capture.c` is in the dual-host CPU timin
 group and verifies copied source order/identities and rejection without partial
 publication. Actual Mac RHI readback and game execution remain separate checks.
 
-The existing native-timing suite compiles `native_surface_coupled.c` on both CI
-hosts without game assets: 65 controlled modes, split-step composition,
-60/120/144 trajectories, identity and invalid-input nonmutation, plus
-positive/repeated/complex eigenvalue cases against independent original equations. The existing
-original-shader suite extends its fixed-neighbor and 64x64 spatial cases with
-the shared coupled step, comparing actual WARP results against the unmodified
-game shaders' one-second float32 output. Temporary-header mutations remove the
-velocity correction and must fail those GPU comparisons after successful build.
-The spatial diagnostic now uses shared GPU DCT/inverse passes around per-mode
-GPU matrices, with a fresh reconstructed field after every update. CPU DCT is
-only an independent reference for asymmetric corners, checkerboard and noise.
-A third disposable-header mutation breaks the inverse transpose and must fail
-its numeric comparison. Resources are reused inside the fixture; this is not a
-game runtime integration or a performance test. Existing byte
-storage differences remain asserted. These GPU cases require the supported
-private XBE and Windows WARP; hosted skips are not Mac GPU/gameplay acceptance.
+`native_surface_coupled.c` runs on both CI hosts without assets: 65 controlled
+modes, split composition, 60/120/144 trajectories, invalid-input nonmutation,
+and positive/repeated/complex roots against independent original equations.
+`test_original_surface_shader_feedback` compares fixed-neighbor and 64-square
+spatial GPU cases with the unmodified game's float32 output. Separate controls
+retain byte-storage differences. Shared GPU forward/inverse transforms are checked
+against CPU asymmetric-corner, checkerboard and noise references. Removing the
+velocity correction or breaking the inverse transpose must fail after compilation.
+These are operator checks, not runtime/performance or Mac GPU acceptance.
 
-The spatial fixture now translates and executes the supported XBE's original
-six-instruction water vertex program as well as both pixel programs. Its input
-triangle and viewport are synthetic; c17-c20 offsets come from callback 2BF10.
-`surface_vertex_definition.c` reads private microcode and uses the current
-production parser/emitter. Translation helpers also receive isolated runtime
-configuration. Single-pass and gradient-only byte-storage controls isolate
-rounding contributions; none is an accepted replacement for the original map.
+`surface_vertex_definition.c` uses the production parser/emitter on private
+microcode: the supported XBE's six-instruction vertex program and both original
+pixel programs run with synthetic geometry and callback-2BF10 c17-c20 offsets.
+Translation helpers use isolated configuration. Single-pass and gradient-only
+byte controls isolate rounding; no controlled scalar/storage test alone establishes
+a replacement for the original map. The pinned private XBE and Windows WARP are
+required; missing-asset skips are not validation. Detailed history is in the
+high-refresh regression guide.
 
 The surface spatial fixture also runs at 128x128, matching the observed game
 feedback target. Its wrapped case mirrors the live quad, viewport, screen-space
@@ -937,18 +931,24 @@ color/depth and multiple/empty viewport restoration, texture/step-buffer
 unbinding and preservation of a sentinel target. Removing output restoration
 or reset invalidation must fail. These are D3D11 lifecycle checks, not Vulkan
 validation. The existing dual-host native timing group now includes
-`native_surface_gpu_owner.c`; its fake RHI fails each of 32 allocation stages,
+`native_surface_gpu_owner.c`; its fake RHI fails each of 37 allocation stages,
 checks complete typed-handle cleanup, and recreates successfully. It performs
 no shader execution and does not replace real GPU coverage. The existing test
 compiler now includes the RHI header directory and the shader harness searches
 its disposable mutation directory first, including nested owner headers.
 
-`native_surface_gpu_cache.c` extends that dual-host group with five-resource
-identity/reuse checks. The shared fake RHI tracks source-image references and
-injects every allocation failure during replacement, requiring the old owner
-and its references to survive without leaked new handles. Generation, coefficient
-and image changes replace the owner; identical requests allocate nothing. Full
-capacity and invalid input do not mutate the registry, and scene clear/recreation
-is checked. The GPU rounding fixture now acquires through the cache every frame
-and replaces its generation between smoothing runs; actual RHI references keep
-source images alive until cache cleanup. These checks do not install game hooks.
+`native_surface_gpu_cache.c` checks identity reuse, replacement failures,
+retained image references, invalid/full-cache rejection and scene clear/recreation
+in the dual-host group. GPU trajectories reacquire each frame, replace generation
+between smoothing runs and release caller references before cache cleanup.
+
+Rounding trajectories now use `pc_surface_gpu_begin_bytes`; original-shader and
+broken-gradient controls still test residual/clipping behavior. Captured replay
+keeps independent unpack/residual setup. The Windows runner's
+`--scenario surface-feedback-gpu --run-name water-runtime-gpu --native-fps 144
+--seconds 100 --no-captures` invokes the shared solver in the deferred renderer.
+Its `feedback.bin.gpu` stores 16 TSWGPU1 records: 92-byte identity plus two
+128-square float4 fields. The third captured-feedback test checks matching
+metadata, finite values and both states within 32 float epsilons; original byte
+endpoints remain exact. A missing capture skips; an existing runtime capture
+without its sidecar fails. Per-sample creation/readback precludes speed claims.

@@ -49,6 +49,12 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         data = capture.read_bytes()
         assert data[:8] == b'TSWATER1' and len(data) == 8 + 16 * (92 + 3 * 128 * 128 * 4)
         (tmp_path / 'live-water.bin').write_bytes(data)
+        computed = capture.with_name(capture.name + '.gpu')
+        if live_capture == 'water-runtime-gpu':
+            assert computed.is_file(), 'Runtime solver sidecar is missing'
+            gpu = computed.read_bytes()
+            assert gpu[:8] == b'TSWGPU1\0' and len(gpu) == 8 + 16 * (92 + 2 * 128 * 128 * 16)
+            (tmp_path / 'live-water.gpu').write_bytes(gpu)
     assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
     previous = dict(vars(config))
     try:
@@ -225,6 +231,8 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
         if rounding:
             if live_capture:
                 helpers += '#define SURFACE_LIVE_CAPTURE 1\n'
+                if live_capture == 'water-runtime-gpu':
+                    helpers += '#define SURFACE_RUNTIME_CAPTURE 1\n'
             helpers += f'#define SURFACE_BENCHMARK {int(benchmark)}\n#include "surface_timing_gpu.h"\n'
             if mutation == 'noise-duplicate':
                 helpers += '#define SURFACE_NOISE_REPEATS 2\n'
@@ -357,7 +365,7 @@ def test_original_byte_rounding_flow(tmp_path, mutation, profile):
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows shader execution')
-@pytest.mark.parametrize('recording', ['water-live-feedback', 'water-live-feedback-original'])
+@pytest.mark.parametrize('recording', ['water-live-feedback', 'water-live-feedback-original', 'water-runtime-gpu'])
 def test_captured_live_feedback(tmp_path, recording):
     # Captures are local hardware output. WARP has different UNORM transitions;
     # its synthetic comparisons use its own original path, not RTX byte goldens.

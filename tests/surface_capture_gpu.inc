@@ -5,9 +5,19 @@
     char magic[8];CHECK(fread(magic,1,8,capture)==8 && !memcmp(magic,"TSWATER1",8));
     unsigned char *pixels=malloc(3u*SURFACE_SIDE*SURFACE_SIDE*4);CHECK(pixels);
     uint32_t words[23];unsigned records=0;
+#ifdef SURFACE_RUNTIME_CAPTURE
+    FILE *computed=fopen("live-water.gpu","rb");CHECK(computed);
+    CHECK(fread(magic,1,8,computed)==8 && !memcmp(magic,"TSWGPU1\0",8));
+    float *runtime=malloc(2u*SURFACE_SIDE*SURFACE_SIDE*16);CHECK(runtime);
+#endif
     while(fread(words,1,sizeof words,capture)==sizeof words) {
         CHECK(fread(pixels,1,3u*SURFACE_SIDE*SURFACE_SIDE*4,capture)==3u*SURFACE_SIDE*SURFACE_SIDE*4);
         CHECK(words[3]==4 && words[4]==7 && words[5]>0);
+#ifdef SURFACE_RUNTIME_CAPTURE
+        uint32_t identity[23];CHECK(fread(identity,1,sizeof identity,computed)==sizeof identity);
+        CHECK(!memcmp(identity,words,sizeof words));
+        CHECK(fread(runtime,1,2u*SURFACE_SIDE*SURFACE_SIDE*16,computed)==2u*SURFACE_SIDE*SURFACE_SIDE*16);
+#endif
         float parameters[4];memcpy(parameters,words+19,sizeof parameters);
         printf("live-feedback record=%u frame=%u resource=%08x k=%g a=%g b=%g d=%g\n",
             records,words[1],words[0],parameters[0],parameters[1],parameters[2],parameters[3]);
@@ -32,7 +42,21 @@
         for(unsigned rate=0;rate<3;rate++) {
             round_draw(f,unpack,NULL,NULL,&bytes[0].read,1,&world);
             CHECK(pc_surface_gpu_begin(surface,world.read,rounding.read));
-            for(unsigned part=0;part<=rate;part++)CHECK(pc_surface_gpu_advance(surface,pieces[rate][part]));
+            for(unsigned part=0;part<=rate;part++) {
+                CHECK(pc_surface_gpu_advance(surface,pieces[rate][part]));
+#ifdef SURFACE_RUNTIME_CAPTURE
+                if(rate==2 && (part==0 || part==2)) {
+                    field_read(world.image,0,field_a);double runtime_error=0;
+                    unsigned offset=part==2?SURFACE_SIDE*SURFACE_SIDE*4:0;
+                    for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<2;channel++) {
+                        float actual=runtime[offset+i*4+channel];CHECK(isfinite(actual));
+                        runtime_error=fmax(runtime_error,fabs(field_a[i*4+channel]-actual));
+                    }
+                    printf("runtime-coupled record=%u part=%u max_float_error=%.9g\n",records,part,runtime_error);
+                    CHECK(runtime_error<=32*FLT_EPSILON);
+                }
+#endif
+            }
             RhiView *boundary_inputs[2]={world.read,first_float.read};
             round_draw(f,boundary,NULL,NULL,boundary_inputs,2,&bytes[1]);
             field_read(bytes[1].image,2,field_a);double error=0;
@@ -43,5 +67,8 @@
         records++;
     }
     CHECK(feof(capture) && records==16);fclose(capture);free(pixels);
+#ifdef SURFACE_RUNTIME_CAPTURE
+    CHECK(fgetc(computed)==EOF);fclose(computed);free(runtime);
+#endif
     puts("PASS: captured live feedback matches original shaders and coupled fractional updates");
 }

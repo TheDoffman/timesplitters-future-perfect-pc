@@ -7220,3 +7220,53 @@ the existing surface patches explicitly; historical test stacks exclude it
 until its dependencies are present. The supported Windows build's bundled
 settings/save-path checks also pass. These host checks do not establish native
 Mac compilation or rendering of the capture extension.
+
+### Shared solver in the live deferred renderer (2026-10-24)
+
+`pc_surface_gpu_begin_bytes` moves byte unpacking and the original first-pass
+residual into shared owner-managed shaders and storage. It validates source and
+first-pass sampled views before drawing, rejects aliases/unsupported storage,
+and requires the authored 128/255 center. The ordinary float-input API remains.
+The owner now has nine float4 images (2.25 MiB of pixel payload at 128 square)
+and 37 allocation stages, all covered by failure cleanup and cache replacement
+tests. Controlled GPU trajectories call the new entry directly; captured replay
+keeps its independent setup to check it.
+
+`TSFP_SURFACE_GPU_CAPTURE=1` invokes the owner using actual source views after
+the original feedback in the deferred stream. It initializes and advances
+5/12 + 5/12 + 1/6, reading the first-piece and full-tick results into a TSWGPU1
+sidecar. Creation/destruction stay inside each diagnostic callback. This is a
+bounded integration proof, not the persistent cache path or visible-water
+replacement. The original guest events and GPU feedback/final passes still run.
+
+The supported Windows build and bundled checks pass. The source is `15d774c`
+plus the shared byte-input/probe extension; executable SHA-256 is
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`.
+`water-runtime-gpu` ran the bounded native144 Scotland route, exited cleanly,
+preserved profile hashes/signatures and recycled disposable disks. Sixteen
+records span host frames 6837-6864 and level ticks 300-317. The source byte file
+is 3,147,208 bytes and the paired float file is 8,390,088 bytes; hashes and exact
+source identities are in its local `capture-provenance.json`.
+
+The 31-case GPU suite passes in 182.59 s. Its live runtime case checks copied
+metadata, finite values, and 32 intermediate/endpoint fields against the
+independent replay within the unchanged 32-float-epsilon arithmetic bound.
+This is float-field agreement, not a claim that the raw runtime float field was
+byte-identical without boundary conversion. Existing original shader/byte
+comparisons remain exact. CPU owner/cache tests pass in 2.84 s and inject every
+one of the new 37 allocation failures. Logs: `water-byte-entry-gpu.log`,
+`water-runtime-owner-cpu.log`, `water-runtime-gpu-build.log`,
+`water-runtime-gpu-game.log`.
+
+The probe allocates and synchronizes readbacks per sample, so its frame times
+are excluded from performance claims. Actual native time-scope/event scheduling,
+persistent resource reset/reuse, final-shader hookup, visible motion acceptance,
+sustained performance and native Mac execution are still required. No new PR.
+
+The 16 captured local whole counts match the clock trace, and local deltas match
+its printed values within 5e-10 (`clock-scope-comparison.json`). This observes
+one route, not every guest-local time scope. The allocation/readback probe causes
+one three-tick catch-up: original `1956A0` gates on nonzero ticks but executes its
+feedback pair only once. Consequently the one-tick probe comparison is not proof
+of correct elapsed-time integration during stalls. The normal runtime connection
+must explicitly handle that distinction and preserve event/RNG call counts.

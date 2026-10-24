@@ -525,7 +525,12 @@ with incompatible storage/shape or hazardous internal aliases are rejected.
 Creation failure unwinds every owned handle. It saves/restores output targets
 and all viewports, including an empty list, and unbinds temporary textures and
 its step buffer. It may leave other draw state changed under the RHI contract.
-This owner now executes the GPU fixture trajectories; no game hook calls it.
+The owner executes the GPU fixture trajectories and the opt-in live GPU probe.
+`pc_surface_gpu_begin_bytes` initializes from completed original input/first-pass
+sampled byte views, retaining first-pass clipping/rounding and second-pass
+acceleration saturation. It requires the authored center (128/255) and rejects
+aliases or incompatible storage before drawing. Its unpack/residual shaders and
+temporary residual image are owner-managed; ordinary float input remains supported.
 Original disturbances/smoothing/byte boundaries remain caller-owned.
 `graphics/surface_gpu_cache.h` provides a zero-initialized, render-thread registry
 bounded to the constructor's five resources. It keys owners by resource ID,
@@ -535,8 +540,15 @@ registry returns NULL without evicting live entries. Clear before scene/device
 reset and advance generation for in-place reinitialization. Invalid or failed
 requests return NULL, never a stale owner. This registry runs in the fixtures;
 guest/HLE reset hooks, local time scopes and actual event ordering still need wiring.
-The eight 128-square float4 images contain 2 MiB of pixels per owner; this is not
+The nine 128-square float4 images contain 2.25 MiB of pixels per owner; this is not
 a total VRAM or in-game performance measurement.
+`TSFP_SURFACE_GPU_CAPTURE=1` extends the bounded capture with shared-kernel
+execution on the renderer thread. Each sample initializes from its actual GPU
+views, advances 5/12 + 5/12 + 1/6, and writes the first-piece/full-tick float
+fields to a `.gpu` sidecar. It creates/releases the owner within that callback,
+so no diagnostic resources survive scene/device teardown. This allocation and
+readback-heavy probe is not the eventual persistent gameplay path and does not
+replace visible water or alter guest event/RNG order.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

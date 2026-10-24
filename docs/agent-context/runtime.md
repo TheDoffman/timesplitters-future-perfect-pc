@@ -36,6 +36,12 @@ creates textures nor calls guest code from the deferred queue. The original
 feedback, RNG calls and guest ABI remain unchanged. This observes completed GPU
 pixels, unlike capture records containing stale render-target system-memory
 copies. The probe is bounded to 16 Scotland samples and is not a pacing test.
+The optional `TSFP_SURFACE_GPU_CAPTURE=1` branch of that existing callback now
+executes `pc_surface_gpu_begin_bytes` and fractional shared-kernel updates using
+the actual source views. It releases all diagnostic GPU resources before
+returning and keeps the original visible feedback/final passes. No further patch
+or guest wrapper was added for this extension. Persistent resource/reset hooks
+and the event/fractional-time integration are still required for normal use.
 
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.

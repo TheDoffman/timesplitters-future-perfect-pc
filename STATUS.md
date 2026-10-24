@@ -1,3 +1,34 @@
+## 2026-10-24 — Shared water solver executes inside the game renderer
+
+`pc_surface_gpu_begin_bytes` now initializes the shared GPU owner directly from
+the game's completed input and first-pass byte views. The owned residual field
+preserves clipping, quantization and acceleration saturation; inputs remain
+sampled only. Existing controlled trajectories use this entry point, while the
+capture replay retains an independent unpack/residual setup.
+
+The opt-in `TSFP_SURFACE_GPU_CAPTURE=1` branch runs this solver inside the existing
+deferred capture callback. It records states after 5/12 and after
+5/12 + 5/12 + 1/6, then releases all diagnostic resources before returning.
+The bounded native144 Scotland session completed cleanly with unchanged valid
+profiles and recycled disks. Its 16 samples cover level ticks 300-317; readback
+and per-sample creation disturb pacing, so this is not a performance test.
+
+The full GPU suite passes 31 cases in 182.59 s, including the live runtime's 32
+float fields compared with independent replay within 32 float epsilons
+(3.815e-6). Original shader/byte endpoint comparisons remain exact. The two CPU
+owner/cache cases pass in 2.84 s, covering all 37 allocation-failure stages.
+The supported Windows build and bundled checks pass. Executable SHA-256:
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`, built from
+`15d774c` plus these shared input/probe changes.
+
+Logs: `water-runtime-gpu-build.log`, `water-runtime-owner-cpu.log`,
+`water-byte-entry-gpu.log`, `water-runtime-gpu-game.log`. Copied identities,
+source hashes and fields are in `private/test-saves/water-runtime-gpu`.
+The new solver still does not control visible water. Persistent resource reuse,
+event/fractional-time scheduling, final-shader hookup, sustained pacing and Mac
+execution remain open. The normal game path has no probe allocations or readbacks.
+No new PR was opened.
+
 ## 2026-10-24 — Coupled water validated against completed gameplay feedback
 
 The opt-in `TSFP_SURFACE_CAPTURE` hook now copies the original feedback input,

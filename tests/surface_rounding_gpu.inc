@@ -2,6 +2,7 @@
  * dynamics still execute on every frame. Both quantization points use actual
  * byte render targets, not a CPU approximation to UNORM conversion. */
 #include "pc_native_timing.h"
+#include <float.h>
 #include "graphics/surface_interval.h"
 #include "graphics/surface_gpu_cache.h"
 typedef struct RoundTarget { RhiImage *image;RhiView *read,*write; } RoundTarget;
@@ -96,6 +97,10 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
     PcSurfaceGpu *surface=pc_surface_gpu_cache_acquire(&cache,0x10000,1,&config,identity,errors,sizeof errors);
     if(!surface)fprintf(stderr,"Surface owner creation: %s\n",errors);CHECK(surface);
     field_owner_lifecycle(surface);
+    unsigned ready=surface->ready;
+    CHECK(!pc_surface_gpu_begin_bytes(surface,first_byte.read,first_byte.read));
+    CHECK(!pc_surface_gpu_begin_bytes(surface,first_float.read,bytes[0].read));
+    CHECK(surface->ready==ready);
     RoundTarget world={surface->world.image,surface->world.read,surface->world.write};
     RoundTarget rounding=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
     /* Canonicalization is allowed only within the arithmetic guard, including
@@ -219,10 +224,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                             round_draw(f,filter,&offsets[2][0][0],&cb[2],inputs,4,&bytes[current^1]);current^=1;}
                         for(unsigned i=0;i<4;i++)inputs[i]=bytes[current].read;
                         round_draw(f,feedback[0],&offsets[0][0][0],&cb[0],inputs,4,&first_byte);
-                        inputs[0]=first_byte.read;inputs[1]=bytes[current].read;
-                        round_draw(f,residual,NULL,NULL,inputs,2,&rounding);
-                        round_draw(f,unpack,NULL,NULL,&bytes[current].read,1,&world);
-                        CHECK(pc_surface_gpu_begin(surface,world.read,rounding.read));
+                        CHECK(pc_surface_gpu_begin_bytes(surface,bytes[current].read,first_byte.read));
                     }
                     CHECK(pc_surface_gpu_advance(surface,part->delta));
                     if(part->ends_tick) {

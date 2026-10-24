@@ -3774,7 +3774,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   through the common RHI in deferred command order. The collector is shared and
   in the dual-host CPU suite; native Mac compilation/readback remain unverified.
   Legacy GL deliberately produces no capture because it lacks these RHI images.
-  This diagnostic does not enable the fractional solver or change default water.
+  The base capture does not change visible/default water.
+  `pc_surface_gpu_begin_bytes` now shares original byte input/residual initialization
+  with the runtime GPU probe; the owner has 37 tested allocation-failure stages.
+  `TSFP_SURFACE_GPU_CAPTURE=1` invokes it inside the existing deferred capture
+  callback and releases it before returning. Windows live midpoint/endpoint
+  comparisons pass; native Mac shader compilation/execution of this extension
+  remains pending. The solver still does not drive visible water on either host.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.
