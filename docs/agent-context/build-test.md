@@ -880,3 +880,13 @@ invalid nonmutation and the four-piece maximum. A reset-phase mutation must fail
 The real guest-hook fixture also checks publication, paused zero time and
 Original-mode clearing. Summing its float deltas at 144 Hz gives 59.999998569489
 ticks in one second; exact metadata and splitting produce all 60 boundaries.
+
+`native_surface_mode.c`, in the same dual-host suite, checks immutable mode
+packing against the existing affine operator and independent one-tick equations,
+including real/repeated/complex roots, irregular split composition and rejected
+output preservation. The GPU rounding fixture now uses the shared evolve shader
+with two immutable mode textures and a 16-byte time uniform; it no longer creates
+coefficient textures keyed by fractional duration. A fifth schedule alternates
+144-Hz intervals by +/-0.1 ms while retaining one second of active time. Every
+profile includes that jitter, smoothing off/on and pause preservation. Replacing
+the evolve shader's first diagonal entry with 1 must fail the byte comparison.

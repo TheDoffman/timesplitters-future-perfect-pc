@@ -493,6 +493,14 @@ It consumes `PcNativeStep` metadata without rounding float deltas or resetting
 phase on rate changes. The GPU fixture uses this producer/splitter, including
 a pause during motion. It is not yet a resource owner or an enabled game hook;
 new resources and guest-local time overrides require explicit synchronization.
+`graphics/surface_mode.h` packs each spatial mode's immutable eigenvalue and
+fixed-point data into two float4s. `surface_evolve_shader.h` advances that mode
+using current state, held residual and a delta/scale uniform. Unlike the earlier
+fixture's per-delta coefficient-image cache, varying elapsed time requires only
+a 16-byte buffer update and no coefficient-image allocation/upload. Real,
+repeated and complex roots share this representation; CPU validation covers all
+three and authored GPU trajectories use the complex branch. This is still an
+uncalled candidate, not a renderer resource owner or a measured speedup.
 See the coupled-operator
 section in `docs/native-high-refresh-regressions.md` for evidence and limits.
 ## Background replacement texture reads

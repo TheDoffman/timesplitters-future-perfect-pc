@@ -3747,6 +3747,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   by the dual-host timing suite. Windows tests cover jitter/pause/stalls and GPU
   flow through that splitter; native Mac execution of this extension is pending.
   Resource lifecycle and guest-local time-scope integration are still required.
+  Shared `surface_mode.h` and `surface_evolve_shader.h` now support changing
+  fractional intervals with immutable mode textures instead of per-delta image
+  construction. The portable mode-packing fixture is in the existing dual-host
+  timing suite. Windows WARP includes 144-Hz jitter and original-byte comparisons;
+  native Mac GPU/CPU execution of this extension and game performance are pending.
   native Mac execution, GPU adapter validation, byte-feedback appearance and
   gameplay integration remain **Awaiting validation**; this is not an enabled
   Mac water feature. See STATUS and the coupled-water regression record.

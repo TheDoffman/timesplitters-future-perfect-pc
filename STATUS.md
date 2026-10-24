@@ -1,3 +1,32 @@
+## 2026-10-24 — Water coefficients for variable frame times
+
+Continuing the same branch, the candidate no longer builds and caches full
+coefficient textures for each distinct frame interval. Shared mode packing
+creates two immutable 128-square float4 textures (512 KiB of coefficient pixel
+data). A shared GPU shader computes the fractional update using that data and
+a 16-byte delta/scale uniform. New intervals need no coefficient image allocation
+or full-image upload. This removes a concrete integration cost, but game frame
+time and GPU performance have not been measured.
+
+The portable fixture covers real, repeated and complex eigenvalues, irregular
+split composition, tiny/full intervals and invalid/overflow rejection; its
+maximum measured arithmetic difference is 2.027e-6. Four focused CPU checks
+pass in 5.47 s; the final packing check including overflow rejection passes in
+1.20 s. Ten focused GPU cases pass in 72.16 s, with all 40 field/rate/smoothing
+trajectories byte-exact at every original boundary and final ripple output.
+The added 144-Hz schedule varies intervals by +/-0.1 ms and retains fresh output
+on every advancing frame. Existing pause and negative controls remain.
+Evidence: logs/water-mode-cpu.log, logs/water-mode-cpu-final.log,
+logs/water-mode-gpu.log.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including
+the new matrix-diagonal mutation (`logs/water-mode-full-suite.log`). Repository
+context and staged whitespace checks pass; the existing byte-error guard is unchanged.
+
+The renderer's RHI contract allows self-contained passes to change shader/state
+bindings but requires output/viewport restoration and texture unbinding. Actual
+resource lifecycle/hook integration, queued splashes, game GPU cost, scene
+coverage and Mac execution remain unfinished. No new PR or playable build.
+
 ## 2026-10-23 — Exact intervals for authored water boundaries
 
 On `fix/native-water-rounding`, the actual timing producer demonstrates why the

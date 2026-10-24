@@ -218,9 +218,13 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
             needle = 'surface_round_channel(state.y,exact.b)'
             replacement = 'state.y'
         elif mutation == 'rounding-unforced':
-            name = 'surface_coupled_shader.h'
-            needle = '(row0.w,row1.w)*residual'
-            replacement = '(row0.w,row1.w)*0'
+            name = 'surface_evolve_shader.h'
+            needle = 'fixed.zw*residual'
+            replacement = 'fixed.zw*0'
+        elif mutation == 'mode-diagonal':
+            name = 'surface_evolve_shader.h'
+            needle = 'scale*(center+amount*mode.x)'
+            replacement = '1.0'
         elif mutation == 'rounding-clipped-gradient':
             name = 'surface_gradient_shader.h'
             needle = 'return gradient;'
@@ -263,7 +267,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage, mutati
                                 capture_output=True, text=True, timeout=90)
         output = result.stdout + result.stderr
         expected = ('boundary_error<1e-7f' if mutation == 'rounding-raw' else
-                    'worst==0' if mutation in ('noise-duplicate', 'rounding-unforced', 'rounding-clipped-gradient',
+                    'worst==0' if mutation in ('mode-diagonal', 'noise-duplicate', 'rounding-unforced', 'rounding-clipped-gradient',
                                               'rounding-unlimited-acceleration', 'rounding-unlimited-boundary') else
                     'error<tolerances[first_storage]' if mutation == 'smoothing-offset' else
                     'fabsf(output[field_index(x,y,c)]-expected)<tolerance' if mutation == 'constant-alpha' else
@@ -291,7 +295,7 @@ def test_original_smoothed_surface_feedback(tmp_path, mutation):
     (False, 0), ('rounding-raw', 0), ('rounding-unforced', 0),
     (False, 1), ('rounding-clipped-gradient', 1), (False, 2),
     ('rounding-unlimited-acceleration', 2), ('rounding-unlimited-boundary', 2),
-    (False, 3), ('noise-duplicate', 3)])
+    (False, 3), ('noise-duplicate', 3), ('mode-diagonal', 0)])
 def test_original_byte_rounding_flow(tmp_path, mutation, profile):
     test_original_surface_shader_feedback(tmp_path, 0x4bbf10,
         'surface_spatial_gpu.inc', 7, mutation, 128, True, rounding=True, rounding_profile=profile)

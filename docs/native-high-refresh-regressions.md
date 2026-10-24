@@ -6960,3 +6960,48 @@ retain byte-exact authored boundaries/final colors. The separate frame-clock
 suite passes nine cases in 10.48 seconds (logs/water-clock-flip-gate.log).
 Repository context and staged whitespace checks pass. These are Windows results;
 the new shared CPU test is registered for Mac CI, not locally verified on Mac.
+
+### Immutable mode data for variable frame intervals
+
+The prior GPU fixture constructed two complete coefficient images per distinct
+fractional duration. That finite cache worked for controlled constant presets,
+but real host intervals vary. Using it directly in a runtime owner could rebuild
+thousands of coefficients and allocate/upload images whenever a duration changed.
+`surface_mode.h` now packs each mode's eigenvalue data and fixed points once.
+`surface_evolve_shader.h` forms the fractional matrix and held-forcing response
+on the GPU from those immutable values and a per-step delta/scale uniform.
+
+The two 128x128 float4 mode images contain 512 KiB of coefficient pixels; each
+step changes only a 16-byte buffer (delta and damping^(delta/2)). The CPU no
+longer constructs a matrix for every mode on each new duration. Positive packed
+angle selects complex roots, negative selects real roots, and zero selects the
+repeated-root limit. Both fixed points retain the original affine centering and
+additional held residual. Existing clipping, quantization and authored-event
+boundaries remain unchanged. No interpolation of stored future frames is used.
+
+The portable fixture checks all three eigenvalue branches against the existing
+operator and independent one-tick equations, including irregular .413/.001/.407/
+.179 pieces. It observes maximum error 2.02655792e-6 and rejects invalid/overflowing
+packed outputs without mutation. Four focused CPU checks pass in 5.47 seconds;
+the final packing case including overflow rejection passes in 1.20 seconds.
+
+The GPU fixture executes the shared shader for all four fields and adds a fifth
+schedule: 144 frames with alternating +/-0.1-ms intervals, totaling one second.
+All 40 field/rate/smoothing combinations match every original byte G/B boundary
+and final byte ripple RGB. All high/mixed/jitter schedules retain fresh final
+output every advancing frame, and the mid-motion pause remains unchanged.
+Maximum pre-quantization disagreement remains 3.21865082e-6. Ten focused GPU
+cases pass in 72.16 seconds (logs/water-mode-gpu.log). Held-residual removal
+mutates the new shader; a separate diagonal-entry mutation targets its matrix.
+
+This removes coefficient reconstruction/allocation from the candidate's update
+loop; it does not establish a measured game speedup or acceptable total GPU cost.
+The direct spatial transforms and their integration cost still require profiling.
+The RHI explicitly permits a self-contained pass to leave shaders, layouts,
+state objects, uniform buffers and samplers changed because game draws rebind
+them; output targets/viewports must be restored and temporary textures unbound.
+Resource lifecycle, original queued disturbances and the supported gameplay hook
+remain unfinished, as do native Mac execution and scene acceptance.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including the
+new matrix-diagonal mutation (logs/water-mode-full-suite.log). Repository context
+and staged whitespace checks pass. The byte ambiguity guard was not widened.

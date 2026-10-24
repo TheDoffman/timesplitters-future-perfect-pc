@@ -3,6 +3,7 @@
  * byte render targets, not a CPU approximation to UNORM conversion. */
 #include "pc_native_timing.h"
 #include "graphics/surface_interval.h"
+#include "graphics/surface_mode.h"
 typedef struct RoundTarget { RhiImage *image;RhiView *read,*write; } RoundTarget;
 static RoundTarget round_target(unsigned format) {
     RhiImageDesc d={0};d.width=d.height=SURFACE_SIDE;d.depth=d.mip_levels=d.samples=1;
@@ -73,13 +74,27 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
 #define TSFP_SURFACE_VEC2 "float2"
 #define TSFP_SURFACE_VEC3 "float3"
 #define TSFP_SURFACE_VEC4 "float4"
-#include "graphics/surface_coupled_shader.h"
-    const char forced_source[]="Texture2D state:register(t0);Texture2D rows0:register(t1);"
-        "Texture2D rows1:register(t2);Texture2D residual:register(t3);"
-        TSFP_SURFACE_COUPLED_SHADER TSFP_SURFACE_FORCED_SHADER
+#include "graphics/surface_evolve_shader.h"
+    const char forced_source[]="Texture2D state:register(t0);Texture2D eigen:register(t1);"
+        "Texture2D fixed:register(t2);Texture2D residual:register(t3);"
+        "cbuffer SurfaceStep:register(b1){float4 surface_step;}"
+        TSFP_SURFACE_EVOLVE_SHADER
         "float4 main(float4 p:SV_POSITION):SV_TARGET {int3 at=int3(p.xy,0);"
-        "return float4(surface_forced(state.Load(at).xy,rows0.Load(at),rows1.Load(at),residual.Load(at).x),0,1);}";
+        "return float4(surface_evolve(state.Load(at).xy,eigen.Load(at),fixed.Load(at),residual.Load(at).x,surface_step.x,surface_step.y),0,1);}";
     RhiShader *forced=shader(RHI_STAGE_PIXEL,forced_source,"ps_5_0");
+    RoundTarget mode[2]={round_target(RHI_FORMAT_R32G32B32A32_FLOAT),round_target(RHI_FORMAT_R32G32B32A32_FLOAT)};
+    for(unsigned row=0;row<2;row++) {
+        for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
+            double dc=(!x && !y)?SURFACE_SIDE:0;PcSurfaceMode m;
+            CHECK(pc_surface_mode(a,b,d,k+pc_surface_stencil_shift(SURFACE_SIDE,SURFACE_SIDE,x,y,PC_SURFACE_WRAP),
+                dc*(c-.5+k*c),dc*(c-.5),&m));
+            memcpy(field_a+(y*SURFACE_SIDE+x)*4,row?m.fixed:m.eigen,16);
+        }
+        rhi_image_update(mode[row].image,0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
+    }
+    RhiBufferDesc step_desc={16,RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
+    RhiBuffer *step_buffer=rhi_buffer_create(&step_desc,NULL);CHECK(step_buffer);
+    rhi_set_uniform_buffers(RHI_STAGE_PIXEL,1,1,&step_buffer);
 #include "graphics/surface_rounding_shader.h"
     const char boundary_source[]="Texture2D state:register(t0);Texture2D exact:register(t1);"
         TSFP_SURFACE_ROUNDING_SHADER
@@ -127,7 +142,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             initial[at+1]=x<SURFACE_SIDE/2?.98f:.02f;
         }
     }
-    const unsigned rates[]={60,120,144,0};
+    const unsigned rates[]={60,120,144,0,144};
     for(unsigned smoothing=0;smoothing<2;smoothing++) {
         unsigned reference_fresh=0;memset(normal,0,sizeof normal);
         rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
@@ -150,15 +165,14 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                 changed|=field_b[i*4+channel]!=normal[i*4+channel];
             reference_fresh+=changed;memcpy(normal,field_b,sizeof normal);
         }
-        for(unsigned rate=0;rate<4;rate++) {
+        for(unsigned rate=0;rate<5;rate++) {
             unsigned fps=rates[rate],ticks=0,fresh=0;double worst=0,arithmetic_error=0;
             /* Use the actual clock producer and shared interval splitter. This
              * frequency represents all presets; CPU coverage adds odd clocks,
-             * jitter and catch-up. Coefficient cache keys are fixture-only. */
+             * jitter and catch-up. Mode images stay immutable for every step. */
             const int64_t frequency=72000000;int64_t now=0;PcNativeTiming clock={0};
             pc_native_timing_step(&clock,now,frequency,144,0);
             unsigned frames=fps?fps:117;
-            RoundTarget rows[13][2]={0};
             rhi_image_update(world.image,0,NULL,initial,SURFACE_SIDE*16,sizeof initial);
             round_draw(f,f->pack,NULL,NULL,&world.read,1,&bytes[0]);current=0;
             memset(normal,0,sizeof normal);
@@ -174,6 +188,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                     CHECK(!memcmp(normal,field_b,sizeof normal));
                 }
                 now+=frequency/frame_rate;
+                if(rate==4)now+=(frame&1)?frequency/10000:-frequency/10000;
                 PcNativeStep step=pc_native_timing_step(&clock,now,frequency,frame_rate,0);
                 PcSurfaceInterval interval;
                 CHECK(pc_surface_interval_split(step.units_per_tick,step.game_phase,step.game_units,&interval));
@@ -195,23 +210,9 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
                         round_draw(f,unpack,NULL,NULL,&bytes[current].read,1,&world);
                         field_gpu_transform(world.read,states[0].write,0);
                     }
-                    CHECK(part->units%(frequency/12)==0);
-                    unsigned piece=(unsigned)(part->units/(frequency/12));
-                    CHECK(piece>0 && piece<=12);
-                    if(!rows[piece][0].image) {
-                        rows[piece][0]=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
-                        rows[piece][1]=round_target(RHI_FORMAT_R32G32B32A32_FLOAT);
-                        for(unsigned row=0;row<2;row++) {
-                            for(unsigned y=0;y<SURFACE_SIDE;y++)for(unsigned x=0;x<SURFACE_SIDE;x++) {
-                                double dc=(!x && !y)?SURFACE_SIDE:0;PcSurfaceCoupledStep m;
-                                CHECK(pc_surface_coupled_forced_step(a,b,d,k+pc_surface_stencil_shift(SURFACE_SIDE,SURFACE_SIDE,x,y,PC_SURFACE_WRAP),
-                                    dc*(c-.5+k*c),dc*(c-.5),part->delta,&m));
-                                memcpy(field_a+(y*SURFACE_SIDE+x)*4,m.row[row],16);
-                            }
-                            rhi_image_update(rows[piece][row].image,0,NULL,field_a,SURFACE_SIDE*16,sizeof field_a);
-                        }
-                    }
-                    inputs[0]=states[0].read;inputs[1]=rows[piece][0].read;inputs[2]=rows[piece][1].read;inputs[3]=force_spectrum.read;
+                    float step_uniform[4]={(float)part->delta,(float)pow(d,part->delta*.5),0,0};
+                    rhi_buffer_update(step_buffer,step_uniform);
+                    inputs[0]=states[0].read;inputs[1]=mode[0].read;inputs[2]=mode[1].read;inputs[3]=force_spectrum.read;
                     round_draw(f,forced,NULL,NULL,inputs,4,&states[1]);
                     RoundTarget swap=states[0];states[0]=states[1];states[1]=swap;
                     field_gpu_transform(states[0].read,world.write,1);
@@ -246,7 +247,7 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             field_final_run(f,f->packed_read,0,1,field_b);double final_error=0;
             for(unsigned i=0;i<SURFACE_SIDE*SURFACE_SIDE;i++)for(unsigned channel=0;channel<3;channel++)
                 final_error=fmax(final_error,fabs(field_a[i*4+channel]-field_b[i*4+channel]));
-            printf("rounded-flow profile=%u smoothing=%u fps=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,ticks,fresh,worst,arithmetic_error,final_error);
+            printf("rounded-flow profile=%u smoothing=%u fps=%u jitter=%u ticks=%u fresh_byte_ripples=%u max_byte_state_error=%.9g max_arithmetic_error=%.9g final_byte_error=%.9g\n",SURFACE_ROUNDING_PROFILE,smoothing,fps,rate==4,ticks,fresh,worst,arithmetic_error,final_error);
             CHECK(worst==0);CHECK(ticks==60 && clock.game_remainder==0);
             printf("rounded-freshness reference60=%u candidate=%u frames=%u\n",reference_fresh,fresh,frames);
             /* A saturated/quantized original field can repeat final colors.
@@ -255,10 +256,11 @@ static void field_rounding_cases(FieldFinal *f,RhiShader **feedback) {
             CHECK(fps==60?fresh==reference_fresh:fresh>reference_fresh);
             if(SURFACE_ROUNDING_PROFILE<2 || fps!=60)CHECK(fresh==frames);
             CHECK(final_error==0);
-            for(unsigned piece=0;piece<=12;piece++)if(rows[piece][0].image){round_destroy(&rows[piece][0]);round_destroy(&rows[piece][1]);}
         }
     }
     free(references);for(unsigned i=0;i<2;i++){round_destroy(&bytes[i]);round_destroy(&states[i]);}
+    RhiBuffer *no_buffer=NULL;rhi_set_uniform_buffers(RHI_STAGE_PIXEL,1,1,&no_buffer);
+    rhi_buffer_destroy(step_buffer);round_destroy(&mode[0]);round_destroy(&mode[1]);
 #if SURFACE_ROUNDING_PROFILE == 3
     field_noise_destroy(&noise);
 #endif
