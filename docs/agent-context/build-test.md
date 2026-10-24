@@ -107,8 +107,10 @@ are invalid original-clock evidence. Default Y delivers logical exit bit0x40;
 F/R deliver0x20/0x10. Verify camera24->0, weapon restoration, on-foot movement,
 pause/resume and unchanged saves. In Siberia choose LEFT from Recommended to
 None, verify roster257, and allow six seconds for vehicle entry before steering.
-Camera/body observations need frame brackets; asynchronous captures alone are
-not synchronized trajectories. Preserved live pillar/bank counterexamples and
+Camera/body observations need frame brackets and camera identity checks: the
+global camera can temporarily differ from the player camera within one frame.
+Compare the same player-camera pointer, retain excluded records, and report
+coverage; asynchronous reads/captures are not completed-frame trajectories. Preserved live pillar/bank counterexamples and
 corrected Windows acceptance records are in STATUS and
 `docs/native-high-refresh-regressions.md`; neither proves broad handling parity.
 

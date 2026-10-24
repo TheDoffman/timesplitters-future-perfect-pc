@@ -1,3 +1,46 @@
+## 2026-10-24 — Current-build live vehicle comparison at Original60/180/240
+
+Three bounded, isolated Siberia no-bot runs use the same Windows executable
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`
+(source/runtime unchanged since aa3c9dd; test/docs head974da97). All complete
+normal-input walking approach, jeep entry, three-second throttle, settling,
+Y exit, on-foot movement and pause/resume. Camera mode changes24->0 and weapon4
+returns in every run; health remains1.75, roster257, and the jeep remains still
+while the player walks away. Reviewed driving/exit captures show the vehicle and
+restored first-person view. Signed saves and the canonical fixture are unchanged;
+the runner recycles disposable disk images and each process exits normally.
+
+One-second synthetic forward commands produce endpoint distances7.999982,
+7.849553 and7.994228 world units at Original60/native180/native240. The180 result
+is1.88% shorter; asynchronous endpoints and injection timestamps do not identify
+consumed input boundaries, so this does **not** establish exact movement parity
+or diagnose its cause. No motion policy was changed to hide that difference.
+The jeep's position changes by0 during each on-foot movement interval.
+
+Each run has114 settled pause samples with zero game delta and constant jeep
+position. Camera checks retain112/112/113 observations whose frame brackets and
+player camera pointer agree. Original60/180 each exclude two reads crossing a
+frame boundary. Native240 excludes one read of camera2170908796, mode3, while
+player_camera was unavailable; the actual on-foot camera is2170904704, mode0.
+The initial unfiltered comparison failed because this different camera had zero
+position. All retained samples of the same player camera are exactly stationary.
+The excluded records remain in the analysis; frame brackets alone do not establish
+camera identity or completed-update/render sampling.
+
+Evidence: `private/test-saves/vehicle-integrated-current-{original60,180,240}`,
+matching logs, and `logs/vehicle-current-comparison.json`; adapter/analysis are
+`private/pipeline/vehicle-current-{live,compare}.py`. Solver traces independently
+confirm original/native mode and contain660/1845/2432 rows, below their limits.
+Configured render1280x720/Classic/FOV55; observed client640x480, nonminimized but
+not foreground. Captures/tracing are active. These are behavioral observations,
+not pacing, physical-input, scanout or full handling/broadphase acceptance.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER; no Mac gameplay claim.
+
+**All14 PR checks passed on974da97**, including both native runtimes, patch
+upgrades/transitions, launchers and compatibility. This subsequent documentation
+update changes no runtime bytes. Broad live acceptance and the crowd dip remain
+open; the high-refresh goal is incomplete.
+
 ## 2026-10-24 — Vehicle and contact regression coverage through 240
 
 Expanded the existing original-US vehicle fixtures from 60/120/144 to include
