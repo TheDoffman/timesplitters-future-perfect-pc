@@ -1,3 +1,25 @@
+## 2026-10-24 — #319 controller profile routing (fix/319-controller-input)
+
+Branch `fix/319-controller-input`, based on main `6ddc8a0`. Selecting Controller
+in the launcher changes the device but retains keyboard-only bindings. The
+runtime detected the pad and changed prompts while mapping no pad controls.
+The shared `controller-profile-routing` patch supplies pad defaults for that
+specific profile shape, after focus/modal gating. It preserves saved keyboard
+bindings, selected pad slots, custom pad maps and entirely unbound profiles.
+
+The real parser/sampler regression failed for gamepad:0, gamepad:2 and xinput:1
+before the fix. Controller/keyboard/weapon-slot/context/backlog checks now pass
+(39 tests). The supported Windows Build passed all built-in checks, including
+real SDL virtual-pad buttons, triggers, sticks, keyboard prompt switching and
+focus loss with both keyboard and launcher-style Controller profiles; no virtual
+pad skips occurred. Evidence: ignored `logs/issue319-build.log` and
+`logs/issue319-investigation.md`. Broad patch/context/backlog validation passed
+55 checks; its historical controls fixture needed to omit this dependent patch
+from the old snapshot, then require it after upgrade. That corrected case passed
+separately (26.97s); see `logs/issue319-old-controls.log`.
+Native Mac gameplay and physical Xbox/Steam controllers remain unverified;
+portable regression coverage is registered in both host runtime CI jobs.
+
 ## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
 
 PR #324 groups water, Classic texture deferral and scoped input/menu/camera

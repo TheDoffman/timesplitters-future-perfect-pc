@@ -200,7 +200,7 @@ jobs:
             tests/test_frame_replay.py
             tests/test_debug_settings_model.py
             tests/test_network_guest_dispatch.py tests/test_network_bot_results.py tests/test_network_movement_stats.py tests/test_network_motion_stats.py tests/test_network_pose_stats.py tests/test_procedural_surface_stats.py
-            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_mounted_mouse.py tests/test_keyboard_menu.py tests/test_weapon_slots.py tests/test_menu_mouse.py tests/test_menu_text.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py tests/test_crane_overlay.py tests/test_ghost_actor_overlay.py
+            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_mounted_mouse.py tests/test_keyboard_menu.py tests/test_controller_profile.py tests/test_weapon_slots.py tests/test_menu_mouse.py tests/test_menu_text.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py tests/test_crane_overlay.py tests/test_ghost_actor_overlay.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/test_frame_interpolation.py tests/test_prediction_targets.py tests/test_config_initialization.py tests/test_pc_refresh.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)

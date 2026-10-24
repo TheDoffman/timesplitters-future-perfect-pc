@@ -801,6 +801,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **#319 (2026-10-24, branch `fix/319-controller-input`):** Shared runtime supplies pad defaults when
+  Controller is selected over a keyboard-only launcher map, without changing
+  saved keys or custom pad maps. Portable actual-parser/sampler coverage is
+  registered in both host jobs. Windows local checks and virtual SDL validation
+  are recorded in STATUS.md; native Mac and physical controllers remain unverified.
+
 - **HUD panel performance follow-up (2026-10-22, candidate `4a4aa02`):**
   The shared `text-panel-scope` patch reuses read mapping checks across the
   original panel's width/fit/draw sequence, inside the existing placement
