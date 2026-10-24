@@ -1,3 +1,52 @@
+## 2026-10-24 — Fresh page queries for display memory checks
+
+Continuation of PR #328 on `perf/mouse-memory-order`, based on `7098fe6`.
+The isolated worktree avoids concurrent crash-diagnostic work in the primary
+checkout. Windows `pc_guest_span.h` queries current resident-page protection
+for known-size accesses within one page. `pc_display_writable` uses it for
+camera/projection validation; cold, failed, guarded and crossing accesses retain
+the existing full-region fallback. Bounds and write permissions remain checked.
+No permissions survive a guest call/update. Darwin retains its Mach VM query;
+unbounded string scans retain full-region semantics on both hosts.
+
+A real Windows 64 MiB file mapping demonstrates the cost of finding the full
+forward region: seven alternating trials of 100,000 queries take 7,815–8,342 ms
+with VirtualQuery, versus 24.45–25.04 ms with QueryWorkingSetEx. Permission changes,
+guard/no-access, cold pages and released/reserved mappings were also inspected.
+This isolated API experiment does not measure gameplay speedup. Evidence:
+`private/pipeline/page-query-probe.{c,py}` and `logs/page-query-probe.txt`.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC 14.44.35207/D3D11/RTX 4070 SUPER. Candidate executable SHA256:
+`eb9ce8c0dfdbe24a94083b25ebbbf381ffb92ecd5b5fdad6551bfef3b5163295`.
+Projection/cutscene/FOV suites: 22 passed, 2 host-specific skips. Real private
+and mapped pages cover protection changes, boundaries/overflow, cold/failed-query
+fallback and release; three negative controls reject disabled fast queries,
+incorrect write permission and ignored page boundaries. Native Mac CI for this
+candidate and physical Mac gameplay remain pending (MAC-001). All non-skipped
+Windows/macOS PR checks passed preceding head `7098fe6`.
+
+The capture-free ten-bot Disco144 check completes with saves/signatures unchanged
+and its disposable partition recycled. At the same 3440x1440/FOV73/Classic setup,
+the complete spawn+5..50s window records 6,317 fresh guest presentations:
+140.400 FPS, lowest one-second count109, lowest five-second rate118.0,
+p99 9.418 ms, worst15.686 ms. Game/wall ratio is0.999991; no interpolated frames
+or intervals above16.67 ms. Foreground client remains1920x1060 on60Hz desktop.
+Compared with the earlier137.466 average, tail results are mixed and bot outcomes
+differ: no reliable gameplay improvement or solved crowd deficit is claimed.
+Evidence: `crowd-page-span-disco-144`, its provenance/report/Present CSV and
+`crowd-pacing-summary.json`, using the complete-clock-window analyzer.
+
+The same bounded Disco route at native240 also completes and preserves saves.
+Its complete45s window records9,623 fresh guest frames:213.871 FPS, lowest
+one-second count120, lowest five-second rate129.0, p99 8.376 ms, worst12.297 ms.
+Game/wall ratio1.000084, no interpolated frames or intervals above16.67 ms.
+Evidence is `crowd-page-span-disco-240` with the same provenance/summary layout.
+This validates a working240 preset, not sustained240 across this scene. Both
+runs measure successful host Presents, not GPU completion or60Hz scanout.
+The21 repository-context/Mac-backlog checks pass; context validation against
+28f5400 and whitespace checks pass. Current crowd-performance work remains open.
+
 ## 2026-10-24 — Crowded gameplay at 144/240: Hotel holds, Disco still dips
 
 Current runtime `1dbd397` (executable hash below), Classic textures, 3440x1440

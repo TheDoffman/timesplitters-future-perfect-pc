@@ -217,8 +217,14 @@ protection changes may occur while it is reused. Bounds, overflow, read-only and
 guard/no-access rejection remain enforced. `pc_display_perspective_projection`
 does not re-query its output: supported US `151CF0` writes all 16 floats without
 guest callbacks before returning. Weapon/preview correction therefore needs no
-VM query; decals still validate their camera and source matrix afresh (one query
-when those share a region, independent of the output's guest-stack region).
+VM query; decals still validate their camera and source matrix afresh, independent
+of the output's guest-stack region. `pc_guest_span.h` supplies a fresh Windows
+resident-page query for known-size accesses contained in one OS page. Its valid
+protection attributes retain read/write checks; failed, cold, guarded or crossing
+accesses fall back to the full-region query. A same-page camera/source pair can
+reuse that snapshot; different pages need fresh queries. Darwin retains its Mach
+region query. Unbounded string scans still use the full-region API. This avoids
+Windows scanning a large mapped allocation to find its end on each display guard.
 Other camera/display checks are unchanged. This does not cache matrices, reduce
 updates or change projection arithmetic. `projection_output.c` checks the real
 US builder's output extent, arithmetic, canaries and stack; generated C stays local.

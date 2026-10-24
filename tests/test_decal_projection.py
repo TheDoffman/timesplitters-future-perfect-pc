@@ -110,6 +110,25 @@ def test_display_memory_protection(tmp_path):
     compile_and_run(tmp_path, (ROOT/'tests/display_memory.c').read_text())
 
 
+@pytest.mark.parametrize('mapped', [False, True])
+def test_display_guest_span(tmp_path, mapped):
+    compile_and_run(tmp_path, '#define GUEST_SPAN_MAPPED '+str(int(mapped))+'\n'+(ROOT/'tests/guest_span.c').read_text())
+
+
+@pytest.mark.skipif(sys.platform!='win32', reason='Resident-page fast path uses Windows PSAPI')
+@pytest.mark.parametrize('mutation', ['disabled', 'write-permission', 'crossing-page'])
+def test_guest_span_mutations(tmp_path, mutation):
+    header=(ROOT/'src/pc_guest_span.h').read_text()
+    old,new={
+        'disabled': ('info.VirtualAttributes.Valid &&', '0 && info.VirtualAttributes.Valid &&'),
+        'write-permission': ('(protection&writes)!=0', '1'),
+        'crossing-page': ('if(bytes<=system.dwPageSize-(address-base))', 'if(1)'),
+    }[mutation]
+    assert old in header
+    source=(ROOT/'tests/guest_span.c').read_text().replace('#include "pc_guest_span.h"', header.replace(old,new))
+    compile_and_run(tmp_path,source,fails=True)
+
+
 @pytest.mark.parametrize('mutation', ['none', 'missing-output-store'])
 def test_original_projection_output(tmp_path, mutation):
     """The destination-check removal depends on the real builder writing 64 bytes."""

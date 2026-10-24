@@ -695,6 +695,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- Display memory span queries (commit carrying this entry): `pc_guest_span.h`
+  uses fresh Windows resident-page protection for known-size, single-page camera
+  and projection accesses; all other cases retain full-region fallback. Shared
+  bounds/snapshot policy is unchanged. Darwin retains its existing Mach query;
+  the Windows-specific optimization needs no Mac equivalent for correctness.
+  Private/mapped protection fixtures run through the registered decal suite on
+  both hosts; Windows failure/fast-path mutations are host-specific. Local
+  Windows tests pass; native Mac CI and physical gameplay remain pending.
+
 - Mouse mapping reuse (commit carrying this entry): `pc_guest_memory.h`,
   `pc_camera.h`, `pc_terminal.h`, `pc_mounted.h` and both host input adapters
   share an OS mapping snapshot only within one mouse update. Bounds/write

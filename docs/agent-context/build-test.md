@@ -140,30 +140,17 @@ not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
 
-Texture timing records travel through the bounded queue. The worker stamps its
-own record; CSV initialization/completion stay on the renderer thread. Test stage
-order with streaming on/off. Total duration includes queue/frame waits; read spans
-are worker work, image/view spans renderer work. Cancelled requests neither
-dereference their owner nor log on the worker.
-
-Texture-upload trace tests compile the real loader and collector through the
-existing both-host `tests/test_texture_runtime.py` registration. They verify
-disabled clock/file inactivity, failed output, bounded output, ordered stages,
-cached switches and missing/invalid/view-failure fallback. Use an isolated CSV
-path and compare raw monotonic timestamps with Present intervals for live
-diagnostics. Windows QPC and POSIX CLOCK_MONOTONIC match each host's presentation
-clock domain; durations cover CPU work/waits, not GPU completion. Trace logging
-can change frame timing. Actual native Mac gameplay remains a separate check.
-Do not attribute a whole slow frame to a sampled upload: intersect the actual
-attempt begin/end timestamps with each Present interval. The first live trace
-accounts for only 2.215 ms of a 12.639-ms interval and has other slow intervals
-without attempts. Hashing/cached-call costs and trace output are outside these
-attempt spans; broader frame work remains open. STATUS retains the evidence.
-The follow-up collector starts before source-key hashing and emits `cached`
-rows as well. Loader tests require nonzero ordered hash boundaries and zero
-read/resource stages on all twenty cached calls while retaining existing load
-and fallback counts. The 8,192-row bound still applies; verify coverage before
-using a live window. The earlier `2230901` data retains its narrower scope.
+Texture traces use a bounded queue: workers stamp reads; the renderer owns CSV
+and image/view stages. Total spans include waits. Cancelled requests neither
+dereference owners nor log on workers. Both-host `test_texture_runtime.py` tests
+streaming stage order, disabled clocks/files, output failure/bounds, cached
+switches and load/view fallbacks. Current rows include key hashing and cached
+calls; cached rows must have zero read/resource stages. Verify the 8,192-row
+coverage before analysis. Earlier `2230901` traces excluded hashing/cache work.
+Use isolated CSVs and intersect attempt timestamps with Present intervals;
+QPC/CLOCK_MONOTONIC share the host presentation clock domain. These spans measure
+CPU work/waits, not GPU completion, and tracing perturbs timing. STATUS records
+partial slow-frame attribution; native Mac gameplay remains separate acceptance.
 
 `stability_transitions_game.py --scenario crowd-venice --native-fps 144
 --display-size 3440 1440 --fov 73 --no-native-trace --profile-presents
@@ -212,14 +199,11 @@ and expiry between operations. `tests/pc_prompts.c` retains real Windows
 protection/guard-page and scratch-write tests in the supported build. A passing
 query-count fixture is not an FPS measurement; compare bounded gameplay runs
 with captures disabled and identical resolution, FOV and bot settings.
-The same Python suite extracts the production outlined-text wrapper and tests
-both host feature defines, all five draws, guest ABI, invalidation and fresh
-scratch writes. Removing the outer scope is a required failing mutation.
-The panel variant extracts `pc_panel_text_original` and `sub_0012E3F0` too.
-It models the panel's three measurement/fit calls and two outlined labels,
-reducing same-region read queries from five to one while retaining all three
-measurements, ten draws and thirteen fresh scratch-write checks. The mutation
-removes only the panel scope; outlined scopes remain. Placement callbacks
+The suite extracts outlined-text wrappers for both host defines, checking five
+draws, ABI, invalidation and fresh scratch writes; removing the scope must fail.
+Panel coverage extracts `pc_panel_text_original`/`sub_0012E3F0`: three fit calls,
+two outlined labels, one read query, ten draws and thirteen scratch-write checks.
+Its mutation removes only the panel scope, retaining outlined scopes. Placement callbacks
 assert they run outside the reused mapping lifetime. This is a boundary/ABI
 fixture, not execution of the full original panel or a rendered comparison.
 The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
@@ -236,6 +220,9 @@ Retained-source-snapshot mutation must fail. Local `projection_output.c` lifts
 checksum-verified US151CF0, checks 16 writes/math/bounds/stack over 48 lenses;
 missing-store mutation fails. Private-XBE cases skip CI. `display_memory.c`
 tests real host read-only/no-access/boundary/overflow protection (also Win guard).
+`guest_span.c` checks private/mapped pages, permission changes, cold/cross-page
+fallback and released mappings. Windows additionally checks failed page queries
+and disabled-fast-path/write-permission/page-boundary negative controls.
 Registered projection/cutscene suites cover both hosts; query savings alone
 do not establish FPS improvement.
 
