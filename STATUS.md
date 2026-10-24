@@ -1,6 +1,7 @@
 ## 2026-10-23 — Match water solver boundaries to captured gameplay
 
-On `fix/native-water-coupling` / draft PR #316, a bounded Original60 Scotland
+Follow-up branch `fix/native-water-boundaries` is based on main 2e3e55a after
+PR #316 merged. During the original investigation, a bounded Original60 Scotland
 run on the preserved playable binary (source 4adb6b0, SHA-256
 0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab) captured host
 frame 3600. Four draws use the verified original six-instruction water vertex
