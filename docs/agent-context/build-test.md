@@ -21,35 +21,38 @@ unavailable hardware/private data remain explicit validation gaps.
 Run `test_audio_output_gain.py` with `test_audio_timing.py`: actual XAudio/SDL
 code, fake devices, gain overrides, mute, live volume and voice parity.
 
-`test_controller_profile.py` tests the actual parser/sampler on both CI hosts:
-launcher device switches, slots, custom/unbound maps, release and disconnect.
-Three stock-profile cases fail before #319. Windows Build additionally checks
-the shipped Controller profile with SDL virtual buttons/sticks and focus loss;
-`tsfp_pc_prompts_test` reports physical-pad/foreground skips. Real hardware and
-native Mac gameplay require separate validation.
+`test_controller_profile.py` covers devices/maps/disconnect. Windows Build uses
+SDL virtual input; physical pads and Mac gameplay require validation.
 
-`test_framebuffer_sampling.py` compiles the full HLE texture unit with fake
-screen-copy callbacks. `framebuffer_surface_stubs.h` supplies unrelated water
-dependencies with fail-fast stubs; no production hooks are removed. Require
-normal refresh and stale-copy mutation cases. Mac covers GL and common RHI;
-Windows uses RHI. Separate native-surface/GPU tests validate water.
+`test_native_demo_timing.py` covers schedule/read guards, mutations, original
+input/ABI, pause, EOF/cancel, catch-up, live presets and recorder reset/capacity.
+Variable60..240/steady110 check time and input edges.
+Missing XBE skips originals. Live/file/Mac playback and sub60 overload remain open.
 
-`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
-20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
-jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
-Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
-mutation must fail the atomic clip-transition assertion. Frame sampling also
-covers native 120/144 Hz without changing the simulation clock. Existing Windows
-and macOS CI invoke this suite; the helper itself has no OS dependencies.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
-bounded production Online host/guest pair through a loopback directory/browser/
-bridge, disposable Test Lab saves and separate input/runtime/display settings.
-It checks the supported XBE and sealed build before launch, records executable
-and compatibility identities, and recycles only its disposable partition images.
-Its asynchronous ReadProcessMemory observations measure actor update holds,
-not rendered frames, monitor scanout or Internet latency. Window captures are
-limited to the test processes. Benchmark fixture junctions are staged locally
-as five manifest files, then checked by the normal fixture validator.
+`test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
+checks refresh/stale copies (Mac GL/RHI, Windows RHI).
+`test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
+diagnostics, budget, idle callback and bypass-removal mutation.
+
+180/240 presets extend frame-clock persistence/live-apply and shared launcher UI
+checks, native clock/input/animation/walking/player/weapon/network/movie fixtures,
+procedural interval switches and demo round trips. These contracts do not prove sustained240 FPS. Legacy144 migration is tested.
+
+`test_sample_chains.py` extracts sampler insertion: deep/short chains, saturation,
+counts and six-frame/hidden-overflow mutations. Both CI hosts run it;
+Mac does not execute Windows stack walking.
+The runner records `--profile-depth 1..32` (default8), `--texture-mode`
+(`classic` default or `enhanced`) and `--crowd-weapons` (`recommended`/`rockets`).
+
+`tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
+60/120/144Hz, jitter/loss, wrapping, death/respawn, authority and atomic clip
+transitions, including cadence/crossfade mutations. Both CI hosts run it.
+`tools/test-online-bot-motion.py --tag <name> --seconds 60` exercises an isolated
+Windows Online host/guest pair with Test Lab saves and loopback discovery.
+It verifies supported XBE/build identities and recycles disposable partitions.
+Asynchronous ReadProcessMemory observations measure update holds, not rendered
+frames or Internet/physical-input latency. Five local benchmark fixture
+manifests are checked with the normal validator; the canonical fixture stays intact.
 
 Launcher changelog publication: tests/test_launcher_release.py covers explicit
 previous stable launcher selection across paginated game/launcher history,
@@ -71,12 +74,13 @@ offline publisher fixtures need no game or launcher rebuild.
 `tests/test_native_vehicle_timing.py` runs portable byte-load, physics-scope,
 partition and lowering contracts on both CI hosts. With the verified private US
 XBE it also lifts the original dispatcher, spring/linear/rest routines, rigid
-clock/solver/integrator, final publisher, bounds, sleep/wake, camera and driver.
+clock/solver/integrator, publisher, bounds, sleep/wake, camera and driver at
+60/120/144/180/240.
 Private-XBE skips on CI do not certify those routines on Mac.
 
 - `native_rigid_motion.c` checks forces, drag, quaternion/position publication,
   controlled support contacts, RNG isolation and secondary-step boundaries at
-  60/120/144, slow/fast/irregular time and pause. Static contact cases compare an
+  all five rates, slow/fast/irregular time and pause. Static contacts compare an
   independent impulse equation, including penetration escape velocity. Mutations
   independently remove gates, timers, contacts, RNG and boundary corrections.
   Geometry, room/model notifications and broadphase services remain controlled.
@@ -106,8 +110,17 @@ are invalid original-clock evidence. Default Y delivers logical exit bit0x40;
 F/R deliver0x20/0x10. Verify camera24->0, weapon restoration, on-foot movement,
 pause/resume and unchanged saves. In Siberia choose LEFT from Recommended to
 None, verify roster257, and allow six seconds for vehicle entry before steering.
-Camera/body observations need frame brackets; asynchronous captures alone are
-not synchronized trajectories. Preserved live pillar/bank counterexamples and
+`testing_profile.publish_input_state` publishes runner input with a same-directory
+atomic replacement, retrying transient Windows reader sharing for at most0.5s.
+Never truncate a live input-state file: the adapter polls no sooner than16ms and treats
+an empty read as key release. Writer timestamps are publication times, not guest
+consumption times. `test_testing_profile.py` covers complete-state publication,
+sharing retries, failure preservation and temporary-file cleanup on both hosts.
+
+Camera/body observations need frame brackets and camera identity checks: the
+global camera can temporarily differ from the player camera within one frame.
+Compare the same player-camera pointer, retain excluded records, and report
+coverage; asynchronous reads/captures are not completed-frame trajectories. Preserved live pillar/bank counterexamples and
 corrected Windows acceptance records are in STATUS and
 `docs/native-high-refresh-regressions.md`; neither proves broad handling parity.
 
@@ -160,16 +173,19 @@ using a live window. The earlier `2230901` data retains its narrower scope.
 --no-captures --seconds 180` replays the tracked unlimited-score ten-bot route.
 Use `--native-fps 0` for Original60. It requires active Venice checkpoints and
 ten configured bots; it does not prove every bot is simultaneously visible.
-`crowd-hotel` (scene39) and `crowd-disco` (scene56) use frequent move/fire/respawn
-input. Crowd routes focus their window after startup; still verify focus below.
-Record roster/window state separately from device resolution; unfocused/minimized
-runs are not foreground acceptance. `--watch-actors` reads bounded actor positions/
-health with pool rechecks; asynchronous proximity is not visibility. Analyze
-complete spawn+5..+55s intervals (Disco +5..+50s, within the 20,000-row cap) with
-clock neighbors and scene/pause/game clock evidence. Disable images/tracing. `--profile-cpu`
-enables 200Hz sampling with bounded menu/spawn/combat snapshots. Concurrent rewrites
-can yield partial snapshots: check before differencing. `--trace-textures` enables
-bounded upload-stage timing. Both perturb pacing; neither is a clean benchmark.
+`crowd-hotel` (scene39), `crowd-temple` (scene49) and `crowd-disco` (scene56)
+use frequent move/fire/respawn input. `--crowd-weapons rockets` selects the normal
+Rockets preset; use spawn+5..35s to fit the recorder cap. Routes focus at startup.
+`--fullscreen` starts borderless via isolated settings and records the request.
+Check actual client size/foreground state. `--watch-actors` reads position/health
+with pool rechecks; proximity is not visibility.
+Use complete spawn+5..55s windows (Disco/Temple end50s), clock neighbors and
+scene/pause evidence. `--profile-delay-seconds 0..600` delays CSV rows, retaining
+the 20,000-row cap; record it in provenance and verify endpoint coverage.
+The present-metrics fixture checks parsing, delayed intervals and cap/disable behavior.
+Disable images/tracing for pacing. `--profile-cpu` enables 200Hz diagnostic
+snapshots; concurrent rewrites may be partial. `--trace-textures` records bounded
+upload-stage timing. Check completeness before differencing either diagnostic.
 `test_menu_text.py` covers scan-local VM reuse/expiry, invalid rows and unchanged
 original text editing; eager-query/stale-cache mutations must fail. Both hosts'
 existing runtime CI includes it. STATUS retains measured performance and limits.
@@ -885,11 +901,11 @@ Controlled UVs replace RNG. Initial draws verify additive green and preserved
 red/blue/alpha; duplicate candidate noise must fail boundary equality. Queued
 splashes, live submission and whole-scene rendering remain separate acceptance.
 
-`native_surface_interval.c` (dual-host timing suite) checks exact conservation
-and boundary counts across three counter frequencies, presets, jitter, pause,
-catch-up, reset, invalid nonmutation and the four-piece maximum. Reset-phase
-mutation must fail. The real guest fixture checks publication, paused zero time
-and Original-mode clearing; exact metadata avoids float-sum boundary loss.
+`native_surface_interval.c` checks exact game/raw conservation and boundaries
+across frequencies, presets, jitter, pause, catch-up, resets and invalid input.
+Reset-phase mutation must fail. Guest tests check publication and Original60
+clearing. Exact raw metadata retains all60 boundaries during paused144;
+summing float deltas loses one. Both hosts run these CPU tests.
 
 `native_surface_mode.c`, in the same dual-host suite, checks immutable mode
 packing against the existing affine operator and independent one-tick equations,

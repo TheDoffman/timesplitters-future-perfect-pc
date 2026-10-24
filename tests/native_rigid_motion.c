@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Original clock -> solver -> body integrator -> quaternion/matrix helpers,
  * vehicle component update, entity publication and sleep/wake, with a
  * controlled support contact. Broadphase, material/allocation, damage,
@@ -215,8 +216,8 @@ int main(int argc,char **argv)
     for(unsigned forced=0;forced<6;forced++) {
         float reference_position[3]={0},reference_velocity[3]={0},reference_quaternion[4]={0};
         uint32_t reference_seed[2]={0};
-        for(unsigned rate=0;rate<3;rate++) {
-            unsigned fps=rate==0?60:rate==1?120:144;
+        for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+            unsigned fps=test_rates[rate];
             g_tsfp_native_timing_active=rate!=0;reset(forced);
             printf("rigid_begin fps=%u forced=%u\n",fps,forced);
             for(unsigned frame=0;frame<fps;frame++)step((frame+1)*60/fps-frame*60/fps,60.f/fps);
@@ -280,8 +281,8 @@ int main(int argc,char **argv)
     /* A character moving upward supplies a moving support contact. Use the
      * original relative-velocity, impulse and notification pipeline with
      * gravity. Character displacement itself is controlled. */
-    for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate];
         g_tsfp_native_timing_active=rate!=0;reset(2);character_contact=1;
         MEMF(BODY+0x150)=2;
         printf("character_contact fps=%u\n",fps);
@@ -316,8 +317,8 @@ int main(int argc,char **argv)
         assert(MEM32(0x4e7950)==(uint32_t)expected_seed && MEM32(0x4e7954)==(uint32_t)(expected_seed>>32));
         assert(fabsf(MEMF(BODY+0x150))<.001f && pc_physics_scope==NULL);
     }
-    for(unsigned mode=0;mode<3;mode++)for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned mode=0;mode<3;mode++)for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate];
         g_tsfp_native_timing_active=rate!=0;reset(0);
         MEM32(BODY+0x1c0)=0x40000;
         for(unsigned i=0;i<3;i++) {
@@ -353,8 +354,8 @@ int main(int argc,char **argv)
     double max_linear_error=0,max_angular_error=0;unsigned wall_cases=0;
     for(unsigned axis=0;axis<3;axis++)for(int sign=-1;sign<=1;sign+=2)
     for(int offset=-1;offset<=1;offset++)for(unsigned mass=0;mass<3;mass++)
-    for(unsigned speed=0;speed<4;speed++)for(unsigned rate=0;rate<4;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned speed=0;speed<4;speed++)for(unsigned rate=0;rate<6;rate++) {
+        unsigned fps=rate<5?test_rates[rate]:144;
         g_tsfp_native_timing_active=rate!=0;reset(2);wall_contact=1;
         unsigned tangent=(axis+1)%3,angular=(axis+2)%3;
         float arm=offset*.25f,closing=closing_speeds[speed],inverse_mass=inverse_masses[mass];
@@ -368,7 +369,7 @@ int main(int argc,char **argv)
         }
         float ticks=0;unsigned frame=0;
         while(ticks<1.f) {
-            float delta=rate==3?(frame%2?.8f:.2f):60.f/fps;
+            float delta=rate==5?(frame%2?.8f:.2f):60.f/fps;
             if(delta>1.f-ticks)delta=1.f-ticks;
             unsigned whole=(unsigned)(ticks+delta)-(unsigned)ticks;
             step(whole,delta);ticks+=delta;frame++;
@@ -408,8 +409,8 @@ int main(int argc,char **argv)
     unsigned overlap_cases=0;double overlap_linear_error=0,overlap_angular_error=0;
     for(unsigned depth=0;depth<4;depth++)for(unsigned rebound=0;rebound<3;rebound++)
     for(unsigned normal=0;normal<2;normal++)for(int arm=-1;arm<=1;arm++)
-    for(unsigned kind=0;kind<2;kind++)for(unsigned rate=0;rate<4;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned kind=0;kind<2;kind++)for(unsigned rate=0;rate<6;rate++) {
+        unsigned fps=rate<5?test_rates[rate]:144;
         g_tsfp_native_timing_active=rate!=0;reset(2);penetration_contact=1;
         contact_depth=depths[depth];contact_restitution=rebounds[rebound];contact_kind=kind?2:0;
         float n[3]={normal?-7.f/127.f:0,0,normal?-126.f/127.f:-1.f};
@@ -426,7 +427,7 @@ int main(int argc,char **argv)
         }
         float ticks=0;unsigned frame=0;
         while(ticks<1.f) {
-            float delta=rate==3?(frame%2?.8f:.2f):60.f/fps;
+            float delta=rate==5?(frame%2?.8f:.2f):60.f/fps;
             if(delta>1.f-ticks)delta=1.f-ticks;
             unsigned whole=(unsigned)(ticks+delta)-(unsigned)ticks;
             step(whole,delta);ticks+=delta;frame++;

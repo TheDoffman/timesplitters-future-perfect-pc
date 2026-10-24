@@ -202,11 +202,11 @@ public static class LauncherSharedUiChecks
                 File.WriteAllText(Path.Combine(folder,"Settings/runtime.conf"),"native_fps = 144\nfuture_setting = retained\n");
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
                 var picker=Find<ComboBox>(page.View,"NativeFrameRate");
-                Need(picker.Items.Count==3 && picker.SelectedIndex==0,"High refresh must remain opt-in");
+                Need(picker.Items.Count==4 && picker.SelectedIndex==0,"High refresh must remain opt-in");
                 Need(Find<TextBlock>(page.View,"NativeFrameRateBetaNote").Text.Contains("Arcade"),"Missing beta limitations");
                 picker.SelectedIndex=2;Click(Find<Button>(page.View,"SettingsCancelButton"));
                 Need(!File.Exists(sidecar),"Cancelled draft changed the game preference");
-                foreach(int choice in new[]{2,1,0}) {
+                foreach(int choice in new[]{3,2,1,0}) {
                     picker.SelectedIndex=choice;Click(Find<Button>(page.View,"SettingsSaveButton"));
                     int rate=GameSettings.NativeFrameRates[choice];
                     Need(GameSettings.Load(folder,null).NativeFps==rate,"Saved rate did not round trip");
@@ -227,9 +227,10 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Save();
                 string sidecar=Path.Combine(folder,"Settings/pc-frame-rate.ini");
                 File.WriteAllText(sidecar,"TSFP_FRAME_RATE_V1 144\n");
+                Need(GameSettings.Load(folder,null).NativeFps==120,"Legacy 144 preference did not migrate to 120");
                 bool rejected=false;try{model.NativeFps=120;model.Save();}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(sidecar)=="TSFP_FRAME_RATE_V1 144\n","Concurrent game preference was overwritten");
-                foreach(string invalid in new[]{"TSFP_FRAME_RATE_V1 60","TSFP_FRAME_RATE_V1 240","TSFP_FRAME_RATE_V2 144","TSFP_FRAME_RATE_V1 144 extra"}) {
+                foreach(string invalid in new[]{"TSFP_FRAME_RATE_V1 60","TSFP_FRAME_RATE_V1 300","TSFP_FRAME_RATE_V2 144","TSFP_FRAME_RATE_V1 144 extra"}) {
                     File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
                     Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid sidecar was accepted or rewritten");
                 }
@@ -239,7 +240,7 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Save();
                 var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
                 var before=files.Select(File.ReadAllBytes).ToArray();
-                Directory.CreateDirectory(files[4]+".bak");model.NativeFps=144;model.VerticalFov=75;
+                Directory.CreateDirectory(files[4]+".bak");model.NativeFps=240;model.VerticalFov=75;
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected,"Blocked backup should reject save");
                 for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived");

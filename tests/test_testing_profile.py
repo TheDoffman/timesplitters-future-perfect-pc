@@ -140,3 +140,39 @@ def test_manual_drive_selection_is_explicit(tmp_path,monkeypatch,manual):
     assert profile.play(tmp_path,run,1,allow_save_drive_changes=manual)==0
     assert captured['TSFP_SAVE_LOCATION_LOCK']==('0' if manual else '1')
     assert not (run/'run.lock').exists()
+
+
+def test_input_publication_keeps_old_state_until_complete_replace(tmp_path, monkeypatch):
+    path = tmp_path / 'private/test-saves/run/input-state.txt'
+    path.parent.mkdir(parents=True)
+    path.write_text('87 1\n')
+    replace = profile.os.replace
+    attempts = []
+    def sharing_reader(source, destination):
+        assert path.read_text() == '87 1\n'
+        assert Path(source).read_text() == '0 0\n'
+        attempts.append(source)
+        if len(attempts) < 3:
+            raise PermissionError('reader still open')
+        replace(source, destination)
+    monkeypatch.setattr(profile.os, 'replace', sharing_reader)
+    profile.publish_input_state(tmp_path, path, '0 0\n')
+    assert path.read_text() == '0 0\n' and len(attempts) == 3
+    assert list(path.parent.iterdir()) == [path]
+
+
+def test_input_publication_failure_preserves_state_and_removes_temp(tmp_path, monkeypatch):
+    path = tmp_path / 'private/test-saves/run/input-state.txt'
+    path.parent.mkdir(parents=True)
+    path.write_text('87 1\n')
+    def deny(*args):
+        raise PermissionError('replacement denied')
+    ticks = iter([0, 1])
+    monkeypatch.setattr(profile.os, 'replace', deny)
+    monkeypatch.setattr(profile.time, 'monotonic', lambda: next(ticks))
+    with pytest.raises(PermissionError):
+        profile.publish_input_state(tmp_path, path, '0 0\n')
+    assert path.read_text() == '87 1\n'
+    assert list(path.parent.iterdir()) == [path]
+    with pytest.raises(ValueError):
+        profile.publish_input_state(tmp_path, tmp_path/'personal.txt', '0 0\n')

@@ -35,6 +35,30 @@ keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
 ## Source ownership and execution
 
+`zz-native-trace-quiet.patch` applies after native timing. With an explicit
+nonpositive trace budget and no watch/dump/filter/profile environment switch,
+`recomp_trace_enter/exit` bypass disabled diagnostic dispatch. The entry guard
+follows the existing renderer-idle callback. Per-thread configuration is read
+once, like existing diagnostic caches; explicit diagnostics retain their original
+budget, initialization and output. Crash/throw/unimplemented reports are untouched.
+
+
+`zz-native-demo-timing.patch` follows the native surface stack and wraps US
+`43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is
+`sub_00043220_gen`. Timer multiplies `433E2/43473` use the wrapper's raw-time
+scope. Numeric load `433A0` can skip recording or zero-time playback; cursor
+store `42535` resets both histories. The existing wrapper includes the bounded
+`pc_native_demo_playback_guest.inc` scheduler and calls `pc_native_visual_rebase`
+after original decoding. No additional wrapper/patch/generated edit is needed.
+Historical pre-native upgrade fixtures exclude the dependent demo patch.
+
+`zz-sampler-caller-depth.patch` keeps captured CPU caller chains up to the
+existing 32-frame walk limit instead of silently truncating at six. The opt-in
+Windows sampler keeps its 8,192-key per-thread cap, reports dropped new chains,
+and clamps the displayed requested depth. Normal execution has no new work.
+Portable insertion tests run on both hosts; Mac still lacks this Win32 thread
+suspension/unwind sampler. No guest timing or rendering code is changed.
+
 `zz-native-surface-render.patch` follows capture and connects the native-water
 path, enabled with 120/144 beta on common RHI. `TSFP_SURFACE_NATIVE_TEST=0`
 is a diagnostic opt-out; Original60 and legacy GL keep original feedback. `pc_surface_native_guest.h` forces only the

@@ -60,8 +60,8 @@ int main(void)
         MEM8(0x74d098+port*0x19+0xb)=MEM8(0x74d098+port*0x19+0xc)=255;
         MEM16(0x74d098+port*0x19+0x15)=65535;MEM16(0x74d098+port*0x19+0x17)=32767;
     }
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned mode=0;mode<4;mode++) {
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode],edges[4]={0},releases[4]={0},changes[4]={0};
         memset(memory+RECORD,0,4*0x3c);memset(polls,0,sizeof polls);memset(feedback,0,sizeof feedback);
         for(unsigned port=0;port<4;port++)MEM32(RECORD+port*0x3c+0x34)=37+port;

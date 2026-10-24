@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Execute the full original vehicle dispatcher and suspension update.
  * World/driver/asset services are controlled. This is not a handling test. */
 #include <assert.h>
@@ -94,8 +95,8 @@ int main(int argc,char **argv)
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate];
         g_tsfp_native_timing_active=rate!=0;reset();
         for(unsigned frame=0;frame<fps;frame++)
             step((frame+1)*60/fps-frame*60/fps,60.f/fps);
@@ -112,8 +113,8 @@ int main(int argc,char **argv)
     }
     /* Execute the original rest countdown independently, under the same
      * outer cadence. Its actual DEC byte is not a fractional time consumer. */
-    for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rate==0?60:rate==1?120:144, frame=0;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate], frame=0;
         g_tsfp_native_timing_active=rate!=0;reset();sleep_calls=0;MEM8(MATRIX+0x1c8)=60;MEM32(DATA+0x58)=0x10000;
         for(;frame<fps*2 && !sleep_calls;frame++) {
             unsigned whole=(frame+1)*60/fps-frame*60/fps;
@@ -128,7 +129,8 @@ int main(int argc,char **argv)
         assert(sleep_calls==1 && frame==fps);
         printf("vehicle_rest fps=%u frame=%u sleep_seconds=%.9f\n",fps,frame,(double)frame/fps);
     }
-    for(unsigned fps=120;fps<=144;fps+=24)for(unsigned fast=0;fast<2;fast++) {
+    for(unsigned rate=1;rate<sizeof test_rates/sizeof test_rates[0];rate++)for(unsigned fast=0;fast<2;fast++) {
+        unsigned fps=test_rates[rate];
         unsigned duration=fast?1:4,multiplier=fast?3:1;
         unsigned frames=fps*duration;
         g_tsfp_native_timing_active=1;reset();

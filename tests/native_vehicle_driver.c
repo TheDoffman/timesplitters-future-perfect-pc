@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Original driver dispatcher and trigger/steering producer. Body wake, action
  * service and model lookup are controlled; this is not a live handling test. */
 #include <assert.h>
@@ -72,9 +73,10 @@ static void steering(void)
     const float vehicle_speeds[]={0.f,.2f,.8f};
     const float targets[]={.75f,-.75f,0.f};
     const float jitter[]={.25f,.75f,.5f,.5f,.125f,.875f};
-    for(unsigned rate=0;rate<5;rate++)for(unsigned speed=0;speed<3;speed++)
+    const unsigned steering_rates[]={60,60,120,144,120,180,240};
+    for(unsigned rate=0;rate<sizeof steering_rates/sizeof steering_rates[0];rate++)for(unsigned speed=0;speed<3;speed++)
     for(unsigned velocity=0;velocity<3;velocity++) {
-        unsigned fps=rate<2?60:rate==3?144:120;
+        unsigned fps=steering_rates[rate];
         g_tsfp_native_timing_active=rate!=0;reset();
         MEM32(PARAM+0x9c)=2;MEMF(PARAM+0x10)=.5f;
         MEM32(DATA+0x17c)=3;MEM32(DATA+0x1e0)=1;
@@ -129,8 +131,8 @@ int main(int argc,char **argv)
     void *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    for(unsigned rate=0;rate<3;rate++)for(unsigned mode=0;mode<3;mode++) {
-        unsigned fps=rate==0?60:rate==1?120:144;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++)for(unsigned mode=0;mode<3;mode++) {
+        unsigned fps=test_rates[rate];
         unsigned duration=mode==1?4:1,multiplier=mode==2?3:1;
         unsigned frames=fps*duration;
         g_tsfp_native_timing_active=rate!=0;reset();

@@ -38,8 +38,8 @@ namespace TimeSplitters.Launcher
         public int VerticalFov = FovDefault;
         // Zero selects the original clock; 60 is not the experimental native-60 path.
         public int NativeFps;
-        public static readonly int[] NativeFrameRates = { 0, 120, 144 };
-        public static readonly string[] NativeFrameRateLabels = { "60 FPS (Original)", "120 FPS (Beta)", "144 FPS (Beta)" };
+        public static readonly int[] NativeFrameRates = { 0, 120, 180, 240 };
+        public static readonly string[] NativeFrameRateLabels = { "60 FPS (Original)", "120 FPS (Beta)", "180 FPS (Beta)", "240 FPS (Beta)" };
         bool SupportsExtendedDisplay
         {
             get {
@@ -128,9 +128,10 @@ namespace TimeSplitters.Launcher
             }
             string frameRate = Text(model.originals[Files[4]]);
             if (frameRate.Length > 0) {
-                var match = Regex.Match(frameRate, @"\ATSFP_FRAME_RATE_V1\s+(0|120|144)\s*\z");
+                var match = Regex.Match(frameRate, @"\ATSFP_FRAME_RATE_V1\s+(0|120|144|180|240)\s*\z");
                 Core.Require(match.Success, "Frame-rate settings are invalid. No settings were changed.");
                 model.NativeFps = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                if(model.NativeFps==144)model.NativeFps=120; // Previous preset; load without rewriting.
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
@@ -257,7 +258,7 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate(bool loading=false)
         {
-            Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), or 144 FPS (Beta).");
+            Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), 180 FPS (Beta), or 240 FPS (Beta).");
             ulong discordId;
             Core.Require((!DiscordEnabled && DiscordApplicationId.Length == 0) ||
                 (Regex.IsMatch(DiscordApplicationId, @"\A[1-9][0-9]{16,19}\z") && UInt64.TryParse(DiscordApplicationId, out discordId)),
