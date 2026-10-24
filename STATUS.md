@@ -1,6 +1,6 @@
 ## 2026-10-23 — Combined open-PR integration
 
-Integration branch combines #305, #307, #308, #309, #310, #311 and #313 on
+Integration branch combines #305, #307, #308, #309, #310, #311, #313 and #321 on
 main 2e3e55a, preserving their heads as merge ancestors. Independent evidence
 and test registrations are retained; the bounded build guide consolidates
 vehicle diagnostics while their detailed history remains here and in the
@@ -16,7 +16,10 @@ resource failures, cancellation, binding preservation and fallback: 22 pass.
 The remaining focused timing/vehicle/trace/filter/panel/UI tests pass (132 plus
 two Windows texture-control compile cases in the initial run); the Mac-only
 adapter fixture skips locally. Full patch application and repository-context
-checks pass. Full build, historical upgrades and combined CI are pending.
+checks pass. Supported Windows build fd40ce7 and built-in checks pass; virtual-pad
+foreground routing skips. Later merge c1f5aed adds #321's uncalled water helpers
+and tests only, with no gameplay hook. Its GPU/CPU checks, historical upgrades
+and final combined CI are pending.
 
 PR #307's old Windows CI failure is a missing Tk panedwindow.tcl installation,
 not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
