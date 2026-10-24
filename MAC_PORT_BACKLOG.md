@@ -3837,6 +3837,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Demo preset lifecycle coverage (2026-10-24, PR #328):** Original-US
+  fixtures now execute eight pause-offset recording cases and32playback
+  transitions through Original60 across120/144/180/240 with one/four
+  controllers. Existing byte, timestamp, edge, lifecycle and mutation assertions
+  remain;105 demo checks pass on Windows. No runtime adapter changes. Public
+  CI skips private-XBE cases, so native Mac/live file playback remains pending.
+  See STATUS for evidence and the bounded unsuccessful packaged-file search.
+
 - **Weapon-menu acceptance (2026-10-24, PR #328):** Current Windows
   e9195841/ed07ee3d preserves issue#105's menu repair at Original60/native240.
   Reviewed captured routes and separate capture-free Present windows confirm

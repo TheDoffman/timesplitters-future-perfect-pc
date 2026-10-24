@@ -1,3 +1,35 @@
+## 2026-10-24 — Demo pause phases and live preset transitions
+
+The original-US demo fixture's steady cadence already covered higher presets,
+but recording pause-offset cases and live playback handoffs still used144.
+It now executes eight recording cases (120/144/180/240, one/four controllers)
+and32native-to-Original60-to-native playback combinations. Recording deliberately
+resumes with raw/game clock phases offset, includes a three-tick stall and
+flushes pending game ticks; byte counts, timestamps, controller data, original
+fallback and same-buffer restart assertions are retained. Playback retains
+every press/release, fractional visual time, zero-time polling and cancellation
+metadata checks. Expected elapsed time derives from the replaced stall interval;
+the existing tolerance is unchanged. Python checks the full executed matrix.
+
+All105 demo tests pass on Windows with the verified private US XBE in29.19s,
+including existing negative controls (logs/demo-preset-lifecycle-tests.log).
+The added edge checks also run during Original60 and after native resumption.
+21 context/backlog checks and repository-context/whitespace checks pass.
+This changes tests only; executable ed07ee3d and gameplay remain unchanged.
+The suite is already registered in dual-host CI, but private-XBE cases skip
+when assets are absent. No Mac execution of those routines is implied.
+
+A bounded read-only scan found no standalone/local top-level uncompressed
+archive entry matching the known replay header/record layout (403 archives,
+78,081 entries). This does not exclude compressed or embedded recordings.
+The writer/reader fixtures use controlled devices and lifecycle services;
+rendered real-file playback, sustained sub60 overload and full-level replay
+remain unverified. Evidence: logs/demo-file-candidates.json.
+
+All14 checks now pass on2e408c89, including both native runtimes and patch
+upgrades/transitions. The next push batches the pending144 crowd records with
+this coverage change after those jobs finish.
+
 ## 2026-10-24 — Current crowded Disco check at diagnostic144
 
 The unchanged ed07ee3d Windows executable completes crowd-current-disco144

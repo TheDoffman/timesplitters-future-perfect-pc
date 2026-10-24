@@ -27,12 +27,12 @@ gain overrides, mute, live volume and voice parity.
 `test_controller_profile.py`: devices/maps/disconnect and SDL virtual input;
 physical pads/Mac gameplay remain unverified.
 
-`test_native_demo_timing.py`: scheduling, guards, mutations, ABI, pause/EOF/cancel,
-catch-up, presets/lifecycle at60..240/steady110. Missing XBE skips originals;
-live/file/Mac playback and sub60 remain open.
+`test_native_demo_timing.py`: guards, mutations, ABI, pause/EOF/cancel, catch-up;
+eight recording-phase and32native/Original60/resume cases through240. Missing
+XBE skips originals; live/file/Mac playback and sub60 remain open.
 
-`test_native_movie_file.py`: two real XMV intros, Original60/native60..240
-(including144), exact decoded pictures/timestamps/PCM and duration. Controlled
+`test_native_movie_file.py`: two XMV intros, Original60/native60..240 including144;
+exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
