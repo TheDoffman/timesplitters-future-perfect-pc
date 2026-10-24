@@ -1,3 +1,21 @@
+## 2026-10-24 — Correct PC Settings menu commands (#333)
+
+Windows menu theme labels had fallen one row behind the actual menu after the
+Textures command was added. The theme drew Hide Menu Bar over Fullscreen and
+converted Textures into a separator. `src/pc_menu_theme.h` now reads each native
+item's caption, shortcut and type before owner drawing, preserving command IDs.
+Per-window metadata is released on detach; disabled mnemonics are ignored.
+
+Branch `333-bug-toggle-menu-bar-toggles-fullscreen`, base `2b355bbf`, Windows x64.
+Both window-theme fixtures pass; the added texture-row regression failed before
+the fix. Tests check actual drawn labels/shortcuts, command IDs, separators,
+reordered/additional entries and disabled items. All 21 context/backlog checks
+and supported Windows Build/built-in checks passed (`logs/issue-333-build.log`).
+An isolated 180-second Test Lab run verified mouse-click Hide Menu Bar leaves
+the window windowed, F1 restores its bar, and clicking Fullscreen separately
+enters 1920x1080 fullscreen. Personal saves/configs were not used. Native Cocoa
+menus do not use this Win32 adapter; Mac UI validation was not run (MAC-021).
+
 ## 2026-10-24 — Quieter default audio output (PR #327)
 
 Branch `fix/audio-volume-scaling`, based on main `3baad73`. The user confirmed
