@@ -71,12 +71,13 @@ offline publisher fixtures need no game or launcher rebuild.
 `tests/test_native_vehicle_timing.py` runs portable byte-load, physics-scope,
 partition and lowering contracts on both CI hosts. With the verified private US
 XBE it also lifts the original dispatcher, spring/linear/rest routines, rigid
-clock/solver/integrator, final publisher, bounds, sleep/wake, camera and driver.
+clock/solver/integrator, publisher, bounds, sleep/wake, camera and driver at
+60/120/144/180/240.
 Private-XBE skips on CI do not certify those routines on Mac.
 
 - `native_rigid_motion.c` checks forces, drag, quaternion/position publication,
   controlled support contacts, RNG isolation and secondary-step boundaries at
-  60/120/144, slow/fast/irregular time and pause. Static contact cases compare an
+  all five rates, slow/fast/irregular time and pause. Static contacts compare an
   independent impulse equation, including penetration escape velocity. Mutations
   independently remove gates, timers, contacts, RNG and boundary corrections.
   Geometry, room/model notifications and broadphase services remain controlled.

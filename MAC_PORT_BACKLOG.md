@@ -3755,6 +3755,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Vehicle coverage through 240 (2026-10-24, PR #325):** Existing shared
+  vehicle/contact fixtures now cover 180/240 alongside Original60 and 120/144.
+  All 19 checks pass on Windows with the supported private US XBE. No runtime
+  or adapter changed. Asset-free contracts run on both CI hosts; private-XBE
+  skips do not validate native Mac vehicles. Live Mac acceptance remains pending;
+  see STATUS for scope and the earlier physics-mutation checkpoint.
+
 - **Quiet trace dispatch (2026-10-24, PR #325):** Shared
   `zz-native-trace-quiet.patch` bypasses disabled diagnostic helpers when the
   launcher supplies a nonpositive trace budget and no watch/dump/filter/profile

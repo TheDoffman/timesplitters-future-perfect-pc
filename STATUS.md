@@ -1,3 +1,32 @@
+## 2026-10-24 — Vehicle and contact regression coverage through 240
+
+Expanded the existing original-US vehicle fixtures from 60/120/144 to include
+180/240: camera tracking/reversal, steering/throttle/brake, suspension, rest and
+sleep/wake, spawn momentum, moving-actor impacts, relative contact velocity,
+rigid-body integration/publication and static contact impulses. Original60
+references, existing tolerances, pause checks and deliberate regression mutations
+remain. Static contact coverage now includes 1,296 wall and 864 overlap cases.
+The retained variable-cadence cases remain separate from fixed-rate comparisons.
+
+**19 tests pass**, 47.18s on Windows with the verified US XBE, using MSVC and the
+production translator/shared policies. Log: `logs/vehicle-240-tests-final.log`.
+Removing the existing secondary-step correction now fails earlier at native180:
+1,620 integrations and 1.125 seconds instead of 1,440 and 1.0. The first run's
+only failure was its old expected mutation checkpoint; all unmutated cases
+passed. Updated the checkpoint without changing tolerances or runtime code.
+
+The CI selector failure on aa3c9dd was an exact-byte patch-index mismatch: the
+Windows worktree retained CRLF while Git committed LF. Repair 8fbcd06 refreshed
+the index after normalizing that patch to its declared LF convention. All 89
+local selector/context checks and a committed-byte index comparison passed;
+the repaired remote selector passed and launched Windows/Mac runtime checks.
+
+This change only extends tests/documentation; the built runtime remains
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+No game was launched and no saves changed. Controlled geometry/services do not
+prove live driving, broadphase collision, crowded scenes or native Mac gameplay.
+Private-XBE checks skip without the asset; host CI is not full-game acceptance.
+
 ## 2026-10-24 — Skip disabled tracing dispatch during normal play
 
 `zz-native-trace-quiet.patch` adds a shared early return in trace entry/exit

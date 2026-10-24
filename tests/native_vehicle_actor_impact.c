@@ -1,3 +1,4 @@
+static const unsigned test_rates[]={60,120,144,180,240};
 /* Original entity velocity publication -> vehicle actor-contact callback.
  * Exercise direct and original queued event delivery, real point velocity,
  * contact construction and impulse selection. Motion, broadphase geometry,
@@ -112,9 +113,8 @@ int main(int argc,char **argv)
     setbuf(stdout,NULL);legacy=argc>1;open_gate=legacy && !strcmp(argv[1],"open-gate-only");
     void *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
-    const unsigned rates[]={60,120,144};
-    for(unsigned rate=0;rate<3;rate++) {
-        unsigned fps=rates[rate];g_tsfp_native_timing_active=rate!=0;
+    for(unsigned rate=0;rate<sizeof test_rates/sizeof test_rates[0];rate++) {
+        unsigned fps=test_rates[rate];g_tsfp_native_timing_active=rate!=0;
         printf("actor_impact fps=%u\n",fps);
         for(unsigned frame=0;frame<fps;frame++)for(int direction=-1;direction<=1;direction++)for(int queued=0;queued<2;queued++) {
             unsigned whole=(frame+1)*60/fps-frame*60/fps;

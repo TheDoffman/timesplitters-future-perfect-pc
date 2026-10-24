@@ -117,7 +117,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
                     'missing-contact': 'fps=60 forced=2',
                     'missing-wall': 'wall_contact fps=60',
                     'missing-penetration': 'penetration fps=60',
-                    'legacy-secondary': 'rigid_mixed mode=1',
+                    # Native180 exposes the ninth-substep bug before mixed clocks.
+                    'legacy-secondary': 'rigid_motion fps=180 forced=2',
                     'legacy-character-contact': 'character_contact fps=120',
                     'legacy-body-sleep': 'rigid_sleep fps=120'}.get(mutation, 'fps=120')
         assert expected in result.stdout, result.stdout + result.stderr
@@ -154,7 +155,9 @@ int main(void) {
         MEM8(0x1000)=value;g_esp=0x2000;tick();
         assert(g_esp==0x2004 && MEM8(0x1000)==value);
     }
-    for(unsigned rate=120;rate<=144;rate+=24) for(unsigned mode=0;mode<3;mode++) {
+    const unsigned rates[]={120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(unsigned mode=0;mode<3;mode++) {
+        unsigned rate=rates[r];
         unsigned divisor=mode==0?4:1, multiplier=mode==2?3:1;
         unsigned frames=rate*divisor;
         MEM8(0x1000)=60;
@@ -256,9 +259,9 @@ int main(void) {
     void *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     MEMF(0x47d000)=.07f;
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     const float speeds[]={.25f,1.f,3.f};
-    for(unsigned mode=0;mode<2;mode++)for(unsigned r=0;r<3;r++)
+    for(unsigned mode=0;mode<2;mode++)for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++)
     for(unsigned s=0;s<3;s++) {
         unsigned fps=rates[r];float raw=60.f/fps,game=raw*speeds[s];
         g_tsfp_native_timing_active=mode;
