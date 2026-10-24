@@ -93,6 +93,7 @@ static void pc_native_timing_guest(void (*original)(void))
     static PcNativeClock pacing;
     static HANDLE timer;
     static int announced;
+    static int physics_history_pending;
     LARGE_INTEGER now, frequency;
     pc_native_pose_trace();
     recomp_config_commit_native_rate();
@@ -106,9 +107,20 @@ static void pc_native_timing_guest(void (*original)(void))
             clock=(PcNativeTiming){0}; pacing=(PcNativeClock){0};
             announced=0;
             g_tsfp_native_timing_active=0;
+            physics_history_pending=1;
             fprintf(stderr,"[NATIVE-TIMING] 60 FPS original clock applied live\n");
         }
-        original(); return;
+        original();
+        /* Native physics consumes live elapsed time, rather than this old
+         * fifteen-frame average. On return to Original 60, seed the history
+         * with its first advancing interval so native-sized samples cannot
+         * temporarily slow physics. Defer across a paused transition. */
+        if (physics_history_pending && NT_FLOAT(0x4E794Cu)>0.f) {
+            float delta=NT_FLOAT(0x4E794Cu);
+            for(unsigned i=0;i<15;i++) NT_FLOAT(0x74C414u+4u*i)=delta;
+            physics_history_pending=0;
+        }
+        return;
     }
     g_tsfp_native_timing_active = 1;
     QueryPerformanceFrequency(&frequency);

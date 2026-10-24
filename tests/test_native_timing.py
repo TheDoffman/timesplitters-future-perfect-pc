@@ -17,7 +17,11 @@ class ObjectRockingQuantization(AssertionError):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
+<<<<<<< HEAD
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_surface_trace.c', 'native_surface_precision.c', 'native_surface_coupled.c')
+=======
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_precision.c')
+>>>>>>> origin/fix/native-vehicle-physics
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh')])
 def test_native_timing(source, mutation, tmp_path):
@@ -68,7 +72,29 @@ def test_native_timing(source, mutation, tmp_path):
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     run_environment = {k:v for k,v in os.environ.items()
-                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE')}
+                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE',
+                                    'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z')}
+    if source == 'native_contact_trace.c':
+        import csv
+        subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
+        for mode in ('bounded', 'bytes', 'invalid'):
+            path=tmp_path / (mode+'.csv')
+            env=dict(run_environment, TSFP_CONTACT_TRACE=str(path), TSFP_CONTACT_TRACE_SLOT='2',
+                     TSFP_CONTACT_TRACE_Z='60,80' if mode!='invalid' else 'nan,80')
+            subprocess.run([str(output), mode], env=env, check=True, timeout=10)
+            if mode=='invalid':
+                assert not path.exists()
+                continue
+            rows=list(csv.DictReader(path.open()))
+            assert len(rows)==(4 if mode=='bytes' else 16000)
+            assert path.stat().st_size<=8*1024*1024
+            assert [r['source'] for r in rows[:4]]==['summary','generated','generated','selected']
+            assert all(None not in row and row['raw_count']=='2' and row['selected_count']=='1' for row in rows)
+        # Opening failure is sticky and must leave gameplay unaffected.
+        env=dict(run_environment, TSFP_CONTACT_TRACE=str(tmp_path/'absent'/'trace.csv'),
+                 TSFP_CONTACT_TRACE_SLOT='2', TSFP_CONTACT_TRACE_Z='60,80')
+        subprocess.run([str(output), 'invalid'], env=env, check=True, timeout=10)
+        return
     if source == 'native_pose_trace.c':
         run_environment['TSFP_NATIVE_POSE_TRACE'] = str(tmp_path / 'poses.csv')
     if source == 'native_surface_precision.c':

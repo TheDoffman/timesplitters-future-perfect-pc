@@ -20,6 +20,58 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Native vehicle/physics candidate (`fix/native-vehicle-physics`):
+`pc_native_numeric.h` opens vehicle gate `0x17E6C3`, scales linear adjustment
+`0x17E6EC` by the smaller live raw/game interval capped at one tick, and retains
+the rest timer's authored raw/game cadence at byte load `0x176673`. The same
+policy now applies at rigid-body memory DEC `0x171F83`, preventing resting
+bodies from sleeping 2/2.4 times too soon at 120/144.
+Rigid-clock loads `0x171FB9/0x17208E/0x172119` select `ceil(game_delta)` solver
+substeps; multiply `0x172099` uses the live interval instead of a fifteen-frame
+average. Original 60 remains on its existing arithmetic. On native-to-original
+handoff, `pc_native_timing_guest.inc` rebases that old history at the first
+advancing interval, deferring across pause. Routine tests establish elapsed-time
+and timer behavior. Original body integration now has force/drag/rotation and
+controlled support-contact checks at all three rates. The original entity
+publisher and bounds transform, sleep/wake and vehicle component integration
+now run in that fixture. Real broadphase geometry, model/render
+notification and Mac gameplay remain unverified. The scoped
+RNG helper in `pc_native_physics_guest.h` now keeps additional primary solves
+from advancing the shared sequence through contact/constraint shuffle sites;
+controlled three-contact tests verify its cadence. `17164F` also prevents a
+rounding-induced ninth secondary solve. These results do not certify arbitrary
+contact geometry or vehicle handling. A subsequent Windows build runs actual
+Siberia jeep driving at all presets, but matched throttle replays expose lower
+travel at native rates; see STATUS for measurements and limits. The playable
+combined crowd build was restored while this discrepancy is investigated.
+The original driver dispatcher `17DA00` independently retained a whole-tick
+gate at `17DA03`, dropping throttle on intervening native updates. Its numeric
+policy now uses positive game time, matching the vehicle consumer's cadence.
+The original trigger producer `172EE0` checks forward, reverse, braking and
+release on fractional frames; seat weapons and live handling remain unverified.
+The rebuilt live replay now matches initial acceleration within 0.1% across
+the three presets, but later terrain contact differs. Do not infer collision
+parity or measured 144 FPS from that corrected throttle window.
+The subsequent `166899` correction keeps character contact velocity fresh
+on fractional updates. Original contact math and the body callback forwarding
+path verify the fix. In the controlled co-moving support case, body motion
+was already correct; the previously stale normal/vector notification changes.
+Character movement and world geometry remain fixture inputs, not live coverage.
+The object-spawn gate `172AB5` now retains animation-derived initial motion
+on fractional events. The original history copy and spawn/setter path test
+linear velocity and angular momentum, including a rotated owner transform,
+an offset model vertex, pause, absent history and allocation failure. This is
+shared numeric policy; live visual/physics and native Mac acceptance are pending.
+Windows candidate `3e1ee87` builds and passes its built-in checks with both
+contact and spawn fixes; it is retained separately from normal playable `4adb6b0`.
+Actor/vehicle impact divide `17CBD6` now preserves the native 60 conversion
+factor: actor entity velocity is already normalized by the post-update.
+Original mode and contact dispatch cadence remain unchanged. Original
+publication, event queue, contact construction, impulse selection and actual
+suspension component changes are covered by `native_vehicle_actor_impact.c`.
+This establishes response to controlled individual contacts, not repeated
+contact dynamics or live driving acceptance.
+
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
 | Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |

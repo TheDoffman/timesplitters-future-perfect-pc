@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "241490fd61e8a128ede2e35bc2698c4f61b0944998c01b5ef8aac74cbbf1bf43",
+  "loaderSha256": "0a61fe21ba31378eae0b5004b54b7f53f76efb791b33da204198342cd07b48a2",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1233,6 +1233,15 @@
         "src/d3d/d3d8_internal.h",
         "src/d3d/d3d8_resources.c",
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-vehicle-physics.patch",
+      "sha256": "b569546c0f46f0d36e508b412c96b1bca3fbb8089adc128900e168a48eaee228",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
       ]
     },
     {

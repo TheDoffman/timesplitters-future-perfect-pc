@@ -25,6 +25,7 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+<<<<<<< HEAD
 `tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
 20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
 jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
@@ -57,6 +58,250 @@ across minor versions, mixed launcher/draft history and ancestor restrictions.
 The suite is already registered for both hosts in the release checks; these
 offline publisher fixtures need no game or launcher rebuild.
 
+=======
+For integrated crowd pacing, use capture-free Present CSVs and the strict
+`native_frame_stats.summarize_clock_window` analyzer. Retain complete intervals
+inside spawn-observation+5..+55 seconds, clock neighbors outside the boundaries,
+active-scene/match/pause checkpoints and game-clock/wall endpoint ratios. The
+new `20dc25d` versus playable `4adb6b0` Venice runs measure integration cost;
+bot outcomes differ, so do not attribute differences to one fix or a speedup.
+Input key-down timestamps and prior health can locate a respawn correlation;
+they do not identify the underlying source of a hitch. STATUS records results.
+
+For a respawn diagnostic, bracket read-only thread-cycle/CPU-time observations
+with QPC and the guest frame, and record actor health plus the configured roster.
+Health restoration can precede the slow interval: do not equate an E key-down
+with the expensive routine. Coarse thread CPU-time counters and asynchronous
+samples cannot identify a wait reason. These instrumented runs are separate
+from clean pacing acceptance. The existing `pc_gpu_timing.inc` starts only from
+`xbox_D3D8InterpBegin`, so it does not measure fresh native guest-frame GPU time.
+
+Timestamped external stack sampling must report its suspension cost. Unwinding
+while suspended materially perturbs this workload; snapshotting bounded stack
+bytes and resuming before unwind lowers that cost, but observer CPU still makes
+it a diagnostic. Preserve the initial process/thread identity, matching PDB,
+raw addresses, QPC intervals and depth/row/time bounds. Nearest public-symbol
+labels with large offsets are not exact function attribution. An isolated
+empty optional-pack path can test the texture-loader lead; never remove the
+installed pack or change personal settings for that control. Classic normally
+still preloads replacement views for live switching. STATUS records the limits.
+
+Vehicle exit probes must verify the delivered logical action before treating a
+failed departure as a timing defect. With the default Windows bindings and
+Test Lab profile, Y delivers exit bit 0x40; F delivers0x20 and R delivers0x10.
+Xbox analog button order is not the guest logical bit order. Original `D2470`
+reads pressed input through `427B0` and transfers bit 0x40 to driver input+0x18;
+`17DA00` routes the exit request, subject to the original vehicle flags. Keep
+those mechanics intact. Acceptance requires restored weapon, camera 24 -> 0,
+on-foot movement away from a stationary jeep, pause/resume and unchanged saves.
+Use explicit `--native-fps 0` for Original60 and verify the solver trace mode.
+These captured synthetic-input probes do not measure pacing or physical input.
+
+The rigid-motion fixture additionally checks 576 overlap/rebound cases using
+the original contact-term/solver/integrator functions: signed/capped depths,
+restitution, unit and quantized normals, centered/eccentric points, static kinds
+0/2 and regular/irregular timing. Expected impulse includes the original escape
+velocity (12 * clamped overlap), with authored drag in the linear bound; energy
+must not grow for the tested closing contacts. `missing-penetration` removes only
+the escape-velocity term and must fail. This fixture controls geometry, uses
+closing speed12/inverse mass0.5/unit inverse inertia, and requires the private XBE.
+It is not a live corner replay. STATUS records the subsequent successful144
+walking detour and the different front/side contact normals versus Original60.
+
+Live vehicle reference correction: `--native-fps 60` means native60, not
+Original60. Existing `vehicle-*-60` camera, steering and terrain recordings use
+that setting, confirmed by their startup logs and solver flag. Their old
+Original60 labels are invalid; do not reuse them as original-clock acceptance.
+The bounded runner now accepts `--native-fps 0` for explicit Original60;
+verify `native=0` in a live solver trace. Omitting the option also uses the
+isolated default. Values 60/120/144 explicitly select the native clock.
+Offline original-routine fixtures explicitly disable the native policy and are
+not affected. See the correction at the top of STATUS.
+
+The solver-entry contact diagnostic requires `TSFP_CONTACT_TRACE` (CSV path),
+`TSFP_CONTACT_TRACE_SLOT` (rigid-body pool slot, 0..1023), and
+`TSFP_CONTACT_TRACE_Z` (finite inclusive `min,max` world-Z window). Set these
+only in an isolated test child's environment after the runner strips inherited
+debug variables. It records a summary even for zero matching contacts, then
+generated and selected records separately. It stops at 16,000 rows or 8 MiB;
+the last snapshot may be partial when capped, so discard it for comparisons
+unless completeness is independently established. The allocated arena is read
+after selection has run; merged normals can already differ from producer output.
+The registered asset-free `native_contact_trace.c` fixture checks filter/identity,
+unreadable data, finite values, list membership, zero-contact snapshots, disabled
+and invalid configuration, opening failure, and both output limits. The physics
+scope fixture checks observation in Original, native and nested solver calls.
+Live contact evidence still requires a build containing this optional hook.
+Build `20dc25d` and the three accepted solver runs (original60/native60/native120)
+are now recorded in STATUS. Check the CSV's `native` flag rather than inferring
+the clock from a filename or FPS counter. The failed144 walking approach never
+reaches the jeep and is excluded. Do not interpret these captures as pacing tests.
+
+`native_rigid_motion.c` also covers 864 identical zero-depth static-contact
+cases against an independent frictionless inelastic impulse equation: signed
+axes, centered/eccentric points, inverse masses, closing/separating/rest speeds
+and regular/irregular native intervals. Its linear error bound accounts for
+original `16CA00` drag `0.001*v` over one authored tick; angular response and kinetic
+energy have separate checks. `missing-wall` drops only these contact solves
+and must fail the analytical response. Broadphase/contact selection and contact
+offsets remain fixture-controlled. This private-XBE test cannot close the live
+pillar discrepancy; source inspection is not geometry acceptance.
+
+The registered vehicle suite now lifts full `CA040` with original spring,
+history-average and angle helpers. Controlled unobstructed collision queries
+and CRT math isolate time consumption. It compares aligned two-second camera
+checkpoints on both horizontal axes through reversal, slow/normal/fast and
+regular/irregular native intervals; it checks fresh updates, pause and ABI.
+Gate/count mutations fail independently; check a missing substep count before
+entering the original decrement loop to avoid an underflow hang. Three
+asset-free real-lowering cases cover both clock sites and an unrelated one.
+For live camera comparisons, read camera and body positions in one bounded
+observation with frame brackets and verify active camera ownership/mode/FOV.
+A similarly timed renderer capture alone is not a synchronized pose trace.
+Integrated `fb261e1` passes the supported Windows build and selected both-host
+CI. The `vehicle-integrated-camfix-{60,120,144}` bounded Windows runs use that
+same executable with isolated Test Lab profiles. Their matched-position
+camera distances remove the prior large lag; steering and settled pause pass.
+See STATUS for values and provenance. Keep one-run asynchronous/captured
+behavior evidence separate from exact trajectories, physical input and pacing.
+The normal playable pair is restored after each run; candidate objects remain
+in the root build cache, so preserve the pair and force a fresh link next build.
+The later `vehicle-integrated-terrain-*` route removes pre-drive steering and
+extends throttle toward the ice pillar. At built source `fb261e1`, 60/144 stop
+but120 reaches the bank; a second60 also stops with a different pose. Its
+asynchronous position/quaternion/velocity readings show approach differences,
+so neither an isolated collision cause nor exact handling parity is proven.
+Preserve this counterexample and use controlled contact evidence before editing
+mechanics. STATUS records checkpoints and rejected broad conclusions.
+Main `acf4464` integration retains keyboard-menu/weapon-slot exclusions in
+the historical controls fixture alongside vehicle physics. Full-stack apply
+and all four current/historical upgrade checks pass on the combined source.
+
+When integrating the vehicle branch with main `7545d4b`, preserve both
+`physics_history_transitions` and `boost_resource_clock` in the guest clock
+fixture. The three historical patch fixtures exclude vehicle physics alongside
+surface coefficients/full-float and flip handoff; the complete stack includes
+all of them. Run combined timing/input and historical upgrades before treating
+earlier separate-branch validation as applicable to the merged candidate.
+Integrated `d0116a7` passes the supported Windows build, 147 combined checks,
+four historical/current upgrades and 88 context/backlog/scope checks (draft
+PR #307). The retained candidate is `vehicle-d0116a7`; older `vehicle-464f850`
+and `vehicle-60e5b36` executable/symbol pairs have been superseded and recycled,
+while diagnostic evidence remains. Build provenance and live exclusions are
+in STATUS. In particular, the earlier `60-empty` route retained six bots:
+verify both roster and captures before treating a route as an empty-map test.
+The first integrated144 observer produced no data, and the second run lost
+the player before jeep entry; neither establishes steering parity.
+For the corrected Siberia route, choose LEFT from Recommended to None,
+verify roster257 (zero bots), and approach the observed jeep using normal
+controls rather than the old six-bot spawn path. Allow six seconds after
+entry; an earlier right-input probe was consumed during the climb-in animation.
+The three `vehicle-integrated-settled-*` runs pass signed-input and settled
+pause checks with unchanged profiles. Keep their asynchronous measurements
+separate from exact response and pacing acceptance. A 180-frame dump cadence
+has different wall-time age across presets; camera-distance comparisons need
+synchronized capture/position observations before diagnosing a regression.
+
+`native_spawn_motion.c`, registered in `test_native_vehicle_timing.py`, lifts
+original joint-history copy `57040`, object spawn `1727A0` and its real
+velocity/momentum setters and matrix helpers. Allocation, owner transform,
+Euler extraction, bounds/wake and the CRT floor service are controlled.
+Independent spawn events test all carried-clock phases at 60/120/144,
+signed inheritance, rotated transforms, vertex offsets, pause, missing
+history and allocation failure. `legacy-spawn-motion` must fail at native120.
+This private-XBE fixture does not certify live model rendering or trajectories.
+Supported Windows build `3e1ee87` includes this fix and `6232685` contact
+velocity; the full build and built-in checks pass. The retained diagnostic
+pair was superseded by `private/build-recovery/vehicle-60e5b36`. Normal playable `4adb6b0`
+is restored, so force a fresh link when building from the candidate object
+cache again. Live spawn/contact and native Mac checks are still pending.
+`native_vehicle_actor_impact.c` in the same Python suite links original
+`A7360` velocity publication to `17CAE0`, both directly and through original
+registration/queue delivery `A5CE0/16C070/16C0D0`. Original `166060/1665F0`,
+`17BC90`, and `174EC0` with its mass/matrix helpers verify contact speed,
+selected impulses and suspension component changes. Movement/geometry and
+effects are controlled. Old divide and gate-only counterfactuals fail at120;
+all preset clock phases and mismatched producer/event intervals are covered.
+The complete Windows build and built-in checks pass at `60e5b36`, as do all
+115 combined timing/vehicle/numeric-join/generation checks. Live contact
+acceptance and Mac execution remain separate requirements.
+For a bounded live probe, `stability_transitions_game.py --trace-vehicle-contact`
+explicitly enables the three original contact/impulse entry traces (64 each)
+after environment isolation. Inherited `RECOMP_*` flags are intentionally
+stripped by `prepare_run`; they cannot enable these traces. The option cannot
+be combined with `--watch-input`. Entry traces identify callers and registers,
+not exact impulse arguments or matched full handling.
+The `vehicle-actor-trace-60e5b36-144` live probe reaches `17CAE0` from the
+player collision caller and passes pause/resume. Its entry-only trace does
+not establish the callback's taken branch or impact magnitude. That candidate
+EXE/PDB was superseded by `vehicle-d0116a7`; its evidence is retained.
+
+`tests/test_native_vehicle_timing.py` runs the shared byte-load timer contract
+without assets on both CI hosts. With the supported local US XBE it also lifts
+the complete vehicle dispatcher, spring helper, linear adjustment, rest routine
+and rigid-body clock. `native_rigid_motion.c` additionally runs the original
+solver, body integrator, quaternion/matrix helpers and support-contact resolver
+(`171FB0 -> 171560 -> 16CA00`, plus `1667C0/16FC00/168720`). It checks actual
+position/velocity/orientation with applied force, drag, a controlled upward
+contact, and pause at 60/120/144. The full original final publisher, bounds
+transform, sleep/wake and vehicle-component updater now execute too. Tests
+check entity position/velocity, cleared force accumulators, component
+acceleration/clamping, sleep duration and immediate fractional wake motion.
+Broadphase geometry, material/allocation, contact damage, room membership and
+model notifications remain controlled services.
+These are routine checks, not live driving or geometry acceptance. Negative
+controls independently remove the gate, linear-rate, rest-timer or rigid-clock
+correction; further controls omit contact resolution, RNG isolation or the
+secondary-step boundary correction or body sleep cadence and must fail their
+relevant cases. Synthetic memory-DEC checks cover all byte values, stored
+result flags and preserved carry at the sleep site and an unrelated site.
+The same suite checks the production manual scanner retains the `171FB0`
+original body; a comma-separated `_gen` extern passes C compilation but the
+scanner misses it and the final link fails. The motion fixture now also executes the original RNG with three controlled
+contacts and checks slow, fast and irregular native intervals. Asset-free
+`native_physics_scope.c` checks nested/private/shared draws and cleanup; the
+same Python test file checks 20,000 secondary-step partitions. Those portable
+cases run on CI even when the private original-routine cases skip.
+`tests/native_timing_guest.c` checks physics-history handoff through the actual
+clock wrapper, including paused return and slow motion. Candidate vehicle and
+multi-contact/vehicle integration still require broader acceptance before replacing
+the existing playable build. The supported Windows build at `ba4f0bf` passes,
+but matched live Siberia throttle replays show lower travel at native rates.
+Use the recorded input sequences, observations and captures linked in the
+high-refresh regression record to investigate before accepting handling.
+The added `native_vehicle_driver.c` fixture runs original `17DA00/172EE0` and
+the XBE's seat switch table. It reproduces half the intended integrated
+throttle at native120 before the `17DA03` gate correction; `legacy-driver`
+must still fail. It checks normal/slow/fast/irregular intervals, fresh analog
+throttle, braking, reverse, release, pause and the guest ABI. Wake, model and
+seat-action services are controlled; full handling requires the live replay.
+The steering extension executes those same complete original routines with
+left/right/released targets, three vehicle-speed inputs including the target
+clamp, quarter/normal/triple time, 60/120/144 and irregular intervals. It checks
+the original-60 recurrence, fresh steering outputs, wheel eligibility, pause
+and unchanged whole/catch-up arithmetic. `legacy-steering` independently removes
+only the new coefficient correction and must fail at native120. The asset-free
+synthetic SSE coefficient test in the same Python suite runs on both CI hosts;
+it checks real lowering, untouched upper lanes, Original-mode arithmetic and
+an unrelated instruction site. Full wheel/terrain forces remain outside it.
+Steering source `464f850` passes the supported Windows build and built-in
+checks. Its candidate pair was superseded by `vehicle-d0116a7`; the normal
+`4adb6b0` pair is restored. The object/generated cache is newer than the normal
+executable, so preserve that pair and force a fresh link before the next build.
+The `67c1864` replay corrects the original throttle deficit (initial travel
+within 0.1% across presets); later pillar/bank paths still diverge. Inspect both
+the sampled input window and subsequent captures before declaring acceptance.
+`native_contact_velocity.c` now lifts original `1667C0/166060` to check rotating
+body point velocity, body/static/character contacts, all movement axes and
+directions, clock speeds, irregular intervals, nullable output, pause and ABI.
+The motion fixture's moving support additionally executes `16E780/16DA90`
+and the original contact-kind table through a controlled body callback. With
+zero material coefficients, damage/effects stay disabled. It verifies fresh
+reported normal/vector velocity while body motion stays consistent. Negative
+`legacy-contact-velocity` and `legacy-character-contact` controls independently
+restore the missed gate and fail at native120. These private-XBE cases skip on
+asset-free CI; CI registration is not evidence of their execution on Mac.
+>>>>>>> origin/fix/native-vehicle-physics
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows
