@@ -489,10 +489,11 @@ int tsfp_native_input_test(void) {
     recomp_bindings_sample(0,&pad);ok &= !!(pad.wButtons&XBOX_GAMEPAD_DPAD_DOWN);
     e.key.scancode=SDL_SCANCODE_W;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.sThumbLY>30000;
-    /* Both hosts use pc_input.c: diagonal movement must not run faster. */
+    /* Both hosts use pc_input.c: W+D must have the same stick radius as W. */
     e.key.scancode=SDL_SCANCODE_D;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);
     ok &= pad.sThumbLX==pad.sThumbLY && pad.sThumbLX>23000 &&
+          hypot(pad.sThumbLX,pad.sThumbLY)>=32765 &&
           hypot(pad.sThumbLX,pad.sThumbLY)<=32767;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.sThumbLX==0 && pad.sThumbLY>30000;

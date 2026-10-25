@@ -15,6 +15,15 @@ and switches between the main and texture stacks. Native Mac synthetic SDL and
 gameplay checks remain pending. No physical controller or in-game displacement
 comparison has been claimed.
 
+The keyboard follow-up checks W+D at both the shared normalization function
+and Windows/SDL sampler sites. Its output radius is 32765.9 versus 32767 for
+W alone; the original US walking routine `sub_00258F50` computes the movement
+vector length before applying its speed cap. The remaining difference is below
+0.01%, from integer stick quantization. The Windows Release Build and input
+suite pass with these stronger assertions. One unrelated replay-timing
+assertion failed on an initial run, then passed both in isolation and on the
+full rerun.
+
 ## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
 
 The unchanged candidate executable50d7323a... completes three bounded ten-bot
