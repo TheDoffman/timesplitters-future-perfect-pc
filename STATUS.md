@@ -1,4 +1,4 @@
-## Current-build Temple crowd pacing and timing calls (2026-10-25, PR #364)
+## Temple crowd pacing and timing calls (2026-10-25, PR #364)
 
 Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
 completes three bounded Temple multiplayer routes at Original60, diagnostic
@@ -48,12 +48,30 @@ these rows are not a144-FPS pacing result or proof of unique GPU images per fram
 Image/trace hashes and checkpoint health are in the run's visual-acceptance.json.
 
 All five runs exit cleanly, preserve canonical profile090cced7/signatures and
-fixture checks, and recycle disposable disks/locks. No game source or executable
-changes this turn; only the Windows runner gains optional bounded counter reads.
+fixture checks, and recycle disposable disks/locks. These measurements precede
+the main integration below. The native-FPS follow-up adds only optional bounded
+counter reads to the Windows runner; no native game policy changes here.
 Shared frame-statistics/context/backlog checks pass33 tests in3.26s; runner CLI
 help succeeds. All applicable Windows/macOS hosted checks pass on c206c28a before
 this acceptance/sampler follow-up. Wider gameplay, live TRAP activation/rendering
 and physical Mac remain open.
+
+After those measurements, origin/main4ce8cbff (PR365's Temporal Uplink map-copy
+repair) is merged into this branch as2f8a7cf2, preserving both sets of changes.
+The supported Windows rebuild/bundled checks pass and produce executable
+5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988.
+Combined GPU menu/screen-copy, prediction, full patch-transition, frame-statistics,
+context and backlog checks pass60 tests in603.64s. Their Git-based transition
+cases continue making progress throughout the long run; no retry was required.
+
+That merged executable also completes `crowd-merged-temple144-smoke`, with
+canonical profile/signature/fixture and cleanup checks intact.19 observations
+record6043 timing calls over41.966346s (143.9963/s), matching accepted Presents
+within the same one-call allowance; game/wall1.000008, maximum read span11.5us.
+Held/60-Hz controls fail again. This run overlaps the patch-transition tests and
+is diagnostic integration evidence, excluded from the capture-free comparison
+table. Its raw report, provenance and native-clock-comparison.json preserve the
+new executable hash. No new live Uplink or TRAP rendering acceptance is claimed.
 
 ## TRAP angle-to-vertex propagation (2026-10-25, PR #364)
 
