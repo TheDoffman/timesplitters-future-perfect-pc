@@ -1,3 +1,212 @@
+## Temple crowd pacing and timing calls (2026-10-25, PR #364)
+
+Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
+completes three bounded Temple multiplayer routes at Original60, diagnostic
+native144 and native240. Each uses one human/ten configured bots, FOV73 and
+Enhanced selected with Classic fallback. Device creation confirms3440x1440;
+the foreground borderless client is1920x1060, so this does not certify physical
+3440x1440 scanout. The144 rate is diagnostic; menu choices remain60/120/180/240.
+
+Capture-free runs disable full native tracing and CPU sampling, retaining light
+state/actor snapshots. Each complete45s spawn+5..50 window has19 active unpaused
+checkpoints and consecutive accepted guest Presents, with zero interpolation:
+
+| Mode | Complete intervals | Average guest Presents/s | Lowest1s/5s rate | p99 interval | Worst interval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 2699 | 60.0001 | 60/60 | 17.223ms | 17.895ms |
+| Native144 diagnostic | 6479 | 143.9996 | 144/144 | 7.535ms | 10.548ms |
+| Native240 Beta | 10799 | 240.0000 | 240/240 | 4.757ms | 6.801ms |
+
+Sampled level-game/wall ratios are1.000045,1.000047 and0.999962 respectively.
+These are complete successful host-API intervals under this workload, not GPU
+completion, scanout or physical input latency. Individual intervals still vary;
+equal one-second counts do not imply every frame hits its deadline. Bot visibility,
+AI/death paths and machine load vary, so this is not a causal speedup or all-map
+acceptance claim. The CSV guest_frame field is an accepted-guest counter, not an
+independent simulation-update identifier. All three share executable, runner and
+input-command hashes; evidence is `logs/crowd-current-temple-comparison.json`
+and each `private/test-saves/crowd-current-temple{240,144,-original60}` summary.
+
+A separate capture-free144 run enables the new read-only `--watch-native-clock`
+sampler. Across19 bounded observations it records6043 timing calls over41.970058s
+(143.9836/s). Every adjacent count agrees with accepted Presents within one
+in-flight call; maximum read span is9.6microseconds. Level-game/wall ratio is
+0.999919. Its complete45s Present window averages144.0010/s, minimum1s/5s144,
+p997.495ms and worst9.003ms. Held-counter and hypothetical60-Hz-counter controls
+are rejected. This verifies high-rate timing calls separately from Presents;
+it does not prove every subsystem consumes fractional time. Evidence:
+`private/test-saves/crowd-current-temple144-clock/native-clock-comparison.json`,
+its raw report/CSV and `logs/crowd-current-temple144-clock-comparison.log`.
+
+A separate144 diagnostic run retains renderer captures and the native trace;
+its timing is excluded. All15292 native timing markers are consecutive, including
+7895 positive game-delta rows in Temple49 from79.854848 to163.097588s. Reviewed
+3440x1440 stills show dual-pistol firing/smoke, a death camera with an armed NPC,
+and respawned firing/impact effects. Combat-four is a death camera, not evidence
+of surviving that segment. Capture overhead reduces the diagnostic update rate;
+these rows are not a144-FPS pacing result or proof of unique GPU images per frame.
+Image/trace hashes and checkpoint health are in the run's visual-acceptance.json.
+
+All five runs exit cleanly, preserve canonical profile090cced7/signatures and
+fixture checks, and recycle disposable disks/locks. These measurements precede
+the main integration below. The native-FPS follow-up adds only optional bounded
+counter reads to the Windows runner; no native game policy changes here.
+Shared frame-statistics/context/backlog checks pass33 tests in3.26s; runner CLI
+help succeeds. All applicable Windows/macOS hosted checks pass on c206c28a before
+this acceptance/sampler follow-up. Wider gameplay, live TRAP activation/rendering
+and physical Mac remain open.
+
+After those measurements, origin/main4ce8cbff (PR365's Temporal Uplink map-copy
+repair) is merged into this branch as2f8a7cf2, preserving both sets of changes.
+The supported Windows rebuild/bundled checks pass and produce executable
+5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988.
+Combined GPU menu/screen-copy, prediction, full patch-transition, frame-statistics,
+context and backlog checks pass60 tests in603.64s. Their Git-based transition
+cases continue making progress throughout the long run; no retry was required.
+
+That merged executable also completes `crowd-merged-temple144-smoke`, with
+canonical profile/signature/fixture and cleanup checks intact.19 observations
+record6043 timing calls over41.966346s (143.9963/s), matching accepted Presents
+within the same one-call allowance; game/wall1.000008, maximum read span11.5us.
+Held/60-Hz controls fail again. This run overlaps the patch-transition tests and
+is diagnostic integration evidence, excluded from the capture-free comparison
+table. Its raw report, provenance and native-clock-comparison.json preserve the
+new executable hash. No new live Uplink or TRAP rendering acceptance is claimed.
+
+## TRAP angle-to-vertex propagation (2026-10-25, PR #364)
+
+The original-code `native_trap_transform.c` fixture now connects the original
+TRAP initializer/registration and callback with entity post-updateA7360, Euler
+cacheA14B0, its original matrix helpers and production affine point entry151E80.
+It exercises80 rate/slow/carried-phase/Original-native cases through240 FPS.
+The fixture drives routine order and uses controlled registration, collision
+and sector services; it does not simulate a whole mission or renderer.
+
+Changed C0 angles cause the original A74F4 store to set +28 bit0x1000. The
+matrix builder consumes/clears that bit, updates cached rotation+274, copies
+the matrix and supplies translation. Its mode2 C0 input atA15C6 reaches151650's
+direct sine/cosine evaluation. Thus the force sine table does not quantize this
+render-transform angle. An off-axis test point receives fresh world coordinates
+on every native pre-sound update; Original mode retains its carried-tick holds.
+Independent trigonometric coordinates, cache reuse, pause, clock restoration
+and ABI are checked. The production point fast path is also compared bit-for-bit
+with the complete original point body on every transform.
+
+Removing the actual invalidation store, angle input, matrix copy or point
+transform independently fails. The connected callback/matrix/public-clock test
+selection passes3 tests in32.09s; the subsequent dual point-path check passes
+in12.92s. Repository/backlog checks pass21 in3.14s. All applicable Windows/macOS
+hosted checks pass on runtime/documentation headbc3a140f; new fixture CI is separate.
+This closes the isolated CPU propagation gap without a production-code change.
+The runtime executable remains7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba.
+
+Normal frame scheduling, actual mesh identity, GPU rendering, collision services,
+normal-play trigger activation and physical Mac gameplay remain unverified.
+These CPU results are not rendered-frame or pacing measurements. Logs are
+`logs/trap-transform-connected-suite.log` and `logs/trap-transform-point-parity.log`.
+
+## Fresh fractional TRAP motion (2026-10-25, PR #364 follow-up)
+
+PR363's discrete-clock repair preserved the original TRAP solver but still
+held its pose between carried ticks. The shared `pc_native_trap_guest.h` now
+subdivides the original kick/drift map using a half-kick coordinate conjugacy:
+`K((h-1)/2) D(h) K((h+1)/2)`. Both kicks use the original quantized sine table.
+This reduces to the original map at h=1; Original and whole/catch-up calls
+bypass the fractional operators. The original callback still owns sound/control
+events, angle clamp, restitution, dirty flags, and removal. Its contact-state
+increment at1D8BFD now spends carried game ticks instead of counting every
+subframe contact. The sound-state increment remains original. No per-entity
+cache, pose interpolation, saved-layout changes or platform adapters are added.
+
+Private original-code experiments explain the coupled repair. Merely scaling
+force and travel produces a maximum aligned angle difference of3.493835degrees
+at240 and removes the object at0.704167s versus Original0.816667s. The symmetric
+motion map reduces that aligned angle error below0.165degrees, but without
+contact normalization removes it at0.6875s. Normalizing the contact counter keeps
+sound/removal within one original tick plus sampling resolution across40
+rate/slow/carried-phase schedules. All pre-sound native frames have fresh angles.
+Frozen pre-repair policy/source provenance is in ignored
+`private/pipeline/trap-fractional-probe/provenance.json`; numerical output is
+`logs/trap-fractional-probe.log`. These experiments do not establish rendered
+appearance or live event-service behavior.
+
+The production original-US fixture checks40 schedules through240,12 mixed-rate/
+jitter schedules, fresh pre-sound poses, a one-tick Original pose envelope with
+0.25degree tolerance, aligned phase-zero endpoint error below0.25degrees,
+phase, terminal state, pause, ABI and exact whole/catch-up bytes/events.
+Removing the entry gate, either time conversion, either coupled
+operator, or contact normalization independently fails. The public fixture
+checks constant-force coupling, contact ticks, fallback and composed GPU-store
+notification without game assets. The GPU acknowledgement scope remains exactly
+3D66C3; contact normalization observes only1D8BFD.
+
+Supported Windows rebuild and bundled checks pass. Executable SHA256:
+`7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba`.
+The final timing/vehicle/GPU suite passes138 tests in219.13s, with one native-Mac
+pthread/event test skipped on Windows. The expanded original-US aligned/switch/
+mutation fixture also passes separately in22.82s. Repository/backlog checks
+pass21 in3.32s. The first full run found a synthetic physics fixture missing
+the newly referenced entity register declaration; that fixture is corrected
+and its20,000 secondary-step partitions pass. Context/index and whitespace pass.
+
+Normal-play TRAP activation, rendered propagation, actual sound/control/collision
+behavior and physical Mac remain unverified. Earlier Mansion entrance tests did
+not activate TRAP; they cannot validate this change. Source inspection finds
+original transform builderA14B0 consuming C0 atA1559/A15C6, but a complete live
+callback-to-render path is still required. No new pacing or damage parity claim.
+The earlier statistics live runs below used the previous executable, not this one.
+
+## Player-statistics clock at native refresh (2026-10-25)
+
+Original-US player bookkeeping `D1FD0` converts the current float game delta
+to seconds, then records two time counters only on carried whole ticks. At
+native240 this records0.25 seconds for one elapsed game second, while its
+integer clock still records60 ticks. Other time counters outside that gate
+already receive the full second. Opening the gate on every frame repairs short
+totals but changes float rounding: a ten-minute Original60 run records599.897644
+seconds, whereas that rejected candidate records600.473572 at native240.
+
+The shared `pc_native_statistics_guest.h` scopes only this routine's float
+game delta to the authored carried tick span at direct callD2CB7, restoring
+the incoming fractional delta on return. The original eligibility, clock
+conditions and accumulator remain in charge. Precomputed movement-distance
+arguments are recorded every native update. D2079 rejects stale whole ticks
+when the live/scoped float delta is zero. No retained state, saved layout,
+solver or platform adapter changes.
+
+`native_player_statistics.c` executes the original bookkeeping, clock getter,
+eligibility and accumulator in160 schedules at60/120/144/180/240, slow time,
+carried phases and hour0/5/6/23. It checks distance inputs, pause, uneven steps,
+ineligible players, match state, ABI, exact whole/catch-up fallback and five
+bit-equal ten-minute totals against Original60. Missing scope or pause guard
+independently fails. The public clock fixture exercises the production callee
+selection and delta restoration without private game data. A copied-header
+reload fixture now also resolves the new helper before compiling mutations.
+
+Windows supported rebuild and bundled checks pass. Executable SHA256:
+`beb523eff40f7fac0f3b4288f114390d18a2385d6b3b9c8620327e0b0187a036`.
+The complete timing/vehicle suite passes119 tests in206.60s; repository/backlog
+checks pass21 in4.09s. These original-routine tests use the supported private
+US XBE; CI without that data can only run the public coverage.
+
+On that executable, isolated Disco multiplayer with one human and ten bots
+completes the native240 combat route with clean exit, valid profile signatures,
+canonical fixture preservation and disposable-disk cleanup. A read-only20Hz
+observer compares counter29 with integer clock7DE328 within an unchanged
+active subject/scene epoch:31.287628 recorded seconds vs31.283333 clock seconds
+over623 observations (difference0.004295s). Hour20 counter4B remains zero as
+required by the original hour<6 condition. Evidence is in ignored
+`private/test-saves/stats-scoped-240/{statistics-results,statistics-provenance}.json`
+and `logs/native-player-stats-live-240.log`. Asynchronous process observations
+are not atomic frame, performance, damage or full-game parity measurements.
+The matching Original60 route also completes cleanly with the same profile/
+fixture checks:41.186016 recorded seconds vs41.183333 clock seconds over820
+stable observations (difference0.002683s). Its evidence is under
+`private/test-saves/stats-scoped-original` and
+`logs/native-player-stats-live-original.log`. Both runs use the same executable
+and bounded observer; unrelated state-conditioned counters are not compared
+across different combat outcomes. Physical Mac gameplay remains pending.
+
 ## Issue #256 follow-up: movement and mouse capture (2026-10-25)
 
 The merged radial-deadzone change did not remove the slowdown in gameplay.
@@ -25981,8 +26190,8 @@ native240 and trueOriginal60, with canonical profiles preserved. From Story,
 select the fifth mission, accept difficulty/start, skip the movie with Escape,
 restore focus, then use ordinary W holds3s/2s/1.3s toward the door and E to enter.
 Both runs reach the foyer and activate TREE through the normal script. Native
-menu exploration introduces idle time; compare the activation interval rather
-than overall run duration. The bound is600s; both sessions stop earlier and
+manual exploration adds idle time before and after activation; compare the
+activation interval rather than overall run duration. The bound is600s; both sessions stop earlier and
 return0 with clean game exits. TRAP is present upstairs but remains inactive:
 no TRAP initializer/callback trace is observed, so live trap behavior stays open.
 
@@ -26027,3 +26236,22 @@ summary: `logs/scripted-tree-live-comparison.json`. Observation SHA256:
 (original). No production code change follows from this passing comparison.
 All applicable Windows/macOS hosted checks pass on source head09087c1b;
 subsequent documentation-head checks remain separate.
+
+
+Mansion coverage clarification (2026-10-25): the native diagnostic lingered
+about90seconds between door-use and its final checkpoint, then ended in player
+death/state8. Original ended about2.19seconds after door-use, alive/state7.
+These unmatched endpoints do not compare survival, damage rate or full mission
+progression. All91 active TREE samples per run precede the terminal endpoint
+and retain state7; the accepted callback phase/clamp comparison is unchanged.
+
+A separate bounded `scripted-attic-native240` calibration attempt retries through
+the normal menu but does not reach the TRAP trigger. Its valid observed TRAP
+states remain idle with phase0, and the uncapped trace has no1D8C40/1D8AB0 entry.
+The route adjustment stayed outside the doorway after retry; command edits made
+after earlier inputs mean this is calibration, not a reproducible acceptance
+route. The executed-event report remains authoritative. The reader ends at its
+480s bound; later input is not claimed covered by that reader. The owned game
+exits cleanly, with signed profile/canonical fixture and partition/lock cleanup.
+No runtime regression or live TRAP success is inferred from this attempt.
+All applicable checks on5cfb1542 pass. No production code changes in this audit.

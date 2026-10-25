@@ -299,6 +299,7 @@ def test_physics_secondary_step_rounding(tmp_path):
 #include <stdio.h>
 /* POLICY */
 ptrdiff_t g_xbox_mem_offset;
+uint32_t g_esi; /* Selected TRAP ADD operator has an explicit entity register. */
 int g_tsfp_native_timing_active;
 int main(void) {
     for(unsigned i=1;i<=20000;i++) {

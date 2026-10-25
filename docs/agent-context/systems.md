@@ -907,13 +907,10 @@ subdivide the one-raw-tick factor at current game speed. Original rotation,
 composition, cleanup and whole/catch-up arithmetic remain intact. The original
 helper fixture covers60..240, slow time, pause, jitter and live switches.
 
-Optional `TSFP_CHARACTER_TRACE` selects `pc_native_character_trace_guest.inc`
-only at126029->120AB0. `pc_native_character_trace.h` retains synchronous copied
-before/after matrices, actual scoped deltas, age, identity and removal. It checks
-mapped reads, drops mismatched identities/frames/scenes, and caps8192rows/8MiB.
-Mapping caches never span guest execution. Disabled/failed/capped traces select
-the original callee; no timing or growth policy changes. This is CPU update
-evidence, not rendered parity or pacing. Physical Mac remains unverified.
+`TSFP_CHARACTER_TRACE` selects126029->120AB0: matrices/deltas/identity/removal,
+validated mappings, cross-frame/scene rejection,8192rows/8MiB cap. Mapping caches
+never span guest execution. Disabled/failed/capped traces keep original callee.
+CPU evidence only; rendering/pacing and physical Mac remain unverified.
 
 ## Temporal Uplink map display
 
@@ -926,17 +923,20 @@ only transfers the image that the game already drew.
 
 ## Forced and damped material scrolling
 
-`pc_native_material.h` splits127500's coupled velocity/travel map in raw time
-at game speed:12765Bforce,1276FD/127705drag,12773B/127791UV. Zero/weak drag
-uses stable limits; Original/whole/catch-up/unsupported bases keep old math.
-Force sample/clamp, wrapping, resources/events, layout and pause stay original.
-Varying force and rendered/Mac parity remain open; see surface/cache tests and STATUS.
+`pc_native_material.h` splits127500 velocity/travel in raw game time:
+12765Bforce,1276FD/127705drag,12773B/127791UV. Weak drag uses stable limits;
+Original/whole/catch-up/unsupported bases keep old math. Force/clamp, wrapping,
+resources/events, layout and pause stay original. Varying-force/rendered/Mac
+parity remain open; see surface/cache tests and STATUS.
 
 ## Scripted object clocks
 
 TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
 Original phase/pose, events, terminal clamp, layout and whole updates remain.
-TRAP1D8AB0 keeps its whole gate and fixed impulse; only1D8AF5/1D8B6A phase/travel
-conversions use that carried span. A pause-only gate override rejects stale
-whole counts. This restores the nonlinear solver, not fractional trap poses.
-Original-US/public clock tests cover these policies; live scenes/Mac remain open.
+TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime.
+Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
+for the map, hook composition, rejected candidates and live/Mac acceptance limits.
+
+Statistics: D2CB7 scopes/restores D1FD0 float delta to carried ticks. Time totals
+keep Original addition cadence; distance stays per-frame. D2079 blocks stale
+ticks during pause. Shared helper adds no state/adapter; Original is unchanged.

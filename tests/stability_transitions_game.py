@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--profile-delay-seconds',type=int,choices=range(601),default=0,help='Delay Present CSV rows after first successful Present; requires a compatible build')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--watch-actors',action='store_true',help='Observe local actor positions/health; proximity is not visibility and readings can cross an update')
+    parser.add_argument('--watch-native-clock',action='store_true',help='Read timing-call counter and game ticks with QPC bounds; not completed simulation or GPU frames')
     parser.add_argument('--watch-effects',action='store_true',help='Read bounded effect lists at checkpoints and requested samples; asynchronous observations, not GPU draws')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
     surfaces=parser.add_mutually_exclusive_group()
@@ -336,7 +337,16 @@ def main():
             **(dict(effects=snapshot_effects(read_bytes)) if args.watch_effects else {}),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
-            **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
+            **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}),
+            **(dict(native_clock=native_clock_snapshot()) if args.watch_native_clock else {}))
+    def native_clock_snapshot():
+        # 7497B8 increments once in the native timing routine before returning
+        # to gameplay. This is separate from the RHI's accepted-Present count.
+        begin=time.perf_counter_ns();scene=word(0x79094c);match=word(0x7de30c)
+        calls=word(0x7497b8);ticks=word(0x7de318)
+        stable=(scene,match)==(word(0x79094c),word(0x7de30c))
+        return dict(begin_ns=begin,end_ns=time.perf_counter_ns(),scene=scene,
+                    match_state=match,identity_stable=stable,timing_calls=calls,level_ticks=ticks)
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -427,6 +437,7 @@ def main():
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         initial_commands_sha256=hashlib.sha256(commands.read_bytes()).hexdigest(),
         input_transport='startup replay plus polled state file',input_poll_ms=16,
+        watch_native_clock=args.watch_native_clock,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,

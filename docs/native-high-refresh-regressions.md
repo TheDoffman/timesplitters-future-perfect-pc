@@ -6,6 +6,58 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current Temple crowd pacing (2026-10-25, PR #364)
+
+The unchanged731288 executable completes capture-free ten-bot Enhanced-selected
+Temple routes at Original60/native144/native240, with3440x1440 device creation.
+Each complete45s window retains its target in every1s/5s bin, zero interpolation
+and sampled correct game speed. Individual frame intervals vary: worst144 is
+10.548ms, so this is not a constant-deadline claim. A separate lightweight clock
+sampler matches144 timing calls/s with accepted Presents within one in-flight
+call; held/60-Hz controls are rejected. A separate capture/trace run shows firing,
+death and respawn and is excluded from pacing. Client1920x1060 is supersampled;
+physical scanout/latency, all-map fidelity and Mac gameplay remain unverified.
+See STATUS for exact counts, bounds, screenshots and provenance.
+
+## TRAP transform propagation (2026-10-25, PR #364)
+
+An80-case original-code fixture connects TRAP initialization/callback to actual
+post-update angle invalidation, Euler caching, matrix copy/translation and point
+transformation. Native pre-sound frames produce fresh off-axis world points;
+Original keeps carried-tick holds. Cache reuse, independent trigonometric
+coordinates, pause, clocks and ABI are checked. Four independent propagation
+mutations fail. This is fixture-driven CPU evidence with controlled collision/
+sector/registration services; normal scheduling, live mesh/GPU rendering and
+physical Mac remain open. Runtime source and executable are unchanged.
+
+## Fresh TRAP poses (2026-10-25, PR #364 follow-up)
+
+The earlier discrete-clock repair below is superseded for fractional intervals.
+Shared coupled half-kick/drift steps now produce fresh poses, while a carried-
+tick contact budget preserves the original lifetime. Original/whole/catch-up
+states and events remain byte-equal. The original-US fixture checks40 rate/slow/
+phase schedules and12 live-switch/jitter schedules, pose/event windows, phase,
+terminal state, pause and ABI. Six independent gate/conversion/operator/contact
+mutations fail. The public clock fixture covers the coupled map and GPU-hook
+composition. Windows build passes; live TRAP activation/rendering and physical
+Mac remain open. See STATUS and the script-clock guide for measured limits.
+
+## Player-statistics timing (2026-10-25)
+
+D1FD0's whole gate records only0.25 seconds per game second at240 for two
+time counters. D2CB7 now scopes/restores its float delta to carried ticks,
+preserving original float-addition cadence while recording caller-computed
+distance every frame. D2079's pause guard blocks stale tick counts.
+Original-US tests cover160 rate/slow/phase/hour schedules, eligibility,
+distance, pause, uneven intervals, fallback and ten-minute bit-equal time totals.
+Opening the gate alone fails long-run rounding parity. Independent scope/pause
+mutations fail; the public fixture covers dispatcher/restoration on both CI hosts.
+Windows build and119 timing/vehicle tests pass. Native240 Disco statistics
+progress agrees with the integer clock within0.0043s over31.28s; this is bounded
+counter evidence, not pacing or broad gameplay validation. The matching
+Original60 route differs by0.0027s over41.18s and also exits cleanly with
+fixture/profile preservation. Physical Mac remains pending; see STATUS.
+
 ## Mansion TREE live progression (2026-10-25)
 
 Read-only map callback records and the in-game menu locate TREE/TRAP in Mansion
@@ -14,7 +66,10 @@ of Madness, Story index4/scene1. Normal isolated entrance play on the current
 observations, monotonic phase, matching original sampled pose math, terminal80
 clamp and active-state clearing. Their activation-duration brackets overlap
 around4.53–4.63s; terminal phase differs by less than one original tick. Signed
-profiles and clean exits/cleanup pass. No production change was needed.
+profiles and clean exits/cleanup pass. The native run later dies after a much
+longer idle interval; this does not establish survival/damage or mission
+progression parity. A bounded upper-floor calibration does not activate TRAP.
+No production change was needed.
 
 The observed foyer rendering does not identify the TREE mesh. Full rendered
 target/event-service parity, live TRAP activation and physical Mac remain open;

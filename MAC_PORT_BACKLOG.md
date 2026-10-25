@@ -3907,6 +3907,42 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Current Temple crowd acceptance (2026-10-25, PR #364):** Unchanged Windows
+  runtime731288 completes capture-free ten-bot3440x1440 Enhanced-selected Temple
+  runs at Original60/native144/native240, with complete45s guest-Present windows
+  and sampled correct game speed. A bounded Windows read-only timing-call
+  sampler independently agrees with accepted Presents at diagnostic144. No game
+  adapter/policy change; test sampling uses the existing Windows runner. Physical
+  Mac gameplay, normal live TRAP rendering and broader maps/visual fidelity remain
+  **Awaiting validation**. Exact rates, captures, uncertainty and provenance are
+  in STATUS; hosted Mac checks do not substitute for that hardware acceptance.
+
+- **TRAP transform propagation (2026-10-25, PR #364):** Original-US fixture
+  connects initializer/callback, post-update dirty invalidation, Euler cache,
+  matrix helpers and original/accelerated affine point transforms through240.
+  Windows CPU propagation passes; no production/adapter change is needed.
+  Private-XBE cases skip on hosts lacking that asset. Actual frame scheduling,
+  mesh/GPU rendering, collision services and physical Mac remain
+  **Awaiting validation**; see STATUS for scope and measurements.
+
+- **Fresh TRAP steps (2026-10-25, PR #364):** Shared `pc_native_trap_guest.h`
+  couples fractional force/travel with carried-tick contact lifetime, replacing
+  PR363's held poses. Original/whole/catch-up arithmetic and state layout remain
+  unchanged; post-store composition retains the GPU acknowledgement contract.
+  No host adapter. Original-US and public clock fixtures cover fresh poses,
+  event windows, pause, fallback and live rate switches. Windows full checks
+  and rebuild pass; normal-play activation/rendering and physical
+  Mac remain **Awaiting validation**. See STATUS and the script-clock guide.
+
+- **Player-statistics clock (2026-10-25, branch `fix/native-statistics-clock`):** Shared
+  `pc_native_statistics_guest.h` and D2CB7 numeric callee dispatch scope D1FD0
+  time bookkeeping to authored carried ticks, restoring the float delta on
+  return. Distance inputs stay per-frame; no OS adapter or saved layout changes.
+  Original-US/public clock tests cover pause, fallback, counter eligibility and
+  long-run float-addition parity through240. Windows build and isolated
+  Original60/native240 Disco counter progression pass; native Mac
+  physical execution remains **Awaiting validation**. See STATUS for live checks.
+
 - **TRAP solver clock (2026-10-25, PR #363):** Shared numeric policy in
   `src/pc_native_numeric.h` keeps two TRAP phase/travel conversions in the same
   whole-tick span as its fixed per-call impulse; a pause override rejects stale

@@ -71,6 +71,16 @@ remain non-atomic; missing player reads are counted/excluded. `rocket_impact_sta
 counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
 captures are not synchronized to memory. See STATUS for live evidence.
 
+The Windows runner's optional `--watch-native-clock` brackets read-only timing-
+call counter7497B8 and level ticks with perf_counter_ns/QPC timestamps plus scene/
+match identity checks. This marker increments in the timing routine before
+gameplay returns; it is independent of accepted-Present CSV counters and is not
+completed simulation or GPU work. Compare successive bounded observations with
+Present clocks, allowing one in-flight call. Exclude resets, transitions, pause
+and wide read spans. Capture-free runs retain lightweight snapshots; full native
+traces and renderer captures belong in separate diagnostic runs.144 remains a
+legacy diagnostic rate; the menu presets are60/120/180/240.
+
 `native_tree_motion.c` (via `test_native_timing.py`) executes the original US
 TREE callback1D88B0, with only its two effect services replaced by spies. It
 covers phase/pose, crossing and retirement times, single events, pause, slow
@@ -78,12 +88,35 @@ time, carried phases and exact whole/catch-up fallback through240; removing
 the gate correction fails. The asset-free native clock fixture checks this
 policy on both CI hosts. A private-XBE skip is not physical Mac/scene evidence.
 
-`native_trap_motion.c` executes the original TRAP solver and sine-table init,
-comparing complete state and sound/removal spies against Original at every
-frame of40 rate/slow/phase schedules. Mixed-clock conversions and an always-open
-gate are independent failing controls; either conversion repair removed also
-fails. Pause/catch-up and nearby continuous conversion behavior are covered.
-This proves authored discrete solver parity, not fresh fractional trap poses.
+`native_trap_motion.c` executes the original TRAP callback and sine-table init.
+40 rate/slow/phase schedules require fresh pre-sound poses, an Original one-tick
+pose envelope, aligned endpoints, event/lifetime bounds, terminal state, phase, pause and ABI.
+12 mixed-rate/jitter schedules exercise live switches. Whole/catch-up state and
+events remain byte-equal. Gate, both conversions, both coupled operators and
+contact normalization are independent failing controls. The asset-free clock
+fixture covers coupled force/travel/contact and GPU-store composition; existing
+`test_gpu_flush_ack.py` retains actual-store/guard/fallback coverage. See
+[script clocks](native-script-clocks.md) for numerical and live-acceptance limits.
+
+`native_trap_transform.c` connects the original initializer/callback, A7360
+post-update invalidation, A14B0 Euler cache/matrix helpers and151E80 point
+transform in80 rate/slow/phase/Original-native cases. It checks changed-angle
+invalidation, cached reuse, fresh off-axis points, independent sine/cosine
+coordinates, point fast/original bit parity, pause, clock restoration and ABI. Registration/collision/sector
+services are spies. Broken dirty-store, angle input, matrix copy or point
+transform independently fails. This is fixture-driven CPU propagation; normal
+frame scheduling, actual mesh/GPU rendering and gameplay activation remain open.
+
+`native_player_statistics.c` runs original D1FD0, clock getter, eligibility and
+float accumulator through the production D2CB7 callee scope.160 rate/slow/phase/
+hour schedules cover60..240, movement-distance inputs, pause, uneven intervals,
+eligibility and exact whole/catch-up fallback. Ten-minute native240 time totals
+must be bit-equal to Original60; per-frame float addition fails this precision
+check. Independent missing-scope and missing-pause-guard controls fail. The public
+clock fixture covers dispatcher/restoration on both CI hosts. Private US XBE
+cases skip without the asset; they do not establish physical Mac gameplay.
+Copied numeric-policy fixtures must resolve all relative helper includes,
+including `pc_native_statistics_guest.h`, before mutation compilation.
 
 ## Choose the cheapest relevant check
 
