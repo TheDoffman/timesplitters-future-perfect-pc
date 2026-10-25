@@ -79,6 +79,34 @@ static unsigned consume_edge(PcNativeStep step,unsigned edge)
     call(step.game_ticks,step.game_delta,edge);
     return reloads-before;
 }
+#include "pc_input.c"
+static void buffered_host_taps(void)
+{
+    const unsigned rates[]={60,120,144,180,240};
+    unsigned cases=0;
+    for(unsigned rate=0;rate<5;rate++)for(unsigned width=1;width<=20;width+=4)for(unsigned phase=0;phase<17;phase++) {
+        unsigned fps=rates[rate],frame=1,base=reloads;
+        PcInput input={0};unsigned char roles[256]={0};roles['R']=1;
+        pc_input_focus(&input,1);pc_input_capture(&input,1);
+        pc_reload_context(&input.reload,PLAYER,1,0,0);
+        PcNativeTiming clock={0};pc_native_timing_step(&clock,0,1000,fps,0);
+        reset_poll();MEM32(STATE+0x44)=1;g_tsfp_native_timing_active=fps!=60;
+        for(unsigned t=0;t<300;t++) {
+            if(t==100+phase)pc_input_key_at(&input,'R',1,t);
+            if(t==100+phase+width)pc_input_key_at(&input,'R',0,t);
+            if(t*fps<frame*1000)continue;
+            PcNativeStep step=pc_native_timing_step(&clock,t,1000,fps,0);
+            pc_reload_context(&input.reload,PLAYER,1,MEM32(STATE+0x44)==7,t);
+            int reload=input.keys['R']?255:0,fire=0,secondary=0;
+            pc_reload_sample(&input.reload,roles,1,t,&reload,&fire,&secondary);
+            unsigned edge=poll_edge(step,reload?1:0);
+            call(step.game_ticks,step.game_delta,edge);
+            frame++;
+        }
+        assert(reloads==base+1);cases++;
+    }
+    printf("PASS: %u buffered taps through original decoder and reload consumer\n",cases);
+}
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
@@ -153,6 +181,7 @@ temporal:
         }
         assert(seen>0);
     }
+    buffered_host_taps();
     free(memory);puts("PASS: original reload edges, remapping, native rates, pause and eligibility");
     return 0;
 }

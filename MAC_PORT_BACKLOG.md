@@ -3862,6 +3862,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   adapter; this is not native Mac execution evidence or full-game acceptance.
   See the PR #328 integration entry in STATUS.
 
+- **Keyboard reload follow-up #337 (this revision, 2026-10-24):** The shared
+  `pc_reload_input.h` model buffers brief presses and gives Reload priority over
+  already-held keyboard Fire; fresh Fire still interrupts. `pc_reload_guest.h`
+  reads the same US local-player/mode/weapon fields on both hosts. Windows and
+  SDL adapters publish key edges and clear state on focus/capture/menu changes;
+  the shared binding patch preserves controller contributions. Public schedules
+  run in both CI jobs. Windows build and original-US integration pass; native
+  Mac build, SDL event delivery and live reload/fresh-click acceptance are pending.
+  See STATUS for bounded gameplay evidence; source is not yet published.
+
 - **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
   `zzzz-global-compare-load.patch` let advancing native frames consume reload
   edges even when raw/game whole-tick phases differ after pause. Original60,

@@ -1,3 +1,83 @@
+## 2026-10-24 — Live reload reproduction attempts (#337)
+
+## Buffered keyboard reload and held-Fire priority (#337, 2026-10-24)
+
+- Implemented on `337-reload-live-reproduction`, based on `bcbdf27c`. Shared
+  `pc_reload_input.h` records keyboard/mouse edges, including down/up within one
+  event pump. The binding sampler retains brief Reload requests across 60 Hz
+  polling gaps and suppresses only keyboard Fire already held at that request.
+  State7 acknowledgement/completion, fresh Fire release/repress, bounded rejection,
+  focus/menu/capture changes and player eligibility release/reset suppression.
+  Physical controller contributions are merged unchanged; configured Reload/Fire
+  bindings supply the action roles. Other split-screen players cannot erase the
+  keyboard player's pending request. No guest ammo/animation logic was replaced.
+- Supported Windows Build and all builtin checks pass, including the real
+  binding/host event regression. Final executable SHA-256:
+  `101a5c595289835efed9758e97a51378ada79718c15601a1192f7c3e111ac47b`.
+  Earlier 120/240 acceptance binary differs only by the later nonlocal-player
+  context guard; all three runs retain their own hashes in validation JSON.
+- Live first-mission Sci-Fi Handgun/default R replay: all55 original cases now
+  pass (21 at120, 17 at240, 17 at Original60), compared with48/55 before.
+  Each of the three formerly missed short taps and four held-Fire interruptions
+  now completes reloading. Separate Original60 checks show a fresh Fire click
+  cancels state7 (ammo15->14), while continuous held Fire allows ammo15->16,
+  exits state7, then resumes firing (16->15). All later control reloads fill16.
+  These are bounded host-input replays, not physical-keyboard or every-weapon
+  acceptance; exact reporter reproduction remains unconfirmed. No issue closed.
+- Shared checks: 110 timing/float-join tests, 35 full-stack patch/update/tracking
+  tests, 14 mounted/camera/keyboard-menu/weapon-slot checks, and 40 final
+  reload/controller/context/backlog checks pass. Four reload tests cover
+  1,360 rate/phase schedules, two rejected mutations, lifecycle/priority/remapping,
+  and the actual SDL edge bridge. The local verified-US integration also passes
+  425 buffered tap schedules through original decoder/wrapper/reload routines.
+- Evidence: `logs/issue337-buffer-*.log`; isolated quick-test validations and
+  losslessly compressed gameplay traces for `native-120-reload-buffer-phases`,
+  `native-240-reload-buffer-matrix`, `60-reload-buffer-acceptance`. Canonical
+  Test Lab and personal saves/settings untouched; owned test runs stopped and
+  temporary partition images recycled. Native Mac build/live gameplay pending;
+  shared policy and SDL adapter implemented, public tests selected in both CI jobs.
+
+
+Windows x64, current main `bcbdf27c`, supported US XBE. Full supported Build and
+built-in tests passed. Executable SHA-256:
+`bd1d7b7712856e024fc9b14244f92e81f82692b2dbc7149ad5fc6db134b2a513`.
+Three bounded isolated first-mission runs used the default R binding, the Sci-Fi
+Handgun and the normal host input replay path: 230 seconds each at Original60
+and native240, then 262 seconds at native120. These are functional input tests,
+not performance measurements or physical keyboard validation.
+
+Two distinct symptoms were observed:
+
+- At both Original60 and native240, pressing R while Fire remained held entered
+  reload state 7, then the next shot returned the weapon to state 1 before the
+  magazine refilled. Both a 100 ms tap and a 1,000 ms hold behaved this way.
+  Holding R after that interruption did not generate a second press. Releasing
+  Fire and pressing R again completed the reload. The recorded button edge
+  proves this was an interrupted reload, not a missing R event.
+- At native120, 3 of 21 scheduled short-tap/phase combinations failed while the
+  weapon was idle: one 5 ms and two 10 ms taps. No reload state or published
+  reload button was observed; the magazine stayed at 14 and a later 500 ms
+  control press restored 16. The other 18 combinations passed, including all
+  tested 15–100 ms taps. Scheduled durations are replay timings, not measured
+  physical-key durations. The 15 post-Fire-release cases in each of the other
+  two runs passed, including their favorably timed short taps.
+
+A disposable original-US decoder/wrapper/consumer probe confirms a separate
+short-input gap: a press seen on a zero-whole-raw-tick native update is suppressed
+by `pc_native_input_guest`; releasing before the next whole raw tick loses it.
+Holding through that tick publishes the edge and reloads. This remains possible
+with the #342 consumer-gate correction enabled. The probe does not establish
+which stage lost every individual live replay tap, or explain ordinary-duration
+failures. No gameplay code was changed in this investigation.
+
+All 55 later control reloads succeeded. Results and compressed full memory
+observations remain local under `logs/*reload*-result.json` and the isolated
+`private/test-saves/quick-test` evidence. Owned games stopped at their time limits;
+disposable partitions were recycled, and the canonical fixture/personal data
+were preserved. Other running checkouts were left alone. The original reporter's
+weapon/timing is still unknown; #337 is not established as fully resolved.
+Native Mac and other weapons remain untested for these reproductions.
+
 ## 2026-10-24 — Reload timing follow-up tests (#337)
 
 Follow-up to merged PR #342, based on `fcaedfe3`. No runtime code changes.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f2044326f247b3b0043b33feffca5e8ffa252dabd33010d4828cb6f56cbb82bf",
+  "loaderSha256": "a0fb1130e763211bdf9d6679ce70b5521ed7e323c613c0cedfeed9ab07c8ae36",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1381,6 +1381,13 @@
       "sha256": "3d0d8f0856b07d0e9906fe576d1c2881c8a9524aa79d9849f9682f5c035c2c24",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zz-keyboard-reload-buffer.patch",
+      "sha256": "0d2e6cee12f32b88c70dbf0810c12c0ecaf31c5391ae41403bae682deec2dc82",
+      "targets": [
+        "src/input/input_bindings.c\r"
       ]
     },
     {

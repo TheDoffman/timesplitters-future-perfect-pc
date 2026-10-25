@@ -14,15 +14,13 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
-Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
-on both CI hosts. `native_reload_input.c` additionally executes the local verified
-US input decoder, timing wrapper and reload consumer across pause-offset phases,
-60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
-`reload_phase_sweep.h` shares 864 schedules across both layers: pause/press phases,
-holds, jitter, stalls, zero time and native/Original60 transitions. Each requires
-two presses without repeats. Removing the original compare hook must fail at a
-timing mismatch. CI runs asset-free schedules on both hosts; private-XBE, physical
-keys, sub-poll taps and full ammo/animation behavior remain separate checks.
+Reload #337: `test_native_timing.py` covers the scoped CMP hook and mutations;
+`reload_phase_sweep.h` exercises 864 schedules/1,728 presses against both the
+asset-free policy and verified-US decoder/consumer. The private-XBE fixture
+also tests 425 buffered taps. `test_reload_keys.py` covers 1,360 host tap schedules
+at 60–240 FPS plus held/fresh Fire, expiry and lifecycle; both CI hosts run it.
+Windows `pc_controls.c` tests the actual event/binding bridge. Missing private
+XBE skips original routines; physical keys and Mac gameplay need separate checks.
 
 `test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
 callback mutations. Fast results and finite fallback results are bit-exact;

@@ -34,6 +34,7 @@ static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
 { (void)bytes;return pc_guest_query_region(address); }
 /* PRODUCTION_MEMORY_HELPERS */
 #include "pc_camera.h"
+#include "pc_reload_guest.h"
 #include "pc_terminal.h"
 #include "pc_mounted.h"
 static PcInput input;
@@ -73,6 +74,12 @@ int main(void)
     U(0x10114)=2;F(0x30384)=55;
     MOVE();APPLY();
     CHECK(queries==1 && fabs(F(0x10100)+1)<.001 && fabs(F(0x10104)+.5)<.001);
+    CHECK(input.reload.eligible && input.reload.player==player_address);
+    /* Updating a second local player must preserve port 1's pending request. */
+    pc_input_key_at(&input,'R',1,1001);
+    U(0x10004)=1;APPLY();U(0x10004)=0;
+    CHECK(input.reload.eligible && (input.reload.events['R']&1));
+    queries=1;
     /* A different FOV mapping requires another query, and may be read-only. */
     split=1;queries=0;MOVE();APPLY();
     CHECK(queries==2 && fabs(F(0x10100)+2)<.001);

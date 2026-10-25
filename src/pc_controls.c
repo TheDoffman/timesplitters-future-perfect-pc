@@ -7,6 +7,7 @@
 #include "pc_input.h"
 #include "pc_text_input.h"
 #include "pc_camera.h"
+#include "pc_reload_guest.h"
 #include "pc_mounted.h"
 #include "pc_terminal.h"
 #include "pc_native_rate.h"
@@ -105,9 +106,9 @@ static void replay_tick(void)
             if(fields<2 || key>=256) {key=0;down=0;}
             fclose(state);
         }
-        if(test_state_key!=key || !down) pc_input_key(&input,test_state_key,0);
+        if(test_state_key!=key || !down) pc_input_key_at(&input,test_state_key,0,GetTickCount64());
         test_state_key=key;
-        pc_input_key(&input,key,down!=0);
+        pc_input_key_at(&input,key,down!=0,GetTickCount64());
         /* Optional sequence + raw counts allow a bounded test to aim after
            loading. Apply a motion update once, regardless of polling rate. */
         if(fields==5 && motion!=test_state_motion) {
@@ -117,7 +118,7 @@ static void replay_tick(void)
     if (!replay_started) replay_started = now;
     while (replay_next < replay_count && now - replay_started >= replay[replay_next].at) {
         struct Replay *r = &replay[replay_next++];
-        if (!strcmp(r->type, "key")) pc_input_key(&input, (unsigned)r->a, r->b);
+        if (!strcmp(r->type, "key")) pc_input_key_at(&input, (unsigned)r->a, r->b,GetTickCount64());
         else if (!strcmp(r->type, "cursor")) { test_cursor_x=r->a; test_cursor_y=r->b; }
         else if (!strcmp(r->type, "mouse")) pc_input_motion(&input, r->a, r->b, now);
         else if (!strcmp(r->type, "wheel")) wheel_input(r->a);
@@ -263,7 +264,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     if((message==WM_KEYDOWN || message==WM_SYSKEYDOWN ||
         message==WM_KEYUP || message==WM_SYSKEYUP) && pc_settings_capture_blocked()) {
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input,(unsigned)wp,message==WM_KEYDOWN || message==WM_SYSKEYDOWN);
+        pc_input_key_at(&input,(unsigned)wp,message==WM_KEYDOWN || message==WM_SYSKEYDOWN,GetTickCount64());
         if(input.focused && (message==WM_KEYDOWN || message==WM_SYSKEYDOWN))pc_settings_capture_key((int)wp);
         ReleaseSRWLockExclusive(&lock);
         return 1;
@@ -371,13 +372,13 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             capture(window, 0);
         }
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input, (unsigned)wp, 1);
+        pc_input_key_at(&input, (unsigned)wp, 1,GetTickCount64());
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
         if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11 || wp == VK_F10) return 1;
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input, (unsigned)wp, 0);
+        pc_input_key_at(&input, (unsigned)wp, 0,GetTickCount64());
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_LBUTTONDOWN: case WM_RBUTTONDOWN: case WM_MBUTTONDOWN:
@@ -393,7 +394,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             return 1;
         }
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input, key, down && (captured || menu_mode));
+        pc_input_key_at(&input, key, down && (captured || menu_mode),GetTickCount64());
         if(down && input.focused)pc_settings_capture_key((int)key);
         ReleaseSRWLockExclusive(&lock);
         break;
@@ -401,8 +402,8 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     case WM_XBUTTONDOWN: case WM_XBUTTONUP:
         if (message == WM_XBUTTONDOWN) pc_prompts_keyboard();
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
-                     message == WM_XBUTTONDOWN && (input.captured || menu_mode));
+        pc_input_key_at(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
+                     message == WM_XBUTTONDOWN && (input.captured || menu_mode),GetTickCount64());
         if(message==WM_XBUTTONDOWN && input.focused)pc_settings_capture_key(HIWORD(wp)==XBUTTON1?VK_XBUTTON1:VK_XBUTTON2);
         ReleaseSRWLockExclusive(&lock);
         *result = TRUE;
@@ -448,6 +449,17 @@ int pc_controls_weapon_slots_active(void)
         input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
     ReleaseSRWLockShared(&lock);
     return active;
+}
+
+void pc_controls_reload_sample(const unsigned char roles[256],int active,
+                               int *reload,int *fire,int *secondary)
+{
+    AcquireSRWLockExclusive(&lock);
+    replay_tick();
+    active=active && !InterlockedCompareExchange(&editing,0,0) && !menu_mode && !text_input.owner &&
+        input.focused && input.captured && (replaying || GetForegroundWindow()==window_handle);
+    pc_reload_sample(&input.reload,roles,active,GetTickCount64(),reload,fire,secondary);
+    ReleaseSRWLockExclusive(&lock);
 }
 
 int pc_controls_accept_pad(void)
@@ -502,6 +514,7 @@ void pc_controls_menu_mode(int active)
     if(changed) {
         menu_button_block=(input.keys[VK_LBUTTON]?1:0)|(input.keys[VK_RBUTTON]?2:0);
         menu_mode=!!active;
+        pc_reload_reset(&input.reload);
         menu_wheel=0; wheel_remainder=0;
         input.dx=input.dy=0;
     }
@@ -561,6 +574,7 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
     }
     /* No guest callbacks run before this local mapping snapshot expires. */
     PcGuestRegion region=pc_camera_mouse_region(player,fov_object,memory_offset);
+    pc_reload_guest_context(&input.reload,player,memory_offset,GetTickCount64(),&region);
     terminal = pc_terminal_mouse_in_region(&input, GetTickCount64(), sensitivity, player, memory_offset, pc_native_rate()!=0,&region);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
     if (terminal >= 0 || pc_mounted_mouse_in_region(&input, GetTickCount64(), sensitivity, invert_y,
