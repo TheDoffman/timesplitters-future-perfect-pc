@@ -1,3 +1,63 @@
+## Venice player wall-contact investigation (2026-10-25)
+
+PR #364 is merged into main as6aeaa8b1 after all applicable hosted checks
+passed on05807cdc. Its Windows executable5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988
+is unchanged in this investigation. No collision repair has been implemented.
+
+Two capture-free Venice Deathmatch routes compare Original60 and native240,
+using identical normal replay inputs, one human/no bots, FOV73, Enhanced selected
+and3440x1440 device rendering into a1920x1060 foreground borderless client.
+The player remains at health1.75 throughout both runs. Each supplies683 readable
+active observations, nine sampled movement holds, two-round firing consumption,
+and matching mouse-driven yaw changes:300 counts turn30degrees, then alternating
+150-count turns change15degrees. Pause holds game ticks, position and aim across
+40 samples/~1.97s. Resume game/wall ratios are0.998700 and1.000213; subsequent
+~29.6s windows give0.999539 and1.000026. The first unobstructed sampled movement
+is8.05354 versus7.99894 world units/s (0.68% difference in this short asynchronous
+window); this does not establish exact velocity or physical input latency.
+
+Complete successful guest-Present intervals during those later windows:
+
+| Mode | Intervals | Average/s | p99 | Worst |
+| --- | ---: | ---: | ---: | ---: |
+| Original60 | 1773 | 59.9994 | 17.315ms | 17.932ms |
+| Native240 | 7095 | 239.9978 | 4.723ms | 5.223ms |
+
+Zero interpolated Presents occur. API acceptance does not prove GPU completion,
+scanout or a fresh pose in every subsystem. This no-bot route does not measure
+crowded-map capacity. The240 recorder delays45s so its20,000-row bound covers
+the complete selected window.
+
+**Movement acceptance fails after repeated contact.** The first five movement
+endpoints differ by at most0.00464 world units. On movement6 (zero-based5),
+both begin near[-59.3615,2.02421,-32.28] facing258degrees and hold Forward for
+3.002s. Original finishes[-75.62154,2.02421,-34.23620]; native240 stops near
+[-62.74108,2.02421,-32.85306], an endpoint difference12.95452. Native samples
+remain at that obstruction from about0.605s through2.724s while game ticks
+advance, replay holds Forward and health stays unchanged. Later paths diverge.
+This is a candidate contact/geometry regression, not a proven solver cause:
+the runs differ by15 level ticks and nearby moving-object state is unobserved.
+Do not call the complete route equivalent from its pacing, aim or early walking.
+
+Evidence: private/test-saves/venice-player-clean-{original60,native240},
+logs/venice-player-comparison.json, and ignored comparison/analyzer adapters.
+Each clean run has one unreadable optional intermediate hold sample; its two
+neighbors are within0.12s with the same live player/health. Required checkpoints
+and pause samples remain readable. Eight controls per run reject bots, death,
+held clocks, advancing pause, changed paused aim, lost mouse input, missing
+checkpoints and missing holds. These checks validate those observations, not
+wall-contact equivalence.
+
+Three earlier bounded diagnostics are retained separately. The initial default
+six-bot run loses health/dies and is rejected for movement parity. Two no-bot
+capture runs show the pause menu/resumed weapon/HUD, but synchronous renderer
+dumps reduce late game/wall ratios to0.8665/0.7176; they are excluded from speed
+and pacing acceptance. All five owned games exit0, signed profiles and canonical
+fixtures remain unchanged, and disposable disks/BMP rings are recycled. Remaining
+work is to reproduce/isolate the contact divergence and exercise actual collision
+services: tests/native_locomotion.c currently replaces C5B50 with a flat-floor
+stub and rejects its258CE0 wall path. Physical Mac gameplay remains unverified.
+
 ## Temple crowd pacing and timing calls (2026-10-25, PR #364)
 
 Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
