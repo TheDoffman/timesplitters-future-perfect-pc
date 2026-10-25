@@ -3498,6 +3498,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   (names, character portraits, kills/deaths, ranks and scores), preserving
   the reliable host result packet. Completed-match menus omit health/shield
   gauges; gameplay, ordinary pause and Story objectives keep their behavior.
+  PR #344's round-limit follow-up admits configured AI at the original
+  score-limit controller filter (return67868, EDI slot), preserving original
+  team/threshold/authority logic. Windows and native-fallback adapter fixtures
+  run in existing CI; supported-US routine tests need private game data.
+  Native Mac still needs the network adapter and live match/results validation.
   Current live acceptance and remaining gaps are in `STATUS.md`;
   issue #25 is not complete from a build or roster check alone.
 - **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
@@ -3852,6 +3857,53 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Status-effect growth (PR #344 follow-up):** Shared character adapter and
+  numeric call scope preserve Original60 model scale/rotation through240.
+  No new host adapter. Original-US helper tests cover slow/pause/catch-up,
+  jitter/live switches and cleanup; missing private XBE skips these tests.
+  Physical Mac and rendered effect activation remain awaiting validation.
+
+- **Character-effect gate (2026-10-24, PR #344):** Shared numeric policy admits
+  fractional updates in US1260C0. Its attached-effect timer otherwise loses
+  half its elapsed time at120. Original-code/matrix tests cover supported rates,
+  phases, slow motion and pause; remaining nested effects use spies. No new Mac
+  adapter; private-XBE test skips do not certify Mac gameplay. Physical Mac
+  effects/rendering remain awaiting validation. Windows evidence is in STATUS.
+
+- **Completed Online rematch (2026-10-24, PR #344):** The existing Windows
+  observer now optionally compares second-round final records after verifying
+  reset. A240/Original60 loopback pair completes two rounds with matching eight
+  participant records and six moving bots. No runtime/adapter change; physical
+  Mac and cross-machine validation remain open. Exact evidence is in STATUS.
+
+- **Arcade HUD grouping (2026-10-24, PR #344):** Shared `pc_display_ui.inc`
+  applies the same left anchor to SCORE and RANK panels, preserving their
+  original spacing/animation. The overlap also reproduces at Original60.
+  No Mac adapter is needed; shared UI/batch/4:3/split-screen tests cover both
+  callers in the existing host CI suite. Physical Mac rendering remains
+  unverified; Windows scene evidence is recorded in STATUS.
+
+- **Mixed-preset Online validation (2026-10-24, PR #344):** The existing
+  Windows diagnostic runner selects independent Original60/120/180/240 peers,
+  records movement checkpoints and uses separate startup taps plus a bounded
+  alive wait. Windows60/240 and180/120 pairs reach six-bot Vietnam combat;
+  accepted movement endpoints differ by at most0.006650 world units. Signed
+  profiles/fixture are preserved. This changes no runtime feature or Mac
+  adapter. Physical Mac multiplayer, cross-machine behavior and complete
+  match/damage equivalence remain pending; see STATUS for rejected attempts
+  and asynchronous-observation limits.
+
+- **Zero-based index copies (2026-10-24, PR #344 after merged #328):**
+  Shared HLE skips allocating/rebasing an index list whose minimum is already
+  zero. Other ranges, fresh vertex gathering and host draw ordering remain
+  unchanged. No Mac adapter is needed. Four Windows driver/mutation checks
+  pass; both native CI hosts register them. Windows build, all patch upgrades
+  and corrected context checks pass. Reviewed Disco combat shows intact
+  geometry; clean240/Original60 runs measure237.89/60.00070FPS with fresh
+  frames and near-unity game speed. All14CI checks pass on82b27c31, including
+  Mac native runtime and patch upgrades/transitions. Physical Mac gameplay
+  remains pending. See STATUS for scope/limits.
 
 - **Temple crowd acceptance (2026-10-24, PR #328):** Source925f9f72's Windows
   binary completes isolated ten-bot Temple runs at Original60/native180/240.

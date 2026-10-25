@@ -357,6 +357,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_fractional.c', [(0x1950b0,0x195110),(0x195110,0x195277),(0x1956a0,0x19576d)]),
+    ('native_character_scale.c', [(0x125fe0,0x12609c),(0x120ab0,0x120c0f),(0x153440,0x153490),
+                                  (0x153600,0x153650),(0x153650,0x1536a0),(0x153270,0x1533e0)]),
+    ('native_character_effects.c', [(0x1260c0,0x126236),(0x11fec0,0x120102),
+                                    (0x151650,0x15178f),(0x151e80,0x151f1c)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -486,7 +490,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -500,6 +504,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
                           else [] if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
+            if harness_name=='native_character_scale.c':
+                addresses.update(range(0x12609c,0x1260b4,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
                 # Captured projectile kinds and damage profiles. These are
                 # original table entries, not made-up falloff coefficients.
@@ -691,6 +697,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* VISUAL_TIME_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
+                           .replace('/* CHARACTER_POLICY */', f'#include "{(ROOT / "src/pc_native_character_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',
                                     (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
