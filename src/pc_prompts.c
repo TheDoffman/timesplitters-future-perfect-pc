@@ -15,6 +15,8 @@ void pc_prompts_layout_begin(void) { pc_text_read_begin(&text_read_scope); }
 void pc_prompts_layout_end(void) { pc_text_read_end(&text_read_scope); }
 size_t pc_prompts_read_region(uintptr_t address)
 { return pc_text_read_region(&text_read_scope,address); }
+size_t pc_prompts_read_span(uintptr_t address,size_t minimum)
+{ return pc_text_read_span(&text_read_scope,address,minimum); }
 
 static SRWLOCK prompt_lock = SRWLOCK_INIT;
 static RecompPadState previous_pad;

@@ -5,25 +5,36 @@
 #include <stdlib.h>
 #include <string.h>
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
 typedef struct PcGuestRegion {uintptr_t base;size_t size;int writable;} PcGuestRegion;
 static unsigned char guest[0x800000];
 static unsigned queries;
-static int readable=1,writable=1,split;
+static int readable=1,writable=1,split,forward,blocked_low;
+static uint32_t player_address=0x10000,fov_address=0x30000;
 static PcGuestRegion pc_guest_query_region(uintptr_t address)
 {
     PcGuestRegion r={0};++queries;
     uintptr_t base=(uintptr_t)guest;
+    if(blocked_low && address>=base && address-base<0x20000)return r;
     if(readable && address>=base && address-base<sizeof guest) {
         r.base=base;r.size=sizeof guest;r.writable=writable;
         if(split) {
             r.size=0x20000;
-            if(address-base>=r.size) {r.base+=r.size;r.size=sizeof guest-0x20000;r.writable=0;}
+            r.writable=split==2?0:writable;
+            if(address-base>=r.size) {r.base+=r.size;r.size=sizeof guest-0x20000;r.writable=split==2?writable:0;}
+        }
+        if(forward) {
+            uintptr_t page=base+((address-base)&~(uintptr_t)0xfff);
+            r.size-=page-r.base;r.base=page;
         }
     }
     return r;
 }
+static PcGuestRegion pc_guest_query_span(uintptr_t address,size_t bytes)
+{ (void)bytes;return pc_guest_query_region(address); }
 /* PRODUCTION_MEMORY_HELPERS */
 #include "pc_camera.h"
+#include "pc_reload_guest.h"
 #include "pc_terminal.h"
 #include "pc_mounted.h"
 static PcInput input;
@@ -56,13 +67,19 @@ static void replay_tick(void){}
 #define U(a) (*(uint32_t*)(guest+(a)))
 #define F(a) (*(float*)(guest+(a)))
 #define MOVE() pc_input_motion(&input,10,5,1000)
-#define APPLY() pc_controls_apply_mouse(0x10000,0x30000,(ptrdiff_t)guest)
+#define APPLY() pc_controls_apply_mouse(player_address,fov_address,(ptrdiff_t)guest)
 int main(void)
 {
     pc_input_focus(&input,1);pc_input_capture(&input,1);
     U(0x10114)=2;F(0x30384)=55;
     MOVE();APPLY();
     CHECK(queries==1 && fabs(F(0x10100)+1)<.001 && fabs(F(0x10104)+.5)<.001);
+    CHECK(input.reload.eligible && input.reload.player==player_address);
+    /* Updating a second local player must preserve port 1's pending request. */
+    pc_input_key_at(&input,'R',1,1001);
+    U(0x10004)=1;APPLY();U(0x10004)=0;
+    CHECK(input.reload.eligible && (input.reload.events['R']&1));
+    queries=1;
     /* A different FOV mapping requires another query, and may be read-only. */
     split=1;queries=0;MOVE();APPLY();
     CHECK(queries==2 && fabs(F(0x10100)+2)<.001);
@@ -83,11 +100,24 @@ int main(void)
     CHECK(F(0x10100)==-2 && !input.dx && input.terminal_active);
     F(0x4e794c)=0;MOVE();APPLY();
     CHECK(F(0x21038)==101 && !input.dx);
+    /* Windows returns the queried page and later pages, even in one allocation.
+     * A camera below the player must not require a second query of that map. */
+    forward=1;player_address=0x30000;fov_address=0x10000;
+    U(0x30114)=2;F(0x10384)=55;F(0x30100)=F(0x30104)=0;
+    queries=0;MOVE();APPLY();
+    CHECK(queries==1 && fabs(F(0x30100)+1)<.001 && fabs(F(0x30104)+.5)<.001);
+    /* The lower camera can be a separate read-only mapping. Never extend its
+     * permissions over the player; falling back to separate queries is valid. */
+    split=2;queries=0;MOVE();APPLY();
+    CHECK(queries==3 && fabs(F(0x30100)+2)<.001);
+    blocked_low=1;queries=0;MOVE();APPLY();
+    CHECK(queries==3 && fabs(F(0x30100)+2)<.001);
+    blocked_low=0;split=0;
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;
-    CHECK(pc_guest_memory_in_region(&region,end-4,4,1));
-    CHECK(!pc_guest_memory_in_region(&region,end-4,8,1));
-    CHECK(!pc_guest_memory_in_region(&region,UINTPTR_MAX-2,8,0));
-    puts("PASS: one mouse-update mapping, split regions, permission expiry, terminal routing and bounds");
+    CHECK(pc_guest_memory_in_span(&region,end-4,4,1));
+    CHECK(!pc_guest_memory_in_span(&region,end-4,8,1));
+    CHECK(!pc_guest_memory_in_span(&region,UINTPTR_MAX-2,8,0));
+    puts("PASS: ordered mouse mappings, split regions, permission expiry, terminal routing and bounds");
     return 0;
 }

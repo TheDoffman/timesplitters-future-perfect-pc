@@ -1,9 +1,11 @@
 #ifndef TSFP_PC_INPUT_H
 #define TSFP_PC_INPUT_H
 #include <stdint.h>
+#include "pc_reload_input.h"
 
 typedef struct PcInput {
     unsigned char keys[256];
+    PcReloadInput reload;
     int focused, captured;
     int terminal_active, terminal_blocked;
     double dx, dy;
@@ -15,6 +17,10 @@ typedef struct PcInput {
 void pc_input_focus(PcInput *s, int focused);
 void pc_input_capture(PcInput *s, int captured);
 void pc_input_key(PcInput *s, unsigned key, int down);
+void pc_input_key_at(PcInput *s, unsigned key, int down, uint64_t now);
+/* Host adapter: apply shared reload policy to keyboard magnitudes only. */
+void pc_controls_reload_sample(const unsigned char roles[256], int active,
+                               int *reload, int *fire, int *secondary);
 void pc_input_motion(PcInput *s, double dx, double dy, uint64_t now);
 /* Consume/rebase the motion batch and return its previous age in milliseconds. */
 uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy);

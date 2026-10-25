@@ -1,6 +1,8 @@
 /* Camera fixtures model a single writable 8 MiB guest mapping. Separate
  * real-VM tests cover protection and mapping boundaries on each host. */
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
+#define pc_guest_query_span(address,bytes) pc_guest_query_region(address)
 typedef struct PcGuestRegion { uintptr_t base; size_t size; int writable; } PcGuestRegion;
 static unsigned display_region_queries;
 static int display_split_regions;

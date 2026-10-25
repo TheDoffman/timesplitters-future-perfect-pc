@@ -188,6 +188,28 @@ def test_demo_wait_and_exit_timing(playback_results):
     assert len(playback_results) == 40
 
 
+def test_recording_pause_phases_cover_beta_rates(playback_output):
+    rows = [list(map(int, line.split()[1:])) for line in playback_output.splitlines()
+            if line.startswith("RECORD_PHASE ")]
+    assert len(rows) == 8
+    assert {(rate, channels) for rate, channels, _ in rows} == {
+        (rate, channels) for rate in (120, 144, 180, 240) for channels in (1, 4)}
+    assert all(partial > 0 for _, _, partial in rows)
+
+
+def test_replay_live_rate_transitions_cover_beta_rates(playback_output):
+    rows = [line.split()[1:] for line in playback_output.splitlines()
+            if line.startswith("LIFECYCLE ")]
+    assert len(rows) == 32
+    assert {tuple(map(int, row[:3])) for row in rows} == {
+        (rate, playback, channels) for rate in (120, 144, 180, 240)
+        for playback in (120, 144, 180, 240) for channels in (1, 4)}
+    for rate, _, _, elapsed in rows:
+        # One second with a three-tick stall replacing one ordinary update,
+        # five Original60 ticks, then one second at the resumed native rate.
+        assert abs(float(elapsed) - (128 - 60 / int(rate))) < 0.0001
+
+
 @pytest.mark.parametrize("mutation", ["record-gate", "record-carry", "record-reset"])
 def test_demo_recording_regressions_are_detected(demo_source, tmp_path, mutation):
     from test_recomp_float_joins import compile_and_run

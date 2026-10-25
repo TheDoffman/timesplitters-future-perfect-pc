@@ -772,3 +772,14 @@ checksum-pinned published banner, backdrop and logo. Normal Windows builds then
 prefer that verified cache in build/launcher-art, so an older private banner does
 not replace the current artwork or leave its backdrop missing. Explicit artwork
 arguments still take precedence; original private files remain untouched.
+
+
+### Capture health and gameplay breadcrumbs
+
+Diagnostics now shows a capture-health snapshot: report storage, current-session
+helper confirmation and whether freeze monitoring is armed. Use Refresh diagnostics
+to recheck. Missing helpers, stale records and older games without a handshake
+are distinguished from confirmed capture. This requires a compatible new game
+build for the heartbeat and gameplay breadcrumbs; launcher-only updates cannot
+add runtime instrumentation. Native report exports include the bounded numeric
+breadcrumb history. See [capture details and limits](windows-crash-logger.md).

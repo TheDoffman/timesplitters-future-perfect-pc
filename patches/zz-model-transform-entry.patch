@@ -1,0 +1,42 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -71,6 +71,11 @@
+ #endif
+ #ifndef RECOMP_PUSH_IMM_U32_AT
+ #define RECOMP_PUSH_IMM_U32_AT(site, value) (value)
++#endif
++/* A title may complete an audited leaf after its entry callback. Returning
++ * zero must leave guest state untouched so the generated body can run. */
++#ifndef RECOMP_FAST_ENTRY
++#define RECOMP_FAST_ENTRY(site) 0
+ #endif
+ #ifndef RECOMP_DIRECT_CALLEE_AT
+ #define RECOMP_DIRECT_CALLEE_AT(site, function) (function)
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -1193,6 +1193,11 @@
+         if start in self.trace_functions or self.trace_all_entries:
+             lines.append(
+                 f'    RECOMP_TRACE_ENTER("{name}", 0x{start:08X});')
++
++        # Run title fast paths only after entry callbacks. Explicit diagnostic
++        # return tracing/overrides retain the complete generated body.
++        if start not in self.trace_functions and start not in self.force_returns:
++            lines.append(f"    if (RECOMP_FAST_ENTRY(0x{start:08X}u)) return;")
+ 
+         # _CxxThrowException. This runtime cannot unwind, so the call inside
+         # does nothing and control falls through the int3 the compiler put
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -113,6 +113,11 @@
+ if(TSFP_PC_CONTROLS_DIR OR TSFP_NATIVE_DIR)
+     target_compile_definitions(${PROJECT_NAME} PRIVATE
+         RECOMP_NUMERIC_POLICY_HEADER="pc_native_numeric.h")
++    if(TSFP_PC_CONTROLS_DIR)
++        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_model_transform_guest.c")
++    else()
++        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../pc_model_transform_guest.c")
++    endif()
+ endif()
+ 
+ # A build-generated resource embeds the icon before executable identity sealing.

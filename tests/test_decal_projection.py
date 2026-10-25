@@ -106,8 +106,47 @@ int main(void)
     compile_and_run(tmp_path, source, fails=mutation!='none')
 
 
-def test_display_memory_protection(tmp_path):
-    compile_and_run(tmp_path, (ROOT/'tests/display_memory.c').read_text())
+@pytest.mark.parametrize('adapter', ['shared', 'production', 'retained-production'])
+def test_display_memory_protection(tmp_path, adapter):
+    source=(ROOT/'tests/display_memory.c').read_text()
+    if adapter!='shared':
+        function=re.search(r'static int guest_writable\(.*?\n\}',
+                           (ROOT/'src/pc_display_menu.c').read_text(),re.S)
+        assert function
+        body=function.group()
+        if adapter=='retained-production':
+            assert 'PcGuestRegion region={0,0,0};' in body
+            body=body.replace('PcGuestRegion region={0,0,0};','static PcGuestRegion region={0,0,0};')
+        production='''
+static ptrdiff_t g_xbox_mem_offset;
+'''+body+'''
+static int production_writable(PcGuestRegion *ignored,uintptr_t offset,uint32_t address,size_t bytes)
+{ (void)ignored;g_xbox_mem_offset=offset;return guest_writable(address,bytes); }
+#define pc_display_writable production_writable
+int main(void)
+'''
+        source=source.replace('int main(void)',production)
+    compile_and_run(tmp_path,source,fails=adapter=='retained-production')
+
+
+@pytest.mark.parametrize('mapped', [False, True])
+def test_display_guest_span(tmp_path, mapped):
+    compile_and_run(tmp_path, '#define GUEST_SPAN_MAPPED '+str(int(mapped))+'\n'+(ROOT/'tests/guest_span.c').read_text())
+
+
+@pytest.mark.skipif(sys.platform!='win32', reason='Resident-page fast path uses Windows PSAPI')
+@pytest.mark.parametrize('mutation', ['disabled', 'write-permission', 'crossing-page', 'first-page-only'])
+def test_guest_span_mutations(tmp_path, mutation):
+    header=(ROOT/'src/pc_guest_span.h').read_text()
+    old,new={
+        'disabled': ('if(readable)', 'if(0 && readable)'),
+        'write-permission': ('(protection&writes)!=0', '1'),
+        'crossing-page': ('size_t pages=(address-base+bytes-1)/system.dwPageSize+1;', 'size_t pages=1;'),
+        'first-page-only': ('for(size_t i=0;i<pages;i++) {', 'for(size_t i=0;i<1;i++) {'),
+    }[mutation]
+    assert old in header
+    source=(ROOT/'tests/guest_span.c').read_text().replace('#include "pc_guest_span.h"', header.replace(old,new))
+    compile_and_run(tmp_path,source,fails=True)
 
 
 @pytest.mark.parametrize('mutation', ['none', 'missing-output-store'])

@@ -90,11 +90,11 @@ int main(void) {
     assert(MEM32(0x4e11bc+32*16)!=0);
     setvbuf(stdout,NULL,_IONBF,0);
     run(60,1,0,0);
-    const int rates[]={60,120,144};
-    for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++) {
+    const int rates[]={60,120,144,180,240};
+    for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++) {
         run(rates[i],slow?.25f:1,1,0);
         run(rates[i],slow?.25f:1,1,.3f);
     }
-    puts("PASS: original beam manager first update, lifetime, deferred start and pause at 60/120/144 FPS");
+    puts("PASS: original beam manager first update, lifetime, deferred start and pause at 60/120/144/180/240 FPS");
     free(memory);return 0;
 }

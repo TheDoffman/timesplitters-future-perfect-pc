@@ -13,7 +13,7 @@ static void pc_prompt_guest_inner(void (*original)(void), unsigned text_arg, uns
     uintptr_t stack=(uintptr_t)saved+g_xbox_mem_offset, text;
     char source[2048], translated[2048];
     size_t length=0;
-    if ((args+1)*4>pc_prompts_read_region(stack)) {
+    if ((args+1)*4>pc_prompts_read_span(stack,(args+1)*4)) {
         original(); return;
     }
     text_va=((uint32_t *)stack)[text_arg];

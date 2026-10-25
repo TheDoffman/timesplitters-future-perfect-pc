@@ -89,8 +89,8 @@ int main(void)
 {
     unsigned char *memory=calloc(1,0x800000); assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
-    const unsigned rates[]={60,120,144};
-    for(unsigned test=0;test<4;test++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned test=0;test<=sizeof rates/sizeof rates[0];test++) {
         unsigned fps=test?rates[test-1]:60;
         g_tsfp_native_timing_active=test!=0;
         memset(memory,0,0x800000); started=announcements=sounds=0;

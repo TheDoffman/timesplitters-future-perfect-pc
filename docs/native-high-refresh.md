@@ -188,12 +188,14 @@ order, not the full-game acceptance scope below.
 ### Goal and acceptance criteria
 
 The goal is a smooth, modern feel across the full game at a native 144 FPS
-target, with correct gameplay speed. The user's expanded scope includes texture
+target, expanded to selectable 60/120/180/240 presets, with correct gameplay
+speed. Native 60/144 remain diagnostic comparisons. The scope includes texture
 fluidity, animation smoothness, and keeping previously addressed bugs resolved.
 These requirements remain part of the active goal until verified:
 
 - Animation: compare player hands, weapon equip/fire/reload, character movement,
-  camera motion, effects and cinematics at original 60 FPS and native 60/120/144.
+  camera motion, effects and cinematics at original 60 FPS and native
+  60/120/144/180/240.
   They must progress smoothly, finish correctly and retain their original
   duration, event timing and interaction with pause/resume.
 - Texture fluidity: check animated and scrolling textures, water, moving surface
@@ -231,7 +233,7 @@ progression remain unverified. See the
 and the prior-fix checklist.
 
 Run `python -m pytest tests/test_native_timing.py` after applying the complete
-patch stack. It checks elapsed-time integration at all three target rates,
+patch stack. It checks elapsed-time integration across supported/diagnostic rates,
 integer timers, pause/resume, stalls, ABI stack balance, numeric conversions,
 the original fallback, and fractional animation-time restoration.
 
@@ -267,6 +269,32 @@ recorded demos, multiplayer synchronization, full campaign timing, and
 perceptual smoothness remain acceptance work. A passing first-mission test
 does not establish native 144 FPS correctness across the full game. The mode
 remains opt-in while that work is incomplete.
+
+## Acceptance audit (2026-10-24)
+
+This audit uses source `82b27c31`, the regression record, current test bodies and
+the Windows build identified in STATUS. Earlier observations retain their named
+build scope. Passing isolated routines does not establish their complete callers
+or the rendered result. The goal remains incomplete.
+
+| Requirement | Evidence inspected | Remaining acceptance |
+| --- | --- | --- |
+| Fresh updates, speed and pacing | Native clock and network cadence fixtures; current Disco and preceding Temple guest-frame/Present traces | Sustained performance across representative demanding scenes; reported dips remain |
+| Opening handoff and animation | Original animation timeline/event fixture, script dispatch controls, recorded opening comparison | Current 180/240 rendered opening comparison and natural cinematic timing |
+| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse, camera and vehicle fixtures | Live camera/vehicle/terminal transitions; physical-input feel |
+| Physics | Original rigid-body, vehicle, falling, force and contact fixtures | Representative real collision geometry and interactions |
+| Weapons and effects | Original firing, sound, projectile, beam, sniper and reload fixtures; live firing/reload cycle; Temple floor-rocket lethality/lifetime/cleanup and respawn at Original60/180/240 | Specific delayed-trail, sniper-hit and pre-bridge NPC reports remain without targeted live confirmation |
+| Scripts and pause | Phase-swept events/reload and pause/resume checks | Broader progression and interactions with moving actors/cameras |
+| Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
+| Texture fluidity | Fractional water implementation, GPU-image cycle and resource reuse; texture contracts | Other animated/scrolling surfaces, filtering/alpha/transitions across scenes |
+| Cinematics and audio | Original polling clocks and real-file movie decoder tests; prior movie tint correction | Visible/audible synchronization across representative scenes and host output |
+| Multiplayer | Cadence/correction/replica fixtures through240; mixed-preset movement, completed matches, matching results/menu captures and240/60 rematch reset plus second-round completion in STATUS | Exact damage equivalence, further modes and cross-machine behavior |
+| Prior fixes, saves and platforms | Regression checklist, isolated signed-profile preservation, shared code and host CI | Scene checks for prior fixes; physical Mac gameplay remains unverified |
+
+Mixed-preset loopback now supplies bounded movement/combat observations. Keep
+that coverage separate from CPU optimization measurements and Internet latency.
+Further scene/visual comparisons remain necessary. The user's request to defer
+the first mission changes investigation order, not its unresolved reports.
 
 ## NPC firing timing
 

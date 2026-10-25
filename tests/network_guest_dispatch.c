@@ -307,6 +307,19 @@ int main(void)
         g_esp=16;memory[4]=0x63f93;g_esi=2;
         pc_network_bots_guest_score_network(original);
         CHECK(g_eax==0x11223344u && g_esp==20);
+        for(unsigned slot=0;slot<17;slot++) {
+            g_esp=16;memory[4]=0x67868;g_edi=slot;g_esi=0xffffffffu;
+            pc_network_bots_guest_score_network(original);
+            CHECK(g_eax==(slot>=2 && slot<8?0u:0x11223344u) && g_esp==20);
+        }
+        for(unsigned guard=0;guard<4;guard++) {
+            g_esp=16;memory[4]=0x67868;g_edi=2;
+            enabled=guard!=0;memory[0x76b108/4]=guard!=1;
+            memory[0x7356d8/4]=guard==2?0:0x1000;live[2]=guard==3?0:6;
+            pc_network_bots_guest_score_network(original);
+            CHECK(g_eax==0x11223344u && g_esp==20);
+        }
+        enabled=1;memory[0x76b108/4]=1;memory[0x7356d8/4]=0x1000;live[2]=6;
         /* In particular, do not turn AI into local controller records. */
         g_esp=16;memory[4]=0x15c5a3;memory[5]=2;
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);

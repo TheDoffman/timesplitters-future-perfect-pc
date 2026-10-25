@@ -12,15 +12,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.parametrize('adapter', ['src/pc_controls.c', 'src/native/input_sdl.c'])
-@pytest.mark.parametrize('mutation', ['none', 'persistent', 'uncached'])
+@pytest.mark.parametrize('mutation', ['none', 'persistent', 'uncached', 'unordered'])
 def test_mouse_update_regions(tmp_path, adapter, mutation):
     text = (ROOT / adapter).read_text()
     body = re.search(r'void pc_controls_apply_mouse\([^\n]*\).*?\n\}', text, re.S).group()
+    seed = re.search(r'PcGuestRegion region=(pc_camera_mouse_region\([^;]+\));', body)
+    assert seed, 'Both adapters must seed a fresh, ordered mouse mapping'
     if mutation == 'persistent':
-        body = body.replace('PcGuestRegion region={0};', 'static PcGuestRegion region={0};')
+        body = body.replace(seed.group(), 'static PcGuestRegion region={0}; if(!region.size) region='+seed.group(1)+';')
+    elif mutation == 'unordered':
+        body = body.replace(seed.group(), 'PcGuestRegion region={0};')
     memory = (ROOT / 'src/pc_guest_memory.h').read_text()
     helpers = '\n'.join(re.search(r'static inline [^\n]*\b' + name + r'\(.*?\n\}', memory, re.S).group()
-                        for name in ('pc_guest_region_remaining', 'pc_guest_memory_in_region'))
+                        for name in ('pc_guest_region_remaining',))
+    span = (ROOT / 'src/pc_guest_span.h').read_text()
+    helpers += '\n' + re.search(r'static inline int pc_guest_memory_in_span\(.*?\n\}', span, re.S).group()
     if mutation == 'uncached':
         helpers = helpers.replace('if(bytes<=pc_guest_region_remaining', 'if(0 && bytes<=pc_guest_region_remaining')
     fixture = (ROOT / 'tests/mouse_region.c').read_text().replace('/* PRODUCTION_MEMORY_HELPERS */', helpers)
@@ -38,14 +44,16 @@ def test_mouse_update_regions(tmp_path, adapter, mutation):
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     if mutation != 'none':
         assert result.returncode != 0 and 'FAIL' in result.stderr, result.stdout + result.stderr
-        expected = ('queries==1', '(queries=4)') if mutation == 'uncached' else ('queries==2', '(queries=0)')
+        expected = {'uncached': ('queries==1', '(queries=6)'),
+                    'persistent': ('queries==2', '(queries=0)'),
+                    'unordered': ('queries==1', '(queries=2)')}[mutation]
         assert all(s in result.stderr for s in expected), result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'), reason='Host guest-memory guards require Windows or macOS')
-@pytest.mark.parametrize('fixture', ['mounted_mouse', 'native_mounted_mouse'])
+@pytest.mark.parametrize('fixture', ['mounted_mouse', 'native_mounted_mouse', 'camera_region_host'])
 def test_mounted_mouse(tmp_path, fixture):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / ('mounted.exe' if os.name == 'nt' else 'mounted')
@@ -61,7 +69,8 @@ def test_mounted_mouse(tmp_path, fixture):
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert 'PASS: mounted mouse routing' in result.stdout
+    expected = 'PASS: camera mapping order' if fixture == 'camera_region_host' else 'PASS: mounted mouse routing'
+    assert expected in result.stdout
     if fixture == 'native_mounted_mouse':
         for mutation in ('legacy-clock', 'legacy-batch'):
             legacy = subprocess.run([str(exe), mutation], capture_output=True, text=True, timeout=10)

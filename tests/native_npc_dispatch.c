@@ -59,11 +59,11 @@ static void dispatch(unsigned whole, float delta)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     assert(memory); g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     MEM32(0x7a2958)=1; MEM32(0x207c)=0x3000;
     MEM32(0x4e8cec)=60; MEMF(0x475c78)=1;
-    for(unsigned r=0;r<3;r++) for(int native=0;native<2;native++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(int native=0;native<2;native++) {
         unsigned fps=rates[r];
         memset(memory+0x3000,0,0x1000);
         MEM32(0x3018)=1;
@@ -91,6 +91,6 @@ int main(void)
     g_tsfp_native_timing_active=0;
     assert(RECOMP_LOAD_GLOBAL_U32(0x15eb0c,0x4e7944,3)==3);
     free(memory);
-    puts("PASS: original NPC timers and movement cadence preserve elapsed time at 60/120/144");
+    puts("PASS: original NPC timers and movement cadence preserve elapsed time at 60/120/144/180/240");
     return 0;
 }

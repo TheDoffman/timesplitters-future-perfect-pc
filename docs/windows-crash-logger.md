@@ -22,6 +22,7 @@ Packaged launches write `Logs/Crashes/crash-<UTC>-<PID>-<helper PID>/` containin
   Xbox registers. `valid=false` means guest memory was not initialized.
 - `crash.dmp`: native exception/context, thread stacks, modules and a custom
   Xbox-register stream (`LastReservedStream + 1`). Full guest RAM is excluded.
+- `breadcrumbs.txt`: up to 64 numeric lifecycle/gameplay transitions, capped at 8 KiB on export.
 - `game-log-tail.txt`: at most the last 64 KiB of `RECOMP_LOG_FILE`, when available.
 
 `TSFP_CRASH_DIR` overrides the destination. Without it, direct execution uses
@@ -36,10 +37,47 @@ still launch. Unwritable storage can prevent a report entirely.
 
 After a newly recorded crash, the Windows launcher restores its window and opens
 Repair / Verify > Diagnostics. **Open latest game report** opens the folder;
-**Export game report...** saves only the four known report files to a new local
+**Export game report...** saves only the known report files to a new local
 ZIP. No automatic upload occurs. Dumps and log excerpts can contain personal
 information; review them before sharing. The ordinary copyable diagnostics
 include only a validated exception code, report ID, capture status and build hash.
+
+## Gameplay breadcrumbs
+
+Crash and hang reports now include a rolling history of capture/guest startup,
+guest shutdown and modal-depth changes, plus sampled scene ID, game mode, menu
+mode, pause, network mode and cutscene changes. Times are milliseconds since
+capture initialization. Identical samples do not consume history. The last 64
+events are kept in preallocated shared memory; the helper formats them after an
+incident. The faulting thread performs no new allocation, locking or file I/O.
+
+Gameplay samples reuse the existing safe guest-state sampler once per second
+when the camera callback runs, independently of whether Discord presence is
+enabled. Short transitions, frontend states without that callback, and a write
+interrupted by a fault can be absent. These are numeric observations, not proof
+of a particular crash cause. Checkpoint/save, loading-progress and audio/device
+reset instrumentation are not included. Forced exits that bypass native capture
+can still leave only the launcher's unexpected-exit summary without breadcrumbs.
+No arbitrary strings, input history, player names, chat or personal paths are
+added to the breadcrumb file. Native Mac uses the same collector and format.
+
+## Capture health in launcher Diagnostics
+
+**Refresh diagnostics** checks whether the report directory accepts a temporary
+write and displays the current tracked game's capture status. A healthy status
+requires a matching session ID/game PID, verified game start time, a recent
+helper heartbeat and a live helper whose start time fits that session. The helper
+atomically refreshes its record every two seconds; after 15 seconds without an
+update it is stale. The check distinguishes missing Windows helper, unavailable
+storage, unverified game support, unavailable helper and armed/unarmed capture.
+Older game builds without this handshake are explicitly unverified; merely
+installing a helper file is insufficient. A game not running has no live status.
+
+The check does not deliberately crash the game or guarantee capture for every
+failure. Focus/modal grace still applies to freeze detection. Diagnostics shows
+a snapshot; refresh it to check again. The same health model runs in the Mac
+launcher, whose reporter is part of its game binary. Health records stay local
+and are excluded from report exports and copied diagnostic text.
 
 ## Freeze detection
 
@@ -210,5 +248,5 @@ can flag unfinished sessions without capturing a dump, with the limits above.
 Freeze detection has the limits described
 above. Native stacks may expose
 translated function names, but this is not a reconstructed Xbox call stack.
-The initial version uses the bounded existing log tail, not a new gameplay
-breadcrumb instrumentation system. Mac capture/report UI is queued separately.
+The bounded log tail and sampled numeric breadcrumbs complement the dump.
+They do not reconstruct an Xbox call stack or record every gameplay event.

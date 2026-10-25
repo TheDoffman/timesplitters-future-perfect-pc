@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define TSFP_PC_GUEST_MEMORY_H
+#define TSFP_PC_GUEST_SPAN_H
+#define pc_guest_query_span(address,minimum) pc_guest_query_region(address)
 static unsigned queries;
 static uintptr_t base=0x1000;
 static size_t length=0x1000;
@@ -29,6 +31,8 @@ int main(void)
     for(unsigned i=999;i>0;i--) CHECK(pc_text_read_region(&scope,base+i)==length-i);
     CHECK(pc_text_read_region(&scope,base)==length);
     CHECK(queries==1);
+    CHECK(!pc_text_read_span(&scope,base+length-4,8));
+    CHECK(!pc_text_read_span(&scope,UINTPTR_MAX-4,8));
     CHECK(!pc_text_read_region(&scope,base-1)); /* Never extend below the mapping. */
     pc_text_read_end(&scope);
     queries=0;

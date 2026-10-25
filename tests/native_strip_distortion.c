@@ -90,8 +90,8 @@ int main(void) {
     Snapshot *reference=calloc(481,sizeof *reference);assert(reference);
     probe=0;g_tsfp_native_timing_active=0;setup();
     for(unsigned t=0;t<=480;t++)reference[t]=step(t,1,1,(float)t);
-    const unsigned rates[]={60,120,144};
-    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned r=0;r<3;r++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned slow=1;slow<=4;slow*=4)for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         unsigned n=rates[r]*slow*8,repeats[3]={0},rounding_frames=0;
         for(probe=0;probe<=2;probe++) {
             g_tsfp_native_timing_active=1;setup();unsigned previous=0;

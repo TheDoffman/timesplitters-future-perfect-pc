@@ -22,6 +22,7 @@ import pc_settings_game as ui
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE,publish_input_state
+from native_effect_trace import snapshot_effects
 
 def weapon_set_metrics(run):
     """Check settled five-second guest-swap windows, excluding transitions.
@@ -67,6 +68,7 @@ def main():
     parser.add_argument('--profile-delay-seconds',type=int,choices=range(601),default=0,help='Delay Present CSV rows after first successful Present; requires a compatible build')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--watch-actors',action='store_true',help='Observe local actor positions/health; proximity is not visibility and readings can cross an update')
+    parser.add_argument('--watch-effects',action='store_true',help='Read bounded effect lists at checkpoints and requested samples; asynchronous observations, not GPU draws')
     parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
     surfaces=parser.add_mutually_exclusive_group()
     surfaces.add_argument('--native-surfaces',action='store_true',default=None,help='Explicitly enable native water (the common-renderer beta default)')
@@ -81,8 +83,10 @@ def main():
     parser.add_argument('--trace-vehicle-contact',action='store_true',help='Trace up to 64 entries each for actor/vehicle contact, impulse selection and suspension response')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
-    parser.add_argument('--scenario',choices=['weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
+    parser.add_argument('--scenario',choices=['rocket-impact','weapon-set','surface-feedback','surface-feedback-gpu','surface-native','surface-native-switch','surface-native-long','crowd-venice','crowd-hotel','crowd-disco','crowd-temple'])
     args=parser.parse_args()
+    if args.scenario=='rocket-impact' and not (args.watch_actors and args.watch_effects):
+        parser.error('rocket-impact requires --watch-actors and --watch-effects for acceptance')
     if args.profile_delay_seconds and not args.profile_presents:
         parser.error('--profile-delay-seconds requires --profile-presents')
     if args.crowd_weapons!='recommended' and not (args.scenario or '').startswith('crowd-'):
@@ -90,8 +94,8 @@ def main():
     if not all(240<=v<=8192 for v in args.display_size):parser.error("Display dimensions must be between 240 and 8192")
     if args.scenario in ('surface-feedback','surface-feedback-gpu') and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('surface-feedback captures the original feedback; disable the older surface experiments')
-    if args.scenario=='surface-native-switch' and not (args.native_fps==144 and args.native_surfaces and args.trace_surface_images and args.trace_surface_switches):
-        parser.error('surface-native-switch requires native144, native-surfaces and both surface trace flags')
+    if args.scenario=='surface-native-switch' and not (args.native_fps==240 and args.native_surfaces is not False and args.trace_surface_images and args.trace_surface_switches):
+        parser.error('surface-native-switch requires native240, default/enabled native water and both surface trace flags')
     if args.native_surfaces and (args.live_surfaces or args.bias_surfaces or args.float_surfaces or args.fractional_surfaces):
         parser.error('--native-surfaces cannot combine with older surface experiments')
     if args.watch_input and args.trace_vehicle_contact:
@@ -124,6 +128,9 @@ def main():
     (run/'display.ini').write_text(f'TSFP_DISPLAY_V2 {args.display_size[0]} {args.display_size[1]} {args.fov}\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     commands=run/'commands.jsonl';commands.write_text('')
+    if args.scenario=='rocket-impact':
+        route=json.loads((ROOT/'tests/fixtures/rocket-impact-commands.json').read_text())
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     if args.scenario=='weapon-set':
         route=[dict(label='main-menu',wait=24),
             dict(keys=[40,69,69,69,69,38,38],gap=1.3,label='before-weapons',wait=12),
@@ -229,6 +236,11 @@ def main():
         value=c.c_int16()
         if not kernel.ReadProcessMemory(handle,address+0x10000,c.byref(value),2,None):return None
         return value.value
+    def read_bytes(address,size):
+        # snapshot_effects bounds all addresses and allocations before calling.
+        buffer=c.create_string_buffer(size)
+        if not kernel.ReadProcessMemory(handle,address+0x10000,buffer,size,None):return None
+        return buffer.raw
     def player_snapshot():
         player=word(0x7b0c7c)
         if player is None or not 0x80000000<=player<0x84000000:return None
@@ -317,6 +329,7 @@ def main():
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
             roster=word(0x7de400),window=window_snapshot(),
             **(dict(actors=actor_snapshot()) if args.watch_actors else {}),
+            **(dict(effects=snapshot_effects(read_bytes)) if args.watch_effects else {}),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
             **(dict(network=network_snapshot()) if args.lan_role else {}),
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
@@ -408,10 +421,12 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        initial_commands_sha256=hashlib.sha256(commands.read_bytes()).hexdigest(),
+        input_transport='startup replay plus polled state file',input_poll_ms=16,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
-        native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
@@ -464,10 +479,18 @@ def main():
                     lost=user.GetForegroundWindow()!=window
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
-                time.sleep(command.get('wait',2.5))
+                wait_samples=[];wait_started=time.perf_counter();wait_seconds=command.get('wait',2.5)
+                if command.get('sample_wait'):
+                    while time.perf_counter()-wait_started<wait_seconds:
+                        began=time.perf_counter()
+                        observation=snapshot()
+                        wait_samples.append(dict(seconds=began-start,end_seconds=time.perf_counter()-start,**observation))
+                        time.sleep(min(.05,max(0,wait_seconds-(time.perf_counter()-wait_started))))
+                else:time.sleep(wait_seconds)
                 item=dict(seconds=round(time.perf_counter()-start,3),observed_ns=time.perf_counter_ns(),
                     command=command,key_events=key_events,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
+                if wait_samples:item['wait_samples']=wait_samples
                 if 'label' in command:capture(command['label'])
                 if args.profile_cpu and command.get('label') in ('ten-bots','spawn','combat-four'):
                     source=run/'cpu-sample.txt'
@@ -498,6 +521,11 @@ def main():
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
+    if args.scenario=='rocket-impact':
+        from rocket_impact_stats import analyze
+        result=analyze(report)
+        (run/'rocket-impact-results.json').write_text(json.dumps(result,indent=2)+'\n')
+        print('PASS: single-rocket lethality, explosion lifetime/cleanup and respawn/walk; not general damage parity',flush=True)
     if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
     if args.scenario in ('crowd-venice','crowd-hotel','crowd-disco','crowd-temple'):
         scene={'crowd-hotel':39,'crowd-venice':46,'crowd-temple':49,'crowd-disco':56}[args.scenario]
@@ -529,7 +557,7 @@ def main():
         assert len(creations)==1 and creations[0]<int(rows[0]['frame']),creations
         results['owner_creations']=creations
         (run/'surface-results.json').write_text(json.dumps(results,indent=2)+'\n')
-        print('PASS: complete native144/native120/Original60/native144 image cycle',flush=True)
+        print('PASS: complete native240/native180/Original60/native120 image cycle',flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

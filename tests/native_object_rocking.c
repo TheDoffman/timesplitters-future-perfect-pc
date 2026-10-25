@@ -175,7 +175,7 @@ static void lifecycle_checks(void)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,60,120,144};
+    const unsigned rates[]={60,60,120,144,180,240};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
@@ -183,7 +183,7 @@ int main(void)
     for(unsigned i=0;i<16;i++) MEMF(0x4e7900+i*4)=i%5==0?1.f:0.f;
     for(unsigned slow=1;slow<=4;slow*=4) {
         float reference_h=0,reference_v=0;
-        for(unsigned rate=0;rate<4;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             unsigned fps=rates[rate],changed=0;
             prepare();g_tsfp_native_timing_active=rate!=0;
             float previous=MEMF(ENTITY+0x220);

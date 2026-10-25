@@ -24,12 +24,69 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
+draws with minimum index zero pass their current index bytes directly to the
+synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
+primitive conversion and draw order are unchanged. No retained index cache.
+
+`zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
+through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
+read each operand once, including fused and separated branches. Indirect, narrow,
+segmented and TEST operands retain original behavior. Regenerate guest C after
+applying it. The shared title policy opts in only audited addresses/sites.
+
+`zz-model-transform-entry.patch` adds a default-off RECOMP_FAST_ENTRY policy
+hook after entry tracing and before input loads. Explicit return tracing and
+forced-return diagnostics keep the generated body. US policy selects only151E80;
+other titles/addresses retain the original path. A zero result must leave guest
+state unchanged; success includes exact registers, memory and stack return.
+
+`dsound-output-headroom.patch` defines the shared default host gain in
+`src/hle/audio_output.h` and uses it in XAudio initialization. The tracked
+`src/native/audio_sdl.c` uses the same default. Guest volume/timing is unchanged.
+
 The additive `controller-profile-routing` patch repairs #319 in shared
 `src/input/input_bindings.c`: parse-time classification of keyboard-only pad
 profiles enables pad defaults after platform focus checks. It follows the
 keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
+`zz-keyboard-reload-buffer.patch` runs after the full input/timing stack. It
+collects configured Reload/X and Fire/trigger keyboard contributions separately,
+passes them through the shared host model, then merges untouched pad magnitudes.
+No generated guest input or controller behavior is rewritten by this patch.
+
 ## Source ownership and execution
+
+`zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture
+binding resolves the first matching cache entry and any framebuffer alias in
+one fresh scan. Null bindings clear both outputs; nonzero stages request only
+an entry. No retained index, checksum/upload or framebuffer-copy policy changes.
+The full-module framebuffer fixture compares all cache sizes through512 against
+the original two searches and rejects first-only/last-entry regressions.
+
+`zz-texel-sample-lanes.patch` groups the texture survey's four independent hash
+lanes. Sample addresses/order, all checksum bits, small-input handling and tails
+match the original scalar recurrence. It changes neither sampling/full-check
+frequency nor upload/invalidation policy. Tests compare actual production code
+with the frozen scalar reference, including exact word-read footprints/bounds.
+
+`zz-shader-source-lookup.patch` adds a guest source-address hint to the existing
+HLE slot-program cache. Every hinted hit still compares the full current
+microcode with the immutable host copy and requires the same instruction count.
+Misses use the original content hash, collision check and creation path; guest
+calls, selected-slot rebinding, declarations and host-program lifetime remain
+unchanged. Relocated identical code updates the hint. This avoids repeated byte
+hashing without treating guest addresses as immutable shader identities.
+
+`zz-pushbuffer-diagnostic-policy.patch` makes `nv2a_pb_scan.c` read both
+RECOMP_PB_SCAN and RECOMP_PB_EXEC once, on its first scan call. These are launch
+diagnostics; presence (even empty/"0") retains the original opt-in semantics.
+Disabled or empty/reversed intervals return before obtaining guest memory.
+Enabled decoding, independent executor mode and report output stay intact.
+The complete production scanner is compiled in `test_pushbuffer_policy.py`,
+including eager-environment and executor-disabled negative controls. This
+removes repeated environment lookup from the acknowledgement worker; it does
+not change busy-bit acknowledgement, fences, clocks, or idle/wake policy.
 
 `zz-native-trace-quiet.patch` applies after native timing. With an explicit
 nonpositive trace budget and no watch/dump/filter/profile environment switch,
@@ -392,6 +449,26 @@ The captured crane also uses an inclusive 639x479 last-pixel scissor. The
 crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
+
+## Character effects update gate
+
+`pc_native_numeric.h` maps the US1260C0 whole-tick load to positive live game
+time in native mode. This dispatcher is called by player/NPC updates; its
+attached-effect timers/transforms already use fractional delta. The old gate
+lost subticks (11FEC0's timer advanced0.5 seconds per second at120). EAX is
+replaced before arithmetic, so this changes eligibility only. Original mode,
+whole-tick fields and zero-time pause remain unchanged. The original-dispatcher
+fixture covers11FEC0's timer and real matrix helpers; other nested systems and
+rendered effects need separate evidence. No generated C or new patch is edited.
+
+The status-3 growth path (`120AB0`) compounds its scale matrix each update.
+Only its `120BBF` call to constructor153600 now uses
+`pc_native_character_guest.h`: recover the one-raw-tick scale at the current
+game speed, then raise it to the fractional raw interval. Rotation, composition,
+timer and cleanup execute original code. Inactive/whole/catch-up updates remain
+exact; stack arguments are restored after the constructor. The model fixture
+covers complete original helpers, uneven intervals and live preset changes.
+This proves transforms, not rendered status-effect activation or emission.
 
 ## Native FPS integration with current main (PR #285)
 

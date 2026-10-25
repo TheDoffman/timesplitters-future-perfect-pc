@@ -1,0 +1,21 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -2448,6 +2448,18 @@
+         sx = self._SNAP_SX[size]
+         lhs = _fmt_operand_read(ops[0])
+         rhs = _fmt_operand_read(ops[1])
++        # Direct 32-bit global comparisons use the same read policy as MOV.
++        # Capture once before flags are derived; indirect/segmented/narrow
++        # accesses retain their original semantics. Title policy owns sites.
++        if kind == "cmp":
++            reads = [lhs, rhs]
++            for index, operand in enumerate(ops[:2]):
++                if (operand.type == "mem" and operand.mem_size == 4
++                        and not operand.mem_base and not operand.mem_index
++                        and not operand.mem_seg):
++                    reads[index] = (f"RECOMP_LOAD_GLOBAL_U32(0x{insn.address:X}, "
++                                    f"{_fmt_mem(operand)}, {reads[index]})")
++            lhs, rhs = reads
+         out = [
+             f"_fa = (uint32_t)({lhs}) & {mask}; _fb = (uint32_t)({rhs}) & {mask};",
+             f"_fas = (int32_t){sx}(_fa); _fbs = (int32_t){sx}(_fb);"

@@ -70,7 +70,9 @@ int main(void)
     memset(&motion,0,sizeof motion);CHECK(!pc_network_bot_motion_sample(&motion,1,&out));
     /* Native refresh sampling uses the same 50 ms wall-clock span, without
        raising the original console clock or multiplying AI simulation. */
-    for(unsigned rate=120;rate<=144;rate+=24) {
+    const unsigned rates[]={120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
+        unsigned rate=rates[r];
         memset(&motion,0,sizeof motion);state.position[0]=0;
         pc_network_bot_motion_push(&motion,&state,0);
         state.position[0]=1;pc_network_bot_motion_push(&motion,&state,.05);
@@ -81,6 +83,24 @@ int main(void)
             previous=out.position[0];
         }
         pc_network_bot_motion_sample(&motion,.11,&out);CHECK(near(out.position[0],1));
+    }
+    /* A crowded scene can vary its update interval. Presentation must follow
+       elapsed time, not the number of rendered frames or the selected preset. */
+    {
+        const unsigned mixed_rates[]={240,110,180,144,60};
+        double now=.05;
+        memset(&motion,0,sizeof motion);state.position[0]=0;
+        pc_network_bot_motion_push(&motion,&state,0);
+        state.position[0]=1;pc_network_bot_motion_push(&motion,&state,.05);
+        previous=0;
+        for(unsigned r=0;r<sizeof mixed_rates/sizeof mixed_rates[0];r++) {
+            now+=1.0/mixed_rates[r];
+            CHECK(pc_network_bot_motion_sample(&motion,now,&out));
+            CHECK(near(out.position[0],(float)((now-.05)/.05)));
+            CHECK(out.position[0]>previous && out.position[0]<1);
+            previous=out.position[0];
+        }
+        CHECK(pc_network_bot_motion_sample(&motion,.12,&out) && near(out.position[0],1));
     }
     puts("PASS: 20 Hz snapshots to continuous 60 Hz transforms, jitter, loss, angles, authority and lifecycle");
     return 0;

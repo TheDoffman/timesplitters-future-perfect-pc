@@ -256,8 +256,8 @@ int main(void) {
         run(60,0,1,homing,0);
         unsigned char original[0x22c];
         memcpy(original,(void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof original);
-        const unsigned rates[]={60,120,144};
-        for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++) {
+        const unsigned rates[]={60,120,144,180,240};
+        for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++) {
             run(rates[i],1,slow?.25f:1,homing,0);
             if(i==0 && !slow)assert(!memcmp(original,
                 (void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof original));
@@ -266,8 +266,8 @@ int main(void) {
     }
     for(unsigned hit=0;hit<2;hit++) {
         float base=run_lifecycle(60,1,hit);
-        const unsigned rates[]={60,120,144};
-        for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++)
+        const unsigned rates[]={60,120,144,180,240};
+        for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++)
             assert(fabsf(run_lifecycle(rates[i],slow?.25f:1,hit)-base)<1.f/60+.0001f);
     }
     missing_emitters();

@@ -10,13 +10,17 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
-MOVIE = ROOT / 'private/game/xmv/eag_e.xmv'
+MOVIES = ROOT / 'private/game/xmv'
 
 
-@pytest.mark.skipif(os.name != 'nt' or not MOVIE.exists(),
+@pytest.mark.skipif(os.name != 'nt' or not MOVIES.exists(),
                     reason='Requires Windows host movie backend and local XMV data')
 @pytest.mark.parametrize('live_clock', [False, True], ids=['controlled-clock', 'windows-timers'])
-def test_real_movie_native_cadence(tmp_path, live_clock):
+@pytest.mark.parametrize('movie_name', ['eag_e.xmv', 'frd.xmv'])
+def test_real_movie_native_cadence(tmp_path, live_clock, movie_name):
+    movie = MOVIES / movie_name
+    if not movie.is_file():
+        pytest.skip('Local XMV data required; never included in CI')
     xbe = ROOT / 'private/game/default.xbe'
     assert hashlib.sha256(xbe.read_bytes()).hexdigest() == (
         '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc')
@@ -41,8 +45,9 @@ def test_real_movie_native_cadence(tmp_path, live_clock):
     environment = {k:v for k,v in env.items() if not k.startswith(('TSFP_', 'RECOMP_'))}
     environment['RECOMP_FFMPEG_DIR'] = str(ffmpeg/'bin')
     results = []
-    for rate in (('60', '120', '144') if live_clock else ('original', '60', '120', '144')):
-        result = subprocess.run([str(executable), str(MOVIE), rate], cwd=tmp_path,
+    native_rates = ('60', '120', '144', '180', '240')
+    for rate in (native_rates if live_clock else ('original', *native_rates)):
+        result = subprocess.run([str(executable), str(movie), rate], cwd=tmp_path,
                                 env=environment, capture_output=True, text=True, timeout=60)
         (tmp_path/f'movie-{rate}.log').write_text(result.stdout+result.stderr, encoding='utf-8')
         assert result.returncode == 0, result.stdout+result.stderr

@@ -73,8 +73,8 @@ int main(void)
     MEMF(0x475d10)=2; MEMF(0x475d1c)=.01f;
     MEMF(0x4765f4)=1.0000000116860974e-7f; MEMF(0x4788e8)=.55f;
     MEMF(0x47d618)=2280; MEMF(0x47d5a4)=1800; MEMF(0x47d614)=1940;
-    const unsigned rates[]={60,120,144};
-    for(unsigned r=0;r<3;r++) for(int native=0;native<2;native++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) for(int native=0;native<2;native++) {
         unsigned fps=rates[r]; g_tsfp_native_timing_active=native; setup();
         for(unsigned f=0;f<fps;f++) {
             unsigned whole=(f+1)*60/fps-f*60/fps;
@@ -93,7 +93,7 @@ int main(void)
         assert(MEMF(CAMERA+0x398)==before && MEMF(0x4dd350)==phase && moves==old_moves);
     }
     g_tsfp_native_timing_active=1;
-    for(unsigned r=0;r<3;r++) {
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         unsigned fps=rates[r]; setup();
         for(unsigned f=0;f<fps;f++)
             dispatch((f+1)*15/fps-f*15/fps,15.0f/fps);

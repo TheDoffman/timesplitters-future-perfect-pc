@@ -135,8 +135,8 @@ int main(int argc,char **argv) {
     (void)argv;legacy_recovery=argc>1;
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
-    const unsigned rates[]={60,60,120,144};
-    for(unsigned mode=0;mode<4;mode++) {
+    const unsigned rates[]={60,60,120,144,180,240};
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode];setup(memory);g_tsfp_native_timing_active=mode!=0;
         MEM32(0x7de318)=301;
         for(unsigned f=0;f<fps;f++)frame((f+1)*60/fps-f*60/fps,60.f/fps,60.f/fps);
@@ -146,7 +146,7 @@ int main(int argc,char **argv) {
     }
     /* The real match clock delays recovery for five game seconds. Slow and
        fast time affect this delay, but not the recharge rate after it. */
-    for(unsigned mode=0;mode<4;mode++) for(unsigned speed=0;speed<3;speed++) {
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) for(unsigned speed=0;speed<3;speed++) {
         unsigned fps=rates[mode],previous=0;
         float scale=speed==0?.25f:speed==1?1.f:3.f;
         setup(memory);g_tsfp_native_timing_active=mode!=0;

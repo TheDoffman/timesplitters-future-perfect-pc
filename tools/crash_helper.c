@@ -4,6 +4,9 @@
 #endif
 #include "pc_crash.h"
 #include "pc_hang_policy.h"
+#include "pc_capture_health.h"
+#include <io.h>
+#include <fcntl.h>
 #include <dbghelp.h>
 #include <bcrypt.h>
 #include <stdio.h>
@@ -32,6 +35,30 @@ static int directory(const WCHAR *path)
 }
 static void join(WCHAR *out, const WCHAR *root, const WCHAR *name)
 { swprintf_s(out, PC_CRASH_PATH, L"%s\\%s", root, name); }
+/* A current-session heartbeat confirms helper startup and an actual writable
+ * report directory. Atomic replacement prevents readers seeing partial JSON. */
+static void health(PcCrashPacket *p)
+{
+    char session[33];
+    if(!pc_capture_session(session) || !directory(p->root))return;
+    WCHAR path[PC_CRASH_PATH],temporary[PC_CRASH_PATH],name[80];
+    join(path,p->root,L"capture-health.json");
+    DWORD attr=GetFileAttributesW(path);
+    if(attr!=INVALID_FILE_ATTRIBUTES && (attr&(FILE_ATTRIBUTE_REPARSE_POINT|FILE_ATTRIBUTE_DIRECTORY)))return;
+    swprintf_s(name,_countof(name),L"health-%lu-%llu.tmp",GetCurrentProcessId(),GetTickCount64());
+    join(temporary,p->root,name);
+    HANDLE file=CreateFileW(temporary,GENERIC_WRITE,0,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
+    if(file==INVALID_HANDLE_VALUE)return;
+    int fd=_open_osfhandle((intptr_t)file,_O_BINARY);
+    if(fd<0){CloseHandle(file);DeleteFileW(temporary);return;}
+    FILE *out=_fdopen(fd,"wb");
+    if(!out){_close(fd);DeleteFileW(temporary);return;}
+    pc_capture_health_json(out,session,p->process_id,GetCurrentProcessId(),InterlockedCompareExchange(&p->watchdog_armed,0,0));
+    int ok=fflush(out)==0 && !ferror(out) && FlushFileBuffers(file);
+    if(fclose(out))ok=0;
+    if(ok)MoveFileExW(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
+    DeleteFileW(temporary);
+}
 static int incident_name(const WCHAR *name)
 {
     if (wcslen(name) != 42 || wcsncmp(name, L"crash-", 6)) return 0;
@@ -62,7 +89,7 @@ static void rotate(const WCHAR *root)
         HANDLE lock = CreateFileW(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
         if (lock == INVALID_HANDLE_VALUE) continue;
         CloseHandle(lock);
-        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"capture.lock"};
+        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"breadcrumbs.txt", L"capture.lock"};
         for (unsigned n = 0; n < _countof(files); ++n) {
             join(file, folder, files[n]);
             DWORD attr = GetFileAttributesW(file);
@@ -146,7 +173,7 @@ finish:
     if (algorithm) BCryptCloseAlgorithmProvider(algorithm, 0);
     CloseHandle(file); return ok;
 }
-static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled_ms, HANDLE crash_request)
+static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled_ms, HANDLE crash_request, PcBreadcrumbs *breadcrumbs)
 {
     WCHAR folder[PC_CRASH_PATH], name[64], path[PC_CRASH_PATH];
     SYSTEMTIME now; GetSystemTime(&now);
@@ -178,6 +205,9 @@ static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled
         if (!saved) DeleteFileW(path);
     }
     log_tail(p->log, folder);
+    join(path,folder,L"breadcrumbs.txt");
+    FILE *crumbs=NULL;_wfopen_s(&crumbs,path,L"wb");
+    if(crumbs){pc_crumb_report(crumbs,breadcrumbs);fclose(crumbs);}
     char sha[65] = "unavailable";
     file_hash(p->executable, sha);
     join(path, folder, L"report.json");
@@ -321,6 +351,8 @@ int wmain(int argc, WCHAR **argv)
     }
     PcCrashPacket *p = MapViewOfFile(handles[0], FILE_MAP_ALL_ACCESS, 0, 0, sizeof *p);
     if (!p || p->schema != PC_CRASH_SCHEMA) return 1;
+    health(p);
+    ULONGLONG last_health=GetTickCount64();
     SetEvent(handles[3]);
     HANDLE waits[2] = {handles[1], handles[4]};
     int result = 0;
@@ -328,11 +360,12 @@ int wmain(int argc, WCHAR **argv)
     for (;;) {
         DWORD waited = WaitForMultipleObjects(2, waits, FALSE, 250);
         if (waited == WAIT_OBJECT_0) {
-            MemoryBarrier(); result = capture(handles[4], p, 0, 0, NULL);
+            MemoryBarrier(); result = capture(handles[4], p, 0, 0, NULL, &p->breadcrumbs);
             SetEvent(handles[2]); break;
         }
         if (waited != WAIT_TIMEOUT) break;
         ULONGLONG now = GetTickCount64();
+        if(now-last_health>=2000){health(p);last_health=now;}
         LONG64 frames = InterlockedCompareExchange64(&p->frame_sequence, 0, 0);
         int suppressed = InterlockedCompareExchange(&p->watchdog_inhibited, 0, 0) > 0;
         HWND window = (HWND)(uintptr_t)InterlockedCompareExchange64((volatile LONG64 *)&p->game_window, 0, 0);
@@ -363,7 +396,7 @@ int wmain(int argc, WCHAR **argv)
             MemoryBarrier();
             if (sequence == InterlockedCompareExchange(&p->snapshot_sequence, 0, 0)) { report.guest = guest; report.thread_id = thread_id; break; }
         }
-        capture(handles[4], &report, 1, now - policy.last_progress, handles[1]);
+        capture(handles[4], &report, 1, now - policy.last_progress, handles[1], &p->breadcrumbs);
     }
     UnmapViewOfFile(p);
     for (int i = 0; i < 5; ++i) CloseHandle(handles[i]);

@@ -102,6 +102,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08x};'
                           for a in sorted(addresses))
     policy = f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
+    if any(start == 0x151e80 for start, _ in ranges):
+        code = f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n' + code
     source = source.replace('/* POLICY */', policy).replace('/* ROUTINES */', code)
     source = source.replace('/* PHYSICS POLICY */',
         f'#include "{(ROOT / "src/pc_native_physics_guest.h").as_posix()}"')

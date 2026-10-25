@@ -1,0 +1,43 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -3,7 +3,7 @@
+  *
+  * From doaxbv-re (https://github.com/NoRain211/doaxbv-re,
+  * recomp-runtime/audio_output.h), GPL-3.0. One behaviour change: output is on
+- * at full gain unless RECOMP_AUDIO_GAIN says otherwise (doaxbv-re defaults to
++ * with mix headroom unless RECOMP_AUDIO_GAIN says otherwise (doaxbv-re defaults to
+  * muted while it validates its decoders).
+  */
+ #ifndef XBOXRECOMP_AUDIO_OUTPUT_H
+@@ -17,7 +17,10 @@
+ 
+ /* Initialization is attempted once per process; an unavailable device or
+    shutdown leaves guest audio timing unchanged. RECOMP_AUDIO_GAIN is the host
+-   master gain (0..1); absent means 1, zero mutes without opening a device. */
++   master gain (0..1); absent uses the shared default below. Zero opens no device. */
++/* -6.02 dB at the output: preserve the game's Music/Sound slider curves and
++ * balance, with a quieter 100% level. Explicit host gain overrides stay exact. */
++#define RECOMP_AUDIO_DEFAULT_GAIN 0.5f
+ #define RECOMP_AUDIO_SLOT_MOVIE 272u
+ 
+ void recomp_audio_output_initialize(void);
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -3,7 +3,7 @@
+  *
+  * From doaxbv-re (https://github.com/NoRain211/doaxbv-re,
+  * recomp-runtime/audio_output_xaudio2.cpp), GPL-3.0. Changed: an unset
+- * RECOMP_AUDIO_GAIN means full gain here rather than muted.
++ * RECOMP_AUDIO_GAIN uses the shared output headroom here rather than muted.
+  */
+ #include "audio_output.h"
+ 
+@@ -138,7 +138,7 @@
+     checkCriticalError();
+     if (attempted) return;
+     attempted = true;
+-    double gain = 1.0;
++    double gain = RECOMP_AUDIO_DEFAULT_GAIN;
+     const char *setting = std::getenv("RECOMP_AUDIO_GAIN");
+     if (setting) {
+         char *end;

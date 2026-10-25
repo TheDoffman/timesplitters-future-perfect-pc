@@ -164,6 +164,66 @@ def test_global_store_observation_scope(encoding, observed):
     assert ('RECOMP_STORE_GLOBAL_U32(0x1000, 0x7DE318,' in code)==observed
 
 
+@pytest.mark.parametrize('encoding,observed', [
+    ('833d44794e0001', True),  # cmp dword [absolute],1
+    ('3b0544794e00', True),    # cmp eax,[absolute]
+    ('833b01', False),         # cmp dword [ebx],1
+    ('803d44794e0001', False), # byte
+    ('66833d44794e0001', False), # word
+    ('64833d0000000001', False), # fs segment
+    ('83f801', False),         # register
+    ('f70544794e0001000000', False), # TEST is not CMP
+])
+def test_global_compare_load_scope(encoding, observed):
+    sys.path.insert(0, str(ROOT / 'external/ts3FPrecomp'))
+    from tools.recomp.disasm import Disassembler
+    from tools.recomp.lifter import Lifter
+    raw=bytes.fromhex(encoding)
+    instruction=Disassembler().disassemble_function(raw,0x1000,0x1000+len(raw))[0]
+    code='\n'.join(Lifter().lift_instruction(instruction))
+    # Count executable expressions only, not the generated explanatory comment.
+    expressions='\n'.join(line.split('/*')[0] for line in code.splitlines())
+    assert expressions.count('RECOMP_LOAD_GLOBAL_U32(')==int(observed)
+
+
+@pytest.mark.parametrize('separated', [False, True])
+@pytest.mark.parametrize('mutation', [None, 'whole-tick-policy', 'unhooked-compare'])
+def test_reload_compare_gate(tmp_path, separated, mutation):
+    """Asset-free generated CMP/JL plus the production policy, also in CI."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    previous=dict(vars(config))
+    base=0x1c2f09
+    image=bytes.fromhex('833d44794e0001'+('90' if separated else '')+'7c06b801000000c331c0c3')
+    try:
+        config._install([config.Section('.text',base,len(image),0,len(image),True)],base,base,'reload-gate-test')
+        info={'end':base+len(image),'name':'reload_gate'}
+        code=FunctionTranslator(image,{base:info}).translate_function(base,info)
+    finally:
+        vars(config).update(previous)
+    policy=(ROOT/'src/pc_native_numeric.h').read_text(encoding='utf-8')
+    policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
+    if mutation=='whole-tick-policy':
+        assert policy.count('site == 0x1C2F09u')==1
+        policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
+    if mutation=='unhooked-compare':
+        assert 'RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))' in code
+        code=code.replace('RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)')
+    (tmp_path/'numeric.h').write_text(policy,encoding='utf-8')
+    harness=(ROOT/'tests/native_reload_gate.c').read_text(encoding='utf-8')
+    harness=harness.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(tmp_path / "numeric.h").as_posix()}"')
+    source=(harness.replace('/* GENERATED_GATE */',code)
+            .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
+            .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text()))
+    if mutation:
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
+            compile_and_run(tmp_path,source)
+    else:
+        output=compile_and_run(tmp_path,source)
+        assert 'reload_sweep trials=864 presses=1728' in output,output
+
+
 def test_native_update_statistics():
     sys.path.insert(0,str(ROOT/'tools'))
     from native_update_stats import summarize
@@ -297,6 +357,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_fractional.c', [(0x1950b0,0x195110),(0x195110,0x195277),(0x1956a0,0x19576d)]),
+    ('native_character_scale.c', [(0x125fe0,0x12609c),(0x120ab0,0x120c0f),(0x153440,0x153490),
+                                  (0x153600,0x153650),(0x153650,0x1536a0),(0x153270,0x1533e0)]),
+    ('native_character_effects.c', [(0x1260c0,0x126236),(0x11fec0,0x120102),
+                                    (0x151650,0x15178f),(0x151e80,0x151f1c)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -335,6 +399,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
     ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                               (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
+    ('native_reload_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d),(0x1c2e80,0x1c30f3),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_weapon_cooldown.c', [(0x1c320c,0x1c3274)]),
     ('native_weapon_fire.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                              (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
@@ -394,7 +459,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name=='native_analog_input.c':
+        if harness_name in ('native_analog_input.c','native_reload_input.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -425,7 +490,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -439,6 +504,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
                           else [] if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
+            if harness_name=='native_character_scale.c':
+                addresses.update(range(0x12609c,0x1260b4,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
                 # Captured projectile kinds and damage profiles. These are
                 # original table entries, not made-up falloff coefficients.
@@ -610,13 +677,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(ROOT/'tests'/harness_name).read_text()
-    if harness_name=='native_analog_input.c':
+    if harness_name in ('native_analog_input.c','native_reload_input.c'):
         wrapper=(ROOT/'src/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
         harness=harness.replace('/* INPUT_WRAPPER */',wrapper[start:end])
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
-    output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+    source=(harness.replace('/* NUMERIC_POLICY */',policy)
+                           .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text())
+                           .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
                            .replace('/* FIRE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* PROJECTILE_POLICY */',
@@ -628,8 +697,22 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* VISUAL_TIME_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
+                           .replace('/* CHARACTER_POLICY */', f'#include "{(ROOT / "src/pc_native_character_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
-                           .replace('/* GENERATED_ROUTINES */',code))
+                           .replace('/* GENERATED_ROUTINES */',
+                                    (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
+                                     if any(start == 0x151e80 for start, _ in ranges) else '') + code))
+    source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
+    output=compile_and_run(tmp_path,source)
+    if harness_name=='native_reload_input.c':
+        assert 'reload_sweep trials=864 presses=1728' in output,output
+        needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
+        expressions='\n'.join(line.split('/*')[0] for line in source.splitlines())
+        assert expressions.count(needle)==1
+        mutated=source.replace(needle,'MEM32(0x4E7944)').replace('/* SWEEP_ONLY */','goto temporal;')
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
+            compile_and_run(tmp_path,mutated)
+        print(output)
     if harness_name=='native_escort_recovery.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
@@ -649,11 +732,19 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_escort_recovery.c':print(output)
+    if harness_name=='native_script_events.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('script_events ')]
+        assert len(rows)==10,output
+        assert {(int(r['fps']),int(r['slow'])) for r in rows}=={
+            (fps,slow) for fps in (60,120,144,180,240) for slow in (1,4)},output
+        print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('coupled_projectile ')]
-        assert len(rows)==16,output
+        assert len(rows)==24,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for homing in ('0','1'):
             reference=next(r for r in rows if r['native']=='0' and r['homing']==homing)
             for r in rows:
@@ -669,7 +760,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
-        assert len(rows)==33,output
+        assert len(rows)==49,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for mode in range(3):
             for slow in (1,4):
                 base=next(r for r in rows if int(r['mode'])==mode and int(r['slow'])==slow and r['fps']=='60' and r['opened']=='0' and r['rare']=='0')
@@ -691,7 +783,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('rocking_audit ')]
-        assert len(rows)==8,output
+        assert len(rows)==12,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         if any(int(r['frozen']) for r in rows if r['native']=='1'):
             raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':

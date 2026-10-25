@@ -13,7 +13,7 @@ static void step(const PcSurfaceCoupledStep *m,double state[2])
 int main(void)
 {
     const double a=26./255, b=165./255, d=249./255, bias=128./255-.5;
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     /* Include the fixed-neighbor fixture and all clamped diagonal-stencil
      * spectral restoring strengths, not just the uniform/low-frequency mode. */
     double max_error=0;
@@ -23,7 +23,7 @@ int main(void)
         CHECK(pc_surface_coupled_step(a,b,d,k,.5,bias,1,&original));
         double reference[2]={.01,.65};
         for(unsigned tick=0;tick<60;tick++)step(&original,reference);
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             unsigned fps=rates[rate];PcSurfaceCoupledStep fractional;
             CHECK(pc_surface_coupled_step(a,b,d,k,.5,bias,60./fps,&fractional));
             double value[2]={.01,.65};
@@ -50,7 +50,7 @@ int main(void)
         double critical=(1-r)*(1-r)/(damp*a*b);
         double restore=critical>0?critical*(mode==0?.25:mode==1?1:1.2):.17;
         double force=.5*restore,offset=.001;
-        for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned rate=0;rate<sizeof rates/sizeof rates[0];rate++) {
             PcSurfaceCoupledStep fractional;
             CHECK(pc_surface_coupled_step(a,b,damp,restore,force,offset,60./rates[rate],&fractional));
             double reference[2]={.01,.65},value[2]={.01,.65};

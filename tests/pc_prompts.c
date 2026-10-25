@@ -272,6 +272,13 @@ int main(int argc,char **argv)
             g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
             CHECK(!strcmp(seen_text,"abcdef"));
+            /* A readable argument frame may straddle two resident OS pages;
+             * the first page-sized text snapshot must not skip translation. */
+            strcpy((char *)memory+0x1000,"\v2 Select");
+            ((uint32_t *)(memory+0x11ff8))[3]=0x1000;
+            g_esp=0x11ff8;
+            pc_prompt_guest(guest_original,3,4);
+            CHECK(!strcmp(seen_text,"[E] Select") && g_esp==0x11ffc);
             /* Scratch below ESP can occupy a different protection region.
              * A readable stack must never authorize that write. */
             frame[3]=0x10080;
