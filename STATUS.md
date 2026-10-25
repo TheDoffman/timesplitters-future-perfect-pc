@@ -1,3 +1,48 @@
+## 2026-10-24 — Temple rocket impact and effect cleanup through 240
+
+Three sequential isolated Windows runs compare Original60, native180 and
+native240 on executable SHA256
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The ordinary menu route selects Temple, Rockets and no bots. All three start
+at the identical position, yaw335/pitch-75 and health1.75, consume one rocket
+(6->5 loaded, reserve6), and die from the floor blast. All127 effect snapshots
+per run are complete; no listed effects remain after the six-second settle.
+The authored0.7-second explosion disappears within these observed age brackets:
+Original60 [0.66667,0.71733],180 [0.68357,0.73387],240 [0.66701,0.71744] seconds.
+Observed age advancement differs from elapsed time by -0.00004,+0.00201 and
+-0.00049 seconds respectively. These are asynchronous observation bounds,
+not presentation timing or input latency. Level-clock/wall-time differences
+in the settle windows are -0.00267,-0.00100 and-0.01133 seconds.
+
+All three respawn at full health with the rocket launcher and respond to a
+one-second walk command. Respawn locations differ; distances7.99998,8.00033
+and6.81292 therefore prove resumed movement, not speed/trajectory equivalence.
+Reviewed captures show death, cleared blast and restored first-person weapon/
+world rendering. The180/240 impact captures show the explosion; the Original60
+impact dump predates the death observation. Dumps are not synchronized with
+memory reads and do not establish pixel/phase parity or smooth scanout. Zero
+health saturates lethal damage: this does not prove equal unsaturated damage,
+arbitrary enemy hits, the reported delayed trails or plasma-sniper repair.
+
+The runner adds opt-in bounded effect observations and20Hz `sample_wait` steps.
+`--scenario rocket-impact --watch-actors --watch-effects --seconds 180`
+requires active no-bot checkpoints, one rocket consumed, death, lifetime and
+cleanup observations, respawn and walking; `--native-fps 0` is Original60.
+`tools/rocket_impact_stats.py` also validates saved reports. Counterexample tests
+reject missing/duplicate checkpoints, wrong scene/bots, pool changes, pauses,
+missing/extra shots, survival, failed recovery, wrong clocks and effect faults.
+They run in both host CI jobs. The57 effect/profile/context/backlog tests pass;
+Python compilation, context freshness and whitespace checks pass.
+
+Evidence: `private/test-saves/rocket-impact-{original60,180,240}`, corresponding
+logs and `logs/rocket-impact-comparison.json`. The first two use runner b2f1b624;
+240 uses d99ce82a (adds final validation/initial-command hash, same route and
+observers). Saved profiles match canonical hash090cced7; signatures/fixture
+checks pass, owned processes exit0 and disposable disks are recycled. An earlier
+`rocket-impact-probe240` calibrated the route; its later24-degree shot caused
+no self-damage and is not an acceptance comparison. No game source changed.
+Native Mac live gameplay, sound and broad effect fidelity remain unverified.
+
 ## 2026-10-24 — Post-match menus and mixed-refresh rematch
 
 On the unchanged `1ae9169c` Windows executable, the isolated Original60/240 pair

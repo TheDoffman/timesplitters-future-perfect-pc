@@ -35,8 +35,15 @@ Camera/mothership/spawn/rigid fixtures include the shared helper.
 
 Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
 helper death and the portable ring; `test_native_crash.py` checks Darwin output.
-Shared UI tests cover health identity/failures and bounded ZIP export. Existing
-runtime/launcher CI runs these on both hosts.
+Both hosts run these and shared UI identity/failure/ZIP tests.
+
+
+`stability_transitions_game.py --scenario rocket-impact --native-fps 240
+--watch-actors --watch-effects --seconds 180`: Temple floor rocket, cleanup,
+respawn/walk;0 selects Original60. `sample_wait` observes at most20Hz; effects
+remain non-atomic. `rocket_impact_stats.py` checks shot/death/lifetime/recovery;
+counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
+captures are not synchronized to memory. See STATUS for live evidence.
 
 ## Choose the cheapest relevant check
 
@@ -535,20 +542,14 @@ A ten-second deadlock guard bounds failures; the test no longer races a 500 ms
 fake response against a 350 ms runner-speed assertion. Both launcher host builds
 run this shared fixture; production timeout and cancellation policy is unchanged.
 
-## PR #285 integration checks
+## Native integration checks
 
-Keep both native FPS test registrations and main's mounted mouse, text entry,
-Auto display, crane/Ghost Gun and scoped-text checks. The historical controls
-upgrade fixture defers both late-frame and native tail patches until full-stack
-migration; fresh stacks apply all of them. `stability_transitions_game.py` retains
-the weapon-set scenario alongside bounded native-rate/surface/network options
-and uses perf-counter timestamps for command/presentation alignment.
+Retain native FPS and main's mounted mouse, text entry, Auto display, crane/Ghost
+Gun and scoped-text tests. Historical controls upgrades defer dependent native
+patches until full-stack migration; fresh stacks apply all patches.
 
-The Windows prompt fixture now verifies real page protections and scratch ABI
-without trying to count read queries in its own translation unit: scoped reads
-live in `pc_prompts.c`. `test_text_read_scope.py` retains explicit query-count,
-nesting and fresh-write checks. Merging source does not establish fresh Mac or
-whole-game high-refresh acceptance.
+`test_text_read_scope.py` covers scoped queries, nesting, fresh writes and
+mutations; Windows prompt fixtures verify actual page protections and ABI.
 
 The PR #285 CI index check also caught three pre-existing Windows patch files
 with residual CRLF bytes despite their LF attributes. They were normalized to
