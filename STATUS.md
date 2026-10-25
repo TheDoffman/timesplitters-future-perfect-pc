@@ -25101,3 +25101,25 @@ texture payloads/catalog are unchanged from11e4db11 and their verified LFS uploa
 Context refresh/check against main and staged whitespace checks passed.
 No runtime changes beyond main, gameplay tests, main merge or release performed.
 Issue74 remains open; final scene validation is still pending.
+
+## Launcher v1.3.1 publication and history recovery (2026-10-24)
+
+PR #347 merged at `17780aa8aa3a5711140a84162df83db780678214`. Hosted run
+40157152003 passed Windows and native Mac builds/regressions plus complete
+package verification. Publication then failed before release creation because
+its shallow checkout could not resolve `launcher-v1.3.0..17780aa8` for the new
+filtered changelog. Its already-created tag was preserved.
+
+Recovered the exact hosted artifacts, verified both receipts/archives with the
+tracked publisher, and invoked the unchanged publisher from that exact source
+in this full-history checkout. Launcher v1.3.1 is public with eight assets and
+one ZIP per platform. Public ZIP/manifest/receipt/hash checks passed; the v1.3.0
+updater installed the downloaded Windows ZIP, restored v1.3.0 after an injected
+failure and preserved all game/ISO/save/settings/texture/rollback fixtures.
+Embedded artwork matches the pins. The old client discovers launcher1.3.1 and
+gamev0.3.2. No published binary or tag was replaced; no game build was released.
+
+The follow-up on `fix/launcher-publish-history` gives the publication job its own
+full Git history. A new regression failed against the shallow checkout before
+passing with the fix. No launcher/runtime code changes. The original workflow
+run remains failed at publication; the verified release was recovered separately.

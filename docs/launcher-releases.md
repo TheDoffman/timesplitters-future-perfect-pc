@@ -60,6 +60,8 @@ stable `launcher-vX.Y.Z` release, including for launcher previews. Game tags,
 drafts and launcher prereleases cannot become the baseline. Release history is
 paged; incomplete history stops publication. With no previous stable launcher,
 the notes describe an initial launcher release without an unrelated comparison.
+The publication job checks out full Git history and tags so the changelog can
+inspect that range. A successful build job does not supply history to this job.
 
 The change list includes only merged PRs in that commit range touching launcher
 source, packaging, artwork/SDK pins or embedded default controls. Game-only,

@@ -44,6 +44,12 @@ Only fixed status text enters copied diagnostics; raw heartbeat fields stay loca
 
 ## Flow and ownership
 
+The launcher publication job requires a full-history checkout (`fetch-depth: 0`)
+for `launcher_pr_notes` to inspect the previous launcher tag and merged commit
+range. Build-job history does not carry into the separate publication job.
+`test_launcher_release.py` checks this prerequisite; tags and published assets
+remain immutable during interrupted-publication recovery.
+
 Read [launcher usage](../launcher.md), [Windows launcher](../windows-launcher.md),
 [Mac launcher](../mac-launcher.md) and [release process](../launcher-releases.md)
 only as needed. `Bootstrap.cs` handles startup; `Core.cs` contains shared
