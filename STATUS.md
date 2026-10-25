@@ -22919,3 +22919,26 @@ Repository context/index check against current main and branch whitespace check
 passed. Log: ignored `logs/bot-pr-main-build.log`. No new gameplay or Mac-host
 validation was performed for this synchronization; original loopback evidence
 and MAC-052 limitations above still apply. No game release was published.
+
+## Launcher v1.3.1 release preparation (2026-10-24)
+
+Prepared from main `aed726e1` on `release/launcher-v1.3.1`. Advances the shared
+version and numeric assembly attributes to ship existing launcher improvements:
+60/120/180/240 FPS Beta presets, capture-health reporting with bounded gameplay
+breadcrumbs in diagnostic exports, and launcher-specific release changelogs.
+The FPS/capture features require compatible game runtimes; this release contains
+only launchers. Optional texture delivery and Classic/Enhanced controls remain
+as implemented in v1.3.0. Package paths, update manifest names and one ZIP per
+platform remain unchanged. No personal files or game assets are modified.
+
+Validation is pending below and in the release PR/workflow. Windows and Mac
+must both pass the existing build, behavioral and package checks before public
+upload. Mac Developer ID signing/notarization remains unavailable, as documented
+in the release publisher. No gameplay validation is claimed by a launcher build.
+
+Local Windows x64 validation passed using .NET Framework 4.8 and checksum-pinned
+artwork: the complete `build-launcher.ps1 -Test -RequireArtwork` suite, all 31
+publisher regressions, backlog consistency, repository-context validation and
+whitespace checks. Build output is isolated in ignored `build/l131`; logs are
+under this source worktree's ignored build directory. Hosted Windows/Mac checks
+and exact public-package verification remain release gates.
