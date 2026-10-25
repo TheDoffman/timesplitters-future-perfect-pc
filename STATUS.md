@@ -25898,3 +25898,66 @@ Repository context/index and whitespace checks pass. No private assets or
 generated game sources are committed. Live registration/activation/rendered TREE behavior,
 physical Mac execution, complete effect services and broader game coverage are
 not established by this routine fixture. No all-scenes or all-bugs claim follows.
+
+
+## TRAP solver mixed-clock repair (2026-10-25)
+
+PR #363's TREE-only head9955d2f2 passes all applicable Windows/macOS hosted
+runtime/transition/PR validation and launcher compatibility checks. This related
+TRAP audit/fix stays in that same PR; no new PR is created.
+
+The adjacent original US1D8AB0 is not the same kind of consumer as TREE.
+Initializer1D8C40 finds the TRAP-tagged entity, sets+C0=-88/+E0=0/state1A0=0,
+and registers1D8AB0. The original whole-game-tick gate selects one solver call;
+inside it, the sine-table force adds a fixed50-times-sine impulse to+E0 once
+per call, while+C0 motion and phase+1A4 consume converted whole game ticks.
+It emits one sound/control request, clamps/bounces at90 with the authored-0.1
+factor, increments a discrete counter and removes the callback beyond11.
+
+Broad native conversion substitutes the current fractional frame interval at
+1D8AF5(phase) and1D8B6A(travel), even though the gate still selects whole-tick
+calls and their fixed impulse. The resulting impulse/time mismatch changes
+motion, phase and event progression. An original-routine fixture fails before
+the repair (first discrepant native slow schedule has2,397 mismatched frame
+states). A naive always-open gate is independently rejected because it adds
+extra fixed impulses even with the corrected converted spans.
+
+Keep only these two converted reads in the authored carried-tick units. The
+original integer gate and fixed impulse/lookup/clamp/retirement logic stay
+unchanged on positive intervals. A pause-only override rejects a stale whole
+count when live game time is zero. Clock words are never rewritten. Other
+continuous conversions, including neighboring sites, continue to use live
+fractional time. There is no new adapter, save field, retained per-entity cache,
+solver coefficient or RNG policy.
+
+This is an intermediate correctness repair of the60Hz-authored nonlinear
+solver, not a claim that TRAP now supplies a fresh fractional pose each native
+frame. Its rendered motion cadence still follows the original solver calls.
+Smooth fractional trap motion needs a separate coupled integration/presentation
+investigation that preserves the verified impulse/event behavior; opening the
+gate alone is not that solution. The overall native-refresh goal stays open.
+
+`tests/native_trap_motion.c` executes the original1D8AB0 body, original153C20
+sine-table initialization and original12010 sine helper, using constants from
+the verified US XBE. Sound/control and callback-removal services are boundary
+spies; the spy honors removal by ceasing later dispatch. No rewritten pendulum
+or synthetic sine table replaces the engine routines. At every frame in40
+rate/slow/carried-phase schedules (60/120/144/180/240, slow1/4, four phases,
+ten game seconds), native state matches Original entity bytes and service
+counts. Original run always emits one sound/control and one removal. Restoring
+either converted read independently must fail. The old mixed-clock path and
+an always-open gate are separate controls that diverge on sub-tick schedules.
+Catch-up step sequences preserve full state/service counts; native pause and
+zero-carried positive intervals preserve state. Asset-free native clock tests
+also cover converted spans, neighboring continuous sites, Original fallback
+and stale-tick pause on both CI hosts. Private-XBE skips are not Mac gameplay.
+
+Three focused TREE/TRAP/clock checks pass9.95s. All118 timing/vehicle checks
+pass243.24s;21 repository/backlog checks pass4.07s. The supported Windows rebuild
+and bundled checks pass. Executable SHA256:
+`1fe73b2c0ef114dfccb3da46cec9f3ff76647515f496e1ce36b9d7bfcf090d8e`.
+Context/index and whitespace checks pass. Subsequent-head hosted checks remain
+separate from9955d2f2 results. Live TRAP/TREE
+registration/activation/rendering, complete service effects and physical Mac
+remain unverified. No game performance improvement is claimed from the offline
+fixture; old pacing evidence retains its explicit executable hashes and limits.

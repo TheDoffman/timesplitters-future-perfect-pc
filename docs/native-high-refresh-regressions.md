@@ -6,6 +6,26 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Scripted TRAP mixed clock (2026-10-25)
+
+TRAP1D8AB0 adds a fixed impulse once per whole-tick call, but broad native
+conversion replaces its phase/travel span with only that native frame's
+fraction. Original-routine comparisons reproduce altered motion/state/event
+progression. Preserve the authored solver by retaining whole units at only
+1D8AF5/1D8B6A; freeze its gate when a local pause leaves a stale carried tick.
+Opening the gate on every native frame would multiply impulses and also fails.
+
+The fixture executes the original solver, sine-table initializer and sine
+helper. Forty schedules through240/slow time/carried phases compare full entity
+bytes and sound/control/removal calls at every frame with Original; catch-up
+and pause are covered. Restoring either conversion or opening the gate is a
+failing control. All118 timing/vehicle tests,21 context/backlog checks and the
+supported Windows rebuild/bundled checks pass. Asset-free clock checks run on
+both CI hosts; private assets
+are needed for original-routine execution. This restores60Hz-authored mechanics,
+not fresh fractional trap poses or live scene/Mac acceptance. See
+[STATUS](../STATUS.md#trap-solver-mixed-clock-repair-2026-10-25).
+
 ## Scripted TREE callback phase (2026-10-25)
 
 Original US1D88B0 integrates its animation phase with float game time, but its

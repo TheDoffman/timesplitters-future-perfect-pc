@@ -3907,7 +3907,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **TREE phase gate (2026-10-25, current branch):** `src/pc_native_numeric.h` admits
+- **TRAP solver clock (2026-10-25, PR #363):** Shared numeric policy in
+  `src/pc_native_numeric.h` keeps two TRAP phase/travel conversions in the same
+  whole-tick span as its fixed per-call impulse; a pause override rejects stale
+  carried ticks. Original solver/events/state and host interfaces stay shared.
+  Windows original-routine parity and asset-free policy checks are separate;
+  private-XBE skips do not prove native Mac execution. Fresh fractional trap
+  poses, live activation/rendering and physical Mac remain **Awaiting validation**.
+
+
+- **TREE phase gate (2026-10-25, PR #363):** `src/pc_native_numeric.h` admits
   live fractional intervals only at US1D88B0. The original callback owns phase,
   pose and single-event crossings; its old whole gate lost75% of time at240.
   No host adapter or state layout changes. Asset-free clock coverage runs on

@@ -272,6 +272,17 @@ static void tree_phase_clock(void)
     g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
     assert(!pc_native_global_load(0x1d88b0,0x4e7944,0));
     assert(pc_native_global_load(0x1d88b0,0x4e7944,3)==3);
+    /* The nonlinear TRAP solver retains authored whole-tick impulse cadence.
+     * A nearby continuous conversion must still see live fractional time. */
+    for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<=3;whole++) {
+        g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=.25f;
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af5,0x4e7944,whole)==(float)whole);
+        assert(RECOMP_I32_TO_F32_AT(0x1d8b6a,0x4e7944,whole)==(float)whole);
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af6,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(pc_native_global_load(0x1d8ab0,0x4e7944,whole)==whole);
+    }
+    g_tsfp_native_timing_active=1;FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x1d8ab0,0x4e7944,1));
 }
 int main(void)
 {

@@ -60,8 +60,14 @@ extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
     ((site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
      (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
+/* TRAP1D8AB0 adds one fixed impulse per whole-tick call. Its phase/travel
+ * conversions must use that same carried span, not the current subframe.
+ * Keep the nonlinear solver/event cadence original; this is not a new
+ * fractional integrator or a per-frame trap-pose smoothing policy. */
 #define RECOMP_I32_TO_F32_AT(site,address,value) \
-    (((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
+    ((((site)==0x1D8AF5u || (site)==0x1D8B6Au) && (address)==0x4E7944u) ? \
+     (float)(int32_t)(value) : \
+     ((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
      pc_native_visual_sample((uint32_t)(value)) : RECOMP_I32_TO_F32((address),(value)))
 /* US script dispatcher sub_00228870 uses this load only as a pause gate.
  * At native rates a zero whole tick still contains fractional game time.
@@ -146,7 +152,9 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * The procedural-texture dispatcher likewise must not evolve its image
      * during a zero-float pause; its gate register is replaced by a render-
      * state return value before use. Positive intervals stay original. */
-    if ((site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
+    /* The discrete TRAP solver must also freeze when a local pause leaves
+     * a stale whole count; positive-time calls keep their original gate. */
+    if ((site == 0x1D8AB0u || site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
         return 0;

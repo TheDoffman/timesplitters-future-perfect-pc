@@ -917,16 +917,17 @@ evidence, not rendered parity or pacing. Physical Mac remains unverified.
 
 ## Forced and damped material scrolling
 
-`pc_native_material.h` splits127500's coupled affine velocity/travel map in raw
-time at current game speed:12765Bforcing,1276FD/127705damping,12773B/127791UV.
-Hooks use original parameters/held force. Zero/weak drag uses stable limits;
-Original, whole/catch-up intervals and unsupported decay retain original math.
-Force sampling/clamp, wrapping, resource/event order, state layout and pause stay
-original. Varying force within an authored interval and live rendered/Mac parity
-remain unproven. See portable/original surface/cache tests and STATUS for evidence.
+`pc_native_material.h` splits127500's coupled velocity/travel map in raw time
+at game speed:12765Bforce,1276FD/127705drag,12773B/127791UV. Zero/weak drag
+uses stable limits; Original/whole/catch-up/unsupported bases keep old math.
+Force sample/clamp, wrapping, resources/events, layout and pause stay original.
+Varying force and rendered/Mac parity remain open; see surface/cache tests and STATUS.
 
-TREE1D88B0 admits fractional time at its entry gate; EAX is overwritten before
-use. The original phase/pose, events, terminal clamp and state layout stay intact.
-Original/whole updates stay original. Adjacent1D8AB0 has per-call behavior and
-is not opted in. Original-US/public clock checks cover the repair; live scene/
-physical Mac remain unverified.
+## Scripted object clocks
+
+TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
+Original phase/pose, events, terminal clamp, layout and whole updates remain.
+TRAP1D8AB0 keeps its whole gate and fixed impulse; only1D8AF5/1D8B6A phase/travel
+conversions use that carried span. A pause-only gate override rejects stale
+whole counts. This restores the nonlinear solver, not fractional trap poses.
+Original-US/public clock tests cover these policies; live scenes/Mac remain open.
