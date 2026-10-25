@@ -1385,9 +1385,9 @@
     },
     {
       "name": "zz-keyboard-reload-buffer.patch",
-      "sha256": "0d2e6cee12f32b88c70dbf0810c12c0ecaf31c5391ae41403bae682deec2dc82",
+      "sha256": "5ab49667e0661962fffbbdcfb98478705d84b0eaebc4ab4faaf4c990524e0be9",
       "targets": [
-        "src/input/input_bindings.c\r"
+        "src/input/input_bindings.c"
       ]
     },
     {
