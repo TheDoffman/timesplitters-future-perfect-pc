@@ -3850,6 +3850,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Completed Online rematch (2026-10-24, PR #344):** The existing Windows
+  observer now optionally compares second-round final records after verifying
+  reset. A240/Original60 loopback pair completes two rounds with matching eight
+  participant records and six moving bots. No runtime/adapter change; physical
+  Mac and cross-machine validation remain open. Exact evidence is in STATUS.
+
 - **Arcade HUD grouping (2026-10-24, PR #344):** Shared `pc_display_ui.inc`
   applies the same left anchor to SCORE and RANK panels, preserving their
   original spacing/animation. The overlap also reproduces at Original60.

@@ -100,6 +100,8 @@ def main():
                         help='After the Results menu, press its Next prompt to capture Scores and Options')
     parser.add_argument('--rematch', action='store_true',
                         help='Use the reviewed Options rematch route and verify a fresh active round')
+    parser.add_argument('--require-rematch-results', action='store_true',
+                        help='Also wait for the fresh rematch to finish and compare both final records')
     parser.add_argument('--inspect-setup', action='store_true',
                         help='Capture the normal setup screens, then stop before gameplay')
     parser.add_argument('--short-match', action='store_true',
@@ -113,6 +115,8 @@ def main():
         parser.error('--inspect-results-tabs requires at least 20 post-results seconds')
     if args.rematch and not args.inspect_results_tabs:
         parser.error('--rematch requires --inspect-results-tabs')
+    if args.require_rematch_results and not args.rematch:
+        parser.error('--require-rematch-results requires --rematch')
     if not args.tag.replace('-', '').isalnum() or not 10 <= args.seconds <= 180:
         parser.error('Use an alphanumeric tag and 10..180 seconds')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
@@ -281,11 +285,49 @@ def main():
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
         if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
-                                              'scores-tab','options-tab','rematch','finished',
+                                              'scores-tab','options-tab','rematch','rematch-results','finished',
                                               'options-root','options-mode','options-settings','options-settings-initial','short-match-settings'):
             for peer, child in enumerate(children):
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
+    def await_results(label):
+        # Called only after active gameplay; rematches additionally require the
+        # existing reset checks for clock, result-ready state, roster and scores.
+        deadline=time.monotonic()+args.seconds
+        while time.monotonic()<deadline:
+            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
+                break
+            wait(.1)
+        else:
+            report(label+'-timeout')
+            raise RuntimeError('Both peers did not complete within the bounded results wait')
+        wait(2)  # Let the existing reliable final packet settle.
+        report(label)
+        results=[]
+        for peer in (0,1):
+            rows=[]
+            for index in range(8):
+                row=read(peer,0x6f0b08+index*0x68,0x68)
+                rows.append(dict(index=index,slot=row[0],
+                    name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
+                    kills=struct.unpack_from('<16h',row,2),
+                    deaths=struct.unpack_from('<h',row,0x4e)[0],
+                    rank=struct.unpack_from('<i',row,0x58)[0],
+                    score=struct.unpack_from('<i',row,0x5c)[0],
+                    character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
+            results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
+                                ready=word(peer,0x6f1188),rows=rows))
+        (out/(label+'.json')).write_text(json.dumps(results,indent=2))
+        for result in results:
+            assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
+            assert all(r['name'] for r in result['rows']), 'Missing results names'
+        def records(result):
+            return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
+                           for row in result['rows']],key=lambda row:row['slot'])
+        assert records(results[0])==records(results[1]), 'Host/client final results differ'
+        if args.short_match:
+            assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
+
     try:
         for peer in range(2):
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
@@ -411,40 +453,7 @@ def main():
             wait(2)
             report(f'move-{peer}-settled')
         if args.require_results:
-            deadline=time.monotonic()+args.seconds
-            while time.monotonic()<deadline:
-                if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
-                    break
-                wait(.1)
-            else:
-                report('results-timeout')
-                raise RuntimeError('Both peers did not complete within the bounded results wait')
-            wait(2)  # Let the existing reliable final packet settle.
-            report('results')
-            results=[]
-            for peer in (0,1):
-                rows=[]
-                for index in range(8):
-                    row=read(peer,0x6f0b08+index*0x68,0x68)
-                    rows.append(dict(index=index,slot=row[0],
-                        name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
-                        kills=struct.unpack_from('<16h',row,2),
-                        deaths=struct.unpack_from('<h',row,0x4e)[0],
-                        rank=struct.unpack_from('<i',row,0x58)[0],
-                        score=struct.unpack_from('<i',row,0x5c)[0],
-                        character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
-                results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
-                                    ready=word(peer,0x6f1188),rows=rows))
-            (out/'results.json').write_text(json.dumps(results,indent=2))
-            for result in results:
-                assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
-                assert all(r['name'] for r in result['rows']), 'Missing results names'
-            def records(result):
-                return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
-                               for row in result['rows']],key=lambda row:row['slot'])
-            assert records(results[0])==records(results[1]), 'Host/client final results differ'
-            if args.short_match:
-                assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
+            await_results('results')
             if args.post_results_seconds:
                 wait(args.post_results_seconds)
                 report('post-results')
@@ -476,6 +485,8 @@ def main():
                     assert all(word(peer,pool+slot*0xea0+0xa6c)==0 for slot in range(8)), 'Rematch retained scores'
                 wait(10)
                 report('rematch')
+                if args.require_rematch_results:
+                    await_results('rematch-results')
         else:
             wait(args.seconds)
         report('finished')
@@ -511,6 +522,7 @@ def main():
             post_results_seconds=args.post_results_seconds,
             inspect_results_tabs=args.inspect_results_tabs,
             rematch=args.rematch,
+            require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
             compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',

@@ -1,3 +1,40 @@
+## 2026-10-24 — Complete a mixed-preset Online rematch
+
+On source `2393d344` and Windows executable
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`,
+a bounded Online loopback host at native240 and guest at Original60 completed
+two consecutive five-point Deathmatches with six bots. The runner now accepts
+`--require-rematch-results`, reusing the first round's bounded final-record
+validation after the existing rematch clock/result-ready/roster/score reset
+checks. It saves a separate second-round result file; no gameplay code changed.
+
+Both rounds produced identical host/guest records for all eight named slots,
+including kills, deaths, rank, score and character. Round one reached results
+at204.0 seconds; the rematch entered fresh gameplay at241.7, remained active
+at251.7 and reached new final records at279.2. The General scored five in both
+rounds, but other scores/deaths differ; these are not reused first-round records.
+All six bots have changing positions on both peers during round two, across
+4093/4155 active observations. Missing actor readings remain excluded; these
+asynchronous samples do not prove exact trajectory, damage or latency parity.
+
+The 280.9-second runner exited0 after terminating only its owned children.
+Both signed disposable profiles retain canonical090cced7, fixture hashes pass,
+and locks/virtual partitions/owned processes are gone. First-round Scores
+captures visibly agree; reviewed rematch captures show gameplay/death. The
+second-round completion images precede the results frontend, so the completion
+claim rests on fresh match state and compared records, not a reviewed second
+Scores screen. This is local loopback, not cross-machine or physical Mac proof.
+
+Evidence: `logs/online-bots-rematch-complete-240-60/` (provenance, checkpoints,
+observations, both result files, captures and acceptance-summary.json),
+`logs/online-rematch-complete-240-60.log`. The runner's recorded SHA256 is
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+Python compilation, the invalid-option early-rejection check and an AST
+comparison confirming unchanged result-validation logic pass. The21 context/
+Mac-backlog tests pass. Existing Windows-only observer uses its existing
+platform boundary; shared runtime and native Mac adapters are unchanged.
+Full-game acceptance remains open.
+
 ## 2026-10-24 — Preserve Arcade Score/Rank spacing during HUD transitions
 
 The Temple death sequence exposed overlapping SCORE/RANK labels. A follow-up

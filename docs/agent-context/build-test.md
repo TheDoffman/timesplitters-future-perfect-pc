@@ -93,7 +93,8 @@ Runner timing includes16ms test-input polling; normal play does not. Its
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
 Windows `test-online-bot-motion.py`: isolated 0/120/180/240 peers.
 `--require-results`: matching records; `--short-match`: five points via menu readback.
-`--post-results-seconds`/`--inspect-results-tabs`/`--rematch`: review transitions.
+`--post-results-seconds`/`--inspect-results-tabs`/`--rematch`: transitions.
+`--require-rematch-results` compares round-two results after reset checks.
 `test_network_bot_results.py`: US routines and AI mutations.
 Async reads are not latency.
 
