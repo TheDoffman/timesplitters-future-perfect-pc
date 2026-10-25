@@ -5,6 +5,7 @@
 static void clear_transient(PcInput *s)
 {
     memset(s->keys, 0, sizeof s->keys);
+    pc_reload_reset(&s->reload);
     s->dx = s->dy = 0;
     s->motion_at = 0;
     s->wheel_queue = s->wheel_key = 0;
@@ -30,6 +31,14 @@ void pc_input_key(PcInput *s, unsigned key, int down)
     if (key < 256 && s->focused) s->keys[key] = !!down;
 }
 
+void pc_input_key_at(PcInput *s, unsigned key, int down, uint64_t now)
+{
+    if(key<256 && s->focused) {
+        pc_reload_event(&s->reload,key,s->keys[key],down,now);
+        pc_input_key(s,key,down);
+    }
+}
+
 void pc_input_motion(PcInput *s, double dx, double dy, uint64_t now)
 {
     if (!s->focused || !s->captured || !isfinite(dx) || !isfinite(dy)) return;
@@ -53,6 +62,7 @@ int pc_input_down(PcInput *s, unsigned key, uint64_t now)
 {
     /* F23/F24 are configurable wheel bindings. Give each notch a press and
        a release, including when several notches arrive in one raw packet. */
+    int old_wheel=s->wheel_key;
     if (now >= s->wheel_until) {
         if (s->wheel_key) { s->wheel_key = 0; s->wheel_until = now + 40; }
         else if (s->wheel_queue) {
@@ -60,6 +70,10 @@ int pc_input_down(PcInput *s, unsigned key, uint64_t now)
             s->wheel_queue += s->wheel_queue > 0 ? -1 : 1;
             s->wheel_until = now + 60;
         }
+    }
+    if(old_wheel!=s->wheel_key) {
+        if(old_wheel)pc_reload_event(&s->reload,(unsigned)old_wheel,1,0,now);
+        if(s->wheel_key)pc_reload_event(&s->reload,(unsigned)s->wheel_key,0,1,now);
     }
     return s->focused && key > 0 && key < 256 && (s->keys[key] || key == (unsigned)s->wheel_key);
 }

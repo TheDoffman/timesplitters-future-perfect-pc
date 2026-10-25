@@ -1,0 +1,71 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -937,6 +937,19 @@
+     }
+ }
+ 
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++static int reload_action(int control)
++{
++    if(CONTROLS[control].kind!=K_ANALOG)return -1;
++    switch(CONTROLS[control].arg) {
++    case XBOX_BUTTON_X:return 0;
++    case XBOX_BUTTON_RTRIGGER:return 1;
++    case XBOX_BUTTON_LTRIGGER:return 2;
++    default:return -1;
++    }
++}
++#endif
++
+ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+ {
+     Controller *c;
+@@ -946,6 +959,8 @@
+     KeyCache kc;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     unsigned char weapon_down[PC_WEAPON_SLOT_COUNT]={0};
++    unsigned char reload_roles[256]={0};
++    int reload_keys[3]={0};
+ #endif
+     RecompPadState pad;
+     int have_pad = 0, i;
+@@ -1035,6 +1050,24 @@
+      * for this port. Port 2 defaults contain no implicit keyboard sources. */
+     use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback);
+     if (use_pad_defaults) defaults_for(&pad_defaults, 1);
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++    if(port==0) {
++        for(i=0;i<CONTROL_COUNT;i++) {
++            int action=reload_action(i);
++            if(action<0)continue;
++            for(int s=0;s<c->bind[i].count;s++) {
++                const Source *source=&c->bind[i].src[s];
++                if(source->kind!=SRC_KEY)continue;
++                if(source->arg>0 && source->arg<256)reload_roles[source->arg]|=1u<<action;
++                int m=source_magnitude(source,&kc,&pad,have_pad,c->deadzone);
++                if(m>reload_keys[action])reload_keys[action]=m;
++            }
++        }
++        pc_controls_reload_sample(reload_roles,c->device==DEV_KEYBOARD && pc_prompts_keyboard_active(),
++                                  &reload_keys[0],&reload_keys[1],&reload_keys[2]);
++    }
++#endif
++
+ 
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+@@ -1059,7 +1092,14 @@
+             }
+         }
+ 
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++        int action=reload_action(i);
++        if(port==0 && action>=0 && reload_keys[action]>mag)mag=reload_keys[action];
++#endif
+         for (s = 0; s < c->bind[i].count; s++) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++            if(port==0 && action>=0 && c->bind[i].src[s].kind==SRC_KEY)continue;
++#endif
+             int m = source_magnitude(&c->bind[i].src[s], &kc, &pad, have_pad,
+                                      c->deadzone);
+             if (m > mag)

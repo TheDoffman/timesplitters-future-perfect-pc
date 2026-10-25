@@ -18,6 +18,7 @@ int main(int argc, char **argv)
     FILE *f;
     unsigned char *guest;
     int i;
+    ULONGLONG replay_epoch;
     LRESULT message_result = 0;
     int16_t mx = 32767, my = 32767;
     CHECK(argc == 3);
@@ -115,6 +116,7 @@ int main(int argc, char **argv)
     fputs("0 key 87 1\n0 key 68 1\n0 key 82 1\n0 key 1 1\n0 key 2 1\n0 key 17 1\n0 wheel 1 0\n0 mouse 100 20\n", f); fclose(f);
     _putenv_s("TSFP_PC_INPUT_REPLAY", replay_file);
     _putenv_s("RECOMP_INPUT_CONFIG", argv[1]);
+    replay_epoch=GetTickCount64();
     pc_controls_attach(NULL);
     CHECK(recomp_bindings_sample(0, &pad));
     CHECK(pad.sThumbLY > 23000 && pad.sThumbLX == pad.sThumbLY && hypot(pad.sThumbLX, pad.sThumbLY) <= 32767);
@@ -283,6 +285,32 @@ int main(int argc, char **argv)
         #undef MF
         CHECK(!_putenv_s("TSFP_NATIVE_FPS",saved_rate?saved_rate:""));
         free(saved_rate);
+    }
+    {
+        /* Real binding sampler + Windows event/replay adapter: a complete R
+         * tap between samples survives, and only old keyboard Fire is held. */
+        f=fopen(state_file,"w");CHECK(f);fputs("0 0",f);fclose(f);
+        f=fopen(replay_file,"w");CHECK(f);
+        unsigned at=(unsigned)(GetTickCount64()-replay_epoch);
+        fprintf(f,"0 key 1 1\n%u key 82 1\n%u key 82 0\n%u key 1 0\n%u key 1 1\n",
+                at+100,at+105,at+250,at+255);fclose(f);
+        *(uint32_t *)(guest+0x10114)=2;
+        *(uint32_t *)(guest+0x105a0)=1;
+        *(uint32_t *)(guest+0x101c8)=1;
+        pc_controls_menu_mode(0);pc_controls_attach(NULL);
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        Sleep(150);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(recomp_bindings_sample(0,&pad));
+        CHECK(pad.bAnalogButtons[XBOX_BUTTON_X]==255);
+        CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0);
+        *(uint32_t *)(guest+0x105a0)=7;
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        Sleep(40);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(recomp_bindings_sample(0,&pad));
+        CHECK(pad.bAnalogButtons[XBOX_BUTTON_X]==0 && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0);
+        Sleep(100);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(recomp_bindings_sample(0,&pad));
+        CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255);
     }
     VirtualFree(guest, 0, MEM_RELEASE);
     puts("PASS: PC input focus/capture, released buttons, wheel queue, raw-count camera math, pitch limits, FOV scaling, poll independence, WASD/reload/fire bindings and guest camera integration");
