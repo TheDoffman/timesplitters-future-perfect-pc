@@ -88,6 +88,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--seconds', type=int, default=60)
+    parser.add_argument('--host-fps', type=int, choices=(0,120,180,240), default=0,
+                        help='0 uses Original60; other values select native beta timing')
+    parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
+    parser.add_argument('--no-captures', action='store_true')
     args = parser.parse_args()
     if not args.tag.replace('-', '').isalnum() or not 10 <= args.seconds <= 180:
         parser.error('Use an alphanumeric tag and 10..180 seconds')
@@ -128,6 +132,7 @@ def main():
     drains=[]
     offsets={}
     samples = []
+    checkpoints = []
     completed=False
     started = time.monotonic()
     def read(peer, address, size):
@@ -175,10 +180,28 @@ def main():
     def key(peer, *keys):
         for value in keys:
             atomic(inputs[peer], f'{value} 1\n')
-            wait(.3)
+            wait(.18)
             atomic(inputs[peer], '0 0\n')
             wait(.6)
+    def wait_alive(slot):
+        # Combat can kill the client before its scheduled input. A corpse's
+        # matching coordinates are not evidence of movement replication.
+        deadline=time.monotonic()+15
+        while time.monotonic()<deadline:
+            actors=[]
+            try:
+                for peer in range(2):
+                    entity=word(peer,word(peer,0x7356d8)+slot*0xea0)
+                    actors.append((word(peer,entity+0x258),
+                                   struct.unpack('<f',read(peer,entity+0x1cc,4))[0]))
+                if actors[0][0]==actors[1][0] and all(a[1]>0 for a in actors):
+                    return
+            except OSError:
+                pass
+            wait(.1)
+        raise RuntimeError(f'Player {slot} did not become alive on both peers')
     def report(label):
+        observe()
         states = []
         for peer in range(len(handles)):
             try:
@@ -187,9 +210,12 @@ def main():
             except OSError:
                 states.append(dict(peer=peer, unmapped=True))
         print(round(time.monotonic()-started, 1), label, states, flush=True)
+        checkpoints.append(dict(label=label, seconds=time.monotonic()-started,
+            states=states, observations=[next((s for s in reversed(samples) if s['peer']==peer),None)
+                                         for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if label in ('startup','profiles','frontend','match','finished'):
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','finished'):
             for peer, child in enumerate(children):
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
@@ -198,13 +224,24 @@ def main():
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
             env = prepare_run(ROOT, run)
             runs.append(run)
+            if (run/'pc-frame-rate.ini').exists():
+                raise ValueError('Saved FPS preference could override this test; use a fresh tag')
             input_path = run/'input.txt'
             atomic(input_path, '0 0\n')
             inputs.append(input_path)
+            # Match stability_transitions_game: distinct presses for title,
+            # player count and Test Lab selection. Never rely on a held Select
+            # leaking through two screens at a particular frame-rate phase.
+            replay = run/'startup.txt'
+            initial = [(5000,69),(10000,69),(14000,40),(18000,69)]
+            replay.write_text('\n'.join(f'{at+d} key {key} {value}'
+                for at,key in initial for d,value in ((0,1),(180,0)))+'\n')
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
                 directory=url, port=host_port, automatic_host=False, detect_public_address=False)))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
+                TSFP_PC_INPUT_REPLAY=str(replay),
+                TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
                 TSFP_ONLINE_TEST_COMMAND=str(command), TSFP_ONLINE_SETTINGS=str(run/'online.json'),
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
             (run/'run.lock').write_text(str(os.getpid()))
@@ -221,14 +258,6 @@ def main():
                 worker.start();drains.append(worker)
             handles.append(K.OpenProcess(0x10, False, children[-1].pid))
         wait(25)
-        report('startup')
-        for peer in range(2):
-            key(peer,69)
-        wait(2)
-        report('profiles')
-        for peer in range(2):
-            key(peer,40,69)
-        wait(3)
         report('frontend')
         for peer in range(2):
             key(peer, 40, 40, 40, 69)
@@ -268,10 +297,14 @@ def main():
         report('match')
         # Movement of each human remains independently observable.
         for peer in range(2):
+            wait_alive(peer)
+            report(f'move-{peer}-start')
             atomic(inputs[peer], '87 1\n')
             wait(2)
             atomic(inputs[peer], '0 0\n')
+            report(f'move-{peer}-released')
             wait(2)
+            report(f'move-{peer}-settled')
         wait(args.seconds)
         report('finished')
         assert all(any(s['peer']==peer and s['humans']==2 and s['bots']>0 for s in samples)
@@ -296,8 +329,11 @@ def main():
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
         (out/'observations.json').write_text(json.dumps(samples))
+        (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
         (out/'provenance.json').write_text(json.dumps(dict(
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
+            runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
             compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
             completed=completed, exit_codes_before_cleanup=exit_codes,

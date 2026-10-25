@@ -270,6 +270,32 @@ perceptual smoothness remain acceptance work. A passing first-mission test
 does not establish native 144 FPS correctness across the full game. The mode
 remains opt-in while that work is incomplete.
 
+## Acceptance audit (2026-10-24)
+
+This audit uses source `82b27c31`, the regression record, current test bodies and
+the Windows build identified in STATUS. Earlier observations retain their named
+build scope. Passing isolated routines does not establish their complete callers
+or the rendered result. The goal remains incomplete.
+
+| Requirement | Evidence inspected | Remaining acceptance |
+| --- | --- | --- |
+| Fresh updates, speed and pacing | Native clock and network cadence fixtures; current Disco and preceding Temple guest-frame/Present traces | Sustained performance across representative demanding scenes; reported dips remain |
+| Opening handoff and animation | Original animation timeline/event fixture, script dispatch controls, recorded opening comparison | Current 180/240 rendered opening comparison and natural cinematic timing |
+| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse, camera and vehicle fixtures | Live camera/vehicle/terminal transitions; physical-input feel |
+| Physics | Original rigid-body, vehicle, falling, force and contact fixtures | Representative real collision geometry and interactions |
+| Weapons and effects | Original firing, sound, projectile, beam, sniper and reload fixtures; live firing/reload cycle | Specific delayed-trail, sniper-hit and pre-bridge NPC reports remain without targeted live confirmation |
+| Scripts and pause | Phase-swept events/reload and pause/resume checks | Broader progression and interactions with moving actors/cameras |
+| Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
+| Texture fluidity | Fractional water implementation, GPU-image cycle and resource reuse; texture contracts | Other animated/scrolling surfaces, filtering/alpha/transitions across scenes |
+| Cinematics and audio | Original polling clocks and real-file movie decoder tests; prior movie tint correction | Visible/audible synchronization across representative scenes and host output |
+| Multiplayer | Cadence/correction/replica fixtures through240; live60/240 and180/120 movement/bot observations in STATUS | Complete match/damage equivalence and cross-machine behavior |
+| Prior fixes, saves and platforms | Regression checklist, isolated signed-profile preservation, shared code and host CI | Scene checks for prior fixes; physical Mac gameplay remains unverified |
+
+Mixed-preset loopback now supplies bounded movement/combat observations. Keep
+that coverage separate from CPU optimization measurements and Internet latency.
+Further scene/visual comparisons remain necessary. The user's request to defer
+the first mission changes investigation order, not its unresolved reports.
+
 ## NPC firing timing
 
 The shared native timing path also scopes the NPC firing transaction

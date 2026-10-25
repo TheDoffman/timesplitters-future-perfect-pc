@@ -1,3 +1,59 @@
+## 2026-10-24 — Goal audit and mixed-preset Online coverage
+
+The acceptance audit in `docs/native-high-refresh.md` maps the original goal to
+inspected source/tests, live evidence and remaining scene/platform gaps. The
+goal remains incomplete. PR #344's implementation head82b27c31 passes all14
+reported CI checks, including both native runtime hosts, patch upgrades and
+patch transitions. This follow-up changes only test tooling/documentation.
+
+`tools/test-online-bot-motion.py` now accepts independent host/guest presets
+0/120/180/240 (0=Original60), optional no-capture mode, and records runner hash,
+rates and movement checkpoints. It rejects a saved FPS sidecar that could
+override the requested test mode. Startup uses the existing stability runner's
+separate 180ms title/player-count/profile taps. The older single held Select
+sometimes left a peer on player/profile selection; the initial180/120 capture
+demonstrates that route failure. The initial60/240 attempt also never joined,
+but has no failed-screen capture to establish its cause. Neither attempt is
+accepted as a paired gameplay test or proof of a networking defect.
+
+Windows11 x64/D3D11, executable SHA256
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36,
+completes isolated Online directory/bridge loopback matches with two human
+slots and six bots. Reviewed640x480 captures show Vietnam gameplay and active
+Original60/240 or180/120 overlays. The two-second forward inputs give:
+
+| Host/client presets | Moving slot | Local displacement | Settled endpoint difference |
+| --- | --- | ---: | ---: |
+| Original60 /240 | Host | 12.849729 | 0 |
+| Original60 /240 | Client | 15.771369 | 0 |
+| 180 /120 | Host | 2.750483 | 0.006650 |
+| 180 /120 | Client | 15.899578 | 0.004815 |
+
+The180 host encounters different geometry; these distances are not speed-parity
+comparisons. Each accepted movement has positive health, an unchanged spawn
+counter, fresh observations on both peers and endpoint error below0.01 world
+units. Samples are asynchronous, not atomic frames. An earlier180/120 replay
+kept the client dead throughout its scheduled movement; that zero-displacement
+check is rejected. A bounded15-second wait for both copies to report the actor
+alive prevents issuing the movement measurement at a corpse. Death during a
+measurement still invalidates it; matching stationary coordinates cannot pass.
+
+Both successful pairs show bot position/health changes and respawn counters;
+this is not exact damage/score/event equivalence, a completed match, LAN/WAN
+latency, physical input latency or clean FPS evidence. The two games, periodic
+memory reads and screenshots share the host. The known test data and signed
+profiles remain byte-identical, canonical fixture hashes match, owned children
+are closed and disposable partition images are recycled.
+
+Evidence: `logs/online-bots-mixed-60-240-visual`,
+`logs/online-bots-mixed-180-120-alive`, their checkpoint/provenance files and
+`logs/online-mixed-*-validation.json`; the rejected route and dead-client runs
+remain under their separate tags. The private validator rejects zero movement,
+changed/dead spawns and stale observations. Source compiles;34 profile/context/
+backlog tests pass. Context freshness and whitespace checks pass. Current
+follow-up CI is separate from the green82b27c31 result; physical Mac gameplay
+and broader acceptance remain open. No game rebuild was required.
+
 ## 2026-10-24 — Avoid copying already-zero-based draw indices
 
 The bounded `crowd-current-profile240` Disco diagnostic uses source 7a796f19's
