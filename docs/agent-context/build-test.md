@@ -137,7 +137,24 @@ read-only/noaccess, large/cold fallback and retained/full-query mutations.
 
 Character fixtures run original dispatcher/timers and status3 scale/rotation/
 composition/cleanup through240, slow/pause/jitter/live switches and old-path
-controls. Scale tests use real matrix helpers; allocation/draws are absent. Surface-cache checks each U/V/phase; GPU calls are spies.
+controls. Scale tests use real matrix helpers; allocation/draws are absent.
+`native_character_trace.c` tests copied status3 update pairs, identity/frame/
+scene guards, removal, invalid/unreadable values and8192row/8MiB bounds. The
+original scale fixture also runs with tracing enabled and a failed file open;
+stdout/behavior stay identical and open failure is latched. The clock fixture
+matches production's manual TLS include order so missing register declarations
+fail locally. Paired matrices surround126029->120AB0, after timer advancement;
+read-cache lifetimes end before/after guest calls. Captured actual scoped deltas
+support per-update growth checks; async samples and an ideal constant60 curve
+are insufficient. It is an opt-in diagnostic, not a GPU/pacing acceptance route.
+`native_material_motion.c` compares180 fractional partitions with an independent
+one-step forced/damped affine map, including weak/zero drag, slow/fast time,
+mixed pieces and untouched rejection. `native_surface_cache.c` executes original
+127500 with nonzero held forcing/drag at60/120/144/180/240 and mixed rates,
+normal/quarter speed and pause, checking U/V velocity/travel against a closed
+form authored recurrence. Independent mutations remove damping, force or travel
+normalization; GPU calls remain spies. Force-table sampling is controlled, so
+these checks do not certify live varying forcing or rendered-material parity.
 
 ### Native vehicle integration and diagnostic checks
 
@@ -153,6 +170,16 @@ Private-XBE skips on CI do not certify those routines on Mac.
   all five rates, slow/fast/irregular time and pause. Static contacts compare an
   independent impulse equation, including penetration escape velocity. Mutations
   independently remove gates, timers, contacts, RNG and boundary corrections.
+  The rigid/rigid extension independently checks 432 frictionless impulse cases:
+  both masses, existing spin, three-dimensional normals and lever arms, diagonal
+  and rotated world inverse-inertia tensors, approaching/separating bodies,
+  Original60/native120/144/180/240 and an extra 0.7ms secondary step. It verifies
+  relative point velocity and both force/torque impulses before integration,
+  including linear and world-origin angular impulse conservation. Independent
+  mutations remove the second mass or its torque response. Original166060 is
+  lifted for both-body point velocity; original16DF60 damage/effect notification
+  is a checked service boundary. This is distinct from full clock scheduling,
+  live terrain selection and post-impact handling acceptance.
   Geometry, room/model notifications and broadphase services remain controlled.
 - `native_vehicle_driver.c` checks original `17DA00/172EE0` throttle, brake,
   reverse/release and steering recurrence, including wheel eligibility, speed
@@ -189,7 +216,14 @@ and temporary cleanup on both hosts.
 Bracket camera/body reads by frame and player-camera identity; globals can differ
 midframe. Retain excluded samples. STATUS/regression records preserve
 counterexamples; async reads do not prove completed-frame trajectories or
-broad handling parity.
+broad handling parity. Current-build Siberia contact acceptance (STATUS,
+2026-10-25) also finds large post-pillar variation between two true Original60
+runs with the same sampled entry pose. Treat that route as nondeterministic;
+matching host key durations and initial pose do not fix decoded input boundaries,
+all physics state, contact selection or captured-frame stalls. Native180/240
+exit/walk/pause pass, but endpoint differences alone cannot identify a native
+collision defect. Use controlled off-center geometry/coherent solver state for
+the next comparison rather than tuning to one live endpoint.
 
 Contact tracing requires isolated `TSFP_CONTACT_TRACE` path, pool slot0..1023
 and finite inclusive `TSFP_CONTACT_TRACE_Z=min,max`. It records generated and
@@ -209,6 +243,12 @@ suspension cost and remains diagnostic; health restoration/keypress timing does
 not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
+
+`surface-native-long` restores focus before `water-stable-start`, then settles.
+Its pacing observations must retain foreground visibility throughout the chosen
+window. Reject a background run even when its recorder has complete clocks;
+do not shorten the window or substitute a background FPS claim. Scotland
+standing-water results do not replace crowded-combat or campaign acceptance.
 
 Texture traces use a bounded queue: workers stamp reads; the renderer owns CSV
 and image/view stages. Total spans include waits. Cancelled requests neither

@@ -33,6 +33,7 @@ static unsigned vehicle_updates;
 static int character_contact,legacy_contact;
 static int wall_contact,missing_wall;
 static int penetration_contact,missing_penetration;
+static int missing_other_mass,missing_other_torque;
 static unsigned contact_kind;
 static float contact_depth,contact_restitution;
 static float contact_normal[3],contact_offset[3];
@@ -54,6 +55,8 @@ static double seconds;
 #undef RECOMP_F32_MUL_AT
 #define RECOMP_F32_MUL_AT(site,left,right) \
     ((site)==0x1689ACu && penetration_contact && missing_penetration ? 0.f : \
+    missing_other_mass && ((site)==0x16FD23u || (site)==0x16FD3Cu || (site)==0x16FD53u) ? 0.f : \
+    missing_other_torque && ((site)==0x1703A6u || (site)==0x1703BFu || (site)==0x1703D8u) ? 0.f : \
     (site)==0x172099 && legacy ? (left)*(right) : pc_native_multiply(site,left,right))
 /* The other ADDSS sites in these lifted routines have identity policy. */
 #undef RECOMP_F32_ADD_AT
@@ -111,6 +114,12 @@ void sub_00168180(void) {assert(g_eax==0);g_esp+=4;}
 void sub_002572A0(void) {assert(MEM32(g_esp+4)==PROP);publications++;g_esp+=4;}
 void sub_000872F0(void) {g_eax=1;g_esp+=4;}
 void sub_002561B0(void) {g_eax=MATERIAL;g_esp+=4;}
+/* Rigid/rigid impact notifications are a controlled service boundary here;
+ * the impulse has already been accumulated. Damage/effects are out of scope. */
+void sub_0016DF60(void) {
+    assert(MEM32(g_esp+4)==0 && MEM32(g_esp+8)==1 && MEM32(g_esp+12)==CONTACT);
+    g_eax=0;g_esp+=4;
+}
 static void impact_callback(void) {
     uint32_t contact=MEM32(g_esp+8);
     assert(contact>=CONTACT && contact<CONTACT+contact_mode*0x40 &&
@@ -200,6 +209,97 @@ static void step_clocks(unsigned raw_whole,unsigned whole,float raw,float delta)
     if(MEMF(position)!=before)changed++;
 }
 static void step(unsigned whole,float delta) {step_clocks(whole,whole,delta,delta);}
+
+static double dot3(const double a[3],const double b[3])
+{ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+static void cross3(const double a[3],const double b[3],double out[3])
+{ for(unsigned i=0;i<3;i++)out[i]=a[(i+1)%3]*b[(i+2)%3]-a[(i+2)%3]*b[(i+1)%3]; }
+
+/* Single frictionless rigid/rigid impact, before integration/drag. Unlike the
+ * static support cases this exercises both masses, both world inverse-inertia
+ * tensors and existing angular velocities. Use generalized impulse equations,
+ * not a reference call through the same guest routine. This does not supply
+ * broadphase geometry or certify a live jeep collision. */
+static void two_body_contacts(void)
+{
+    enum { OTHER_BODY=BODY+0x200, OTHER_PROP=0xe000, RELATIVE=0xe200 };
+    const double normals[][3]={{.6,0,.8},{0,-.8,.6},{-2./3,1./3,2./3}};
+    const double arms[][3]={{0,0,0},{.25,-.5,.75},{-.75,.25,.5}};
+    unsigned cases=0;double max_error=0;
+    for(unsigned normal=0;normal<3;normal++)for(unsigned arm=0;arm<3;arm++)
+    for(unsigned inertia=0;inertia<4;inertia++)for(unsigned approach=0;approach<2;approach++)
+    for(unsigned rate=0;rate<6;rate++) {
+        unsigned fps=rate<5?test_rates[rate]:144;
+        reset(2);g_tsfp_native_timing_active=rate!=0;
+        double n[3],ra[3],rb[3],wa[3]={.5,-.25,.75},wb[3]={-.25,.5,-.125};
+        double va[3],vb[3],ca[3],cb[3],relative[3],rxna[3],rxnb[3];
+        double ia[3][3]={{0}},ib[3][3]={{0}},inverse_a=.25,inverse_b=2;
+        float dt=rate==5?.0007f:1.f/(8*fps);
+        MEM32(0x4e7944)=rate==0?1:0;MEMF(0x4e794c)=60.f*dt*8;
+        MEM32(0x4e7940)=rate==0?1:0;MEMF(0x4e7948)=60.f*dt*8;
+        MEM32(CONTACT+0x24)=PROP;MEM32(CONTACT+0x28)=OTHER_PROP;
+        MEM16(CONTACT+0x2e)=1;MEM32(OTHER_PROP+0x80)=1;MEM32(TABLE+4)=OTHER_PROP;
+        MEM32(OTHER_BODY+0x1e8)=0x7f1234;
+        MEMF(BODY+0x1a8)=(float)inverse_a;MEMF(OTHER_BODY+0x1a8)=(float)inverse_b;
+        for(unsigned i=0;i<3;i++) {
+            /* Float-quantize the independent inputs exactly as guest memory. */
+            n[i]=(float)normals[normal][i];ra[i]=(float)arms[arm][i];
+            rb[i]=(float)arms[(arm+1)%3][i];
+            ia[i][i]=inertia==0?1:(inertia==1?.25*(i+1):2.-.5*i);
+            ib[i][i]=inertia==0?1:(inertia==1?2.-.5*i:.25*(i+1));
+        }
+        if(inertia==3) {
+            /* Positive-definite tensors with rotated principal axes. */
+            ia[0][0]=ia[1][1]=1.25;ia[0][1]=ia[1][0]=.75;ia[2][2]=.5;
+            ib[0][0]=ib[1][1]=1;ib[0][1]=ib[1][0]=-.5;ib[2][2]=2;
+        }
+        for(unsigned i=0;i<3;i++) {
+            va[i]=(float)((approach?4:-12)*n[i]+(i==0?1.25:0));
+            vb[i]=(float)(i==2?-.5:0);
+            MEMF(CONTACT+i*4)=(float)ra[i];MEMF(CONTACT+0xc+i*4)=(float)n[i];
+            MEMF(BODY+0x140+i*4)=0;MEMF(OTHER_BODY+0x140+i*4)=(float)(ra[i]-rb[i]);
+            MEMF(BODY+0x14c+i*4)=(float)va[i];MEMF(OTHER_BODY+0x14c+i*4)=(float)vb[i];
+            MEMF(BODY+0x134+i*4)=(float)wa[i];MEMF(OTHER_BODY+0x134+i*4)=(float)wb[i];
+            for(unsigned j=0;j<3;j++) {
+                MEMF(BODY+0x40+i*16+j*4)=(float)ia[i][j];
+                MEMF(OTHER_BODY+0x40+i*16+j*4)=(float)ib[i][j];
+            }
+            MEMF(BODY+0x110+i*4)=MEMF(BODY+0x11c+i*4)=0;
+            MEMF(OTHER_BODY+0x110+i*4)=MEMF(OTHER_BODY+0x11c+i*4)=0;
+        }
+        cross3(wa,ra,ca);cross3(wb,rb,cb);
+        cross3(ra,n,rxna);cross3(rb,n,rxnb);
+        for(unsigned i=0;i<3;i++)relative[i]=va[i]+ca[i]-vb[i]-cb[i];
+        double speed=dot3(relative,n),denominator=(inverse_a+inverse_b)*dot3(n,n);
+        for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++)
+            denominator+=ia[i][j]*rxna[i]*rxna[j]+ib[i][j]*rxnb[i]*rxnb[j];
+        double impulse=speed<0?-speed/denominator:0;
+        g_esp=0x18000;MEM32(g_esp)=0x12345678;g_edx=CONTACT;g_esi=RELATIVE;
+        sub_001667C0();assert(g_esp==0x18004 && fabs(g_xmm0.f[0]-speed)<.00001);
+        for(unsigned i=0;i<3;i++)assert(fabs(MEMF(RELATIVE+i*4)-relative[i])<.00001);
+        float guest_speed=g_xmm0.f[0];
+        g_esp=0x18000;MEM32(g_esp)=0x12345678;
+        MEMF(g_esp+4)=dt;MEMF(g_esp+8)=guest_speed;MEM32(g_esp+12)=RELATIVE;
+        g_ebx=CONTACT;sub_0016FC00();assert(g_esp==0x18004);
+        printf("two_body_contact fps=%u mode=%u normal=%u arm=%u inertia=%u approach=%u impulse=%.9f\n",
+               fps,rate,normal,arm,inertia,approach,impulse);
+        for(unsigned i=0;i<3;i++) {
+            double actual_a=MEMF(BODY+0x110+i*4)*dt,actual_b=MEMF(OTHER_BODY+0x110+i*4)*dt;
+            double torque_a=MEMF(BODY+0x11c+i*4)*dt,torque_b=MEMF(OTHER_BODY+0x11c+i*4)*dt;
+            double errors[]={fabs(actual_a-impulse*n[i]),fabs(actual_b+impulse*n[i]),
+                             fabs(torque_a-impulse*rxna[i]),fabs(torque_b+impulse*rxnb[i])};
+            for(unsigned j=0;j<4;j++) {if(errors[j]>max_error)max_error=errors[j];assert(errors[j]<.00001);}
+            assert(fabs(actual_a+actual_b)<.00001);
+            /* Equal/opposite total angular impulse about the world origin. */
+            double origin_b[3],force_b[3],orbital[3];
+            for(unsigned j=0;j<3;j++){origin_b[j]=ra[j]-rb[j];force_b[j]=-impulse*n[j];}
+            cross3(origin_b,force_b,orbital);
+            assert(fabs(torque_a+torque_b+orbital[i])<.00001);
+        }
+        cases++;
+    }
+    printf("two_body_summary cases=%u max_impulse_error=%.9f\n",cases,max_error);
+}
 int main(int argc,char **argv)
 {
     legacy=argc>1 && !strcmp(argv[1],"legacy-clock");
@@ -210,6 +310,8 @@ int main(int argc,char **argv)
     missing_contact=argc>1 && !strcmp(argv[1],"missing-contact");
     missing_wall=argc>1 && !strcmp(argv[1],"missing-wall");
     missing_penetration=argc>1 && !strcmp(argv[1],"missing-penetration");setbuf(stdout,NULL);
+    missing_other_mass=argc>1 && !strcmp(argv[1],"missing-other-mass");
+    missing_other_torque=argc>1 && !strcmp(argv[1],"missing-other-torque");
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* CONSTANTS */
@@ -452,5 +554,6 @@ int main(int argc,char **argv)
     }
     printf("penetration_summary cases=%u max_linear_error=%.9f max_angular_error=%.9f\n",
            overlap_cases,overlap_linear_error,overlap_angular_error);
+    two_body_contacts();
     free(memory);puts("PASS: original rigid motion, force, drag, quaternion/matrix pipeline, support/contact impulse, fresh steps and pause");return 0;
 }

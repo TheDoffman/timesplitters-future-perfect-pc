@@ -5355,6 +5355,40 @@ See STATUS for exact measurements and the corrected reference scope.
   full-game or native Mac validation from the Windows first-mission run.
 - **PC evidence:** [Native high refresh development](STATUS.md#native-high-refresh-development-2026-10-20).
 
+**Rigid/rigid impulse acceptance extension (2026-10-25):**
+On branch `test/native-vehicle-contact-acceptance`,
+`tests/native_rigid_motion.c` and `tests/test_native_vehicle_timing.py` now
+exercise original1667C0/166060 point velocity and16FC00 two-body response against
+an independent generalized impulse calculation. The 432 cases include distinct
+masses, spin, 3D lever arms/normals and rotated inverse-inertia tensors at all
+five diagnostic rates plus an additional secondary-step duration. Damage/effect
+notifications remain a checked boundary; scheduling and live geometry are not
+provided by this extension. Existing both-host workflow registration includes
+the fixture, but its private supported-US-XBE requirement still skips these
+original routines on asset-free CI. No production behavior or OS adapter changes.
+Actual Mac execution/live handling remain Awaiting validation; see STATUS.
+
+**Forced/damped material motion follow-up (2026-10-25):**
+On `fix/native-material-motion` (source d2ae41d6, main integration65058c27),
+Shared `src/pc_native_material.h` and the five audited127500 numeric sites in
+`pc_native_numeric.h` split velocity, held forcing and UV travel together.
+Original mode and unsupported decay bases retain the original path; no state
+layout, resource owner or OS adapter changes. Asset-free partition tests and the
+original surface/cache fixture are selected by the existing both-host native
+timing suite. Private-XBE skips still do not prove Mac execution. Windows
+build/gameplay evidence belongs in STATUS; physical Mac and actual changing
+force-table/rendered-material acceptance remain Awaiting validation.
+
+**Coherent character-growth observation (2026-10-25, PR #361 WIP):**
+`pc_native_character_trace.h` / `pc_native_character_trace_guest.inc` optionally
+observe the original126029->120AB0 matrix update. Before/after reads use the
+existing Windows/Darwin mapped-memory adapter, resetting its cache across guest
+execution. Default, failed and capped traces retain the original callee. This
+adds no gameplay policy or OS adapter. Portable collector/writer and enabled/
+failed-open original-routine checks join the existing both-host timing suite;
+private-XBE skips are not Mac execution. Windows build/live evidence is in
+STATUS. Physical Mac and rendered-effect parity remain Awaiting validation.
+
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 
 - **Status:** Awaiting validation

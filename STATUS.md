@@ -25309,3 +25309,333 @@ unrelated custom-texture fixtures remained unchanged. This was a bounded real
 download/installation check, not a full 1.91 GiB install or gameplay test. Mac live
 download/UI execution remains unrun on this Windows host; both hosts use the
 unchanged shared downloader/installer. No new launcher binary is required.
+
+
+## Current-build live vehicle contact comparison (2026-10-25)
+
+After PR #359 merged as `40600133`, continued acceptance on the unchanged
+Windows executable SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+Source `4ff0d5ff` has the same tree as that squash merge. This investigation
+changes no runtime physics or timing coefficients.
+
+Used disposable no-bot Siberia sessions, normal walking/vehicle controls and
+read-only body observations. A synchronous solver-entry trace retained generated
+and selected contacts for body slot88 in Z45..75, below its 16,000-row/8MiB caps.
+Original mode is verified by trace native=0; 180/240 use native=1. The route uses
+three seconds of throttle, a release, two seconds of throttle, settling, exit,
+on-foot movement and pause/resume. Host holds were 3.0016..3.0021s and
+2.0016..2.0019s; release gaps were 1.3785..1.3819s. These are publication times,
+not guest consumption times. Captures/tracing perturb timing; no pacing,
+physical-input latency or deterministic trajectory claim follows from them.
+
+Both native routes pass entry, exit action delivery, weapon restoration,
+on-foot travel (8.00/8.26 units) and pause/resume checks. A second true Original60
+route passes those checks too. Canonical signed profiles/fixture remain intact;
+owned game processes and disposable save partitions are cleaned up. Reviewed
+native stopped captures show the jeep against the Siberia pillar. Original60 v2
+retains valid earlier driving/contact data but failed its final walking-distance
+check against a snow wall; the later route turns away before walking. Do not
+count v2 as a complete passing route.
+
+The repeated original run changes the interpretation of older endpoint evidence.
+All four sampled starting poses agree: position(-12.109511,1.117227,7.079708),
+zero velocity and identity quaternion. Nevertheless Original60 v2 stops near
+(-13.219,1.163,68.067), while v3 glances past the pillar and stops near
+(-8.826,1.135,86.343). Their first selected non-up contacts are at Z67.206 and
+Z68.061, with front-facing versus side-facing normals. Native180/240 contact at
+Z67.136/67.126 and stop near Z68.075/67.739. Before impact, nearest-Z64 forward
+velocities are 11.801/11.810 original and 11.768/11.763 native; lateral positions
+in the native runs lie between the two original runs. This narrows the evidence:
+the existing live route is sensitive even at Original60 and cannot attribute
+post-impact differences to native timing by itself. It does not prove handling
+parity or rule out a high-refresh defect.
+
+Evidence stays private under `private/test-saves/vehicle-integrated-contact-*`;
+`logs/vehicle-contact-current-summary.json` records trace hashes, exact states,
+input boundaries and exclusions, produced by the ignored
+`private/pipeline/summarize-vehicle-contact.py`. Trace row counts are2495
+(original v2),7205(native180),11684(native240),1269(original v3). No private game
+assets or generated code are committed. Next discriminate off-center contact
+response using controlled geometry and coherent solver state; do not tune
+forces, steering or collision coefficients to match a single asynchronous
+endpoint. Full handling, campaign and physical Mac acceptance remain open.
+
+
+## Two-body collision impulse contract (2026-10-25)
+
+On `test/native-vehicle-contact-acceptance`, extended the existing original-US-XBE
+rigid-motion fixture rather than tuning physics from the variable live pillar
+route. No production runtime, geometry, coefficients or executable changed.
+`native_rigid_motion.c` now lifts original166060 in addition to1667C0/16FC00 and
+checks 432 isolated frictionless two-body impacts against a separate double
+precision generalized impulse equation. Both bodies have distinct masses and
+existing spin; cases vary three-dimensional normals, lever arms, diagonal and
+rotated positive-definite world inverse-inertia tensors, approaching/separating
+motion, Original60/native120/144/180/240 and an extra0.7ms secondary step.
+
+The checks compare relative point velocity, both force impulses and both torque
+impulses, including conservation of total linear/angular impulse about the world
+origin. Largest measured component error in the focused run is0.000000649 at a
+0.00001 absolute bound. Independent mutations remove the second mass contribution
+or its torque response and must fail in the new cases. The complete existing
+vehicle timing file passes all19 tests in56.64s, retaining its clock, RNG,
+secondary-step, sleep/wake, steering, camera and other regression mutations.
+
+Original16DF60 damage/effect notification is a checked service boundary after
+force accumulation. This test observes a single impulse before integration and
+drag; it does not supply terrain broadphase, deterministic live controls,
+frictional contacts or a complete vehicle collision replay. It narrows the
+low-level response uncertainty and provides a regression contract; it does not
+prove live handling parity or rule out collision-selection/integration defects.
+Both-host CI already selects this test file, but original-routine checks require
+the private supported XBE and skip in asset-free CI. Physical Mac validation
+remains open under MAC-060. No private assets/generated guest code are tracked.
+
+
+## Forced/damped material scrolling at native rates (2026-10-25)
+
+On `fix/native-material-motion`, the original127500 material update exposed an
+arithmetic rate dependence beyond its earlier cache/timing gate. The authored
+step damps/adds force to velocity, then moves U/V using that updated velocity.
+Fractional Euler steps change the product and the travel sum. A held-force test
+without drag gives U0.614500 at Original60 versus0.608501 at120 after two seconds
+(about0.006 texture repeats less travel); original constant-velocity-only tests
+did not cover this case.
+
+Shared `pc_native_material.h` and five numeric sites now split the complete
+velocity/travel affine map in raw time at current game speed. Damping, held
+forcing and travel are normalized together; zero/weak damping have stable limits.
+Original mode, whole/catch-up raw time, pause and unsupported/nonpositive decay
+bases retain original arithmetic. Original force-table samples, force clamp, UV
+wrapping, image/resource/event order, material layout and saves stay owned by the
+original routine. This advances fresh material state, not rendered-frame blends.
+Varying within-tick force sampling and complete visual parity remain separate.
+
+The asset-free helper passes180 fractional partitions against an independent
+one-step recurrence. The original surface/cache fixture checks48 normal/quarter
+speed schedules at60/120/144/180/240 and mixed intervals with held forcing/drag,
+plus pause and exact original fallback. Independent controls remove damping,
+forcing or travel normalization and must fail. Full timing/vehicle suites pass
+115 tests in229.77s; the final test-only expansion adds exact fallback checks
+and its eight focused tests pass again in22.11s. The forced/damped controlled
+case reaches about0.000003 maximum U/V error rather than the previous0.006.
+GPU calls in that fixture are spies; this does not prove live varying forces.
+
+Supported Windows build and bundled checks pass on base40600133 with executable
+SHA256 `3e24f6f93f4f95734902d559885db62627f343dbafda174a0713e57a3b569999`.
+Bounded Scotland runs at native240, native120 and trueOriginal60 pass movement,
+pause/resume, canonical signed profile preservation and owned-process cleanup.
+Reviewed native captures show the path, weapon, scenery and NPC. The integrated
+read-only native120/Original60 censuses each retain40 observations identifying
+one active material with forcing0.002, drag0.007 and direction(-0.6,0.4). All40
+native samples have positive fractional raw time and equal frame brackets. This
+establishes activation/identity, not coherent completed-update or pixel parity.
+The first late standalone census could not open the already-closed240 child;
+it records zero rows and is rejected evidence. The rerun attaches at owned-child
+creation. These captured/observed tests make no performance or latency claim.
+
+Evidence: `logs/material-{forced-before,forced-after,focused-final,timing-full,
+final-compatibility,build}.log` and isolated
+`private/test-saves/material-motion-scotland{240,120,-original60}`.
+Both-host CI selects the asset-free math and existing original-XBE fixture;
+private-XBE skips do not certify physical Mac behavior. MAC-060 remains Awaiting
+validation. Main advanced to7bd271cf (controller diagonal correction) during
+validation; integration and final-build evidence follow separately.
+
+
+Material follow-up integration: merged current main7bd271cf without conflicts as
+65058c27, preserving its controller diagonal movement/look correction. The
+supported Windows rebuild and bundled checks pass; final executable SHA256 is
+`835ca768b4f576889d86089311026e7124d8ca4fa725e9aae0b28c5902b3a09d`.
+Nine focused tests (including main's expanded locomotion, final material/cache,
+asset-free math and reload controls) pass in25.85s;21 context/backlog tests pass
+in5.66s. Context refresh/check against7bd271cf and whitespace checks pass.
+
+The rebuilt `material-motion-main240` Scotland run passes scene4, healthy player,
+12.535 units of movement and pause/resume checks. Canonical signed profiles are
+preserved and its owned process/partition clean up. Reviewed forward capture
+shows weapon/scenery/path. Its read-only census retains40 equal-frame-bracket
+samples of the same active material;36 have positive fractional raw time.
+`logs/material-live-summary.json` records all four runs' executable/report hashes,
+movement and census exclusions. This captured run is not pacing or pixel-parity
+evidence. No production source changes follow this rebuild; final notes are data
+only. Physical Mac, live varying forcing, full visual fidelity and broad
+native-refresh acceptance remain open.
+
+
+## Coherent live character-growth comparison (2026-10-25, PR #361)
+
+The current pushed material head38a1d1cf passed all applicable hosted jobs before
+this follow-up. Replaced the earlier asynchronous matrix/time comparison with
+an explicitly opt-in CPU trace around original126029->120AB0. Shared
+`pc_native_character_trace.h` / `pc_native_character_trace_guest.inc` copy both
+matrices, actual scoped raw/game deltas, age, coefficients and model identity in
+one update. Mapped reads are checked independently before/after guest execution;
+removal is represented without reading freed model memory. CSV is bounded to
+8192 complete pair rows/8MiB. Disabled, failed-open and capped traces select the
+original callee directly. No clock/growth/gameplay policy changes in this step.
+
+Collector/writer tests cover identity/frame/scene mismatches, copied values,
+removal, invalid/unreadable data and row/byte caps. The complete original scale
+fixture produces identical behavior/stdout with tracing enabled and after a
+latched file-open failure. Full timing/vehicle suites pass116 tests in175.98s.
+The first supported build caught an ESI declaration-order omission in the manual
+translation unit. The corrected adapter uses its existing manual TLS contract;
+the clock fixture now reproduces that include order. All three focused checks
+pass again (4.75s). The supported Windows rebuild/bundled checks pass, executable
+SHA256 `4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`.
+The final test-only include-order expansion and documentation do not change that
+runtime. Original scale construction and cleanup still execute unmodified.
+
+Bounded ten-bot Disco runs at native240 and trueOriginal60 complete all four
+spawn/combat checkpoints in scene56, unpaused with roster655617. Both preserve
+canonical signed profiles, close their owned processes and recycle disposable
+partitions. Each trace contains its maximum8192 complete pairs, all in scene56;
+these are valid capped prefixes, not whole-match or full-effect-lifetime captures.
+No removal rows occur in these prefixes; live cleanup is therefore not certified
+by them. Native240 includes7919 positive fractional updates. An independent
+analysis reconstructs the caller's original x87/SSE factors and normalization
+from the actual captured deltas, then checks determinant growth per update and
+across continuous model identities:
+
+| CPU trace | Maximum pair relative error | Continuous sequences (20+ updates) | Maximum cumulative relative error |
+| --- | ---: | ---: | ---: |
+| Native240 | 3.357e-7 | 28 | 3.267e-6 |
+| Original60 | 2.937e-7 | 83 | 5.092e-6 |
+
+The native fractional old-path prediction has median relative error0.000190968,
+versus0.0000000594 for the repaired rule. This identifies actual live execution
+of the fractional repair rather than merely a successful scene launch. It does
+not compare identical rendered pixels, random combat paths or physical latency.
+Reviewed combat-one captures show weapons, muzzle/impact effects, casings, NPCs,
+scenery and HUD, not a continuous size/appearance comparison of these models.
+
+The old ideal-volume comparison can also disagree while each actual update is
+correct. In the longest new native sequence (346 updates over1.695s), measured
+volume differs1.252% from an ideal repeated-one-tick curve but only0.000101%
+from the recorded-input rule. Its11 whole/catch-up updates predict a1.2521%
+ideal-curve deficit; fractional rounding contributes about0.000296%. Preserving
+original whole/catch-up arithmetic explains that new trace. This does not
+retroactively identify the exact cause of the older asynchronous0.8..1.1%
+samples, whose input/phase history was never captured coherently. Do not change
+scale coefficients to force those samples onto a constant-speed ideal curve.
+
+Evidence: private runs `character-coherent-disco240` and
+`character-coherent-disco-original60`; their CSV/provenance/analysis files and
+`logs/character-coherent-{focused,order,timing,build-fixed,analysis240,
+analysis-original60}.log`. CSV SHA256 values are0fa35b98aed9bb6ae4ab94ec1ddebe7e26162879597b6ce27ae63814c49a1e35
+(native) and54e5caf04651707c9e1b3f2ae2a83feac36f22a560fb5c2e331c01a50bfd0706
+(original). Tracing/readback/captures perturb timing, so these runs are not FPS,
+GPU completion or scanout measurements. Physical Mac and broad rendered-effect/
+full-game acceptance remain open under MAC-060. The bounded systems guide also
+condenses historical uncalled-water descriptions while retaining current owner,
+spatial/alpha-height contracts and links to the detailed regression history.
+
+
+## Clean current-build Scotland pacing (2026-10-25, PR #361)
+
+Measured the unchanged4d09cd2c Windows executable with character/contact/update/
+surface tracing, CPU sampling and frame captures disabled. No heavy build/test
+work ran during either accepted measurement. Both use Enhanced mode, FOV73 and
+requested3440x1440 rendering; device creation confirms3440x1440, while all ten
+window checkpoints report a visible foreground1920x1060 client. This does not
+certify a physical ultrawide display or every replacement texture.
+
+The first native240 attempt, `material-clean-scotland240`, completed its session
+but all ten window checkpoints were background. Its strict pacing validator
+rejected it; no foreground-performance result is inferred from that run. The
+Scotland long route lacked the crowd runner's focus restoration. Added the same
+owned-window focus action before `water-stable-start`, with settling before the
+measurement, to the bounded public runner. No normal-game runtime behavior or
+binary changes are involved.
+
+Accepted runs `material-clean-scotland240-v2` and
+`material-clean-scotland-original60` use identical executable, effective command
+stream and runner hashes. Their complete50s windows start five seconds after
+`water-stable-start`. Validation requires recorder clock neighbors on both sides,
+consecutive clock/frame records, strictly increasing guest frame IDs and all ten
+scene4/match-state7/unpaused/foreground checkpoints. Stable look direction,
+roster257 and unchanged health are recorded. Native water owner creation and
+advancing native actions are present in the240 log; there is no GPU readback.
+
+| Path | Fresh guest intervals | Average FPS | Lowest1s /5s FPS | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native240 |11999|240.0017|240 /240|4.866ms|5.850ms|0.999936|
+| Original60 |2999|60.0003|60 /60|17.371ms|17.834ms|0.999827|
+
+Neither has interpolated presents. Every measured native interval is below the
+144-FPS6.944ms budget; individual intervals still vary, so the average/bin counts
+do not mean uniform240-FPS frame times. The native recorder reaches its20000-row
+cap after the accepted window and retains the required clock neighbors; its cap
+does not truncate this window. These successful host Present intervals do not
+measure GPU completion, scanout or physical input latency. Different selected
+caps are not a causal before/after optimization comparison. Standing Scotland
+water acceptance is distinct from crowded fights, physical Mac or all levels.
+
+Both sessions also execute firing, pause and resume after the measured window;
+pause/resume flags pass, canonical profile bytes/signatures remain intact and
+owned processes/partitions clean up. Present CSV SHA256 values are
+edc28425d675f35ab468e6097f4b7120d77a8ba0920cfebcb3e65b6cf8197c02(native) and
+8f06e70fb874ba186767d6c202eb4b4f42bd1c49fdc7ecdcf3fd05ba07de786f(original).
+Private per-run `material-pacing-summary.json` files preserve clocks, bins,
+provenance, actual clients and exclusions. The ignored bounded adapters are
+`private/pipeline/material-clean-pacing.py` and `summarize-material-pacing.py`.
+Logs use `material-clean-scotland*`; the first rejected run remains available.
+All34 frame-statistics/profile/context/backlog checks pass(4.53s). No new build
+is required for the runner-focus/documentation-only change. Broad high-refresh
+and physical Mac acceptance remain open.
+
+
+## Live Windows process audio output presence (2026-10-25, PR #361)
+
+Closed a live-output evidence gap beyond fake-device and original sound-event
+fixtures, without changing audio production code. Used the unchanged Windows
+executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+in separate isolated ten-bot Disco runs at native240 and trueOriginal60.
+
+A bounded private Windows SDK helper receives only the owned game PID, retains
+its process handle and exits when that process closes. It queries that PID's
+render sessions through IAudioSessionControl2, ISimpleAudioVolume and
+IAudioMeterInformation, plus endpoint mute/volume getters. It does not record
+waveforms, open microphone/capture clients, change volume/mute, or report other
+applications' sessions/device names. Each numeric sample is timestamped in the
+same QPC domain as the runner. The helper is hidden, read-only and limited to
+180s; both owned helpers exit0. No current build or audio setting is replaced.
+
+The selected gameplay windows begin two seconds after the spawn checkpoint and
+end at combat-six. Meter coverage exists on both sides. Spawn/combat-one/four/
+six retain scene56, active match7, ten configured bots and foreground visibility.
+This selects actual combat observations rather than relying on menu output.
+
+| Selected path | Gameplay window | Samples | Valid unmuted game-session samples | Nonzero mixed-output samples | Largest observation gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Native240 |65.796s|324|324|324|218.020ms|
+| Original60 |65.792s|322|322|322|224.871ms|
+
+Session and endpoint mute are false and their levels are positive throughout
+these samples. Game-session volume remains1.0; no setter is used. Minimum sampled
+peaks are0.05530(native)/0.06203(original), with maximum0.99000 in both. These are
+Windows session meter peaks of all game output, including music and all voices;
+they are not a waveform or isolated gun-sound comparison. Random combat paths
+prevent amplitude-parity claims. The roughly200ms getter cadence cannot detect
+brief underruns or certify event cadence, audible synchronization, device
+fidelity, physical latency, or heard speaker/headset output. Captures and metering
+also make these runs unsuitable for frame-pacing claims.
+
+Both game sessions complete normally and preserve canonical profile bytes and
+signatures, with disposable partition/owned-process cleanup. Existing shared
+XAudio/SDL gain, mute/live-volume and buffer/stream timing tests pass25 checks
+(5.50s). No production audio change was justified by this observation. Physical
+Mac audio/gameplay and broader per-event/voice acceptance remain open.
+
+Evidence is private under `audio-output-disco240` and
+`audio-output-disco-original60`: audio-meter.jsonl, audio-meter-provenance.json,
+audio-output-summary.json and helper exit records. Numeric JSONL SHA256 values
+arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
+(native) and9c856d5753f14ad2ae5adbf71ee2c444f40e4601830c35304a70518fa36d5622
+(original). Private helper/adapter sources and exact hashes remain in the run
+provenance; logs are `audio-output-*`. No audio files, private assets or binaries
+are committed. All applicable PR checks passed on f971dac0 before this data-only
+acceptance record; subsequent-head checks remain separate.

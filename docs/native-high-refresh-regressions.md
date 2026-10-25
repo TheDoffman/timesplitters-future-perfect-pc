@@ -6,6 +6,22 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current Windows audio output presence (2026-10-25)
+
+The current4d09cd2c executable completes ten-bot Disco sessions at native240
+and trueOriginal60. A read-only helper meters only the owned game's Windows
+render sessions; it neither records audio nor changes volume/mute. Across
+approximately65.8s of active foreground gameplay per run, all324(native) and
+322(original) sampled points have valid unmuted sessions and nonzero mixed game
+output. Profiles/signatures and isolated cleanup pass;25 shared audio gain/
+timing tests pass. This closes an output-presence gap beyond fake devices.
+
+Mixed music/voices and roughly200ms sample spacing do not identify individual
+weapons, prove heard sound, detect brief underruns or establish sync/latency/
+frame pacing. Physical Mac/per-event audio acceptance remains open. Full method,
+provenance and limits are in [STATUS](../STATUS.md#live-windows-process-audio-output-presence-2026-10-25-pr-361).
+No production audio behavior changes in this check.
+
 ## Current Temple crowd coverage (2026-10-24)
 
 The925f9f72 Windows binary completes separate ten-bot Temple sessions at

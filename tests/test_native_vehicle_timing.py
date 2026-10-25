@@ -61,6 +61,7 @@ def test_physics_wrapper_retains_original_body():
                              (0x1506b0, 0x15082c), (0x1530e0, 0x153187),
                              (0x153270, 0x1533e0), (0x151e80, 0x151f1c),
                              (0x152090, 0x15211d), (0x1667c0, 0x16694c),
+                             (0x166060, 0x166136),
                              (0x16fc00, 0x1704fa), (0x168720, 0x1689ef),
                              (0x153b40, 0x153b7a), (0x3c9ed0, 0x3c9f04),
                              (0x1719e0, 0x171fad), (0x165a40, 0x165b90),
@@ -68,7 +69,8 @@ def test_physics_wrapper_retains_original_body():
                              (0x1753a0, 0x175508), (0x1677e0, 0x167877),
                              (0x16e780, 0x16e867), (0x16da90, 0x16df5b)],
      ['legacy-clock', 'missing-contact', 'legacy-rng', 'legacy-secondary', 'legacy-body-sleep',
-      'legacy-character-contact', 'missing-wall', 'missing-penetration']),
+      'legacy-character-contact', 'missing-wall', 'missing-penetration',
+      'missing-other-mass', 'missing-other-torque']),
 ])
 def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
     from capstone import Cs, CS_ARCH_X86, CS_MODE_32
@@ -119,6 +121,8 @@ def test_original_vehicle_timing(tmp_path, harness, ranges, mutations):
                     'missing-contact': 'fps=60 forced=2',
                     'missing-wall': 'wall_contact fps=60',
                     'missing-penetration': 'penetration fps=60',
+                    'missing-other-mass': 'two_body_contact fps=60',
+                    'missing-other-torque': 'two_body_contact fps=60',
                     # Native180 exposes the ninth-substep bug before mixed clocks.
                     'legacy-secondary': 'rigid_motion fps=180 forced=2',
                     'legacy-character-contact': 'character_contact fps=120',
