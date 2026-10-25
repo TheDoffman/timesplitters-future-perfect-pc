@@ -25961,3 +25961,69 @@ separate from9955d2f2 results. Live TRAP/TREE
 registration/activation/rendering, complete service effects and physical Mac
 remain unverified. No game performance improvement is claimed from the offline
 fixture; old pacing evidence retains its explicit executable hashes and limits.
+
+
+## Mansion TREE live activation and phase (2026-10-25, PR #363)
+
+Both scripted callbacks are located in Mansion of Madness (Story index4,
+scene1), not the opening mission (scene2). Read-only archive analysis finds
+SETU entry882ae5ed in `pak/story/l_1_st.pak`: its callback records69/381 select
+indices50/42 from4D2B10, which point to TREE initializer1D8A10 and TRAP
+initializer1D8C40. The original loader maps serialized header90/94 to runtime
+CC/D0, relocates callback records at strideC8, and resolves fields38/3C through
+that function table. A first attempt using runtime offsets directly in the
+serialized header was rejected; tag-byte hits alone in other archives do not
+establish callback ownership. The unlocked in-game menu independently shows
+Mansion of Madness, and runtime observations confirm scene1/mission4.
+
+The current1fe73b2c executable completes separate isolated entrance routes at
+native240 and trueOriginal60, with canonical profiles preserved. From Story,
+select the fifth mission, accept difficulty/start, skip the movie with Escape,
+restore focus, then use ordinary W holds3s/2s/1.3s toward the door and E to enter.
+Both runs reach the foyer and activate TREE through the normal script. Native
+menu exploration introduces idle time; compare the activation interval rather
+than overall run duration. The bound is600s; both sessions stop earlier and
+return0 with clean game exits. TRAP is present upstairs but remains inactive:
+no TRAP initializer/callback trace is observed, so live trap behavior stays open.
+
+The private read-only observer validates the owned executable path and handle,
+walks the original tag lookup at75D318, resolves entity handles through72F5E8
+(stride2E8; index=handle>>22), checks the generation word at+2C and rechecks the
+lookup/pool identity. It reads bounded entity blocks approximately20Hz, capped
+at480s/8MiB, and stops when the owned process exits. It never writes guest
+memory. The stable TREE identity agrees with the bounded original-function
+trace; each run contains one1D8A10 entry and subsequent1D88B0 execution.
+
+| Observation | Native240 | Original60 |
+| --- | ---: | ---: |
+| Active TREE observations | 91 | 91 |
+| Terminal phase (game seconds) | 4.571001 | 4.583338 |
+| Conservative activation-duration bracket (wall seconds) | 4.5277–4.6288 | 4.5290–4.6300 |
+| Maximum sampled pose/phase formula error (degrees) | 0.00000313 | 0.00000380 |
+
+Duration brackets include before/after inactive samples and each read interval;
+they overlap. The terminal phases differ by less than one original tick, as
+expected from different threshold-crossing step sizes. All active samples have
+monotonic phase; both paths reach+C8=80 and clear active state1A0. The sampled
+pose matches the original exponential evaluated at its observed phase. This
+is stronger live timing evidence than entry/reaching-scene checks, but the
+asynchronous blocks are not atomic per-update traces or proof of every frame.
+
+Reviewed captures show the correct mission selection, entrance and populated
+foyer scene in both modes. They do not independently identify the rendered
+TREE mesh; the visible burning chandelier must not be equated with the TREE
+tag merely because it appears near the event. Full target visual appearance,
+complete event-service behavior and physical Mac remain unverified. Captures,
+function traces and process reads make these diagnostic runs unsuitable for
+clean FPS, physical latency or scanout claims.
+
+All canonical/test profiles retain090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695,
+with valid length/HMAC; run locks/disposable partitions are removed. Evidence
+is private under `scripted-scene1-{native240,original60}`: report/commands,
+scripted-objects.jsonl, observer-provenance, trace logs and captures. Comparison
+summary: `logs/scripted-tree-live-comparison.json`. Observation SHA256:
+`93dbe5de9b9df2c497418d9b54a640469754a55eff722660e4b424f7a5b36df1`
+(native) / `c0dd9779e0663a76c15283dd150910fa37800b322652907ce322a30bfec5ec9b`
+(original). No production code change follows from this passing comparison.
+All applicable Windows/macOS hosted checks pass on source head09087c1b;
+subsequent documentation-head checks remain separate.

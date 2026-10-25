@@ -3921,8 +3921,9 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   pose and single-event crossings; its old whole gate lost75% of time at240.
   No host adapter or state layout changes. Asset-free clock coverage runs on
   both CI hosts; original-US phase/pose/event checks require the private XBE.
-  Windows build/tests pass; live scene acceptance is tracked separately in STATUS;
-  physical Mac execution/rendering remain **Awaiting validation**.
+  Windows build/tests and Mansion callback activation/phase at Original60/native240
+  pass; full target rendering and physical Mac remain **Awaiting validation**.
+  Exact source mapping, observations and limits are in STATUS.
 
 
 - **Pushed model copies (2026-10-25, PR #359):** Common HLE size-dispatch

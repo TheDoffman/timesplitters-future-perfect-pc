@@ -6,6 +6,22 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Mansion TREE live progression (2026-10-25)
+
+Read-only map callback records and the in-game menu locate TREE/TRAP in Mansion
+of Madness, Story index4/scene1. Normal isolated entrance play on the current
+1fe73b2c executable activates TREE in Original60/native240. Both have91 active
+observations, monotonic phase, matching original sampled pose math, terminal80
+clamp and active-state clearing. Their activation-duration brackets overlap
+around4.53–4.63s; terminal phase differs by less than one original tick. Signed
+profiles and clean exits/cleanup pass. No production change was needed.
+
+The observed foyer rendering does not identify the TREE mesh. Full rendered
+target/event-service parity, live TRAP activation and physical Mac remain open;
+process reads/traces/captures are not pacing or per-frame atomic evidence. See
+[STATUS](../STATUS.md#mansion-tree-live-activation-and-phase-2026-10-25-pr-363)
+for source mapping, provenance, corrected serialized offsets and limitations.
+
 ## Scripted TRAP mixed clock (2026-10-25)
 
 TRAP1D8AB0 adds a fixed impulse once per whole-tick call, but broad native
