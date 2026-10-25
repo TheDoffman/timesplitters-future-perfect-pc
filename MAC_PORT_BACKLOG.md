@@ -2356,6 +2356,14 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.3.1 release preparation (2026-10-24):** Shared version/assembly attributes
+  advance for the existing 60/120/180/240 FPS Beta choices and capture-health
+  diagnostics on main. Optional texture delivery, data preservation and one ZIP
+  per platform remain unchanged. No new platform adapter is introduced. Both
+  host build/package checks must pass before publication; local Windows results
+  do not establish native Mac execution or gameplay. Evidence is recorded in
+  [STATUS.md](STATUS.md#launcher-v131-release-preparation-2026-10-24).
+
 - **Bundled texture toggle (2026-10-20, commit carrying this entry on
   `feature/launcher-texture-toggle`):** Shared `GameSettings.cs` and
   `SettingsPage.cs` replace texture download/ZIP/folder controls with an
