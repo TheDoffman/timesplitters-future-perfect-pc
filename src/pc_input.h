@@ -30,6 +30,9 @@ void pc_input_terminal_context(PcInput *s, int active, int left_down);
 int pc_input_terminal_click(PcInput *s, int left_down);
 int pc_input_terminal_suppresses_left(PcInput *s, int left_down);
 void pc_input_normalize_movement(int16_t *x, int16_t *y);
+/* Remap one stick axis after a circular deadzone, preserving its direction. */
+int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
+                                   int sign, int deadzone);
 int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
                   float fov_scale, float *yaw, float *pitch);
 #endif

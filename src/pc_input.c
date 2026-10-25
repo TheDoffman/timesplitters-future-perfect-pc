@@ -87,6 +87,20 @@ void pc_input_normalize_movement(int16_t *x, int16_t *y)
     }
 }
 
+int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
+                                   int sign, int deadzone)
+{
+    double length = hypot((double)axis, (double)other);
+    double value = (double)axis * sign;
+    double gain;
+    if (value <= 0 || length <= deadzone || deadzone >= 32767)
+        return 0;
+    /* The same radial gain applies to both components. Subtracting the
+       deadzone from each component separately slows diagonal movement/aim. */
+    gain = (fmin(length, 32767.0) - deadzone) / (32767.0 - deadzone);
+    return (int)(255.0 * gain * value / length + 0.5);
+}
+
 uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy)
 {
     uint64_t age = now - s->motion_at;

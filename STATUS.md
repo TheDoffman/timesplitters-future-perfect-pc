@@ -1,3 +1,36 @@
+## Issue #256 diagonal stick speed (2026-10-25)
+
+All five issue comments were reviewed. Windows and Linux players report slow
+diagonals, including both controller sticks. The PC binding sampler subtracted
+its deadzone separately from X and Y, making equal-radius diagonal travel
+smaller than straight travel. The shared radial mapping preserves stick angle
+and applies equally to movement and look; keyboard normalization and
+stick-bound buttons retain their existing behavior.
+
+The focused branch `256-diagonal-movement-speed` uses a new final runtime patch
+and shared `pc_input` math. Windows Release Build and its input tests pass;
+portable controller-profile tests pass (15 cases). Five focused patch-transition
+cases pass, including fresh checkout, older controls migration, line endings,
+and switches between the main and texture stacks. Native Mac synthetic SDL and
+gameplay checks remain pending. No physical controller or in-game displacement
+comparison has been claimed.
+
+The keyboard follow-up checks W+D at both the shared normalization function
+and Windows/SDL sampler sites. Its output radius is 32765.9 versus 32767 for
+W alone; the original US walking routine `sub_00258F50` computes the movement
+vector length before applying its speed cap. The remaining difference is below
+0.01%, from integer stick quantization. The Windows Release Build and input
+suite pass with these stronger assertions. One unrelated replay-timing
+assertion failed on an initial run, then passed both in isolation and on the
+full rerun.
+
+The rate follow-up runs the complete original-US walking routine on its
+controlled flat-floor fixture, using the keyboard sampler's W+D components.
+One-second straight versus diagonal distances differ by less than 0.00005
+world units at original 60 and native 60/120/144/180/240 FPS. The original
+analogue input fixture also passes across those rates. These are deterministic
+guest-code checks, not live level traversal or a measured display frame rate.
+
 ## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
 
 The unchanged candidate executable50d7323a... completes three bounded ten-bot
