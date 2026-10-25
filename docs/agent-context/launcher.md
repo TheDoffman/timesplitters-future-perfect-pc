@@ -29,6 +29,16 @@ when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
 
+## Saved settings button
+
+`SettingsPage` snapshots its deferred draft after a successful save and disables
+Save using the existing theme. Shared input events and binding refreshes compare
+against that snapshot: edits re-enable Save, reverting edits disables it, and
+failed saves leave it available. Tab/filter navigation and immediate texture
+update checks do not dirty the deferred draft. The first save remains available
+for defaults/migration. Behavioral coverage runs in `launcher_shared_ui.cs` on
+both hosts; no new platform adapter or persistence format is introduced.
+
 ## Capture health diagnostics
 
 Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS

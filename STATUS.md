@@ -25639,3 +25639,25 @@ arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
 provenance; logs are `audio-output-*`. No audio files, private assets or binaries
 are committed. All applicable PR checks passed on f971dac0 before this data-only
 acceptance record; subsequent-head checks remain separate.
+
+## Launcher Save button state (2026-10-25)
+
+Based on main `063789df` on `fix/launcher-save-button-state`, the shared
+SettingsPage now disables Save after successful persistence using the existing
+disabled-button theme. It snapshots the deferred UI draft, re-enables Save for
+controls/graphics/Discord/key-binding edits and disables it again when edits are
+reverted. Tab navigation, display filters and immediate texture-check preferences
+are excluded. Initial Save remains available for defaults/migration. Duplicate
+save activation is ignored; validation and concurrent-file failures leave retry
+available without overwriting external changes. Persistence format is unchanged.
+
+Windows x64 .NET Framework launcher/bootstrap/test compilation passed with pinned
+artwork. All 20 shared UI groups and 38 isolated settings checks passed. The new
+shared UI group exercises every deferred control type, key bindings, defaults,
+reversion, navigation, duplicate saves, validation failure and conflicting file
+edits. Three portable shared UI tests, nine compatibility-policy tests and backlog
+consistency passed. Inspected a 900×720 WPF render: Save appears greyed out after
+saving and the saved status remains readable. No personal files were used.
+Native Mac compilation/UI execution remain unavailable on this Windows host;
+shared behavior/tests use the existing dual-host workflow with no new OS adapter.
+No push, merge or launcher release is performed by this change.

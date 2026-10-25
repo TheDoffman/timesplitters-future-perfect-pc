@@ -44,6 +44,8 @@ namespace TimeSplitters.Launcher
         readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
+        readonly Button save;
+        string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
@@ -102,7 +104,7 @@ namespace TimeSplitters.Launcher
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
-            var save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
+            save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
             status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
             tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
             var controls=new StackPanel();
@@ -245,9 +247,28 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(portal);
             presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
+            foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var choice in new[]{device,scale,filtering,frameRate})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            Ui.ValueChanged(fov,RefreshSaveState);
+        }
+        string Draft()
+        {
+            return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
+                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,
+                (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
+        }
+        void RefreshSaveState()
+        {
+            if(savedDraft==null)return;
+            save.IsEnabled=Draft()!=savedDraft;
+            status.Foreground=save.IsEnabled?Muted:Accent;
+            status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } RefreshSaveState(); }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         public async void CheckTexturesIfOptedIn()
         { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }
@@ -350,6 +371,7 @@ namespace TimeSplitters.Launcher
         }
         void Save()
         {
+            if(!save.IsEnabled)return;
             try
             {
                 double number; int w=0,h=0;
@@ -364,7 +386,7 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
-                model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
+                model.Save(); savedDraft=Draft(); RefreshSaveState();
                 if(Saved!=null)Saved();
             }
             catch(Exception ex) { status.Foreground=Accent; status.Text=ex.Message; }

@@ -162,6 +162,52 @@ public static class LauncherSharedUiChecks
                 try {GameSettings.Load(folder,null);}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(controls)==invalid,"Malformed preference was accepted or rewritten");
             });
+            Test("saved settings disable Save until a persisted draft changes",()=>{
+                string folder=Path.Combine(root,"save-button");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var save=Find<Button>(page.View,"SettingsSaveButton");int saves=0;page.Saved+=()=>saves++;
+                Click(save);Need(!save.IsEnabled && saves==1,"Successful save did not disable Save");
+                Click(save);Need(saves==1,"Disabled Save rewrote settings");
+                for(int tab=0;tab<3;tab++){page.SelectTab(tab);Need(!save.IsEnabled,"Tab navigation enabled Save");}
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                Func<string,object> field=name=>page.GetType().GetField(name,flags).GetValue(page);
+                foreach(string name in new[]{"sensitivity","width","height","discordId"}) {
+                    var input=(TextBox)field(name);string before=input.Text;
+                    input.Text=before+"0";Need(save.IsEnabled,name+" did not enable Save");
+                    input.Text=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                foreach(string name in new[]{"enabled","invert","fullscreen","vrr","fps","skipSplashes","discordEnabled","enhancedTextures"}) {
+                    var check=(CheckBox)field(name);bool? before=check.IsChecked;
+                    check.IsChecked=before!=true;Need(save.IsEnabled,name+" did not enable Save");
+                    check.IsChecked=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                foreach(string name in new[]{"device","scale","filtering","frameRate"}) {
+                    var choice=(ComboBox)field(name);int before=choice.SelectedIndex;
+                    choice.SelectedIndex=(before+1)%choice.Items.Count;Need(save.IsEnabled,name+" did not enable Save");
+                    choice.SelectedIndex=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                var fov=(Slider)field("fov");double original=fov.Value;
+                fov.Value=original+1;Need(save.IsEnabled,"FOV did not enable Save");
+                fov.Value=original;Need(!save.IsEnabled,"Reverted FOV remained dirty");
+                var automatic=(CheckBox)field("textureUpdates");automatic.IsChecked=automatic.IsChecked!=true;
+                Need(!save.IsEnabled,"Immediate texture-check preference enabled deferred Save");
+                var inputSensitivity=(TextBox)field("sensitivity");string valid=inputSensitivity.Text;
+                inputSensitivity.Text="invalid";Click(save);
+                Need(save.IsEnabled && saves==1,"Failed validation disabled Save or reported success");
+                inputSensitivity.Text=valid;Need(!save.IsEnabled,"Restored saved input remained dirty");
+                page.SelectTab(0);var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                Click(binding);Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Clear binding"));
+                Need(save.IsEnabled,"Binding change did not enable Save");Click(save);
+                Need(!save.IsEnabled && saves==2 && GameSettings.Load(folder,null).Binding(0)[0]=="none","Binding save did not disable Save or persist");
+                Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Restore default controls"));
+                Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Restore defaults"));
+                Need(save.IsEnabled,"Restoring default controls did not enable Save");Click(save);
+                Need(!save.IsEnabled && saves==3,"Saving defaults did not disable Save");
+                string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                string external=File.ReadAllText(controls)+" ";File.WriteAllText(controls,external);
+                fov.Value=original+2;Click(save);
+                Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
+            });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
                 var fov=Find<Slider>(page.View,"VerticalFovSlider");var number=Find<TextBlock>(page.View,"VerticalFovValue");

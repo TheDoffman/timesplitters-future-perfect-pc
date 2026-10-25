@@ -73,6 +73,10 @@ captures are not synchronized to memory. See STATUS for live evidence.
 
 ## Choose the cheapest relevant check
 
+`launcher_shared_ui.cs` exercises Save disabling/re-enabling across all deferred
+settings and bindings, reverted edits, defaults, duplicate clicks and failed or
+conflicting saves. It runs against both WPF and Avalonia in launcher CI.
+
 Launcher publisher tests require full checkout history for release notes.
 
 `test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
