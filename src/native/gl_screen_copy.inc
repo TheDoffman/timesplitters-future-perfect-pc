@@ -50,5 +50,52 @@ static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const
 }
 HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst) {return native_copy_screen(dst,NULL,NULL);}
 HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst,const RECT *src,const POINT *at) {return native_copy_screen(dst,src,at);}
+HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                         IDirect3DTexture8 *src,const RECT *region)
+{
+    NATIVE_GL_SCOPE;
+    if(!dst || !src || !region || dst->lpVtbl!=&g_tex_vtbl || src->lpVtbl!=&g_tex_vtbl)
+        return D3DERR_INVALIDCALL;
+    GLTexture *d=(GLTexture*)dst,*s=(GLTexture*)src;
+    if(region->left<0 || region->top<0 || region->right<=region->left ||
+       region->bottom<=region->top || region->right>(LONG)s->width ||
+       region->bottom>(LONG)s->height)return D3DERR_INVALIDCALL;
+    GLint read,draw,binding,width=0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);
+    GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
+    glBindTexture(GL_TEXTURE_2D,d->gl_tex);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);
+    if(!width)glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,d->width,d->height,0,
+                          GL_RGBA,GL_UNSIGNED_BYTE,NULL);
+    GLuint fbos[2];glGenFramebuffers(2,fbos);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER,fbos[0]);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,s->gl_tex,0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER,fbos[1]);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,d->gl_tex,0);
+    HRESULT result=E_FAIL;
+    if(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE &&
+       glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) {
+        glDisable(GL_SCISSOR_TEST);
+        /* The saved full-frame copy has the same guest coordinate system as
+         * its source; scale its region into the small Uplink display. */
+        int x0=region->left*(int)s->width/(int)g.backbuf_w;
+        int x1=region->right*(int)s->width/(int)g.backbuf_w;
+        int y0=region->top*(int)s->height/(int)g.backbuf_h;
+        int y1=region->bottom*(int)s->height/(int)g.backbuf_h;
+        int sy0=s->flipped?(int)s->height-y1:y1;
+        int sy1=s->flipped?(int)s->height-y0:y0;
+        glBlitFramebuffer(x0,sy0,x1,sy1,0,(int)d->height,(int)d->width,0,
+                          GL_COLOR_BUFFER_BIT,GL_LINEAR);
+        d->flipped=1;d->screen_copy=1;native_screen_copies++;
+        native_pack_release(d);d->pack_checked=1;result=S_OK;
+    }
+    if(scissor)glEnable(GL_SCISSOR_TEST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER,read);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER,draw);
+    glBindTexture(GL_TEXTURE_2D,binding);glDeleteFramebuffers(2,fbos);
+    return result;
+}
 unsigned long xbox_D3D8ScreenCopyCount(void) {return native_screen_copies;}
 void xbox_D3D8ScreenCopyShutdown(void) {native_screen_copies=0;}

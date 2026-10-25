@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "prediction_targets_impl.h"
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); exit(1); } } while (0)
-static unsigned writes[5];
+static unsigned writes[6];
 HRESULT host_Clear(IDirect3DDevice8 *dev, DWORD count, const D3DRECT *rects,
                    DWORD flags, D3DCOLOR color, float z, DWORD stencil)
 { ++writes[0]; return S_OK; }
@@ -18,6 +18,8 @@ HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *dst)
 { ++writes[3]; return S_OK; }
 HRESULT host_CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *rect, const POINT *at)
 { ++writes[4]; return S_OK; }
+HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst, IDirect3DTexture8 *src, const RECT *rect)
+{ ++writes[5]; return S_OK; }
 static void replay(unsigned draws, unsigned copies)
 {
     unsigned before[5];
@@ -26,7 +28,8 @@ static void replay(unsigned draws, unsigned copies)
     op_clear(data.bytes); op_draw_up(data.bytes); op_draw_indexed_up(data.bytes);
     op_screen_copy(data.bytes);
     ((dq_screen_copy *)data.bytes)->has_rect = 1; op_screen_copy(data.bytes);
-    for (unsigned i=0; i<5; ++i) CHECK(writes[i] == before[i] + (i<3 ? draws : copies));
+    ((dq_screen_copy *)data.bytes)->has_rect = 2; op_screen_copy(data.bytes);
+    for (unsigned i=0; i<6; ++i) CHECK(writes[i] == before[i] + (i<3 ? draws : copies));
 }
 int main(void)
 {
