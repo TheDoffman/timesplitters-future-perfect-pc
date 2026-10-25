@@ -5359,7 +5359,8 @@ the fixture, but its private supported-US-XBE requirement still skips these
 original routines on asset-free CI. No production behavior or OS adapter changes.
 Actual Mac execution/live handling remain Awaiting validation; see STATUS.
 
-**Forced/damped material motion follow-up (2026-10-25, WIP):**
+**Forced/damped material motion follow-up (2026-10-25):**
+On `fix/native-material-motion` (source d2ae41d6, main integration65058c27),
 Shared `src/pc_native_material.h` and the five audited127500 numeric sites in
 `pc_native_numeric.h` split velocity, held forcing and UV travel together.
 Original mode and unsupported decay bases retain the original path; no state

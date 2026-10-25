@@ -25418,3 +25418,23 @@ Both-host CI selects the asset-free math and existing original-XBE fixture;
 private-XBE skips do not certify physical Mac behavior. MAC-060 remains Awaiting
 validation. Main advanced to7bd271cf (controller diagonal correction) during
 validation; integration and final-build evidence follow separately.
+
+
+Material follow-up integration: merged current main7bd271cf without conflicts as
+65058c27, preserving its controller diagonal movement/look correction. The
+supported Windows rebuild and bundled checks pass; final executable SHA256 is
+`835ca768b4f576889d86089311026e7124d8ca4fa725e9aae0b28c5902b3a09d`.
+Nine focused tests (including main's expanded locomotion, final material/cache,
+asset-free math and reload controls) pass in25.85s;21 context/backlog tests pass
+in5.66s. Context refresh/check against7bd271cf and whitespace checks pass.
+
+The rebuilt `material-motion-main240` Scotland run passes scene4, healthy player,
+12.535 units of movement and pause/resume checks. Canonical signed profiles are
+preserved and its owned process/partition clean up. Reviewed forward capture
+shows weapon/scenery/path. Its read-only census retains40 equal-frame-bracket
+samples of the same active material;36 have positive fractional raw time.
+`logs/material-live-summary.json` records all four runs' executable/report hashes,
+movement and census exclusions. This captured run is not pacing or pixel-parity
+evidence. No production source changes follow this rebuild; final notes are data
+only. Physical Mac, live varying forcing, full visual fidelity and broad
+native-refresh acceptance remain open.
