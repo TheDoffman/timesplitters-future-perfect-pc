@@ -23405,6 +23405,1678 @@ passed. Log: ignored `logs/bot-pr-main-build.log`. No new gameplay or Mac-host
 validation was performed for this synchronization; original loopback evidence
 and MAC-052 limitations above still apply. No game release was published.
 
+
+## 2026-10-24 — #74 hybrid-256 metal material batch
+
+Continued from 28f5400a on the #74 texture branch. Seven individual generated
+material drafts used catalog-verified originals; four passed offline layout and
+repeat review. Added d7d5700cb3aafcb6, dbe50dd84be9d5d8, f202e661b5f1e111 and
+f7d8f57b6f20f646. Actual source artwork is 1254 square; compiled sizes are three
+1024-square assets and one 512-square asset with full mip chains. Two use DXT1;
+two use RGBA8 after measured compression error and detail loss. No native 4K
+source claim. Three drafts remain held for tread/contrast/fastener corrections;
+b2ba2e001048f470 remains original pending alpha semantics review.
+
+Windows offline audit: 2,050 replacements; public pack 1,852,072,267 bytes
+(1.73 GiB), private pack 1,852,799,281 bytes, below 6 GiB. Native DDS parser,
+original aspect/opaque alpha, full mip layout and hash checks pass. All 2,046
+previous public DDS/JSON pairs match the audited production pack; retained
+original icon keys are absent. Only four LFS pointers and sanitized sidecars
+were added to the checkout; no duplicate pack, game copy or release staging.
+Temporary output is 267,681,218 bytes, with 754,238 bytes below 256 MiB. Further
+art batches need to recycle verified disposable references before adding more
+temporary images. Source artwork is retained. Workspace logical/allocation
+snapshot: 9,038,116,021 bytes; free disk 45,725,478,912 bytes before LFS staging.
+
+Queue: 4,435 need artwork, 163 drafts need review, 164 icons intentionally
+original, 2,050 installed among 6,812 known supported keys. Classification is
+not completion. Private hybrid-256-validation.json, hybrid-256-prompts.json,
+per-asset prompt records and refreshed worklist/hybrid-plan retain provenance.
+No game launch, runtime change or release publication; scene appearance and
+Windows/Mac validation remain pending near completion. MAC-011 stays open.
+
+Repository context and staged/unstaged whitespace checks pass. The unchanged
+build-test guide needed local LF normalization: Windows CRLF expansion exceeded
+the 65,536-byte context guard; its tracked content did not change.
+
+
+## 2026-10-24 — #74 hybrid-257 masonry and carved materials
+
+Eight individual built-in image-generation drafts accepted after original/UV,
+large-scale identity and compiled repeat comparisons. Added bfe9664f816e43d9,
+c72d94206ced80b6, c7e12b45ed0a9910, e22ad8247b4fa564, e29efb4211a7acb9,
+e46f2404b9a64aee, e4970af57beea5ad and 14f2fa45dd515c54. These cover rock atlas,
+rail/masonry, molded wall, riveted brickwork, carved stone motifs, stepped
+marble strips, divided stonework and a small meander tile. No character icons.
+Actual source size: 1254 square. Seven compiled at 1024 square, one at 512;
+all LANCZOS downsampled, with full mips. Six RGBA8 files preserve fine details
+that DXT1 lost; two DXT1 files passed compression review. This is not native
+4K art and is not final in-game appearance validation.
+
+All eight passed the Windows native DDS parser, original aspect/opaque alpha,
+full-mip, metadata and hash checks. Every prior private DDS/JSON file (4,100)
+was verified unchanged; all 2,050 prior public pairs match the audited pack.
+Full release auditor passes with original-icon exclusions. Compiled comparison
+sheets retain original atlas boundaries and deliberate geometry; they do not
+prove scene adjacency. No game launch, source/runtime change or publication.
+
+Public pack: 2,058 entries, 1,882,833,405 bytes (1.75 GiB). Private pack:
+1,883,573,148 bytes. Both remain below 6 GiB. Temp output: 267,949,135 bytes,
+486,321 bytes below 256 MiB. Recoverable reference PNGs from hybrid-256 and
+hybrid-257 reclaimed 790,952 and 684,469 bytes respectively after catalog payload
+and decoded-pixel verification; recovery receipts and all generated art remain.
+Workspace logical/allocated snapshot is 9,100,210,254 bytes, separate from pack
+budget; free disk 44,608,274,432 bytes after LFS staging. New checkout assets
+are pointers with sanitized metadata, not another hydrated pack.
+
+Refreshed queue: 4,427 need artwork, 163 drafts require review, 164 icons
+intentionally original and 2,058 installed among 6,812 supported known keys.
+Private hybrid-257-generation.json, hybrid-257-prompts.json and
+hybrid-257-validation.json retain prompts, source dimensions and review evidence.
+Remaining unsupported/undiscovered formats and scene/host validation are still
+open. Continue #74; MAC-011 remains awaiting validation. Recycle verified
+redundant temporary comparisons before another disk-based reference batch.
+
+
+## 2026-10-24 — #74 hybrid-258 concrete, brick and rock
+
+Six more accepted replacements: 375415186a75f6ce, 65d6157d68e002f3,
+77183c7890a9aa52, 7729fdf024e42e57, 852ef7fa1700f593 and 88be41d1f2825f62.
+All are 1024 square, downsampled LANCZOS from actual 1254-square built-in
+image-generation sources; four RGBA8 and two DXT1 with complete mips. Mean
+luminance changes are roughly -1% to -5%. Atlas 187e29d9bea9fa6c and fractured
+panel 76669676fbbe8298 remain held for excessive brightness/warmth and damage
+contrast (about +14% and +11%). Original artwork remains active for those keys.
+
+Windows native DDS parser, mip/aspect/opaque-alpha/hash and whole-pack audits
+pass. All 4,116 prior private DDS/JSON files and 2,058 prior public pairs were
+verified unchanged. Both compiled repeat sheets were manually reviewed; this
+preserves original boundary lighting, not proof of seamless scene adjacency.
+No gameplay or host/runtime changes; MAC-011 scene validation remains pending.
+Private offline-batch-compile.py now reuses the reviewed decisions and existing
+encoder/auditor tools, reducing repeated batch work without automatic art approval.
+
+Public pack: 2,064 entries, 1,906,603,317 bytes (1.78 GiB); private pack:
+1,907,352,666 bytes, both below 6 GiB. Temporary output: 267,592,311 bytes,
+843,145 bytes below 256 MiB. Reclaimed 1,096,350 bytes of redundant previews
+with byte-exact reconstruction and 1,495,538 bytes of original PNG references
+after exact decoded-pixel verification. Primary before/after sheets, generated
+sources, prompts and recovery receipts remain; previously denied targets were
+untouched. Workspace logical/allocated snapshot: 9,155,257,348 bytes; free disk
+44,278,362,112 bytes after LFS staging. No duplicate full pack or game copy.
+
+Queue: 4,419 need artwork, 165 drafts require review, 164 icons intentionally
+original, 2,064 installed among 6,812 known supported keys. Public metadata
+and LFS pointers are local to #74; no release or push. Provenance is retained
+in private hybrid-258-generation/prompts/review/validation.json. Full scope,
+unsupported/undiscovered assets and final scene/hardware validation remain open.
+
+
+## 2026-10-24 — #74 hybrid-259 focused material corrections
+
+Resolved three held keys: e3d6a97496f76048 (tread plate), fe89c21ad41d913f
+(fastened panel) and 76669676fbbe8298 (cracked concrete). All are 1024-square
+DXT1 with full mips, downsampled from 1254-square corrected built-in image
+sources. Tone/layout review and native DDS/mip/aspect/opaque-alpha/hash checks
+pass. Whole-pack audit preserves all 4,128 prior private files and 2,064 public
+pairs. Compiled repeat review completed offline; relief and scene appearance
+still require near-completion validation. No gameplay or runtime change.
+
+Correction to hybrid-256 review: fe89's original has three fasteners, including
+a faint top-center one. It was not an added fastener; the correction targeted
+size/contrast and preserved all original positions. fd205d978aa73156 remains
+held for brightness/mottling; 187e29d9bea9fa6c improves tone but moves atlas
+boundaries, so remains original. Historical drafts/prompts are retained with
+sibling prompt records and hybrid-259 provenance; no prior artwork overwritten.
+
+Public pack: 2,067 entries, 1,908,701,589 bytes (1.78 GiB); private pack:
+1,909,456,003 bytes. Temporary output: 268,025,827 bytes, 409,629 below 256 MiB.
+Retired 502,858 bytes of this batch's lossless original PNG references only
+after exact recovered-pixel/hash checks. Source art and review receipts remain.
+Workspace logical/allocated snapshot: 9,174,332,851 bytes; free disk
+44,158,656,512 bytes after LFS staging. No duplicate pack or game copy.
+Queue: 4,419 need art, 162 drafts require review, 164 icons intentionally original
+and 2,067 installed/6,812 known supported keys. Worklist and hybrid plan updated.
+Local #74 only, no push/publication; full overhaul and MAC-011 validation open.
+
+
+## 2026-10-24 — #74 hybrid-260 narrow wood trims
+
+Five replacements accepted offline: 43e3ba328bf66163, 327ad34d022472ae,
+44ba0ad3f49f3e24, 46b6144006f09c65 and 5405db3f5ff207dd. Four are
+1024x256 DXT1 and the small secondary strip is 256x64, all with full mips.
+Original rail pairs, molding bands, knots and notch sequence were compared
+against catalog originals. Compiled repeat sheets were reviewed; actual scene
+adjacency, relief and brightness remain deferred to final scene validation.
+
+Direct generation returned 3:1 artwork for 4:1 originals, so those drafts were
+held. Technical references placed the exact original in a 4:1 central region
+of a padded 3:1 canvas. Built-in imagegen returned 2169/2170x725 sources;
+explicitly reviewed regions were extracted with <=1% aspect rounding before
+resampling to exact original proportions. Full source artwork, prompts,
+region coordinates, hashes and prior drafts remain private. No native 4K claim.
+Three guided drafts remain held: warm wood 19eeebe57d9532f3 is too dark;
+4c42cc4ea79918da needs tone/band correction; cdb590fd9b291846 needs region
+proportion and fracture-relief review. They are not counted as installed.
+
+Native DDS/mip/aspect/opaque-alpha/hash and full-pack checks pass. All 4,134
+prior private files and 2,067 prior public pairs are unchanged. Original
+character-icon exclusions remain enforced. Public pack: 2,072 entries,
+1,909,413,495 bytes (1.78 GiB); private pack: 1,910,177,837 bytes, below 6 GiB.
+Reclaimed 255,022 bytes of this batch's original PNGs and technical guides
+after exact catalog-pixel reconstruction and contained path/hash checks.
+Temporary output is 268,262,446 bytes, 173,010 below 256 MiB. Source art,
+selected review evidence and receipts remain; previously denied targets untouched.
+Workspace logical/allocated snapshot: 9,218,169,509 bytes; free disk
+43,829,936,128 bytes. No duplicate game, pack or packaging tree.
+
+Queue: 4,411 need artwork, 165 drafts require review, 164 icons intentionally
+original and 2,072 installed among 6,812 known supported keys. Worklist and
+hybrid plan refreshed. Local #74 only; no gameplay, push or publication.
+Full scope and final scene/hardware validation remain open. Evidence is in
+private hybrid-260-generation/review/region-diagnostics/validation.json.
+
+
+## 2026-10-24 — #74 hybrid-261 stone and plaster materials
+
+Six replacements accepted offline: moss-edged stone 895b51c4af53cee1,
+grooved gray-purple rock b411b1efa6fc205d, salmon plaster variants
+d7429025f4ac0143/e94671d1d7c3dcec, two-tone masonry f3c65dd55f3413cc and
+small worn masonry fadf264d71425a0d. Outputs are one 1024-square, one
+512-square, three 512x256 and one 256-square, all full-mip RGBA8 after DXT1
+exceeded the existing RGB error threshold. Actual accepted sources are three
+1254-square and three 1774x887 images, downsampled without aspect changes.
+Built-in imagegen artwork, original layout/tone comparisons and source hashes
+are preserved. No native 4K claim. Held: c2c5465c7fdf9482 loses the original
+coarse grain scale; fcbd0022acc0f6e6 retains joints but is 13.4% too dark.
+
+Native DDS, full mip chains, original aspect, opaque alpha, hash identity and
+whole-pack audits pass. Both compiled repeat sheets reviewed. Stronger groove
+relief and actual model/scene adjacency still require final scene validation;
+repeat sheets do not establish seamlessness everywhere. All 4,144 prior private
+files and 2,072 prior public pairs remain unchanged. Character-icon exclusions
+are enforced; no gameplay or runtime modification.
+
+Public pack: 2,078 entries, 1,918,852,833 bytes (1.79 GiB); private pack:
+1,919,627,016 bytes, below 6 GiB. Reclaimed 568,986 bytes of redundant
+hybrid-258/259 repeat sheets after byte-exact reconstruction, retaining primary
+comparisons, and 259,630 bytes of this batch's original PNG references after
+exact catalog-pixel verification. Contained paths and hashes checked before
+removal; sources, prompts, receipts and previously denied targets retained.
+Temporary output: 268,176,631 bytes, 258,825 below 256 MiB. Workspace snapshot:
+9,260,661,318 logical/allocated bytes; free disk 43,433,066,496 bytes after LFS
+staging. No full pack/game duplicate. Private offline-batch-stage.py reuses
+public sanitization/LFS staging and preservation audits, requiring recorded
+manual compiled review before staging; it never publishes.
+
+Queue: 4,403 need art, 167 drafts require review, 164 icons intentionally
+original, 2,078 installed among 6,812 known supported keys. Worklist/hybrid
+plan refreshed. Changes local to #74; no push or release. Full overhaul and
+final scene/hardware validation remain open. Evidence: private hybrid-261
+selection/prompts/generation/review/diagnostics/validation and cleanup receipts.
+
+
+## 2026-10-24 — #74 hybrid-262 timber, painted wood and weathered trim
+
+Four replacements accepted offline: mottled vertical trim 7a0f9b5585a20c2f,
+pale split timber 7d1a914c2e9cb14c, pale-blue painted wood b7d7e2b939076aad
+and framed pale wooden inset d1020d42ec9cc84e. Actual sources are two
+887x1774 and two 1774x887 built-in imagegen outputs, downsampled to two
+512x1024 and two 1024x512 full-mip DDS files. One DXT1; three RGBA8 after
+DXT1 exceeded the existing RGB error threshold. No native 4K claim.
+
+Direct inspection corrected incomplete routing descriptions: the mossy board
+atlas 926b4b49c8b40d5b includes small grilles at both edges; the mottled trim
+material is uncertain, so its prompt did not invent generic wood grain. Both
+grilles remain visible with five opening rows in the enlarged original/generated
+comparison, but the atlas is held for 14.1% lower exposure. Other held drafts:
+3d782221b2dc79db is 14.8% darker, 82bb1398e5e0d6ad is 16.6% darker, and
+98a4b917a67596de shifts neutral tan toward yellow (mean RGB172/140/101 to
+185/145/90). Source art, full prompts and specific correction briefs retained.
+
+Original/compiled repeat review and native DDS/mip/aspect/opaque-alpha/hash
+checks pass. All 4,156 previous private files and 2,078 previous public pairs
+are unchanged; icon exclusions remain enforced. Existing repeat discontinuities,
+stronger grain and final mapped appearance remain scene-validation work.
+No gameplay, runtime change or publication.
+
+Public pack: 2,082 entries, 1,927,592,427 bytes (1.80 GiB); private pack:
+1,928,373,250 bytes, below 6 GiB. Retired 387,703 bytes of redundant260/261
+repeat sheets after byte-exact reconstruction and 476,762 bytes of this batch's
+original PNG references after exact catalog-pixel checks. Explicit contained
+paths/hashes verified before removal; primary comparisons, sources, prompts,
+receipts and previously denied targets preserved. Temporary output268,078,860
+bytes, headroom356,596 below256 MiB. Texture workspace snapshot9,295,039,044
+logical/allocated bytes; free disk43,278,512,128 bytes. No duplicate full pack.
+
+Private offline-batch-prepare.py and offline-batch-ingest.py reuse bounded
+reference preparation and source retention/comparison routines for later batches;
+neither approves artwork. Queue4,395 need art/171 drafts/164 retained originals/
+2,082 installed among6,812 known supported keys. Worklist/hybrid plan refreshed.
+Local #74 only. Full overhaul and final scene/hardware validation remain open.
+Evidence: private hybrid-262 selection/prompts/generation/review/diagnostics,
+detail-diagnostics, validation and cleanup receipts.
+
+
+## 2026-10-24 — #74 hybrid-263 focused tone and grain corrections
+
+Accepted tan timber98a4b917a67596de after correcting the yellow cast while
+preserving vertical flecks and pore positions. Actual source1774x887,
+downsampled to1024x512 DXT1 with11 mips. Corrected mean RGB165/130/104
+versus original172/140/101;6% lower luminance and muted contrast accepted
+offline. Final scene color match remains pending. Original/compiled repeat
+review and native DDS/mip/aspect/opaque-alpha/hash checks pass. All4,164
+previous private files and2,082 prior public pairs unchanged; icons excluded.
+
+Five other corrections remain held. Numeric exposure-lift prompts overshot:
+3d782221b2dc79db +43.8%,82bb1398e5e0d6ad +38.6%,926b4b49c8b40d5b +98%,
+fcbd0022acc0f6e6 +46.9% relative to original. This strategy must not be
+repeated blindly. Plasterc2c5465c7fdf9482 improves grain but still loses coarse
+structure at original scale (luminance std11.55 vs17.48; gradient10.42 vs15.02).
+Visual review accompanies metrics; numbers alone do not approve artwork.
+All old drafts and prompts remain, with pre-hybrid-263 prompt snapshots.
+
+Public pack2,083 entries/1,927,942,329 bytes (1.80 GiB); private pack
+1,928,724,906 bytes, below6 GiB. Reclaimed131,576 redundant repeat bytes and
+357,460 original-reference bytes after byte-exact/pixel-exact reconstruction,
+contained path and hash checks. Primary comparisons, source artwork, prompts
+and receipts retained; denied targets untouched. Temporary268,102,408 bytes,
+333,048 headroom below256 MiB. Workspace9,314,556,480 logical/allocated bytes;
+free disk43,162,746,880 bytes. No duplicate full pack or game copy.
+
+Queue4,395 need art/170 drafts/164 original icons/2,083 installed among6,812
+known supported keys. Worklist/hybrid plan refreshed. Private preparation and
+ingestion helpers now support explicit correction-lane inputs and preserve
+prior prompt provenance. Local #74 only; no gameplay, push or publication.
+Full overhaul and final scene/hardware validation remain open. Evidence:
+private hybrid-263 generation/review/diagnostics/detail-diagnostics/validation.
+
+
+## 2026-10-24 - #74 hybrid-264 masonry, cliff and plaster materials
+
+Accepted six replacements: moss-stained masonry, three-course brick, ochre
+weathered plaster, craggy cliff, edged concrete and quiet mottled plaster.
+Actual generated sources are 1774x887, downsampled to four 1024x512 and two
+512x256 outputs. Five use RGBA8 to preserve detail; quiet plaster uses DXT1.
+All have full mip chains and opaque alpha. Native DDS, dimensions, aspect,
+alpha, hashes, full-pack and manual compiled-repeat checks pass. All 4,166
+prior private files and 2,083 prior public pairs remain unchanged.
+
+Two drafts remain held: 8ce897566f9cdd60 fills original black lower-course edge
+regions (mean RGB below 1 becomes above 162), and c10d92048ae03ba1 darkens
+lighting by 17.7% with overemphasized grooves. Neither enters the pack. Accepted
+moss contrast and warm plaster color still require consolidated scene review.
+Repeat previews verify layout and repetition, not actual scene adjacency.
+
+Public pack: 2,089 entries / 1,939,915,751 bytes (1.81 GiB); private pack:
+1,940,707,948 bytes, below 6 GiB. Reclaimed 332,087 redundant preview bytes
+and 432,800 exact-recoverable reference bytes with verified reconstruction,
+contained-path and hash checks. Source artwork, prompts, selected comparisons
+and receipts remain. Temporary files: 268,102,113 bytes, with 333,343 bytes
+headroom below 256 MiB. Texture workspace: 9,356,942,004 logical/allocated
+bytes; free disk: 42,957,705,216 bytes. No duplicate game or full pack.
+
+Refreshed queue: 4,387 need art, 172 drafts need review, 164 retained original
+icons, 2,089 installed among 6,812 known supported keys. Original icons remain
+excluded. Unsupported/undiscovered coverage and final scene/hardware validation
+remain open. Local #74 changes only; no gameplay, push or publication. Evidence:
+private hybrid-264 generation/review/validation/stone-edge diagnostics and
+reference/preview retirement receipts. No runtime or delivery contract changes.
+
+
+## 2026-10-24 - #74 hybrid-265 architectural trim and wood
+
+Accepted five materials: rusty brick/plaster band, pale stone molding, worn
+brown-band plaster, framed dark wood and pale knotty wood. Sources are actual
+1774x887 built-in imagegen outputs, downsampled to1024x512 with11 mips.
+Three use DXT1; two use RGBA8 where compression loses fine detail. Full native
+DDS, mip/aspect/opaque-alpha/hash, pack and manual compiled-repeat checks pass.
+All4,178 previous private files and2,089 prior public pairs remain unchanged.
+Original icons excluded; final scene tone/adjacency and hardware tests pending.
+
+Three drafts held: eb1ef38d4d6f6603 is17.2% darker and needs detailed carved
+motif correspondence review; e16c5380d1af201f needs correspondence checks for
+prominent bright upper hinge elements against faint original hardware;
+ba78fe749a088658 preserves ridge pitch but broadens/darkens grooves and
+increases orange contrast. The original-scale focus rules out a ridge-count
+change; do not report missing ridges. No held draft was installed.
+
+Pack2,094 entries, public1,946,558,585/private1,947,358,956 bytes, about1.81GiB
+under6GiB. Reclaimed222,686 redundant repeat-preview bytes and353,236 exact
+reference bytes after reconstruction/path/hash checks. Source artwork, prompts,
+selected comparisons, layout focus and receipts retained. Temporary268,257,051
+bytes,178,405 headroom below256MiB. Texture workspace9,391,481,842 logical and
+allocated bytes; free disk42,744,799,232. No full duplicate pack or game copy.
+Queue4,379needart/175drafts/164originalicons/2,094installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final validation remain open. Evidence:
+private hybrid-265 prompts/generation/review/validation and retirement receipts.
+
+
+## 2026-10-24 - #74 hybrid-266 small panels and chipped surfaces
+
+Accepted four replacements: four-pane green-gray frame, quiet tan impressed
+surface, gray industrial hinged/vented panel and pale mint chipped material.
+Actual square1254 sources downsampled to two512 and two256 square outputs;
+threeDXT1 and oneRGBA8, full10/9 mip chains. Original four hinge positions and
+five-column/four-row vent grid retained in accepted2ff8f7496eec6a2e. Manual
+compiled2x2 comparison, native DDS, mip/aspect/opaque-alpha/hash and full-pack
+checks pass. All4,188 prior private files/2,094 prior public pairs unchanged.
+Tone changes (-10.9%,+12.3%,-11%, -2.1% before compression) remain explicit
+scene-review items; acceptance includes layout and material review, not just
+brightness thresholds. Original repetition boundaries remain visible.
+
+Held1e42b870f3b4d520 loses small dark edge marks;2384dc9128899e5c reinterprets
+faint rectangles as multi-slot vents;2febd9d6e5abd127 omits paired lower-center
+dots;30cc197b429f9731 is19.3% darker and substitutes diamond mesh for the
+central ribbed strip. Preserve original cues before installation. All source
+artwork and prompts remain; no held draft installed and no original icons added.
+
+Pack2,098 entries/public1,947,302,795/private1,948,109,919 bytes (1.81GiB),
+below6GiB. Reclaimed252,059 redundant own265 repeat/focus bytes and30,312
+new reference bytes after exact reconstruction, resolved-path and SHA checks.
+Selected comparisons and all authoritative source/provenance remain. Temporary
+268,297,379bytes,138,077 headroom below256MiB; workspace9,419,870,544 logical
+and allocated bytes; diskfree47,133,229,056. No full game or pack duplicate.
+Queue4,371needart/179drafts/164originalicons/2,098installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final scene/hardware validation remain
+open. Evidence: private hybrid-266 prompts/generation/review/validation and
+reference/preview retirement receipts. Runtime/delivery contracts unchanged.
+
+
+## 2026-10-24 - #74 hybrid-267 fine materials and parquet
+
+Accepted three replacements: gray-purple granular surface, quiet warm tan
+impressed surface and interlocking parquet. Actual square1254 sources emitted
+two256 and one512 outputs, oneRGBA8/twoDXT1 with full9/10 mip chains. Native
+DDS, mip/aspect/opaque-alpha/hash/full-pack and manual2x2 repeat checks pass.
+All4,196 prior private files and2,098 prior public pairs remain unchanged.
+Original icons excluded. Granular material is finer at original scale (gradient
+11.90 versus14.54, std13.21 versus17.45); broad brightness stays within1.2%.
+Accepted as modern material detail; mapped scale and scene tone remain pending.
+
+Five held drafts:37bc5679f46153e7 changes overlapping-cell topology;
+3e0cf1111ceac7e4 replaces the broad black upper atlas region with metal;
+655f690b5265ad50 extends the inset downward and darkens13.3%;7bfa8be6661571f2
+shifts bottom notch dark columns31-36 to29-33 at64px;89ad1b5859be47af moves
+the darkest mortar-gap row38 to33 and increases coarse gradient12.20 to22.10.
+None installed. Small original references need an exact enlarged-reference
+experiment to reduce structural drift; this is not yet a demonstrated remedy.
+
+Pack2,101 entries/public1,947,871,871/private1,948,684,068 bytes (1.81GiB),
+below6GiB. Retired421,117 redundant own262/263 comparisons and266 repeat bytes,
+plus40,363 new reference bytes after exact reconstruction/path/SHA checks.
+All source art, prompts, selected264-267 comparisons and receipts remain.
+Temporary268,198,948 bytes,236,508 headroom below256MiB; texture workspace
+9,451,957,148 logical/allocated bytes; diskfree46,907,170,816. No duplicatepack.
+Queue4,363needart/184drafts/164originalicons/2,101installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final scene/hardware validation remain
+open. Evidence: private hybrid-267 prompts/generation/review/validation,
+detail-diagnostics and retirement receipts. Runtime/delivery contract unchanged.
+
+
+## 2026-10-24 - #74 hybrid-268 enlarged-reference correction experiment
+
+Eight held assets regenerated from exact512px NEAREST enlargements of their
+32/64px originals. Five now pass:37bc5679f46153e7 overlapping-cell grouping;
+3e0cf1111ceac7e4 reserved black atlas band;7bfa8be6661571f2 notch positions;
+89ad1b5859be47af mortar gap;2febd9d6e5abd127 paired dark marks. Actual1254-square
+sources emitted two256 and three512 outputs, fourDXT1/oneRGBA8 with full mips.
+Native DDS/mip/aspect/opaque-alpha/hash/full-pack/manual repeat checks pass.
+All4,202 prior private files and2,101 prior public pairs remain unchanged.
+
+Post-encode original-scale checks verify notch spans exactly (left rows29-34,
+bottom columns31-36), gap darkest row38, first nonblack atlas row10 and top8
+rows meanRGB below1. Paired marks retain contrast at original coordinates.
+Original gaps and panel proportions are preserved; mapped scene appearance
+still needs final review. This is evidence the enlarged references help these
+five corrections, not a guarantee of perfect generation for every asset.
+
+Three remain held:655f690b5265ad50 has a brown/rust cast and11.3% lower mean;
+1e42b870f3b4d520 restores marks but invents extra rail subdivisions;
+30cc197b429f9731 overshoots brightness by24%. Enlarged original inspection
+corrects an earlier interpretation:30cc DOES have faint diamond-like central
+mottling. The earlier draft exaggerated it; it was not wholly invented.
+Prior sources and prompts remain, with pre-hybrid-268 prompt snapshots.
+
+Pack2,106 entries/public1,949,708,719/private1,950,529,381 bytes (1.82GiB),
+below6GiB. Reclaimed143,453 own267 repeat bytes,28,317 references and56,613
+technical guide bytes after exact reconstruction/path/SHA checks. Guide recipes,
+hashes and source resolutions remain in provenance; all authored artwork kept.
+Temporary268,396,583 bytes,38,873 headroom below256MiB; next batch requires
+verified preview retirement first. Workspace9,479,266,318 logical/allocated;
+diskfree46,713,053,184. No duplicate full pack or game. Queue4,363needart,
+179drafts,164originalicons,2,106installed among6,812 known supported keys.
+Local #74 only; no gameplay, push or publication. Full coverage and final
+scene/hardware validation remain open. Evidence: private hybrid-268 selection,
+prompts/generation/review/validation/correction-diagnostics/original-clarification
+and three retirement receipts. Runtime/delivery contract unchanged.
+
+
+## 2026-10-24 - #74 hybrid-269 guided material batch
+
+Five of eight new 64x64 opaque candidates were accepted after original/generated
+comparisons and separate decorative/ambiguous-atlas layout review. Gray granular
+material, ochre pitted material and the ambiguous highlight panel use 256x256;
+ornamental maroon/gold bands and the three-fastener tread panel use 512x512.
+All five encode as DXT1 with full mips from actual 1254x1254 built-in imagegen
+sources. Exact 512x512 NEAREST references guide layout only; outputs are not
+native 4K artwork. Source artwork and prompts remain private.
+
+Held d9937dc8fda0c4fb is 17.3% darker. Inset 16293cce3e63dc8f retains geometry
+but has darker faces and more dominant white edges (-11.6% mean luminance).
+Terracotta 2d7d1f0ed0bf2c03 expands lower branching cracks; the original does
+contain faint lower marks, so the problem is prominence rather than wholly
+invented cracks. Held drafts are excluded from pack assets. The decorative
+engraving is a modern interpretation; the ambiguous highlight panel's scene
+purpose remains unverified.
+
+Native Windows DDS parser, dimensions/mips, opaque alpha, content hashes,
+full-pack audit, original-character-icon exclusion and both compiled 2x2
+repeat reviews pass. Prior 4,212 private pack files passed unchanged checks;
+2,106 previous public pairs match the pack. Encoding completed before the
+second repeat preview was blocked by the 256 MiB temporary guard. The verified
+119,143-byte focus sheet was retired, then existing assets and the first
+preview were reverified unchanged and reporting completed without re-encoding.
+No storage-limit increase or duplicate pack was needed.
+
+Pack: 2,111 entries; sanitized DDS/JSON 1,950,191,167 bytes (1.82 GiB), private
+pack 1,951,020,713 bytes. Temporary outputs 268,359,802 bytes, 75,654 bytes below
+256 MiB. Earlier reviewed previews retired for this batch total 446,959 bytes;
+exactly recoverable originals/guides total 139,387 bytes. Hashes, reconstruction
+recipes and receipts remain; all generated sources/prompts are retained.
+Texture workspace logical/allocated size is 9,507,741,942 bytes; free disk space
+46,471,827,456 bytes at audit. The pack budget is distinct from source-art disk use.
+
+Queue: 4,355 need art, 182 drafts require review, 164 retained original icons,
+2,111 installed among 6,812 known supported keys. Unsupported/undiscovered
+assets and final scene/hardware validation remain open. Local #74 changes only;
+no gameplay, commit, push or release. Evidence: private hybrid-269 selection,
+prompts, generation, review, diagnostics, retirement and validation records.
+
+
+## 2026-10-24 - #74 hybrid-270 narrow metal trims
+
+Seven of eight opaque 4:1 metal candidates are installed after individual
+UV-layout and repeated-feature review: divided brushed trim, four-blade
+louvers, finned strip, paired inset plates with fasteners and bracket, repeated
+ribs, perforated panel and baked-highlight strip. Six outputs are 1024x256;
+the small finned strip is 512x128. All are DXT1 with complete mip chains.
+The oval band f18b1d0f32e2de94 remains held: the draft compresses artwork and
+adds black first/last rows inside the intended texture region. A tighter crop
+would exceed the allowed aspect deviation; it is not a valid layout repair.
+
+Built-in imagegen received exact NEAREST1536x384 enlargements on 1536x512
+canvases with 64-pixel black technical top/bottom padding. Actual generated
+sources are 2172x724. Manually reviewed extraction regions remove padding only,
+retain original internal gutters and differ from 4:1 by 0 to 0.37% before
+resampling to exact original aspect. Full sources, region coordinates, guide
+recipes/hashes and prompts are retained privately; no native-4K claim.
+
+Original-reference clarification: 71567f123bbaae3a has six troughs, not five
+as mistakenly specified in its prompt. Original and compiled original-scale
+profiles both place the troughs at x70,75,80,85,90,95. The generated image
+followed the reference. Preserve that result and the historical prompt; do
+not change it to fit the incorrect number. Corrugated-strip checks retain
+sixteen original-aligned rib windows, maximum peak offset one original texel.
+Five sampled perforation row profiles have equal dark-component counts and
+centers within half an original texel; the central seam is also a component.
+These are bounded checks alongside manual full-image/2x2 repeat review, not
+proof of all scene topology or lighting. Source-scale brightness changes range
+from -10.6% to +10.7% for accepted drafts and remain subject to scene validation.
+
+Native Windows DDS parser, dimensions/mips, alpha, hashes, full-pack audit,
+original-character-icon exclusion and both compiled repeat reviews pass.
+Prior 4,222 private files and 2,111 public DDS/JSON pairs remain unchanged.
+Pack: 2,118 replacements; sanitized files 1,951,286,143 bytes (1.82 GiB),
+private pack 1,952,130,564 bytes. Temporary output 268,089,134 bytes leaves
+346,322 bytes below 256 MiB. Retired 568,678 bytes of exactly reconstructed
+old comparisons/repeats plus 136,570 bytes of recoverable references and
+237,117 bytes of guides, retaining receipts and all authored sources/prompts.
+Workspace logical/allocated size 9,526,929,538 bytes; free disk space
+46,342,639,616 bytes at audit. No pack duplication or storage-cap increase.
+
+Queue: 4,347 need art, 183 drafts need review, 164 retained original icons,
+2,118 installed among 6,812 supported keys. Unsupported/undiscovered assets
+and final runtime/hardware validation remain incomplete. Work is local on #74;
+no gameplay, commit, push or publication. Evidence: private hybrid-270
+selection, prompts, generation, review, geometry diagnostics, original count
+clarification, post-encode geometry, retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 hybrid-271 very narrow 8:1 trims
+
+Four of eight new opaque 8:1 candidates passed artwork and compiled review:
+fafe3af293685c61 silver patterned strip at 2048x256;79f1d5dbf5cb3a20 repeating
+panel strip and 2d0985d8ce8906cb grille strip at 1024x128; ad4fc9d9abae1a53
+four-rivet band at 512x64. All use DXT1 with full mips. Accepted source-scale
+luminance changes range from -10.9% to -0.5%; later scene lighting remains open.
+Specialist inspection preserved the silver strip's fixed reflection-like dark
+clusters without claiming their material/scene identity is known.
+
+Guides are exact NEAREST 1536x192 enlargements on 1536x512 canvases with 160 px
+black technical top/bottom padding. Generated sources are 2172x724. Accepted
+manually reviewed regions differ from 8:1 by 0.18-0.55% before resampling to
+exact original aspect. The private compiler now describes each crop using
+actual original dimensions, instead of a hard-coded 4:1 recipe. Full artwork,
+source sizes/hashes, extraction regions, prompts and guide recipes remain
+private; these are not native 4K images.
+
+Held 540a9cf140785f09, fa5a2704c4c05210 and 95d1b646b6039fdd expand artwork
+height, yielding 5.07%, 2.34% and 3.04% aspect mismatch. Diagnostic comparisons
+show the measured extents but do not approve stretching/cropping away the
+error. The teal strip also overstates rust, and the blue paint gains hard
+boundaries. Held 307059597814103f matches the main highlight/boundary but
+fills a near-black lower atlas field: original rows 24-26 RGB mean 4.6 become
+24.0/22.3/19.6. Whole-image luminance cannot establish local dark-field fidelity.
+
+Native Windows DDS parser, mip/dimension/aspect/opaque-alpha/hash checks,
+full-pack audit, character-icon exclusions and manual compiled 2x2 repeat review
+pass. Post-encode original-scale profiles retain all ten grille trough centers
+x104..140 step 4 and all four rivet-highlight peaks x11/45/75/109. Two lower
+marks remain at x112 and 239-240 versus original 112/240, centroid offset <= 0.5.
+These checks supplement visual review; scene adjacency, lighting and scale
+remain unverified. All 4,236 prior private files and 2,118 public pairs unchanged.
+
+Pack 2,122 entries; sanitized DDS/JSON 1,951,833,906 bytes (1.82 GiB), private
+pack 1,952,686,939 bytes. Temporary output 268,123,920 bytes, headroom 311,536
+below 256 MiB. Retired 126,297 bytes of verified 270 repeats and recoverable
+271 references 186,388/guides 257,136 bytes. Reconstruction/hash receipts and
+all generated source artwork/prompts retained. Texture-workspace logical and
+allocated size 9,539,160,306 bytes; disk free 46,311,170,048 bytes at audit.
+No extra game/pack copy or storage-cap increase.
+
+Queue: 4,339 need art, 187 drafts require review, 164 original icons, 2,122 installed
+among 6,812 supported keys. Unsupported/undiscovered assets and final runtime/
+hardware checks remain incomplete. Local #74 work only; no gameplay, commit,
+push or publication. Evidence: private hybrid-271 selection, prompts, generation,
+padding/geometry diagnostics, review, post-encode geometry, retirement receipts
+and validation report.
+
+
+## 2026-10-24 - #74 hybrid-272 metal and molding strips
+
+Six of eight opaque 4:1 candidates passed artwork and compiled review: warm
+red/brass band ffadbf926dcf0084 at 512x128; two-slot trim 16b89c26fce9b6b5,
+tread plate 29f9b73bd48e516c, pale jointed strip 335056938e008198, clamped rail
+4df69a84970d5003 and asymmetric molding 2b3dab4f94656b51 at 1024x256.
+All use DXT1 and complete mip chains. Three complete rail clamps plus the
+partial right-edge clamp survive; the molding's left returns continue off the
+right edge without an invented closing frame. Accepted source-scale luminance
+changes range from -9.1% to +6.3%; scene lighting and scale remain pending.
+
+Exact NEAREST1536x384 original enlargements sit in 1536x512 guides with 64-pixel
+black top/bottom technical padding. All actual imagegen sources are 2172x724.
+Reviewed source regions remove padding only, with 0-0.93% aspect rounding before
+exact original 4:1 outputs. Full sources, sizes, extraction coordinates, prompts,
+hashes and guide recipes remain private. No native 4K claim.
+
+Held b03c32125d718402 expands the artwork to 549 pixels high (1.09% aspect
+error) and intensifies corrosion. Held b9e78713059ddd5b compresses it to 536
+pixels high (1.31% aspect error), moving the lower rail/edge upward. Both exceed
+the existing 1% extraction tolerance. Diagnostic previews show measured artwork
+regions; they do not authorize shaving edges or stretching to pass the gate.
+
+Native Windows DDS parser, dimensions/mips, alpha/aspect/hash checks, full-pack
+audit, original-character-icon exclusions and both manual compiled 2x2 repeat
+reviews pass. Sampled post-encode tread inset spans match x33-100 and x161-228
+at original rows 6/7. Two slot boundaries remain within one original texel at
+rows 17/19. The joint's dark mark matches x133-139 at rows 21/23, with a different
+corner taper at row 25. Brass highlight peak row 17 and groove minimum row 13
+remain unchanged. These are bounded checks alongside full-image review, not
+pixel-exact or scene equivalence. All 4,244 previous private pack files and
+2,122 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,128 replacements; sanitized files 1,952,753,732 bytes (1.82 GiB), private
+pack 1,953,619,504 bytes. Temporary output 268,230,202 bytes leaves 205,254 bytes
+below 256 MiB. Retired 197,605 bytes of verified old comparisons/repeats plus
+156,153 bytes of recoverable references and 259,099 bytes of guides. Exact
+reconstruction/hash receipts remain, as do all generated artwork and prompts.
+Texture-workspace logical/allocated size is 9,560,599,506 bytes; free disk space
+45,914,234,880 bytes at audit. No duplicate pack or storage-cap increase.
+
+Queue: 4,331 need art, 189 drafts require review, 164 retained original icons,
+2,128 installed among 6,812 supported keys. Unsupported/undiscovered assets and
+final runtime/hardware validation remain incomplete. Work stays local on #74;
+no gameplay, commit, push or publication. Evidence: private hybrid-272 selection,
+prompts, generation, padding diagnostics, review, post-encode geometry,
+retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 architectural strips, hybrid-273
+
+Added five reviewed replacements: orange weathered panel, framed marble,
+granular olive-gray strip, pale corroded corrugation and pale segmented panel.
+All use 1024x256 DXT1 with complete 11-level mip chains. Built-in imagegen sources
+are 2172x724 padded atlases, guided by exact NEAREST enlargements of original
+4:1 textures. Explicitly reviewed technical crops retain the artwork; source
+aspect rounding is 0.18-0.91%. These are not native 4K images. Full sources and
+prompts remain private. Two proportion-drift drafts and one overbright metal
+draft remain held; none is installed. Character/profile icons remain original.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash
+checks and both manual compiled-repeat sheets pass. Original-scale orange seam
+minimum remains row 50; corrugation trough/ridge remain rows 8/32. Five pale-panel
+seam probes differ by at most one original texel. These bounded probes support
+full-image review, not scene or pixel-exact equivalence. All 4,256 prior private
+pack files and 2,128 prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2,133 replacements; sanitized files 1,953,629,482 bytes (1.82 GiB), private
+pack 1,954,505,389 bytes. Temporary outputs total 268,228,996 bytes, leaving
+206,460 bytes below 256 MiB. Retired 276,148 bytes of exactly reconstructed old
+previews, plus 172,044 bytes of verified original references and 270,816 bytes
+of exact guides. Reconstruction/hash receipts, authored sources and prompts
+remain. Texture workspace logical/allocated size is 9,581,527,499 bytes; disk
+free space is 45,776,424,960 bytes at audit. One pack; no cap increase.
+
+Queue: 4,323 need art, 192 drafts need review, 164 retained original icons and
+2,133 installed among 6,812 supported keys. Coverage and final scene/hardware
+validation remain incomplete. Changes are local on #74; no gameplay, commit,
+push or publication. Evidence: private hybrid-273 selection/prompts/generation,
+padding diagnostics, review, post-encode geometry, retirement and validation.
+
+
+## 2026-10-24 - #74 ornament and mechanical strips, hybrid-274
+
+Added eight reviewed replacements: gold leaf-scroll molding, two gray mechanical
+panels, four-slab masonry, dark blue-gray banded surface, rusty trim, a central
+mechanical channel and four louvers. All use DXT1 with full mip chains: ornament
+2048x512 (12 levels), seven strips 1024x256 (11 levels). Built-in imagegen sources
+are 2172x724 padded atlases. Exact original 4:1 NEAREST guides preserve coordinate
+cues; reviewed technical extraction has at most 0.56% aspect rounding. These are
+not native 4K sources. Full source artwork and prompt provenance remain private.
+All eight passed individual layout review; no new held draft in this batch.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash
+checks and two decoded 2x2 repeat comparisons pass. Bounded original-scale probes
+survive encoding: mechanical slot minimum row21 and rail highlight row37;
+slab joint minima x63/127/191; rusty ridge row12; channel transitions rows17/43.
+Four louver highlights match within one original texel (third is row45 versus44).
+Ornament motifs and stepped grille/hardware received visual review. These checks
+do not prove scene adjacency or exact pixel equivalence. All 4,266 previous
+private pack files and 2,133 previous public DDS/JSON pairs remain unchanged.
+
+Pack: 2,141 replacements; sanitized files 1,955,554,970 bytes (1.82 GiB), private
+pack 1,956,447,324 bytes. Temporary outputs total 268,290,698 bytes, leaving
+144,758 bytes below 256 MiB. Retired 273,730 bytes of exactly reconstructable
+old previews, plus 139,792 bytes of verified references and 231,605 bytes of
+exact guides. Source art, prompts and reconstruction/hash receipts remain.
+Texture workspace logical/allocated size is 9,602,542,413 bytes; disk free space
+45,610,409,984 bytes at audit. One active pack; storage caps unchanged.
+
+Queue: 4,315 need art, 192 drafts need review, 164 retained original icons and
+2,141 installed among 6,812 supported keys. Remaining coverage, unsupported or
+undiscovered assets and final scene/hardware validation are incomplete. Work
+stays local on #74; no gameplay, commit, push or publication. Evidence: private
+hybrid-274 selection/prompts/generation, padding diagnostics, review, source and
+post-encode geometry, retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 worn plaster and banded trim, hybrid-275
+
+Added five reviewed 1024x 256 DXT 1 replacements with complete 11-level mip chains:
+ochre/red trim, cracked plaster, stained cream trim, olive-gray banded surface
+and two-tone gray plaster. Built-in imagegen sources are 2172x 724 padded atlases;
+exact original NEAREST guides and reviewed technical crops preserve 4: 1 layout
+with at most 0.55% source aspect rounding. Full sources/prompts remain private;
+these are not native 4K sources. Three drafts remain held: red/gold ornament
+became sculpted leaves, panel lighting/recess details drifted, and a dark mottled
+surface changed its broad cavities/lower edge. None of these held keys is installed.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash,
+original-icon exclusions and two manual decoded-repeat reviews pass. Post-encode
+original-scale probes retain separator row 38, brown line row 33, lower seam row 46
+and gray-band transition row 31. Lower rail peak differs by one texel. Main crack
+branches remain visually aligned, but threshold 35 row 40 probes lose two tiny
+dark spans at x 164-165 and 175-176; fine shading is not pixel-exact. This limitation
+is recorded, not treated as scene equivalence. All 4, 282 previous private pack
+files and 2, 141 prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2, 146 replacements; sanitized files 1, 956, 430, 720 bytes (1.82 GiB), private
+pack 1, 957, 333, 186 bytes. Temporary output 268, 243, 203 bytes leaves 192, 253 bytes
+below 256 MiB. Retired 340, 903 bytes of exactly reconstructable old previews,
+175, 995 bytes of verified references and 271, 191 bytes of exact guides. Authored
+art, prompts and reconstruction/hash receipts remain. Texture-workspace logical
+and allocated size 9, 624, 416, 433 bytes; free disk 45, 489, 065, 984 bytes at audit.
+One active pack; storage caps unchanged.
+
+Queue: 4, 307 need art, 195 drafts need review, 164 retained original icons and
+2, 146 installed among 6, 812 supported keys. Remaining coverage and final scene/
+hardware validation are incomplete. Work remains local on #74; no gameplay,
+commit, push or publication. Private hybrid-275 selection/prompts/generation,
+padding/geometry diagnostics, review, retirement receipts and validation retain
+provenance and measured limitations.
+
+
+## 2026-10-24 - #74 trim and small grille, hybrid-276
+
+Added three reviewed DXT1 replacements: rust-gray parallel trim and pale panel
+with small grille at 1024x256 (11 mip levels), and ambiguous gray-brown highlight
+strip at 512x128 (10 levels). Built-in imagegen sources are 2172x724 padded atlases;
+exact original NEAREST guides and reviewed technical crops preserve 4:1 layout
+with at most 0.55% source aspect rounding. Full artwork and prompts remain private;
+these are not native 4K sources. Five drafts remain held: ornament became leaf
+relief, ridge shadows/gouges darkened, faint grid lost a line, four-hole panel
+was compressed by 6.05% in aspect, and off-white panels lost center subdivisions.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash,
+original-icon exclusions and manual decoded-repeat review pass. Post-encode
+trim ridge peaks remain rows 18/44 and center highlight row 15. The grille keeps
+five openings: original-scale dark spans match at rows 29/31, with at most one
+texel difference at row 27. These bounded checks supplement full-image review;
+scene adjacency remains unverified. All 4,292 prior private pack files and 2,146
+prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2,149 replacements; sanitized files 1,956,825,096 bytes (1.82 GiB), private
+pack 1,957,733,672 bytes. Temporary output 268,196,016 bytes leaves 239,440 bytes
+below 256 MiB. Retired 276,472 bytes of verified old previews, 137,616 bytes of
+original references and 219,399 bytes of exact guides. Reproduction/hash receipts,
+authored artwork and prompts remain. Texture-workspace logical/allocated size
+9,645,733,475 bytes; free disk 45,173,239,808 bytes at audit. One active pack;
+storage caps unchanged.
+
+Queue: 4,299 need art, 200 drafts need review, 164 retained original icons, 2,149
+installed among 6,812 supported keys. Coverage and final scene/hardware validation
+remain incomplete. Local #74 work only; no gameplay, commit, push or publication.
+Private hybrid-276 selection/prompts/generation, padding diagnostics, review,
+post-encode geometry, retirement receipts and validation retain evidence.
+
+
+## 2026-10-24 - #74 wall panels and trims, hybrid-277
+
+Added four reviewed 1024x256 DXT1 replacements with 11 mip levels: paired vent
+inserts, tan beveled panel, dark olive-brown stained strip and green-gray worn
+band. Built-in imagegen sources retain full 2172x724 artwork; reviewed technical
+padding extraction has at most 0.55% aspect rounding. These are downsampled
+material restorations, not native 4K artwork. Four drafts remain held for tile
+brightness, omitted central-support subdivision and altered fastener treatment.
+
+Native Windows DDS parser, dimensions/mips/alpha/aspect/hash, full-pack audit,
+original-icon exclusions and manual decoded repeat review pass. Vent side edges
+match original-scale columns 37/101/153/217; top edge differs by one texel and
+bottom edge matches. Tan lower-bevel peak remains row 59. All 4,298 prior private
+files and 2,149 public DDS/JSON pairs remain unchanged. Scene adjacency and Mac
+GPU appearance remain untested; no runtime or host-specific code changed.
+
+Pack: 2,153 replacements; sanitized files 1,957,525,696 bytes (1.82 GiB), private
+pack 1,958,442,405 bytes. Temporary output 268,193,629 bytes leaves 241,827 bytes
+below 256 MiB. Retired 235,181 bytes of byte-reproduced old previews, 137,933 bytes
+of verified catalog references and 235,878 bytes of exact NEAREST guides. Full
+source art, prompts and reconstruction/hash receipts remain. Texture workspace
+logical/allocated size 9,667,187,324 bytes; free disk 44,922,400,768 bytes at audit.
+The 6 GiB pack and 512 MiB runtime residency caps are unchanged.
+
+Queue: 4,291 need art, 204 drafts need review, 164 retained original icons, 2,153
+installed among 6,812 supported keys. Local #74 work only; no gameplay, commit,
+push or publication. Private hybrid-277 selection/prompts/generation, padding
+and post-encode diagnostics, review, retirement receipts and validation record
+the evidence. The new four sanitized DDS/JSON pairs are staged as LFS pointers;
+there are now 107 new pairs staged since task base.
+
+
+## 2026-10-24 - #74 masonry trim variants, hybrid-278
+
+Added five reviewed 1024x256 DXT1 replacements with 11 mip levels: corroded seam
+trim, matte and reflective lower-band variants, divided concrete strip and a
+long inset panel. Built-in imagegen sources are 2172x724 padded atlases; reviewed
+technical crops preserve original 4:1 layout with at most 0.73% aspect rounding.
+Full source artwork and prompts remain private; these are not native 4K sources.
+Three drafts are held: rough stone is 17.8% darker, cornice has 5.23% aspect
+error with shifted lower blocks, brick atlas adds a divider and changes courses.
+
+Native Windows DDS parser, full-pack audit, mip/alpha/aspect/hash checks, original
+icon exclusions and both decoded repeat sheets pass offline review. Post-encode
+separator row 25 matches for both band variants; sampled upper joint gradients
+move by 0-2 original texels. Corroded seam minimum is row 27 versus original 28.
+Concrete upper trim remains row 16, lower trim is 61 versus 62. Inset left edge
+26 and bottom row 53 match; right edge is 226 versus 227. These bounded probes
+supplement visual review, not exact pixel equivalence or scene validation.
+All 4,306 prior private files and 2,153 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,158 replacements; sanitized files 1,958,401,446 bytes (1.82 GiB), private
+pack 1,959,328,298 bytes. Temporary output 268,198,345 bytes leaves 237,111 bytes
+below 256 MiB. Retired 259,885 bytes of byte-reproduced previews, 129,991 bytes of
+verified catalog references and 221,983 bytes of exact guides; reconstruction
+receipts remain. Texture workspace logical/allocated size 9,688,808,536 bytes;
+free disk 44,744,888,320 bytes at audit. One private pack; storage caps unchanged.
+
+Queue: 4,283 need art, 207 drafts need review, 164 original icons, 2,158 installed
+among 6,812 supported keys. Coverage, final scenes and Mac GPU validation remain
+incomplete. Local #74 only; no gameplay, commit, push or publication. Five new
+sanitized DDS/JSON pairs are staged as LFS pointers (112 new pairs since base).
+Private hybrid-278 selection/prompts/generation, diagnostics, review, retirement
+receipts, post-encode geometry and validation preserve the evidence.
+
+
+## 2026-10-24 - #74 ornament, brick and slabs, hybrid-279
+
+Added three reviewed DXT1 replacements: ornate molding at 2048x512/12 mip levels,
+brick strip at 512x128/10 levels and four slabs at 1024x256/11 levels. Built-in
+imagegen sources are 2172x724 padded atlases; reviewed technical crops preserve
+original 4:1 layout with at most 0.73% aspect rounding. Full artwork/prompts
+remain private; none is native 4K. Five drafts remain held for compressed molding
+framing, altered frieze contours and three dark materials losing 10.8-22.9% value.
+The granular strip's black-border framing remains explicitly unapproved.
+
+Native Windows DDS parser, full-pack audit, mip/alpha/aspect/hash and icon
+exclusion checks pass. Manual decoded repeat review and original-scale probes
+retain brick molding/mortar minima at rows 3/12/18 and highlight at 30. Ornate
+principal grooves and sampled recess positions differ by at most one original
+texel; the windows supplement visual count review and do not independently prove
+count. Slab joint minima are 62/125/189 versus original 61/125/188. Scene adjacency
+and Mac GPU appearance remain untested. All 4,316 prior private files and 2,158
+public DDS/JSON pairs remain unchanged.
+
+Pack: 2,161 replacements; sanitized files 1,959,320,110 bytes (about 1.82 GiB),
+private pack 1,960,253,167 bytes. Temporary output 268,021,741 bytes leaves 413,715
+bytes below 256 MiB. A guide preflight stopped before writing when 321,325 bytes
+would exceed remaining temporary space. Retired 427,806 bytes of byte-reproduced
+old previews, then 222,040 bytes of verified catalog references and 321,325 bytes
+of exact guides. Reconstruction/hash receipts and full sources remain. Texture
+workspace logical/allocated size 9,711,094,918 bytes; free disk 44,676,661,248 bytes
+at audit. One active pack; 6 GiB pack and 512 MiB residency limits unchanged.
+
+Queue: 4,275 need art, 212 drafts need review, 164 retained original icons, 2,161
+installed among 6,812 supported keys. Coverage and final validation are incomplete.
+Local #74 only; no gameplay, commit, push or publication. Three new sanitized
+DDS/JSON pairs staged as LFS pointers (115 new pairs since base). Private
+hybrid-279 selection/prompts/generation, diagnostics, review, retirement receipts,
+post-encode geometry and validation retain evidence.
+
+
+## 2026-10-24 - #74 wood and panel variants, hybrid-280
+
+Added three reviewed 1024x256 DXT1 replacements with 11 mip levels: wood/floral
+wallpaper atlas, wood/scratched-gold atlas and dark horizontal grain. Built-in
+imagegen sources are 2172x724 padded atlases; technical crops retain original
+4:1 layout with at most 0.91% aspect rounding. Printed floral centers have
+reinterpreted detail, not exact reconstruction. Full artwork/prompts remain
+private; these are not native 4K sources. Five drafts remain held: teeth became
+round holes, frame grew heavier, subtle cracks became large black seams, and
+three drafts lost 15.1-27.6% brightness (including frame/ambiguous material).
+
+Native Windows DDS parser, full-pack, mip/alpha/aspect/hash, icon exclusions and
+manual decoded repeat checks pass. Both atlases retain main partition/rail
+gradients at original columns 85/242. Scratched-atlas slat minima retain original
+rows 12/25/38/51; floral first seam is 13 versus 12, others match. Dark grain
+minimum stays row 47; central stain mean is 20.4 versus original 25.2, a measured
+tone difference for later scene review. Overall dark-wood brightness is -8.4%.
+These bounded checks do not prove exact pixels, scene adjacency or Mac GPU output.
+All 4,322 prior private files and 2,161 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,164 replacements; sanitized files 1,959,845,560 bytes (about 1.83 GiB),
+private pack 1,960,784,883 bytes. Temporary output 268,267,711 bytes leaves 167,745
+bytes below 256 MiB. Retired only this batch's 150,591-byte original references
+and 248,313-byte exact guides after reproduction/hash verification; full source
+art and receipts remain. Texture workspace logical/allocated size 9,730,731,895
+bytes; free disk 44,549,840,896 bytes at audit. One active pack, unchanged caps.
+
+Queue: 4,267 need art, 217 drafts need review, 164 retained original icons, 2,164
+installed among 6,812 supported keys. Coverage and final validation remain
+incomplete. Local #74 only; no gameplay, commit, push or publication. Three new
+sanitized DDS/JSON pairs staged as LFS pointers (118 new pairs since task base).
+Private hybrid-280 selection/prompts/generation, padding/geometry diagnostics,
+review, retirement receipts and validation preserve evidence.
+
+
+### 2026-10-24: #74 narrow trim batch 281 (local only)
+
+Four of eight generated strips accepted: rust molding, curved blue-gray segments,
+weathered plaster and dark neutral trim. Three drafts exceed the 1% strip-aspect
+tolerance; the layered gray trim brightened 18.3% and remains held. Full sources
+and prompts remain private. Sources are 2172x724 padded atlases, with reviewed
+material regions downsampled to 1024x128 DXT1 and 11 mip levels; not native 4K.
+
+Native DDS parser, alpha/aspect/mips/hashes, full-pack audit and original-icon
+exclusion passed. All 4,328 prior private files and 2,164 prior public pairs
+remain unchanged. Manual decoded repeat review passed. Molding row probes
+7/16/24, plaster ridge25 and trim lips0/31 match; eight curved-channel spans
+differ by at most one original texel. Scene validation remains pending.
+
+Pack: 2,168 replacements; sanitized 1,960,196,716 bytes; private 1,961,144,084.
+Queue: 4,259 need art, 221 drafts require review, 164 retained originals.
+Texture workspace: 9,742,190,642 bytes logical/allocated; 44,454,850,560 free
+at audit. Temporary outputs: 268,126,876 bytes, 308,580 below the 256 MiB limit.
+Retired only 293,004 bytes of byte-reproduced old previews and 277,721 bytes
+of new exact-reconstructable references/guides, with parent/hash checks and
+receipts. Source art, saves/settings and the single pack remain intact.
+
+Sanitized new DDS LFS pointers/JSON are staged locally on #74; 122 new pairs
+since task base. No gameplay, commit, push or publication in this batch.
+
+
+### 2026-10-24: #74 narrow trim batch 282 (local only)
+
+Two of eight generated strips accepted: worn ochre paint and pale masonry.
+Six drafts remain held: changed rib rhythm, compressed bronze atlas, merged
+silver-rail bottom cutouts, expanded/brightened tan tiles, expanded turquoise
+strip and darkened gray trim. Full artwork and prompts remain private. Sources
+are 2172x724 padded atlases; reviewed material regions become 1024x128 DXT1
+with 11 mip levels. These are downsampled detail restorations, not native 4K.
+
+Native DDS parser, alpha/aspect/mip/hash validation, full-pack audit and original
+icon exclusions pass. All 4,336 prior private files and 2,168 public pairs remain
+unchanged. Decoded 2x2 repeats reviewed; original-scale ochre seam231 and masonry
+seams58/116/161/210 match. Fine mineral detail and paint flaking are reinterpreted;
+scene validation remains pending. No game launch, commit, push or publication.
+
+Pack: 2,170 replacements, sanitized 1,960,372,294 bytes; private 1,961,323,774.
+Queue: 4,251 need art, 227 drafts require review, 164 retained originals.
+Texture workspace: 9,753,132,385 bytes logical/allocated; disk free44,387,782,656
+at audit. Temporary outputs268,258,540 bytes with176,916 bytes headroom below
+256 MiB. Only new references/guides totaling249,756 bytes were retired after
+exact reconstruction, resolved-parent and hash verification. One active pack,
+source artwork and user saves/settings preserved. 124 new sanitized pairs are
+staged locally since task base.
+
+
+### 2026-10-24: #74 rectangular material batch 283 (local only)
+
+Four of eight drafts accepted: warm speckled panel, brown-gray weathered strip,
+gray granular strip and aged floral wallpaper. Tread plate omitted its original
+black lower atlas field and brightened34.6%; orange and dark wall dimmed18.9%
+and17.2%; ornate scrollwork deepened/enlarged relief. These four remain held.
+Full generated sources1774x887 are retained with prompts and provenance. Outputs
+use1024x512 or512x256 RGBA8 with full mip chains, not native4K art.
+
+Native DDS, dimensions/mips/alpha/hashes, full-pack audit and original-icon
+exclusions passed. All4,340 prior private files and2,170 public pairs remain
+unchanged. Decoded repeats reviewed. Highlight row2, weathered center/edge37/59
+and gray-strip center/edge30/63 match; weathered upper band differs by one
+original texel. Floral border-shading minima differ by up to two texels; the
+fine printed details are reinterpreted. Scene validation remains pending.
+
+Pack2,174 entries: sanitized1,967,364,242 bytes, private1,968,322,628. Queue
+4,243 need art,231 drafts require review,164 retained originals. Workspace
+9,791,565,895 bytes logical/allocated; disk free44,243,222,528 at audit. Temporary
+outputs268,168,260 bytes with267,196 headroom below256MiB. Reproduced and retired
+373,853 bytes of old comparison previews plus265,263 bytes of new original
+references using exact reconstruction and resolved-parent/hash checks. All
+source art, saves/settings and one active pack preserved.128 new pairs staged
+locally since task base. No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 panel and trim batch 284 (local only)
+
+Six of eight drafts accepted: pale layered trim, cracked red/pale surface,
+blue-gray crossrail panel, mottled brown-gray material, paired silver fastener
+panels and weathered pink-gray atlas. The ledge brightened 14.2%; the facade
+openings became too dark. Both remain held. The facade was removed from the
+new private pack before staging after encoded review, with exact new-file
+hash/parent checks and a recovery receipt retaining metadata. Source art stays.
+
+Originals used exact NEAREST 512x256 layout guides. Full generated sources are
+1774x887; outputs range from 256x128 to 1024x512, DXT1 or RGBA8 with full mips.
+Native DDS, alpha/aspect/mips/hashes, full-pack audit and icon exclusions pass.
+All 4,348 prior private files and 2,174 public pairs remain unchanged. Decoded
+repeats reviewed, including the facade rejection. Trim rows 12/14/26, crossrail
+16, mottling23, pink-gray seam19 and red boundaries29/64/94 match at original
+scale. Fastener dark-pixel probes differ by up to one column and three rows;
+changed highlights make these diagnostic, not proof of identical contours.
+Scenes remain untested. No gameplay, commit, push or publication.
+
+Pack: 2,180 entries; sanitized 1,969,310,695 bytes; private 1,970,279,290.
+Queue: 4,235 need art, 233 drafts require review, 164 retained originals.
+Workspace: 9,822,009,510 bytes logical/allocated; disk free 44,053,565,440 at
+audit. Temporary outputs 268,406,231 bytes, 29,225 below 256 MiB; recycle
+reproducible previews before another batch. Retired 82,540 bytes of reproduced
+281/282 repeat sheets and 178,702 bytes of newly reconstructed references/guides
+with resolved-parent and hash checks. Artwork, saves/settings and one active
+pack preserved. 134 new sanitized pairs staged locally since task base.
+
+
+### 2026-10-24: #74 wall, window and trim batch 285 (local only)
+
+Five of eight drafts accepted: gray banded wall with baked shadow, pale
+ornamental trim, blue-gray service wall, floral wallpaper and curved window
+frame. Changed scroll relief, broken-glass contours and stronger pseudo-lettering
+remain held. Generated sources are 1774x887; compiled outputs are 512x256 or
+1024x512 DXT1 with complete mip chains. Native DDS and full-pack audits passed.
+All 4,360 prior private files and 2,180 public pairs stayed unchanged; all 164
+retired icon keys remain excluded. Original-scale trim rows23/36/46/54 and
+window mullions46/83 match. Banded-wall transitions differ by at most one texel;
+service-rail gradients differ by up to two. Wallpaper border minima differ by
+one, while a broad stripe minimum moved five because shading changed. The
+follow-up explicitly distinguishes local contrast from boundary movement;
+wallpaper contrast and all scenes remain pending runtime review.
+
+Pack:2,185 entries; sanitized1,970,273,767 bytes; private1,971,250,977.
+Queue:4,227 need art,236 drafts require review,164 retained originals.
+At batch audit, texture workspace9,846,436,744 bytes logical/allocated;
+disk free43,376,676,864; temporary268,297,789 with137,667 bytes headroom.
+Retired353,979 bytes of exactly reconstructed older previews and297,414 bytes
+of new original references/guides. Sources/provenance and one pack retained.
+139 new sanitized pairs staged locally since task base. No gameplay or publication.
+
+
+### 2026-10-24: #74 tile, grille and plaster batch 286 (local only)
+
+Seven of eight drafts accepted: terracotta tile grid, striped woven material,
+bracketed pale wall, stained green tile grid, two-row grille, eroded two-tone
+plaster and fine terracotta material. Dark chipped slabs remain held after a
+12.4% luminance reduction and exaggerated recess edges. Inspection corrected
+ambiguous queue descriptions before prompting: the plaster boundary is irregular,
+the dark slabs have chipped recesses, and the terracotta field has no brick grid.
+
+Full sources1774x887; outputs512x256 or1024x512 with complete mips. Six use DXT1;
+the striped woven material uses RGBA8 to preserve detail. Native parser,
+alpha/aspect/mips/hash, full-pack audit and icon exclusions passed. All4,370
+prior private files and2,185 prior public pairs remained unchanged. Both decoded
+repeat sheets reviewed; actual scene adjacency and gameplay remain untested.
+Tile grout columns63/127/191 and row64 match. Red stripe spans differ by one
+texel; sampled irregular tile seams and grille dark cores differ by at most two.
+Initial uniform-grid search windows missed the original wider central cell;
+enlarged original/decoded comparison and corrected windows are recorded alongside
+the original diagnostic, rather than hiding the mismatch. These are bounded
+feature probes, not whole-image equivalence or scene certification.
+
+Pack:2,192 entries; sanitized1,974,383,305 bytes; private1,975,372,326.
+Queue:4,219 need art,237 drafts require review,164 retained originals.
+Texture workspace9,880,068,272 bytes logical/allocated; disk free43,223,863,296
+at audit. Temporary268,208,656 bytes with226,800 headroom below256MiB.
+Retired451,714 bytes of byte-reconstructed previews and528,118 bytes of new
+original references/guides. The initial redundant PowerShell Split-Path parent
+check emitted a parameter-set error; the preceding Python resolved-parent check
+and exact bytes plus PowerShell hash check had passed. The receipt records this;
+subsequent removals use terminating errors and System.IO.Path.GetDirectoryName.
+No source art, recovery record, game data, save or setting was removed.146 new
+sanitized pairs staged locally since task base. No gameplay, commit, push or release.
+
+
+### 2026-10-24: #74 rough material and panel batch 287 (local only)
+
+Six of eight drafts accepted: gray-green rocky material, lit sandstone,
+small pale mottled strip, corrugated industrial wall, cross-seamed gray panel
+and cream/olive banded panel. Brighter chipped masonry and darker six-rail
+hardware with enlarged end caps remain held. Full sources1774x887; outputs
+256x128,512x256 or1024x512. Rock and sandstone use RGBA8 to preserve fine
+color detail; the other four use DXT1. All have complete mip chains.
+
+NativeDDS, alpha/aspect/mips/hash, full-pack and icon exclusion checks passed.
+All4,384 prior private files and2,192 prior public pairs remain unchanged.
+Both decoded2x2 repeats reviewed; all scene/gameplay acceptance remains pending.
+Sandstone vertical light peaks158/345 match; lower light row192 becomes191.
+Panel seam column48/row125, notch bottom119 and band transitions17/41 match.
+Upper rib dark cores differ by at most3 original texels as shading changes;
+this is not a complete contour proof. Grain, light strength and seam contrast
+remain explicit scene-review concerns. No native4K source claim.
+
+Pack:2,198 entries; sanitized1,980,786,212 bytes; private1,981,785,424.
+Queue:4,211 need art,239 drafts require review,164 retained originals.
+Texture workspace9,916,514,935 bytes logical/allocated; disk free43,052,109,824
+at audit. Temporary267,566,438 bytes,869,018 headroom below256MiB.
+
+Recycled966,637 bytes of five diagnostic previews with resolved-parent/hash
+checks. The258/259 contact sheets were redundant; their current/previous source
+hashes, original payload provenance and review reports were verified and retained.
+Their old JPEG rendering recipe was not byte-exact recovered. The286 comparison
+and two repeat sheets were reproduced byte-for-byte before removal. Neither
+cleanup type removed artwork or recovery records. The receipt distinguishes them.
+Retired999,227 bytes of new original references and149,395 bytes of separate
+NEAREST guides after exact reconstruction. Three512x256 originals doubled as
+edit references, avoiding duplicate guides. One game/build/pack and personal
+saves/settings preserved.152 new sanitized pairs staged locally since base.
+No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 wood, plaster and granular batch 288 (local only)
+
+Six of eight drafts accepted: weathered wood, small blue-gray panel, ochre
+material, pink-beige mottling, diagonal brown bands and pink-to-gray eroded
+plaster. Gray tiles retain stronger crack/grain contrast and about8.8% higher
+brightness; rust is more saturated and about11.4% darker. Both remain held.
+Original inspection identified the large brown surface as wood, preserving
+knots and plank cuts rather than following its earlier inferred ground label.
+
+All full sources1774x887. Wood is resampled to2048x1024 for its1024x512 original;
+other outputs are256x128 or512x256. This is not native4K source artwork. All
+six use DXT1 and full mip chains. NativeDDS, alpha/aspect/mips/hash, full-pack
+and retired-icon checks passed. All4,396 prior private files and2,198 public
+pairs stayed unchanged. Both decoded repeat sheets reviewed; scene validation
+remains pending, especially wood highlights and diagonal-material roughness.
+
+Sampled wood cut rows49/227/276 become48/227/276; small-panel partitions17/37
+match. Five sustained pink-to-gray color transitions differ by at most one
+original texel. The initial largest-gradient probe picked lower-layer speckle
+at some columns; color profiles and follow-up are retained with that limitation.
+These measurements do not establish full contours, scene adjacency or gameplay.
+
+Pack:2,204 entries; sanitized1,982,557,935 bytes; private1,983,567,402.
+Queue:4,203 need art,241 drafts require review,164 retained originals.
+Texture workspace9,947,625,704 bytes logical/allocated; disk free42,639,245,312
+at audit. Temporary267,530,303 bytes with905,153 headroom below256MiB.
+Retired one296,789-byte redundant257comparison after source hash/provenance and
+resolved-parent/file-hash checks; exact historical JPEG recipe not recovered,
+but all artwork, original game/catalog and review records retained. New original
+references909,904 bytes and seven exactNEAREST guides126,476 bytes were retired
+after exact reconstruction. The1024x512 original served directly as its guide.
+No game data, saves/settings or source art removed.158 new sanitized pairs
+staged locally since base. No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 plaster, columns and corrugation batch 289 (local only)
+
+Four of eight drafts accepted: pale streaked plaster, recessed-column strip,
+dark corrugation and pink-gray chipped plaster. Diagonal ridges, inset panel
+and red ribs remain held for excessive darkness/relief; the grimy wall became
+about 12.8% brighter. Held sources and review decisions remain private.
+
+All full artwork sources are 1774x887, generated with built-in imagegen. Accepted
+outputs are 512x256 or 1024x512 DXT1 with full mip chains, downsampled from the
+sources; no native 4K claim. Alpha/aspect/mips/hash checks, native DDS parser,
+full-pack audit and original-icon exclusions pass. All 4,408 prior private
+pack files and 2,204 prior public pairs remain unchanged. Decoded 2x2 comparisons
+were reviewed. Eight column-face highlight peaks differ by at most one original
+texel; the central corrugation probe finds 20 peaks in both images, within two
+texels. These brightness probes do not prove full geometry or scene adjacency.
+Plaster streaks, column relief, reflection intensity and the exposed-layer
+interpretation remain final scene-review concerns.
+
+Pack: 2,208 replacements, 1,983,433,251 sanitized bytes; private pack 1,984,449,553.
+Queue: 4,195 need art, 245 drafts need correction/review, 164 retained originals.
+Texture workspace 9,977,224,787 bytes logical/allocated; disk free 42,344,361,984
+at audit. Temporary outputs 267,761,946 bytes, 673,510 below the 256 MiB limit.
+The eight original reference PNGs (183,753 bytes) and eight NEAREST guides
+(218,441 bytes) were removed only after exact reconstruction plus resolved-parent
+and file-hash verification. Source artwork, original game/catalog, prompts and
+recovery records remain. No duplicate game/pack/staging tree created.
+162 new sanitized pairs are staged locally since base; no gameplay, commit,
+push or publication. Repository context and whitespace checks passed.
+
+
+### 2026-10-24: #74 subtle material batch 290 (local only)
+
+Four of eight drafts accepted: dark worn brown-gray surface, smooth pale plaster
+with a narrow left border, rough gray material and fine gray speckled material.
+Three other drafts retain square reference-sampling artifacts in their generated
+material detail/borders; chipped plaster has excessively pronounced cracks.
+These remain held despite modest whole-image luminance changes. Downsampling to
+hide those artifacts is not treated as a high-fidelity correction.
+
+All sources are 1774x887 from built-in imagegen. Accepted outputs are 512x256 or
+1024x512 DXT1 with full mips, downsampled and recorded as such. Native parser,
+alpha/aspect/mips/hash, full-pack and retired-icon audits pass. All 4,416 prior
+private files and 2,208 prior public pairs remain unchanged. Four decoded 2x2
+comparisons reviewed. The pale-plaster left-border transition remains at original
+column 4; top worn highlight moves from row 10 to 11. These bounded brightness
+probes supplement visual inspection; local grain, border shading and scene
+adjacency still require final scene review. No gameplay performed.
+
+Pack: 2,212 replacements; 1,984,570,713 sanitized bytes and 1,985,593,770 private
+pack bytes. Queue: 4,187 need art, 249 drafts need correction/review, 164 retained
+originals. Workspace 10,004,888,354 bytes logical/allocated; disk free
+42,168,995,840 at audit. Temporary outputs 267,620,143 bytes, with 815,313 bytes
+headroom under 256 MiB. Three older batch287 previews (324,419 bytes) were
+reproduced byte-exactly then retired after parent/hash checks. New original refs
+(320,413 bytes) and NEAREST guides (345,049 bytes) were likewise verified and
+retired. Full artwork, game/catalog, prompts, review/provenance records remain.
+166 sanitized pairs are staged locally since base. No commit, push or publication.
+Repository context and whitespace check results are in hybrid-290-validation.json.
+
+
+### 2026-10-24: #74 panel and trim batch 291 (local only)
+
+Six of eight drafts accepted: dusty red-brown panel, tan-olive slab, soft gray
+field, olive-gray panel, rounded gray masonry trim and paired tan molding.
+Dark red-streaked material and maroon-bordered gray wall remain held for excess
+darkness/roughness. Native-resolution original PNGs were supplied directly,
+without enlarged guide duplicates. No obvious square sampling patterns were
+found in this batch; different assets/prompts prevent a causal A/B claim.
+
+All sources are 1774x887 from built-in imagegen. Accepted outputs are 512x256 or
+1024x512 DXT1 with full mips and recorded downsampling. Native DDS, full-pack,
+alpha/aspect/mips/hash and original-icon checks pass. All 4,424 prior private
+files and 2,212 prior public pairs remain unchanged. Both decoded repeat sheets
+reviewed. Gray trim grooves remain at original rows 42/104; tan black recess
+spans 18:29, sampled highlights differ by at most one texel, olive seam 186->185.
+Initial vertical-joint probe windows mistakenly used half-scale coordinates and
+missed the joints. Corrected original-scale windows give 61/169/60->61/170/61;
+the failed diagnostic and correction are retained. These probes do not prove
+complete contours, adjacent scene matches or gameplay. Local stain contrast,
+roughness, gray reflection and tan lower shadow need final scene review.
+
+Pack: 2,218 replacements; 1,986,407,979 sanitized bytes, 1,987,441,222 private pack
+bytes. Queue: 4,179 need art, 251 drafts need correction/review, 164 retained
+originals. Workspace 10,031,483,798 bytes logical/allocated; disk free
+41,999,122,432 at audit. Temporary outputs 267,837,895 bytes, 597,561 below the
+256 MiB limit. Eight new reference PNGs (260,004 bytes) retired after exact
+catalog reconstruction plus resolved-parent/file-hash checks; no extra guides
+or other cleanup in this batch. Source artwork, prompts, provenance and game
+files remain. 172 new sanitized pairs are staged locally since base.
+No gameplay, commit, push or publication. Context/whitespace results are recorded
+in hybrid-291-validation.json after execution.
+
+
+### 2026-10-24: #74 plaster, corrugation and rust batch 292 (local only)
+
+Four of eight drafts accepted: beige cracked plaster, pale mottled plaster,
+center-highlight corrugation and rusty orange-gray panel. Gray trim, salmon
+plaster, diagonal-shadow corrugation and dark coarse material remain held for
+excess darkness/roughness, saturation, gold-shifted reflection or checkered
+clusters. Native-original references were used directly; no extra guides.
+
+All sources are 1774x887 from built-in imagegen. Outputs are 512x256 or1024x512,
+with full mips and recorded downsampling. Three use DXT1; the rusty panel uses
+RGBA8 because its DXT1 error exceeded the compiler threshold. Native DDS,
+alpha/aspect/mips/hash, full-pack and original-icon checks pass. All 4,436 prior
+private files and 2,218 prior public pairs remain unchanged. Decoded 2x2 review
+completed. Rust divider208->210 and bottom edge123->123 at original scale.
+The raw corrugation profile has19 versus18 local maxima, including a tiny
+secondary maximum in one original rib. Spacing-filtered profiles each have18
+peaks within two texels. Both diagnostics and local sample values remain;
+this filtering does not independently certify geometry. Highlight centroid
+moves127.47/67.44->127.12/64.10, a3.34-row rise that needs final scene review.
+Plaster crack relief, rust chroma and local reflection intensity remain untested
+in game; no gameplay or full-scene fidelity claim.
+
+Pack:2,222 replacements;1,989,729,957 sanitized bytes,1,990,770,022 private pack
+bytes. Queue:4,171 need art,255 drafts need correction/review,164 retained originals.
+Workspace10,061,596,604 bytes logical/allocated; disk free41,952,358,400 at audit.
+Temporary268,042,751 bytes,392,705 below256MiB. Eight new reference PNGs239,789
+bytes retired after exact catalog reconstruction and resolved-parent/hash checks.
+Full source art, prompts, game/catalog and recovery records remain.176 new
+sanitized pairs staged since base; no commit, push or publication. Repository
+context/whitespace results are recorded in hybrid-292-validation.json.
+
+
+## Texture overhaul issue #74: hybrid batch 293
+
+October 24, 2026; local Windows asset work on the #74 branch at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Added five reviewed replacements:
+ochre peeled plaster e4cb082746a4a5ba, paired tan panels e5b9f9915808f2be,
+olive separator panel e9730a0acb02ceeb, blue-gray ribbed atlas f38669797af2a99a,
+and pale weathered panel f907c0ff3e2c3d7f. Built-in imagegen sources are1774x887;
+plaster is resampled to2048x1024, others to1024x512. This is not native4K artwork.
+Four use DXT1; plaster uses RGBA8 because DXT1 RGB error5.24 exceeded threshold5.
+Full mip chains, opacity, format/hash checks and native DDS parser passed.
+
+Held three drafts: ed2ab1820b86687a changes the broad red reflection and darkens
+9.5%; f6e57f11d4c93290 introduces repeating checkered/diagonal detail;
+f9c86a478102d1f8 darkens18.4% and adds unsupported coarse relief. Full source art
+and prompts remain for correction. Decoded comparisons preserve broad layouts.
+Sampled seam column130 and separator row63 match originals; pale rails8/121
+become8/119. Raw rib maxima26vs24 are shading-sensitive and do not certify rib
+counts or atlas contours. Plaster relief, panel warmth, marks, baked reflections
+and scene adjacency still need final consolidated scene review. No game launch.
+
+Pack:2,227 replacements;2,002,314,739 sanitized bytes,2,003,363,335 private pack
+bytes including metadata, below6GiB. Coverage2227/6812 known supported keys;
+4,163 need artwork,258 drafts require review,164 original icons remain excluded.
+All4,444 prior private files and2,222 prior public pairs verified unchanged.
+Texture workspace10,101,766,523 logical/allocated bytes; free disk41,883,615,232
+at audit. Temporary outputs267,799,987 bytes,635,469 below256MiB. These figures
+cover the texture workspace, not the entire project. No duplicate game/pack/ZIP.
+
+Retired five older288/289 comparison/repeat previews after byte-exact recreation
+and resolved-parent/SHA verification, reclaiming492,297 bytes. New native-size
+original references668,777 bytes were catalog/pixel/hash verified then retired.
+No separate enlarged guides. Denied cleanup targets were not touched. Artwork,
+prompts, provenance, game, saves and settings retained.181 new pairs staged since
+task base; docs/config remain local. No commit, push or release. Evidence and
+repository checks: private hybrid-293-validation.json and associated records.
+
+
+## Texture overhaul issue #74: hybrid batch 294
+
+October24,2026; local Windows asset work on #74, base28f5400a49a24529e8a3ee5711db3d5d7c444da7.
+Added gray tile grid3fe39c6744a95fa7 at1024squareDXT1, worn tiles457dbbe4cd507129
+at512squareRGBA8, irregular gray masonryc22f99f073690ef7 at1024squareRGBA8.
+Built-in imagegen sources1254square, downsampled; no native4K claim. Native DDS,
+full mip/alpha/aspect/hash and full-pack checks passed. The two RGBA8 assets
+exceeded the DXT1 error threshold. Decoded2x2 comparisons manually reviewed.
+Gray-tile seam column128/row127 match; worn-tile column62->63, row65 matches.
+Masonry top-joint columns53/100/144/223 become53/101/145/223; upper horizontal
+seams20/40/68 match. These bounded intensity probes supplement visual review,
+not complete contours or scene proof. Worn-tile contrast, crack detail and scene
+adjacency remain final review concerns. No playtesting or runtime change.
+
+Held five drafts:43be1406a19ed958 changed pale mortar to dark inset seams;
+b0c072b2d19377df has checkered fine detail and stronger orange;
+b14cc8fb3952635b is15.5% brighter/golder with changed shadow footprint;
+b21faa6448837f33 is7.1% darker/olive; c658bf9f0896a7df has repeated diagonal
+stipple and overly distinct peeling. Sources/prompts retained for correction.
+
+2,230 replacements,2,010,005,389 sanitized bytes,2,011,059,191 private pack bytes,
+below6GiB.4,155 need art,263 drafts require review,164 original icons excluded.
+All4,454 prior private files and2,227 public pairs verified unchanged.184newpairs
+staged sincebase; no commit/push/release. Pack is partial and scene validation open.
+Texture workspace10,140,042,766 logical/allocated bytes; diskfree41,672,429,568.
+Temporary output267,797,564bytes,637,892 below256MiB. Full artwork storage is
+separate from the pack cap. Reclaimed400,368bytes from five290/291review sheets
+after byte-exact recreation and parent/hash checks;798,879new reference bytes
+catalog/pixel/hash verified then retired. No denied cleanup targets touched;
+no duplicate game,pack,ZIP or release staging. Game/saves/settings preserved.
+Evidence:private hybrid-294-prompts/generation/review/validation/postencode-probes
+and retirement receipts. Repository checks recorded in validation after completion.
+
+
+## Texture overhaul issue #74: hybrid batch 295
+
+October24,2026; local Windows asset-only work on #74 at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four additions: dark red mottling
+c757a887e850485f, framed olive panelc78448042941be5c, streaked gray panel
+cbd7b38e93c3e9be and soft gray-green bandee900309297dfa18. Built-in imagegen
+sources1254square; output512square except streaked panel1024square. All DXT1
+with full mips. No native4K claim. Native DDS, alpha/aspect/hash, full-pack and
+original-icon exclusion checks passed; all4,460 previous private files and2,230
+public pairs verified unchanged. Decoded repeat comparisons manually reviewed.
+
+Framed-panel rails7/98, thin lightline33 match; bottom121->122, sides5/122->4/123.
+Streaked panel bottom boundaries231/249 match; soft band shadow68/light108 match.
+These are intensity probes, not complete contour/hardware/scene proof. Absolute
+mean luminance red30.42->27.38, olive120.29->111.19, streaked64.80->69.51,
+soft band127.81->118.41; quadrant evidence retained. Broad distribution and
+layout are retained, but darker red/olive/soft band, brighter streaks, detailed
+hardware and paint contrast remain scene concerns. No game launch.
+
+Held c420549e08570264 for stronger cracks/brightening,cebf6af867a01408 for darker
+molding shadows/changed pale color,f30eecd6f0464a6f for exaggerated pebbly/checkered
+relief, andf7406363bd36bcc4 for patterned grain/sharper light falloff. Full sources,
+prompts and review reasons retained.2,234 replacements,4,147 need art,267 drafts
+require review,164 original icons excluded; full overhaul remains incomplete.
+
+Sanitized pack2,011,230,215bytes; private pack2,012,291,012bytes,below6GiB.
+Texture workspace10,167,146,034logical/allocated bytes; free disk41,477,885,952
+at audit. Temporary output267,644,441bytes,791,015below256MiB. Reclaimed454,389
+bytes from five292/293review sheets after byte-exact reconstruction/parent/hash
+checks; new native references495,407bytes catalog/pixel/hash verified then retired.
+No duplicate game/pack/ZIP or denied cleanup attempts. Artwork/provenance and
+user game/saves/settings preserved.188newpairs staged sincebase; no commit/push/
+release. Private hybrid-295-validation.json records evidence and repository checks.
+
+
+## Texture overhaul issue #74: hybrid batch 296
+
+October24,2026; local Windows asset-only work on #74, task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four additions: rose-gray mottling
+393555e7155b6071, green worn masonry398ef9c9ad0538c0,64-cell tile grid
+3a29fe5a345678ef and16-cell reflective grid3a84018bd04c9567. Built-in imagegen
+sources1254square; outputs1024square. Three DXT1, masonryRGBA8 after DXT1 error
+exceeded5. No native4K claim. Native DDS, full mips/alpha/aspect/hash, full-pack
+and original-icon exclusion checks passed. All4,468 prior private files and2,234
+public pairs unchanged. Four decoded repeat comparisons and boundary crops reviewed.
+
+Eight-by-eight row seams match; one column minimum128->127, all others match.
+Four-by-four column seams match; central row dark minimum124->128 is influenced
+by rising reflection, while the inspected negative seam gradient remains127.
+Reflection peak126 and halfmaxwidth19 match; excess-light centroid122.90->123.03,
+peak luminance251.75->254.69. Five sampled masonry course minima match; final
+229->223 probe selected changing surface shading below the pale lip. Follow-up
+lip maximum226 matches. Both initial and follow-up diagnostics retained. These
+bounded intensity profiles do not certify full contours, tiling in actual scenes,
+fine chips or all lighting. Original/reference appearance remains the final standard.
+
+Held15cb94e1409cc0f9 for14.7% darkening/larger patterned gravel,
+1655cdb6d068d2e5 for lace/lattice grass structure,1f6bcc92fd3a26fc for11.8%
+darkening/embossed diagonal detail,1f7c64655b676d3b for over-sharp damp illumination
+and coarse relief. Full sources and prompts retained for correction. No game launch.
+
+Pack2,238 replacements,2,018,921,253sanitized bytes;2,019,988,952private bytes,
+below6GiB.4,139needart,271drafts,164retainedoriginal icons.192newpairs staged
+sincebase; no commit/push/release. Full overhaul and scene validation incomplete.
+Texture workspace10,203,149,874logical/allocated bytes; free disk41,110,798,336
+at audit. Temporary output267,770,184bytes,665,272below256MiB. Reclaimed397,945
+bytes from two294review sheets after byte-exact reconstruction and parent/hash
+checks;847,790new reference bytes catalog/pixel/hash verified then retired. Sources,
+review decisions, game/saves/settings preserved. No denied cleanup attempts or
+duplicate extracts,packs,ZIPs. Evidence:hybrid-296-validation.json, prompts,
+postencode-probes, boundary-followup and retirement receipts. Repository checks
+recorded after completion. Native runtime behavior and delivery contracts unchanged.
+
+
+## Texture overhaul issue #74: hybrid batch 297
+
+October 24, 2026; local Windows asset work on #74 at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. This focused correction batch tested
+separating fixed macro layout from independently repainted microtexture, using
+native originals as the sole image references. Five previously held keys passed:
+b0c072b2d19377df (flaking material), 1f7c64655b676d3b (damp masonry),
+c658bf9f0896a7df (plaster), f30eecd6f0464a6f (cracked surface), and
+f7406363bd36bcc4 (lit wall). Sources are 1254 square, downsampled to 1024 square.
+Four use DXT1; the cracked surface uses RGBA8 after compression error exceeded 5.
+Built-in imagegen only; no native 4K claim. Previous full sources and prompt
+records are preserved and hashed; per-key prior prompts were archived before updates.
+
+Full-source and decoded repeat review found reduced prominent pattern artifacts
+on accepted keys. The soil still has enlarged patterned gravel; grass retains
+lace-like shapes and oversized leaf fragments; dark blocks retain embossed
+striations. Those three remain held. This bounded result does not prove the
+prompt method works generally. Peeling edges, fine relief, color and scene lighting
+remain final validation concerns. No gameplay was launched.
+
+Native DDS, full mip/alpha/aspect/hash, full-pack and original-icon exclusion
+checks passed. All 4,476 prior private files and 2,238 public pairs were unchanged.
+Plaster seam columns 127/215 match. Masonry course rows 54/106/161/206 become
+56/106/161/206; crack crossings 86/168 become 84/169. Seven tile seam columns
+match. The rail minimum changes 43->48, selecting different dark parts of the
+band; follow-up top and bright-edge gradients remain at 39/46. Both profiles
+are retained. Light-pool peaks move -1/+3 rows; centroids move +1.44/+1.42 rows.
+These are bounded samples, not complete contour or scene validation.
+
+Pack: 2,243 replacements, 2,027,311,715 sanitized bytes; 2,028,388,217 private
+bytes including metadata, below 6 GiB. The correction backlog fell from 271 to
+266; 4,139 still need artwork and 164 original icons remain excluded. There are
+197 new pairs staged since the task base. No commit, push or release.
+
+Texture workspace: 10,243,017,172 logical/allocated bytes; free disk 40,744,808,448
+at audit. Temporary output: 267,762,458 bytes, 672,998 below 256 MiB. Reclaimed
+530,200 bytes from three older comparison/repeat previews after byte-exact
+reconstruction and resolved-parent/hash checks. New references of 975,561 bytes
+were catalog/pixel/hash verified before retirement. No denied cleanup targets,
+duplicate game/pack/ZIP or user saves/settings were touched. Evidence and final
+repository checks: private hybrid-297-validation.json and associated records.
+
+
+## Texture overhaul issue #74: hybrid batch 298
+
+October 24, 2026; local Windows asset work at base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four new panel/window materials accepted:
+cc81869c18f06c35, deae52dc1c20f778, ff206a6627a23576, 5065bfcfd29b4d55.
+Built-in imagegen sources are1254square, downsampled to1024square for the barred
+grid and512square for the other three; all DXT1 with complete mip chains. No
+native4K claim. Source art, prompts and all held drafts remain private.
+
+Four drafts remain held: ced5 lower stripe shift/narrowing and lost faint grid;
+e029 atlas bottom padding/pipe changes; e894 altered reflection/highlight and
+scratches; 5d40 soft bright rail replaced by a dark groove. Initial cc/deae prompt
+counts were incorrect: visual reference/output both retain six full dark insert
+rows and six full interior columns plus side strips respectively. These mistakes
+are recorded, not used as evidence of compliance.
+
+Full sources and decoded2x2 repeats reviewed. Barred-grid row peaks67/131/195
+match; six of seven column peaks match and one shifts-1. Other raw extrema
+shift up to5pixels because opposite bevel edges become darkest. Follow-up narrow
+profiles retain cc bands mostly-1pixel, nine-pane transition edges about1pixel,
+six-cell central mullion+1 and lower rail-1. Original and follow-up measurements
+are retained; no claim of exact contour equivalence. Bevels, framing contrast,
+glass grime, brightness and small geometry offsets await scene validation.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon exclusion checks
+passed. All4486prior private files and2243public pairs unchanged. Pack now2247
+replacements:2,028,536,541sanitized bytes,2,029,620,009private bytes, below6GiB.
+4131need artwork;270drafts require correction;164retained originals.201new pairs
+staged since task base. No commit/push/release or gameplay.
+
+Texture workspace10,266,068,009logical/allocated bytes;40,161,804,288free at audit.
+Temporary output268,078,408bytes,357,048headroom below256MiB.294,794bytes of new
+original references verified against catalog/pixels/hash, then removed through
+resolved-parent/SHA native PowerShell checks. No duplicate extract/pack/ZIP,
+denied cleanup target, source artwork, game, save or setting touched. Current
+comparison/repeat retained; next batch should retire reproducible older previews
+before further exports. Evidence:private hybrid-298-validation.json, prompts,
+review, postencode-probes, profile-followup and reference-retirement records.
+Repository checks recorded after completion; runtime/delivery behavior unchanged.
+
+
+## Texture overhaul issue #74: hybrid batch 299
+
+October 24, 2026; local Windows asset work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous goal turn made verified progress
+with four additions; this turn adds three: 5db71ff9470d9cc7 (rounded-rim panel),
+7f4d67e8e998c1b4 (concrete with hole), cf26c294c9b28118 (streaked concrete).
+Built-in imagegen sources are 1254 square, downsampled to 1024 square; all DXT1
+with complete mip chains. No native 4K claim. Full source and decoded 2x2 repeats
+reviewed. No game launch, commit, push or release.
+
+Five drafts remain held: ddfc/e0 paired pale panels gained patterned diagonal
+microflecks and enlarged fasteners; 5dd1 moved lower hardware to mid-height and
+is about 7.9% darker; 7514 changed soft angular mottling to sharply defined
+peeling-like islands and is about 10.2% darker; 8be7 strengthened orange marks
+and coarse sandy texture. Full sources and prompt provenance remain available.
+
+Straight rim profiles differ by 0-1 original pixels. Rounded groove positions
+at rows 190/210/225 match; row235 shifts +1. At row240 the bounded minimum moves
+236->242. Follow-up profiles show different bands becoming darkest at the
+curved/horizontal junction and sharper groove shading; this sample is not claimed
+matched or proof of complete contour fidelity. Main hole dark centroid changes
+less than 0.05 pixels in each axis, but below-60 area grows 40->53 pixels. The
+lower concrete mark centroid changes about 0.2 pixels and area 6->7. Region
+brightness and all profiles are retained. Apparent hole size, bevel contrast,
+pitting, darker vignette and streak definition remain scene-review concerns.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and 164-original-icon exclusion
+checks passed. All 4,494 previous private files and 2,247 public pairs unchanged.
+Pack now 2,250 replacements: 2,030,634,813 sanitized bytes; 2,031,723,511 private
+bytes including metadata, below 6 GiB. There are 4,123 keys needing artwork,
+275 held drafts and 164 retained originals. 204 new pairs staged since task base.
+
+Texture workspace: 10,291,905,450 logical/allocated bytes; free disk 39,936,598,016
+at audit. Temporary output: 267,636,648 bytes, 798,808 headroom below 256 MiB.
+Retired four older review previews (296 repeat,297 comparison and both repeats),
+742,151 bytes total, after byte-exact in-memory reconstruction and source/DDS
+hash checks. Retired 663,931 bytes of newly exported originals after catalog,
+pixel/hash verification. Native PowerShell resolved-parent/SHA checks guarded
+all removals. No denied cleanup targets, source artwork, game, saves or settings
+touched; no duplicate extracts, packs or ZIPs. Current reviews remain. Evidence:
+private hybrid-299 validation, prompts, review, postencode-probes, corner-followup
+and retirement receipts. Repository checks recorded after completion. Shared
+runtime, host adapter and delivery contracts unchanged; scene testing deferred.
+
+
+## Texture overhaul issue #74: hybrid batch 300
+
+October 24, 2026; local Windows asset work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous turn made verified progress.
+This batch adds four:662c18a45b7b1d9a(dark-band tiles),98cb1b3effb3613c(reflective
+tiles),e91c0944336ee52b(reflection plus dark-band tiles),cb159851f6b78902(staggered
+blocks). All built-in imagegen sources1254square ->1024square DXT1, full mips.
+No native4K claim; full sources and decoded2x2 comparisons reviewed. No gameplay,
+commit,push or release. Source artwork and prompts retained privately.
+
+Held e126f17e2e9c614a for embossed/checker grain, warmer/brighter tone and bevels;
+f6009fc775ed8c83 for thickened dark seam network/coarse material;
+f5358d8500a921fc for overly prominent pale lines/mottling requiring exact network
+review;9b992b6554aa69e1 for thin seams becoming strongly raised rails. No failed
+artwork was downsampled to hide defects or installed.
+
+Grid seams generally match or differ one original pixel. The unbanded reflective
+center-row minimum124->128 is confounded by highlight slope; full profiles retain
+positive gradient125 and negative gradient127->126. Original and follow-up probes
+remain; no exact contour claim. Reflection peak rows127->126 and125->126,
+half-maximum widths28->29 and24->26, excess centroids126.64->125.31 and
+124.33->123.66. Both intended darker third rows remain distinct from the unbanded
+variant. Block course rows61/125/191 match; nine of ten vertical joints match,
+one87->88. Reflection intensity/width, tile bevel/stain contrast, block brightness
+and mortar grains remain scene concerns. Repeat review is not scene adjacency proof.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon exclusion checks
+passed. All4500previous private files and2250public pairs unchanged. Pack2254:
+2,033,432,509sanitized bytes;2,034,528,031private bytes including metadata, below6GiB.
+4115keys need artwork,279drafts require correction,164original icons retained.
+208new pairs staged since task base. Shared runtime/delivery contracts unchanged.
+
+Texture workspace10,321,073,963logical/allocated bytes;39,557,058,560disk free at
+audit. Temporary output267,617,052bytes,818,404headroom below256MiB. Retired298
+comparison/repeat315,950bytes after byte-exact reconstruction and source/DDS hashes.
+Retired701,623new reference bytes after catalog/pixel/hash verification. Native
+PowerShell resolved-parent/SHA checks guarded explicit removals. Sources, provenance,
+game,saves/settings and denied cleanup targets untouched; no duplicate pack/extract/
+ZIP. Evidence:private hybrid-300-validation,prompts,review,postencode-probes,
+reflection-seam-followup and retirement receipts. Repository checks recorded after
+completion. Full overhaul and consolidated scene validation remain incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 301
+
+October 24, 2026; local Windows work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous/current turns made progress.
+Added8203cc78a27bf227(cream wall/base),839aaca07193018c(vignetted concrete),
+a3a42c3e2b35f9f4(pale concrete panel),e4265427f9359e73(brushed band/reflection).
+Built-in imagegen sources1254square ->1024square DXT1, complete mip chains.
+No native4K claim; source and decoded2x2 comparisons reviewed. No game launch,
+commit,push or release. Full source art and prompt provenance remain private.
+
+Held8e856bdaa2124487 for invented stronger upright/cracks and uncertain subtle
+structure;d5b156815296a1e7 for stronger raised grooves, rust and patterned grain,
+about8% darker;db33031d58e50e68 for diagonal/checker grain and groove relief;
+d3f28ae463a3db71 for enlarged mottling, raised rails and about14.5% brightness gain.
+Failed drafts remain outside the pack and are not downsampled to hide defects.
+
+Cream molding rows202/225 match. Purple-base RGB means72.79/63.46/77.13 become
+66.37/60.94/80.75. Concrete seam94 matches; center mean171.38->171.31 while
+upper/sides/bottom darken. Pale panel seams15/240 become16/239, central mean
+149.78->158.98. Brushed boundaries/reflection92/114/173 match; reflection width7
+unchanged, excess centroid173.354->173.283, peak mean200.73->213.24. These are
+bounded offline samples, not complete contour or scene proofs. Base hue, stronger
+vignette, concrete pitting/brightness and reflection intensity remain scene concerns.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon checks passed.
+All4508prior private files and2254public pairs unchanged. Pack2258replacements:
+2,036,230,205sanitized bytes;2,037,332,619private bytes including metadata, below6GiB.
+4107keys need art,283drafts need correction,164original icons retained.212new pairs
+staged sincebase. Shared runtime/host adapter/delivery contracts unchanged.
+
+Texture workspace10,350,600,248logical/allocated bytes;39,281,250,304free at audit.
+Temporary output267,646,714bytes,788,742headroom below256MiB. Retired299comparison/
+repeat300,391bytes after byte-exact reconstruction and source/DDS hash checks.
+Retired705,101new reference bytes after catalog/pixel/hash verification. Explicit
+native PowerShell resolved-parent/SHA removals only. No denied cleanup targets,
+source artwork, game,saves/settings or duplicate pack/extract/ZIP touched. Current
+reviews retained. Evidence:private hybrid-301-validation,review,prompts,
+postencode-probes and retirement receipts. Repository checks recorded after
+completion. Consolidated scene validation and full overhaul remain incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 302
+
+October 24, 2026; Windows local source branch74-enhancement-gfx-overhaul-to-modernize-textures
+at base28f5400a49a24529e8a3ee5711db3d5d7c444da7. Added three masonry materials:
+7b8bb162d117829b (mossy/light-pool blocks), aee4ffe2ffe12b06 (pale vignetted blocks),
+be3b2c513af451f3 (small mossy masonry). Built-in imagegen produced1254-square
+sources; outputs1024-square RGBA8 with11mips. Full source and decoded2x2 reviews
+completed. No native4K claim, game launch, commit, push or release.
+
+Held c75c1af0028d5d5c for coarse patterned grain/upper-strip relief,
+c81dfaec85ad5725 for orange saturation/brightness and deeper flaking,
+cafe4de72f7ba948 for excessive moss/sharpened weathering,
+d1423d3132561c0a for dark mortar/orange palette and15% luminance reduction,
+f97d261210df6889 for chain-like mineral pattern and heavier mortar.
+All full sources and prompts remain private; failed drafts are outside the pack.
+
+Pale-wall joint samples57/108 match,164->163 and213->214. Mossy-block sample106
+matches,161->162; broad upper minimum48->54 is illumination-confounded (local
+original trough54), lower209->206 selects a different part of rough shaded mortar.
+Raw profiles retained; not full contour proof. Center region means135.289->128.912,
+134.549->143.751 and119.809->106.568 respectively. Pale lower vignette23.378->32.609.
+Mortar contrast, baked illumination and stronger relief remain scene concerns.
+
+Native DDS, alpha/aspect/mips/hash, full-pack and164-original-icon checks passed.
+All4516prior private files and2258public pairs verified unchanged.2261replacements,
+2,053,008,503sanitized bytes;2,054,116,040private pack bytes including metadata,
+below6GiB.4099need art,288drafts need review,164retained originals.215new pairs
+staged sincebase. Shared runtime, host adapters and optional delivery unchanged.
+
+Texture workspace10,400,241,323logical/allocated bytes;37,911,212,032free at audit.
+Temporary output267,473,866bytes,961,590headroom below256MiB. Retired300/301
+comparison/repeat previews626,407bytes after byte-exact reconstruction and hashes;
+new references1,371,114bytes after catalog/pixel/hash verification. Native PowerShell
+resolved-parent/SHA removal receipts retained. No denied cleanup target, source
+artwork, game, saves/settings or duplicate pack/extract/ZIP touched. Evidence:
+private hybrid-302-selection/prompts/generation/review/validation/postencode-probes
+and retirement receipts. Full overhaul and consolidated scene validation incomplete.
+
 ## Launcher v1.3.1 release preparation (2026-10-24)
 
 Prepared from main `aed726e1` on `release/launcher-v1.3.1`. Advances the shared
@@ -23427,6 +25099,19 @@ publisher regressions, backlog consistency, repository-context validation and
 whitespace checks. Build output is isolated in ignored `build/l131`; logs are
 under this source worktree's ignored build directory. Hosted Windows/Mac checks
 and exact public-package verification remain release gates.
+
+
+## Texture PR #350 integration repair (2026-10-24)
+
+Merged main0577c4d6 into the issue74 branch to resolve overlapping appended
+STATUS and systems-guide notes. Preserved both texture and launcher/runtime
+content; condensed repeated texture batch narratives in the bounded systems
+guide, retaining detailed results above. All main documentation lines remain
+in order. The PR delta remains215texture pairs and five supporting files;
+texture payloads/catalog are unchanged from11e4db11 and their verified LFS upload.
+Context refresh/check against main and staged whitespace checks passed.
+No runtime changes beyond main, gameplay tests, main merge or release performed.
+Issue74 remains open; final scene validation is still pending.
 
 ## Launcher v1.3.1 publication and history recovery (2026-10-24)
 

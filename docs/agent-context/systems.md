@@ -24,6 +24,57 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+The 2026-10-24 #74 material continuation adds 215 reviewed metal, masonry,
+rock, plaster, carved, granular and wood replacements, bringing the optional
+pack to 2,261 entries. Sanitized DDS/JSON and config/texture-pack.json change
+together; source artwork, prompts and held drafts remain private. Square sources
+are 1254 pixels, downsampled to 1024, 512 or 256; rectangular sources are
+1774x887 or 887x1774, usually downsampled to 512/1024 on the long edge.
+One1774x887 wood source is resampled to2048x1024 for a1024x512 original; this
+is not native4K artwork. RGBA8 preserves
+fine detail when DXT1 loses it. Narrow wood/metal sources are 2169/2170x725 or
+2172x724 padded atlases. The private compiler extracts explicitly reviewed
+regions with at most 1% aspect rounding, then emits exact original 4:1 or 8:1
+outputs, up to 2048 pixels long. Full source dimensions, extraction coordinates
+and resampling remain in private provenance; no native 4K claim.
+
+The loader, key mapping, optional-delivery contract, host adapters and164original
+character-icon exclusions remain unchanged. Asset batches use native DDS,
+mip/aspect/alpha/hash, full-pack and decoded2x2 repeat checks. Original-scale
+feature profiles supplement manual review; extrema can select different bevel
+edges, so preserve initial measurements and follow-up evidence. These checks
+cannot establish complete contour equivalence, scene adjacency or final lighting.
+
+Hybrid production separates fixed macro layout from repainted microtexture.
+Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
+Do not downsample defects away, infer approval from classification, or treat
+whole-image brightness as proof of local fidelity. Native original references
+are normally sufficient. Enlarged references and revised prompts have improved
+some corrections, but those are asset-specific results, not a universal recipe.
+
+Narrow source extraction only removes explicitly reviewed atlas padding within
+the compiler's1%aspect tolerance; it cannot fix changed material geometry. Record
+actual source dimensions, crop coordinates, resampling and output format. Keep
+prior full artwork and prompt records for corrections. Confirm counts against
+the original: mistaken prompt counts have occurred for grooves and grid cells.
+
+Temporary outputs stay below256MiB. Retire only reproducible disposable reviews
+or catalog-verified exported originals with resolved-parent and SHA checks;
+preserve source art/provenance and never retry denied cleanup targets. One private
+pack and small public LFS pointers avoid duplicate hydrated copies. Detailed
+historical batch measurements, held reasons and storage audits remain in STATUS.md
+and private hybrid-N validation records; coverage is summarized in docs/textures.md.
+Scene testing remains deferred under the near-completion policy.
+
+Recent batches preserve separate baked-lighting variants and record
+original-scale joint, reflection and region-brightness samples alongside decoded
+repeat review. Measured offsets, uncertain extrema and altered contrast remain
+scene-validation concerns; these samples do not establish full contour parity.
+Detailed batch298-302 acceptances, held reasons, measurements and storage receipts
+remain in STATUS.md and private validation records. The latest batch adds three
+1024-square RGBA8 masonry textures from1254-square sources. Runtime, optional
+delivery and host-adapter contracts are unchanged.
+
 Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
 positive fractional game time for player/NPC effect updates. Its children already
 consume the float delta; dropping subticks delayed attached-effect timers.

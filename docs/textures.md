@@ -2,12 +2,21 @@
 
 [Back to the README](../README.md)
 
-This branch contains **2,046 replacements**, about **1.72 GiB installed**, covering
-approximately 30% of the 6,812 known supported keys. The menu progress and
+This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
+approximately 33% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
 These additions enter optional texture downloads after integration and publication. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
 source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
+
+The October 24 material batches add 215 metal, masonry, rock, plaster, carved,
+timber and painted-wood replacements after offline layout, mip, alpha and format
+review. One hundred twenty-eight generated drafts remain held for correction; another candidate
+needs alpha-channel review. Narrow wood and metal trims preserve their original 4:1 or 8:1 proportions;
+other rectangular materials retain their landscape or portrait orientation.
+Output long edges range from 256 to 2048 pixels, preserving fine detail in RGBA8 where
+DXT1 compression loses it. These additions have not yet been checked in game
+or published as a texture download.
 
 ## Install through the launcher
 
