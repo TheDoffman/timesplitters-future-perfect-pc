@@ -107,9 +107,9 @@ four-page batches, larger fallback, permissions and mutation controls.
 `test_discord_presence.py`: production read bounds/copies, fresh permissions,
 read-only/noaccess, large/cold fallback and retained/full-query mutations.
 
-Character-effects fixture: original dispatch/timer/matrices, phase/slow/pause
-and old-gate controls through240. Surface-cache checks each U/V/phase step.
-Other effects/GPU calls are spies.
+Character fixtures run original dispatcher/timers and status3 scale/rotation/
+composition/cleanup through240, slow/pause/jitter/live switches and old-path
+controls. Scale tests use real matrix helpers; allocation/draws are absent. Surface-cache checks each U/V/phase; GPU calls are spies.
 
 ### Native vehicle integration and diagnostic checks
 

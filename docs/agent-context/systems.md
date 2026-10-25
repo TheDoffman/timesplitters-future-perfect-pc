@@ -839,3 +839,14 @@ legacy GL remain original. `pc_surface_native_policy` accepts an explicit
 The HLE adapter latches allocation/shader failure until constructor/device reset,
 so fallback does not retry expensive setup each frame. Cleanup is registered
 before first allocation; empty resets do not alter RHI texture bindings.
+
+## Character status-effect model growth
+
+`pc_native_character_guest.h`, included by the shared timing guest adapter,
+normalizes only scale-constructor call120BBF. Status3's repeated linear growth
+otherwise changes with update frequency. It splits the original one-raw-tick
+factor at the current game speed; rotation/composition and cleanup remain
+original. Numeric policy routes that call only. Original/full/catch-up steps
+are unchanged. Original-helper tests cover60..240, slow time, pause, jitter,
+live rate switches and cleanup; rendered activation and physical Mac remain
+unverified. See the runtime guide and `native_character_scale.c`.

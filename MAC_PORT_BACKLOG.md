@@ -3850,6 +3850,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Status-effect growth (PR #344 follow-up):** Shared character adapter and
+  numeric call scope preserve Original60 model scale/rotation through240.
+  No new host adapter. Original-US helper tests cover slow/pause/catch-up,
+  jitter/live switches and cleanup; missing private XBE skips these tests.
+  Physical Mac and rendered effect activation remain awaiting validation.
+
 - **Character-effect gate (2026-10-24, PR #344):** Shared numeric policy admits
   fractional updates in US1260C0. Its attached-effect timer otherwise loses
   half its elapsed time at120. Original-code/matrix tests cover supported rates,

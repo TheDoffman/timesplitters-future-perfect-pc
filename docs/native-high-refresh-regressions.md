@@ -7365,3 +7365,14 @@ The new original-dispatcher/matrix fixture sweeps rates through240, quarter
 speed and carried phases, with an old-gate control. Nested effect systems other
 than11FEC0 remain spies. STATUS records the Windows build and actual scene
 coverage; do not infer complete effect rendering or Mac acceptance from it.
+
+## Character status3 growth (2026-10-24)
+
+Original125FE0/120AB0 repeatedly scale the live effect matrix. Linear factors
+split by FPS gave X/Z scale2.213807 at120 versus2.202338 atOriginal60 after
+half a second. Only constructor call120BBF now splits the original one-raw-tick
+factor geometrically at the current game speed. Original/integer/catch-up
+arithmetic, rotation, timer/cleanup and stack arguments are preserved. The
+original dispatcher/matrix fixture compares all16 entries across rates, speeds,
+jitter and live changes; old-path control still differs. This is model-transform
+evidence, not proof of the effect's complete rendered appearance. See STATUS.

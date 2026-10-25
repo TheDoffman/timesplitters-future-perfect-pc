@@ -1,3 +1,58 @@
+## 2026-10-24 — Preserve character status-effect model growth
+
+Original status dispatcher125FE0 advances state+5C and calls120AB0 for status3.
+That path repeatedly multiplies an existing effect matrix by linear scale
+factors computed from the current time interval. Subdivision changes the product:
+after half a second Original60 had X/Z scale2.202338, but120 gave2.213807
+(about0.52% larger). This is a separate arithmetic issue from1260C0's update gate.
+
+The shared `pc_native_character_guest.h` intercepts only scale-constructor
+call120BBF. It recovers the original one-raw-tick factor at the current game
+speed, then splits it over fractional raw time. Original rotation/composition,
+timer and cleanup still execute. Original mode and whole/catch-up intervals
+retain exact arithmetic; caller arguments are restored after the constructor.
+No generated guest C, shared coefficient, save or user preference is edited.
+
+The new `native_character_scale.c` executes original125FE0,120AB0 and the
+rotation/scale/matrix composition helpers. It compares all16 matrix entries
+against Original60 through60/120/144/180/240 at quarter/normal/double speed,
+plus pause, uneven frame intervals, live rate switches, catch-up, cleanup and
+argument preservation. An old-path control retains the measured mismatch.
+Allocation and rendering are absent, so this proves transforms and lifetime,
+not full visual effect acceptance. The final dispatcher/ABI fixture passes;
+all95 native timing tests pass (144.73s), as do21 context/backlog tests (4.03s).
+The complete suite ran before the last test-only expansion to the dispatcher
+and stack-argument checks; that expanded fixture was rerun successfully.
+
+Supported Windows build and bundled checks pass. Executable SHA256:
+`ff4cfc6d518db1f7293202fe78f80605a4db80653e8d0c7f89308215b9e70307`.
+Production source did not change after this build. Live evidence
+is recorded below. Physical Mac remains unverified
+under MAC-060. All14CI checks passed for preceding5bd61a15; this follow-up's
+checks require its own pushed head. Continue PR344; the full goal is incomplete.
+
+The rebuilt native240 Disco run `character-scale-240` completed all three
+combat checkpoints with ten bots. The1800-sample read-only census recorded3211
+active status3/model observations across all11 slots, with8 samples crossing
+frame boundaries; ages ranged0..1.696 seconds. This establishes live activation,
+not exact size or rendered-animation parity. Its combat-four image shows the
+normal death scene and nearby armed NPCs. All personal files remain untouched.
+
+A second run `character-scale-matrix-240` selected Temple49 instead of Disco56;
+the route validator correctly returned failure. Captures show active Temple
+combat, not the requested map. A separate read-only8-second probe retained320
+model matrices there. Four long segments differed by about0.8..1.1% in volume
+from an ideal constant-speed Original60 curve; asynchronous timer/matrix reads
+are not coherent update snapshots, and the20000-row clock trace ended before
+those observations. Catch-up/phase effects therefore remain unresolved; do not
+claim live transform equivalence from this probe. The first late matrix probe
+could not open the already-closed first child; the second run's Disco-only
+observer collected zero samples and reported child shutdown. These rejected
+observations are retained, not counted as passes. Both owned games are closed,
+run locks/partitions recycled, and profiles remain canonical SHA256090cced7...
+with valid signatures. `logs/character-scale-live-summary.json` records hashes
+and checkpoints; `character-scale-matrix-analysis.json` records the comparison.
+
 ## 2026-10-24 — Restore fractional character-effect time
 
 The shared character-effect dispatcher US1260C0 still gated nested updates

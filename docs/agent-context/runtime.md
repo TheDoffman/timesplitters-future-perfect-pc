@@ -461,6 +461,15 @@ whole-tick fields and zero-time pause remain unchanged. The original-dispatcher
 fixture covers11FEC0's timer and real matrix helpers; other nested systems and
 rendered effects need separate evidence. No generated C or new patch is edited.
 
+The status-3 growth path (`120AB0`) compounds its scale matrix each update.
+Only its `120BBF` call to constructor153600 now uses
+`pc_native_character_guest.h`: recover the one-raw-tick scale at the current
+game speed, then raise it to the fractional raw interval. Rotation, composition,
+timer and cleanup execute original code. Inactive/whole/catch-up updates remain
+exact; stack arguments are restored after the constructor. The model fixture
+covers complete original helpers, uneven intervals and live preset changes.
+This proves transforms, not rendered status-effect activation or emission.
+
 ## Native FPS integration with current main (PR #285)
 
 The effective tail now installs native timing and retires interpolation before
