@@ -25561,3 +25561,57 @@ Logs use `material-clean-scotland*`; the first rejected run remains available.
 All34 frame-statistics/profile/context/backlog checks pass(4.53s). No new build
 is required for the runner-focus/documentation-only change. Broad high-refresh
 and physical Mac acceptance remain open.
+
+
+## Live Windows process audio output presence (2026-10-25, PR #361)
+
+Closed a live-output evidence gap beyond fake-device and original sound-event
+fixtures, without changing audio production code. Used the unchanged Windows
+executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+in separate isolated ten-bot Disco runs at native240 and trueOriginal60.
+
+A bounded private Windows SDK helper receives only the owned game PID, retains
+its process handle and exits when that process closes. It queries that PID's
+render sessions through IAudioSessionControl2, ISimpleAudioVolume and
+IAudioMeterInformation, plus endpoint mute/volume getters. It does not record
+waveforms, open microphone/capture clients, change volume/mute, or report other
+applications' sessions/device names. Each numeric sample is timestamped in the
+same QPC domain as the runner. The helper is hidden, read-only and limited to
+180s; both owned helpers exit0. No current build or audio setting is replaced.
+
+The selected gameplay windows begin two seconds after the spawn checkpoint and
+end at combat-six. Meter coverage exists on both sides. Spawn/combat-one/four/
+six retain scene56, active match7, ten configured bots and foreground visibility.
+This selects actual combat observations rather than relying on menu output.
+
+| Selected path | Gameplay window | Samples | Valid unmuted game-session samples | Nonzero mixed-output samples | Largest observation gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Native240 |65.796s|324|324|324|218.020ms|
+| Original60 |65.792s|322|322|322|224.871ms|
+
+Session and endpoint mute are false and their levels are positive throughout
+these samples. Game-session volume remains1.0; no setter is used. Minimum sampled
+peaks are0.05530(native)/0.06203(original), with maximum0.99000 in both. These are
+Windows session meter peaks of all game output, including music and all voices;
+they are not a waveform or isolated gun-sound comparison. Random combat paths
+prevent amplitude-parity claims. The roughly200ms getter cadence cannot detect
+brief underruns or certify event cadence, audible synchronization, device
+fidelity, physical latency, or heard speaker/headset output. Captures and metering
+also make these runs unsuitable for frame-pacing claims.
+
+Both game sessions complete normally and preserve canonical profile bytes and
+signatures, with disposable partition/owned-process cleanup. Existing shared
+XAudio/SDL gain, mute/live-volume and buffer/stream timing tests pass25 checks
+(5.50s). No production audio change was justified by this observation. Physical
+Mac audio/gameplay and broader per-event/voice acceptance remain open.
+
+Evidence is private under `audio-output-disco240` and
+`audio-output-disco-original60`: audio-meter.jsonl, audio-meter-provenance.json,
+audio-output-summary.json and helper exit records. Numeric JSONL SHA256 values
+arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
+(native) and9c856d5753f14ad2ae5adbf71ee2c444f40e4601830c35304a70518fa36d5622
+(original). Private helper/adapter sources and exact hashes remain in the run
+provenance; logs are `audio-output-*`. No audio files, private assets or binaries
+are committed. All applicable PR checks passed on f971dac0 before this data-only
+acceptance record; subsequent-head checks remain separate.
