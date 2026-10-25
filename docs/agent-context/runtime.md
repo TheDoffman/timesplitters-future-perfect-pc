@@ -29,6 +29,14 @@ draws with minimum index zero pass their current index bytes directly to the
 synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
 primitive conversion and draw order are unchanged. No retained index cache.
 
+`zz-strided-vertex-copy.patch` dispatches pushed-array attribute copies by byte
+size once per attribute, keeping common1/2/3/4/6/8/12/16-byte copies constant
+inside the vertex loop. It preserves original32-bit guest address arithmetic,
+attribute order, zero-filled holes, readability checks and allocation ownership.
+Unusual sizes retain the original generic copy; no geometry is cached. The
+change is shared by Windows/native Mac. See `test_push_gather.py` for complete
+original-function comparisons and guard-page read/write limits.
+
 `zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
 through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
 read each operand once, including fused and separated branches. Indirect, narrow,

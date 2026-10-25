@@ -1,3 +1,45 @@
+## 2026-10-25 — Reduce repeated model-attribute copy overhead
+
+The fresh main build (`c5aaf1ef`) runs a ten-bot Hotel profile at native240.
+Between complete spawn/combat-four sampler snapshots,5155 main-thread samples
+include117 in the model-node renderer and copy/allocation work in pushed-array
+preparation. This diagnostic has no dropped chains and uses200Hz sampling;
+it is not an uninstrumented FPS measurement or exact CPU-share attribution.
+The profile and matched clean baseline use executable SHA256
+`7a10bad00f8ee2cf169a2597f066ef317b74a2fe12108c5e7c43c64ca3d717ca`.
+
+`zz-strided-vertex-copy.patch` dispatches by attribute size once before each
+vertex loop, making common small copies constant-size so the compiler can
+inline them. It retains original32-bit guest address arithmetic, declaration
+order, zero-filled holes, readability checks, generic sizes and allocation
+ownership. No vertex data is retained between draws. This common HLE path is
+used by both Windows and native Mac and applies independently of FPS choice.
+
+The complete production gather is compared with its frozen prior implementation
+in24000 calls, covering fresh data, mixed formats/strides/offsets, overlapping
+attributes, missing inputs, invalid declarations/reads and allocation failures.
+Guard pages bound both source and destination for sizes1..64. Deliberate
+12-byte over-read and wrong-stride mutations fail. All3 focused checks pass;
+the final portability-only test edit is also rerun successfully (6.09s).
+Six alternating benchmark pairs,2million96-vertex draws per method/round,
+measure median0.6565s prior versus0.3655s candidate (44.3% less kernel time).
+This does not establish a whole-game FPS gain.
+
+The baseline capture-free50s Hotel window has11985 increasing guest-frame
+intervals,239.719FPS, lowest1s232, lowest5s237.6, p994.840ms and worst6.853ms;
+there is no interpolation. Sampled game/wall ratio is0.999952. Render request
+1280x720, FOV55, Classic textures, foreground/visible640x480 client and ten
+configured bots are recorded. All required scene/clock neighbors and window
+coverage checks pass. Simultaneous visibility of all bots is not established.
+
+The candidate supported Windows build/bundled checks pass, SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+An Original60 ten-bot Hotel run completes; reviewed combat-four/six images show
+weapons, scenery, impacts and a distant character. Fixture signatures and exact
+profile bytes remain intact; owned games close and disposable partitions/locks
+are recycled. Historical patch checks and matching candidate240 timing remain
+pending before publication. Physical Mac gameplay remains under MAC-060.
+
 ## PR validation consolidation (2026-10-25)
 
 - Branch `ci/simplify-pr-validation` starts at `83a7923f` from `origin/main`.
