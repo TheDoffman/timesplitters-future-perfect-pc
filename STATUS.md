@@ -1,3 +1,38 @@
+## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
+
+The unchanged candidate executable50d7323a... completes three bounded ten-bot
+Disco runs at3440x1440, FOV73, enhanced mode with the local texture pack selected.
+Device creation confirms3440x1440 rendering; all combat checkpoints show Disco56,
+ten configured bots, unpaused play and a foreground borderless1920x1060 client.
+This supersampled window does not certify a physical3440x1440 display.
+
+Capture-free240 and180 tests use no CPU sampler/native update trace or heavy
+background tests. Delayed Present recording covers each complete45s
+spawn+5..50 window, with consecutive clocks, increasing guest-frame IDs and
+zero interpolation. Results:
+
+| Target | Fresh frames | Average FPS | Lowest1s count | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 240 Beta | 10569 | 234.8869 | 182 | 5.620ms | 7.144ms | 0.999977 |
+| 180 Beta | 8099 | 179.9984 | 180 | 6.199ms | 7.265ms | 0.999737 |
+
+The240 run exceeds the144-FPS6.944ms interval budget once. This demonstrates
+headroom on this route, not whole-game acceptance. The180 run retains180 in
+every measured1s/5s bin, with individual interval variation. Different targets,
+random combat/spawn paths and the FPS limiter preclude a causal before/after
+gain claim; neither run proves physical latency, GPU completion or scanout.
+
+The Original60 reference also completes all three combat checkpoints. Reviewed
+3440x1440 captures show an armed NPC firing, weapon/impact effects, scenery and
+HUD. Captures verify those states rather than continuous animation parity or
+every replacement texture. All three runs share executable/input-command
+hashes; canonical profile090cced7.../signatures and partition/lock cleanup pass.
+Evidence: private/test-saves/crowd-copy-disco-ultrawide{240,180,-original60},
+`logs/crowd-copy-ultrawide-summary.json` and per-run pacing summaries.
+All16 hosted checks passed onade82564 before this documentation-only addition;
+there is no runtime change or new build. Physical Mac scenes and broader
+native-refresh mechanics/visual acceptance remain open under MAC-060.
+
 ## 2026-10-25 — Reduce repeated model-attribute copy overhead
 
 The fresh main build (`c5aaf1ef`) runs a ten-bot Hotel profile at native240.
