@@ -187,7 +187,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
-        if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch', '-controller-profile-routing.patch', '-keyboard-reload-buffer.patch')):
+        if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch', '-controller-profile-routing.patch', '-keyboard-reload-buffer.patch', '-radial-stick-deadzone.patch')):
             continue  # Needs shared-input locks/display wrappers absent in the old snapshot.
         if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-trace-quiet.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
@@ -202,6 +202,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert 'tmp.bind[i].count > 2' in bindings
     assert 'pc_weapon_keys_sample' in bindings
     assert 'pc_controls_reload_sample(reload_roles' in bindings
+    assert 'pc_input_radial_axis_magnitude' in bindings
     assert 'use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback)' in bindings
     assert b'pc_display_weapon_slots();' in manual.read_bytes()
     device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()

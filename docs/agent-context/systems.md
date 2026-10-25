@@ -6,6 +6,11 @@ Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for inpu
 `pc_menu_*`, `pc_ui_layout.h`, `pc_cutscene.h`, `pc_camera.h` for menus/camera;
 `pc_debug_options.def` for the shared debug fields/keys/labels/capabilities;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
+For movement regressions, compare player-position displacement in game as well
+as sampled stick values: the title attenuates diagonals after the binding
+sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
+relative mode is owned by `src/native/input_sdl.c` and should recover from
+focus changes only when gameplay capture was requested.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 
@@ -664,6 +669,14 @@ bindings pages draw a keyboard/mouse diagram with primary/alternate columns;
 `PC_BINDING_SLOTS` is two in the shared model and native dialogs; old keyboard
 profiles use their first two sources without modifying disk until saved.
 Controller profiles keep their existing source capacity.
+
+For gameplay stick axes, the shared binding sampler uses
+`pc_input_radial_axis_magnitude` from `pc_input.c` on both left and right
+sticks. It subtracts the configured deadzone once from the stick's radius,
+then applies one gain to both components. Keyboard WASD still uses the existing
+diagonal magnitude cap; stick halves bound to buttons retain their original
+per-source threshold. This prevents a physical diagonal from losing speed in
+movement or look while preserving custom bindings and both host adapters.
 
 `pc_binding_capture.h` handles opening-input release, capture, final-input
 release, Escape cancellation, focus loss and timeout. `pc_bindings.inc` owns

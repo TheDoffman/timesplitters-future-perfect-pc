@@ -127,6 +127,24 @@ int main(int argc,char **argv) {
         assert(fabsf(MEMF(PLAYER+0xa8)+3.f/sqrtf(2.f))<.0001f);
         assert(fabsf(MEMF(PLAYER+0xb0)+3.f/sqrtf(2.f))<.0001f);
     }
+    /* Keep a full-radius guest-only reference across frame rates. The PC
+       sampler applies an additional diagonal correction after this point;
+       live player-position tests cover the complete input path. */
+    for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
+        unsigned fps=rates[mode];float diagonal=23169.f/32767.f;
+        float straight_distance,diagonal_distance;
+        g_tsfp_native_timing_active=mode!=0;setup(0);
+        for(unsigned f=0;f<fps;f++)
+            step((f+1)*60/fps-f*60/fps,60.f/fps,60.f/fps,0,1);
+        straight_distance=hypotf(MEMF(PLAYER+0xa8),MEMF(PLAYER+0xb0));
+        setup(0);
+        for(unsigned f=0;f<fps;f++)
+            step((f+1)*60/fps-f*60/fps,60.f/fps,60.f/fps,diagonal,diagonal);
+        diagonal_distance=hypotf(MEMF(PLAYER+0xa8),MEMF(PLAYER+0xb0));
+        printf("keyboard travel fps=%u straight=%.7f diagonal=%.7f\n",
+               fps,straight_distance,diagonal_distance);
+        assert(fabsf(diagonal_distance-straight_distance)<.003f);
+    }
     /* Depletion retains the original threshold/overshoot, within one
        original update of boost duration and travel distance. */
     for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {

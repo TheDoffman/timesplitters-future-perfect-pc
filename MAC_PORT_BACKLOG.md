@@ -862,6 +862,24 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **#256 diagonal stick speed (2026-10-25, branch `256-diagonal-movement-speed`):**
+  The shared binding sampler now applies the configured deadzone radially to
+  gameplay movement and look axes on both host builds. Keyboard diagonal
+  capping and stick-as-button thresholds stay as before. Windows build and
+  shared math/patch checks are recorded in [STATUS.md](STATUS.md#issue-256-diagonal-stick-speed-2026-10-25).
+  The synthetic SDL gamepad self-test now compares straight and diagonal travel
+  on both sticks; native Mac execution and physical controller gameplay still
+  need validation.
+
+- **#256 gameplay follow-up (2026-10-25, branch `fix/256-diagonal-and-mouse-capture`):**
+  Live Windows Story displacement showed remaining diagonal attenuation after
+  the radial input fix. Shared `pc_input_normalize_movement` now compensates
+  the title's later movement step for keyboard and controller input. The SDL
+  adapter restores desired relative mouse mode on focus return, except during
+  menus or after explicit release. Windows live replay and host tests cover
+  the new path; run native Mac input tests and physical movement/focus checks
+  before claiming Mac acceptance.
+
 - Fresh text chunks (commit carrying this entry): `pc_text_read_scope.h` uses
   the shared page-span adapter for bounded reads. Strings walk successive
   validated chunks; `pc_prompts_read_span` validates whole argument frames,
@@ -3888,6 +3906,12 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Pushed model copies (2026-10-25, PR #359):** Common HLE size-dispatch
+  removes dynamic small-copy calls per vertex while preserving bytes/order,
+  guest addressing and ownership. No host-specific adapter; native Mac uses
+  the same source. `test_push_gather.py` is registered on both CI hosts;
+  physical Mac scenes and comparative pacing remain awaiting validation.
 
 - **Status-effect growth (PR #344 follow-up):** Shared character adapter and
   numeric call scope preserve Original60 model scale/rotation through240.

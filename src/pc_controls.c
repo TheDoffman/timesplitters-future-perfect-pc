@@ -52,6 +52,7 @@ static int menu_wheel;
 static ULONGLONG menu_wheel_at;
 static int test_cursor_x=-1,test_cursor_y=-1;
 #define PC_MENU_MOUSE_MESSAGE (WM_APP+0x186)
+#define PC_MOUSE_CAPTURE_TIMER 0x7e31
 
 
 /* Deterministic integration tests use the same key/motion model as the
@@ -136,6 +137,19 @@ static void clip_to_window(HWND window)
     ClipCursor(&rect);
 }
 
+static void restore_window_clip(HWND window)
+{
+    RECT expected, actual;
+    POINT origin = {0, 0};
+    if (!window || GetForegroundWindow() != window ||
+        !GetClientRect(window, &expected) ||
+        !ClientToScreen(window, &origin) ||
+        expected.right <= 0 || expected.bottom <= 0) return;
+    OffsetRect(&expected, origin.x, origin.y);
+    if (GetClipCursor(&actual) && !EqualRect(&expected, &actual))
+        ClipCursor(&expected);
+}
+
 /* Window thread only: it owns cursor confinement and visibility. */
 static void capture(HWND window, int on)
 {
@@ -189,7 +203,7 @@ void pc_controls_attach(HWND window)
     } else test_state_path=NULL;
     fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F10 switches Classic/4K textures; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
-    if (window) pc_settings_attach(window);
+    if (window) { pc_settings_attach(window); SetTimer(window, PC_MOUSE_CAPTURE_TIMER, 250, NULL); }
     pc_debug_init(window);
     pc_crash_window(window);
     pc_discord_start();
@@ -249,7 +263,12 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
-    if (message == WM_DESTROY) { pc_discord_stop(); pc_crash_window(NULL); pc_settings_detach(window); pc_debug_shutdown(); }
+    if (message == WM_TIMER && wp == PC_MOUSE_CAPTURE_TIMER) {
+        AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
+        if (captured) restore_window_clip(window);
+        return 1;
+    }
+    if (message == WM_DESTROY) { KillTimer(window, PC_MOUSE_CAPTURE_TIMER); pc_discord_stop(); pc_crash_window(NULL); pc_settings_detach(window); pc_debug_shutdown(); }
     if(message==PC_MENU_MOUSE_MESSAGE) {
         /* Escape temporarily releases capture to open Pause. Returning to
          * gameplay restores the capture preference without another click.
@@ -321,6 +340,19 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             want_capture = 1;
             *result = MA_ACTIVATEANDEAT; /* focus the game without an accidental shot */
             return 1;
+        }
+        break;
+    case WM_ACTIVATEAPP:
+        if (!wp) {
+            capture(window, 0);
+            AcquireSRWLockExclusive(&lock);
+            pc_input_focus(&input, 0);
+            ReleaseSRWLockExclusive(&lock);
+        } else if (GetForegroundWindow() == window) {
+            AcquireSRWLockExclusive(&lock);
+            pc_input_focus(&input, 1);
+            ReleaseSRWLockExclusive(&lock);
+            capture(window, want_capture);
         }
         break;
     case WM_SETFOCUS:
@@ -427,6 +459,8 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
                 wheel_remainder = delta % WHEEL_DELTA;
             }
             ReleaseSRWLockExclusive(&lock);
+            AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
+            if (captured) restore_window_clip(window);
         }
         break; /* DefWindowProc must perform WM_INPUT cleanup */
     }

@@ -1,0 +1,47 @@
+diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -918,6 +918,23 @@
+     }
+ }
+ 
++/* A movement/look axis needs a circular deadzone. Keep the original
++ * per-source threshold for buttons bound to a stick half. */
++static int control_magnitude(int control, const Source *source, KeyCache *kc,
++                             const RecompPadState *pad, int have_pad, int deadzone)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
++    if (CONTROLS[control].kind == K_AXIS && source->kind == SRC_PAD_AXIS && have_pad)
++        return pc_input_radial_axis_magnitude(
++            (int16_t)axis_value(pad, source->arg),
++            (int16_t)axis_value(pad, source->arg ^ 1),
++            source->sign, deadzone);
++#else
++    (void)control;
++#endif
++    return source_magnitude(source, kc, pad, have_pad, deadzone);
++}
++
+ /* The first thing pressed on a port, named once. A binding that is wrong is
+  * otherwise invisible: the title just never responds, and there is no way to
+  * tell a mis-bound key from a title that is not reading the pad at all. */
+@@ -1087,7 +1104,7 @@
+ #endif
+         if (use_pad_defaults) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+-                int m=source_magnitude(&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
++                int m=control_magnitude(i,&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
+                 if(m>mag) mag=m;
+             }
+         }
+@@ -1100,8 +1117,8 @@
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+             if(port==0 && action>=0 && c->bind[i].src[s].kind==SRC_KEY)continue;
+ #endif
+-            int m = source_magnitude(&c->bind[i].src[s], &kc, &pad, have_pad,
+-                                     c->deadzone);
++            int m = control_magnitude(i, &c->bind[i].src[s], &kc, &pad,
++                                  have_pad, c->deadzone);
+             if (m > mag)
+                 mag = m;
+         }

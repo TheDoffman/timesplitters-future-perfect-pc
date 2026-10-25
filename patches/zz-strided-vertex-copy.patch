@@ -1,0 +1,54 @@
+--- a/src/hle/hle_d3d8_vertex.c
++++ b/src/hle/hle_d3d8_vertex.c
+@@ -176,6 +176,30 @@
+         push_scan(start, end);
+ }
+ 
++/* Size dispatch is per attribute, outside the vertex loop. Constant-size
++ * copies let the compiler inline common Xbox formats without changing bytes,
++ * declaration order or the original fallback for unusual attribute sizes. */
++static void push_copy_attribute(uint8_t *dst, size_t dstride, uint32_t va, uint32_t first,
++                                uint32_t sstride, uint32_t vertices, UINT size)
++{
++    uint32_t v;
++#define PUSH_COPY_BYTES(n) \
++    for (v = 0; v < vertices; v++) \
++        memcpy(dst + (size_t)v * dstride, HLE_PTR(va + (first + v) * sstride), (n))
++    switch (size) {
++    case 1: PUSH_COPY_BYTES(1); break;
++    case 2: PUSH_COPY_BYTES(2); break;
++    case 3: PUSH_COPY_BYTES(3); break;
++    case 4: PUSH_COPY_BYTES(4); break;
++    case 6: PUSH_COPY_BYTES(6); break;
++    case 8: PUSH_COPY_BYTES(8); break;
++    case 12: PUSH_COPY_BYTES(12); break;
++    case 16: PUSH_COPY_BYTES(16); break;
++    default: PUSH_COPY_BYTES(size); break;
++    }
++#undef PUSH_COPY_BYTES
++}
++
+ /* The vertices the GPU fetches for indices first .. first + vertices - 1 when
+  * the title's pushed arrays are in force: every register of the selected
+  * declaration read from its own array (address + index * stride) and laid
+@@ -184,7 +208,7 @@
+  * when there is no declaration to lay them out by. */
+ static uint8_t *push_gather(uint32_t first, uint32_t vertices, uint32_t *stride)
+ {
+-    uint32_t object = hle_d3d8_shadow_program_object(), extent = 0, i, v;
++    uint32_t object = hle_d3d8_shadow_program_object(), extent = 0, i;
+     uint8_t *out;
+ 
+     if (!object || !vertices || !guest_readable(object, 20u + 16u * 16u))
+@@ -228,9 +252,8 @@
+             g_push_failed++;
+             continue;
+         }
+-        for (v = 0; v < vertices; v++)
+-            memcpy(out + (size_t)v * extent + offset,
+-                   HLE_PTR(va + (first + v) * pstride), size);
++        push_copy_attribute(out + offset, extent,
++                            va, first, pstride, vertices, size);
+     }
+     *stride = extent;
+     return out;

@@ -12,6 +12,11 @@ Isolated gameplay: `tools/testing_profile.py --play --seconds 120` (Windows),
 `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
 Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
+For movement input changes, sampler and guest-only fixtures do not prove
+gameplay speed. Use an isolated Story run and compare actual player-position
+displacement for straight and diagonal travel. Mouse capture checks should
+also cover focus loss, stale held buttons, menu return and a clip released by
+another component while the game remains foreground.
 <!-- packet:end -->
 
 Native SDL input validation checks both active Confirm slots (E and Space) and
@@ -27,6 +32,13 @@ required check names continue to report until the branch ruleset migrates.
 Unrequired issue-form and issue-resolution workflows are scoped to their own
 source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
 missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
+
+`test_push_gather.py` compares complete production gathering against its frozen
+original:24,000 calls, fresh bytes, mixed formats/strides/offsets, holes/overlaps,
+invalid declarations/readability and allocation failure. Guard pages bound source
+and destination for sizes1..64; over-read/wrong-stride mutations must fail.
+Both native CI hosts run it. Its optional six-pair benchmark uses2million96-vertex
+draws per round, alternating methods; that CPU kernel result is not game FPS.
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
@@ -634,8 +646,11 @@ blocked CI scope selection even though the generated index was current.
 route in `test_native_timing.py`. It executes the complete walking routine,
 with controlled input displacement and flat-floor world services. Tests cover
 60/120/144 displacement, diagonal cap, stops/reversals, boost resource, selected
-player/mode/button eligibility, depletion, slow/fast time and catch-up. A
-runtime mutation restores the old subtraction and must fail resource parity.
+player/mode/button eligibility, depletion, slow/fast time and catch-up.
+Keyboard W+D versus W travel uses the sampler's exact stick
+components over one second at original 60 and native 60/120/144/180/240 FPS.
+The controlled flat-floor results stay within 0.00005 world units at every rate.
+A runtime mutation restores the old subtraction and must fail resource parity.
 `native_timing_guest.c` also checks the actual clock-to-resource calculation
 without game assets in existing Windows/macOS CI. The XBE-dependent fixture
 is skipped when assets are absent; do not count that skip as gameplay coverage.

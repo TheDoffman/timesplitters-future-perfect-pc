@@ -1,3 +1,149 @@
+## Issue #256 follow-up: movement and mouse capture (2026-10-25)
+
+The merged radial-deadzone change did not remove the slowdown in gameplay.
+Its original test compared outgoing stick vectors and a guest walking call
+separately, missing the title's later diagonal attenuation. An isolated
+first-mission Windows run measured median player displacement at 6.65 units/s
+straight and 5.15 diagonal. The shared movement sampler now smoothly raises
+diagonal magnitude while keeping cardinal input unchanged. In the same route,
+the medians were 6.56 and 6.43 units/s. This is a bounded replay on one Story
+route, not a physical controller or all-terrain speed measurement. At native
+120 FPS, the same replay measured 6.56 straight and 6.64 diagonal; the
+guest-only fixture covers the remaining supported rates through 240 FPS.
+
+Windows gameplay capture now checks the cursor clip periodically and on raw
+mouse packets, restoring the client-area clip if another component releases
+it while the game still owns focus. Focus loss continues to clear held keys,
+fire and mouse deltas. The macOS SDL adapter remembers intentional gameplay
+capture through focus loss and restores relative mode on return; menus and
+explicit release still leave the cursor free. Native Mac hardware validation
+remains pending.
+
+## Original issue #256 diagonal stick speed (2026-10-25)
+
+Historical validation of the first fix; the gameplay finding above supersedes
+its inference about player travel speed.
+
+All five issue comments were reviewed. Windows and Linux players report slow
+diagonals, including both controller sticks. The PC binding sampler subtracted
+its deadzone separately from X and Y, making equal-radius diagonal travel
+smaller than straight travel. The shared radial mapping preserves stick angle
+and applies equally to movement and look; keyboard normalization and
+stick-bound buttons retain their existing behavior.
+
+The focused branch `256-diagonal-movement-speed` uses a new final runtime patch
+and shared `pc_input` math. Windows Release Build and its input tests pass;
+portable controller-profile tests pass (15 cases). Five focused patch-transition
+cases pass, including fresh checkout, older controls migration, line endings,
+and switches between the main and texture stacks. Native Mac synthetic SDL and
+gameplay checks remain pending. No physical controller or in-game displacement
+comparison has been claimed.
+
+The keyboard follow-up checks W+D at both the shared normalization function
+and Windows/SDL sampler sites. Its output radius is 32765.9 versus 32767 for
+W alone; the original US walking routine `sub_00258F50` computes the movement
+vector length before applying its speed cap. The remaining difference is below
+0.01%, from integer stick quantization. The Windows Release Build and input
+suite pass with these stronger assertions. One unrelated replay-timing
+assertion failed on an initial run, then passed both in isolation and on the
+full rerun.
+
+The rate follow-up runs the complete original-US walking routine on its
+controlled flat-floor fixture, using the keyboard sampler's W+D components.
+One-second straight versus diagonal distances differ by less than 0.00005
+world units at original 60 and native 60/120/144/180/240 FPS. The original
+analogue input fixture also passes across those rates. These are deterministic
+guest-code checks, not live level traversal or a measured display frame rate.
+
+## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
+
+The unchanged candidate executable50d7323a... completes three bounded ten-bot
+Disco runs at3440x1440, FOV73, enhanced mode with the local texture pack selected.
+Device creation confirms3440x1440 rendering; all combat checkpoints show Disco56,
+ten configured bots, unpaused play and a foreground borderless1920x1060 client.
+This supersampled window does not certify a physical3440x1440 display.
+
+Capture-free240 and180 tests use no CPU sampler/native update trace or heavy
+background tests. Delayed Present recording covers each complete45s
+spawn+5..50 window, with consecutive clocks, increasing guest-frame IDs and
+zero interpolation. Results:
+
+| Target | Fresh frames | Average FPS | Lowest1s count | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 240 Beta | 10569 | 234.8869 | 182 | 5.620ms | 7.144ms | 0.999977 |
+| 180 Beta | 8099 | 179.9984 | 180 | 6.199ms | 7.265ms | 0.999737 |
+
+The240 run exceeds the144-FPS6.944ms interval budget once. This demonstrates
+headroom on this route, not whole-game acceptance. The180 run retains180 in
+every measured1s/5s bin, with individual interval variation. Different targets,
+random combat/spawn paths and the FPS limiter preclude a causal before/after
+gain claim; neither run proves physical latency, GPU completion or scanout.
+
+The Original60 reference also completes all three combat checkpoints. Reviewed
+3440x1440 captures show an armed NPC firing, weapon/impact effects, scenery and
+HUD. Captures verify those states rather than continuous animation parity or
+every replacement texture. All three runs share executable/input-command
+hashes; canonical profile090cced7.../signatures and partition/lock cleanup pass.
+Evidence: private/test-saves/crowd-copy-disco-ultrawide{240,180,-original60},
+`logs/crowd-copy-ultrawide-summary.json` and per-run pacing summaries.
+All16 hosted checks passed onade82564 before this documentation-only addition;
+there is no runtime change or new build. Physical Mac scenes and broader
+native-refresh mechanics/visual acceptance remain open under MAC-060.
+
+## 2026-10-25 — Reduce repeated model-attribute copy overhead
+
+The fresh main build (`c5aaf1ef`) runs a ten-bot Hotel profile at native240.
+Between complete spawn/combat-four sampler snapshots,5155 main-thread samples
+include117 in the model-node renderer and copy/allocation work in pushed-array
+preparation. This diagnostic has no dropped chains and uses200Hz sampling;
+it is not an uninstrumented FPS measurement or exact CPU-share attribution.
+The profile and matched clean baseline use executable SHA256
+`7a10bad00f8ee2cf169a2597f066ef317b74a2fe12108c5e7c43c64ca3d717ca`.
+
+`zz-strided-vertex-copy.patch` dispatches by attribute size once before each
+vertex loop, making common small copies constant-size so the compiler can
+inline them. It retains original32-bit guest address arithmetic, declaration
+order, zero-filled holes, readability checks, generic sizes and allocation
+ownership. No vertex data is retained between draws. This common HLE path is
+used by both Windows and native Mac and applies independently of FPS choice.
+
+The complete production gather is compared with its frozen prior implementation
+in24000 calls, covering fresh data, mixed formats/strides/offsets, overlapping
+attributes, missing inputs, invalid declarations/reads and allocation failures.
+Guard pages bound both source and destination for sizes1..64. Deliberate
+12-byte over-read and wrong-stride mutations fail. All3 focused checks pass;
+the final portability-only test edit is also rerun successfully (6.09s).
+Six alternating benchmark pairs,2million96-vertex draws per method/round,
+measure median0.6565s prior versus0.3655s candidate (44.3% less kernel time).
+This does not establish a whole-game FPS gain.
+
+The baseline capture-free50s Hotel window has11985 increasing guest-frame
+intervals,239.719FPS, lowest1s232, lowest5s237.6, p994.840ms and worst6.853ms;
+there is no interpolation. Sampled game/wall ratio is0.999952. Render request
+1280x720, FOV55, Classic textures, foreground/visible640x480 client and ten
+configured bots are recorded. All required scene/clock neighbors and window
+coverage checks pass. Simultaneous visibility of all bots is not established.
+
+The candidate supported Windows build/bundled checks pass, SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+An Original60 ten-bot Hotel run completes; reviewed combat-four/six images show
+weapons, scenery, impacts and a distant character. Fixture signatures and exact
+profile bytes remain intact; owned games close and disposable partitions/locks
+are recycled. All118 local integration checks pass (749.36s), including historical upgrades,
+branch switches, copy/index contracts, context/backlog and suite selection.
+The candidate's complete50s Hotel window has11999 increasing guest-frame
+intervals,239.9999FPS, minimum1s240/minimum5s240, p994.976ms and worst5.927ms.
+Game/wall ratio is0.999981 with no interpolation. The same command-stream hash,
+requested/actual display settings, ten bots and foreground checks match the
+baseline. Both tests ran without CPU sampling/captures/native update tracing;
+no heavy build/test work ran during either measurement window. Game/death/AI
+paths still vary: mean/worst intervals improve while p99 slightly worsens.
+This is valid candidate pacing evidence, not a causal whole-game speedup.
+Profiles/signatures and owned-process/partition cleanup pass for both runs.
+Detailed comparison is `logs/strided-vertex-live-summary.json` locally. Physical
+Mac gameplay remains under MAC-060. Follow-up draft PR #359 starts at current
+main; current-head hosted checks remain separate acceptance.
+
 ## PR validation consolidation (2026-10-25)
 
 - Branch `ci/simplify-pr-validation` starts at `83a7923f` from `origin/main`.

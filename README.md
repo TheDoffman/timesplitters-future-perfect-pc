@@ -15,6 +15,19 @@ Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 </div>
 
+<table>
+  <tr>
+    <td width="50%"><a href="docs/assets/gameplay-story1.jpg"><img src="docs/assets/gameplay-story1.jpg" alt="Story gameplay screenshot 1" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-story2.jpg"><img src="docs/assets/gameplay-story2.jpg" alt="Story gameplay screenshot 2" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/assets/gameplay-arcade2.jpg"><img src="docs/assets/gameplay-arcade2.jpg" alt="Arcade gameplay screenshot 2" width="100%"></a></td>
+    <td width="50%"><a href="docs/assets/gameplay-arcade1.jpg"><img src="docs/assets/gameplay-arcade1.jpg" alt="Arcade gameplay screenshot 1" width="100%"></a></td>
+  </tr>
+</table>
+
+<p align="center"><sub>In-game screenshots as of v0.3.2</sub></p>
+
 ![TimeSplitters launcher v1.2.18 with the updated banner, aligned sidebar, Play Game, game versions and update controls](docs/assets/launcher-preview.png)
 
 <p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; Stable is the default game channel; named previews are opt-in with launcher 1.3.0+.</sub></p>

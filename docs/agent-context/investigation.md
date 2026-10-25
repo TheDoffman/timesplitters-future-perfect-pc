@@ -25,6 +25,11 @@ context is installed. Candidate
 math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
+`tests/test_repo_context.py` checks effective patch order rather than only
+filename sorting. The radial stick deadzone patch is now the final record,
+after zero-base-indices and the keyboard reload patch; update that ordering
+assertion when intentionally adding another final patch.
+
 ## Working note (not committed)
 
 Create this only for substantial tasks; tiny edits do not need a diary. Limit it
