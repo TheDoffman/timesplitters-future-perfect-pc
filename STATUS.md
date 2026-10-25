@@ -26,9 +26,11 @@ All owned games close, signed profiles match canonical090cced7 and disposable
 disks are recycled. Evidence: `rocket-merged-{original60,180,240}` under the
 test-save directory and `logs/rocket-merged-comparison.json` (including the
 analyzer/provenance hashes). The23 analyzer counterexample tests and7 original/
-shared reload timing tests pass. Patch-upgrade/integration tests are still
-running; their result will be recorded separately. No full-game or Mac visual
-completion claim follows from these runs.
+shared reload timing tests pass. The complete patch-upgrade/reload/effect/
+profile/context/backlog/zero-index selection passes86 tests in685.79 seconds
+(`logs/rocket-main-integration-tests.log`). The23 analyzer tests overlap that
+selection and additionally cover the unreadable-player cases. No full-game or
+Mac visual completion claim follows from these runs.
 
 Three sequential isolated Windows runs compare Original60, native180 and
 native240 on executable SHA256
