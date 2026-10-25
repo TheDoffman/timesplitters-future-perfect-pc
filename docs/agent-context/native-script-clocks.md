@@ -39,7 +39,8 @@ as well as the actual guest GPU store, fallback and acknowledgement guards.
 `native_trap_motion.c` executes the original US callback and sine initializer;
 sound/control/removal services are spies.40 rate/slow/carried-phase schedules
 cover60/120/144/180/240, fresh motion on every pre-sound frame, a one-original-tick
-pose envelope with0.25degree tolerance, event time windows, terminal state,
+pose envelope with0.25degree tolerance, phase-zero aligned endpoint error below
+0.25degrees, event time windows, terminal state,
 phase, pause and ABI.12 additional mixed-rate/jitter schedules cover live changes.
 Original/whole/catch-up state/events remain byte-equal. Independently removing
 gate, either conversion, either coupled operator, or contact normalization fails.
