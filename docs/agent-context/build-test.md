@@ -38,6 +38,8 @@ runtime/launcher CI runs these on both hosts.
 
 ## Choose the cheapest relevant check
 
+Launcher v1.3.1 uses existing dual-host package checks; no game rebuild.
+
 `test_pushbuffer_policy.py` compiles the full scanner: disabled/scan/execute/both,
 presence semantics, decoding/reporting, and repeated-lookup/executor mutations.
 

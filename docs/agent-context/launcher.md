@@ -26,6 +26,11 @@ or change credentials just to validate a launcher edit.
 
 ## Capture health diagnostics
 
+Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS
+presets already on main. The shared version and numeric assembly attributes
+advance together; package format, updater manifest names and optional-texture
+delivery stay unchanged. Release validation uses the existing dual-host workflow.
+
 Both launch adapters pass the persistent session ID as `TSFP_CAPTURE_SESSION`.
 `GameSessions.CaptureSession` positively verifies the game PID/start-time pair.
 `CrashReports.CaptureHealth` shares storage probing, bounded record parsing,
