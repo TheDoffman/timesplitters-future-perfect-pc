@@ -915,6 +915,15 @@ Mapping caches never span guest execution. Disabled/failed/capped traces select
 the original callee; no timing or growth policy changes. This is CPU update
 evidence, not rendered parity or pacing. Physical Mac remains unverified.
 
+## Temporal Uplink map display
+
+The shared HLE screen-copy hook saves Future Perfect's preclear map image
+and supplies its map region to the handheld texture later in the frame.
+Native GL implements the same texture-region transfer in
+`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
+state. The map geometry and gameplay controls remain guest-owned; this adapter
+only transfers the image that the game already drew.
+
 ## Forced and damped material scrolling
 
 `pc_native_material.h` splits the original127500 affine velocity/travel map in

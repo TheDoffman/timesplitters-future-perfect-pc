@@ -79,6 +79,20 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
             CHECK(((D3D8Texture *)texture)->screen_copy==1);
             CHECK(xbox_D3D8ScreenCopyCount()==before+(test?cases[test-1].copies:1));
         }
+        /* The Uplink composes its map before a clear, then copies a region
+         * from that saved image into the small display after the clear. */
+        IDirect3DTexture8 *saved=NULL;
+        CHECK(d3d8_CreateTextureImpl(16,12,1,D3DUSAGE_RENDERTARGET,
+                                      D3DFMT_LIN_A8R8G8B8,&saved)==S_OK);
+        CHECK(xbox_D3D8CopyBackBufferToTexture(saved)==S_OK);
+        rhi_clear_color(copy_scene_rtv,black);
+        rhi_clear_color(dest,black);
+        RECT map_region={4,2,12,10};
+        CHECK(xbox_D3D8CopyTextureRegionScaled(texture,saved,&map_region)==S_OK);
+        unsigned char map_pixels[8*6*4];
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,map_pixels,8*4)==0);
+        CHECK(map_pixels[0]!=0 && map_pixels[8*6*4-2]!=0);
+        saved->lpVtbl->Release(saved);
         /* Explicit offscreen source differs from the current scene and size. */
         image.width=4;image.height=2;
         RhiImage *offscreen=rhi_image_create(&image,NULL);CHECK(offscreen);
