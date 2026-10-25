@@ -663,6 +663,18 @@ int tsfp_native_input_test(void) {
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,true);
         SDL_Delay(300);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255 && !pc_prompts_keyboard_active();
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_LEFTX,24000);
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_RIGHTY,-24000);
+        SDL_Delay(3);recomp_bindings_sample(0,&pad);
+        int straight_move=pad.sThumbLX,straight_look=pad.sThumbRY;
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_LEFTX,16971);
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_LEFTY,-16971);
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_RIGHTX,16971);
+        SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_RIGHTY,-16971);
+        SDL_Delay(3);recomp_bindings_sample(0,&pad);
+        ok &= straight_move>0 && straight_look>0 &&
+              fabs(hypot(pad.sThumbLX,pad.sThumbLY)-straight_move)<500 &&
+              fabs(hypot(pad.sThumbRX,pad.sThumbRY)-straight_look)<500;
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,false);
         SDL_Delay(3);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;

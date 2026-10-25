@@ -71,6 +71,17 @@ int main(int argc, char **argv)
     CHECK(mx == my && hypot(mx, my) <= 32767 && mx > 23000);
     mx = 0; my = -32767; pc_input_normalize_movement(&mx, &my);
     CHECK(mx == 0 && my == -32767);
+    /* Equal radial stick travel must produce equal straight/diagonal speed,
+       for both movement and look axes. Per-axis deadzones lose the diagonal. */
+    {
+        int straight = pc_input_radial_axis_magnitude(24000, 0, 1, 7849);
+        int diagonal = pc_input_radial_axis_magnitude(16971, 16971, 1, 7849);
+        CHECK(fabs(hypot(diagonal, diagonal) - straight) <= 2);
+        CHECK(pc_input_radial_axis_magnitude(5000, 5000, 1, 7849) == 0);
+        CHECK(pc_input_radial_axis_magnitude(6000, 6000, 1, 7849) > 0);
+        CHECK(pc_input_radial_axis_magnitude(-23170, -23170, -1, 7849) > 175);
+        CHECK(pc_input_radial_axis_magnitude(-23170, -23170, 1, 7849) == 0);
+    }
     pc_input_focus(&s, 1); pc_input_capture(&s, 1);
     pc_input_key(&s, 'W', 1); CHECK(pc_input_down(&s, 'W', 0));
     pc_input_focus(&s, 0); CHECK(!pc_input_down(&s, 'W', 0));

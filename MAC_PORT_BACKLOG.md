@@ -862,6 +862,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **#256 diagonal stick speed (2026-10-25, branch `256-diagonal-movement-speed`):**
+  The shared binding sampler now applies the configured deadzone radially to
+  gameplay movement and look axes on both host builds. Keyboard diagonal
+  capping and stick-as-button thresholds stay as before. Windows build and
+  shared math/patch checks are recorded in [STATUS.md](STATUS.md#issue-256-diagonal-stick-speed-2026-10-25).
+  The synthetic SDL gamepad self-test now compares straight and diagonal travel
+  on both sticks; native Mac execution and physical controller gameplay still
+  need validation.
+
 - Fresh text chunks (commit carrying this entry): `pc_text_read_scope.h` uses
   the shared page-span adapter for bounded reads. Strings walk successive
   validated chunks; `pc_prompts_read_span` validates whole argument frames,

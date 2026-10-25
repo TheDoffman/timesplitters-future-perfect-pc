@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "69cf403110a86d406b5f88ca82474324140f06a1bd3299155d8bda032dcd0f5f",
+  "loaderSha256": "dff2693bab8cb98e42ae19a9bb82d8fe7987a6a99452192546af859c61577729",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1411,6 +1411,13 @@
       "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
       "targets": [
         "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-radial-stick-deadzone.patch",
+      "sha256": "f57e529e36fcd5badc1e0be48e9df3230d79c816729602aba3a737b7705ec59c",
+      "targets": [
+        "src/input/input_bindings.c\r"
       ]
     }
   ]

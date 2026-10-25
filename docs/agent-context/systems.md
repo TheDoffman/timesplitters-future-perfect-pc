@@ -665,6 +665,14 @@ bindings pages draw a keyboard/mouse diagram with primary/alternate columns;
 profiles use their first two sources without modifying disk until saved.
 Controller profiles keep their existing source capacity.
 
+For gameplay stick axes, the shared binding sampler uses
+`pc_input_radial_axis_magnitude` from `pc_input.c` on both left and right
+sticks. It subtracts the configured deadzone once from the stick's radius,
+then applies one gain to both components. Keyboard WASD still uses the existing
+diagonal magnitude cap; stick halves bound to buttons retain their original
+per-source threshold. This prevents a physical diagonal from losing speed in
+movement or look while preserving custom bindings and both host adapters.
+
 `pc_binding_capture.h` handles opening-input release, capture, final-input
 release, Escape cancellation, focus loss and timeout. `pc_bindings.inc` owns
 its lock/state; Windows and SDL supply raw physical keys and wheel pulses, latching press

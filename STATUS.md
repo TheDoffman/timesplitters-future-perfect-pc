@@ -1,3 +1,20 @@
+## Issue #256 diagonal stick speed (2026-10-25)
+
+All five issue comments were reviewed. Windows and Linux players report slow
+diagonals, including both controller sticks. The PC binding sampler subtracted
+its deadzone separately from X and Y, making equal-radius diagonal travel
+smaller than straight travel. The shared radial mapping preserves stick angle
+and applies equally to movement and look; keyboard normalization and
+stick-bound buttons retain their existing behavior.
+
+The focused branch `256-diagonal-movement-speed` uses a new final runtime patch
+and shared `pc_input` math. Windows Release Build and its input tests pass;
+portable controller-profile tests pass (15 cases). Five focused patch-transition
+cases pass, including fresh checkout, older controls migration, line endings,
+and switches between the main and texture stacks. Native Mac synthetic SDL and
+gameplay checks remain pending. No physical controller or in-game displacement
+comparison has been claimed.
+
 ## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
 
 The unchanged candidate executable50d7323a... completes three bounded ten-bot

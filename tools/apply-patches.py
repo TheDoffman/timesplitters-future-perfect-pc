@@ -71,6 +71,11 @@ def patch_records(paths):
         if patch:
             paths.remove(patch)
             paths.append(patch)
+    # Stick remapping extends the binding sampler after the late reload patch.
+    radial = next((p for p in paths if p.name.endswith('-radial-stick-deadzone.patch')), None)
+    if radial:
+        paths.remove(radial)
+        paths.append(radial)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
