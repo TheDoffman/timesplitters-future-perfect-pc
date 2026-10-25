@@ -1,15 +1,15 @@
 # CI and branch protection
 
-Every pull request runs these checks, without file-path or target-branch filters:
+The live `Base` ruleset currently requires these three GitHub Actions checks
+on every pull request (verified 2026-10-25):
 
-- **Issue form tests**
-- **Issue resolution tests**
 - **Patch transitions (windows-latest)**
 - **Patch transitions (macos-latest)**
+- **Launcher compatibility**
 
-The issue-test workflows contain only their tests. Event automation runs in
-separate workflows, so open PRs do not list skipped `labels`, `versions` or
-`comment` jobs:
+**Issue form tests** and **Issue resolution tests** run only when their source,
+templates, or workflow files change. They are not required branch checks.
+Event automation runs in separate workflows:
 
 - **Automatic issue labels** runs when issues are opened, edited or reopened.
 - **Issue form versions** validates and proposes reference updates after release
@@ -20,16 +20,22 @@ separate workflows, so open PRs do not list skipped `labels`, `versions` or
   with open bug reports and maintainer workaround notes. It also runs after
   automatic labeling. See [maintainer instructions](known-issues.md).
 
-Required job names and their GitHub Actions source stay the same; no branch
-ruleset changes are needed when moving the automation.
+`PR validation` is a candidate single required check. It uses the same runtime
+scope and original Windows/Mac workers, selects launcher builds from the same
+revision, and fails if any selected worker fails or is unexpectedly skipped.
+The old required checks continue reporting during the rollout. After the new
+gate has passed on a PR, replace the three existing required contexts with
+`PR validation` in the `Base` ruleset. Only then remove the old reporting jobs
+and the separate PR trigger in `launcher-compatibility.yml`. This staged change
+avoids a window where protected PRs wait for a check that does not exist.
 
-The runtime jobs always test suite selection. They run the affected patch,
-native, release and launcher tests when relevant files change. A documentation
-edit therefore still gets completed checks without a full game build. No
+The runtime plan always tests suite selection. It runs affected patch, native,
+release and launcher tests when relevant files change. A documentation edit
+still gets a completed gate without full game or launcher builds. No
 private game files or personal saves are needed in CI.
 
 The `Base` branch ruleset targets `main` with active enforcement. It requires a
-pull request, all four checks from GitHub Actions, and an up-to-date branch.
+pull request, the three checks listed above, and an up-to-date branch.
 Deletion and force pushes remain blocked. There are no bypass actors or required
 reviewer approvals, so a solo maintainer can merge once checks pass.
 

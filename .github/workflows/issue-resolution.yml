@@ -2,6 +2,11 @@ name: Issue resolution tests
 
 on:
   pull_request:
+    paths:
+      - .github/workflows/issue-resolution.yml
+      - .github/workflows/issue-resolution-comments.yml
+      - tools/issue-resolution.py
+      - tests/test_issue_resolution.py
   push:
     branches: [main]
     paths:

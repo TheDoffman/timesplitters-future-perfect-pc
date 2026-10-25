@@ -37,6 +37,8 @@ jobs:
       native: ${{ steps.scope.outputs.native }}
       gpu: ${{ steps.scope.outputs.gpu }}
       release: ${{ steps.scope.outputs.release }}
+      launcher: ${{ steps.launcher.outputs.run }}
+      head: ${{ steps.launcher.outputs.head }}
       revision: ${{ steps.pins.outputs.revision }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -48,6 +50,18 @@ jobs:
       - name: Select affected test suites
         id: scope
         run: python tools/ci-runtime-scope.py
+      - name: Select launcher checks from the same revision
+        id: launcher
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = workflow_dispatch ] || [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = 0000000000000000000000000000000000000000 ]; then
+            python tools/launcher-compatibility.py scope --head "$HEAD_SHA" --all
+          else
+            python tools/launcher-compatibility.py scope --base "$BASE_SHA" --head "$HEAD_SHA"
+          fi
       - name: Read shared runtime and test dependency pins
         id: pins
         run: |
@@ -65,7 +79,7 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
       - name: Test CI suite selection and feature handoff index
-        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py tests/test_repo_context.py -q --tb=short
+        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_ci_pr_gate.py tests/test_launcher_compatibility.py tests/test_mac_backlog.py tests/test_repo_context.py -q --tb=short
       - name: Validate repository context and affected-system guide updates
         run: python tools/repo-context.py check --ci
       - name: Test optional local-router context reader
@@ -221,6 +235,37 @@ jobs:
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
         run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py tests/test_native_mac_package.py tests/test_build_textures.py tests/test_texture_release.py -q --tb=short
+
+  launcher:
+    needs: plan
+    if: needs.plan.outputs.launcher == 'true'
+    uses: ./.github/workflows/launcher-build.yml
+    with:
+      source_ref: ${{ needs.plan.outputs.head }}
+
+  # Candidate single required check. Keep the established required names below
+  # until the branch ruleset points to this successfully exercised gate.
+  pr-validation:
+    name: PR validation
+    needs: [plan, patches, native, launcher]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Require every selected runtime and launcher check
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          RUN_TRANSITIONS: ${{ needs.plan.outputs.transitions }}
+          RUN_NATIVE: ${{ needs.plan.outputs.native }}
+          RUN_RELEASE: ${{ needs.plan.outputs.release }}
+          RUN_LAUNCHER: ${{ needs.plan.outputs.launcher }}
+          PATCHES_RESULT: ${{ needs.patches.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+          LAUNCHER_RESULT: ${{ needs.launcher.result }}
+        run: python tools/ci-pr-gate.py
 
   # Preserve the two existing branch-protection check names. An intentional
   # scope skip passes; failed/cancelled/missing or unexpectedly skipped work fails.

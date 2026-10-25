@@ -11,12 +11,28 @@ scope = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scope)
 
 
-@pytest.mark.parametrize('filename', ['issue-forms.yml', 'issue-resolution.yml', 'runtime-patches.yml'])
-def test_required_workflows_report_on_every_pull_request(filename):
+def test_required_workflow_reports_on_every_pull_request():
+    filename = 'runtime-patches.yml'
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()
     trigger = re.search(r'^  pull_request:\n(.*?)(?=^  [a-z_]+:|^[^ \n]|\Z)', workflow, re.M | re.S)
     assert trigger, 'Required checks need a pull_request trigger.'
     assert not trigger[1].strip(), 'Required workflows must not skip PRs by path, branch or event type.'
+
+
+@pytest.mark.parametrize('filename,inputs', [
+    ('issue-forms.yml', {'tools/issue-forms.py', 'tests/test_issue_forms.py',
+                         'tools/known-issues.py', 'tests/test_known_issues.py',
+                         'VERSION', 'tools/launcher/LauncherVersion.cs'}),
+    ('issue-resolution.yml', {'tools/issue-resolution.py', 'tests/test_issue_resolution.py'}),
+])
+def test_unrequired_issue_jobs_run_only_for_relevant_prs(filename, inputs):
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()
+    pr = workflow.split('  pull_request:\n', 1)[1].split('  push:\n', 1)[0]
+    push = workflow.split('  push:\n', 1)[1].split('\npermissions:', 1)[0]
+    assert '    paths:\n' in pr and '    paths:\n' in push
+    for path in inputs:
+        assert f'      - {path}\n' in pr
+        assert f'      - {path}\n' in push
 
 
 def test_version_refresh_cannot_push_directly_to_protected_main():
@@ -179,6 +195,22 @@ def test_parallel_workers_preserve_required_check_contract():
                        'needs.plan.outputs.native', 'needs.plan.outputs.release',
                        'needs.patches.result', 'needs.native.result'):
         assert '${{ ' + expression + ' }}' in gate
+
+
+def test_single_gate_covers_runtime_and_launcher_without_changing_old_checks():
+    workflow = (Path(__file__).resolve().parents[1] /
+                '.github/workflows/runtime-patches.yml').read_text()
+    plan = workflow.split('\n  plan:\n', 1)[1].split('\n  patches:\n', 1)[0]
+    launcher = workflow.split('\n  launcher:\n', 1)[1].split('\n  pr-validation:\n', 1)[0]
+    gate = workflow.split('\n  pr-validation:\n', 1)[1].split('\n  # Preserve', 1)[0]
+    assert 'python tools/launcher-compatibility.py scope' in plan
+    assert 'launcher: ${{ steps.launcher.outputs.run }}' in plan
+    assert 'uses: ./.github/workflows/launcher-build.yml' in launcher
+    assert 'source_ref: ${{ needs.plan.outputs.head }}' in launcher
+    assert 'name: PR validation' in gate
+    assert 'needs: [plan, patches, native, launcher]' in gate
+    assert 'if: always()' in gate
+    assert 'python tools/ci-pr-gate.py' in gate
 
 
 def test_launcher_build_and_moved_tests_have_one_owner():

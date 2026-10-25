@@ -1,3 +1,14 @@
+## PR validation consolidation (2026-10-25)
+
+- Branch `ci/simplify-pr-validation` starts at `83a7923f` from `origin/main`.
+  Issue-form and issue-resolution tests now trigger only for their inputs.
+  Runtime selection also selects launcher builds at the same revision and
+  reports the candidate `PR validation` gate. The existing three required
+  check names remain active until the `Base` ruleset can be migrated safely.
+- Local checks: 112 focused tests and 26 subtests pass; the three issue-tool
+  suites pass (24, 21 and 15 tests). Repository context and whitespace checks
+  pass. Hosted Windows/Mac/launcher jobs and the new gate still need PR CI.
+
 ## 2026-10-24 — Preserve character status-effect model growth
 
 Original status dispatcher125FE0 advances state+5C and calls120AB0 for status3.
