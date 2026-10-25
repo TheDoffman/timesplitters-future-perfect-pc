@@ -167,10 +167,13 @@ rechecked on retry. Opt-in lives in `.launcher/texture-opt-in.json`; opening Set
 checks for updates, but downloads always require confirmation. Opt-out deletes only
 that preference. Classic/Enhanced persistence is separate and defaults to Classic.
 
-The catalog in `config/texture-pack.json` now declares optional delivery; normal
-Windows/Mac game packages omit the assets. The download manifest is an unpublished
-placeholder until a maintainer publishes through `texture-release.py` and merges
-the resulting index. No runtime changes or OS-specific texture protocol are needed.
+The catalog in `config/texture-pack.json` declares optional delivery; normal
+Windows/Mac game packages omit the assets. The download index must contain a
+published schema-3 manifest, produced by `texture-release.py` after auditing and
+uploading the committed pack. Committing DDS files alone does not make them
+downloadable: the launcher reads this index, not Git LFS or the repository tree.
+Merge each generated index after its remote assets verify; no launcher rebuild
+is needed to discover it. No OS-specific texture protocol is needed.
 Portable and host validation routes are recorded in build-test.md and MAC-057.
 
 Texture operations disable Mac page navigation through the shared busy state,

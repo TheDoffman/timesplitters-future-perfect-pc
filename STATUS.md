@@ -25123,3 +25123,32 @@ The follow-up on `fix/launcher-publish-history` gives the publication job its ow
 full Git history. A new regression failed against the shallow checkout before
 passing with the fix. No launcher/runtime code changes. The original workflow
 run remains failed at publication; the verified release was recovered separately.
+
+## Optional texture download availability (2026-10-25)
+
+Investigation on main `0ccf654f8089e2625130755c15657c6777683bd9` found that
+`config/texture-download.json` still declared `published: false`. No optional
+texture release existed. Launcher v1.3.1 correctly rejected this placeholder;
+committed Git LFS textures do not provide a downloadable part index.
+
+On `fix/texture-download-publication`, audited the 2,261 committed replacements
+(2,053,008,503 bytes installed) using hard links to existing immutable local LFS
+objects. Verified DDS headers, dimensions, complete mip chains, formats, hashes,
+sanitized metadata, catalog identity and retained-original policy. No second DDS
+working copy, personal saves/settings, private art or newer uncommitted textures
+were used. All 17 texture publication/packaging tests and three subtests passed.
+Publication uses `texture-release.py` and one bounded temporary ZIP at a time.
+
+Published `textures-v0.1.0-beta.1` as a prerelease without changing GitHub Latest.
+All 49 bounded ZIP parts and the generated schema-3 index passed remote asset
+size/hash verification. The generated `config/texture-download.json` replaces
+the unavailable placeholder; merging this PR activates existing launchers.
+
+Used the actual public Windows v1.3.1 app assembly in an isolated harness. It
+parsed all 2,261 textures/49 parts, downloaded `textures-029.zip`, verified and
+installed its four replacements, then reported zero remaining download bytes
+for the same part. Every indexed installed hash matched. Save, settings, ISO and
+unrelated custom-texture fixtures remained unchanged. This was a bounded real
+download/installation check, not a full 1.91 GiB install or gameplay test. Mac live
+download/UI execution remains unrun on this Windows host; both hosts use the
+unchanged shared downloader/installer. No new launcher binary is required.
