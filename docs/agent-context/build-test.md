@@ -641,8 +641,11 @@ blocked CI scope selection even though the generated index was current.
 route in `test_native_timing.py`. It executes the complete walking routine,
 with controlled input displacement and flat-floor world services. Tests cover
 60/120/144 displacement, diagonal cap, stops/reversals, boost resource, selected
-player/mode/button eligibility, depletion, slow/fast time and catch-up. A
-runtime mutation restores the old subtraction and must fail resource parity.
+player/mode/button eligibility, depletion, slow/fast time and catch-up.
+Keyboard W+D versus W travel uses the sampler's exact stick
+components over one second at original 60 and native 60/120/144/180/240 FPS.
+The controlled flat-floor results stay within 0.00005 world units at every rate.
+A runtime mutation restores the old subtraction and must fail resource parity.
 `native_timing_guest.c` also checks the actual clock-to-resource calculation
 without game assets in existing Windows/macOS CI. The XBE-dependent fixture
 is skipped when assets are absent; do not count that skip as gameplay coverage.

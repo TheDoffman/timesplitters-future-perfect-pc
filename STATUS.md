@@ -24,6 +24,13 @@ suite pass with these stronger assertions. One unrelated replay-timing
 assertion failed on an initial run, then passed both in isolation and on the
 full rerun.
 
+The rate follow-up runs the complete original-US walking routine on its
+controlled flat-floor fixture, using the keyboard sampler's W+D components.
+One-second straight versus diagonal distances differ by less than 0.00005
+world units at original 60 and native 60/120/144/180/240 FPS. The original
+analogue input fixture also passes across those rates. These are deterministic
+guest-code checks, not live level traversal or a measured display frame rate.
+
 ## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
 
 The unchanged candidate executable50d7323a... completes three bounded ten-bot
