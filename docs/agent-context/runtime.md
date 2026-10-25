@@ -63,6 +63,13 @@ collects configured Reload/X and Fire/trigger keyboard contributions separately,
 passes them through the shared host model, then merges untouched pad magnitudes.
 No generated guest input or controller behavior is rewritten by this patch.
 
+The final `radial-stick-deadzone` patch changes shared analog axis sampling in
+`src/input/input_bindings.c` to use the root `pc_input` radial helper for both
+movement and look. `tools/apply-patches.py:patch_records` places it after
+`zz-keyboard-reload-buffer.patch` so the historical keyboard patch still
+applies during branch transitions. Keyboard normalization and stick-button
+thresholds are unchanged; `tests/test_patch_updates.py` covers those transitions.
+
 ## Source ownership and execution
 
 `zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture

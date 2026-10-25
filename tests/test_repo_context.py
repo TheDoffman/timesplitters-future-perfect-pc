@@ -38,7 +38,8 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     assert position('-native-demo-timing.patch') < position('-texture-bind-scan.patch')
     assert position('-texture-bind-scan.patch') < position('-model-transform-entry.patch')
     assert position('-model-transform-entry.patch') < position('-zero-base-indices.patch')
-    assert names[-1].endswith('-zero-base-indices.patch')
+    assert position('-zero-base-indices.patch') < position('-radial-stick-deadzone.patch')
+    assert names[-1].endswith('-radial-stick-deadzone.patch')
 
     assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])
