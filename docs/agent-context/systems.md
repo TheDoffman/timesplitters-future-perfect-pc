@@ -6,6 +6,11 @@ Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for inpu
 `pc_menu_*`, `pc_ui_layout.h`, `pc_cutscene.h`, `pc_camera.h` for menus/camera;
 `pc_debug_options.def` for the shared debug fields/keys/labels/capabilities;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
+For movement regressions, compare player-position displacement in game as well
+as sampled stick values: the title attenuates diagonals after the binding
+sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
+relative mode is owned by `src/native/input_sdl.c` and should recover from
+focus changes only when gameplay capture was requested.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 

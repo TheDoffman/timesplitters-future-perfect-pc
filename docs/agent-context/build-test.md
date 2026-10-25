@@ -12,6 +12,11 @@ Isolated gameplay: `tools/testing_profile.py --play --seconds 120` (Windows),
 `tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
 Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
+For movement input changes, sampler and guest-only fixtures do not prove
+gameplay speed. Use an isolated Story run and compare actual player-position
+displacement for straight and diagonal travel. Mouse capture checks should
+also cover focus loss, stale held buttons, menu return and a clip released by
+another component while the game remains foreground.
 <!-- packet:end -->
 
 Native SDL input validation checks both active Confirm slots (E and Space) and

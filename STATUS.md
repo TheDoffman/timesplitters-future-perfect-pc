@@ -1,4 +1,28 @@
-## Issue #256 diagonal stick speed (2026-10-25)
+## Issue #256 follow-up: movement and mouse capture (2026-10-25)
+
+The merged radial-deadzone change did not remove the slowdown in gameplay.
+Its original test compared outgoing stick vectors and a guest walking call
+separately, missing the title's later diagonal attenuation. An isolated
+first-mission Windows run measured median player displacement at 6.65 units/s
+straight and 5.15 diagonal. The shared movement sampler now smoothly raises
+diagonal magnitude while keeping cardinal input unchanged. In the same route,
+the medians were 6.56 and 6.43 units/s. This is a bounded replay on one Story
+route, not a physical controller or all-terrain speed measurement. At native
+120 FPS, the same replay measured 6.56 straight and 6.64 diagonal; the
+guest-only fixture covers the remaining supported rates through 240 FPS.
+
+Windows gameplay capture now checks the cursor clip periodically and on raw
+mouse packets, restoring the client-area clip if another component releases
+it while the game still owns focus. Focus loss continues to clear held keys,
+fire and mouse deltas. The macOS SDL adapter remembers intentional gameplay
+capture through focus loss and restores relative mode on return; menus and
+explicit release still leave the cursor free. Native Mac hardware validation
+remains pending.
+
+## Original issue #256 diagonal stick speed (2026-10-25)
+
+Historical validation of the first fix; the gameplay finding above supersedes
+its inference about player travel speed.
 
 All five issue comments were reviewed. Windows and Linux players report slow
 diagonals, including both controller sticks. The PC binding sampler subtracted

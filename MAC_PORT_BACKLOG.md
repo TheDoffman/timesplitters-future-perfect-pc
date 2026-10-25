@@ -871,6 +871,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   on both sticks; native Mac execution and physical controller gameplay still
   need validation.
 
+- **#256 gameplay follow-up (2026-10-25, branch `fix/256-diagonal-and-mouse-capture`):**
+  Live Windows Story displacement showed remaining diagonal attenuation after
+  the radial input fix. Shared `pc_input_normalize_movement` now compensates
+  the title's later movement step for keyboard and controller input. The SDL
+  adapter restores desired relative mouse mode on focus return, except during
+  menus or after explicit release. Windows live replay and host tests cover
+  the new path; run native Mac input tests and physical movement/focus checks
+  before claiming Mac acceptance.
+
 - Fresh text chunks (commit carrying this entry): `pc_text_read_scope.h` uses
   the shared page-span adapter for bounded reads. Strings walk successive
   validated chunks; `pc_prompts_read_span` validates whole argument frames,

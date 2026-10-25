@@ -80,11 +80,17 @@ int pc_input_down(PcInput *s, unsigned key, uint64_t now)
 
 void pc_input_normalize_movement(int16_t *x, int16_t *y)
 {
-    double length = hypot((double)*x, (double)*y);
-    if (length > 32767.0) {
-        *x = (int16_t)(*x * 32767.0 / length);
-        *y = (int16_t)(*y * 32767.0 / length);
-    }
+    double ax = fabs((double)*x), ay = fabs((double)*y);
+    double length = hypot(ax, ay);
+    double diagonal = ax + ay ? 2.0 * fmin(ax, ay) / (ax + ay) : 0.0;
+    double scale = length > 32767.0 ? 32767.0 / length : 1.0;
+    /* The title attenuates diagonal travel after reading its Xbox stick.
+       Preserve cardinal speed, then compensate smoothly as both axes engage.
+       This gain is measured at the player position in Story, not inferred
+       from the outgoing stick radius alone. */
+    scale *= 1.0 + 0.25 * diagonal;
+    *x = (int16_t)fmax(-32767.0, fmin(32767.0, round(*x * scale)));
+    *y = (int16_t)fmax(-32767.0, fmin(32767.0, round(*y * scale)));
 }
 
 int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
