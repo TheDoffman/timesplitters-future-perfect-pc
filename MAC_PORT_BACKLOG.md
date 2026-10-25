@@ -799,6 +799,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
   final clean release validation follows after integration.
 
+- **v0.3.3 input self-test (2026-10-25):** The shared keyboard profile parser
+  deliberately keeps two bindings per action. The synthetic SDL test now checks
+  E and Space as Confirm, with press/release assertions, and verifies that the
+  fixture's retained third entry (Return) remains inactive. It previously
+  required Return despite that cap. This changes only test expectations;
+  gameplay bindings and physical-input acceptance remain unchanged. Clean
+  revision `6f105606` passed three CTests plus native renderer, input, Cocoa
+  settings and debug checks on Apple M4/macOS 27.0.1. Synthetic checks do not
+  replace physical keyboard or gameplay acceptance.
+
 - **Issue #182 follow-up (2026-10-21, this change):** Shared
   `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
   of hidden player angles. Both host adapters call it; no additional native

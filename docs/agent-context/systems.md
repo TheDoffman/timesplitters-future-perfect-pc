@@ -379,6 +379,10 @@ testing independent mouse capture/fire behavior. The fractional-terminal case
 otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,
 suppressing the next case's Fire button. This is test isolation inside
 `tsfp_native_input_test`; ordinary frame/input behavior is unchanged.
+Its Confirm checks use the fixture's two active keyboard slots (E and Space),
+then verify that its retained third entry (Return) stays inactive. The keyboard
+profile parser deliberately caps bindings at two; the test must not require a
+third binding or change the shared parser to satisfy its fixture.
 
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`
 and `config/pc-display.ini` are personal. `private/game` is the single extracted

@@ -14,6 +14,12 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
+Native SDL input validation checks both active Confirm slots (E and Space) and
+rejects the retained third fixture entry (Return), matching the shared keyboard
+profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual host;
+this self-test correction does not change gameplay bindings or certify physical
+keyboard input.
+
 PR CI now offers a candidate `PR validation` gate in `runtime-patches.yml`.
 Its plan selects runtime and launcher work from the same head, reuses the
 Windows/Mac workers and checks selected results with `ci-pr-gate.py`. Existing

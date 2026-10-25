@@ -463,8 +463,18 @@ int tsfp_native_input_test(void) {
     int prompt_ok=native_test_prompts();
     SDL_Event e={0};XBOX_GAMEPAD pad;
     e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,NULL);
-    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_RETURN;tsfp_native_input_event(&e,NULL);
+    /* The keyboard profile exposes two slots: E and Space in this fixture.
+     * Return is a retained third entry and must not become an active binding. */
+    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_E;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);int ok=prompt_ok && pad.bAnalogButtons[XBOX_BUTTON_A]==255;
+    e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
+    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_SPACE;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255;
+    e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
+    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_RETURN;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
     PcDebugOptions debug_before,debug_now;pc_debug_get(&debug_before);
