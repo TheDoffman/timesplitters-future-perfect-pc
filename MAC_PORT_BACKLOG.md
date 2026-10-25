@@ -2356,6 +2356,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.3.1 publication recovery (2026-10-24):** Hosted Windows and native Mac
+  builds, regressions and dual-platform package verification passed in run
+  `40157152003`. Its publication job lacked Git history for changelog filtering.
+  Both unchanged CI packages were verified and published with the same publisher
+  from the tested commit in a full-history checkout. Public manifests/receipts,
+  eight assets/two ZIPs, Windows upgrade/rollback and v1.3.0 discovery passed.
+  The workflow now fetches full history; a regression catches shallow publication
+  checkouts. No runtime or OS adapter change; Mac notarization remains pending.
+
 - **v1.3.1 release preparation (2026-10-24):** Shared version/assembly attributes
   advance for the existing 60/120/180/240 FPS Beta choices and capture-health
   diagnostics on main. Optional texture delivery, data preservation and one ZIP
