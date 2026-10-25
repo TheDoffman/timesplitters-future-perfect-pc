@@ -20,6 +20,95 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+The 2026-10-24 #74 material continuation adds 215 reviewed metal, masonry,
+rock, plaster, carved, granular and wood replacements, bringing the optional
+pack to 2,261 entries. Sanitized DDS/JSON and config/texture-pack.json change
+together; source artwork, prompts and held drafts remain private. Square sources
+are 1254 pixels, downsampled to 1024, 512 or 256; rectangular sources are
+1774x887 or 887x1774, usually downsampled to 512/1024 on the long edge.
+One1774x887 wood source is resampled to2048x1024 for a1024x512 original; this
+is not native4K artwork. RGBA8 preserves
+fine detail when DXT1 loses it. Narrow wood/metal sources are 2169/2170x725 or
+2172x724 padded atlases. The private compiler extracts explicitly reviewed
+regions with at most 1% aspect rounding, then emits exact original 4:1 or 8:1
+outputs, up to 2048 pixels long. Full source dimensions, extraction coordinates
+and resampling remain in private provenance; no native 4K claim.
+
+The loader, key mapping, optional-delivery contract, host adapters and164original
+character-icon exclusions remain unchanged. Asset batches use native DDS,
+mip/aspect/alpha/hash, full-pack and decoded2x2 repeat checks. Original-scale
+feature profiles supplement manual review; extrema can select different bevel
+edges, so preserve initial measurements and follow-up evidence. These checks
+cannot establish complete contour equivalence, scene adjacency or final lighting.
+
+Hybrid production separates fixed macro layout from repainted microtexture.
+Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
+Do not downsample defects away, infer approval from classification, or treat
+whole-image brightness as proof of local fidelity. Native original references
+are normally sufficient. Enlarged references and revised prompts have improved
+some corrections, but those are asset-specific results, not a universal recipe.
+
+Narrow source extraction only removes explicitly reviewed atlas padding within
+the compiler's1%aspect tolerance; it cannot fix changed material geometry. Record
+actual source dimensions, crop coordinates, resampling and output format. Keep
+prior full artwork and prompt records for corrections. Confirm counts against
+the original: mistaken prompt counts have occurred for grooves and grid cells.
+
+Temporary outputs stay below256MiB. Retire only reproducible disposable reviews
+or catalog-verified exported originals with resolved-parent and SHA checks;
+preserve source art/provenance and never retry denied cleanup targets. One private
+pack and small public LFS pointers avoid duplicate hydrated copies. Detailed
+historical batch measurements, held reasons and storage audits remain in STATUS.md
+and private hybrid-N validation records; coverage is summarized in docs/textures.md.
+Scene testing remains deferred under the near-completion policy.
+
+Batch 298 adds four framed/grid/window materials as DXT1, one at1024square and
+three at512square from1254square sources. Six full insert rows and six full
+interior barred-grid columns plus edge strips were verified visually; the
+initial prompt counts were incorrect and are explicitly corrected in review.
+Barred-grid horizontal peaks match; one vertical peak moves one original pixel.
+Other bounded profiles distinguish bevel extrema from geometry and retain about
+one-pixel rail/mullion offsets for later scene checks. Four drafts remain held
+for stripe shift, atlas padding, reflection changes or reversed rail shading.
+No runtime/delivery contract changes; native DDS/full-pack/icon checks and
+decoded repeat review passed. Scene lighting and framing contrast remain untested.
+
+Batch 299 adds a rounded-rim panel and two weathered concrete materials, all
+1024-square DXT1 from 1254-square sources. Straight rim samples differ by at
+most one original pixel; the curved junction has sharper shading and an
+ambiguous final minimum, retained in follow-up profiles. The main hole centroid
+is within 0.05 original pixels, but its dark threshold area grows from 40 to 53;
+the lower concrete mark centroid differs by about 0.2 pixels. These are offline
+acceptances with shading/scale concerns for scene review. Five drafts remain held
+for patterned microtexture, displaced hardware or over-defined stains. Prior
+public/private pack contents and the original-icon exclusion policy are unchanged.
+
+Batch 300 adds three separate 4x4 tile lighting variants and one staggered block
+material, all1024-square DXT1 from1254-square sources. Preserve the original
+reflection/shadow-band combinations; similar base materials are not interchangeable.
+Encoded reflection half-maximum widths change28->29 and24->26original pixels;
+peak rows move one pixel. A center-seam minimum is reflection-confounded, so raw
+profiles and gradient follow-up remain alongside manual review. Block course
+rows match and nine of ten sampled vertical joints match; one differs by one
+pixel. Four drafts remain held for patterned grain or exaggerated seams/relief.
+No loader, optional delivery or host contract changes; scene validation deferred.
+
+Batch 301 adds four wall/plaster materials, all1024-square DXT1 from1254-square
+sources. Cream molding rows202/225, concrete seam94 and brushed band/reflection
+rows92/114/173 match after encoding. Pale concrete seams move one original pixel.
+The brushed reflection retains seven-pixel half-maximum width but is brighter;
+regional means retain the darker concrete vignette and shifted purple-base hue
+as scene concerns. Four drafts remain held for invented structure, patterned grain,
+stronger raised grooves or excessive brightness. No runtime/delivery changes.
+
+Batch 302 adds three masonry materials as1024-square RGBA8 from1254-square
+sources. Pale block-wall sampled joint rows differ by at most one original pixel;
+rough mossy-wall extrema are light/relief-confounded and raw profiles are retained.
+Regional means record brighter pale blocks and darker small masonry as pending
+scene concerns. Five drafts remain held for patterned grain, excessive moss/relief,
+orange plaster or darkened brick mortar. No runtime, optional-delivery or host
+adapter contract changes. The164original character-icon exclusions remain intact.
+
 Recorded-input wait/exit timing: `pc_native_demo_guest.inc` captures the incoming
 raw interval around original `43220`, with nested TLS restoration. Numeric
 multiplies `433E2/43473` use that interval instead of the original minimum-one
