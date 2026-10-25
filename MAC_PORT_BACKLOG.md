@@ -3889,7 +3889,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Pushed model copies (2026-10-25, uncommitted):** Common HLE size-dispatch
+- **Pushed model copies (2026-10-25, PR #359):** Common HLE size-dispatch
   removes dynamic small-copy calls per vertex while preserving bytes/order,
   guest addressing and ownership. No host-specific adapter; native Mac uses
   the same source. `test_push_gather.py` is registered on both CI hosts;

@@ -37,8 +37,20 @@ The candidate supported Windows build/bundled checks pass, SHA256
 An Original60 ten-bot Hotel run completes; reviewed combat-four/six images show
 weapons, scenery, impacts and a distant character. Fixture signatures and exact
 profile bytes remain intact; owned games close and disposable partitions/locks
-are recycled. Historical patch checks and matching candidate240 timing remain
-pending before publication. Physical Mac gameplay remains under MAC-060.
+are recycled. All118 local integration checks pass (749.36s), including historical upgrades,
+branch switches, copy/index contracts, context/backlog and suite selection.
+The candidate's complete50s Hotel window has11999 increasing guest-frame
+intervals,239.9999FPS, minimum1s240/minimum5s240, p994.976ms and worst5.927ms.
+Game/wall ratio is0.999981 with no interpolation. The same command-stream hash,
+requested/actual display settings, ten bots and foreground checks match the
+baseline. Both tests ran without CPU sampling/captures/native update tracing;
+no heavy build/test work ran during either measurement window. Game/death/AI
+paths still vary: mean/worst intervals improve while p99 slightly worsens.
+This is valid candidate pacing evidence, not a causal whole-game speedup.
+Profiles/signatures and owned-process/partition cleanup pass for both runs.
+Detailed comparison is `logs/strided-vertex-live-summary.json` locally. Physical
+Mac gameplay remains under MAC-060. Follow-up draft PR #359 starts at current
+main; current-head hosted checks remain separate acceptance.
 
 ## PR validation consolidation (2026-10-25)
 
