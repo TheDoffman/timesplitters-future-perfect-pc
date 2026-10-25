@@ -25639,3 +25639,391 @@ arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
 provenance; logs are `audio-output-*`. No audio files, private assets or binaries
 are committed. All applicable PR checks passed on f971dac0 before this data-only
 acceptance record; subsequent-head checks remain separate.
+
+
+## Mixed-rate Online match completion and rematches (2026-10-25)
+
+This acceptance closes the previously untested mixed-rate completed-match/
+rematch route, within the Windows loopback scope below. It does not establish
+full multiplayer or full-game correctness. PR #361 subsequently merged into
+main as063789df after all applicable Windows/macOS hosted checks passed.
+
+Both runs use executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+and unchanged runner `tools/test-online-bot-motion.py` SHA256
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+This executable predates main's later controller/mouse-capture changes included
+in0b69b149/063789df; these are not claims about a newly rebuilt main executable.
+The production Online directory/browser/bridge uses a local directory server
+and ephemeral UDP ports on loopback, with automatic public hosting disabled.
+Personal settings and saves are not used.
+
+Reproduce from the supported Windows checkout, with the private US XBE and
+canonical unlocked Test Lab fixture, using the venv Python:
+
+```text
+python tools/test-online-bot-motion.py --tag current-mixed-results-0-240 --host-fps 0 --guest-fps 240 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+python tools/test-online-bot-motion.py --tag current-mixed-results-240-0 --host-fps 240 --guest-fps 0 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+```
+
+Here0 selects true Original60. The180-second deadline applies separately to
+completion of each round, with bounded menu/setup time outside that deadline.
+Both runs report completed=true; total durations are287.422s and294.000s,
+with40,392 and41,724 asynchronous observations respectively. Each has two human
+slots and six bots, host/guest roles1/2, Online mode15, five-point limit and
+matching configuration[2,1,6] on both peers throughout the sampled transitions.
+Both first rounds and both rematches reach at least five points and publish
+results-ready1/match-state8 on both peers. The runner compares all eight final
+records sorted by slot: names, sixteen kill counts, deaths, ranks, score and
+character. It excludes row order and raw padding. All four comparisons pass.
+Independent inspection confirms the four semantic tables match across peers.
+
+Normal E/Down input navigates Results -> Scores -> Options and requests Rematch.
+The fresh round requires match-state7, results-ready0, reset level clock and all
+eight actor scores zero before the second completed-round comparison. Both
+runs pass. Reviewed native-host Results/Options and Original-guest Scores
+captures show populated menus and score rows; the native overlay says target240
+(Beta). The two zero-score human rows and six bot rows agree with the recorded
+first-round table. No unresponsive or blank captured results screen is observed.
+
+All four signed test profiles retain SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`;
+length/HMAC and the canonical fixture manifest pass. Run locks and disposable
+partition images are removed. Both owned games remain alive until the runner's
+intentional termination/cleanup (exit_codes_before_cleanup=[null,null]); this
+is not evidence of a graceful game exit. No production runtime changes follow
+from these passing results.
+
+Private evidence: `logs/online-bots-current-mixed-results-{0-240,240-0}` contains
+provenance, checkpoints, menu inputs, observations, both final tables and owned
+window screenshots. Provenance JSON SHA256 is
+`58b94cb58cb5f30d094c2b0fb7779f64d3da7e7a74bd4cd0073cdaa02250a675`
+(60 host) / `c2db5a2d4bf71f3f435038948985cb0023a4549486ba8de1a35ba4611eab96c4`
+(240 host). Rematch table JSON SHA256 is
+`54d7151e0f4206a8a0fd376a89a177fa9dbe21a9f0c9029ba6922e1425e8e4ce`
+/ `0a7547108462ae95ba0e6c123073ab1ba7af03d021703e70d4190fafdde13f6c`.
+
+Two simultaneous game instances, asynchronous ReadProcessMemory observations
+and captures are not clean FPS/latency measurements. Selected240 is not a claim
+of locked240 throughout. Randomized combat paths are not trajectory, damage,
+weapon cadence or AI decision parity. Local loopback does not prove real LAN/
+Internet loss/reordering behavior, human input responsiveness or Mac networking.
+Full campaign, wider rendered acceptance and physical Mac remain open.
+
+The existing results/guest-dispatch regression suites pass10 tests in11.35s
+(`tests/test_network_bot_results.py`, `tests/test_network_guest_dispatch.py`).
+Repository context/index and whitespace checks pass. These fixture results
+supplement the observed Online rounds; they do not expand their runtime scope.
+
+
+## Merged-main Hart Attack timeout and pause (2026-10-25)
+
+The supported `tsfp.ps1 -Action Build -SkipTextures` rebuild with CL_MPCount=2
+passes its bundled checks after integrating main063789df. Source branch
+validate/native-mixed-rate-results46110f39 adds only acceptance documentation
+above that main revision. Resulting executable SHA256:
+`63934f0ba48d8fdffc3a05ced89d5d4e1c3a80592bf1f75534df71e405d67f46`.
+Unlike the preceding Online records, this build includes the merged controller/
+mouse changes. It is not a published release or a Mac gameplay validation.
+
+The existing bounded `tests/stability_transitions_game.py` runner uses isolated
+unlocked Test Lab copies, default native surfaces, Classic textures, requested
+1280x720/FOV55, renderer captures, actor observations and Present profiling;
+per-update native tracing and CPU profiling are disabled. Run names
+`hart-main-original60`/`hart-main-native240` select `--native-fps 0`/`240`, with
+`--no-native-trace --watch-actors --profile-presents`, total bounds360s/260s.
+Runner SHA256 is
+`ca881e2d36b86b73803d7310492a3cf8e03d70a51855af054e4f3d1e3611ba15`.
+A preceding `challenge-main-original60` session only calibrates menus; it never
+reaches gameplay and is excluded from behavioral acceptance.
+
+Reproducible input route (ordinary virtual keys, no guest-state edits): from
+Story highlighted on Main, Down/Down/E enters Challenge; Down/E selects Cut-Out
+Shoot-Out; E opens Hart Attack's briefing, E opens character selection, E marks
+Corporal Hart Ready, and another E starts. Allow menu transitions and loading,
+restore focus, then observe15s. Escape pauses; observe8s. E on Continue resumes;
+observe3s. Hold W3s, release/wait2s, hold primary fire3s, release/wait2s; observe
+30s, another30s, then20s through timeout. The runner supplies the usual startup
+profile input; the initial exploration needed extra menu time. Exact submitted
+commands remain in each isolated commands.jsonl/report.json and the private
+`private/pipeline/hart-challenge-route.json`; both tests use the same gameplay
+command sequence. Their menu/setup wall durations differ and are not compared.
+
+Both actual scene64/match-state7 sessions remain alive with health0.8. Hart
+Attack's reviewed briefing sets90seconds and18targets. These are intentional
+zero-score runs, not successful medal attempts. Both rendered results show
+Game Over/0points/Retry Level, with health unchanged. The sampled transition
+from match-state7 to8 has exactly the same level-tick bracket[5581,5584], about
+93.1 game seconds including the start countdown, in both modes. The wall bracket
+widths are50.155ms Original/50.363ms native; these asynchronous20Hz observations
+do not identify an exact transition frame or establish finer timing parity.
+
+All159 paused clock observations per run stay fixed: Original846ticks across
+7.9722s, native862ticks across7.9660s. Valid paused position observations stay
+fixed too:159 Original/158 native. One native player snapshot is unavailable;
+the initial strict position analysis rejects that missing sample, and the final
+report explicitly excludes/counts it rather than treating it as stationary.
+The clock/pause fields remain available in all159 observations. No claim of
+fully atomic memory snapshots or motion during the missing observation follows.
+
+Two separate approximately30s unpaused windows have game/wall ratios
+0.999770/0.999647 Original and0.998864/1.000173 native. The shorter resumed window
+ratios0.996422/1.003383 are more affected by whole-tick/sample boundaries. All
+sampled points in those windows retain scene64/state7/unpaused. Each firing
+hold changes pistol magazine16->8 with reserve84 unchanged. The forward input
+moves24.0555/24.4098 world units, confirming movement response, not exact movement
+parity; polled input/asynchronous observations do not fix the same update/RNG
+schedule. Target hits/scoring, damage, winning objectives and target animation
+cadence remain unverified by this zero-score route.
+
+These capture-bearing runs are not sustained pacing evidence. The Original late
+window's diagnostic Present log averages58.066FPS with p9941.526ms/worst45.026ms;
+renderer dumps/input polling/observation overhead remains included. The native
+recorder reaches its20,000-row cap at99.191s, so its missing late-window rows are
+not treated as zero FPS or a completed240FPS pacing window. A separate capture-
+free current-build repeat is recorded below. Neither capture-bearing result
+replaces clean pacing evidence or certifies physical latency/scanout/all-map performance.
+
+Both runner sessions return0 with clean game exits, valid HMAC/profile length,
+canonical fixture verification, and disposable lock/partition cleanup. Each
+profile retains SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`.
+Private reports and captures live under the run names in private/test-saves;
+comparison summary `logs/hart-main-comparison.json` records intervals/ratios and
+missing observations. report.json hashes are
+`9b9b18c7adc4e1d43620d1dbbc35cc79fbefafc48c8964eb18b584594ea7a63d`
+(Original) and
+`ae6d2eb34ba5b5b30b2cbff25df0a27c1acc1f35bd0079f9748d7c11571fee32`
+(native). No production timing change is justified by these passing behavior
+checks. Wider Challenge/Arcade gameplay, full campaign/rendered fidelity,
+remote-network behavior and physical Mac acceptance remain incomplete.
+
+
+Capture-free Hart Attack repeats on the same63934f0b executable use the same
+menu/gameplay commands through the existing runner, with `--no-native-trace
+--no-captures --profile-presents --profile-delay-seconds 110 --seconds 260` and
+native0/240. `watch-actors` and CPU/effect tracing are off; the runner's normal
+player snapshots/input polling and requested20Hz wait observations remain.
+A private wrapper `private/pipeline/run-hart-clean.py` waits for the owned runner
+to prepare commands, submits the reviewed JSON route and joins that same process.
+It runs each game separately. Both runner sessions return0 and preserve the
+canonical signed profile/cleanup. Both timeout again with unchanged health,
+pause-clock hold, normal movement and magazine16->8. No new game-policy change.
+
+For pacing, use the second late30s wait, excluding one second at each end.
+Strict surrounding Present rows cover both window boundaries; neither file is
+capped. All selected rows are guest frames with consecutive guest IDs, not
+interpolated frames. The sampled scene stays64/state7/unpaused and the selected
+test window stays visible/unminimized/foreground. This late phase is stationary
+after the movement/fire sequence; it is not target-hit or crowded-combat pacing.
+
+| Measurement | Original60 | Native240 |
+| --- | ---: | ---: |
+| Complete observed window (seconds) | 27.969387 | 27.999316 |
+| Selected fresh Present rows | 1,679 | 6,720 |
+| FPS between first/last selected rows | 60.000146 | 239.997154 |
+| Complete one-second bins (min/max frames) | 59/61 | 240/240 |
+| p99 interval (ms) | 17.2877 | 4.7130 |
+| Worst interval (ms) | 17.7802 | 5.7361 |
+| Game/wall ratio over sampled late wait | 1.000465 | 1.000023 |
+
+Original one-second bin59/61 variation accompanies the60.000 average; averages
+are not uniform-frame promises. There are3,609/14,428 total recorded rows, below
+the20,000 cap. Capture-free is not overhead-free: file input, memory observation
+and Present logging remain. No physical input latency, GPU completion/scanout,
+all-map240 guarantee or cause-of-speedup claim follows.
+
+Device logs confirm1280x720; the runner's selected test window reports640x480
+client (the title/shadow path also reports640x480). Keep these distinct; this
+is not certification of a physical1280x720 display or ultrawide gameplay.
+The earlier capture pair likewise reports a640x480 selected client. Canonical
+profile SHA090cced7 is unchanged in all four gameplay runs.
+
+Private evidence: `private/test-saves/hart-clean-{original60,native240}` retains
+commands/reports/states/provenance and run0-presents.csv; numeric summary is
+`logs/hart-clean-comparison.json`. Present CSV SHA256:
+`b916afb4ff68bc691ab8ea76e7128a23e3d3267a8f25d96009fe2ce994c13958`
+(Original) /
+`f93557b1a7d808faf72f77f9da8f076b10c03a4be697fead563056768349a549`
+(native). Report SHA256:
+`f1af9fc6c6d3042aed4d9f03784a67df136f94d1e5bb86349e472fb78c9739e9`
+/
+`02f7e0f0e381ccbfdfb9e4babb56a0ac37fe500c3097965ed10cdf8047290e5b`.
+These repeats address the capture/cap measurement gap for this mode/window only.
+Physical Mac, winning Challenge routes and wider gameplay remain unverified.
+
+
+## TREE callback fractional phase gate (2026-10-25)
+
+An audit of remaining whole-game-tick entry gates identifies original US
+`sub_001D88B0`. Initializer1D8A10 finds the TREE-tagged entity, initializes active
+state/phase and registers this callback at1D8A94. The callback initially reads
+4E7944 only as a zero-time gate, then overwrites EAX with entity state. Its
+phase at entity+1A4 advances with float4E794C divided by ticks-per-second; its
+pose at+C8 is derived directly from that phase using the original exponential.
+It emits a crossing event near phase1 and a terminal effect/clamp at80, clears
+active state, and multiplies E0 by the original-0.1 factor.
+
+The original whole-tick gate discards fractional intervals even though its body
+integrates fractional time. A fixture executing the original routine reproduces
+phase0.25 after one game second at native240, with no phase1 event yet. The
+unchanged-policy regression fails its one-second phase check (including native
+slow-time schedules) before the repair. Changing only the audited gate to test
+positive live float time makes phase advance correctly at60/120/144/180/240.
+Original mode retains its original gate; carried whole fields remain unchanged.
+The adjacent1D8AB0 callback has per-call additions and is deliberately outside
+this change pending its own integration audit, not assumed safe from proximity.
+
+`tests/native_tree_motion.c`, selected by existing `test_native_timing.py` on
+both CI hosts, translates/executes the pinned private US routine rather than a
+rewritten phase model. Two effect services are spies; other original arithmetic,
+branching, loads/stores and stack operations execute. Exact constants are read
+from the verified XBE, including complete x87 doubles. Forty rate/slow/phase
+schedules verify phase and analytic pose, one crossing/one finish with event-time
+bounds, pause (including stale carried ticks), terminal clamp/state/retirement,
+unchanged clock words and preserved callee-saved registers/stack/x87 depth.
+Whole/catch-up sequences produce identical entity bytes/event counts in native
+and Original modes. A negative control replacing only the generated gate load
+with its original value must fail; no generated game file is edited.
+
+The asset-free `native_timing_guest.c` clock fixture additionally checks ten
+rate/slow schedules, one-second phase accumulation, unchanged neighbor sites,
+pause and Original fallback on both hosted platforms. This policy test does
+not stand in for original pose/event execution when private-XBE cases skip.
+The two focused checks pass4.50s. All117 timing/vehicle checks pass231.84s;
+21 repository/backlog checks pass3.35s. The supported Windows rebuild and bundled
+checks pass, producing executable SHA256
+`a35525a76633b3d99d7571b1b9efdef9faad443739ae905ae4e7938a588b3690`.
+Repository context/index and whitespace checks pass. No private assets or
+generated game sources are committed. Live registration/activation/rendered TREE behavior,
+physical Mac execution, complete effect services and broader game coverage are
+not established by this routine fixture. No all-scenes or all-bugs claim follows.
+
+
+## TRAP solver mixed-clock repair (2026-10-25)
+
+PR #363's TREE-only head9955d2f2 passes all applicable Windows/macOS hosted
+runtime/transition/PR validation and launcher compatibility checks. This related
+TRAP audit/fix stays in that same PR; no new PR is created.
+
+The adjacent original US1D8AB0 is not the same kind of consumer as TREE.
+Initializer1D8C40 finds the TRAP-tagged entity, sets+C0=-88/+E0=0/state1A0=0,
+and registers1D8AB0. The original whole-game-tick gate selects one solver call;
+inside it, the sine-table force adds a fixed50-times-sine impulse to+E0 once
+per call, while+C0 motion and phase+1A4 consume converted whole game ticks.
+It emits one sound/control request, clamps/bounces at90 with the authored-0.1
+factor, increments a discrete counter and removes the callback beyond11.
+
+Broad native conversion substitutes the current fractional frame interval at
+1D8AF5(phase) and1D8B6A(travel), even though the gate still selects whole-tick
+calls and their fixed impulse. The resulting impulse/time mismatch changes
+motion, phase and event progression. An original-routine fixture fails before
+the repair (first discrepant native slow schedule has2,397 mismatched frame
+states). A naive always-open gate is independently rejected because it adds
+extra fixed impulses even with the corrected converted spans.
+
+Keep only these two converted reads in the authored carried-tick units. The
+original integer gate and fixed impulse/lookup/clamp/retirement logic stay
+unchanged on positive intervals. A pause-only override rejects a stale whole
+count when live game time is zero. Clock words are never rewritten. Other
+continuous conversions, including neighboring sites, continue to use live
+fractional time. There is no new adapter, save field, retained per-entity cache,
+solver coefficient or RNG policy.
+
+This is an intermediate correctness repair of the60Hz-authored nonlinear
+solver, not a claim that TRAP now supplies a fresh fractional pose each native
+frame. Its rendered motion cadence still follows the original solver calls.
+Smooth fractional trap motion needs a separate coupled integration/presentation
+investigation that preserves the verified impulse/event behavior; opening the
+gate alone is not that solution. The overall native-refresh goal stays open.
+
+`tests/native_trap_motion.c` executes the original1D8AB0 body, original153C20
+sine-table initialization and original12010 sine helper, using constants from
+the verified US XBE. Sound/control and callback-removal services are boundary
+spies; the spy honors removal by ceasing later dispatch. No rewritten pendulum
+or synthetic sine table replaces the engine routines. At every frame in40
+rate/slow/carried-phase schedules (60/120/144/180/240, slow1/4, four phases,
+ten game seconds), native state matches Original entity bytes and service
+counts. Original run always emits one sound/control and one removal. Restoring
+either converted read independently must fail. The old mixed-clock path and
+an always-open gate are separate controls that diverge on sub-tick schedules.
+Catch-up step sequences preserve full state/service counts; native pause and
+zero-carried positive intervals preserve state. Asset-free native clock tests
+also cover converted spans, neighboring continuous sites, Original fallback
+and stale-tick pause on both CI hosts. Private-XBE skips are not Mac gameplay.
+
+Three focused TREE/TRAP/clock checks pass9.95s. All118 timing/vehicle checks
+pass243.24s;21 repository/backlog checks pass4.07s. The supported Windows rebuild
+and bundled checks pass. Executable SHA256:
+`1fe73b2c0ef114dfccb3da46cec9f3ff76647515f496e1ce36b9d7bfcf090d8e`.
+Context/index and whitespace checks pass. Subsequent-head hosted checks remain
+separate from9955d2f2 results. Live TRAP/TREE
+registration/activation/rendering, complete service effects and physical Mac
+remain unverified. No game performance improvement is claimed from the offline
+fixture; old pacing evidence retains its explicit executable hashes and limits.
+
+
+## Mansion TREE live activation and phase (2026-10-25, PR #363)
+
+Both scripted callbacks are located in Mansion of Madness (Story index4,
+scene1), not the opening mission (scene2). Read-only archive analysis finds
+SETU entry882ae5ed in `pak/story/l_1_st.pak`: its callback records69/381 select
+indices50/42 from4D2B10, which point to TREE initializer1D8A10 and TRAP
+initializer1D8C40. The original loader maps serialized header90/94 to runtime
+CC/D0, relocates callback records at strideC8, and resolves fields38/3C through
+that function table. A first attempt using runtime offsets directly in the
+serialized header was rejected; tag-byte hits alone in other archives do not
+establish callback ownership. The unlocked in-game menu independently shows
+Mansion of Madness, and runtime observations confirm scene1/mission4.
+
+The current1fe73b2c executable completes separate isolated entrance routes at
+native240 and trueOriginal60, with canonical profiles preserved. From Story,
+select the fifth mission, accept difficulty/start, skip the movie with Escape,
+restore focus, then use ordinary W holds3s/2s/1.3s toward the door and E to enter.
+Both runs reach the foyer and activate TREE through the normal script. Native
+menu exploration introduces idle time; compare the activation interval rather
+than overall run duration. The bound is600s; both sessions stop earlier and
+return0 with clean game exits. TRAP is present upstairs but remains inactive:
+no TRAP initializer/callback trace is observed, so live trap behavior stays open.
+
+The private read-only observer validates the owned executable path and handle,
+walks the original tag lookup at75D318, resolves entity handles through72F5E8
+(stride2E8; index=handle>>22), checks the generation word at+2C and rechecks the
+lookup/pool identity. It reads bounded entity blocks approximately20Hz, capped
+at480s/8MiB, and stops when the owned process exits. It never writes guest
+memory. The stable TREE identity agrees with the bounded original-function
+trace; each run contains one1D8A10 entry and subsequent1D88B0 execution.
+
+| Observation | Native240 | Original60 |
+| --- | ---: | ---: |
+| Active TREE observations | 91 | 91 |
+| Terminal phase (game seconds) | 4.571001 | 4.583338 |
+| Conservative activation-duration bracket (wall seconds) | 4.5277–4.6288 | 4.5290–4.6300 |
+| Maximum sampled pose/phase formula error (degrees) | 0.00000313 | 0.00000380 |
+
+Duration brackets include before/after inactive samples and each read interval;
+they overlap. The terminal phases differ by less than one original tick, as
+expected from different threshold-crossing step sizes. All active samples have
+monotonic phase; both paths reach+C8=80 and clear active state1A0. The sampled
+pose matches the original exponential evaluated at its observed phase. This
+is stronger live timing evidence than entry/reaching-scene checks, but the
+asynchronous blocks are not atomic per-update traces or proof of every frame.
+
+Reviewed captures show the correct mission selection, entrance and populated
+foyer scene in both modes. They do not independently identify the rendered
+TREE mesh; the visible burning chandelier must not be equated with the TREE
+tag merely because it appears near the event. Full target visual appearance,
+complete event-service behavior and physical Mac remain unverified. Captures,
+function traces and process reads make these diagnostic runs unsuitable for
+clean FPS, physical latency or scanout claims.
+
+All canonical/test profiles retain090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695,
+with valid length/HMAC; run locks/disposable partitions are removed. Evidence
+is private under `scripted-scene1-{native240,original60}`: report/commands,
+scripted-objects.jsonl, observer-provenance, trace logs and captures. Comparison
+summary: `logs/scripted-tree-live-comparison.json`. Observation SHA256:
+`93dbe5de9b9df2c497418d9b54a640469754a55eff722660e4b424f7a5b36df1`
+(native) / `c0dd9779e0663a76c15283dd150910fa37800b322652907ce322a30bfec5ec9b`
+(original). No production code change follows from this passing comparison.
+All applicable Windows/macOS hosted checks pass on source head09087c1b;
+subsequent documentation-head checks remain separate.

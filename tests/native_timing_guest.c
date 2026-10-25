@@ -248,6 +248,42 @@ static void boost_resource_clock(void)
     assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
     puts("PASS: boost drain and recovery retain original time budgets at 60/120/144");
 }
+/* Asset-free policy coverage on both CI hosts. The private-US fixture also
+ * executes the actual callback, pose arithmetic and event crossings. */
+static void tree_phase_clock(void)
+{
+    const unsigned rates[]={60,120,144,180,240};
+    g_tsfp_native_timing_active=1;
+    for(unsigned r=0;r<5;r++)for(unsigned slow=1;slow<=4;slow*=4) {
+        unsigned count=rates[r]*slow,previous=0;
+        double phase=0;
+        for(unsigned f=1;f<=count;f++) {
+            unsigned tick=f*60/count,whole=tick-previous;previous=tick;
+            WORD(0x4e7944)=whole;FLOAT(0x4e794c)=60.f/count;
+            if(pc_native_global_load(0x1d88b0,0x4e7944,whole))
+                phase+=FLOAT(0x4e794c)/60.;
+            assert(WORD(0x4e7944)==whole);
+            assert(pc_native_global_load(0x1d88b1,0x4e7944,whole)==whole);
+        }
+        assert(phase>.99999 && phase<1.00001);
+    }
+    FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x1d88b0,0x4e7944,1));
+    g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
+    assert(!pc_native_global_load(0x1d88b0,0x4e7944,0));
+    assert(pc_native_global_load(0x1d88b0,0x4e7944,3)==3);
+    /* The nonlinear TRAP solver retains authored whole-tick impulse cadence.
+     * A nearby continuous conversion must still see live fractional time. */
+    for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<=3;whole++) {
+        g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=.25f;
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af5,0x4e7944,whole)==(float)whole);
+        assert(RECOMP_I32_TO_F32_AT(0x1d8b6a,0x4e7944,whole)==(float)whole);
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af6,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(pc_native_global_load(0x1d8ab0,0x4e7944,whole)==whole);
+    }
+    g_tsfp_native_timing_active=1;FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x1d8ab0,0x4e7944,1));
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -304,6 +340,7 @@ int main(void)
     input_after_pause();
     physics_history_transitions();
     boost_resource_clock();
+    tree_phase_clock();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }
