@@ -14,7 +14,10 @@ of Madness, Story index4/scene1. Normal isolated entrance play on the current
 observations, monotonic phase, matching original sampled pose math, terminal80
 clamp and active-state clearing. Their activation-duration brackets overlap
 around4.53–4.63s; terminal phase differs by less than one original tick. Signed
-profiles and clean exits/cleanup pass. No production change was needed.
+profiles and clean exits/cleanup pass. The native run later dies after a much
+longer idle interval; this does not establish survival/damage or mission
+progression parity. A bounded upper-floor calibration does not activate TRAP.
+No production change was needed.
 
 The observed foyer rendering does not identify the TREE mesh. Full rendered
 target/event-service parity, live TRAP activation and physical Mac remain open;

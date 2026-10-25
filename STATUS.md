@@ -25981,8 +25981,8 @@ native240 and trueOriginal60, with canonical profiles preserved. From Story,
 select the fifth mission, accept difficulty/start, skip the movie with Escape,
 restore focus, then use ordinary W holds3s/2s/1.3s toward the door and E to enter.
 Both runs reach the foyer and activate TREE through the normal script. Native
-menu exploration introduces idle time; compare the activation interval rather
-than overall run duration. The bound is600s; both sessions stop earlier and
+manual exploration adds idle time before and after activation; compare the
+activation interval rather than overall run duration. The bound is600s; both sessions stop earlier and
 return0 with clean game exits. TRAP is present upstairs but remains inactive:
 no TRAP initializer/callback trace is observed, so live trap behavior stays open.
 
@@ -26027,3 +26027,22 @@ summary: `logs/scripted-tree-live-comparison.json`. Observation SHA256:
 (original). No production code change follows from this passing comparison.
 All applicable Windows/macOS hosted checks pass on source head09087c1b;
 subsequent documentation-head checks remain separate.
+
+
+Mansion coverage clarification (2026-10-25): the native diagnostic lingered
+about90seconds between door-use and its final checkpoint, then ended in player
+death/state8. Original ended about2.19seconds after door-use, alive/state7.
+These unmatched endpoints do not compare survival, damage rate or full mission
+progression. All91 active TREE samples per run precede the terminal endpoint
+and retain state7; the accepted callback phase/clamp comparison is unchanged.
+
+A separate bounded `scripted-attic-native240` calibration attempt retries through
+the normal menu but does not reach the TRAP trigger. Its valid observed TRAP
+states remain idle with phase0, and the uncapped trace has no1D8C40/1D8AB0 entry.
+The route adjustment stayed outside the doorway after retry; command edits made
+after earlier inputs mean this is calibration, not a reproducible acceptance
+route. The executed-event report remains authoritative. The reader ends at its
+480s bound; later input is not claimed covered by that reader. The owned game
+exits cleanly, with signed profile/canonical fixture and partition/lock cleanup.
+No runtime regression or live TRAP success is inferred from this attempt.
+All applicable checks on5cfb1542 pass. No production code changes in this audit.
