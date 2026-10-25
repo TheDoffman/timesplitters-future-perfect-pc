@@ -71,16 +71,16 @@ def patch_records(paths):
         if patch:
             paths.remove(patch)
             paths.append(patch)
+    # The Uplink copy builds on the final screen-copy and interpolation adapters.
+    uplink = next((p for p in paths if p.name.endswith('-temporal-uplink-map.patch')), None)
+    if uplink:
+        paths.remove(uplink)
+        paths.append(uplink)
     # Stick remapping extends the binding sampler after the late reload patch.
     radial = next((p for p in paths if p.name.endswith('-radial-stick-deadzone.patch')), None)
     if radial:
         paths.remove(radial)
         paths.append(radial)
-    # The Uplink fix builds on the final screen-copy and interpolation adapters.
-    uplink = next((p for p in paths if p.name.endswith('-temporal-uplink-map.patch')), None)
-    if uplink:
-        paths.remove(uplink)
-        paths.append(uplink)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
