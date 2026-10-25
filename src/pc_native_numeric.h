@@ -149,10 +149,13 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * Spawn gate 172AB5 similarly guards joint-displacement inheritance:
      * skipping a fractional spawn permanently loses its initial motion.
      * EAX is overwritten, and 172B01 already divides by live game time. */
+    /* Character-effect dispatch 1260C0 gates attached-effect timers and
+     * transforms which already consume fractional time. Its EAX is replaced
+     * before use by the effect flags; skipping subticks loses elapsed time. */
     /* The reload/mode input consumer compares the whole tick directly.
      * Press edges expire after this update, so an advancing fractional frame
      * must enter it too. Its animation timer already uses fractional time. */
-    if ((site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    if ((site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
@@ -464,6 +467,7 @@ static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
 #define RECOMP_LOAD_U8_AT(site,value) \
     (((site)==0x176673u || (site)==0x171F83u) ? \
      pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
+extern void pc_native_character_scale(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
@@ -471,7 +475,8 @@ extern void pc_native_physics_solver(void),pc_native_physics_random(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0xF0CA7u ? pc_native_kind35_target : \
+    ((site)==0x120BBFu ? pc_native_character_scale : \
+    (site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
      (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \

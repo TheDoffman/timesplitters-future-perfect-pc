@@ -24,6 +24,11 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
+draws with minimum index zero pass their current index bytes directly to the
+synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
+primitive conversion and draw order are unchanged. No retained index cache.
+
 `zzzz-global-compare-load.patch` routes direct, unsegmented 32-bit CMP operands
 through the existing `RECOMP_LOAD_GLOBAL_U32` policy, just like MOV. Flag snapshots
 read each operand once, including fused and separated branches. Indirect, narrow,
@@ -444,6 +449,26 @@ The captured crane also uses an inclusive 639x479 last-pixel scissor. The
 crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
+
+## Character effects update gate
+
+`pc_native_numeric.h` maps the US1260C0 whole-tick load to positive live game
+time in native mode. This dispatcher is called by player/NPC updates; its
+attached-effect timers/transforms already use fractional delta. The old gate
+lost subticks (11FEC0's timer advanced0.5 seconds per second at120). EAX is
+replaced before arithmetic, so this changes eligibility only. Original mode,
+whole-tick fields and zero-time pause remain unchanged. The original-dispatcher
+fixture covers11FEC0's timer and real matrix helpers; other nested systems and
+rendered effects need separate evidence. No generated C or new patch is edited.
+
+The status-3 growth path (`120AB0`) compounds its scale matrix each update.
+Only its `120BBF` call to constructor153600 now uses
+`pc_native_character_guest.h`: recover the one-raw-tick scale at the current
+game speed, then raise it to the fractional raw interval. Rotation, composition,
+timer and cleanup execute original code. Inactive/whole/catch-up updates remain
+exact; stack arguments are restored after the constructor. The model fixture
+covers complete original helpers, uneven intervals and live preset changes.
+This proves transforms, not rendered status-effect activation or emission.
 
 ## Native FPS integration with current main (PR #285)
 

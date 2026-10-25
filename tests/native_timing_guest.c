@@ -37,6 +37,7 @@ static void test_sleep(DWORD ms) { counter += (int64_t)ms*144000; }
 #define WORD(a) (*(uint32_t *)(memory+(a)))
 #define FLOAT(a) (*(float *)(memory+(a)))
 uint64_t xbox_ReadTimeStampCounter(void) { return (uint64_t)counter*733333333/144000000; }
+void sub_00153600(void) { assert(!"unexpected character scale in clock fixture"); }
 void sub_000455B0(void) { paused_calls++; g_esp+=4; }
 void sub_000455C0(void) { resume_calls++; g_esp+=4; }
 void sub_00150190(void) { WORD(0x74914C)+=WORD(0x4E7940); g_esp+=4; }

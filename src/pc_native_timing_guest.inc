@@ -9,6 +9,7 @@
 extern uint64_t xbox_ReadTimeStampCounter(void);
 extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
+#include "pc_native_character_guest.h"
 /* Shared host-side interval for future procedural consumers. Original mode
  * publishes zero; the existing guest timing words retain their exact layout. */
 PcNativeStep g_tsfp_native_step;
