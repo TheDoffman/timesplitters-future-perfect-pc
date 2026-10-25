@@ -24,6 +24,11 @@ shared checks, plus affected host lifecycle/build checks. Never start publishing
 or change credentials just to validate a launcher edit.
 <!-- packet:end -->
 
+PR checks: `runtime-patches.yml` now calls the existing `launcher-build.yml`
+when `launcher-compatibility.py scope` selects launcher inputs, then includes
+that result in the candidate `PR validation` gate. The separate launcher
+compatibility required check stays active until the branch ruleset migrates.
+
 ## Capture health diagnostics
 
 Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS

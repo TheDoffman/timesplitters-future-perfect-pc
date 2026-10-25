@@ -64,7 +64,7 @@ def affected(paths, *, full=False):
             continue  # launcher-build.yml owns these, including packaging/icons.
         elif path.startswith(('tools/issue-', 'tools/known-issues',
                               'tests/test_issue_', 'tests/test_known_issues')):
-            continue  # Always-reporting issue workflows own these tests.
+            continue  # Path-scoped issue workflows own these tests.
         elif path in ('tools/compatibility-worker.py', 'tests/test_compatibility_worker.py',
                       'tests/test_mac_backlog.py', 'tools/repo-context.py',
                       'tests/test_repo_context.py', 'tools/router/repository-context.mjs',

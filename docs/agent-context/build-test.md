@@ -14,6 +14,14 @@ Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
 different evidence; unavailable hardware/private data remain validation gaps.
 <!-- packet:end -->
 
+PR CI now offers a candidate `PR validation` gate in `runtime-patches.yml`.
+Its plan selects runtime and launcher work from the same head, reuses the
+Windows/Mac workers and checks selected results with `ci-pr-gate.py`. Existing
+required check names continue to report until the branch ruleset migrates.
+Unrequired issue-form and issue-resolution workflows are scoped to their own
+source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
+missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
+
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
