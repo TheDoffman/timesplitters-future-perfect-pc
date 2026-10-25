@@ -5,7 +5,8 @@
 This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
 approximately 33% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
-These additions enter optional texture downloads after integration and publication. Major surfaces use up to 4K; smaller
+These additions enter optional texture downloads through a published pack and
+its download index on main. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
 source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
 
@@ -15,12 +16,16 @@ review. One hundred twenty-eight generated drafts remain held for correction; an
 needs alpha-channel review. Narrow wood and metal trims preserve their original 4:1 or 8:1 proportions;
 other rectangular materials retain their landscape or portrait orientation.
 Output long edges range from 256 to 2048 pixels, preserving fine detail in RGBA8 where
-DXT1 compression loses it. These additions have not yet been checked in game
-or published as a texture download.
+DXT1 compression loses it. Representative in-game validation of these additions
+remains incomplete. Publication does not establish in-game fidelity.
 
 ## Install through the launcher
 
-The upcoming shared Windows/Mac launcher offers **Game settings → Graphics &
+Pack [0.1.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.1.0-beta.1)
+publishes the 2,261 replacements from main `0ccf654f`. Its verified download index
+must be present on main before the launcher can discover it.
+
+The shared Windows/Mac launcher offers **Game settings → Graphics &
 resolution → Check texture downloads → Download / update textures**. Normal game
 packages omit the pack. Existing bundled packs remain installed and usable.
 The launcher compares file hashes, skips matching parts, downloads changed parts
@@ -82,14 +87,15 @@ Older traces from `2230901` omit hashing and cached calls and lack hash columns.
    schema-3 file index to `config/texture-download.json`. It does not replace the
    separate repository catalog `config/texture-pack.json`.
 3. Run `python tools/texture-release.py verify --remote`, review and commit the
-   generated download manifest, then merge it into main. The launcher reads that
-   manifest. Publish the updated Windows and Mac launchers for the new controls.
+   generated download manifest, then merge it into main. Existing Windows and Mac
+   launchers with the optional-texture controls discover that index without a rebuild.
 4. Subsequent updates repeat with a new texture version. File hashes let older
    bundled packs and partial downloads be reused without a historical receipt.
 
-The checked-in `published: false` placeholder is intentional until the first
-optional release is published. No pack or launcher is published just by changing
-this source. Stable key-prefix buckets reduce part churn as new textures are added.
+Committing DDS files does not publish a download. A `published: false` index makes
+the launcher report that the pack is unavailable even when assets exist on main.
+Keep the verified generated index on main after publication. Stable key-prefix
+buckets reduce part churn as new textures are added.
 Each archive is capped at 64 MiB compressed and generated from at most 48 MiB raw;
 installer validation bounds expanded content too. Optional updates do not prune
 unknown keys. Game packages retain the earlier exact-hash retirement policy for

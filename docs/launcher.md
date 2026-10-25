@@ -74,7 +74,7 @@ the installed game. Optional texture updates also need temporary space for one p
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
 
-## Enhanced textures (upcoming launcher update)
+## Enhanced textures (Beta)
 
 Windows and Mac use the same optional pack. Under **Game settings → Graphics &
 resolution**, select **Check texture downloads**, then **Download / update textures**.
@@ -95,8 +95,9 @@ matching keys and preserve unrelated custom keys, saves and settings. Each part 
 validated before installation and rolls back on failure; completed parts survive
 cancellation. Game upgrades, repair and rollback preserve the installed pack.
 
-The optional pack must be published before downloads become available. Until then,
-the launcher explains its availability and continues to support installed packs.
+Texture downloads come from a published optional pack. New DDS files committed
+to main become available after the maintainer publishes a pack update and merges
+its download index. No launcher update is required for new pack versions.
 
 ## Compare specific game versions (upcoming launcher update)
 

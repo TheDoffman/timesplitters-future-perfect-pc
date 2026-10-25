@@ -3809,6 +3809,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **First downloadable pack (2026-10-25, `fix/texture-download-publication`):**
+  Main's `published: false` index prevented discovery despite committed DDS
+  assets. Published audited main `0ccf654f` as `textures-v0.1.0-beta.1`: 2,261
+  replacements in 49 immutable, hash-verified parts. The generated schema-3 index
+  activates existing Windows/Mac download controls once merged; no launcher
+  executable or platform adapter change. Actual public launcher v1.3.1 on Windows
+  parsed the full index, downloaded/installed a public part and reused it, while
+  preserving isolated save/settings/ISO/custom-texture fixtures. All 17 portable
+  publication/packaging tests plus three subtests passed. Native Mac download/UI
+  execution of this first live pack remains unrun; shared algorithm is unchanged.
+  [Evidence](STATUS.md#optional-texture-download-availability-2026-10-25).
+
 - **Optional-delivery replacement (2026-10-22, `optional-texture-downloads`):** The user's new
   request supersedes the default-bundling follow-ups below. Shared `SettingsPage`,
   `TextureDownload` and `TexturePack` implement opt-in checks, confirmed downloads,
