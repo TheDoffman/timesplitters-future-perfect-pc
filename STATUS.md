@@ -25639,3 +25639,78 @@ arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
 provenance; logs are `audio-output-*`. No audio files, private assets or binaries
 are committed. All applicable PR checks passed on f971dac0 before this data-only
 acceptance record; subsequent-head checks remain separate.
+
+
+## Mixed-rate Online match completion and rematches (2026-10-25)
+
+This acceptance closes the previously untested mixed-rate completed-match/
+rematch route, within the Windows loopback scope below. It does not establish
+full multiplayer or full-game correctness. PR #361 subsequently merged into
+main as063789df after all applicable Windows/macOS hosted checks passed.
+
+Both runs use executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+and unchanged runner `tools/test-online-bot-motion.py` SHA256
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+This executable predates main's later controller/mouse-capture changes included
+in0b69b149/063789df; these are not claims about a newly rebuilt main executable.
+The production Online directory/browser/bridge uses a local directory server
+and ephemeral UDP ports on loopback, with automatic public hosting disabled.
+Personal settings and saves are not used.
+
+Reproduce from the supported Windows checkout, with the private US XBE and
+canonical unlocked Test Lab fixture, using the venv Python:
+
+```text
+python tools/test-online-bot-motion.py --tag current-mixed-results-0-240 --host-fps 0 --guest-fps 240 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+python tools/test-online-bot-motion.py --tag current-mixed-results-240-0 --host-fps 240 --guest-fps 0 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+```
+
+Here0 selects true Original60. The180-second deadline applies separately to
+completion of each round, with bounded menu/setup time outside that deadline.
+Both runs report completed=true; total durations are287.422s and294.000s,
+with40,392 and41,724 asynchronous observations respectively. Each has two human
+slots and six bots, host/guest roles1/2, Online mode15, five-point limit and
+matching configuration[2,1,6] on both peers throughout the sampled transitions.
+Both first rounds and both rematches reach at least five points and publish
+results-ready1/match-state8 on both peers. The runner compares all eight final
+records sorted by slot: names, sixteen kill counts, deaths, ranks, score and
+character. It excludes row order and raw padding. All four comparisons pass.
+Independent inspection confirms the four semantic tables match across peers.
+
+Normal E/Down input navigates Results -> Scores -> Options and requests Rematch.
+The fresh round requires match-state7, results-ready0, reset level clock and all
+eight actor scores zero before the second completed-round comparison. Both
+runs pass. Reviewed native-host Results/Options and Original-guest Scores
+captures show populated menus and score rows; the native overlay says target240
+(Beta). The two zero-score human rows and six bot rows agree with the recorded
+first-round table. No unresponsive or blank captured results screen is observed.
+
+All four signed test profiles retain SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`;
+length/HMAC and the canonical fixture manifest pass. Run locks and disposable
+partition images are removed. Both owned games remain alive until the runner's
+intentional termination/cleanup (exit_codes_before_cleanup=[null,null]); this
+is not evidence of a graceful game exit. No production runtime changes follow
+from these passing results.
+
+Private evidence: `logs/online-bots-current-mixed-results-{0-240,240-0}` contains
+provenance, checkpoints, menu inputs, observations, both final tables and owned
+window screenshots. Provenance JSON SHA256 is
+`58b94cb58cb5f30d094c2b0fb7779f64d3da7e7a74bd4cd0073cdaa02250a675`
+(60 host) / `c2db5a2d4bf71f3f435038948985cb0023a4549486ba8de1a35ba4611eab96c4`
+(240 host). Rematch table JSON SHA256 is
+`54d7151e0f4206a8a0fd376a89a177fa9dbe21a9f0c9029ba6922e1425e8e4ce`
+/ `0a7547108462ae95ba0e6c123073ab1ba7af03d021703e70d4190fafdde13f6c`.
+
+Two simultaneous game instances, asynchronous ReadProcessMemory observations
+and captures are not clean FPS/latency measurements. Selected240 is not a claim
+of locked240 throughout. Randomized combat paths are not trajectory, damage,
+weapon cadence or AI decision parity. Local loopback does not prove real LAN/
+Internet loss/reordering behavior, human input responsiveness or Mac networking.
+Full campaign, wider rendered acceptance and physical Mac remain open.
+
+The existing results/guest-dispatch regression suites pass10 tests in11.35s
+(`tests/test_network_bot_results.py`, `tests/test_network_guest_dispatch.py`).
+Repository context/index and whitespace checks pass. These fixture results
+supplement the observed Online rounds; they do not expand their runtime scope.

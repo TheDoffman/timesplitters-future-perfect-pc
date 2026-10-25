@@ -6,6 +6,26 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Mixed-rate Online results and rematches (2026-10-25)
+
+Two isolated local Online peers complete a five-point Deathmatch and a full
+rematch with Original60 hosting native240, then with native240 hosting
+Original60. Both rounds in each direction produce matching final records for
+all eight participants (two humans, six bots). Normal Results, Scores and
+Options navigation works; the rematch resets all eight scores and the match
+clock before completing again. Owned-window captures show the results and
+score table rendered, including the 240 FPS Beta overlay.
+
+These runs use executable `4d09cd2c`, built before main's later controller/
+mouse-capture changes; they do not validate a rebuild of merged main. They use
+the production Online directory/browser/bridge on loopback, asynchronous
+memory observations and test-window captures. They establish this match-flow
+and final-record behavior, not clean pacing, identical combat trajectories,
+physical latency, remote Internet behavior or Mac networking. The runner
+intentionally terminates its owned games after acceptance and preserves the
+signed test profiles. See [STATUS](../STATUS.md#mixed-rate-online-match-completion-and-rematches-2026-10-25)
+for commands, provenance and limitations. No production change was needed.
+
 ## Current Windows audio output presence (2026-10-25)
 
 The current4d09cd2c executable completes ten-bot Disco sessions at native240
