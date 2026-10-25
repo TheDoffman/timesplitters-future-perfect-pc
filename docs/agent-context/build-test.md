@@ -17,14 +17,14 @@ different evidence; unavailable hardware/private data remain validation gaps.
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
-Reload: `test_native_timing.py` runs asset-free CMP/branch and policy mutations
-on both CI hosts. `native_reload_input.c` additionally executes the local verified
-US input decoder, timing wrapper and reload consumer across pause-offset phases,
-60/120/144/180/240, bindings and eligibility. Missing private XBE skips this layer.
-`reload_phase_sweep.h`: 864 schedules cover pause/press phases, holds, jitter,
-stalls, zero time and live mode changes; two presses, no repeats. Missing-hook
-controls must fail on timing. Physical keys, sub-poll taps and full ammo/animation
-behavior remain separate from both hosts' asset-free CI.
+Reload #337: `test_native_timing.py` covers CMP policy/mutations; the private-US
+`native_reload_input.c` runs decoder/consumer plus425 buffered taps.
+`reload_phase_sweep.h`:864 schedules/1,728 presses against policy and US routines.
+`test_reload_keys.py`:1,360 host tap schedules at60..240, held/fresh Fire, expiry,
+lifecycle, both triggers/alternate bindings and equal-timestamp Reload/Fire
+release/repress ordering. Windows `pc_controls.c` tests the real event bridge.
+Both CI hosts run these; missing XBE skips originals. Physical keys/Mac gameplay
+remain separate checks.
 
 `test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
 callback mutations. Fast results and finite fallback results are bit-exact;

@@ -695,6 +695,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* GENERATED_ROUTINES */',
                                     (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
+    source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
     if harness_name=='native_reload_input.c':
         assert 'reload_sweep trials=864 presses=1728' in output,output

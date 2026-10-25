@@ -50,6 +50,11 @@ The additive `controller-profile-routing` patch repairs #319 in shared
 profiles enables pad defaults after platform focus checks. It follows the
 keyboard-settings/weapon-slots patches; no generated guest hook is needed.
 
+`zz-keyboard-reload-buffer.patch` runs after the full input/timing stack. It
+collects configured Reload/X and Fire/trigger keyboard contributions separately,
+passes them through the shared host model, then merges untouched pad magnitudes.
+No generated guest input or controller behavior is rewritten by this patch.
+
 ## Source ownership and execution
 
 `zz-texture-bind-scan.patch` runs after the renderer/native stack. Texture
