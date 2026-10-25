@@ -94,6 +94,27 @@ static int virtual_pad_test(void)
             return 0;
         }
     }
+    {
+        RECT client, expected, actual;
+        POINT origin={0,0};
+        SendMessage(window,WM_SETFOCUS,0,0);
+        CHECK(GetClientRect(window,&client) && ClientToScreen(window,&origin));
+        expected=client;OffsetRect(&expected,origin.x,origin.y);
+        CHECK(ClipCursor(NULL));
+        SendMessage(window,WM_TIMER,0x7e31,0);
+        CHECK(GetClipCursor(&actual) && EqualRect(&expected,&actual));
+        SendMessage(window,WM_KEYDOWN,'W',0);
+        CHECK(pc_controls_key_down('W'));
+        SendMessage(window,WM_KILLFOCUS,0,0);
+        CHECK(!pc_controls_key_down('W'));
+        SendMessage(window,WM_SETFOCUS,0,0);
+        CHECK(!pc_controls_key_down('W'));
+        SendMessage(window,WM_KEYDOWN,'W',0);
+        SendMessage(window,WM_ACTIVATEAPP,FALSE,0);
+        CHECK(!pc_controls_key_down('W'));
+        SendMessage(window,WM_ACTIVATEAPP,TRUE,0);
+        CHECK(!pc_controls_key_down('W'));
+    }
     CHECK(pc_controls_accept_pad());
     Sleep(260);
     CHECK(recomp_bindings_sample(0,&output));
