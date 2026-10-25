@@ -1415,9 +1415,9 @@
     },
     {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-radial-stick-deadzone.patch",
-      "sha256": "f57e529e36fcd5badc1e0be48e9df3230d79c816729602aba3a737b7705ec59c",
+      "sha256": "6719d10e202746e0d5d7f29ed418f63bcc1b0ecb610ffbd9f5691eb2de43675e",
       "targets": [
-        "src/input/input_bindings.c\r"
+        "src/input/input_bindings.c"
       ]
     }
   ]
