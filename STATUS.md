@@ -25252,3 +25252,54 @@ unrelated custom-texture fixtures remained unchanged. This was a bounded real
 download/installation check, not a full 1.91 GiB install or gameplay test. Mac live
 download/UI execution remains unrun on this Windows host; both hosts use the
 unchanged shared downloader/installer. No new launcher binary is required.
+
+
+## Current-build live vehicle contact comparison (2026-10-25)
+
+After PR #359 merged as `40600133`, continued acceptance on the unchanged
+Windows executable SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+Source `4ff0d5ff` has the same tree as that squash merge. This investigation
+changes no runtime physics or timing coefficients.
+
+Used disposable no-bot Siberia sessions, normal walking/vehicle controls and
+read-only body observations. A synchronous solver-entry trace retained generated
+and selected contacts for body slot88 in Z45..75, below its 16,000-row/8MiB caps.
+Original mode is verified by trace native=0; 180/240 use native=1. The route uses
+three seconds of throttle, a release, two seconds of throttle, settling, exit,
+on-foot movement and pause/resume. Host holds were 3.0016..3.0021s and
+2.0016..2.0019s; release gaps were 1.3785..1.3819s. These are publication times,
+not guest consumption times. Captures/tracing perturb timing; no pacing,
+physical-input latency or deterministic trajectory claim follows from them.
+
+Both native routes pass entry, exit action delivery, weapon restoration,
+on-foot travel (8.00/8.26 units) and pause/resume checks. A second true Original60
+route passes those checks too. Canonical signed profiles/fixture remain intact;
+owned game processes and disposable save partitions are cleaned up. Reviewed
+native stopped captures show the jeep against the Siberia pillar. Original60 v2
+retains valid earlier driving/contact data but failed its final walking-distance
+check against a snow wall; the later route turns away before walking. Do not
+count v2 as a complete passing route.
+
+The repeated original run changes the interpretation of older endpoint evidence.
+All four sampled starting poses agree: position(-12.109511,1.117227,7.079708),
+zero velocity and identity quaternion. Nevertheless Original60 v2 stops near
+(-13.219,1.163,68.067), while v3 glances past the pillar and stops near
+(-8.826,1.135,86.343). Their first selected non-up contacts are at Z67.206 and
+Z68.061, with front-facing versus side-facing normals. Native180/240 contact at
+Z67.136/67.126 and stop near Z68.075/67.739. Before impact, nearest-Z64 forward
+velocities are 11.801/11.810 original and 11.768/11.763 native; lateral positions
+in the native runs lie between the two original runs. This narrows the evidence:
+the existing live route is sensitive even at Original60 and cannot attribute
+post-impact differences to native timing by itself. It does not prove handling
+parity or rule out a high-refresh defect.
+
+Evidence stays private under `private/test-saves/vehicle-integrated-contact-*`;
+`logs/vehicle-contact-current-summary.json` records trace hashes, exact states,
+input boundaries and exclusions, produced by the ignored
+`private/pipeline/summarize-vehicle-contact.py`. Trace row counts are2495
+(original v2),7205(native180),11684(native240),1269(original v3). No private game
+assets or generated code are committed. Next discriminate off-center contact
+response using controlled geometry and coherent solver state; do not tune
+forces, steering or collision coefficients to match a single asynchronous
+endpoint. Full handling, campaign and physical Mac acceptance remain open.

@@ -184,7 +184,14 @@ and temporary cleanup on both hosts.
 Bracket camera/body reads by frame and player-camera identity; globals can differ
 midframe. Retain excluded samples. STATUS/regression records preserve
 counterexamples; async reads do not prove completed-frame trajectories or
-broad handling parity.
+broad handling parity. Current-build Siberia contact acceptance (STATUS,
+2026-10-25) also finds large post-pillar variation between two true Original60
+runs with the same sampled entry pose. Treat that route as nondeterministic;
+matching host key durations and initial pose do not fix decoded input boundaries,
+all physics state, contact selection or captured-frame stalls. Native180/240
+exit/walk/pause pass, but endpoint differences alone cannot identify a native
+collision defect. Use controlled off-center geometry/coherent solver state for
+the next comparison rather than tuning to one live endpoint.
 
 Contact tracing requires isolated `TSFP_CONTACT_TRACE` path, pool slot0..1023
 and finite inclusive `TSFP_CONTACT_TRACE_Z=min,max`. It records generated and
