@@ -17,6 +17,13 @@ of endpoint divergence. The first five endpoints agree within0.00464. No contact
 fix or full-route equivalence is established. Moving-object state and a15-tick
 initial clock offset remain possible factors; the solver cause is unproven.
 
+Native180 reproduces the same obstruction, and a second read-only paired repeat
+shows Original moving12.185 world units while240 remains stationary across the
+same1.7s portion of the hold. Both advance101 game ticks, stay alive/in walking
+mode and retain the same feet height. Raw sampled contact fields do not identify
+the blocking surface or solver decision; no repair is established. See STATUS
+for the observer's bounds, field-label correction and separate180 pacing result.
+
 The existing walking fixture stubs C5B50's actual collision services. Next
 reproduce the same contact through the normal route, then distinguish geometry,
 step-size thresholds and moving-object timing before changing gameplay. STATUS

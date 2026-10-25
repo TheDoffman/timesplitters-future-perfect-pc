@@ -58,6 +58,44 @@ work is to reproduce/isolate the contact divergence and exercise actual collisio
 services: tests/native_locomotion.c currently replaces C5B50 with a flat-floor
 stub and rejects its258CE0 wall path. Physical Mac gameplay remains unverified.
 
+### Contact repeats at180 and240
+
+The unchanged executable repeats the clean no-bot route at native180. Its
+sixth movement starts only0.00308 world units from Original's corresponding
+start and stops[-62.74100,2.02421,-32.85329], giving12.95456 units of endpoint
+divergence. The full selected Present window contains5321 intervals averaging
+179.99985/s, p996.092ms and worst6.827ms, with no interpolation. This reinforces
+that reaching the FPS target does not establish correct movement through contact.
+Two optional intermediate hold reads are unavailable out of570; both have valid
+same-player/health neighbors within0.12s. The180 analyzer bounds these isolated
+misses below1% and retains strict required-checkpoint/pause checks and the eight
+negative controls. This does not turn the divergent route into a passing test.
+
+Two further normal-input repeats add bounded read-only player/contact fields
+at20ms intervals, limited to level ticks1800..2600. Each records655 rows, exits0,
+preserves signed profiles/fixtures and recycles disposable disks. On the same
+0.8..2.5s portion of the sixth hold,84 selected observations per run show
+Original moving12.18498 world units and native240 moving0. Both advance101 game
+ticks, retain health1.75, walking mode2 and identical feet height0.333008. Maximum
+read spans are341.1/242.8us; they are asynchronous rather than atomic frames.
+Original again finishes[-75.62154,2.02421,-34.23620], while native240 again stops
+[-62.74114,2.02421,-32.85284]. Sampling therefore reproduces the obstruction
+without a screenshot/trace stall, death, sampled mode change or stopped clock.
+
+The observer's historical field named `velocity` is raw player+C0; the original
+mantle code normalizes it for a direction test, and its observed values match
+view direction. It is not evidence of requested movement velocity. Actor contact
+words are also raw, unclassified offsets and do not identify the blocking wall.
+The actual chain is258F50 ->C5B50 ->C5A90 ->C54A0, whose sweep/slide calls use
+C4700. The258CE0 branch is a separate mantle/action path; no sampled mode/height
+change establishes its involvement. Next capture synchronous collision entry/exit
+state and identify the first differing decision before changing solver behavior.
+The initial level-clock offset and unobserved moving geometry remain limitations.
+
+Evidence: venice-player-clean-native180, venice-contact-{original60,native240},
+logs/venice-player180-comparison.json and logs/venice-contact-repeat-comparison.json.
+No runtime edit, repair, new build or general collision acceptance is claimed.
+
 ## Temple crowd pacing and timing calls (2026-10-25, PR #364)
 
 Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
