@@ -740,20 +740,16 @@ real Hartley weights and the corresponding diagonal-stencil eigenvalues, bounded
 to 128 texels per axis. The captured game path uses 128x128 **wrap**, so the
 earlier clamped DCT result is only a diagnostic. Texture-load/vector adapters
 remain separate from shared spectral policy. The current
-common-RHI fixture reuses its basis and scratch resources and reconstructs the
-world field on the GPU after every fractional update. These are experimental helpers exercised by CPU/common-RHI fixtures;
-the game does not call them and no normal-play or legacy-GL policy changes.
-The matrix's restoring coefficient belongs to a spatial eigenmode, not an
-independent world texel. A runtime integration needs spatial transforms and the
-original disturbance/smoothing/storage rules. Float32 equivalence alone does
-not preserve the original byte-feedback appearance. A separate Original60 GPU
-reference now includes cardinal smoothing before feedback; the storage gap
-persists there too. This changes validation coverage, not runtime ownership.
-`graphics/surface_state_shader.h` converts reconstructed signed velocity/height
-to the original texture channels: red scratch, green velocity plus 0.5, blue
-height and **alpha height**. Original effect 22 samples alpha cardinal differences
-for its ripple shading input; constant alpha would erase those slopes. This
-shared encoding is currently exercised only by the GPU fixture, not game hooks.
+common-RHI fixture reuses basis/scratch resources and reconstructs the field
+after each fractional update. The production owner/scheduler is described below.
+Restoring coefficients belong to spatial eigenmodes; per-texel matrix powers
+cannot replace the spatial transform. Preserve authored disturbances, smoothing
+and byte storage. Historical float-only candidates and their rejected storage
+comparisons remain in `docs/native-high-refresh-regressions.md`.
+`graphics/surface_state_shader.h` encodes red scratch, green signed velocity plus
+0.5, blue height and alpha height. Effect22 samples alpha cardinal differences;
+constant alpha erases ripple slopes. The native final-view adapter packs this
+height channel too.
 `pc_surface_coupled_forced_step` stores the fractional response to a held forcing
 input in each row's fourth component; `TSFP_SURFACE_FORCED_SHADER` applies that
 input in the same spectral basis. The rounding fixture refreshes the measured
@@ -776,13 +772,12 @@ owner calls this policy yet. The fixture covers mild/strong initial fields,
 near-limit signed velocities/heights and
 mixed-rate steps, including nonzero-phase switches; actual disturbance shaders,
 full scene saturation coverage and live game scheduling remain acceptance work.
-The original dispatcher `1956A0` calls queued disturbances `1953B0`, texture
-noise `1952D0`, smoothing `1950B0`, feedback `195110`, then final output `195280`.
-Effect 19 (`2BE30`) uses pixel definition `4BBD30` and vertex program `4BBBF8`.
-Its captured noise draw adds the immutable A8L8 texture into green with ONE/ONE
-blend and RGB writes, before smoothing. The candidate fixture now executes
-those unchanged shaders at authored boundaries with controlled UV offsets;
-queued splash geometry and actual runtime RNG/event delivery remain unverified.
+Original1956A0 dispatches disturbances1953B0, noise1952D0, smoothing1950B0,
+feedback195110, then output195280. Noise effect19/2BE30 uses pixel4BBD30 and
+vertex4BBBF8: immutable A8L8 noise adds into green (ONE/ONE, RGB writes) before
+smoothing. Fixtures retain these shaders at authored boundaries with controlled
+UV offsets; queued splash geometry and runtime RNG/event delivery need live
+acceptance.
 `graphics/surface_interval.h` splits exact host-side intervals into at most four
 pieces (the existing maximum three-tick catch-up can cross four partial pieces).
 Each piece marks authored start/end boundaries; zero elapsed time produces none.
@@ -822,15 +817,12 @@ reset and advance generation for in-place reinitialization. Invalid or failed
 requests return NULL, never a stale owner. The opt-in native render hook now uses this registry.
 The ten 128-square float4 images contain 2.5 MiB of pixels per owner; this is not
 a total VRAM or in-game performance measurement.
-`TSFP_SURFACE_GPU_CAPTURE=1` extends the bounded capture with shared-kernel
-execution on the renderer thread. Each sample initializes from its actual GPU
-views, advances 5/12 + 5/12 + 1/6, and writes the first-piece/full-tick float
-fields to a `.gpu` sidecar. It creates/releases the owner within that callback,
-so no diagnostic resources survive scene/device teardown. This allocation and
-readback-heavy probe is not the eventual persistent gameplay path and does not
-replace visible water or alter guest event/RNG order.
-See the coupled-operator
-section in `docs/native-high-refresh-regressions.md` for evidence and limits.
+`TSFP_SURFACE_GPU_CAPTURE=1` runs the shared kernel on actual GPU views and
+writes fractional/full-tick fields to a `.gpu` sidecar. Its per-sample allocation
+and readback are diagnostic; they do not replace visible water or alter guest
+RNG/events. The persistent gameplay owner is separate. See the coupled-operator
+record in `docs/native-high-refresh-regressions.md` for capture details/limits.
+
 ## Background replacement texture reads
 
 `texture_pack_stream.h` owns a shared single-reader queue for common RHI and
@@ -905,15 +897,18 @@ before first allocation; empty resets do not alter RHI texture bindings.
 
 ## Character status-effect model growth
 
-`pc_native_character_guest.h`, included by the shared timing guest adapter,
-normalizes only scale-constructor call120BBF. Status3's repeated linear growth
-otherwise changes with update frequency. It splits the original one-raw-tick
-factor at the current game speed; rotation/composition and cleanup remain
-original. Numeric policy routes that call only. Original/full/catch-up steps
-are unchanged. Original-helper tests cover60..240, slow time, pause, jitter,
-live rate switches and cleanup; rendered activation and physical Mac remain
-unverified. See the runtime guide and `native_character_scale.c`.
+`pc_native_character_guest.h` normalizes only scale-constructor call120BBF:
+subdivide the one-raw-tick factor at current game speed. Original rotation,
+composition, cleanup and whole/catch-up arithmetic remain intact. The original
+helper fixture covers60..240, slow time, pause, jitter and live switches.
 
+Optional `TSFP_CHARACTER_TRACE` selects `pc_native_character_trace_guest.inc`
+only at126029->120AB0. `pc_native_character_trace.h` retains synchronous copied
+before/after matrices, actual scoped deltas, age, identity and removal. It checks
+mapped reads, drops mismatched identities/frames/scenes, and caps8192rows/8MiB.
+Mapping caches never span guest execution. Disabled/failed/capped traces select
+the original callee; no timing or growth policy changes. This is CPU update
+evidence, not rendered parity or pacing. Physical Mac remains unverified.
 
 ## Forced and damped material scrolling
 

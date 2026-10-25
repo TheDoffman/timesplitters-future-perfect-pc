@@ -133,6 +133,15 @@ read-only/noaccess, large/cold fallback and retained/full-query mutations.
 Character fixtures run original dispatcher/timers and status3 scale/rotation/
 composition/cleanup through240, slow/pause/jitter/live switches and old-path
 controls. Scale tests use real matrix helpers; allocation/draws are absent.
+`native_character_trace.c` tests copied status3 update pairs, identity/frame/
+scene guards, removal, invalid/unreadable values and8192row/8MiB bounds. The
+original scale fixture also runs with tracing enabled and a failed file open;
+stdout/behavior stay identical and open failure is latched. The clock fixture
+matches production's manual TLS include order so missing register declarations
+fail locally. Paired matrices surround126029->120AB0, after timer advancement;
+read-cache lifetimes end before/after guest calls. Captured actual scoped deltas
+support per-update growth checks; async samples and an ideal constant60 curve
+are insufficient. It is an opt-in diagnostic, not a GPU/pacing acceptance route.
 `native_material_motion.c` compares180 fractional partitions with an independent
 one-step forced/damped affine map, including weak/zero drag, slow/fast time,
 mixed pieces and untouched rejection. `native_surface_cache.c` executes original

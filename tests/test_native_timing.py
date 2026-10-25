@@ -16,7 +16,7 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
@@ -78,7 +78,8 @@ def test_native_timing(source, mutation, tmp_path):
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     run_environment = {k:v for k,v in os.environ.items()
                        if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE',
-                                    'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z')}
+                                    'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z',
+                                    'TSFP_CHARACTER_TRACE')}
     if source == 'native_contact_trace.c':
         import csv
         subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
@@ -699,12 +700,28 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* CHARACTER_POLICY */', f'#include "{(ROOT / "src/pc_native_character_guest.h").as_posix()}"')
+                           .replace('/* CHARACTER_TRACE_POLICY */', f'#include "{(ROOT / "src/pc_native_character_trace_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',
                                     (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
+    if harness_name=='native_character_scale.c':
+        import csv
+        trace=tmp_path/'character-pairs.csv'
+        executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        traced=subprocess.run([str(executable)],env=dict(os.environ,TSFP_CHARACTER_TRACE=str(trace)),
+                              capture_output=True,text=True,timeout=20)
+        assert traced.returncode==0 and traced.stdout==output,traced.stdout+traced.stderr
+        rows=list(csv.DictReader(trace.open()))
+        assert 20<len(rows)<=8192 and trace.stat().st_size<=8*1024*1024
+        assert {'0','1'}=={r['native'] for r in rows}
+        assert all(int(r['state'])==0x10000 and len(r)==45 for r in rows)
+        failed=subprocess.run([str(executable)],env=dict(os.environ,TSFP_CHARACTER_TRACE=str(tmp_path)),
+                              capture_output=True,text=True,timeout=20)
+        assert failed.returncode==0 and failed.stdout==output
+        assert failed.stderr.count('[CHARACTER-TRACE] Unable to open requested trace')==1
     if harness_name=='native_surface_cache.c':
         for sites in [(0x1276fd,0x127705),(0x12765b,),(0x12773b,0x127791)]:
             mutated=source

@@ -9,6 +9,11 @@
 static uint8_t memory[0x800000];
 static ptrdiff_t g_xbox_mem_offset;
 static uint32_t g_esp;
+#if defined(_MSC_VER)
+#define RECOMP_MANUAL_TLS __declspec(thread)
+#else
+#define RECOMP_MANUAL_TLS _Thread_local
+#endif
 static int64_t counter, deadline;
 static unsigned paused_calls, resume_calls, original_calls, frames;
 static const char *setting;
@@ -38,6 +43,7 @@ static void test_sleep(DWORD ms) { counter += (int64_t)ms*144000; }
 #define FLOAT(a) (*(float *)(memory+(a)))
 uint64_t xbox_ReadTimeStampCounter(void) { return (uint64_t)counter*733333333/144000000; }
 void sub_00153600(void) { assert(!"unexpected character scale in clock fixture"); }
+void sub_00120AB0(void) { assert(!"unexpected character update in clock fixture"); }
 void sub_000455B0(void) { paused_calls++; g_esp+=4; }
 void sub_000455C0(void) { resume_calls++; g_esp+=4; }
 void sub_00150190(void) { WORD(0x74914C)+=WORD(0x4E7940); g_esp+=4; }
@@ -47,6 +53,8 @@ static void original(void) {
     if(original_game_delta>=0.f)FLOAT(0x4E794C)=original_game_delta;
 }
 #include "../src/pc_native_timing_guest.inc"
+/* Match the production manual TU: the clock include precedes ESI's definition. */
+RECOMP_MANUAL_TLS uint32_t g_esi;
 #include "../src/pc_native_numeric.h"
 static int test_button;
 static void sample_pad(void)

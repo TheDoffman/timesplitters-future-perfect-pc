@@ -14,20 +14,29 @@ RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
-enum { RECORD=0x1000, EFFECT=0x2000, MATRIX=0x3000, STACK=0x10000 };
+enum { RECORD=0x10000, EFFECT=0x11000, MATRIX=0x12000, STACK=0x18000 };
 static unsigned removed;
 static int legacy;
 void sub_00153600(void);
+void sub_00120AB0(void);
 static void production_scale(void) { RECOMP_DIRECT_CALLEE_AT(0x120BBFu,sub_00153600)(); }
-static void scope(void) { assert(RECOMP_DIRECT_CALLEE_AT(0x120BBEu,sub_00153600)==sub_00153600); }
+static void production_update(void) { RECOMP_DIRECT_CALLEE_AT(0x126029u,sub_00120AB0)(); }
+static void scope(void) {
+    assert(RECOMP_DIRECT_CALLEE_AT(0x120BBEu,sub_00153600)==sub_00153600);
+    assert(RECOMP_DIRECT_CALLEE_AT(0x126028u,sub_00120AB0)==sub_00120AB0);
+    assert(RECOMP_DIRECT_CALLEE_AT(0x126029u,sub_00120AB0)==
+           (pc_native_character_trace_requested()?pc_native_character_update:sub_00120AB0));
+}
 #undef RECOMP_DIRECT_CALLEE_AT
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0x120BBFu && !legacy ? production_scale : (function))
+    ((site)==0x120BBFu && !legacy ? production_scale : \
+     (site)==0x126029u ? production_update : (function))
 void sub_000FF200(void) { assert(g_eax==EFFECT);removed++;g_esp+=4; }
 #define UNUSED(name) void name(void) { assert(!"unexpected " #name); }
 UNUSED(sub_00120660) UNUSED(sub_00120C10) UNUSED(sub_0011D4D0) UNUSED(sub_00347D70)
 void sub_000A9070(void) { assert(!"unexpected attached entity"); }
 /* CHARACTER_POLICY */
+/* CHARACTER_TRACE_POLICY */
 #undef RECOMP_ITAIL
 #define RECOMP_ITAIL(target) assert(!"unexpected status switch target")
 /* GENERATED_ROUTINES */

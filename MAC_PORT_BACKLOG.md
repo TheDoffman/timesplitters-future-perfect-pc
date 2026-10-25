@@ -5370,6 +5370,16 @@ timing suite. Private-XBE skips still do not prove Mac execution. Windows
 build/gameplay evidence belongs in STATUS; physical Mac and actual changing
 force-table/rendered-material acceptance remain Awaiting validation.
 
+**Coherent character-growth observation (2026-10-25, PR #361 WIP):**
+`pc_native_character_trace.h` / `pc_native_character_trace_guest.inc` optionally
+observe the original126029->120AB0 matrix update. Before/after reads use the
+existing Windows/Darwin mapped-memory adapter, resetting its cache across guest
+execution. Default, failed and capped traces retain the original callee. This
+adds no gameplay policy or OS adapter. Portable collector/writer and enabled/
+failed-open original-routine checks join the existing both-host timing suite;
+private-XBE skips are not Mac execution. Windows build/live evidence is in
+STATUS. Physical Mac and rendered-effect parity remain Awaiting validation.
+
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 
 - **Status:** Awaiting validation

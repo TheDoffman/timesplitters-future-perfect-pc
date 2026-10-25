@@ -495,6 +495,8 @@ static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
     (((site)==0x176673u || (site)==0x171F83u) ? \
      pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
 extern void pc_native_character_scale(void);
+extern int pc_native_character_trace_requested(void);
+extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
@@ -503,6 +505,7 @@ extern void pc_native_physics_solver(void),pc_native_physics_random(void);
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
     ((site)==0x120BBFu ? pc_native_character_scale : \
+    ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \

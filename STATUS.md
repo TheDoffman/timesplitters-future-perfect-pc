@@ -25438,3 +25438,72 @@ movement and census exclusions. This captured run is not pacing or pixel-parity
 evidence. No production source changes follow this rebuild; final notes are data
 only. Physical Mac, live varying forcing, full visual fidelity and broad
 native-refresh acceptance remain open.
+
+
+## Coherent live character-growth comparison (2026-10-25, PR #361)
+
+The current pushed material head38a1d1cf passed all applicable hosted jobs before
+this follow-up. Replaced the earlier asynchronous matrix/time comparison with
+an explicitly opt-in CPU trace around original126029->120AB0. Shared
+`pc_native_character_trace.h` / `pc_native_character_trace_guest.inc` copy both
+matrices, actual scoped raw/game deltas, age, coefficients and model identity in
+one update. Mapped reads are checked independently before/after guest execution;
+removal is represented without reading freed model memory. CSV is bounded to
+8192 complete pair rows/8MiB. Disabled, failed-open and capped traces select the
+original callee directly. No clock/growth/gameplay policy changes in this step.
+
+Collector/writer tests cover identity/frame/scene mismatches, copied values,
+removal, invalid/unreadable data and row/byte caps. The complete original scale
+fixture produces identical behavior/stdout with tracing enabled and after a
+latched file-open failure. Full timing/vehicle suites pass116 tests in175.98s.
+The first supported build caught an ESI declaration-order omission in the manual
+translation unit. The corrected adapter uses its existing manual TLS contract;
+the clock fixture now reproduces that include order. All three focused checks
+pass again (4.75s). The supported Windows rebuild/bundled checks pass, executable
+SHA256 `4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`.
+The final test-only include-order expansion and documentation do not change that
+runtime. Original scale construction and cleanup still execute unmodified.
+
+Bounded ten-bot Disco runs at native240 and trueOriginal60 complete all four
+spawn/combat checkpoints in scene56, unpaused with roster655617. Both preserve
+canonical signed profiles, close their owned processes and recycle disposable
+partitions. Each trace contains its maximum8192 complete pairs, all in scene56;
+these are valid capped prefixes, not whole-match or full-effect-lifetime captures.
+No removal rows occur in these prefixes; live cleanup is therefore not certified
+by them. Native240 includes7919 positive fractional updates. An independent
+analysis reconstructs the caller's original x87/SSE factors and normalization
+from the actual captured deltas, then checks determinant growth per update and
+across continuous model identities:
+
+| CPU trace | Maximum pair relative error | Continuous sequences (20+ updates) | Maximum cumulative relative error |
+| --- | ---: | ---: | ---: |
+| Native240 | 3.357e-7 | 28 | 3.267e-6 |
+| Original60 | 2.937e-7 | 83 | 5.092e-6 |
+
+The native fractional old-path prediction has median relative error0.000190968,
+versus0.0000000594 for the repaired rule. This identifies actual live execution
+of the fractional repair rather than merely a successful scene launch. It does
+not compare identical rendered pixels, random combat paths or physical latency.
+Reviewed combat-one captures show weapons, muzzle/impact effects, casings, NPCs,
+scenery and HUD, not a continuous size/appearance comparison of these models.
+
+The old ideal-volume comparison can also disagree while each actual update is
+correct. In the longest new native sequence (346 updates over1.695s), measured
+volume differs1.252% from an ideal repeated-one-tick curve but only0.000101%
+from the recorded-input rule. Its11 whole/catch-up updates predict a1.2521%
+ideal-curve deficit; fractional rounding contributes about0.000296%. Preserving
+original whole/catch-up arithmetic explains that new trace. This does not
+retroactively identify the exact cause of the older asynchronous0.8..1.1%
+samples, whose input/phase history was never captured coherently. Do not change
+scale coefficients to force those samples onto a constant-speed ideal curve.
+
+Evidence: private runs `character-coherent-disco240` and
+`character-coherent-disco-original60`; their CSV/provenance/analysis files and
+`logs/character-coherent-{focused,order,timing,build-fixed,analysis240,
+analysis-original60}.log`. CSV SHA256 values are0fa35b98aed9bb6ae4ab94ec1ddebe7e26162879597b6ce27ae63814c49a1e35
+(native) and54e5caf04651707c9e1b3f2ae2a83feac36f22a560fb5c2e331c01a50bfd0706
+(original). Tracing/readback/captures perturb timing, so these runs are not FPS,
+GPU completion or scanout measurements. Physical Mac and broad rendered-effect/
+full-game acceptance remain open under MAC-060. The bounded systems guide also
+condenses historical uncalled-water descriptions while retaining current owner,
+spatial/alpha-height contracts and links to the detailed regression history.
