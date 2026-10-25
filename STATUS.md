@@ -2,6 +2,12 @@
 
 ## Buffered keyboard reload and held-Fire priority (#337, 2026-10-24)
 
+- PR #345 review follow-up: preserve the order of Reload and new Fire presses
+  within a single input poll, even at identical millisecond timestamps. The
+  24-case regression failed on the earlier implementation and passes with the
+  shared sequence tracking; all four reload tests pass on Windows. Mac runtime
+  and patch-upgrade CI passed on `9f8f3538`; the ordering follow-up needs its own
+  CI run. Physical input and native Mac gameplay remain separate validation.
 - Implemented on `337-reload-live-reproduction`, based on `bcbdf27c`. Shared
   `pc_reload_input.h` records keyboard/mouse edges, including down/up within one
   event pump. The binding sampler retains brief Reload requests across 60 Hz

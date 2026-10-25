@@ -38,7 +38,9 @@ binding sampler applies action roles from configured keys to keyboard magnitudes
 before merging physical-pad contributions. A short Reload request lasts at
 least 34 ms and expires after 150 ms if the weapon never enters reload state 7.
 Already-held Fire is suppressed until release, reload completion or rejection;
-a fresh Fire press can interrupt. Context expires after 100 ms without an eligible
+a fresh Fire press can interrupt. Monotonic press order preserves Fire after
+Reload within one poll, including events with identical clock timestamps.
+Context expires after 100 ms without an eligible
 local-player camera update; menu/capture/focus/controller transitions clear it.
 This does not queue rejected reloads indefinitely or alter ammo/animation logic.
 

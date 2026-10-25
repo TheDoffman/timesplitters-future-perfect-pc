@@ -60,6 +60,35 @@ static void priority(void)
     r=255;f=255;a=0;sample(&s,1160,1,&r,&f,&a);assert(f==255);
 }
 
+static void event_order(void)
+{
+    /* Both trigger actions, alternate binding, same-millisecond events, and
+     * a held trigger released/repressed before the first sample. */
+    roles[3]=2;
+    for(unsigned key=1;key<=3;key++)for(int held=0;held<2;held++)
+    for(int fire_first=0;fire_first<2;fire_first++)for(int same_time=0;same_time<2;same_time++) {
+        PcInput s={0};int r=0,f=key==2?0:255,a=key==2?255:0;
+        pc_input_focus(&s,1);pc_input_capture(&s,1);context(&s,0,100);
+        if(held)pc_input_key_at(&s,key,1,100);
+        if(fire_first) {
+            if(held)pc_input_key_at(&s,key,0,101);
+            pc_input_key_at(&s,key,1,101);
+        }
+        pc_input_key_at(&s,'R',1,101);pc_input_key_at(&s,'R',0,102);
+        if(!fire_first) {
+            if(held)pc_input_key_at(&s,key,0,same_time?101:105);
+            pc_input_key_at(&s,key,1,same_time?101:105);
+        }
+        sample(&s,110,1,&r,&f,&a);
+        assert(r==255);
+        assert((key==2?a:f)==(fire_first?0:255));
+        context(&s,1,120);r=0;f=key==2?0:255;a=key==2?255:0;
+        sample(&s,120,1,&r,&f,&a);
+        assert((key==2?a:f)==(fire_first?0:255));
+    }
+    roles[3]=0;
+}
+
 static void lifecycle(void)
 {
     for(int guard=0;guard<7;guard++) {
@@ -84,6 +113,6 @@ static void lifecycle(void)
 int main(void)
 {
     roles['R']=1;roles[1]=2;roles[2]=4;
-    taps();priority();lifecycle();puts("PASS: reload priority, fresh Fire, expiry, remapping and lifecycle");
+    taps();priority();event_order();lifecycle();puts("PASS: reload priority, fresh Fire, expiry, remapping and lifecycle");
     return 0;
 }

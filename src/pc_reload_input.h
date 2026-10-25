@@ -7,6 +7,7 @@
  * adapters serialize events/context/sampling with their existing input lock. */
 typedef struct PcReloadInput {
     uint64_t pressed_at[256], context_at, pulse_until, request_until;
+    uint64_t press_order[256], sequence;
     unsigned char events[256]; /* press=1, release=2 */
     uint32_t player;
     int eligible, reloading, waiting, seen_reload, blocked_fire;
@@ -18,7 +19,10 @@ static inline void pc_reload_event(PcReloadInput *r,unsigned key,int was_down,in
 {
     if(key==0 || key>=256 || !!was_down==!!down)return;
     r->events[key]|=down?1:2;
-    if(down)r->pressed_at[key]=now;
+    if(down) {
+        r->pressed_at[key]=now;
+        r->press_order[key]=++r->sequence;
+    }
 }
 
 static inline void pc_reload_context(PcReloadInput *r,uint32_t player,int eligible,int reloading,uint64_t now)
@@ -33,11 +37,15 @@ static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[2
                                     uint64_t now,int *reload,int *fire,int *secondary)
 {
     int pressed=0,released_fire=0;
+    uint64_t reload_order=0;
     if(!active || !r->eligible || now-r->context_at>100) {
         pc_reload_reset(r);return;
     }
     for(unsigned k=1;k<256;k++) {
-        if((roles[k]&1) && (r->events[k]&1) && now-r->pressed_at[k]<=100)pressed=1;
+        if((roles[k]&1) && (r->events[k]&1) && now-r->pressed_at[k]<=100) {
+            pressed=1;
+            if(r->press_order[k]>reload_order)reload_order=r->press_order[k];
+        }
         if(r->events[k]&2)released_fire|=roles[k]&6;
         r->events[k]=0;
     }
@@ -49,6 +57,10 @@ static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[2
         r->pulse_until=now+34; /* at least two original 60 Hz input intervals */
         r->request_until=now+150;r->waiting=1;r->seen_reload=0;
         r->blocked_fire=(*fire?2:0)|(*secondary?4:0);
+        /* Preserve shots pressed after Reload, even within this same poll or
+         * millisecond. Host event order is more precise than clock timestamps. */
+        for(unsigned k=1;k<256;k++)
+            if(r->press_order[k]>reload_order)r->blocked_fire&=~(roles[k]&6);
     }
     if(r->waiting) {
         if(r->reloading)r->seen_reload=1;

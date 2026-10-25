@@ -19,6 +19,8 @@ Reload #337: `test_native_timing.py` covers the scoped CMP hook and mutations;
 asset-free policy and verified-US decoder/consumer. The private-XBE fixture
 also tests 425 buffered taps. `test_reload_keys.py` covers 1,360 host tap schedules
 at 60–240 FPS plus held/fresh Fire, expiry and lifecycle; both CI hosts run it.
+The event-order regression checks both triggers and alternate bindings with
+same-poll Reload/Fire and release/repress events, including equal timestamps.
 Windows `pc_controls.c` tests the actual event/binding bridge. Missing private
 XBE skips original routines; physical keys and Mac gameplay need separate checks.
 
