@@ -1,3 +1,49 @@
+## 2026-10-24 — Preserve Arcade Score/Rank spacing during HUD transitions
+
+The Temple death sequence exposed overlapping SCORE/RANK labels. A follow-up
+Original60 sequence on executable952ee3d8 reproduces the overlap across several
+captures: this is a widescreen layout defect, not evidence of a native clock
+regression. Original US14F0B0 composes the panels; their shared renderer returns
+through12EC8B for RANK and12EA9B for SCORE. The placement wrapper explicitly
+anchored only RANK to the left, so the panels used different origins while
+simultaneously visible. SCORE now shares RANK's left anchor. Original panel
+geometry/widths, ordering, sliding/fading and gameplay timers are retained;
+unrelated panel callers and the existing 4:3/split-screen guards are unchanged.
+
+The supported Windows build/bundled checks pass. New executable SHA256:
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`.
+Reviewed Original60 and native240 sequences at1280x720 show separated SCORE
+and RANK panels, followed by SCORE leaving and RANK sliding into place. The
+same ordinary-input Temple floor-shot route provides24 sampled captures each;
+slow dump cadence can repeat frames, and images are not synchronized to memory
+observations. No scanout, clean-FPS or frame-exact timing claim follows.
+
+An additional native240 run at3440x1440 confirms the same separated panels
+and slide transition in reviewed captures. All24 observations stay in active
+Temple;19 show the dead player and the final5 occur after automatic respawn.
+These are not24 identical death-phase samples. The runner reports successful
+completion, unchanged signed profiles and preserved fixture. Evidence:
+`private/test-saves/hud-fixed-ultrawide240`, `logs/hud-fixed-ultrawide240.log`.
+
+The20 UI/text-scope regression tests pass, including panel batch boundaries,
+restored placement and both callers' 4:3/split-screen bypass. A disposable
+counterfactual with the prior SCORE omission fails the new panel assertion.
+The21 repository-context/Mac-backlog tests pass; context and whitespace checks
+pass. Existing Windows/Mac CI already registers these UI fixtures. Shared code
+needs no new Mac adapter; physical Mac graphics validation remains pending
+under MAC-060. Before this follow-up, all14 checks passed for head da05737b.
+
+Evidence: `private/test-saves/hud-transition-original60`, `hud-fixed-original60`
+and `hud-fixed-240`; commands have identical SHA256b61a8633. All24 observations
+in each run remain active Temple with one player/no bots and the dead player,
+rather than silently capturing a menu or respawn. Each owned game exits0,
+profiles remain canonical090cced7, signature/fixture checks pass and disposable
+disks are recycled. Logs: `hud-score-layout-build.log`,
+`hud-score-layout-tests.log`, `hud-score-negative.log`,
+`hud-score-context-tests.log`, `hud-score-validation.json`. Reviewed contact
+sheets remain in the respective run directories; the cropped comparison is
+`logs/hud-score-before-after.png`. Full-game acceptance remains open.
+
 ## 2026-10-24 — Temple rocket impact and effect cleanup through 240
 
 Main's reload fix (`aed726e1`, PR #345) is integrated in `dcb3b112`, preserving

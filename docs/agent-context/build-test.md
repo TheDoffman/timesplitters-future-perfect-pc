@@ -245,9 +245,9 @@ two outlined labels, one read query, ten draws and thirteen scratch-write checks
 Its mutation removes only the panel scope, retaining outlined scopes. Placement callbacks
 assert they run outside the reused mapping lifetime. This is a boundary/ABI
 fixture, not execution of the full original panel or a rendered comparison.
-The UI placement-hook contract names `pc_panel_text_original` for `0x12E3F0`;
-the original panel now runs inside that callback. Other placement targets keep
-their direct original callbacks. The scope suite verifies callback execution.
+`0x12E3F0` uses `pc_panel_text_original`; others keep original callbacks.
+`test_ui_layout.py` checks RANK/SCORE left anchoring, batch restoration and
+unchanged split-screen/4:3. The scope suite checks callback lifetime.
 The first native144 Venice panel comparison is recorded in STATUS: average FPS
 and tail intervals move in different directions, so query savings alone must
 not be reported as a pacing improvement. Exclude a measurement window when

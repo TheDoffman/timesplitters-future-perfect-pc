@@ -24,6 +24,14 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Arcade HUD panels: `pc_display_ui.inc` gives both shared-panel callers
+US12EC8B (RANK) and12EA9B (SCORE) the left anchor. Their original compositor
+retains panel widths, spacing and sliding/fading; mismatched anchors otherwise
+overlap them on widescreen, including Original60. Each full panel flushes before
+placement changes and restores its enclosing placement. Other panel callers,
+4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
+the UI fixture tests both callers and guards, while Mac scenes remain unverified.
+
 Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
 weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
 Input edges follow raw whole ticks; pause can offset those from game whole ticks,

@@ -3850,6 +3850,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Arcade HUD grouping (2026-10-24, PR #344):** Shared `pc_display_ui.inc`
+  applies the same left anchor to SCORE and RANK panels, preserving their
+  original spacing/animation. The overlap also reproduces at Original60.
+  No Mac adapter is needed; shared UI/batch/4:3/split-screen tests cover both
+  callers in the existing host CI suite. Physical Mac rendering remains
+  unverified; Windows scene evidence is recorded in STATUS.
+
 - **Mixed-preset Online validation (2026-10-24, PR #344):** The existing
   Windows diagnostic runner selects independent Original60/120/180/240 peers,
   records movement checkpoints and uses separate startup taps plus a bounded
