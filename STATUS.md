@@ -25714,3 +25714,140 @@ The existing results/guest-dispatch regression suites pass10 tests in11.35s
 (`tests/test_network_bot_results.py`, `tests/test_network_guest_dispatch.py`).
 Repository context/index and whitespace checks pass. These fixture results
 supplement the observed Online rounds; they do not expand their runtime scope.
+
+
+## Merged-main Hart Attack timeout and pause (2026-10-25)
+
+The supported `tsfp.ps1 -Action Build -SkipTextures` rebuild with CL_MPCount=2
+passes its bundled checks after integrating main063789df. Source branch
+validate/native-mixed-rate-results46110f39 adds only acceptance documentation
+above that main revision. Resulting executable SHA256:
+`63934f0ba48d8fdffc3a05ced89d5d4e1c3a80592bf1f75534df71e405d67f46`.
+Unlike the preceding Online records, this build includes the merged controller/
+mouse changes. It is not a published release or a Mac gameplay validation.
+
+The existing bounded `tests/stability_transitions_game.py` runner uses isolated
+unlocked Test Lab copies, default native surfaces, Classic textures, requested
+1280x720/FOV55, renderer captures, actor observations and Present profiling;
+per-update native tracing and CPU profiling are disabled. Run names
+`hart-main-original60`/`hart-main-native240` select `--native-fps 0`/`240`, with
+`--no-native-trace --watch-actors --profile-presents`, total bounds360s/260s.
+Runner SHA256 is
+`ca881e2d36b86b73803d7310492a3cf8e03d70a51855af054e4f3d1e3611ba15`.
+A preceding `challenge-main-original60` session only calibrates menus; it never
+reaches gameplay and is excluded from behavioral acceptance.
+
+Reproducible input route (ordinary virtual keys, no guest-state edits): from
+Story highlighted on Main, Down/Down/E enters Challenge; Down/E selects Cut-Out
+Shoot-Out; E opens Hart Attack's briefing, E opens character selection, E marks
+Corporal Hart Ready, and another E starts. Allow menu transitions and loading,
+restore focus, then observe15s. Escape pauses; observe8s. E on Continue resumes;
+observe3s. Hold W3s, release/wait2s, hold primary fire3s, release/wait2s; observe
+30s, another30s, then20s through timeout. The runner supplies the usual startup
+profile input; the initial exploration needed extra menu time. Exact submitted
+commands remain in each isolated commands.jsonl/report.json and the private
+`private/pipeline/hart-challenge-route.json`; both tests use the same gameplay
+command sequence. Their menu/setup wall durations differ and are not compared.
+
+Both actual scene64/match-state7 sessions remain alive with health0.8. Hart
+Attack's reviewed briefing sets90seconds and18targets. These are intentional
+zero-score runs, not successful medal attempts. Both rendered results show
+Game Over/0points/Retry Level, with health unchanged. The sampled transition
+from match-state7 to8 has exactly the same level-tick bracket[5581,5584], about
+93.1 game seconds including the start countdown, in both modes. The wall bracket
+widths are50.155ms Original/50.363ms native; these asynchronous20Hz observations
+do not identify an exact transition frame or establish finer timing parity.
+
+All159 paused clock observations per run stay fixed: Original846ticks across
+7.9722s, native862ticks across7.9660s. Valid paused position observations stay
+fixed too:159 Original/158 native. One native player snapshot is unavailable;
+the initial strict position analysis rejects that missing sample, and the final
+report explicitly excludes/counts it rather than treating it as stationary.
+The clock/pause fields remain available in all159 observations. No claim of
+fully atomic memory snapshots or motion during the missing observation follows.
+
+Two separate approximately30s unpaused windows have game/wall ratios
+0.999770/0.999647 Original and0.998864/1.000173 native. The shorter resumed window
+ratios0.996422/1.003383 are more affected by whole-tick/sample boundaries. All
+sampled points in those windows retain scene64/state7/unpaused. Each firing
+hold changes pistol magazine16->8 with reserve84 unchanged. The forward input
+moves24.0555/24.4098 world units, confirming movement response, not exact movement
+parity; polled input/asynchronous observations do not fix the same update/RNG
+schedule. Target hits/scoring, damage, winning objectives and target animation
+cadence remain unverified by this zero-score route.
+
+These capture-bearing runs are not sustained pacing evidence. The Original late
+window's diagnostic Present log averages58.066FPS with p9941.526ms/worst45.026ms;
+renderer dumps/input polling/observation overhead remains included. The native
+recorder reaches its20,000-row cap at99.191s, so its missing late-window rows are
+not treated as zero FPS or a completed240FPS pacing window. A separate capture-
+free current-build repeat is recorded below. Neither capture-bearing result
+replaces clean pacing evidence or certifies physical latency/scanout/all-map performance.
+
+Both runner sessions return0 with clean game exits, valid HMAC/profile length,
+canonical fixture verification, and disposable lock/partition cleanup. Each
+profile retains SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`.
+Private reports and captures live under the run names in private/test-saves;
+comparison summary `logs/hart-main-comparison.json` records intervals/ratios and
+missing observations. report.json hashes are
+`9b9b18c7adc4e1d43620d1dbbc35cc79fbefafc48c8964eb18b584594ea7a63d`
+(Original) and
+`ae6d2eb34ba5b5b30b2cbff25df0a27c1acc1f35bd0079f9748d7c11571fee32`
+(native). No production timing change is justified by these passing behavior
+checks. Wider Challenge/Arcade gameplay, full campaign/rendered fidelity,
+remote-network behavior and physical Mac acceptance remain incomplete.
+
+
+Capture-free Hart Attack repeats on the same63934f0b executable use the same
+menu/gameplay commands through the existing runner, with `--no-native-trace
+--no-captures --profile-presents --profile-delay-seconds 110 --seconds 260` and
+native0/240. `watch-actors` and CPU/effect tracing are off; the runner's normal
+player snapshots/input polling and requested20Hz wait observations remain.
+A private wrapper `private/pipeline/run-hart-clean.py` waits for the owned runner
+to prepare commands, submits the reviewed JSON route and joins that same process.
+It runs each game separately. Both runner sessions return0 and preserve the
+canonical signed profile/cleanup. Both timeout again with unchanged health,
+pause-clock hold, normal movement and magazine16->8. No new game-policy change.
+
+For pacing, use the second late30s wait, excluding one second at each end.
+Strict surrounding Present rows cover both window boundaries; neither file is
+capped. All selected rows are guest frames with consecutive guest IDs, not
+interpolated frames. The sampled scene stays64/state7/unpaused and the selected
+test window stays visible/unminimized/foreground. This late phase is stationary
+after the movement/fire sequence; it is not target-hit or crowded-combat pacing.
+
+| Measurement | Original60 | Native240 |
+| --- | ---: | ---: |
+| Complete observed window (seconds) | 27.969387 | 27.999316 |
+| Selected fresh Present rows | 1,679 | 6,720 |
+| FPS between first/last selected rows | 60.000146 | 239.997154 |
+| Complete one-second bins (min/max frames) | 59/61 | 240/240 |
+| p99 interval (ms) | 17.2877 | 4.7130 |
+| Worst interval (ms) | 17.7802 | 5.7361 |
+| Game/wall ratio over sampled late wait | 1.000465 | 1.000023 |
+
+Original one-second bin59/61 variation accompanies the60.000 average; averages
+are not uniform-frame promises. There are3,609/14,428 total recorded rows, below
+the20,000 cap. Capture-free is not overhead-free: file input, memory observation
+and Present logging remain. No physical input latency, GPU completion/scanout,
+all-map240 guarantee or cause-of-speedup claim follows.
+
+Device logs confirm1280x720; the runner's selected test window reports640x480
+client (the title/shadow path also reports640x480). Keep these distinct; this
+is not certification of a physical1280x720 display or ultrawide gameplay.
+The earlier capture pair likewise reports a640x480 selected client. Canonical
+profile SHA090cced7 is unchanged in all four gameplay runs.
+
+Private evidence: `private/test-saves/hart-clean-{original60,native240}` retains
+commands/reports/states/provenance and run0-presents.csv; numeric summary is
+`logs/hart-clean-comparison.json`. Present CSV SHA256:
+`b916afb4ff68bc691ab8ea76e7128a23e3d3267a8f25d96009fe2ce994c13958`
+(Original) /
+`f93557b1a7d808faf72f77f9da8f076b10c03a4be697fead563056768349a549`
+(native). Report SHA256:
+`f1af9fc6c6d3042aed4d9f03784a67df136f94d1e5bb86349e472fb78c9739e9`
+/
+`02f7e0f0e381ccbfdfb9e4babb56a0ac37fe500c3097965ed10cdf8047290e5b`.
+These repeats address the capture/cap measurement gap for this mode/window only.
+Physical Mac, winning Challenge routes and wider gameplay remain unverified.

@@ -6,6 +6,30 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Merged-main Challenge timeout and pause (2026-10-25)
+
+A supported Windows rebuild including main063789df completes Hart Attack's
+zero-score timeout route at Original60 and native240. Both enter Game Over in
+the same observed level-tick bracket5581..5584, retain health, hold their clock
+through an eight-second pause and resume at normal speed. Ordinary forward
+movement works and the three-second firing hold consumes eight pistol rounds
+in each run. Reviewed captures show the challenge HUD, pause menu and zero-score
+result screen in both modes. The signed test profile and canonical fixture stay
+unchanged; both games exit cleanly.
+
+This validates the sampled Challenge failure/timeout path, not a medal-winning
+run, target scoring/animation, damage parity, identical displacement or the full
+Challenge mode. Capture-bearing runs do not establish pacing; their native
+Present recorder caps at20,000 rows before the late window. Separate repeats
+without captures/traces and with delayed recording measure60.000/239.997FPS
+over approximately28seconds, with consecutive fresh guest IDs. Native p99 is
+4.713ms/worst5.736ms, game/wall1.000023; this is the stationary late phase, not
+crowded combat. Device1280x720 and selected-window client640x480 differ, so no
+physical display-resolution claim follows. One native paused
+position observation is unavailable and excluded; all159 paused clock readings
+remain valid/fixed. See [STATUS](../STATUS.md#merged-main-hart-attack-timeout-and-pause-2026-10-25)
+for reproducibility, measurements and limits. No production change was justified.
+
 ## Mixed-rate Online results and rematches (2026-10-25)
 
 Two isolated local Online peers complete a five-point Deathmatch and a full
