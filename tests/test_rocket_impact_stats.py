@@ -40,7 +40,8 @@ def test_complete_route_and_bounded_lifetime():
 
 @pytest.mark.parametrize('fault', ['missing','duplicate','wrong-scene','bots','pool-race','pause',
     'no-shot','two-shots','survived','no-respawn','no-walk','clock','effects-stuck',
-    'incomplete-checkpoint','no-samples','fast-effect','recycled-effect','no-removal'])
+    'incomplete-checkpoint','no-samples','fast-effect','recycled-effect','no-removal',
+    'unreadable-checkpoint','unreadable-players'])
 def test_counterexamples_fail(fault):
     r=report()
     if fault=='missing':r.pop()
@@ -65,9 +66,17 @@ def test_counterexamples_fail(fault):
     elif fault=='recycled-effect':r[3]['wait_samples'][0]['effects']['effects'][0]['address']=5678
     elif fault=='no-removal':
         for s in r[3]['wait_samples'][4:]:s['effects']['complete']=False
+    elif fault=='unreadable-checkpoint':r[2]['player']=None
+    elif fault=='unreadable-players':
+        for s in r[2]['hold_samples']+r[2]['wait_samples']+r[3]['wait_samples']:s['player']=None
     with pytest.raises(AssertionError):analyze(r)
 
 
 def test_incomplete_intermediate_effect_read_is_reported_not_counted():
     r=report();r[3]['wait_samples'][1]['effects']['complete']=False
     assert analyze(r)['incomplete_effect_samples']==1
+
+
+def test_unreadable_intermediate_player_is_reported_not_counted_as_ammo():
+    r=report();r[3]['wait_samples'][20]['player']=None
+    assert analyze(r)['missing_player_samples']==1

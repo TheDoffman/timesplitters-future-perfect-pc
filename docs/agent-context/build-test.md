@@ -41,7 +41,7 @@ Both hosts run these and shared UI identity/failure/ZIP tests.
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
 --watch-actors --watch-effects --seconds 180`: Temple floor rocket, cleanup,
 respawn/walk;0 selects Original60. `sample_wait` observes at most20Hz; effects
-remain non-atomic. `rocket_impact_stats.py` checks shot/death/lifetime/recovery;
+remain non-atomic; missing player reads are counted/excluded. `rocket_impact_stats.py` checks shot/death/lifetime/recovery;
 counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
 captures are not synchronized to memory. See STATUS for live evidence.
 

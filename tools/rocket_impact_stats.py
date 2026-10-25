@@ -1,5 +1,6 @@
 """Acceptance for the no-bot Temple floor-shot route, not general damage parity.
 
+The tracked lifetime belongs to the type-5 effect observed after the blast.
 Observers are asynchronous. Effect counts/ages do not prove rendered opacity,
 audio, scanout or input latency. Death saturates health at zero, so this route
 can compare lethality but cannot measure equal unsaturated damage.
@@ -21,6 +22,7 @@ def analyze(report):
                for a,b in zip(names,names[1:])), 'Checkpoints out of order'
     for name,row in checkpoints.items():
         assert (row['scene'],row['match_state'],row['roster'],row['paused'])==(49,7,257,0), name
+        assert row.get('player') is not None, f'Unreadable player at {name}'
         actors=row['actors']
         assert actors['pool']==actors['pool_after'] and actors['bot_slots']==0, name
         assert actors['human_slots']==1 and [a['slot'] for a in actors['actors']]==[0], name
@@ -35,7 +37,8 @@ def analyze(report):
     assert impact['command']['keys']==[1] and len(impact['key_events'])==1, 'Expected one fire press'
     samples=impact.get('hold_samples',[])+impact.get('wait_samples',[])+settled.get('wait_samples',[])
     assert len(settled.get('wait_samples',[]))>=80, 'Insufficient effect-cleanup observations'
-    totals=[a['loaded']+a['reserve'] for row in samples for a in row['player']['ammo']
+    missing_player_samples=sum(row.get('player') is None for row in samples)
+    totals=[a['loaded']+a['reserve'] for row in samples if row.get('player') is not None for a in row['player']['ammo']
             if a['weapon']==16 and a['type']==19]
     assert totals and min(totals)==11 and max(totals)<=12, 'Did not observe exactly one rocket consumed'
     assert impact['player']['health']==settled['player']['health']==0, 'Blast did not kill the player'
@@ -67,6 +70,7 @@ def analyze(report):
                 rockets_consumed=1,lethal=True,respawn_walk_distance=displacement,
                 settle_wall_seconds=wall,settle_game_seconds=game,
                 effect_samples=len(samples),incomplete_effect_samples=len(samples)-len(complete),
+                missing_player_samples=missing_player_samples,
                 explosion_age_error_seconds=age_delta-observed_delta,
                 explosion_removal_age_bounds=[last_effect['age'],removal_upper],
                 effects_empty_after_settle=True)
