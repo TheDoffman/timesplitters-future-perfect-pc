@@ -132,7 +132,15 @@ read-only/noaccess, large/cold fallback and retained/full-query mutations.
 
 Character fixtures run original dispatcher/timers and status3 scale/rotation/
 composition/cleanup through240, slow/pause/jitter/live switches and old-path
-controls. Scale tests use real matrix helpers; allocation/draws are absent. Surface-cache checks each U/V/phase; GPU calls are spies.
+controls. Scale tests use real matrix helpers; allocation/draws are absent.
+`native_material_motion.c` compares180 fractional partitions with an independent
+one-step forced/damped affine map, including weak/zero drag, slow/fast time,
+mixed pieces and untouched rejection. `native_surface_cache.c` executes original
+127500 with nonzero held forcing/drag at60/120/144/180/240 and mixed rates,
+normal/quarter speed and pause, checking U/V velocity/travel against a closed
+form authored recurrence. Independent mutations remove damping, force or travel
+normalization; GPU calls remain spies. Force-table sampling is controlled, so
+these checks do not certify live varying forcing or rendered-material parity.
 
 ### Native vehicle integration and diagnostic checks
 

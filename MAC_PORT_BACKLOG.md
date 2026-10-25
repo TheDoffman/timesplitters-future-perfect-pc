@@ -5350,6 +5350,16 @@ the fixture, but its private supported-US-XBE requirement still skips these
 original routines on asset-free CI. No production behavior or OS adapter changes.
 Actual Mac execution/live handling remain Awaiting validation; see STATUS.
 
+**Forced/damped material motion follow-up (2026-10-25, WIP):**
+Shared `src/pc_native_material.h` and the five audited127500 numeric sites in
+`pc_native_numeric.h` split velocity, held forcing and UV travel together.
+Original mode and unsupported decay bases retain the original path; no state
+layout, resource owner or OS adapter changes. Asset-free partition tests and the
+original surface/cache fixture are selected by the existing both-host native
+timing suite. Private-XBE skips still do not prove Mac execution. Windows
+build/gameplay evidence belongs in STATUS; physical Mac and actual changing
+force-table/rendered-material acceptance remain Awaiting validation.
+
 ### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
 
 - **Status:** Awaiting validation

@@ -905,3 +905,20 @@ original. Numeric policy routes that call only. Original/full/catch-up steps
 are unchanged. Original-helper tests cover60..240, slow time, pause, jitter,
 live rate switches and cleanup; rendered activation and physical Mac remain
 unverified. See the runtime guide and `native_character_scale.c`.
+
+
+## Forced and damped material scrolling
+
+`pc_native_material.h` splits the original127500 affine velocity/travel map in
+raw time at the current game speed. Shared numeric policy routes only12765B
+(forcing),1276FD/127705 (damping),12773B/127791 (U/V travel), using the original
+parameter pointer and held forcing register. Coupling travel to velocity matters:
+normalizing damping alone still changes texture displacement. Zero drag uses the
+finite acceleration limit; weak damping uses a stable series. Original mode,
+whole/catch-up raw intervals and unsupported/nonpositive decay bases retain
+original arithmetic. This changes no material state layout or resource ownership.
+Original force-table sampling, clamp, UV wrapping, procedural image dispatch and
+pause still execute. It does not normalize a force that changes within an authored
+interval or prove all live material behavior. Asset-free partitions and original
+surface/caching fixtures cover the arithmetic; live visual/Mac acceptance remains
+separate. See STATUS for measured before/after error and current build evidence.

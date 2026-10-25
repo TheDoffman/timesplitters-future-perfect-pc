@@ -11,6 +11,30 @@ extern int pc_model_transform_entry(void);
 #define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
+#include "pc_native_material.h"
+/* Only these audited US127500 multiplications receive the material pointer
+ * and its already-clamped/scaled forcing register. All original loads/stores,
+ * force sampling, wrapping and procedural resource/event order still execute. */
+static inline float pc_native_material_multiply(uint32_t site,float left,float right,
+                                               uint32_t parameters,float forcing)
+{
+    if(g_tsfp_native_timing_active) {
+        const float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        const float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        const float drag=*(const float *)((uintptr_t)(parameters+0x18u)+g_xbox_mem_offset);
+        PcMaterialMotion c;
+        if(pc_material_motion(raw,game,drag,&c)) {
+            if(site==0x12765Bu)return (float)((double)left*right*c.force_scale);
+            if(site==0x1276FDu || site==0x127705u)return (float)(c.decay*right);
+            unsigned offset=site==0x12773Bu?8:12;
+            float direction=*(const float *)((uintptr_t)(parameters+offset)+g_xbox_mem_offset);
+            double velocity=site==0x12773Bu?right:left;
+            float adjusted=(float)(c.velocity*velocity+c.forcing*direction*forcing);
+            return site==0x12773Bu?left*adjusted:adjusted*right;
+        }
+    }
+    return left*right;
+}
 /* These original integer-to-float reads are continuous motion consumers of
  * the engine delta (animation, particles, camera easing). Native updates use
  * the adjacent fractional delta. Integer arithmetic and counters keep using
@@ -368,7 +392,10 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
  * integer sine crossing and its random-amplitude event unchanged. */
 extern float pc_native_demo_timer_multiply(uint32_t site,float left,float right);
 #define RECOMP_F32_MUL_AT(site, left, right) \
-    (((site)==0x433E2u || (site)==0x43473u) ? \
+    (((site)==0x12765Bu || (site)==0x1276FDu || (site)==0x127705u || \
+      (site)==0x12773Bu || (site)==0x127791u) ? \
+     pc_native_material_multiply((uint32_t)(site),(float)(left),(float)(right),g_edi,g_xmm4.f[0]) : \
+     ((site)==0x433E2u || (site)==0x43473u) ? \
      pc_native_demo_timer_multiply((uint32_t)(site),(float)(left),(float)(right)) : \
      (site)==0x1C4539u && g_tsfp_native_timing_active ? \
      pc_native_weapon_sway((float)(left))*(float)(right) : \

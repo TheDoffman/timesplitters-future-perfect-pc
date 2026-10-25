@@ -25334,3 +25334,54 @@ prove live handling parity or rule out collision-selection/integration defects.
 Both-host CI already selects this test file, but original-routine checks require
 the private supported XBE and skip in asset-free CI. Physical Mac validation
 remains open under MAC-060. No private assets/generated guest code are tracked.
+
+
+## Forced/damped material scrolling at native rates (2026-10-25)
+
+On `fix/native-material-motion`, the original127500 material update exposed an
+arithmetic rate dependence beyond its earlier cache/timing gate. The authored
+step damps/adds force to velocity, then moves U/V using that updated velocity.
+Fractional Euler steps change the product and the travel sum. A held-force test
+without drag gives U0.614500 at Original60 versus0.608501 at120 after two seconds
+(about0.006 texture repeats less travel); original constant-velocity-only tests
+did not cover this case.
+
+Shared `pc_native_material.h` and five numeric sites now split the complete
+velocity/travel affine map in raw time at current game speed. Damping, held
+forcing and travel are normalized together; zero/weak damping have stable limits.
+Original mode, whole/catch-up raw time, pause and unsupported/nonpositive decay
+bases retain original arithmetic. Original force-table samples, force clamp, UV
+wrapping, image/resource/event order, material layout and saves stay owned by the
+original routine. This advances fresh material state, not rendered-frame blends.
+Varying within-tick force sampling and complete visual parity remain separate.
+
+The asset-free helper passes180 fractional partitions against an independent
+one-step recurrence. The original surface/cache fixture checks48 normal/quarter
+speed schedules at60/120/144/180/240 and mixed intervals with held forcing/drag,
+plus pause and exact original fallback. Independent controls remove damping,
+forcing or travel normalization and must fail. Full timing/vehicle suites pass
+115 tests in229.77s; the final test-only expansion adds exact fallback checks
+and its eight focused tests pass again in22.11s. The forced/damped controlled
+case reaches about0.000003 maximum U/V error rather than the previous0.006.
+GPU calls in that fixture are spies; this does not prove live varying forces.
+
+Supported Windows build and bundled checks pass on base40600133 with executable
+SHA256 `3e24f6f93f4f95734902d559885db62627f343dbafda174a0713e57a3b569999`.
+Bounded Scotland runs at native240, native120 and trueOriginal60 pass movement,
+pause/resume, canonical signed profile preservation and owned-process cleanup.
+Reviewed native captures show the path, weapon, scenery and NPC. The integrated
+read-only native120/Original60 censuses each retain40 observations identifying
+one active material with forcing0.002, drag0.007 and direction(-0.6,0.4). All40
+native samples have positive fractional raw time and equal frame brackets. This
+establishes activation/identity, not coherent completed-update or pixel parity.
+The first late standalone census could not open the already-closed240 child;
+it records zero rows and is rejected evidence. The rerun attaches at owned-child
+creation. These captured/observed tests make no performance or latency claim.
+
+Evidence: `logs/material-{forced-before,forced-after,focused-final,timing-full,
+final-compatibility,build}.log` and isolated
+`private/test-saves/material-motion-scotland{240,120,-original60}`.
+Both-host CI selects the asset-free math and existing original-XBE fixture;
+private-XBE skips do not certify physical Mac behavior. MAC-060 remains Awaiting
+validation. Main advanced to7bd271cf (controller diagonal correction) during
+validation; integration and final-build evidence follow separately.

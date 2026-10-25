@@ -16,7 +16,7 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
@@ -204,6 +204,7 @@ def test_reload_compare_gate(tmp_path, separated, mutation):
         vars(config).update(previous)
     policy=(ROOT/'src/pc_native_numeric.h').read_text(encoding='utf-8')
     policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_material.h"','"'+(ROOT/'src/pc_native_material.h').as_posix()+'"')
     if mutation=='whole-tick-policy':
         assert policy.count('site == 0x1C2F09u')==1
         policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
@@ -704,6 +705,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
+    if harness_name=='native_surface_cache.c':
+        for sites in [(0x1276fd,0x127705),(0x12765b,),(0x12773b,0x127791)]:
+            mutated=source
+            for site in sites:
+                needle=f'RECOMP_F32_MUL_AT(0x{site:X},'
+                assert mutated.count(needle)==1
+                mutated=mutated.replace(needle,'RECOMP_F32_MUL_AT(0xFFFFFFFF,')
+            with pytest.raises(AssertionError,match='forced_surface'):
+                compile_and_run(tmp_path,mutated)
     if harness_name=='native_reload_input.c':
         assert 'reload_sweep trials=864 presses=1728' in output,output
         needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
