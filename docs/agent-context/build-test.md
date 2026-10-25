@@ -88,6 +88,15 @@ fixture covers coupled force/travel/contact and GPU-store composition; existing
 `test_gpu_flush_ack.py` retains actual-store/guard/fallback coverage. See
 [script clocks](native-script-clocks.md) for numerical and live-acceptance limits.
 
+`native_trap_transform.c` connects the original initializer/callback, A7360
+post-update invalidation, A14B0 Euler cache/matrix helpers and151E80 point
+transform in80 rate/slow/phase/Original-native cases. It checks changed-angle
+invalidation, cached reuse, fresh off-axis points, independent sine/cosine
+coordinates, point fast/original bit parity, pause, clock restoration and ABI. Registration/collision/sector
+services are spies. Broken dirty-store, angle input, matrix copy or point
+transform independently fails. This is fixture-driven CPU propagation; normal
+frame scheduling, actual mesh/GPU rendering and gameplay activation remain open.
+
 `native_player_statistics.c` runs original D1FD0, clock getter, eligibility and
 float accumulator through the production D2CB7 callee scope.160 rate/slow/phase/
 hour schedules cover60..240, movement-distance inputs, pause, uneven intervals,

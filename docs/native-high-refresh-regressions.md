@@ -6,6 +6,17 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## TRAP transform propagation (2026-10-25, PR #364)
+
+An80-case original-code fixture connects TRAP initialization/callback to actual
+post-update angle invalidation, Euler caching, matrix copy/translation and point
+transformation. Native pre-sound frames produce fresh off-axis world points;
+Original keeps carried-tick holds. Cache reuse, independent trigonometric
+coordinates, pause, clocks and ABI are checked. Four independent propagation
+mutations fail. This is fixture-driven CPU evidence with controlled collision/
+sector/registration services; normal scheduling, live mesh/GPU rendering and
+physical Mac remain open. Runtime source and executable are unchanged.
+
 ## Fresh TRAP poses (2026-10-25, PR #364 follow-up)
 
 The earlier discrete-clock repair below is superseded for fractional intervals.

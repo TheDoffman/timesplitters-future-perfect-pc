@@ -3907,6 +3907,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **TRAP transform propagation (2026-10-25, PR #364):** Original-US fixture
+  connects initializer/callback, post-update dirty invalidation, Euler cache,
+  matrix helpers and original/accelerated affine point transforms through240.
+  Windows CPU propagation passes; no production/adapter change is needed.
+  Private-XBE cases skip on hosts lacking that asset. Actual frame scheduling,
+  mesh/GPU rendering, collision services and physical Mac remain
+  **Awaiting validation**; see STATUS for scope and measurements.
+
 - **Fresh TRAP steps (2026-10-25, PR #364):** Shared `pc_native_trap_guest.h`
   couples fractional force/travel with carried-tick contact lifetime, replacing
   PR363's held poses. Original/whole/catch-up arithmetic and state layout remain

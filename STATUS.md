@@ -1,3 +1,35 @@
+## TRAP angle-to-vertex propagation (2026-10-25, PR #364)
+
+The original-code `native_trap_transform.c` fixture now connects the original
+TRAP initializer/registration and callback with entity post-updateA7360, Euler
+cacheA14B0, its original matrix helpers and production affine point entry151E80.
+It exercises80 rate/slow/carried-phase/Original-native cases through240 FPS.
+The fixture drives routine order and uses controlled registration, collision
+and sector services; it does not simulate a whole mission or renderer.
+
+Changed C0 angles cause the original A74F4 store to set +28 bit0x1000. The
+matrix builder consumes/clears that bit, updates cached rotation+274, copies
+the matrix and supplies translation. Its mode2 C0 input atA15C6 reaches151650's
+direct sine/cosine evaluation. Thus the force sine table does not quantize this
+render-transform angle. An off-axis test point receives fresh world coordinates
+on every native pre-sound update; Original mode retains its carried-tick holds.
+Independent trigonometric coordinates, cache reuse, pause, clock restoration
+and ABI are checked. The production point fast path is also compared bit-for-bit
+with the complete original point body on every transform.
+
+Removing the actual invalidation store, angle input, matrix copy or point
+transform independently fails. The connected callback/matrix/public-clock test
+selection passes3 tests in32.09s; the subsequent dual point-path check passes
+in12.92s. Repository/backlog checks pass21 in3.14s. All applicable Windows/macOS
+hosted checks pass on runtime/documentation headbc3a140f; new fixture CI is separate.
+This closes the isolated CPU propagation gap without a production-code change.
+The runtime executable remains7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba.
+
+Normal frame scheduling, actual mesh identity, GPU rendering, collision services,
+normal-play trigger activation and physical Mac gameplay remain unverified.
+These CPU results are not rendered-frame or pacing measurements. Logs are
+`logs/trap-transform-connected-suite.log` and `logs/trap-transform-point-parity.log`.
+
 ## Fresh fractional TRAP motion (2026-10-25, PR #364 follow-up)
 
 PR363's discrete-clock repair preserved the original TRAP solver but still

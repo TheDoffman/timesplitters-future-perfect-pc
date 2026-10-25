@@ -47,6 +47,19 @@ gate, either conversion, either coupled operator, or contact normalization fails
 The public native clock fixture exercises the coupled map, fallback and GPU-hook
 composition on both CI hosts without game assets.
 
+`native_trap_transform.c` extends CPU propagation through original initialization
+1D8C40, callback1D8AB0, post-updateA7360, Euler cacheA14B0 and affine point151E80.
+A74F4 sets +28 bit0x1000 when C0 changes; A14B0 consumes/clears it, rebuilds
+the cached rotation at+274, copies it and supplies translation. Its mode2 path
+loads C0 atA15C6 and calls151650, which evaluates sin/cos directly; the force
+sine table is not a quantized rendering-angle lookup.80 rate/slow/phase/mode
+cases require fresh native off-axis points, Original held-frame cache reuse,
+independent trigonometric coordinates, point fast/original bit parity, pause,
+ABI and restored clocks. Four
+independent dirty-store/angle/copy/point-transform controls fail. Registration,
+collision and sector services remain spies; the fixture drives routine order.
+It does not prove normal frame scheduling, live mesh identity or GPU rendering.
+
 Rejected original-code experiments show why isolated delta scaling is wrong:
 ordinary fractional Euler motion differs by about3.49degrees at aligned240
 samples and retires at0.70417s versus Original0.81667s. The symmetric coupled
