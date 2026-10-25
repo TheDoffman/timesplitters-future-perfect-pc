@@ -6,6 +6,19 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Current Temple crowd pacing (2026-10-25, PR #364)
+
+The unchanged731288 executable completes capture-free ten-bot Enhanced-selected
+Temple routes at Original60/native144/native240, with3440x1440 device creation.
+Each complete45s window retains its target in every1s/5s bin, zero interpolation
+and sampled correct game speed. Individual frame intervals vary: worst144 is
+10.548ms, so this is not a constant-deadline claim. A separate lightweight clock
+sampler matches144 timing calls/s with accepted Presents within one in-flight
+call; held/60-Hz controls are rejected. A separate capture/trace run shows firing,
+death and respawn and is excluded from pacing. Client1920x1060 is supersampled;
+physical scanout/latency, all-map fidelity and Mac gameplay remain unverified.
+See STATUS for exact counts, bounds, screenshots and provenance.
+
 ## TRAP transform propagation (2026-10-25, PR #364)
 
 An80-case original-code fixture connects TRAP initialization/callback to actual

@@ -71,6 +71,16 @@ remain non-atomic; missing player reads are counted/excluded. `rocket_impact_sta
 counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
 captures are not synchronized to memory. See STATUS for live evidence.
 
+The Windows runner's optional `--watch-native-clock` brackets read-only timing-
+call counter7497B8 and level ticks with perf_counter_ns/QPC timestamps plus scene/
+match identity checks. This marker increments in the timing routine before
+gameplay returns; it is independent of accepted-Present CSV counters and is not
+completed simulation or GPU work. Compare successive bounded observations with
+Present clocks, allowing one in-flight call. Exclude resets, transitions, pause
+and wide read spans. Capture-free runs retain lightweight snapshots; full native
+traces and renderer captures belong in separate diagnostic runs.144 remains a
+legacy diagnostic rate; the menu presets are60/120/180/240.
+
 `native_tree_motion.c` (via `test_native_timing.py`) executes the original US
 TREE callback1D88B0, with only its two effect services replaced by spies. It
 covers phase/pose, crossing and retirement times, single events, pause, slow

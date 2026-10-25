@@ -1,3 +1,60 @@
+## Current-build Temple crowd pacing and timing calls (2026-10-25, PR #364)
+
+Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
+completes three bounded Temple multiplayer routes at Original60, diagnostic
+native144 and native240. Each uses one human/ten configured bots, FOV73 and
+Enhanced selected with Classic fallback. Device creation confirms3440x1440;
+the foreground borderless client is1920x1060, so this does not certify physical
+3440x1440 scanout. The144 rate is diagnostic; menu choices remain60/120/180/240.
+
+Capture-free runs disable full native tracing and CPU sampling, retaining light
+state/actor snapshots. Each complete45s spawn+5..50 window has19 active unpaused
+checkpoints and consecutive accepted guest Presents, with zero interpolation:
+
+| Mode | Complete intervals | Average guest Presents/s | Lowest1s/5s rate | p99 interval | Worst interval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 2699 | 60.0001 | 60/60 | 17.223ms | 17.895ms |
+| Native144 diagnostic | 6479 | 143.9996 | 144/144 | 7.535ms | 10.548ms |
+| Native240 Beta | 10799 | 240.0000 | 240/240 | 4.757ms | 6.801ms |
+
+Sampled level-game/wall ratios are1.000045,1.000047 and0.999962 respectively.
+These are complete successful host-API intervals under this workload, not GPU
+completion, scanout or physical input latency. Individual intervals still vary;
+equal one-second counts do not imply every frame hits its deadline. Bot visibility,
+AI/death paths and machine load vary, so this is not a causal speedup or all-map
+acceptance claim. The CSV guest_frame field is an accepted-guest counter, not an
+independent simulation-update identifier. All three share executable, runner and
+input-command hashes; evidence is `logs/crowd-current-temple-comparison.json`
+and each `private/test-saves/crowd-current-temple{240,144,-original60}` summary.
+
+A separate capture-free144 run enables the new read-only `--watch-native-clock`
+sampler. Across19 bounded observations it records6043 timing calls over41.970058s
+(143.9836/s). Every adjacent count agrees with accepted Presents within one
+in-flight call; maximum read span is9.6microseconds. Level-game/wall ratio is
+0.999919. Its complete45s Present window averages144.0010/s, minimum1s/5s144,
+p997.495ms and worst9.003ms. Held-counter and hypothetical60-Hz-counter controls
+are rejected. This verifies high-rate timing calls separately from Presents;
+it does not prove every subsystem consumes fractional time. Evidence:
+`private/test-saves/crowd-current-temple144-clock/native-clock-comparison.json`,
+its raw report/CSV and `logs/crowd-current-temple144-clock-comparison.log`.
+
+A separate144 diagnostic run retains renderer captures and the native trace;
+its timing is excluded. All15292 native timing markers are consecutive, including
+7895 positive game-delta rows in Temple49 from79.854848 to163.097588s. Reviewed
+3440x1440 stills show dual-pistol firing/smoke, a death camera with an armed NPC,
+and respawned firing/impact effects. Combat-four is a death camera, not evidence
+of surviving that segment. Capture overhead reduces the diagnostic update rate;
+these rows are not a144-FPS pacing result or proof of unique GPU images per frame.
+Image/trace hashes and checkpoint health are in the run's visual-acceptance.json.
+
+All five runs exit cleanly, preserve canonical profile090cced7/signatures and
+fixture checks, and recycle disposable disks/locks. No game source or executable
+changes this turn; only the Windows runner gains optional bounded counter reads.
+Shared frame-statistics/context/backlog checks pass33 tests in3.26s; runner CLI
+help succeeds. All applicable Windows/macOS hosted checks pass on c206c28a before
+this acceptance/sampler follow-up. Wider gameplay, live TRAP activation/rendering
+and physical Mac remain open.
+
 ## TRAP angle-to-vertex propagation (2026-10-25, PR #364)
 
 The original-code `native_trap_transform.c` fixture now connects the original

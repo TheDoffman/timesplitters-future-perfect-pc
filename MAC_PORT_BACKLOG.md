@@ -3907,6 +3907,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Current Temple crowd acceptance (2026-10-25, PR #364):** Unchanged Windows
+  runtime731288 completes capture-free ten-bot3440x1440 Enhanced-selected Temple
+  runs at Original60/native144/native240, with complete45s guest-Present windows
+  and sampled correct game speed. A bounded Windows read-only timing-call
+  sampler independently agrees with accepted Presents at diagnostic144. No game
+  adapter/policy change; test sampling uses the existing Windows runner. Physical
+  Mac gameplay, normal live TRAP rendering and broader maps/visual fidelity remain
+  **Awaiting validation**. Exact rates, captures, uncertainty and provenance are
+  in STATUS; hosted Mac checks do not substitute for that hardware acceptance.
+
 - **TRAP transform propagation (2026-10-25, PR #364):** Original-US fixture
   connects initializer/callback, post-update dirty invalidation, Euler cache,
   matrix helpers and original/accelerated affine point transforms through240.
