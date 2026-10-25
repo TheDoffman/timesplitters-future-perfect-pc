@@ -25303,3 +25303,34 @@ assets or generated code are committed. Next discriminate off-center contact
 response using controlled geometry and coherent solver state; do not tune
 forces, steering or collision coefficients to match a single asynchronous
 endpoint. Full handling, campaign and physical Mac acceptance remain open.
+
+
+## Two-body collision impulse contract (2026-10-25)
+
+On `test/native-vehicle-contact-acceptance`, extended the existing original-US-XBE
+rigid-motion fixture rather than tuning physics from the variable live pillar
+route. No production runtime, geometry, coefficients or executable changed.
+`native_rigid_motion.c` now lifts original166060 in addition to1667C0/16FC00 and
+checks 432 isolated frictionless two-body impacts against a separate double
+precision generalized impulse equation. Both bodies have distinct masses and
+existing spin; cases vary three-dimensional normals, lever arms, diagonal and
+rotated positive-definite world inverse-inertia tensors, approaching/separating
+motion, Original60/native120/144/180/240 and an extra0.7ms secondary step.
+
+The checks compare relative point velocity, both force impulses and both torque
+impulses, including conservation of total linear/angular impulse about the world
+origin. Largest measured component error in the focused run is0.000000649 at a
+0.00001 absolute bound. Independent mutations remove the second mass contribution
+or its torque response and must fail in the new cases. The complete existing
+vehicle timing file passes all19 tests in56.64s, retaining its clock, RNG,
+secondary-step, sleep/wake, steering, camera and other regression mutations.
+
+Original16DF60 damage/effect notification is a checked service boundary after
+force accumulation. This test observes a single impulse before integration and
+drag; it does not supply terrain broadphase, deterministic live controls,
+frictional contacts or a complete vehicle collision replay. It narrows the
+low-level response uncertainty and provides a regression contract; it does not
+prove live handling parity or rule out collision-selection/integration defects.
+Both-host CI already selects this test file, but original-routine checks require
+the private supported XBE and skip in asset-free CI. Physical Mac validation
+remains open under MAC-060. No private assets/generated guest code are tracked.

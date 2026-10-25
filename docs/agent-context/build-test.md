@@ -148,6 +148,16 @@ Private-XBE skips on CI do not certify those routines on Mac.
   all five rates, slow/fast/irregular time and pause. Static contacts compare an
   independent impulse equation, including penetration escape velocity. Mutations
   independently remove gates, timers, contacts, RNG and boundary corrections.
+  The rigid/rigid extension independently checks 432 frictionless impulse cases:
+  both masses, existing spin, three-dimensional normals and lever arms, diagonal
+  and rotated world inverse-inertia tensors, approaching/separating bodies,
+  Original60/native120/144/180/240 and an extra 0.7ms secondary step. It verifies
+  relative point velocity and both force/torque impulses before integration,
+  including linear and world-origin angular impulse conservation. Independent
+  mutations remove the second mass or its torque response. Original166060 is
+  lifted for both-body point velocity; original16DF60 damage/effect notification
+  is a checked service boundary. This is distinct from full clock scheduling,
+  live terrain selection and post-impact handling acceptance.
   Geometry, room/model notifications and broadphase services remain controlled.
 - `native_vehicle_driver.c` checks original `17DA00/172EE0` throttle, brake,
   reverse/release and steering recurrence, including wheel eligibility, speed
