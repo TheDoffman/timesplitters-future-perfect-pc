@@ -92,7 +92,15 @@ def main():
                         help='0 uses Original60; other values select native beta timing')
     parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
     parser.add_argument('--no-captures', action='store_true')
+    parser.add_argument('--require-results', action='store_true',
+                        help='Wait up to --seconds for both peers to finish and publish score rows')
+    parser.add_argument('--inspect-setup', action='store_true',
+                        help='Capture the normal setup screens, then stop before gameplay')
+    parser.add_argument('--short-match', action='store_true',
+                        help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
+    if args.inspect_setup and args.require_results:
+        parser.error('--inspect-setup cannot satisfy --require-results')
     if not args.tag.replace('-', '').isalnum() or not 10 <= args.seconds <= 180:
         parser.error('Use an alphanumeric tag and 10..180 seconds')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
@@ -167,7 +175,8 @@ def main():
                         spawn=word(peer, entity+0x258),
                         health=struct.unpack('<f', read(peer, entity+0x1cc, 4))[0]))
                 samples.append(dict(seconds=time.monotonic()-started, peer=peer,
-                    tick=word(peer, 0x7de318), humans=config[0], bots=config[2], actors=actors))
+                    tick=word(peer, 0x7de318), match_state=word(peer,0x7de30c),
+                    humans=config[0], bots=config[2], actors=actors))
             except OSError:
                 pass
     def wait(seconds):
@@ -205,17 +214,34 @@ def main():
         states = []
         for peer in range(len(handles)):
             try:
+                config=read(peer,0x7de400,0xa0)
+                pool=word(peer,0x7356d8)
+                actors=[]
+                if pool and word(peer,0x7de30c)==7 and 0<config[0]+config[2]<=16:
+                    for slot in range(config[0]+config[2]):
+                        actor=pool+slot*0xea0
+                        actors.append(dict(slot=slot,
+                            kills=struct.unpack('<16h',read(peer,actor+0xa10,32)),
+                            score=struct.unpack('<i',read(peer,actor+0xa6c,4))[0],
+                            controller_flags=read(peer,0x77728c+slot*0x124,1)[0]))
                 states.append(dict(peer=peer, network=word(peer, 0x76b1a4),
-                    role=word(peer, 0x76b140), config=list(read(peer, 0x7de400, 3))))
+                    role=word(peer, 0x76b140), config=list(config[:3]),
+                    match_state=word(peer,0x7de30c),results_ready=word(peer,0x6f1188),
+                    score_limit=word(peer,0x7de464),
+                    active_config=config.hex(),pending_config=read(peer,0x78ad58,0xa0).hex(),
+                    actor_counts=[word(peer,0x790950),word(peer,0x7a2958)],actors=actors))
             except OSError:
                 states.append(dict(peer=peer, unmapped=True))
-        print(round(time.monotonic()-started, 1), label, states, flush=True)
+        print(round(time.monotonic()-started, 1), label,
+              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors')}
+               for state in states], flush=True)
         checkpoints.append(dict(label=label, seconds=time.monotonic()-started,
             states=states, observations=[next((s for s in reversed(samples) if s['peer']==peer),None)
                                          for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if not args.no_captures and label in ('frontend','no-online-lobby','match','finished'):
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','finished',
+                                              'options-root','options-mode','options-settings','short-match-settings'):
             for peer, child in enumerate(children):
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
@@ -279,10 +305,20 @@ def main():
         # Select Deathmatch using the stock Options flow. Keep fixture bots.
         key(0, 89)
         wait(3)
+        if args.inspect_setup:report('options-root')
         key(0, 69)
         wait(2)
+        if args.inspect_setup:report('options-mode')
         key(0, 69)
         wait(2)
+        if args.short_match:
+            # Observed stock setup: GO is row13; SCORE LIMIT is row0.
+            # The fixture starts at15 points; two left taps choose5.
+            key(0,*([38]*13+[37]*2+[40]*13))
+            report('short-match-settings')
+        if args.inspect_setup:
+            report('options-settings')
+            return
         key(0, 69)
         wait(5)
         key(1, 82)
@@ -295,6 +331,8 @@ def main():
         key(0, 69)
         wait(18)
         report('match')
+        if args.short_match:
+            assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
         # Movement of each human remains independently observable.
         for peer in range(2):
             wait_alive(peer)
@@ -305,7 +343,43 @@ def main():
             report(f'move-{peer}-released')
             wait(2)
             report(f'move-{peer}-settled')
-        wait(args.seconds)
+        if args.require_results:
+            deadline=time.monotonic()+args.seconds
+            while time.monotonic()<deadline:
+                if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
+                    break
+                wait(.1)
+            else:
+                report('results-timeout')
+                raise RuntimeError('Both peers did not complete within the bounded results wait')
+            wait(2)  # Let the existing reliable final packet settle.
+            report('results')
+            results=[]
+            for peer in (0,1):
+                rows=[]
+                for index in range(8):
+                    row=read(peer,0x6f0b08+index*0x68,0x68)
+                    rows.append(dict(index=index,slot=row[0],
+                        name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
+                        kills=struct.unpack_from('<16h',row,2),
+                        deaths=struct.unpack_from('<h',row,0x4e)[0],
+                        rank=struct.unpack_from('<i',row,0x58)[0],
+                        score=struct.unpack_from('<i',row,0x5c)[0],
+                        character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
+                results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
+                                    ready=word(peer,0x6f1188),rows=rows))
+            (out/'results.json').write_text(json.dumps(results,indent=2))
+            for result in results:
+                assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
+                assert all(r['name'] for r in result['rows']), 'Missing results names'
+            def records(result):
+                return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
+                               for row in result['rows']],key=lambda row:row['slot'])
+            assert records(results[0])==records(results[1]), 'Host/client final results differ'
+            if args.short_match:
+                assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
+        else:
+            wait(args.seconds)
         report('finished')
         assert all(any(s['peer']==peer and s['humans']==2 and s['bots']>0 for s in samples)
                    for peer in (0,1)), 'No paired bot gameplay'
@@ -334,6 +408,9 @@ def main():
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
             runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
+            require_results=args.require_results,
+            inspect_setup=args.inspect_setup,
+            short_match=args.short_match,
             compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
             completed=completed, exit_codes_before_cleanup=exit_codes,

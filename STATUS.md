@@ -1,3 +1,50 @@
+## 2026-10-24 — Online bot score-limit completion
+
+Mixed-refresh completed-match testing exposed an existing Online bot eligibility
+bug. With the old `ee2e77b3` executable, both peers retained the live five-point
+limit but stayed in state7 with bot scores5,9 and10. The original US674C0
+round-limit scan filters network controller flags; AI have no controller records.
+The adapter now admits configured bot slots at return67868 using EDI, retaining
+the original team score, threshold and end-of-round authority decisions. Human,
+invalid, offline, disabled and native Mac fallback paths remain original.
+
+The supported Windows build and bundled checks pass. New executable SHA256:
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The original US result-builder and round-limit fixtures pass, including humans,
+all six bot slots, both peer roles, teams, scores4/5/6, ABI and disabled-hook
+mutations. The new original-routine check failed before the fix. Existing public
+adapter tests cover slot/feature/network/pool guards and native fallback; these
+run on both CI hosts. US routine tests require private game data. The combined
+network suite passed10 tests; boundary-expanded originals plus profile/context/
+backlog checks passed38. Context and whitespace checks pass.
+
+The isolated Original60/240 Online pair reaches state8 with both result builders
+ready, eight named records and identical per-slot kills/deaths/ranks/scores and
+character IDs. Schmidt wins with five points. Results captures at this boundary
+still show the end-of-round gameplay view; this is final-record validation,
+not a reviewed post-match menu or subsequent round. Presets and live Apply
+remain unchanged. The companion180/120 pair also completes with eight matching
+records, at its actual ten-point limit (Schmidt wins with10). Its menu
+replay missed one adjustment; it is accepted as ten-point completion evidence,
+not a five-point test. A new runner assertion rejects that mismatch on future
+`--short-match` runs. That final assertion has compilation validation only.
+
+`--require-results` enforces completed records and semantic peer equality;
+`--short-match` selects five points through the stock menu. Checkpoints retain
+active/pending configuration, scores and controller flags. Setup-only inspection
+cannot be combined with a results requirement. Async reads and two local games
+do not measure frame pacing, Internet latency or exact combat parity.
+
+Evidence: `logs/online-bots-results-limit-60-240` (rejected completion),
+`logs/online-bots-results-fixed-60-240`, `logs/online-bots-results-fixed-180-120`,
+`logs/online-limit-before.log`,
+`logs/online-limit-after.log`, `logs/online-limit-validation.log` and
+`logs/online-limit-build.log`. Four earlier diagnostic runs and the successful
+60/240 and180/120 pairs preserve signed profiles byte-for-byte and canonical fixture hashes,
+close owned children and recycle disposable partitions. Physical Mac networking
+remains queued under MAC-052; full-game acceptance remains open. Previous PR344
+head2ff8b17f passes all14 checks; this follow-up CI is separate.
+
 ## 2026-10-24 — Goal audit and mixed-preset Online coverage
 
 The acceptance audit in `docs/native-high-refresh.md` maps the original goal to

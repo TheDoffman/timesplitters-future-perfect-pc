@@ -255,6 +255,14 @@ the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
 duration/elapsed with another snapshot's clip identity can select an invalid clip.
 
+The bot score-network adapter admits configured AI at US return site67868,
+using EDI's actor slot in the original round score-limit scan. The stock
+controller-flag filter otherwise skips AI despite valid scores. Limit/team
+calculation and end-of-round authority remain original. Invalid slots, humans,
+disabled networking and native Mac retain fallback (MAC-052). The supported-US
+round routine fixture checks threshold decisions; the Online runner can require
+both peers' completed Results records.
+
 Camera and perspective corrections use `pc_display_memory.h` with a stack-local
 region after the original guest routine returns; no guest calls, allocations or
 protection changes may occur while it is reused. Bounds, overflow, read-only and

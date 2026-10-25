@@ -3490,6 +3490,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   (names, character portraits, kills/deaths, ranks and scores), preserving
   the reliable host result packet. Completed-match menus omit health/shield
   gauges; gameplay, ordinary pause and Story objectives keep their behavior.
+  PR #344's round-limit follow-up admits configured AI at the original
+  score-limit controller filter (return67868, EDI slot), preserving original
+  team/threshold/authority logic. Windows and native-fallback adapter fixtures
+  run in existing CI; supported-US routine tests need private game data.
+  Native Mac still needs the network adapter and live match/results validation.
   Current live acceptance and remaining gaps are in `STATUS.md`;
   issue #25 is not complete from a build or roster check alone.
 - **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
