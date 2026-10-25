@@ -233,6 +233,13 @@
       ]
     },
     {
+      "name": "zz-strided-vertex-copy.patch",
+      "sha256": "ed32291d77d8afca9e71c47505dfb176941c98def32250a3543997c6dd0fa283",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
       "name": "zz-texel-sample-lanes.patch",
       "sha256": "a88ff19bcf29efbc9bc5f7d0be71ea47f7ca38edc1cdb6960d80adc5e9549e2a",
       "targets": [
