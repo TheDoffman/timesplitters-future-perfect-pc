@@ -288,7 +288,7 @@ or the rendered result. The goal remains incomplete.
 | Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
 | Texture fluidity | Fractional water implementation, GPU-image cycle and resource reuse; texture contracts | Other animated/scrolling surfaces, filtering/alpha/transitions across scenes |
 | Cinematics and audio | Original polling clocks and real-file movie decoder tests; prior movie tint correction | Visible/audible synchronization across representative scenes and host output |
-| Multiplayer | Cadence/correction/replica fixtures through240; live60/240 and180/120 movement, completed five/ten-point matches and matching final records in STATUS | Damage equivalence, post-match menu/next-round visuals and cross-machine behavior |
+| Multiplayer | Cadence/correction/replica fixtures through240; mixed-preset movement, completed matches, matching results/menu captures and240/60 rematch reset/gameplay in STATUS | Exact damage equivalence, next-round completion and cross-machine behavior |
 | Prior fixes, saves and platforms | Regression checklist, isolated signed-profile preservation, shared code and host CI | Scene checks for prior fixes; physical Mac gameplay remains unverified |
 
 Mixed-preset loopback now supplies bounded movement/combat observations. Keep

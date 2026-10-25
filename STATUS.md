@@ -1,3 +1,46 @@
+## 2026-10-24 — Post-match menus and mixed-refresh rematch
+
+On the unchanged `1ae9169c` Windows executable, the isolated Original60/240 pair
+now remains open20 seconds after final records. Reviewed captures show both
+visible Results menus, eight portraits and no overlapping health gauges. The
+180/120 pair additionally navigates the Scores and Options tabs: both tables
+show identical eight-player scores, and host/guest Rematch options are present.
+Both runs load the requested five-point limit. Signed profiles and the canonical
+fixture remain unchanged; owned processes close and disposable disks recycle.
+
+The reversed240/Original60 pair completes the same menu path and chooses Rematch
+through the reviewed UI. Both peers return to network15/active state7 with the
+results-ready flag cleared, reset game clocks, the same two-human/six-bot roster
+and all eight scores zero. In the following10 seconds both advance from tick199
+to799, and all six bots change position on each peer. Reviewed rematch captures
+show gameplay/HUD on both. This verifies entry and ten seconds of the next round,
+not its completion, physical input latency, frame pacing or cross-machine play.
+The host dies/changes spawn during the first-round movement probe: that probe is
+rejected, even though the final-record/menu/rematch checks pass independently.
+
+The runner gains bounded post-result observation, tab inspection and rematch
+options. A failed fixed-count setup is retained: the240 host loaded10 points and
+the strict five-point guard stopped it. Earlier notes describing missed input
+were hypotheses. Menu inspection shows the starting choice can differ; the new
+replay reads the persistent view-root/child chain, finds row7 and the localized
+"5 points" choice, verifies focus/value after each ordinary key press, returns
+to GO row19 and checks that unrelated choices did not change. The successful
+240/60 run records28 presses, each changing the expected state. No game-memory
+writes or runtime changes are introduced. Temporary callback/transition pointers
+were rejected as menu observers; the final helper uses the persistent root.
+
+Evidence: `logs/online-bots-post-results-60-240`,
+`logs/online-bots-post-tabs-180-120`, and
+`logs/online-bots-rematch-feedback-240-60` (including menu-inputs/checkpoints,
+observations, result records, captures and runner/build hashes). The failed
+`rematch-240-60` and three setup diagnostics remain separate. Successful-run
+signed-profile/canonical-fixture and cleanup checks pass. The new argument
+dependencies/bounds reject invalid combinations before launching. The34
+profile/context/backlog tests pass. Context and
+whitespace checks pass. All14 CI checks pass on implementation headf13937cf;
+this follow-up changes tooling/documentation only. Native Mac gameplay and
+broader acceptance remain open; this adds no Mac runtime dependency.
+
 ## 2026-10-24 — Online bot score-limit completion
 
 Mixed-refresh completed-match testing exposed an existing Online bot eligibility

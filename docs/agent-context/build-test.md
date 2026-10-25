@@ -84,11 +84,11 @@ Runner timing includes16ms test-input polling; normal play does not. Its
 `tests/test_network_guest_dispatch.py` checks 20Hz snapshots rendered at
 60/120/144/180/240Hz, mixed 60..240Hz intervals, jitter/loss, wrapping, death/respawn, authority and atomic clip
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
-Windows `test-online-bot-motion.py`: isolated peers, FPS
-0/120/180/240. `--require-results` checks both peers' eight final records;
-`--short-match` selects five points. Checkpoints: limits/scores.
-`test_network_bot_results.py` lifts US result/limit routines, with AI mutations.
-Async reads are not latency measurements.
+Windows `test-online-bot-motion.py`: isolated 0/120/180/240 peers.
+`--require-results`: matching records; `--short-match`: five points via menu readback.
+`--post-results-seconds`/`--inspect-results-tabs`/`--rematch`: review transitions.
+`test_network_bot_results.py`: US routines and AI mutations.
+Async reads are not latency.
 
 Dual-host `test_launcher_release.py` / `test_publish_release.py` cover
 Stable/alpha baselines, pagination/completeness, notes and scope/merge/rename/

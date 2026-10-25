@@ -94,6 +94,12 @@ def main():
     parser.add_argument('--no-captures', action='store_true')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
+    parser.add_argument('--post-results-seconds', type=int, default=0,
+                        help='Keep observing up to 30 seconds after final records, then capture the menu')
+    parser.add_argument('--inspect-results-tabs', action='store_true',
+                        help='After the Results menu, press its Next prompt to capture Scores and Options')
+    parser.add_argument('--rematch', action='store_true',
+                        help='Use the reviewed Options rematch route and verify a fresh active round')
     parser.add_argument('--inspect-setup', action='store_true',
                         help='Capture the normal setup screens, then stop before gameplay')
     parser.add_argument('--short-match', action='store_true',
@@ -101,6 +107,12 @@ def main():
     args = parser.parse_args()
     if args.inspect_setup and args.require_results:
         parser.error('--inspect-setup cannot satisfy --require-results')
+    if not 0<=args.post_results_seconds<=30 or (args.post_results_seconds and not args.require_results):
+        parser.error('--post-results-seconds requires --require-results and 0..30 seconds')
+    if args.inspect_results_tabs and args.post_results_seconds<20:
+        parser.error('--inspect-results-tabs requires at least 20 post-results seconds')
+    if args.rematch and not args.inspect_results_tabs:
+        parser.error('--rematch requires --inspect-results-tabs')
     if not args.tag.replace('-', '').isalnum() or not 10 <= args.seconds <= 180:
         parser.error('Use an alphanumeric tag and 10..180 seconds')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
@@ -141,6 +153,7 @@ def main():
     offsets={}
     samples = []
     checkpoints = []
+    menu_inputs = []
     completed=False
     started = time.monotonic()
     def read(peer, address, size):
@@ -155,6 +168,28 @@ def main():
         return data.raw
     def word(peer, address):
         return struct.unpack('<I', read(peer, address, 4))[0]
+    def menu_state(peer):
+        # US77470 follows persistent view-root children; callback context
+        # 7BB1E8 and transition target7BA270 are normally zero between calls.
+        menu=word(peer,0x7ba26c)
+        for _ in range(16):
+            child=word(peer,menu+0x170) if menu else 0
+            if not child:break
+            menu=child
+        if not menu:raise OSError('No persistent menu')
+        rows=[];node=word(peer,menu+0x178)
+        while node and len(rows)<32:
+            row=dict(address=node,id=word(peer,node+0x14),choice=word(peer,node+0xc8))
+            if row['id']==7:
+                choice=word(peer,node+0xd8);labels=[]
+                while choice and len(labels)<64:
+                    # US717D0 stores choice text at+4;75430 follows+10.
+                    label=word(peer,choice+4)
+                    labels.append(read(peer,label,96).split(b'\0',1)[0].decode('latin1'))
+                    choice=word(peer,choice+0x10)
+                row['labels']=labels
+            rows.append(row);node=word(peer,node+4)
+        return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
         for peer in range(len(handles)):
             try:
@@ -186,10 +221,10 @@ def main():
                 raise RuntimeError('A game exited early')
             observe()
             time.sleep(.008)
-    def key(peer, *keys):
+    def key(peer, *keys, hold=.18):
         for value in keys:
             atomic(inputs[peer], f'{value} 1\n')
-            wait(.18)
+            wait(hold)
             atomic(inputs[peer], '0 0\n')
             wait(.6)
     def wait_alive(slot):
@@ -230,18 +265,24 @@ def main():
                     score_limit=word(peer,0x7de464),
                     active_config=config.hex(),pending_config=read(peer,0x78ad58,0xa0).hex(),
                     actor_counts=[word(peer,0x790950),word(peer,0x7a2958)],actors=actors))
+                if label in ('options-settings-initial','short-match-settings','options-settings'):
+                    try:
+                        states[-1]['menu']=menu_state(peer)
+                    except OSError as error:
+                        states[-1]['menu_error']=str(error)
             except OSError:
                 states.append(dict(peer=peer, unmapped=True))
         print(round(time.monotonic()-started, 1), label,
-              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors')}
+              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors','menu')}
                for state in states], flush=True)
         checkpoints.append(dict(label=label, seconds=time.monotonic()-started,
             states=states, observations=[next((s for s in reversed(samples) if s['peer']==peer),None)
                                          for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','finished',
-                                              'options-root','options-mode','options-settings','short-match-settings'):
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
+                                              'scores-tab','options-tab','rematch','finished',
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings'):
             for peer, child in enumerate(children):
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
@@ -312,9 +353,35 @@ def main():
         key(0, 69)
         wait(2)
         if args.short_match:
-            # Observed stock setup: GO is row13; SCORE LIMIT is row0.
-            # The fixture starts at15 points; two left taps choose5.
-            key(0,*([38]*13+[37]*2+[40]*13))
+            report('options-settings-initial')
+            initial=menu_state(0)
+            score=next(r for r in initial['rows'] if r['id']==7)
+            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(r'\s*5\s+points?\s*',label,re.I)]
+            assert len(targets)==1, 'Could not identify the five-point menu choice'
+            def menu_key(value):
+                before=menu_state(0)
+                key(0,value)
+                after=menu_state(0)
+                menu_inputs.append(dict(key=value,seconds=time.monotonic()-started,
+                                        before=before,after=after))
+            for _ in range(32):
+                if menu_state(0)['selected']==7:break
+                menu_key(38)
+            else:raise RuntimeError('Score-limit row did not become selected')
+            for _ in range(32):
+                current=menu_state(0)
+                assert current['selected']==7, 'Score-limit focus changed'
+                choice=next(r['choice'] for r in current['rows'] if r['id']==7)
+                if choice==targets[0]:break
+                menu_key(37 if choice>targets[0] else 39)
+            else:raise RuntimeError('Five-point menu choice did not become selected')
+            for _ in range(32):
+                if menu_state(0)['selected']==19:break
+                menu_key(40)
+            else:raise RuntimeError('GO row did not become selected')
+            def other_choices(state):
+                return {r['id']:r['choice'] for r in state['rows'] if r['id'] not in (7,0xffffffff)}
+            assert other_choices(initial)==other_choices(menu_state(0)), 'Unrelated menu choice changed'
             report('short-match-settings')
         if args.inspect_setup:
             report('options-settings')
@@ -378,6 +445,37 @@ def main():
             assert records(results[0])==records(results[1]), 'Host/client final results differ'
             if args.short_match:
                 assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
+            if args.post_results_seconds:
+                wait(args.post_results_seconds)
+                report('post-results')
+            if args.inspect_results_tabs:
+                for label in ('scores-tab','options-tab'):
+                    for peer in (0,1):key(peer,69)
+                    wait(2)
+                    report(label)
+            if args.rematch:
+                previous_ticks=[word(peer,0x7de318) for peer in (0,1)]
+                # Reviewed Options: guest defaults to Rematch; host has Change
+                # Game Type above it. Let the guest request before the host.
+                key(1,69)
+                key(0,40,69)
+                deadline=time.monotonic()+30
+                while time.monotonic()<deadline:
+                    if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and
+                           word(peer,0x6f1188)==0 and word(peer,0x7de318)<previous_ticks[peer]
+                           for peer in (0,1)):
+                        break
+                    wait(.1)
+                else:
+                    report('rematch-timeout')
+                    raise RuntimeError('Rematch did not become a fresh active round on both peers')
+                report('rematch-start')
+                for peer in (0,1):
+                    pool=word(peer,0x7356d8)
+                    assert pool and read(peer,0x7de400,3)==bytes((2,1,6)), 'Rematch roster changed'
+                    assert all(word(peer,pool+slot*0xea0+0xa6c)==0 for slot in range(8)), 'Rematch retained scores'
+                wait(10)
+                report('rematch')
         else:
             wait(args.seconds)
         report('finished')
@@ -404,11 +502,15 @@ def main():
         server.shutdown(); server.server_close(); thread.join()
         (out/'observations.json').write_text(json.dumps(samples))
         (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
+        (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         (out/'provenance.json').write_text(json.dumps(dict(
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
             runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
             require_results=args.require_results,
+            post_results_seconds=args.post_results_seconds,
+            inspect_results_tabs=args.inspect_results_tabs,
+            rematch=args.rematch,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
             compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',
