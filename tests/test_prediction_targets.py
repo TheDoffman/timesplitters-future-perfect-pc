@@ -38,7 +38,7 @@ static IDirect3DDevice8 *hle_d3d8_shadow_device(void) { return NULL; }
         'clear': section('typedef struct { DWORD count, flags;', 'HRESULT host_Clear('),
         'draw': section('typedef struct { DWORD type; UINT prims, stride;', 'typedef struct {\n    DWORD type;'),
         'indexed': section('typedef struct {\n    DWORD type;', 'HRESULT host_DrawPrimitiveUP('),
-        'copy': section('typedef struct { IDirect3DTexture8 *dst;', 'HRESULT host_CopyBackBufferToTexture('),
+        'copy': section('typedef struct { IDirect3DTexture8 *dst, *source;', 'HRESULT host_CopyBackBufferToTexture('),
     }
     for name, code in parts.items():
         if mutation == name:

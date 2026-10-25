@@ -912,6 +912,15 @@ validated mappings, cross-frame/scene rejection,8192rows/8MiB cap. Mapping cache
 never span guest execution. Disabled/failed/capped traces keep original callee.
 CPU evidence only; rendering/pacing and physical Mac remain unverified.
 
+## Temporal Uplink map display
+
+The shared HLE screen-copy hook saves Future Perfect's preclear map image
+and supplies its map region to the handheld texture later in the frame.
+Native GL implements the same texture-region transfer in
+`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
+state. The map geometry and gameplay controls remain guest-owned; this adapter
+only transfers the image that the game already drew.
+
 ## Forced and damped material scrolling
 
 `pc_native_material.h` splits127500 velocity/travel in raw game time:

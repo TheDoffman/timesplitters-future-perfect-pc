@@ -948,6 +948,16 @@ fixtures now use beta.N, with explicit legacy rejection/history and independent
 Beta baseline tests. Existing generic semantic-version ordering tests still cover
 alpha/beta ordering separately from the new publication policy.
 
+## Temporal Uplink regression route
+
+`tests/rhi_screen_copy.h` exercises the production GPU screen-copy pass by
+copying a saved texture region after clearing the source scene. Run
+`python -m pytest tests/test_rhi_menu_sampling.py -q` on Windows. The shared
+runtime patch stack is checked by `tests/test_patch_updates.py`; a native GL
+build and live Scotland the Brave Uplink view remain separate platform and
+visual validation routes. Replay captures alone cannot verify this effect
+because the host copies are not serialized into replay frames.
+
 ## Coupled water operator checks
 
 See [water and procedural-surface validation](water-tests.md) for the complete

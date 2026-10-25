@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "dff2693bab8cb98e42ae19a9bb82d8fe7987a6a99452192546af859c61577729",
+  "loaderSha256": "e00e04af4574b2177104c11260e17f8b4d9034ddfaf49b468f5edbfaf3911b6e",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1411,6 +1411,17 @@
       "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
       "targets": [
         "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-temporal-uplink-map.patch",
+      "sha256": "42b03d3b0f05e5db7342700d8fe9a5bb8983acd4d43c72a1660bace14d295a03",
+      "targets": [
+        "src/d3d/d3d8_screencopy.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h"
       ]
     },
     {
