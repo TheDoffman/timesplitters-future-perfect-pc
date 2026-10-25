@@ -478,6 +478,13 @@ class LauncherReleaseTests(unittest.TestCase):
         self.assertIn('TimeSplitters-Launcher-v${{ steps.plan.outputs.version }}-windows-x64.zip', shared)
         self.assertIn('TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-macos-arm64.zip', shared)
 
+    def test_publication_checkout_includes_changelog_baseline_and_commit_history(self):
+        workflow = (ROOT/'.github/workflows/launcher-release.yml').read_text()
+        publish = workflow.split('\n  publish:\n', 1)[1]
+        checkout = publish.split('      - uses: actions/checkout@', 1)[1].split('      - uses:', 1)[0]
+        self.assertIn('fetch-depth: 0', checkout,
+                      'Launcher changelogs need prior release tags and the complete commit range.')
+
     def test_readme_download_links_do_not_depend_on_removed_aliases(self):
         readme = (ROOT/'README.md').read_text(encoding='utf-8')
         self.assertIn('href="https://github.com/'+release.REPOSITORY+'/releases/latest"', readme)
