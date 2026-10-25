@@ -248,6 +248,17 @@ static void boost_resource_clock(void)
     assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
     puts("PASS: boost drain and recovery retain original time budgets at 60/120/144");
 }
+static double statistics_seconds;
+static unsigned statistics_ticks;
+void sub_000D1FD0(void)
+{
+    unsigned whole=WORD(0x4e7944);
+    if(pc_native_global_load(0xd2079,0x4e7944,whole)) {
+        statistics_seconds+=FLOAT(0x4e794c)/60.;
+        statistics_ticks+=pc_native_global_load(0xd20f0,0x4e7944,whole);
+    }
+    g_esp+=4;
+}
 /* Asset-free policy coverage on both CI hosts. The private-US fixture also
  * executes the actual callback, pose arithmetic and event crossings. */
 static void tree_phase_clock(void)
@@ -283,6 +294,16 @@ static void tree_phase_clock(void)
     }
     g_tsfp_native_timing_active=1;FLOAT(0x4e794c)=0;
     assert(!pc_native_global_load(0x1d8ab0,0x4e7944,1));
+    statistics_seconds=0;statistics_ticks=0;
+    for(unsigned f=1;f<=240;f++) {
+        unsigned whole=f/4-(f-1)/4;WORD(0x4e7944)=whole;FLOAT(0x4e794c)=.25f;
+        g_esp=0x1000;RECOMP_DIRECT_CALLEE_AT(0xD2CB7,sub_000D1FD0)();
+        assert(g_esp==0x1004 && FLOAT(0x4e794c)==.25f && WORD(0x4e7944)==whole);
+    }
+    assert(statistics_seconds>.99999 && statistics_seconds<1.00001 && statistics_ticks==60);
+    FLOAT(0x4e794c)=0;assert(!pc_native_global_load(0xd2079,0x4e7944,1));
+    g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
+    assert(!pc_native_global_load(0xd2079,0x4e7944,0));
 }
 int main(void)
 {

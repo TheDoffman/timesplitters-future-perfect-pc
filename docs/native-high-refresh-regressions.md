@@ -6,6 +6,22 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Player-statistics timing (2026-10-25)
+
+D1FD0's whole gate records only0.25 seconds per game second at240 for two
+time counters. D2CB7 now scopes/restores its float delta to carried ticks,
+preserving original float-addition cadence while recording caller-computed
+distance every frame. D2079's pause guard blocks stale tick counts.
+Original-US tests cover160 rate/slow/phase/hour schedules, eligibility,
+distance, pause, uneven intervals, fallback and ten-minute bit-equal time totals.
+Opening the gate alone fails long-run rounding parity. Independent scope/pause
+mutations fail; the public fixture covers dispatcher/restoration on both CI hosts.
+Windows build and119 timing/vehicle tests pass. Native240 Disco statistics
+progress agrees with the integer clock within0.0043s over31.28s; this is bounded
+counter evidence, not pacing or broad gameplay validation. The matching
+Original60 route differs by0.0027s over41.18s and also exits cleanly with
+fixture/profile preservation. Physical Mac remains pending; see STATUS.
+
 ## Mansion TREE live progression (2026-10-25)
 
 Read-only map callback records and the in-game menu locate TREE/TRAP in Mansion

@@ -1,3 +1,54 @@
+## Player-statistics clock at native refresh (2026-10-25)
+
+Original-US player bookkeeping `D1FD0` converts the current float game delta
+to seconds, then records two time counters only on carried whole ticks. At
+native240 this records0.25 seconds for one elapsed game second, while its
+integer clock still records60 ticks. Other time counters outside that gate
+already receive the full second. Opening the gate on every frame repairs short
+totals but changes float rounding: a ten-minute Original60 run records599.897644
+seconds, whereas that rejected candidate records600.473572 at native240.
+
+The shared `pc_native_statistics_guest.h` scopes only this routine's float
+game delta to the authored carried tick span at direct callD2CB7, restoring
+the incoming fractional delta on return. The original eligibility, clock
+conditions and accumulator remain in charge. Precomputed movement-distance
+arguments are recorded every native update. D2079 rejects stale whole ticks
+when the live/scoped float delta is zero. No retained state, saved layout,
+solver or platform adapter changes.
+
+`native_player_statistics.c` executes the original bookkeeping, clock getter,
+eligibility and accumulator in160 schedules at60/120/144/180/240, slow time,
+carried phases and hour0/5/6/23. It checks distance inputs, pause, uneven steps,
+ineligible players, match state, ABI, exact whole/catch-up fallback and five
+bit-equal ten-minute totals against Original60. Missing scope or pause guard
+independently fails. The public clock fixture exercises the production callee
+selection and delta restoration without private game data. A copied-header
+reload fixture now also resolves the new helper before compiling mutations.
+
+Windows supported rebuild and bundled checks pass. Executable SHA256:
+`beb523eff40f7fac0f3b4288f114390d18a2385d6b3b9c8620327e0b0187a036`.
+The complete timing/vehicle suite passes119 tests in206.60s; repository/backlog
+checks pass21 in4.09s. These original-routine tests use the supported private
+US XBE; CI without that data can only run the public coverage.
+
+On that executable, isolated Disco multiplayer with one human and ten bots
+completes the native240 combat route with clean exit, valid profile signatures,
+canonical fixture preservation and disposable-disk cleanup. A read-only20Hz
+observer compares counter29 with integer clock7DE328 within an unchanged
+active subject/scene epoch:31.287628 recorded seconds vs31.283333 clock seconds
+over623 observations (difference0.004295s). Hour20 counter4B remains zero as
+required by the original hour<6 condition. Evidence is in ignored
+`private/test-saves/stats-scoped-240/{statistics-results,statistics-provenance}.json`
+and `logs/native-player-stats-live-240.log`. Asynchronous process observations
+are not atomic frame, performance, damage or full-game parity measurements.
+The matching Original60 route also completes cleanly with the same profile/
+fixture checks:41.186016 recorded seconds vs41.183333 clock seconds over820
+stable observations (difference0.002683s). Its evidence is under
+`private/test-saves/stats-scoped-original` and
+`logs/native-player-stats-live-original.log`. Both runs use the same executable
+and bounded observer; unrelated state-conditioned counters are not compared
+across different combat outcomes. Physical Mac gameplay remains pending.
+
 ## Issue #256 follow-up: movement and mouse capture (2026-10-25)
 
 The merged radial-deadzone change did not remove the slowdown in gameplay.

@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Player-statistics clock (2026-10-25, branch `fix/native-statistics-clock`):** Shared
+  `pc_native_statistics_guest.h` and D2CB7 numeric callee dispatch scope D1FD0
+  time bookkeeping to authored carried ticks, restoring the float delta on
+  return. Distance inputs stay per-frame; no OS adapter or saved layout changes.
+  Original-US/public clock tests cover pause, fallback, counter eligibility and
+  long-run float-addition parity through240. Windows build and isolated
+  Original60/native240 Disco counter progression pass; native Mac
+  physical execution remains **Awaiting validation**. See STATUS for live checks.
+
 - **TRAP solver clock (2026-10-25, PR #363):** Shared numeric policy in
   `src/pc_native_numeric.h` keeps two TRAP phase/travel conversions in the same
   whole-tick span as its fixed per-call impulse; a pause override rejects stale

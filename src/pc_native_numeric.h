@@ -12,6 +12,10 @@ extern int pc_model_transform_entry(void);
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 #include "pc_native_material.h"
+#include "pc_native_statistics_guest.h"
+extern void sub_000D1FD0(void);
+static inline void pc_native_player_statistics(void)
+{ pc_native_statistics_guest(sub_000D1FD0); }
 /* Only these audited US127500 multiplications receive the material pointer
  * and its already-clamped/scaled forcing register. All original loads/stores,
  * force sampling, wrapping and procedural resource/event order still execute. */
@@ -152,9 +156,9 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * The procedural-texture dispatcher likewise must not evolve its image
      * during a zero-float pause; its gate register is replaced by a render-
      * state return value before use. Positive intervals stay original. */
-    /* The discrete TRAP solver must also freeze when a local pause leaves
-     * a stale whole count; positive-time calls keep their original gate. */
-    if ((site == 0x1D8AB0u || site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
+    /* Discrete TRAP and player-statistics clocks freeze when a local pause
+     * leaves stale whole ticks; positive-time calls keep their original gate. */
+    if ((site == 0xD2079u || site == 0x1D8AB0u || site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
         return 0;
@@ -516,7 +520,8 @@ extern void pc_native_physics_solver(void),pc_native_physics_random(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0x120BBFu ? pc_native_character_scale : \
+    ((site)==0xD2CB7u ? pc_native_player_statistics : \
+    (site)==0x120BBFu ? pc_native_character_scale : \
     ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \

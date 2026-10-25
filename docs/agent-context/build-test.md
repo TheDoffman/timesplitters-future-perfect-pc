@@ -85,6 +85,17 @@ gate are independent failing controls; either conversion repair removed also
 fails. Pause/catch-up and nearby continuous conversion behavior are covered.
 This proves authored discrete solver parity, not fresh fractional trap poses.
 
+`native_player_statistics.c` runs original D1FD0, clock getter, eligibility and
+float accumulator through the production D2CB7 callee scope.160 rate/slow/phase/
+hour schedules cover60..240, movement-distance inputs, pause, uneven intervals,
+eligibility and exact whole/catch-up fallback. Ten-minute native240 time totals
+must be bit-equal to Original60; per-frame float addition fails this precision
+check. Independent missing-scope and missing-pause-guard controls fail. The public
+clock fixture covers dispatcher/restoration on both CI hosts. Private US XBE
+cases skip without the asset; they do not establish physical Mac gameplay.
+Copied numeric-policy fixtures must resolve all relative helper includes,
+including `pc_native_statistics_guest.h`, before mutation compilation.
+
 ## Choose the cheapest relevant check
 
 Launcher publisher tests require full checkout history for release notes.

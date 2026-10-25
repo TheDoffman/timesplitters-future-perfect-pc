@@ -206,6 +206,7 @@ def test_reload_compare_gate(tmp_path, separated, mutation):
     policy=(ROOT/'src/pc_native_numeric.h').read_text(encoding='utf-8')
     policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
     policy=policy.replace('"pc_native_material.h"','"'+(ROOT/'src/pc_native_material.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_statistics_guest.h"','"'+(ROOT/'src/pc_native_statistics_guest.h').as_posix()+'"')
     if mutation=='whole-tick-policy':
         assert policy.count('site == 0x1C2F09u')==1
         policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
@@ -401,6 +402,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
     ('native_tree_motion.c', [(0x1d88b0,0x1d89d9)]),
     ('native_trap_motion.c', [(0x12010,0x12017),(0x153c20,0x153c57),(0x1d8ab0,0x1d8c40)]),
+    ('native_player_statistics.c', [(0xd1fd0,0xd2188),(0x150200,0x150226),
+                                   (0x2382b0,0x23833b),(0x238510,0x23854c)]),
     ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                               (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
     ('native_reload_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d),(0x1c2e80,0x1c30f3),(0x42760,0x427ac),(0x427b0,0x427e8)]),
@@ -585,6 +588,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                 0x475ce8,0x475dbc,0x4783dc,0x47d3a4,0x47d564,
                                 0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578,
                                 0x475d28,0x4785cc,0x4785d0,0x4785d4,0x475ccc,0x475d40))
+        if harness_name=='native_player_statistics.c':
+            import struct
+            constants=f'MEM32(0x475c78)=0x{struct.unpack_from("<I",image,config.va_to_file_offset(0x475c78))[0]:08x};'
         if harness_name=='native_trap_motion.c':
             import struct
             constants='\n'.join(
@@ -724,6 +730,14 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
+    if harness_name=='native_player_statistics.c':
+        for needle,replacement in (
+            ('RECOMP_DIRECT_CALLEE_AT(0xD2CB7,sub_000D1FD0)','sub_000D1FD0'),
+            ('RECOMP_LOAD_GLOBAL_U32(0xD2079, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)'),
+        ):
+            assert source.count(needle)==1
+            with pytest.raises(AssertionError,match='legacy_stats'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
     if harness_name=='native_trap_motion.c':
         for site in (0x1d8af5,0x1d8b6a):
             needle=f'RECOMP_I32_TO_F32_AT(0x{site:X}, 0x4E7944, MEM32(0x4E7944))'
