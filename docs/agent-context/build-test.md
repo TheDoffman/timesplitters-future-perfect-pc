@@ -71,6 +71,20 @@ remain non-atomic; missing player reads are counted/excluded. `rocket_impact_sta
 counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
 captures are not synchronized to memory. See STATUS for live evidence.
 
+`native_tree_motion.c` (via `test_native_timing.py`) executes the original US
+TREE callback1D88B0, with only its two effect services replaced by spies. It
+covers phase/pose, crossing and retirement times, single events, pause, slow
+time, carried phases and exact whole/catch-up fallback through240; removing
+the gate correction fails. The asset-free native clock fixture checks this
+policy on both CI hosts. A private-XBE skip is not physical Mac/scene evidence.
+
+`native_trap_motion.c` executes the original TRAP solver and sine-table init,
+comparing complete state and sound/removal spies against Original at every
+frame of40 rate/slow/phase schedules. Mixed-clock conversions and an always-open
+gate are independent failing controls; either conversion repair removed also
+fails. Pause/catch-up and nearby continuous conversion behavior are covered.
+This proves authored discrete solver parity, not fresh fractional trap poses.
+
 ## Choose the cheapest relevant check
 
 Launcher publisher tests require full checkout history for release notes.

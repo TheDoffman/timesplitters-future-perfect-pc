@@ -6,6 +6,104 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Mansion TREE live progression (2026-10-25)
+
+Read-only map callback records and the in-game menu locate TREE/TRAP in Mansion
+of Madness, Story index4/scene1. Normal isolated entrance play on the current
+1fe73b2c executable activates TREE in Original60/native240. Both have91 active
+observations, monotonic phase, matching original sampled pose math, terminal80
+clamp and active-state clearing. Their activation-duration brackets overlap
+around4.53–4.63s; terminal phase differs by less than one original tick. Signed
+profiles and clean exits/cleanup pass. No production change was needed.
+
+The observed foyer rendering does not identify the TREE mesh. Full rendered
+target/event-service parity, live TRAP activation and physical Mac remain open;
+process reads/traces/captures are not pacing or per-frame atomic evidence. See
+[STATUS](../STATUS.md#mansion-tree-live-activation-and-phase-2026-10-25-pr-363)
+for source mapping, provenance, corrected serialized offsets and limitations.
+
+## Scripted TRAP mixed clock (2026-10-25)
+
+TRAP1D8AB0 adds a fixed impulse once per whole-tick call, but broad native
+conversion replaces its phase/travel span with only that native frame's
+fraction. Original-routine comparisons reproduce altered motion/state/event
+progression. Preserve the authored solver by retaining whole units at only
+1D8AF5/1D8B6A; freeze its gate when a local pause leaves a stale carried tick.
+Opening the gate on every native frame would multiply impulses and also fails.
+
+The fixture executes the original solver, sine-table initializer and sine
+helper. Forty schedules through240/slow time/carried phases compare full entity
+bytes and sound/control/removal calls at every frame with Original; catch-up
+and pause are covered. Restoring either conversion or opening the gate is a
+failing control. All118 timing/vehicle tests,21 context/backlog checks and the
+supported Windows rebuild/bundled checks pass. Asset-free clock checks run on
+both CI hosts; private assets
+are needed for original-routine execution. This restores60Hz-authored mechanics,
+not fresh fractional trap poses or live scene/Mac acceptance. See
+[STATUS](../STATUS.md#trap-solver-mixed-clock-repair-2026-10-25).
+
+## Scripted TREE callback phase (2026-10-25)
+
+Original US1D88B0 integrates its animation phase with float game time, but its
+whole-tick entry gate drops subticks. Original-routine execution reproduces
+phase0.25 after one game second at native240. A site-specific gate correction
+admits positive fractional intervals; the original routine retains pose math,
+event crossings, terminal clamp and state. Neighbor callback1D8AB0 remains
+outside the repair because it has separate per-call behavior.
+
+Forty original-routine schedules through240 cover phase/pose, slow time, carried
+phases, pause, single crossing/completion events, event times, ABI and exact
+whole/catch-up fallback. Restoring the old gate fails. The asset-free clock
+fixture covers the policy on both CI hosts; private-XBE cases skip without
+supported assets and do not certify Mac gameplay. All117 timing/vehicle tests,
+21 context/backlog checks and the supported Windows build/bundled checks pass.
+Live TREE activation/rendered appearance and physical Mac remain unverified.
+See [STATUS](../STATUS.md#tree-callback-fractional-phase-gate-2026-10-25).
+
+## Merged-main Challenge timeout and pause (2026-10-25)
+
+A supported Windows rebuild including main063789df completes Hart Attack's
+zero-score timeout route at Original60 and native240. Both enter Game Over in
+the same observed level-tick bracket5581..5584, retain health, hold their clock
+through an eight-second pause and resume at normal speed. Ordinary forward
+movement works and the three-second firing hold consumes eight pistol rounds
+in each run. Reviewed captures show the challenge HUD, pause menu and zero-score
+result screen in both modes. The signed test profile and canonical fixture stay
+unchanged; both games exit cleanly.
+
+This validates the sampled Challenge failure/timeout path, not a medal-winning
+run, target scoring/animation, damage parity, identical displacement or the full
+Challenge mode. Capture-bearing runs do not establish pacing; their native
+Present recorder caps at20,000 rows before the late window. Separate repeats
+without captures/traces and with delayed recording measure60.000/239.997FPS
+over approximately28seconds, with consecutive fresh guest IDs. Native p99 is
+4.713ms/worst5.736ms, game/wall1.000023; this is the stationary late phase, not
+crowded combat. Device1280x720 and selected-window client640x480 differ, so no
+physical display-resolution claim follows. One native paused
+position observation is unavailable and excluded; all159 paused clock readings
+remain valid/fixed. See [STATUS](../STATUS.md#merged-main-hart-attack-timeout-and-pause-2026-10-25)
+for reproducibility, measurements and limits. No production change was justified.
+
+## Mixed-rate Online results and rematches (2026-10-25)
+
+Two isolated local Online peers complete a five-point Deathmatch and a full
+rematch with Original60 hosting native240, then with native240 hosting
+Original60. Both rounds in each direction produce matching final records for
+all eight participants (two humans, six bots). Normal Results, Scores and
+Options navigation works; the rematch resets all eight scores and the match
+clock before completing again. Owned-window captures show the results and
+score table rendered, including the 240 FPS Beta overlay.
+
+These runs use executable `4d09cd2c`, built before main's later controller/
+mouse-capture changes; they do not validate a rebuild of merged main. They use
+the production Online directory/browser/bridge on loopback, asynchronous
+memory observations and test-window captures. They establish this match-flow
+and final-record behavior, not clean pacing, identical combat trajectories,
+physical latency, remote Internet behavior or Mac networking. The runner
+intentionally terminates its owned games after acceptance and preserves the
+signed test profiles. See [STATUS](../STATUS.md#mixed-rate-online-match-completion-and-rematches-2026-10-25)
+for commands, provenance and limitations. No production change was needed.
+
 ## Current Windows audio output presence (2026-10-25)
 
 The current4d09cd2c executable completes ten-bot Disco sessions at native240

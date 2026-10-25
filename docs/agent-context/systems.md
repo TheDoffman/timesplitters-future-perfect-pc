@@ -917,16 +917,17 @@ evidence, not rendered parity or pacing. Physical Mac remains unverified.
 
 ## Forced and damped material scrolling
 
-`pc_native_material.h` splits the original127500 affine velocity/travel map in
-raw time at the current game speed. Shared numeric policy routes only12765B
-(forcing),1276FD/127705 (damping),12773B/127791 (U/V travel), using the original
-parameter pointer and held forcing register. Coupling travel to velocity matters:
-normalizing damping alone still changes texture displacement. Zero drag uses the
-finite acceleration limit; weak damping uses a stable series. Original mode,
-whole/catch-up raw intervals and unsupported/nonpositive decay bases retain
-original arithmetic. This changes no material state layout or resource ownership.
-Original force-table sampling, clamp, UV wrapping, procedural image dispatch and
-pause still execute. It does not normalize a force that changes within an authored
-interval or prove all live material behavior. Asset-free partitions and original
-surface/caching fixtures cover the arithmetic; live visual/Mac acceptance remains
-separate. See STATUS for measured before/after error and current build evidence.
+`pc_native_material.h` splits127500's coupled velocity/travel map in raw time
+at game speed:12765Bforce,1276FD/127705drag,12773B/127791UV. Zero/weak drag
+uses stable limits; Original/whole/catch-up/unsupported bases keep old math.
+Force sample/clamp, wrapping, resources/events, layout and pause stay original.
+Varying force and rendered/Mac parity remain open; see surface/cache tests and STATUS.
+
+## Scripted object clocks
+
+TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
+Original phase/pose, events, terminal clamp, layout and whole updates remain.
+TRAP1D8AB0 keeps its whole gate and fixed impulse; only1D8AF5/1D8B6A phase/travel
+conversions use that carried span. A pause-only gate override rejects stale
+whole counts. This restores the nonlinear solver, not fractional trap poses.
+Original-US/public clock tests cover these policies; live scenes/Mac remain open.
