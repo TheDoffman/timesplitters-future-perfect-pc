@@ -804,8 +804,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   E and Space as Confirm, with press/release assertions, and verifies that the
   fixture's retained third entry (Return) remains inactive. It previously
   required Return despite that cap. This changes only test expectations;
-  gameplay bindings and physical-input acceptance remain unchanged. Native
-  release validation is pending the clean committed build.
+  gameplay bindings and physical-input acceptance remain unchanged. Clean
+  revision `6f105606` passed three CTests plus native renderer, input, Cocoa
+  settings and debug checks on Apple M4/macOS 27.0.1. Synthetic checks do not
+  replace physical keyboard or gameplay acceptance.
 
 - **Issue #182 follow-up (2026-10-21, this change):** Shared
   `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
