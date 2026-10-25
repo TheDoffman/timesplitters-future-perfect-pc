@@ -127,9 +127,9 @@ int main(int argc,char **argv) {
         assert(fabsf(MEMF(PLAYER+0xa8)+3.f/sqrtf(2.f))<.0001f);
         assert(fabsf(MEMF(PLAYER+0xb0)+3.f/sqrtf(2.f))<.0001f);
     }
-    /* The PC keyboard sampler maps W+D to (23169,23169), just below a full
-       stick radius. Feed those components to the original walking routine
-       and compare one second of travel with W at every supported cadence. */
+    /* Keep a full-radius guest-only reference across frame rates. The PC
+       sampler applies an additional diagonal correction after this point;
+       live player-position tests cover the complete input path. */
     for(unsigned mode=0;mode<sizeof rates/sizeof rates[0];mode++) {
         unsigned fps=rates[mode];float diagonal=23169.f/32767.f;
         float straight_distance,diagonal_distance;

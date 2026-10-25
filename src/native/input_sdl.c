@@ -34,6 +34,7 @@ static pthread_mutex_t camera_lock=PTHREAD_MUTEX_INITIALIZER;
 static atomic_int mouse_enabled=1, mouse_invert;
 static _Atomic float mouse_sensitivity=0.10f;
 static atomic_int captured;
+static int capture_desired;
 static int capture_click;
 static atomic_int menu_active, menu_capture_request;
 /* Published under camera_lock; only the SDL thread calls window APIs. */
@@ -173,6 +174,7 @@ static void clear_mouse(void) {
 }
 /* Main-thread only: worker polls see only the cleared/published atomics. */
 static void set_capture(SDL_Window *window,int wanted) {
+    capture_desired=!!wanted;
     wanted=!!wanted && atomic_load(&focused) && atomic_load(&mouse_enabled);
     if(window && !SDL_SetWindowRelativeMouseMode(window,wanted)) {
         fprintf(stderr,"[native-input] cannot %s mouse capture: %s\n",wanted?"enable":"release",SDL_GetError());
@@ -245,9 +247,15 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     if(e->type==SDL_EVENT_WINDOW_MOUSE_LEAVE) {
         pthread_mutex_lock(&camera_lock);menu_pointer_state.valid=0;pthread_mutex_unlock(&camera_lock);
     }
-    if(e->type==SDL_EVENT_WINDOW_FOCUS_GAINED){release_all();atomic_store(&focused,1);fprintf(stderr,"[native-input] window focused\n");}
+    if(e->type==SDL_EVENT_WINDOW_FOCUS_GAINED){
+        release_all();atomic_store(&focused,1);
+        if(capture_desired && !atomic_load(&menu_active))set_capture(window,1);
+        fprintf(stderr,"[native-input] window focused\n");
+    }
     if(e->type==SDL_EVENT_WINDOW_FOCUS_LOST){
+        int restore=capture_desired;
         atomic_store(&focused,0);release_all();set_capture(window,0);
+        capture_desired=restore;
         fprintf(stderr,"[native-input] focus lost; controls released\n");
     }
     if(e->type==SDL_EVENT_TEXT_INPUT) {
@@ -489,12 +497,12 @@ int tsfp_native_input_test(void) {
     recomp_bindings_sample(0,&pad);ok &= !!(pad.wButtons&XBOX_GAMEPAD_DPAD_DOWN);
     e.key.scancode=SDL_SCANCODE_W;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.sThumbLY>30000;
-    /* Both hosts use pc_input.c: W+D must have the same stick radius as W. */
+    /* Both hosts compensate the game's later diagonal attenuation. */
     e.key.scancode=SDL_SCANCODE_D;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);
-    ok &= pad.sThumbLX==pad.sThumbLY && pad.sThumbLX>23000 &&
-          hypot(pad.sThumbLX,pad.sThumbLY)>=32765 &&
-          hypot(pad.sThumbLX,pad.sThumbLY)<=32767;
+    ok &= pad.sThumbLX==pad.sThumbLY && pad.sThumbLX>28950 &&
+          hypot(pad.sThumbLX,pad.sThumbLY)>=40955 &&
+          hypot(pad.sThumbLX,pad.sThumbLY)<=40965;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.sThumbLX==0 && pad.sThumbLY>30000;
     e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,NULL);
@@ -641,6 +649,7 @@ int tsfp_native_input_test(void) {
         e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
         tsfp_native_input_event(&e,window);ok &= !captured;
         e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+        ok &= captured && SDL_GetWindowRelativeMouseMode(window);
         tsfp_native_mouse_config(0,0.1,0);
         e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
         tsfp_native_input_event(&e,window);ok &= !captured;
@@ -674,7 +683,7 @@ int tsfp_native_input_test(void) {
         SDL_SetJoystickVirtualAxis(joy,SDL_GAMEPAD_AXIS_RIGHTY,-16971);
         SDL_Delay(3);recomp_bindings_sample(0,&pad);
         ok &= straight_move>0 && straight_look>0 &&
-              fabs(hypot(pad.sThumbLX,pad.sThumbLY)-straight_move)<500 &&
+              fabs(hypot(pad.sThumbLX,pad.sThumbLY)-straight_move*1.25)<500 &&
               fabs(hypot(pad.sThumbRX,pad.sThumbRY)-straight_look)<500;
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,false);
         SDL_Delay(3);recomp_bindings_sample(0,&pad);

@@ -68,10 +68,12 @@ int main(int argc, char **argv)
     pc_controls_text_mode(0);CHECK(!pc_controls_message(NULL,WM_CHAR,'x',0,&message_result));
     pc_controls_message(NULL,WM_KILLFOCUS,0,0,&message_result);
     pc_input_normalize_movement(&mx, &my);
-    CHECK(mx == my && hypot(mx, my) >= 32765 &&
-          hypot(mx, my) <= 32767 && mx > 23000);
+    CHECK(mx == my && hypot(mx, my) >= 40955 &&
+          hypot(mx, my) <= 40965 && mx > 28950);
     mx = 0; my = -32767; pc_input_normalize_movement(&mx, &my);
     CHECK(mx == 0 && my == -32767);
+    mx = 24000; my = 12000; pc_input_normalize_movement(&mx, &my);
+    CHECK(mx == 28000 && my == 14000);
     /* Equal radial stick travel must produce equal straight/diagonal speed,
        for both movement and look axes. Per-axis deadzones lose the diagonal. */
     {
@@ -131,9 +133,9 @@ int main(int argc, char **argv)
     replay_epoch=GetTickCount64();
     pc_controls_attach(NULL);
     CHECK(recomp_bindings_sample(0, &pad));
-    CHECK(pad.sThumbLY > 23000 && pad.sThumbLX == pad.sThumbLY &&
-          hypot(pad.sThumbLX, pad.sThumbLY) >= 32765 &&
-          hypot(pad.sThumbLX, pad.sThumbLY) <= 32767);
+    CHECK(pad.sThumbLY > 28950 && pad.sThumbLX == pad.sThumbLY &&
+          hypot(pad.sThumbLX, pad.sThumbLY) >= 40955 &&
+          hypot(pad.sThumbLX, pad.sThumbLY) <= 40965);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_X] == 255);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_LTRIGGER] == 0);
