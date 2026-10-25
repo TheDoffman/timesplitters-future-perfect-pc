@@ -24,6 +24,12 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
+positive fractional game time for player/NPC effect updates. Its children already
+consume the float delta; dropping subticks delayed attached-effect timers.
+Original mode and zero-time pause retain their behavior. See runtime guide and
+the original-dispatcher fixture for tested versus stubbed nested coverage.
+
 Arcade HUD panels: `pc_display_ui.inc` gives both shared-panel callers
 US12EC8B (RANK) and12EA9B (SCORE) the left anchor. Their original compositor
 retains panel widths, spacing and sliding/fading; mismatched anchors otherwise

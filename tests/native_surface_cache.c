@@ -145,9 +145,9 @@ int main(void) {
     void *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)memory;
     /* ORIGINAL_CONSTANTS */
     setvbuf(stdout,NULL,_IONBF,0);
-    unsigned losses=0;const unsigned rates[]={60,120,144};
+    unsigned losses=0;const unsigned rates[]={60,120,144,180,240};
     for(unpatched=1;unpatched>=0;unpatched--)for(unsigned slow=1;slow<=4;slow*=4)
-    for(unsigned r=0;r<3;r++)
+    for(unsigned r=0;r<sizeof(rates)/sizeof(rates[0]);r++)
     for(unsigned phase=0;phase<4;phase++)for(unsigned view=0;view<4;view+=3) {
         setup(view);g_tsfp_native_timing_active=1;
         unsigned previous=0;
@@ -155,7 +155,21 @@ int main(void) {
             unsigned tick=f*60/(rates[r]*slow),whole=tick-previous;
             unsigned vblank=100+(f*60*4+phase*rates[r])/(rates[r]*4);
             unsigned before=updates;
+            float prior_u=MEMF(MATERIALS+0xb0),prior_v=MEMF(MATERIALS+0xb4);
+            float prior_phase=MEMF(MATERIALS+0xb8);
             step(f,vblank,tick,whole,60.f/(rates[r]*slow));
+            /* Every fractional frame must advance the original material's
+             * scrolling and phase, even when its discrete GPU image holds.
+             * Compare the independent constant-velocity solution each step. */
+            double seconds=(double)f/(rates[r]*slow);
+            for(unsigned material=0;material<2;material++) {
+                uint32_t p=MATERIALS+material*0xc0;
+                assert(fabs(MEMF(p+0xb0)-(.1+2*seconds/64))<.0001);
+                assert(fabs(MEMF(p+0xb4)-(.4-seconds/64))<.0001);
+                assert(fabs(MEMF(p+0xb8)-.1*seconds)<.0001);
+            }
+            assert(MEMF(MATERIALS+0xb0)>prior_u && MEMF(MATERIALS+0xb4)<prior_v);
+            assert(MEMF(MATERIALS+0xb8)>prior_phase);
             assert(updates-before<=1 && (whole || updates==before));
             if(!unpatched)assert(updates-before==(whole?1u:0u));
             previous=tick;

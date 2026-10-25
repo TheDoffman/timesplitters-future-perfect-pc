@@ -93,10 +93,10 @@ Runner timing includes16ms test-input polling; normal play does not. Its
 transitions, including cadence/crossfade mutations. Both CI hosts run it.
 Windows `test-online-bot-motion.py`: isolated 0/120/180/240 peers.
 `--require-results`: matching records; `--short-match`: five points via menu readback.
-`--post-results-seconds`/`--inspect-results-tabs`/`--rematch`: transitions.
+Results transitions: `--post-results-seconds`/`--inspect-results-tabs`/`--rematch`.
 `--require-rematch-results` compares round-two results after reset checks.
 `test_network_bot_results.py`: US routines and AI mutations.
-Async reads are not latency.
+Async reads do not measure latency.
 
 Dual-host `test_launcher_release.py` / `test_publish_release.py` cover
 Stable/alpha baselines, pagination/completeness, notes and scope/merge/rename/
@@ -106,6 +106,10 @@ ancestry. Offline publisher tests need no game/UI rebuild.
 four-page batches, larger fallback, permissions and mutation controls.
 `test_discord_presence.py`: production read bounds/copies, fresh permissions,
 read-only/noaccess, large/cold fallback and retained/full-query mutations.
+
+Character-effects fixture: original dispatch/timer/matrices, phase/slow/pause
+and old-gate controls through240. Surface-cache checks each U/V/phase step.
+Other effects/GPU calls are spies.
 
 ### Native vehicle integration and diagnostic checks
 
@@ -148,19 +152,16 @@ are invalid original-clock evidence. Default Y delivers logical exit bit0x40;
 F/R deliver0x20/0x10. Verify camera24->0, weapon restoration, on-foot movement,
 pause/resume and unchanged saves. In Siberia choose LEFT from Recommended to
 None, verify roster257, and allow six seconds for vehicle entry before steering.
-`testing_profile.publish_input_state` publishes runner input with a same-directory
-atomic replacement, retrying transient Windows reader sharing for at most0.5s.
+`testing_profile.publish_input_state` atomically replaces input beside its source,
+retrying Windows reader sharing for at most0.5s.
 Never truncate a live input-state file: the adapter polls no sooner than16ms and treats
-an empty read as key release. Writer timestamps are publication times, not guest
-consumption times. `test_testing_profile.py` covers complete-state publication,
-sharing retries, failure preservation and temporary-file cleanup on both hosts.
+an empty read as key release. Writer timestamps mark publication, not guest consumption. `test_testing_profile.py` checks publication, sharing retries, failure preservation
+and temporary cleanup on both hosts.
 
-Camera/body observations need frame brackets and camera identity checks: the
-global camera can temporarily differ from the player camera within one frame.
-Compare the same player-camera pointer, retain excluded records, and report
-coverage; asynchronous reads/captures are not completed-frame trajectories. Preserved live pillar/bank counterexamples and
-corrected Windows acceptance records are in STATUS and
-`docs/native-high-refresh-regressions.md`; neither proves broad handling parity.
+Bracket camera/body reads by frame and player-camera identity; globals can differ
+midframe. Retain excluded samples. STATUS/regression records preserve
+counterexamples; async reads do not prove completed-frame trajectories or
+broad handling parity.
 
 Contact tracing requires isolated `TSFP_CONTACT_TRACE` path, pool slot0..1023
 and finite inclusive `TSFP_CONTACT_TRACE_Z=min,max`. It records generated and

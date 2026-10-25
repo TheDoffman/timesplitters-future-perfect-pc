@@ -450,6 +450,17 @@ crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
 
+## Character effects update gate
+
+`pc_native_numeric.h` maps the US1260C0 whole-tick load to positive live game
+time in native mode. This dispatcher is called by player/NPC updates; its
+attached-effect timers/transforms already use fractional delta. The old gate
+lost subticks (11FEC0's timer advanced0.5 seconds per second at120). EAX is
+replaced before arithmetic, so this changes eligibility only. Original mode,
+whole-tick fields and zero-time pause remain unchanged. The original-dispatcher
+fixture covers11FEC0's timer and real matrix helpers; other nested systems and
+rendered effects need separate evidence. No generated C or new patch is edited.
+
 ## Native FPS integration with current main (PR #285)
 
 The effective tail now installs native timing and retires interpolation before

@@ -3850,6 +3850,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Character-effect gate (2026-10-24, PR #344):** Shared numeric policy admits
+  fractional updates in US1260C0. Its attached-effect timer otherwise loses
+  half its elapsed time at120. Original-code/matrix tests cover supported rates,
+  phases, slow motion and pause; remaining nested effects use spies. No new Mac
+  adapter; private-XBE test skips do not certify Mac gameplay. Physical Mac
+  effects/rendering remain awaiting validation. Windows evidence is in STATUS.
+
 - **Completed Online rematch (2026-10-24, PR #344):** The existing Windows
   observer now optionally compares second-round final records after verifying
   reset. A240/Original60 loopback pair completes two rounds with matching eight

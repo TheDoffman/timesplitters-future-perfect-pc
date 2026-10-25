@@ -1,3 +1,56 @@
+## 2026-10-24 — Restore fractional character-effect time
+
+The shared character-effect dispatcher US1260C0 still gated nested updates
+on whole game ticks, although their timers/transforms consume fractional time.
+An original-code reproduction through its11FEC0 child advanced the attached
+state timer only0.5 seconds over one second at120 (Original60 advanced1.0).
+The shared numeric policy now admits positive live game time at that one load;
+the temporary EAX is replaced before arithmetic. Whole-tick fields and the
+Original-mode gate are unchanged, and zero live time remains paused.
+
+`native_character_effects.c` executes the original dispatcher,11FEC0 and matrix
+helpers, checks every timer step through60/120/144/180/240, four carried phases,
+normal/quarter speed, pause and original fallback, with an old-gate control.
+The control confirms the missing-time defect; corrected cases retain elapsed
+time and ABI/global state. Other effect subsystems are spies, so this fixture
+does not establish their complete emission or visual behavior. The existing
+surface-cache fixture now also checks each fractional U/V/phase step and adds
+180/240. That constant-velocity test does not prove forced/damped materials.
+
+The supported Windows build and bundled checks pass. Executable SHA256:
+`733a620416d3e9f74e2766e08221332174b25caf7bca240f38e7addb78d74f13`.
+All94 native timing tests pass (140.89 seconds). The new fixture was then rerun
+against the exact original dispatcher end126236 (rather than including five
+padding bytes) and passed; no runtime source changed after the build. The21
+context/backlog tests pass. Tests are registered through the existing native
+suite on both CI hosts; private-XBE skips are not Mac gameplay evidence.
+
+Live native240 ten-bot Disco completes normally with the canonical signed
+profile unchanged; reviewed captures show combat/HUD/death states. A bounded
+read-only census retained1800 character-state observations, including12 which
+crossed native frame boundaries. None activated flag0x100 used by11FEC0, so
+this is general combat stability evidence, not that effect's visual acceptance.
+The instrumented/captured run supplies no clean performance or latency claim.
+The rebuilt Original60 run also completes with the same command stream and
+canonical profile. Both retain active Disco/ten bots at all three combat
+checkpoints. Their random combat paths differ; this is not damage/trajectory
+equivalence. Physical Mac effects validation remains open under MAC-060.
+
+An earlier Disco material census found count0/pointer0 for the procedural table
+and retained its diagnostic failure. It did not find the non-water animated
+material path and provides no visual scrolling evidence. The subsequent
+character-effect discovery came from auditing original effect dispatch, not
+from treating that empty census as a passing surface test.
+
+Evidence: `logs/character-effects-before.log`, `character-effects-fixed.log`,
+`character-effects-native-tests.log`, `character-effects-range-final.log`,
+`character-effects-build.log`, `character-effects-context-tests.log`;
+`private/test-saves/character-effects-{original60,240}`, the240 census
+`character-effects.json`, and `logs/character-effects-live-summary.json`.
+Private census tools remain under `private/pipeline`; only source/tests/docs
+are tracked. Before this follow-up all14 checks passed for head c2310121.
+Full-game acceptance remains incomplete.
+
 ## 2026-10-24 — Complete a mixed-preset Online rematch
 
 On source `2393d344` and Windows executable

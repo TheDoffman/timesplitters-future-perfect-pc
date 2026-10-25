@@ -7352,3 +7352,16 @@ one three-tick catch-up: original `1956A0` gates on nonzero ticks but executes i
 feedback pair only once. Consequently the one-tick probe comparison is not proof
 of correct elapsed-time integration during stalls. The normal runtime connection
 must explicitly handle that distinction and preserve event/RNG call counts.
+
+
+## Character-effect dispatcher subticks (2026-10-24)
+
+US1260C0 is called by player/NPC dispatch (NPC passes actor+C68). Its first
+whole-tick gate drops fractional time before nested effects which already use
+the float interval. The original11FEC0 timer reproduces0.5 elapsed seconds at
+120 for a one-second interval. The shared numeric hook now uses positive live
+time at this gate, retaining original inactive behavior and paused zero-time.
+The new original-dispatcher/matrix fixture sweeps rates through240, quarter
+speed and carried phases, with an old-gate control. Nested effect systems other
+than11FEC0 remain spies. STATUS records the Windows build and actual scene
+coverage; do not infer complete effect rendering or Mac acceptance from it.
