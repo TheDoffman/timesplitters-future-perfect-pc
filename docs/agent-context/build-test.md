@@ -239,6 +239,12 @@ not identify hitch cause. An empty optional-pack control must not remove an
 installed pack or edit personal settings. Performance evidence and exclusions
 remain in STATUS; mixed bot outcomes prevent attributing gains to one fix.
 
+`surface-native-long` restores focus before `water-stable-start`, then settles.
+Its pacing observations must retain foreground visibility throughout the chosen
+window. Reject a background run even when its recorder has complete clocks;
+do not shorten the window or substitute a background FPS claim. Scotland
+standing-water results do not replace crowded-combat or campaign acceptance.
+
 Texture traces use a bounded queue: workers stamp reads; the renderer owns CSV
 and image/view stages. Total spans include waits. Cancelled requests neither
 dereference owners nor log on workers. Both-host `test_texture_runtime.py` tests

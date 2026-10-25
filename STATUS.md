@@ -25507,3 +25507,57 @@ GPU completion or scanout measurements. Physical Mac and broad rendered-effect/
 full-game acceptance remain open under MAC-060. The bounded systems guide also
 condenses historical uncalled-water descriptions while retaining current owner,
 spatial/alpha-height contracts and links to the detailed regression history.
+
+
+## Clean current-build Scotland pacing (2026-10-25, PR #361)
+
+Measured the unchanged4d09cd2c Windows executable with character/contact/update/
+surface tracing, CPU sampling and frame captures disabled. No heavy build/test
+work ran during either accepted measurement. Both use Enhanced mode, FOV73 and
+requested3440x1440 rendering; device creation confirms3440x1440, while all ten
+window checkpoints report a visible foreground1920x1060 client. This does not
+certify a physical ultrawide display or every replacement texture.
+
+The first native240 attempt, `material-clean-scotland240`, completed its session
+but all ten window checkpoints were background. Its strict pacing validator
+rejected it; no foreground-performance result is inferred from that run. The
+Scotland long route lacked the crowd runner's focus restoration. Added the same
+owned-window focus action before `water-stable-start`, with settling before the
+measurement, to the bounded public runner. No normal-game runtime behavior or
+binary changes are involved.
+
+Accepted runs `material-clean-scotland240-v2` and
+`material-clean-scotland-original60` use identical executable, effective command
+stream and runner hashes. Their complete50s windows start five seconds after
+`water-stable-start`. Validation requires recorder clock neighbors on both sides,
+consecutive clock/frame records, strictly increasing guest frame IDs and all ten
+scene4/match-state7/unpaused/foreground checkpoints. Stable look direction,
+roster257 and unchanged health are recorded. Native water owner creation and
+advancing native actions are present in the240 log; there is no GPU readback.
+
+| Path | Fresh guest intervals | Average FPS | Lowest1s /5s FPS | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native240 |11999|240.0017|240 /240|4.866ms|5.850ms|0.999936|
+| Original60 |2999|60.0003|60 /60|17.371ms|17.834ms|0.999827|
+
+Neither has interpolated presents. Every measured native interval is below the
+144-FPS6.944ms budget; individual intervals still vary, so the average/bin counts
+do not mean uniform240-FPS frame times. The native recorder reaches its20000-row
+cap after the accepted window and retains the required clock neighbors; its cap
+does not truncate this window. These successful host Present intervals do not
+measure GPU completion, scanout or physical input latency. Different selected
+caps are not a causal before/after optimization comparison. Standing Scotland
+water acceptance is distinct from crowded fights, physical Mac or all levels.
+
+Both sessions also execute firing, pause and resume after the measured window;
+pause/resume flags pass, canonical profile bytes/signatures remain intact and
+owned processes/partitions clean up. Present CSV SHA256 values are
+edc28425d675f35ab468e6097f4b7120d77a8ba0920cfebcb3e65b6cf8197c02(native) and
+8f06e70fb874ba186767d6c202eb4b4f42bd1c49fdc7ecdcf3fd05ba07de786f(original).
+Private per-run `material-pacing-summary.json` files preserve clocks, bins,
+provenance, actual clients and exclusions. The ignored bounded adapters are
+`private/pipeline/material-clean-pacing.py` and `summarize-material-pacing.py`.
+Logs use `material-clean-scotland*`; the first rejected run remains available.
+All34 frame-statistics/profile/context/backlog checks pass(4.53s). No new build
+is required for the runner-focus/documentation-only change. Broad high-refresh
+and physical Mac acceptance remain open.

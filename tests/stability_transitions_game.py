@@ -178,6 +178,10 @@ def main():
     if args.scenario in ('surface-native','surface-native-switch','surface-native-long'):
         key={'surface-native':'scotland','surface-native-switch':'scotland_switch','surface-native-long':'scotland_long'}[args.scenario]
         route=json.loads((ROOT/'tests/fixtures/procedural-surface-commands.json').read_text())[key]
+        if args.scenario=='surface-native-long':
+            # Background rendering is not foreground gameplay evidence.
+            marker=next(i for i,step in enumerate(route) if step.get('label')=='water-stable-start')
+            route.insert(marker,dict(window='focus',wait=1,label='water-focus'))
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     env.pop('TSFP_SURFACE_NATIVE_TEST',None)
     if args.native_surfaces is not None:env['TSFP_SURFACE_NATIVE_TEST']='1' if args.native_surfaces else '0'
