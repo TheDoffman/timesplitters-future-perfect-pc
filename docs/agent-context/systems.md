@@ -24,6 +24,20 @@ Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
+Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
+positive fractional game time for player/NPC effect updates. Its children already
+consume the float delta; dropping subticks delayed attached-effect timers.
+Original mode and zero-time pause retain their behavior. See runtime guide and
+the original-dispatcher fixture for tested versus stubbed nested coverage.
+
+Arcade HUD panels: `pc_display_ui.inc` gives both shared-panel callers
+US12EC8B (RANK) and12EA9B (SCORE) the left anchor. Their original compositor
+retains panel widths, spacing and sliding/fading; mismatched anchors otherwise
+overlap them on widescreen, including Original60. Each full panel flushes before
+placement changes and restores its enclosing placement. Other panel callers,
+4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
+the UI fixture tests both callers and guards, while Mac scenes remain unverified.
+
 Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
 weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
 Input edges follow raw whole ticks; pause can offset those from game whole ticks,
@@ -268,6 +282,14 @@ Only clip-block `+8` (model `DC`/`134`) is interpolated within the same clip/cyc
 the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
 duration/elapsed with another snapshot's clip identity can select an invalid clip.
+
+The bot score-network adapter admits configured AI at US return site67868,
+using EDI's actor slot in the original round score-limit scan. The stock
+controller-flag filter otherwise skips AI despite valid scores. Limit/team
+calculation and end-of-round authority remain original. Invalid slots, humans,
+disabled networking and native Mac retain fallback (MAC-052). The supported-US
+round routine fixture checks threshold decisions; the Online runner can require
+both peers' completed Results records.
 
 Camera and perspective corrections use `pc_display_memory.h` with a stack-local
 region after the original guest routine returns; no guest calls, allocations or
@@ -817,3 +839,14 @@ legacy GL remain original. `pc_surface_native_policy` accepts an explicit
 The HLE adapter latches allocation/shader failure until constructor/device reset,
 so fallback does not retry expensive setup each frame. Cleanup is registered
 before first allocation; empty resets do not alter RHI texture bindings.
+
+## Character status-effect model growth
+
+`pc_native_character_guest.h`, included by the shared timing guest adapter,
+normalizes only scale-constructor call120BBF. Status3's repeated linear growth
+otherwise changes with update frequency. It splits the original one-raw-tick
+factor at the current game speed; rotation/composition and cleanup remain
+original. Numeric policy routes that call only. Original/full/catch-up steps
+are unchanged. Original-helper tests cover60..240, slow time, pause, jitter,
+live rate switches and cleanup; rendered activation and physical Mac remain
+unverified. See the runtime guide and `native_character_scale.c`.

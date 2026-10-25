@@ -211,12 +211,17 @@ int main(void)
     const uint32_t left[]={0x12f670,0x14b930,0x1409c0,0x13fc50};
     for(unsigned i=0;i<4;i++){g_esp=0;n=draw_count;pc_display_ui(draw,left[i]);CHECK(drawn[n]==3);}
     g_esp=0;n=draw_count;pc_display_ui(draw,0x1358a0);CHECK(drawn[n]==5 && placement==0);
-    g_esp=0;stack[0]=0x12ec8b;n=draw_count;pending=1;
-    pc_display_ui(rank_widget,0x12e3f0);
-    CHECK(drawn[n]==0); /* Earlier HUD batches retain their own anchor. */
-    for(int part=1;part<=3;part++)CHECK(drawn[n+part]==3);
-    CHECK(placement==0 && tag==0 && g_esp==4);
-    draw();sub_00022FF0();CHECK(drawn[n+4]==0);
+    const uint32_t arcade_panels[]={0x12ec8b,0x12ea9b};
+    for(unsigned panel=0;panel<2;panel++) {
+        g_esp=0;stack[0]=arcade_panels[panel];n=draw_count;pending=1;
+        pc_display_ui(rank_widget,0x12e3f0);
+        CHECK(drawn[n]==0); /* Earlier HUD batches retain their own anchor. */
+        /* Both complete panels must share an origin while simultaneously
+           visible; the original compositor retains their spacing/animation. */
+        for(int part=1;part<=3;part++)CHECK(drawn[n+part]==3);
+        CHECK(placement==0 && tag==0 && g_esp==4);
+        draw();sub_00022FF0();CHECK(drawn[n+4]==0);
+    }
     /* The same renderer is used for timers and other counters. */
     g_esp=0;stack[0]=0x14f5cc;n=draw_count;int before_count=selection_count;
     pc_display_ui(rank_widget,0x12e3f0);sub_00022FF0();
@@ -239,10 +244,12 @@ int main(void)
         wide=i;players=i?2:1;g_esp=0;count=selection_count;
         pc_display_ui(draw,0x1334d0);CHECK(count==selection_count && g_esp==4);
         sub_00022FF0();
-        g_esp=0;stack[0]=0x12ec8b;count=selection_count;
-        pc_display_ui(rank_widget,0x12e3f0);
-        CHECK(count==selection_count && g_esp==4 && placement==0);
-        sub_00022FF0();
+        for(unsigned panel=0;panel<2;panel++) {
+            g_esp=0;stack[0]=arcade_panels[panel];count=selection_count;
+            pc_display_ui(rank_widget,0x12e3f0);
+            CHECK(count==selection_count && g_esp==4 && placement==0);
+            sub_00022FF0();
+        }
     }
     players=2;g_esp=0;count=selection_count;stack[4]=0x3f99999a;
     pc_display_health(draw);

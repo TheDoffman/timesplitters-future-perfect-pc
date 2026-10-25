@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a0fb1130e763211bdf9d6679ce70b5521ed7e323c613c0cedfeed9ab07c8ae36",
+  "loaderSha256": "69cf403110a86d406b5f88ca82474324140f06a1bd3299155d8bda032dcd0f5f",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1397,6 +1397,13 @@
         "templates/runtime/recomp_types.h",
         "titles/futureperfect/CMakeLists.txt",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "zz-zero-base-indices.patch",
+      "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
       ]
     }
   ]

@@ -1,3 +1,477 @@
+## 2026-10-24 — Preserve character status-effect model growth
+
+Original status dispatcher125FE0 advances state+5C and calls120AB0 for status3.
+That path repeatedly multiplies an existing effect matrix by linear scale
+factors computed from the current time interval. Subdivision changes the product:
+after half a second Original60 had X/Z scale2.202338, but120 gave2.213807
+(about0.52% larger). This is a separate arithmetic issue from1260C0's update gate.
+
+The shared `pc_native_character_guest.h` intercepts only scale-constructor
+call120BBF. It recovers the original one-raw-tick factor at the current game
+speed, then splits it over fractional raw time. Original rotation/composition,
+timer and cleanup still execute. Original mode and whole/catch-up intervals
+retain exact arithmetic; caller arguments are restored after the constructor.
+No generated guest C, shared coefficient, save or user preference is edited.
+
+The new `native_character_scale.c` executes original125FE0,120AB0 and the
+rotation/scale/matrix composition helpers. It compares all16 matrix entries
+against Original60 through60/120/144/180/240 at quarter/normal/double speed,
+plus pause, uneven frame intervals, live rate switches, catch-up, cleanup and
+argument preservation. An old-path control retains the measured mismatch.
+Allocation and rendering are absent, so this proves transforms and lifetime,
+not full visual effect acceptance. The final dispatcher/ABI fixture passes;
+all95 native timing tests pass (144.73s), as do21 context/backlog tests (4.03s).
+The complete suite ran before the last test-only expansion to the dispatcher
+and stack-argument checks; that expanded fixture was rerun successfully.
+
+Supported Windows build and bundled checks pass. Executable SHA256:
+`ff4cfc6d518db1f7293202fe78f80605a4db80653e8d0c7f89308215b9e70307`.
+Production source did not change after this build. Live evidence
+is recorded below. Physical Mac remains unverified
+under MAC-060. All14CI checks passed for preceding5bd61a15; this follow-up's
+checks require its own pushed head. Continue PR344; the full goal is incomplete.
+
+The rebuilt native240 Disco run `character-scale-240` completed all three
+combat checkpoints with ten bots. The1800-sample read-only census recorded3211
+active status3/model observations across all11 slots, with8 samples crossing
+frame boundaries; ages ranged0..1.696 seconds. This establishes live activation,
+not exact size or rendered-animation parity. Its combat-four image shows the
+normal death scene and nearby armed NPCs. All personal files remain untouched.
+
+A second run `character-scale-matrix-240` selected Temple49 instead of Disco56;
+the route validator correctly returned failure. Captures show active Temple
+combat, not the requested map. A separate read-only8-second probe retained320
+model matrices there. Four long segments differed by about0.8..1.1% in volume
+from an ideal constant-speed Original60 curve; asynchronous timer/matrix reads
+are not coherent update snapshots, and the20000-row clock trace ended before
+those observations. Catch-up/phase effects therefore remain unresolved; do not
+claim live transform equivalence from this probe. The first late matrix probe
+could not open the already-closed first child; the second run's Disco-only
+observer collected zero samples and reported child shutdown. These rejected
+observations are retained, not counted as passes. Both owned games are closed,
+run locks/partitions recycled, and profiles remain canonical SHA256090cced7...
+with valid signatures. `logs/character-scale-live-summary.json` records hashes
+and checkpoints; `character-scale-matrix-analysis.json` records the comparison.
+
+## 2026-10-24 — Restore fractional character-effect time
+
+The shared character-effect dispatcher US1260C0 still gated nested updates
+on whole game ticks, although their timers/transforms consume fractional time.
+An original-code reproduction through its11FEC0 child advanced the attached
+state timer only0.5 seconds over one second at120 (Original60 advanced1.0).
+The shared numeric policy now admits positive live game time at that one load;
+the temporary EAX is replaced before arithmetic. Whole-tick fields and the
+Original-mode gate are unchanged, and zero live time remains paused.
+
+`native_character_effects.c` executes the original dispatcher,11FEC0 and matrix
+helpers, checks every timer step through60/120/144/180/240, four carried phases,
+normal/quarter speed, pause and original fallback, with an old-gate control.
+The control confirms the missing-time defect; corrected cases retain elapsed
+time and ABI/global state. Other effect subsystems are spies, so this fixture
+does not establish their complete emission or visual behavior. The existing
+surface-cache fixture now also checks each fractional U/V/phase step and adds
+180/240. That constant-velocity test does not prove forced/damped materials.
+
+The supported Windows build and bundled checks pass. Executable SHA256:
+`733a620416d3e9f74e2766e08221332174b25caf7bca240f38e7addb78d74f13`.
+All94 native timing tests pass (140.89 seconds). The new fixture was then rerun
+against the exact original dispatcher end126236 (rather than including five
+padding bytes) and passed; no runtime source changed after the build. The21
+context/backlog tests pass. Tests are registered through the existing native
+suite on both CI hosts; private-XBE skips are not Mac gameplay evidence.
+
+Live native240 ten-bot Disco completes normally with the canonical signed
+profile unchanged; reviewed captures show combat/HUD/death states. A bounded
+read-only census retained1800 character-state observations, including12 which
+crossed native frame boundaries. None activated flag0x100 used by11FEC0, so
+this is general combat stability evidence, not that effect's visual acceptance.
+The instrumented/captured run supplies no clean performance or latency claim.
+The rebuilt Original60 run also completes with the same command stream and
+canonical profile. Both retain active Disco/ten bots at all three combat
+checkpoints. Their random combat paths differ; this is not damage/trajectory
+equivalence. Physical Mac effects validation remains open under MAC-060.
+
+An earlier Disco material census found count0/pointer0 for the procedural table
+and retained its diagnostic failure. It did not find the non-water animated
+material path and provides no visual scrolling evidence. The subsequent
+character-effect discovery came from auditing original effect dispatch, not
+from treating that empty census as a passing surface test.
+
+Evidence: `logs/character-effects-before.log`, `character-effects-fixed.log`,
+`character-effects-native-tests.log`, `character-effects-range-final.log`,
+`character-effects-build.log`, `character-effects-context-tests.log`;
+`private/test-saves/character-effects-{original60,240}`, the240 census
+`character-effects.json`, and `logs/character-effects-live-summary.json`.
+Private census tools remain under `private/pipeline`; only source/tests/docs
+are tracked. Before this follow-up all14 checks passed for head c2310121.
+Full-game acceptance remains incomplete.
+
+## 2026-10-24 — Complete a mixed-preset Online rematch
+
+On source `2393d344` and Windows executable
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`,
+a bounded Online loopback host at native240 and guest at Original60 completed
+two consecutive five-point Deathmatches with six bots. The runner now accepts
+`--require-rematch-results`, reusing the first round's bounded final-record
+validation after the existing rematch clock/result-ready/roster/score reset
+checks. It saves a separate second-round result file; no gameplay code changed.
+
+Both rounds produced identical host/guest records for all eight named slots,
+including kills, deaths, rank, score and character. Round one reached results
+at204.0 seconds; the rematch entered fresh gameplay at241.7, remained active
+at251.7 and reached new final records at279.2. The General scored five in both
+rounds, but other scores/deaths differ; these are not reused first-round records.
+All six bots have changing positions on both peers during round two, across
+4093/4155 active observations. Missing actor readings remain excluded; these
+asynchronous samples do not prove exact trajectory, damage or latency parity.
+
+The 280.9-second runner exited0 after terminating only its owned children.
+Both signed disposable profiles retain canonical090cced7, fixture hashes pass,
+and locks/virtual partitions/owned processes are gone. First-round Scores
+captures visibly agree; reviewed rematch captures show gameplay/death. The
+second-round completion images precede the results frontend, so the completion
+claim rests on fresh match state and compared records, not a reviewed second
+Scores screen. This is local loopback, not cross-machine or physical Mac proof.
+
+Evidence: `logs/online-bots-rematch-complete-240-60/` (provenance, checkpoints,
+observations, both result files, captures and acceptance-summary.json),
+`logs/online-rematch-complete-240-60.log`. The runner's recorded SHA256 is
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+Python compilation, the invalid-option early-rejection check and an AST
+comparison confirming unchanged result-validation logic pass. The21 context/
+Mac-backlog tests pass. Existing Windows-only observer uses its existing
+platform boundary; shared runtime and native Mac adapters are unchanged.
+Full-game acceptance remains open.
+
+## 2026-10-24 — Preserve Arcade Score/Rank spacing during HUD transitions
+
+The Temple death sequence exposed overlapping SCORE/RANK labels. A follow-up
+Original60 sequence on executable952ee3d8 reproduces the overlap across several
+captures: this is a widescreen layout defect, not evidence of a native clock
+regression. Original US14F0B0 composes the panels; their shared renderer returns
+through12EC8B for RANK and12EA9B for SCORE. The placement wrapper explicitly
+anchored only RANK to the left, so the panels used different origins while
+simultaneously visible. SCORE now shares RANK's left anchor. Original panel
+geometry/widths, ordering, sliding/fading and gameplay timers are retained;
+unrelated panel callers and the existing 4:3/split-screen guards are unchanged.
+
+The supported Windows build/bundled checks pass. New executable SHA256:
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`.
+Reviewed Original60 and native240 sequences at1280x720 show separated SCORE
+and RANK panels, followed by SCORE leaving and RANK sliding into place. The
+same ordinary-input Temple floor-shot route provides24 sampled captures each;
+slow dump cadence can repeat frames, and images are not synchronized to memory
+observations. No scanout, clean-FPS or frame-exact timing claim follows.
+
+An additional native240 run at3440x1440 confirms the same separated panels
+and slide transition in reviewed captures. All24 observations stay in active
+Temple;19 show the dead player and the final5 occur after automatic respawn.
+These are not24 identical death-phase samples. The runner reports successful
+completion, unchanged signed profiles and preserved fixture. Evidence:
+`private/test-saves/hud-fixed-ultrawide240`, `logs/hud-fixed-ultrawide240.log`.
+
+The20 UI/text-scope regression tests pass, including panel batch boundaries,
+restored placement and both callers' 4:3/split-screen bypass. A disposable
+counterfactual with the prior SCORE omission fails the new panel assertion.
+The21 repository-context/Mac-backlog tests pass; context and whitespace checks
+pass. Existing Windows/Mac CI already registers these UI fixtures. Shared code
+needs no new Mac adapter; physical Mac graphics validation remains pending
+under MAC-060. Before this follow-up, all14 checks passed for head da05737b.
+
+Evidence: `private/test-saves/hud-transition-original60`, `hud-fixed-original60`
+and `hud-fixed-240`; commands have identical SHA256b61a8633. All24 observations
+in each run remain active Temple with one player/no bots and the dead player,
+rather than silently capturing a menu or respawn. Each owned game exits0,
+profiles remain canonical090cced7, signature/fixture checks pass and disposable
+disks are recycled. Logs: `hud-score-layout-build.log`,
+`hud-score-layout-tests.log`, `hud-score-negative.log`,
+`hud-score-context-tests.log`, `hud-score-validation.json`. Reviewed contact
+sheets remain in the respective run directories; the cropped comparison is
+`logs/hud-score-before-after.png`. Full-game acceptance remains open.
+
+## 2026-10-24 — Temple rocket impact and effect cleanup through 240
+
+Main's reload fix (`aed726e1`, PR #345) is integrated in `dcb3b112`, preserving
+the zero-index optimization, bot-limit fix and both sets of CI tests. Patch
+ordering includes keyboard reload before model/zero-index hooks; the generated
+index and context checks pass. The supported Windows build/bundled checks pass
+(`logs/rocket-main-integration-build.log`). The new executable is
+`952ee3d8f4682a875c7b9772567f2a5367c53cf7dc67fa62a6f1f86e2053b7eb`.
+
+Repeating the full Temple route on that executable at Original60/180/240 again
+observes identical initial position/aim/health, exactly one rocket consumed,
+lethality, effect cleanup and successful respawn/walking. All127 effect-list
+samples per run are complete. Type5 removal-age brackets are respectively
+[0.66667,0.71709], [0.68344,0.73408], [0.67537,0.72587] seconds; age/wall deltas
+differ by at most0.00246 seconds. Six-second game/wall windows differ by at most
+0.014 seconds. These are gameplay observations, not clean FPS measurements.
+Respawn locations still differ, so walking is only recovery evidence.
+
+The merged Original60 runner initially exited1 during analysis because one
+intermediate player read returned None. Its game exited0 and all required
+checkpoints were intact. The corrected analyzer explicitly counts/excludes
+that unreadable ammo sample and passes the saved report; it still rejects an
+unreadable required checkpoint, all missing player samples, or absent ammo
+consumption. The180/240 runners then exit0 with no missing player samples.
+All owned games close, signed profiles match canonical090cced7 and disposable
+disks are recycled. Evidence: `rocket-merged-{original60,180,240}` under the
+test-save directory and `logs/rocket-merged-comparison.json` (including the
+analyzer/provenance hashes). The23 analyzer counterexample tests and7 original/
+shared reload timing tests pass. The complete patch-upgrade/reload/effect/
+profile/context/backlog/zero-index selection passes86 tests in685.79 seconds
+(`logs/rocket-main-integration-tests.log`). The23 analyzer tests overlap that
+selection and additionally cover the unreadable-player cases. No full-game or
+Mac visual completion claim follows from these runs.
+
+Three sequential isolated Windows runs compare Original60, native180 and
+native240 on executable SHA256
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The ordinary menu route selects Temple, Rockets and no bots. All three start
+at the identical position, yaw335/pitch-75 and health1.75, consume one rocket
+(6->5 loaded, reserve6), and die from the floor blast. All127 effect snapshots
+per run are complete; no listed effects remain after the six-second settle.
+The type5 effect following the blast has an authored0.7-second lifetime and
+disappears within these observed age brackets:
+Original60 [0.66667,0.71733],180 [0.68357,0.73387],240 [0.66701,0.71744] seconds.
+Observed age advancement differs from elapsed time by -0.00004,+0.00201 and
+-0.00049 seconds respectively. These are asynchronous observation bounds,
+not presentation timing or input latency. Level-clock/wall-time differences
+in the settle windows are -0.00267,-0.00100 and-0.01133 seconds.
+
+All three respawn at full health with the rocket launcher and respond to a
+one-second walk command. Respawn locations differ; distances7.99998,8.00033
+and6.81292 therefore prove resumed movement, not speed/trajectory equivalence.
+Reviewed captures show death, cleared blast and restored first-person weapon/
+world rendering. The180/240 impact captures show the explosion; the Original60
+impact dump predates the death observation. Dumps are not synchronized with
+memory reads and do not establish pixel/phase parity or smooth scanout. Zero
+health saturates lethal damage: this does not prove equal unsaturated damage,
+arbitrary enemy hits, the reported delayed trails or plasma-sniper repair.
+
+The runner adds opt-in bounded effect observations and20Hz `sample_wait` steps.
+`--scenario rocket-impact --watch-actors --watch-effects --seconds 180`
+requires active no-bot checkpoints, one rocket consumed, death, lifetime and
+cleanup observations, respawn and walking; `--native-fps 0` is Original60.
+`tools/rocket_impact_stats.py` also validates saved reports. Counterexample tests
+reject missing/duplicate checkpoints, wrong scene/bots, pool changes, pauses,
+missing/extra shots, survival, failed recovery, wrong clocks and effect faults.
+They run in both host CI jobs. The57 effect/profile/context/backlog tests pass;
+Python compilation, context freshness and whitespace checks pass.
+
+Evidence: `private/test-saves/rocket-impact-{original60,180,240}`, corresponding
+logs and `logs/rocket-impact-comparison.json`. The first two use runner b2f1b624;
+240 uses d99ce82a (adds final validation/initial-command hash, same route and
+observers). Saved profiles match canonical hash090cced7; signatures/fixture
+checks pass, owned processes exit0 and disposable disks are recycled. An earlier
+`rocket-impact-probe240` calibrated the route; its later24-degree shot caused
+no self-damage and is not an acceptance comparison. No game source changed.
+Native Mac live gameplay, sound and broad effect fidelity remain unverified.
+
+## 2026-10-24 — Post-match menus and mixed-refresh rematch
+
+On the unchanged `1ae9169c` Windows executable, the isolated Original60/240 pair
+now remains open20 seconds after final records. Reviewed captures show both
+visible Results menus, eight portraits and no overlapping health gauges. The
+180/120 pair additionally navigates the Scores and Options tabs: both tables
+show identical eight-player scores, and host/guest Rematch options are present.
+Both runs load the requested five-point limit. Signed profiles and the canonical
+fixture remain unchanged; owned processes close and disposable disks recycle.
+
+The reversed240/Original60 pair completes the same menu path and chooses Rematch
+through the reviewed UI. Both peers return to network15/active state7 with the
+results-ready flag cleared, reset game clocks, the same two-human/six-bot roster
+and all eight scores zero. In the following10 seconds both advance from tick199
+to799, and all six bots change position on each peer. Reviewed rematch captures
+show gameplay/HUD on both. This verifies entry and ten seconds of the next round,
+not its completion, physical input latency, frame pacing or cross-machine play.
+The host dies/changes spawn during the first-round movement probe: that probe is
+rejected, even though the final-record/menu/rematch checks pass independently.
+
+The runner gains bounded post-result observation, tab inspection and rematch
+options. A failed fixed-count setup is retained: the240 host loaded10 points and
+the strict five-point guard stopped it. Earlier notes describing missed input
+were hypotheses. Menu inspection shows the starting choice can differ; the new
+replay reads the persistent view-root/child chain, finds row7 and the localized
+"5 points" choice, verifies focus/value after each ordinary key press, returns
+to GO row19 and checks that unrelated choices did not change. The successful
+240/60 run records28 presses, each changing the expected state. No game-memory
+writes or runtime changes are introduced. Temporary callback/transition pointers
+were rejected as menu observers; the final helper uses the persistent root.
+
+Evidence: `logs/online-bots-post-results-60-240`,
+`logs/online-bots-post-tabs-180-120`, and
+`logs/online-bots-rematch-feedback-240-60` (including menu-inputs/checkpoints,
+observations, result records, captures and runner/build hashes). The failed
+`rematch-240-60` and three setup diagnostics remain separate. Successful-run
+signed-profile/canonical-fixture and cleanup checks pass. The new argument
+dependencies/bounds reject invalid combinations before launching. The34
+profile/context/backlog tests pass. Context and
+whitespace checks pass. All14 CI checks pass on implementation headf13937cf;
+this follow-up changes tooling/documentation only. Native Mac gameplay and
+broader acceptance remain open; this adds no Mac runtime dependency.
+
+## 2026-10-24 — Online bot score-limit completion
+
+Mixed-refresh completed-match testing exposed an existing Online bot eligibility
+bug. With the old `ee2e77b3` executable, both peers retained the live five-point
+limit but stayed in state7 with bot scores5,9 and10. The original US674C0
+round-limit scan filters network controller flags; AI have no controller records.
+The adapter now admits configured bot slots at return67868 using EDI, retaining
+the original team score, threshold and end-of-round authority decisions. Human,
+invalid, offline, disabled and native Mac fallback paths remain original.
+
+The supported Windows build and bundled checks pass. New executable SHA256:
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The original US result-builder and round-limit fixtures pass, including humans,
+all six bot slots, both peer roles, teams, scores4/5/6, ABI and disabled-hook
+mutations. The new original-routine check failed before the fix. Existing public
+adapter tests cover slot/feature/network/pool guards and native fallback; these
+run on both CI hosts. US routine tests require private game data. The combined
+network suite passed10 tests; boundary-expanded originals plus profile/context/
+backlog checks passed38. Context and whitespace checks pass.
+
+The isolated Original60/240 Online pair reaches state8 with both result builders
+ready, eight named records and identical per-slot kills/deaths/ranks/scores and
+character IDs. Schmidt wins with five points. Results captures at this boundary
+still show the end-of-round gameplay view; this is final-record validation,
+not a reviewed post-match menu or subsequent round. Presets and live Apply
+remain unchanged. The companion180/120 pair also completes with eight matching
+records, at its actual ten-point limit (Schmidt wins with10). Its menu
+replay missed one adjustment; it is accepted as ten-point completion evidence,
+not a five-point test. A new runner assertion rejects that mismatch on future
+`--short-match` runs. That final assertion has compilation validation only.
+
+`--require-results` enforces completed records and semantic peer equality;
+`--short-match` selects five points through the stock menu. Checkpoints retain
+active/pending configuration, scores and controller flags. Setup-only inspection
+cannot be combined with a results requirement. Async reads and two local games
+do not measure frame pacing, Internet latency or exact combat parity.
+
+Evidence: `logs/online-bots-results-limit-60-240` (rejected completion),
+`logs/online-bots-results-fixed-60-240`, `logs/online-bots-results-fixed-180-120`,
+`logs/online-limit-before.log`,
+`logs/online-limit-after.log`, `logs/online-limit-validation.log` and
+`logs/online-limit-build.log`. Four earlier diagnostic runs and the successful
+60/240 and180/120 pairs preserve signed profiles byte-for-byte and canonical fixture hashes,
+close owned children and recycle disposable partitions. Physical Mac networking
+remains queued under MAC-052; full-game acceptance remains open. Previous PR344
+head2ff8b17f passes all14 checks; this follow-up CI is separate.
+
+## 2026-10-24 — Goal audit and mixed-preset Online coverage
+
+The acceptance audit in `docs/native-high-refresh.md` maps the original goal to
+inspected source/tests, live evidence and remaining scene/platform gaps. The
+goal remains incomplete. PR #344's implementation head82b27c31 passes all14
+reported CI checks, including both native runtime hosts, patch upgrades and
+patch transitions. This follow-up changes only test tooling/documentation.
+
+`tools/test-online-bot-motion.py` now accepts independent host/guest presets
+0/120/180/240 (0=Original60), optional no-capture mode, and records runner hash,
+rates and movement checkpoints. It rejects a saved FPS sidecar that could
+override the requested test mode. Startup uses the existing stability runner's
+separate 180ms title/player-count/profile taps. The older single held Select
+sometimes left a peer on player/profile selection; the initial180/120 capture
+demonstrates that route failure. The initial60/240 attempt also never joined,
+but has no failed-screen capture to establish its cause. Neither attempt is
+accepted as a paired gameplay test or proof of a networking defect.
+
+Windows11 x64/D3D11, executable SHA256
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36,
+completes isolated Online directory/bridge loopback matches with two human
+slots and six bots. Reviewed640x480 captures show Vietnam gameplay and active
+Original60/240 or180/120 overlays. The two-second forward inputs give:
+
+| Host/client presets | Moving slot | Local displacement | Settled endpoint difference |
+| --- | --- | ---: | ---: |
+| Original60 /240 | Host | 12.849729 | 0 |
+| Original60 /240 | Client | 15.771369 | 0 |
+| 180 /120 | Host | 2.750483 | 0.006650 |
+| 180 /120 | Client | 15.899578 | 0.004815 |
+
+The180 host encounters different geometry; these distances are not speed-parity
+comparisons. Each accepted movement has positive health, an unchanged spawn
+counter, fresh observations on both peers and endpoint error below0.01 world
+units. Samples are asynchronous, not atomic frames. An earlier180/120 replay
+kept the client dead throughout its scheduled movement; that zero-displacement
+check is rejected. A bounded15-second wait for both copies to report the actor
+alive prevents issuing the movement measurement at a corpse. Death during a
+measurement still invalidates it; matching stationary coordinates cannot pass.
+
+Both successful pairs show bot position/health changes and respawn counters;
+this is not exact damage/score/event equivalence, a completed match, LAN/WAN
+latency, physical input latency or clean FPS evidence. The two games, periodic
+memory reads and screenshots share the host. The known test data and signed
+profiles remain byte-identical, canonical fixture hashes match, owned children
+are closed and disposable partition images are recycled.
+
+Evidence: `logs/online-bots-mixed-60-240-visual`,
+`logs/online-bots-mixed-180-120-alive`, their checkpoint/provenance files and
+`logs/online-mixed-*-validation.json`; the rejected route and dead-client runs
+remain under their separate tags. The private validator rejects zero movement,
+changed/dead spawns and stale observations. Source compiles;34 profile/context/
+backlog tests pass. Context freshness and whitespace checks pass. Current
+follow-up CI is separate from the green82b27c31 result; physical Mac gameplay
+and broader acceptance remain open. No game rebuild was required.
+
+## 2026-10-24 — Avoid copying already-zero-based draw indices
+
+The bounded `crowd-current-profile240` Disco diagnostic uses source 7a796f19's
+975f69dc binary with the 200 Hz/depth-12 sampler. Differencing complete spawn and
+combat snapshots yields 6,810 guest-thread leaf/chain samples, zero dropped
+chains and 32 virtual-memory-query leaves. Model rendering appears in 2,893
+chains; allocation stacks include pushed-vertex gathering and index copies.
+These are diagnostic wall-time observations, including waits and observer cost,
+not clean FPS or CPU-share measurements. The run exits normally with signed
+profiles/fixture intact and disposable partitions recycled.
+
+The shared indexed-draw driver always allocated and rewrote indices, even
+when their minimum was zero. `zz-zero-base-indices.patch` skips that redundant
+allocation/copy for zero-based pushed-array draws. Other ranges retain their
+original rebasing and failure path. Vertex gathering, host primitive conversion,
+draw order and ordinary vertex-buffer draws remain unchanged; no index data is
+cached between calls. The same HLE path serves Windows/native Mac.
+
+A private comparison of the actual pre-change and candidate driver passes
+12,000 randomized byte/dispatch comparisons. Its two-million-call, 24-index
+mocked-host benchmark gives median 120 ms original/79 ms candidate at minimum 0,
+and 118/119 ms at minimum 17 across five alternating pairs. This isolates the
+driver's allocation/copy cost, not a measured game FPS gain or the frequency
+of zero-based draws in live combat. Raw evidence is under
+`private/pipeline/zero-index-prototype` and `logs/crowd-current-profile240-summary.json`.
+
+Four public Windows checks pass, including deliberate always-copy, omitted
+rebasing and leaked-index mutations. They compare against the prior shared HLE
+driver, check fresh indices/ranges, explicit extrema/empty/invalid calls,
+ordinary-stream dispatch and allocation failure; host drawing/gathering are
+controlled boundaries. Both native CI hosts register this suite. The supported
+Windows build and bundled checks pass. Executable SHA256:
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36.
+An isolated native240 Disco session completes with signed profiles/fixture
+preserved and partitions recycled. Reviewed combat-one/combat-four captures
+show intact weapon/hand geometry, characters, scenery, muzzle flashes and casings.
+This visual run overlaps compiler-based tests and supplies no clean FPS evidence.
+The combined regression run passes 49 cases, including every patch-upgrade,
+draw and framebuffer case, and fails one old patch-order assertion already
+loaded by pytest before its source was corrected. The current context/backlog
+recheck passes all 21 cases; patch freshness and whitespace checks pass. Logs:
+`logs/zero-index-{regressions,context-recheck,build}.log`. All 15 CI checks pass
+on preceding 7a796f19; that does not establish this follow-up's CI. Mac execution
+and full-game performance remain unverified.
+
+Separate clean, isolated ten-bot Disco runs complete with unchanged signed
+profiles/fixture and recycled partitions. Native240's complete 45-second window
+averages 237.888896 FPS, minimum one/five-second rates 214/222.6, p99 4.931 ms,
+worst 10.608 ms and 10,704 fresh guest intervals. Original60 averages 60.000695 FPS,
+minimum one/five-second rates 60/60, p99 17.132 ms, worst 17.676 ms and 2,699 fresh
+intervals. Both have 19 active foreground checkpoints and no interpolation;
+sampled game/wall ratios are 1.00012194 and 1.00022353. Neither window overlaps
+builds/tests, CPU profiling or captures. Input state polling every 16 ms remains
+test overhead. Classic/3440x1440/FOV73 configuration has actual client1920x1060
+on a60Hz desktop. Summaries are `logs/zero-index-clean{240,60}-summary.json`.
+Present intervals are not GPU completion, scanout or physical input latency.
+The native run is not locked240; differing AI/death/view paths prevent attributing
+its FPS difference from earlier runs to this optimization.
+
 ## 2026-10-24 — Live reload reproduction attempts (#337)
 
 ## Buffered keyboard reload and held-Fire priority (#337, 2026-10-24)
