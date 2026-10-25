@@ -6,6 +6,24 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Scripted TREE callback phase (2026-10-25)
+
+Original US1D88B0 integrates its animation phase with float game time, but its
+whole-tick entry gate drops subticks. Original-routine execution reproduces
+phase0.25 after one game second at native240. A site-specific gate correction
+admits positive fractional intervals; the original routine retains pose math,
+event crossings, terminal clamp and state. Neighbor callback1D8AB0 remains
+outside the repair because it has separate per-call behavior.
+
+Forty original-routine schedules through240 cover phase/pose, slow time, carried
+phases, pause, single crossing/completion events, event times, ABI and exact
+whole/catch-up fallback. Restoring the old gate fails. The asset-free clock
+fixture covers the policy on both CI hosts; private-XBE cases skip without
+supported assets and do not certify Mac gameplay. All117 timing/vehicle tests,
+21 context/backlog checks and the supported Windows build/bundled checks pass.
+Live TREE activation/rendered appearance and physical Mac remain unverified.
+See [STATUS](../STATUS.md#tree-callback-fractional-phase-gate-2026-10-25).
+
 ## Merged-main Challenge timeout and pause (2026-10-25)
 
 A supported Windows rebuild including main063789df completes Hart Attack's

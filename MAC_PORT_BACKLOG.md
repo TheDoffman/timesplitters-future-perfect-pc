@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **TREE phase gate (2026-10-25, current branch):** `src/pc_native_numeric.h` admits
+  live fractional intervals only at US1D88B0. The original callback owns phase,
+  pose and single-event crossings; its old whole gate lost75% of time at240.
+  No host adapter or state layout changes. Asset-free clock coverage runs on
+  both CI hosts; original-US phase/pose/event checks require the private XBE.
+  Windows build/tests pass; live scene acceptance is tracked separately in STATUS;
+  physical Mac execution/rendering remain **Awaiting validation**.
+
+
 - **Pushed model copies (2026-10-25, PR #359):** Common HLE size-dispatch
   removes dynamic small-copy calls per vertex while preserving bytes/order,
   guest addressing and ownership. No host-specific adapter; native Mac uses

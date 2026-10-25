@@ -179,7 +179,11 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
     /* The reload/mode input consumer compares the whole tick directly.
      * Press edges expire after this update, so an advancing fractional frame
      * must enter it too. Its animation timer already uses fractional time. */
-    if ((site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* TREE callback 1D88B0 advances its phase with the live float delta and
+     * derives its pose from that phase. Its gate otherwise discards subticks.
+     * EAX is replaced by the entity state before use; event crossings, clamp
+     * and retirement still belong to the original routine. */
+    if ((site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||

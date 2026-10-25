@@ -25851,3 +25851,50 @@ commands/reports/states/provenance and run0-presents.csv; numeric summary is
 `02f7e0f0e381ccbfdfb9e4babb56a0ac37fe500c3097965ed10cdf8047290e5b`.
 These repeats address the capture/cap measurement gap for this mode/window only.
 Physical Mac, winning Challenge routes and wider gameplay remain unverified.
+
+
+## TREE callback fractional phase gate (2026-10-25)
+
+An audit of remaining whole-game-tick entry gates identifies original US
+`sub_001D88B0`. Initializer1D8A10 finds the TREE-tagged entity, initializes active
+state/phase and registers this callback at1D8A94. The callback initially reads
+4E7944 only as a zero-time gate, then overwrites EAX with entity state. Its
+phase at entity+1A4 advances with float4E794C divided by ticks-per-second; its
+pose at+C8 is derived directly from that phase using the original exponential.
+It emits a crossing event near phase1 and a terminal effect/clamp at80, clears
+active state, and multiplies E0 by the original-0.1 factor.
+
+The original whole-tick gate discards fractional intervals even though its body
+integrates fractional time. A fixture executing the original routine reproduces
+phase0.25 after one game second at native240, with no phase1 event yet. The
+unchanged-policy regression fails its one-second phase check (including native
+slow-time schedules) before the repair. Changing only the audited gate to test
+positive live float time makes phase advance correctly at60/120/144/180/240.
+Original mode retains its original gate; carried whole fields remain unchanged.
+The adjacent1D8AB0 callback has per-call additions and is deliberately outside
+this change pending its own integration audit, not assumed safe from proximity.
+
+`tests/native_tree_motion.c`, selected by existing `test_native_timing.py` on
+both CI hosts, translates/executes the pinned private US routine rather than a
+rewritten phase model. Two effect services are spies; other original arithmetic,
+branching, loads/stores and stack operations execute. Exact constants are read
+from the verified XBE, including complete x87 doubles. Forty rate/slow/phase
+schedules verify phase and analytic pose, one crossing/one finish with event-time
+bounds, pause (including stale carried ticks), terminal clamp/state/retirement,
+unchanged clock words and preserved callee-saved registers/stack/x87 depth.
+Whole/catch-up sequences produce identical entity bytes/event counts in native
+and Original modes. A negative control replacing only the generated gate load
+with its original value must fail; no generated game file is edited.
+
+The asset-free `native_timing_guest.c` clock fixture additionally checks ten
+rate/slow schedules, one-second phase accumulation, unchanged neighbor sites,
+pause and Original fallback on both hosted platforms. This policy test does
+not stand in for original pose/event execution when private-XBE cases skip.
+The two focused checks pass4.50s. All117 timing/vehicle checks pass231.84s;
+21 repository/backlog checks pass3.35s. The supported Windows rebuild and bundled
+checks pass, producing executable SHA256
+`a35525a76633b3d99d7571b1b9efdef9faad443739ae905ae4e7938a588b3690`.
+Repository context/index and whitespace checks pass. No private assets or
+generated game sources are committed. Live registration/activation/rendered TREE behavior,
+physical Mac execution, complete effect services and broader game coverage are
+not established by this routine fixture. No all-scenes or all-bugs claim follows.

@@ -917,16 +917,16 @@ evidence, not rendered parity or pacing. Physical Mac remains unverified.
 
 ## Forced and damped material scrolling
 
-`pc_native_material.h` splits the original127500 affine velocity/travel map in
-raw time at the current game speed. Shared numeric policy routes only12765B
-(forcing),1276FD/127705 (damping),12773B/127791 (U/V travel), using the original
-parameter pointer and held forcing register. Coupling travel to velocity matters:
-normalizing damping alone still changes texture displacement. Zero drag uses the
-finite acceleration limit; weak damping uses a stable series. Original mode,
-whole/catch-up raw intervals and unsupported/nonpositive decay bases retain
-original arithmetic. This changes no material state layout or resource ownership.
-Original force-table sampling, clamp, UV wrapping, procedural image dispatch and
-pause still execute. It does not normalize a force that changes within an authored
-interval or prove all live material behavior. Asset-free partitions and original
-surface/caching fixtures cover the arithmetic; live visual/Mac acceptance remains
-separate. See STATUS for measured before/after error and current build evidence.
+`pc_native_material.h` splits127500's coupled affine velocity/travel map in raw
+time at current game speed:12765Bforcing,1276FD/127705damping,12773B/127791UV.
+Hooks use original parameters/held force. Zero/weak drag uses stable limits;
+Original, whole/catch-up intervals and unsupported decay retain original math.
+Force sampling/clamp, wrapping, resource/event order, state layout and pause stay
+original. Varying force within an authored interval and live rendered/Mac parity
+remain unproven. See portable/original surface/cache tests and STATUS for evidence.
+
+TREE1D88B0 admits fractional time at its entry gate; EAX is overwritten before
+use. The original phase/pose, events, terminal clamp and state layout stay intact.
+Original/whole updates stay original. Adjacent1D8AB0 has per-call behavior and
+is not opted in. Original-US/public clock checks cover the repair; live scene/
+physical Mac remain unverified.
