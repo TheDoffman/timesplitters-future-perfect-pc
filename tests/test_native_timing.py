@@ -207,6 +207,7 @@ def test_reload_compare_gate(tmp_path, separated, mutation):
     policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
     policy=policy.replace('"pc_native_material.h"','"'+(ROOT/'src/pc_native_material.h').as_posix()+'"')
     policy=policy.replace('"pc_native_statistics_guest.h"','"'+(ROOT/'src/pc_native_statistics_guest.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_trap_guest.h"','"'+(ROOT/'src/pc_native_trap_guest.h').as_posix()+'"')
     if mutation=='whole-tick-policy':
         assert policy.count('site == 0x1C2F09u')==1
         policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
@@ -739,11 +740,17 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             with pytest.raises(AssertionError,match='legacy_stats'):
                 compile_and_run(tmp_path,source.replace(needle,replacement))
     if harness_name=='native_trap_motion.c':
-        for site in (0x1d8af5,0x1d8b6a):
-            needle=f'RECOMP_I32_TO_F32_AT(0x{site:X}, 0x4E7944, MEM32(0x4E7944))'
+        for needle,replacement in (
+            ('RECOMP_LOAD_GLOBAL_U32(0x1D8AB0, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)'),
+            ('RECOMP_F32_ADD_AT(0x1D8B46,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
+            ('RECOMP_F32_ADD_AT(0x1D8B7A,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
+            ('RECOMP_AFTER_STORE32(0x1D8BFD,','RECOMP_AFTER_STORE32(0xFFFFFFFF,'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+        ):
             assert source.count(needle)==1
-            with pytest.raises(AssertionError,match='trap fps'):
-                compile_and_run(tmp_path,source.replace(needle,'RECOMP_I32_TO_F32(0x4E7944, MEM32(0x4E7944))'))
+            with pytest.raises(AssertionError,match='trap fractional'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
     if harness_name=='native_tree_motion.c':
         needle='RECOMP_LOAD_GLOBAL_U32(0x1D88B0, 0x4E7944, MEM32(0x4E7944))'
         assert source.count(needle)==1

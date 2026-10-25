@@ -1,3 +1,54 @@
+## Fresh fractional TRAP motion (2026-10-25, PR #364 follow-up)
+
+PR363's discrete-clock repair preserved the original TRAP solver but still
+held its pose between carried ticks. The shared `pc_native_trap_guest.h` now
+subdivides the original kick/drift map using a half-kick coordinate conjugacy:
+`K((h-1)/2) D(h) K((h+1)/2)`. Both kicks use the original quantized sine table.
+This reduces to the original map at h=1; Original and whole/catch-up calls
+bypass the fractional operators. The original callback still owns sound/control
+events, angle clamp, restitution, dirty flags, and removal. Its contact-state
+increment at1D8BFD now spends carried game ticks instead of counting every
+subframe contact. The sound-state increment remains original. No per-entity
+cache, pose interpolation, saved-layout changes or platform adapters are added.
+
+Private original-code experiments explain the coupled repair. Merely scaling
+force and travel produces a maximum aligned angle difference of3.493835degrees
+at240 and removes the object at0.704167s versus Original0.816667s. The symmetric
+motion map reduces that aligned angle error below0.165degrees, but without
+contact normalization removes it at0.6875s. Normalizing the contact counter keeps
+sound/removal within one original tick plus sampling resolution across40
+rate/slow/carried-phase schedules. All pre-sound native frames have fresh angles.
+Frozen pre-repair policy/source provenance is in ignored
+`private/pipeline/trap-fractional-probe/provenance.json`; numerical output is
+`logs/trap-fractional-probe.log`. These experiments do not establish rendered
+appearance or live event-service behavior.
+
+The production original-US fixture checks40 schedules through240,12 mixed-rate/
+jitter schedules, fresh pre-sound poses, a one-tick Original pose envelope with
+0.25degree tolerance, aligned phase-zero endpoint error below0.25degrees,
+phase, terminal state, pause, ABI and exact whole/catch-up bytes/events.
+Removing the entry gate, either time conversion, either coupled
+operator, or contact normalization independently fails. The public fixture
+checks constant-force coupling, contact ticks, fallback and composed GPU-store
+notification without game assets. The GPU acknowledgement scope remains exactly
+3D66C3; contact normalization observes only1D8BFD.
+
+Supported Windows rebuild and bundled checks pass. Executable SHA256:
+`7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba`.
+The final timing/vehicle/GPU suite passes138 tests in219.13s, with one native-Mac
+pthread/event test skipped on Windows. The expanded original-US aligned/switch/
+mutation fixture also passes separately in22.82s. Repository/backlog checks
+pass21 in3.32s. The first full run found a synthetic physics fixture missing
+the newly referenced entity register declaration; that fixture is corrected
+and its20,000 secondary-step partitions pass. Context/index and whitespace pass.
+
+Normal-play TRAP activation, rendered propagation, actual sound/control/collision
+behavior and physical Mac remain unverified. Earlier Mansion entrance tests did
+not activate TRAP; they cannot validate this change. Source inspection finds
+original transform builderA14B0 consuming C0 atA1559/A15C6, but a complete live
+callback-to-render path is still required. No new pacing or damage parity claim.
+The earlier statistics live runs below used the previous executable, not this one.
+
 ## Player-statistics clock at native refresh (2026-10-25)
 
 Original-US player bookkeeping `D1FD0` converts the current float game delta

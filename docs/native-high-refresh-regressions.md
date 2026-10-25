@@ -6,6 +6,18 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Fresh TRAP poses (2026-10-25, PR #364 follow-up)
+
+The earlier discrete-clock repair below is superseded for fractional intervals.
+Shared coupled half-kick/drift steps now produce fresh poses, while a carried-
+tick contact budget preserves the original lifetime. Original/whole/catch-up
+states and events remain byte-equal. The original-US fixture checks40 rate/slow/
+phase schedules and12 live-switch/jitter schedules, pose/event windows, phase,
+terminal state, pause and ABI. Six independent gate/conversion/operator/contact
+mutations fail. The public clock fixture covers the coupled map and GPU-hook
+composition. Windows build passes; live TRAP activation/rendering and physical
+Mac remain open. See STATUS and the script-clock guide for measured limits.
+
 ## Player-statistics timing (2026-10-25)
 
 D1FD0's whole gate records only0.25 seconds per game second at240 for two

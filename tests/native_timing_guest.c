@@ -250,6 +250,35 @@ static void boost_resource_clock(void)
 }
 static double statistics_seconds;
 static unsigned statistics_ticks;
+static unsigned gpu_notifications;
+void xbox_Nv2aNotifyPfbFlush(uint32_t address)
+{ assert(address==0x1000 && WORD(address)==0x12345678);gpu_notifications++; }
+static void trap_fractional_clock(void)
+{
+    g_tsfp_native_timing_active=1;g_esi=0x7000;
+    FLOAT(0x4e794c)=.25f;FLOAT(0x475d0c)=0;FLOAT(0x475ce0)=1;
+    FLOAT(0x475cd4)=0;FLOAT(0x7a38a0)=2;FLOAT(0x475d28)=50;
+    float kicked=RECOMP_F32_ADD_AT(0x1d8b46,100.f,200.f);
+    assert(kicked==262.5f);FLOAT(g_esi+0xe0)=kicked;
+    float angle=RECOMP_F32_ADD_AT(0x1d8b7a,kicked*.25f/60.f,2.f);
+    assert(angle==3.09375f && FLOAT(g_esi+0xe0)==225.f);
+    for(unsigned whole=0;whole<2;whole++) {
+        WORD(0x4e7944)=whole;WORD(g_esi+0x1a0)=4;
+        RECOMP_AFTER_STORE32(0x1d8bfd,g_esi+0x1a0);
+        assert(WORD(g_esi+0x1a0)==3+whole && !gpu_notifications);
+    }
+    WORD(0x1000)=0x12345678;RECOMP_AFTER_STORE32(0x3d66c3,0x1000);
+    assert(gpu_notifications==1);
+    for(unsigned native=0;native<2;native++)for(unsigned span=1;span<=3;span++) {
+        g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=(float)span;
+        FLOAT(g_esi+0xe0)=999;WORD(g_esi+0x1a0)=4;
+        assert(RECOMP_F32_ADD_AT(0x1d8b46,100.f,200.f)==300.f);
+        assert(RECOMP_F32_ADD_AT(0x1d8b7a,1.f,2.f)==3.f && FLOAT(g_esi+0xe0)==999);
+        RECOMP_AFTER_STORE32(0x1d8bfd,g_esi+0x1a0);
+        assert(WORD(g_esi+0x1a0)==4);
+    }
+    puts("PASS: coupled fractional TRAP force/travel/contact and GPU notification composition");
+}
 void sub_000D1FD0(void)
 {
     unsigned whole=WORD(0x4e7944);
@@ -283,14 +312,14 @@ static void tree_phase_clock(void)
     g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
     assert(!pc_native_global_load(0x1d88b0,0x4e7944,0));
     assert(pc_native_global_load(0x1d88b0,0x4e7944,3)==3);
-    /* The nonlinear TRAP solver retains authored whole-tick impulse cadence.
-     * A nearby continuous conversion must still see live fractional time. */
+    /* TRAP consumes fractional time only with its coupled map selected.
+     * A nearby continuous conversion must also retain live fractional time. */
     for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<=3;whole++) {
         g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=.25f;
-        assert(RECOMP_I32_TO_F32_AT(0x1d8af5,0x4e7944,whole)==(float)whole);
-        assert(RECOMP_I32_TO_F32_AT(0x1d8b6a,0x4e7944,whole)==(float)whole);
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af5,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(RECOMP_I32_TO_F32_AT(0x1d8b6a,0x4e7944,whole)==(native?.25f:(float)whole));
         assert(RECOMP_I32_TO_F32_AT(0x1d8af6,0x4e7944,whole)==(native?.25f:(float)whole));
-        assert(pc_native_global_load(0x1d8ab0,0x4e7944,whole)==whole);
+        assert(pc_native_global_load(0x1d8ab0,0x4e7944,whole)==(native?1:whole));
     }
     g_tsfp_native_timing_active=1;FLOAT(0x4e794c)=0;
     assert(!pc_native_global_load(0x1d8ab0,0x4e7944,1));
@@ -362,6 +391,7 @@ int main(void)
     physics_history_transitions();
     boost_resource_clock();
     tree_phase_clock();
+    trap_fractional_clock();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

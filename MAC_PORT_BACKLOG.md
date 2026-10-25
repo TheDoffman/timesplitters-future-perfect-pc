@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Fresh TRAP steps (2026-10-25, PR #364):** Shared `pc_native_trap_guest.h`
+  couples fractional force/travel with carried-tick contact lifetime, replacing
+  PR363's held poses. Original/whole/catch-up arithmetic and state layout remain
+  unchanged; post-store composition retains the GPU acknowledgement contract.
+  No host adapter. Original-US and public clock fixtures cover fresh poses,
+  event windows, pause, fallback and live rate switches. Windows full checks
+  and rebuild pass; normal-play activation/rendering and physical
+  Mac remain **Awaiting validation**. See STATUS and the script-clock guide.
+
 - **Player-statistics clock (2026-10-25, branch `fix/native-statistics-clock`):** Shared
   `pc_native_statistics_guest.h` and D2CB7 numeric callee dispatch scope D1FD0
   time bookkeeping to authored carried ticks, restoring the float delta on

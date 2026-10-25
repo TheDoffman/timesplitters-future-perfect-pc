@@ -924,10 +924,9 @@ parity remain open; see surface/cache tests and STATUS.
 
 TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
 Original phase/pose, events, terminal clamp, layout and whole updates remain.
-TRAP1D8AB0 keeps its whole gate and fixed impulse; only1D8AF5/1D8B6A phase/travel
-conversions use that carried span. A pause-only gate override rejects stale
-whole counts. This restores the nonlinear solver, not fractional trap poses.
-Original-US/public clock tests cover these policies; live scenes/Mac remain open.
+TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime.
+Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
+for the map, hook composition, rejected candidates and live/Mac acceptance limits.
 
 Statistics: D2CB7 scopes/restores D1FD0 float delta to carried ticks. Time totals
 keep Original addition cadence; distance stays per-frame. D2079 blocks stale

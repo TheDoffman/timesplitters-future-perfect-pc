@@ -13,6 +13,11 @@ extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
+#include "pc_native_trap_guest.h"
+#undef RECOMP_AFTER_STORE32
+#define RECOMP_AFTER_STORE32(site,address) \
+    do { PC_GPU_ACK_AFTER_STORE32(site,address); \
+         if((site)==0x1D8BFDu)pc_native_trap_contact_store((uint32_t)(address)); } while(0)
 extern void sub_000D1FD0(void);
 static inline void pc_native_player_statistics(void)
 { pc_native_statistics_guest(sub_000D1FD0); }
@@ -64,13 +69,11 @@ extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
     ((site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
      (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
-/* TRAP1D8AB0 adds one fixed impulse per whole-tick call. Its phase/travel
- * conversions must use that same carried span, not the current subframe.
- * Keep the nonlinear solver/event cadence original; this is not a new
- * fractional integrator or a per-frame trap-pose smoothing policy. */
+/* Select TRAP's coupled fractional kicks/travel and contact clock together.
+ * Original and whole/catch-up calls retain their authored conversion. */
 #define RECOMP_I32_TO_F32_AT(site,address,value) \
     ((((site)==0x1D8AF5u || (site)==0x1D8B6Au) && (address)==0x4E7944u) ? \
-     (float)(int32_t)(value) : \
+     pc_native_trap_ticks((int32_t)(value)) : \
      ((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
      pc_native_visual_sample((uint32_t)(value)) : RECOMP_I32_TO_F32((address),(value)))
 /* US script dispatcher sub_00228870 uses this load only as a pause gate.
@@ -156,8 +159,9 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * The procedural-texture dispatcher likewise must not evolve its image
      * during a zero-float pause; its gate register is replaced by a render-
      * state return value before use. Positive intervals stay original. */
-    /* Discrete TRAP and player-statistics clocks freeze when a local pause
-     * leaves stale whole ticks; positive-time calls keep their original gate. */
+    if(site==0x1D8AB0u && address==0x4E7944u && pc_native_trap_fraction()>0.f)return 1;
+    /* TRAP and player-statistics clocks freeze when a local pause leaves
+     * stale whole ticks. Whole/catch-up TRAP calls keep their original gate. */
     if ((site == 0xD2079u || site == 0x1D8AB0u || site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
@@ -301,7 +305,9 @@ static inline float pc_native_boost_recover(float left,float charge)
     return left+charge;
 }
 #define RECOMP_F32_ADD_AT(site,left,right) \
-    (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
+    ((site)==0x1D8B46u ? pc_native_trap_force((float)(left),(float)(right)) : \
+    (site)==0x1D8B7Au ? pc_native_trap_travel((float)(left),(float)(right),g_esi) : \
+    ((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
     pc_native_hit_add((float)(left),(float)(right)) : \
     (site)==0xD4853u ? pc_native_force_add((float)(left),(float)(right)) : \
     (site)==0x6552Du ? pc_native_boost_recover((float)(left),(float)(right)) : \
