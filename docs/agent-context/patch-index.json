@@ -55,6 +55,14 @@
       ]
     },
     {
+      "name": "independent-disasm-z-recovery.patch",
+      "sha256": "5df360ee3f9f879bc5f2fe1c86d5eb53c9537099917cb03d4156bce497215fce",
+      "targets": [
+        "tools/disasm/engine.py",
+        "tools/disasm/loader.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

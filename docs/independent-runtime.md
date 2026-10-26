@@ -9,8 +9,9 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
-classification, traversal and direct-edge reachability. Do not present the port as an original implementation of
-the complete Xbox runtime or recompiler.
+classification, traversal, direct-edge reachability and table/body recovery.
+Do not present the port as an original implementation of the complete Xbox
+runtime or recompiler.
 
 ## Active goal and completion gates
 
@@ -48,6 +49,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Executable parser and analysis model | Implemented in `tools/xbe_image.py`; production generation uses the compatibility bridge | Synthetic valid/malformed images, verified-US metadata equality, regeneration and bounded gameplay; native Mac validation pending |
 | Disassembler input and instruction model | Project-owned `recomp_image.py` and `x86_decode.py`; production consumer uses them with permitted Capstone | Mapping/operand fixtures, cache invalidation, full regeneration and bounded gameplay; native Mac pending |
 | Instruction traversal and reachability | Project-owned `x86_flow.py`; production engine inherits scan, realignment, reachability and queries | Synthetic edges/cycles/overlaps/limits, existing consumer tests, full regeneration and bounded gameplay; native Mac pending |
+| Table recovery and body/entry probes | Project-owned `x86_recovery.py`; production engine is now a compatibility import | Original table/shape/bounds fixtures, existing consumer tests, full regeneration/build and isolated gameplay; native Mac pending |
 | Function discovery and x86-to-C translation | Still upstream, using the independent input layer | Independent control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -99,12 +101,34 @@ Realignment preserves overlapping streams and stops at a known successor or
 terminator. A zero/negative instruction limit performs no decode.
 
 The production engine inherits those methods through
-`independent-disasm-traversal.patch`, after the input patch. Table recovery,
-prologue/body probes and function boundaries still come from the existing
-engine/detector; their presence is not concealed by the new base class.
+`independent-disasm-traversal.patch`, after the input patch. The subsequent
+`independent-disasm-z-recovery.patch` replaces the remaining engine methods with
+`x86_recovery.CodeRecovery`. Function-boundary discovery is still upstream.
 The traversal source is included in both cache fingerprints. Its independent
 tests are in `tests/test_x86_flow.py`; the consumer integration test asserts
 that production traversal methods originate in the project module.
+
+`tools/x86_recovery.py` owns bounded switch-table measurement, removal of
+instructions overlapping proven table bytes, case/continuation realignment,
+and read-only code-shape probes. Measurement handles displacement aliases,
+negative indices and up to three unused leading slots. Backward extension is
+bounded by the owning dispatch and a local target cluster so plausible pointer
+bytes in an epilogue do not become table entries. Slots and destinations stay
+in the same executable section; file-backed reads reject virtual zero fill.
+
+Block-tail and extent queries share one boundary scan. Returning-body evidence
+may continue through a measured switch arm; unknown indirect jumps do not prove
+a return. These are lexical probes, not proofs of all-path control flow: internal
+forward branches keep the lexical run, and only measured switch dispatches move
+the probe cursor. General body evidence also accepts a tail jump. All probes
+have byte/instruction bounds and preserve the cached instruction map. Exact
+operand shapes recognize constant accessors, virtual dispatch and common entry
+prologues; saved-register evidence reports pops before their corresponding save.
+
+Original fixtures are in `tests/test_x86_recovery.py`. The production consumer
+assertions verify recovery method origins. The standalone test executes recovery
+without toolkit imports. Existing upstream consumer tests remain a compatibility
+check and must be replaced/removed before the final fixture/provenance audit.
 
 `tools/recomp_image.py` builds a read-only image from the independent XBE parser,
 without requiring cached JSON or the external toolkit. Explicit or exactly named
@@ -120,8 +144,7 @@ operand classification used by production disassembly. It follows the
 with the existing pinned standard dependency. Direct transfers, absolute memory
 references, address-like immediates and indexed table candidates retain the
 consumer interface. A candidate is not proof of a function or table; recovery,
-table/prologue recovery, function discovery, labels, cross-references and
-translation remain upstream.
+function discovery, labels, cross-references and translation remain upstream.
 
 `patches/independent-disasm-input.patch` removes the old loader/model/classifier
 bodies and connects the new implementations. It adapts code-probe reads and adds

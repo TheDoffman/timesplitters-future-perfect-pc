@@ -174,7 +174,7 @@ def test_invalid_or_truncated_instruction_has_no_record():
 
 
 def test_standalone_modules_and_cache_invalidation(tmp_path):
-    for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
+    for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
         shutil.copyfile(ROOT / 'tools' / name, tmp_path / name)
     path = write_xbe(tmp_path)
     script = """import sys
@@ -183,6 +183,7 @@ sys.path.insert(0, sys.argv[1])
 from recomp_image import load_image, source_fingerprint
 from x86_decode import make_decoder, classify_instruction
 from x86_flow import InstructionTraversal
+from x86_recovery import CodeRecovery
 image = load_image(sys.argv[2])
 assert image.entry_point == 0x11000
 flow = InstructionTraversal(image)
@@ -190,7 +191,10 @@ assert flow.decode_at(image.entry_point, 1) == 1
 assert flow.recursive_descent([image.entry_point], [(0x11000, 0x11200)]) == {image.entry_point}
 instruction = classify_instruction(next(make_decoder().disasm(b'\\xc3', 0x11000)), 0x10000, 0x2000)
 assert instruction.is_ret
-for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
+recovery = CodeRecovery(image)
+assert not recovery.probes_as_constant_stub(image.entry_point)
+assert recovery.resync_jump_tables() == 0
+for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
     before = source_fingerprint()
     with (Path(sys.argv[1]) / name).open('a') as stream: stream.write('\\n')
     assert before != source_fingerprint()
@@ -224,6 +228,9 @@ assert Instruction.__module__ == 'x86_decode'
 assert DisasmEngine.linear_sweep.__module__ == 'x86_flow'
 assert DisasmEngine.decode_at.__module__ == 'x86_flow'
 assert DisasmEngine.recursive_descent.__module__ == 'x86_flow'
+assert DisasmEngine.resync_jump_tables.__module__ == 'x86_recovery'
+assert DisasmEngine.probes_as_function_body.__module__ == 'x86_recovery'
+assert DisasmEngine.probes_as_prologue.__module__ == 'x86_recovery'
 before = cache.AnalysisCache._opts_key(False)
 cache.source_fingerprint = lambda: 'changed independent dependency'
 assert before != cache.AnalysisCache._opts_key(False)

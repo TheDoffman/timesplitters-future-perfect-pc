@@ -202,6 +202,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-066 | Independent executable analysis | Awaiting validation |
 | MAC-067 | Independent disassembler input | Awaiting validation |
 | MAC-068 | Independent instruction traversal | Awaiting validation |
+| MAC-069 | Independent table and body recovery | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5678,7 +5679,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Status:** Awaiting validation
 - **PC behavior:** Production disassembly inherits project-owned linear scan,
   bounded realignment, cached direct-edge reachability and instruction queries.
-  Function/table/prologue recovery remains in the existing toolkit for now.
+  Table/prologue recovery is now covered by MAC-069; function discovery remains upstream.
 - **PC source:** Active independent-replacement goal, continuing PR #370;
   `tools/x86_flow.py`, `patches/independent-disasm-traversal.patch`, cache and
   generation fingerprints, `tests/test_x86_flow.py`.
@@ -5692,6 +5693,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   verified US game, rebuild and run isolated Story movement/fire/pause/resume.
 - **Mac implementation and evidence:** Both-host CI registration; Windows
   validation does not establish native Mac gameplay.
+
+### MAC-069 - Independent table and body recovery
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly uses project-owned table measurement,
+  case realignment, block boundaries and read-only body/prologue probes. Function
+  detection and translation remain upstream.
+- **PC source:** Continuing PR #370 on `feature/independent-game-import`;
+  `tools/x86_recovery.py`, `patches/independent-disasm-z-recovery.patch`, source
+  fingerprints and `tests/test_x86_recovery.py`.
+- **PC validation:** Synthetic table ownership/alias/bounds and probe-shape
+  fixtures plus existing consumer tests. Build/game evidence is in STATUS.md.
+- **Existing Mac support:** Shared Python and pinned Capstone; the source-root
+  bridge handles the same module in shared dependency checkouts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run recovery/input/fingerprint tests, regenerate
+  the verified US image, rebuild and validate isolated Story movement, firing,
+  pause/resume. Verify cache invalidation and preserve the canonical fixture.
+- **Mac implementation and evidence:** Tests registered in both-host CI;
+  Windows validation does not establish native Mac generation or gameplay.
 
 ## Entry template
 

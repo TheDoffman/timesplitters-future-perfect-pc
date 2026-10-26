@@ -1,3 +1,44 @@
+## Independent table and body recovery (2026-10-26)
+
+The active replacement goal continues from `d6231896` in PR #370.
+`tools/x86_recovery.py` now owns measured switch-table spans, dispatch/epilogue
+preservation, case/continuation realignment, block extent/tail queries, saved-
+register entry checks and bounded prologue/accessor/virtual-dispatch/body probes.
+`independent-disasm-z-recovery.patch` replaces the remaining disassembly engine
+with a compatibility import of the project class. Function detection, analysis
+metadata/output/cache orchestration, translation and the runtime remain upstream.
+The overall independence goal is **not complete**.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **311 passed, 1 skipped in 11m03s** across patch transitions, recovery,
+  traversal, input/parser/import/fingerprint, Mac tooling and CI scope.
+- **107 focused checks passed**: 47 original recovery fixtures, 58 input checks
+  (including a subprocess running the existing 97-test consumer suite), and
+  2 generation-fingerprint tests. Standalone recovery runs using only project
+  modules/data and permitted Capstone, without toolkit imports.
+- **21 context/backlog checks passed**. Original fixtures cover table aliases,
+  negative indices, unused slots, dispatch ownership, local pointer clusters,
+  bounds/zero fill, repeat passes, exact operand shapes, count limits and
+  read-only probes. Both cache keys include the recovery source.
+- Full supported-US regeneration kept **21 generated C/header files byte-
+  identical**. Windows build and native regression checks passed. The disassembly
+  function-recovery summary counts matched the preceding stage.
+- Bounded isolated Scotland the Brave session: reviewed start/pause/resume
+  captures, movement by 11.216 world units, loaded ammo 8 to 6 after firing,
+  frozen simulation ticks during pause, advancing ticks after resume, and
+  backward movement. Last checkpoint 93.801 seconds; exit 0, no crash artifacts.
+- Test profiles unchanged and signatures valid; canonical fixture verified;
+  disposable partitions recycled. Personal saves/settings were not used.
+
+The game check used replay/state injection in a minimized/background window,
+original 60 FPS settings and skipped startup movies. It does not certify physical
+input, audio, foreground pacing or complete levels. Tested executable SHA-256:
+`5605d42c84b812f825017a95a6635f102dcd5682060d36a510b60b442c741268`.
+Local evidence: `logs/independent-recovery-*` and
+`private/test-saves/independent-recovery`. MAC-069 tracks native Mac acceptance;
+Windows evidence does not establish Mac generation or gameplay.
+
 ## Active replacement goal: instruction traversal (2026-10-26)
 
 The user requested an active goal to finish the remaining independent runtime

@@ -1,11 +1,11 @@
 # Build, run and validation map
 
-`recomp_image.py`, `x86_decode.py` and `x86_flow.py` own image views, instruction
-classification, traversal and reachability. Their hashes invalidate both caches.
-`test_recomp_input.py` checks standalone inputs and runs 97 consumer tests;
-`test_x86_flow.py` checks edges, holes, limits and overlaps. Probes use bounded
-windows; exact reads cannot cross section/zero-fill boundaries. Remaining goal
-milestones are in `docs/independent-runtime.md`.
+`recomp_image.py`, `x86_decode.py`, `x86_flow.py` and `x86_recovery.py` own
+image/operand inputs, traversal, table recovery and body probes. Their hashes
+invalidate both caches. `test_recomp_input.py` checks standalone use and 97
+consumer tests; flow/recovery fixtures check edges, ownership, limits and shapes.
+Probes are read-only and bounded. Full replacement gates remain in
+`docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

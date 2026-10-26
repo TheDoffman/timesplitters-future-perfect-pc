@@ -1,17 +1,22 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-disasm-z-recovery.patch` follows traversal, replacing the remaining
+engine with a bridge to `x86_recovery.CodeRecovery`. It owns table measurement,
+realignment, read-only body/entry probes and block boundaries. Both fingerprints
+include recovery; `test_x86_recovery.py` covers ownership, bounds and shapes.
+Function detection, labels, cross-references and translation remain upstream.
+
 `independent-disasm-traversal.patch` follows the input patch and removes the
 engine's scan/realignment/reachability/query methods in favor of inherited
-`x86_flow.InstructionTraversal`. Recovery/table/prologue methods remain in the
-patched engine. Both cache fingerprints include the new module. Synthetic
+`x86_flow.InstructionTraversal`. The subsequent recovery patch replaces the table/prologue methods. Both cache fingerprints include the new module. Synthetic
 `test_x86_flow.py` covers edges, holes, limits and overlaps; input tests assert
 the production method origin and run the existing consumer suite.
 
 `independent-disasm-input.patch` replaces the disassembler loader with imports
 from project `recomp_image.py`, and its instruction model/classifier/Capstone
-creation with `x86_decode.py`. The remaining engine/detector code owns table/prologue recovery and function
-discovery; traversal and candidate registration come from the new base class. Probe reads use `read_code_window`;
+creation with `x86_decode.py`. The remaining detector owns function discovery; the new base classes own
+traversal, candidate registration and recovery. Probe reads use `read_code_window`;
 exact data reads remain strict. The analysis cache includes all independent
 input source hashes, and the generation fingerprint includes disassembler
 source too. `test_recomp_input.py` exercises the real patched consumer suite.
