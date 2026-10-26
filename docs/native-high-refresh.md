@@ -284,7 +284,7 @@ or rendered results. The goal remains incomplete.
 
 | Requirement | Evidence inspected | Remaining acceptance |
 | --- | --- | --- |
-| Fresh updates, speed and pacing | Clock/network fixtures; preceding8b68 executable's clean45s ten-bot Disco pair:232.039FPS at240,59.9996 at Original60, increasing guest frames, zero interpolation and game/wall near1 | Latest executable's clean comparison; sustained heavy240 and other demanding scenes. Host Present calls are not scanout |
+| Fresh updates, speed and pacing | Clock/network fixtures; current D675 executable's clean45s ten-bot Disco pair:214.332FPS at240 (minimum1s132),59.9998 at Original60, increasing guest frames, zero interpolation and game/wall near1 | Sustained heavy240 remains unmet; attribute current load dips and cover other demanding scenes. Host Present calls are not scanout |
 | Opening handoff and animation | Original timeline/events, script controls, recorded opening comparisons; selected completed local body/hand/weapon observations through240 | Broader180/240 natural cinematic/handoff and scene rendering; selected clips do not establish all animation |
 | Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse and vehicle fixtures; completed local observations; original registered yaw callback through entity passes, cache and fresh transformed points | Live scripted-object/camera/vehicle/terminal transitions; GPU confirmation and physical-input feel/latency |
 | Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |
@@ -302,12 +302,13 @@ that coverage separate from CPU optimization measurements and Internet latency.
 Further scene/visual comparisons remain necessary. The user's request to defer
 the first mission changes investigation order, not its unresolved reports.
 
-The next live gate is the current executable's clean Original60/native240 crowd
-pair, without captures, CPU sampling or pose tracing. Keep its source/executable
-hashes and complete foreground ten-bot windows; do not measure it alongside
-another running game. This checks integration and pacing, not a causal gain
-from different AI routes. Subsequent acceptance should cover a different scene
-or unresolved mechanic rather than repeat the same selected firing/NPC proof.
+The current executable's clean Original60/native240 crowd pair is complete;
+the measured crowd dips still need attribution and repair. Keep the separate
+CPU diagnostic outside clean pacing acceptance. Any changed implementation
+needs source/executable hashes and complete foreground ten-bot windows without
+another game/build. Different AI routes do not establish a causal gain. Further
+acceptance also needs a different demanding scene or unresolved mechanic;
+repeating the same selected firing/NPC proof does not close those requirements.
 
 Detailed evidence and limits are in STATUS under **State-preparation live register
 references**, **Pushed-array address recurrence and current crowd profile**,
@@ -323,8 +324,8 @@ queued character voices and their cooldown. Original caller, scheduler and RNG
 tests cover 576 schedules through 240 FPS, stale actor handles, pause and
 36 whole/catch-up parity cases. The original delays and selection rules remain.
 The full timing suite passes 108 tests; this establishes CPU timing behavior.
-A rebuilt game and audible confirmation remain pending while the separate
-Bugs chat finishes its live session. See the deferred actor voice entry in
+A normal Windows rebuild and bundled gates now pass after Bugs finished;
+audible confirmation remains pending. See the deferred actor voice entry in
 [STATUS](../STATUS.md) for evidence and controlled service boundaries.
 
 ## NPC firing timing

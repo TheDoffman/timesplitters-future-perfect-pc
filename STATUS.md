@@ -1,4 +1,78 @@
+## Current build: clean crowd pacing and remaining load dips (2026-10-26)
+
+After Bugs completed its separate session, the supported Windows Build finished
+with exit0 and all bundled gates passing (`logs/build-actor-voice.log`). This
+build includes the deferred voice fix and prior render/yaw work; all rejected
+wind experiment source/test changes were removed before building. Source is
+9f8aa7aa (production code unchanged from f55088bf), with only documentation dirty.
+Executable SHA256: `d675d36bfb9dc91d911ba54748f632795178430945f91beb8dd190d1d3efe08a`.
+All16 hosted checks pass on exact9f8aa7aa; physical Mac remains unverified.
+
+Two completed isolated ten-bot Disco runs use this same executable, enhanced
+textures, FOV73, requested3440x1440/borderless, actual client1920x1060. There is
+no other game or active build at launch. Captures, native CSV/pose tracing and
+CPU sampling are disabled. Each complete45-second spawn+5 window has19 active,
+visible foreground checkpoints, scene56/state7/ten configured bots, increasing
+guest frames and zero interpolated Presents. Configured bots do not prove
+simultaneous visibility. Host successful Present intervals are not scanout.
+
+| Setting | Mean FPS | Minimum1s /5s FPS | p99 /worst interval | Game/wall clock ratio |
+| --- | --- | --- | --- | --- |
+| Native240 |214.331758|132 /139.4|7.832 /9.027ms|0.999833883|
+| Original60 |59.999835|60 /60|17.122 /17.380ms|0.999920921|
+
+Read-bounded timing-call counts match accepted Present counts across18 adjacent
+observation pairs per run; held-counter/wrong-rate controls fail. Maximum native
+read span is9.2microseconds. Native240 does **not** sustain its target in this
+crowd window. Different AI/combat/death routes and host conditions prevent a
+causal performance comparison against the prior8b68 run or another implementation.
+The completed pair does not validate all mechanics, GPU poses or physical input.
+
+Private receipts remain in `private/test-saves/crowd-d675-disco{240,60}/`:
+provenance, report, Presents, `crowd-pacing-summary.json` and
+`native-clock-comparison.json`. Native Present/report SHA256:
+`d572377bfbf7f618880ce4b549afff41a15ea8b2d28ea1f8f30b3f976649acf7` /
+`52d525b8f2d7470fec56fb0741c2df535a79522346a102cd81cb3809dd798db7`.
+The canonical profile remains8040bytes, valid HMAC and SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`.
+A separate CPU diagnostic completes on the same executable, outside clean
+pacing acceptance. Its cumulative snapshots after80/120seconds contain6,834
+additional main-thread samples and34.2seconds additional reported CPU time.
+The spawn/combat-four observations are86.548/121.470seconds, so that cumulative
+delta includes some setup time. Complete chain counts cover6,170 samples;
+664 chains are dropped by the8,192-entry table. Reported paths include model
+rendering, draw submission and texture work. Counts are partial lower bounds,
+not instruction-accurate attribution or a new performance improvement.
+
+The requested22BE0 PC report has no omitted target samples (29 before,41 after),
+but no source-line records. Its12 additional target-leaf samples do not justify
+focusing all optimization there. Raw symbol labels can identify folded/nearby
+compiler fragments; new instruction attribution needs current native bounds.
+Source inspection confirms21450/214C0 are dirty-state list set/flush routines,
+not bone arithmetic. The frontend already has dynamic upload rings; do not add
+a duplicate backend allocation cache from an unverified CreateBuffer hypothesis.
+The profiler's FPS is excluded. Private diagnostic outputs and partial summary
+are under `crowd-d675-disco240-profile/`; combined build/profile/save receipt:
+`logs/crowd-d675-comparison.json`. All three isolated profiles keep valid HMACs,
+their remapped test-slot metadata is byte-preserved, and disposable disks/locks
+are removed. No separate Bugs checkout or personal save is modified.
+
 ## Remaining wind-animation CPU input hold (2026-10-26)
+
+Follow-up experiment rejected on9f8aa7aa: fractional powers of the local
+coupled affine angle/velocity map provide fresh motion and pass504 fixed-phase
+Original comparisons. Expanding to5,040 normal/quarter/four-phase schedules
+rejects17 cases after impulses/contact, with a maximum3.18444824 angle-unit
+violation of the original one-tick sample envelope. Naive subframe projection,
+normalized projection, reconstructed free-history and carried-boundary split
+variants do not establish acceptance. An alternative explicit temporal window
+also remains rejected; the envelope was not relaxed to approve the candidate.
+All experimental runtime/test changes are removed, restoring the pushed source.
+Original init/wind/matrix propagation and a complete fractional contact operator
+remain unfinished. Private standalone replay: `logs/reproduce-wind-rejection.py`;
+sources/hash receipt/output: `logs/wind-unaccepted/`. This replay compiles and
+rejects the candidate without modifying runtime source. Actual wind and Euler
+consumers remain controlled; no build/live/Mac acceptance follows from it.
 
 Original1DDF10 and its nonlinear AB050 helper reproduce a separate hold on
 f55088bf. Under controlled constant wind, three seconds at native240 make720

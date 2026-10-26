@@ -117,6 +117,22 @@ required before a production change. Private reproducible evidence is in
 Use the full AB050 range through its ret atAB372 (exclusive endAB373); the
 first private attempt omitted that return and is not accepted evidence.
 
+The subsequent fractional affine-power candidate is rejected, not enabled.
+It advances the coupled angle/velocity map with the live forcing and preserves
+whole/catch-up fallback.504 fixed-phase comparisons passed, but the expanded
+5,040 normal/quarter/four-phase comparisons reject17 cases, up to3.18444824
+angle units beyond the original one-tick sample envelope after large impulses.
+Projecting contact velocity each subframe also changes rebound amplitude;
+normalizing that projection, reconstructing free-step history or splitting at
+the carried boundary did not establish acceptance. A temporal-window variant
+also remains rejected. All experimental runtime/test edits were removed; do
+not restore them as a completed fix. Reproduce without editing tracked source
+with `logs/reproduce-wind-rejection.py`; sources, original-code injection and
+hashes remain in `logs/wind-unaccepted/`. Controlled wind/Euler consumers do
+not certify original initializer, actual matrices or live rendering. The next
+operator must account for the noninvertible contact response and carried phase,
+then pass those original-code counterexamples before live acceptance.
+
 ## Deferred actor voice clock
 
 US164E00 is a deferred actor-audio scheduler, not a physics step. Original
