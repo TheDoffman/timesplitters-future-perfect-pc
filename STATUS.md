@@ -1,3 +1,25 @@
+## Current Temple crowd pair (2026-10-26, PR #367)
+
+Executable024c6faa completed capture-free45-second Temple ten-bot windows at
+native240 and Original60, using the same startup-command hash. Native240 averaged
+237.999298 successful guest Presents/s, with minimum1s219/minimum5s225.6,
+p994.938ms and worst5.872ms. Original60 averaged60.000279, minimum1s/5s60,
+p9917.150ms and worst17.541ms. Both have19 active foreground checkpoints in
+scene49/match state7, ten configured bots with changing observed positions,
+strictly increasing guest-frame IDs and zero interpolated Presents. Independent
+read-bounded timing-call/Present comparisons pass18 pairs in each run; sampled
+game seconds/wall second are0.999924545 and0.999729339 respectively.
+
+Request3440x1440/FOV73/enhanced/borderless; actual client1920x1060 at all measured
+checkpoints. CPU sampling, captures and native-update CSV were disabled. No other
+game/compiler ran during these windows. These are successful host Present
+intervals, not scanout/input-latency or simultaneous visibility of all bots.
+Nondeterministic AI/routes and a different scene prevent causal comparisons with
+prior Disco results. Sustained demanding240 and full-game acceptance remain
+unproven. The canonical fixture is unchanged and disposable test disks were
+recycled. Source/build scopes, summaries and independent clock controls are bound
+in `logs/crowd-024c-temple-comparison.json`; each run retains provenance/report.
+
 ## Quiet trace initialization and CI index repair (2026-10-26, PR #367)
 
 The common trace guard now inlines its per-thread cached setting and outlines
