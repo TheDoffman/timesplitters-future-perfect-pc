@@ -60,6 +60,59 @@ def test_original_level_ambient_callback(tmp_path, level, descriptors, callback,
         vars(config).update(previous)
 
 
+def test_original_scripted_yaw_callback(tmp_path):
+    import hashlib
+    import re
+    import struct
+    from capstone import Cs, CS_ARCH_X86, CS_MODE_32
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    path = ROOT / 'private/game/default.xbe'
+    if not path.is_file():
+        pytest.skip('Supported US XBE required for original object callback')
+    image = path.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(path))
+        at = config.va_to_file_offset(0x225430)
+        assert image[at:at+8] == bytes.fromhex('68704122006a0356')
+        call = config.va_to_file_offset(0x225438)
+        assert image[call] == 0xe8 and 0x22543d+struct.unpack_from('<i',image,call+1)[0] == 0xa5ce0
+        ranges = [(0xa0c50,0xa0d24),(0x36e430,0x36e43b),(0x224170,0x224285),
+                  (0xa5ce0,0xa5e34),(0xa7670,0xa786a),(0xa7870,0xa79a2),
+                  (0xa7360,0xa7666),(0xa14b0,0xa17ab),(0x151650,0x15178f),
+                  (0x1518f0,0x151916),(0x151e80,0x151f1c),(0x1531d0,0x1531fb),
+                  (0x153240,0x15326d),(0x153270,0x1533e0),(0x153440,0x153490),
+                  (0x153600,0x153650),(0x153650,0x1536a0)]
+        functions = {a:dict(name=f'sub_{a:08X}',end=e) for a,e in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())+'\n'
+        code += '\n'.join(translator.translate_function(a,f) for a,f in functions.items())
+        source = (ROOT/'tests/native_scripted_yaw.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code))
+        unexpected = '\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses = set(range(0xa17ac,0xa17bc,4))
+        decoder = Cs(CS_ARCH_X86,CS_MODE_32)
+        for a,e in ranges:
+            offset = config.va_to_file_offset(a)
+            for instruction in decoder.disasm(image[offset:offset+e-a],a):
+                addresses.update(int(x,16) for x in re.findall(r'\[0x([0-9a-f]+)\]',instruction.op_str)
+                                 if 0x470000<=int(x,16)<0x4a0000)
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source = source.replace('/* POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT/"src/pc_native_numeric.h").as_posix()}"')
+        source = source.replace('/* ROUTINES */',f'#include "{(ROOT/"src/pc_model_transform_guest.inc").as_posix()}"\n'+code)
+        source = source.replace('/* UNEXPECTED */',unexpected).replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+        executable = tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        for mutation in ('legacy-gate','missing-dirty'):
+            result = subprocess.run([str(executable),mutation],capture_output=True,text=True,timeout=15)
+            assert result.returncode != 0 and 'Assertion' in result.stderr
+            assert 'UNEXPECTED' not in result.stderr
+    finally:
+        vars(config).update(previous)
+
+
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',

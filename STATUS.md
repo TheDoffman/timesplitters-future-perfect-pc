@@ -1,3 +1,44 @@
+## Registered yaw callback and fresh CPU pose propagation (2026-10-26)
+
+US224170 gates float-seconds yaw motion on whole game ticks. A reproduction
+using original registrationA5CE0, entity passesA7670/A7870, post-updateA7360,
+matrix cacheA14B0 and affine point transform holds the first positive native120
+subtick even though the registered callback executes. This is a confirmed
+CPU pose hold and lost elapsed time, not just a suspicious source pattern.
+
+Only that exact entry load now follows positive game time. EAX is replaced by
+entity flags before use. The original0/91-degree clamps, direction/state,
+moving flag, sound378/379 start/stop and dirty propagation remain. The verified
+XBE's225430 registration sequence anchors the test to the original callback.
+The pre-pass model-status path and original tail cleanup also execute; physics,
+world/sector/model services and sound consumers remain controlled boundaries.
+
+The96 rate/phase/direction cases through240 require fresh native yaw/matrices/
+transformed points, independent sin/cos coordinates, pause and unchanged clocks.
+They retain coalesced authored-tick Original60 references. Largest measured
+stop-time error is0.016666667 simulated game seconds. Eighteen additional whole/
+catch-up cases compare the entire entity, transformed point and sound-event
+counts byte for byte between Original and native. Both old-gate and missing-
+dirty-store controls fail. All107 timing tests pass186.91s; the final augmented
+fixture/public scope recheck passes2 tests4.69s, and20 context tests pass5.75s.
+The supported normal Windows rebuild and bundled gates pass. Executable SHA256:
+`eb91ae41a0ea8dc46066e1cbd391a1a271245fd6eff94c6837389e2e5c195649`.
+The render preparation helper remains6,844 bytes/93 static TLS-base loads/27
+calls. Its strict old byte signature no longer matches: eleven MOV/CMP SIB
+bytes exchange RSI/RBX in equivalent unsegmented64-bit scale1 addresses.
+Bounded instruction/operand verification accepts only those commutations and
+rejects a flipped-opcode control. This is static equivalence outside typed
+relocations, not a new execution or FPS result. Receipt:
+logs/scripted-yaw-build-receipt.json.
+
+Logs: rotating-callback-before.log, -after.log, scripted-yaw-cases.log,
+-timing-suite.log, -final-focused.log and -context.log. Initial private probe
+setup omissions (the original matrix jump table and two original helpers) are
+corrected before accepting the result. No generated game C is edited.
+This establishes selected actual CPU scheduling/pose propagation, including
+the current point path. Live scene activation, collision geometry, GPU pixels,
+physical Mac gameplay and full-game acceptance remain unverified.
+
 ## Subway callback time and random-event cadence (2026-10-26)
 
 Intersecting the private gate inventory with supported-XBE map callback/name

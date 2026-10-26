@@ -49,6 +49,40 @@ quarter speed and fails. Both map fixtures share the parameterized original-code
 test and verify XBE descriptors before execution. Public timing-hook scope tests
 cover both exact sites. This does not validate sound output or all level callbacks.
 
+## Registered yaw callback
+
+US224170 advances entity yaw at+70 using float seconds, but its integer entry
+gate discarded fractional frames. Initialization225430 registers this callback
+as type3 throughA5CE0 at entity+160. A7670 reads that registered slot; A7870
+then callsA7360, which detects yaw changes, marks+28 bit0x1000 and publishes
+the yaw at+108. A14B0 mode1 consumes that dirty flag and builds the cached yaw
+matrix via153440. These are actual lifted paths, not an inferred update order.
+
+Only224170's entry load now follows positive game time. EAX becomes entity flags
+before use, so its original angle arithmetic,0/91-degree clamps, moving flag,
+sound378/379 start/stop and state selection remain. No transform is interpolated
+or retained by a new cache. Pause with a stale whole count does not advance yaw.
+
+`native_scripted_yaw.c` runs original registration, both entity passes, model
+status, post-update, matrix cache and affine point transform, including the
+existing accelerated point path. It verifies independent sin/cos coordinates
+and fresh points on every advancing native frame before the endpoint.96 cases
+cover both directions, four carried phases, normal/quarter intervals through240
+and a coalesced authored-tick Original60 reference. Exact endpoint/event counts,
+unchanged clocks, pause, ABI and frame propagation are checked. Reverting only
+the gate fails; suppressing only the original dirty store also fails. The
+measured largest stop-time error is one original tick. Eighteen whole/catch-up
+cases retain byte-equal entity/point/event state. Sound, world/sector/model
+services and physics are controlled. This is CPU scheduling/pose propagation,
+not live collision geometry, renderer/GPU pixels or physical Mac acceptance.
+The existing timing test file selects originals when the private XBE exists;
+the asset-free timing-hook fixture checks this exact site on both hosts.
+
+Do not change every inventory match into a fractional entry gate:2238D0 uses
+whole ticks for a damping loop while separately integrating float time, and
+1DDF10 already integrates float motion before a whole-count helper loop. Those
+sites need their own operator/event analysis; neither is changed here.
+
 ## TRAP motion and contact lifetime
 
 US1D8AB0 rotates a tagged object using a sine-table impulse, drift, upper clamp,

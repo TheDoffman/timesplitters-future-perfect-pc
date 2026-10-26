@@ -4004,6 +4004,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   mesh/GPU rendering, collision services and physical Mac remain
   **Awaiting validation**; see STATUS for scope and measurements.
 
+- **Registered yaw callback (PR #367 follow-up):** Shared numeric policy admits
+  fractional entry at224170. Original registration/entity passes, dirty yaw
+  cache and affine point fixtures verify fresh CPU propagation through240;
+  original sound/clamp/event paths remain. No adapter is added. Asset-dependent
+  originals skip without the supported XBE; public scope checks run on both
+  hosts. Live collision/rendered pixels and physical Mac gameplay remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
+
 - **Venice/Subway callback clocks (PR #367 follow-up):** Shared numeric policy
   admits positive fractional time at the original timed callbacks' entries.
   Original dispatch/reset/countdown/event tests run through240; Subway also
