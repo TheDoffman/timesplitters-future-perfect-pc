@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
+
 GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the
 production state-module pixel fixture with Windows WARP; see [runtime](runtime.md).
 The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.

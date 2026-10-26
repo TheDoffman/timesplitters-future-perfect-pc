@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
     parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
+    parser.add_argument('--trace-local-poses',action='store_true',help='Record bounded completed local aim/camera/animation state; diagnostic overhead, not clean pacing')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
     parser.add_argument('--profile-depth',type=int,choices=range(1,33),default=8,help='Captured caller frames for CPU diagnostics (default 8)')
@@ -388,6 +389,10 @@ def main():
             env['TSFP_FRAME_PROFILE']=str(run/f'run{index}-presents.csv')
         if args.trace_network_poses:
             env['TSFP_NATIVE_POSE_TRACE']=str(run/f'run{index}-network-poses.csv')
+        if args.trace_local_poses:
+            env['TSFP_NATIVE_LOCAL_TRACE']=str(run/f'run{index}-local-poses.csv')
+        else:
+            env.pop('TSFP_NATIVE_LOCAL_TRACE',None)
         process=subprocess.Popen([str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],cwd=ROOT,env=env,
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=subprocess.CREATE_NO_WINDOW)
         handle=kernel.OpenProcess(0x410,False,process.pid);assert handle
@@ -441,7 +446,7 @@ def main():
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         initial_commands_sha256=hashlib.sha256(commands.read_bytes()).hexdigest(),
         input_transport='startup replay plus polled state file',input_poll_ms=16,
-        watch_native_clock=args.watch_native_clock,
+        watch_native_clock=args.watch_native_clock,trace_local_poses=args.trace_local_poses,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,

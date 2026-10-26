@@ -1,3 +1,116 @@
+## Completed local aim and animation observations
+
+The shared, default-off `TSFP_NATIVE_LOCAL_TRACE` diagnostic now records local
+CPU state after the US gameplay update returns, before the next timing interval.
+It does not change game state, input, clocks or animation. It supports one local
+Story/Arcade player, marks optional animation/camera validity and stops at20,000
+rows or8MiB. The existing LAN trace schema is unchanged. Eight collector/writer/
+guard/limit/mutation checks pass; all104 timing tests and the supported Windows
+build/bundled gates pass. Both native CI hosts now include the new trace checks.
+
+Normal Windows executable SHA256
+`c8e1ec1b4c3542472537c02efad286d0a1e24910b9d6dacc58e12227563c82cb`
+is built from7a89c528 plus the local-trace source changes; source/PDB/executable
+hashes are recorded in `logs/local-state-build-receipt.json`. Paired no-bot Venice
+routes use the same executable and synthetic commands:3440x1440 host device,
+1920x1060 client, FOV73,24 mouse steps, held fire and pause/resume.
+
+| Observation | Native240 | Original60 |
+| --- | ---: | ---: |
+| Completed CPU-state rows |5765|1426|
+| Actual yaw steps / total absolute rotation |24 /60 degrees|24 /60 degrees|
+| Yaw steps on zero-carried-tick updates |9|0|
+| Stable firing hand/weapon pairs, all advancing |623|155|
+| Those firing pairs with zero carried ticks |467|0|
+| Interior pause observations, all frozen |481|120|
+| Rounds consumed (weapon3, reserve unchanged30) |4|4|
+
+All rows have valid body/hand/weapon/camera records and consecutive completed
+frame IDs. Native body animation also advances on all3,790 eligible positive
+zero-carried-tick updates across this route. Idle hand/weapon times legitimately
+hold; the firing window excludes transitions and checks stable clip/cycle/model.
+Equivalent yaw representations differing by360 degrees are excluded from input
+step counts. Pause freezes body/hand/weapon times, reference position, aim and
+camera direction. Both exit cleanly, preserving fixture/profiles/signatures and
+recycling disposable partitions. Receipt: `logs/local-state-pair-results.json`.
+
+These are completed CPU-state observations, not bone/mesh or rendered-frame
+freshness, GPU completion, scanout or physical input latency. The native run
+overlapped offline timing tests; both CSV-writing runs are excluded from clean
+pacing claims. Public presets/menus/mechanics are unchanged. Broader rendering,
+physical Mac gameplay and sustained240 acceptance remain open.
+
+## Current-build Disco cost investigation
+
+Two bounded diagnostic routes use the unchanged510c/7a89c528 Windows build,
+ten Disco bots, FOV73, Enhanced-selected/Classic fallback,3440x1440 host device
+and1920x1060 foreground client. Both exit cleanly with profiles/signatures and
+fixture preserved; they are not clean pacing measurements.
+
+The200Hz internal sampler's spawn-to-combat-four delta has6,884 main-thread
+leaf samples. Only27 are NtQueryVirtualMemory; the much larger cumulative
+menu-time count does not identify the gameplay bottleneck.541 call chains
+are dropped at the16-frame/capacity limit; leaf counts remain available.
+The exact-name program-expansion report has zero matches because that helper
+is inlined; zero matches must not be interpreted as zero conversion cost.
+
+A separate45s owned-main-thread sampler retains4,258 raw native-PC records
+with zero failures/already-suspended/capacity errors. Sampling suspends/unwinds
+the thread for1,122.69ms total (maximum1.479ms per observation), so its frame
+rate cannot establish normal throughput or latency. Native unwind boundaries
+prevent nearest-symbol aliases from being presented as actual function names.
+Source-line resolution identifies texture-survey/checksum/state/texture-bind
+ranges; generated guest model lines remain unresolved. The model-node renderer
+18EA90 appears in1,025 eight-frame chains (100 leaf samples), a useful next
+render-setup target, not proof that all that cost belongs to its own body.
+Texture-survey instructions account for88 samples, about2.1% of all samples.
+Receipts: `logs/owned-510c-disco-analysis.json`, per-run raw `owned-sample.json`,
+`logs/resolve-510c-lines.log` and the internal `diagnostic-summary.json`.
+
+Private8-/16-sample texture-loop unroll prototypes pass the existing exact
+checksum/read-position/order/bounds fixture but are rejected for performance.
+Seven alternating CPU rounds show8-way ratios1.074 at256KiB and1.044 at64MiB;
+16-way is1.231 at32KiB and1.105 at256KiB (candidate/current, lower is faster).
+Mixed small gains do not justify deployment. The production four-lane path,
+checksum/upload cadence, gameplay and generated sources remain unchanged.
+Receipt: `logs/texel-unroll-510c-probe.json`; this is Windows CPU-kernel evidence,
+not a Mac result or a causal game-FPS comparison. The full goal remains open.
+
+## Current-build Hotel crowd coverage
+
+The normal Windows executable510c (source7a89c528) completes paired ten-bot
+Hotel routes at native240 and Original60. Both use FOV73, Enhanced selection
+(Classic fallback), actual3440x1440 host device creation and foreground1920x1060
+clients. Capture, native CSV tracing and CPU sampling are disabled; Present
+recording starts after70s. Each complete50s window has21 active ten-bot
+checkpoints. Recorded dimensions/settings are checked in addition to the request.
+
+| Mode | Mean FPS | Lowest1s /5s FPS | p99 / worst frame interval |
+| --- | ---: | ---: | ---: |
+| Native240 |239.88101|238 /238.6|4.936 /5.823ms|
+| Original60 |60.00068|60 /60|17.209 /17.554ms|
+
+Both retain unique increasing guest frames, zero interpolation and independent
+timing-call/accepted-Present agreement; held-counter and wrong-rate controls
+are rejected. Every sampled bot moves (14..19 distinct positions native,
+13..20 Original). Native sampled game/wall speed is0.999771. Both exit cleanly;
+fixture, personal profiles and signatures remain preserved and disposable
+partitions are recycled. Receipt: `logs/tiled-510c-hotel-full-comparison.json`.
+
+An earlier separate pair has the same3440x1440 device but640x480 visible clients:
+native239.13648/min1s226 and Original60.00061/min60. Its receipt is retained as
+`logs/tiled-510c-hotel-comparison.json`; it is not the full-window comparison.
+Separate AI/death/camera routes prevent causal before/after performance claims.
+These are successful host Present intervals and sampled motion, not simultaneous
+bot visibility, GPU completion/scanout, per-frame aim/animation or physical input
+latency. Hotel staying near240 does not resolve Disco's231.60 average/min196.
+All16 checks remain green at unchanged7a89c528; PR367 remains draft.
+
+The existing completed-update pose trace is specifically filtered to two-human
+LAN play and records body positions only. It cannot establish local per-frame
+aim/hand animation freshness. Broader rendered-pose and physical Mac gameplay
+acceptance remain open; no full-goal completion is claimed.
+
 ## Bounded packed-vertex tiles
 
 The additive `zz-vertex-expand-tiles.patch` bounds each tail/attribute pass to
@@ -30,8 +143,22 @@ The120s native180 opening replay passes movement, hand/weapon14 handoff, firing
 and pause/resume:32 rounds consumed128 to96, four interior samples freeze hand
 clip/time and position, and clips1180/1188/1190 advance. A retained frame shows
 gun/canyon geometry without obvious breakage. This diagnostic overlapped patch
-validation and is not clean pacing or complete visual parity. Patch-transition,
-current-head hosted and clean crowded-scene acceptance are pending.
+validation and is not clean pacing or complete visual parity. The local patch-
+transition/context suite passes41 checks in633.11s, and all16 hosted checks
+pass at7a89c528, including native Windows/Mac and upgrades/transitions.
+
+The fresh same510c capture/sampler-free Disco comparison completes45s windows.
+Native240 averages231.59515, minimum one-second196/five-second208.2,
+p995.401ms/worst9.668ms. Original60 averages59.99967, minima60/60,
+p9917.242ms/worst17.838ms. Both retain19 foreground ten-bot observations,
+unique increasing guest frames, zero interpolation and independent timing-call/
+Present agreement with held/wrong-rate controls rejected. Game/wall speed is
+0.999705/1.000023; sampled bots occupy15..19/14..19 distinct positions. Fixture,
+profiles and signatures remain preserved and disposable partitions recycled.
+Receipt: `logs/tiled-510c-crowd-comparison.json`. These separate AI/camera/death
+routes do not prove a causal increase over5988's220.35/min154 or32D1's232.02/
+min177. Sustained240, full-game/visual and physical Mac/input acceptance remain
+unfinished; the PR remains draft.
 
 ## Packed vertex conversion follow-up
 

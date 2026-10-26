@@ -77,7 +77,7 @@ def test_native_timing(source, mutation, tmp_path):
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     run_environment = {k:v for k,v in os.environ.items()
-                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE',
+                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_NATIVE_LOCAL_TRACE', 'TSFP_SURFACE_TRACE',
                                     'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z',
                                     'TSFP_CHARACTER_TRACE', 'TSFP_WALK_TRACE',
                                     'TSFP_WALK_TRACE_SCENE', 'TSFP_WALK_TRACE_TICKS')}

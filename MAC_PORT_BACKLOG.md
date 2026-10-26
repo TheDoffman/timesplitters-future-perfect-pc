@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Completed local state diagnostics (PR #367 follow-up):** Shared
+  `pc_native_local_trace.h` observes local aim/camera and animation timelines
+  at the completed US gameplay-update boundary in Original/native modes.
+  It is default-off, read-only and row/byte bounded; no Mac adapter or saved
+  setting is added. Collector/writer/guard/mutation tests run on both native CI
+  hosts. CPU observations do not prove rendered poses or physical input latency.
+  Windows live results belong in STATUS; physical Mac gameplay remains
+  **Awaiting validation**.
+
 - **Packed vertex conversion (PR #367 follow-up):** Shared HLE
   `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute;
   the following `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.

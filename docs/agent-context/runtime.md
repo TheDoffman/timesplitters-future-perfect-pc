@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Completed local aim/animation state: [optional shared trace](native-local-trace.md).
+
 `zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
 common `hle_d3d8.c`; `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
 Attribute/width dispatch moves outside the vertex loop within each tile;

@@ -202,6 +202,7 @@ jobs:
             tests/test_native_compiler.py tests/test_audio_timing.py tests/test_audio_output_gain.py
             tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_native_demo_timing.py tests/test_reload_keys.py
+            tests/test_native_local_trace.py
             tests/test_native_effect_trace.py tests/test_rocket_impact_stats.py tests/test_surface_shader_feedback.py tests/test_combiner_constants.py tests/test_surface_preservation.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_model_transform.py tests/test_gpr_refs.py tests/test_zero_base_indices.py tests/test_push_gather.py tests/test_vertex_expand.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
