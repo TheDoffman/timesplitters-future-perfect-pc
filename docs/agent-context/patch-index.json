@@ -233,6 +233,13 @@
       ]
     },
     {
+      "name": "zz-sampler-pc-locations.patch",
+      "sha256": "7dbba510e7b233dc00b98e3760ba46e5482011a7e072ce6f294b2b1868ad1186",
+      "targets": [
+        "src/kernel/recomp_sample.c"
+      ]
+    },
+    {
       "name": "zz-shader-source-lookup.patch",
       "sha256": "d643a9d35f288f6ffb82db34c654a5d798afc533277d11ae65c6b66234fcf0e1",
       "targets": [

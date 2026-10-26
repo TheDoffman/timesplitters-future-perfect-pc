@@ -1,5 +1,14 @@
 # Runtime and patch navigation
 
+`zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
+to the existing Windows sampler. One exact executable symbol gets at most512
+native PC rows per thread/report, with executable RVA, symbol offset, source
+basename and PDB line. A coverage footer counts all matching addresses/samples
+and omitted samples; truncated tables cannot support complete differential
+claims. Resolution happens only after sampled threads resume. No per-sample
+collection or guest behavior changes; source paths are not dumped. Mac's
+existing no-op sampler is unchanged; portable reporter fixtures run on both.
+
 `zz-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
 32-entry descriptor caches for immutable blend, depth/stencil and rasterizer
 objects. Current bindings borrow cache objects; shutdown destroys each owner

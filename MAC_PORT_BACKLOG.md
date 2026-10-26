@@ -3907,6 +3907,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Native PC locations (PR #367 follow-up):** The existing opt-in Windows
+  CPU sampler can report bounded instruction RVAs, symbol offsets and PDB
+  source basenames/lines for one requested symbol. DbgHelp is Windows-specific;
+  the existing Mac no-op sampler remains unchanged. Portable selection/output
+  controls run on both hosts, but do not provide a Mac native-stack adapter.
+  This is diagnostic capability only; it changes no common game timing or
+  rendering policy. Mac gameplay acceptance remains **Awaiting validation**.
+
 - **Immutable render-state reuse (2026-10-26, commit8d87314c):** Common RHI
   `zz-render-state-cache.patch` retains up to32 exact descriptors each for
   blend, depth/stencil and rasterizer state objects across material switches.

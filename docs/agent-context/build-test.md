@@ -1,5 +1,9 @@
 # Build, run and validation map
 
+Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is
+recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
+controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
+
 `tests/test_render_state_cache.py` compiles the complete common state module
 against observable RHI services on Windows/macOS. It reconstructs the pre-cache
 module by reversing only `zz-render-state-cache.patch` in a temporary tree,

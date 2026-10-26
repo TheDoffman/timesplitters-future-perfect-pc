@@ -1,3 +1,52 @@
+## Remaining crowd-cost diagnostics (2026-10-26, PR #367 follow-up)
+
+All hosted checks passed for457b5e20 before this diagnostic follow-up, including
+both native runtimes, Mac MoltenVK pixel/replay checks, patch upgrades and
+transitions, launcher compatibility and PR validation. Physical Mac gameplay
+and broad full-game acceptance remain unverified.
+
+The completed Disco CPU profile (`crowd-state-cache-disco-profile240`) has
+6728 differential main-thread samples,1721 wait leaves, and zero omitted
+caller chains. The model renderer18EA90 has241 leaf samples, versus105 texture
+survey,89 disabled-trace guard and85 affine-transform samples. These are
+diagnostic counts from a different AI route, not a clean FPS comparison.
+
+`zz-sampler-pc-locations.patch` now optionally reports original native PCs for
+one exact executable symbol instead of losing their offsets in aggregation.
+It keeps the existing collection, resolves after threads resume, emits at
+most512 rows per thread/report, accounts for every omitted sample, and rejects
+truncated/unresolved symbol names as exact matches. Source output contains
+basenames only and explicitly uses unknown/line0 when PDB lines are unavailable.
+The normal sampler/report path remains unchanged unless requested; normal
+gameplay has no new collection work. The existing Mac no-op sampler remains.
+
+Production reporter fixtures cover disabled work, executable bounds, exact
+names, incomplete symbols, source fallback/privacy and output limits with
+independent negative controls. Eight reporter/caller checks pass in11.16s;
+the additional real Win32 collector/PDB integration and final reporter controls
+pass six checks without game assets. Selected full-stack/repeated-build and
+native-checkpoint upgrade tests pass. Their combined selection has53 passes
+and one host skip; two context-budget failures are repaired by shortening the
+build guide, with all20 context tests then passing in3.29s.
+
+Both supported Windows builds and bundled checks pass. The live diagnostic
+executable is `fd16901b6d10b58d2ce190183024758d190ec4eda6a5acae5bc4b95b66d25c08`.
+The final build additionally rejects incomplete symbol names and has SHA256
+`d7b97fa59cd00ed4dfdbcbf892c52467a9bd520b3e18c02ec77f9e430478c534`;
+that guard is covered by the final fixtures and real Windows collector test.
+No gameplay policy changes between these builds.
+
+`crowd-disco-model-pc240` completes with isolated profiles/signatures/fixture
+preserved and disks recycled. Zero-omission snapshot differencing accounts for
+all291 model samples at236 distinct native PCs. No one PC has more than five
+samples. None maps to a source line: the generated model's Release project
+has no compiler debug-information format selected. Native RVA/symbol offsets
+remain valid; disassembly at the sampled addresses shows repeated TLS register
+access and guest model-data loads. This supports investigating that broad path,
+not attributing the cost to one instruction or claiming a causal speed gain.
+The240 pacing gaps below remain open; refreshed checks for this follow-up are
+pending. The overall goal remains active.
+
 ## Immutable render-state reuse candidate (2026-10-26)
 
 `perf/native-crowd-render-cost` builds on merged main `e9d9faeb`. The gameplay
@@ -36,7 +85,14 @@ The first hosted Mac runtime suite atf716ead3 passes671 tests with234 skips
 and18 subtests. Its subsequent Vulkan GPU target fails to compile the new
 fixture because `D3D8DisplayPolicy` is hidden without `TSFP_RHI_RENDERER`.
 The fixture target now explicitly defines that common-frontend switch; the
-GPU check remains enabled and its refreshed hosted result is pending.
+GPU check remains enabled; refreshed hosted results follow.
+
+At457b5e20 the refreshed hosted Mac job passes:671 tests/234 skips/18
+subtests, the common MoltenVK GPU pixel contract (including the cached
+blend/stencil/scissor/replacement fixture), swapchain/readback/presentation,
+and production one-frame replay. The release/cleanup selection additionally
+passes147 tests/3 skips/3 subtests. This verifies the test-target definition
+repair and hosted common-RHI acceptance, not physical Mac gameplay.
 
 The follow-up CPU run (`crowd-state-cache-profile-temple240`) exits0 and
 preserves fixtures/profiles/signatures. Subtracting the80s/110s reports gives
@@ -72,6 +128,46 @@ establish an FPS improvement or resolve the crowded240 pacing gap. The proven
 benefit is fewer immutable object creations with matching binds/pixels in the
 controlled fixtures. Current-head hosted checks, broader live rendering and
 physical Mac acceptance remain pending. The overall goal remains active.
+
+## Disco crowd pair (2026-10-26, candidate2804)
+
+`crowd-state-cache-disco-original60` and `crowd-state-cache-disco-native240`
+use the same executable28041c99, command payload, FOV73, one human/ten bots,
+Enhanced selected/Classic fallback,3440x1440 rendering and foreground1920x1060
+borderless client on common D3D11. Both run capture/sampler-free, with the
+complete45-second spawn+5..50 window measured after Present recording delay70s.
+
+| Measurement | Original60 | Native240 |
+| --- | ---: | ---: |
+| Successful guest Presents | 2699 | 10370 |
+| Average accepted Presents/s | 60.0002 | 230.4781 |
+| Minimum one-second bin | 60 | 181 |
+| Minimum five-second rate | 60 | 197.4 |
+| p99 interval (ms) | 17.315 | 5.808 |
+| Worst interval (ms) | 17.934 | 7.482 |
+| Sampled game/wall speed | 1.000127 | 1.000249 |
+
+Both windows have zero interpolation and19 active ten-bot checkpoints;
+every bot has18..19 (Original) or17..19 (native) distinct sampled positions.
+Human health spans0..1.75 in both, so these include death and do not represent
+uninterrupted live-player stress or identical AI trajectories. Independent
+timing-call observations match accepted Presents within one in-flight update;
+held and wrong-rate counter controls fail. The helpers now select scene/rate
+from provenance, so an actual60-Hz Original counter is not treated as invalid.
+Maximum observation spans are20.9/30.6us. Neither run changes profiles; fixture,
+signatures, bounded exit and disposable-disk cleanup pass.
+
+Command SHA256: `48d10e9930e1272797a4c15d5ebb712c592d22736bef62a1eae038194097f61c`.
+Present CSV hashes are
+`da01c9fa9373d0df2fbd1f842ad7c97638f4157b1aa8e138e63266ec63a410c0`
+(Original) and `fe9117a59d5df2dc4f855ea5a97c38aac5165bcd8e36bbbb29a95c86b8246ea3`
+(native). Private receipt: `logs/disco-current-crowd-comparison.json`.
+
+Disco exposes a larger240 pacing gap than the current Temple route; this
+extends coverage and does **not** demonstrate sustained240 or a cache-related
+speed gain. API acceptance/counter observations do not prove rendered pixel
+identity, complete subsystem behavior, GPU completion or scanout. The follow-up
+Disco CPU sampler is diagnostic only and excluded from these clean intervals.
 
 ## Crowded Temple follow-up (2026-10-26)
 
