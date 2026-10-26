@@ -3907,7 +3907,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Immutable render-state reuse (2026-10-26, uncommitted):** Common RHI
+- **Immutable render-state reuse (2026-10-26, commit8d87314c):** Common RHI
   `zz-render-state-cache.patch` retains up to32 exact descriptors each for
   blend, depth/stencil and rasterizer state objects across material switches.
   Dynamic stencil references/scissor rectangles and all guest updates remain

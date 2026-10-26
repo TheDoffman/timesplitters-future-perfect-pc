@@ -1,10 +1,7 @@
 # Subsystem entry points
 
-`src/native/vulkan_probe.cmake` and the Windows WARP fixture compile the real
-common `d3d8_states.c` for `tests/rhi_state_cache.h`. Pixel readbacks check
-cached alpha blending, dynamic stencil reference/scissor changes and bounded
-cache replacement. The cache implementation stays in the common runtime patch;
-this native CMake change only supplies the same GPU acceptance fixture to Mac.
+GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the
+production state-module pixel fixture with Windows WARP; see [runtime](runtime.md).
 
 Native player contact: [fractional clear-slide policy and trace](native-player-contact.md).
 C54A0 keeps an eligible clear slide through its original small-motion guard;

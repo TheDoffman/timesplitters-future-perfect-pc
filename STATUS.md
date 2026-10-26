@@ -29,7 +29,8 @@ checks pass in5.05s. The broader renderer/patch migration selection passes
 55 tests with one Mac-only skip in647.56s. Supported Windows build and bundled
 checks pass; candidate executable SHA256 is
 `28041c9960003a17d46d92fe7cec7bae130850ff89b0ede804a92abca9477dc7`.
-Physical Mac validation remains pending under MAC-060.
+Native Mac tool/backlog/CI-scope contracts additionally pass94 tests with one
+host-specific skip in1.12s. Physical Mac validation remains pending under MAC-060.
 
 The first candidate Temple run exits0 with ten bots and preserved fixture,
 profiles and signatures, but overlaps the regression suite and is excluded
