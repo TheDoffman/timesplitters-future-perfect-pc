@@ -1,10 +1,66 @@
-## Vector reference extension under validation
+## Current vector-reference crowd and opening validation
+
+All16 hosted checks pass for code revision1a61f02e: native Windows/Mac,
+Windows/macOS patch upgrades/transitions, both launchers and PR validation.
+This establishes the hosted contract scope, not physical Mac gameplay.
+
+The same32D1 executable completes capture/sampler-free Disco runs at public120
+and180, plus legacy diagnostic144 (not a player-menu option). Each has a complete
+45s spawn+5..50 window,19 foreground ten-bot checkpoints, unique increasing guest
+frame IDs, zero interpolation, independently bounded timing-call/Present
+agreement within one in-flight call and rejected held/wrong-rate controls.
+Command hash/settings match the Original60/native240 comparison below.
+
+| Target | Guest Presents | Average FPS | Minimum1s/5s | p99/worst interval (ms) | Game/wall speed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Native120 | 5399 | 119.99904 | 120/120 | 8.841/9.438 | 0.999836 |
+| Diagnostic144 | 6479 | 143.99829 | 144/144 | 7.560/8.104 | 0.999925 |
+| Native180 | 8099 | 179.99848 | 180/180 | 6.191/7.164 | 1.000299 |
+
+Individual bots occupy13..19 distinct sampled positions across these runs;
+human health includes combat/death. Profiles/signatures/fixture stay preserved
+and disposable partitions are recycled. `logs/vector-crowd-rate-matrix.json`
+contains all five same-build modes, exact counters/hashes and limitations.
+These measurements establish these bounded windows, not all maps, simultaneous
+bot visibility, GPU completion/scanout or physical-input latency. Native240
+still averages232.02 with minimum one-second177 below; it is not sustained240.
+
+A fresh depth8 CPU diagnostic (`crowd-vector-profile-disco240`) accounts for all
+6789 main-thread differential samples and chains, zero omitted.2399 are wait
+leaves;110 texture survey,92 model renderer,78 state flush and77 trace-guard
+leaves remain. Different AI routes and depth8 versus the earlier depth16
+diagnostic prevent causal performance attribution. This is not a clean FPS run.
+
+Current32D1 Original60 and native144 opening replays,120s each, both pass
+movement, changing/advancing hand clips, weapon14 handoff, ammunition use and
+pause/resume. Both consume32 rounds (128 to96 total ammunition), and four
+interior pause samples each keep the hand clip/time and player position exactly
+frozen. Observed forward XZ speed over86..89.5s is6.22287 versus6.18952 units/s
+(native0.536% lower); this short, sampled, turning/collision-capable route does
+not prove exact locomotion equivalence. Reload/reset observations align within
+the sampling resolution; exact shot/reload timing and idle phase are unproven.
+`logs/vector-opening-comparison.json` records validation/gameplay hashes and
+the comparison. Both use diagnostic captures/traces; they are not pacing tests.
+
+Reviewed opening-space captures from Original60 and native144 and a native
+cockpit capture show no uniform brown overlay. This is selected visual evidence,
+not all cinematic frames or full rendering parity. The native144180s natural-
+intro run finishes its cinematic and reaches Story, but has only22s of player
+observations and does not prove the later weapon handoff. An initial Original
+natural-intro attempt incorrectly combined the fixed pause/stress replay:80s
+Escape skipped the cinematic,83s Escape paused gameplay, and the replay correctly
+failed. It is retained as invalid fixture timing, not reported as a game bug.
+See `docs/agent-context/native-opening-checks.md` for separate acceptance routes.
+The full goal remains active: crowded240, broader game/visual coverage and
+physical Mac/input acceptance remain incomplete.
+
+## Vector reference extension implementation and validation
 
 The shared reference protocol now also addresses the same eight live RecompXmm
 cells in the existing three selected routines. No vector values are cached;
 partial lanes, callback visibility and Original/native clocks retain their
-existing behavior. MMX/x87 and EBP/SEH are unchanged. This is currently local
-source on afb8f7f7; D448 measurements below precede the vector extension.
+existing behavior. MMX/x87 and EBP/SEH are unchanged. The vector extension is
+committed as1a61f02e; D448 measurements below precede it.
 
 The isolated model compiler comparison now includes this header:3646 assembly
 instruction lines/five static GS:88 TLS-base reads, versus integer-only3920/93
@@ -66,10 +122,9 @@ gain, absence of regression or sustained240 is proved. Present acceptance is not
 GPU completion/scanout or physical-input latency. Broader gameplay/visual and
 physical Mac acceptance remain open; the full high-refresh goal stays active.
 
-All hosted checks pass for afb8f7f7 (the integer-only candidate and Clang fixture
-repair): both native runtimes, patch upgrades/transitions, launchers and PR
-validation. The local vector extension has not yet been pushed or validated on
-the hosted Mac. The PR remains draft and the full high-refresh goal is incomplete.
+All hosted checks pass for1a61f02e, including the vector extension: both native
+runtimes, patch upgrades/transitions, launchers and PR validation. The PR remains
+draft and physical Mac/full-game acceptance remains incomplete.
 
 ## Register-reference CI repair and diagnostic follow-up
 

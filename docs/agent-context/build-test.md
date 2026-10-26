@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
+
 Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is
 recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
 controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
