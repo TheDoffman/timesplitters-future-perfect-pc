@@ -32,6 +32,26 @@ checks pass; candidate executable SHA256 is
 Native Mac tool/backlog/CI-scope contracts additionally pass94 tests with one
 host-specific skip in1.12s. Physical Mac validation remains pending under MAC-060.
 
+The first hosted Mac runtime suite atf716ead3 passes671 tests with234 skips
+and18 subtests. Its subsequent Vulkan GPU target fails to compile the new
+fixture because `D3D8DisplayPolicy` is hidden without `TSFP_RHI_RENDERER`.
+The fixture target now explicitly defines that common-frontend switch; the
+GPU check remains enabled and its refreshed hosted result is pending.
+
+The follow-up CPU run (`crowd-state-cache-profile-temple240`) exits0 and
+preserves fixtures/profiles/signatures. Subtracting the80s/110s reports gives
+5110 main-thread samples, including1768 wait leaves and zero dropped chains
+at depth16/capacity8192. No state-creation backend appears in these gameplay
+caller chains, versus28 blend/11 depth/1 raster samples before the cache;
+this is sampling evidence, not an exact zero-call assertion. Remaining
+overlapping caller counts include74 pushed gathering,57 format expansion,
+73 guest state setter21450 and145 state flush214C0. The original versions of
+the latter routines manage the guest's dirty-state linked list; skipping them
+would alter authored render-state ordering. The expansion path converts packed
+normals/shorts and preserves other attributes, so it cannot simply be omitted.
+Different nondeterministic routes and profiling overhead still prevent a game
+FPS improvement claim.
+
 The first candidate Temple run exits0 with ten bots and preserved fixture,
 profiles and signatures, but overlaps the regression suite and is excluded
 from clean performance comparison. The subsequent isolated capture/sampler-free

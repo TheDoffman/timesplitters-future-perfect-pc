@@ -11,6 +11,8 @@ native-runtime CI jobs; mocked RHI calls do not replace rendered GPU acceptance.
 objects: alpha blend/reuse, stencil-reference changes, moving scissor rectangles
 and replacement must produce expected readback pixels. The existing Windows
 WARP and native Mac Vulkan targets both include it.
+The Vulkan fixture target explicitly defines `TSFP_RHI_RENDERER`; without it,
+Mac's common display-policy declarations are hidden even with Vulkan linked.
 
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
