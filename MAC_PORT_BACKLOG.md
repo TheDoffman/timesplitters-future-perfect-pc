@@ -3907,6 +3907,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Player clear-slide guard (2026-10-25, local follow-up):** Shared
+  `pc_native_walk_guest.h` scopes fractional C54A0 calls so a completed clear
+  slide selects the existing small-motion guard. Blocked/Original/whole paths
+  retain their branch; no geometry, response constants or save layout changes.
+  The optional synchronous C54A0/C4700 diagnostic uses existing Windows/Mac
+  memory validation. Public scope/bridge tests and private original-code cases
+  join existing native-timing CI; private cases skip without the supported XBE.
+  Windows build/live results are in STATUS as available. No new Mac adapter is
+  needed; physical Mac scene acceptance remains **Awaiting validation**.
+
 - **Current Temple crowd acceptance (2026-10-25, PR #364):** Unchanged Windows
   runtime731288 completes capture-free ten-bot3440x1440 Enhanced-selected Temple
   runs at Original60/native144/native240, with complete45s guest-Present windows

@@ -6,7 +6,25 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
-## Venice wall-contact divergence (2026-10-25, unresolved)
+## Venice fractional clear-slide repair (2026-10-25)
+
+The current branch tracks only the completed final slide attempts within a
+fractional C54A0 transaction. A clear result selects the original small-motion
+guard at C596C; blocked/Original/whole paths retain their branch. The old guard
+could select its large corner penalty using scratch globals after a clear slide
+and floor query, discarding every small native step. Existing delta-squared
+scaling, geometry and response points are unchanged.
+
+The original-code fixture reproduces that rewind with captured service boundaries
+and tests16 mode/clear/blocked/scope cases; missing root/branch controls fail.
+144 timing/vehicle/context/backlog checks and the Windows build pass. Same-build
+live Original60/180/240 routes now pass the formerly blocked hold. Its endpoint
+differences fall from12.9545 to0.2269/0.2182 units; other endpoints can differ by
+0.5373, so exact geometric trajectory parity remains unverified. Pause, aim,
+firing and clean Present intervals are separately checked. Mac scenes and wider
+geometry/NPC acceptance remain open. See STATUS and the player-contact guide.
+
+The following record describes the pre-fix investigation.
 
 Current merged-main executable5487 completes matched no-bot Original60/native240
 input routes with matching aim changes, ammo consumption, pause behavior and
@@ -24,9 +42,8 @@ mode and retain the same feet height. Raw sampled contact fields do not identify
 the blocking surface or solver decision; no repair is established. See STATUS
 for the observer's bounds, field-label correction and separate180 pacing result.
 
-The existing walking fixture stubs C5B50's actual collision services. Next
-reproduce the same contact through the normal route, then distinguish geometry,
-step-size thresholds and moving-object timing before changing gameplay. STATUS
+The earlier walking fixture stubs C5B50's actual collision services; the new
+C54A0 acceptance fixture and paired traces supplement that coverage. STATUS
 records captures excluded for observer overhead, the live observations, unreadable
 sample handling, negative controls and preserved settings. Mac scenes remain open.
 

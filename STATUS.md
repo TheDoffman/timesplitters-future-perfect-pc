@@ -1,4 +1,91 @@
-## Venice player wall-contact investigation (2026-10-25)
+## Fractional clear-slide repair (2026-10-25, current branch)
+
+`fix/native-player-wall-contact` starts from merged main6aeaa8b1/PR #364.
+The old Venice contact discrepancy is reproduced at180/240 and in two paired
+Original60/240 routes below. Shared `pc_native_walk_guest.h` now keeps a valid
+fractional clear slide through C54A0's existing small-motion guard.
+
+The synchronous diagnostic build5038f362ed51a8da690d348e9ae454fdabe9fdf6d8237593cbf9f377fa2ed7be
+records1084 paired calls/333 roots at Original60 and4876/1232 at240. At the
+obstruction, the primary sweep returns contact flags6 and the final slide sweep
+returns0 (clear) in both runs. C54A0's later corner-normal comparison still
+selects the large stop-distance guard after scratch globals have been reused by
+the no-hit slide/floor query. Original pair453 retains squared movement0.000132846
+above its0.0001 limit. Native pair2045 produces a valid squared slide0.00000491973,
+below its0.00000578075 limit, then restores the old position. The existing test
+already multiplies game delta twice; an additional time scaling is not a repair.
+Its ordinary small-motion branch would use0.000000578075 for this native step.
+
+A call-local scope now classifies only the completed final slide attempts at
+C5781/C58B0. For native positive game deltas below one tick, a clear final result
+takes C596C's existing small-motion branch. A subsequent blocked result replaces
+an earlier clear result. Original, whole/catch-up and zero/invalid-time paths keep
+the old branch. Geometry sweeps, response points, thresholds, returned flags,
+input, clocks and save formats stay original. The scope restores its parent and
+keeps no per-actor data between updates. The optional shared trace is bounded;
+disabled production calls perform no mapping queries or trace writes.
+
+The supported Windows build/bundled checks pass for executable
+de7bd09f68c5840c58e51ce727af3b03cad350155cf95157bee7743c1b34260a.
+The timing/vehicle/context/Mac-backlog selection passes144 tests in219.32s.
+Full original C54A0 runs16 Original/native, clear/blocked and scoped/unscoped
+cases with recorded geometry-service boundaries. It reproduces the rewind and
+retains the eligible clear slide without bypassing the blocked-contact guard.
+Removing either root scope or final branch hook fails. Public tests cover
+interval guards, nested scope restoration, later blocked replacement, disabled
+dispatch, nested trace pairs, original argument reuse, ABI and diagnostic limits.
+Existing Windows/Mac CI registers the tests; hosted/physical Mac results for this
+head are still pending. Controlled services are not a full map-geometry replay.
+
+Three capture-free no-bot Venice routes on the new executable preserve health,
+matching mouse-driven aim changes, two-round firing consumption, stationary
+pause and normal game speed after resume. Native180 and240 now pass the sixth
+hold instead of remaining at[-62.741,-32.853] in X/Z. Their endpoint differences
+from the same-build Original60 reference are0.22689/0.21817 world units, reduced
+from12.9545. Subsequent reverse holds return within0.00028 of Original. Other
+contact endpoints can differ by up to0.53727; this is recovery from the persistent
+rewind, not exact trajectory/geometry equivalence. Early unobstructed sampled
+speed is8.06626/7.98331/8.00021 world units/s for Original60/180/240; short
+asynchronous windows have different sample phases and do not prove exact velocity.
+
+Complete guest-Present windows of about29.6s, with zero interpolation:
+
+| Mode | Intervals | Average/s | p99 | Worst | Game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 1774 | 60.00145 | 17.288ms | 17.674ms | 1.000129 |
+| Native180 | 5321 | 179.99808 | 6.076ms | 6.592ms | 0.999995 |
+| Native240 | 7094 | 240.00124 | 4.708ms | 5.058ms | 1.000134 |
+
+Each route has40 stationary pause samples over~1.97s; all required checkpoints
+are readable. Optional intermediate player reads are unavailable0/3/1 times out
+of570 hold observations; each isolated miss has same-player/live-health neighbors
+within0.12s. The verifier caps misses below1%, rejects missing required samples
+and retains all eight controls described below. All three games exit0 and
+preserve signed profiles/fixtures, with disposable disks/BMP rings recycled.
+3440x1440 device rendering uses a1920x1060 foreground borderless client.
+Present intervals measure API acceptance rather than GPU completion/scanout.
+
+Evidence: venice-walk-trace-{original60,native240},
+venice-walk-fixed-{original60,native180,native240};
+logs/venice-walk-trace-comparison.json, logs/venice-player-fixed-comparison.json,
+logs/venice-player-fixed-180-comparison.json and native-walk-{trace,policy} logs.
+The new executable also completes a capture-free ten-bot Temple240 route. Its
+complete45s window has10712 successful guest-Present intervals, averaging238.0651/s
+with p995.095ms, worst6.557ms and zero interpolation. Lowest1s/5s rates are
+225/231.8; unlike the earlier build's scoped result, this run does not sustain240
+in every bin. These nondeterministic routes do not establish that the policy
+caused the difference. Sampled game/wall is0.999954;19 independent timing-counter
+reads match accepted Presents within one in-flight call (9990 calls/41.96856s,
+max8.9us span). Held/60-Hz counter controls fail. All19 active checkpoints keep
+ten configured bots and a foreground window; NPC positions change. Profile,
+fixture and cleanup checks pass with exit0. Exact CSV/report hashes and limits
+are in crowd-walk-fixed-temple240/{crowd-pacing-summary,native-clock-comparison}.json.
+Crowded-scene performance remains open; reaching a scene or a preset is not
+completion evidence. Broader contact geometry/NPC behavior, physical input latency, full rendered acceptance
+and physical Mac gameplay remain unverified; the overall native-refresh goal
+remains incomplete.
+
+## Venice player wall-contact investigation (2026-10-25, before repair)
 
 PR #364 is merged into main as6aeaa8b1 after all applicable hosted checks
 passed on05807cdc. Its Windows executable5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988

@@ -16,7 +16,7 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
         'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
@@ -79,7 +79,8 @@ def test_native_timing(source, mutation, tmp_path):
     run_environment = {k:v for k,v in os.environ.items()
                        if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE',
                                     'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z',
-                                    'TSFP_CHARACTER_TRACE')}
+                                    'TSFP_CHARACTER_TRACE', 'TSFP_WALK_TRACE',
+                                    'TSFP_WALK_TRACE_SCENE', 'TSFP_WALK_TRACE_TICKS')}
     if source == 'native_contact_trace.c':
         import csv
         subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
@@ -359,6 +360,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
+    ('native_walk_contact.c', [(0xc54a0,0xc5a4a)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_fractional.c', [(0x1950b0,0x195110),(0x195110,0x195277),(0x1956a0,0x19576d)]),
     ('native_character_scale.c', [(0x125fe0,0x12609c),(0x120ab0,0x120c0f),(0x153440,0x153490),
@@ -504,7 +506,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -516,7 +518,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
-                          else [] if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
+                          else [] if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
             if harness_name=='native_character_scale.c':
                 addresses.update(range(0x12609c,0x1260b4,4))
@@ -734,6 +736,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
                            .replace('/* CHARACTER_POLICY */', f'#include "{(ROOT / "src/pc_native_character_guest.h").as_posix()}"')
+                           .replace('/* WALK_POLICY */', f'#include "{(ROOT / "src/pc_native_walk_guest.h").as_posix()}"')
                            .replace('/* CHARACTER_TRACE_POLICY */', f'#include "{(ROOT / "src/pc_native_character_trace_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',
@@ -741,6 +744,16 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
+    if harness_name=='native_walk_contact.c':
+        for needle,replacement in (
+            ('RECOMP_FLOAT_BRANCH_AT(0xC596C,','RECOMP_FLOAT_BRANCH_AT(0xFFFFFFFF,'),
+            ('if(candidate)RECOMP_DIRECT_CALLEE_AT(0xc5ad6u,sub_000C54A0)();',
+             'if(candidate)sub_000C54A0();'),
+        ):
+            assert source.count(needle)==1,needle
+            with pytest.raises(AssertionError,match='distance>.001f'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+        print(output)
     if harness_name=='native_trap_transform.c':
         for needle,replacement in (
             ('MEM32(esi + 0x28) = eax;\n    RECOMP_AFTER_STORE32(0xA74F4,',

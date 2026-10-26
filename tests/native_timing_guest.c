@@ -9,6 +9,9 @@
 static uint8_t memory[0x800000];
 static ptrdiff_t g_xbox_mem_offset;
 static uint32_t g_esp;
+static uint32_t g_eax;
+void sub_000C54A0(void) { assert(!"unexpected walk collision in clock fixture"); }
+void sub_000C4700(void) { assert(!"unexpected walk sweep in clock fixture"); }
 #if defined(_MSC_VER)
 #define RECOMP_MANUAL_TLS __declspec(thread)
 #else
