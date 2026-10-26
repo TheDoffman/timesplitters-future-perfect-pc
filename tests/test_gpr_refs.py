@@ -42,7 +42,9 @@ def gpr_runs(tmp_path_factory):
         exe=target/('refs.exe' if os.name=='nt' else 'refs')
         include=[target,RUNTIME/'templates/runtime']
         command=([compiler,'/nologo','/std:c11','/O2','/DMODE='+str(mode),*('/I'+str(p) for p in include),str(source),'/Fe:'+str(exe)] if os.name=='nt'
-                 else [compiler,'-std=c11','-O2','-Wall','-Wextra','-Werror','-pthread','-DMODE='+str(mode),*('-I'+str(p) for p in include),str(source),'-lm','-o',str(exe)])
+                 # Generated basic blocks retain labels even when reached only
+                 # by fall-through. Keep other warnings fatal in this fixture.
+                 else [compiler,'-std=c11','-O2','-Wall','-Wextra','-Werror','-Wno-unused-label','-pthread','-DMODE='+str(mode),*('-I'+str(p) for p in include),str(source),'-lm','-o',str(exe)])
         built=subprocess.run(command,cwd=target,env=env,capture_output=True,text=True,timeout=60)
         assert built.returncode==0,built.stdout+built.stderr
         results[mode]=subprocess.run([str(exe)],capture_output=True,text=True,timeout=20)

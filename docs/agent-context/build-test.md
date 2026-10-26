@@ -13,6 +13,7 @@ for common display-policy declarations. See [runtime](runtime.md).
 `test_gpr_refs.py` covers generated live-cell references, callbacks, aliasing,
 mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator
 patch follows model-entry policy; old fixture stacks omit both until upgrade.
+Only generated unused labels are exempted from this fixture's fatal warnings.
 
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with

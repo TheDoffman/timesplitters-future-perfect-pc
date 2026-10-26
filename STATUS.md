@@ -1,3 +1,35 @@
+## Register-reference CI repair and diagnostic follow-up
+
+The a65c6764 hosted Mac runtime selection passes677 checks, skips235 and passes18
+subtests, but the two generated-register fixture tests fail during compilation:
+Clang's `-Werror=unused-label` rejects three generator block labels reached by
+fall-through. No runtime fixture assertion has executed at that point. The
+fixture now exempts only unused labels while retaining `-Wall -Wextra -Werror`;
+both the positive comparisons and copied-cell rejection must still compile and
+run. Windows reference/context selection passes23 checks in7.28s. No production
+code, assertion, timeout or game executable changes for this repair. Fresh hosted
+Mac validation is pending; the local optional Clang compiler is unavailable.
+
+The completed D448 `crowd-gpr-disco-profile240` keeps the isolated profiles,
+signatures and fixture intact and recycles partitions. Its spawn-to-combat-four
+differential contains6866 main-thread leaf samples:1239 wait,155 texture sampling,
+144 driver,130 model renderer,97 disabled-trace guard and84 state-flush samples.
+Caller-chain storage is full:6354 chains plus512 omitted account for all6866
+samples. Do not interpret that partial chain table as complete attribution, or
+compare diagnostic FPS with clean capture/sampler-free measurements. Different
+AI routes also prevent a causal speed comparison with prior profiles.
+
+An ignored isolated MSVC `/O2` code-generation comparison compiles the same
+current model body/header twice, changing only the reference enable flag.
+The direct-global model has5525 assembly instruction lines and300 static GS:88
+TLS-base reads; the reference version has3920 and93. Object file sizes are
+42139/35373 bytes (not function machine-code sizes). This supports fewer static
+address calculations in that compiler output; it is not dynamic instruction
+coverage, cycle timing, full-model equivalence or measured game FPS improvement.
+Receipts remain local in `private/pipeline/model-refs-codegen/comparison.json`
+and `logs/crowd-gpr-disco-profile240-summary.json`. The crowd pacing gap remains
+open and the overall goal remains active.
+
 ## Live register reference candidate (PR #367 follow-up)
 
 On `perf/native-crowd-render-cost`, the common generator now supports retaining

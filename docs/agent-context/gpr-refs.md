@@ -28,7 +28,10 @@ callbacks that inspect the real cells. Results and intermediate-state digests
 match the legacy mode. A mutation redirecting EAX to a copied value fails.
 The deployment selector also checks all three sites and neighboring exclusions.
 Tests run on Windows/macOS; Windows uses events/threads and POSIX uses pthreads
-only inside the fixture. No runtime OS adapter is added.
+only inside the fixture. Clang permits the generator's fall-through block labels
+with `-Wno-unused-label`; other `-Wall -Wextra` warnings remain fatal. Positive
+and copied-cell controls must compile before their runtime outcomes are checked.
+No runtime OS adapter is added.
 
 The ignored original21450 MSVC microbenchmark compares the actual deployed
 macro/after-trace declaration against direct global aliases. Six alternating
