@@ -84,6 +84,15 @@
       ]
     },
     {
+      "name": "independent-symbol-driver.patch",
+      "sha256": "2d4fb951d557bccab32aeaa70d639ae8176ea48d6f6b3a2962f398501d255da5",
+      "targets": [
+        "scripts/recompile.py",
+        "tools/xdk_symbols/__init__.py",
+        "tools/xdk_symbols/__main__.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

@@ -17,7 +17,15 @@ options. Receipts hash inputs/options/source and all outputs, including observed
 seed status; failed publication invalidates receipts. Explicit extra sections
 become code for both decoding and probes. JSON retains the generation contract;
 assembly listings are human output. Original runner/cache tests cover this layer.
-Symbol identification and translation remain upstream.
+`independent-symbol-driver.patch` routes the symbol CLI to `xdk_catalog.py`
+and generation orchestration to `compile_pipeline.py`. The adapter consumes
+separately licensed XbSymbolDatabase protocol output; it owns CLI discovery,
+supplement validation/merging and atomic publication. The driver calls the own
+parser/analyzer directly and preserves title seed and per-title output routing.
+Custom metadata paths reach disassembly. The bridge also exposes the bounded
+identifier-only helper to importlib consumers; real runs validate the full XBE.
+Both enter the generation fingerprint.
+Function classification and translation still run from the runtime tree.
 
 `independent-disasm-traversal.patch` follows the input patch and removes the
 engine's scan/realignment/reachability/query methods in favor of inherited

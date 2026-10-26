@@ -1,3 +1,51 @@
+## Independent library-symbol adapter and generation driver (2026-10-26)
+
+Continuing PR #370 from `a3aa7f74`, `xdk_catalog.py` owns scanner discovery,
+protocol decoding, supplemental-symbol validation/merging and atomic output.
+The separately MIT-licensed XbSymbolDatabase dependency remains credited and
+supplies the signature database; it is not claimed as project-owned code.
+`compile_pipeline.py` owns stage selection, title seeds, output routing and
+failure handling. Parsing/disassembly invoke project scripts directly; custom
+analysis JSON paths are now passed to disassembly. Compatibility entries replace
+three upstream module bodies. Function classification, translation and runtime
+services still require replacement; the overall goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **394 passed, 1 skipped in 689.79 seconds** in the final combined
+  patch-transition, adapter/driver/analyzer, import/parser/fingerprint, Mac-tool
+  and CI-scope suite after repairing the module-consumer compatibility failure.
+- **101 final focused tests passed**: 24 catalog/driver cases, 17 runner
+  cases, 58 input checks and two fingerprint tests. Nested subprocesses run
+  eight existing scanner consumers and 97 analyzer consumers. Copied-module
+  tests parse/analyze without toolkit imports and decode scanner output using
+  project sources only. The full suite caught an importlib bridge omission;
+  the corrected bridge exposes the identifier helper, whose bounded header-only
+  probe is separate from the full image validation required before execution.
+- Fixtures cover exact Release-preferred CLI discovery, parameter/register
+  widths, malformed records, supplemental validation/precedence/deduplication,
+  scanner failures/timeouts, input preservation, stage selection, per-title and
+  explicit seeds, custom metadata, manual exclusions, output paths and early
+  failure. Subprocess arguments remain arrays without shell evaluation.
+- **21 context/backlog checks passed.** Sources/bridges enter the generation
+  fingerprint and tests are registered for both CI hosts.
+- Production regeneration reproduced all **379 library symbols** and **21,114
+  classification records** semantically. All **21 generated C/header files are
+  byte-identical**. Full Windows build and native checks passed.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; movement
+  11.175 world units, ammo 8 to 6, 40 pause samples with frozen ticks, 60 resume
+  samples with advancing simulation, backward movement 6.185 units. Last
+  checkpoint 87.410 seconds; exit 0, no crash artifacts or leftover partitions.
+  Signed test profiles unchanged; canonical fixture verified, personal data unused.
+- Tested executable SHA-256:
+  `d288864293c456388d4b72e6922070cb0d12ddb6a33e99cebceb453525c7b17b`.
+
+Injected input, minimized/background rendering, original 60 FPS and skipped
+movies do not certify physical input, audio, foreground pacing or complete
+levels. Evidence: `logs/independent-symbol-driver-*` and
+`private/test-saves/independent-symbol-driver-final`. Native Mac acceptance remains
+pending under MAC-072; Windows results do not establish Mac gameplay.
+
 ## Independent analysis runner, cache and output (2026-10-26)
 
 Continuing PR #370 from `a8bf8f13`, production executable analysis now uses

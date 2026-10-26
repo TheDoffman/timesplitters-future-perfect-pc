@@ -198,7 +198,7 @@ jobs:
             tests/test_texture_runtime.py tests/texture_pack_tools.py tests/test_texture_hybrid_plan.py
             tests/texture_archive_signatures.py tests/texture_embedded_scan.py
             tests/texture_nonpak.py tests/texture_variants.py
-            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py tests/test_disc_image.py tests/test_xbe_image.py tests/test_recomp_input.py tests/test_x86_flow.py tests/test_x86_recovery.py tests/test_x86_functions.py tests/test_recomp_symbols.py tests/test_analysis_cache.py tests/test_analysis_runner.py
+            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py tests/test_disc_image.py tests/test_xbe_image.py tests/test_recomp_input.py tests/test_x86_flow.py tests/test_x86_recovery.py tests/test_x86_functions.py tests/test_recomp_symbols.py tests/test_analysis_cache.py tests/test_analysis_runner.py tests/test_xdk_catalog.py tests/test_compile_pipeline.py
             tests/test_native_compiler.py tests/test_audio_timing.py tests/test_audio_output_gain.py
             tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_native_demo_timing.py tests/test_reload_keys.py

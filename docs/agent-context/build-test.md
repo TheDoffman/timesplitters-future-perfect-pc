@@ -1,10 +1,10 @@
 # Build, run and validation map
 
-Independent `analysis_*`, `recomp_*` and `x86_*` modules enter both source
-hashes. Runner/cache tests cover standalone CLI, publication, seeds and outputs;
-input tests run 97 existing consumers. `independent-pipeline.patch` redirects
-production analysis. Symbol tooling/translation remain; see
-`docs/independent-runtime.md`.
+`compile_pipeline.py` drives generation; its first stages call `xbe_image.py`
+and `analysis_runner.py` directly. `xdk_catalog.py` adapts permitted
+XbSymbolDatabase. Own sources and bridges enter the generation hash; analysis
+hashes exclude unrelated drivers. Runner/cache/pipeline/catalog tests cover
+standalone execution and failures. Remaining work: `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

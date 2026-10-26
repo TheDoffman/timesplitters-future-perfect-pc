@@ -205,6 +205,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-069 | Independent table and body recovery | Awaiting validation |
 | MAC-070 | Independent function discovery and metadata | Awaiting validation |
 | MAC-071 | Independent analysis runner and publication | Awaiting validation |
+| MAC-072 | Independent symbol adapter and pipeline driver | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5756,6 +5757,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   movement/fire/pause/resume. Confirm cache reuse and changed-output rejection.
 - **Mac implementation and evidence:** Both-host CI registration; Windows
   verification does not establish native Mac generation or gameplay.
+
+### MAC-072 - Independent symbol adapter and pipeline driver
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production symbol scanning and generation use project-owned
+  adapters/orchestration; parsing and disassembly call project scripts directly.
+  The separately licensed XbSymbolDatabase library still supplies signatures.
+- **PC source:** Continuing PR #370; `tools/xdk_catalog.py`,
+  `tools/compile_pipeline.py`, `patches/independent-symbol-driver.patch`,
+  generation fingerprint, catalog/driver tests and both-host CI registration.
+- **PC validation:** Original protocol/routing/failure fixtures and existing
+  scanner consumers; symbol/generated-output/build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python subprocess argv and path handling;
+  exact scanner executable lookup supports native and Windows names.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run catalog/driver/fingerprint tests, scan the
+  supported US image with the pinned native database, regenerate with
+  `--generate`, build and validate isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows results do not establish native
+  scanner/generation/gameplay acceptance; see STATUS.md for measured scope.
 
 ## Entry template
 

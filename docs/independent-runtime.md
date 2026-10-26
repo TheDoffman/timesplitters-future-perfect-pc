@@ -10,7 +10,8 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
-function discovery, labels, cross-references and analysis orchestration/output/cache.
+function discovery, labels, cross-references, analysis orchestration/output/cache,
+the library-symbol adapter and generation driver.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -53,7 +54,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Table recovery and body/entry probes | Project-owned `x86_recovery.py`; production engine is now a compatibility import | Original table/shape/bounds fixtures, existing consumer tests, full regeneration/build and isolated gameplay; native Mac pending |
 | Function discovery, labels and references | Project-owned `x86_functions.py` and `recomp_symbols.py`; production uses compatibility imports | Original discovery/metadata fixtures, existing consumer tests, semantic function/xref comparison, full regeneration/build and isolated gameplay; native Mac pending |
 | Analysis orchestration, configuration, cache and output | Project-owned `analysis_runner.py`, `analysis_config.py`, `analysis_cache.py`, `analysis_output.py`; compatibility imports serve production | Standalone XBE-to-JSON/assembly CLI, content-verified cache, seed/section/publication fixtures, generation/build and isolated gameplay; native Mac pending |
-| Symbol tooling and x86-to-C translation | Still upstream | Own symbol identification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Library-symbol adapter and generation driver | Project-owned `xdk_catalog.py` and `compile_pipeline.py`; production compatibility entries use them | Protocol/seed/routing/failure fixtures, actual symbol and generated-code comparisons, Windows build and isolated gameplay; native Mac pending |
+| Function classification and x86-to-C translation | Still upstream | Own symbol classification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -92,6 +94,36 @@ fill that evidence gap. The importer has a read-only verification command for
 when an original ISO is available.
 
 ## Current commands
+
+### Library symbols and generation orchestration
+
+```sh
+python tools/xdk_catalog.py private/game/default.xbe --cli /path/to/XbSymbolDatabaseCLI --extra /path/to/title-symbols.json
+python tools/compile_pipeline.py private/game/default.xbe --runtime external/ts3FPrecomp --work-dir private/pipeline --project external/ts3FPrecomp/titles/futureperfect --game-name "TimeSplitters: Future Perfect" --trace-all-entries
+python -m pytest tests/test_xdk_catalog.py tests/test_compile_pipeline.py -q
+```
+
+`xdk_catalog.py` owns parsing the scanner's public line protocol, exact CLI
+selection, supplemental-record validation and merging, and atomic JSON output.
+[XbSymbolDatabase](https://github.com/Cxbx-Reloaded/XbSymbolDatabase) remains a
+separately MIT-licensed dependency for signature matching, credited to its
+contributors; its source and license remain required. It is not claimed as
+project-owned code. The adapter was authored against its CLI emitter protocol
+in `src/cli/main.c`, not by retaining the old wrapper implementation.
+
+`compile_pipeline.py` owns stage selection, per-title seed lookup, output paths,
+manual-source exclusion, diagnostics and subprocess execution. Parsing and
+analysis call project scripts directly; classification/lifting still require the
+selected runtime tree. A custom `--json` path is passed to disassembly rather
+than relying on a sibling file. Missing requested seed files and invalid images
+fail before execution; dry runs can describe a missing image without writing.
+The driver stops on a failed stage and reports where to resume.
+
+Production compatibility entries preserve Windows/Mac build-driver calls and
+runtime dependency locations. Both new sources and the adapters enter the
+regeneration hash. Existing supplemental symbol/seed data and upstream patch
+history still require the final provenance audit. Native Mac acceptance is
+pending under MAC-072.
 
 ### Complete executable analysis
 
