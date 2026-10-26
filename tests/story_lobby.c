@@ -39,6 +39,9 @@ void sub_000CF060_gen(void){marker=16;}
 void sub_0009A420_gen(void){marker=27;}
 void sub_0025EE60(void){marker=31;}
 static unsigned story_checkpoint;
+static unsigned restart_calls,restart_rows;
+static void restart_original(void){++restart_calls;g_eax=73;g_esp+=4;}
+void sub_000653B0(void){restart_original();}
 void sub_00359EB0(void){CHECK(0);}
 void sub_0003D7B0(void){marker=9;} void sub_00040F00(void){marker=10;}
 void sub_00041DC0(void){marker=11;} void sub_0003FA10(void){marker=12;}
@@ -64,6 +67,8 @@ static unsigned char npc_sent[512],npc_sent_base[256],npc_sent_pose[256];
 static unsigned npc_base_size,npc_pose_size;
 static PcCharacterPose npc_last_pose;
 static unsigned npc_pose_calls;
+static unsigned story_hit_requests;
+void pc_network_bots_request_hit(uint32_t context){CHECK(context==0x79000);++story_hit_requests;}
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 {CHECK(entity==0x72000);npc_last_pose=*pose;++npc_pose_calls;}
 void pc_network_bots_entity_refresh(uint32_t entity){CHECK(entity==0x72000);++npc_refreshes;}
@@ -72,6 +77,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
+    if(fn==sub_000653B0) {CHECK(count==1 && args[0]==0);++restart_calls;return 0;}
     if(fn==sub_001BA2B0) {
         CHECK(count==3 && ((args[1]==25 && args[2]==8) || (args[1]==32 && args[2]==6)));loadout_ammo+=args[2];return 8;
     }
@@ -112,6 +118,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_0025EE60){CHECK(count==1 && args[0]==0);return story_checkpoint;}
     if(fn==sub_0009A420_gen){CHECK(count==1 && args[0]==0x1f40);return 0x78000;}
     if(fn==sub_000CF060_gen){CHECK(count==1 && WORD_AT(args[0])==0);++pad_fallbacks;return 77;}
+    else if(fn==sub_0003D7B0 && count==1 && args[0]==0x17a8){return 0x33000;}
     else if(fn==sub_0003D7B0){CHECK(count==1 && (args[0]==22 || args[0]==33));return args[0]==33?0xd000:0xb000;}
     else if(fn==sub_00040F00){CHECK(count==2 && args[0]==0xb000);return 0xc000;}
     else if(fn==sub_0003F8D0){CHECK(count==0);}
@@ -153,6 +160,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     else if(fn==sub_00075B70){CHECK(count==5 && args[4]==0x1237e);difficulty_rows=0;}
     else if(fn==sub_00079D60_gen){
+        if(count==6 && args[4]==0x2ebc30){++restart_rows;return 0;}
         static const char *names[]={"Easy","Normal","Hard"};
         CHECK(count==6 && difficulty_rows<3 && args[1]==difficulty_rows && args[4]==0x1237d);
         CHECK(!strcmp((char *)(g_xbox_mem_offset+args[0]),names[difficulty_rows]));++difficulty_rows;
@@ -250,6 +258,8 @@ static uint32_t pad_original_result=UINT32_MAX;
 static void pad_original(void){g_eax=pad_original_result;g_esp+=4;}
 static void team_original(void)
 {WORD_AT(WORD_AT(g_esp+4)+0x84)=WORD_AT(g_esp+8);g_eax=77;g_esp+=4;}
+static void team_init_original(void)
+{const uint32_t actor=WORD_AT(g_esp+4);WORD_AT(actor+0x84)=WORD_AT(actor+8)+1;g_eax=91;g_esp+=4;}
 static unsigned hit_original_calls;
 static void hit_trace_original(void)
 {
@@ -864,6 +874,12 @@ int main(void)
             g_esp=0x1800;story_human_teams_frame();CHECK(g_esp==0x1800);
             for(unsigned slot=0;slot<4;slot++)CHECK(WORD_AT(0x50000+slot*0xea0+0x84)==1);
         }
+        g_esp=0x1800;WORD_AT(g_esp+4)=actor;
+        pc_story_network_team_init(team_init_original);
+        CHECK(WORD_AT(actor+0x84)==1 && g_eax==91 && g_esp==0x1804);
+        WORD_AT(0x74800+0x150)=0;g_esp=0x1800;
+        pc_story_network_team_init(team_init_original);CHECK(WORD_AT(actor+0x84)==3 && g_esp==0x1804);
+        WORD_AT(0x74800+0x150)=0x6000+2*0x1584;
         WORD_AT(actor+0x84)=3;((uint8_t *)memory)[0x7de455]=1;
         story_human_teams_frame();CHECK(WORD_AT(actor+0x84)==3);
         ((uint8_t *)memory)[0x7de455]=10;
@@ -897,6 +913,73 @@ int main(void)
         WORD_AT(actor)=victim;online_mode=PC_ONLINE_ARCADE;
         CHECK(!pc_story_network_hit_trace(hit_trace_original) && hit_original_calls==1);
         load_probe_enabled=0;
+    }
+#endif
+#ifdef _WIN32
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=4;WORD_AT(0x774028)=0x30000;
+        story_pending_stage=1;story_reload_epoch=0;restart_calls=0;
+        g_esp=0x1800;pc_story_network_pause_rows();CHECK(restart_rows==1 && g_esp==0x1800);
+        WORD_AT(0x76b140)=2;pc_story_network_pause_rows();CHECK(restart_rows==1);WORD_AT(0x76b140)=1;
+        const uint32_t old_match=story_npc_match();g_esp=0x1800;WORD_AT(g_esp+4)=0;
+        story_npc_parts[5]=3;story_npc_fresh[5]=1;
+        pc_story_network_restart(restart_original);
+        CHECK(restart_calls==1 && g_esp==0x1804 && g_eax==73 && story_reload_epoch==1 &&
+              story_context_start_pending && !story_npc_parts[5] && !story_npc_fresh[5]);
+        StoryRestart message;memcpy(&message,npc_sent+4,sizeof message);
+        CHECK(message.magic==STORY_RESTART_MAGIC && message.match==old_match && message.epoch==1 && !message.checkpoint);
+        CHECK(story_npc_match()!=old_match);
+        WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_restart(restart_original);
+        CHECK(restart_calls==1 && g_esp==0x1804); /* guest action cannot reload */
+        story_reload_epoch=0;WORD_AT(0x774040)=9;WORD_AT(0x31000)=8;
+        memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message) && restart_calls==1);
+        WORD_AT(0x31000)=9;
+        message.match^=1;memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message) && restart_calls==1);
+        message.match^=1;message.epoch=2;memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message) && restart_calls==1);
+        message.epoch=1;memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message-1)==0);
+        message.checkpoint=1;memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message) && restart_calls==1);
+        message.checkpoint=0;memcpy((uint8_t *)memory+0x32000,&message,sizeof message);
+        g_esp=0x1800;
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message+4) && restart_calls==2 &&
+              story_reload_epoch==1 && g_esp==0x1800);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof message) && restart_calls==2);
+        online_mode=PC_ONLINE_ARCADE;g_esp=0x1800;pc_story_network_restart(restart_original);
+        CHECK(restart_calls==3 && g_esp==0x1804 && g_eax==73);
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x79094c)=4;g_esp=0x1800;
+        pc_story_network_restart(restart_original);CHECK(restart_calls==4 && g_esp==0x1804);
+    }
+#endif
+#ifdef _WIN32
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=2;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=4;WORD_AT(0x7356d8)=0x50000;WORD_AT(0x7b0c48)=0x6000;
+        const uint32_t actor=0x50000+11*0xea0,entity=0x78000,source=0x77000,hit=0x79000;
+        WORD_AT(actor)=entity;WORD_AT(actor+8)=11;WORD_AT(entity+0x7c)=actor;
+        WORD_AT(entity+0x150)=0;WORD_AT(entity+0x258)=7;
+        StoryNpcReplica *r=&story_npc_replicas[11];
+        r->entity=entity;r->spawn=7;r->match=story_npc_match();r->pose_present=0;
+        WORD_AT(source+0x150)=0x6000;WORD_AT(0x6000)=0;WORD_AT(0x6004)=0;WORD_AT(0x6014)=source;
+        WORD_AT(hit)=entity;WORD_AT(hit+4)=source;WORD_AT(hit+8)=0;
+        g_esp=0x1800;WORD_AT(g_esp+4)=hit;WORD_AT(0x76b170)=0;story_hit_requests=0;
+        CHECK(pc_story_network_damage() && story_hit_requests==1 && g_esp==0x1800);
+        WORD_AT(0x76b170)=1;CHECK(pc_story_network_damage() && story_hit_requests==1);
+        WORD_AT(0x76b170)=0;WORD_AT(0x6004)=UINT32_MAX;
+        CHECK(pc_story_network_damage() && story_hit_requests==1); /* remote human replay */
+        WORD_AT(0x6004)=0;WORD_AT(hit+4)=0;WORD_AT(hit+8)=source;
+        CHECK(pc_story_network_damage() && story_hit_requests==2); /* projectile owner */
+        WORD_AT(0x6014)=0;CHECK(pc_story_network_damage() && story_hit_requests==2);
+        WORD_AT(0x6014)=source;r->spawn=6;CHECK(!pc_story_network_damage());r->spawn=7;
+        r->match^=1;CHECK(!pc_story_network_damage());r->match=story_npc_match();
+        WORD_AT(0x76b140)=1;CHECK(!pc_story_network_damage());
+        WORD_AT(0x76b140)=2;online_mode=PC_ONLINE_ARCADE;CHECK(!pc_story_network_damage());
     }
 #endif
     puts("PASS: Story host controls, network-mode preservation and difficulty return");

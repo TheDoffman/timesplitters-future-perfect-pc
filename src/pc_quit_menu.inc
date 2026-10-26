@@ -85,6 +85,9 @@ void pc_display_menu_finish(void (*original)(void))
     const uint32_t caller=WORD_AT(g_esp), menu=WORD_AT(g_esp+4);
     const int frontend=caller==0x002D0EDFu;
     const int paused=caller==0x002F582Fu || caller==0x002F5879u;
+#if defined(_WIN32) && !defined(TSFP_QUIT_MENU_TEST)
+    if(paused) pc_story_network_pause_rows();
+#endif
     if((frontend || paused) && guest_writable(menu,0x3c) &&
        WORD_AT(menu+0x38)==0 && quit_prepare()) {
         /* Main menu's original callback bounds-checks IDs 0..7; this new

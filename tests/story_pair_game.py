@@ -31,6 +31,14 @@ def read_json(path,default=None):
     except (OSError,ValueError):return default
 
 
+def npc_health_agrees(host,peer):
+    """Retired bodies and nonpositive health are equivalent only after death."""
+    if host is not None and not math.isfinite(host):return False
+    if peer is not None and not math.isfinite(peer):return False
+    if host is None or host<=0:return peer is None or peer<=0
+    return peer is not None and abs(peer-host)<=.05
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--load-probe',action='store_true',help='Opt-in experimental Story start and movement check')
@@ -41,6 +49,7 @@ def main():
     parser.add_argument('--players',type=int,choices=[2,4],default=2,help='Actual instances/players admitted to the isolated lobby')
     parser.add_argument('--fire-probe',action='store_true',help='Check first-level firearm and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
+    parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
     parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
     parser.add_argument('--script-observe-seconds',type=int,default=0,choices=range(31),metavar='0..30',help='Passive diagnostic wait if a peer is script-suspended; does not replace failed startup evidence')
     parser.add_argument('--receipt-id',help='Caller nonce for interpreter-independent receipt identity')
@@ -48,6 +57,7 @@ def main():
     assert not args.lobby_controls or args.load_probe
     assert not args.lobby_only or args.lobby_controls
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
+    assert not args.restart_probe or (args.fire_probe and args.mission==0 and not args.lobby_only)
     assert not args.combat_probe or (args.fire_probe and args.mission==0 and args.players==4)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
     assert not args.skip_intro or (args.load_probe and args.mission==0 and not args.lobby_only)
@@ -94,7 +104,7 @@ def main():
     address=f'http://127.0.0.1:{directory.server_port}'
     client=Client(address)
     children={};streams=[]
-    deadline=time.monotonic()+(450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
+    deadline=time.monotonic()+(600 if args.restart_probe else 450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
 
     def launch(role,code=None):
         command=[sys.executable,str(ROOT/'tests/stability_transitions_game.py'),
@@ -309,6 +319,35 @@ def main():
                             remaining=ammo_total(s.get('local_player'))
                             assert remaining is not None and remaining<ammo_total(after[role].get('local_player')),(role,'No firing ammunition consumed',s.get('local_player'))
                         assert s['scene']==before[role]['scene'] and s['network_phase']==15 and not s['paused'],(role,'Lost live Story during firing input',s)
+                if args.restart_probe:
+                    def restart_capture(role,label,**step):
+                        append(role,label=label,world_probe=True,**step)
+                        return wait_for(lambda:captured(role,label),'Missing restart capture '+label)
+                    # Guest Start opens only its own pause menu; the host owns
+                    # reload. Capture both menus for visual authority review.
+                    restart_capture('guest','guest-pause',keys=[27],wait=2)
+                    restart_capture('guest','guest-unpause',keys=[27],wait=2)
+                    result['restart_host_pause']=restart_capture('host','host-pause',keys=[27],wait=2)
+                    # Restart Level is the penultimate row, before Quit to Desktop.
+                    # Original confirmation defaults to No; Up explicitly selects Yes.
+                    restart_capture('host','host-restart-confirm',keys=[38,38,69],wait=2)
+                    restart_capture('host','host-restart-yes',keys=[38,69],wait=2)
+                    restart_deadline=time.monotonic()+80
+                    prior_ticks={role:s['game_tick'] for role,s in fired.items()}
+                    def restarted():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        ready=all(s.get('scene')==2 and s.get('network_phase')==15 and
+                            s.get('game_state')==7 and s.get('context_states')==[2]*args.players and
+                            s.get('result_flags')==0 and s.get('game_tick',2**32)<prior_ticks[role] and
+                            (s.get('local_player') or {}).get('equipped',[None,None])[1]==14 and
+                            '[PC-STORY-RESTART]' in (runs[role]/'run0.err').read_text(errors='replace')
+                            for role,s in states.items())
+                        assert ready or time.monotonic()<restart_deadline,('Coordinated Story level restart did not become playable',states)
+                        return states if ready else None
+                    result['restart_ready_states']=wait_for(restarted,'Story reload did not finish')
+                    result['restart_after']={role:restart_capture(role,'restart-after',wait=2) for role in roles}
+                    for role,s in result['restart_after'].items():
+                        assert ammo_total(s.get('local_player'))==ammo_total(before['host'].get('local_player')),(role,'Reload lost or duplicated opening ammo',s)
                 if args.combat_probe:
                     # Inputs only: do not manufacture targets, teleport actors or
                     # write health. Preserve a failed search as missing evidence.
@@ -326,18 +365,18 @@ def main():
                     # canyon wall. Turn through the opening occupied by the
                     # authored soldiers before approaching the far NPC. These
                     # are ordinary input waypoints, never position writes.
-                    waypoints=[(0,25),(20,42),(42,45),(62,25),(63,0)]
+                    waypoints=[(0,44),(18,50),(18,32),(30,21),(45,12),(63,0)]
                     waypoint=0
                     controls=read_json(runs[shooter]/'controls.json')['mouse'];sensitivity=controls['sensitivity']
-                    for index in range(12):
+                    for index in range(24):
                         world=current.get('world',{});npcs=[c for c in world.get('characters',[]) if not c.get('context')]
                         for c in npcs:
                             assert c.get('lookup_entities') and c['lookup_entities'][0]==c['entity'],('Original NPC ID decoder resolves a different entity',shooter,c)
                         enemies=[c for c in npcs if c.get('kind',[None])[0]==91 and c.get('health',0)>0 and
-                                 (c.get('visibility_flags',0)&0x10) and math.dist(current['local_player']['position'],c['position'])<=40]
+                                 (c.get('visibility_flags',0)&0x10) and math.dist(current['local_player']['position'],c['position'])<=10]
                         if enemies:
                             target=min(enemies,key=lambda c:math.dist(current['local_player']['position'],c['position']));break
-                        if index==11:break
+                        if index==23:break
                         local=current['local_player'];position=local['position']
                         while waypoint<len(waypoints)-1 and math.dist((position[0],position[2]),waypoints[waypoint])<6:
                             waypoint+=1
@@ -345,7 +384,7 @@ def main():
                         yaw=math.degrees(math.atan2(point[0]-position[0],point[1]-position[2]))
                         dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
                         dy=round(local['look'][1]/sensitivity)*(-1 if controls.get('invert_y') else 1)
-                        current=command_capture(shooter,'combat-walk-'+str(index),mouse=[dx,dy],keys=[87],hold_seconds=3,sample_hold=True,wait=.3)
+                        current=command_capture(shooter,'combat-walk-'+str(index),mouse=[dx,dy],keys=[87],hold_seconds=1.5,sample_hold=True,wait=.3)
                         walk.append(current)
                     result['combat_walk']=walk
                     assert target,('No living enemy found on bounded opening route; combat remains unverified',current)
@@ -375,7 +414,7 @@ def main():
                     expected_health=npc_health(observations['host'])
                     for role,s in observations.items():
                         value=npc_health(s)
-                        assert (value is None and expected_health is None) or (value is not None and expected_health is not None and abs(value-expected_health)<=.05),(role,'NPC health differs from host',value,expected_health)
+                        assert npc_health_agrees(expected_health,value),(role,'NPC health differs from host',value,expected_health)
                 result['status']='load-probe-passed'
     except BaseException as error:
         result['status']='failed';result['error']=str(error)

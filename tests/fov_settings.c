@@ -169,7 +169,7 @@ void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 void sub_00079710(void) { separators++;g_esp+=4; }
 STUB(sub_00074910) STUB(sub_001A0A60)
-STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490)
+STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490)
 STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
 STUB(sub_002402B0) STUB(sub_00353A90)
 STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)

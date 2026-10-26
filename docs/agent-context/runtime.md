@@ -751,3 +751,7 @@ timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
 context/native timing passes, optimized Windows build/native checks completed.
 The transition runner retains both scenario families and input publication.
 Fresh four-peer acceptance and native Mac Online remain separate.
+
+The separate story-level-restart patch wraps original653B0 with pc_story_network_restart. Original bodies/register and return behavior remain the fallback. Connected first-mission Story uses the reliable reload event; no generated C is edited. The additional patch is excluded from the historical Mac networking migration fixture.
+
+The separate story-team-initialization patch wraps originalD7570 after its direct slot+1 team/color writes. It invokes the shared human-team adapter only after validating a real human pool slot. D7550 and the frame fallback retain their original responsibilities.

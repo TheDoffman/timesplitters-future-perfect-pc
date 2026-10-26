@@ -66,7 +66,8 @@ static void story_npc_reset(void)
 static uint32_t story_npc_match(void)
 {
     const uint8_t *c=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
-    return c[0x99]|((uint32_t)c[0x54]<<8)|((uint32_t)c[0x55]<<16)|((uint32_t)c[0x56]<<24);
+    return (c[0x99]|((uint32_t)c[0x54]<<8)|((uint32_t)c[0x55]<<16)|((uint32_t)c[0x56]<<24)) ^
+        (story_reload_epoch&255u) ^ ((story_reload_epoch&0xff00u)<<16);
 }
 static unsigned story_npc_humans(void)
 { return *(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset); }
@@ -368,6 +369,7 @@ void pc_story_network_npc_receive(void (*original)(void))
     if(story_network_session() && WORD_AT(0x0076B108u) && guest_writable(g_esp,20u)) {
         const uint32_t frame=g_esp,peer=WORD_AT(frame+4u),payload=WORD_AT(frame+8u);
         const uint32_t type=WORD_AT(frame+12u),length=WORD_AT(frame+16u);
+        if(story_restart_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_loadout_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(getenv("TSFP_STORY_TRACE")) {
             static unsigned observations;
@@ -430,9 +432,9 @@ int pc_story_network_hit_trace(void (*original)(void))
 
 /* Freeze only replicas with a valid pose in this match and body generation.
  * Human animation, Local Story and ordinary multiplayer keep their own paths. */
-int pc_story_network_replica(uint32_t entity)
-{
 #ifdef _WIN32
+static int story_npc_replica_valid(uint32_t entity,int need_pose)
+{
     if(!story_npc_session() || WORD_AT(0x0076B140u)!=2u || WORD_AT(0x0076B1A4u)!=15u ||
        !guest_writable(entity,0x25cu) || WORD_AT(entity+0x150u)) return 0;
     const uint32_t actor=WORD_AT(entity+0x7cu),pool=WORD_AT(0x007356D8u);
@@ -440,9 +442,44 @@ int pc_story_network_replica(uint32_t entity)
     const unsigned slot=WORD_AT(actor+8u);
     if(slot<story_npc_humans() || slot>=32u || actor!=pool+slot*0xea0u || WORD_AT(actor)!=entity) return 0;
     const StoryNpcReplica *r=&story_npc_replicas[slot];
-    return r->pose_present && r->entity==entity && r->spawn==WORD_AT(entity+0x258u) && r->match==story_npc_match();
+    return (!need_pose || r->pose_present) && r->entity==entity && r->spawn==WORD_AT(entity+0x258u) && r->match==story_npc_match();
+}
+#endif
+int pc_story_network_replica(uint32_t entity)
+{
+#ifdef _WIN32
+    return story_npc_replica_valid(entity,1);
 #else
     (void)entity;return 0;
+#endif
+}
+/* Replicas never run a second damage/death/script simulation. Only a locally
+ * owned human may request a hit; the host applies it and republishes state. */
+int pc_story_network_damage(void)
+{
+#ifdef _WIN32
+    if(!guest_writable(g_esp,8u)) return 0;
+    const uint32_t context=WORD_AT(g_esp+4u);
+    if(!guest_writable(context,0x58u) || !story_npc_replica_valid(WORD_AT(context),0)) return 0;
+    if(!WORD_AT(0x0076B170u)) {
+        const uint32_t pool=WORD_AT(0x007B0C48u);
+        for(unsigned offset=4u;offset<=8u;offset+=4u) {
+            const uint32_t source=WORD_AT(context+offset);
+            if(!guest_writable(source,0x154u)) continue;
+            const uint32_t player=WORD_AT(source+0x150u);
+            if(!pool || !guest_writable(player,0x1584u)) continue;
+            const unsigned slot=WORD_AT(player);
+            if(slot>=story_npc_humans() || player!=pool+slot*0x1584u ||
+               WORD_AT(player+0x14u)!=source || (int32_t)WORD_AT(player+4u)<0) continue;
+            GuestRegisters saved;save_registers(&saved);
+            pc_network_bots_request_hit(context);
+            restore_registers(&saved);
+            break;
+        }
+    }
+    return 1;
+#else
+    return 0;
 #endif
 }
 int pc_story_network_replica_bounds(uint32_t entity)

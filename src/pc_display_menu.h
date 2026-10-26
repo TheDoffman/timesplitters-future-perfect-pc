@@ -8,6 +8,9 @@ void pc_network_bots_menu(void (*original)(void));
 /* Opt-in coordinated Story load experiment; native fallback is inert. */
 int pc_story_network_prepare(uint32_t address);
 void pc_story_network_activate(void);
+void pc_story_network_restart(void (*original)(void));
+void pc_story_network_team_init(void (*original)(void));
+void pc_story_network_pause_rows(void);
 void pc_story_network_advance(void (*original)(void));
 void pc_story_network_ready(void (*original)(void));
 void pc_story_network_asset(void (*original)(void));
@@ -24,6 +27,7 @@ void pc_network_bots_entity_refresh(uint32_t entity);
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state);
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose);
 int pc_story_network_replica(uint32_t entity);
+int pc_story_network_damage(void);
 int pc_story_network_replica_bounds(uint32_t entity);
 void pc_network_bots_pose_weapons(uint32_t entity);
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);

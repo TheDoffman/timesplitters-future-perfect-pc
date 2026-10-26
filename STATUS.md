@@ -27015,3 +27015,60 @@ logs/story-resume-build.log, story-resume-source-tests.log and
 story-resume-integration.log (ignored). Fresh four-peer acceptance is separate
 and in progress; this integration does not establish completed Story co-op.
 Mac Online remains blocked on MAC-013, with no native-host validation here.
+
+
+## First-mission Story co-op continuation (2026-10-26)
+
+Continued on online-story-coop after local main merge a00de1c (main e9d9fae).
+Implemented host-only Restart Level for Time to Split: the existing pause
+confirmation broadcasts a pointer-free reliable reload event. Every peer uses
+the original reload function. A private reload epoch rejects old-run NPC and
+loadout messages; fresh opening grants and initial contexts reset together.
+Checkpoint restore and Game Over menu handling remain incomplete; other missions
+retain their prior paths. This is still experimental co-op, not full acceptance.
+
+A four-peer run reproduced Arcade teams2/4 on remote humans after the older
+frame correction. The new D7570 return adapter immediately reapplies the existing
+validated shared-team rule, preserving NPC/Local/Arcade/native behavior.
+A later close-range run crashed a guest in original DC550+124 following a wild
+NPC damage callback. Exact executable/PDB matching was verified; the dump and
+matching-symbols.zip remain together in the guest's ignored crash directory.
+The damage adapter had executed Story guest NPC health/death before its ordinary
+bot authority guard, including when tracing was enabled. Story replica damage
+now bypasses local simulation before tracing, forwarding owned-human hits with
+the original reliable35C870 sender. Only the host applies NPC damage/death;
+guests consume its snapshots. Host and unrelated-mode handling remain original.
+
+Measured Windows x64/MSBuild17.12.6, optimized MSVC Release (/O2 /Ob2), D3D11 RHI,
+original60FPS/60Hz: supported final build/native checks/seal/matching symbols
+completed with actual process exit0. The supported US XBE hash was checked before
+build and all game runs. Source menu/Story/guest checks15passed2platformskips;
+patch/context checks22passed, then21passed after initializer extension. The
+Online/context/native timing merge suite passed139 tests. CI scope and dead-NPC
+evidence checks passed81 tests; the new12-case retirement policy is registered
+in runtime-patches.yml. Missing live NPC health still fails; an already retired
+corpse may agree with a dead host body.
+
+The natural-intro four-peer run passed movie-to-game handoff, distinct starts,
+independent movement, firearms/ammo and observed matching NPC animation. Its
+combat route initially hit canyon geometry. Corrected ordinary-input waypoints
+follow the opening soldiers and require a target within10 units, rather than
+treating a frustum-visible enemy behind a wreck as a hit test.
+
+The final changed four-peer run passed first-mission loading, shared team1 on
+every peer before/after reload, cross-observed movement, ammo consumption,
+host-only pause/confirmation and all-peer level restart with fresh handoff.
+Reviewed host/guest menu captures confirm only the host has Restart Level.
+The guest's real NPC hit reached the host through the original reliable handler;
+NPC health/death agreement passed. All four runners exited0 and recycled their
+virtual disks; canonical fixture and personal saves/settings were preserved.
+No full-level completion or subsequent mission was attempted. No Internet/WAN,
+physical-controller or native Mac validation is claimed; MAC-013 remains open.
+
+Final executable SHA-256: a21c4df5d04a506a3c46e33b4805257222d1de845bad0944b26798fdba32b8da
+Compatibility: e850f26b75d974d9927a7a2595cd378fc078c735254ae628a328254f0ece243f
+Receipt: private/network-validation/story-four/pair-evidence.json (ignored),
+with final host-accepted hits and reload states. Logs: story-authority-four.log,
+story-damage-build.log and story-damage-tests.log in ignored logs/. Earlier
+failed receipts and the matched crash recovery remain preserved separately.
+No release, push, or merge of Story into main was performed.

@@ -46,7 +46,10 @@ static int story_prepare_ok;
 int pc_story_network_prepare(uint32_t address)
 { (void)address;++story_prepares;return story_prepare_ok; }
 void pc_story_network_activate(void) {++story_activates;}
-int pc_story_network_hit_trace(void (*original)(void)){(void)original;return 0;}
+static int story_damage_handled;
+static unsigned story_trace_calls;
+int pc_story_network_damage(void){return story_damage_handled;}
+int pc_story_network_hit_trace(void (*original)(void)){(void)original;++story_trace_calls;return 0;}
 static uint32_t story_replica;
 int pc_story_network_replica(uint32_t entity){return entity && entity==story_replica;}
 int pc_story_network_replica_bounds(uint32_t entity)
@@ -636,6 +639,12 @@ int main(void)
     pc_network_guest_sample(original);
 #ifndef TSFP_TEST_NATIVE_FALLBACK
     CHECK(memory[0x2100/4]==1);
+#endif
+#ifdef _WIN32
+    {unsigned calls=originals,traces=story_trace_calls;g_esp=0x1000;story_damage_handled=1;
+     pc_network_bots_guest_damage(original);
+     CHECK(g_esp==0x1004 && g_eax==0 && originals==calls && story_trace_calls==traces);
+     story_damage_handled=0;}
 #endif
     puts("PASS: movement gate, duplicate calls, offline/native fallback and unchanged guest clocks");
     return 0;

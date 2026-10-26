@@ -902,3 +902,15 @@ timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
 context/native timing passes, optimized Windows build/native checks completed.
 The transition runner retains both scenario families and input publication.
 Fresh four-peer acceptance and native Mac Online remain separate.
+
+First-mission level reload uses pc_story_restart.inc on the original reliable Story channel. Only the host may initiate checkpoint0; guests validate host identity, current match and next reload epoch. Every peer calls original653B0 and resets NPC/loadout/initial-spawn state. The epoch changes pointer-free NPC/loadout identity to reject old-run packets. Original pause confirmation is retained; only the host receives the Restart Level row. Checkpoint restoration remains unsupported; no raw checkpoint buffers are transmitted. Native/non-Story fallback stays original.
+
+A changed four-peer startup caught remote human teams2/4 after earlier normalization. The new D7570 return adapter now reapplies the existing validated body/context normalization immediately after the direct slot+1 initializer, preserving original return/register state. The frame fallback still covers construction before backlinks exist; NPC, Local and Arcade assignments remain original.
+
+Story damage authority now runs before optional hit tracing in the shared damage wrapper. A guest replica never executes its own health/death/scripts, including incoming host events; a locally owned human instead sends the original35C870 reliable hit request. Replica identity validates match/entity/spawn independently of pose availability. Host damage remains original and drives snapshots. A matched Windows crash resolved to DC550 after guest-side NPC damage/death and a wild callback; the new guard removes that second simulation rather than suppressing the allocator failure.
+
+Changed Windows four-peer acceptance (2026-10-26) passed opening, shared human
+teams, owned movement/ammo, host-only level reload with fresh handoff, and
+original host receipt/application of guest NPC hits through death. All runners
+exited0 after the damage-authority correction. Full mission completion,
+checkpoint/Game Over handling and native Mac/Internet validation remain separate.

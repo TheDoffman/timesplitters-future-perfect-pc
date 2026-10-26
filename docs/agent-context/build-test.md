@@ -871,3 +871,22 @@ timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
 context/native timing passes, optimized Windows build/native checks completed.
 The transition runner retains both scenario families and input publication.
 Fresh four-peer acceptance and native Mac Online remain separate.
+
+Story restart fixtures exercise host send/original return, guest authority rejection, validated reliable receive, duplicate/short/non-host/checkpoint rejection, epoch isolation and Arcade fallback. Runtime coordinated reload and changed first-mission combat remain separate acceptance checks.
+
+The team fixture now reproduces D7570 assigning slot+1 after a frame normalization, verifies immediate team1 correction with original ABI/result, and rejects incomplete body/context backlinks. A real four-peer startup must retain all human teams before the reload probe.
+
+First-mission reload/combat route: `tests/story_pair_game.py --load-probe
+--players 4 --fire-probe --restart-probe --combat-probe --skip-intro`. Intro
+skipping is diagnostic; natural intro acceptance remains a separate run. The
+registered test_story_evidence.py accepts corpse retirement only for a dead or
+already absent host target, rejects missing live targets/non-finite health and
+retains the requirement for a host-received, guest-attributed damage trace.
+
+Story damage fixtures cover owned human/direct and projectile-owner requests, remote/NPC replay suppression, incoming host damage suppression, stale spawn/match and host/Arcade fallback. The guest dispatch fixture requires this authority guard before tracing, preventing instrumentation from executing a replica death path. Preserve the exact crash-symbol archive beside the retained guest dump before replacing the build.
+
+Changed Windows four-peer acceptance (2026-10-26) passed opening, shared human
+teams, owned movement/ammo, host-only level reload with fresh handoff, and
+original host receipt/application of guest NPC hits through death. All runners
+exited0 after the damage-authority correction. Full mission completion,
+checkpoint/Game Over handling and native Mac/Internet validation remain separate.

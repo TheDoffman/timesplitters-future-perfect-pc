@@ -2088,6 +2088,26 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- First-mission Story level restart (uncommitted, 2026-10-26): shared
+  pc_story_restart.inc and the separate restart patch coordinate the original
+  level reload and isolate NPC/loadout epochs. Source tests pass on Windows;
+  Windows four-peer reload/fresh-handoff validation passed (see STATUS).
+  Native fallback remains unchanged; Online still
+  needs this entry's XNet transport/session adapter. Validate host confirmation,
+  every peer reloading, fresh handoff and late old-packet rejection on native
+  and mixed hosts. Checkpoint restart is not implemented.
+- Story guest damage authority (uncommitted, 2026-10-26): shared damage
+  dispatch suppresses replica health/death simulation before tracing and sends
+  owned-human hits through the original reliable sender. Source checks and
+  changed Windows runtime acceptance are tracked in STATUS. Native fallback
+  stays original; validate via the MAC-013 transport adapter on native/mixed
+  peers, including death and late snapshot handling.
+- Story initialization team correction (uncommitted, 2026-10-26): the shared
+  D7570 return adapter immediately normalizes completed human bodies, preserving
+  NPC/native/Arcade fallback. A new four-peer startup exposed teams2/4 after the
+  older frame-only correction. Source fixtures and changed Windows four-peer
+  startup/reload team checks pass; native/mixed-host acceptance remains pending
+  under MAC-013.
 - Shared Story human teams (uncommitted): `pc_story_load.inc` and the separate
   human-teams patch plus existing frame adapter preserve original Story team1
   when the ordinary network pump or remote-body initializer reapplies Arcade teams. The scoped original setter still runs; NPC/lobby/native

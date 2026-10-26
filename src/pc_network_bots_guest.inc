@@ -23,6 +23,7 @@ int pc_story_network_prepare(uint32_t address);
 void pc_story_network_activate(void);
 int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity);
 int pc_story_network_hit_trace(void (*original)(void));
+int pc_story_network_damage(void);
 int pc_story_network_replica(uint32_t entity);
 int pc_story_network_replica_bounds(uint32_t entity);
 #endif
@@ -475,6 +476,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
 static void pc_network_bots_guest_damage(void (*original)(void))
 {
 #ifdef _WIN32
+    if(pc_story_network_damage()) {g_eax=0;g_esp+=4u;return;}
     if(pc_story_network_hit_trace(original)) return;
     static unsigned traces;
     /* Guest shot replay (including delayed projectile effects) is cosmetic.

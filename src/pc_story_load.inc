@@ -10,6 +10,8 @@ static uint32_t story_extra_pad_storage;
 extern void sub_0025EE60(void);
 static int story_context_start_pending;
 static unsigned story_pending_stage;
+static unsigned story_reload_epoch;
+static int story_restart_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static void story_npc_reset(void);
 static void story_npc_pending_frame(void);
 static void story_loadout_reset(void);
@@ -111,6 +113,7 @@ void pc_story_network_activate(void)
 {
 #ifdef _WIN32
     if(!story_network_session()) return;
+    story_reload_epoch=0;
     story_npc_reset();
     story_loadout_reset();
     /* One full local view per network instance; keep the frontend network mode. */
@@ -581,6 +584,20 @@ static void story_human_teams_frame(void)
 }
 #endif
 
+/* D7570 can also run after the frame adapter, writing slot+1 directly.
+ * Correct its completed human bodies immediately, preserving original results. */
+void pc_story_network_team_init(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const uint32_t actor=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+#endif
+    original();
+#ifdef _WIN32
+    if(story_human_team_scope(actor)) story_human_teams_frame();
+#endif
+}
+
 void pc_story_network_team(void (*original)(void))
 {
 #ifdef _WIN32
@@ -621,3 +638,5 @@ void pc_story_network_character_remove(void (*original)(void))
 }
 #include "pc_story_npc.inc"
 #include "pc_story_loadout.inc"
+
+#include "pc_story_restart.inc"
