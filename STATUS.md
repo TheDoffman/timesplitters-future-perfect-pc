@@ -1,4 +1,45 @@
-## Fractional clear-slide repair (2026-10-25, current branch)
+## Crowded Temple follow-up (2026-10-26)
+
+PR #366 is merged into main `e9d9faeb`; Windows/macOS runtime, patch
+transitions, launcher compatibility and PR validation passed for its final head.
+The existing DE7 executable below has the same gameplay source as this merge.
+No performance policy changed in this follow-up.
+
+An isolated, capture-free legacy diagnostic144 run (`crowd-merged-temple144`)
+uses Temple49, one human and ten bots, FOV73, Enhanced selected/Classic fallback,
+3440x1440 device rendering and a foreground1920x1060 borderless client. The
+complete45-second spawn+5..50 window contains6479 successful guest Presents:
+144.0009/s average,144 minimum in every one-second bin, p99 7.516ms and
+worst8.124ms, with zero interpolation. Nineteen active checkpoints retain the
+ten-bot roster; each bot has12..18 distinct sampled positions. The human's
+health ranges0..1.75, including death, so this is a mixed combat/death window,
+not uninterrupted live-player stress. The original reported144-to110 drop
+was not reproduced here. Other maps/routes and simultaneously visible crowds
+remain unverified. The public menu still offers60/120/180/240.
+
+Independent timing-call observations measure6043 updates/41.9662s =143.9967/s,
+agreeing with accepted Presents within one in-flight call. Level-clock speed is
+1.00001 game seconds per wall second. Held and60-Hz counter controls fail the
+comparison. Maximum observation span is9us. Profiles/signatures/fixture are
+preserved, the runner exits0, and disposable disks are recycled. The Present
+CSV SHA256 is `00b4348ff61823c374ad6b3165122bf01bd3ef99891b5d25ca4d7cf200c306e0`.
+These are API acceptance and sampled timing measurements, not GPU completion,
+physical scanout, pixel identity or physical-input latency.
+
+A separate opt-in200-Hz CPU profile (`crowd-walk-profile-temple240`) subtracts
+the80-second report from110 seconds, excluding startup. Of5129 main-thread
+samples,1382 have wait leaves;1456 of the remaining3747 (38.9%) contain the
+model-node renderer18EA90 within the16-frame caller window. Only142 are leaves
+in that function: downstream rendering work matters. VM-query leaves account
+for17 samples, versus822 in the startup-inclusive final report. Both snapshots
+report zero dropped chains at8192 capacity. Unresolved DLL offsets must be
+normalized before differencing symbol counts. Sampling perturbs scheduling;
+this profile does not prove GPU saturation or isolate an instruction-level
+optimization. Focus subsequent investigation on the model/draw path. The prior
+clean240 Temple result (238.065 average,225 minimum one-second bin) remains an
+open performance gap. Full-game and physical Mac acceptance remain open.
+
+## Fractional clear-slide repair (2026-10-25, merged PR #366)
 
 `fix/native-player-wall-contact` starts from merged main6aeaa8b1/PR #364.
 The old Venice contact discrepancy is reproduced at180/240 and in two paired
