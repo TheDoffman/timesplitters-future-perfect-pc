@@ -43,8 +43,8 @@ int main(void)
     MEM32(0x78ae00)=0xffffffff;
     MEMF(0x475c78)=1; MEMF(0x475c88)=360; MEMF(0x475cb8)=-360;
     MEMF(0x475c84)=180; MEMF(0x475cac)=0;
-    const unsigned rates[]={60,120,144};
-    for(unsigned r=0;r<3;r++) {
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         unsigned fps=rates[r],flips=0,last=0;
         memset((void *)((uintptr_t)BACKDROP+g_xbox_mem_offset),0,0x1000);
         for(unsigned i=0;i<5;i++) {

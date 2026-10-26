@@ -123,15 +123,15 @@ int main(void) {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     setvbuf(stdout,NULL,_IONBF,0);
-    const unsigned rates[]={60,120,144};
+    const unsigned rates[]={60,120,144,180,240};
     for(unsigned mode=0;mode<3;mode++) {
         for(unsigned slow=1;slow<=4;slow*=4)
-            for(unsigned i=0;i<3;i++)run(mode,rates[i],slow,0);
+            for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)run(mode,rates[i],slow,0);
         run(mode,60,1,0);run(mode,120,1,1);run(mode,144,1,1);
     }
     rare=1;
     for(unsigned slow=1;slow<=4;slow*=4)
-        for(unsigned i=0;i<3;i++)run(2,rates[i],slow,0);
+        for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)run(2,rates[i],slow,0);
     check_edges_and_catchup();
     puts("PASS: original NPC aim branch executed with bounded geometry, pause and timing-field checks");
     free(memory);return 0;

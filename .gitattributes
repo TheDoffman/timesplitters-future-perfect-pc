@@ -1,6 +1,8 @@
 * text=auto
 .gitattributes text eol=lf
 AGENTS.md text eol=lf
+# Bounded context guides must keep the same byte size on both hosts.
+docs/agent-context/*.md text eol=lf
 *.command text eol=lf
 *.sh text eol=lf
 *.py text eol=lf

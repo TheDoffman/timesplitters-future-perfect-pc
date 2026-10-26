@@ -2,16 +2,30 @@
 
 [Back to the README](../README.md)
 
-This branch contains **2,046 replacements**, about **1.72 GiB installed**, covering
-approximately 30% of the 6,812 known supported keys. The menu progress and
+This branch contains **2,261 replacements**, about **1.91 GiB installed**, covering
+approximately 33% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
-These additions enter optional texture downloads after integration and publication. Major surfaces use up to 4K; smaller
+These additions enter optional texture downloads through a published pack and
+its download index on main. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
 source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
 
+The October 24 material batches add 215 metal, masonry, rock, plaster, carved,
+timber and painted-wood replacements after offline layout, mip, alpha and format
+review. One hundred twenty-eight generated drafts remain held for correction; another candidate
+needs alpha-channel review. Narrow wood and metal trims preserve their original 4:1 or 8:1 proportions;
+other rectangular materials retain their landscape or portrait orientation.
+Output long edges range from 256 to 2048 pixels, preserving fine detail in RGBA8 where
+DXT1 compression loses it. Representative in-game validation of these additions
+remains incomplete. Publication does not establish in-game fidelity.
+
 ## Install through the launcher
 
-The upcoming shared Windows/Mac launcher offers **Game settings → Graphics &
+Pack [0.1.0-beta.1](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/textures-v0.1.0-beta.1)
+publishes the 2,261 replacements from main `0ccf654f`. Its verified download index
+must be present on main before the launcher can discover it.
+
+The shared Windows/Mac launcher offers **Game settings → Graphics &
 resolution → Check texture downloads → Download / update textures**. Normal game
 packages omit the pack. Existing bundled packs remain installed and usable.
 The launcher compares file hashes, skips matching parts, downloads changed parts
@@ -20,6 +34,11 @@ textures, saves and settings remain. Downloads require confirmation, including
 when opted into checks on opening Settings. Cancelled updates keep completed parts
 and restore the part in progress. Classic remains the default; save the Enhanced
 checkbox separately to enable replacements on launch. See [launcher usage](launcher.md).
+
+Classic defers new replacement reads and uploads. Selecting Enhanced starts
+loading replacements as their textures are used, showing originals until ready.
+Switching back retains the cache, so already loaded replacements switch instantly
+on later toggles. Requests already submitted can finish in Classic.
 
 ## Texture build dependency
 
@@ -32,6 +51,33 @@ The nested source ZIP also omits compiled textures. Source launches can continue
 to use `assets/textures` when present. Building never enables Enhanced or changes
 personal settings. Players still supply their original game data.
 
+## Developer upload timing
+
+For a bounded developer investigation, set `TSFP_TEXTURE_UPLOAD_TRACE` to an
+isolated CSV path before launching. Common RHI and legacy GL record each eligible
+upload call's key, texture mode, outcome and monotonic nanosecond boundaries.
+`hash_end-hash_begin` measures source-key calculation, including calls whose
+outcome is `cached`. Those calls retain their existing request/cache state and
+do not reach file or graphics-resource stages. `deferred` records a new Classic
+key without requesting a replacement. Late Enhanced requests have zero hash
+and source-byte fields because the original upload already computed the key.
+`open_end-read_begin` measures opening the file;
+`read_end-open_end` includes seeking, allocation, transfer and close;
+`validated-read_end` covers parsing and acceptance. Image and view begin/end
+fields measure CPU calls into the graphics backend, not GPU completion. GL has
+one texture-upload span and no separate view. Zero fields mean a stage was not
+reached. Release/dump/cleanup can contribute
+to total elapsed time outside the named stages.
+
+The trace is off by default, stops at 8,192 rows/below 4 MiB and does not change
+Classic/Enhanced behavior. CSV writes occur after each measured attempt and
+flush every 64 records, so they can perturb later frames. Retain source/build
+identity and separate these diagnostics from clean performance runs. Use a
+fresh process to restart a completed or failed trace; do not use personal save
+or settings paths for automated tests. Check that the row limit was not reached
+before interpreting a selected time window; cached calls now count toward it.
+Older traces from `2230901` omit hashing and cached calls and lack hash columns.
+
 ## Publishing optional pack updates
 
 1. Audit and hydrate the committed `assets/textures` pack. Keep private source art
@@ -41,14 +87,15 @@ personal settings. Players still supply their original game data.
    schema-3 file index to `config/texture-download.json`. It does not replace the
    separate repository catalog `config/texture-pack.json`.
 3. Run `python tools/texture-release.py verify --remote`, review and commit the
-   generated download manifest, then merge it into main. The launcher reads that
-   manifest. Publish the updated Windows and Mac launchers for the new controls.
+   generated download manifest, then merge it into main. Existing Windows and Mac
+   launchers with the optional-texture controls discover that index without a rebuild.
 4. Subsequent updates repeat with a new texture version. File hashes let older
    bundled packs and partial downloads be reused without a historical receipt.
 
-The checked-in `published: false` placeholder is intentional until the first
-optional release is published. No pack or launcher is published just by changing
-this source. Stable key-prefix buckets reduce part churn as new textures are added.
+Committing DDS files does not publish a download. A `published: false` index makes
+the launcher report that the pack is unavailable even when assets exist on main.
+Keep the verified generated index on main after publication. Stable key-prefix
+buckets reduce part churn as new textures are added.
 Each archive is capped at 64 MiB compressed and generated from at most 48 MiB raw;
 installer validation bounds expanded content too. Optional updates do not prune
 unknown keys. Game packages retain the earlier exact-hash retirement policy for
@@ -59,10 +106,9 @@ original character icons; custom-modified icon pairs are preserved.
 From a Windows source checkout with a built runtime and an existing pack,
 double-click **Play-Textures.cmd**. It loads replacements from
 `private/texture-remaster/pack`; it does not download or generate a pack.
-In the game's **Settings** (or paused **Options**), open **Display settings**
+In the game's **Settings** (or paused **Options**), open **Video Options**
 and change **Textures** between **Classic** and **Enhanced** with the native
-choice arrows. It takes effect immediately; **Apply settings** is for
-resolution/FOV. The texture choice lasts for this game session and remains in sync
+choice arrows, then select **Apply**. The texture choice lasts for this game session and remains in sync
 with Windows **F10** and **PC Settings > 4K Textures**.
 This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.

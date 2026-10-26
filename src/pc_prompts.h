@@ -16,5 +16,8 @@ int pc_prompts_rewrite(const char *source, char *out, size_t capacity);
 /* Synchronous word-wrap only; mapping facts expire on return. */
 void pc_prompts_layout_begin(void);
 void pc_prompts_layout_end(void);
+/* Read-only chunk, possibly one page; string scanners must continue at its end.
+ * Known-size argument frames require read_span so a page boundary is not EOF. */
 size_t pc_prompts_read_region(uintptr_t address);
+size_t pc_prompts_read_span(uintptr_t address,size_t minimum);
 #endif

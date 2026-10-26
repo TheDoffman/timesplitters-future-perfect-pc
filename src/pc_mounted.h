@@ -1,13 +1,13 @@
 #ifndef TSFP_PC_MOUNTED_H
 #define TSFP_PC_MOUNTED_H
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 #include "pc_input.h"
 #include <math.h>
 
-static inline uintptr_t pc_mounted_read(uint32_t address,ptrdiff_t offset,size_t size)
+static inline uintptr_t pc_mounted_read(uint32_t address,ptrdiff_t offset,size_t size,PcGuestRegion *region)
 {
     uintptr_t p=(uintptr_t)address+offset;
-    return address && pc_guest_memory(p,size,0)?p:0;
+    return address && pc_guest_memory_in_span(region,p,size,0)?p:0;
 }
 
 /* US sub_00258A20: equal limits lock an axis, a full revolution wraps it,
@@ -25,11 +25,11 @@ static inline float pc_mounted_limit(double angle,float minimum,float maximum)
  * CCTV-controlled guns. Their player angles are not their aiming angles.
  * Follow the same C14 gun link and limits as sub_0025D520/sub_00258A20,
  * checking the reverse owner link so stale or AI-controlled guns stay intact. */
-static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity,
+static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float sensitivity,
                                    int invert,uint32_t player,uint32_t fov_object,
-                                   ptrdiff_t offset,int native_timing)
+                                   ptrdiff_t offset,int native_timing,PcGuestRegion *region)
 {
-    uintptr_t p=pc_mounted_read(player,offset,0x118),entity,extra,gun,data,ticks,f;
+    uintptr_t p=pc_mounted_read(player,offset,0x118,region),entity,extra,gun,data,ticks,f;
     uint32_t owner,gun_address,state;
     double dx,dy,scale;
     float pitch,yaw,pmin,pmax,ymin,ymax,fov;
@@ -38,7 +38,7 @@ static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity
     if(!input->focused || !input->captured || age>100 ||
        !isfinite(dx) || !isfinite(dy) || (!dx && !dy) ||
        !isfinite(sensitivity) || sensitivity<=0 || *(const int32_t*)(p+4)!=0)return 0;
-    ticks=pc_mounted_read(native_timing?0x004e794c:0x004e7944,offset,4);
+    ticks=pc_mounted_read(native_timing?0x004e794c:0x004e7944,offset,4,region);
     if(!ticks)return 0;
     /* Raw mouse counts are displacement. Every advancing native interval
      * consumes them once, including frames without a carried whole tick.
@@ -48,20 +48,20 @@ static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity
         if(!isfinite(delta) || delta<=0)return 0;
     } else if(!*(const uint32_t*)ticks)return 0;
     owner=*(const uint32_t*)(p+0x14);
-    entity=pc_mounted_read(owner,offset,0x80);
+    entity=pc_mounted_read(owner,offset,0x80,region);
     if(!entity)return 0;
-    extra=pc_mounted_read(*(const uint32_t*)(entity+0x7c),offset,0xc18);
+    extra=pc_mounted_read(*(const uint32_t*)(entity+0x7c),offset,0xc18,region);
     if(!extra)return 0;
     gun_address=*(const uint32_t*)(extra+0xc14);
-    gun=pc_mounted_read(gun_address,offset,0x80);
+    gun=pc_mounted_read(gun_address,offset,0x80,region);
     if(!gun)return 0;
-    data=pc_mounted_read(*(const uint32_t*)(gun+0x7c),offset,0x6c);
-    if(!data || !pc_guest_memory(data,0x6c,1) ||
+    data=pc_mounted_read(*(const uint32_t*)(gun+0x7c),offset,0x6c,region);
+    if(!data || !pc_guest_memory_in_span(region,data,0x6c,1) ||
        *(const uint32_t*)data!=gun_address || *(const uint32_t*)(data+4)!=0x4147554e ||
        *(const uint32_t*)(data+0x68)!=owner)return 0;
     state=*(const uint32_t*)(data+0x10);
     if(state==1 || state==9)return 0; /* original locked/inactive aim states */
-    f=pc_mounted_read(fov_object,offset,0x388);
+    f=pc_mounted_read(fov_object,offset,0x388,region);
     if(!f)return 0;
     fov=*(const float*)(f+0x384);
     if(!isfinite(fov) || fov<1 || fov>120)return 0;
@@ -82,5 +82,12 @@ static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity
     *(float*)(data+0x1c)=pc_mounted_limit(pitch+dy*scale*(invert?-1:1),pmin,pmax);
     *(float*)(data+0x24)=pc_mounted_limit(yaw-dx*scale,ymin,ymax);
     return 1;
+}
+static inline int pc_mounted_mouse(PcInput *input,uint64_t now,float sensitivity,
+                                   int invert,uint32_t player,uint32_t fov_object,
+                                   ptrdiff_t offset,int native_timing)
+{
+    PcGuestRegion region={0};
+    return pc_mounted_mouse_in_region(input,now,sensitivity,invert,player,fov_object,offset,native_timing,&region);
 }
 #endif

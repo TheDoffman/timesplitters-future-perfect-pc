@@ -74,7 +74,7 @@ the installed game. Optional texture updates also need temporary space for one p
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
 
-## Enhanced textures (upcoming launcher update)
+## Enhanced textures (Beta)
 
 Windows and Mac use the same optional pack. Under **Game settings → Graphics &
 resolution**, select **Check texture downloads**, then **Download / update textures**.
@@ -95,8 +95,9 @@ matching keys and preserve unrelated custom keys, saves and settings. Each part 
 validated before installation and rolls back on failure; completed parts survive
 cancellation. Game upgrades, repair and rollback preserve the installed pack.
 
-The optional pack must be published before downloads become available. Until then,
-the launcher explains its availability and continues to support installed packs.
+Texture downloads come from a published optional pack. New DDS files committed
+to main become available after the maintainer publishes a pack update and merges
+its download index. No launcher update is required for new pack versions.
 
 ## Compare specific game versions (upcoming launcher update)
 
@@ -204,7 +205,7 @@ source repository alone does not install a playable game.
 ## Native frame-rate selection (upcoming launcher update)
 
 Open **Game settings → Graphics & resolution → Frame rate** to select
-**60 FPS (Original)**, **120 FPS (Beta)**, or **144 FPS (Beta)**, then save.
+**60 FPS (Original)**, **120 FPS (Beta)**, **180 FPS (Beta)**, or **240 FPS (Beta)**, then save.
 The original 60 FPS path is the default and the recovery option. High-refresh
 mode requires a game build containing the `feature/native-144-fps` runtime;
 installing this launcher alone does not add that capability to older games.
@@ -219,7 +220,8 @@ problems occur.
 
 The launcher shares `pc-frame-rate.ini` with the new in-game frame-rate menu,
 beside `pc-display.ini` in the installation's settings folder. Its versioned
-format is `TSFP_FRAME_RATE_V1 0`, `120`, or `144` (zero selects original timing).
+format is `TSFP_FRAME_RATE_V1 0`, `120`, `180`, or `240` (zero selects original timing).
+An older `144` preference loads as `120`; reading it does not rewrite the file.
 Reopen launcher settings after changing the choice in the game. Concurrent
 changes are rejected instead of overwritten, and the preference participates
 in the existing backup and multi-file rollback transaction. Cancel leaves it

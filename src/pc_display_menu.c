@@ -10,6 +10,7 @@ static uint32_t kb_caption(void);
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
+#include "pc_breadcrumbs.h"
 #include "pc_guest_memory.h"
 #ifdef _WIN32
 #include "pc_network.h"
@@ -78,13 +79,10 @@ static void push(uint32_t word)
 
 static int guest_writable(uint32_t address,size_t bytes)
 {
-    MEMORY_BASIC_INFORMATION m;
-    uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
-    if(!address || bytes>UINT32_MAX-address ||
-       !VirtualQuery((const void *)host,&m,sizeof m) || m.State!=MEM_COMMIT ||
-       (m.Protect&(PAGE_GUARD|PAGE_NOACCESS))) return 0;
-    return (m.Protect&(PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|PAGE_EXECUTE_WRITECOPY)) &&
-        host+bytes>=host && host+bytes<=(uintptr_t)m.BaseAddress+m.RegionSize;
+    /* Every caller supplies a known extent. Query it afresh: these checks may
+     * occur on either side of guest callbacks and cannot share VM snapshots. */
+    PcGuestRegion region={0,0,0};
+    return pc_display_writable(&region,g_xbox_mem_offset,address,bytes);
 }
 
 static float cutscene_camera_zoom(void)
@@ -127,10 +125,13 @@ static float gameplay_fov_scale(uint32_t caller)
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
        !guest_writable(actor,0x118) ||
-       (WORD_AT(actor+0x114)!=2 && WORD_AT(actor+0x114)!=4) ||
+       (WORD_AT(actor+0x114)!=2 && WORD_AT(actor+0x114)!=4 &&
+        WORD_AT(actor+0x114)!=0x800) ||
        WORD_AT(actor+8)!=WORD_AT(0x007B0CC0u)) return 1.f;
     /* US sub_00258F50 enters state 4 when ground contact is lost; the
-       landing path returns to state 2. Both retain the player's own lens. */
+       landing path returns to state 2. US sub_00225C70 enters state 0x800
+       inside Zeppelin air lifts and returns to 4 on exit. All three states
+       retain the player's own lens, including weapon zoom. */
     return pc_display_fov_scale();
 }
 
@@ -138,8 +139,12 @@ static float gameplay_fov_scale(uint32_t caller)
 static int discord_guest_read(void *context,uint32_t address,void *out,size_t bytes)
 {
     uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
+    /* Each decoder read has a known extent. Validate it afresh without walking
+     * the end of the whole guest mapping for every string byte. */
+    PcGuestRegion region={0,0,0};
     (void)context;
-    if(!address || bytes>UINT32_MAX-address || !pc_guest_memory(host,bytes,0)) return 0;
+    if(!address || bytes>UINT32_MAX-address ||
+       !pc_guest_memory_in_span(&region,host,bytes,0)) return 0;
     memcpy(out,(const void *)host,bytes);return 1;
 }
 #endif
@@ -159,6 +164,7 @@ void pc_display_camera(void (*original)(void))
         network=pc_network_latency(&latency,&peers);
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
+        pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);
         pc_discord_submit(&sample);discord_sampled=now;
     }
 #endif
@@ -201,6 +207,10 @@ void pc_display_perspective_projection(void (*original)(void))
     const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
     uint32_t camera, matrix;
     original();
+    /* US 151CF0 unconditionally writes all 16 destination floats before
+       returning, with no guest callbacks. Its successful return establishes
+       this output's writable extent; do not query it again below. Camera
+       sources still need a fresh, correction-local permission check. */
     PcGuestRegion region={0,0,0};
     /* US sub_001B73F0 builds the first-person weapon lens; sub_002C44D0
        rebuilds the character picker lens, including when models change.
@@ -208,10 +218,8 @@ void pc_display_perspective_projection(void (*original)(void))
        matrix, rather than copying the world camera's different FOV/zoom or
        adjusting a retained matrix repeatedly while a new character loads. */
     if(caller==0x001B7482u || caller==0x002C46EFu) {
-        if(pc_display_writable(&region,g_xbox_mem_offset,destination,64)) {
-            float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
-            projection[0]/=pc_display_camera_factor();
-        }
+        float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
+        projection[0]/=pc_display_camera_factor();
         return;
     }
     /* These two US decal passes rebuild a perspective matrix with biased
@@ -223,10 +231,7 @@ void pc_display_perspective_projection(void (*original)(void))
     camera=WORD_AT(0x007B0CC0u);
     if(!pc_display_writable(&region,g_xbox_mem_offset,camera,0x208)) return;
     matrix=WORD_AT(camera+0x204u);
-    /* Validate the camera's matrix before the temporary output: decal callers
-       use a guest-stack destination in a different region from camera RAM. */
-    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64) ||
-       !pc_display_writable(&region,g_xbox_mem_offset,destination,64)) return;
+    if(!pc_display_writable(&region,g_xbox_mem_offset,matrix,64)) return;
     WORD_AT(destination)=WORD_AT(matrix);
     WORD_AT(destination+0x14u)=WORD_AT(matrix+0x14u);
 }

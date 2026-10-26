@@ -1,25 +1,25 @@
 #ifndef TSFP_PC_TERMINAL_H
 #define TSFP_PC_TERMINAL_H
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 #include "pc_input.h"
 #include <math.h>
 
 /* US sub_003700D0 routes the active console's stick input to its 256-unit
  * pointer, not player yaw/pitch. The local input index selects the console;
  * the guest player ID can differ (for example on a network client). */
-static inline uintptr_t pc_terminal_read(uint32_t address,ptrdiff_t offset,size_t size)
+static inline uintptr_t pc_terminal_read(uint32_t address,ptrdiff_t offset,size_t size,PcGuestRegion *region)
 {
     uintptr_t p=(uintptr_t)address+offset;
-    return address && pc_guest_memory(p,size,0)?p:0;
+    return address && pc_guest_memory_in_span(region,p,size,0)?p:0;
 }
 
 /* -1: ordinary camera; 0/1: terminal handled without/with pointer movement.
  * Consume terminal motion even when paused, scripted or temporarily invalid,
  * so it cannot turn the hidden player or leak into gameplay on exit. */
-static inline int pc_terminal_mouse(PcInput *input,uint64_t now,float sensitivity,
-                                    uint32_t player,ptrdiff_t offset,int native_timing)
+static inline int pc_terminal_mouse_in_region(PcInput *input,uint64_t now,float sensitivity,
+                                    uint32_t player,ptrdiff_t offset,int native_timing,PcGuestRegion *region)
 {
-    uintptr_t p=pc_terminal_read(player,offset,0x118),slot,entity,t,descriptor,ticks;
+    uintptr_t p=pc_terminal_read(player,offset,0x118,region),slot,entity,t,descriptor,ticks;
     double dx,dy;
     int32_t index;
     float *x,*y;
@@ -30,15 +30,15 @@ static inline int pc_terminal_mouse(PcInput *input,uint64_t now,float sensitivit
        !isfinite(sensitivity) || sensitivity<=0)return 0;
     index=*(const int32_t*)(p+4);
     if(index<0 || index>=4)return 0;
-    slot=pc_terminal_read(0x0076C27C+(uint32_t)index*4,offset,4);
+    slot=pc_terminal_read(0x0076C27C+(uint32_t)index*4,offset,4,region);
     if(!slot)return 0;
-    entity=pc_terminal_read(*(const uint32_t*)slot,offset,0x80);
+    entity=pc_terminal_read(*(const uint32_t*)slot,offset,0x80,region);
     if(!entity)return 0;
-    t=pc_terminal_read(*(const uint32_t*)(entity+0x7c),offset,0x60);
-    if(!t || !pc_guest_memory(t,0x60,1) ||
+    t=pc_terminal_read(*(const uint32_t*)(entity+0x7c),offset,0x60,region);
+    if(!t || !pc_guest_memory_in_span(region,t,0x60,1) ||
        *(const uint32_t*)(t+0x14)!=player || *(const uint32_t*)(t+0x58))return 0;
-    descriptor=pc_terminal_read(*(const uint32_t*)(t+0x30),offset,0x18);
-    ticks=pc_terminal_read(native_timing?0x004E794C:0x004E7944,offset,4);
+    descriptor=pc_terminal_read(*(const uint32_t*)(t+0x30),offset,0x18,region);
+    ticks=pc_terminal_read(native_timing?0x004E794C:0x004E7944,offset,4,region);
     if(!descriptor || (*(const uint32_t*)(descriptor+0x14)&4) ||
        !ticks)return 0;
     /* Native zero-whole intervals still accept raw counts while game time
@@ -56,5 +56,11 @@ static inline int pc_terminal_mouse(PcInput *input,uint64_t now,float sensitivit
     *y=(float)fmin(251.0,fmax(4.0,(double)*y+dy*sensitivity));
     *(uint32_t*)(t+0x20)=0; /* Same inactivity reset as controller movement. */
     return 1;
+}
+static inline int pc_terminal_mouse(PcInput *input,uint64_t now,float sensitivity,
+                                    uint32_t player,ptrdiff_t offset,int native_timing)
+{
+    PcGuestRegion region={0};
+    return pc_terminal_mouse_in_region(input,now,sensitivity,player,offset,native_timing,&region);
 }
 #endif

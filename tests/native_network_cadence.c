@@ -90,8 +90,8 @@ static void reset(int64_t start,const char *rate,uint32_t origin)
 }
 static void regular_rates(void)
 {
-    const char *rates[]={"60","120","144"};
-    for(unsigned wrap=0;wrap<2;wrap++) for(unsigned r=0;r<3;r++) {
+    const char *rates[]={"60","120","144","180","240"};
+    for(unsigned wrap=0;wrap<2;wrap++) for(unsigned r=0;r<sizeof rates/sizeof rates[0];r++) {
         int rate=atoi(rates[r]);int64_t start=counter+144000000;
         uint32_t origin=wrap?UINT32_MAX-30u:0;
         reset(start,rates[r],origin);

@@ -19,6 +19,17 @@ relevant guide when changing its system, regenerate the patch index for indexed
 patch changes, and run the context checker against the task base.
 <!-- packet:end -->
 
+The generated-entry optimization follows texture-bind-scan in the patch order;
+zero-base-indices follows it. Historical controls omit these until renderer
+context is installed. Candidate
+math must preserve callback order and exceptional-input behavior, not only
+ordinary output coordinates. Local-register prototypes alone are not integration.
+
+`tests/test_repo_context.py` checks effective patch order rather than only
+filename sorting. The radial stick deadzone patch is now the final record,
+after zero-base-indices and the keyboard reload patch; update that ordering
+assertion when intentionally adding another final patch.
+
 ## Working note (not committed)
 
 Create this only for substantial tasks; tiny edits do not need a diary. Limit it
@@ -80,6 +91,11 @@ Never invoke a nested model from a LOCAL ONLY task or an advisory session.
 
 ## Maintenance
 
+Patch-order tests now require `texture-bind-scan` after the native renderer/demo
+series. Historical controls fixtures omit it until the complete-stack upgrade,
+when its cross-platform renderer context is present. Keep both order and upgrade
+contracts when adding dependent patches; do not weaken full-stack validation.
+
 Every change to a covered system must update its guide in the same change. Add
 the changed responsibility, entry point, contract, migration pitfall or test
 route. For an internal change with no architectural impact, record a concise
@@ -93,7 +109,10 @@ authoritative if a guide is stale; fix the guide as part of the task.
 2. For patch changes, stage only the intended patch files, then run
    `python tools/repo-context.py refresh`. The index intentionally excludes
    untracked experiments; `find` labels those separately. Never stage unrelated
-   patches just to refresh it.
+   patches just to refresh it. Verify new patch worktree bytes use their declared
+   Git line endings before refreshing: Git can stage LF while leaving CRLF in
+   an existing Windows file. The index hashes exact loader bytes, so that mismatch
+   passes locally but fails on fresh CI checkouts. Preserve explicit `-text` patches.
 3. Run `python tools/repo-context.py check` and
    `python tools/repo-context.py check --base <task-base-revision>`.
 4. Include guide updates, generated index and useful measured evidence in the
@@ -115,6 +134,9 @@ late-frame pacing immediately after fixed defaults, and numeric/surface patches
 after that boundary. It no longer assumes fixed-60/pacing are the final two
 patches. This is a navigation-order contract; runtime/build tests establish
 application and behavior separately.
+
+The demo-timer wrapper extends that tail after native surface rendering.
+The index-order regression now checks this final dependency explicitly.
 
 The 2026-10-22 root texture policy retains original character selection/profile
 icons via `config/texture-originals.json`. Consult the systems/build-test guides
@@ -142,3 +164,14 @@ changes within validated existing AUTO blocks. It compares the rest of the file
 against the base unchanged and rejects empty-list regressions, malformed/duplicate
 markers and arbitrary inserted content. Deleted/new forms and all implementation
 or workflow changes retain ordinary guide requirements.
+
+## Native high-refresh PR sequence (2026-10-24)
+
+Root AGENTS records the user's request to consolidate related native-high-refresh
+work into the current PR and verify it has merged into main before opening a
+successor. Keep repairs on the existing PR; branch history or a local merge alone
+is not proof of the remote PR's merge state. Required checks remain in force.
+
+The repository-context order test includes the post-handoff surface capture/render
+tail, with render last. Preserve dependency assertions when extending the loader;
+a stale last-patch assertion is not evidence of a loader failure.

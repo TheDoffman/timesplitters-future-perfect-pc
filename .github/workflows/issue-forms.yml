@@ -2,6 +2,19 @@ name: Issue form tests
 
 on:
   pull_request:
+    paths:
+      - .github/ISSUE_TEMPLATE/**
+      - .github/workflows/issue-forms.yml
+      - .github/workflows/issue-labels.yml
+      - .github/workflows/issue-form-versions.yml
+      - .github/workflows/known-issues.yml
+      - .github/known-issues.json
+      - tools/issue-forms.py
+      - tools/known-issues.py
+      - tests/test_issue_forms.py
+      - tests/test_known_issues.py
+      - VERSION
+      - tools/launcher/LauncherVersion.cs
   push:
     branches: [main]
     paths:

@@ -243,6 +243,10 @@ static void pc_network_bots_guest_score_network(void (*original)(void))
        pointer and must retain the network path (including score offsets).
        The stock reliable results packet already carries all 16 slots. */
     else if(caller==0x00063f05u) slot=g_esi;
+    /* Round score-limit scan uses EDI as its actor slot. Its network branch
+       filters controller flags, which are absent for AI even after scoring.
+       Retain the original limit/team/authority decisions after eligibility. */
+    else if(caller==0x00067868u) slot=g_edi;
     /* A dead bot keeps its score row even while its body is missing. */
     if(pc_network_bots_guest_actor(slot)) {g_eax=0;g_esp+=4u;return;}
 #endif

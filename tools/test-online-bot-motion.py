@@ -88,7 +88,35 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--seconds', type=int, default=60)
+    parser.add_argument('--host-fps', type=int, choices=(0,120,180,240), default=0,
+                        help='0 uses Original60; other values select native beta timing')
+    parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
+    parser.add_argument('--no-captures', action='store_true')
+    parser.add_argument('--require-results', action='store_true',
+                        help='Wait up to --seconds for both peers to finish and publish score rows')
+    parser.add_argument('--post-results-seconds', type=int, default=0,
+                        help='Keep observing up to 30 seconds after final records, then capture the menu')
+    parser.add_argument('--inspect-results-tabs', action='store_true',
+                        help='After the Results menu, press its Next prompt to capture Scores and Options')
+    parser.add_argument('--rematch', action='store_true',
+                        help='Use the reviewed Options rematch route and verify a fresh active round')
+    parser.add_argument('--require-rematch-results', action='store_true',
+                        help='Also wait for the fresh rematch to finish and compare both final records')
+    parser.add_argument('--inspect-setup', action='store_true',
+                        help='Capture the normal setup screens, then stop before gameplay')
+    parser.add_argument('--short-match', action='store_true',
+                        help='Select five-point Deathmatch through the stock setup menu')
     args = parser.parse_args()
+    if args.inspect_setup and args.require_results:
+        parser.error('--inspect-setup cannot satisfy --require-results')
+    if not 0<=args.post_results_seconds<=30 or (args.post_results_seconds and not args.require_results):
+        parser.error('--post-results-seconds requires --require-results and 0..30 seconds')
+    if args.inspect_results_tabs and args.post_results_seconds<20:
+        parser.error('--inspect-results-tabs requires at least 20 post-results seconds')
+    if args.rematch and not args.inspect_results_tabs:
+        parser.error('--rematch requires --inspect-results-tabs')
+    if args.require_rematch_results and not args.rematch:
+        parser.error('--require-rematch-results requires --rematch')
     if not args.tag.replace('-', '').isalnum() or not 10 <= args.seconds <= 180:
         parser.error('Use an alphanumeric tag and 10..180 seconds')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
@@ -128,6 +156,8 @@ def main():
     drains=[]
     offsets={}
     samples = []
+    checkpoints = []
+    menu_inputs = []
     completed=False
     started = time.monotonic()
     def read(peer, address, size):
@@ -142,6 +172,28 @@ def main():
         return data.raw
     def word(peer, address):
         return struct.unpack('<I', read(peer, address, 4))[0]
+    def menu_state(peer):
+        # US77470 follows persistent view-root children; callback context
+        # 7BB1E8 and transition target7BA270 are normally zero between calls.
+        menu=word(peer,0x7ba26c)
+        for _ in range(16):
+            child=word(peer,menu+0x170) if menu else 0
+            if not child:break
+            menu=child
+        if not menu:raise OSError('No persistent menu')
+        rows=[];node=word(peer,menu+0x178)
+        while node and len(rows)<32:
+            row=dict(address=node,id=word(peer,node+0x14),choice=word(peer,node+0xc8))
+            if row['id']==7:
+                choice=word(peer,node+0xd8);labels=[]
+                while choice and len(labels)<64:
+                    # US717D0 stores choice text at+4;75430 follows+10.
+                    label=word(peer,choice+4)
+                    labels.append(read(peer,label,96).split(b'\0',1)[0].decode('latin1'))
+                    choice=word(peer,choice+0x10)
+                row['labels']=labels
+            rows.append(row);node=word(peer,node+4)
+        return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
         for peer in range(len(handles)):
             try:
@@ -162,7 +214,8 @@ def main():
                         spawn=word(peer, entity+0x258),
                         health=struct.unpack('<f', read(peer, entity+0x1cc, 4))[0]))
                 samples.append(dict(seconds=time.monotonic()-started, peer=peer,
-                    tick=word(peer, 0x7de318), humans=config[0], bots=config[2], actors=actors))
+                    tick=word(peer, 0x7de318), match_state=word(peer,0x7de30c),
+                    humans=config[0], bots=config[2], actors=actors))
             except OSError:
                 pass
     def wait(seconds):
@@ -172,39 +225,132 @@ def main():
                 raise RuntimeError('A game exited early')
             observe()
             time.sleep(.008)
-    def key(peer, *keys):
+    def key(peer, *keys, hold=.18):
         for value in keys:
             atomic(inputs[peer], f'{value} 1\n')
-            wait(.3)
+            wait(hold)
             atomic(inputs[peer], '0 0\n')
             wait(.6)
+    def wait_alive(slot):
+        # Combat can kill the client before its scheduled input. A corpse's
+        # matching coordinates are not evidence of movement replication.
+        deadline=time.monotonic()+15
+        while time.monotonic()<deadline:
+            actors=[]
+            try:
+                for peer in range(2):
+                    entity=word(peer,word(peer,0x7356d8)+slot*0xea0)
+                    actors.append((word(peer,entity+0x258),
+                                   struct.unpack('<f',read(peer,entity+0x1cc,4))[0]))
+                if actors[0][0]==actors[1][0] and all(a[1]>0 for a in actors):
+                    return
+            except OSError:
+                pass
+            wait(.1)
+        raise RuntimeError(f'Player {slot} did not become alive on both peers')
     def report(label):
+        observe()
         states = []
         for peer in range(len(handles)):
             try:
+                config=read(peer,0x7de400,0xa0)
+                pool=word(peer,0x7356d8)
+                actors=[]
+                if pool and word(peer,0x7de30c)==7 and 0<config[0]+config[2]<=16:
+                    for slot in range(config[0]+config[2]):
+                        actor=pool+slot*0xea0
+                        actors.append(dict(slot=slot,
+                            kills=struct.unpack('<16h',read(peer,actor+0xa10,32)),
+                            score=struct.unpack('<i',read(peer,actor+0xa6c,4))[0],
+                            controller_flags=read(peer,0x77728c+slot*0x124,1)[0]))
                 states.append(dict(peer=peer, network=word(peer, 0x76b1a4),
-                    role=word(peer, 0x76b140), config=list(read(peer, 0x7de400, 3))))
+                    role=word(peer, 0x76b140), config=list(config[:3]),
+                    match_state=word(peer,0x7de30c),results_ready=word(peer,0x6f1188),
+                    score_limit=word(peer,0x7de464),
+                    active_config=config.hex(),pending_config=read(peer,0x78ad58,0xa0).hex(),
+                    actor_counts=[word(peer,0x790950),word(peer,0x7a2958)],actors=actors))
+                if label in ('options-settings-initial','short-match-settings','options-settings'):
+                    try:
+                        states[-1]['menu']=menu_state(peer)
+                    except OSError as error:
+                        states[-1]['menu_error']=str(error)
             except OSError:
                 states.append(dict(peer=peer, unmapped=True))
-        print(round(time.monotonic()-started, 1), label, states, flush=True)
+        print(round(time.monotonic()-started, 1), label,
+              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors','menu')}
+               for state in states], flush=True)
+        checkpoints.append(dict(label=label, seconds=time.monotonic()-started,
+            states=states, observations=[next((s for s in reversed(samples) if s['peer']==peer),None)
+                                         for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if label in ('startup','profiles','frontend','match','finished'):
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
+                                              'scores-tab','options-tab','rematch','rematch-results','finished',
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings'):
             for peer, child in enumerate(children):
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
+    def await_results(label):
+        # Called only after active gameplay; rematches additionally require the
+        # existing reset checks for clock, result-ready state, roster and scores.
+        deadline=time.monotonic()+args.seconds
+        while time.monotonic()<deadline:
+            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
+                break
+            wait(.1)
+        else:
+            report(label+'-timeout')
+            raise RuntimeError('Both peers did not complete within the bounded results wait')
+        wait(2)  # Let the existing reliable final packet settle.
+        report(label)
+        results=[]
+        for peer in (0,1):
+            rows=[]
+            for index in range(8):
+                row=read(peer,0x6f0b08+index*0x68,0x68)
+                rows.append(dict(index=index,slot=row[0],
+                    name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
+                    kills=struct.unpack_from('<16h',row,2),
+                    deaths=struct.unpack_from('<h',row,0x4e)[0],
+                    rank=struct.unpack_from('<i',row,0x58)[0],
+                    score=struct.unpack_from('<i',row,0x5c)[0],
+                    character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
+            results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
+                                ready=word(peer,0x6f1188),rows=rows))
+        (out/(label+'.json')).write_text(json.dumps(results,indent=2))
+        for result in results:
+            assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
+            assert all(r['name'] for r in result['rows']), 'Missing results names'
+        def records(result):
+            return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
+                           for row in result['rows']],key=lambda row:row['slot'])
+        assert records(results[0])==records(results[1]), 'Host/client final results differ'
+        if args.short_match:
+            assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
+
     try:
         for peer in range(2):
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
             env = prepare_run(ROOT, run)
             runs.append(run)
+            if (run/'pc-frame-rate.ini').exists():
+                raise ValueError('Saved FPS preference could override this test; use a fresh tag')
             input_path = run/'input.txt'
             atomic(input_path, '0 0\n')
             inputs.append(input_path)
+            # Match stability_transitions_game: distinct presses for title,
+            # player count and Test Lab selection. Never rely on a held Select
+            # leaking through two screens at a particular frame-rate phase.
+            replay = run/'startup.txt'
+            initial = [(5000,69),(10000,69),(14000,40),(18000,69)]
+            replay.write_text('\n'.join(f'{at+d} key {key} {value}'
+                for at,key in initial for d,value in ((0,1),(180,0)))+'\n')
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
                 directory=url, port=host_port, automatic_host=False, detect_public_address=False)))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
+                TSFP_PC_INPUT_REPLAY=str(replay),
+                TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
                 TSFP_ONLINE_TEST_COMMAND=str(command), TSFP_ONLINE_SETTINGS=str(run/'online.json'),
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
             (run/'run.lock').write_text(str(os.getpid()))
@@ -221,14 +367,6 @@ def main():
                 worker.start();drains.append(worker)
             handles.append(K.OpenProcess(0x10, False, children[-1].pid))
         wait(25)
-        report('startup')
-        for peer in range(2):
-            key(peer,69)
-        wait(2)
-        report('profiles')
-        for peer in range(2):
-            key(peer,40,69)
-        wait(3)
         report('frontend')
         for peer in range(2):
             key(peer, 40, 40, 40, 69)
@@ -250,10 +388,46 @@ def main():
         # Select Deathmatch using the stock Options flow. Keep fixture bots.
         key(0, 89)
         wait(3)
+        if args.inspect_setup:report('options-root')
         key(0, 69)
         wait(2)
+        if args.inspect_setup:report('options-mode')
         key(0, 69)
         wait(2)
+        if args.short_match:
+            report('options-settings-initial')
+            initial=menu_state(0)
+            score=next(r for r in initial['rows'] if r['id']==7)
+            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(r'\s*5\s+points?\s*',label,re.I)]
+            assert len(targets)==1, 'Could not identify the five-point menu choice'
+            def menu_key(value):
+                before=menu_state(0)
+                key(0,value)
+                after=menu_state(0)
+                menu_inputs.append(dict(key=value,seconds=time.monotonic()-started,
+                                        before=before,after=after))
+            for _ in range(32):
+                if menu_state(0)['selected']==7:break
+                menu_key(38)
+            else:raise RuntimeError('Score-limit row did not become selected')
+            for _ in range(32):
+                current=menu_state(0)
+                assert current['selected']==7, 'Score-limit focus changed'
+                choice=next(r['choice'] for r in current['rows'] if r['id']==7)
+                if choice==targets[0]:break
+                menu_key(37 if choice>targets[0] else 39)
+            else:raise RuntimeError('Five-point menu choice did not become selected')
+            for _ in range(32):
+                if menu_state(0)['selected']==19:break
+                menu_key(40)
+            else:raise RuntimeError('GO row did not become selected')
+            def other_choices(state):
+                return {r['id']:r['choice'] for r in state['rows'] if r['id'] not in (7,0xffffffff)}
+            assert other_choices(initial)==other_choices(menu_state(0)), 'Unrelated menu choice changed'
+            report('short-match-settings')
+        if args.inspect_setup:
+            report('options-settings')
+            return
         key(0, 69)
         wait(5)
         key(1, 82)
@@ -266,13 +440,55 @@ def main():
         key(0, 69)
         wait(18)
         report('match')
+        if args.short_match:
+            assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
         # Movement of each human remains independently observable.
         for peer in range(2):
+            wait_alive(peer)
+            report(f'move-{peer}-start')
             atomic(inputs[peer], '87 1\n')
             wait(2)
             atomic(inputs[peer], '0 0\n')
+            report(f'move-{peer}-released')
             wait(2)
-        wait(args.seconds)
+            report(f'move-{peer}-settled')
+        if args.require_results:
+            await_results('results')
+            if args.post_results_seconds:
+                wait(args.post_results_seconds)
+                report('post-results')
+            if args.inspect_results_tabs:
+                for label in ('scores-tab','options-tab'):
+                    for peer in (0,1):key(peer,69)
+                    wait(2)
+                    report(label)
+            if args.rematch:
+                previous_ticks=[word(peer,0x7de318) for peer in (0,1)]
+                # Reviewed Options: guest defaults to Rematch; host has Change
+                # Game Type above it. Let the guest request before the host.
+                key(1,69)
+                key(0,40,69)
+                deadline=time.monotonic()+30
+                while time.monotonic()<deadline:
+                    if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and
+                           word(peer,0x6f1188)==0 and word(peer,0x7de318)<previous_ticks[peer]
+                           for peer in (0,1)):
+                        break
+                    wait(.1)
+                else:
+                    report('rematch-timeout')
+                    raise RuntimeError('Rematch did not become a fresh active round on both peers')
+                report('rematch-start')
+                for peer in (0,1):
+                    pool=word(peer,0x7356d8)
+                    assert pool and read(peer,0x7de400,3)==bytes((2,1,6)), 'Rematch roster changed'
+                    assert all(word(peer,pool+slot*0xea0+0xa6c)==0 for slot in range(8)), 'Rematch retained scores'
+                wait(10)
+                report('rematch')
+                if args.require_rematch_results:
+                    await_results('rematch-results')
+        else:
+            wait(args.seconds)
         report('finished')
         assert all(any(s['peer']==peer and s['humans']==2 and s['bots']>0 for s in samples)
                    for peer in (0,1)), 'No paired bot gameplay'
@@ -296,8 +512,19 @@ def main():
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
         (out/'observations.json').write_text(json.dumps(samples))
+        (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
+        (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         (out/'provenance.json').write_text(json.dumps(dict(
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
+            runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
+            require_results=args.require_results,
+            post_results_seconds=args.post_results_seconds,
+            inspect_results_tabs=args.inspect_results_tabs,
+            rematch=args.rematch,
+            require_rematch_results=args.require_rematch_results,
+            inspect_setup=args.inspect_setup,
+            short_match=args.short_match,
             compatibility=identity['compatibility'], observation='asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
             completed=completed, exit_codes_before_cleanup=exit_codes,

@@ -2,6 +2,7 @@
  * they own selection replacement, byte/visible-width limits, sounds, callbacks
  * and saving. No host thread writes guest text or profile memory. */
 #include "pc_text_input.h"
+#include "pc_guest_memory.h"
 extern void sub_0007DB20(void),sub_0007C410(void),sub_0007C300(void),sub_0007C390(void);
 extern void sub_0007C4F0(void),sub_0007CDE0(void),sub_000746D0(void);
 extern void sub_0007CCA0(void),sub_00071940(void);
@@ -10,10 +11,20 @@ extern void sub_0007CCA0(void),sub_00071940(void);
  * their own descriptors. Identify the live keyboard rows, not just the
  * standalone dialog descriptor; stale edit-buffer fields survive page changes. */
 static uint32_t menu_text_row(uint32_t menu,uint32_t callback,uint32_t id) {
+    /* This scan calls no guest routines or event handlers. Reuse one live VM
+     * region only until the scan returns; menu ticks can replace these rows. */
+    PcGuestRegion region={0};
     uint32_t item=WORD_AT(menu+0x178);
-    for(unsigned n=0;item && n<256 && guest_writable(item,0x10c);n++,item=WORD_AT(item+4))
+    for(unsigned n=0;item && n<256;n++,item=WORD_AT(item+4)) {
+        if(0x10cu>UINT32_MAX-item)break;
+        uintptr_t host=(uintptr_t)item+g_xbox_mem_offset;
+        if(pc_guest_region_remaining(&region,host,1)<0x10c) {
+            region=pc_guest_query_region(host);
+            if(pc_guest_region_remaining(&region,host,1)<0x10c)break;
+        }
         if(WORD_AT(item+0x38)==callback &&
            (id==UINT32_MAX || WORD_AT(item+0x14)==id))return item;
+    }
     return 0;
 }
 static int menu_text_keyboard(uint32_t menu) {

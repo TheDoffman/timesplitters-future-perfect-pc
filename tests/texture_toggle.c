@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #ifndef _WIN32
 static int _putenv_s(const char *name,const char *value) {
     return *value ? setenv(name,value,1) : unsetenv(name);
@@ -16,6 +21,52 @@ static int _putenv_s(const char *name,const char *value) {
 
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 static int images, views, allocations, fail_view;
+#ifdef TSFP_TEST_BINDING_SYNC
+/* Pytest extracts this helper from the fully patched runtime. The standalone
+ * CMake target exercises the same loader without that generated fixture. */
+static unsigned rebinds;
+static struct {void *image;} *g_cur_rt;
+static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
+#include "texture_binding_sync.inc"
+static unsigned frame_completions, host_presents;
+static BOOL g_skip_guest_present;
+static UINT g_present_interval=1;
+static DWORD g_d3d_begin_count,g_d3d_end_count,g_d3d_clear_count,g_d3d_draw_count;
+static DWORD g_d3d_settransform_count,g_d3d_setrs_count,g_d3d_settexture_count;
+static void follow_vrr(void) {}
+static void two_d_tag_frame(void) {}
+static void present_scene(void) {}
+static void d3d8_display_frame_done(void) {}
+void rhi_pump_events(void) {}
+int32_t rhi_present_kind(uint32_t interval,uint32_t kind)
+{if(interval!=1 || kind!=RHI_PRESENT_GUEST)abort();host_presents++;return 0;}
+static DWORD texture_test_tick(void) {return 1;}
+static void texture_test_complete(void) {frame_completions++;tsfp_texture_frame_complete();}
+#define GetTickCount texture_test_tick
+#define tsfp_texture_frame_complete texture_test_complete
+#include "texture_frame_dispatch.inc"
+#undef tsfp_texture_frame_complete
+#undef GetTickCount
+#endif
+static int finish(D3D8Texture *texture)
+{
+    for(int i=0;i<2000;i++) {
+#ifdef TSFP_TEST_BINDING_SYNC
+        /* Future Perfect uses Swap, rather than the older Present entry. */
+        if(dev_Swap(NULL,0)!=S_OK)return 0;
+#else
+        tsfp_texture_frame_complete();
+#endif
+        if(texture->pack_checked<2)return 1;
+        (void)tsfp_texture_view(texture); /* retry a saturated queue */
+#ifdef _WIN32
+        Sleep(1);
+#else
+        usleep(1000);
+#endif
+    }
+    return 0;
+}
 RhiFormat d3d8_to_dxgi_format(D3DFORMAT fmt) { return (RhiFormat)fmt; }
 RhiImage *rhi_image_create(const RhiImageDesc *desc,const RhiSubresourceData *data)
 {
@@ -49,16 +100,28 @@ int main(int argc,char **argv)
     char path[4096]; int initial, cached_allocations;
     RhiView *cached;
     CHECK(argc==3);
+#ifdef TSFP_TEST_BINDING_SYNC
+    CHECK(dev_Swap(NULL,0)==S_OK && frame_completions==1 && host_presents==1);
+    g_skip_guest_present=TRUE;
+    CHECK(dev_Swap(NULL,0)==S_OK && frame_completions==1 && host_presents==1);
+    CHECK(dev_Present(NULL,NULL,NULL,NULL,NULL)==S_OK && frame_completions==2 && host_presents==2);
+#endif
+    if(!getenv("TSFP_TEXTURE_STREAMING"))_putenv_s("TSFP_TEXTURE_STREAMING","1");
     _putenv_s("TSFP_TEXTURE_DUMP_DIR","");
     _putenv_s("TSFP_TEXTURE_PACK_DIR",!strcmp(argv[2],"missing") ? "" : argv[1]);
     _putenv_s("TSFP_TEXTURE_MODE",!strcmp(argv[2],"implicit") ? "" : argv[2]);
     /* getenv returns an empty string as unset with _putenv_s on Windows. */
     initial=!strcmp(argv[2],"4k") || !strcmp(argv[2],"implicit");
     CHECK(tsfp_texture_is_4k()==initial);
+#ifdef TSFP_TEST_BINDING_SYNC
+    tsfp_texture_sync_bindings();CHECK(rebinds==1);
+    tsfp_texture_sync_bindings();CHECK(rebinds==1);
+#endif
     texture.width=texture.height=4;texture.d3d8_format=12;texture.sys_mem=data;
     texture.srv=(RhiView *)(uintptr_t)1;
     snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",argv[1],tsfp_texture_key(12,4,4,data,8));
     CHECK(fixture(path,1));
+    if(!initial && strcmp(argv[2],"missing"))CHECK(remove(path)==0);
     tsfp_texture_upload(&texture);
     if(!strcmp(argv[2],"missing")) {
         CHECK(!images && !views && !texture.pack_srv);
@@ -67,9 +130,34 @@ int main(int argc,char **argv)
         CHECK(remove(path)==0);
         puts("PASS: absent pack falls back to Classic in both modes"); return 0;
     }
+    if(!initial) {
+        CHECK(texture.pack_checked==3 && !images && !views && !allocations);
+        for(int i=0;i<20;i++) {
+            tsfp_texture_frame_complete();
+            CHECK(tsfp_texture_view(&texture)==texture.srv && texture.pack_checked==3);
+        }
+        uint64_t old_key=texture.pack_key;
+        texture.sys_mem=changed;tsfp_texture_upload(&texture);
+        CHECK(texture.pack_checked==3 && texture.pack_key!=old_key && !allocations);
+        texture.sys_mem=data;tsfp_texture_upload(&texture);
+        CHECK(texture.pack_checked==3 && texture.pack_key==old_key && !allocations);
+        /* If Classic tried the absent file, this later activation would retain
+         * a failed check instead of loading the newly available fixture. */
+        CHECK(fixture(path,1));tsfp_texture_set_4k(1);
+        (void)tsfp_texture_view(&texture);
+    }
+    if(strcmp(getenv("TSFP_TEXTURE_STREAMING"),"0")) {
+        CHECK(!images && !views && !texture.pack_srv);
+        CHECK(tsfp_texture_view(&texture)==texture.srv);
+    }
+    CHECK(finish(&texture));
+#ifdef TSFP_TEST_BINDING_SYNC
+    tsfp_texture_sync_bindings();CHECK(rebinds==2);
+    tsfp_texture_sync_bindings();CHECK(rebinds==2);
+#endif
     CHECK(images==1 && views==1 && texture.pack_bytes==24);
     cached=texture.pack_srv;cached_allocations=allocations;
-    CHECK(tsfp_texture_view(&texture)==(initial?cached:texture.srv));
+    CHECK(tsfp_texture_view(&texture)==cached);
     tsfp_texture_set_4k(1);tsfp_texture_set_4k(1);
     CHECK(tsfp_texture_view(&texture)==cached);
     tsfp_texture_set_4k(0);tsfp_texture_set_4k(0);
@@ -88,21 +176,30 @@ int main(int argc,char **argv)
     texture.usage=0;CHECK(tsfp_texture_view(&texture)==cached);
     missing=texture;missing.pack_srv=NULL;missing.pack_image=NULL;missing.pack_bytes=0;
     missing.pack_checked=0;missing.sys_mem=changed;
-    tsfp_texture_upload(&missing);CHECK(tsfp_texture_view(&missing)==missing.srv);
+    tsfp_texture_upload(&missing);CHECK(finish(&missing));
+    CHECK(tsfp_texture_view(&missing)==missing.srv);
     bad=missing;bad.usage=1;bad.sys_mem=data;
     tsfp_texture_upload(&bad);CHECK(!bad.pack_srv);
     bad.usage=0;bad.screen_copy=1;tsfp_texture_upload(&bad);CHECK(!bad.pack_srv);
     bad.screen_copy=0;bad.pack_checked=0;
-    CHECK(fixture(path,0));tsfp_texture_upload(&bad);CHECK(!bad.pack_srv);
+    CHECK(fixture(path,0));tsfp_texture_upload(&bad);CHECK(finish(&bad));CHECK(!bad.pack_srv);
     CHECK(fixture(path,1));bad.pack_checked=0;fail_view=1;
-    tsfp_texture_upload(&bad);CHECK(!bad.pack_srv && !bad.pack_image && images==1);
+    tsfp_texture_upload(&bad);CHECK(finish(&bad));CHECK(!bad.pack_srv && !bad.pack_image && images==1);
     fail_view=0;bad.pack_checked=0;tsfp_texture_upload(&bad);
+    CHECK(finish(&bad));
     CHECK(bad.pack_srv && images==2 && views==2);
     tsfp_texture_release(&bad);CHECK(images==1 && views==1);
     texture.sys_mem=changed;tsfp_texture_upload(&texture);
     CHECK(!texture.pack_srv && !texture.pack_bytes && !images && !views);
     CHECK(tsfp_texture_view(&texture)==texture.srv);
     tsfp_texture_release(&texture);tsfp_texture_release(&texture);
+    tsfp_texture_release(&missing);
+    /* A canceled request must not resurrect the old view after owner reuse. */
+    texture.sys_mem=data;tsfp_texture_upload(&texture);
+    tsfp_texture_release(&texture);texture.sys_mem=changed;
+    tsfp_texture_upload(&texture);CHECK(finish(&texture));
+    CHECK(!texture.pack_srv && !images && !views);
+    tsfp_texture_release(&texture);
     CHECK(!images && !views);CHECK(remove(path)==0);
     puts("PASS: live cached view switches, original preservation, missing/invalid pack fallback, screen-copy exclusion, content changes and cleanup");
     return 0;

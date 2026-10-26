@@ -12,7 +12,7 @@
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static SDL_AudioDeviceID device;
 static int initialized;
-static float master_gain = 1.0f;
+static float master_gain = RECOMP_AUDIO_DEFAULT_GAIN;
 static struct { SDL_AudioStream *stream; SDL_AudioSpec spec; } voices[SLOT_COUNT];
 
 void recomp_audio_output_initialize(void)

@@ -141,13 +141,77 @@ static void lifecycle(void) {
     for(unsigned view=0;view<6;view++)assert(MEM32(RESOURCE+4+view*4)==0xffffffff);
     step(100,200,1,1,1);assert(updates==5);
 }
+static void forced_motion(void) {
+    const unsigned rates[]={60,120,144,180,240};
+    const float mixed[]={.5f,.25f,1.f/3,5.f/12};
+    for(unsigned slow=0;slow<2;slow++)
+    for(unsigned damped=0;damped<2;damped++)for(unsigned forced=0;forced<2;forced++)
+    for(unsigned r=0;r<6;r++) {
+        unsigned fps=r<5?rates[r]:240;float speed=slow?.25f:1;
+        setup(0);g_tsfp_native_timing_active=r!=0;
+        for(unsigned i=0;i<2048;i++)MEMF(0x7a38a0+4*i)=1;
+        MEMF(PARAMS+8)=4;MEMF(PARAMS+12)=-2;
+        MEMF(PARAMS+0x14)=forced?.12f:0;MEMF(PARAMS+0x18)=damped?.2f:0;
+        double drag=MEMF(PARAMS+0x18),a=1.f-MEMF(PARAMS+0x18)*speed;
+        double wind=(1.+MEMF(0x475cc8))*MEMF(PARAMS+0x14)*speed;
+        double b[]={4*wind,-2*wind},initial_v[]={2,-1},initial_uv[]={.1,.4};
+        double ticks=0;unsigned frame=0;
+        while(ticks<120) {
+            float raw=r==5?mixed[frame%4]:60.f/fps;
+            if(raw>120-ticks)raw=(float)(120-ticks);
+            double next=ticks+raw;
+            unsigned whole=(unsigned)(next*speed)-(unsigned)(ticks*speed);
+            MEMF(0x4e7948)=raw;MEM32(0x4e7940)=(unsigned)next-(unsigned)ticks;
+            step(++frame*2,100+(unsigned)next,(unsigned)(next*speed),whole,raw*speed);
+            if(frame==30) {
+                unsigned char before[0xc0];memcpy(before,(void *)(g_xbox_mem_offset+MATERIALS),sizeof before);
+                MEMF(0x4e7948)=0;MEM32(0x4e7940)=0;
+                step(frame*2+1,100+(unsigned)next,(unsigned)(next*speed),0,0);
+                assert(!memcmp(before,(void *)(g_xbox_mem_offset+MATERIALS),sizeof before));
+            }
+            ticks=next;
+        }
+        double n=120,power=pow(a,n),g=drag?(1-power)/(1-a):n;
+        double h=a*g,k=drag?(n-h)/(1-a):n*(n+1)/2;
+        printf("forced_surface fps=%u mode=%u slow=%u drag=%u force=%u u=%.9f v=%.9f vu=%.9f vv=%.9f\n",
+               fps,r,slow,damped,forced,MEMF(MATERIALS+0xb0),MEMF(MATERIALS+0xb4),
+               MEMF(MATERIALS+0xa8),MEMF(MATERIALS+0xac));
+        for(unsigned axis=0;axis<2;axis++) {
+            double v=power*initial_v[axis]+b[axis]*g;
+            double uv=initial_uv[axis]+speed*(h*initial_v[axis]+b[axis]*k)/(60*64);
+            /* Authored wrapping removes at most one turn per update. */
+            uv-=floor(uv);
+            printf("forced_surface_error axis=%u velocity=%.9f uv=%.9f\n",axis,
+                   MEMF(MATERIALS+0xa8+axis*4)-v,MEMF(MATERIALS+0xb0+axis*4)-uv);
+            assert(fabs(MEMF(MATERIALS+0xa8+axis*4)-v)<.001);
+            assert(fabs(MEMF(MATERIALS+0xb0+axis*4)-uv)<.0001);
+        }
+    }
+    /* Disabled, whole/catch-up, pause and unsupported real-power bases keep
+     * the original five material floats bit-for-bit, including overshoot. */
+    const float fallback[][3]={{1,1,.2f},{2,2,.2f},{.5f,0,.2f},
+                               {.5f,.5f,1.5f},{.5f,.5f,-.2f}};
+    for(unsigned c=0;c<sizeof fallback/sizeof fallback[0];c++) {
+        unsigned char reference[20];
+        for(unsigned native=0;native<2;native++) {
+            setup(0);g_tsfp_native_timing_active=native;
+            for(unsigned i=0;i<2048;i++)MEMF(0x7a38a0+4*i)=1;
+            MEMF(PARAMS+8)=4;MEMF(PARAMS+12)=-2;MEMF(PARAMS+0x14)=.12f;
+            MEMF(PARAMS+0x18)=fallback[c][2];
+            MEMF(0x4e7948)=fallback[c][0];MEM32(0x4e7940)=1;
+            step(1,100,1,1,fallback[c][1]);
+            if(!native)memcpy(reference,(void *)(g_xbox_mem_offset+MATERIALS+0xa8),sizeof reference);
+            else assert(!memcmp(reference,(void *)(g_xbox_mem_offset+MATERIALS+0xa8),sizeof reference));
+        }
+    }
+}
 int main(void) {
     void *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)memory;
     /* ORIGINAL_CONSTANTS */
     setvbuf(stdout,NULL,_IONBF,0);
-    unsigned losses=0;const unsigned rates[]={60,120,144};
+    unsigned losses=0;const unsigned rates[]={60,120,144,180,240};
     for(unpatched=1;unpatched>=0;unpatched--)for(unsigned slow=1;slow<=4;slow*=4)
-    for(unsigned r=0;r<3;r++)
+    for(unsigned r=0;r<sizeof(rates)/sizeof(rates[0]);r++)
     for(unsigned phase=0;phase<4;phase++)for(unsigned view=0;view<4;view+=3) {
         setup(view);g_tsfp_native_timing_active=1;
         unsigned previous=0;
@@ -155,7 +219,21 @@ int main(void) {
             unsigned tick=f*60/(rates[r]*slow),whole=tick-previous;
             unsigned vblank=100+(f*60*4+phase*rates[r])/(rates[r]*4);
             unsigned before=updates;
+            float prior_u=MEMF(MATERIALS+0xb0),prior_v=MEMF(MATERIALS+0xb4);
+            float prior_phase=MEMF(MATERIALS+0xb8);
             step(f,vblank,tick,whole,60.f/(rates[r]*slow));
+            /* Every fractional frame must advance the original material's
+             * scrolling and phase, even when its discrete GPU image holds.
+             * Compare the independent constant-velocity solution each step. */
+            double seconds=(double)f/(rates[r]*slow);
+            for(unsigned material=0;material<2;material++) {
+                uint32_t p=MATERIALS+material*0xc0;
+                assert(fabs(MEMF(p+0xb0)-(.1+2*seconds/64))<.0001);
+                assert(fabs(MEMF(p+0xb4)-(.4-seconds/64))<.0001);
+                assert(fabs(MEMF(p+0xb8)-.1*seconds)<.0001);
+            }
+            assert(MEMF(MATERIALS+0xb0)>prior_u && MEMF(MATERIALS+0xb4)<prior_v);
+            assert(MEMF(MATERIALS+0xb8)>prior_phase);
             assert(updates-before<=1 && (whole || updates==before));
             if(!unpatched)assert(updates-before==(whole?1u:0u));
             previous=tick;
@@ -198,6 +276,7 @@ int main(void) {
     setup(0);g_tsfp_native_timing_active=0;
     step(1,100,1,1,0);assert(updates==1);
     lifecycle();
+    forced_motion();
     puts("PASS: procedural texture cadence, original UV motion, resource allocation/reuse and per-view cache lifetime");
     free(memory);return 0;
 }

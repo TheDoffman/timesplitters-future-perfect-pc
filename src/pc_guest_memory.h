@@ -58,4 +58,15 @@ static inline int pc_guest_memory(uintptr_t address,size_t bytes,int writing)
 {
     return bytes<=UINTPTR_MAX-address && bytes<=pc_guest_region(address,writing);
 }
+/* Reuse a caller-owned snapshot only within one uninterrupted host operation.
+ * Initialize to zero each time; never carry it through guest calls, callbacks,
+ * allocations or protection changes. Reads never grant write permission. */
+static inline int pc_guest_memory_in_region(PcGuestRegion *region,
+                                           uintptr_t address,size_t bytes,int writing)
+{
+    if(bytes>UINTPTR_MAX-address)return 0;
+    if(bytes<=pc_guest_region_remaining(region,address,writing))return 1;
+    *region=pc_guest_query_region(address);
+    return bytes<=pc_guest_region_remaining(region,address,writing);
+}
 #endif

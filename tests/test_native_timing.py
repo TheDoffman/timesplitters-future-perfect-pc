@@ -16,17 +16,26 @@ class ObjectRockingQuantization(AssertionError):
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
-        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_surface_trace.c', 'native_surface_precision.c')
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
-     ('native_network_cadence.c', 'render-refresh')])
+     ('native_network_cadence.c', 'render-refresh'),
+     ('native_surface_interval.c', 'reset-phase')])
 def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
-    includes = [runtime, runtime / 'config', ROOT / 'src']
+    includes = [runtime, runtime / 'config', runtime / 'd3d', ROOT / 'src']
     output = tmp_path / ('native-timing.exe' if os.name == 'nt' else 'native-timing')
     source_path = ROOT / 'tests' / source
-    if mutation:
+    if mutation == 'reset-phase':
+        adapter = (ROOT / 'src/graphics/surface_interval.h').read_text(encoding='utf-8')
+        needle = 'PcSurfaceInterval result={0};'
+        assert adapter.count(needle) == 1
+        (tmp_path / 'graphics').mkdir()
+        (tmp_path / 'graphics/surface_interval.h').write_text(adapter.replace(needle, needle+' phase=0;'))
+        source_path = tmp_path / source
+        source_path.write_text((ROOT / 'tests' / source).read_text())
+    elif mutation:
         # Reject changing network clock units to rendered-frame counts. Keep
         # production files intact; mutate only this disposable translation unit.
         adapter = (ROOT / 'src/pc_network_guest.inc').read_text(encoding='utf-8')
@@ -68,7 +77,31 @@ def test_native_timing(source, mutation, tmp_path):
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     run_environment = {k:v for k,v in os.environ.items()
-                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE')}
+                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE',
+                                    'TSFP_CONTACT_TRACE', 'TSFP_CONTACT_TRACE_SLOT', 'TSFP_CONTACT_TRACE_Z',
+                                    'TSFP_CHARACTER_TRACE', 'TSFP_WALK_TRACE',
+                                    'TSFP_WALK_TRACE_SCENE', 'TSFP_WALK_TRACE_TICKS')}
+    if source == 'native_contact_trace.c':
+        import csv
+        subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
+        for mode in ('bounded', 'bytes', 'invalid'):
+            path=tmp_path / (mode+'.csv')
+            env=dict(run_environment, TSFP_CONTACT_TRACE=str(path), TSFP_CONTACT_TRACE_SLOT='2',
+                     TSFP_CONTACT_TRACE_Z='60,80' if mode!='invalid' else 'nan,80')
+            subprocess.run([str(output), mode], env=env, check=True, timeout=10)
+            if mode=='invalid':
+                assert not path.exists()
+                continue
+            rows=list(csv.DictReader(path.open()))
+            assert len(rows)==(4 if mode=='bytes' else 16000)
+            assert path.stat().st_size<=8*1024*1024
+            assert [r['source'] for r in rows[:4]]==['summary','generated','generated','selected']
+            assert all(None not in row and row['raw_count']=='2' and row['selected_count']=='1' for row in rows)
+        # Opening failure is sticky and must leave gameplay unaffected.
+        env=dict(run_environment, TSFP_CONTACT_TRACE=str(tmp_path/'absent'/'trace.csv'),
+                 TSFP_CONTACT_TRACE_SLOT='2', TSFP_CONTACT_TRACE_Z='60,80')
+        subprocess.run([str(output), 'invalid'], env=env, check=True, timeout=10)
+        return
     if source == 'native_pose_trace.c':
         run_environment['TSFP_NATIVE_POSE_TRACE'] = str(tmp_path / 'poses.csv')
     if source == 'native_surface_precision.c':
@@ -95,7 +128,8 @@ def test_native_timing(source, mutation, tmp_path):
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
         assert result.returncode != 0
-        expected = 'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40'
+        expected = ('p->begins_tick' if mutation == 'reset-phase' else
+                    'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40')
         assert expected in result.stderr, result.stdout + result.stderr
 
 
@@ -130,6 +164,69 @@ def test_global_store_observation_scope(encoding, observed):
     instruction=Disassembler().disassemble_function(raw,0x1000,0x1000+len(raw))[0]
     code='\n'.join(Lifter().lift_instruction(instruction))
     assert ('RECOMP_STORE_GLOBAL_U32(0x1000, 0x7DE318,' in code)==observed
+
+
+@pytest.mark.parametrize('encoding,observed', [
+    ('833d44794e0001', True),  # cmp dword [absolute],1
+    ('3b0544794e00', True),    # cmp eax,[absolute]
+    ('833b01', False),         # cmp dword [ebx],1
+    ('803d44794e0001', False), # byte
+    ('66833d44794e0001', False), # word
+    ('64833d0000000001', False), # fs segment
+    ('83f801', False),         # register
+    ('f70544794e0001000000', False), # TEST is not CMP
+])
+def test_global_compare_load_scope(encoding, observed):
+    sys.path.insert(0, str(ROOT / 'external/ts3FPrecomp'))
+    from tools.recomp.disasm import Disassembler
+    from tools.recomp.lifter import Lifter
+    raw=bytes.fromhex(encoding)
+    instruction=Disassembler().disassemble_function(raw,0x1000,0x1000+len(raw))[0]
+    code='\n'.join(Lifter().lift_instruction(instruction))
+    # Count executable expressions only, not the generated explanatory comment.
+    expressions='\n'.join(line.split('/*')[0] for line in code.splitlines())
+    assert expressions.count('RECOMP_LOAD_GLOBAL_U32(')==int(observed)
+
+
+@pytest.mark.parametrize('separated', [False, True])
+@pytest.mark.parametrize('mutation', [None, 'whole-tick-policy', 'unhooked-compare'])
+def test_reload_compare_gate(tmp_path, separated, mutation):
+    """Asset-free generated CMP/JL plus the production policy, also in CI."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    previous=dict(vars(config))
+    base=0x1c2f09
+    image=bytes.fromhex('833d44794e0001'+('90' if separated else '')+'7c06b801000000c331c0c3')
+    try:
+        config._install([config.Section('.text',base,len(image),0,len(image),True)],base,base,'reload-gate-test')
+        info={'end':base+len(image),'name':'reload_gate'}
+        code=FunctionTranslator(image,{base:info}).translate_function(base,info)
+    finally:
+        vars(config).update(previous)
+    policy=(ROOT/'src/pc_native_numeric.h').read_text(encoding='utf-8')
+    policy=policy.replace('"pc_gpu_ack.h"','"'+(ROOT/'src/pc_gpu_ack.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_material.h"','"'+(ROOT/'src/pc_native_material.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_statistics_guest.h"','"'+(ROOT/'src/pc_native_statistics_guest.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_trap_guest.h"','"'+(ROOT/'src/pc_native_trap_guest.h').as_posix()+'"')
+    if mutation=='whole-tick-policy':
+        assert policy.count('site == 0x1C2F09u')==1
+        policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')
+    if mutation=='unhooked-compare':
+        assert 'RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))' in code
+        code=code.replace('RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)')
+    (tmp_path/'numeric.h').write_text(policy,encoding='utf-8')
+    harness=(ROOT/'tests/native_reload_gate.c').read_text(encoding='utf-8')
+    harness=harness.replace('/* NUMERIC_POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(tmp_path / "numeric.h").as_posix()}"')
+    source=(harness.replace('/* GENERATED_GATE */',code)
+            .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
+            .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text()))
+    if mutation:
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
+            compile_and_run(tmp_path,source)
+    else:
+        output=compile_and_run(tmp_path,source)
+        assert 'reload_sweep trials=864 presses=1728' in output,output
 
 
 def test_native_update_statistics():
@@ -263,8 +360,13 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
+    ('native_walk_contact.c', [(0xc54a0,0xc5a4a)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_fractional.c', [(0x1950b0,0x195110),(0x195110,0x195277),(0x1956a0,0x19576d)]),
+    ('native_character_scale.c', [(0x125fe0,0x12609c),(0x120ab0,0x120c0f),(0x153440,0x153490),
+                                  (0x153600,0x153650),(0x153650,0x1536a0),(0x153270,0x1533e0)]),
+    ('native_character_effects.c', [(0x1260c0,0x126236),(0x11fec0,0x120102),
+                                    (0x151650,0x15178f),(0x151e80,0x151f1c)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -301,8 +403,19 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_menu_motion.c', [(0x2dab30,0x2dab77),(0x2daf90,0x2db005),
                             (0x2da0e0,0x2da440)]),
     ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
+    ('native_tree_motion.c', [(0x1d88b0,0x1d89d9)]),
+    ('native_trap_motion.c', [(0x12010,0x12017),(0x153c20,0x153c57),(0x1d8ab0,0x1d8c40)]),
+    ('native_trap_transform.c', [(0x12010,0x12017),(0x153c20,0x153c57),
+        (0x1d8ab0,0x1d8c40),(0x1d8c40,0x1d8c8b),
+        (0xa7360,0xa7666),(0xa14b0,0xa17ab),
+        (0x151650,0x15178f),(0x1518f0,0x151916),(0x151e80,0x151f1c),
+        (0x1531d0,0x1531fb),(0x153240,0x15326d),(0x153270,0x1533e0),
+        (0x153440,0x153490),(0x153600,0x153650),(0x153650,0x1536a0)]),
+    ('native_player_statistics.c', [(0xd1fd0,0xd2188),(0x150200,0x150226),
+                                   (0x2382b0,0x23833b),(0x238510,0x23854c)]),
     ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                               (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
+    ('native_reload_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d),(0x1c2e80,0x1c30f3),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_weapon_cooldown.c', [(0x1c320c,0x1c3274)]),
     ('native_weapon_fire.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                              (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
@@ -362,7 +475,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name=='native_analog_input.c':
+        if harness_name in ('native_analog_input.c','native_reload_input.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -393,7 +506,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -405,8 +518,10 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
-                          else [] if harness_name in ('native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
+                          else [] if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
+            if harness_name=='native_character_scale.c':
+                addresses.update(range(0x12609c,0x1260b4,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
                 # Captured projectile kinds and damage profiles. These are
                 # original table entries, not made-up falloff coefficients.
@@ -482,6 +597,28 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                 0x475ce8,0x475dbc,0x4783dc,0x47d3a4,0x47d564,
                                 0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578,
                                 0x475d28,0x4785cc,0x4785d0,0x4785d4,0x475ccc,0x475d40))
+        if harness_name=='native_player_statistics.c':
+            import struct
+            constants=f'MEM32(0x475c78)=0x{struct.unpack_from("<I",image,config.va_to_file_offset(0x475c78))[0]:08x};'
+        if harness_name in ('native_trap_motion.c','native_trap_transform.c'):
+            import struct
+            constants='\n'.join(
+                f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                for address in (0x478628,0x475c78,0x475d0c,0x475ce0,0x475cd4,
+                                0x475d28,0x4788fc,0x47cfdc,0x49dedc,
+                                0x47dc80,0x475c94))
+            if harness_name=='native_trap_transform.c':
+                constants+='\n'+'\n'.join(
+                    f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                    for address in range(0xa17ac,0xa17bc,4))
+        if harness_name=='native_tree_motion.c':
+            import struct
+            # Full doubles are loaded by the original x87 exponential path.
+            constants='\n'.join(
+                f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                for address in (0x475c78,0x49ded8,0x49ded0,0x49ded4,
+                                0x49dec8,0x49decc,0x47d7c8,0x47d7cc,
+                                0x47d1f4,0x47cfdc))
         if harness_name=='native_weapon_sound.c':
             import struct
             constants='\n'.join(
@@ -578,13 +715,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(ROOT/'tests'/harness_name).read_text()
-    if harness_name=='native_analog_input.c':
+    if harness_name in ('native_analog_input.c','native_reload_input.c'):
         wrapper=(ROOT/'src/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
         harness=harness.replace('/* INPUT_WRAPPER */',wrapper[start:end])
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
-    output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+    source=(harness.replace('/* NUMERIC_POLICY */',policy)
+                           .replace('/* PHASE_SWEEP */',(ROOT/'tests/reload_phase_sweep.h').read_text())
+                           .replace('/* TIMING_HEADER */',f'#include "{(ROOT / "src/pc_native_timing.h").as_posix()}"')
                            .replace('/* FIRE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* PROJECTILE_POLICY */',
@@ -596,8 +735,95 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* VISUAL_TIME_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* SURFACE_POLICY */', f'#include "{(ROOT / "src/pc_native_surface_guest.h").as_posix()}"')
+                           .replace('/* CHARACTER_POLICY */', f'#include "{(ROOT / "src/pc_native_character_guest.h").as_posix()}"')
+                           .replace('/* WALK_POLICY */', f'#include "{(ROOT / "src/pc_native_walk_guest.h").as_posix()}"')
+                           .replace('/* CHARACTER_TRACE_POLICY */', f'#include "{(ROOT / "src/pc_native_character_trace_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
-                           .replace('/* GENERATED_ROUTINES */',code))
+                           .replace('/* GENERATED_ROUTINES */',
+                                    (f'#include "{(ROOT / "src/pc_model_transform_guest.inc").as_posix()}"\n'
+                                     if any(start == 0x151e80 for start, _ in ranges) else '') + code))
+    source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
+    output=compile_and_run(tmp_path,source)
+    if harness_name=='native_walk_contact.c':
+        for needle,replacement in (
+            ('RECOMP_FLOAT_BRANCH_AT(0xC596C,','RECOMP_FLOAT_BRANCH_AT(0xFFFFFFFF,'),
+            ('if(candidate)RECOMP_DIRECT_CALLEE_AT(0xc5ad6u,sub_000C54A0)();',
+             'if(candidate)sub_000C54A0();'),
+        ):
+            assert source.count(needle)==1,needle
+            with pytest.raises(AssertionError,match='distance>.001f'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+        print(output)
+    if harness_name=='native_trap_transform.c':
+        for needle,replacement in (
+            ('MEM32(esi + 0x28) = eax;\n    RECOMP_AFTER_STORE32(0xA74F4,',
+             '(void)eax;\n    RECOMP_AFTER_STORE32(0xA74F4,'),
+            ('RECOMP_F32_MUL_AT(0xA15C6, xmm1.f[0], xmm0.f[0])','0.f'),
+            ('RECOMP_DIRECT_CALLEE_AT(0xA1645, sub_001531D0)','missing_matrix_copy'),
+            ('sub_00151E80();','g_esp+=4;'),
+        ):
+            assert source.count(needle)==1,needle
+            with pytest.raises(AssertionError,match='trap transform'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+        print(output)
+    if harness_name=='native_player_statistics.c':
+        for needle,replacement in (
+            ('RECOMP_DIRECT_CALLEE_AT(0xD2CB7,sub_000D1FD0)','sub_000D1FD0'),
+            ('RECOMP_LOAD_GLOBAL_U32(0xD2079, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)'),
+        ):
+            assert source.count(needle)==1
+            with pytest.raises(AssertionError,match='legacy_stats'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+    if harness_name=='native_trap_motion.c':
+        for needle,replacement in (
+            ('RECOMP_LOAD_GLOBAL_U32(0x1D8AB0, 0x4E7944, MEM32(0x4E7944))','MEM32(0x4E7944)'),
+            ('RECOMP_F32_ADD_AT(0x1D8B46,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
+            ('RECOMP_F32_ADD_AT(0x1D8B7A,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
+            ('RECOMP_AFTER_STORE32(0x1D8BFD,','RECOMP_AFTER_STORE32(0xFFFFFFFF,'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+        ):
+            assert source.count(needle)==1
+            with pytest.raises(AssertionError,match='trap fractional'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+    if harness_name=='native_tree_motion.c':
+        needle='RECOMP_LOAD_GLOBAL_U32(0x1D88B0, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError,match='legacy_tree'):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
+    if harness_name=='native_character_scale.c':
+        import csv
+        trace=tmp_path/'character-pairs.csv'
+        executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        traced=subprocess.run([str(executable)],env=dict(os.environ,TSFP_CHARACTER_TRACE=str(trace)),
+                              capture_output=True,text=True,timeout=20)
+        assert traced.returncode==0 and traced.stdout==output,traced.stdout+traced.stderr
+        rows=list(csv.DictReader(trace.open()))
+        assert 20<len(rows)<=8192 and trace.stat().st_size<=8*1024*1024
+        assert {'0','1'}=={r['native'] for r in rows}
+        assert all(int(r['state'])==0x10000 and len(r)==45 for r in rows)
+        failed=subprocess.run([str(executable)],env=dict(os.environ,TSFP_CHARACTER_TRACE=str(tmp_path)),
+                              capture_output=True,text=True,timeout=20)
+        assert failed.returncode==0 and failed.stdout==output
+        assert failed.stderr.count('[CHARACTER-TRACE] Unable to open requested trace')==1
+    if harness_name=='native_surface_cache.c':
+        for sites in [(0x1276fd,0x127705),(0x12765b,),(0x12773b,0x127791)]:
+            mutated=source
+            for site in sites:
+                needle=f'RECOMP_F32_MUL_AT(0x{site:X},'
+                assert mutated.count(needle)==1
+                mutated=mutated.replace(needle,'RECOMP_F32_MUL_AT(0xFFFFFFFF,')
+            with pytest.raises(AssertionError,match='forced_surface'):
+                compile_and_run(tmp_path,mutated)
+    if harness_name=='native_reload_input.c':
+        assert 'reload_sweep trials=864 presses=1728' in output,output
+        needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
+        expressions='\n'.join(line.split('/*')[0] for line in source.splitlines())
+        assert expressions.count(needle)==1
+        mutated=source.replace(needle,'MEM32(0x4E7944)').replace('/* SWEEP_ONLY */','goto temporal;')
+        with pytest.raises(AssertionError,match='reload phase mismatch'):
+            compile_and_run(tmp_path,mutated)
+        print(output)
     if harness_name=='native_escort_recovery.c':
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         mutation=subprocess.run([str(executable),'legacy-recovery'],capture_output=True,text=True,timeout=10)
@@ -617,11 +843,19 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_escort_recovery.c':print(output)
+    if harness_name=='native_script_events.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('script_events ')]
+        assert len(rows)==10,output
+        assert {(int(r['fps']),int(r['slow'])) for r in rows}=={
+            (fps,slow) for fps in (60,120,144,180,240) for slow in (1,4)},output
+        print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('coupled_projectile ')]
-        assert len(rows)==16,output
+        assert len(rows)==24,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for homing in ('0','1'):
             reference=next(r for r in rows if r['native']=='0' and r['homing']==homing)
             for r in rows:
@@ -637,7 +871,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
-        assert len(rows)==33,output
+        assert len(rows)==49,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         for mode in range(3):
             for slow in (1,4):
                 base=next(r for r in rows if int(r['mode'])==mode and int(r['slow'])==slow and r['fps']=='60' and r['opened']=='0' and r['rare']=='0')
@@ -659,14 +894,16 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('rocking_audit ')]
-        assert len(rows)==8,output
+        assert len(rows)==12,output
+        assert {int(r["fps"]) for r in rows}=={60,120,144,180,240},output
         if any(int(r['frozen']) for r in rows if r['native']=='1'):
             raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':
         print(output)
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_fire_audit ')]
-        assert len(rows)==6,output
+        assert len(rows)==10,output
+        assert {int(row['fps']) for row in rows}=={60,120,144,180,240},output
         reference=next(r for r in rows if r['fps']=='60' and r['scoped']=='0')
         failures=[r for r in rows if r['scoped']=='1' and
                   (r['shots']!=reference['shots'] or r['sounds']!=reference['sounds'] or
@@ -676,7 +913,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_weapon_fire.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('fire_audit ')]
-        assert len(rows)==12,output
+        assert len(rows)==20,output
         failures=[]
         for row in rows:
             if row['native']=='0' or row['open_gate']=='1':

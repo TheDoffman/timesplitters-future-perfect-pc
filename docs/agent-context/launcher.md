@@ -14,16 +14,46 @@ that `Data`, `Settings`, `Saves`, `Bin` and root checkout paths are interchangea
 `DownloadTransfer.cs`: transfers; `InstallationMaintenance.cs`: repairs;
 `GameSessions.cs`: game launch/lifetime; `GameSettings.cs`/`SettingsPage.cs`:
 settings; `TexturePack.cs`/`TextureDownload.cs`: optional textures.
-`GameSettings.NativeFps` stores original(0)/120/144 beta selection in a separate
+`GameSettings.NativeFps` stores original(0)/120/180/240 beta selection in a separate
 `pc-frame-rate.ini` and exports `TSFP_NATIVE_FPS`; it needs a compatible game
 build and does not revive interpolation or change the console interrupt clock.
+Legacy144 sidecars load as120 without writes; explicit save uses the new preset.
 Launcher version and game version are separate. A source commit is not a
 published release. Use `tools/launcher-compatibility.py --local` for API-free
 shared checks, plus affected host lifecycle/build checks. Never start publishing
 or change credentials just to validate a launcher edit.
 <!-- packet:end -->
 
+PR checks: `runtime-patches.yml` now calls the existing `launcher-build.yml`
+when `launcher-compatibility.py scope` selects launcher inputs, then includes
+that result in the candidate `PR validation` gate. The separate launcher
+compatibility required check stays active until the branch ruleset migrates.
+
+## Capture health diagnostics
+
+Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS
+presets already on main. The shared version and numeric assembly attributes
+advance together; package format, updater manifest names and optional-texture
+delivery stay unchanged. Release validation uses the existing dual-host workflow.
+
+Both launch adapters pass the persistent session ID as `TSFP_CAPTURE_SESSION`.
+`GameSessions.CaptureSession` positively verifies the game PID/start-time pair.
+`CrashReports.CaptureHealth` shares storage probing, bounded record parsing,
+session/PID matching, 15-second freshness and helper lifetime checks across hosts.
+It distinguishes missing helper, unverified old game, stopped/stale helper,
+unwritable storage and live armed/unarmed capture. File presence alone never
+establishes support. Diagnostics refresh is explicit; it does not run a test crash.
+The ordinary Diagnostics report and Windows live-hang view include this summary.
+Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
+`breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
+
 ## Flow and ownership
+
+The launcher publication job requires a full-history checkout (`fetch-depth: 0`)
+for `launcher_pr_notes` to inspect the previous launcher tag and merged commit
+range. Build-job history does not carry into the separate publication job.
+`test_launcher_release.py` checks this prerequisite; tags and published assets
+remain immutable during interrupted-publication recovery.
 
 Read [launcher usage](../launcher.md), [Windows launcher](../windows-launcher.md),
 [Mac launcher](../mac-launcher.md) and [release process](../launcher-releases.md)
@@ -142,10 +172,13 @@ rechecked on retry. Opt-in lives in `.launcher/texture-opt-in.json`; opening Set
 checks for updates, but downloads always require confirmation. Opt-out deletes only
 that preference. Classic/Enhanced persistence is separate and defaults to Classic.
 
-The catalog in `config/texture-pack.json` now declares optional delivery; normal
-Windows/Mac game packages omit the assets. The download manifest is an unpublished
-placeholder until a maintainer publishes through `texture-release.py` and merges
-the resulting index. No runtime changes or OS-specific texture protocol are needed.
+The catalog in `config/texture-pack.json` declares optional delivery; normal
+Windows/Mac game packages omit the assets. The download index must contain a
+published schema-3 manifest, produced by `texture-release.py` after auditing and
+uploading the committed pack. Committing DDS files alone does not make them
+downloadable: the launcher reads this index, not Git LFS or the repository tree.
+Merge each generated index after its remote assets verify; no launcher rebuild
+is needed to discover it. No OS-specific texture protocol is needed.
 Portable and host validation routes are recorded in build-test.md and MAC-057.
 
 Texture operations disable Mac page navigation through the shared busy state,
@@ -179,7 +212,6 @@ and normalize on Save; loading does not rewrite the player's configuration.
 The native runtime dialogs use the matching `PC_BINDING_SLOTS`. The in-game
 themed editor applies bindings live through the shared runtime settings API;
 launcher Save retains its existing close-game requirement.
-
 
 ## Stable and named preview releases (2026-10-22)
 

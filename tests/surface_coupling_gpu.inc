@@ -88,6 +88,64 @@
     CHECK(fabsf(finals[0][0][1]-finals[0][1][1])>.0001f);
     CHECK(fabsf(finals[0][0][1]-finals[0][2][1])>.0001f);
     CHECK(fabsf(finals[0][0][1]-finals[2][0][1])>.0001f);
+    /* The corrected coupled operator is evaluated on the GPU, then compared
+     * with the original translated shader's full 60-step float32 trajectory.
+     * This is the same fixed-neighbor case, not a replacement spatial solver. */
+#define TSFP_SURFACE_VEC2 "float2"
+#define TSFP_SURFACE_VEC3 "float3"
+#include "graphics/surface_coupled_shader.h"
+    const char coupled_hlsl[]=
+        "Texture2D source:register(t0);SamplerState smp:register(s0);"
+        "cbuffer Step:register(b0){float4 row0;float4 row1;}"
+        TSFP_SURFACE_COUPLED_SHADER
+        "float4 main(float4 p:SV_POSITION):SV_TARGET {"
+        "float4 value=source.Sample(smp,float2(.5,.5));"
+        "float2 state=surface_coupled(float2(value.g-.5,value.b),row0.xyz,row1.xyz);"
+        "return float4(.5,state.x+.5,state.y,1);}";
+    RhiShader *coupled_ps=shader(RHI_STAGE_PIXEL,coupled_hlsl,"ps_5_0");
+    RhiBufferDesc coupled_desc={sizeof(PcSurfaceCoupledStep),RHI_USAGE_DEFAULT,RHI_BIND_UNIFORM,0};
+    RhiBuffer *coupled_uniforms=rhi_buffer_create(&coupled_desc,NULL);CHECK(coupled_uniforms);
+    float coupled_max_error=0;
+    for(unsigned rate=0;rate<3;rate++) {
+        unsigned fps=rates[rate];PcSurfaceCoupledStep matrix;
+        CHECK(pc_surface_coupled_step(packed_coefficients[0][0]/255.,
+            packed_coefficients[0][1]/255.,packed_coefficients[0][2]/255.,
+            1,.5,128./255-.5,60./fps,&matrix));
+        rhi_buffer_update(coupled_uniforms,&matrix);
+        rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&coupled_uniforms);
+        rhi_set_shader(RHI_STAGE_PIXEL,coupled_ps);
+        td.width=td.height=64;td.format=RHI_FORMAT_R32G32B32A32_FLOAT;td.bind=RHI_BIND_RENDER_TARGET;
+        RhiImage *output=rhi_image_create(&td,NULL);CHECK(output);
+        RhiView *output_view=rhi_view_create(output,RHI_VIEW_RENDER_TARGET,NULL);CHECK(output_view);
+        rhi_set_render_target(output_view,NULL);
+        td.width=td.height=1;td.bind=RHI_BIND_SAMPLED;
+        float state[4]={.5f,.5f,.65f,1};RhiSubresourceData data={state,sizeof state,sizeof state};
+        RhiImage *input=rhi_image_create(&td,&data);CHECK(input);
+        RhiView *view=rhi_view_create(input,RHI_VIEW_SAMPLED,NULL);CHECK(view);
+        rhi_set_textures(0,1,&view);
+        float pixels[64*64*4];unsigned fresh=0;
+        for(unsigned frame=0;frame<fps;frame++) {
+            rhi_image_update(input,0,NULL,state,sizeof state,sizeof state);
+            rhi_draw(3,0);CHECK(rhi_image_readback(output,0,pixels,64*16)==0);
+            if(pixels[1]!=state[1] || pixels[2]!=state[2])fresh++;
+            for(unsigned i=0;i<64*64;i++) {
+                CHECK(isfinite(pixels[4*i+1]) && isfinite(pixels[4*i+2]));
+                CHECK(pixels[4*i+1]==pixels[1] && pixels[4*i+2]==pixels[2]);
+            }
+            state[1]=pixels[1];state[2]=pixels[2];
+        }
+        CHECK(fresh==fps);
+        for(unsigned i=0;i<2;i++) {
+            float error=fabsf(state[i+1]-finals[0][0][i]);
+            if(error>coupled_max_error)coupled_max_error=error;
+            CHECK(error<.00001f);
+        }
+        printf("coupled-corrected fps=%u G=%.9f B=%.9f fresh=%u/%u\n",fps,state[1],state[2],fresh,fps);
+        RhiView *none=NULL;rhi_set_textures(0,1,&none);rhi_set_render_target(NULL,NULL);
+        rhi_view_destroy(view);rhi_image_destroy(input);rhi_view_destroy(output_view);rhi_image_destroy(output);
+    }
+    printf("PASS: original translated feedback shader reference matched by coupled GPU step; max error %.9g\n",coupled_max_error);
+    rhi_buffer_destroy(coupled_uniforms);rhi_shader_destroy(coupled_ps);
     puts("PASS: original translated feedback shader separates coupled timestep and storage effects");
     rhi_set_render_target(NULL,NULL);rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);
     rhi_buffer_destroy(uniforms);rhi_shader_destroy(surface_vs);rhi_shader_destroy(surface_ps);

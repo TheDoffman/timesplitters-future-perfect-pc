@@ -21,7 +21,7 @@ static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
 int recomp_config_request_native_rate(int rate) { requested_rate=rate;return 1; }
 const char *recomp_config_lookup(const char *env,const char *key)
-{ (void)env;(void)key;return requested_rate<0 || requested_rate==144?"144":requested_rate==120?"120":"0"; }
+{ (void)env;(void)key;return requested_rate==144?"144":requested_rate==120?"120":requested_rate==180?"180":requested_rate==240?"240":"0"; }
 uint32_t recomp_config_title_id(void) { return 0x45410066; }
 int recomp_settings_path(uint32_t title,char *out,size_t size)
 { (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
@@ -296,7 +296,7 @@ int main(int argc,char **argv)
     CHECK(display_dirty() && !(WORD_AT(apply_row+0x28)&1));
     int left=returned;call(BACK_CB,0,0);CHECK(returned==left+1);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(!display_dirty() && staged_fov==55 && staged_rate==2 && texture_choice==0);
+    CHECK(!display_dirty() && staged_fov==55 && staged_rate==0 && texture_choice==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
@@ -336,17 +336,17 @@ int main(int argc,char **argv)
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     content("TSFP_DISPLAY_V2 1280 720 70\n");CHECK(pc_frame_rate_read()==120);
     CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));call(SELECT_CB,3,0);
-    CHECK(pc_display_fov()==75 && requested_rate==144 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
+    CHECK(pc_display_fov()==75 && requested_rate==180 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */
     resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=80;
     WORD_AT(rate_row+0xc8)=0;WORD_AT(texture_row+0xc8)=1;call(SELECT_CB,3,0);
     CHECK(page==DISPLAY_CONFIRM && current.width==1920 && pc_display_fov()==75);
-    CHECK(requested_rate==144 && !tsfp_texture_is_4k());call(BACK_CB,0,0);
+    CHECK(requested_rate==180 && !tsfp_texture_is_4k());call(BACK_CB,0,0);
     CHECK(page==DISPLAY_HOME && current.width==1280 && pc_display_fov()==75 && display_dirty());
     resolution_row=0;staged=(PcDisplayMode){1920,1080};call(SELECT_CB,3,0);
     clock_ms=16000;pc_display_frame_done();call(TICK_CB,0,0);
-    CHECK(page==DISPLAY_HOME && current.width==1280 && pc_display_fov()==75 && requested_rate==144);
+    CHECK(page==DISPLAY_HOME && current.width==1280 && pc_display_fov()==75 && requested_rate==180);
     resolution_row=0;staged=(PcDisplayMode){1920,1080};call(SELECT_CB,3,0);call(SELECT_CB,0,0);
     CHECK(page==DISPLAY_HOME && current.width==1920 && pc_display_fov()==80);
     CHECK(requested_rate==0 && tsfp_texture_is_4k() && !display_dirty());

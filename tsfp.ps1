@@ -200,6 +200,11 @@ try {
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_display_test.exe") @(
                         (Join-Path $testRoot 'pc-display-test.ini'))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_prompts_test.exe") @($testConfig)
+                    $controllerConfig = Join-Path $testRoot 'controller-profile.json'
+                    $controllerDocument = Get-Content -LiteralPath (Join-Path $projectRoot 'config\pc-controls.default.json') -Raw | ConvertFrom-Json
+                    $controllerDocument.controllers[0].device = 'gamepad:0'
+                    [IO.File]::WriteAllText($controllerConfig, ($controllerDocument | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_prompts_test.exe") @($controllerConfig, 'controller-profile')
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_save_paths_test.exe") @($testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_controls_test.exe") @(
                         $testConfig, $testRoot)

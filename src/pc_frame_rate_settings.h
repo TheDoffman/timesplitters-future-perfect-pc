@@ -8,16 +8,16 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#define PC_FRAME_RATE_COUNT 3
+#define PC_FRAME_RATE_COUNT 4
 #define PC_FRAME_RATE_BETA "High refresh is in beta. Gameplay issues may occur."
 #define PC_FRAME_RATE_APPLY "Changes apply without restarting."
 static int pc_frame_rate_value(int choice)
-{ return choice==1?120:choice==2?144:0; }
+{ return choice>=1 && choice<PC_FRAME_RATE_COUNT?(choice+1)*60:0; }
 static int pc_frame_rate_choice(int rate)
-{ return rate==120?1:rate==144?2:0; }
+{ return rate==120 || rate==144?1:rate==180?2:rate==240?3:0; }
 static const char *pc_frame_rate_label(int choice)
 {
-    static const char *labels[]={"60 FPS (Original)","120 FPS (Beta)","144 FPS (Beta)"};
+    static const char *labels[]={"60 FPS (Original)","120 FPS (Beta)","180 FPS (Beta)","240 FPS (Beta)"};
     return labels[choice>=0 && choice<PC_FRAME_RATE_COUNT?choice:0];
 }
 static int pc_frame_rate_path(char *out,size_t size)
@@ -41,13 +41,14 @@ static int pc_frame_rate_read(void)
     FILE *file=fopen(path,"rb");if(!file)return -1;
     if(fscanf(file,"%31s %d %c",version,&rate,&tail)!=2 ||
        strcmp(version,"TSFP_FRAME_RATE_V1") ||
-       (rate!=0 && rate!=120 && rate!=144))rate=-1;
-    fclose(file);return rate;
+       (rate!=0 && rate!=120 && rate!=144 && rate!=180 && rate!=240))rate=-1;
+    /* Adopt the nearest lower new preset without rewriting a saved file. */
+    fclose(file);return rate==144?120:rate;
 }
 static int pc_frame_rate_save(int rate)
 {
     char path[32768],temp[32768];
-    if(rate!=0 && rate!=120 && rate!=144)return 0;
+    if(rate!=0 && rate!=120 && rate!=180 && rate!=240)return 0;
     if(!pc_frame_rate_path(path,sizeof path) || strlen(path)+5>=sizeof temp)return 0;
     snprintf(temp,sizeof temp,"%s.tmp",path);
     FILE *file=fopen(temp,"wb");if(!file)return 0;

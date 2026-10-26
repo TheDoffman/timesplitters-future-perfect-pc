@@ -5,6 +5,7 @@
 static void clear_transient(PcInput *s)
 {
     memset(s->keys, 0, sizeof s->keys);
+    pc_reload_reset(&s->reload);
     s->dx = s->dy = 0;
     s->motion_at = 0;
     s->wheel_queue = s->wheel_key = 0;
@@ -30,6 +31,14 @@ void pc_input_key(PcInput *s, unsigned key, int down)
     if (key < 256 && s->focused) s->keys[key] = !!down;
 }
 
+void pc_input_key_at(PcInput *s, unsigned key, int down, uint64_t now)
+{
+    if(key<256 && s->focused) {
+        pc_reload_event(&s->reload,key,s->keys[key],down,now);
+        pc_input_key(s,key,down);
+    }
+}
+
 void pc_input_motion(PcInput *s, double dx, double dy, uint64_t now)
 {
     if (!s->focused || !s->captured || !isfinite(dx) || !isfinite(dy)) return;
@@ -53,6 +62,7 @@ int pc_input_down(PcInput *s, unsigned key, uint64_t now)
 {
     /* F23/F24 are configurable wheel bindings. Give each notch a press and
        a release, including when several notches arrive in one raw packet. */
+    int old_wheel=s->wheel_key;
     if (now >= s->wheel_until) {
         if (s->wheel_key) { s->wheel_key = 0; s->wheel_until = now + 40; }
         else if (s->wheel_queue) {
@@ -61,16 +71,40 @@ int pc_input_down(PcInput *s, unsigned key, uint64_t now)
             s->wheel_until = now + 60;
         }
     }
+    if(old_wheel!=s->wheel_key) {
+        if(old_wheel)pc_reload_event(&s->reload,(unsigned)old_wheel,1,0,now);
+        if(s->wheel_key)pc_reload_event(&s->reload,(unsigned)s->wheel_key,0,1,now);
+    }
     return s->focused && key > 0 && key < 256 && (s->keys[key] || key == (unsigned)s->wheel_key);
 }
 
 void pc_input_normalize_movement(int16_t *x, int16_t *y)
 {
-    double length = hypot((double)*x, (double)*y);
-    if (length > 32767.0) {
-        *x = (int16_t)(*x * 32767.0 / length);
-        *y = (int16_t)(*y * 32767.0 / length);
-    }
+    double ax = fabs((double)*x), ay = fabs((double)*y);
+    double length = hypot(ax, ay);
+    double diagonal = ax + ay ? 2.0 * fmin(ax, ay) / (ax + ay) : 0.0;
+    double scale = length > 32767.0 ? 32767.0 / length : 1.0;
+    /* The title attenuates diagonal travel after reading its Xbox stick.
+       Preserve cardinal speed, then compensate smoothly as both axes engage.
+       This gain is measured at the player position in Story, not inferred
+       from the outgoing stick radius alone. */
+    scale *= 1.0 + 0.25 * diagonal;
+    *x = (int16_t)fmax(-32767.0, fmin(32767.0, round(*x * scale)));
+    *y = (int16_t)fmax(-32767.0, fmin(32767.0, round(*y * scale)));
+}
+
+int pc_input_radial_axis_magnitude(int16_t axis, int16_t other,
+                                   int sign, int deadzone)
+{
+    double length = hypot((double)axis, (double)other);
+    double value = (double)axis * sign;
+    double gain;
+    if (value <= 0 || length <= deadzone || deadzone >= 32767)
+        return 0;
+    /* The same radial gain applies to both components. Subtracting the
+       deadzone from each component separately slows diagonal movement/aim. */
+    gain = (fmin(length, 32767.0) - deadzone) / (32767.0 - deadzone);
+    return (int)(255.0 * gain * value / length + 0.5);
 }
 
 uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy)

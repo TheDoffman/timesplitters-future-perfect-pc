@@ -6,6 +6,296 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Venice fractional clear-slide repair (2026-10-25)
+
+The current branch tracks only the completed final slide attempts within a
+fractional C54A0 transaction. A clear result selects the original small-motion
+guard at C596C; blocked/Original/whole paths retain their branch. The old guard
+could select its large corner penalty using scratch globals after a clear slide
+and floor query, discarding every small native step. Existing delta-squared
+scaling, geometry and response points are unchanged.
+
+The original-code fixture reproduces that rewind with captured service boundaries
+and tests16 mode/clear/blocked/scope cases; missing root/branch controls fail.
+144 timing/vehicle/context/backlog checks and the Windows build pass. Same-build
+live Original60/180/240 routes now pass the formerly blocked hold. Its endpoint
+differences fall from12.9545 to0.2269/0.2182 units; other endpoints can differ by
+0.5373, so exact geometric trajectory parity remains unverified. Pause, aim,
+firing and clean Present intervals are separately checked. Mac scenes and wider
+geometry/NPC acceptance remain open. See STATUS and the player-contact guide.
+
+The following record describes the pre-fix investigation.
+
+Current merged-main executable5487 completes matched no-bot Original60/native240
+input routes with matching aim changes, ammo consumption, pause behavior and
+correct sampled clock speed. Capture-free Present windows average59.9994 and
+239.9978/s. Despite those results, the sixth movement hold blocks native240 near
+[-62.7411,2.02421,-32.8531] while Original continues, producing12.9545 world units
+of endpoint divergence. The first five endpoints agree within0.00464. No contact
+fix or full-route equivalence is established. Moving-object state and a15-tick
+initial clock offset remain possible factors; the solver cause is unproven.
+
+Native180 reproduces the same obstruction, and a second read-only paired repeat
+shows Original moving12.185 world units while240 remains stationary across the
+same1.7s portion of the hold. Both advance101 game ticks, stay alive/in walking
+mode and retain the same feet height. Raw sampled contact fields do not identify
+the blocking surface or solver decision; no repair is established. See STATUS
+for the observer's bounds, field-label correction and separate180 pacing result.
+
+The earlier walking fixture stubs C5B50's actual collision services; the new
+C54A0 acceptance fixture and paired traces supplement that coverage. STATUS
+records captures excluded for observer overhead, the live observations, unreadable
+sample handling, negative controls and preserved settings. Mac scenes remain open.
+
+## Current Temple crowd pacing (2026-10-25, PR #364)
+
+The unchanged731288 executable completes capture-free ten-bot Enhanced-selected
+Temple routes at Original60/native144/native240, with3440x1440 device creation.
+Each complete45s window retains its target in every1s/5s bin, zero interpolation
+and sampled correct game speed. Individual frame intervals vary: worst144 is
+10.548ms, so this is not a constant-deadline claim. A separate lightweight clock
+sampler matches144 timing calls/s with accepted Presents within one in-flight
+call; held/60-Hz controls are rejected. A separate capture/trace run shows firing,
+death and respawn and is excluded from pacing. Client1920x1060 is supersampled;
+physical scanout/latency, all-map fidelity and Mac gameplay remain unverified.
+See STATUS for exact counts, bounds, screenshots and provenance.
+
+## TRAP transform propagation (2026-10-25, PR #364)
+
+An80-case original-code fixture connects TRAP initialization/callback to actual
+post-update angle invalidation, Euler caching, matrix copy/translation and point
+transformation. Native pre-sound frames produce fresh off-axis world points;
+Original keeps carried-tick holds. Cache reuse, independent trigonometric
+coordinates, pause, clocks and ABI are checked. Four independent propagation
+mutations fail. This is fixture-driven CPU evidence with controlled collision/
+sector/registration services; normal scheduling, live mesh/GPU rendering and
+physical Mac remain open. Runtime source and executable are unchanged.
+
+## Fresh TRAP poses (2026-10-25, PR #364 follow-up)
+
+The earlier discrete-clock repair below is superseded for fractional intervals.
+Shared coupled half-kick/drift steps now produce fresh poses, while a carried-
+tick contact budget preserves the original lifetime. Original/whole/catch-up
+states and events remain byte-equal. The original-US fixture checks40 rate/slow/
+phase schedules and12 live-switch/jitter schedules, pose/event windows, phase,
+terminal state, pause and ABI. Six independent gate/conversion/operator/contact
+mutations fail. The public clock fixture covers the coupled map and GPU-hook
+composition. Windows build passes; live TRAP activation/rendering and physical
+Mac remain open. See STATUS and the script-clock guide for measured limits.
+
+## Player-statistics timing (2026-10-25)
+
+D1FD0's whole gate records only0.25 seconds per game second at240 for two
+time counters. D2CB7 now scopes/restores its float delta to carried ticks,
+preserving original float-addition cadence while recording caller-computed
+distance every frame. D2079's pause guard blocks stale tick counts.
+Original-US tests cover160 rate/slow/phase/hour schedules, eligibility,
+distance, pause, uneven intervals, fallback and ten-minute bit-equal time totals.
+Opening the gate alone fails long-run rounding parity. Independent scope/pause
+mutations fail; the public fixture covers dispatcher/restoration on both CI hosts.
+Windows build and119 timing/vehicle tests pass. Native240 Disco statistics
+progress agrees with the integer clock within0.0043s over31.28s; this is bounded
+counter evidence, not pacing or broad gameplay validation. The matching
+Original60 route differs by0.0027s over41.18s and also exits cleanly with
+fixture/profile preservation. Physical Mac remains pending; see STATUS.
+
+## Mansion TREE live progression (2026-10-25)
+
+Read-only map callback records and the in-game menu locate TREE/TRAP in Mansion
+of Madness, Story index4/scene1. Normal isolated entrance play on the current
+1fe73b2c executable activates TREE in Original60/native240. Both have91 active
+observations, monotonic phase, matching original sampled pose math, terminal80
+clamp and active-state clearing. Their activation-duration brackets overlap
+around4.53–4.63s; terminal phase differs by less than one original tick. Signed
+profiles and clean exits/cleanup pass. The native run later dies after a much
+longer idle interval; this does not establish survival/damage or mission
+progression parity. A bounded upper-floor calibration does not activate TRAP.
+No production change was needed.
+
+The observed foyer rendering does not identify the TREE mesh. Full rendered
+target/event-service parity, live TRAP activation and physical Mac remain open;
+process reads/traces/captures are not pacing or per-frame atomic evidence. See
+[STATUS](../STATUS.md#mansion-tree-live-activation-and-phase-2026-10-25-pr-363)
+for source mapping, provenance, corrected serialized offsets and limitations.
+
+## Scripted TRAP mixed clock (2026-10-25)
+
+TRAP1D8AB0 adds a fixed impulse once per whole-tick call, but broad native
+conversion replaces its phase/travel span with only that native frame's
+fraction. Original-routine comparisons reproduce altered motion/state/event
+progression. Preserve the authored solver by retaining whole units at only
+1D8AF5/1D8B6A; freeze its gate when a local pause leaves a stale carried tick.
+Opening the gate on every native frame would multiply impulses and also fails.
+
+The fixture executes the original solver, sine-table initializer and sine
+helper. Forty schedules through240/slow time/carried phases compare full entity
+bytes and sound/control/removal calls at every frame with Original; catch-up
+and pause are covered. Restoring either conversion or opening the gate is a
+failing control. All118 timing/vehicle tests,21 context/backlog checks and the
+supported Windows rebuild/bundled checks pass. Asset-free clock checks run on
+both CI hosts; private assets
+are needed for original-routine execution. This restores60Hz-authored mechanics,
+not fresh fractional trap poses or live scene/Mac acceptance. See
+[STATUS](../STATUS.md#trap-solver-mixed-clock-repair-2026-10-25).
+
+## Scripted TREE callback phase (2026-10-25)
+
+Original US1D88B0 integrates its animation phase with float game time, but its
+whole-tick entry gate drops subticks. Original-routine execution reproduces
+phase0.25 after one game second at native240. A site-specific gate correction
+admits positive fractional intervals; the original routine retains pose math,
+event crossings, terminal clamp and state. Neighbor callback1D8AB0 remains
+outside the repair because it has separate per-call behavior.
+
+Forty original-routine schedules through240 cover phase/pose, slow time, carried
+phases, pause, single crossing/completion events, event times, ABI and exact
+whole/catch-up fallback. Restoring the old gate fails. The asset-free clock
+fixture covers the policy on both CI hosts; private-XBE cases skip without
+supported assets and do not certify Mac gameplay. All117 timing/vehicle tests,
+21 context/backlog checks and the supported Windows build/bundled checks pass.
+Live TREE activation/rendered appearance and physical Mac remain unverified.
+See [STATUS](../STATUS.md#tree-callback-fractional-phase-gate-2026-10-25).
+
+## Merged-main Challenge timeout and pause (2026-10-25)
+
+A supported Windows rebuild including main063789df completes Hart Attack's
+zero-score timeout route at Original60 and native240. Both enter Game Over in
+the same observed level-tick bracket5581..5584, retain health, hold their clock
+through an eight-second pause and resume at normal speed. Ordinary forward
+movement works and the three-second firing hold consumes eight pistol rounds
+in each run. Reviewed captures show the challenge HUD, pause menu and zero-score
+result screen in both modes. The signed test profile and canonical fixture stay
+unchanged; both games exit cleanly.
+
+This validates the sampled Challenge failure/timeout path, not a medal-winning
+run, target scoring/animation, damage parity, identical displacement or the full
+Challenge mode. Capture-bearing runs do not establish pacing; their native
+Present recorder caps at20,000 rows before the late window. Separate repeats
+without captures/traces and with delayed recording measure60.000/239.997FPS
+over approximately28seconds, with consecutive fresh guest IDs. Native p99 is
+4.713ms/worst5.736ms, game/wall1.000023; this is the stationary late phase, not
+crowded combat. Device1280x720 and selected-window client640x480 differ, so no
+physical display-resolution claim follows. One native paused
+position observation is unavailable and excluded; all159 paused clock readings
+remain valid/fixed. See [STATUS](../STATUS.md#merged-main-hart-attack-timeout-and-pause-2026-10-25)
+for reproducibility, measurements and limits. No production change was justified.
+
+## Mixed-rate Online results and rematches (2026-10-25)
+
+Two isolated local Online peers complete a five-point Deathmatch and a full
+rematch with Original60 hosting native240, then with native240 hosting
+Original60. Both rounds in each direction produce matching final records for
+all eight participants (two humans, six bots). Normal Results, Scores and
+Options navigation works; the rematch resets all eight scores and the match
+clock before completing again. Owned-window captures show the results and
+score table rendered, including the 240 FPS Beta overlay.
+
+These runs use executable `4d09cd2c`, built before main's later controller/
+mouse-capture changes; they do not validate a rebuild of merged main. They use
+the production Online directory/browser/bridge on loopback, asynchronous
+memory observations and test-window captures. They establish this match-flow
+and final-record behavior, not clean pacing, identical combat trajectories,
+physical latency, remote Internet behavior or Mac networking. The runner
+intentionally terminates its owned games after acceptance and preserves the
+signed test profiles. See [STATUS](../STATUS.md#mixed-rate-online-match-completion-and-rematches-2026-10-25)
+for commands, provenance and limitations. No production change was needed.
+
+## Current Windows audio output presence (2026-10-25)
+
+The current4d09cd2c executable completes ten-bot Disco sessions at native240
+and trueOriginal60. A read-only helper meters only the owned game's Windows
+render sessions; it neither records audio nor changes volume/mute. Across
+approximately65.8s of active foreground gameplay per run, all324(native) and
+322(original) sampled points have valid unmuted sessions and nonzero mixed game
+output. Profiles/signatures and isolated cleanup pass;25 shared audio gain/
+timing tests pass. This closes an output-presence gap beyond fake devices.
+
+Mixed music/voices and roughly200ms sample spacing do not identify individual
+weapons, prove heard sound, detect brief underruns or establish sync/latency/
+frame pacing. Physical Mac/per-event audio acceptance remains open. Full method,
+provenance and limits are in [STATUS](../STATUS.md#live-windows-process-audio-output-presence-2026-10-25-pr-361).
+No production audio behavior changes in this check.
+
+## Current Temple crowd coverage (2026-10-24)
+
+The925f9f72 Windows binary completes separate ten-bot Temple sessions at
+Original60/native180/240. Complete45-second host-clock windows measure
+60.00054/179.99977/239.91279FPS; minimum one-second rates are60/180/236,
+and p99 intervals17.145/6.038/4.849ms. All sampled checkpoints remain active
+and foreground, guest frame IDs advance, and game/wall ratios stay within
+0.02% of unity. Clean windows exclude captures, tracing, CPU profiling and
+concurrent local builds/tests; automated input polling remains overhead.
+Signed profiles and the canonical fixture are preserved. A separate desktop
+capture verifies Temple scene/HUD/weapon/effect appearance in sampled combat.
+This broadens current crowded-map coverage; it does not prove simultaneous
+visibility of all bots, locked240, physical latency or full-game/Mac acceptance.
+See [STATUS](../STATUS.md) for exact binary, settings, traces and limits.
+
+## Current diagnostic144 crowded-match check (2026-10-24)
+
+The ed07ee3d Windows build completes the current ten-bot Disco route with
+143.999013FPS across45seconds, minimum one/five-second rates144, p997.372ms
+and worst8.241ms. All6,479 guest IDs advance;19foreground active checkpoints
+retain game/wall1.0002459. No captures, CPU profiler or per-update trace;
+automated input polling remains. This current-build result supports the
+original144FPS crowd target in that sampled match, not all maps or sustained240.
+Diagnostic144 remains outside the four player-facing presets. See STATUS for
+provenance and limits. No runtime change was justified by the trace-hook
+microbenchmark examined alongside this run.
+
+## Weapon-menu repair preserved at the current presets (2026-10-24)
+
+Issue#105's prior fixed60 repair now has current-build Original60/native240
+coverage on e9195841/ed07ee3d. Reviewed captures show entering the Vietnam Arcade
+weapon list, selecting its third slot with the correct shotgun preview, and
+backing out. Separate capture-free windows average59.999–60.000 and
+239.999–240.016FPS with consecutive guest-frame IDs and no interpolation.
+Native p99 stays below4.82ms in the three complete five-second menu windows.
+The recorder cap excludes the native back-out window; only its separate swap
+log reports240.0FPS. All four routes exit cleanly with profiles preserved.
+This verifies that specific menu regression on Windows, not combat pacing,
+full animation/texture fidelity or Mac gameplay. Input automation remains
+active; see [STATUS](../STATUS.md) for capture overhead, timing and host limits.
+
+## Expanded presets and original mechanics (2026-10-24)
+
+Player-facing choices are exactly Original60 and native120/180/240 Beta;
+native60/144 remain diagnostic comparisons. Six original-US fixtures extend
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD clocks to 180/240 without relaxing assertions/tolerances. All six pass
+with verified private XBE data on Windows. Public CI skips absent private data;
+native Mac execution and broader gameplay remain unverified.
+
+The follow-up adds nine original-US fixtures at 180/240: player/NPC aiming,
+coupled homing projectiles, beam geometry, camera tracks, falling/force regions
+and rocking/bouncing objects. All nine pass with existing tolerances, preserving
+their pause, lifecycle, damage/event and original-reference checks. Mounted
+mouse tests also cover the new rates with 125/1000/8000 Hz packets, jitter and
+legacy clock/consumption controls; the host suite passes all 11 tests. Controlled
+targets/collisions/effect spies and packet injection are bounded evidence, not
+full live combat, rendered-pose or physical input-latency acceptance.
+Light decisions, network correction, screen/strip distortion, escort recovery
+and menu motion also pass their original-US fixtures at 180/240. Portable
+mouse-cadence and coupled-surface math checks pass; the latter does not validate
+visible water integration. Existing tolerances remain unchanged throughout.
+
+Script event delivery now covers every phase of the 60/120/144/180/240 cadence
+at normal and quarter speed. The actual handoff dispatcher grants the weapon
+and eight rounds exactly once; the disabled native path still reproduces missed
+events on fractional phases. Original60, pause/resume, timer globals and ABI
+checks remain. Original weapon sounds, camera effects and Arcade countdowns
+also pass at180/240 with their existing timer, sound-count, collision/decay and
+input-release assertions. These four original-code tests pass on Windows with
+verified private data. They are not rendered opening-sequence or audible-output
+acceptance, and their public CI skips do not validate Mac gameplay.
+
+The current `4e16421` executable's complete ten-bot Disco windows measure
+60.000418, 119.933859 and 167.835127 FPS at Original60/120/180. Two preceding
+240 windows on that same executable measure 227.035 and 233.604. Fresh guest
+IDs and near-unity game/wall ratios support sampled cadence/speed, not locked
+180/240 or full-game acceptance. See [STATUS](../STATUS.md) for windows,
+provenance, tails, nondeterministic workload and physical-display limitations.
+
 ## Crowded multiplayer preset coverage (2026-10-22)
 
 PR #295 (`252e72e`, implementation head `4a40569`) reduces repeated memory
@@ -25,7 +315,9 @@ with their distinct scope in [STATUS](../STATUS.md#2026-10-22--crowded-multiplay
 All selected Windows/macOS CI checks pass for that implementation head;
 native Mac gameplay, online human matches, remaining animation/physics audits,
 texture-fluidity acceptance and representative full-game coverage remain open.
-The earlier live 144-to-60 handoff gap also remains a separate pacing target.
+The earlier live 144-to-60 handoff gap was subsequently repaired; see
+[the handoff evidence](#native-start-return-to-original-60-2026-10-22).
+That bounded result does not establish every rate/scene transition.
 
 ## Fresh analogue input at native cadence (2026-10-21)
 
@@ -5383,6 +5675,642 @@ open. The next targeted pacing check should distinguish settings application,
 original guest-clock waiting and host flip waiting during the 144-to-60 handoff.
 
 
+## Vehicle and rigid-body clock candidate (2026-10-22)
+
+The complete original US vehicle dispatcher (`17E680`) calls spring update
+`175150` behind whole-tick gate `17E6C3`. In the controlled stationary fixture,
+60/120/144 rendered updates consumed 1/0.5/0.416666657 seconds per second.
+Opening only the gate restored time but made linear adjustment `17E6EC` run
+2/2.4 times too quickly. The original rest routine (`176530`) similarly reached
+its 60-count sleep threshold after 0.5/0.416666667 seconds if simply called at
+native cadence. These are coupled changes, not permission to open all gates.
+
+The underlying complete rigid clock (`171FB0`) also showed 60 solver submissions
+and 1/0.5/0.416666670 seconds at 60/120/144 after history settled. The candidate
+uses each live game interval and `ceil(delta)` equal substeps instead of losing
+zero-whole intervals. The original collision-dependent secondary step selection
+is retained. Its original-60 history is rebased only after a native handoff, at
+the first advancing interval, including return through pause or slow motion.
+
+Candidate tests report 60/120/144 spring calls and approximately one second;
+linear state 20 ends at 13.999977112/14.000053406/14.000045776. Rest eligibility
+occurs at one second at every rate. Spring displacement remains step-size
+sensitive (.297045410/.300243407/.300794750 in this fixture); equal integrated
+time does not establish identical handling. The first combined native timing
+run passed 67 tests. Final focused four tests pass, including slow/fast motion, catch-up, the
+original secondary-step selection and history handoff. Companion translator,
+context and backlog checks pass114; full-stack install/upgrade checks pass four.
+
+`tests/test_native_vehicle_timing.py` lifts original complete routines from the
+hash-verified private US XBE; controlled world, driver, rest-eligibility and
+solver services prevent claims about real geometry/contact behavior. Four
+negative controls separately remove gate, linear adjustment, rest cadence and
+rigid-clock fixes and must fail. An asset-free synthetic byte MOV/DEC/store test
+runs on both selected CI hosts; the private-XBE tests skip when assets are absent.
+No generated code or private assets are distributed. Full driving/force and
+collision integration, live modes, multiplayer physics, performance and native
+Mac execution remain unverified. The playable combined build is unchanged.
+
+### Original moving-body and support-contact checks
+
+`tests/native_rigid_motion.c` extends the clock fixture through original solver
+`171560`, body integrator `16CA00`, quaternion/matrix helpers, relative contact
+velocity `1667C0`, resolver `16FC00` and Jacobian/bounds helper `168720`. The
+fixture supplies body state, material/allocation services and an upward,
+zero-depth contact at the body's centre; world broadphase, contact notifications
+and final entity publication remain controlled boundaries. No game bytes are
+checked in. The private supported XBE is hash-verified before lifting routines.
+
+The full vehicle test file passes four cases on Windows in 17.10 seconds
+(`logs/native-rigid-motion-final.log`). Free motion and constant force produce
+60/120/144 fresh body positions and one second of integrated time. Without
+external force, final X is 5.998522282/5.998525143/5.998499870. With force X=12
+and inverse mass 0.5, final X is 8.948050499/8.973025322/8.977188110 and velocity
+is 11.995525360/11.995513916/11.995511055. Constant angular speed agrees with the
+analytic half-radian rotation; quaternion normalization remains intact. These
+checks allow the original forward-Euler step-size difference, not lost time.
+
+The support case starts with downward velocity -4 and persistent downward force
+-20. Original contact policy selects eight secondary integrations per update:
+480/960/1152 per second. The body stops after the first update, retaining a
+small first-step displacement of -0.008333325/-0.004166665/-0.003472221; final
+vertical speed is approximately zero. Every advancing frame still resolves
+support impulses. A stationary supported body is not required to change
+position merely to satisfy a fresh-update assertion. Zero-time pause preserves
+the complete body bytes. Negative controls separately restore the old clock
+and remove contact resolution; both fail assertions on the relevant cases.
+
+The initial contact fixture assumed two secondary steps and retained lateral
+motion while reusing its contact point. Inspection confirmed the authored
+factor is one eighth; the intended axial support case now starts with zero
+lateral/angular velocity. No production change or relaxed physical threshold
+was used to make that case pass. Sliding/rolling contact is not covered.
+
+An additional private two-identical-contact diagnostic runs the original RNG
+`153B40` and its 64-bit multiplication helper `3C9ED0`. Contact shuffling at
+`1715A0` consumes 480/960/1152 shared random draws at 60/120/144. With initial
+seed 1, the final 64-bit seeds are `13b6de5c:93f5b261`, `06996cae:198df4c1`,
+and `97219018:3fd0b281`. This is characterization of an unresolved coupling,
+not accepted gameplay parity. The constraint-list shuffle at `170E51` also
+uses the same RNG but is not exercised by this diagnostic. Evidence:
+`private/pipeline/rigid-contact-rng-audit.py` and
+`logs/rigid-contact-rng-audit.log`. The candidate remains WIP and has not
+replaced the playable crowd-performance build. Multi-contact ordering, active
+vehicle forces/input, real geometry, entity publication and live performance
+remain required before acceptance.
+
+### Shuffle RNG isolation and secondary-step rounding correction
+
+The subsequent candidate wraps the complete original `171FB0` with
+`pc_native_physics_guest.h`. Within that scope, each `172114 -> 171560` primary
+solve is classified using the carried whole-tick budget. The original number
+of authored primary solves retains shared RNG side effects. Additional solves
+still shuffle and integrate every time, but only shuffle sites `1715A0` and
+`170E51` use a private advancing sequence. The original `153B40` generator runs
+for every draw; its seed pair and counter are restored after private draws.
+Other gameplay random calls remain shared, including calls inside a solver.
+Nested scopes restore their parent and retain nothing between frames/levels.
+
+The original-routine motion fixture now supplies three coincident support
+contacts, exercising two shuffle draws per secondary solve. At 60/120/144 it
+executes 960/1920/2304 original random calls but commits 960 shared draws at
+every rate, ending at the identical seed `06996cae:198df4c1`. Physical contact
+integration remains fresh. A mutation that bypasses isolation fails the native
+case. This checks RNG cadence with controlled contact lists, not identical
+arbitrary collision trajectories or full vehicle handling.
+
+The fast-motion extension initially failed independently: game delta 1.25
+partitioned into two primary steps, each with secondary duration primary/8,
+but repeated float additions left the eighth sum slightly below the target.
+The original loop then performed a ninth solve. One wall second at triple
+game speed integrated 3.375000101 seconds instead of 3. This failure was not
+hidden by relaxing the test. Native ADDSS site `17164F` now snaps to `8*step`
+only within four float epsilons of that boundary. The correction preserves
+intermediate sums and original-timing arithmetic. The same full original
+solver now integrates 3.000000089 seconds; its negative control fails when
+the correction is removed.
+
+Expanded native support cases report:
+
+| Case | Simulated seconds | Carried ticks | Primary solves | Actual / shared RNG draws |
+| --- | ---: | ---: | ---: | ---: |
+| Quarter speed, 576 frames at 144 | 1.000000007 | 60 | 576 | 9216 / 960 |
+| Triple speed, 144 frames at 144 | 3.000000089 | 180 | 288 | 4608 / 2880 |
+| Repeated irregular intervals | 1.383333387 | 83 | 120 | 1920 / 1328 |
+
+An independent 64-bit recurrence checks the complete shared seed, not only its
+draw count. The asset-free scope case checks varied whole/primary budgets,
+nested fractional solvers, an unrelated shared draw between private draws,
+original-mode behavior and scope cleanup. Five expanded cases passed in 20.98
+seconds (`logs/native-vehicle-rng-expanded.log`). The additional asset-free
+20,000-partition rounding contract also passes. Final Windows suites pass 70
+timing/vehicle tests in 91.37 seconds, 115 translator/generation/context/backlog
+companions in 24.17 seconds, and four fresh/repeated/native-checkpoint/controls/
+Mac-stack patch checks in 74.42 seconds. Logs are
+`native-vehicle-rng-regressions.log`, `native-vehicle-rng-companions.log` and
+`native-vehicle-rng-upgrades.log` under `logs/`. The first companion command
+used a nonexistent scope-test filename and collected nothing; the corrected
+command produced the reported 115 passes. No full-build or live-driving claim is made;
+the previously tested crowd executable remains installed.
+
+### Entity publication, vehicle components and rigid-body sleep
+
+The next fixture extension executes original `1719E0/165A40/9E840` publication
+and bounds transforms, `1753A0` vehicle component integration, and
+`1677E0/167880` sleep/wake. Entity position and velocity now receive the actual
+body results every advancing frame. The fixture supplies controlled external
+forces before each advancing update because the original publisher clears
+the accumulators. A rotating nonzero center offset exercises the position and
+bounds transform. Component acceleration, angle accumulation and clamping run
+at 60/120/144; their small forward-Euler differences remain explicit.
+
+This exposed another real timer defect: direct byte-memory DEC `171F83`
+expired ten sleep counts after ten rendered updates, taking
+0.166667/0.083333/0.069444 seconds. The candidate extends the existing byte-load
+policy to this exact decrement. The lifter applies the hook once to its input,
+then derives flags from the actual stored result, retaining carry. Unrelated
+sites and original timing keep their arithmetic. Synthetic tests exhaust all
+256 byte values at the target and an unrelated site, checking ZF, OF and CF.
+
+The full original-routine test now sleeps after 10/20/24 frames at 60/120/144
+(0.166667 seconds), or 40/80/96 at quarter game speed (0.666667 seconds).
+Triple game speed retains the original raw-clock sleep cadence. Sleeping bodies
+leave the active list; two wake calls reinsert the body once, and the next
+positive fractional update publishes movement immediately. Removing the new
+sleep policy fails the 120 FPS case. Evidence includes
+`logs/native-rigid-publication-before.log`, `logs/native-rigid-sleep-wake.log`
+and `logs/native-rigid-memory-dec.log`.
+
+Windows final suites pass 110 timing/vehicle/float-join/vehicle-join/generation
+tests in 132.34 seconds (`logs/native-rigid-publication-regressions.log`) and
+four fresh/repeated/checkpoint/controls/Mac-stack patch cases in 101.69 seconds
+(`logs/native-rigid-publication-upgrades.log`). The earlier focused test used
+an unsupported synthetic SETO instruction; replacing that test-only instruction
+with the supported JO branch yielded two passing exhaustive DEC cases. No
+unrelated lifter instruction support was added. Real world geometry, vehicle
+driver/force production, damage/model notification and rendered driving remain
+unverified. These routine results do not establish full handling acceptance.
+
+The first supported Windows build regenerated guest code but failed to link
+`sub_00171FB0_gen`. The runtime manual scanner only recognizes standalone
+`extern void sub_X_gen(void);` declarations; combining it with two other
+declarations was valid C but caused the generator to omit the original body.
+The patch now separates that declaration, and a new asset-free regression uses
+the actual scanner to require both wrapper recognition and solver/RNG name
+pinning. The full patch loader applied the repair normally. The failed build
+is recorded in `logs/native-vehicle-full-build.log`; a corrected build is
+required before any gameplay claim.
+
+### First full build and live vehicle comparison: acceptance still fails
+
+The corrected supported Windows/MSVC build at `ba4f0bf` passes generation,
+linking and the builder's native tests (`logs/native-vehicle-wrapper-build.log`).
+Executable SHA-256 is
+`d973dbe170da727c0d8bc554cd16e1445aa03b01b1077f3776b199632d45b78f`.
+The scanner regression passes, 78 generation/context/backlog/scope checks pass
+in 1.39 seconds, and four full-stack install/upgrade cases pass in 186.13 seconds.
+The patch loader applied the correction normally; generated source was not edited.
+
+Bounded isolated Test Lab runs use Siberia multiplayer, Classic textures,
+1280x720 and the default six bots on the same Windows i7-13700K/RTX 4070 SUPER
+D3D11 host. The initial exploratory `vehicle-live-144` run establishes that
+entry, rendered driving, ice/bank motion and collision with a wall execute.
+It contains long idle periods and combat damage, so it is not the matched
+handling comparison. W moves the player on foot; the right trigger (replayed
+left mouse button) accelerates the jeep. Initial W-only vehicle commands did
+not test acceleration.
+
+The subsequent `vehicle-live-60`, `vehicle-compare-120` and
+`vehicle-compare-144` runs use the same shorter command sequence. Each starts
+from the same player spawn, approaches and enters the parked jeep, holds the
+right trigger for three seconds, then drives toward the bank and pauses/resumes.
+Captures were reviewed at all three rates. Player health remains 1.75 through
+the compared throttle interval. Read-only player position samples taken during
+that first throttle hold give:
+
+| Requested preset | Sample span (seconds) | Authored ticks advanced | Distance (game units) |
+| --- | ---: | ---: | ---: |
+| Original 60 | 2.972633 | 179 | 29.958242 |
+| Native 120 | 2.975056 | 178 | 19.875402 |
+| Native 144 | 2.977932 | 178 | 22.393338 |
+
+Each row has 60 asynchronous samples. Initial XYZ values are approximately
+(-12.48, 1.57, 7.03), differing by less than 0.02 game units. These results
+contradict handling acceptance despite normal elapsed game time and the passing
+controlled-routine tests. They do not yet isolate whether force production,
+wheel/contact coupling or another vehicle path causes the difference. The
+later bank trajectories also diverge; no arbitrary terrain-parity claim follows.
+These are captured diagnostic runs, not locked 120/144 performance tests. The
+native trace confirms positive fractional updates; it does not record vehicle
+state at every completed update. The first exploratory trace hits its 20,000-row
+bound before the entire driving route; the shorter comparisons remain within it.
+
+All four runners exit cleanly, preserve fixture/profile signatures and recycle
+their disposable partitions. Logs are `logs/native-vehicle-live-{60,144}.log`
+and `logs/native-vehicle-compare-{120,144}.log`; command sequences, captures,
+provenance, observations and reports are in the correspondingly named isolated
+directories under `private/test-saves/`. The summarized throttle samples are
+`private/pipeline/vehicle-live-comparison.json`. Exit-button attempts did not
+establish leaving the jeep and remain unverified. Mac driving is untested.
+
+The candidate EXE/PDB are retained at
+`private/build-recovery/vehicle-ba4f0bf/` for continued diagnosis. The previously
+tested combined crowd-performance EXE/PDB were restored to the normal Release
+location, with executable hash
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`
+reverified. No candidate PR or release has been published. The next investigation
+must include actual driver/force/contact production, beyond the controlled
+component inputs that currently pass.
+
+### Driver input gate follow-up
+
+The original driver dispatcher `17DA00` reads the integer game delta at
+`17DA03` and exits when it is zero. Its throttle/brake producer `172EE0` then
+does not replenish vehicle fields `+530/+534`, which the now-fractional vehicle
+dispatcher consumes and clears. The new `native_vehicle_driver.c` fixture lifts
+both complete routines and the original seat switch table from the verified US
+XBE. Before correction, native120 runs only 60 throttle updates in a second and
+integrates 100 units of a requested 200-unit input (Original60 integrates 200).
+See `logs/native-vehicle-driver-before.log` for that actual failing assertion.
+
+The shared numeric policy now treats `17DA03` as a positive-game-time entry
+gate. Its temporary integer value is overwritten before use as anything else.
+Original timing remains unchanged; stale integer ticks cannot advance a native
+zero-float pause. With the correction, the original producer runs on every
+native interval and integrates the same input at 60/120/144. Tests also cover
+fractional analog throttle changes, braking, reverse, release, quarter/triple
+speed, irregular intervals, pause and stack/callee-saved invariants. The
+`legacy-driver` negative control restores the original gate and must fail.
+Model lookup, wake and seat-action services are controlled. This test establishes
+input production, not tire traction, weapon behavior or live handling parity.
+The Windows regression run passes 112 timing/vehicle/float-join/vehicle-join/
+generation cases in 132.95 seconds (`logs/native-vehicle-driver-regressions.log`),
+plus 77 context/backlog/CI-scope cases in 1.18 seconds. The original-routine
+test requires the supported private XBE and skips without it.
+
+### Rebuilt driver comparison (`67c1864`)
+
+The supported Windows build and its build tests pass. Executable SHA-256 is
+`02757346892118abf6caf7eb1376634afce4753a93155600c21d799b3ef2adb8`.
+The same established Siberia input sequence runs sequentially at 144, 60 and
+120 with six default bots, Classic textures and 1280x720 captures. All sampled
+throttle windows have 60 observations, 178 authored ticks, health 1.75 and
+starting positions within 0.02 units. Initial throttle travel is now:
+
+| Requested preset | Sample span (seconds) | Travel (game units) |
+| --- | ---: | ---: |
+| Native 60 | 2.975451 | 29.694886 |
+| Native 120 | 2.976108 | 29.677941 |
+| Native 144 | 2.975363 | 29.674005 |
+
+This removes the earlier large acceleration deficit; the spread is below 0.1%.
+The later route still diverges at terrain contact: 60/120 stop against the ice
+pillar near Z=67.57/68.56, while 144 proceeds onto the bank near Z=106.06. Captures
+confirm these different outcomes. No collision root cause is established by
+this replay, and broader handling acceptance remains open. The exit attempt
+again does not leave the vehicle. Pause and resume are observed at each rate.
+
+Native120/144 traces have median positive game deltas 0.52116/0.51533 ticks;
+1,703/1,766 advancing gameplay updates carry zero integer ticks. These are
+diagnostic runs, not locked-preset FPS or pacing measurements; a separate
+menu-footer checkout's game also remains open and untouched. All three runners
+exit cleanly, preserve fixture/profile signatures and recycle disposable disks.
+Evidence: `private/test-saves/vehicle-driver-{60,120,144}`, corresponding
+`logs/native-vehicle-driver-{60,120,144}.log`, and
+`private/pipeline/vehicle-driver-comparison.json`. Runner SHA-256 is
+`f9e0751890fc3511181c993a3881737c3c7ed173b9fac7f4c03742b71c9755f5`.
+The previous playable crowd EXE/PDB are restored and their executable hash
+reverified. Current candidate files are in `private/build-recovery/vehicle-67c1864`;
+the superseded `vehicle-ba4f0bf` binary pair was recycled. Source remains on the
+focused WIP branch, without a candidate PR or release. Mac execution is pending.
+
+### Character contact velocity and notification follow-up
+
+Analysis of the existing pillar replay finds the approaches differ before
+impact. Aligning adjacent asynchronous observations at Z=66 gives X values
+-11.46446/-11.64785/-11.75056 and headings 2.81737/2.18834/1.84633 degrees
+at requested 60/120/144. The alignment is an analysis of samples, not a game
+timing change. Evidence is `private/pipeline/vehicle-contact-approach.json`.
+These small pre-impact differences prevent attributing the later different
+outcomes to a collision defect without a controlled contact comparison.
+
+The audit independently identifies a missed gate in original contact-relative
+velocity function `1667C0`: `166899` skips the moving character contribution on
+zero-whole native updates. The guarded conversion already divides per-update
+displacement by float game time. The gate register is immediately restored;
+it is not a tick counter. The shared numeric policy now admits positive live
+game intervals there, preserving original mode and avoiding division by zero
+on native pauses with a stale whole tick. Static and rigid-body branches are
+unaffected. This is not a fix for the static-pillar trajectory.
+
+`native_contact_velocity.c` lifts full `1667C0/166060` from the verified US XBE.
+It checks analytical point velocity (linear plus angular cross offset), body,
+static and character contacts, all axes and signed/zero actor velocities,
+60/120/144, quarter/triple speed, irregular intervals, pause, nullable output
+and stack/callee-saved state. Before correction it passes Original60 then fails
+at native120 (`logs/native-contact-velocity-before.log`). The restored-gate
+negative control must still fail at that rate.
+
+The coupled rigid fixture adds a body resting on a character moving upward at
+2 units/second with gravity. A body-position-only assertion passes even with
+the old gate: the impulse solver independently reads live displacement.
+The observable defect is the relative normal/vector velocity forwarded through
+the original `16E780/16DA90` path to the body impact callback. The corrected
+pipeline reports relative velocity near zero instead of the body's absolute
+2 units/second on fractional updates. The callback assertion rejects
+`legacy-character-contact`; the original dispatcher and contact-kind table run
+unchanged. Body positions after one second remain approximately
+1.999984/1.999991/2.000027 at 60/120/144 with velocity approximately 2.
+Material coefficients are controlled at zero, so actual damage/effects and
+live character movement remain outside this check.
+
+Validation: 113 timing/vehicle/float-join/vehicle-join/generation cases pass in
+139.99 seconds (`logs/native-contact-velocity-regressions.log`), followed by the
+expanded original notification-path fixture in 12.04 seconds
+(`logs/native-character-contact-notification.log`). These original-routine
+tests require the private supported XBE. Full game build/live contact and
+native Mac execution of this correction remain pending. The playable crowd
+EXE/PDB and retained driver candidate `67c1864` are unchanged.
+
+### Initial motion inherited by spawned physics objects
+
+Original `1727A0` creates a physics object from a model joint. Its gate at
+`172AB5` checked integer time before inheriting the difference between current
+and previous joint positions. A spawn on a fractional native update therefore
+permanently lost its initial linear velocity and angular momentum. The
+conversion at `172B01` already divides by fractional game time; the temporary
+gate register is overwritten. The shared positive-time gate now includes this
+site, while Original60 and native pause retain their intended behavior.
+
+Joint history is copied by `57040`, called at `A7425` in the entity updater.
+Caller `2107E8` passes a nonzero inheritance factor; `1FA7B2` passes zero and
+intentionally disables inheritance. This routine creates an object once per
+event; it is not a continuous animated-collider update.
+
+`tests/native_spawn_motion.c` lifts full `57040/1727A0`, real linear-velocity
+and angular-momentum setters `167CE0/167C00/167AE0`, and their matrix helpers
+from the verified US XBE. Controlled services provide allocation, neutral
+Euler extraction, owner transforms, CRT floor, bounds and wake notification.
+The history routine samples the prescribed joint before it moves. Independent
+spawn events check every carried-clock phase at 60/120/144, signed/disabled
+inheritance, identity/rotated transforms, an offset vertex, slow/long intervals,
+pause with stale whole time, missing history, allocation failure and guest ABI.
+The before-fix run passes Original60 and fails native120's velocity assertion
+(`logs/native-spawn-motion-before.log`). After correction it passes, including
+the old-gate negative control (`logs/native-spawn-motion-after.log`). These
+checks establish initial body state, not live appearance or full trajectories.
+The broader Windows suite passes 114 timing/vehicle/translator/generation
+checks in 147.56 seconds (`logs/native-spawn-motion-regressions.log`) and 77
+context/backlog/scope checks in 1.17 seconds. Supported Windows build `3e1ee87`
+and its built-in validation pass (`logs/native-spawn-motion-build.log`), using
+MSVC 14.44.35207, Windows SDK 10.0.26100 and the common Xbox frontend. This
+build also includes the prior character-contact correction `6232685`.
+Candidate EXE SHA-256:
+`6cfe6c7a5b5fe71b0f128b520e1e08affd1e50e3fbd672de783c34f21387c42e`.
+The EXE/PDB pair is retained in `private/build-recovery/vehicle-3e1ee87`;
+the superseded `vehicle-67c1864` pair was recycled. The normal playable
+`4adb6b0` pair was restored and its executable hash reverified as
+`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+No game session was launched for these two additions. Live spawn/contact,
+broader handling, measured pacing and native Mac validation remain pending.
+
+### Actor-to-vehicle contact velocity units
+
+The previously deferred `17CBAF` gate cannot safely be treated as another
+missing fractional-update gate. Original entity post-update `A7360` already
+divides displacement by live game time at `A75F8`, publishing units per
+authored tick in entity `+F8/+FC/+100`. Callback `17CAE0` then multiplies those
+fields by60, but on positive whole counts also divides by live time again at
+`17CBD6`. The same constant-speed contact at120 therefore alternates between
+the correct speed and twice that speed. Merely opening the gate would make
+both phases wrong. Native `17CBD6` now returns its numerator, leaving the
+original mode, callback cadence and `17CBAF` gate unchanged.
+
+Jeep initialization registers this callback as event7 (`182C04 -> A5CE0`),
+stored at entity `+170`. Player collision delivers it at `C4A3F`; original
+physics contact handling queues events through `1709F0/170B53 -> 16C070` and
+drains them at `16C126` in `16C0D0`. `A7870` runs the physics clock before
+the entity post-update, so prior published velocity may be consumed by the
+next interval. Reusing a different interval must not rescale that velocity.
+
+`native_vehicle_actor_impact.c` executes full original publication `A7360`,
+registration `A5CE0`, queue append/drain `16C070/16C0D0`, callback `17CAE0`,
+point velocity/contact construction `166060/1665F0`, impulse selection
+`17BC90`, and suspension response `174EC0` with its original mass/matrix
+helpers. Motion and contact geometry are prescribed; allocator release and
+the final effect service are controlled. Each case is an independent contact,
+not a repeated-contact or driving simulation. It checks all carried-clock
+phases at60/120/144, signed/stationary motion, 25 combinations of producer and
+event intervals, original-mode multi-tick behavior, pause and guest ABI.
+Both contact speed and actual suspension component changes are asserted.
+
+After fixing test-only stub declarations and contact-normal sign expectation,
+the before-fix run passes60 and zero-whole120, then fails the carried120 case:
+normal speed -10.4 instead of -5.2 (`logs/native-actor-impact-before.log`).
+The corrected fixture passes (`logs/native-actor-impact-after.log`), including
+negative controls restoring the old division or opening only the old gate.
+The combined timing/vehicle/numeric-join/generation suite passes 115 tests
+in 146.56 seconds. Supported Windows build `60e5b36` and its built-in checks
+pass (`logs/native-actor-impact-build.log`), using MSVC 14.44.35207 and
+Windows SDK 10.0.26100 with the common Xbox frontend. Executable SHA-256:
+`6431273bb202aa4a0efa9b66cd2611cd3b63191cd9b3cb111115d6aa59c224d4`.
+Live vehicle/actor acceptance and native Mac validation remain pending.
+
+The bounded native144 Siberia probe is recorded in
+`private/test-saves/vehicle-actor-trace-60e5b36-144` (`report.json`, selected
+captures, `run0.err`, `contact-probe.json`). It walks into the parked jeep
+without entering it, reaching 64 bounded `17CAE0` entries from the original
+player collision return `C4A41`. The scene also records 64 `17BC90` and ten
+`174EC0` entries; these include vehicle/world setup contacts and are not
+attributed to the player impact. Pause/resume changes the observed pause
+flag 0/1/0, health stays 1.75, and the isolated profile/signatures are intact.
+The reviewed contact capture shows the player stopped beside the jeep.
+Entry traces do not expose the actor argument/type or confirm that a particular
+entry reached `17CBD6`; they do not measure impact strength or repeated-contact
+parity. No locked-144 FPS or full handling claim follows from this probe.
+
+The first probe (`vehicle-actor-60e5b36-144`) reached the same scene but had
+no function trace because `prepare_run` correctly strips inherited debug
+environment variables. The runner now accepts explicit `--trace-vehicle-contact`
+after isolation, with a 64-entry budget per function, mutually exclusive with
+the different `--watch-input` function trace. The repeated probe uses that flag.
+Both bounded child processes exited normally and disposable partitions were
+cleaned by the runner. The new candidate EXE/PDB is retained under
+`private/build-recovery/vehicle-60e5b36`; the superseded `3e1ee87` pair was
+recycled. Playable `4adb6b0` was restored with its previously recorded hash
+verified. The root object cache remains the newer candidate, requiring a
+fresh link after preserving the playable pair before any subsequent rebuild.
+
+### Steering response subdivision
+
+The next original-routine audit identifies a separate steering-response mismatch.
+`172EE0` computes a speed-dependent signed target, subtracts the current steering
+value at vehicle data `+538`, multiplies by float game time at `173062` and
+then by 0.07 at `17306A`. Dividing this linear weight over more rendered updates
+changes its remaining-error decay. The same half-second quarter-speed stage
+ends at -0.102306642 with the original 60 update response but -0.100790747 at
+native120 before correction. This is a controlled steering result, not proof
+of the earlier static-pillar trajectory's cause.
+
+The shared numeric policy adds only `17306A` to the existing aim-easing rule.
+For a fractional raw interval, it splits the authored remaining-error factor
+at the current game-speed ratio. One-tick and catch-up intervals keep original
+arithmetic, as do authored weights outside the decay range. The speed-dependent
+target clamp and wheel eligibility/distribution remain original code.
+
+The expanded `native_vehicle_driver.c` executes full original `17DA00/172EE0`
+from the hash-verified US XBE. It compares independent 30-step Original60
+recurrences for left, right and released targets across Original60/native60,
+120/144 and irregular raw intervals, three prescribed game speeds and three
+vehicle-speed inputs (including the target clamp). Every advancing sample must
+publish fresh steering and the correct eligible-wheel angle; other wheels,
+paused state, stack and saved registers remain intact. Whole/catch-up and
+overshooting-weight cases preserve their linear step. The before-fix log fails
+at native120; the corrected fixture passes and the independent
+`legacy-steering` mutation restores the failure. Logs:
+`logs/native-vehicle-steering-{before,after}.log`.
+
+Two asset-free synthetic SSE cases in the same registered Python suite exercise
+the actual lifter and numeric policy at the steering site and an unrelated
+site, including Original-mode arithmetic and preserved upper lanes. Both pass
+on Windows (`logs/native-steering-coefficient.log`). Private original-routine
+cases still skip when the game asset is absent. World geometry, wheel forces,
+physical input and live handling remain separate acceptance work; no full-game
+or native Mac claim follows from these checks.
+
+The full Windows timing/vehicle/float-join/vehicle-join/generation suite passes
+117 tests in 153.58 seconds (`logs/native-steering-regressions.log`); another
+77 context/backlog/scope checks pass. Across 135 steering stage comparisons,
+maximum absolute error from the independent Original60 recurrence is
+0.000000238. Supported Windows build `464f850` and all built-in checks pass
+(`logs/native-steering-build.log`), using MSVC 14.44.35207, SDK 10.0.26100 and
+the common Xbox frontend. This pair was superseded by integrated `d0116a7`;
+its historical EXE SHA-256 is
+`a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
+The normal `4adb6b0` pair was restored with its previously recorded hash verified.
+No live driving run was performed at that source revision. Subsequent integrated
+source `d0116a7` incorporates main `7545d4b` and passes the supported Windows
+build, 147 combined runtime/source checks, four upgrades and 88 repository
+checks. All selected Windows/Mac CI and transition jobs pass at `d0116a7`
+(runtime workflow 39851684749). Original-routine cases require private assets;
+these hosted results do not establish actual Mac gameplay.
+
+**Reference-clock correction:** the live `vehicle-*-60` records in this vehicle
+investigation use native60 (`--native-fps 60`), verified by saved provenance and
+startup logs. They do not exercise Original60; prior original-clock labels are
+withdrawn. This does not alter offline fixtures that explicitly disable native
+timing. Use zero/disabled native timing for a genuine live original reference.
+
+Initial integrated live144 runs were excluded from steering comparison: one
+observer confused a body handle with a pointer and had no samples, and in the
+next run a bot killed the player before entry. The later native60 route
+showed steering/throttle and a stationary paused jeep but still had six bots,
+despite its `60-empty` name. `logs/vehicle-integrated-live-summary.json` records
+these exclusions and limits. A subsequent setup probe selected the normal
+None bot preset (roster257, zero bots); the different spawn invalidated its old
+walk-to-jeep route. No handling comparison is claimed from that probe.
+Use the verified None preset and observed approach position for future matched
+runs; preserve asynchronous diagnostic scope and inspect actual jeep entry.
+The corrected `vehicle-integrated-settled-{60,120,144}` runs use that setup,
+a bounded normal-input approach and six seconds for the entry animation.
+All three pass signed steering (>0.9 magnitude in each direction), throttle
+movement and stationary paused-body checks, with zero bots and unchanged
+profiles. The 3,502 / 3,507 / 3,536 read-only samples are asynchronous; see
+STATUS and `logs/vehicle-nobots-comparison.json` for sampled differences.
+Those images prompted a separate camera/body position probe because their
+180-frame dump cadence yields different capture ages across presets. Before
+the camera fix, valid ownership/mode/FOV and matching frame brackets show
+distance 10.44548 at native60 versus 15.13290 at native144 near vehicle Z30.
+Original `CA040` discarded fractional frames despite consuming a fractional
+physics-history duration; `CA424` also required a nonzero spring-substep count.
+Shared numeric fix `24d0ad5`, integrated into `fb261e1`, corrects both loads
+while retaining Original60, authored coefficients and world routines.
+
+The full-original camera fixture reproduces the deficit and passes after the
+fix; gate/count counterfactuals fail independently. Full Windows build and all
+selected CI pass at `fb261e1`. Its matched no-bot camera runs at 60/120/144
+measure distances 10.10340 / 10.10925 / 9.97361 near Z30, with signed steering,
+stationary pause and unchanged profiles. Captures show the expected chase
+view. STATUS records all checkpoints, binary provenance and scope. These
+single short captured runs use asynchronous observations, not completed-update
+or scanout traces. Exact response, complete trajectories, terrain/contact,
+physical input, vehicle exit, frame pacing and native Mac acceptance remain
+pending. Evidence: `logs/vehicle-camera-comparison.json` and isolated
+`vehicle-integrated-camfix-{60,120,144}` reports/provenance/captures.
+
+The subsequent straight no-bot obstacle route uses that same `fb261e1` binary,
+removes all pre-drive steering, and extends throttle through two additional
+three-second bursts. Native60/native144 stop near Z67.987/67.912, whereas
+native120 reaches the bank near Z109.037. A second native60 stops at Z67.568.
+Captures confirm the different outcomes. Steering remains below0.001, health
+stays1.75 and pause/profile-preservation checks pass in all four sessions.
+The earlier six-bot replay split at144; this one splits at120. Small position,
+orientation and vertical-motion differences are present before the pillar
+edge, including differences between the two native60 runs. Neither replay
+establishes the collision root cause. No production mechanics change was made;
+controlled obstacle/contact acceptance remains open. See STATUS and
+`logs/vehicle-terrain-comparison.json`, plus the isolated
+`vehicle-integrated-terrain-{60,120,144,60-repeat}` records. Captured asynchronous
+observations do not establish exact trajectories or pacing.
+
+### Synchronous vehicle contacts and actual original-clock reference
+
+Build `20dc25d` adds a disabled-by-default bounded solver-entry diagnostic.
+Generated arena records and selected pointers are read at `172114 -> 171560`
+with checked memory spans. The arena has already passed selection/merging;
+it is not untouched producer output. The previous asynchronous probe sampled
+the arena after reset and cannot establish absence of contacts.
+
+New original60/native60/native120 runs on the same Windows executable record
+453/663/870 solver entries and 945/1,385/1,750 selected target contacts. The
+original run explicitly uses `--native-fps 0` and verifies `native=0`; controls
+verify `native=1`. All three stop at the pillar, near Z67.946/68.027/67.622, with
+visible contact response and stationary pause. Initial contact geometry and
+approach velocities differ; the earlier pass-through remains unresolved.
+The native144 navigation attempt never reaches the jeep and is excluded.
+Independent frame-bracketed camera samples near Z30 are 10.15778/10.13406/
+10.03145 units for original60/native60/native120. These short captured runs are
+not pacing evidence or full original-versus144 acceptance. See STATUS and
+`logs/vehicle-solver-comparison.json` for scope, provenance and exclusions.
+
+The subsequent `vehicle-integrated-solver-144-detour` reaches the jeep using
+normal walking waypoints around the obstructing column, then runs the same
+jeep inputs. Its 241 solver entries include 655 selected contacts within
+Z60..80; the jeep continues to the bank near Z105.204. The first object normal
+points sideways (-0.9962,-0.0654,+0.0573), unlike the original-clock front normal
+(-0.0551,0,-0.9921). Allocated records contain four side-facing normals and no
+front-facing normals in that window; selection may already have merged them.
+This identifies different contact geometry entering the solver, not a proven
+missed response. Approach differences and broader handling remain open.
+Camera/body distance near Z30 is 10.01738 at144 versus 10.15778 at original60;
+114 settled pause observations are stationary. These captured synthetic-control
+runs remain separate from pacing and scanout measurements.
+
+The original rigid fixture also checks 576 nonzero-depth/rebound/quantized-normal
+cases against an independent generalized impulse with unit inverse inertia.
+Original penetration correction is already a velocity (12 * clamped overlap),
+not a per-frame displacement. Dropping that term fails the new counterfactual.
+All 19 vehicle tests pass; controlled geometry and the private-XBE requirement
+limit this evidence. No runtime mechanics change follows from the audit.
+
+### Vehicle exit and on-foot controls
+
+Windows `20dc25d` passes a bounded Siberia jeep route at genuine Original60 and
+native144: enter, throttle three seconds, settle five seconds, Y exit, one
+second of walking, pause/resume. Exit restores weapon 4 and camera 24 -> 0; walking
+moves 7.988814/8.001610/7.990989 units while the jeep stays stationary. Each run has 114
+settled zero-delta pause samples with unchanged body/camera positions, zero
+bots, health 1.75 and unchanged valid isolated profiles. The synchronous trace
+verifies native=0/native=1. Exit/movement captures were reviewed. Full handling,
+other seats/vehicles, physical input, pacing and native Mac remain unverified.
+
+Default Y supplies logical 0x40, which original `D2470` forwards to `17DA00`.
+Earlier E/F/R attempts are excluded as incorrect input (F/R measured 0x20/0x10),
+not classified as high-refresh defects. Guest logical bits differ from Xbox
+analog indices. This is validation/documentation only, with no runtime change.
+Evidence: `vehicle-integrated-exit-y-{original60,120,144}` and
+`logs/vehicle-exit-comparison.json`; source/build/hash/host details in STATUS.
+
 ## Native-start return to Original 60 (2026-10-22)
 
 The earlier 36–39 ms cycle gaps were measured before main's late-frame pacing
@@ -5830,3 +6758,831 @@ CSVs, `logs/crowd-*-matrix.json` and `*-stats.json`; rejected
 `crowd-venice-setup`, `crowd-venice-match-rules` and `crowd-projection-visual`.
 All sessions exit cleanly with unchanged valid profile signatures, preserved
 fixtures, recycled disposable disks and no personal game left open.
+
+## Coupled fractional water operator (2026-10-23)
+
+The earlier controlled tests isolate two independent problems: fractional
+coupling and intermediate storage. This candidate addresses the first without
+claiming the second is solved. The game still uses its existing paths; no hook
+calls the candidate, and the normal-play water experiment remains disabled.
+
+For centered velocity `g = G - 0.5` and displacement `h = B`, the verified
+one-step linear model is `v = g + a*(forcing - k*h)`,
+`g_next = v + bias`, `h_next = d*(h + travel*v)`. Its linear matrix is
+`[[1, -a*k], [d*travel, d*(1-a*travel*k)]]`; its offset is
+`[a*forcing+bias, d*travel*a*forcing]`. The new portable helper takes the real
+principal fractional matrix power and preserves the affine fixed point.
+It handles the complex-conjugate and positive-real eigenvalue cases, including
+the repeated-eigenvalue limit, and rejects invalid/non-real-step inputs without
+publishing partial output. Timestep zero is identity and one retains the original
+matrix. Input coefficients remain anchored to the actual uploader's packed bytes.
+
+The old three-parameter scaling cannot express this operator: the required
+velocity-retention coefficient is approximately 1.00824992 at 120 and 1.00802577
+at 144 in the fixed-neighbor fixture, whereas the old shader structure fixes it
+at one. The new shader body evaluates both coupled rows; language adapters only
+supply vector syntax. These rows must operate on spatial modes, not independent
+world texels with an assumed constant restoring strength.
+
+`native_surface_coupled.c` runs through the existing Windows/Mac native-timing
+suite without assets. It checks 65 restoring strengths spanning the clamped
+diagonal stencil, original/native rates, 0.17+0.83 split-step composition,
+identity and invalid-input nonmutation. Local maximum trajectory error is
+0.0000023031 after float coefficient storage. Additional cases cover positive,
+repeated and complex eigenvalues against independent original equations. The
+full native-timing suite passes 67 tests in 85.65 seconds. This is a linear
+numerical contract.
+
+The Windows WARP fixture still executes the unmodified production-translated
+original pixel programs and extracts coefficient bytes from the complete US
+uploader. Their float32 60-step results supply the independent GPU references.
+The shared candidate shader matches the fixed-neighbor result within
+0.0000008345 at 60/120/144, with every candidate update changing the state.
+
+The 64x64 spatial extension uses an orthonormal DCT-II for the same clamped
+diagonal-neighbor stencil. Its mode restoring strength is
+`k + 4 - 4*cos(pi*x/64)*cos(pi*y/64)`; only the zero mode receives the constant
+forcing/centering offsets. The shared separable GPU transform runs before per-mode stepping, and its inverse
+reconstructs the field after **every** update. The fixture reuses its basis and
+scratch textures. CPU transforms remain only as independent numeric references;
+asymmetric corner impulses, a checkerboard and deterministic noise exercise both
+axes, the inverse transpose and high frequencies. Their maximum absolute error
+is 0.0000028611. The direct 64-term-per-axis transform is bounded, but its game
+frame-time cost has not been measured and no runtime hook calls it.
+
+| Candidate rate | G/B RMS vs original float32 60 | Maximum error | G/B RMS vs original byte 60 | Fresh updates |
+| --- | ---: | ---: | ---: | ---: |
+| 60 | 0.0000008438 | 0.0000018478 | 0.03137490 | 60/60 |
+| 120 | 0.0000009699 | 0.0000020266 | 0.03137500 | 120/120 |
+| 144 | 0.0000007604 | 0.0000017286 | 0.03137483 | 144/144 |
+
+Temporary-header mutations reset fractional velocity retention to one. Both
+the fixed-neighbor and spatial GPU comparisons then fail their numeric acceptance
+after successful compilation, proving that those tests detect the missing term.
+An additional mutation removes the inverse-transform transpose and must fail
+the GPU round-trip comparison. Both spectral state and reconstructed world
+field are checked for fresh updates at every candidate frame. All eight GPU
+cases pass in 30.74 seconds, including the three expected-failure mutations. Existing byte/half-float discrepancy checks remain.
+No supported game rebuild is needed for these currently uncalled helpers/tests.
+
+Outstanding: original byte-feedback appearance/rounding, clipping, smoothing,
+disturbance timing, original guest geometry/viewport submission, runtime ownership/state restoration for the GPU
+transform resources, runtime integration, live-rate transitions, actual
+frame-time cost and native Mac GPU/gameplay acceptance. Do not enable the water
+experiment solely from these controlled results. Evidence is local in
+logs/water-coupling-gpu-suite.log; shader bytes and game assets are not tracked.
+
+### Original vertex program and rounding isolation
+
+The updated WARP fixture extracts the vertex program at US 0x4BBB90 (header
+0x00062078, six instructions) and translates it with the unmodified production
+vertex parser/emitter. The original program consumes v1/v2/v3, copies position,
+swizzles color and adds c17-c20 to UVs. It now runs on the GPU alongside both
+original pixel programs. The fixture still supplies a synthetic fullscreen
+triangle/NDC position and texel-centered UVs; this does not validate the game's
+actual vertex submission or viewport/half-texel handling. All controlled spatial
+results are unchanged. Translation helpers use isolated runtime configuration.
+
+Three added one-second Original-60 controls isolate byte rounding. Each pass
+renders to its selected actual GPU storage format. The gradient-only control
+retains the first pass's byte red result but explicitly restores copied green/
+blue channels from the float input before pass two. This is an intentional
+ablation, not game behavior. Each mixed path must remain distinct from the
+original both-byte result (RMS blue difference > 0.005).
+
+| Storage control | Mean blue | Blue standard deviation | RMS blue vs both-byte 60 |
+| --- | ---: | ---: | ---: |
+| Both passes byte (reference) | 0.604052758 | 0.024023703 | 0 |
+| First pass byte, second float | 0.595155834 | 0.023109208 | 0.012476170 |
+| First pass float, second byte | 0.562469389 | 0.009027910 | 0.045231253 |
+| First gradient byte, copied G/B and second pass float | 0.570406683 | 0.001638243 | 0.041304309 |
+
+The closer first-byte-only result cannot be attributed solely to rounding the
+spatial gradient: it also repeatedly rounds the carried velocity/displacement.
+Keeping only the quantized gradient loses that result. Mean signed rounding
+errors are recorded per pass/channel, rather than treating quantization as
+zero-mean noise. For the both-byte reference, first red mean error is
++0.000151594 and second green mean error is +0.000358667 per update. These are
+state-dependent observations, not constants to add to the fractional solver.
+Neither changing one target format nor rounding only the gradient preserves
+the original byte feedback in this field. Full nonlinear/state-rounding behavior
+remains unresolved. Evidence: logs/water-original-vertex.log and
+logs/water-quantization-ablation.log; no game asset bytes are committed. All
+eight updated GPU cases pass in 31.96 seconds (logs/water-coupling-gpu-followup.log).
+### Integrated vehicle-physics build: crowded-match pacing
+
+The later `20dc25d` build is compared with normal playable `4adb6b0` using the
+same configured ten-bot Venice route, native144, 3440x1440/FOV 73/Classic and
+unlimited score. Capture-free/no-sampler minimized Windows runs produce
+143.803/143.901 guest presents/sec over the strict complete-interval 50-second
+window. p95 is 7.737/7.782 ms, p99 is 8.116/8.195 ms, worst is 27.428/34.091 ms;
+slowest full second is 141 for both. All presents are guest frames. Active
+scene 46/state 7/unpaused checkpoints and clock/wall ratios 0.999959/0.999937
+validate the measurement scope; signed isolated profiles remain unchanged.
+
+This supplies integration pacing evidence after fresh physics updates, not
+an individual-fix speedup, deterministic scene comparison or scanout/physical
+input acceptance. It does not prove the reported 110-FPS drops are eliminated.
+Both largest gaps follow E key-down after zero-health checkpoints by 67.273/
+47.697 ms; their Present bodies take 0.069/0.068 ms. Respawn is a follow-up lead,
+not a proven cause, and other slow frames have different timing. Source hashes,
+CI scope and remaining gaps are in STATUS; raw evidence is under
+`vehicle-integrated-crowd-144`/`crowd-playable-compare-144` and
+`logs/integrated-crowd-comparison.json`. No runtime change or rebuild.
+
+The subsequent read-only CPU/health diagnostic reproduces a 25.856-ms gap
+after health restoration, with a 0.070-ms Present call. A follow-up observing
+emulated GPU handshake words has a worst selected gap of 14.332 ms and does
+not reproduce the larger event. These instrumented runs preserve isolated
+profiles and verify the ten-bot roster, but neither identifies a causal routine
+or proves an FPS improvement. Keep the hitch open; STATUS records the CPU
+counter limitations, raw evidence and need for a timestamped stack/wait trace.
+
+That follow-up now captures texture-file I/O beneath `tsfp_texture_upload`
+in slow frames. A revised saved-stack sampler reduces median suspension to
+0.0188 ms from 0.4553 ms; it remains diagnostic. Its worst selected interval is
+12.701 ms versus 9.456 ms in one isolated no-pack control, with differing bot
+outcomes. Neither reproduces the 25.856-ms event or proves a performance fix.
+Preserve Classic/Enhanced and live switching; measure individual upload stages
+before changing the loader. STATUS records all three runs and their limits.
+
+### Captured periodic boundary and authored target size
+
+A single bounded Original60 Scotland run (`water-runtime-state`) used the
+preserved source-4adb6b0 executable, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab, with the verified
+US XBE and isolated Test Lab settings/saves. Host frame 3600 was recorded in a
+9,220,188-byte version-9 D3D capture. The run completed cleanly without changed
+profile hashes; signatures and fixture remain valid, and disposable partitions
+were recycled. This binary does not contain the experimental solver.
+
+The capture identifies four water draws by vertex-microcode SHA-256
+363fd81ebd9f0567bbcbea7fafab686241707d85396df0a8abef78ce79bf0425, matching the
+supported XBE's six-instruction program. In particular, the feedback pair uses:
+
+- 128x128, Xbox format 6, single-level render targets and sampled inputs;
+- U/V address mode 1 (wrap), min/mag filter 2 (linear);
+- a four-vertex triangle strip, stride 24, positions (0,0), (0,128),
+  (128,0), (128,128), Z 0.001 and UVs (0,0)..(1,1);
+- viewport (0,0,128,128), depth 0..1;
+- enabled screen-space undo, scale (64,-64,16777215,1), offset (64,64,0,0);
+- the same first-pass diagonal and second-pass southwest UV offsets as the
+  callback-derived fixture, now observed at +/-1/128.
+
+Recorded pixel tokens are host handles, **not** guest shader addresses. The
+inspection therefore selects the verified vertex program and inspects offsets,
+bindings and pass order, rather than equating a host token with 0x4BBE20/0x4BBF10.
+The capture's system-memory texture copies are not live feedback pixels; only
+its state/geometry is used here. Private evidence: the run's water.d3dcap,
+capture-provenance.json, report.json, and private/pipeline/water-runtime-draw-state.json.
+No game data is committed.
+
+The observed wrapping invalidates direct gameplay use of the earlier clamped
+DCT basis. `graphics/surface_basis.h` now owns both policies: DCT-II for clamp
+controls and real orthonormal Hartley weights `(cos(2*pi*k*x/N) + sin(2*pi*k*x/N))
+/ sqrt(N)` for wrap. Periodic restoring shift is
+`4 - 4*cos(2*pi*kx/width)*cos(2*pi*ky/height)`. The shared shader takes the axis
+extent, and resources/basis weights must match it; the shared policy accepts
+extents 1..128 and rejects invalid coordinates/boundary values.
+
+The 128x128 wrapped GPU case mirrors the observed quad, normalized UVs, viewport,
+screen-space undo and linear wrap sampler through the original vertex/pixel
+programs. Its synthetic initial field includes a small edge pulse in addition
+to the center Gaussian. This crosses the seam immediately and exposes the old
+boundary error; substituting a clamped basis fails the numeric comparison.
+The basis and coupled updates remain on the GPU, with a fresh reconstruction
+after every fractional step.
+
+| Periodic candidate FPS | RMS G/B vs original float32 60 | Maximum error | RMS G/B vs original byte 60 | Fresh reconstructed updates |
+| --- | ---: | ---: | ---: | ---: |
+| 60 | 0.0000006489 | 0.0000016690 | 0.03692987 | 60/60 |
+| 120 | 0.0000007953 | 0.0000019074 | 0.03693001 | 120/120 |
+| 144 | 0.0000007933 | 0.0000019074 | 0.03693000 | 144/144 |
+
+The asset-free shared-basis fixture checks orthonormality and actual neighbor
+stencils for both boundaries at 1/7/64/128; maximum error is 4.623e-14. It is
+registered in the existing Windows/Mac native-timing suite. All 11 WARP cases
+pass in 48.61 seconds, including the new boundary negative control and the
+previous retention/transpose controls. Evidence: logs/water-wrapped-suite.log
+and logs/water-authored-size.log. These remain controlled float32 results: byte
+rounding/clipping, actual smoothing/disturbance inputs, runtime resource/state
+integration, live rate changes, gameplay frame-time cost, other surfaces and
+native Mac GPU/gameplay acceptance remain open. Normal play is unchanged.
+
+### Original smoothing plus feedback storage reference
+
+Follow-up PR #321 adds an Original60-only reference with the observed cardinal
+smoothing pass before both feedback passes. It translates shader 0x4BBC40
+unchanged and uses the original vertex program with the captured +/-1/128
+cardinal offsets, pixel-space quad and wrapped linear sampling. Input remains
+the controlled center Gaussian plus seam pulse; random disturbances and final
+normal/shading are excluded. The fractional candidate comparison remains the
+separate feedback-only contract, not a claim to match this fuller reference.
+
+At each of 60 updates, all RGB smoothing output is checked against the explicit
+wrapped four-neighbor average and the shader's nonidentity centering/color
+factor. Float32 maximum filter error is 5.96046448e-8; byte error is bounded by
+half a byte step. A mutation zeros all smoothing offsets and must fail the
+neighbor calculation, so the test distinguishes smoothing from a copy.
+
+| Original60 three-pass storage | Mean blue | Blue standard deviation | RMS blue vs both-byte |
+| --- | ---: | ---: | ---: |
+| All float32 | 0.576436446 | 0.000468331 | — |
+| All half float | 0.559374392 | 0.001727153 | — |
+| All byte | 0.562230514 | 0.023116937 | 0 |
+| Smoothing and first feedback byte, second float | 0.629445438 | 0.040056530 | 0.080110445 |
+| Smoothing and first feedback float, second byte | 0.631365151 | 0.019306744 | 0.076352467 |
+
+Combined float32/byte G/B RMS is 0.0192863519. Thus smoothing changes the field
+but does not explain away the storage difference; the full nonlinear byte
+behavior still needs treatment before candidate gameplay integration. Mixed
+controls use the first-feedback format for smoothing too, and are not identical
+to the earlier two-pass ablations. With byte smoothing, the gradient-only
+control's copied G/B are already quantized, explaining its identical result to
+the first mixed row. No constant drift correction is inferred from these means.
+
+Windows x64/MSVC/common-RHI WARP evidence is in logs/water-smoothed-reference.log
+and logs/water-smoothed-suite.log; all 13 GPU cases pass in 58.56 seconds,
+including the missing-offset negative control. This is controlled original-shader coverage;
+no new game binary or native Mac GPU/gameplay result is claimed.
+
+### Final ripple consumer and alpha-height encoding
+
+The supported executable's effect table at `0x476270 + 22*16` selects callback
+0x2C320, used by final routine 0x195280. That callback binds pixel definition
+0x4BC318 and the same six-instruction vertex program, uploads packed .6 red/
+green strength and selects left/right/down/up texel offsets. This matches the
+fourth water draw in the retained Original60 capture. The final shader derives
+its slopes from **texture alpha**, not directly from the blue height channel.
+
+The spectral fixture previously reconstructed `(velocity,height,0,1)` solely
+for numeric inspection. Feeding that texture directly to the original final
+pass would make its alpha differences zero. Shared `surface_state_shader.h`
+materializes `(0,velocity+0.5,height,height)`; red is scratch regenerated by the
+first feedback pass. It does not replace the original final shader or clamp
+the stored state. The storage adapter owns precision. No game hook uses it yet.
+
+`surface_final_gpu.inc` executes the unmodified production-translated final
+shader and original vertex program. An independent calculation checks its
+cardinal alpha differences, staged clamping, packed strength and centering.
+Float output tolerance is 1e-5; actual byte target tolerance is half a byte
+step (0.501/255). Replacing alpha-height with alpha=1 must fail after successful
+compilation. The fixture also materializes and executes final ripple generation
+after **every** candidate fractional update, checking fresh red/green output.
+
+The 128x128 wrapped feedback-only candidate's final float-reference maximum
+errors at 60/120/144 are 1.084805e-5, 1.090765e-5 and 1.031160e-5 respectively.
+Fresh final outputs are 60/60, 120/120 and 144/144. This extends the controlled
+linear comparison through its original consumer; it does not solve byte feedback.
+
+For the Original60 smoothing-plus-feedback reference, final red/green RMS from
+the flat encoded slope is 0.000786400 (float feedback), 0.004454691 (half) and
+0.057356713 (byte). Float/byte final-output RMS is 0.057236962, and remains
+0.057267247 when both final outputs use an actual byte render target. Thus the
+remaining storage difference affects the generated ripple shading input and is
+not solely a uniform height offset. Full material/scene visibility, disturbances,
+runtime resource/state handling and capture-free GPU cost remain unverified.
+Evidence: logs/water-final-initial.log and logs/water-final-controls.log;
+the latter passes three cases, including the constant-alpha negative control.
+The complete updated suite passes all 14 cases in 72.15 seconds
+(`logs/water-final-suite.log`). Candidate versus float-reference final byte RGB
+has zero maximum difference in the tested 64/128 clamp and 128-wrap fields at
+60/120/144. This equality compares float feedback paths, not original-byte state.
+
+### Held rounding input and authored byte boundaries
+
+The follow-up keeps the first-pass quantization event at its original boundary,
+while the coupled field evolves at each native frame. Starting from byte G/B,
+the first pass's copied channels already have the correct precision. Its red
+residual `e = byte_red - unclipped_linear_red` is an additional spatial forcing
+input. The one-tick contribution is `(a*e, d*b*a*e)`; the fractional response
+comes from the same affine operator. Shared `pc_surface_coupled_forced_step`
+stores this response in the fourth component of its two rows, and
+`TSFP_SURFACE_FORCED_SHADER` applies the transformed residual. That input stays
+fixed until the next authored boundary; it is not re-rounded every native frame.
+
+`surface_rounding_gpu.inc` executes the original first-pass byte format and the
+shared unclipped gradient to measure the residual on the GPU, transforms it and the live state, and advances each
+fractional piece. A 144-Hz frame crossing a 60-Hz boundary splits into two pieces.
+At the boundary the persistent state is written to an actual byte target.
+Original smoothing, when selected, executes at authored boundaries too. The
+fixture starts by encoding its initial Gaussian/edge pulse into a real byte
+target and computes an independent original 60-step reference. Unlike earlier
+storage ablations, the first input here is already byte-representable.
+
+The initial raw GPU attempt diverged at authored tick 14: blue was
+0.566666483879089 versus original arithmetic 0.566667437553406, straddling a byte
+midpoint. The small numerical difference became a full byte step and grew over
+later iterations. Private evidence: logs/water-rounding-flow-unresolved.log.
+An independent double-precision numerical model matched the byte-initialized
+trajectory, with and without smoothing; that model is supporting evidence only,
+not the GPU acceptance result or an implementation used by the game.
+
+Shared `surface_rounding_shader.h` guards ambiguous conversion. It uses original
+second-pass arithmetic evaluated from the held first-pass byte result and the
+interval's input state **at the boundary**. It substitutes that scalar only
+when both `abs(candidate-original)` and distance to a half-byte threshold are
+within `32 * FLT_EPSILON` (3.814697265625e-6 in normalized units). Other values
+remain the integrated candidate; the render target performs the byte conversion.
+This is a bounded numerical rounding decision, not an unconditional state reset
+or interpolation of saved frames. Direct cases check close ambiguity, rejection
+of a distant replacement, preservation away from thresholds and out-of-range
+values. Removing this handling or the held residual must fail.
+
+The initial GPU run matches original byte G/B exactly at **every** authored
+boundary in all six schedules (60/120/144, smoothing off/on). Maximum arithmetic
+disagreement before conversion is 3.09944153e-6. CPU tests independently compose
+held forcing through 5/12 + 5/12 + 2/12 pieces for 65 modes and three signed
+residuals, and check invalid-output preservation. This is progress on the storage
+gap in one controlled field; disturbances, intermediate clipping, live-rate
+transitions, runtime resource/state ownership, game GPU cost and Mac GPU/gameplay
+remain unverified. Existing normal-play water is unchanged.
+
+The complete updated WARP suite passes 17 cases in 83.64 seconds
+(`logs/water-rounding-flow-suite.log`). All six held-rounding schedules also
+match the original final byte ripple RGB exactly. Fresh byte ripple outputs
+are 60/60, 120/120 and 144/144 with smoothing both off and on, so freshness is
+checked after final byte conversion as well as in the internal float field.
+The two new required-failure controls pass, and the focused portable coupled
+test passes in 1.77 seconds. No full game build or frame-time claim follows.
+PR #321 subsequently reached main through #322. The held-rounding follow-up is
+on `fix/native-water-rounding`, rebased onto 2252af1, with no new PR yet.
+Applying the full integrated patch stack updates nine runtime files; repeating
+the GPU suite then passes all 17 cases in 82.79 seconds, and the focused native
+coupled check passes in 1.15 seconds. Evidence: logs/water-rounding-main-suite.log.
+
+### Strong first-pass clipping and mixed frame rates
+
+A stronger initial field (height 0.5 with +0.45 at (1,3), -0.45 at (96,23),
+zero signed velocity, encoded into an actual byte target) exposed missing
+first-pass clipping. The earlier residual subtracted the already-clipped float
+shader result and therefore corrected only rounding. It diverged immediately:
+tick 0, cell 385 green was 0.313725501 versus 0.407843143. Over one second,
+maximum byte-state error reached 0.192156881 and final byte RGB error 0.450980425
+(`logs/water-impulse-before.log`).
+
+`surface_gradient_shader.h` now computes the unclipped linear gradient used by
+the coupled operator. Actual byte red minus that gradient includes clipping as
+well as rounding. The strong and original mild fields both match every authored
+G/B boundary and final byte RGB at 60/120/144, smoothing off/on. A mutation that
+clamps the shared gradient again must fail the original-byte comparison.
+
+The fixture also uses a 720-unit clock to run 37 frames at 144, 30 at 120, 15 at
+60, then 35 at 144: 117 frames over one second. All three changes occur with an
+authored tick partly elapsed. Phase and held residual survive these changes;
+all 60 boundaries and final byte RGB match, and all 117 final byte ripple frames
+are fresh for both fields and both smoothing choices. Across all 16 field/rate/
+smoothing combinations, maximum pre-quantization disagreement is 3.21865082e-6.
+The five focused cases pass in 33.83 seconds (`logs/water-impulse-switch.log`).
+The full shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`).
+
+This tests synthetic initial impulses, not the game's disturbance shader or
+arbitrary velocity/height saturation in the second pass. The integer fixture
+clock does not validate the host-counter clock's runtime integration. Shared
+helpers remain uncalled by the game; resource ownership, actual live setting
+changes, GPU cost, scene behavior and Mac execution are still pending.
+
+### Second-pass acceleration and height limits
+
+A third initial field uses signed velocity +0.49 and height 0.98 on one half
+of the 128-square map, -0.49 and height 0.02 on the other. The existing candidate
+failed at tick 0: green 0.843137264 versus 0.890196085, growing to maximum byte
+state error 0.976470590 and final byte RGB error 1. The unchanged production
+translation shows a signed [-1,1] clamp after adding the fourth neighbor to the
+first-pass red acceleration, and an upper height clamp before damping.
+Evidence: logs/water-saturation-before.log.
+
+Shared `surface_feedback_residual` now computes the difference between that
+clamped acceleration and the unclipped linear stencil. The coupled field
+integrates this held residual. At authored boundaries, `surface_limit_boundary`
+caps signed velocity to [-0.5,0.5] and height to [0,damping], before guarded byte
+rounding. The height upper bound represents the original pre-damping clip;
+clipping only to 1 after damping is not equivalent. These limits do not run
+after each fractional piece. The original reference shaders remain unchanged.
+
+All 24 trajectories (three fields, four rate schedules, smoothing off/on) match
+every authored byte G/B boundary and final byte RGB. The extreme field repeats
+some final colors at 60 Hz: 53 changed frames without smoothing, 52 with it,
+matching the independently executed original exactly. Every 120/144/mixed-rate
+frame still changes the final byte ripple output (120/120,144/144,117/117).
+The freshness test now measures the original instead of requiring artificial
+color changes on its saturated 60-Hz frames. Mild and impulse fields retain
+the every-frame requirement at all rates.
+
+Removing the acceleration clamp or authored boundary limits must fail the byte
+comparison, independently of the existing rounding/clipping controls. The eight
+focused GPU cases pass in 54.18 seconds (logs/water-saturation-controls.log).
+The complete shader suite passes all 22 cases in 117.52 seconds
+(logs/water-saturation-full-suite.log). Context and whitespace checks pass.
+This is controlled saturation coverage, not actual disturbance or game-scene
+validation. The helper remains uncalled by gameplay; no runtime scheduler,
+resource owner, Mac GPU or game performance claim follows from these results.
+
+### Original texture-noise input before smoothing and feedback
+
+Pinned dispatcher `1956A0` swaps the current target, calls queued disturbances
+`1953B0`, then texture noise `1952D0`, smoothing `1950B0`, feedback `195110`
+and final output `195280`. The noise callback resolves texture 0x365, consumes
+two RNG results for UV offsets and draws effect 19 (`2BE30`). That effect uses
+pixel definition `4BBD30` and the four-instruction vertex program at `4BBBF8`.
+The vertex input mask is 0x010e; input 8 supplies unused secondary UVs, captured
+as (0,0,0,1). This differs from the feedback program's mask 0x000e.
+
+The preserved Original60 Scotland frame-3600 capture includes the noise draw.
+Its source is immutable texture ID 4, Xbox A8L8 format 0x1a, 128x128, usage 0;
+unlike feedback target snapshots, its captured system-memory texels are usable
+source data. State is ONE/ONE additive RGB blending, RGB write mask 7, linear
+wrap sampling. The pixel shader multiplies source RGB by (0,1,0), so the draw
+adds luminance to green and preserves red, blue and alpha. Observed UV origin
+is (0.506488204,0.382273525), with a full pixel-space quad. Private evidence:
+private/pipeline/water-disturbance-draw-state.json and its inspection script.
+
+`surface_noise_gpu.inc` executes the original translated pixel/vertex programs
+with that texture and state before smoothing at each authored boundary. The
+test varies UV offsets deterministically; it does not claim to reproduce the
+game's RNG sequence. A candidate-only duplicate draw is a required failing
+mutation. Initial draws additionally check nonzero additive green and unchanged
+red/blue/alpha. The asset is read from the private capture into temporary test
+files, never tracked. Missing captures cause an explicit skip, not a pass.
+
+The two focused cases pass in 14.56 seconds (logs/water-noise-integration.log).
+All eight noise trajectories match every original byte G/B boundary and final
+byte RGB, with maximum pre-quantization disagreement 2.56299973e-6. Freshness is
+60/60 without smoothing and 27/60 with it at original 60 Hz, identically in the
+candidate; high and mixed rates produce 120/120,144/144,117/117 changed outputs.
+These are shader/input/order checks, not queued gameplay splash geometry, actual
+RNG scheduling, runtime integration, scene acceptance or game GPU performance.
+The complete updated suite passes all 24 cases in 132.19 seconds with no skips
+(logs/water-noise-full-suite.log), including the nonzero-green/channel-preservation
+checks. Repository context and staged whitespace checks pass.
+
+### Exact clock intervals and pause-preserving splits
+
+The production native clock publishes float deltas for guest motion and integer
+ticks for timers. Summing those float deltas into a double still yields only
+59.999998569489 after one second at exactly 144 Hz, so deriving authored
+boundaries from that sum would miss the 60th tick. `PcNativeStep` now also carries
+scaled host counter units, starting game phase and units per tick. The shared
+guest wrapper publishes that snapshot as `g_tsfp_native_step`, clearing it in
+Original mode. No guest field, ISR, float delta or whole-tick policy changes.
+Invalid/null clocks and unrealistically large frequencies are rejected before
+mutation, keeping the bounded scaled arithmetic within int64 range.
+
+Shared `pc_surface_interval_split` consumes exact units, marks starts/ends and
+emits zero to four fractional pieces. A pause emits no pieces and retains phase;
+rate changes require no phase reset. Four pieces cover a three-tick catch-up
+that begins inside a tick. The portable test independently accounts for consumed
+units/boundaries at three frequencies, with jitter, changing presets, pause,
+stall clamping, frequency reset and rejected-output preservation. Resetting phase
+on entry is a required failing mutation. Four focused tests pass in 5.37 seconds,
+and all 18 asset-free timing cases pass in 23.70 seconds.
+
+The original-shader GPU fixture now obtains pieces from this production clock
+and splitter, using a controlled 72-MHz source. It inserts a half-second pause
+during motion and requires zero slices plus bit-identical final ripple output,
+then resumes the existing boundary/color/freshness comparisons. Counter jitter
+is tested on the CPU; live scheduling and resource lifecycle are not implied.
+The snapshot precedes guest-local time overrides, so a future runtime consumer
+must respect those scopes and initialize held input/state for newly created or
+reset resources. There is still no enabled coupled-water game hook.
+All 24 GPU cases pass in 133.40 seconds with this producer/splitter and pause
+check (logs/water-clock-gpu-suite.log); all 32 field/rate/smoothing trajectories
+retain byte-exact authored boundaries/final colors. The separate frame-clock
+suite passes nine cases in 10.48 seconds (logs/water-clock-flip-gate.log).
+Repository context and staged whitespace checks pass. These are Windows results;
+the new shared CPU test is registered for Mac CI, not locally verified on Mac.
+
+### Immutable mode data for variable frame intervals
+
+The prior GPU fixture constructed two complete coefficient images per distinct
+fractional duration. That finite cache worked for controlled constant presets,
+but real host intervals vary. Using it directly in a runtime owner could rebuild
+thousands of coefficients and allocate/upload images whenever a duration changed.
+`surface_mode.h` now packs each mode's eigenvalue data and fixed points once.
+`surface_evolve_shader.h` forms the fractional matrix and held-forcing response
+on the GPU from those immutable values and a per-step delta/scale uniform.
+
+The two 128x128 float4 mode images contain 512 KiB of coefficient pixels; each
+step changes only a 16-byte buffer (delta and damping^(delta/2)). The CPU no
+longer constructs a matrix for every mode on each new duration. Positive packed
+angle selects complex roots, negative selects real roots, and zero selects the
+repeated-root limit. Both fixed points retain the original affine centering and
+additional held residual. Existing clipping, quantization and authored-event
+boundaries remain unchanged. No interpolation of stored future frames is used.
+
+The portable fixture checks all three eigenvalue branches against the existing
+operator and independent one-tick equations, including irregular .413/.001/.407/
+.179 pieces. It observes maximum error 2.02655792e-6 and rejects invalid/overflowing
+packed outputs without mutation. Four focused CPU checks pass in 5.47 seconds;
+the final packing case including overflow rejection passes in 1.20 seconds.
+
+The GPU fixture executes the shared shader for all four fields and adds a fifth
+schedule: 144 frames with alternating +/-0.1-ms intervals, totaling one second.
+All 40 field/rate/smoothing combinations match every original byte G/B boundary
+and final byte ripple RGB. All high/mixed/jitter schedules retain fresh final
+output every advancing frame, and the mid-motion pause remains unchanged.
+Maximum pre-quantization disagreement remains 3.21865082e-6. Ten focused GPU
+cases pass in 72.16 seconds (logs/water-mode-gpu.log). Held-residual removal
+mutates the new shader; a separate diagonal-entry mutation targets its matrix.
+
+This removes coefficient reconstruction/allocation from the candidate's update
+loop; it does not establish a measured game speedup or acceptable total GPU cost.
+The direct spatial transforms and their integration cost still require profiling.
+The RHI explicitly permits a self-contained pass to leave shaders, layouts,
+state objects, uniform buffers and samplers changed because game draws rebind
+them; output targets/viewports must be restored and temporary textures unbound.
+Resource lifecycle, original queued disturbances and the supported gameplay hook
+remain unfinished, as do native Mac execution and scene acceptance.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including the
+new matrix-diagonal mutation (logs/water-mode-full-suite.log). Repository context
+and staged whitespace checks pass. The byte ambiguity guard was not widened.
+
+### Initial D3D11 hardware gate (2026-10-24; superseded below)
+
+The candidate's WARP comparisons do not establish hardware correctness. Running
+`python tests/test_surface_shader_feedback.py --hardware-check --profile 0` on
+the NVIDIA GeForce RTX 4070 SUPER (vendor 10de, device 2783, feature level b000)
+fails the existing boundary comparison at tick 0, cell 0, green: 127/255 versus
+the independently executed original's 128/255. Candidate prequantized green is
+0.500199913978577 versus original float-target 0.500999629497528. Across the
+first 60-tick trajectory, maximum byte G/B error is 0.0901961029, arithmetic
+error 0.00759711862 and final byte RGB error 0.615686297. The original-noise
+profile also fails from that first cell, with final RGB error 1. Root cause is
+not established; this is neither accumulated clock drift nor a reason to widen
+the arithmetic guard. See logs/water-hardware-current-check.log and
+logs/water-hardware-check.log. The first broader hardware attempt also failed
+an older float/half storage probe before reaching the candidate; that control
+is tuned for WARP. Explicit hardware modes now select only candidate setup and
+its reference, while regular pytest continues to run all the original probes.
+
+`--benchmark --profile 3` uses hardware timestamp/disjoint queries, recorded
+around the same original/candidate draw sequences. Query creation and all query
+polling happen outside the measured sequence; first-noise and per-frame image
+readbacks are omitted only in this mode. It still checks final byte output and
+exits unsuccessfully if mismatched. The initial run measured 0.009899 ms mean
+original and 0.106240 ms candidate GPU timestamp span at 60; it failed final
+output and therefore never measured 120/144. Spans include submission bubbles,
+exclude initialization/readback, are not game frame times, and do not establish
+acceptable production cost. The bounded helper records adapter identity and
+rejects disjoint/zero clocks or ten-second query timeout. The full WARP suite
+still passes 25 cases in 141.81 seconds (logs/water-hardware-harness-suite.log).
+Resource/hook integration is deferred until the first hardware step is correct;
+queued splashes, actual event delivery, Mac GPUs and scene coverage remain open.
+
+### Hardware sampler and conversion corrections (2026-10-24)
+
+The initial hardware-only fixture reused sampler creation but skipped the older
+storage loop that bound the four wrap samplers. This was an invalid reference
+configuration, not evidence of a first-step production shader defect. All entry
+points now bind those samplers in common setup. This removes the first-tick
+failure, but the correctly configured mild trajectory still failed at tick 21,
+cell 1146, blue: 165/255 versus 166/255. Candidate prequantized value was
+0.649169504642487, original float result 0.649170935153961. Error was within the
+existing arithmetic guard, but neither value was near the ideal 165.5/255
+threshold, so the old correction did nothing.
+
+A direct passthrough-shader sweep to the same hardware byte target observes a
+transition between inputs 0.649169862270355 and 0.649169921875. The ideal
+threshold is 0.649019607843137. This establishes the old threshold assumption
+was false on this GPU; it does not establish a universal hardware conversion
+algorithm. The probe remains a bounded optional diagnostic and reports actual
+transitions without asserting other GPUs share them.
+
+Shared `surface_rounding_shader.h` now canonicalizes to the original shader's
+arithmetic only if disagreement is <=32*FLT_EPSILON, independent of predicted
+byte thresholds. This correction still runs only at authored boundaries;
+fractional evolution remains independent. The tolerance is unchanged, and a
+larger disagreement is preserved for failure detection. Direct cases exercise
+the observed nearby pair and a larger rejected difference. An unconditional
+copy mutation must fail; existing missing-forcing, incorrect matrix, clipping,
+noise and raw-rounding controls remain.
+
+All four profiles pass on RTX 4070 SUPER (driver 32.0.16.1742), ten schedules
+each with smoothing off/on, 60/120/144, mixed nonzero-phase switches, jitter and
+mid-motion pause. Every authored G/B byte boundary and final RGB byte matches
+the independently executed original reference. Maximum arithmetic error is
+3.21865082e-6; original saturated/noise repeat counts differ from WARP, but the
+candidate preserves this adapter's counts at 60 and all higher/mixed schedules
+remain fresh every advancing frame. Logs: water-hardware-canonical.log and
+water-hardware-canonical-{1,2,3}.log.
+
+The corrected, capture-free noise-profile benchmark passes every final-image
+check, running without parallel tests. Hardware timestamp means (ms) are:
+
+| Path | Smoothing off | Smoothing on |
+| --- | ---: | ---: |
+| Original 60 | 0.010121 | 0.011844 |
+| Candidate 60 | 0.107264 | 0.108201 |
+| Candidate 120 | 0.070852 | 0.072243 |
+| Candidate 144 | 0.075883 | 0.076961 |
+
+Candidate 144 p95 is 0.140288/0.143360 ms; some frames cross authored boundaries
+and execute additional transforms. Log: water-hardware-canonical-cost.log.
+This single bounded run includes submission bubbles and covers one 128-square
+field; it is not game FPS, a sustained pacing measurement, other-GPU evidence,
+or a speedup over Original. Resource ownership/hooks, queued splashes, runtime
+event order, scene acceptance and native Mac execution remain required.
+The full WARP regression suite passes all 26 cases in 146.83 seconds, including
+the unconditional-copy negative control (logs/water-hardware-canonical-suite.log).
+Repository context and whitespace checks pass; no game build was replaced.
+
+### Coupled GPU resource ownership (2026-10-24)
+
+The trajectory fixture now uses shared `graphics/surface_gpu.h` for the coupled
+kernel's resource lifecycle and draws. Each instance owns immutable mode/basis
+textures, two spectral states, held forcing, world and scratch fields, shaders,
+a 16-byte step buffer and raster/depth/blend states. At 128x128 its eight float4
+images contain 2 MiB of pixel data, excluding other resources and driver overhead.
+No per-duration cache is allocated. Original event, smoothing, quantization and
+final shading passes remain caller-owned; guest resource/event integration is
+still absent.
+
+Create/begin/advance/reset/destroy are render-thread operations. Begin accepts
+full single-mip sampled float4 fields of matching shape, copies external state,
+and rejects internal aliases that would be overwritten. Zero time changes no
+pixels; invalid time/storage/aliases leave the state untouched. Reset blocks
+advancement and invalidates the output accessor until initialization. Destruction
+must precede device destruction. Each draw scope preserves color/depth targets
+and all viewports and clears texture slots 0-3 and its temporary step buffer.
+The current RHI restore adapter skips an empty viewport list, so the owner
+explicitly restores zero viewports too. Other pipeline bindings may change,
+as allowed by the RHI's normal-draw rebinding contract.
+
+`surface_owner_gpu.inc` verifies these behaviors on WARP/hardware, including two
+distinct reset/input cycles, multiple/empty viewport lists, target identities,
+an untouched sentinel color target and actual D3D11 binding queries. Missing
+reset/output restoration mutations must fail. `native_surface_gpu_owner.c`
+injects failure at each of 32 RHI allocation calls, requires complete typed-handle
+cleanup, then recreates the owner. That asset-free fixture is registered in the
+existing dual-host timing group; it does not execute GPU shaders.
+
+All 40 RTX original-byte trajectories still pass through this owner. The full
+GPU suite passes 28 cases in 159.55 s and the asset-free timing group passes 20
+in 25.48 s. Final empty-viewport/output-accessor checks additionally pass the
+hardware profile-0 run. Logs: water-owner-lifecycle.log,
+water-owner-final-lifecycle.log, water-owner-hardware-{1,2,3}.log,
+water-owner-gpu-suite.log and water-owner-host-suite.log. No native Mac execution
+or game build is claimed.
+
+Two isolated no-readback timing runs pass endpoint comparisons but show variable
+144-Hz means (0.075534 to 0.739911 ms across conditions). A read-only 100-ms GPU
+clock trace during the repeat observes P8/P5 low-clock states and P0 at 2520 MHz;
+it cannot assign a clock to each measured frame. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. These short workloads are
+not a controlled before/after performance comparison. No power/clock setting was
+changed. Sustained scene measurements, caller hooks and actual queued disturbance
+delivery remain required before enabling this path.
+
+### Bounded GPU water resource identity (2026-10-24)
+
+`graphics/surface_gpu_cache.h` supplies a render-thread registry for the five
+resources allocated by the guest constructor. An entry retains the four source
+RHI images, preventing freed pointer addresses from masquerading as the old
+identity. Repeated resource/generation/configuration/image requests reuse an
+owner with no allocations. Changed identity builds a replacement before releasing
+the old owner; any failure returns NULL and leaves the old entry intact. The
+caller must fall back for that failed request, not use the mismatched old state.
+The registry refuses a sixth resource rather than evicting a potentially active
+one. Start zeroed, clear before scene/device reset, and advance generation when
+initializing a resource in place.
+
+The asset-free cache fixture checks reuse, generation/configuration/source
+replacement, every allocation failure during replacement, image retention,
+capacity rejection and clear/recreation. The shared fake RHI has no shader
+emulation. The actual GPU trajectory fixture reacquires every frame, replaces
+the generation between smoothing runs and releases caller references before
+cache cleanup. These are resource-lifetime checks, not actual level-reload or
+gameplay evidence. Guest/HLE construction/reset and deferred-command integration,
+original event delivery and local timing remain unwired. No new game build or
+Mac run is claimed.
+
+Validation: the asset-free timing group passes 21 cases in 25.68 s and the WARP
+suite passes 28 in 160.72 s. All 40 RTX 4070 SUPER trajectories pass with exact
+authored byte boundaries/final output through the cache. Logs:
+`water-cache-host-suite.log`, `water-cache-gpu-suite.log` and
+`water-cache-hardware-{0,1,2,3}.log`. No performance comparison was run for this
+change; the previously documented isolated-clock confound remains unresolved.
+
+### Completed gameplay feedback captures (2026-10-24)
+
+`TSFP_SURFACE_CAPTURE` observes original feedback `195110` using a copied guest
+identity snapshot and a callback in the same HLE deferred stream, immediately
+after the original two draws. The callback matches already-rendered host textures
+by VA/data/format/size and reads their actual RHI pixels. No guest pointer is
+retained or texture created by the capture. Unsupported storage/identity/readback
+or file I/O stops the probe; captures are bounded to 16 records. This closes the
+specific evidence gap caused by stale CPU copies of render targets in older D3D
+captures. It does not install the new solver as a game update.
+
+The supported Windows builder passes with executable SHA-256
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`, from base
+`0cec704` plus this capture change. Both bounded, isolated Scotland routes
+complete cleanly with unchanged valid Test Lab profiles. `water-live-feedback`
+uses native144 and captures host frames 6822-6858; `water-live-feedback-original`
+uses Original60 and captures 3034-3049. Both cover level ticks 300-315 and have
+16 distinct input fields. Metadata stores the actual authored coefficients
+(0.17, 0.105, 0.65, 0.98); the translated byte constants remain 43, 26, 165, 249.
+Each 3,147,208-byte TSWATER1 file contains input/first/output RGBA8 triplets.
+Hashes and source/executable provenance are retained locally, with the summary
+in `private/pipeline/live-water-feedback-validation.json`.
+
+On RTX 4070 SUPER, original-shader replay matches first-pass red and second-pass
+green/blue/alpha exactly on all 32 fields. The shared coupled GPU owner also
+matches each captured endpoint under 1, 1/2 + 1/2, and 5/12 + 5/12 + 1/6 steps.
+Both capture cases pass in 12.13 s (`water-live-gpu-final.log`). An initial WARP
+replay differed from these hardware bytes by one byte; cross-adapter UNORM
+transitions are already known to differ. Hardware capture tests therefore use
+local hardware; the separate WARP suite keeps its own original shader reference.
+The failed cross-adapter comparison remains in `water-live-gpu.log`, and no
+numerical tolerance or candidate algorithm was changed to hide it.
+
+The CPU collector test verifies copied input/first/output order and safe rejection
+without partially publishing a snapshot. The asset-free group passes 22 cases
+in 27.50 s. GPU readback and extra tests synchronize/stall the GPU: these sessions
+are not evidence of in-game speed or pacing. Captured fields include whatever
+original disturbances/smoothing preceded them, but the run does not establish
+queued splash coverage or equal event/RNG ordering across FPS choices. Runtime
+fractional updates/final shading, local time scopes, resource resets, performance
+and native Mac validation still need integration and acceptance checks.
+
+All 21 patch-update scenarios pass in 542.79 s (`water-live-patches.log`),
+including historical upgrades and branch switching. The capture patch follows
+the existing surface patches explicitly; historical test stacks exclude it
+until its dependencies are present. The supported Windows build's bundled
+settings/save-path checks also pass. These host checks do not establish native
+Mac compilation or rendering of the capture extension.
+
+### Shared solver in the live deferred renderer (2026-10-24)
+
+`pc_surface_gpu_begin_bytes` moves byte unpacking and the original first-pass
+residual into shared owner-managed shaders and storage. It validates source and
+first-pass sampled views before drawing, rejects aliases/unsupported storage,
+and requires the authored 128/255 center. The ordinary float-input API remains.
+The owner now has nine float4 images (2.25 MiB of pixel payload at 128 square)
+and 37 allocation stages, all covered by failure cleanup and cache replacement
+tests. Controlled GPU trajectories call the new entry directly; captured replay
+keeps its independent setup to check it.
+
+`TSFP_SURFACE_GPU_CAPTURE=1` invokes the owner using actual source views after
+the original feedback in the deferred stream. It initializes and advances
+5/12 + 5/12 + 1/6, reading the first-piece and full-tick results into a TSWGPU1
+sidecar. Creation/destruction stay inside each diagnostic callback. This is a
+bounded integration proof, not the persistent cache path or visible-water
+replacement. The original guest events and GPU feedback/final passes still run.
+
+The supported Windows build and bundled checks pass. The source is `15d774c`
+plus the shared byte-input/probe extension; executable SHA-256 is
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`.
+`water-runtime-gpu` ran the bounded native144 Scotland route, exited cleanly,
+preserved profile hashes/signatures and recycled disposable disks. Sixteen
+records span host frames 6837-6864 and level ticks 300-317. The source byte file
+is 3,147,208 bytes and the paired float file is 8,390,088 bytes; hashes and exact
+source identities are in its local `capture-provenance.json`.
+
+The 31-case GPU suite passes in 182.59 s. Its live runtime case checks copied
+metadata, finite values, and 32 intermediate/endpoint fields against the
+independent replay within the unchanged 32-float-epsilon arithmetic bound.
+This is float-field agreement, not a claim that the raw runtime float field was
+byte-identical without boundary conversion. Existing original shader/byte
+comparisons remain exact. CPU owner/cache tests pass in 2.84 s and inject every
+one of the new 37 allocation failures. Logs: `water-byte-entry-gpu.log`,
+`water-runtime-owner-cpu.log`, `water-runtime-gpu-build.log`,
+`water-runtime-gpu-game.log`.
+
+The probe allocates and synchronizes readbacks per sample, so its frame times
+are excluded from performance claims. Actual native time-scope/event scheduling,
+persistent resource reset/reuse, final-shader hookup, visible motion acceptance,
+sustained performance and native Mac execution are still required. No new PR.
+
+The 16 captured local whole counts match the clock trace, and local deltas match
+its printed values within 5e-10 (`clock-scope-comparison.json`). This observes
+one route, not every guest-local time scope. The allocation/readback probe causes
+one three-tick catch-up: original `1956A0` gates on nonzero ticks but executes its
+feedback pair only once. Consequently the one-tick probe comparison is not proof
+of correct elapsed-time integration during stalls. The normal runtime connection
+must explicitly handle that distinction and preserve event/RNG call counts.
+
+
+## Character-effect dispatcher subticks (2026-10-24)
+
+US1260C0 is called by player/NPC dispatch (NPC passes actor+C68). Its first
+whole-tick gate drops fractional time before nested effects which already use
+the float interval. The original11FEC0 timer reproduces0.5 elapsed seconds at
+120 for a one-second interval. The shared numeric hook now uses positive live
+time at this gate, retaining original inactive behavior and paused zero-time.
+The new original-dispatcher/matrix fixture sweeps rates through240, quarter
+speed and carried phases, with an old-gate control. Nested effect systems other
+than11FEC0 remain spies. STATUS records the Windows build and actual scene
+coverage; do not infer complete effect rendering or Mac acceptance from it.
+
+## Character status3 growth (2026-10-24)
+
+Original125FE0/120AB0 repeatedly scale the live effect matrix. Linear factors
+split by FPS gave X/Z scale2.213807 at120 versus2.202338 atOriginal60 after
+half a second. Only constructor call120BBF now splits the original one-raw-tick
+factor geometrically at the current game speed. Original/integer/catch-up
+arithmetic, rotation, timer/cleanup and stack arguments are preserved. The
+original dispatcher/matrix fixture compares all16 entries across rates, speeds,
+jitter and live changes; old-path control still differs. This is model-transform
+evidence, not proof of the effect's complete rendered appearance. See STATUS.

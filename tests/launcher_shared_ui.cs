@@ -202,11 +202,11 @@ public static class LauncherSharedUiChecks
                 File.WriteAllText(Path.Combine(folder,"Settings/runtime.conf"),"native_fps = 144\nfuture_setting = retained\n");
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
                 var picker=Find<ComboBox>(page.View,"NativeFrameRate");
-                Need(picker.Items.Count==3 && picker.SelectedIndex==0,"High refresh must remain opt-in");
+                Need(picker.Items.Count==4 && picker.SelectedIndex==0,"High refresh must remain opt-in");
                 Need(Find<TextBlock>(page.View,"NativeFrameRateBetaNote").Text.Contains("Arcade"),"Missing beta limitations");
                 picker.SelectedIndex=2;Click(Find<Button>(page.View,"SettingsCancelButton"));
                 Need(!File.Exists(sidecar),"Cancelled draft changed the game preference");
-                foreach(int choice in new[]{2,1,0}) {
+                foreach(int choice in new[]{3,2,1,0}) {
                     picker.SelectedIndex=choice;Click(Find<Button>(page.View,"SettingsSaveButton"));
                     int rate=GameSettings.NativeFrameRates[choice];
                     Need(GameSettings.Load(folder,null).NativeFps==rate,"Saved rate did not round trip");
@@ -227,9 +227,10 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Save();
                 string sidecar=Path.Combine(folder,"Settings/pc-frame-rate.ini");
                 File.WriteAllText(sidecar,"TSFP_FRAME_RATE_V1 144\n");
+                Need(GameSettings.Load(folder,null).NativeFps==120,"Legacy 144 preference did not migrate to 120");
                 bool rejected=false;try{model.NativeFps=120;model.Save();}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(sidecar)=="TSFP_FRAME_RATE_V1 144\n","Concurrent game preference was overwritten");
-                foreach(string invalid in new[]{"TSFP_FRAME_RATE_V1 60","TSFP_FRAME_RATE_V1 240","TSFP_FRAME_RATE_V2 144","TSFP_FRAME_RATE_V1 144 extra"}) {
+                foreach(string invalid in new[]{"TSFP_FRAME_RATE_V1 60","TSFP_FRAME_RATE_V1 300","TSFP_FRAME_RATE_V2 144","TSFP_FRAME_RATE_V1 144 extra"}) {
                     File.WriteAllText(sidecar,invalid);rejected=false;try{GameSettings.Load(folder,null);}catch{rejected=true;}
                     Need(rejected && File.ReadAllText(sidecar)==invalid,"Invalid sidecar was accepted or rewritten");
                 }
@@ -239,7 +240,7 @@ public static class LauncherSharedUiChecks
                 var model=GameSettings.Load(folder,null);model.Save();
                 var files=LauncherPlatform.Settings(folder).Select(p=>Core.PathIn(folder,p)).ToArray();
                 var before=files.Select(File.ReadAllBytes).ToArray();
-                Directory.CreateDirectory(files[4]+".bak");model.NativeFps=144;model.VerticalFov=75;
+                Directory.CreateDirectory(files[4]+".bak");model.NativeFps=240;model.VerticalFov=75;
                 bool rejected=false;try{model.Save();}catch{rejected=true;}
                 Need(rejected,"Blocked backup should reject save");
                 for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(before[i]),"Partial settings commit survived");
@@ -276,6 +277,53 @@ public static class LauncherSharedUiChecks
                 area.SetBusy(false);area.Tabs.SelectedIndex=1;Need(area.Tabs.SelectedIndex==1,"Maintenance stayed locked");
                 repair.SetVerification(new VerificationResult{Version="v1.0.0"},new VerificationResult{Version=LauncherVersion.Value});repair.SetBusy(false,false);
                 Need(repair.RepairGame.IsEnabled&&repair.RepairLauncher.IsEnabled,"Verified files cannot be repaired");repair.SetBusy(false,true);Need(!repair.RepairGame.IsEnabled&&!repair.RepairLauncher.IsEnabled,"Repair allowed during play");
+            });
+            Test("capture health distinguishes current, stale, missing and blocked capture",()=>{
+                string folder=Path.Combine(root,"capture-health");Directory.CreateDirectory(folder);
+                Need(CrashReports.CaptureHealth(folder).Contains("Game not installed"),"Missing game claimed support");
+                string game=Core.PathIn(folder,LauncherPlatform.GamePath(folder));Directory.CreateDirectory(Path.GetDirectoryName(game));File.WriteAllText(game,"fixture");
+#if !MACOS
+                Need(CrashReports.CaptureHealth(folder).Contains("helper missing"),"Missing helper claimed support");
+                File.WriteAllText(Path.Combine(Path.GetDirectoryName(game),"tsfp_crash_helper.exe"),"fixture");
+#endif
+                Need(CrashReports.CaptureHealth(folder).Contains("no tracked game"),"Idle helper presence claimed live health");
+                string id=GameSessions.Begin(folder,"20261024-120000-000");
+                using(var process=System.Diagnostics.Process.GetCurrentProcess()) {
+                    GameSessions.Started(folder,id,process);
+                    Need(CrashReports.CaptureHealth(folder).Contains("has not confirmed"),"Old game claimed a handshake");
+                    string path=Core.PathIn(folder,"Logs/Crashes/capture-health.json");
+                    Action<string,int,bool> record=(session,pid,armed)=>File.WriteAllText(path,Json.Encode(new {schema=1,session_id=session,pid=process.Id,helper_pid=pid,armed=armed}));
+                    record(id,process.Id,true);Need(CrashReports.CaptureHealth(folder).Contains("Helper responding"),"Valid current heartbeat rejected");
+                    Need(InstallationMaintenance.Report(folder,null,null,"fixture").Contains("Freeze monitoring armed"),"Diagnostics omitted health");
+                    record(id,process.Id,false);Need(CrashReports.CaptureHealth(folder).Contains("Waiting for guest"),"Unarmed capture called armed");
+                    record(new string('e',32),process.Id,true);Need(CrashReports.CaptureHealth(folder).Contains("no matching"),"Old session heartbeat accepted");
+                    record(id,process.Id,true);File.SetLastWriteTimeUtc(path,DateTime.UtcNow.AddSeconds(-30));Need(CrashReports.CaptureHealth(folder).Contains("stale"),"Stale helper accepted");
+                    record(id,process.Id,true);File.SetLastWriteTimeUtc(path,DateTime.UtcNow.AddMinutes(2));Need(CrashReports.CaptureHealth(folder).Contains("stale"),"Future-dated helper accepted");
+                    record(id,Int32.MaxValue,true);Need(CrashReports.CaptureHealth(folder).Contains("Degraded"),"Dead helper accepted");
+                    record(id,process.Id,true);
+                    string marker=Core.PathIn(folder,".launcher/game-session.json");var current=Json.Object(File.ReadAllText(marker));
+                    current["game_started_ticks"]=(process.StartTime.ToUniversalTime().Ticks+1).ToString();File.WriteAllText(marker,Json.Encode(current));
+                    Need(!CrashReports.CaptureHealth(folder).Contains("Helper responding"),"Reused game PID accepted");
+                    current["game_started_ticks"]=process.StartTime.ToUniversalTime().Ticks.ToString();File.WriteAllText(marker,Json.Encode(current));
+                    File.WriteAllText(path,"private path and malformed JSON");Need(!CrashReports.CaptureHealth(folder).Contains("private path"),"Health leaked raw metadata");
+                    File.WriteAllText(path,new string('x',2049));Need(CrashReports.CaptureHealth(folder).Contains("invalid"),"Oversized record accepted");
+                    File.Delete(path);Directory.Delete(Path.GetDirectoryName(path));File.WriteAllText(Path.GetDirectoryName(path),"blocked storage");
+                    Need(CrashReports.CaptureHealth(folder).Contains("storage unavailable"),"Blocked storage claimed writable");
+                }
+            });
+            Test("breadcrumb exports are bounded and preserve unknown files",()=>{
+                string folder=Path.Combine(root,"breadcrumb-export");Directory.CreateDirectory(folder);
+                string name="crash-20261024-120000000-0000000001-123456";
+                string report=CrashReports.Folder(folder,name);Directory.CreateDirectory(report);
+                File.WriteAllText(Path.Combine(report,"capture.lock"),"");
+                File.WriteAllText(Path.Combine(report,"report.json"),"{\"schema\":1,\"kind\":\"suspected_hang\"}");
+                File.WriteAllText(Path.Combine(report,"breadcrumbs.txt"),"1 0 scene-id 4\n");
+                File.WriteAllText(Path.Combine(report,"private-file"),"private");
+                string zip=Path.Combine(folder,"export.zip");CrashReports.Export(folder,name,zip);
+                using(var archive=System.IO.Compression.ZipFile.OpenRead(zip))Need(archive.GetEntry("breadcrumbs.txt")!=null && archive.GetEntry("private-file")==null,"Wrong breadcrumb export contents");
+                File.WriteAllText(Path.Combine(report,"breadcrumbs.txt"),new string('x',8193));bool rejected=false;
+                try{CrashReports.Export(folder,name,Path.Combine(folder,"large.zip"));}catch(System.IO.InvalidDataException){rejected=true;}
+                Need(rejected && !File.Exists(Path.Combine(folder,"large.zip")),"Oversized breadcrumb file escaped export cap");
             });
             Console.WriteLine(passed+" shared launcher UI groups passed.");return 0;
         }finally{Directory.Delete(root,true);}

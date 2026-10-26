@@ -12,19 +12,28 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.mark.skipif(sys.platform not in ('win32', 'darwin'),
                     reason='HLE renderer is compiled on Windows and macOS')
-@pytest.mark.parametrize('break_refresh', [False, True], ids=['fixed', 'detect-stale-copy'])
-def test_framebuffer_sampling_passes(tmp_path, break_refresh):
+@pytest.mark.parametrize('mutation', ['none', 'stale-copy', 'first-hit', 'last-hit'])
+@pytest.mark.parametrize('common_renderer', [False, True] if sys.platform == 'darwin' else [True],
+                         ids=lambda common: 'rhi' if common else 'legacy-gl')
+def test_framebuffer_sampling_passes(tmp_path, mutation, common_renderer):
     compiler, environment = native_compiler(tmp_path)
     source = ROOT / 'external/ts3FPrecomp/src'
     includes = [source, ROOT / 'src', *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
-    if break_refresh:
-        # Prove the behavioral test detects losing the production binding hook.
+    if mutation != 'none':
+        # Prove the fixture detects stale copies and incorrect alias selection.
         original = (source / 'hle/hle_d3d8_texture.c').read_text()
-        hook = '        framebuffer_binding_changed(stage, texture);'
-        assert original.count(hook) == 1
+        replacements = {
+            'stale-copy': ('        framebuffer_binding_changed(stage, texture);',
+                           '        /* mutation: stale copy */'),
+            'first-hit': ('        if (!framebuffer) break;',
+                          '        if (!framebuffer) break; *framebuffer = entry->framebuffer; break;'),
+            'last-hit': ('        if (!first) first = entry;', '        first = entry;'),
+        }
+        old, new = replacements[mutation]
+        assert original.count(old) == 1
         mutant = tmp_path / 'mutant/hle/hle_d3d8_texture.c'
         mutant.parent.mkdir(parents=True)
-        mutant.write_text(original.replace(hook, '        /* mutation: stale copy */'))
+        mutant.write_text(original.replace(old, new))
         includes.insert(0, mutant.parent.parent)
     exe = tmp_path / ('framebuffer.exe' if os.name == 'nt' else 'framebuffer')
     fixture = ROOT / 'tests/framebuffer_sampling.c'
@@ -38,15 +47,20 @@ def test_framebuffer_sampling_passes(tmp_path, break_refresh):
                     '/link', '/OPT:REF']
     else:
         command = [compiler, '-std=gnu11', '-O2', '-Wl,-dead_strip']
+        if common_renderer:
+            command += ['-DTSFP_RHI_RENDERER=1']
         command += ['-I' + str(path) for path in includes]
         command += [str(fixture), '-o', str(exe)]
     result = subprocess.run(command, cwd=tmp_path, env=environment,
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
-    if break_refresh:
-        assert result.returncode != 0, 'Regression did not detect the stale framebuffer copy'
-        assert 'copies == 2 && sampled == 20' in result.stderr
+    if mutation != 'none':
+        assert result.returncode != 0, f'Regression did not detect {mutation}'
+        expected = {'stale-copy': 'copies == 2 && sampled == 20',
+                    'first-hit': 'actual_fb == expected_fb',
+                    'last-hit': 'bound_host_entry(host, &actual_fb) == expected'}
+        assert expected[mutation] in result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr
         assert 'PASS: framebuffer sampling passes' in result.stdout

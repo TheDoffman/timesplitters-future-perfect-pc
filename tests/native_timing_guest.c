@@ -9,6 +9,14 @@
 static uint8_t memory[0x800000];
 static ptrdiff_t g_xbox_mem_offset;
 static uint32_t g_esp;
+static uint32_t g_eax;
+void sub_000C54A0(void) { assert(!"unexpected walk collision in clock fixture"); }
+void sub_000C4700(void) { assert(!"unexpected walk sweep in clock fixture"); }
+#if defined(_MSC_VER)
+#define RECOMP_MANUAL_TLS __declspec(thread)
+#else
+#define RECOMP_MANUAL_TLS _Thread_local
+#endif
 static int64_t counter, deadline;
 static unsigned paused_calls, resume_calls, original_calls, frames;
 static const char *setting;
@@ -37,11 +45,19 @@ static void test_sleep(DWORD ms) { counter += (int64_t)ms*144000; }
 #define WORD(a) (*(uint32_t *)(memory+(a)))
 #define FLOAT(a) (*(float *)(memory+(a)))
 uint64_t xbox_ReadTimeStampCounter(void) { return (uint64_t)counter*733333333/144000000; }
+void sub_00153600(void) { assert(!"unexpected character scale in clock fixture"); }
+void sub_00120AB0(void) { assert(!"unexpected character update in clock fixture"); }
 void sub_000455B0(void) { paused_calls++; g_esp+=4; }
 void sub_000455C0(void) { resume_calls++; g_esp+=4; }
 void sub_00150190(void) { WORD(0x74914C)+=WORD(0x4E7940); g_esp+=4; }
-static void original(void) { original_calls++; g_esp+=4; }
+static float original_game_delta=-1.f;
+static void original(void) {
+    original_calls++;g_esp+=4;
+    if(original_game_delta>=0.f)FLOAT(0x4E794C)=original_game_delta;
+}
 #include "../src/pc_native_timing_guest.inc"
+/* Match the production manual TU: the clock include precedes ESI's definition. */
+RECOMP_MANUAL_TLS uint32_t g_esi;
 #include "../src/pc_native_numeric.h"
 static int test_button;
 static void sample_pad(void)
@@ -129,6 +145,19 @@ static void frame(void)
     pc_native_timing_guest(original);
     assert(g_esp==0x1004 && WORD(0x1000)==0x12345678);
     assert(WORD(0x563918)==123); /* ISR state was never used as a fake frame counter. */
+    if(!g_tsfp_native_timing_active) {
+        assert(!g_tsfp_native_step.units_per_tick && !g_tsfp_native_step.game_units &&
+               !g_tsfp_native_step.game_phase && !g_tsfp_native_step.raw_units &&
+               !g_tsfp_native_step.raw_phase);
+    } else {
+        assert(g_tsfp_native_step.game_ticks==WORD(0x4E7944));
+        assert(g_tsfp_native_step.game_delta==FLOAT(0x4E794C));
+        assert(g_tsfp_native_step.raw_ticks==WORD(0x4E7940));
+        assert(g_tsfp_native_step.raw_delta==FLOAT(0x4E7948));
+        assert(g_tsfp_native_step.raw_units>=0 && g_tsfp_native_step.raw_phase>=0);
+        assert(g_tsfp_native_step.raw_ticks==(g_tsfp_native_step.raw_phase+
+            g_tsfp_native_step.raw_units)/g_tsfp_native_step.units_per_tick);
+    }
     frames++;
 }
 static void live_rates(void)
@@ -168,6 +197,24 @@ static void live_rates(void)
     frame();assert(FLOAT(0x4E7948)>.416f && FLOAT(0x4E7948)<.417f);
     puts("PASS: live 60/120/144 transitions, pacing, remainder continuity, pause/resume and stale clock reset");
 }
+static void physics_history_transitions(void)
+{
+    original_game_delta=1.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==1.f);
+    for(unsigned i=0;i<15;i++)FLOAT(0x74c414+4*i)=3.f;
+    frame(); /* Ordinary Original 60 updates retain their authored history. */
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==3.f);
+    setting="120";frame();
+    for(unsigned i=0;i<15;i++)FLOAT(0x74c414+4*i)=.5f;
+    original_game_delta=0.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==.5f);
+    original_game_delta=.25f;frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==.25f);
+    setting="144";frame();original_game_delta=1.f;setting="0";frame();
+    for(unsigned i=0;i<15;i++)assert(FLOAT(0x74c414+4*i)==1.f);
+    original_game_delta=-1.f;
+    puts("PASS: physics history rebased only after native-to-original handoff, including pause and slow motion");
+}
 /* Asset-free clock-to-resource contract; full US walking integration is
  * exercised by native_locomotion.c when the supported XBE is available. */
 static void boost_resource_clock(void)
@@ -204,6 +251,92 @@ static void boost_resource_clock(void)
     assert(RECOMP_F32_ADD_AT(0x6552Du,4.f,.25f)==4.25f);
     puts("PASS: boost drain and recovery retain original time budgets at 60/120/144");
 }
+static double statistics_seconds;
+static unsigned statistics_ticks;
+static unsigned gpu_notifications;
+void xbox_Nv2aNotifyPfbFlush(uint32_t address)
+{ assert(address==0x1000 && WORD(address)==0x12345678);gpu_notifications++; }
+static void trap_fractional_clock(void)
+{
+    g_tsfp_native_timing_active=1;g_esi=0x7000;
+    FLOAT(0x4e794c)=.25f;FLOAT(0x475d0c)=0;FLOAT(0x475ce0)=1;
+    FLOAT(0x475cd4)=0;FLOAT(0x7a38a0)=2;FLOAT(0x475d28)=50;
+    float kicked=RECOMP_F32_ADD_AT(0x1d8b46,100.f,200.f);
+    assert(kicked==262.5f);FLOAT(g_esi+0xe0)=kicked;
+    float angle=RECOMP_F32_ADD_AT(0x1d8b7a,kicked*.25f/60.f,2.f);
+    assert(angle==3.09375f && FLOAT(g_esi+0xe0)==225.f);
+    for(unsigned whole=0;whole<2;whole++) {
+        WORD(0x4e7944)=whole;WORD(g_esi+0x1a0)=4;
+        RECOMP_AFTER_STORE32(0x1d8bfd,g_esi+0x1a0);
+        assert(WORD(g_esi+0x1a0)==3+whole && !gpu_notifications);
+    }
+    WORD(0x1000)=0x12345678;RECOMP_AFTER_STORE32(0x3d66c3,0x1000);
+    assert(gpu_notifications==1);
+    for(unsigned native=0;native<2;native++)for(unsigned span=1;span<=3;span++) {
+        g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=(float)span;
+        FLOAT(g_esi+0xe0)=999;WORD(g_esi+0x1a0)=4;
+        assert(RECOMP_F32_ADD_AT(0x1d8b46,100.f,200.f)==300.f);
+        assert(RECOMP_F32_ADD_AT(0x1d8b7a,1.f,2.f)==3.f && FLOAT(g_esi+0xe0)==999);
+        RECOMP_AFTER_STORE32(0x1d8bfd,g_esi+0x1a0);
+        assert(WORD(g_esi+0x1a0)==4);
+    }
+    puts("PASS: coupled fractional TRAP force/travel/contact and GPU notification composition");
+}
+void sub_000D1FD0(void)
+{
+    unsigned whole=WORD(0x4e7944);
+    if(pc_native_global_load(0xd2079,0x4e7944,whole)) {
+        statistics_seconds+=FLOAT(0x4e794c)/60.;
+        statistics_ticks+=pc_native_global_load(0xd20f0,0x4e7944,whole);
+    }
+    g_esp+=4;
+}
+/* Asset-free policy coverage on both CI hosts. The private-US fixture also
+ * executes the actual callback, pose arithmetic and event crossings. */
+static void tree_phase_clock(void)
+{
+    const unsigned rates[]={60,120,144,180,240};
+    g_tsfp_native_timing_active=1;
+    for(unsigned r=0;r<5;r++)for(unsigned slow=1;slow<=4;slow*=4) {
+        unsigned count=rates[r]*slow,previous=0;
+        double phase=0;
+        for(unsigned f=1;f<=count;f++) {
+            unsigned tick=f*60/count,whole=tick-previous;previous=tick;
+            WORD(0x4e7944)=whole;FLOAT(0x4e794c)=60.f/count;
+            if(pc_native_global_load(0x1d88b0,0x4e7944,whole))
+                phase+=FLOAT(0x4e794c)/60.;
+            assert(WORD(0x4e7944)==whole);
+            assert(pc_native_global_load(0x1d88b1,0x4e7944,whole)==whole);
+        }
+        assert(phase>.99999 && phase<1.00001);
+    }
+    FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x1d88b0,0x4e7944,1));
+    g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
+    assert(!pc_native_global_load(0x1d88b0,0x4e7944,0));
+    assert(pc_native_global_load(0x1d88b0,0x4e7944,3)==3);
+    /* TRAP consumes fractional time only with its coupled map selected.
+     * A nearby continuous conversion must also retain live fractional time. */
+    for(unsigned native=0;native<2;native++)for(unsigned whole=0;whole<=3;whole++) {
+        g_tsfp_native_timing_active=native;FLOAT(0x4e794c)=.25f;
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af5,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(RECOMP_I32_TO_F32_AT(0x1d8b6a,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(RECOMP_I32_TO_F32_AT(0x1d8af6,0x4e7944,whole)==(native?.25f:(float)whole));
+        assert(pc_native_global_load(0x1d8ab0,0x4e7944,whole)==(native?1:whole));
+    }
+    g_tsfp_native_timing_active=1;FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x1d8ab0,0x4e7944,1));
+    statistics_seconds=0;statistics_ticks=0;
+    for(unsigned f=1;f<=240;f++) {
+        unsigned whole=f/4-(f-1)/4;WORD(0x4e7944)=whole;FLOAT(0x4e794c)=.25f;
+        g_esp=0x1000;RECOMP_DIRECT_CALLEE_AT(0xD2CB7,sub_000D1FD0)();
+        assert(g_esp==0x1004 && FLOAT(0x4e794c)==.25f && WORD(0x4e7944)==whole);
+    }
+    assert(statistics_seconds>.99999 && statistics_seconds<1.00001 && statistics_ticks==60);
+    FLOAT(0x4e794c)=0;assert(!pc_native_global_load(0xd2079,0x4e7944,1));
+    g_tsfp_native_timing_active=0;FLOAT(0x4e794c)=.25f;
+    assert(!pc_native_global_load(0xd2079,0x4e7944,0));
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -213,10 +346,19 @@ int main(void)
     assert(RECOMP_I32_TO_F32(0x4E7944,1)==1);
     assert(RECOMP_I32_TO_F64(0x4E7944,1)==1);
     setting="144oops"; frame(); assert(original_calls==2);
-    setting="240"; frame(); assert(original_calls==3);
+    setting="300"; frame(); assert(original_calls==3);
     setting="144"; frame();
     double distance=0;
-    for(unsigned i=0;i<144;i++) { frame(); distance+=FLOAT(0x4E794C); }
+    int64_t exact_units=0;
+    for(unsigned i=0;i<144;i++) {
+        frame();distance+=FLOAT(0x4E794C);
+        assert(g_tsfp_native_step.units_per_tick==144000000);
+        assert(g_tsfp_native_step.game_phase==exact_units%144000000);
+        assert(g_tsfp_native_step.raw_phase==g_tsfp_native_step.game_phase);
+        assert(g_tsfp_native_step.raw_units==g_tsfp_native_step.game_units);
+        exact_units+=g_tsfp_native_step.game_units;
+    }
+    assert(exact_units==60LL*144000000);
     assert(WORD(0x7497B0)==60 && WORD(0x74914C)==60);
     assert(distance>59.999 && distance<60.001);
     assert(WORD(0x7497B8)==145);
@@ -233,16 +375,26 @@ int main(void)
     pc_native_restore_animation_delta(saved_delta);
     assert(FLOAT(0x4E794C)==.4166667f);
     WORD(0x7497B4)=1;
-    for(unsigned i=0;i<144;i++) { frame(); assert(FLOAT(0x4E794C)==0 && WORD(0x4E7944)==0); }
+    for(unsigned i=0;i<144;i++) {
+        frame();assert(FLOAT(0x4E794C)==0 && WORD(0x4E7944)==0);
+        assert(!g_tsfp_native_step.game_units && !g_tsfp_native_step.game_ticks);
+        assert(g_tsfp_native_step.raw_phase==exact_units%144000000);
+        assert(g_tsfp_native_step.raw_units>0);
+        exact_units+=g_tsfp_native_step.raw_units;
+    }
     assert(paused_calls==1 && resume_calls==0);
     assert(WORD(0x7497B0)==120);
+    assert(exact_units==120LL*144000000);
     WORD(0x7497B4)=UINT32_MAX; frame();
     assert(resume_calls==1 && WORD(0x7497B4)==0 && FLOAT(0x4E794C)>0);
     assert(original_calls==3 && frames==293);
     live_rates();
     input_edges();
     input_after_pause();
+    physics_history_transitions();
     boost_resource_clock();
+    tree_phase_clock();
+    trap_fractional_clock();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

@@ -1,0 +1,42 @@
+diff --git a/src/kernel/recomp_trace.c b/src/kernel/recomp_trace.c
+--- a/src/kernel/recomp_trace.c
++++ b/src/kernel/recomp_trace.c
+@@ -506,6 +506,22 @@
+     fflush(stderr);
+ }
+ 
++/* Runtime diagnostic switches are startup settings, like the existing helper
++ * caches. Normal launcher play explicitly sets a zero trace budget. Collapse
++ * its disabled diagnostics into one check, without bypassing render-idle work.
++ * Presence of any diagnostic switch conservatively retains the original path. */
++static int trace_quiet(void)
++{
++    static RECOMP_TLS int quiet = -1;
++    if (quiet < 0) {
++        const char *budget = getenv("RECOMP_TRACE_BUDGET");
++        quiet = budget && strtol(budget, NULL, 0) <= 0 &&
++            !getenv("RECOMP_WATCH_VA") && !getenv("RECOMP_DUMP_VA") &&
++            !getenv("RECOMP_TRACE_ONLY") && !getenv("RECOMP_TRACE_PROFILE");
++    }
++    return quiet;
++}
++
+ void recomp_trace_enter(const char *name, uint32_t va)
+ {
+ #ifdef _WIN32
+@@ -513,6 +529,7 @@
+      * The callback verifies thread ownership and untouched frame state. */
+     if (s_render_idle && !(++s_idle_count & 255u)) s_render_idle();
+ #endif
++    if (trace_quiet()) return;
+     watch_check(name);
+     dump_va_once();
+     if (trace_only_match(name))
+@@ -579,6 +596,7 @@
+  * comes back wrong. */
+ void recomp_trace_exit(const char *name, uint32_t va)
+ {
++    if (trace_quiet()) return;
+     if (prof_enabled()) return;     /* entries alone carry the count */
+     if (!trace_budget()) return;
+     fprintf(stderr, "[TRACE] <- %s (0x%08X)  esp=%08X eax=%08X ecx=%08X "

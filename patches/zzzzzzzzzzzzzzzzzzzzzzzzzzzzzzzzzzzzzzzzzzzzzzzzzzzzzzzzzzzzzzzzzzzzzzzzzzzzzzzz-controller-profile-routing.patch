@@ -1,0 +1,99 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -167,6 +167,7 @@
+     int pad;                /* recomp_pad slot when device == DEV_PAD */
+     int deadzone;
+     int has_key;            /* any key: source, so the port works with no pad */
++    int pad_fallback;       /* launcher switched a keyboard-only map to a pad */
+     Binding bind[CONTROL_COUNT];
+     char label[40];
+ } Controller;
+@@ -475,7 +476,7 @@
+ {
+     Controller tmp;
+     char key[48], value[64];
+-    int port = index, seen_port = 0, i;
++    int port = index, seen_port = 0, has_pad = 0, i;
+ 
+     defaults_for(&tmp, index < PORTS ? index : 0);
+     p = ws(p);
+@@ -530,10 +531,18 @@
+             if (tmp.bind[i].count > 2) tmp.bind[i].count = 2;
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int s;
+-        for (s = 0; s < tmp.bind[i].count; s++)
+-            if (tmp.bind[i].src[s].kind == SRC_KEY)
+-                tmp.has_key = 1;
+-    }
++        for (s = 0; s < tmp.bind[i].count; s++) {
++            int kind = tmp.bind[i].src[s].kind;
++            if (kind == SRC_KEY) tmp.has_key = 1;
++            if (kind == SRC_PAD_BUTTON || kind == SRC_PAD_TRIGGER || kind == SRC_PAD_AXIS)
++                has_pad = 1;
++        }
++    }
++    /* The launcher changes device without replacing the user's keyboard map.
++     * Supply pad defaults only for that keyboard-only profile. Any pad mapping
++     * makes this a custom controller profile; preserve its unbound controls.
++     * An entirely unbound profile must also remain unbound. Never rewrite keys. */
++    tmp.pad_fallback = tmp.device == DEV_PAD && tmp.has_key && !has_pad;
+     g_ctl[port] = tmp;
+     return p + 1;
+ }
+@@ -941,10 +950,10 @@
+     RecompPadState pad;
+     int have_pad = 0, i;
+     int axis[4] = { 0, 0, 0, 0 };
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     Controller pad_defaults;
++    int auto_pad = -1, use_pad_defaults;
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     unsigned reserved_pads = 0;
+-    int auto_pad = -1;
+ #endif
+ 
+     if (!out)
+@@ -1000,7 +1009,6 @@
+             if(!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
+                 have_pad=1;auto_pad=slot;break;
+             }
+-        if(have_pad)defaults_for(&pad_defaults,1);
+         pc_prompts_controller(&pad,have_pad);
+     }
+ #endif
+@@ -1015,7 +1023,6 @@
+                     have_pad=1; auto_pad=slot; break;
+                 }
+             }
+-            if (have_pad) defaults_for(&pad_defaults,1); /* pad-only defaults */
+             InterlockedExchange(&g_pc_auto_pad,auto_pad);
+         }
+         pc_prompts_controller(&pad,have_pad);
+@@ -1023,6 +1030,11 @@
+         have_pad=0; /* Modal PC settings and background windows receive no pad input. */
+     }
+ #endif
++
++    /* Initialize after platform focus/modal gating, using only the pad read
++     * for this port. Port 2 defaults contain no implicit keyboard sources. */
++    use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback);
++    if (use_pad_defaults) defaults_for(&pad_defaults, 1);
+ 
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+@@ -1040,14 +1052,12 @@
+             continue;
+         }
+ #endif
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-        if (auto_pad>=0) {
++        if (use_pad_defaults) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+                 int m=source_magnitude(&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
+                 if(m>mag) mag=m;
+             }
+         }
+-#endif
+ 
+         for (s = 0; s < c->bind[i].count; s++) {
+             int m = source_magnitude(&c->bind[i].src[s], &kc, &pad, have_pad,

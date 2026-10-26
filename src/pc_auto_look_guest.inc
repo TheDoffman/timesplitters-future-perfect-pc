@@ -3,12 +3,25 @@
  * Override only that read, never the stored profile/controller preference. */
 #include "pc_controls.h"
 #include "pc_prompts.h"
-#include "pc_guest_memory.h"
+#include "pc_guest_span.h"
 
 static uintptr_t pc_auto_look_memory(uint32_t address,size_t bytes,int writing)
 {
     uintptr_t p=(uintptr_t)address+g_xbox_mem_offset;
     return address && pc_guest_memory(p,bytes,writing)?p:0;
+}
+static uintptr_t pc_auto_look_memory_in_regions(PcGuestRegion regions[2],
+                                               uint32_t address,size_t bytes,int writing)
+{
+    uintptr_t p=(uintptr_t)address+g_xbox_mem_offset;
+    if(!address || bytes>UINTPTR_MAX-p)return 0;
+    for(unsigned i=0;i<2;i++)
+        if(bytes<=pc_guest_region_remaining(&regions[i],p,writing))return p;
+    /* Keep the current-player global's map: settings may return to that map
+       after the player record in high guest RAM. The second slot is bounded. */
+    PcGuestRegion *region=regions[0].size?&regions[1]:&regions[0];
+    *region=pc_guest_query_span(p,bytes);
+    return bytes<=pc_guest_region_remaining(region,p,writing)?p:0;
 }
 static uint32_t pc_auto_look_word(uintptr_t address)
 {
@@ -25,14 +38,17 @@ static int pc_auto_look_mouse(void)
 }
 static void pc_auto_look_camera(void (*original)(void))
 {
-    uintptr_t current=pc_auto_look_memory(0x007B0C7Cu,4,0),p=0,settings=0;
+    /* Reuse permissions only for the consecutive pre-call pointer reads.
+       This scope ends before original(); never retain it for another update. */
+    PcGuestRegion regions[2]={{0}};
+    uintptr_t current=pc_auto_look_memory_in_regions(regions,0x007B0C7Cu,4,0),p=0,settings=0;
     uint8_t saved=0;
     if(current && pc_auto_look_mouse()) {
-        p=pc_auto_look_memory(pc_auto_look_word(current),0x1504,0);
+        p=pc_auto_look_memory_in_regions(regions,pc_auto_look_word(current),0x1504,0);
         /* +4 is the local input slot. +0 is a network/player ID and may be
          * nonzero even for the local keyboard/mouse player. */
         if(p && pc_auto_look_word(p+4)==0)
-            settings=pc_auto_look_memory(pc_auto_look_word(p+0x1500),3,1);
+            settings=pc_auto_look_memory_in_regions(regions,pc_auto_look_word(p+0x1500),3,1);
         if(settings) {
             saved=*(uint8_t *)(settings+2)&8u;
             *(uint8_t *)(settings+2)&=(uint8_t)~8u;

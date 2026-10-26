@@ -1,320 +1,128 @@
 # Build, run and validation map
 
-The team fixture verifies the scoped33ACDB setter receives1 for Story humans,
-with original arguments/result/stack restored and NPC/other-caller/Arcade
-fallback. Supported-US checks confirm original Story selects that shared team.
-The four-peer runner checks every loaded human actor retains team1.
-
-The handoff authority fixture verifies host/original fallback, guest animation-
-callback suppression, independent pistol/rifle queues, original co-op slot1
-ownership and preservation of its existing pistol ammo. Original-US contracts
-include the rifle grant call sites. The isolated opening test compares each
-owned ammo total with the host to catch animation-triggered duplicate awards.
-
-The Story pose fixtures enforce the original256-byte sender ceiling, assemble
-reordered/missing physical/pose parts and reject mixed checksums before applying
-SNP2 animation and bounds. They reject
-non-finite channels/negative bounds and stale body generations, and preserve
-duplicate protection. The display fixture executes the common pose renderer,
-verifying local asset/bone handles, crossfade asset resolution and root-motion
-flag clearing. Guest dispatch checks Story frozen evaluation as well as existing
-bot behavior. Runtime world snapshots expose host/guest clip/time metadata;
-source checks alone do not prove live NPC animation or hit synchronization.
-
-Story `--combat-probe` extends the bounded four-peer runner after firearm checks.
-It uses ordinary movement/mouse/fire inputs, checks the original NPC ID decoder
-would resolve the same entity, searches a bounded opening route for a nearby live enemy marked locally visible,
-and requires a host-received guest-source damage trace plus agreeing NPC health.
-No target, health drop from unrelated AI combat, or camera/ammo-only evidence is
-not acceptance. Read-only world snapshots now include class/team, pose metadata,
-last-damage tick and first-ID-match evidence from the original entity pool.
-The hit-trace C fixture verifies one unchanged original call, stack/result/health
-effects, disabled tracing and invalid-backlink/other-mode fallback.
-
-The Story loadout fixture executes production ammo/grant observers, reliable
-serialization, receive dispatch, loading/ownership gates and original-API calls.
-It checks replay does not refill ammo, other players remain untouched, existing
-inventory is preserved, and malformed/non-host/stale-generation commands do not
-grant items. Supported-US call-site checks bind both handoff pairs to their
-original inventory functions; live four-peer ammo/fire acceptance is separate.
-
-The extra-start fixture verifies distinct signed16 pad IDs, private template
-positions with unchanged room/heading data, tag/inverse lookup, delayed cached
-resolution, late remote setup after activation, authored slot0/1 selection, checkpoint release, allocation failure and other-scene
-fallback. Complete-stack fresh/repeated and historical Mac migration must also
-include the three new original-pad wrappers; source tests alone cannot establish
-collision-free playable starts.
-
-The Story fixture now exercises host NPC serialization and guest body creation
-from production adapters, initial state/team/identity/list preservation,
-duplicate/out-of-order messages, loading queues, absence and ordinary fallback.
-It rejects non-host senders, short messages and non-finite state. The reliable
-creation message replaces a reproduced null-target guest spawn, rather than
-discarding the valid spawn. Fresh runtime construction/pose/combat still needs
-the changed four-peer build. The fixture also checks periodic host publication,
-same-tick/rate bounds, later roster removal, absence and loading suppression.
-Historical Mac migration excludes the dependent
-creation patch before applying the complete stack.
-
-The pending-start fixture covers state4 after Arcade ready placement is skipped,
-alongside16, and confirms the one-shot token prevents later respawn attempts.
-Active2 and script-suspended256 contexts retain their original handling. The
-adapter validates the full cached-pad span before clearing each initial pad.
-
-The activity adapter fixtures cover an existing Story NPC, stale/backlinked
-entities, player contexts, controller callers, mode/phase and pool bounds. Guest
-dispatch tests retain controller enumeration and ordinary bot behavior. The
-supported-US fixture executes3568C0/358560 to prove the original controller gate
-rejects NPCs and the subsequent script-ownership gate accepts only the host.
-They also cover a dormant script actor with no active body and rejection of an
-obsolete prototype, and verify dispatch supplies the caller's original entity.
-
-The isolated `story-local-load` route enables Local NPC lifecycle tracing for a
-direct original-versus-Online comparison. Scene telemetry includes placed-NPC
-count+30 and labels unverified allocation counters by their numeric addresses.
-Those counters must not be interpreted as human population. Numeric guest
-return candidates are observations, not a validated stack unwind.
-
-The NPC lifecycle patch's four boundaries keep independent eight-call trace
-budgets. Complete-stack migration checks the scripted-spawn hook installation.
-Scene metadata comparison now proves identical NPC budgets and record counts
-between Local and four-player Online; it does not prove the spawn events execute.
-
-Story pair-load samples include the numeric active config tail60..9F, to compare
-mission/variant initialization independently of the limited scene/difficulty
-summary. The authored-record trace is separately bounded to24 masked records.
-Neither a predicate fixture nor a generated wrapper proves NPC initialization;
-the first changed runtime probe still failed firearm acceptance after60s.
-Local and paired Story samples also record the scene setup pointer, authored
-NPC budget index/count, bounded record counts and actor/human allocation counts.
-The refreshed Local reference reaches six characters and weapon14 with budget
-index8/count5; use it to distinguish resource availability from NPC replication.
-
-The original-US Story fixture executes6B100 with the verified rule jump table:
-stock four-player/co-op rejection, stock network exclusion, and retained Normal
-versus Easy/Hard and solo-only restrictions. Adapter tests check restored argument
-and return/stack behavior, co-op normalization, retained solo/difficulty masks
-and Arcade pass-through. Complete-stack migration installs the new wrapper;
-the historical Mac-only fixture excludes this dependent patch before migration.
-
-The Story lobby fixture covers the guest intro-to-game pending copy while the
-original receiver is still phase15, with no host broadcast from the guest.
-Ready fixtures cover zero-actor transport for pending Story gameplay and
-ordinary pass-through after that pending start is consumed. The supported-US
-357540 fixture executes its real transport tail for gameplay flags80008 too.
-
-The suspended-spawn trace source check also verifies the original context reset
-is preserved with its return/stack effects and existing suspension flag. The
-patch migration assertion includes the original D50E0 wrapper.
-
-The Story source fixture verifies that suspend/restore tracing preserves the
-original suspension flags/context and return/stack effects. The migration
-fixture also verifies installation of both original script-control wrappers.
-`--script-observe-seconds 20` adds a passive bounded wait only when a peer is
-script-suspended; it retains the initial startup evidence and assertions rather
-than substituting the later state as a passing start.
-
-`tests/story_pair_game.py --load-probe --lobby-controls --players 4 --fire-probe`
-extends the isolated route to four actual game processes and primary-fire input.
-Weapon IDs, aim and muzzle telemetry use the existing bot-shot field contracts;
-they are not ammo or hit counters. Fire-input completion is recorded separately
-from load/movement acceptance and requires reviewed captures. Neither proves
-Story NPC/script authority or coordinated next-level behavior. Spawn-pad source contracts also check scoped slot/ownership/stack preservation,
-valid-result passthrough and inactive/non-Story guards. The migration check
-asserts the separate CF060 wrapper is installed. Revised notes require the
-header's name, year, difficulty/trophy, thumbnail and population.
-
-`tests/test_quit_menu.py` also compiles `tests/story_lobby.c` against the
-production Story lobby adapter with isolated guest RAM. It checks host/guest/mode
-guards, host Options and each peer Progress routing, preserved network inputs and frontend mode,
-and difficulty confirmation without a local-game launch.
-`tests/story_pair_game.py --load-probe --lobby-controls` adds host Scotland/Hard,
-guest reliable settings receipt and Progress/Back before GO and movement.
-The controls route sends an ignored guest Confirm rather than Ready; host GO must
-work using automatic original readiness. Review its guest-confirm-ignored capture
-for only Back/Player Progress, alongside the live lobby authority assertion. The
-runner removes TSFP_STORY_LOAD_PROBE so this exercises normal typed Story start.
-The changed route needs its own runtime receipt and reviewed captures; the prior
-startup-only receipt does not certify these controls. These callback
-contracts do not establish live lobby rendering or synchronized Story play.
-The isolated `story-host-controls` scenario extends `story-host` with Y/level/
-difficulty/X Progress/Back. Expected descriptor checks stop the route if level
-or difficulty navigation differs, before a subsequent confirm could press GO.
-Run with native process access: restricted probes have failed before the menus
-with an invalid-handle exception; native-access runs reached the lobby cleanly.
-Its bounded pipe drain uses `read1` and flushes each chunk: live descriptor
-assertions must not read a log buffered until child shutdown. A menu mismatch
-after that fix is real routing evidence; inspect the captured screen and the
-`PC-STORY-SELECT` trace rather than treating the generic exit check as acceptance.
-The difficulty step chooses mission 1 and checks the live allocated descriptor
-against its trace, plus mission retention and custom-builder entry. Review the
-capture for actual Easy/Normal/Hard choices; tracing alone is insufficient.
-The probe's raw `mission` field is guest frontend data, not the host-owned Story
-choice in network menus. Retention is checked against the custom dialog's own
-mission trace. Review the returned lobby header for the selected mission name
-and thumbnail, in addition to confirming menu descriptors.
+See [build-test-details](build-test-details.md) for detailed adapter contracts and validation routes.
 
 <!-- packet:start -->
-Windows entry point is `tsfp.ps1` (Setup/Extract/Test/Generate/Build/Run/SmokeTest);
-`setup.ps1` orchestrates first setup. Use `powershell -NoProfile -File tsfp.ps1
--Action Build` from the checkout. The builder uses pinned upstream and `.venv`,
-applies the full patch stack, checks guest-generation fingerprints/wrappers,
-regenerates when needed, configures MSVC x64 and builds/tests native targets.
-Output: `build/windows/Release/futureperfect_recomp.exe`. Do not bypass a failed
-patch phase with direct edits or suppress the first compiler/linker diagnostic.
-
-Mac: `.venv/bin/python tools/build-native-mac.py`; `--generate` for stale guest
-code, `--setup` only for explicit setup. Output `build/macos/futureperfect_recomp`.
-Default renderer auto chooses common Vulkan on supported macOS26+ and GL on
-older hosts; pinned SDK `config/vulkan-sdk.json`, loader `tools/vulkan_sdk.py`.
-`BUILD.json` records selected driver/provenance. Do not copy Windows build trees.
-
-Routine bounded Windows gameplay: `.venv/Scripts/python.exe tools/testing_profile.py
---play --seconds 120`; Mac: `.venv/bin/python tools/test-native-mac.py
---unlocked-profile --seconds 120`. Both use disposable fixture copies, not
-personal saves. Source-only tests do not certify gameplay. Missing supported
-game data or an unavailable host is a reported validation gap, not a reason to
-invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
+Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
+checks fingerprints, regenerates, builds and tests MSVC x64. Output:
+`build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
+Mac: `tools/build-native-mac.py` (`--generate` for stale code, `--setup` for setup).
+Output: `build/macos/futureperfect_recomp`. Auto selects Vulkan on macOS26+,
+otherwise GL. SDK pin: `config/vulkan-sdk.json`; driver provenance:
+`tools/vulkan_sdk.py` and `BUILD.json`.
+Isolated gameplay: `tools/testing_profile.py --play --seconds 120` (Windows),
+`tools/test-native-mac.py --unlocked-profile --seconds 120` (Mac), with .venv.
+Root AGENTS owns assets/isolation/storage. Build, startup and gameplay are
+different evidence; unavailable hardware/private data remain validation gaps.
+For movement input changes, sampler and guest-only fixtures do not prove
+gameplay speed. Use an isolated Story run and compare actual player-position
+displacement for straight and diagonal travel. Mouse capture checks should
+also cover focus loss, stale held buttons, menu return and a clip released by
+another component while the game remains foreground.
 <!-- packet:end -->
+
+Native SDL input validation checks both active Confirm slots (E and Space) and
+rejects the retained third fixture entry (Return), matching the shared keyboard
+profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual host;
+this self-test correction does not change gameplay bindings or certify physical
+keyboard input.
+
+PR CI now offers a candidate `PR validation` gate in `runtime-patches.yml`.
+Its plan selects runtime and launcher work from the same head, reuses the
+Windows/Mac workers and checks selected results with `ci-pr-gate.py`. Existing
+required check names continue to report until the branch ruleset migrates.
+Unrequired issue-form and issue-resolution workflows are scoped to their own
+source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
+missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
+
+`test_push_gather.py` compares complete production gathering against its frozen
+original:24,000 calls, fresh bytes, mixed formats/strides/offsets, holes/overlaps,
+invalid declarations/readability and allocation failure. Guard pages bound source
+and destination for sizes1..64; over-read/wrong-stride mutations must fail.
+Both native CI hosts run it. Its optional six-pair benchmark uses2million96-vertex
+draws per round, alternating methods; that CPU kernel result is not game FPS.
+
+`test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
+dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
+
+Reload #337: `test_native_timing.py` covers CMP policy/mutations; the private-US
+`native_reload_input.c` runs decoder/consumer plus425 buffered taps.
+`reload_phase_sweep.h`:864 schedules/1,728 presses against policy and US routines.
+`test_reload_keys.py`:1,360 host tap schedules at60..240, held/fresh Fire, expiry,
+lifecycle, both triggers/alternate bindings and equal-timestamp Reload/Fire
+release/repress ordering. Windows `pc_controls.c` tests the real event bridge.
+Both CI hosts run these; missing XBE skips originals. Physical keys/Mac gameplay
+remain separate checks.
+
+`test_model_transform.py` compares memory/GPR/SSE in four rounding modes and
+callback mutations. Fast results and finite fallback results are bit-exact;
+fallback arithmetic destinations allow quiet-NaN payload variation (also seen
+with fast entry disabled). Rejected inputs leave all bits/FP flags unchanged.
+Public fixtures/mutations run on both hosts; US-body tests need the private XBE.
+Camera/mothership/spawn/rigid fixtures include the shared helper.
+
+Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
+helper death and the portable ring; `test_native_crash.py` checks Darwin output.
+Both hosts run these and shared UI identity/failure/ZIP tests.
+
+
+`stability_transitions_game.py --scenario rocket-impact --native-fps 240
+--watch-actors --watch-effects --seconds 180`: Temple floor rocket, cleanup,
+respawn/walk;0 selects Original60. `sample_wait` observes at most20Hz; effects
+remain non-atomic; missing player reads are counted/excluded. `rocket_impact_stats.py` checks shot/death/lifetime/recovery;
+counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
+captures are not synchronized to memory. See STATUS for live evidence.
+
+The Windows runner's optional `--watch-native-clock` brackets read-only timing-
+call counter7497B8 and level ticks with perf_counter_ns/QPC timestamps plus scene/
+match identity checks. This marker increments in the timing routine before
+gameplay returns; it is independent of accepted-Present CSV counters and is not
+completed simulation or GPU work. Compare successive bounded observations with
+Present clocks, allowing one in-flight call. Exclude resets, transitions, pause
+and wide read spans. Capture-free runs retain lightweight snapshots; full native
+traces and renderer captures belong in separate diagnostic runs.144 remains a
+legacy diagnostic rate; the menu presets are60/120/180/240.
+
+`native_tree_motion.c` (via `test_native_timing.py`) executes the original US
+TREE callback1D88B0, with only its two effect services replaced by spies. It
+covers phase/pose, crossing and retirement times, single events, pause, slow
+time, carried phases and exact whole/catch-up fallback through240; removing
+the gate correction fails. The asset-free native clock fixture checks this
+policy on both CI hosts. A private-XBE skip is not physical Mac/scene evidence.
+
+`native_trap_motion.c` executes the original TRAP callback and sine-table init.
+40 rate/slow/phase schedules require fresh pre-sound poses, an Original one-tick
+pose envelope, aligned endpoints, event/lifetime bounds, terminal state, phase, pause and ABI.
+12 mixed-rate/jitter schedules exercise live switches. Whole/catch-up state and
+events remain byte-equal. Gate, both conversions, both coupled operators and
+contact normalization are independent failing controls. The asset-free clock
+fixture covers coupled force/travel/contact and GPU-store composition; existing
+`test_gpu_flush_ack.py` retains actual-store/guard/fallback coverage. See
+[script clocks](native-script-clocks.md) for numerical and live-acceptance limits.
+
+`native_trap_transform.c` connects the original initializer/callback, A7360
+post-update invalidation, A14B0 Euler cache/matrix helpers and151E80 point
+transform in80 rate/slow/phase/Original-native cases. It checks changed-angle
+invalidation, cached reuse, fresh off-axis points, independent sine/cosine
+coordinates, point fast/original bit parity, pause, clock restoration and ABI. Registration/collision/sector
+services are spies. Broken dirty-store, angle input, matrix copy or point
+transform independently fails. This is fixture-driven CPU propagation; normal
+frame scheduling, actual mesh/GPU rendering and gameplay activation remain open.
+
+`native_player_statistics.c` runs original D1FD0, clock getter, eligibility and
+float accumulator through the production D2CB7 callee scope.160 rate/slow/phase/
+hour schedules cover60..240, movement-distance inputs, pause, uneven intervals,
+eligibility and exact whole/catch-up fallback. Ten-minute native240 time totals
+must be bit-equal to Original60; per-frame float addition fails this precision
+check. Independent missing-scope and missing-pause-guard controls fail. The public
+clock fixture covers dispatcher/restoration on both CI hosts. Private US XBE
+cases skip without the asset; they do not establish physical Mac gameplay.
+Copied numeric-policy fixtures must resolve all relative helper includes,
+including `pc_native_statistics_guest.h`, before mutation compilation.
 
 ## Choose the cheapest relevant check
 
-Online v2 discovery now has immutable `arcade`/`story` session types. Omitted
-types retain Arcade; Story capacity is four including the host. The directory
-checks type before admission (including private codes), serializes final-seat
-joins under its existing lock, and rejects type changes on either heartbeat.
-`Session.create/join`, automatic hosting and the companion's `--mode` propagate
-this type; Story fails closed against old directories and releases rejected
-registrations. Existing `test_online.py` covers mode isolation, limits, concurrent
-admission, expiry/departure and old-directory cleanup; the real loopback relay
-and `test_online_host.py` TLS invitation checks run for both modes. These are
-transport/admission checks only: no Story guest loading or gameplay is established
-by them. The in-game chooser is described in `systems.md`. `test_quit_menu.py`
-compiles its production callbacks for Windows/shared-native fallback, covering
-row routing, original Local descriptor, Back, cancelled/successful typed Story
-connections and allocation failure. Its optional local US-image test checks the
-original Story route and callback padding. `test_fov_settings.py` retains whole
-menu translation-unit coverage. Live navigation and Story gameplay require
-separate checks.
-
-For bounded Windows entry navigation, use
-`tests/stability_transitions_game.py --run-name online-story-entry --scenario
-story-entry`. It visits Local/Back/re-entry and opens/cancels the Story directory
-using isolated Test Lab and online settings. Local Back returns to the chooser;
-another Back returns to Main Menu. The cancellation helper checks only this
-game's `pythonw.exe` child chain, including the venv interpreter child, and the
-exact Story window title. Checking only direct game children misses the window.
-Passing this route establishes entry navigation, not lobby or gameplay acceptance.
-
-The `story-host` scenario uses its own ephemeral loopback-only directory and
-disposable companion automation command under `private/network-validation`,
-reusing the same isolated Test Lab profile routing. It connects Story, visits
-Start New Match and captures the stock host lobby with opt-in numeric tracing.
-Successful runs established host role 1/lobby phase 11 and the menu callbacks
-documented in `systems.md`; later local runs failed at `No renderer capture`.
-Do not label those failures passed, infer that a stock Deathmatch lobby is Story
-co-op, or change capture cadence based on an assumed meaning of `RECOMP_FPS`.
-
-`tests/test_network_guest_dispatch.py` includes `network_bot_motion.c`: a
-20 Hz snapshot stream must produce continuous 60 Hz display transforms, while
-jitter, loss, angle wrapping, death/absence/respawn and authority remain bounded.
-Its zero-duration mutation must fail the cadence assertion; its mixed-crossfade
-mutation must fail the atomic clip-transition assertion. Frame sampling also
-covers native 120/144 Hz without changing the simulation clock. Existing Windows
-and macOS CI invoke this suite; the helper itself has no OS dependencies.
-`tools/test-online-bot-motion.py --tag <name> --seconds 60` runs a Windows-only,
-bounded production Online host/guest pair through a loopback directory/browser/
-bridge, disposable Test Lab saves and separate input/runtime/display settings.
-It checks the supported XBE and sealed build before launch, records executable
-and compatibility identities, and recycles only its disposable partition images.
-Its asynchronous ReadProcessMemory observations measure actor update holds,
-not rendered frames, monitor scanout or Internet latency. Window captures are
-limited to the test processes. Benchmark fixture junctions are staged locally
-as five manifest files, then checked by the normal fixture validator.
-
-Launcher changelog publication: tests/test_launcher_release.py covers explicit
-previous stable launcher selection across paginated game/launcher history,
-initial-release notes and refusal of incomplete history. It remains registered
-in the existing Windows/Mac launcher build workflow. These are offline publisher
-tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
-Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
-mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
-file-list refusal in the same existing dual-host test route.
-
-Game changelog baselines: tests/test_publish_release.py covers first-Stable
-bootstrap from the latest earlier published alpha, subsequent Stable baselines
-across minor versions, mixed launcher/draft history and ancestor restrictions.
-The suite is already registered for both hosts in the release checks; these
-offline publisher fixtures need no game or launcher rebuild.
-
-`tests/test_text_read_scope.py` checks query reuse for ascending and descending
-addresses within the same OS region, both mapping boundaries, nested layouts
-and expiry between operations. `tests/pc_prompts.c` retains real Windows
-protection/guard-page and scratch-write tests in the supported build. A passing
-query-count fixture is not an FPS measurement; compare bounded gameplay runs
-with captures disabled and identical resolution, FOV and bot settings.
-The same Python suite extracts the production outlined-text wrapper and tests
-both host feature defines, all five draws, guest ABI, invalidation and fresh
-scratch writes. Removing the outer scope is a required failing mutation.
-
-`tests/test_decal_projection.py` checks the production projection wrapper's
-guest ABI and all matrix elements, plus one VM query per same-region correction.
-Its split camera/stack case requires two queries and covers the actual decal
-callers' temporary stack output ordering.
-A retained-snapshot mutation must fail, proving each invocation queries afresh.
-`tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
-no-access, boundary-crossing and overflow rejection (Windows also guard pages).
-The existing registered projection/cutscene CI suites run these checks on both
-hosts. The cutscene fixture shares a controlled query adapter for geometry;
-neither query counts nor successful geometry tests establish FPS improvement.
-
-Native `--input-self-test` must reset the synthetic terminal context between
-its fractional-time test and mouse-capture/fire test. The stale context caused
-a false failure during alpha.2 validation; clearing it within the self-test
-passes the actual Mac input, renderer, settings/debug checks and CTests with
-isolated configurations. Use a real local build/test root for partition cleanup;
-a runtime-root whose build directory redirects elsewhere is rejected.
-
-Hosted-only contributors need no local model, Ollama service or installed router.
-The context/maintenance checker uses Python and Git. The optional broker's Node
-contract tests run in CI with disposable/mocked fixtures; they invoke no hosted
-or local models. Running those contracts locally needs Node, while the supported
-game builders retain their existing dependencies. Guide/index upkeep applies
-equally to human and model-assisted changes and can produce a new CI failure
-when a covered system changes without its documentation update.
-
-| Change | First checks | Further evidence |
-| --- | --- | --- |
-| Agent context/index | `python tools/repo-context.py check`; `python -m pytest tests/test_repo_context.py -q` | Changed-path maintenance check against base |
-| Patch loader/order | `tests/test_patch_tracking.py`, `tests/test_patch_updates.py` | Full stack transition fixtures; supported build |
-| Guest generation/wrappers | `tests/test_recomp_generation.py`, float/vehicle join tests | Regenerate using verified local XBE, build |
-| Settings/input/menu | Affected `tests/test_*` and native C fixtures | Relevant native target, bounded isolated acceptance |
-| Renderer/shader/resources | Shared source contracts, `tests/test_renderer_host.py`, `tests/test_rhi_menu_sampling.py` | Windows WARP / Mac `tools/test-rhi-mac.py`; scoped scene evidence |
-| Launcher | `python tools/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher_*` fixtures |
-| Issue automation | `tests/test_issue_forms.py`, `tests/test_issue_resolution.py` | Read-only fixtures, workflow checks; no posting for tests |
-
-Enhancement routing uses the Ideas contact link in the issue chooser. The existing
-`test_issue_forms.py` refresh fixture verifies that release updates preserve that
-link and do not restore the removed enhancement issue form. The existing Windows
-`launcher_maintenance.cs` draft checks cover the shared launcher Ideas destination,
-empty diagnostics payload and unchanged bug-report round trip. These run in the
-already registered issue-form and launcher workflows; native Mac builds consume
-the same `DiagnosticIssueDraft.cs` URL policy.
-The mocked version-refresh PR creation check also verifies that the generated
-description preserves Ideas routing instead of referring to a removed form.
-The v1.2.23 release bump changes only shared version metadata; existing launcher
-release-policy, compatibility and both-host package checks remain the acceptance
-route. The optional-pack policy no longer hydrates LFS for version-only changes. A version bump alone is not evidence of a published update.
-
-Read each harness before assuming it is asset-free. Patch transition tests can
-need pristine pinned upstream files and Git access. Use existing dependencies;
-do not download/setup everything for a documentation edit. On Windows call
-`.venv/Scripts/python.exe` explicitly if `python` resolves to the Windows alias.
-In PowerShell each tool call has fresh process state: set `workdir`, use
-`login=false` / `-NoProfile`, absolute or root-relative paths, and check
-`$LASTEXITCODE` for native tools. A later `Write-Output` or pipeline can hide a
-failed native exit code. A profile warning alone does not prove filesystem
-operations are forbidden.
+See [choose the cheapest relevant check](build-test-details.md).
 
 ## Build failures and provenance
 
@@ -418,18 +226,19 @@ interactive launchers or persistent user settings.
 
 ## Bounded Arcade weapon-set route
 
-On Windows, `tests/stability_transitions_game.py --run-name issue105 --scenario
-weapon-set` reuses the isolated Test Lab runner, visits Arcade/Deathmatch/Vietnam,
-opens weapon set, changes selection and backs out, then exits in about 100 seconds.
-Review its named captures to confirm screen identity. `weapon_set_metrics` checks
-settled five-second guest-swap windows against 50 FPS, saving JSON results.
-The complete repair passes this unchanged threshold on Windows; partial cache
-variants failed it. Counters measure guest swaps, not GPU completion or scanout.
-`tests/test_text_read_scope.py` exercises query reduction, nesting, boundaries,
-scope invalidation and actual prompt-hook ABI/fallbacks. `tests/test_frame_clock.py`
-extracts the real Arm body for cheap/late/no-signal pacing contracts. Both run in
-runtime CI. Mac runtime checks remain
-unavailable on this Windows host.
+Windows `tests/stability_transitions_game.py --run-name issue105 --scenario
+weapon-set` uses isolated Test Lab saves and visits Vietnam's Arcade weapon-set
+menu. Captures identify screens; `weapon_set_metrics` checks settled five-second
+guest-swap windows against 50 FPS. The repair passes; partial caches failed.
+Counters do not measure GPU completion or scanout.
+`test_text_read_scope.py` checks query reduction, nesting, boundaries, invalidation
+and prompt-hook ABI/fallbacks. `test_frame_clock.py` extracts the Arm body for
+cheap/late/no-signal pacing checks. Both run in runtime CI.
+`test_shader_source_lookup.py` checks fresh shader contents and avoided hashing.
+`test_texel_sample_lanes.py` checks scalar checksum/read-footprint parity across
+lengths, strides and unaligned sources. Both extract production code, require
+negative controls on both CI hosts; neither proves rendered parity. Sample-load
+instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
 
@@ -472,11 +281,11 @@ The Windows-specific fixture compiles the model against deterministic
 monitor/window adapters: secondary fullscreen desktop size, windowed resize,
 minimize/query failure, allocation rollback/retry, persistence and preview
 rollback, manual override, and Auto ratio filtering. `tests/pc_display.c` retains
-existing manual scene/camera/HUD tests. `test_cutscene_letterbox.py` exercises
-the effective-output hook after the complete patch stack is applied. Launcher
-settings checks cover Auto UI/filter/save, fresh defaults, existing manual
-settings, and older package capability gating. Native Cocoa's graphics self-test
-recognizes the Auto choice; physical Retina/multi-display validation needs Mac.
+manual scene/camera/HUD tests. `test_cutscene_letterbox.py` checks effective
+output and air-lift FOV (#339), including a guard-removal mutation. With a local
+US XBE it executes all four lift regions through the production camera hook.
+Launcher tests cover Auto UI/filter/save, defaults and older packages. Cocoa's
+self-test recognizes Auto; physical Retina/multi-display checks need Mac.
 
 The historical controls-only fixture in `test_patch_updates.py` excludes
 `-auto-display.patch` until the complete-stack migration installs its display,
@@ -583,17 +392,18 @@ pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
 paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
 both tests. Physical turret aiming/firing and native host delivery remain
 separate gameplay checks; see #182 in STATUS and MAC-001.
-`native_mounted_mouse.c` in that same registered suite checks 60/120/144
-updates with 125/1000/8000 Hz packet streams, regular/jittered intervals and
-quarter-speed game time. It asserts integrated raw displacement and fresh
-aim on every update carrying motion, plus paused/invalid clocks, no replay,
-mode handoff and untouched player angles. Separate old-clock and old-batch
-counterfactuals must fail. It executes shared host input logic with controlled
-guest fields; it does not establish live turret rendering or physical input.
-Windows source `a5e0dc2` passes the supported build and built-in checks, plus
-159 broader regressions. Its candidate binary is retained separately; the
-normal playable executable is restored. Consult STATUS for hashes before
-testing and force a fresh link after preserving the playable pair on rebuild.
+`native_mounted_mouse.c` checks 60/120/144 with 125/1000/8000 Hz packets,
+jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
+handoff and untouched player angles. Old-clock/batch mutations must fail.
+These controlled-field tests do not certify live turret rendering/input.
+Consult STATUS for current build hashes, not historical candidate paths.
+`mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
+one query for either address order, forward page spans, split/read-only/inaccessible
+FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered
+mutations must fail. `camera_region_host.c` validates real OS protection changes
+on Windows/macOS. Mocked locks/events are not physical input. `auto_look_region.c`
+checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
+expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
 `tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
 mode through the actual adapters, changing the native rate without recreating
 input capture. The focused Windows `tsfp_pc_controls_test` target passes with
@@ -610,20 +420,14 @@ A ten-second deadlock guard bounds failures; the test no longer races a 500 ms
 fake response against a 350 ms runner-speed assertion. Both launcher host builds
 run this shared fixture; production timeout and cancellation policy is unchanged.
 
-## PR #285 integration checks
+## Native integration checks
 
-Keep both native FPS test registrations and main's mounted mouse, text entry,
-Auto display, crane/Ghost Gun and scoped-text checks. The historical controls
-upgrade fixture defers both late-frame and native tail patches until full-stack
-migration; fresh stacks apply all of them. `stability_transitions_game.py` retains
-the weapon-set scenario alongside bounded native-rate/surface/network options
-and uses perf-counter timestamps for command/presentation alignment.
+Retain native FPS and main's mounted mouse, text entry, Auto display, crane/Ghost
+Gun and scoped-text tests. Historical controls upgrades defer dependent native
+patches until full-stack migration; fresh stacks apply all patches.
 
-The Windows prompt fixture now verifies real page protections and scratch ABI
-without trying to count read queries in its own translation unit: scoped reads
-live in `pc_prompts.c`. `test_text_read_scope.py` retains explicit query-count,
-nesting and fresh-write checks. Merging source does not establish fresh Mac or
-whole-game high-refresh acceptance.
+`test_text_read_scope.py` covers scoped queries, nesting, fresh writes and
+mutations; Windows prompt fixtures verify actual page protections and ABI.
 
 The PR #285 CI index check also caught three pre-existing Windows patch files
 with residual CRLF bytes despite their LF attributes. They were normalized to
@@ -690,8 +494,11 @@ blocked CI scope selection even though the generated index was current.
 route in `test_native_timing.py`. It executes the complete walking routine,
 with controlled input displacement and flat-floor world services. Tests cover
 60/120/144 displacement, diagonal cap, stops/reversals, boost resource, selected
-player/mode/button eligibility, depletion, slow/fast time and catch-up. A
-runtime mutation restores the old subtraction and must fail resource parity.
+player/mode/button eligibility, depletion, slow/fast time and catch-up.
+Keyboard W+D versus W travel uses the sampler's exact stick
+components over one second at original 60 and native 60/120/144/180/240 FPS.
+The controlled flat-floor results stay within 0.00005 world units at every rate.
+A runtime mutation restores the old subtraction and must fail resource parity.
 `native_timing_guest.c` also checks the actual clock-to-resource calculation
 without game assets in existing Windows/macOS CI. The XBE-dependent fixture
 is skipped when assets are absent; do not count that skip as gameplay coverage.
@@ -888,30 +695,24 @@ matching each local team alone does not pass this gate.
 
 ## Weapon-slot selection checks
 
-`tests/test_weapon_slots.py` compiles the shared key-state and production guest
-selector fixture on Windows/macOS. It covers press edges, held/focus/menu input,
-expiry, empty slots, grouped weapon variants and local-player/state guards.
-The supported Windows build also runs `tests/pc_settings.c` for migration and
-last-slot rebinding/persistence. Launcher settings tests cover defaults, custom
-conflicts, explicit Unbound, moving keys and reset. Original input-hook changes
-require regenerating the guest C through the supported build. These fixtures
-are not a substitute for actual weapon-switch animation/gameplay validation.
+`test_weapon_slots.py` checks shared key state and guest selection on both hosts:
+press/held/focus/menu input, expiry, empty/grouped slots and local-player guards.
+Windows Build's `pc_settings.c` checks migration and last-slot persistence;
+launcher tests cover defaults, conflicts, Unbound, moving keys and reset.
+Input-hook edits require supported regeneration; animations need gameplay checks.
 
 ## Themed keyboard editor checks
 
-The historical old-controls upgrade fixture excludes keyboard-settings-menu and
-keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+The historical old-controls fixture excludes keyboard-settings-menu,
+keyboard-weapon-slots and controller-profile-routing until shared-input dependencies exist. The
 final full-stack upgrade must contain the capture pump, two-binding limit and
 weapon-slot sampling/guest hook, so both new patches are still validated.
 
-`tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
-input release, one event per press, cancel/focus/timeout, complete action
-coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
-`test_weapon_slots.py` and `test_quit_menu.py`. Supported game Build checks
-exercise native settings persistence and two-slot bounds; launcher settings
-tests cover importing legacy four-binding profiles, rejecting a third slot,
-and saving two slots. Live acceptance must separately check main/pause access,
-binding capture without shortcut leakage, conflict/clear/defaults, mouse
+`test_keyboard_menu.py` checks capture/page release, single presses,
+cancel/focus/timeout, action coverage and sensitivity. Run with menu_mouse,
+weapon_slots and quit_menu tests. Build checks native persistence/two-slot bounds;
+launcher checks legacy four-slot import, third-slot rejection and two-slot save.
+Live checks cover main/pause access, shortcut-free capture, conflict/clear/default,
 sensitivity, two-column layout and return to gameplay.
 
 ## Storage selection checks
@@ -939,6 +740,45 @@ backs up only untouched seeded copies outside UserData. Modified legacy profiles
 require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
 Player 1 without deleting a profile or altering personal saves.
 
+## Texture streaming regression checks
+
+The Windows native-runtime CI job installs requirements-release.txt before its
+Online HTTPS tests, using the same pinned certificate provider as the packaged
+companion. Without it, the suite fell back to the runner's Git OpenSSL, which
+timed out during certificate creation on 9bf5630. This changes test dependency
+setup, not the production hosting fallback. Changes to those pins trigger the
+workflow and select native checks; Mac's selected suite does not run that test.
+
+`tests/test_texture_runtime.py` compiles the actual shared queue, common RHI
+loader and legacy GL loader with tiny real DDS files and counted GPU adapters.
+It runs on both CI hosts. A deliberately stalled reader checks nonblocking
+pump/cancellation, owner reuse, queue backpressure, staging limits and cleanup.
+Both modes check Classic deferral without reads/allocations, content changes,
+late Enhanced activation, cached switching and failures; GL also checks mips
+and binding restoration. Deferred traces omit I/O; late requests omit hashing.
+These are CPU/adapter tests, not GPU/scene acceptance. Run patch upgrades for
+Present hook changes; measure pacing/pop-in separately at Original60/120/144.
+
+The pytest loader fixture defines TSFP_TEST_BINDING_SYNC and extracts the actual
+patched binding helper into its temporary include directory. The CMake loader
+fixture runs without that extra helper; it requires no pytest-generated files.
+Both routes default to background loading when no diagnostic override is set.
+
+Historical controls-only and pre-toggle snapshots omit streaming along with its
+texture prerequisites. Full-stack migration must install both the Present pump
+and binding-revision hook, which the controls-upgrade test explicitly checks.
+
+The texture fixture now compiles actual present_resolve, dev_Swap and dev_Present
+bodies, verifies exactly one queue completion per presentation (none for a skip),
+and finishes real DDS loads through Swap. It fails against the Present-only
+prototype. Replay mode deliberately suppresses host shortcuts in pc_controls_message;
+neither guest F10 injection nor posting PC_TEXTURE_MODE_COMMAND validates live
+switching during replay. Use the in-game settings route or a non-replay session.
+The host toggle logs transitions, but the menu's explicit tsfp_texture_set_4k
+setter does not. For menu validation inspect staged/applied captures, Apply's
+disabled state, and the actual value after closing/reopening the page (which
+reads tsfp_texture_is_4k). Capture resumed gameplay in both modes separately from
+frame-time measurements. The ineffective window command was removed.
 
 ## Release and launcher validation routes
 
@@ -964,3 +804,70 @@ motion mutation fixtures copy pc_character_pose.h with the shared state header
 now required by Story's numeric pose model. Run quit/menu, FOV, guest dispatch,
 bot results, keyboard/storage/weapon fixtures and the supported optimized build.
 Native gameplay/Online and four-peer Story acceptance remain separate checks.
+
+`publish-release.py` defaults to exact origin/main; --branch permits pushed feature
+previews and Stable release/ or hotfix/ branches with a published Stable ancestor.
+It validates monotonic versions within stable major/minor lines or exact preview
+base/channel series. Notes choose an ancestor in that series, falling back to
+Stable; unrelated/nonancestor experiments never become a baseline. Channel JSON
+records exact source and included/latest published Stable; a missing latest
+Stable is disclosed. --notes-file supplies reviewed feature notes for unmerged
+branches. Prepared package reuse includes the channel metadata; publication
+retains latest=false and existing package/installer/hash/rollback checks.
+
+The release CI scope selects release_channels.py and release-version.py and
+existing test_publish_release.py covers their identity, preparation, branch,
+hotfix, unrelated-baseline and prepared-retry contracts using fake GitHub.
+LauncherSharedUiChecks covers shared channel selection/preferences/metadata;
+launcher_versions.cs covers paginated discovery. Run the existing Windows launcher
+suite and both-host CI. See STATUS.md for measured local results; no runtime game
+behavior or generated guest code changed, and no game build/publication is
+established by these asset-free checks.
+
+
+Grouped Preview UI: GameChannelPickerPage.cs is compiled automatically by both
+hosts' existing *Page.cs includes. launcher_shared_ui.cs tests the actual shared
+selector, including remembering a feature while returning through Stable, general
+preview selection and unavailable-track refresh. Rebuild with build-launcher.ps1
+-Test, then run build/launcher/TimeSplitters Launcher.exe. --render-preview produces
+a synthetic named-track example without modifying preferences or calling GitHub.
+No game build or publisher/tag-format change is required for this grouping.
+
+
+Local Windows artwork selection: build-launcher.ps1 resolves explicit image
+arguments first, then validates each build/launcher-art PNG against the shared
+artwork pin, then uses the existing private legacy fallback if no cached file
+exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
+executing downloaded code. -RequireArtwork checks the selected resources; normal
+local rebuilds now reuse the same verified art as release CI when cached.
+
+
+Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
+publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
+both package entry points and publisher preflight enforce that mode. Beta's
+canonical identity is beta/Beta; a custom Beta display name is rejected. Historical
+identities remain readable for baselines without joining Beta's series. Publisher
+fixtures now use beta.N, with explicit legacy rejection/history and independent
+Beta baseline tests. Existing generic semantic-version ordering tests still cover
+alpha/beta ordering separately from the new publication policy.
+
+## Temporal Uplink regression route
+
+`tests/rhi_screen_copy.h` exercises the production GPU screen-copy pass by
+copying a saved texture region after clearing the source scene. Run
+`python -m pytest tests/test_rhi_menu_sampling.py -q` on Windows. The shared
+runtime patch stack is checked by `tests/test_patch_updates.py`; a native GL
+build and live Scotland the Brave Uplink view remain separate platform and
+visual validation routes. Replay captures alone cannot verify this effect
+because the host copies are not serialized into replay frames.
+
+## Coupled water operator checks
+
+See [water and procedural-surface validation](water-tests.md) for the complete
+CPU/GPU fixtures, live capture routes, controls, and acceptance limits.
+
+Story/main integration (2026-10-26): preserved Story adapters with current main
+timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
+context/native timing passes, optimized Windows build/native checks completed.
+The transition runner retains both scenario families and input publication.
+Fresh four-peer acceptance and native Mac Online remain separate.

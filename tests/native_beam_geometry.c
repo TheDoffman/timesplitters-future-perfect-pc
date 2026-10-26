@@ -194,16 +194,16 @@ int main(void) {
                 float reference=run(60,0,1,strands,q,rng);
                 unsigned char original[0xa00];
                 memcpy(original,(void *)((uintptr_t)DATA+g_xbox_mem_offset),sizeof original);
-                const unsigned rates[]={60,120,144};
-                for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++) {
+                const unsigned rates[]={60,120,144,180,240};
+                for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++) {
                     float last=run(rates[i],1,slow?.25f:1,strands,q,rng);
                     assert(fabsf(last-reference)<=1.f/60+.00001f);
                     if(i==0 && !slow)assert(!memcmp(original,
                         (void *)((uintptr_t)DATA+g_xbox_mem_offset),sizeof original));
                 }
             }
-    const unsigned rates[]={60,120,144};
-    for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++)
+    const unsigned rates[]={60,120,144,180,240};
+    for(unsigned i=0;i<sizeof rates/sizeof rates[0];i++)for(unsigned slow=0;slow<2;slow++)
         visibility_cases(rates[i],slow?.25f:1);
     puts("PASS: original beam construction, geometry, vertex alpha onset/fade, pause and retirement");
     free(memory);return 0;

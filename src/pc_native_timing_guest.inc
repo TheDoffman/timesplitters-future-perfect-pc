@@ -9,6 +9,12 @@
 extern uint64_t xbox_ReadTimeStampCounter(void);
 extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
+#include "pc_native_character_guest.h"
+#include "pc_native_character_trace_guest.inc"
+#include "pc_native_walk_trace_guest.inc"
+/* Shared host-side interval for future procedural consumers. Original mode
+ * publishes zero; the existing guest timing words retain their exact layout. */
+PcNativeStep g_tsfp_native_step;
 #define NT_WORD(va) (*(volatile uint32_t *)((uintptr_t)(va) + g_xbox_mem_offset))
 #define NT_FLOAT(va) (*(float *)((uintptr_t)(va) + g_xbox_mem_offset))
 #include "pc_native_pose_trace.h"
@@ -93,11 +99,13 @@ static void pc_native_timing_guest(void (*original)(void))
     static PcNativeClock pacing;
     static HANDLE timer;
     static int announced;
+    static int physics_history_pending;
     LARGE_INTEGER now, frequency;
     pc_native_pose_trace();
     recomp_config_commit_native_rate();
     int rate = pc_native_rate();
     if (!rate) {
+        g_tsfp_native_step=(PcNativeStep){0};
         if (g_tsfp_native_timing_active) {
             /* The original waits relative to 7A58B0. Rebase to the real ISR
              * counter so a stale native/menu deadline cannot cause catch-up. */
@@ -106,9 +114,20 @@ static void pc_native_timing_guest(void (*original)(void))
             clock=(PcNativeTiming){0}; pacing=(PcNativeClock){0};
             announced=0;
             g_tsfp_native_timing_active=0;
+            physics_history_pending=1;
             fprintf(stderr,"[NATIVE-TIMING] 60 FPS original clock applied live\n");
         }
-        original(); return;
+        original();
+        /* Native physics consumes live elapsed time, rather than this old
+         * fifteen-frame average. On return to Original 60, seed the history
+         * with its first advancing interval so native-sized samples cannot
+         * temporarily slow physics. Defer across a paused transition. */
+        if (physics_history_pending && NT_FLOAT(0x4E794Cu)>0.f) {
+            float delta=NT_FLOAT(0x4E794Cu);
+            for(unsigned i=0;i<15;i++) NT_FLOAT(0x74C414u+4u*i)=delta;
+            physics_history_pending=0;
+        }
+        return;
     }
     g_tsfp_native_timing_active = 1;
     QueryPerformanceFrequency(&frequency);
@@ -140,6 +159,7 @@ static void pc_native_timing_guest(void (*original)(void))
     int32_t pause = (int32_t)NT_WORD(0x7497B4u);
     PcNativeStep step = pc_native_timing_step(&clock, now.QuadPart,
         frequency.QuadPart, rate, pause > 0);
+    g_tsfp_native_step=step;
     if (!announced) {
         announced = 1;
         fprintf(stderr,

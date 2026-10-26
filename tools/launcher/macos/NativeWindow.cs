@@ -124,6 +124,7 @@ namespace TimeSplitters.Launcher
         {
             string previous=CrashReports.Latest(sessionRoot);string id=null;try{id=GameSessions.Begin(sessionRoot,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff"));}catch(Exception e){LauncherLog.Write(sessionRoot,"Session tracking unavailable: "+e.GetType().Name);}Process process;
             string observedBuild=LauncherPlatform.Checkout(sessionRoot)?"":Core.GameBuildHash(sessionRoot);lastWindowObserved=false;var previousState=WindowState;
+            info.Environment["TSFP_CAPTURE_SESSION"]=id??"";
             try{process=Process.Start(info);}catch{if(id!=null)GameSessions.CancelLaunch(sessionRoot,id);throw;}
             try{if(id!=null)GameSessions.Started(sessionRoot,id,process);}catch(Exception e){LauncherLog.Write(sessionRoot,"Session start observation: "+e.Message);}
             gameRunning=true;Refresh();WindowState=WindowState.Minimized;

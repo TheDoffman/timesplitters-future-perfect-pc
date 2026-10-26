@@ -98,7 +98,7 @@ Awaiting validation.
 
 ## Storage and reproducibility
 
-The active pack contains 2,046 entries and occupies
+At the 2026-10-22 menu audit, the active pack contained 2,046 entries and occupied
 1,844,405,700 bytes (1.72 GiB), below 6 GiB.
 The 2026-10-22 texture workspace snapshot, including retained source art, occupies
 9,003,558,966 bytes. Temporary files total

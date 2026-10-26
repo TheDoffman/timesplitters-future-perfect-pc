@@ -293,6 +293,5692 @@ Story lobby, shared level load or gameplay acceptance is claimed. See
 failures reported by LOCAL are not classified as baseline failures without evidence.
 
 
+
+## Fractional clear-slide repair (2026-10-25, current branch)
+
+`fix/native-player-wall-contact` starts from merged main6aeaa8b1/PR #364.
+The old Venice contact discrepancy is reproduced at180/240 and in two paired
+Original60/240 routes below. Shared `pc_native_walk_guest.h` now keeps a valid
+fractional clear slide through C54A0's existing small-motion guard.
+
+The synchronous diagnostic build5038f362ed51a8da690d348e9ae454fdabe9fdf6d8237593cbf9f377fa2ed7be
+records1084 paired calls/333 roots at Original60 and4876/1232 at240. At the
+obstruction, the primary sweep returns contact flags6 and the final slide sweep
+returns0 (clear) in both runs. C54A0's later corner-normal comparison still
+selects the large stop-distance guard after scratch globals have been reused by
+the no-hit slide/floor query. Original pair453 retains squared movement0.000132846
+above its0.0001 limit. Native pair2045 produces a valid squared slide0.00000491973,
+below its0.00000578075 limit, then restores the old position. The existing test
+already multiplies game delta twice; an additional time scaling is not a repair.
+Its ordinary small-motion branch would use0.000000578075 for this native step.
+
+A call-local scope now classifies only the completed final slide attempts at
+C5781/C58B0. For native positive game deltas below one tick, a clear final result
+takes C596C's existing small-motion branch. A subsequent blocked result replaces
+an earlier clear result. Original, whole/catch-up and zero/invalid-time paths keep
+the old branch. Geometry sweeps, response points, thresholds, returned flags,
+input, clocks and save formats stay original. The scope restores its parent and
+keeps no per-actor data between updates. The optional shared trace is bounded;
+disabled production calls perform no mapping queries or trace writes.
+
+The supported Windows build/bundled checks pass for executable
+de7bd09f68c5840c58e51ce727af3b03cad350155cf95157bee7743c1b34260a.
+The timing/vehicle/context/Mac-backlog selection passes144 tests in219.32s.
+Full original C54A0 runs16 Original/native, clear/blocked and scoped/unscoped
+cases with recorded geometry-service boundaries. It reproduces the rewind and
+retains the eligible clear slide without bypassing the blocked-contact guard.
+Removing either root scope or final branch hook fails. Public tests cover
+interval guards, nested scope restoration, later blocked replacement, disabled
+dispatch, nested trace pairs, original argument reuse, ABI and diagnostic limits.
+Existing Windows/Mac CI registers the tests; hosted/physical Mac results for this
+head are still pending. Controlled services are not a full map-geometry replay.
+
+Three capture-free no-bot Venice routes on the new executable preserve health,
+matching mouse-driven aim changes, two-round firing consumption, stationary
+pause and normal game speed after resume. Native180 and240 now pass the sixth
+hold instead of remaining at[-62.741,-32.853] in X/Z. Their endpoint differences
+from the same-build Original60 reference are0.22689/0.21817 world units, reduced
+from12.9545. Subsequent reverse holds return within0.00028 of Original. Other
+contact endpoints can differ by up to0.53727; this is recovery from the persistent
+rewind, not exact trajectory/geometry equivalence. Early unobstructed sampled
+speed is8.06626/7.98331/8.00021 world units/s for Original60/180/240; short
+asynchronous windows have different sample phases and do not prove exact velocity.
+
+Complete guest-Present windows of about29.6s, with zero interpolation:
+
+| Mode | Intervals | Average/s | p99 | Worst | Game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 1774 | 60.00145 | 17.288ms | 17.674ms | 1.000129 |
+| Native180 | 5321 | 179.99808 | 6.076ms | 6.592ms | 0.999995 |
+| Native240 | 7094 | 240.00124 | 4.708ms | 5.058ms | 1.000134 |
+
+Each route has40 stationary pause samples over~1.97s; all required checkpoints
+are readable. Optional intermediate player reads are unavailable0/3/1 times out
+of570 hold observations; each isolated miss has same-player/live-health neighbors
+within0.12s. The verifier caps misses below1%, rejects missing required samples
+and retains all eight controls described below. All three games exit0 and
+preserve signed profiles/fixtures, with disposable disks/BMP rings recycled.
+3440x1440 device rendering uses a1920x1060 foreground borderless client.
+Present intervals measure API acceptance rather than GPU completion/scanout.
+
+Evidence: venice-walk-trace-{original60,native240},
+venice-walk-fixed-{original60,native180,native240};
+logs/venice-walk-trace-comparison.json, logs/venice-player-fixed-comparison.json,
+logs/venice-player-fixed-180-comparison.json and native-walk-{trace,policy} logs.
+The new executable also completes a capture-free ten-bot Temple240 route. Its
+complete45s window has10712 successful guest-Present intervals, averaging238.0651/s
+with p995.095ms, worst6.557ms and zero interpolation. Lowest1s/5s rates are
+225/231.8; unlike the earlier build's scoped result, this run does not sustain240
+in every bin. These nondeterministic routes do not establish that the policy
+caused the difference. Sampled game/wall is0.999954;19 independent timing-counter
+reads match accepted Presents within one in-flight call (9990 calls/41.96856s,
+max8.9us span). Held/60-Hz counter controls fail. All19 active checkpoints keep
+ten configured bots and a foreground window; NPC positions change. Profile,
+fixture and cleanup checks pass with exit0. Exact CSV/report hashes and limits
+are in crowd-walk-fixed-temple240/{crowd-pacing-summary,native-clock-comparison}.json.
+Crowded-scene performance remains open; reaching a scene or a preset is not
+completion evidence. Broader contact geometry/NPC behavior, physical input latency, full rendered acceptance
+and physical Mac gameplay remain unverified; the overall native-refresh goal
+remains incomplete.
+
+## Venice player wall-contact investigation (2026-10-25, before repair)
+
+PR #364 is merged into main as6aeaa8b1 after all applicable hosted checks
+passed on05807cdc. Its Windows executable5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988
+is unchanged in this investigation. No collision repair has been implemented.
+
+Two capture-free Venice Deathmatch routes compare Original60 and native240,
+using identical normal replay inputs, one human/no bots, FOV73, Enhanced selected
+and3440x1440 device rendering into a1920x1060 foreground borderless client.
+The player remains at health1.75 throughout both runs. Each supplies683 readable
+active observations, nine sampled movement holds, two-round firing consumption,
+and matching mouse-driven yaw changes:300 counts turn30degrees, then alternating
+150-count turns change15degrees. Pause holds game ticks, position and aim across
+40 samples/~1.97s. Resume game/wall ratios are0.998700 and1.000213; subsequent
+~29.6s windows give0.999539 and1.000026. The first unobstructed sampled movement
+is8.05354 versus7.99894 world units/s (0.68% difference in this short asynchronous
+window); this does not establish exact velocity or physical input latency.
+
+Complete successful guest-Present intervals during those later windows:
+
+| Mode | Intervals | Average/s | p99 | Worst |
+| --- | ---: | ---: | ---: | ---: |
+| Original60 | 1773 | 59.9994 | 17.315ms | 17.932ms |
+| Native240 | 7095 | 239.9978 | 4.723ms | 5.223ms |
+
+Zero interpolated Presents occur. API acceptance does not prove GPU completion,
+scanout or a fresh pose in every subsystem. This no-bot route does not measure
+crowded-map capacity. The240 recorder delays45s so its20,000-row bound covers
+the complete selected window.
+
+**Movement acceptance fails after repeated contact.** The first five movement
+endpoints differ by at most0.00464 world units. On movement6 (zero-based5),
+both begin near[-59.3615,2.02421,-32.28] facing258degrees and hold Forward for
+3.002s. Original finishes[-75.62154,2.02421,-34.23620]; native240 stops near
+[-62.74108,2.02421,-32.85306], an endpoint difference12.95452. Native samples
+remain at that obstruction from about0.605s through2.724s while game ticks
+advance, replay holds Forward and health stays unchanged. Later paths diverge.
+This is a candidate contact/geometry regression, not a proven solver cause:
+the runs differ by15 level ticks and nearby moving-object state is unobserved.
+Do not call the complete route equivalent from its pacing, aim or early walking.
+
+Evidence: private/test-saves/venice-player-clean-{original60,native240},
+logs/venice-player-comparison.json, and ignored comparison/analyzer adapters.
+Each clean run has one unreadable optional intermediate hold sample; its two
+neighbors are within0.12s with the same live player/health. Required checkpoints
+and pause samples remain readable. Eight controls per run reject bots, death,
+held clocks, advancing pause, changed paused aim, lost mouse input, missing
+checkpoints and missing holds. These checks validate those observations, not
+wall-contact equivalence.
+
+Three earlier bounded diagnostics are retained separately. The initial default
+six-bot run loses health/dies and is rejected for movement parity. Two no-bot
+capture runs show the pause menu/resumed weapon/HUD, but synchronous renderer
+dumps reduce late game/wall ratios to0.8665/0.7176; they are excluded from speed
+and pacing acceptance. All five owned games exit0, signed profiles and canonical
+fixtures remain unchanged, and disposable disks/BMP rings are recycled. Remaining
+work is to reproduce/isolate the contact divergence and exercise actual collision
+services: tests/native_locomotion.c currently replaces C5B50 with a flat-floor
+stub and rejects its258CE0 wall path. Physical Mac gameplay remains unverified.
+
+### Contact repeats at180 and240
+
+The unchanged executable repeats the clean no-bot route at native180. Its
+sixth movement starts only0.00308 world units from Original's corresponding
+start and stops[-62.74100,2.02421,-32.85329], giving12.95456 units of endpoint
+divergence. The full selected Present window contains5321 intervals averaging
+179.99985/s, p996.092ms and worst6.827ms, with no interpolation. This reinforces
+that reaching the FPS target does not establish correct movement through contact.
+Two optional intermediate hold reads are unavailable out of570; both have valid
+same-player/health neighbors within0.12s. The180 analyzer bounds these isolated
+misses below1% and retains strict required-checkpoint/pause checks and the eight
+negative controls. This does not turn the divergent route into a passing test.
+
+Two further normal-input repeats add bounded read-only player/contact fields
+at20ms intervals, limited to level ticks1800..2600. Each records655 rows, exits0,
+preserves signed profiles/fixtures and recycles disposable disks. On the same
+0.8..2.5s portion of the sixth hold,84 selected observations per run show
+Original moving12.18498 world units and native240 moving0. Both advance101 game
+ticks, retain health1.75, walking mode2 and identical feet height0.333008. Maximum
+read spans are341.1/242.8us; they are asynchronous rather than atomic frames.
+Original again finishes[-75.62154,2.02421,-34.23620], while native240 again stops
+[-62.74114,2.02421,-32.85284]. Sampling therefore reproduces the obstruction
+without a screenshot/trace stall, death, sampled mode change or stopped clock.
+
+The observer's historical field named `velocity` is raw player+C0; the original
+mantle code normalizes it for a direction test, and its observed values match
+view direction. It is not evidence of requested movement velocity. Actor contact
+words are also raw, unclassified offsets and do not identify the blocking wall.
+The actual chain is258F50 ->C5B50 ->C5A90 ->C54A0, whose sweep/slide calls use
+C4700. The258CE0 branch is a separate mantle/action path; no sampled mode/height
+change establishes its involvement. Next capture synchronous collision entry/exit
+state and identify the first differing decision before changing solver behavior.
+The initial level-clock offset and unobserved moving geometry remain limitations.
+
+Evidence: venice-player-clean-native180, venice-contact-{original60,native240},
+logs/venice-player180-comparison.json and logs/venice-contact-repeat-comparison.json.
+No runtime edit, repair, new build or general collision acceptance is claimed.
+
+## Temple crowd pacing and timing calls (2026-10-25, PR #364)
+
+Executable7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba
+completes three bounded Temple multiplayer routes at Original60, diagnostic
+native144 and native240. Each uses one human/ten configured bots, FOV73 and
+Enhanced selected with Classic fallback. Device creation confirms3440x1440;
+the foreground borderless client is1920x1060, so this does not certify physical
+3440x1440 scanout. The144 rate is diagnostic; menu choices remain60/120/180/240.
+
+Capture-free runs disable full native tracing and CPU sampling, retaining light
+state/actor snapshots. Each complete45s spawn+5..50 window has19 active unpaused
+checkpoints and consecutive accepted guest Presents, with zero interpolation:
+
+| Mode | Complete intervals | Average guest Presents/s | Lowest1s/5s rate | p99 interval | Worst interval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 2699 | 60.0001 | 60/60 | 17.223ms | 17.895ms |
+| Native144 diagnostic | 6479 | 143.9996 | 144/144 | 7.535ms | 10.548ms |
+| Native240 Beta | 10799 | 240.0000 | 240/240 | 4.757ms | 6.801ms |
+
+Sampled level-game/wall ratios are1.000045,1.000047 and0.999962 respectively.
+These are complete successful host-API intervals under this workload, not GPU
+completion, scanout or physical input latency. Individual intervals still vary;
+equal one-second counts do not imply every frame hits its deadline. Bot visibility,
+AI/death paths and machine load vary, so this is not a causal speedup or all-map
+acceptance claim. The CSV guest_frame field is an accepted-guest counter, not an
+independent simulation-update identifier. All three share executable, runner and
+input-command hashes; evidence is `logs/crowd-current-temple-comparison.json`
+and each `private/test-saves/crowd-current-temple{240,144,-original60}` summary.
+
+A separate capture-free144 run enables the new read-only `--watch-native-clock`
+sampler. Across19 bounded observations it records6043 timing calls over41.970058s
+(143.9836/s). Every adjacent count agrees with accepted Presents within one
+in-flight call; maximum read span is9.6microseconds. Level-game/wall ratio is
+0.999919. Its complete45s Present window averages144.0010/s, minimum1s/5s144,
+p997.495ms and worst9.003ms. Held-counter and hypothetical60-Hz-counter controls
+are rejected. This verifies high-rate timing calls separately from Presents;
+it does not prove every subsystem consumes fractional time. Evidence:
+`private/test-saves/crowd-current-temple144-clock/native-clock-comparison.json`,
+its raw report/CSV and `logs/crowd-current-temple144-clock-comparison.log`.
+
+A separate144 diagnostic run retains renderer captures and the native trace;
+its timing is excluded. All15292 native timing markers are consecutive, including
+7895 positive game-delta rows in Temple49 from79.854848 to163.097588s. Reviewed
+3440x1440 stills show dual-pistol firing/smoke, a death camera with an armed NPC,
+and respawned firing/impact effects. Combat-four is a death camera, not evidence
+of surviving that segment. Capture overhead reduces the diagnostic update rate;
+these rows are not a144-FPS pacing result or proof of unique GPU images per frame.
+Image/trace hashes and checkpoint health are in the run's visual-acceptance.json.
+
+All five runs exit cleanly, preserve canonical profile090cced7/signatures and
+fixture checks, and recycle disposable disks/locks. These measurements precede
+the main integration below. The native-FPS follow-up adds only optional bounded
+counter reads to the Windows runner; no native game policy changes here.
+Shared frame-statistics/context/backlog checks pass33 tests in3.26s; runner CLI
+help succeeds. All applicable Windows/macOS hosted checks pass on c206c28a before
+this acceptance/sampler follow-up. Wider gameplay, live TRAP activation/rendering
+and physical Mac remain open.
+
+After those measurements, origin/main4ce8cbff (PR365's Temporal Uplink map-copy
+repair) is merged into this branch as2f8a7cf2, preserving both sets of changes.
+The supported Windows rebuild/bundled checks pass and produce executable
+5487f1dfe94140911b4936b712041d16d112f8706acf0fb5088bcabcbf70c988.
+Combined GPU menu/screen-copy, prediction, full patch-transition, frame-statistics,
+context and backlog checks pass60 tests in603.64s. Their Git-based transition
+cases continue making progress throughout the long run; no retry was required.
+
+That merged executable also completes `crowd-merged-temple144-smoke`, with
+canonical profile/signature/fixture and cleanup checks intact.19 observations
+record6043 timing calls over41.966346s (143.9963/s), matching accepted Presents
+within the same one-call allowance; game/wall1.000008, maximum read span11.5us.
+Held/60-Hz controls fail again. This run overlaps the patch-transition tests and
+is diagnostic integration evidence, excluded from the capture-free comparison
+table. Its raw report, provenance and native-clock-comparison.json preserve the
+new executable hash. No new live Uplink or TRAP rendering acceptance is claimed.
+
+## TRAP angle-to-vertex propagation (2026-10-25, PR #364)
+
+The original-code `native_trap_transform.c` fixture now connects the original
+TRAP initializer/registration and callback with entity post-updateA7360, Euler
+cacheA14B0, its original matrix helpers and production affine point entry151E80.
+It exercises80 rate/slow/carried-phase/Original-native cases through240 FPS.
+The fixture drives routine order and uses controlled registration, collision
+and sector services; it does not simulate a whole mission or renderer.
+
+Changed C0 angles cause the original A74F4 store to set +28 bit0x1000. The
+matrix builder consumes/clears that bit, updates cached rotation+274, copies
+the matrix and supplies translation. Its mode2 C0 input atA15C6 reaches151650's
+direct sine/cosine evaluation. Thus the force sine table does not quantize this
+render-transform angle. An off-axis test point receives fresh world coordinates
+on every native pre-sound update; Original mode retains its carried-tick holds.
+Independent trigonometric coordinates, cache reuse, pause, clock restoration
+and ABI are checked. The production point fast path is also compared bit-for-bit
+with the complete original point body on every transform.
+
+Removing the actual invalidation store, angle input, matrix copy or point
+transform independently fails. The connected callback/matrix/public-clock test
+selection passes3 tests in32.09s; the subsequent dual point-path check passes
+in12.92s. Repository/backlog checks pass21 in3.14s. All applicable Windows/macOS
+hosted checks pass on runtime/documentation headbc3a140f; new fixture CI is separate.
+This closes the isolated CPU propagation gap without a production-code change.
+The runtime executable remains7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba.
+
+Normal frame scheduling, actual mesh identity, GPU rendering, collision services,
+normal-play trigger activation and physical Mac gameplay remain unverified.
+These CPU results are not rendered-frame or pacing measurements. Logs are
+`logs/trap-transform-connected-suite.log` and `logs/trap-transform-point-parity.log`.
+
+## Fresh fractional TRAP motion (2026-10-25, PR #364 follow-up)
+
+PR363's discrete-clock repair preserved the original TRAP solver but still
+held its pose between carried ticks. The shared `pc_native_trap_guest.h` now
+subdivides the original kick/drift map using a half-kick coordinate conjugacy:
+`K((h-1)/2) D(h) K((h+1)/2)`. Both kicks use the original quantized sine table.
+This reduces to the original map at h=1; Original and whole/catch-up calls
+bypass the fractional operators. The original callback still owns sound/control
+events, angle clamp, restitution, dirty flags, and removal. Its contact-state
+increment at1D8BFD now spends carried game ticks instead of counting every
+subframe contact. The sound-state increment remains original. No per-entity
+cache, pose interpolation, saved-layout changes or platform adapters are added.
+
+Private original-code experiments explain the coupled repair. Merely scaling
+force and travel produces a maximum aligned angle difference of3.493835degrees
+at240 and removes the object at0.704167s versus Original0.816667s. The symmetric
+motion map reduces that aligned angle error below0.165degrees, but without
+contact normalization removes it at0.6875s. Normalizing the contact counter keeps
+sound/removal within one original tick plus sampling resolution across40
+rate/slow/carried-phase schedules. All pre-sound native frames have fresh angles.
+Frozen pre-repair policy/source provenance is in ignored
+`private/pipeline/trap-fractional-probe/provenance.json`; numerical output is
+`logs/trap-fractional-probe.log`. These experiments do not establish rendered
+appearance or live event-service behavior.
+
+The production original-US fixture checks40 schedules through240,12 mixed-rate/
+jitter schedules, fresh pre-sound poses, a one-tick Original pose envelope with
+0.25degree tolerance, aligned phase-zero endpoint error below0.25degrees,
+phase, terminal state, pause, ABI and exact whole/catch-up bytes/events.
+Removing the entry gate, either time conversion, either coupled
+operator, or contact normalization independently fails. The public fixture
+checks constant-force coupling, contact ticks, fallback and composed GPU-store
+notification without game assets. The GPU acknowledgement scope remains exactly
+3D66C3; contact normalization observes only1D8BFD.
+
+Supported Windows rebuild and bundled checks pass. Executable SHA256:
+`7312881192729f03c2bccb6c417e00c656c8c7a647634b37827ed40e0ab581ba`.
+The final timing/vehicle/GPU suite passes138 tests in219.13s, with one native-Mac
+pthread/event test skipped on Windows. The expanded original-US aligned/switch/
+mutation fixture also passes separately in22.82s. Repository/backlog checks
+pass21 in3.32s. The first full run found a synthetic physics fixture missing
+the newly referenced entity register declaration; that fixture is corrected
+and its20,000 secondary-step partitions pass. Context/index and whitespace pass.
+
+Normal-play TRAP activation, rendered propagation, actual sound/control/collision
+behavior and physical Mac remain unverified. Earlier Mansion entrance tests did
+not activate TRAP; they cannot validate this change. Source inspection finds
+original transform builderA14B0 consuming C0 atA1559/A15C6, but a complete live
+callback-to-render path is still required. No new pacing or damage parity claim.
+The earlier statistics live runs below used the previous executable, not this one.
+
+## Player-statistics clock at native refresh (2026-10-25)
+
+Original-US player bookkeeping `D1FD0` converts the current float game delta
+to seconds, then records two time counters only on carried whole ticks. At
+native240 this records0.25 seconds for one elapsed game second, while its
+integer clock still records60 ticks. Other time counters outside that gate
+already receive the full second. Opening the gate on every frame repairs short
+totals but changes float rounding: a ten-minute Original60 run records599.897644
+seconds, whereas that rejected candidate records600.473572 at native240.
+
+The shared `pc_native_statistics_guest.h` scopes only this routine's float
+game delta to the authored carried tick span at direct callD2CB7, restoring
+the incoming fractional delta on return. The original eligibility, clock
+conditions and accumulator remain in charge. Precomputed movement-distance
+arguments are recorded every native update. D2079 rejects stale whole ticks
+when the live/scoped float delta is zero. No retained state, saved layout,
+solver or platform adapter changes.
+
+`native_player_statistics.c` executes the original bookkeeping, clock getter,
+eligibility and accumulator in160 schedules at60/120/144/180/240, slow time,
+carried phases and hour0/5/6/23. It checks distance inputs, pause, uneven steps,
+ineligible players, match state, ABI, exact whole/catch-up fallback and five
+bit-equal ten-minute totals against Original60. Missing scope or pause guard
+independently fails. The public clock fixture exercises the production callee
+selection and delta restoration without private game data. A copied-header
+reload fixture now also resolves the new helper before compiling mutations.
+
+Windows supported rebuild and bundled checks pass. Executable SHA256:
+`beb523eff40f7fac0f3b4288f114390d18a2385d6b3b9c8620327e0b0187a036`.
+The complete timing/vehicle suite passes119 tests in206.60s; repository/backlog
+checks pass21 in4.09s. These original-routine tests use the supported private
+US XBE; CI without that data can only run the public coverage.
+
+On that executable, isolated Disco multiplayer with one human and ten bots
+completes the native240 combat route with clean exit, valid profile signatures,
+canonical fixture preservation and disposable-disk cleanup. A read-only20Hz
+observer compares counter29 with integer clock7DE328 within an unchanged
+active subject/scene epoch:31.287628 recorded seconds vs31.283333 clock seconds
+over623 observations (difference0.004295s). Hour20 counter4B remains zero as
+required by the original hour<6 condition. Evidence is in ignored
+`private/test-saves/stats-scoped-240/{statistics-results,statistics-provenance}.json`
+and `logs/native-player-stats-live-240.log`. Asynchronous process observations
+are not atomic frame, performance, damage or full-game parity measurements.
+The matching Original60 route also completes cleanly with the same profile/
+fixture checks:41.186016 recorded seconds vs41.183333 clock seconds over820
+stable observations (difference0.002683s). Its evidence is under
+`private/test-saves/stats-scoped-original` and
+`logs/native-player-stats-live-original.log`. Both runs use the same executable
+and bounded observer; unrelated state-conditioned counters are not compared
+across different combat outcomes. Physical Mac gameplay remains pending.
+
+## Issue #256 follow-up: movement and mouse capture (2026-10-25)
+
+The merged radial-deadzone change did not remove the slowdown in gameplay.
+Its original test compared outgoing stick vectors and a guest walking call
+separately, missing the title's later diagonal attenuation. An isolated
+first-mission Windows run measured median player displacement at 6.65 units/s
+straight and 5.15 diagonal. The shared movement sampler now smoothly raises
+diagonal magnitude while keeping cardinal input unchanged. In the same route,
+the medians were 6.56 and 6.43 units/s. This is a bounded replay on one Story
+route, not a physical controller or all-terrain speed measurement. At native
+120 FPS, the same replay measured 6.56 straight and 6.64 diagonal; the
+guest-only fixture covers the remaining supported rates through 240 FPS.
+
+Windows gameplay capture now checks the cursor clip periodically and on raw
+mouse packets, restoring the client-area clip if another component releases
+it while the game still owns focus. Focus loss continues to clear held keys,
+fire and mouse deltas. The macOS SDL adapter remembers intentional gameplay
+capture through focus loss and restores relative mode on return; menus and
+explicit release still leave the cursor free. Native Mac hardware validation
+remains pending.
+
+## Original issue #256 diagonal stick speed (2026-10-25)
+
+Historical validation of the first fix; the gameplay finding above supersedes
+its inference about player travel speed.
+
+All five issue comments were reviewed. Windows and Linux players report slow
+diagonals, including both controller sticks. The PC binding sampler subtracted
+its deadzone separately from X and Y, making equal-radius diagonal travel
+smaller than straight travel. The shared radial mapping preserves stick angle
+and applies equally to movement and look; keyboard normalization and
+stick-bound buttons retain their existing behavior.
+
+The focused branch `256-diagonal-movement-speed` uses a new final runtime patch
+and shared `pc_input` math. Windows Release Build and its input tests pass;
+portable controller-profile tests pass (15 cases). Five focused patch-transition
+cases pass, including fresh checkout, older controls migration, line endings,
+and switches between the main and texture stacks. Native Mac synthetic SDL and
+gameplay checks remain pending. No physical controller or in-game displacement
+comparison has been claimed.
+
+The keyboard follow-up checks W+D at both the shared normalization function
+and Windows/SDL sampler sites. Its output radius is 32765.9 versus 32767 for
+W alone; the original US walking routine `sub_00258F50` computes the movement
+vector length before applying its speed cap. The remaining difference is below
+0.01%, from integer stick quantization. The Windows Release Build and input
+suite pass with these stronger assertions. One unrelated replay-timing
+assertion failed on an initial run, then passed both in isolation and on the
+full rerun.
+
+The rate follow-up runs the complete original-US walking routine on its
+controlled flat-floor fixture, using the keyboard sampler's W+D components.
+One-second straight versus diagonal distances differ by less than 0.00005
+world units at original 60 and native 60/120/144/180/240 FPS. The original
+analogue input fixture also passes across those rates. These are deterministic
+guest-code checks, not live level traversal or a measured display frame rate.
+
+## 2026-10-25 — Enhanced ultrawide crowd acceptance (PR #359)
+
+The unchanged candidate executable50d7323a... completes three bounded ten-bot
+Disco runs at3440x1440, FOV73, enhanced mode with the local texture pack selected.
+Device creation confirms3440x1440 rendering; all combat checkpoints show Disco56,
+ten configured bots, unpaused play and a foreground borderless1920x1060 client.
+This supersampled window does not certify a physical3440x1440 display.
+
+Capture-free240 and180 tests use no CPU sampler/native update trace or heavy
+background tests. Delayed Present recording covers each complete45s
+spawn+5..50 window, with consecutive clocks, increasing guest-frame IDs and
+zero interpolation. Results:
+
+| Target | Fresh frames | Average FPS | Lowest1s count | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 240 Beta | 10569 | 234.8869 | 182 | 5.620ms | 7.144ms | 0.999977 |
+| 180 Beta | 8099 | 179.9984 | 180 | 6.199ms | 7.265ms | 0.999737 |
+
+The240 run exceeds the144-FPS6.944ms interval budget once. This demonstrates
+headroom on this route, not whole-game acceptance. The180 run retains180 in
+every measured1s/5s bin, with individual interval variation. Different targets,
+random combat/spawn paths and the FPS limiter preclude a causal before/after
+gain claim; neither run proves physical latency, GPU completion or scanout.
+
+The Original60 reference also completes all three combat checkpoints. Reviewed
+3440x1440 captures show an armed NPC firing, weapon/impact effects, scenery and
+HUD. Captures verify those states rather than continuous animation parity or
+every replacement texture. All three runs share executable/input-command
+hashes; canonical profile090cced7.../signatures and partition/lock cleanup pass.
+Evidence: private/test-saves/crowd-copy-disco-ultrawide{240,180,-original60},
+`logs/crowd-copy-ultrawide-summary.json` and per-run pacing summaries.
+All16 hosted checks passed onade82564 before this documentation-only addition;
+there is no runtime change or new build. Physical Mac scenes and broader
+native-refresh mechanics/visual acceptance remain open under MAC-060.
+
+## 2026-10-25 — Reduce repeated model-attribute copy overhead
+
+The fresh main build (`c5aaf1ef`) runs a ten-bot Hotel profile at native240.
+Between complete spawn/combat-four sampler snapshots,5155 main-thread samples
+include117 in the model-node renderer and copy/allocation work in pushed-array
+preparation. This diagnostic has no dropped chains and uses200Hz sampling;
+it is not an uninstrumented FPS measurement or exact CPU-share attribution.
+The profile and matched clean baseline use executable SHA256
+`7a10bad00f8ee2cf169a2597f066ef317b74a2fe12108c5e7c43c64ca3d717ca`.
+
+`zz-strided-vertex-copy.patch` dispatches by attribute size once before each
+vertex loop, making common small copies constant-size so the compiler can
+inline them. It retains original32-bit guest address arithmetic, declaration
+order, zero-filled holes, readability checks, generic sizes and allocation
+ownership. No vertex data is retained between draws. This common HLE path is
+used by both Windows and native Mac and applies independently of FPS choice.
+
+The complete production gather is compared with its frozen prior implementation
+in24000 calls, covering fresh data, mixed formats/strides/offsets, overlapping
+attributes, missing inputs, invalid declarations/reads and allocation failures.
+Guard pages bound both source and destination for sizes1..64. Deliberate
+12-byte over-read and wrong-stride mutations fail. All3 focused checks pass;
+the final portability-only test edit is also rerun successfully (6.09s).
+Six alternating benchmark pairs,2million96-vertex draws per method/round,
+measure median0.6565s prior versus0.3655s candidate (44.3% less kernel time).
+This does not establish a whole-game FPS gain.
+
+The baseline capture-free50s Hotel window has11985 increasing guest-frame
+intervals,239.719FPS, lowest1s232, lowest5s237.6, p994.840ms and worst6.853ms;
+there is no interpolation. Sampled game/wall ratio is0.999952. Render request
+1280x720, FOV55, Classic textures, foreground/visible640x480 client and ten
+configured bots are recorded. All required scene/clock neighbors and window
+coverage checks pass. Simultaneous visibility of all bots is not established.
+
+The candidate supported Windows build/bundled checks pass, SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+An Original60 ten-bot Hotel run completes; reviewed combat-four/six images show
+weapons, scenery, impacts and a distant character. Fixture signatures and exact
+profile bytes remain intact; owned games close and disposable partitions/locks
+are recycled. All118 local integration checks pass (749.36s), including historical upgrades,
+branch switches, copy/index contracts, context/backlog and suite selection.
+The candidate's complete50s Hotel window has11999 increasing guest-frame
+intervals,239.9999FPS, minimum1s240/minimum5s240, p994.976ms and worst5.927ms.
+Game/wall ratio is0.999981 with no interpolation. The same command-stream hash,
+requested/actual display settings, ten bots and foreground checks match the
+baseline. Both tests ran without CPU sampling/captures/native update tracing;
+no heavy build/test work ran during either measurement window. Game/death/AI
+paths still vary: mean/worst intervals improve while p99 slightly worsens.
+This is valid candidate pacing evidence, not a causal whole-game speedup.
+Profiles/signatures and owned-process/partition cleanup pass for both runs.
+Detailed comparison is `logs/strided-vertex-live-summary.json` locally. Physical
+Mac gameplay remains under MAC-060. Follow-up draft PR #359 starts at current
+main; current-head hosted checks remain separate acceptance.
+
+## PR validation consolidation (2026-10-25)
+
+- Branch `ci/simplify-pr-validation` starts at `83a7923f` from `origin/main`.
+  Issue-form and issue-resolution tests now trigger only for their inputs.
+  Runtime selection also selects launcher builds at the same revision and
+  reports the candidate `PR validation` gate. The existing three required
+  check names remain active until the `Base` ruleset can be migrated safely.
+- Local checks: 112 focused tests and 26 subtests pass; the three issue-tool
+  suites pass (24, 21 and 15 tests). Repository context and whitespace checks
+  pass. Hosted Windows/Mac/launcher jobs and the new gate still need PR CI.
+
+## 2026-10-24 — Preserve character status-effect model growth
+
+Original status dispatcher125FE0 advances state+5C and calls120AB0 for status3.
+That path repeatedly multiplies an existing effect matrix by linear scale
+factors computed from the current time interval. Subdivision changes the product:
+after half a second Original60 had X/Z scale2.202338, but120 gave2.213807
+(about0.52% larger). This is a separate arithmetic issue from1260C0's update gate.
+
+The shared `pc_native_character_guest.h` intercepts only scale-constructor
+call120BBF. It recovers the original one-raw-tick factor at the current game
+speed, then splits it over fractional raw time. Original rotation/composition,
+timer and cleanup still execute. Original mode and whole/catch-up intervals
+retain exact arithmetic; caller arguments are restored after the constructor.
+No generated guest C, shared coefficient, save or user preference is edited.
+
+The new `native_character_scale.c` executes original125FE0,120AB0 and the
+rotation/scale/matrix composition helpers. It compares all16 matrix entries
+against Original60 through60/120/144/180/240 at quarter/normal/double speed,
+plus pause, uneven frame intervals, live rate switches, catch-up, cleanup and
+argument preservation. An old-path control retains the measured mismatch.
+Allocation and rendering are absent, so this proves transforms and lifetime,
+not full visual effect acceptance. The final dispatcher/ABI fixture passes;
+all95 native timing tests pass (144.73s), as do21 context/backlog tests (4.03s).
+The complete suite ran before the last test-only expansion to the dispatcher
+and stack-argument checks; that expanded fixture was rerun successfully.
+
+Supported Windows build and bundled checks pass. Executable SHA256:
+`ff4cfc6d518db1f7293202fe78f80605a4db80653e8d0c7f89308215b9e70307`.
+Production source did not change after this build. Live evidence
+is recorded below. Physical Mac remains unverified
+under MAC-060. All14CI checks passed for preceding5bd61a15; this follow-up's
+checks require its own pushed head. Continue PR344; the full goal is incomplete.
+
+The rebuilt native240 Disco run `character-scale-240` completed all three
+combat checkpoints with ten bots. The1800-sample read-only census recorded3211
+active status3/model observations across all11 slots, with8 samples crossing
+frame boundaries; ages ranged0..1.696 seconds. This establishes live activation,
+not exact size or rendered-animation parity. Its combat-four image shows the
+normal death scene and nearby armed NPCs. All personal files remain untouched.
+
+A second run `character-scale-matrix-240` selected Temple49 instead of Disco56;
+the route validator correctly returned failure. Captures show active Temple
+combat, not the requested map. A separate read-only8-second probe retained320
+model matrices there. Four long segments differed by about0.8..1.1% in volume
+from an ideal constant-speed Original60 curve; asynchronous timer/matrix reads
+are not coherent update snapshots, and the20000-row clock trace ended before
+those observations. Catch-up/phase effects therefore remain unresolved; do not
+claim live transform equivalence from this probe. The first late matrix probe
+could not open the already-closed first child; the second run's Disco-only
+observer collected zero samples and reported child shutdown. These rejected
+observations are retained, not counted as passes. Both owned games are closed,
+run locks/partitions recycled, and profiles remain canonical SHA256090cced7...
+with valid signatures. `logs/character-scale-live-summary.json` records hashes
+and checkpoints; `character-scale-matrix-analysis.json` records the comparison.
+
+## 2026-10-24 — Restore fractional character-effect time
+
+The shared character-effect dispatcher US1260C0 still gated nested updates
+on whole game ticks, although their timers/transforms consume fractional time.
+An original-code reproduction through its11FEC0 child advanced the attached
+state timer only0.5 seconds over one second at120 (Original60 advanced1.0).
+The shared numeric policy now admits positive live game time at that one load;
+the temporary EAX is replaced before arithmetic. Whole-tick fields and the
+Original-mode gate are unchanged, and zero live time remains paused.
+
+`native_character_effects.c` executes the original dispatcher,11FEC0 and matrix
+helpers, checks every timer step through60/120/144/180/240, four carried phases,
+normal/quarter speed, pause and original fallback, with an old-gate control.
+The control confirms the missing-time defect; corrected cases retain elapsed
+time and ABI/global state. Other effect subsystems are spies, so this fixture
+does not establish their complete emission or visual behavior. The existing
+surface-cache fixture now also checks each fractional U/V/phase step and adds
+180/240. That constant-velocity test does not prove forced/damped materials.
+
+The supported Windows build and bundled checks pass. Executable SHA256:
+`733a620416d3e9f74e2766e08221332174b25caf7bca240f38e7addb78d74f13`.
+All94 native timing tests pass (140.89 seconds). The new fixture was then rerun
+against the exact original dispatcher end126236 (rather than including five
+padding bytes) and passed; no runtime source changed after the build. The21
+context/backlog tests pass. Tests are registered through the existing native
+suite on both CI hosts; private-XBE skips are not Mac gameplay evidence.
+
+Live native240 ten-bot Disco completes normally with the canonical signed
+profile unchanged; reviewed captures show combat/HUD/death states. A bounded
+read-only census retained1800 character-state observations, including12 which
+crossed native frame boundaries. None activated flag0x100 used by11FEC0, so
+this is general combat stability evidence, not that effect's visual acceptance.
+The instrumented/captured run supplies no clean performance or latency claim.
+The rebuilt Original60 run also completes with the same command stream and
+canonical profile. Both retain active Disco/ten bots at all three combat
+checkpoints. Their random combat paths differ; this is not damage/trajectory
+equivalence. Physical Mac effects validation remains open under MAC-060.
+
+An earlier Disco material census found count0/pointer0 for the procedural table
+and retained its diagnostic failure. It did not find the non-water animated
+material path and provides no visual scrolling evidence. The subsequent
+character-effect discovery came from auditing original effect dispatch, not
+from treating that empty census as a passing surface test.
+
+Evidence: `logs/character-effects-before.log`, `character-effects-fixed.log`,
+`character-effects-native-tests.log`, `character-effects-range-final.log`,
+`character-effects-build.log`, `character-effects-context-tests.log`;
+`private/test-saves/character-effects-{original60,240}`, the240 census
+`character-effects.json`, and `logs/character-effects-live-summary.json`.
+Private census tools remain under `private/pipeline`; only source/tests/docs
+are tracked. Before this follow-up all14 checks passed for head c2310121.
+Full-game acceptance remains incomplete.
+
+## 2026-10-24 — Complete a mixed-preset Online rematch
+
+On source `2393d344` and Windows executable
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`,
+a bounded Online loopback host at native240 and guest at Original60 completed
+two consecutive five-point Deathmatches with six bots. The runner now accepts
+`--require-rematch-results`, reusing the first round's bounded final-record
+validation after the existing rematch clock/result-ready/roster/score reset
+checks. It saves a separate second-round result file; no gameplay code changed.
+
+Both rounds produced identical host/guest records for all eight named slots,
+including kills, deaths, rank, score and character. Round one reached results
+at204.0 seconds; the rematch entered fresh gameplay at241.7, remained active
+at251.7 and reached new final records at279.2. The General scored five in both
+rounds, but other scores/deaths differ; these are not reused first-round records.
+All six bots have changing positions on both peers during round two, across
+4093/4155 active observations. Missing actor readings remain excluded; these
+asynchronous samples do not prove exact trajectory, damage or latency parity.
+
+The 280.9-second runner exited0 after terminating only its owned children.
+Both signed disposable profiles retain canonical090cced7, fixture hashes pass,
+and locks/virtual partitions/owned processes are gone. First-round Scores
+captures visibly agree; reviewed rematch captures show gameplay/death. The
+second-round completion images precede the results frontend, so the completion
+claim rests on fresh match state and compared records, not a reviewed second
+Scores screen. This is local loopback, not cross-machine or physical Mac proof.
+
+Evidence: `logs/online-bots-rematch-complete-240-60/` (provenance, checkpoints,
+observations, both result files, captures and acceptance-summary.json),
+`logs/online-rematch-complete-240-60.log`. The runner's recorded SHA256 is
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+Python compilation, the invalid-option early-rejection check and an AST
+comparison confirming unchanged result-validation logic pass. The21 context/
+Mac-backlog tests pass. Existing Windows-only observer uses its existing
+platform boundary; shared runtime and native Mac adapters are unchanged.
+Full-game acceptance remains open.
+
+## 2026-10-24 — Preserve Arcade Score/Rank spacing during HUD transitions
+
+The Temple death sequence exposed overlapping SCORE/RANK labels. A follow-up
+Original60 sequence on executable952ee3d8 reproduces the overlap across several
+captures: this is a widescreen layout defect, not evidence of a native clock
+regression. Original US14F0B0 composes the panels; their shared renderer returns
+through12EC8B for RANK and12EA9B for SCORE. The placement wrapper explicitly
+anchored only RANK to the left, so the panels used different origins while
+simultaneously visible. SCORE now shares RANK's left anchor. Original panel
+geometry/widths, ordering, sliding/fading and gameplay timers are retained;
+unrelated panel callers and the existing 4:3/split-screen guards are unchanged.
+
+The supported Windows build/bundled checks pass. New executable SHA256:
+`a42729355da0ce7cf5a1796fd7cb96ce001b4e73152d24ee9d8d5169e69a398f`.
+Reviewed Original60 and native240 sequences at1280x720 show separated SCORE
+and RANK panels, followed by SCORE leaving and RANK sliding into place. The
+same ordinary-input Temple floor-shot route provides24 sampled captures each;
+slow dump cadence can repeat frames, and images are not synchronized to memory
+observations. No scanout, clean-FPS or frame-exact timing claim follows.
+
+An additional native240 run at3440x1440 confirms the same separated panels
+and slide transition in reviewed captures. All24 observations stay in active
+Temple;19 show the dead player and the final5 occur after automatic respawn.
+These are not24 identical death-phase samples. The runner reports successful
+completion, unchanged signed profiles and preserved fixture. Evidence:
+`private/test-saves/hud-fixed-ultrawide240`, `logs/hud-fixed-ultrawide240.log`.
+
+The20 UI/text-scope regression tests pass, including panel batch boundaries,
+restored placement and both callers' 4:3/split-screen bypass. A disposable
+counterfactual with the prior SCORE omission fails the new panel assertion.
+The21 repository-context/Mac-backlog tests pass; context and whitespace checks
+pass. Existing Windows/Mac CI already registers these UI fixtures. Shared code
+needs no new Mac adapter; physical Mac graphics validation remains pending
+under MAC-060. Before this follow-up, all14 checks passed for head da05737b.
+
+Evidence: `private/test-saves/hud-transition-original60`, `hud-fixed-original60`
+and `hud-fixed-240`; commands have identical SHA256b61a8633. All24 observations
+in each run remain active Temple with one player/no bots and the dead player,
+rather than silently capturing a menu or respawn. Each owned game exits0,
+profiles remain canonical090cced7, signature/fixture checks pass and disposable
+disks are recycled. Logs: `hud-score-layout-build.log`,
+`hud-score-layout-tests.log`, `hud-score-negative.log`,
+`hud-score-context-tests.log`, `hud-score-validation.json`. Reviewed contact
+sheets remain in the respective run directories; the cropped comparison is
+`logs/hud-score-before-after.png`. Full-game acceptance remains open.
+
+## 2026-10-24 — Temple rocket impact and effect cleanup through 240
+
+Main's reload fix (`aed726e1`, PR #345) is integrated in `dcb3b112`, preserving
+the zero-index optimization, bot-limit fix and both sets of CI tests. Patch
+ordering includes keyboard reload before model/zero-index hooks; the generated
+index and context checks pass. The supported Windows build/bundled checks pass
+(`logs/rocket-main-integration-build.log`). The new executable is
+`952ee3d8f4682a875c7b9772567f2a5367c53cf7dc67fa62a6f1f86e2053b7eb`.
+
+Repeating the full Temple route on that executable at Original60/180/240 again
+observes identical initial position/aim/health, exactly one rocket consumed,
+lethality, effect cleanup and successful respawn/walking. All127 effect-list
+samples per run are complete. Type5 removal-age brackets are respectively
+[0.66667,0.71709], [0.68344,0.73408], [0.67537,0.72587] seconds; age/wall deltas
+differ by at most0.00246 seconds. Six-second game/wall windows differ by at most
+0.014 seconds. These are gameplay observations, not clean FPS measurements.
+Respawn locations still differ, so walking is only recovery evidence.
+
+The merged Original60 runner initially exited1 during analysis because one
+intermediate player read returned None. Its game exited0 and all required
+checkpoints were intact. The corrected analyzer explicitly counts/excludes
+that unreadable ammo sample and passes the saved report; it still rejects an
+unreadable required checkpoint, all missing player samples, or absent ammo
+consumption. The180/240 runners then exit0 with no missing player samples.
+All owned games close, signed profiles match canonical090cced7 and disposable
+disks are recycled. Evidence: `rocket-merged-{original60,180,240}` under the
+test-save directory and `logs/rocket-merged-comparison.json` (including the
+analyzer/provenance hashes). The23 analyzer counterexample tests and7 original/
+shared reload timing tests pass. The complete patch-upgrade/reload/effect/
+profile/context/backlog/zero-index selection passes86 tests in685.79 seconds
+(`logs/rocket-main-integration-tests.log`). The23 analyzer tests overlap that
+selection and additionally cover the unreadable-player cases. No full-game or
+Mac visual completion claim follows from these runs.
+
+Three sequential isolated Windows runs compare Original60, native180 and
+native240 on executable SHA256
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The ordinary menu route selects Temple, Rockets and no bots. All three start
+at the identical position, yaw335/pitch-75 and health1.75, consume one rocket
+(6->5 loaded, reserve6), and die from the floor blast. All127 effect snapshots
+per run are complete; no listed effects remain after the six-second settle.
+The type5 effect following the blast has an authored0.7-second lifetime and
+disappears within these observed age brackets:
+Original60 [0.66667,0.71733],180 [0.68357,0.73387],240 [0.66701,0.71744] seconds.
+Observed age advancement differs from elapsed time by -0.00004,+0.00201 and
+-0.00049 seconds respectively. These are asynchronous observation bounds,
+not presentation timing or input latency. Level-clock/wall-time differences
+in the settle windows are -0.00267,-0.00100 and-0.01133 seconds.
+
+All three respawn at full health with the rocket launcher and respond to a
+one-second walk command. Respawn locations differ; distances7.99998,8.00033
+and6.81292 therefore prove resumed movement, not speed/trajectory equivalence.
+Reviewed captures show death, cleared blast and restored first-person weapon/
+world rendering. The180/240 impact captures show the explosion; the Original60
+impact dump predates the death observation. Dumps are not synchronized with
+memory reads and do not establish pixel/phase parity or smooth scanout. Zero
+health saturates lethal damage: this does not prove equal unsaturated damage,
+arbitrary enemy hits, the reported delayed trails or plasma-sniper repair.
+
+The runner adds opt-in bounded effect observations and20Hz `sample_wait` steps.
+`--scenario rocket-impact --watch-actors --watch-effects --seconds 180`
+requires active no-bot checkpoints, one rocket consumed, death, lifetime and
+cleanup observations, respawn and walking; `--native-fps 0` is Original60.
+`tools/rocket_impact_stats.py` also validates saved reports. Counterexample tests
+reject missing/duplicate checkpoints, wrong scene/bots, pool changes, pauses,
+missing/extra shots, survival, failed recovery, wrong clocks and effect faults.
+They run in both host CI jobs. The57 effect/profile/context/backlog tests pass;
+Python compilation, context freshness and whitespace checks pass.
+
+Evidence: `private/test-saves/rocket-impact-{original60,180,240}`, corresponding
+logs and `logs/rocket-impact-comparison.json`. The first two use runner b2f1b624;
+240 uses d99ce82a (adds final validation/initial-command hash, same route and
+observers). Saved profiles match canonical hash090cced7; signatures/fixture
+checks pass, owned processes exit0 and disposable disks are recycled. An earlier
+`rocket-impact-probe240` calibrated the route; its later24-degree shot caused
+no self-damage and is not an acceptance comparison. No game source changed.
+Native Mac live gameplay, sound and broad effect fidelity remain unverified.
+
+## 2026-10-24 — Post-match menus and mixed-refresh rematch
+
+On the unchanged `1ae9169c` Windows executable, the isolated Original60/240 pair
+now remains open20 seconds after final records. Reviewed captures show both
+visible Results menus, eight portraits and no overlapping health gauges. The
+180/120 pair additionally navigates the Scores and Options tabs: both tables
+show identical eight-player scores, and host/guest Rematch options are present.
+Both runs load the requested five-point limit. Signed profiles and the canonical
+fixture remain unchanged; owned processes close and disposable disks recycle.
+
+The reversed240/Original60 pair completes the same menu path and chooses Rematch
+through the reviewed UI. Both peers return to network15/active state7 with the
+results-ready flag cleared, reset game clocks, the same two-human/six-bot roster
+and all eight scores zero. In the following10 seconds both advance from tick199
+to799, and all six bots change position on each peer. Reviewed rematch captures
+show gameplay/HUD on both. This verifies entry and ten seconds of the next round,
+not its completion, physical input latency, frame pacing or cross-machine play.
+The host dies/changes spawn during the first-round movement probe: that probe is
+rejected, even though the final-record/menu/rematch checks pass independently.
+
+The runner gains bounded post-result observation, tab inspection and rematch
+options. A failed fixed-count setup is retained: the240 host loaded10 points and
+the strict five-point guard stopped it. Earlier notes describing missed input
+were hypotheses. Menu inspection shows the starting choice can differ; the new
+replay reads the persistent view-root/child chain, finds row7 and the localized
+"5 points" choice, verifies focus/value after each ordinary key press, returns
+to GO row19 and checks that unrelated choices did not change. The successful
+240/60 run records28 presses, each changing the expected state. No game-memory
+writes or runtime changes are introduced. Temporary callback/transition pointers
+were rejected as menu observers; the final helper uses the persistent root.
+
+Evidence: `logs/online-bots-post-results-60-240`,
+`logs/online-bots-post-tabs-180-120`, and
+`logs/online-bots-rematch-feedback-240-60` (including menu-inputs/checkpoints,
+observations, result records, captures and runner/build hashes). The failed
+`rematch-240-60` and three setup diagnostics remain separate. Successful-run
+signed-profile/canonical-fixture and cleanup checks pass. The new argument
+dependencies/bounds reject invalid combinations before launching. The34
+profile/context/backlog tests pass. Context and
+whitespace checks pass. All14 CI checks pass on implementation headf13937cf;
+this follow-up changes tooling/documentation only. Native Mac gameplay and
+broader acceptance remain open; this adds no Mac runtime dependency.
+
+## 2026-10-24 — Online bot score-limit completion
+
+Mixed-refresh completed-match testing exposed an existing Online bot eligibility
+bug. With the old `ee2e77b3` executable, both peers retained the live five-point
+limit but stayed in state7 with bot scores5,9 and10. The original US674C0
+round-limit scan filters network controller flags; AI have no controller records.
+The adapter now admits configured bot slots at return67868 using EDI, retaining
+the original team score, threshold and end-of-round authority decisions. Human,
+invalid, offline, disabled and native Mac fallback paths remain original.
+
+The supported Windows build and bundled checks pass. New executable SHA256:
+`1ae9169c10cacd3dd193ca0cf02b287c03de958df65dabdb4b93b184fbc2df15`.
+The original US result-builder and round-limit fixtures pass, including humans,
+all six bot slots, both peer roles, teams, scores4/5/6, ABI and disabled-hook
+mutations. The new original-routine check failed before the fix. Existing public
+adapter tests cover slot/feature/network/pool guards and native fallback; these
+run on both CI hosts. US routine tests require private game data. The combined
+network suite passed10 tests; boundary-expanded originals plus profile/context/
+backlog checks passed38. Context and whitespace checks pass.
+
+The isolated Original60/240 Online pair reaches state8 with both result builders
+ready, eight named records and identical per-slot kills/deaths/ranks/scores and
+character IDs. Schmidt wins with five points. Results captures at this boundary
+still show the end-of-round gameplay view; this is final-record validation,
+not a reviewed post-match menu or subsequent round. Presets and live Apply
+remain unchanged. The companion180/120 pair also completes with eight matching
+records, at its actual ten-point limit (Schmidt wins with10). Its menu
+replay missed one adjustment; it is accepted as ten-point completion evidence,
+not a five-point test. A new runner assertion rejects that mismatch on future
+`--short-match` runs. That final assertion has compilation validation only.
+
+`--require-results` enforces completed records and semantic peer equality;
+`--short-match` selects five points through the stock menu. Checkpoints retain
+active/pending configuration, scores and controller flags. Setup-only inspection
+cannot be combined with a results requirement. Async reads and two local games
+do not measure frame pacing, Internet latency or exact combat parity.
+
+Evidence: `logs/online-bots-results-limit-60-240` (rejected completion),
+`logs/online-bots-results-fixed-60-240`, `logs/online-bots-results-fixed-180-120`,
+`logs/online-limit-before.log`,
+`logs/online-limit-after.log`, `logs/online-limit-validation.log` and
+`logs/online-limit-build.log`. Four earlier diagnostic runs and the successful
+60/240 and180/120 pairs preserve signed profiles byte-for-byte and canonical fixture hashes,
+close owned children and recycle disposable partitions. Physical Mac networking
+remains queued under MAC-052; full-game acceptance remains open. Previous PR344
+head2ff8b17f passes all14 checks; this follow-up CI is separate.
+
+## 2026-10-24 — Goal audit and mixed-preset Online coverage
+
+The acceptance audit in `docs/native-high-refresh.md` maps the original goal to
+inspected source/tests, live evidence and remaining scene/platform gaps. The
+goal remains incomplete. PR #344's implementation head82b27c31 passes all14
+reported CI checks, including both native runtime hosts, patch upgrades and
+patch transitions. This follow-up changes only test tooling/documentation.
+
+`tools/test-online-bot-motion.py` now accepts independent host/guest presets
+0/120/180/240 (0=Original60), optional no-capture mode, and records runner hash,
+rates and movement checkpoints. It rejects a saved FPS sidecar that could
+override the requested test mode. Startup uses the existing stability runner's
+separate 180ms title/player-count/profile taps. The older single held Select
+sometimes left a peer on player/profile selection; the initial180/120 capture
+demonstrates that route failure. The initial60/240 attempt also never joined,
+but has no failed-screen capture to establish its cause. Neither attempt is
+accepted as a paired gameplay test or proof of a networking defect.
+
+Windows11 x64/D3D11, executable SHA256
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36,
+completes isolated Online directory/bridge loopback matches with two human
+slots and six bots. Reviewed640x480 captures show Vietnam gameplay and active
+Original60/240 or180/120 overlays. The two-second forward inputs give:
+
+| Host/client presets | Moving slot | Local displacement | Settled endpoint difference |
+| --- | --- | ---: | ---: |
+| Original60 /240 | Host | 12.849729 | 0 |
+| Original60 /240 | Client | 15.771369 | 0 |
+| 180 /120 | Host | 2.750483 | 0.006650 |
+| 180 /120 | Client | 15.899578 | 0.004815 |
+
+The180 host encounters different geometry; these distances are not speed-parity
+comparisons. Each accepted movement has positive health, an unchanged spawn
+counter, fresh observations on both peers and endpoint error below0.01 world
+units. Samples are asynchronous, not atomic frames. An earlier180/120 replay
+kept the client dead throughout its scheduled movement; that zero-displacement
+check is rejected. A bounded15-second wait for both copies to report the actor
+alive prevents issuing the movement measurement at a corpse. Death during a
+measurement still invalidates it; matching stationary coordinates cannot pass.
+
+Both successful pairs show bot position/health changes and respawn counters;
+this is not exact damage/score/event equivalence, a completed match, LAN/WAN
+latency, physical input latency or clean FPS evidence. The two games, periodic
+memory reads and screenshots share the host. The known test data and signed
+profiles remain byte-identical, canonical fixture hashes match, owned children
+are closed and disposable partition images are recycled.
+
+Evidence: `logs/online-bots-mixed-60-240-visual`,
+`logs/online-bots-mixed-180-120-alive`, their checkpoint/provenance files and
+`logs/online-mixed-*-validation.json`; the rejected route and dead-client runs
+remain under their separate tags. The private validator rejects zero movement,
+changed/dead spawns and stale observations. Source compiles;34 profile/context/
+backlog tests pass. Context freshness and whitespace checks pass. Current
+follow-up CI is separate from the green82b27c31 result; physical Mac gameplay
+and broader acceptance remain open. No game rebuild was required.
+
+## 2026-10-24 — Avoid copying already-zero-based draw indices
+
+The bounded `crowd-current-profile240` Disco diagnostic uses source 7a796f19's
+975f69dc binary with the 200 Hz/depth-12 sampler. Differencing complete spawn and
+combat snapshots yields 6,810 guest-thread leaf/chain samples, zero dropped
+chains and 32 virtual-memory-query leaves. Model rendering appears in 2,893
+chains; allocation stacks include pushed-vertex gathering and index copies.
+These are diagnostic wall-time observations, including waits and observer cost,
+not clean FPS or CPU-share measurements. The run exits normally with signed
+profiles/fixture intact and disposable partitions recycled.
+
+The shared indexed-draw driver always allocated and rewrote indices, even
+when their minimum was zero. `zz-zero-base-indices.patch` skips that redundant
+allocation/copy for zero-based pushed-array draws. Other ranges retain their
+original rebasing and failure path. Vertex gathering, host primitive conversion,
+draw order and ordinary vertex-buffer draws remain unchanged; no index data is
+cached between calls. The same HLE path serves Windows/native Mac.
+
+A private comparison of the actual pre-change and candidate driver passes
+12,000 randomized byte/dispatch comparisons. Its two-million-call, 24-index
+mocked-host benchmark gives median 120 ms original/79 ms candidate at minimum 0,
+and 118/119 ms at minimum 17 across five alternating pairs. This isolates the
+driver's allocation/copy cost, not a measured game FPS gain or the frequency
+of zero-based draws in live combat. Raw evidence is under
+`private/pipeline/zero-index-prototype` and `logs/crowd-current-profile240-summary.json`.
+
+Four public Windows checks pass, including deliberate always-copy, omitted
+rebasing and leaked-index mutations. They compare against the prior shared HLE
+driver, check fresh indices/ranges, explicit extrema/empty/invalid calls,
+ordinary-stream dispatch and allocation failure; host drawing/gathering are
+controlled boundaries. Both native CI hosts register this suite. The supported
+Windows build and bundled checks pass. Executable SHA256:
+ee2e77b3de3f09ccfbe0df990b7368d1adda3b205167d9d47a37c9339ec43f36.
+An isolated native240 Disco session completes with signed profiles/fixture
+preserved and partitions recycled. Reviewed combat-one/combat-four captures
+show intact weapon/hand geometry, characters, scenery, muzzle flashes and casings.
+This visual run overlaps compiler-based tests and supplies no clean FPS evidence.
+The combined regression run passes 49 cases, including every patch-upgrade,
+draw and framebuffer case, and fails one old patch-order assertion already
+loaded by pytest before its source was corrected. The current context/backlog
+recheck passes all 21 cases; patch freshness and whitespace checks pass. Logs:
+`logs/zero-index-{regressions,context-recheck,build}.log`. All 15 CI checks pass
+on preceding 7a796f19; that does not establish this follow-up's CI. Mac execution
+and full-game performance remain unverified.
+
+Separate clean, isolated ten-bot Disco runs complete with unchanged signed
+profiles/fixture and recycled partitions. Native240's complete 45-second window
+averages 237.888896 FPS, minimum one/five-second rates 214/222.6, p99 4.931 ms,
+worst 10.608 ms and 10,704 fresh guest intervals. Original60 averages 60.000695 FPS,
+minimum one/five-second rates 60/60, p99 17.132 ms, worst 17.676 ms and 2,699 fresh
+intervals. Both have 19 active foreground checkpoints and no interpolation;
+sampled game/wall ratios are 1.00012194 and 1.00022353. Neither window overlaps
+builds/tests, CPU profiling or captures. Input state polling every 16 ms remains
+test overhead. Classic/3440x1440/FOV73 configuration has actual client1920x1060
+on a60Hz desktop. Summaries are `logs/zero-index-clean{240,60}-summary.json`.
+Present intervals are not GPU completion, scanout or physical input latency.
+The native run is not locked240; differing AI/death/view paths prevent attributing
+its FPS difference from earlier runs to this optimization.
+
+## 2026-10-24 — Live reload reproduction attempts (#337)
+
+## Buffered keyboard reload and held-Fire priority (#337, 2026-10-24)
+
+- PR #345 review follow-up: preserve the order of Reload and new Fire presses
+  within a single input poll, even at identical millisecond timestamps. The
+  24-case regression failed on the earlier implementation and passes with the
+  shared sequence tracking; all four reload tests pass on Windows. Mac runtime
+  and patch-upgrade CI passed on `9f8f3538`; the ordering follow-up needs its own
+  CI run. Physical input and native Mac gameplay remain separate validation.
+- Implemented on `337-reload-live-reproduction`, based on `bcbdf27c`. Shared
+  `pc_reload_input.h` records keyboard/mouse edges, including down/up within one
+  event pump. The binding sampler retains brief Reload requests across 60 Hz
+  polling gaps and suppresses only keyboard Fire already held at that request.
+  State7 acknowledgement/completion, fresh Fire release/repress, bounded rejection,
+  focus/menu/capture changes and player eligibility release/reset suppression.
+  Physical controller contributions are merged unchanged; configured Reload/Fire
+  bindings supply the action roles. Other split-screen players cannot erase the
+  keyboard player's pending request. No guest ammo/animation logic was replaced.
+- Supported Windows Build and all builtin checks pass, including the real
+  binding/host event regression. Final executable SHA-256:
+  `101a5c595289835efed9758e97a51378ada79718c15601a1192f7c3e111ac47b`.
+  Earlier 120/240 acceptance binary differs only by the later nonlocal-player
+  context guard; all three runs retain their own hashes in validation JSON.
+- Live first-mission Sci-Fi Handgun/default R replay: all55 original cases now
+  pass (21 at120, 17 at240, 17 at Original60), compared with48/55 before.
+  Each of the three formerly missed short taps and four held-Fire interruptions
+  now completes reloading. Separate Original60 checks show a fresh Fire click
+  cancels state7 (ammo15->14), while continuous held Fire allows ammo15->16,
+  exits state7, then resumes firing (16->15). All later control reloads fill16.
+  These are bounded host-input replays, not physical-keyboard or every-weapon
+  acceptance; exact reporter reproduction remains unconfirmed. No issue closed.
+- Shared checks: 110 timing/float-join tests, 35 full-stack patch/update/tracking
+  tests, 14 mounted/camera/keyboard-menu/weapon-slot checks, and 40 final
+  reload/controller/context/backlog checks pass. Four reload tests cover
+  1,360 rate/phase schedules, two rejected mutations, lifecycle/priority/remapping,
+  and the actual SDL edge bridge. The local verified-US integration also passes
+  425 buffered tap schedules through original decoder/wrapper/reload routines.
+- Evidence: `logs/issue337-buffer-*.log`; isolated quick-test validations and
+  losslessly compressed gameplay traces for `native-120-reload-buffer-phases`,
+  `native-240-reload-buffer-matrix`, `60-reload-buffer-acceptance`. Canonical
+  Test Lab and personal saves/settings untouched; owned test runs stopped and
+  temporary partition images recycled. Native Mac build/live gameplay pending;
+  shared policy and SDL adapter implemented, public tests selected in both CI jobs.
+
+
+Windows x64, current main `bcbdf27c`, supported US XBE. Full supported Build and
+built-in tests passed. Executable SHA-256:
+`bd1d7b7712856e024fc9b14244f92e81f82692b2dbc7149ad5fc6db134b2a513`.
+Three bounded isolated first-mission runs used the default R binding, the Sci-Fi
+Handgun and the normal host input replay path: 230 seconds each at Original60
+and native240, then 262 seconds at native120. These are functional input tests,
+not performance measurements or physical keyboard validation.
+
+Two distinct symptoms were observed:
+
+- At both Original60 and native240, pressing R while Fire remained held entered
+  reload state 7, then the next shot returned the weapon to state 1 before the
+  magazine refilled. Both a 100 ms tap and a 1,000 ms hold behaved this way.
+  Holding R after that interruption did not generate a second press. Releasing
+  Fire and pressing R again completed the reload. The recorded button edge
+  proves this was an interrupted reload, not a missing R event.
+- At native120, 3 of 21 scheduled short-tap/phase combinations failed while the
+  weapon was idle: one 5 ms and two 10 ms taps. No reload state or published
+  reload button was observed; the magazine stayed at 14 and a later 500 ms
+  control press restored 16. The other 18 combinations passed, including all
+  tested 15–100 ms taps. Scheduled durations are replay timings, not measured
+  physical-key durations. The 15 post-Fire-release cases in each of the other
+  two runs passed, including their favorably timed short taps.
+
+A disposable original-US decoder/wrapper/consumer probe confirms a separate
+short-input gap: a press seen on a zero-whole-raw-tick native update is suppressed
+by `pc_native_input_guest`; releasing before the next whole raw tick loses it.
+Holding through that tick publishes the edge and reloads. This remains possible
+with the #342 consumer-gate correction enabled. The probe does not establish
+which stage lost every individual live replay tap, or explain ordinary-duration
+failures. No gameplay code was changed in this investigation.
+
+All 55 later control reloads succeeded. Results and compressed full memory
+observations remain local under `logs/*reload*-result.json` and the isolated
+`private/test-saves/quick-test` evidence. Owned games stopped at their time limits;
+disposable partitions were recycled, and the canonical fixture/personal data
+were preserved. Other running checkouts were left alone. The original reporter's
+weapon/timing is still unknown; #337 is not established as fully resolved.
+Native Mac and other weapons remain untested for these reproductions.
+
+## 2026-10-24 — Reload timing follow-up tests (#337)
+
+Follow-up to merged PR #342, based on `fcaedfe3`. No runtime code changes.
+The shared reload schedule fixture now covers 864 deterministic combinations
+and 1,728 presses: Original60 and native60/120/144/180/240, eight pause/press
+offsets, three hold lengths, uneven frame intervals, clamped stalls, repeated
+pauses, native/Original60/native transitions and zero-time polls. It requires
+one dispatch per press, no held repeats, and successful release/re-press.
+The same schedule runs against the asset-free generated gate and the verified
+US input decoder plus original reload consumer. Removing the compare hook in
+the original-routine fixture must fail at an identified timing mismatch;
+compile errors and unrelated assertion failures cannot satisfy that control.
+
+This validates the timing correction, not every possible cause of the reporter's
+intermittent symptom. Input presses span at least one 60 Hz poll; physical key
+delivery and sub-poll taps are not established. The integration fixture retains
+controlled weapon animation/ammo boundaries. Native Mac private-XBE and live
+gameplay validation remain pending under MAC-060. CI runs the asset-free layer
+on both hosts through the existing native timing test selection.
+
+Windows x64/MSVC: native timing, float joins and context/backlog suites passed
+all 131 checks. Context freshness and whitespace checks passed. A bounded
+185-second isolated first-mission replay used the existing corrected binary
+(SHA-256 `b213f743a6907a95428def64ac336ca55a71239dc2117e6554e9f827c2e1ff99`)
+at the native240 target: pause/resume was observed, and all 11 R reloads
+(20–2000 ms presses) refilled 14 to 16 rounds while consuming two reserve rounds.
+This is target240, not a sustained240 performance claim. Source runtime code
+is unchanged from PR #342; no new game binary was needed for this test-only PR.
+The runner stopped its owned child at the time limit and recycled its isolated
+partitions; personal saves/settings and the canonical Test Lab fixture remained
+untouched. This smoke check still does not reproduce the original live failure.
+
+## 2026-10-24 — Current-build Temple crowd acceptance
+
+Source925f9f72, Windows11 x64/MSVC14.44/D3D11/RTX4070SUPER, executable
+975f69dc61571d04680c032b8aeff1f348221ad52e07c7e6d5e607ed26ff47f1.
+The isolated ten-bot Temple route broadens the current build's crowded-map
+coverage beyond Disco. Configuration is Classic/3440x1440/FOV73; actual client
+1920x1060 on a60Hz desktop. The predeclared45-second window starts five seconds
+after the spawn observation. Scene49, active match, ten configured bots and
+foreground/unminimized state are required throughout its19 checkpoints.
+
+`crowd-temple-clean180` completes with179.999766FPS, minimum one/five-second
+rates180/180, p996.038ms, worst6.631ms and8,099 fresh guest intervals. There are
+no interpolated frames or intervals above16.67ms. Sampled game/wall ratio is
+0.99982853. No image capture, per-update trace, CPU sampler or concurrent local
+build/test runs during this window; automated state-file polling every16ms
+remains test overhead. Profiles/signatures and the canonical fixture are intact;
+disposable partitions recycled. Summary: `logs/temple-clean180-summary.json`.
+
+The same-binary `crowd-temple-clean60` Original60 reference also completes.
+Its complete45-second window measures60.000541FPS, minimum one/five-second
+rates60/60, p9917.145ms, worst17.392ms, and2,699 fresh guest intervals. All19
+checkpoints satisfy the same active/foreground/roster checks; game/wall ratio
+is1.00019688. No intervals exceed33.33ms. Identical capture/profiler exclusions
+and profile-preservation checks apply. Summary: `logs/temple-clean60-summary.json`.
+
+`crowd-temple-clean240` completes with239.912790FPS, minimum one/five-second
+rates236/239.2, p994.849ms, worst7.360ms and10,795 fresh guest intervals.
+Game/wall ratio is1.00009273, with19 valid checkpoints and no interpolation.
+Its recorder starts65s after first Present to keep the complete measured window
+inside the20,000-row cap; the60/180 runs use45s. Profiles/fixture/signatures
+remain intact and partitions are recycled. No clean run overlaps another game,
+local build, tests or profiler. Summary: `logs/temple-clean240-summary.json`.
+The result approaches240 in this Temple workload; it is not locked240. Separate
+bot/respawn paths make cross-run numbers descriptive, not causal comparisons.
+
+The preceding `crowd-temple-current180` run is visual evidence only: a desktop
+capture during combat shows the Temple scene, dual weapons, HUD, waterfall,
+fire and actors. Its early ready snapshot was still loading; the later spawn
+and scene49 checkpoints confirm that navigation succeeded. It is excluded
+from clean timing claims because of the capture. All reported Present intervals
+measure host API cadence, not GPU completion, scanout or physical input latency.
+Ten configured bots do not establish simultaneous visibility. This bounded
+Temple result does not establish sustained180/240 on every map, causal speedup,
+complete gameplay/animation fidelity or native Mac gameplay.
+
+## 2026-10-24 — Integrate main's reload fix into PR #328
+
+Combined source is 7b30610c plus main fcaedfe3 (#342). Documentation conflicts
+retain both the guarded model-transform work and main's reload timing repair;
+the generated patch index is refreshed. Player presets remain exactly
+60/120/180/240, with live Apply and Beta labels above60. Historical144 remains
+an internal diagnostic rate and saved144 preferences migrate to120.
+
+The supported Windows build and bundled checks pass (Windows11 x64,
+MSVC14.44, D3D11, RTX4070SUPER). Executable SHA256:
+975f69dc61571d04680c032b8aeff1f348221ad52e07c7e6d5e607ed26ff47f1.
+Combined timing, vehicles, float joins, generation, model-transform and context/
+backlog tests: **161 passed** in254.72s. Full patch-upgrade suite: **21 passed**
+in693.42s, including the corrected historical Mac fixture. Logs are
+`logs/reload-model-merge-{build,tests,upgrades}.log`. These are current combined
+source results; preceding model-only crowd measurements below use another binary.
+Native Mac execution and full-game acceptance remain pending.
+
+The bounded isolated `reload-arcade-presets-final` run completes in one process
+with runtime-confirmed240 ->180 ->Original60 ->120 transitions. In Disco with
+one human and no bots, all12 trials fire6-7 SMG rounds, pause/resume, and reload
+with a roughly52ms R press. Every magazine returns to32 and reserve decreases
+by exactly the replenished amount; player identity, health, foreground status
+and expected pause states remain intact. Saved test preference is120. The
+strict report audit is `logs/reload-presets-summary.json`; this is ammo/input
+smoke evidence, not exact reproduction of the failing clock phase, reload
+latency, rendered animation cadence or FPS measurement. Personal profiles and
+canonical fixture remain unchanged with valid signatures; partitions recycled.
+
+Earlier attempts are not counted as a complete cycle: `reload-arcade-240`
+completed eight trials before the runner's48-image limit; `reload-arcade-presets`
+misnavigated the menu after its first three240 trials. Its later paused inputs
+provide no reload evidence despite clean runner exit. Splitting menu Escape
+presses into short separate commands produced the validated final route.
+The earlier reviewed apply-180 capture shows180FPS Beta and gray Apply.
+
+## 2026-10-24 — Reload input timing investigation (#337)
+
+Branch `337-bug-reload-key-sometimes-not-working`, base `e0386672`, Windows
+x64/MSVC. The original US reload/mode consumer
+`1C2E80` checks whole game ticks at `1C2F09`, while the input wrapper publishes
+button edges on whole raw ticks. Those clocks can differ in phase after pause;
+a press then expires without reaching reload. The shared numeric policy now
+admits this consumer on positive fractional game time. Original binding,
+weapon readiness, ammo and animation behavior remain in charge. Original60
+and zero-time pause are unchanged.
+
+The additive generic CMP patch routes only absolute unsegmented 32-bit operands
+through the existing global-read policy. It preserves one-time flag snapshots;
+indirect/narrow/segmented comparisons and TEST are unchanged. Generated C is
+regenerated, never edited. Both Windows/Mac use this path.
+
+The original-routine reload regression failed before correction and passes
+with it. It executes the verified US decoder/getters/reload consumer and real
+input wrapper/clock through offset raw/game phases, 60/120/144/180/240, remapped
+reload, pause, disabled input, busy/dead state and guest ABI. Animation/ammo
+services are controlled boundaries. Asset-free generated branch tests include
+fused/separated comparisons, read-scope exclusions and independent old-policy /
+missing-hook mutations. Timing and float-join suites: 110 passed on Windows.
+
+Live limitation: all 44 pre-fix reload attempts succeeded in bounded isolated
+first-mission runs (60 FPS delayed/immediate, native120 delayed/after pause,
+20–2000 ms R presses). These runs did not reproduce the reporter's exact
+intermittent failure. The fix addresses the demonstrated timing condition;
+weapon/FPS details or a failing live capture are still needed to establish
+whether it accounts for every case in #337. Personal saves/settings are intact.
+The supported Windows build and built-in tests passed (`logs/issue337-build.log`).
+The corrected native120 build completed the same 185-second pause/reload replay:
+all 11 reloads replenished the magazine and consumed the expected reserve ammo.
+This is a smoke check, not live reproduction of the failing clock phase.
+Patch update/tracking tests: 35 passed (including branch reversals/CRLF).
+Context/backlog tests: 21 passed; context freshness and whitespace checks passed.
+Native Mac build/gameplay remain pending (MAC-060).
+
+## 2026-10-24 — Integrate the guarded model transform
+
+The shared US151E80 point-transform helper keeps intermediate values in local
+binary32 temporaries instead of repeatedly accessing emulated SSE registers.
+A default-off generated entry hook runs after the original trace/renderer-idle
+callback. Only this audited leaf is selected; explicit return tracing and forced
+return diagnostics retain the generated body. Success preserves the full guest
+return state, including the middle-row product in xmm4. Overlapping buffers,
+address wrapping, nonfinite values and magnitudes above 2^33 reject the fast path
+without changing memory, registers or floating-point exception flags. Both host
+build paths compile the same helper; no new platform adapter is needed.
+
+Ten model checks pass on Windows (18.83s), including 40,000 comparisons in each
+of the portable, original-US and disabled-fast cases, four rounding modes,
+callback mutation, and six deliberate regressions. Fast results, finite fallback
+results, and all untouched memory/register lanes are compared bit-for-bit.
+Fallback arithmetic destinations allow quiet-NaN payload variation: the original
+generated body produced fff2073c versus ffd67f1d with fast entry ALWAYS disabled
+in the private control. The preceding branch changes compiler allocation;
+rejection preserves input bits, but compiled NaN output payloads are not promised.
+This exception is confined to fallback arithmetic outputs, not fast results.
+
+The broader generation/native-timing run passed 108 cases and exposed seven
+vehicle-test plumbing errors from an overbroad include insertion. Those were
+repaired; all vehicle cases then passed. Actual camera/mothership/spawn/rigid
+consumers execute the shared helper. The full patch suite passed 20 cases and
+failed a historical Mac fixture that incorrectly included the dependent patch.
+After correction, fresh/repeated, historical-controls and historical-Mac upgrades
+all pass (3 cases, 75.03s). Twenty-one context/backlog checks pass, as do
+repository-context and whitespace checks. Public model tests are registered in
+both host CI jobs; private-XBE comparisons skip when that asset is unavailable.
+
+The supported Windows build and bundled checks pass with MSVC 14.44, Windows11
+x64/D3D11/RTX4070SUPER. Initial integration builds caught a manual-TU register
+declaration mismatch, then an incorrect generated-header include; the dedicated
+shared TU and gen/recomp_types.h resolve both. Executable SHA256:
+cf965c1798f2f13fddc456278b14e458ab8237996651f3be4a1d6cd710d9d641.
+Source is 85ccf0bd plus this implementation; the prior all-14-green CI result
+belongs to 85ccf0bd, not the new implementation.
+
+The isolated ten-bot Disco240 run completes with intact signed profiles and
+recycled partitions. Its complete 45-second window averages 228.355915 FPS,
+minimum one/five-second rates 169/181.8, p99 6.051ms and worst 10.699ms.
+All 10,275 guest intervals are fresh, with no interpolated frames; all 19
+checkpoints are active and foreground. Game/wall ratio is 0.99982377. It does
+not sustain 240. Independent bot/death/view paths vary, so the earlier 208.54
+and 235.24 runs do not establish a causal speedup or regression. Configuration
+is Classic/3440x1440/FOV73, actual client1920x1060 on a 60Hz desktop. No compiler,
+tests, CPU sampler, captures or per-update CSV ran during the measured window;
+automated input still polls its state file every16ms. Present is not GPU completion,
+scanout or physical input latency.
+
+The same-binary Original60 run also completes with intact profiles. Its complete
+45-second window measures 60.000151 FPS, minimum one/five-second rates60/60,
+p99 17.108ms, worst17.278ms and game/wall1.00000085. All2,699 guest intervals
+are fresh and all19 checkpoints are active/foreground. A later attempted desktop
+snapshot found the test window already closed; it provides no visual evidence.
+A separate renderer-capture run is used for visual inspection, not pacing.
+Reviewed combat-one/combat-four images from crowd-model-transform-visual240
+show intact weapon/hand geometry, enemy models, scenery, muzzle flashes and
+ejected casings in the Disco match. This is a bounded visual smoke check,
+not proof of animation cadence or full-game rendering equivalence.
+
+Evidence: logs/model-transform-{final-tests,final-build,upgrade-recheck,context-tests}.log,
+logs/model-transform240-summary.json and private/test-saves/crowd-model-transform240.
+Original60 measurements are in logs/model-transform60-summary.json; selected
+visuals remain in private/test-saves/crowd-model-transform-visual240.
+Physical Mac gameplay and broader native-high-refresh acceptance remain open.
+
+## 2026-10-24 — Current-head CI and slow-frame attribution
+
+All14 CI checks pass on85ccf0bd, including native Windows/Mac, patch upgrades
+and transitions, both launchers and complete-package verification. The runtime
+and executable remain de9ee95d / ffa9c843; this follow-up changes no game code.
+
+The isolated `crowd-bind-waits240` diagnostic completes with intact profiles and
+recycled partitions. A hash-matched guest-thread-only sampler takes6,701 snapshots
+in45.0005393s, with no failed or already-suspended observations. Its API spans
+total0.1961068s (max2.5717ms); thread user/kernel time totals35.09375s. Profiling
+perturbs execution, so these are not clean FPS measurements or CPU shares.
+
+The same-clock join accepts6,699 samples and rejects two spans crossing frame
+boundaries. Frames under4.5ms contain1,170 wait-leaf snapshots;4.5..6ms contain273;
+frames at least6ms contain just one. All128 captured wait stacks lead to return
+RVA0x6929, immediately after the native pacing timer's WaitForSingleObject call.
+The linked IAT/disassembly confirms SetWaitableTimer / wait / QueryPerformanceCounter;
+its nearest public name `pc_native_rocking_sub` is misleading. Capturing every
+eighth wait reaches the128-stack cap;53 later eligible stacks are omitted.
+This evidence does not justify changing GPU acknowledgement or the frame limiter.
+
+Of986 slow-frame snapshots,57 name the model-node renderer sub_0018EA90_gen.
+Across all snapshots,124 name the small affine point transform sub_00151E80;
+its linked code repeatedly loads/stores emulated SSE registers. An offline
+prototype keeps those temporaries local, preserving guest state at return.
+The unrestricted version fails a bitwise comparison at an overlapping-matrix
+NaN case (original ffc00000 versus local7fdc6136); it is rejected, not shipped.
+A guarded candidate falls back for matrix/vector overlap or input magnitudes
+above2^33 (including nonfinite values). It passes50,000 whole-memory/register
+comparisons, including12,518 fast cases and37,482 fallbacks. Separate-caller-TU
+MSVC/O2 benchmark medians are119.8472ms original /51.0515ms candidate over2million
+calls, seven alternating pairs, with matching output checksums. This57.40% lower
+synthetic kernel time is not a game FPS gain. Default Windows floating-point
+mode only; Mac, rounding modes and runtime integration remain unverified.
+
+No prototype is wired into the game. Integration must preserve the entry trace/
+renderer-idle callback before reading guest inputs, one trace per call, exact
+return registers and exceptional-input fallback. A callback-safe entry hook
+needs validation before replacing the current body. Evidence stays under
+private/pipeline/model-transform-prototype and private/test-saves/crowd-bind-waits240;
+linked call-site and frame-bin summaries are in logs/crowd-bind-wait-callsite.asm
+and logs/crowd-bind-waits240-frames.json. The high-refresh goal remains open.
+
+## 2026-10-24 — Combine texture binding cache searches
+
+The hash-matched ed07 crowd profile samples both consecutive texture-binding
+searches: first matching host entry, then any framebuffer alias. The new shared
+patch combines those into one fresh pass while retaining both outputs, including
+aliases with different framebuffer flags. Null/nonzero-stage behavior, content
+checks, uploads and copy invalidation remain unchanged. No persistent cache is
+introduced. This removes redundant traversal; it is not a measured FPS gain.
+
+The complete production-module framebuffer fixture compares cache sizes 0..512
+against the original independent searches and checks null/missing/aliased hosts
+and unchanged cache bytes. All four Windows cases pass, including deliberately
+broken first-only/last-entry selection and stale-copy controls. The supported
+Windows Build -SkipTextures and its bundled checks pass; executable SHA256 is
+`a279c1561eb7a7ce54add834392a434706ded3a6217d451a60c0ad7aef8005de`
+from 0f775759 plus this patch. Twenty-one context/backlog checks pass.
+All 25 framebuffer/patch-upgrade cases pass across the full run plus the repaired
+historical-controls retest: the initial run had 24 passes and one old-fixture
+ordering failure; its corrected case passes separately in 27.30s. The fixture
+now omits this renderer-dependent patch until the full-stack upgrade. No runtime
+assertion was relaxed. Main967e734a crash breadcrumbs are merged, preserving both
+documentation histories. The combined supported Windows build passes, with
+SHA256 `ffa9c8439e34a9db94862241da066d35e9811a577572b4a093930e98866b1c6c`
+at de9ee95d. Crash/context/backlog checks: 27 pass, 10 Mac-only skips in21.30s.
+The isolated ten-bot Disco run `crowd-bind-scan240` completes with intact profiles
+and recycled partitions. Its complete45s window has9,384 increasing guest frames,
+208.536855FPS, minimum one/five-second rates138/148.8, p997.468ms and worst11.618ms.
+Nineteen checkpoints retain active foreground gameplay; game/wall is1.00005364.
+Classic3440x1440/FOV73 is configured; actual client1920x1060 on60Hzdesktop. There
+are no interpolated frames, captures, CPU sampling or overlapping build/tests;
+the existing16ms input-file polling remains. This is lower than the earlier
+235.244550 run. Different AI/death/view paths and the main merge prevent causal
+attribution; do not claim a whole-game improvement or sustained240 from this run.
+Host Present intervals do not measure GPU completion, scanout or input latency.
+
+An independent MSVC/O2 microbenchmark compiles the actual new helper and the
+upstream two-loop body separately from their caller (no LTO). Seven alternating
+pairs of2million calls over512entries and513host keys give median ordinary-texture
+370.2068ms before /254.4047ms after (31.28% less), all-framebuffer248.0392/137.8402ms,
+and entry-only126.9207/121.8539ms. Every pair has identical output checksums. These
+synthetic workloads demonstrate lookup cost only, not scene/frame gains. Private
+sources/results: private/pipeline/bind-scan-bench; live provenance and strict
+summary: logs/crowd-bind-scan240-summary.json. Current-head CI remains pending.
+The shared fixture remains registered for Windows RHI and Mac GL/RHI; physical
+Mac gameplay and broad native240 acceptance remain open (MAC-060).
+
+## 2026-10-24 — Demo pause phases and live preset transitions
+
+The original-US demo fixture's steady cadence already covered higher presets,
+but recording pause-offset cases and live playback handoffs still used144.
+It now executes eight recording cases (120/144/180/240, one/four controllers)
+and32native-to-Original60-to-native playback combinations. Recording deliberately
+resumes with raw/game clock phases offset, includes a three-tick stall and
+flushes pending game ticks; byte counts, timestamps, controller data, original
+fallback and same-buffer restart assertions are retained. Playback retains
+every press/release, fractional visual time, zero-time polling and cancellation
+metadata checks. Expected elapsed time derives from the replaced stall interval;
+the existing tolerance is unchanged. Python checks the full executed matrix.
+
+All105 demo tests pass on Windows with the verified private US XBE in29.19s,
+including existing negative controls (logs/demo-preset-lifecycle-tests.log).
+The added edge checks also run during Original60 and after native resumption.
+21 context/backlog checks and repository-context/whitespace checks pass.
+This changes tests only; executable ed07ee3d and gameplay remain unchanged.
+The suite is already registered in dual-host CI, but private-XBE cases skip
+when assets are absent. No Mac execution of those routines is implied.
+
+A bounded read-only scan found no standalone/local top-level uncompressed
+archive entry matching the known replay header/record layout (403 archives,
+78,081 entries). This does not exclude compressed or embedded recordings.
+The writer/reader fixtures use controlled devices and lifecycle services;
+rendered real-file playback, sustained sub60 overload and full-level replay
+remain unverified. Evidence: logs/demo-file-candidates.json.
+
+All14 checks now pass on2e408c89, including both native runtimes and patch
+upgrades/transitions. The next push batches the pending144 crowd records with
+this coverage change after those jobs finish.
+
+## 2026-10-24 — Current crowded Disco check at diagnostic144
+
+The unchanged ed07ee3d Windows executable completes crowd-current-disco144
+with ten configured bots, intact Test Lab profiles and recycled partitions.
+Its complete45-second host-clock window contains6,479 fresh guest intervals,
+averages143.999013FPS and has minimum one/five-second rates144/144.0.
+p99 is7.372ms, worst8.241ms; no interval exceeds9ms. Nineteen sampled
+checkpoints retain active unpaused combat and foreground/nonminimized state;
+game/wall is1.0002459. Original console interrupts remain60Hz.
+
+This uses diagnostic144, not a restored menu preset. Classic3440x1440/FOV73,
+actual1920x1060 client; no captures, per-update trace or CPU profiler. Automated
+input still polls a state file every16ms. Ten configured bots do not prove all
+ten were simultaneously visible. These are successful Present intervals,
+not scanout/input latency, identical bot paths or every-map acceptance. This
+narrows the original144FPS crowd report on the current build without claiming
+native240 is sustained. Evidence: the named run's crowd-pacing-summary.json
+and logs/crowd-current-disco144-summary.json.
+
+Read-only inspection of the earlier same-binary crowd profile confirms samples
+inside disabled trace guards. Two private candidates split diagnostic bodies
+or separate their cached initialization. A same-translation-unit benchmark
+initially suggested a gain; the corrected benchmark uses separate caller/runtime
+translation units, like the game. Seven alternating20-million-pair runs have
+medians47.647ms baseline,47.889ms body split and47.517ms cached initializer.
+These differences do not justify a runtime change. The original1/256 idle
+callback count is preserved in every experiment; no candidate is shipped.
+Evidence: private/pipeline/trace-dispatch-experiment/results.json and generated
+assembly. Isolated call timing is not whole-game FPS or CPU-share evidence.
+
+All14 CI checks passed e9195841, including both native runtimes and patch
+upgrades/transitions. The subsequent2e408c89 documentation-only head passes
+Mac runtime/upgrades and launchers; Windows validation is still running at this
+checkpoint. Avoid interrupting it with another documentation-only push.
+
+## 2026-10-24 — Weapon-menu regression at Original60 and native240
+
+On source e9195841, unchanged Windows executable ed07ee3d, four isolated
+Vietnam Arcade weapon-set routes complete with unchanged valid profiles and
+recycled disposable partitions. The captured Original60/native240 routes show
+the expected setup, weapon list, third-slot shotgun selection and back-out
+screens. Their existing50FPS regression gate passes, but renderer dumps cause
+periodic long frames: measured windows average58.0–58.3 and204.9–205.9FPS.
+Those diagnostic runs are not clean performance measurements.
+
+Repeating the verified route without captures, per-update tracing or CPU
+profiling yields these complete five-second host-clock windows:
+
+| Window | Original60 FPS | Native240 FPS | Original60 p99/worst ms | Native240 p99/worst ms |
+| --- | ---: | ---: | ---: | ---: |
+| Before weapons | 59.999 | 240.016 | 17.182/17.459 | 4.787/5.051 |
+| Weapons | 60.000 | 240.011 | 17.119/17.386 | 4.725/5.082 |
+| Third-slot selection | 59.999 | 239.999 | 17.306/17.417 | 4.818/5.276 |
+| After backing out | 59.999 | unavailable | 17.265/17.314 | unavailable |
+
+Every recorded guest-frame ID is consecutive; no interpolated presents occur.
+The native240 Present recorder reaches its cap before the final window, which
+is explicitly unavailable; the separate five-second swap log reports240.0FPS
+after backing out. The strict clock-window analyzer initially rejected the
+missing window, and its coverage gate remains unchanged. Original60 covers
+all four windows. These results preserve the issue#105 menu repair in this
+route; they do not establish sustained240 in combat, physical input latency,
+scanout, animation speed or Mac menu performance. Automated state-file input
+still polls every16ms. Both rates use Classic1280x720/FOV55, actual1920x1060
+client, visible/nonminimized but not foreground. Host/workload variation remains.
+
+Evidence: private/test-saves/weapon-menu-{current240,current-original,clean240,
+clean-original}, matching logs, and logs/weapon-menu-current-comparison.json.
+Both Windows and Mac native CI now pass e9195841's surface-fixture repair;
+Windows patch upgrades are still running at this checkpoint.21 local context/
+backlog checks and repository-context/whitespace checks pass for these records.
+No runtime code changed here.
+
+## 2026-10-24 — Real movie coverage through 240 and surface-fixture CI repair
+
+The real-file movie test now compares both EA and Free Radical intros across
+Original60 and native60/120/144/180/240 with controlled time, plus every native
+rate with the Windows clock. Exact decoded image, timestamp and PCM hashes
+match at every rate: EA has88 pictures/511912 PCM bytes; Free Radical has81
+pictures/717240 PCM bytes. Controlled completion stays within the existing34ms
+poll-boundary tolerance. Timer cleanup and polling bounds remain enforced.
+All27 movie/stop/context/backlog checks pass. GPU presentation and audio-device
+output are mocked: these results do not establish tint, audible sync, display
+cadence or Mac movie playback. Evidence: movie-current-presets-validation.log.
+
+Windows/Mac native CI on33d7bf4f found an overlooked surface-trace fixture
+still emitting144/120/Original60/144 against the new strict validator. The
+failure reproduces locally. Its cycle now emits240/180/Original60/120 and
+records the matching fractional delta. Capture bounds, paused updates, skipped
+tails, balanced references and stack checks are unchanged. The fixture passes
+locally, as do all78 native-timing checks and53 image-analysis/context/backlog
+checks. No runtime code changes
+or rebuild are needed; current-head cross-host CI must confirm the repair.
+Patch-transition jobs also fail their required native-result gate on that head,
+not patch application.
+Evidence: surface-cycle-ci-repro.log, surface-cycle-ci-repair.log and
+movie-surface-current-contracts.log and native-timing-current-presets.log.
+
+## 2026-10-24 — Current four-preset water and live Apply validation
+
+The old surface-switch route/validator still required144/120/60/144 and rejected
+180/240 image segments. They now exercise240/180/Original60/120 with default
+native-water policy. Four complete90-image segments, original/native flags,
+consecutive frames, unchanged resource identity and a single owner creation
+remain required. Historical144 captures can be checked with explicit expected
+rates; the current default rejects the old cycle.32 image-analysis checks pass,
+including gaps, stale images, partial/misordered cycles and wrong timing paths.
+21 context/backlog checks pass after condensing the guide to its size limit.
+The original combined run caught that documentation-size violation; no image
+assertion or capture limit was weakened. No game/runtime/shader code changed.
+
+`water-current-four-presets` completes on unchanged Windows executable
+ed07ee3de98ecd9db961141ec5dea137e30202e08a52472944cdaa514d4dd1a7.
+All360 GPU images validate; each of the four segments has89/89 changed pairs
+and nonflat green/blue channels. Resource82962910 has exactly one owner creation
+at frame8083, before capture, and is reused through Original60 and native120.
+The final isolated saved preference is120. Reviewed video240/apply180/apply60/
+apply120 captures show the intended labels (Beta above60) and gray Apply;
+playing180/60/120 shoreline stills retain visible water and normal scene output.
+The same process handles all changes, preserving signed profiles/canonical
+fixture and recycling disposable partitions on clean exit.
+
+Configured1280x720/Classic/FOV55; actual1920x1060 client, nonminimized but not
+foreground. GPU readback, renderer captures, update tracing and test-input file
+polling are active. This is bounded image/menu/resource evidence, not pacing,
+physical scanout, identical wave trajectories or full-level visual/mechanics
+acceptance. Native Mac gameplay and additional water scenes remain unverified.
+Evidence: logs/water-current-cycle-tests.log, -context-recheck.log,
+water-current-four-presets.log and that run's surface-results.json/captures.
+
+## 2026-10-24 — File-open attribution and benchmark scope
+
+On unchanged7c8bc2db/ed07ee3d, crowd-file-stack-240 completes the ten-bot route
+with intact fixtures and recycled partitions. A guest-only diagnostic extends
+targeted NtCreateFile stacks to24frames (maximum128);6,707 samples/45.000291s
+contain five identical file-open chains, zero context failures/truncation.
+API spans total0.148037s, maximum2.9871ms. No worker suspension or memory/register
+writes. The caller is `pc_controls_key_down` -> `replay_tick`: linked return
+RVA2005ff7 follows the test-state fopen under the16ms gate (cmp0x10).
+
+These opens belong to the opt-in `TSFP_PC_INPUT_STATE` automation transport,
+not normal keyboard handling, settings reloads or save routing. No gameplay
+optimization is justified by those samples. The bounded runner now records
+its startup-replay/state-file transport and16ms polling in provenance. Earlier
+capture-free/CPU-profiler-free pacing runs still include this input harness
+cost; their measured Present intervals remain valid, but do not establish
+unassisted-play performance. Raw input/scanout latency and deterministic causal
+speedups remain unmeasured. Keep this limitation when comparing candidates.
+Evidence: the named run's file-stack-summary.txt and logs/replay-file-open-linked.asm.
+
+## 2026-10-24 — Bounded Discord status reads
+
+The prior targeted stacks include16 VirtualQuery chains through the camera's
+once-per-second Discord sampler. Hash-matched linked code confirms the camera
+call atRVA1f87e70 targets the sampler at1f871d0, passing reader1f7e610; the
+sampled VirtualQuery return at1f7e675 is in that reader, and1f7e7dd is a string
+table pointer read. The nearest public names reported by the PDB were misleading.
+`discord_guest_read` previously queried full mapping extents for each word/byte.
+It now uses a fresh bounded span per read, preserving guards, decoded content,
+sampling cadence, event-name cache and IPC behavior. No snapshots span callbacks.
+
+Production-callback tests use real host mappings and verify copied bytes,
+fresh permission checks, read-only access, noaccess/cross-boundary rejection,
+unchanged output on rejection, guest overflow and large/failed-query fallback.
+Retained-region and old-full-query controls fail as intended. The related
+Discord/decal suites pass27 checks with8 Mac-only skips on Windows; the supported
+Windows build and built-in checks pass. New executable SHA256:
+ed07ee3de98ecd9db961141ec5dea137e30202e08a52472944cdaa514d4dd1a7.
+Log: discord-bounded-build. New cases run in the existing dual-host Discord CI
+suite; this follow-up's Mac execution remains pending. The diagnostic
+crowd-discord-query-240 completes its ten-bot route with intact fixture signatures
+and recycled partitions. Its6,702 samples/45.006611s include37 targeted syscall
+stacks, zero full VirtualQuery leaves (previously16, all through the camera).
+Sampling API spans total0.155095s, maximum1.4652ms; no context failures or stack
+truncation. This supports removal of the identified query path, not a causal
+FPS/CPU-share result.
+
+The separate crowd-discord-clean240 run passes the complete45s crowd window:
+10,585 fresh guest intervals,235.244550FPS, minimum1s199/minimum5s211.4,
+p995.299ms/worst6.383ms, no intervals above9ms, game/wall0.999985 and19active
+foreground checkpoints. No interpolation, CPU sampler, captures or per-update
+trace. Classic/3440x1440/FOV73, actual1920x1060 client on a60Hz desktop, ten
+configured bots. Fixture signatures remain intact and disposable partitions
+are recycled. The previous clean texture candidate averaged226.507835FPS with
+p996.789ms/worst9.728ms; nondeterministic AI and host conditions prevent a causal
+percentage-gain claim from these separate runs.240 is still not sustained.
+Present intervals do not establish GPU completion, scanout, physical input
+latency, other maps or full-game mechanics/visual acceptance. Evidence:
+logs/crowd-discord-clean240-summary.json and the named isolated run.
+
+All14 CI checks for the previous fixture-only repair15cb9fba now pass, including
+Windows/Mac runtime, upgrades/transitions and launcher checks. This confirms
+the texture-fixture portability repair on Mac; physical gameplay
+and this newer Discord change are separate validation requirements.
+
+## 2026-10-24 — Texture fixture portability and frame-aligned profiling
+
+Mac native CI for898ee923 fails while compiling allthree texture-survey fixture
+variants;586 other tests pass,213 skip and18 subtests pass. Captured compiler
+stderr is hidden by the CalledProcessError summary. The fixture redefines libc's
+`memcpy`, which can conflict with fortified headers under warnings-as-errors.
+Instrumentation now rewrites only the five intended production sample-load
+calls, leaving system copy macros untouched. Compiler failures expose stdout/
+stderr in the assertion. A predefined-copy-macro case passes; deliberately
+restoring the redefinition fails compilation. Allfive cases pass on Windows
+with /W4 /WX, including existing tail/overread controls. This reproduces the
+portability hazard locally; native Mac confirmation remains pending. Runtime
+code and the cbcd0bfc executable are unchanged. Log: texel-macro-portability-tests.
+
+`crowd-interval-profile-240` adds exact QPC origins and each sampling API span to
+the private guest-only probe. Joining these against Present timestamps accepts
+6,693 of6,698 samples over45.003340s; four cross a frame boundary and one falls
+in a partial edge frame, so allfive are excluded. Guest CPU time is36.125s;
+sampling API spans total0.140869s, maximum0.6433ms. Frames under4.5ms contain
+4,191 samples, 4.5–6ms contain2,373, and122 frames at least6ms contain129 samples.
+The last group has17 NtQueryVirtualMemory leaves, while fast frames frequently
+sample NtWaitForSingleObject (1,064/4,191). Small slow-bin counts and observer
+cost prevent a causal CPU-share or clean-pacing claim. The route completes with
+ten bots and unchanged fixture signatures; disposable partitions are recycled.
+Evidence: the named run and logs/crowd-interval-profile-summary.json.
+
+A second bounded route, `crowd-query-stack-240`, captures at most eight frames
+only at the prior observed +0x14 return sites in NtQueryVirtualMemory/NtCreateFile,
+after resolving the target symbols and verifying their return opcode. It records
+6,701 samples/45.001500s and45 stacks, with no truncation. API spans total0.153956s,
+maximum1.4261ms. No acknowledgement-worker suspension or game-memory/register
+writes occur. The route completes with intact signatures. Some returned symbol
+names are nearest public names rather than exact static-function identities;
+caller addresses need linked-code/source validation before changing guards.
+This diagnostic does not measure uninstrumented FPS or prove a specific fix.
+
+## 2026-10-24 — Texture survey lane scheduling
+
+The retained crowd shader profile has61 samples in `texel_sample` (92 in its
+pre-shader baseline). The original texture survey maintains four independent
+checksum lanes but updates one dynamically indexed lane per iteration.
+`zz-texel-sample-lanes.patch` explicitly processes each four-sample group,
+retaining the same positions/order, recurrence and final mixing. Remaining
+one/two/three samples use the original tail, and inputs below eight bytes keep
+their original byte hash. No sampling frequency, full-check interval, mip hash,
+texture invalidation/upload, guest timing or renderer policy changes.
+
+The production-code fixture compares against the frozen scalar recurrence,
+checking both result bits and exact word-read positions/order/bounds. Coverage
+includes every byte length0..32775, step boundaries through64MiB, unaligned
+sources, modified bytes and synthetic linear/compressed row layouts. Deliberate
+tail-lane and overread mutations fail. Allthree Windows checks pass;21 context/
+backlog checks and context/whitespace validation pass. Both native CI hosts
+register the fixture; native Mac execution remains pending for this follow-up.
+
+An isolated MSVC14.44 /O2 microbenchmark uses200,000 calls per round on warmed
+256KiB inputs, changes the first byte each call, consumes results and alternates
+method order across six rounds. Median old time0.1095095s versus new0.0829925s
+(about24.2% less time for this checksum workload). Prototype equality also passes
+50,000 lengths. This is not a full-game FPS gain or a hardware-independent result.
+Evidence: `logs/texel-lanes-prototype.log`, `logs/texel-sample-lanes-tests.log`,
+`logs/texel-lanes-context-tests.log`; private benchmark sources are ignored.
+
+Supported Windows Build -SkipTextures and built-in checks pass on Windows11x64,
+MSVC14.44 / D3D11 / RTX4070SUPER. Candidate SHA256:
+`cbcd0bfcf258a13bbcaf04655d1da62d09e209c84799ff5bb453ca379b22d2ff`.
+`crowd-texel-lanes-60` completes the ten-bot Disco route with19 active foreground
+checkpoints. Its full45s spawn+5..50 window contains2,699 fresh guest intervals:
+60.000371FPS, minimum1s/5s rates60, p99 17.272ms, worst17.657ms, sampled game/wall
+1.000322 and no interpolation. No CPU sampler, captures or per-update trace ran;
+fixture signatures remain intact and disposable partitions are recycled.
+
+The first240 route also completes with19 checkpoints but a local compiler/test
+command overlaps the beginning of its predeclared window (log completion at
+run+94.221s). Its full45s numbers are retained as confounded observations:
+10,134 intervals,225.229290FPS, minimum1s147/minimum5s169.2,p99 6.782ms,worst9.797ms.
+Do not attribute this difference to the patch or use it as a clean comparison.
+Both the run summary and `logs/texel-lanes-240-overlap-summary.json` mark the
+overlap. Idle MSBuild worker CPU counters do not
+change between the two pre-repeat observations; no workers are terminated.
+
+The separate `crowd-texel-lanes-clean240` repeat completes without a local build/
+test workload in its window. All19 active foreground checkpoints pass; its full
+45s window has10,192 fresh guest intervals,226.507835FPS, minimum1s150/minimum5s180,
+p99 6.789ms,worst9.728ms and three intervals above9ms. Sampled game/wall is1.000082,
+with no interpolation/CPU sampler/captures/update trace. Both modes use Classic,
+3440x1440 render/FOV73 and actual1920x1060 foreground clients. Fixture signatures
+remain valid/unchanged and disposable partitions are recycled. The average is
+lower than the preceding shader build's232.374342; nondeterministic bots and
+host conditions prevent causal comparison. This validates bounded gameplay and
+the measured interval distribution, not a full-game FPS benefit. The checksum
+microbenchmark establishes only the targeted computation improvement. Evidence:
+`logs/texel-lanes-original-summary.json` and `logs/texel-lanes-clean240-summary.json`.
+
+The published shader head8c172ff3 passes all14 Windows/Mac CI checks, including
+native runtime and patch upgrades/transitions. This confirms that earlier head,
+not the pending texture follow-up or physical Mac gameplay. Full-game visual/
+mechanical acceptance and sustained crowded240 remain unverified.
+
+## 2026-10-24 — Gameplay breadcrumbs and launcher capture health
+
+Crash/hang reports now include a bounded 64-event numeric breadcrumb history:
+capture/guest lifetime, modal depth and sampled scene, game/menu mode, pause,
+network mode and cutscene state. Shared lock-free fields let the helper read
+completed slots even if a producer stops mid-write. Sampling uses the existing
+safe guest snapshot once per second; brief transitions can be missed. No player
+names, chat, input history or paths are recorded in breadcrumbs. Windows and
+native Mac adapters use the same ring and format; launcher export caps the file
+at 8 KiB and preserves the existing allowlist.
+
+Both launcher launch paths supply a fresh session token. The helper atomically
+updates a small health record every two seconds. Shared Diagnostics verifies
+writable report storage, the current game PID/start time, matching session,
+freshness and the helper process lifetime before reporting capture health.
+Missing helpers, older games without a handshake, stale records and unavailable
+storage get explicit status text. This is a refresh-time diagnostic snapshot,
+not a guarantee that every possible exit can produce a dump.
+
+Local Windows validation: supported native Build passed; actual executable crash
+checks resolved deliberate main/worker/concurrent faults to
+`tsfp_crash_test_site` with matching PDB identity. All nine hang scenarios passed,
+including symbol resolution to `tsfp_hang_test_site`. Executable SHA256:
+`c59fc5c323b6ea402501fe65ee6a6c66a6c81bcbefb6c8cf9fc957a23295851a`.
+Focused source checks: 90 passed, 10 Darwin-only skipped, 26 subtests passed.
+The Windows launcher regression suite includes 19 shared UI groups, with health
+identity/freshness/failure cases and bounded breadcrumb export. Native test
+fixtures verify heartbeat updates, helper death, blocked storage, missing helper,
+invalid session and interrupted breadcrumb producers. Logs are under
+`logs/crash-breadcrumb-*`; no personal saves/settings or game assets are committed.
+Actual launcher/game crash and live-hang integrations pass, including health
+handshake and breadcrumb ZIP contents. The integration fixture waits briefly for
+helper teardown before deleting its own validated directory. Context guides use
+LF checkout endings so their existing byte-size bounds agree across hosts.
+Mac capture and shared launcher checks are registered in existing CI; native Mac
+gameplay and real gameplay transition coverage remain unverified locally.
+
+## 2026-10-24 — Preserve FOV in Zeppelin air lifts (#339)
+
+Branch `339-bug-zeppelin-air-lift-resets-fov`, base `9a583c15`, Windows x64/MSVC. `src/pc_display_menu.c` accepted grounded state 2 and falling state
+4 but omitted the 0x800 movement state selected by original US `sub_00225C70`.
+The shared Windows/Mac player-camera hook now accepts all three, retaining
+scene/camera ownership and cinematic exclusions. Projection and CPU frustum
+change together; the guest weapon lens and lift physics are unchanged.
+
+The new camera regression failed before the fix. Afterward the cutscene/FOV
+suite passed 9 tests; two Mac-specific settings checks were skipped on Windows.
+An explicit mutation removing the air-lift allowance is detected. The local
+checksum-verified US fixture executes the original region selector and state
+setter for all four Zeppelin lift cylinders, both camera callers, default/90°
+FOV and 4:3/16:9/ultrawide output. It checks ascent and exit to falling against
+production projection/frustum behavior, unchanged lens/state and guest ABI.
+The separate original player-force fixture passes real exit/landing motion.
+Supported Windows Build and built-in tests pass (`logs/issue-339-build.log`).
+All 21 context/backlog tests, context freshness and whitespace checks pass.
+
+A bounded isolated pre-fix Zeppelin run confirmed the custom 90° lens during
+ordinary movement/falling, but did not reach a lift; it is not live reproduction
+or post-fix visual acceptance. Original-routine integration supplies the lift
+regression evidence. Personal saves/settings were preserved. Native Mac build
+and gameplay checks remain pending (MAC-022).
+
+## 2026-10-24 — Jittered crowd profile and shader source lookup
+
+On Windows 11 x64 / RTX 4070 SUPER / D3D11, the unchanged 74e15bec executable
+(`c7ae83a8...5075d206`) completes `crowd-jitter-flush-pc`, a bounded ten-bot
+Disco240 route using Classic textures, 3440x1440 render settings and FOV73
+(actual foreground client 1920x1060). Fixture signatures remain unchanged.
+The external guest-only probe now uses a high-resolution timer with 3–10ms
+jitter, records all PCs, and measures GetThreadTimes deltas. In 30.003030s it
+collects 4,449 samples, with zero context failures/already-suspended observations.
+Intervals range 3.0756–10.586ms, median6.7148ms, p95 9.9355ms. Guest CPU time
+is22.890625s (1.984375 kernel,20.906250 user); suspend/context/resume API spans
+sum0.090668s, maximum0.6078ms. The worker is never suspended by this probe.
+
+Only15 samples land in the emulated busy-poll function. This does not support
+changing acknowledgement ordering based on the earlier all-thread profile.
+The node renderer has180 leaf samples; shader-program loading has109, of which
+102 lie in the compiled FNV byte-hash loop (102 samples at offsets0x197/199/19f).
+These are wall-time PC snapshots, not attributed CPU percentages; different
+bot outcomes and observer overhead prohibit causal FPS comparisons. Some DLL
+symbols are only nearest exported names. Local PDBs are hash-matched to the
+executable, and sampled instruction boundaries identify the hash multiply.
+Evidence: the named run's provenance, `flush-pc.json`, `jitter-summary.json`
+and retained disassembly. No Present pacing claim comes from this probe.
+
+`zz-shader-source-lookup.patch` adds source-address hints to the existing shared
+shader cache, still comparing the full current microcode against immutable host
+code on every hinted hit. Mismatched bytes/counts fall back to content hashing,
+collision checking and original creation. Original guest calls, slot rebinding,
+declarations and lifetimes remain intact. Three Windows checks pass, including
+negative controls for stale address reuse and eager hashing; 21 context/backlog
+checks pass. Both native CI jobs register the new fixture. Supported MSVC14.44
+Windows Build -SkipTextures and built-in checks pass; candidate SHA256 is
+`813edab01e5be64cbb4b5315a9a1f9c871f7e914ea78da1831381aac25fea128`.
+The candidate's `crowd-shader-source-pc` probe captures4,445 samples in30.002293s
+with zero context failures: onlyseven shader-load samples, none in its hash
+loop, versus109/102 previously. CPU time is20.812500s, API spans0.091947s,
+maximum0.5286ms. This supports removal of the observed repeated hashing;
+bot outcomes differ, so neither CPU-time nor total FPS improvement is causal.
+Native Mac execution and broad visual acceptance remain unverified. This does
+not claim sustained240 in crowded maps.
+
+The candidate Disco route completes, preserving fixture signatures and recycling
+its disposable partitions. Main e0386672's Zeppelin air-lift FOV repair (#339/#341)
+is then merged into this branch; only STATUS conflicts, resolved by retaining
+both histories. The actor-state guard retains the bounded-memory path and adds
+main's state0x800 alongside2/4. All32 cutscene/shader/context/backlog checks pass,
+as do repository-context/whitespace checks and the supported Windows build with
+built-in tests. Merged executable SHA256:
+`d9c5c0d753191d020958a88f08ecb993c3d72965d2b5e3fe50b15057fa885149`.
+`crowd-shader-merged-240` completes the clean ten-bot Disco route and passes the
+generic coverage gate with19 active foreground checkpoints. The complete45s
+spawn+5..50 window contains10,456 fresh guest intervals:232.374342FPS, lowest1s
+count188, lowest5s rate202.6, p99 5.646ms, worst8.513ms and no intervals above9ms.
+Sampled game/wall ratio is1.000000; no interpolation, CPU probe, captures or
+per-update trace runs. Classic/3440x1440/FOV73 and actual1920x1060 client remain.
+Fixture signatures are unchanged and disposable partitions recycled. Evidence:
+`logs/shader-merged-pacing-summary.json` and the named run's provenance/CSV/report.
+This validates bounded merged-build gameplay and pacing, not a matched causal
+FPS gain, sustained240, GPU completion/scanout or full visual parity.
+
+## 2026-10-24 — Merged-build Venice pacing and instruction-level wait probe
+
+Runtime/PR head74e15bec has passing Windows and Mac CI, including native runtime
+and patch-transition/upgrade checks. The supported merged executable remains
+`c7ae83a8e976a1d396f27ed9b24ccd1c112600a28fa5c788e93fb3035075d206`.
+No production code changes accompany these observations.
+
+`crowd-merged-venice-240` completes with ten configured bots and unchanged valid
+fixture signatures. Its complete50s spawn+5..55 Present window has11,998 fresh
+guest intervals:239.978339FPS, lowest1s count239, lowest5s rate239.8, p99 4.934ms,
+worst8.061ms, no intervals above9ms and no interpolation. The sampled game/wall
+ratio is0.999791. Classic/3440x1440/FOV73 and foreground1920x1060 client are
+recorded; no CPU sampler, captures or update trace ran. However, Venice's route
+takes roughly10-second observations: onlyfive fall inside the window. The generic
+crowd checker correctly rejects its ten-observation coverage requirement. The
+independent complete-window Present statistics are retained with that failed
+coverage gate explicitly marked in `pacing-with-sparse-observations.json`.
+Do not report this as passing the generic crowd checker or infer continuous
+actor/scene coverage from sparse observations. It is also not a matched causal
+comparison with other maps, GPU-completion/scanout or physical-latency evidence.
+
+The matching crash-symbol archive contains the private PDB. After verifying its
+packaged executable hash against the running candidate, the local helper resolves
+`sub_003D6690` to RVA29191024 and obtains its726-byte range from the linked x64
+unwind table (the public symbol has sizezero). Disassembly identifies the emulated
+PFB busy poll at function offsets0x1f0..0x207. In `crowd-merged-flush-pc`, a bounded
+external sampler briefly suspends only the primary guest thread, never the
+acknowledgement worker, and makes no register or guest-memory writes. It captures
+1,926 samples in30.0096s, with no context failures or already-suspended observations.
+Exactly31 land in that function, all in the identified poll (offset counts:
+0x1f0=23,0x1f3=1,0x200=1,0x203=2,0x207=4). The summed suspend/context/resume API
+spans are0.092085s, maximum0.1684ms; these include API overhead, not an exact CPU
+pause measurement. The route completes and preserves fixture signatures.
+
+This confirms the sampled instruction location but does not reproduce the large
+share suggested by the earlier all-thread profiler. The external sample cadence
+is about64Hz despite a requested10ms sleep; fixed-period aliasing, different
+observer overhead and bot outcomes limit comparisons. The probe has no per-thread
+CPU-time delta and does not classify addresses outside the target. Do not convert
+31/1926 into a CPU-time percentage or claim an acknowledgement fix. A future
+measurement needs jittered sampling and all-address/CPU-time accounting before
+altering acknowledgement order. This diagnostic is excluded from pacing claims.
+Evidence is under the named runs plus `logs/flush-native-bounds.json`,
+`logs/flush-native-code.txt` and `logs/merged-flush-pc-sampler.log`. Local helpers
+and symbols remain ignored. Both runs recycle their disposable partitions.
+
+## 2026-10-24 — Temple240 gameplay and integration with main
+
+The pushbuffer-policy executable `5304a5d5185d84cdd8586542587c5465749c144c932391f70bf83163301850e7`
+completes the bounded ten-bot Temple route (`crowd-pb-policy-temple-240`).
+The complete45s spawn+5..50 window has10,334 increasing guest-frame intervals,
+no interpolation, 229.667039 FPS, lowest one-second count169, lowest five-second
+rate186.8, p99 6.085ms and worst9.534ms (one interval above9ms). Sampled game/wall
+ratio is1.000077. Classic textures,3440x1440 render,FOV73 and a foreground
+1920x1060 client are recorded. No CPU sampler, captures or update trace ran.
+The fixture retains valid unchanged signatures and disposable partitions are
+recycled. Evidence: run provenance/report/Present CSV and
+`logs/pb-policy-temple-240-summary.json`. This validates sampled gameplay
+progression and pacing on another map, not sustained240 or full visual/mechanical
+acceptance, physical input latency or GPU completion/scanout. No matched causal
+comparison with the older Disco runs is claimed.
+
+A second Disco route on that executable also completes with ten bots and intact
+fixture signatures. An external instruction-pointer probe fails to locate an
+OS thread named "guest main": the built-in sampler assigns that label itself.
+The later corrected probe rejects the child after the bounded route has ended.
+There are no usable PC samples, no new instruction-level attribution and no
+GPU acknowledgement policy change from this probe. Its local helper is not
+shipped; the existing failed direct-clear prototype remains rejected.
+
+Main advances to9a583c15 (#333/#340), making PR328 conflict and preventing new
+PR checks for d805b22a. Integration retains the main menu-command/label fix and
+both documentation histories. Only STATUS and the build-test guide required
+manual conflict resolution. The guide remains under its64KiB limit. The combined
+window-theme/pushbuffer/context/backlog selection has29 passing checks initially;
+its two context failures caused by unresolved markers/guide size pass after
+resolution (31 checks total). Context and whitespace checks pass. Logs:
+`pb-policy-main-merge-tests.log` and `pb-policy-main-merge-context-recheck.log`.
+The supported combined Windows build and built-in checks pass on
+Windows11/MSVC14.44/D3D11 (`pb-policy-main-merge-build.log`). Source is d805b22a
+plus main9a583c15 and these documentation resolutions; executable SHA256:
+`c7ae83a8e976a1d396f27ed9b24ccd1c112600a28fa5c788e93fb3035075d206`.
+The imported menu header/test exactly match main. The Temple observation above
+uses the preceding executable; post-merge gameplay and new-head CI remain
+pending. This does not merge the PR into main or change its review state.
+
+## 2026-10-24 — Script-event phases and presentation timers through 240
+
+Four original-US fixtures expand preset coverage without changing runtime code.
+The script handoff test derives the rational tick cadence for each of
+60/120/144/180/240 at normal and quarter speed, places the authored event in every
+phase, and checks exactly one weapon grant and eight rounds. The actual native
+dispatcher runs every live interval; the original whole-tick path continues to
+miss events in fractional phases. Original60, pause/resume, untouched timers and
+ABI guards remain. This extends the old144-only phase reproduction of the
+opening handoff regression; it is not a rendered opening-sequence test.
+
+Weapon-sound, camera-effect and Arcade-countdown fixtures add180/240 while
+retaining one-shot/repeat/pause parameters, timer/decay/collision assertions,
+184-console-tick countdown duration, four announcements/sounds and input release.
+All **four checks pass** in5.90s on Windows with the verified private US XBE;
+74 unrelated cases were deselected (`native-240-events-tests.log`). Original
+references and tolerances are unchanged. Python also requires all ten script
+rate/speed combinations in the emitted results. Another21 context/backlog checks
+pass in3.42s; repository context and whitespace checks pass. The fixtures use the existing dual-host suite
+registration; public private-data skips do not establish native Mac execution.
+
+The built runtime is unchanged from the preceding pushbuffer-policy entry.
+Its new-build gameplay validation is still pending while another checkout's
+game is active; that session was left undisturbed. Currentd2343fbf Mac native
+and upgrade checks pass; Windows native/upgrade CI remained running when checked.
+Audible output, rendered animations, physical input/scanout and full-game coverage
+remain distinct, unproven requirements.
+
+## 2026-10-24 — Acknowledgement-worker diagnostic overhead
+
+The latest Disco240 CPU profile on `5a322e67` redirects investigation from
+shader hashing to emulated GPU waits. The late stored snapshots (sampler ages
+113..155s) contain 3,160 samples, 3,159 classified on-CPU and 40.1s guest-main
+CPU, with no dropped chains. `sub_003D6690` has 957 leaf samples; its leading
+chains come through indexed draws and Swap. Generated code confirms the existing
+post-store wake hook before the PFB busy poll. Function-level sampling does not
+identify individual instructions or prove a physical GPU stall. The worker's
+full-run profile also includes repeated environment scanning under `nv2a_pb_scan`.
+
+`zz-pushbuffer-diagnostic-policy.patch` reads the pushbuffer survey flag once,
+matching its existing executor launch policy. Disabled diagnostics now return
+before requesting the guest-memory offset. Enabled survey decoding, executor-only
+mode, report contents and presence semantics (including empty/"0") remain.
+The shared implementation applies to Windows and Mac. Busy-bit/DMA/fence order,
+notification and idle policy, clocks and player presets are unchanged.
+
+Eight asset-free Windows checks pass in 1.48s, compiling the complete production
+scanner with observable environment/memory/executor boundaries. They cover
+disabled/scan/executor/both modes, increasing/nonincreasing methods, jump termination,
+report separation, and mutations restoring repeated lookup or disabling execution.
+The new suite is registered in both native CI jobs. Another21 context/backlog
+checks pass, as do repository context and whitespace checks. The supported
+Windows build and built-in checks pass (Windows11/MSVC14.44/D3D11). Executable
+SHA256: `5304a5d5185d84cdd8586542587c5465749c144c932391f70bf83163301850e7`;
+source `5a322e67` plus this follow-up. Logs: `pushbuffer-policy-tests.log`,
+`pushbuffer-policy-context-tests.log`, `pushbuffer-policy-build.log`.
+All non-skipped CI checks passed preceding head5a322e67, including Windows/Mac
+native and transition suites. This follow-up needs its own CI. Live validation
+of the new build is pending: another checkout has an active game session, which
+was left undisturbed. Native Mac execution/gameplay remain pending. Removing
+known environment scans is not evidence of a measured FPS gain.
+
+A separate same-binary diagnostic, `crowd-ack-noidle-disco-240`, disables only the
+existing worker idle delay (`RECOMP_NV2A_ACK_IDLE_US=0`) in its isolated child.
+The complete 45s combat window has 9,807 fresh guest intervals: 217.954238 FPS,
+lowest one-second count154, lowest five-second rate166.6, p99 6.818ms, worst12.334ms,
+three intervals above9ms, game/wall0.999781. No interpolation, CPU sampler,
+captures or update trace ran. Classic/3440x1440/FOV73, ten configured bots,
+foreground1920x1060 client on60Hz desktop; signatures preserved and disks recycled.
+This provides no reason to change default idle policy. Different bot outcomes
+prevent a causal comparison with the earlier default229.509FPS run. Present
+timing does not establish GPU completion, scanout or physical input latency.
+Source/build/diagnostic provenance and full statistics are under the named run
+and `logs/crowd-ack-noidle-disco-240-summary.json`; the override is not persisted.
+
+## 2026-10-24 — Bounded mouse-chain memory validation
+
+The previous complete Disco diagnostic retained 278 VM-query samples under
+`VirtualQuery -> pc_controls_apply_mouse`. The shared camera, terminal and
+mounted helpers still used full-region queries despite knowing every access
+extent. They now use `pc_guest_memory_in_span`: reuse a caller-owned snapshot
+within one uninterrupted mouse operation, otherwise query the exact bounded
+extent through `pc_guest_query_span`. The seed uses 0x118 bytes for the player
+or four bytes for a lower FOV field. Subsequent fields must fit the returned
+span or get their own check. Permissions are never kept across updates.
+Validated record extents, ownership/mode checks, sensitivity, inversion, raw
+mouse displacement, native pause rules and input consumption are unchanged.
+Windows uses bounded resident-page batches; Darwin retains its Mach query.
+
+Controlled Windows and SDL adapter bodies retain cache/order/permission-expiry
+negative controls. Real OS camera checks now require zero full-region queries
+for resident fields while retaining read-only FOV acceptance and protected-player
+rejection. Mounted/terminal tests pass **13 checks** in 15.80s, including native
+cadence and legacy clock/consumption controls. Another 21 context/backlog tests
+pass; repository context and whitespace checks pass. Logs:
+`mouse-page-span-tests.log`. Native Mac execution/physical input remain pending.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER. Source is `8ddec4f6` plus this follow-up;
+executable SHA256:
+`9b56f00e2a4dc22e440866ccb7b7239ab5b88cc64c96b6ae63cef9e7ce66bc63`.
+Build log: `mouse-page-span-build.log`. No physical-input latency or sustained
+FPS claim follows from the memory checks or build alone.
+
+The native144 ten-bot Disco diagnostic `crowd-mouse-page-span-profile` completes,
+preserving fixture signatures and recycling disposable partitions. The complete
+80s-to-120s interval has 6,798 samples, 3,826 on-CPU samples, 24.1s CPU and no
+dropped chains. Spawn is observed at 86.583s, so the interval includes the match
+transition. VM-query leaves decrease from the preceding candidate's 298 to 33;
+the previous 278-sample `VirtualQuery -> pc_controls_apply_mouse` chain is absent
+from this window. Nineteen VM chains still contain full VirtualQuery beneath
+display-camera callers, and 14 contain QueryWorkingSetEx. Three other retained
+chains mention the mouse adapter (configuration lookup/general code).
+This supports removal of the targeted query work, not zero total input cost or
+an exact causal FPS gain; bot outcomes and sample attribution still vary.
+Evidence: run provenance/report/CPU snapshots and
+`logs/mouse-page-span-profile-summary.json`. A clean pacing run is separate.
+
+The clean Disco240 run `crowd-mouse-page-span-disco-240` completes with the same
+Classic/3440x1440/FOV73 setup, foreground 1920x1060 client on a 60 Hz desktop,
+and ten configured bots. The complete spawn+5..50s window contains 10,327 fresh
+guest intervals: 229.508907 FPS, lowest one-second count 168, lowest five-second
+rate 184.4, p99 6.077 ms and worst 8.912 ms. Game/wall ratio is 0.999969;
+no interval exceeds 9 ms and no frames are interpolated. There is no CPU
+profiler, capture or per-update trace; Present CSV and bounded actor reads remain.
+Fixture signatures are preserved and disposable partitions recycled. Evidence:
+run provenance/report/CSV and `crowd-pacing-summary.json`.
+This still does not sustain 240 and is within the earlier HUD candidate's
+varying 227.035/233.604 averages; do not claim a matched FPS gain. The sampled
+memory-query reduction does not explain all remaining crowd frame-time spikes.
+Physical scanout/latency, other maps/modes and Mac gameplay remain unverified.
+
+All non-skipped Windows/macOS CI checks pass preceding head `8ddec4f6`, including
+native runtime and patch transitions. This mouse-chain follow-up needs new CI.
+
+## 2026-10-24 — Bounded page batches for camera validation
+
+The Auto Lookahead camera guard still validated its full 0x1504-byte player
+record through a full-region VM query. `pc_guest_query_span` now batches up to
+four resident Windows pages, validates every page's readable/current attributes,
+and grants writes only when all pages are writable. Auto Lookahead uses that
+bounded query on cache misses while preserving the complete record extent and
+two fresh pre-call regions. Larger, failed, cold or guarded queries retain the
+full-region fallback. General region scans and Darwin's Mach adapter are unchanged.
+No mouse sensitivity, camera arithmetic, cadence or saved preference changes.
+
+Private/mapped memory fixtures now check two/four-page success, five-page
+fallback and read-only/inaccessible pages at each intermediate/final position.
+Disabled-fast-path, incorrect-write, truncated-span and first-page-only mutations
+fail as required. The real Auto Lookahead fixture validates a page-crossing
+record with zero full-region queries on Windows, rejects an inaccessible record
+page, observes protection changes between calls and restores the preference.
+Existing controller/menu, split-map and stale/uncached-snapshot controls pass.
+Auto-look/decal tests pass 21 initially; the final added host-record fixture and
+four existing Auto Lookahead tests pass all five. Another 11 text/FOV checks
+pass with two Mac-only skips. Logs: `auto-look-page-batch-tests.log`,
+`auto-look-page-host-tests.log`, `auto-look-page-text-fov-tests.log`.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER. Source is `ed8b8d00` plus this page-batch
+follow-up; executable SHA256:
+`28b2ed8fc8644f22553de5e686ce2da7dbff99552a105e44d7d674d0cee156cc`.
+Build log: `auto-look-page-build.log`. Updated Mac CI and physical gameplay
+remain pending (MAC-001). A passing guard test/build is not a measured FPS gain.
+
+The bounded native144 ten-bot Disco profile `crowd-auto-look-page-profile`
+completes and preserves fixture signatures/recycles disposable partitions.
+The complete 80s-to-120s sampler interval has 6,866 samples, 4,944 on-CPU,
+24.8s CPU and no dropped chains. It includes the match transition (spawn observed
+at 86.570s), so it is not entirely active combat. There are 298 VM-query leaves,
+versus 600 in the earlier text-only diagnostic; intervening HUD changes and
+different bot outcomes prevent attributing that difference to this patch alone.
+Of these 298, 278 retain `VirtualQuery -> pc_controls_apply_mouse`, making that
+the next specific query path to audit. Symbol folding/inlining prevents treating
+the absence of an Auto Lookahead symbol as proof it performs zero queries.
+The later 120s-to-160s interval has 6,861 samples, 4,849 on-CPU, 24.7s CPU and
+291 VM leaves, but drops 1,752 call chains; it cannot rank all callers.
+Evidence: the run's CPU snapshots/provenance/report and ignored
+`logs/auto-look-page-profile-summary.json` / `auto-look-page-profile-late-summary.json`.
+These are diagnostic samples, not clean pacing or physical-input latency.
+
+A separate clean Hotel240 run (`crowd-auto-look-page-hotel-240`) completes with
+ten configured bots, Classic textures, 3440x1440 render/FOV73 and a foreground
+1920x1060 client on a 60 Hz desktop. Its complete spawn+5..55s window records
+11,599 fresh guest intervals: 232.000495 FPS, lowest one-second count 196,
+lowest five-second rate 206.8, p99 5.534 ms and worst 7.786 ms. No interval
+exceeds 9 ms; game/wall ratio is 1.000244 and no frames are interpolated.
+Fixture signatures are preserved and disposable partitions recycled. No CPU
+sampler, screenshots or per-update trace ran during this measurement.
+Evidence: run provenance/report/Present CSV and `crowd-pacing-summary.json`.
+This does not sustain 240, and earlier Hotel candidates held their target in
+different matches. Variable bot/death/respawn paths prevent a matched causal
+comparison; do not dismiss this shortfall or claim a measured FPS gain from
+the page change. Successful Presents are not GPU completion, scanout or physical
+input latency. Broader maps, modes and native Mac gameplay remain unverified.
+
+Final Auto Lookahead, decal/projection, cutscene, context and backlog checks
+pass **50 tests** in 39.81s (`auto-look-page-final-tests.log`). The preceding
+`ed8b8d00` PR head passes every non-skipped Windows/macOS check, including native
+runtime and patch transitions. This runtime follow-up requires its own CI.
+
+## 2026-10-24 — Expanded aim, physics and effects rate coverage
+
+Continued the high-refresh audit on `e9feea43` without changing runtime code.
+Nine more original-US fixtures now exercise native180/240 in addition to their
+existing Original60/native60/120/144 comparisons where applicable:
+
+- Player aim/weapon offsets retain the original response curve, pause, snap
+  and catch-up checks; NPC aim retains fresh changes and exact random-event
+  counts/ticks at normal and quarter speed. NPC post-aim firing is outside scope.
+- Coupled kind-35 projectiles retain native60 byte equality, homing/straight
+  motion, scan/RNG cadence, effect positioning, impact/expiry/cleanup and damage
+  callback checks. Controlled collision/effect/damage spies are not full live
+  combat or rendered-effect validation.
+- Beam geometry retains construction, alpha onset/fade, visibility and lifetime
+  checks. Camera tracks retain fractional sampling, pause, external clock,
+  endpoint/loop and hard-cut checks; the special edge cases keep their existing
+  diagnostic intervals.
+- Player fall/force fixtures retain landing times, damage, terminal velocity,
+  view damping, force-region transitions and existing position error bounds.
+  Object rocking retains exact original endpoints and rejects frozen native
+  updates; bouncing retains contact sounds, settling and pause behavior.
+
+Existing assertions/tolerances are unchanged. Row validators now require the
+expanded output counts and all five diagnostic/native rates. Windows 11 x64,
+MSVC14.44.35207 with verified private US XBE: selected aim/projectile checks
+pass **3 tests, 75 deselected** in 6.74s; motion/effects checks pass **6 tests,
+72 deselected** in 9.00s. Logs: `native-240-aim-projectile-tests.log` and
+`native-240-motion-tests.log`. No skips or expected failures in those runs.
+
+Mounted-mouse cadence now also exercises 180/240 with 125/1000/8000 Hz packet
+delivery, normal/quarter speed and jitter. The host suite passes **11 tests**
+in 13.03s (`native-240-mounted-tests.log`), including failing legacy-clock and
+legacy-consumption controls. These are controlled packet tests, not physical
+input-latency measurements. Test entry points remain registered on both CI
+hosts, but public CI skips private-XBE cases; updated Mac execution and full
+gameplay acceptance remain unverified. No build or new live gameplay is claimed
+for this tests-only follow-up. The previous crowd measurements still apply to
+the unchanged executable, including the unresolved 180/240 target dips.
+
+The same batch also extends six original-US light-preview, network-correction,
+screen/strip-distortion, escort-recovery and menu-motion fixtures to 180/240,
+plus portable mouse-cadence and coupled-surface-math cases. All **8 selected
+tests pass, 70 deselected**, in 13.29s (`native-240-visual-tests.log`). Original
+light/RNG decisions, menu texture alternation, paused frontend/raw-time behavior,
+distortion whole-tick references and escort recovery controls retain their
+assertions; no visual tolerance was widened. Mouse injection covers up to
+8000 Hz. Coupled surface math retains independent original equations across
+spatial modes/damping, but does not establish visible water integration.
+
+This batch therefore extends 15 original-US fixtures and three portable/host
+fixtures; focused groups total 28 passing tests including existing mounted
+host checks. No new gameplay/performance claim follows from these tests.
+
+## 2026-10-24 — Remaining preset measurements and mechanics coverage
+
+The current HUD candidate `4e16421` was tested at Original60 (`--native-fps 0`),
+native120 and native180 using the same executable SHA256
+`33161470197e0be656d5d740d68132ef7fea8c02b760d53c99012f60d9f1fa31`.
+Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER; ten-bot Disco, Classic,
+3440x1440 render target, FOV73, foreground 1920x1060 client on a 60 Hz desktop.
+Complete spawn+5..50s windows exclude setup. No CPU profiling, captures or
+per-update trace ran; successful-Present CSV and bounded actor reads remained.
+
+| Target | Intervals | FPS | Lowest 1s | Lowest 5s | p99 ms | Worst ms | Game/wall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Original60 | 2699 | 60.000418 | 60 | 60.0 | 17.188 | 17.608 | 0.999870 |
+| 120 | 5396 | 119.933859 | 117 | 119.4 | 9.033 | 10.803 | 1.000141 |
+| 180 | 7552 | 167.835127 | 130 | 137.6 | 8.065 | 10.121 | 0.999518 |
+
+Every recorded presentation has an increasing guest-frame ID; none is
+interpolated. Sessions exit successfully, preserve fixture signatures and recycle
+disposable partitions. Evidence: `crowd-hud-page-disco-original60`,
+`crowd-hud-page-disco-120`, `crowd-hud-page-disco-180` and each run's provenance,
+report, Present CSV and `crowd-pacing-summary.json`. Original60 holds its target;
+120 is close, while 180 is not sustained. Prior 240 observations remain below.
+Varying AI/death paths prevent direct causal or monotonic rate comparisons.
+Host Present intervals do not prove GPU completion, scanout or input latency.
+Other maps, full-game behavior and physical Mac validation remain open.
+
+Six original-US fixtures now extend their existing rate matrices to 180/240:
+NPC dispatch, entity velocity, projectile motion, beam lifetime, camera easing
+and HUD messages. Existing assertions/tolerances, original paths, slow-time,
+pause and catch-up coverage remain. Projectile checks retain swept hits/damage
+and byte-identical native60 comparison; HUD checks retain delayed objectives.
+The separate HUD audio-bound subcase remains at diagnostic144.
+`test_native_timing.py` selected fixtures pass **6 tests, 72 deselected** in
+8.59s using verified private US XBE data (`logs/native-240-coverage-tests.log`).
+This follow-up changes tests/docs only; no rebuild is needed. Public CI skips
+private-XBE cases, so this does not certify their execution on Mac. All
+non-skipped CI checks pass for runtime head `4e16421`, including Windows/Mac
+native suites and patch transitions; the new test/docs head needs its own CI.
+
+## 2026-10-24 — Fresh validation for HUD and general display accesses
+
+The remaining `pc_display_menu.c::guest_writable` used a separate full-region
+VirtualQuery for each known-size HUD/camera/menu/network-display access. It now
+delegates to `pc_display_writable` with a newly zeroed snapshot on every call.
+Windows uses the tested resident-page path where applicable; multi-page and
+cold/guarded accesses retain full-region fallback. No permissions cross guest
+callbacks. Darwin uses real Mach bounds/protection instead of the compatibility
+stub's synthetic 4 KiB writable extent. No placement, FOV, drawing or game-clock
+arithmetic changes.
+
+Production-helper tests now execute its extracted body against actual OS
+protection, overflow and multi-page cases. A retained-snapshot mutation must
+fail. Projection/cutscene/FOV tests pass 24 with two Mac-only skips; the final
+projection/context/backlog group passes 37. The supported Windows build and
+built-in checks pass on Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER.
+Executable SHA256:
+`33161470197e0be656d5d740d68132ef7fea8c02b760d53c99012f60d9f1fa31`.
+Native Mac CI and physical UI/gameplay acceptance remain pending (MAC-001).
+
+A preceding 240-FPS diagnostic of `3ebc3c5` completed. Its 80s→120s window is
+excluded because local test compilation overlapped its start. The later complete
+120s→160s window contains 6,725 samples, 6,379 on-CPU, 37.9s CPU and 804 VM leaves.
+However 4,501 call chains were dropped at the fixed capacity, so retained chains
+are incomplete and cannot rank all costs. They corroborate HUD/view/camera and
+auto-look queries already identified at 144. This is neither clean pacing nor a
+complete explanation of the prior 240 result. Evidence:
+`crowd-text-page-disco-240-profile`, `combat-four-cpu.txt`→`cpu-sample.txt`, and
+`logs/text-page-disco-240-profile-summary.json`.
+
+The first clean ten-bot Disco240 run of the HUD candidate completes, preserving
+saves and recycling its partition. The complete spawn+5..50s window contains
+10,215 fresh guest presentations: 227.035 FPS, lowest one-second count 164,
+lowest five-second rate 192.4, p99 6.533 ms and worst 8.575 ms. No interval exceeds
+9 ms; game/wall ratio is 1.000060 and no frames are interpolated. Conditions remain
+Classic, FOV73, 3440x1440 render target and foreground 1920x1060 client on a 60 Hz
+desktop. This improves on the preceding single run's 185.046/p99 10.128 ms, but
+different bot outcomes still prevent a controlled causal claim. Evidence:
+`crowd-hud-page-disco-240`, its report/provenance/CSV and complete-window summary.
+
+An independent repeat with the identical setup completes cleanly: 10,511 fresh
+guest intervals, 233.604 FPS, lowest one-second count 186, lowest five-second
+rate 203.4, p99 5.799 ms and worst 7.838 ms. Game/wall ratio is 1.000254; again
+no interval exceeds 9 ms and no frames are interpolated. Saves/signatures remain
+unchanged and the disposable partition is recycled. Evidence:
+`crowd-hud-page-disco-240-repeat`. Both new measured runs have better averages
+and tails than the preceding single text-only run, but different bot workloads
+still preclude an exact causal speedup claim. Sustained 240, other maps and
+physical high-refresh scanout remain unverified; the broad goal stays open.
+
+## 2026-10-24 — Page-bounded prompt text validation
+
+A fresh 200 Hz/depth16 Disco profile of `b589a79` confirms the display-query
+change reaches live gameplay. Complete 80s→120s snapshots contain 6,848 main
+samples, 4,897 on-CPU samples, 27.4s CPU and no dropped chains. VM-query leaves
+fall from the earlier 1,143 to 801; decal-projection chains account for only five
+versus 319 previously. This is diagnostic sampling across different bot outcomes,
+not a matched timing comparison. Prompt reads now account for 301 VM leaves,
+making them the largest identified caller. Evidence:
+`crowd-page-span-disco-profile`, its diagnostic summary and
+`logs/page-span-profile-callers.json`.
+
+The follow-up changes `pc_text_read_scope.h` to consume fresh validated chunks
+through the shared page-span adapter. Strings continue across chunk boundaries.
+New `pc_prompts_read_span` requires the whole argument frame before reading it;
+cross-page frames query the complete span even after a smaller cached chunk.
+Existing scope expiry and independent scratch-write protection remain intact.
+Darwin retains its full Mach query. No glyph/layout arithmetic or text contents
+change, and no permission snapshot persists between layout operations.
+
+Twenty-four text-scope/projection/page tests pass. The supported Windows build
+and built-in tests also pass, including translated argument frames across pages,
+straddling strings, inaccessible/guarded memory and scratch-write protection.
+Windows 11 x64/MSVC14.44.35207/D3D11/RTX4070SUPER; executable SHA256:
+`394381ef8b8fd9611b9e094e28129de50b8d44487abb0962f0130900211330ee`.
+New Mac CI and physical prompt/gameplay acceptance remain pending (MAC-002).
+
+The first capture-free ten-bot Disco144 run with this change holds 144.001 FPS
+over the complete spawn+5..50s window (6,479 intervals), with lowest one-second
+and five-second rates both 144. p99 is 7.487 ms and worst 9.229 ms, versus
+9.418/15.686 ms in the preceding display-only candidate. Every presentation has
+a newer guest-frame ID; game/wall ratio is 1.000086 and there are no interpolated
+frames. Save signatures are preserved and disposable partitions recycled.
+Same Classic/3440x1440/FOV73 setup, foreground 1920x1060 client on a 60 Hz desktop.
+This is one encouraging run with varying bot outcomes, not full-game acceptance
+or proof of a matched causal FPS gain. Evidence: `crowd-text-page-disco-144`
+provenance, report, Present CSV and complete-window summary. Another 22 context,
+backlog and FOV tests pass, with two Mac-only skips.
+
+The same capture-free route at 240 records 8,325 intervals in its complete 45s
+window: 185.046 FPS, lowest one-second count 98, lowest five-second rate 136.6,
+p99 10.128 ms and worst 13.196 ms. Game/wall ratio is 0.999864; guest IDs increase,
+no frames are interpolated, saves are preserved and partitions recycled. This is
+worse than the preceding candidate's 213.871 average/p99 8.376 ms, despite the
+better 144 run. Different combat/death/respawn outcomes prevent attributing that
+change to this optimization or dismissing it as harmless variation. Sustained
+240 performance remains unresolved. Evidence: `crowd-text-page-disco-240`.
+
+A second bounded diagnostic (`crowd-text-page-disco-profile`) checks the actual
+query path rather than assuming the clean-run difference is causal. Complete
+80s→120s snapshots contain 6,721 samples, 4,661 on-CPU, 26.1s CPU and no dropped
+chains. Total VM leaves are 600; only 11 retained VM chains pass through the
+original text measure/draw wrappers, versus 301 prompt-read samples before.
+All eleven use the page-query path. This supports reduced text-validation work,
+but is not a matched FPS comparison. Folded/nearest symbols such as
+`pc_storage_set_profile_router` must not be mistaken for the enclosing source
+operation. All non-skipped CI checks passed preceding head `b589a79`; this
+follow-up still needs updated Windows/macOS CI.
+
+## 2026-10-24 — Fresh page queries for display memory checks
+
+Continuation of PR #328 on `perf/mouse-memory-order`, based on `7098fe6`.
+The isolated worktree avoids concurrent crash-diagnostic work in the primary
+checkout. Windows `pc_guest_span.h` queries current resident-page protection
+for known-size accesses within one page. `pc_display_writable` uses it for
+camera/projection validation; cold, failed, guarded and crossing accesses retain
+the existing full-region fallback. Bounds and write permissions remain checked.
+No permissions survive a guest call/update. Darwin retains its Mach VM query;
+unbounded string scans retain full-region semantics on both hosts.
+
+A real Windows 64 MiB file mapping demonstrates the cost of finding the full
+forward region: seven alternating trials of 100,000 queries take 7,815–8,342 ms
+with VirtualQuery, versus 24.45–25.04 ms with QueryWorkingSetEx. Permission changes,
+guard/no-access, cold pages and released/reserved mappings were also inspected.
+This isolated API experiment does not measure gameplay speedup. Evidence:
+`private/pipeline/page-query-probe.{c,py}` and `logs/page-query-probe.txt`.
+
+The supported Windows build and built-in checks pass on Windows 11 x64,
+MSVC 14.44.35207/D3D11/RTX 4070 SUPER. Candidate executable SHA256:
+`eb9ce8c0dfdbe24a94083b25ebbbf381ffb92ecd5b5fdad6551bfef3b5163295`.
+Projection/cutscene/FOV suites: 22 passed, 2 host-specific skips. Real private
+and mapped pages cover protection changes, boundaries/overflow, cold/failed-query
+fallback and release; three negative controls reject disabled fast queries,
+incorrect write permission and ignored page boundaries. Native Mac CI for this
+candidate and physical Mac gameplay remain pending (MAC-001). All non-skipped
+Windows/macOS PR checks passed preceding head `7098fe6`.
+
+The capture-free ten-bot Disco 144 check completes with saves/signatures unchanged
+and its disposable partition recycled. At the same 3440x1440/FOV73/Classic setup,
+the complete spawn+5..50s window records 6,317 fresh guest presentations:
+140.400 FPS, lowest one-second count 109, lowest five-second rate 118.0,
+p99 9.418 ms, worst 15.686 ms. Game/wall ratio is 0.999991; no interpolated frames
+or intervals above 16.67 ms. Foreground client remains 1920x1060 on a 60 Hz desktop.
+Compared with the earlier 137.466 average, tail results are mixed and bot outcomes
+differ: no reliable gameplay improvement or solved crowd deficit is claimed.
+Evidence: `crowd-page-span-disco-144`, its provenance/report/Present CSV and
+`crowd-pacing-summary.json`, using the complete-clock-window analyzer.
+
+The same bounded Disco route at native 240 also completes and preserves saves.
+Its complete 45s window records 9,623 fresh guest frames: 213.871 FPS, lowest
+one-second count 120, lowest five-second rate 129.0, p99 8.376 ms, worst 12.297 ms.
+Game/wall ratio 1.000084, no interpolated frames or intervals above 16.67 ms.
+Evidence is `crowd-page-span-disco-240` with the same provenance/summary layout.
+This validates a working 240 preset, not sustained 240 across this scene. Both
+runs measure successful host Presents, not GPU completion or 60 Hz scanout.
+The 21 repository-context/Mac-backlog checks pass; context validation against
+28f5400 and whitespace checks pass. Current crowd-performance work remains open.
+
+Main's audio calibration (`2b355bb`) was merged at `56d4938`, preserving both
+validation histories. The combined supported Windows build/built-in checks pass;
+projection/cutscene/FOV/audio/context/backlog suites pass 68 tests with two
+Mac-only skips. Combined executable SHA256:
+`674f5be8cf239a1ade6f3461e131899cf3b8dc339dcd3aa3b80d07c2a328120e`.
+The crowd measurements above use the pre-merge candidate hash, not this rebuilt
+audio-calibrated executable. Updated Windows/macOS CI remains pending.
+
+## 2026-10-24 — Crowded gameplay at 144/240: Hotel holds, Disco still dips
+
+Current runtime `1dbd397` (executable hash below), Classic textures, 3440x1440
+render target, FOV73, ten configured bots and bounded move/fire/respawn routes.
+Capture and per-update tracing are disabled. The client is foreground and
+1920x1060; the desktop output reports 1920x1080 at 60 Hz. These are successful
+host Present intervals, not GPU completion, physical input latency or scanout.
+
+| Map / target | Measured FPS | Lowest one-second count | 99th-percentile frame | Worst frame |
+| --- | ---: | ---: | ---: | ---: |
+| Hotel / 144 | 144.001 | 144 | 7.435 ms | 9.454 ms |
+| Hotel / 240 | 239.941 | 238 | 4.762 ms | 15.088 ms |
+| Disco / 144 | 137.466 | 115 | 9.195 ms | 11.240 ms |
+
+The complete spawn+5..55-second Hotel windows contain 7,199/11,996 intervals;
+Disco's spawn+5..50 window contains 6,185. Every presentation is a guest frame
+with a strictly increasing guest-frame ID. Game seconds per wall second are
+0.999911 / 1.000035 / 1.000239 respectively. No frame exceeds 16.67 ms in these
+windows. Recorder coverage includes both endpoints, even where the 20,000-row
+cap is reached later. All three sessions finish cleanly, preserve profile hashes
+and signatures, and recycle their disposable partitions.
+
+Disco reproduces a sustained crowd-related deficit close to the user's report:
+its lowest five-second rate is 118.6 FPS, versus 144/239.6 in Hotel. Dips occur
+during multiple combat/death/respawn states; proximity samples do not establish
+visibility or causality. Bot outcomes differ between runs, so Hotel's higher
+result than earlier builds is not attributed to the mouse change alone.
+The larger slowdown remains unresolved; this is not full-game acceptance.
+
+A separate 200 Hz / 16-frame-depth Disco diagnostic completes. Differencing
+its complete 80s and 120s snapshots yields 6,852 main-thread samples, 26.9s CPU,
+and no dropped chains. NtQueryVirtualMemory accounts for 1,143 leaves; prominent
+retained callers are decal perspective correction (319 samples), prompt/text
+reads (221), auto-look (137), and mouse updates (63). Folded/nearest static symbols
+must not be interpreted as exact source functions. This identifies work to
+investigate, not the cause of each slow frame. Snapshot/stack overhead and
+different bot outcomes prevent treating this run as clean pacing evidence.
+Evidence: `crowd-mouse-order-disco-profile`, `diagnostic-summary.json`, and
+`private/pipeline/analyze-disco-crowd-profile.py`.
+
+Evidence: `private/test-saves/crowd-mouse-order-{144,240,disco-144}` reports,
+provenance and `crowd-pacing-summary.json`; matching logs and
+`private/pipeline/summarize-current-crowd.py` use the shared clock-window validator.
+
+All non-skipped PR #328 checks pass at `1dbd397`, including Windows/macOS native
+runtime and patch transitions. This covers the real host protection fixture on
+both CI hosts, not native Mac gameplay. The network bot-motion fixture now also
+checks 180/240 sampling and mixed 60..240 FPS intervals against elapsed-time
+progression, retaining its packet-loss/lifecycle/authority checks and negative
+controls. Six focused Windows checks pass; the new test-only head needs CI.
+
+## 2026-10-24 — Avoid a duplicate mouse mapping query
+
+PR #325 merged into main at `28f5400`; this follow-up starts from that main on
+`perf/mouse-memory-order`. Windows VirtualQuery returns a forward span from the
+queried page. The shared mouse update now queries the lower player/FOV address
+first, allowing terminal/mounted/ordinary camera guards to reuse that fresh span.
+All bounds and write checks remain; no snapshot survives an update or guest call.
+Separate mappings still require fallback queries, and a lower read-only FOV can
+require three rather than two. This is not a universal mapping-query reduction.
+
+Supported Windows build and built-in checks pass. Executable SHA256:
+`e6e098e6ca5c003a059411d1c5dc01da4485daa127217a04c6e5ef0088c74449`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11/RTX 4070 SUPER. Thirteen input tests
+pass, including both adapter bodies, forward spans, split/protected maps, stale
+permission/uncached/unordered negative controls, and actual Windows protection
+changes. Another 22 refresh/context checks pass. Mac execution remains pending
+(MAC-001); the helper and regression fixtures are shared, with existing Mach VM
+and Windows VM adapters. Runtime CI already runs the expanded mounted suite.
+
+The bounded `mouse-mapping-order-240` Hotel route completes in about 120 seconds
+with ten bots, movement, firing and two injected mouse turns. Saves/signatures
+are unchanged and the temporary partition is recycled. Read-only OS mapping
+observations found the lower camera and player in the same writable span for all
+2250 ordinary-state samples: 1315 menu and 935 Hotel-player samples. This confirms
+the layout that allows one query instead of two; it is not synchronous per-update
+query instrumentation. Actual client was 640x480, foreground, configured 1280x720;
+the run establishes neither sustained 240 FPS nor physical input latency.
+
+A controlled 500,000-call Windows adapter benchmark with a private 8 MiB RW
+allocation uses 1,000,000 queries before and 500,000 after for the lower camera;
+both versions use 500,000 when the player is lower. Seven alternating repetitions
+give lower-camera medians 1191.020 / 900.757 ms. Host timing varies; this is local
+adapter work, not a gameplay FPS comparison. A separate static-image allocation
+exposed distinct mapping spans and an extra query, retained as a counterexample.
+The reported 144-to-110 crowd dip is still not reproduced or claimed fixed.
+
+Evidence: `logs/mouse-region-order-build.log`, `logs/mouse-region-context-tests.log`,
+`logs/mouse-region-isolated-benchmark.json`, `private/pipeline/mouse-region-benchmark`,
+and `private/test-saves/mouse-mapping-order-240` (mapping observations and report).
+
+## 2026-10-24 — Correct PC Settings menu commands (#333)
+
+Windows menu theme labels had fallen one row behind the actual menu after the
+Textures command was added. The theme drew Hide Menu Bar over Fullscreen and
+converted Textures into a separator. `src/pc_menu_theme.h` now reads each native
+item's caption, shortcut and type before owner drawing, preserving command IDs.
+Per-window metadata is released on detach; disabled mnemonics are ignored.
+
+Branch `333-bug-toggle-menu-bar-toggles-fullscreen`, base `2b355bbf`, Windows x64.
+Both window-theme fixtures pass; the added texture-row regression failed before
+the fix. Tests check actual drawn labels/shortcuts, command IDs, separators,
+reordered/additional entries and disabled items. All 21 context/backlog checks
+and supported Windows Build/built-in checks passed (`logs/issue-333-build.log`).
+An isolated 180-second Test Lab run verified mouse-click Hide Menu Bar leaves
+the window windowed, F1 restores its bar, and clicking Fullscreen separately
+enters 1920x1080 fullscreen. Personal saves/configs were not used. Native Cocoa
+menus do not use this Win32 adapter; Mac UI validation was not run (MAC-021).
+
+## 2026-10-24 — Quieter default audio output (PR #327)
+
+Branch `fix/audio-volume-scaling`, based on main `3baad73`. The user confirmed
+that Music/Sound at 100% is clean but too loud and both sliders work. Shared
+`RECOMP_AUDIO_DEFAULT_GAIN=0.5` reduces default output by 6.02 dB; XAudio applies
+it once at the master and SDL once per stream. Original slider curves, saved
+profile values, relative voice balance and explicit `RECOMP_AUDIO_GAIN` overrides
+remain unchanged. This is output calibration, not a clipping/distortion repair.
+
+Actual XAudio initialization and SDL adapter fixtures plus audio timing tests:
+25 passed. Fresh-stack/repeated-build and Windows-line-ending upgrades passed.
+Two guide-size failures were corrected by condensing the build guide; all 21
+context/backlog checks then passed. Supported Windows Build and built-in checks
+passed (`logs/audio-volume-build.log`). The isolated Test Lab session reports
+`master_gain=0.500000` in `private/test-saves/quick-test/game.err`; final listening
+acceptance is pending. Both CI hosts include the new backend fixtures, but native
+Mac device/listening validation remains pending under MAC-018.
+
+Autonomous Windows verification used process-only WASAPI loopback, without a
+microphone or other apps' audio. Both Music/Sound bars were set to maximum in
+the isolated Test Lab profile. A 30-second menu sample peaked at -37.59 dBFS
+(RMS -48.60); a 45-second mission-opening sample at -29.83 (RMS -42.84);
+a 60-second opening/gameplay sample including a weapon shot at -20.88
+(RMS -39.24). All had zero full-scale samples and zero capture discontinuities.
+Read-only mixer inspection found the app at 100%, output device at 96%; neither
+was changed. Statistics are in ignored `logs/audio-output-*` files. These are
+sampled output measurements, not acoustic loudness or an all-scenes clipping
+guarantee. The 6.02 dB change is verified by backend gain tests, not a matched
+before/after recording; subjective listening acceptance remains pending.
+
+## 2026-10-24 — Reliable test-input publication and repeated180 walking
+
+The bounded transition runner rewrote `input-state.txt` in place. Its host
+adapter polls no sooner than16ms and treats an empty/failed read as key release,
+so a read during truncation can interrupt a held input. This is an integration
+harness flaw; physical keyboard handling is unchanged. New shared Python helper
+`testing_profile.publish_input_state` writes a complete sibling temporary file,
+then atomically replaces the state. Transient Windows reader-sharing failures
+retry for at most0.5s; permanent failures retain the old state, clean the temporary
+file and fail the test. All five writes in `stability_transitions_game.py` now
+use it, and key-down timestamps follow successful publication.
+
+**102 local tests pass**, 3.55s, including13 profile tests and existing context/
+backlog/CI-scope checks. New cases observe old/new bytes at replacement, simulate
+reader-sharing retries, and check failure preservation, cleanup and path bounds.
+They use the existing Windows/macOS CI registration. Syntax/context/whitespace
+checks pass. Runtime/game executable remains unchanged at SHA256
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+
+Two bounded Siberia runs repeat jeep entry/drive/exit and four one-second walking
+commands with the corrected writer at Original60/native180. They preserve saves,
+health1.75, no-bot roster257, exit weapon/camera and on-foot pause/resume. A new
+read-only observer samples the decoded pad/position at roughly1ms after vehicle
+entry, with before/after frame IDs and read timestamps. Analysis keeps22,852 /
+23,003 frame-bracketed observations; gaps around the walking commands reach at
+most4.177ms. Every command has one continuous observed nonneutral input interval.
+These reads bound publication transitions, not exact consumed simulation updates.
+
+Original60 forward endpoints:7.999975 /7.999975 world units; native180:
+8.001167 /8.000927. Original60 backward endpoints:7.916621 /7.916621;
+native180:7.915228 /7.914225. Maximum like-direction difference is0.031%.
+The prior1.88% shortfall does not reproduce. It remains inappropriate to change
+movement policy from that earlier asynchronous result; this comparison does not
+prove its cause, since captures/per-update tracing were also disabled here.
+No gameplay timing code changed. High-rate memory sampling and contact tracing
+make these diagnostic runs, not clean pacing or physical-input measurements.
+
+Evidence: `private/test-saves/vehicle-integrated-input-{original60,180}` with
+`input-boundaries.csv`/`input-analysis.json`, matching logs, and
+`logs/vehicle-input-current-comparison.json`. Ignored adapters are
+`private/pipeline/vehicle-input-{current,analysis}.py`. Both processes exit
+normally and disposable disk images are recycled. Host remains Windows11Pro x64,
+MSVC14.44.35207/D3D11/RTX4070SUPER;1280x720 render, observed640x480 nonforeground
+client, Classic/FOV55. Native Mac gameplay and broad high-refresh acceptance
+remain open. All14 checks passed parent28509ef before this test-only repair.
+
+## 2026-10-24 — Current-build live vehicle comparison at Original60/180/240
+
+Three bounded, isolated Siberia no-bot runs use the same Windows executable
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`
+(source/runtime unchanged since aa3c9dd; test/docs head974da97). All complete
+normal-input walking approach, jeep entry, three-second throttle, settling,
+Y exit, on-foot movement and pause/resume. Camera mode changes24->0 and weapon4
+returns in every run; health remains1.75, roster257, and the jeep remains still
+while the player walks away. Reviewed driving/exit captures show the vehicle and
+restored first-person view. Signed saves and the canonical fixture are unchanged;
+the runner recycles disposable disk images and each process exits normally.
+
+One-second synthetic forward commands produce endpoint distances7.999982,
+7.849553 and7.994228 world units at Original60/native180/native240. The180 result
+is1.88% shorter; asynchronous endpoints and injection timestamps do not identify
+consumed input boundaries, so this does **not** establish exact movement parity
+or diagnose its cause. No motion policy was changed to hide that difference.
+The jeep's position changes by0 during each on-foot movement interval.
+
+Each run has114 settled pause samples with zero game delta and constant jeep
+position. Camera checks retain112/112/113 observations whose frame brackets and
+player camera pointer agree. Original60/180 each exclude two reads crossing a
+frame boundary. Native240 excludes one read of camera2170908796, mode3, while
+player_camera was unavailable; the actual on-foot camera is2170904704, mode0.
+The initial unfiltered comparison failed because this different camera had zero
+position. All retained samples of the same player camera are exactly stationary.
+The excluded records remain in the analysis; frame brackets alone do not establish
+camera identity or completed-update/render sampling.
+
+Evidence: `private/test-saves/vehicle-integrated-current-{original60,180,240}`,
+matching logs, and `logs/vehicle-current-comparison.json`; adapter/analysis are
+`private/pipeline/vehicle-current-{live,compare}.py`. Solver traces independently
+confirm original/native mode and contain660/1845/2432 rows, below their limits.
+Configured render1280x720/Classic/FOV55; observed client640x480, nonminimized but
+not foreground. Captures/tracing are active. These are behavioral observations,
+not pacing, physical-input, scanout or full handling/broadphase acceptance.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER; no Mac gameplay claim.
+
+**All14 PR checks passed on974da97**, including both native runtimes, patch
+upgrades/transitions, launchers and compatibility. This subsequent documentation
+update changes no runtime bytes. Broad live acceptance and the crowd dip remain
+open; the high-refresh goal is incomplete.
+
+## 2026-10-24 — Vehicle and contact regression coverage through 240
+
+Expanded the existing original-US vehicle fixtures from 60/120/144 to include
+180/240: camera tracking/reversal, steering/throttle/brake, suspension, rest and
+sleep/wake, spawn momentum, moving-actor impacts, relative contact velocity,
+rigid-body integration/publication and static contact impulses. Original60
+references, existing tolerances, pause checks and deliberate regression mutations
+remain. Static contact coverage now includes 1,296 wall and 864 overlap cases.
+The retained variable-cadence cases remain separate from fixed-rate comparisons.
+
+**19 tests pass**, 47.18s on Windows with the verified US XBE, using MSVC and the
+production translator/shared policies. Log: `logs/vehicle-240-tests-final.log`.
+Removing the existing secondary-step correction now fails earlier at native180:
+1,620 integrations and 1.125 seconds instead of 1,440 and 1.0. The first run's
+only failure was its old expected mutation checkpoint; all unmutated cases
+passed. Updated the checkpoint without changing tolerances or runtime code.
+
+The CI selector failure on aa3c9dd was an exact-byte patch-index mismatch: the
+Windows worktree retained CRLF while Git committed LF. Repair 8fbcd06 refreshed
+the index after normalizing that patch to its declared LF convention. All 89
+local selector/context checks and a committed-byte index comparison passed;
+the repaired remote selector passed and launched Windows/Mac runtime checks.
+
+This change only extends tests/documentation; the built runtime remains
+`ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+No game was launched and no saves changed. Controlled geometry/services do not
+prove live driving, broadphase collision, crowded scenes or native Mac gameplay.
+Private-XBE checks skip without the asset; host CI is not full-game acceptance.
+
+## 2026-10-24 — Skip disabled tracing dispatch during normal play
+
+`zz-native-trace-quiet.patch` adds a shared early return in trace entry/exit
+when startup configuration explicitly disables the trace budget and provides
+no watch, dump, name-filter or call-profile switch. Entry still services the
+existing renderer-idle callback before returning. Explicit diagnostics retain
+their original helpers, output and budgets; crash/throw/unimplemented reports
+are untouched. This removes repeated disabled-helper dispatch from every lifted
+function without changing simulation or rendering policy. Runtime startup
+settings remain cached, as before; no live diagnostics-toggle API is introduced.
+
+Supported Windows Build passes on parent `14d9e1c` plus this change. Executable
+SHA256: `ea42233f195abb3f9a4c335e612855d858358bb017be9b27f90ef50f21203134`.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER. **18 focused tests pass**,
+59.56s: actual tracing-module dispatch/outputs, callback cadence, bypass-removal
+mutation, fresh/repeated patch installation and historical controls upgrade.
+**89 context/backlog/CI-scope tests pass**, 3.35s. The final patch ordering preserves
+the existing demo-tail contract; reapplication updates zero runtime files.
+Logs: `trace-quiet-{build,tests,context-tests,final-patches}.log`.
+The original test failures were missing fixture globals and an initially changed
+patch-tail ordering, corrected without weakening assertions.
+
+A bounded, alternating six-pair MSVC/O2 microbenchmark invokes the uninstrumented
+production entry function20million times per process. With explicit zero budget,
+no diagnostic switches and no idle callback, with entry forced out of line in
+both variants, median QPC elapsed time falls from
+45.6694ms to21.38245ms. The comparison removes only the new guard in the baseline.
+This demonstrates lower diagnostic-dispatch cost, **not a percentage game-FPS
+gain**. Evidence: `private/pipeline/benchmark-trace-quiet.py` and
+`logs/trace-quiet-benchmark.json`.
+
+One bounded Hotel ten-bot run at native240/Classic/FOV73/3440x1440 render output
+uses no CPU sampling, captures, per-update CSV or texture trace. The strict
+spawn+5..55s window contains11,342 fresh guest Presents, zero interpolation,
+**226.854246 FPS**, p95 5.526ms, p99 6.195ms and worst9.885ms. Minimum aligned
+one-second count170; no interval exceeds33.33ms. The asynchronous game/wall
+clock ratio is1.000071. All33 gameplay observations remain foreground and
+nonminimized with ten configured bots, client1920x1060. Signed profiles and
+canonical fixture remain unchanged; the session exits normally and disks recycle.
+Evidence: `private/test-saves/crowd-trace-quiet-240`, matching runner log and
+`logs/crowd-trace-quiet-240-{matrix,stats}.json`.
+
+The prior unchanged-route baseline was216.956966 FPS, but nondeterministic bot
+movement, spawn, visibility, deaths and render load prevent causal attribution
+of that difference. The controlled microbenchmark establishes only the dispatch
+cost reduction. Sustained240, the reported144-to110 crowd dip, physical refresh
+and broad gameplay remain unverified. Native Mac execution is pending; shared
+production-module tests run in the existing cross-host workflow (MAC-060).
+
+## 2026-10-24 — Current 240-preset crowd baseline
+
+Source `e9cd2ef` (runtime unchanged from `74f9fe1`), Windows 11 Pro x64,
+MSVC14.44.35207, D3D11/RTX4070SUPER; executable SHA256
+`630954c7891f0c2d05967e92b900324509d1003d85b9b5f8da305f1d9fc2a646`.
+Two bounded Hotel runs use ten bots, native240, Classic textures, FOV73 and
+3440x1440 render configuration. Observed clients are foreground1920x1060;
+physical display/scanout240 is not established. Personal saves remain untouched,
+signed profiles/canonical fixture are unchanged, disks recycled and both games
+exit normally. No game process remains after the runs.
+
+With CPU sampling/captures/native-update/texture tracing disabled, the complete
+spawn+5..55s window contains **10,847 successful fresh guest Presents**, zero
+interpolated Presents, **216.956966 FPS**, median4.409ms, p95 5.965ms,
+p99 6.846ms and worst10.874ms. No interval exceeds33.33ms. The minimum aligned
+one-second frame count is156. The asynchronous gameplay clock/wall ratio is
+0.999825 across combat and respawns, not an animation/weapon parity result.
+All gameplay observations remain foreground/nonminimized with ten configured
+bots. Present CSV and actor snapshots remain enabled. This establishes a
+current 240-target shortfall in this scene; it does not reproduce the user's
+144-to110 dip, prove causality, or measure GPU completion/physical latency.
+Random spawn, bot movement and deaths prevent a controlled before/after claim.
+
+The separate200Hz/depth12 CPU diagnostic's complete110..150s reports contain
+6,766 guest-thread samples, 5,734 classified on-CPU and32.3s thread CPU.
+VM-query leaves account for1,702 samples. Retained chains include panel12E3F0
+text validation278, decal projection112EA0 275, auto-look194 and camera-feed166.
+These are sampled counts, not call counts or durations. The8192-key table drops
+727 new chains in this window; retained6039+dropped727 equals leaf6766.
+Unresolved driver addresses are grouped by module before subtracting cumulative
+reports because their displayed representative addresses change. Static helpers
+still resolve to nearby public symbols, so function labels need source checks.
+Sampling perturbs timing; the diagnostic is not the clean performance run.
+
+Evidence: `private/test-saves/crowd-current-240-{profile,clean}`;
+`logs/crowd-current-240-profile-summary.json`,
+`logs/crowd-current-240-clean-{matrix,stats}.json`, and matching runner logs.
+The clean analysis uses the tracked strict clock-window analyzer. No runtime
+optimization was made from these observations. Existing text-layout and
+projection scopes were confirmed in source; validation checks were not removed.
+Native Mac scenes, sustained240 across modes, crowd-dip reproduction and broader
+high-refresh acceptance remain open.
+
+## 2026-10-24 — Playback under delivered-rate variation
+
+On source `74f9fe1`, the original-game playback fixture now checks a native
+240 target delivered steadily at 110 updates/s and alternating intervals from
+60, 110, 120, 144, 180 and 240 updates/s. Each of 360 updates checks elapsed game
+time against exact elapsed host-counter time and all press/release transitions
+for one and four controllers. All four cases pass, with no catch-up debt or
+skipped packet. The complete demo suite has **103 passed**, 28.46 seconds on
+Windows x64/MSVC; `logs/native-demo-variable-cadence-tests.log`. These are
+controlled input/clock fixtures, not rendered crowd-performance measurements.
+Runtime and executable are unchanged from the preceding 240 build.
+
+An ignored original-code diagnostic also forced two seconds of sustained
+30/45/55 updates/s. Both the unwrapped original decoder and native scheduler
+advanced recorded game time by 1.0/1.5/1.833333 seconds respectively. Native
+recovery at 240 updates/s for a further second reaches
+2.033333/2.533333/2.866667 seconds: only two retained ticks are recovered, so
+previously discarded backlog is not repaid. Input packets remain ordered. This
+quantifies an existing limitation; it is not a speed-fidelity pass or a fix.
+The unwrapped decoder is only a baseline at or below its normal 60-update rate;
+forcing it faster is not original-mode runtime behavior. The diagnostic has no
+rendering, file IO or full-level simulation. Evidence:
+`private/pipeline/check-demo-overload.py`, `logs/native-demo-overload-probe.log`.
+
+Changing only packet selection to catch up would discard intervening input
+edges. Preserving those edges while advancing faster requires investigating
+simulation-step dispatch; increasing the debt cap alone cannot fix sustained
+sub60 speed. No such policy change was made. The reported multiplayer crowd dip
+and full-game overload behavior remain unresolved. Native Mac execution of this
+new original-game fixture is unverified; it uses the existing cross-host test
+route and requires the supported private XBE.
+
+## 2026-10-24 — 60-step FPS presets through 240 (PR #325)
+
+The shared Video Options menu and launcher now offer Original 60 and Beta
+120, 180 and 240 FPS. Apply uses the existing deferred live switch; restarting
+is unnecessary. The counter still reports actual measured FPS. Old saved 144
+preferences load as 120 without rewriting the file; direct 144 diagnostic
+launches remain available for regression comparisons. Original 60 stays default.
+
+Supported Windows Build passes on `89c49ee` plus this change. Executable SHA256:
+`630954c7891f0c2d05967e92b900324509d1003d85b9b5f8da305f1d9fc2a646`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11/RTX 4070 SUPER. The final targeted
+clock/menu/native timing/demo/context/backlog/CI-scope suite has **279 passed,
+2 skipped**, 150.38 seconds; skips are Darwin-only menu/prompt compile checks.
+Expanded fixtures include original-game movement, analog input, animation,
+weapons/NPC fire, network/movie clocks, procedural intervals and 50 recording/
+playback rate/controller combinations. The round-trip fixture now observes EOF
+rather than treating selection of the last packet as completed playback; no
+runtime playback policy was changed. Logs: `native-240-build.log` and
+`native-240-final-tests.log`.
+
+The Windows launcher compiles; base and shared UI checks pass, including every
+new preset, legacy migration and save rollback. Standalone settings checks:
+**38 passed**. The full launcher run stops at the texture installer's running-game
+guard because another session is active; that session was left untouched.
+Remaining full-suite checks were not run in that invocation. Logs:
+`native-240-launcher.log`, `native-240-launcher-settings.log`.
+
+Separate bounded Breaking and Entering runs at 180 and 240 preserve pause,
+paused mouse suppression, resume and heading changes (91 to 31 to 1 degrees),
+with health 35 throughout. Position, level ticks and HUD timing freeze while
+paused. Native traces contain 2935/3513 fractional positive game updates at
+180/240 respectively. Signed profiles/canonical fixture remain unchanged;
+both sessions exit normally and recycle temporary partitions. Evidence:
+`private/test-saves/new-presets-{180,240}`, matching logs and
+`private/pipeline/new-presets-comparison.json`. These minimized, capture-enabled
+sessions run alongside another game and do not measure sustained 180/240 FPS,
+GPU completion or physical refresh. Full gameplay coverage remains open.
+
+The isolated live-menu route `fps-menu-240-v2` switches Original 60 to
+120, 180, 240 and back to Original 60 within PID 12844. Runtime logs confirm
+all four applied clocks; reviewed captures show the matching labels, enabled
+Apply while staged and gray Apply after saving. Final sidecar contains zero;
+profiles remain unchanged. The first route navigated incorrectly after Apply
+reset selection to the top and verified only 120. The corrected route verifies
+all choices; its final nominal resume step still remains in the menu and is
+not counted as resume evidence. Separate gameplay routes above cover resume.
+
+All 14 checks passed on parent `89c49ee`; this does not validate the new commit.
+New-head CI and native Mac gameplay are pending. Policy is shared, with no new
+host adapter; see MAC-060. Crowd dips and sustained playback overload remain
+unresolved. Earlier observations below retain their original binary identities.
+
+## 2026-10-24 — Preserve main's controller fix in the high-refresh branch
+
+Merged main `3baad73` (#319/#326) into the existing PR #325 branch. The only
+conflicts were overlapping STATUS and build/test guide additions; both the
+controller repair and native-refresh contracts remain. The regenerated patch
+index and complete patch stack validate. No movement policy was changed.
+
+The supported Windows build and its native tests pass on the combined tree
+(parents `9a9ac82` and `3baad73`, merge not yet committed at build time), including
+the shipped Controller profile through SDL virtual controls. Executable SHA256:
+`b03d7860c8b6169e48bb041106d3857596f0a36f492014b80c1e47335a61789b`.
+Controller-profile/context/backlog/CI-scope tests: **104 passed**, 5.73 seconds.
+Original-program analog-input and walking fixtures: **2 passed**, 5.04 seconds.
+The historical-controls patch-upgrade case passes, 29.92 seconds
+(`high-refresh-main-controller-upgrade.log`). Context freshness and whitespace pass.
+Logs: `high-refresh-main-controller-build.log`,
+`high-refresh-main-controller-tests.log`, `high-refresh-main-movement-fixtures.log`.
+Windows 11 Pro x64/MSVC 14.44.35207/D3D11; native Mac gameplay and physical
+controller acceptance remain unverified. This build does not relabel the
+following observations, which used the earlier `24da8a98` executable.
+
+Before the merge, four forward/backward quarter-second input pairs per preset
+completed the same safe rooftop route with decoded-pad and position observation:
+
+| Preset | Forward distance range | Backward distance range |
+| --- | --- | --- |
+| Original 60 | 1.562501 | 1.546218 |
+| Native 120 | 1.559877–1.563314 | 1.545611–1.547557 |
+| Native 144 | 1.560292–1.603581 | 1.542822–1.586870 |
+
+The earlier 120-FPS outlier was not reproduced; a consistent 120-FPS speed
+increase is unsupported by these repeated observations. Each move had one
+observed nonneutral pad interval and the expected forward/backward axis, with
+health 35 throughout. Input duration is still uncertain: the external observer's
+largest sample gaps were 16.629/31.057/17.021 ms at 60/120/144. Its requested 2-ms
+wait did not produce a 2-ms cadence. Reads are asynchronous and may miss shorter
+transitions. The 144-FPS spread and the original outlier are not explained or
+declared fixed; exact integration parity needs completed-update input traces.
+
+All three bounded sessions exit cleanly, preserve signed profiles/canonical
+fixture and recycle temporary partitions. Captures/native CSV were disabled;
+this independent observer is diagnostic, not a clean performance measurement.
+Evidence: `private/test-saves/input-boundaries-{60,120,144}` and matching logs;
+ignored `check-input-boundaries.py` / `analyze-input-boundaries.py` in
+`private/pipeline` record the route, raw observations and uncertainty bounds.
+
+## 2026-10-24 — #319 controller profile routing (fix/319-controller-input)
+
+Branch `fix/319-controller-input`, based on main `6ddc8a0`. Selecting Controller
+in the launcher changes the device but retains keyboard-only bindings. The
+runtime detected the pad and changed prompts while mapping no pad controls.
+The shared `controller-profile-routing` patch supplies pad defaults for that
+specific profile shape, after focus/modal gating. It preserves saved keyboard
+bindings, selected pad slots, custom pad maps and entirely unbound profiles.
+
+The real parser/sampler regression failed for gamepad:0, gamepad:2 and xinput:1
+before the fix. Controller/keyboard/weapon-slot/context/backlog checks now pass
+(39 tests). The supported Windows Build passed all built-in checks, including
+real SDL virtual-pad buttons, triggers, sticks, keyboard prompt switching and
+focus loss with both keyboard and launcher-style Controller profiles; no virtual
+pad skips occurred. Evidence: ignored `logs/issue319-build.log` and
+`logs/issue319-investigation.md`. Broad patch/context/backlog validation passed
+55 checks; its historical controls fixture needed to omit this dependent patch
+from the old snapshot, then require it after upgrade. That corrected case passed
+separately (26.97s); see `logs/issue319-old-controls.log`.
+Native Mac gameplay and physical Xbox/Steam controllers remain unverified;
+portable regression coverage is registered in both host runtime CI jobs.
+
+## 2026-10-24 — Controlled later-mission pause at all three presets
+
+Original 60, native 120 and native 144 completed isolated **Breaking and
+Entering** rooftop runs on runtime `36204e9`, executable SHA256
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+The route pauses before entering combat; all eight gameplay observations retain
+health 35, mission/scene 6 and a foreground, nonminimized window. Reviewed pause
+and resume captures show the expected menu/rooftop. This replaces the invalid
+pause comparison below, which crossed different death/restart states.
+
+At all three rates, 600 horizontal mouse counts change heading from 91 to 31
+degrees. During pause, position, heading, level ticks and the observed objective
+HUD timer remain unchanged, including after injected mouse motion. The two
+paused observations span 1.236/1.234/1.344 seconds at 60/120/144 respectively.
+Resume advances the level clock without applying paused motion; a subsequent
+300-count turn reaches 1 degree with zero vertical deflection. This verifies
+this synthetic-input pause route, not physical input latency or every menu.
+
+The additional 0.25-second forward/backward inputs do **not** establish movement
+parity: forward distances were 1.571181/1.719802/1.563154 world units, with final
+return offsets 0.016284/0.175728/0.019034. Requested key holds measured about
+0.251 seconds at the writer, but `pc_controls.c::replay_tick` polls the test
+state file no more often than every 16 ms; actual guest press/release boundaries
+were not traced. The larger 120-FPS endpoint difference remains unexplained;
+neither a speed regression nor input-delivery variation is proven. A longer
+matched movement interval or consumed-input trace is needed before acceptance.
+
+All sessions exit normally, preserve signed test profiles and the canonical
+fixture, and recycle temporary partitions. Windows 11 Pro x64, MSVC 14.44.35207,
+D3D11; render 1280x720, client 640x480, Classic textures/FOV55. Captures and
+native traces were enabled, so these are behavioral checks, not pacing results.
+Evidence: `private/test-saves/breaking-pause-{60,120,144}`, corresponding logs,
+and ignored `private/pipeline/compare-breaking-pause.py` plus its comparison JSON.
+Native Mac scenes, broad gameplay and the reported multiplayer dip remain open.
+No runtime change or rebuild was needed for this comparison.
+
+## 2026-10-24 — Isolate Online GUI tests and compare a later mission
+
+PR #325 Windows runtime CI at `36204e9` reported552passed,168skipped and18
+subtests, but failed two Online theme tests while creating Tk roots: Tcl could
+not load `init.tcl` or `tk.tcl`. The preceding root lifecycle passed. Repeating
+the unchanged three cases eight times in one local pytest process reproduced
+two later-root startup failures (22passed,2failed; `online-theme-repeated-before.log`).
+The local error was `invalid command name "tcl_findLibrary"`; this establishes
+the repeated-interpreter failure class, not the precise underlying Tcl defect.
+
+Each real Tk test lifecycle now runs in its own60-second-bounded Python child,
+matching the separate Online application's interpreter lifetime. All existing
+widget, theme, caption, popup and cleanup assertions remain; child errors/timeouts
+fail rather than skip. No application or game code changes. The three tests pass
+in1.06s, and the same24-case repetition passes in8.00s
+(`online-theme-isolated.log`, `online-theme-isolated-repeated.log`). Remote
+Windows CI on this repair is still required. The tests remain Windows-only;
+native Mac runtime/gameplay support is unchanged.
+
+Separately, isolated Original60/native144 runs selected **Breaking and Entering**
+(mission6/scene6) on the same `36204e9` runtime, executable SHA256
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+Reviewed captures confirm the selected level and rooftop gameplay at both rates.
+Both start at identical coordinates/91-degree heading and end the initial
+three-second forward/600-count mouse input at31degrees. Displacements including
+the descent were20.268466 and20.258855 world units; endpoints differ0.011211units.
+Health remains35 at that checkpoint. This is a short movement/look/fall result,
+not a deterministic full-physics or animation-frame comparison.
+
+The carried device has no ammunition/reload counter, so this route does not
+verify firing/reloading. Guards then damage and kill the player at different
+times. Original60 is already dead before the nominal pause step and restarts on
+the next input; native144 pauses alive, resumes, then dies. Those later steps
+are **not comparable pause/resume or damage-cadence acceptance**. The native
+trace has731scene6 rows with zero game time across5.556raw seconds, including
+pause/death; this is not a pure pause-duration measurement. No performance claim
+is made from capture-enabled runs. Both sessions exited normally, retained
+unchanged signed test profiles/canonical fixture, and recycled temporary disks.
+Personal settings/saves were not used.
+
+Evidence: ignored `private/test-saves/breaking-entry-{60,144}`, corresponding
+logs and `private/pipeline/breaking-entry-comparison.json`; coordinator
+`private/pipeline/check-breaking-entry.py` records the fixed initial route.
+Windows11Pro x64/MSVC14.44.35207/D3D11, rendered1280x720/client640x480. No live
+mission completion, physical latency, native Mac scene or broad gameplay parity
+is claimed. All repairs stay in PR #325; the overall goal remains incomplete.
+
+## 2026-10-24 — Playback exit pauses procedural timing metadata
+
+The original playback EOF/cancellation path sets guest game time to zero after
+the native clock has published the update. The shared demo wrapper restored raw
+time correctly but left the earlier advancing game interval in `PcNativeStep`.
+Procedural consumers could therefore receive nonzero time during that pause.
+The wrapper now clears game delta, whole ticks and exact units when both guest
+game-time fields are paused; incoming raw time and clock phases remain intact.
+Normal playback and the Original60 path are unchanged.
+
+A new asset-free EOF assertion failed on the prior source with stale game units.
+After the correction, **54 playback tests pass**,27.23s, including original-US
+cancellation/EOF paths with one/four controllers and a mutation that removes the
+metadata correction. Four affected surface interval/render/runtime checks pass,
+5.31s;88 context/CI-scope checks pass,3.55s. Context freshness and whitespace pass.
+Logs: `demo-eof-metadata-before.log`, `demo-eof-metadata-tests.log`,
+`demo-eof-surface-consumers.log`, `demo-eof-context-tests.log`.
+
+The supported Windows build compiled and passed native checks, then initially
+failed in the final Recycle Bin cleanup with "This function is not supported on
+this system". Retrying the same contained-directory recycling operation worked;
+the unchanged full build then passed, recycled its test data and completed
+network identity/crash-symbol processing (`demo-eof-metadata-build-retry.log`).
+This intermittent cleanup error is recorded, not claimed fixed by the game patch.
+Final executable SHA256:
+`24da8a980ee08cbfc9206cab8be2c86f21f7d6020a66e8e5d0c7f0a3c6601169`.
+
+Source base `a21f51c` plus this change, shared policy under PR #325/MAC-060;
+Windows11Pro x64/MSVC14.44.35207. No live game/file-playback or native Mac scene
+claim follows from these checks. Previous Hotel measurements used the earlier
+binary and are not relabeled as measurements of this fix. Broad gameplay,
+physical latency, sustained overload and native Mac acceptance remain incomplete.
+
+## 2026-10-24 — Consolidated PR and foreground Hotel comparison
+
+PR #324 is remotely verified merged at `6ddc8a0`. Related follow-ups are now
+together in draft PR #325 (`perf/crowd-callers`); no further PR should open until
+this one merges. Both native-runtime and patch-upgrade CI jobs passed on Windows
+and Mac at `4655d8a`; patch-transition jobs were still running when inspected.
+Those checks do not establish full-game or native Mac gameplay acceptance.
+
+The isolated Windows runner now accepts `--fullscreen`, writes that choice to
+its own runtime settings and disables its background-start flag for that mode.
+Previously background startup deliberately bypassed fullscreen. The request is
+recorded alongside observed client size; no personal configuration is changed.
+Two setup attempts were stopped and excluded before this correction. Both final
+runs completed their route and cleanup normally, preserving the canonical fixture
+and recycling disposable partitions.
+
+Measured the existing Hotel ten-bot Recommended-weapons move/fire/respawn route
+with Enhanced textures, FOV73, original60 versus native144, the same executable
+SHA256 `c045f372678ad39e753cb01731e83bc7668cd4a7ed91bb662f49bb2fb62a7931`, and
+190-second session bounds. Native/CPU/texture traces and captures were disabled;
+Present recording began60seconds after its first successful call. Analysis uses
+the preselected complete interval window from spawn+5 to spawn+55seconds.
+
+| Preset | Fresh Presents | Measured FPS | Median / p95 / p99 ms | Worst ms | Minimum rolling 1s count | Game / wall time |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Original60 | 2,999 | 60.000835 | 16.665 / 17.022 / 17.109 | 17.802 | 60 | 1.000065648 |
+| Native144 | 7,196 | 143.920524 | 6.984 / 7.292 / 7.486 | 9.915 | 142 | 1.000083880 |
+
+Both runs had zero interpolated Presents and no intervals above33.33ms. All33
+combat command observations per run had scene39, active/unpaused match7, ten bots,
+foreground/visible/nonminimized windows and client1920x1060. The game logged a
+3440x1440 D3D device, but the monitor/fullscreen request reported1920x1080 at60Hz.
+This tests the ultrawide render workload, not physical144Hz display smoothness.
+Windows11Pro x64/MSVC14.44.35207/D3D11/RTX4070SUPER host as in the preceding build.
+Maximum living bots within10/20/30 world units while the player was alive were
+3/4/8 at60 and4/7/7 at144. These asynchronous reads do not establish visibility;
+random bot motion prevents a controlled mechanics comparison. The reported
+144-to110 crowd slowdown remains unreproduced and unresolved. Host Presents do
+not measure GPU completion, scanout or physical input latency.
+
+Evidence: ignored `private/test-saves/crowd-fullscreen{60,144}` provenance,
+report/states, Present CSV, crowd/actor metrics, and matching `logs/` summaries.
+Runner source is this commit; runtime source is unchanged from `4655d8a`.
+Local context/CI-scope/profile checks: **99 passed**,3.34s; context freshness
+(`--base 6ddc8a0`) and whitespace checks passed. Current-head CI remains required
+after pushing this test-runner/documentation update; no runtime rebuild needed.
+Live recording-file playback, sustained overload, Online, broad mechanics and
+native Mac gameplay remain open. The overall goal remains incomplete.
+
+## 2026-10-24 — Recorded playback uses fractional native time
+
+The recorder correction is now paired with a shared playback scheduler in
+`pc_native_demo_playback_guest.inc`, reached by the existing43220 wrapper.
+It uses exact raw counter units to select authored input groups, calls the
+original decoder every advancing update, then publishes fractional raw/game
+time, integer carries and matching procedural-surface metadata. Normal120/144
+updates stay fractional. This is fresh simulation time, not rendered-frame
+interpolation. `pc_native_visual_rebase` retains fractional level-clock phase.
+
+The original recorder's raw timestamp describes the END of its interval, while
+the level timestamp describes its START. The scheduler treats them separately.
+Zero-time startup/polling cannot consume the first recorded press. Fractional
+position survives144->60->120, including the zero-length new clock update.
+Same-buffer initialization clears history; cursor/buffer identity changes reset
+it. Unreadable or incomplete groups enter original EOF through bounded fresh
+memory reads; mapped-region permissions are not retained across guest calls.
+
+Older native zero-tick groups fold into the next positive group, carrying their
+game ticks. A leading zero also enables this repair when opened at Original60;
+normal console recordings keep their original60 decoder. The fixture exercises
+one/four controllers and native120/144 recordings with both recorded pause and
+game ticks falling on zero-raw frames, replayed at all three presets. The format,
+personal settings and saves are unchanged.
+
+All18 record/playback rate/controller combinations and the prior24 packet cases
+now pass, resolving the recorder-only intermediate regression. Original-program
+tests also check held/pressed/released inputs, six analog bytes, ABI, wait/exit,
+zero polling, cancellation, pause, one three-tick stall, clock/visual continuity,
+bounded reads and live rate handoff. Catch-up advances at most one input group
+per update, with bounded debt repaid by later native updates; the tested stall
+recovers without skipped packets or elapsed-time loss. Sustained playback below
+60updates/s can exceed its three-tick debt budget and remains a fidelity gap.
+
+Windows/MSVC native/demo suite: **128 passed**,112.61s
+(`demo-playback-native-suite.log`). Three further asset-free mutations of phase,
+raw timestamp and zero-time gating are rejected (**5 shared cases passed**,
+48 deselected,9.29s; `demo-playback-shared-mutations.log`). No expected failures
+remain in this module. Source base907dfde plus this change. Tests requiring the
+supported US XBE use its verified hash; CI without it skips original routines,
+while the new shared schedule/read-boundary fixture still runs. Full live game/
+recording-file playback, physical latency, sustained overload and native Mac
+execution remain unverified. This is not full-game high-refresh acceptance.
+
+The supported Windows build verifies the full patch stack and passes its native
+checks (`logs/demo-playback-build.log`); test partitions were recycled. Final
+executable SHA256:
+`c045f372678ad39e753cb01731e83bc7668cd4a7ed91bb662f49bb2fb62a7931`.
+Host: Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests,
+context freshness and whitespace checks pass. No new PR or live game session.
+
+## 2026-10-24 — Native recordings retain authored-tick cadence
+
+The original recorder wrote a packet on every native update, including zero-
+whole-tick frames. One second recorded at144 therefore needed144 updates to
+replay, taking2.4seconds on Original60. The shared demo scope now suppresses
+only serialization on those fractional frames; original device and lifecycle
+calls still execute. Offset game ticks after pause are carried into the next
+record, along with their starting timestamp. The correction touches only bytes
+just written by the original, under buffer identity/cursor bounds; live timing,
+input bytes, saves and the14-byte recording format remain unchanged. Catch-up
+retains original multi-tick records. Original60 keeps its untouched path, apart
+from flushing a pending native recording interval during a live handoff.
+
+The existing numeric hooks select the writer branch at433A0 and observe cursor
+initialization at42535. Same-buffer restarts and unexpected level-clock rebases
+discard pending history. No extra patch, guest wrapper or generated edit.
+The original writer/reader fixture now verifies correct1s raw/0.5s paused game
+time when recordings from **all three presets** replay at60. Recorder checks
+cover one/four controllers, zero startup, pause away from tick boundaries,
+three-tick catch-up, exact input/analog bytes, pending-tick60handoff, same-buffer
+reset and a full buffer stopping partway through the controller loop. Removing
+the write gate, carry or reset each fails its designated assertion.
+
+Windows/MSVC native/demo suite: **99 passed,28 expected failures**,110.54s
+(`logs/demo-recording-native-suite.log`). After adding the level-clock rebase
+guard, zero-startup and partial-capacity cases, the final demo suite reports
+**21 passed,28 expected failures**,17.20s (`logs/demo-recording-final-tests.log`).
+The expected failures still represent native playback: it consumes one packet
+per update. The recorder repair makes native-to60 correct; playback at120/144
+still needs repair, including previously produced zero-tick recordings. No full
+game-loop/file playback or native Mac validation is claimed. Source base6c1abaa
+plus this correction; the overall smoothness goal remains incomplete.
+
+**Interim candidate, not ready to merge alone:** native-to-native round trips
+previously matched duration because both writer and reader ran too often.
+Normalizing only the writer makes those cases finish too early too. The writer
+and playback scheduler must land together. An ignored combined prototype now
+passes all18 rate/controller round trips (`demo-prototype-normalized-roundtrip.log`),
+but zero-time playback, reset identity/memory validation, catch-up input events,
+old zero-tick recordings and native-to60 playback handoff remain unresolved.
+The prototype is not in the executable; no PR was opened for this intermediate work.
+
+Supported Windows build and native checks pass (`demo-recording-build.log`),
+with the full patch stack verified. Final executable SHA256:
+`e38e78475d4dc8a90b0f64d9f22241bb8c587ed699f5dfab6bf12064bcf2b5ff`.
+Windows11Pro x64 10.0.26300/MSVC14.44.35207. Context/CI-scope88 tests pass;
+context freshness/whitespace pass. No new live game session was launched.
+
+## 2026-10-24 — Exact raw clock and recording round-trip evidence
+
+`PcNativeStep` now publishes raw counter units and the interval's starting
+remainder, matching its existing exact game-time metadata. Raw time continues
+during pause. This is shared host metadata; guest memory, saves, original60,
+game-speed arithmetic and pacing are unchanged. Sampling rounded float deltas
+at144 loses an authored boundary after one second even with a double sum;
+the exact raw interval retains all60, including while game time is paused.
+
+The hash-verified original writer (`43220` state3), full input dispatcher and
+playback initializer/reader now run recording-to-playback checks at all nine
+60/120/144 rate pairs with one/four controllers. A one-second recording has
+half a second of game time followed by half a second paused. Tests verify actual
+written raw/game totals, preserved live deltas, playback totals and time of last
+packet consumption. Final totals alone would miss accelerated completion.
+Same-rate cases pass; twelve cross-rate cases fail strictly on measured timing.
+Together with the prior packet fixture: **18 passed, 28 expected failures**
+(`logs/demo-roundtrip-tests.log`, Windows/MSVC, base `eaabfbf` plus this change).
+These expected failures are unresolved defects, not acceptance.
+
+An ignored prototype correctly resampled pre-filled60-packet streams at120/144,
+including mixed ticks and a144-to120 switch, but fails the new round-trip test.
+The current writer emits144 packet groups per second at144, including84 zero-raw
+groups. The prototype consumes only0.416666663s of such a recording in one wall
+second, even replaying at144. It was therefore **not integrated**. Repair must
+cover recording and playback together, plus zero-time startup, lifecycle resets,
+button events, pauses, catch-up and live switches to/from Original60.
+Logs: `demo-recording-probe.log`, `demo-prototype-roundtrip.log` (private generated
+test code stays ignored). File IO/full level playback and Mac execution remain
+unverified; the native smoothness goal remains incomplete. No new PR opened.
+
+Five focused clock/guest/surface tests pass (73 unrelated cases deselected),
+including exact raw metadata through pause and mode reset; context/CI-scope
+tests pass88 cases. Context freshness and whitespace checks pass. The supported
+Windows build verifies the full patch stack and passes its native checks:
+`logs/demo-raw-clock-build.log`, Windows11Pro x64 10.0.26300/MSVC14.44.35207.
+Executable SHA256:
+`f5b434f1f98841c2b8b8ccf21a8f5997ab4d104ecc3274bacefbef2338f9afd6`.
+No new gameplay/performance or native Mac validation is claimed for this change.
+
+## 2026-10-24 — Demo wait and exit timers use fractional time
+
+Original recorded-input states2 (exit) and5 (wait) clamp elapsed raw time to
+at least one tick. At native rates this accelerates their countdowns. State2
+also writes raw time back to one while visiting the first controller, exposing
+that value to later controllers and the rest of the update.
+
+The shared `pc_native_demo_guest.inc` wrapper captures the incoming raw interval
+in a nested thread-local scope. Numeric sites `433E2/43473` use it for those
+two countdowns; exit/EOF restore the incoming raw whole/float values while
+retaining the original zero game time. The wrapper remembers execution of the
+exit site, so cancellation still restores time if cleanup changes demo mode.
+Original60 arithmetic and state changes
+remain original, including the old multi-controller/multi-tick asymmetry.
+The new patch wraps `43220` on both hosts and requires guest regeneration.
+
+The original-program fixture now executes completion of both transitions at
+60/120/144 with one/four controllers, checks one/two-tick interval scaling,
+zero-time frames, EOF, raw-clock publication and stack/register preservation.
+Timer and restoration mutations must fail separately. This repairs transitions;
+it does **not** fix record consumption. The sixteen strict packet-timing expected
+failures remain, and neither live demo playback nor native Mac execution is
+verified. MAC-060 records the shared implementation and remaining host checks.
+
+On Windows11Pro x64 10.0.26300/MSVC14.44.35207, the final focused suite reports
+**12 passed, 16 expected failures** (`demo-transition-cancel-tests.log`). This
+includes the asset-free nested-scope/fallback check and two rejected mutations.
+The context/CI-scope recheck passes88 cases; context freshness and whitespace
+pass. Both supported Windows builds pass their native checks. The final
+executable SHA256 is
+`1f45acfbcb85decb56e0c997e5d889bac70c5c7106b71a8622c098bb3b7219d9`.
+Source is `333cb5f` plus this correction.
+The broad native/patch-upgrade suite finished with123 passed,16 expected failures
+and one player-dispatch fixture link failure (991.50s). That fixture's variable-
+site arithmetic checks needed a failing stub for the new, unrelated demo helper.
+Adding it preserves rejection of accidental demo-policy routing; the affected
+test now passes (1 passed,77 deselected,2.80s). Fresh/repeated patch application
+and historical upgrade checks passed in the broad run. Logs:
+`demo-transition-suite.log`, `demo-transition-player-recheck.log`.
+
+Before the cancellation follow-up, an isolated180s Hotel native144 integration
+run (`demo-transition-normal-144`) exited zero: all four named active-match
+checkpoints retained ten bots;33 active observations include24 player positions
+and19 zero-whole-tick intervals. Signed profiles/fixture were preserved and
+disposable partitions removed. Enhanced/FOV73, 3440x1440 render request,
+foreground640x480 client; no captures, CPU/Present or per-update trace. Binary
+`e020983bb49940e5a48e760eded65b747e8b83736bc12d117596c1cc783c3795`.
+This checks normal input integration in that candidate, not final-build live
+demo lifecycle, visible correctness, latency or crowd performance. D3D11,
+RTX4070SUPER driver32.0.16.1742; the executable reports native144 timing active.
+
+## 2026-10-24 — Recorded-input playback timing regression reproduced offline
+
+The verified US XBE's original playback initializer (`69E80 -> 431F0 -> 42510`)
+and full input dispatcher (`438B0 -> 43220`) now run in a repeatable local
+regression fixture. Synthetic recording bytes and controlled physical-device/
+lifecycle services are the test boundaries. Initialization, one/four-controller
+held/pressed/released values and six analog bytes, guest stack/callee-saved
+registers, the menu scene gate and end-of-stream transition all pass.
+
+With unit raw/game tick records, one nominal wall second consumes 1.0 seconds
+of recorded time at60 calls/s, 2.0 at120 and 2.4 at144. The input dispatcher
+reaches playback on fractional frames too. Source inspection traces the normal
+offline input path through `3559A0 -> 438B0`; its PC bot wrapper calls the
+original unconditionally. This is stronger than calling playback in isolation,
+but is not a live recording/file or full game-loop reproduction.
+
+`tests/test_native_demo_timing.py` reports **8 passed, 16 expected failures**.
+Only the measured timing mismatch may strictly xfail; build, initialization,
+input and ABI failures cannot be hidden by that mark. Multi-tick and zero-game
+records compare with the same synthetic Original60 path, not an asserted
+variable-duration recording wall-clock contract. Generation stays local and
+requires the hash-verified private XBE; CI without it skips these cases.
+Windows/MSVC checked on source `d4c0c02` plus this test change; native Mac and
+live playback remain unverified. No runtime repair is claimed. Next: establish
+record consumption/clock rebasing across fractional frames, pause, EOF and
+live rate changes before changing the playback path. No new PR opened.
+
+## 2026-10-24 — Later combat pacing and delayed bounded capture
+
+The previous 20,000-row Present recorder spent much of its allowance on menus.
+The common recorder now accepts optional `TSFP_FRAME_PROFILE_DELAY_MS` in
+0..600000 (default0; invalid values fall back to0). CSV rows start after that
+delay from the first successful Present. Counters and last-success timestamps
+continue throughout, so the delay does not create an artificial long interval.
+Skipped/failed gaps and the same 20,000-row cap remain. Disabled recording adds
+no delay environment lookup. This improves diagnostic coverage, not game FPS.
+The runner records `--profile-delay-seconds` and adds `--crowd-weapons rockets`
+using the calibrated normal weapon-menu selection. No saves, AI or health are
+modified by these options. Shared RHI/GL use the same implementation (MAC-003).
+
+The production recorder passes delayed-boundary CSV, full counters, failure/
+skip gaps, cap/close, disabled-path and malformed/overflow-input tests.
+The relevant renderer, frame-statistics and context/backlog suite reports
+49 passed, 1 skipped (Mac CoreText adapter) in 20.52s; the supported Windows
+builder and native checks pass. Logs: `crowd-delayed-profile-{tests,build}.log`.
+Native Mac execution remains pending. No new PR has been opened.
+
+An isolated captured Hotel calibration checked weapon presets: six right presses
+from Recommended selects Rockets; Custom1 (nine right presses) is all Unarmed in
+the local fixture. The unarmed experiment reached scene39 with ten bots and
+ordinary deaths/respawns, but ended against a wall and did not establish a dense
+visible fight. Reject it as pacing acceptance; capture overhead also applies.
+
+Clean Enhanced Hotel Rocket runs used 3440x1440 rendering, FOV73 and a foreground,
+visible, nonminimized 1920x1060 client. Window toggles occur before match setup;
+all input is normal menu/movement/fire/respawn input on isolated Test Lab copies.
+Host: Windows11Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver
+32.0.16.1742. CPU sampling, captures and texture/per-update tracing were off.
+Present logging and bounded asynchronous actor observations stayed on.
+
+| Run | Predeclared window | Guest intervals / FPS | Median / p95 / p99 ms | Worst ms | Minimum rolling 1s | Game/wall |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| `crowd-rockets-144` | spawn+5..35s | 4319 / 143.999897 | 6.968 / 7.295 / 7.449 | 12.398 | 144 | 0.999851 |
+| `crowd-rockets-120` | spawn+5..35s | 3599 / 120.000731 | 8.328 / 8.703 / 8.827 | 12.442 | 120 | 1.000103 |
+| `crowd-rockets-long-144` | spawn+5..125s | 17263 / 143.867096 | 6.988 / 7.316 / 7.547 | 11.497 | 137 | 0.999969 |
+| `crowd-rockets-long-60` | spawn+5..125s | 7199 / 60.000373 | 16.668 / 17.029 / 17.140 | 17.449 | 60 | 0.999986 |
+
+The short runs used the prior executable
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`.
+Runner hashes: 144=`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`;
+120=`164a956b2dd1414b2a092db352d131ac4db75def9408a873b2b01c1c74e6811b`.
+The long run used source `42bcffb` plus the delayed-recorder change, executable
+`47f187793a120ca4533f864dce9f7d33f72dc425a1db1868663cd0561adf880a`,
+runner `66d679a0abd32e5b097e8cfacf1a612bd2d0755c1c21d5318475f3b4630ca680`.
+It extended movement/fire to64 blocks, turning900 horizontal input units every
+six blocks, and delayed recording90s. CSV spans elapsed90002.837..228996.163ms,
+exactly20,000 rows /1,158,625 bytes, with both measurement endpoints covered.
+
+The long run's 65 actor checkpoints include43 living-player observations;
+34 lie inside the measurement window. Maximum living bots within10/20/30 units
+inside that window are3/7/9. The short144 run's whole-route maximum4/7/9 was
+outside its measurement window; inside it the maximum is2/4/7 (120:2/4/6).
+Do not present the whole-route peak as measured crowded-frame acceptance.
+The lowest rolling count137 ends170.348s after runner start, bracketed by living
+player at169.296s and dead player at171.606s. Nearby reads do not establish
+rendered visibility or whether death/effects caused the dip. No interval exceeds
+33.33ms and all measured Presents are fresh guest frames. This reveals a modest
+later pacing dip, not the reported110 FPS case, nor a performance improvement.
+
+All runs exited zero, retained signed profiles/canonical fixture and recycled
+disposable partitions. Evidence is under ignored `private/test-saves/` with
+the run names above; the long run includes `later-window-summary.json`.
+Random bot paths prevent paired mechanical/causal comparisons. Presents do not
+measure GPU completion, scanout or input latency. The reported crowd issue,
+broader gameplay and Mac acceptance remain open.
+
+The completed Original60 long-combat control uses the same executable/runner
+hashes and identical normal-input command file as long144. Its predeclared
+window is covered, with no interval above33.33ms and only fresh guest Presents.
+All measured window observations are foreground, visible and nonminimized at
+1920x1060 client size (3440x1440 render request). Of65 actor checkpoints,
+45 observe a living player; 36 fall inside the window, with nearby living-bot
+maxima3/5/10 at10/20/30 world units. These are proximity, not visibility counts.
+The bounded run exited zero, preserved signed profiles/fixture and left no
+disposable partition images. Evidence: `crowd-rockets-long-60` under the same
+ignored test directory. This supplies the missing60 control, not a causal
+explanation for native dips or proof of the user's reported110 FPS case.
+
+## 2026-10-24 — Enhanced Temple comparison at Original60 and native144
+
+The isolated crowd runner now supports `--texture-mode classic|enhanced`
+(Classic remains the default) and a calibrated `crowd-temple` route. The latter
+selects menu index3 and requires scene49, active match7, no pause and ten bots at
+all four named gameplay checkpoints. Texture mode is recorded in provenance.
+These are validation changes, not a runtime performance fix.
+
+An initial captured Temple calibration confirmed the temple environment and
+Enhanced delivery: 147 replacements loaded, 173,452,828 replacement bytes, and
+154 rejected reads retaining original textures. All 301 trace rows selected
+Enhanced. Captures and texture logging exclude this calibration from pacing
+acceptance. This does not establish complete replacement coverage or parity.
+
+Separate clean `crowd-temple-enhanced-{60,144}` runs used source `8677d88` plus
+the runner changes, Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and
+RTX4070SUPER driver32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`33b7fa4e83d8706fd3ce93af640586a69919c5e1d4568258e49f0929ff2a871d`.
+Both selected Enhanced, FOV73 and 3440x1440 rendering (confirmed at D3D device
+creation). Each isolated command file toggled fullscreen after focusing and
+before match setup. All 33 active observations were foreground, visible and
+nonminimized with a 1920x1060 client; this is not physical ultrawide acceptance.
+CPU sampling, per-update CSV, texture logging and captures were disabled.
+Present recording and bounded asynchronous actor reads remained enabled.
+
+The predeclared spawn+5..50s window fits the 20,000-row recorder cap:
+
+| Mode | Fresh guest intervals | FPS | Median / p95 / p99 (ms) | Worst (ms) | Minimum rolling 1s | Game/wall time |
+| --- | ---: | ---: | --- | ---: | ---: | ---: |
+| Original60 | 2,699 | 60.000377 | 16.668 / 17.038 / 17.164 | 19.754 | 60 | 0.999916 |
+| Native144 | 6,479 | 143.999419 | 6.985 / 7.292 / 7.417 | 10.128 | 144 | 1.000096 |
+
+Neither window contained an interval over 33.33ms or interpolated Presents.
+Both observed a living player at 26/33 checkpoints. Maximum living bots within
+10/20/30 world units were 1/3/4 at60 and 1/3/3 at144. This is less dense than
+the Hotel route: reject Temple as proof of the reported heavy-crowd case.
+Asynchronous proximity does not establish visibility, and random bot outcomes
+are not deterministic mechanical equivalence. Successful Presents do not
+measure GPU completion, monitor scanout or input latency.
+
+Both runs exited zero and preserved signed profiles and the canonical fixture;
+disposable partitions were recycled. Twenty repository-context tests passed;
+context/index validation against `6ddc8a0` and whitespace checks passed. The
+runtime binary was unchanged, so no game rebuild was needed. Evidence remains under ignored
+`private/test-saves/crowd-temple-{calibrate-144,enhanced-60,enhanced-144}` and
+matching `logs/` files. The crowd dip, wider gameplay and native Mac acceptance
+remain open. Related work stays on `perf/crowd-callers`; no new PR was opened.
+
+## 2026-10-24 — Deeper crowd caller attribution
+
+The opt-in Windows CPU sampler walked eight frames by default but retained only
+six in its caller-chain keys and reports. That cut off the gameplay parents of
+expensive host memory checks. `zz-sampler-caller-depth.patch` retains all captured
+frames up to the existing 32-frame walk limit, clamps the reported requested
+depth, and reports dropped new chains when the unchanged 8,192-key table fills.
+Existing keys still accumulate after saturation. On x64 the bounded chain table
+is now 2.0625 MiB per sampled thread (previously 0.4375 MiB); it is allocated only
+with the sampler enabled. Normal gameplay gains no allocations or checks from
+this diagnostic change. The bounded runner adds `--profile-depth` and provenance.
+
+The actual insertion function passes caller-depth, short-stack, saturation and
+retained-count tests; mutations restoring six frames or hiding overflow fail.
+98 focused/context/CI-selection checks pass in 15.70s, and fresh patch installation
+plus repeated application passes in 20.81s. The supported Windows builder and its
+native checks pass (`logs/crowd-callers-{tests,patch-test,build}.log`). The existing
+Win32 suspension/DbgHelp adapter remains Windows-only; portable key tests are
+registered for both CI hosts. Mac live profiling remains absent (MAC-003).
+
+A bounded Hotel diagnostic used source `625699f` plus this sampler patch,
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11 and RTX4070SUPER
+32.0.16.1742. Executable SHA256:
+`b634816a35103a2a03c43bcaa2e663b3161224ce3f143b9c5f3cddda46bb9680`;
+runner SHA256:
+`40ec20c2af64bf6c6216412b7328f24c6f9f42c2a3527ebfbb5b5e04fa508860`.
+The isolated route used native144, Classic, FOV73, 3440x1440 render configuration,
+foreground 1920x1060 client, 200Hz requested sampling and twelve frames. No
+per-update CSV, texture tracing or captures were enabled. Ten bots remained
+configured; 28/33 observations had a living player, with maximum 2/4/6 living
+bots within 10/20/30 units. Proximity is not visibility.
+
+Complete cumulative110s-to150s guest-thread snapshots contain 6,832 samples,
+3,858 classified on-CPU, 24.1s thread CPU and 1,077 VM-query samples. Caller
+coverage reports depth12 and zero dropped keys; independent leaf/chain totals
+match. The final dump is 825,944 bytes, below the runner's 4MiB snapshot bound.
+Deeper chains now identify panel `12E3F0` behind 223 text-query samples, decal
+paths `112EA0/115A40` behind 160/69, and aiming-overlay validation behind69.
+These are sampled counts, not call counts or causal FPS improvements. Existing
+panel scopes and source-only decal checks already cover those paths; no checks
+were removed based solely on the profile. Nearest public symbols still misname
+some static helpers. Sampling perturbs timing and random bot paths differ from
+previous runs, so CPU-time differences are not evidence of a performance gain.
+
+Evidence is in ignored `private/test-saves/crowd-callers-profile-144` and
+`logs/crowd-callers-profile-144.log`. The runner exited zero, preserved profiles
+and the canonical fixture, and recycled its partitions. The reported crowd dip
+and broader native-refresh gameplay acceptance remain open. This diagnostic
+work stays grouped with the next performance changes; no successor PR is open.
+
+## 2026-10-24 — Clean final-runtime Hotel crowd sample
+
+PR #324 merged into main as `6ddc8a0` after all 14 checks passed for head
+`1872a68`. Windows runtime CI: 545 passed, 120 skipped, 18 subtests passed;
+release contracts: 150 passed, 3 subtests passed. Mac native-runtime/GPU and
+both framebuffer fixture variants passed. CI does not certify Mac game scenes.
+
+After the fixture-only PR #324 repair, a bounded Windows Hotel run used the
+unchanged final runtime executable `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`
+(f51d514 runtime source; subsequent changes are documentation/test fixtures).
+Host remains Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11,
+RTX 4070 SUPER driver 32.0.16.1742. Runner SHA256:
+`d77628e191222a06538030e2f6dd719ec67d512913f9d2c7ae67dcaad1cc0c9f`.
+The isolated crowd-hotel route selected native144, Classic, FOV73 and
+3440x1440 rendering; an inserted command toggled fullscreen before match setup.
+All 33 active checkpoints were visible/foreground/nonminimized with a
+1920x1060 client. This is not physical 3440x1440 monitor acceptance.
+
+The predeclared spawn+5..50-second interval fits the recorder's 20,000-row cap.
+Its 6,479 complete fresh-guest Present intervals give 144.000079 FPS, median
+6.976 ms, p95 7.295 ms, p99 7.449 ms and worst 9.317 ms; minimum rolling
+one-second count is 144. Game/wall clock ratio is 1.000151. CPU sampling,
+per-update CSV, texture tracing and captures were disabled. Bounded asynchronous
+actor observations remain: 25/33 checkpoints have a living player; maximum
+living bots within 10/20/30 world units are 3/5/7. Ten configured bots does not
+mean ten visible bots, and these observations are not an alive-time fraction.
+
+The test exited zero, preserved signed profiles and the canonical fixture,
+and recycled disposable partitions. Evidence: ignored
+`private/test-saves/crowd-final-fullscreen-144/{provenance,report,crowd-metrics,actor-metrics,acceptance-window}.json`
+and `logs/crowd-final-fullscreen-144.log`. Successful host Presents are not GPU
+completion, scanout or physical input latency. This nondeterministic route did
+not reproduce the reported 144-to-110 drop and does not establish its resolution.
+The earlier Original60/native120 comparisons retain their separate conditions;
+this is additional current-runtime coverage, not a controlled before/after gain.
+
+## 2026-10-24 — Grouped high-refresh validation and framebuffer harness repair
+
+PR #324 groups water, Classic texture deferral and scoped input/menu/camera
+validation work. Main `843dd10` was merged as `e3cc50d`, preserving the unified
+launcher README. On that head the combined Windows runtime suite passed all
+165 checks in 332.06s; patch migration/context/backlog passed 42 in 558.97s.
+Mac native-runtime/GPU CI, both patch-upgrade jobs and all launcher jobs passed.
+Windows runtime CI exposed two framebuffer-fixture link failures (543 other
+checks passed, 120 skipped, 18 subtests passed); do not treat that head as green.
+
+The fixture includes the complete HLE texture unit, whose new water hooks add
+35 graphics dependencies. Explicit assertion-failing stubs now supply these
+unused APIs. The actual framebuffer cache and its stale-copy mutation remain
+unchanged; both cases pass locally (2 checks, 4.37s, MSVC 14.44.35207/x64 on
+Windows 11). Mac retains its legacy-GL case and adds the common-RHI variant.
+Adjacent ghost-rendering cases also pass; after condensing the guide to its
+size budget, all 21 context/backlog checks pass (3.09s). This is a test-harness
+repair only; the game binary and personal files are unchanged. Updated-head
+cross-platform CI is pending. Earlier gameplay evidence
+and its crowd/Online/full-game/Mac limits remain applicable, not expanded by
+these tests. PR #324 must merge before the next related PR is opened.
+
+## 2026-10-24 — Reuse auto-look validation across low/high guest mappings
+
+`pc_auto_look_camera` now keeps two permission snapshots only during the host
+accesses preceding its original guest call. The current-player global and saved
+control settings share low guest RAM, while the player record is in high RAM.
+Retaining both avoids re-querying the first mapping for settings. Same-region
+accesses need one query instead of three; the observed low/high/low path needs
+two. Reads cannot grant writes, and each invocation starts empty. Stored
+preferences, bit-3 restoration, input-device selection, local-slot eligibility,
+mouse sensitivity and menu logic remain unchanged. No shared helper or timing
+rule changed; native Mac validation is still pending under MAC-043.
+
+The pre-change `crowd-projection-profile-144` Hotel run on `aa868b3` completed
+with ten bots at 3440x1440/FOV73/Classic. Its complete 110..150s cumulative CPU
+reports contain 6,898 samples, 5,158 on-CPU samples, 29.1 CPU seconds and 1,262
+VM-query leaves. The auto-look call chain accounts for 105 samples; text and
+decal validation remain larger contributors. The run has 25/33 living-player
+checkpoints, at most 3/6/9 living bots within 10/20/30 units. A 200Hz sampler
+perturbs timing; different combat outcomes prevent causal performance claims.
+The retained analysis aggregates duplicate chain labels and normalizes unnamed
+DLL offsets to their module, matching the sampler's actual bucket key. Both
+raw and delta leaf/chain totals must match the report headers.
+
+A read-only live `VirtualQueryEx` observation in the diagnostic run verifies
+the low/high/low mapping pattern (`auto-look-maps.json`): global guest7B0C7C,
+player81F7C360, settings7BEDC4, all committed/read-write. Settings lies within
+the first returned interval. This evidence rejected the initial one-slot
+candidate, which loses that region after reading the player. It does not
+authorize retaining permissions through guest execution or between frames.
+
+Four final auto-look tests pass, including the actual host-memory behavior and
+controlled split/read-only maps, per-call expiry and preference restoration.
+Uncached and persistent-snapshot mutations fail. The eight existing mounted/
+mouse checks also pass; 21 context/backlog checks passed during this change.
+Tests remain in the existing registered Windows/macOS suite; running them on
+Windows does not establish native Mac gameplay behavior.
+
+The final supported Windows build and its native tests pass. One preceding
+builder run compiled successfully but failed Debug-dialog Save with
+`FAIL 192: driven && !timed_out`; the unchanged standalone Debug test and full
+builder then passed. The failed log is retained (`auto-look-region-build-failed.log`),
+and the intermittent save failure is not claimed resolved. Final executable
+SHA-256 is `fd1a5f62db9e97b757c5ba9a201188512ebb4974610c9c513a8cf208eb0093ae`,
+built from `aa868b3` plus this auto-look change on Windows11Pro x64 10.0.26300,
+MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+
+`crowd-auto-look-clean-120` runs the ten-bot Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. All 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480/windowed.
+The complete spawn+5..55s window contains 5,999 fresh guest presents at
+120.0001FPS; median8.331/p95 8.684/p99 8.792/worst11.052ms. Lowest rolling
+one-second count is120, sampled game-clock/wall ratio1.000128. There are 27/33
+living-player checkpoints and at most 2/6/10 nearby living bots within10/20/30
+units. It exits cleanly, preserves signed profiles/fixture and recycles disks.
+Host presents do not measure GPU completion/scanout/input latency; actor proximity
+does not establish visibility. This extends preset coverage, not a causal
+optimization gain or proof that the reported 144-to-110 crowd drop is fixed.
+
+`crowd-auto-look-final-profile-144` completes the same Hotel route on the final
+build. Complete 110..150s reports contain 6,912 samples, 4,070 on-CPU samples,
+20.5 CPU seconds and 1,145 VM-query leaves. The auto-look caller chain has127
+samples versus105 before, despite the fixture-proven query removal. Thus this
+sampling comparison does not demonstrate lower auto-look CPU cost, and the
+different combat/render load prevents attributing the lower total CPU time to
+this change. There are 27/33 living-player checkpoints, at most2/7/8 nearby
+living bots; all33 are foreground/windowed640x480. The child exits cleanly,
+signatures/fixture checks pass, disposable disks are recycled and no owned game
+remains. `diagnostic-summary.json` and `actor-metrics.json` retain the evidence.
+Full-game, concentrated crowd, Online and native Mac acceptance remain open.
+
+## 2026-10-24 — Remove redundant projection-output checks; extend crowd coverage
+
+On `fix/native-water-rounding`, `pc_display_perspective_projection` no longer
+queries output permissions after the original US151CF0 builder successfully
+writes the entire 64-byte matrix. That routine has no guest calls or conditional
+output path. Weapon/character-preview corrections now need zero OS queries;
+decal corrections retain fresh camera/source validation, needing one query when
+those sources share a region even with a separate guest-stack output. Projection
+math, timing, caller selection and source guards are unchanged. No permissions
+are retained between invocations. Shared Mac code needs no new adapter, but
+native validation remains pending (MAC-026).
+
+Nine projection checks pass, including both platform wrappers, missing camera,
+alternating outputs, original/ultrawide/narrow aspects, real host VM protection,
+and a retained-source-snapshot mutation. A local checksum-verified original-US
+fixture covers 48 lens combinations, all 16 values, output canaries and stack
+balance; removing one original store makes it fail. Private lifted code stays
+local and those two XBE cases skip CI without assets. Seven affected cutscene
+checks also pass, as do 21 context/backlog checks and the full supported Windows
+builder/native tests. The first test run exposed two obsolete mutation cases:
+with no camera, there are now no queries to retain. Those no-op mutation cases
+were removed; ordinary missing-camera coverage remains on both platform defines.
+
+Executable SHA-256 `5613d5a92d86de077baabfc66a7333b60e8c88107efb3e169dc1c14e2160f68b`
+is built from `8b90d08` plus this projection change. Host: Windows11Pro x64
+10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER driver32.0.16.1742.
+`logs/projection-output-build.log` retains the build result.
+
+The bounded visual scout verified Disco (menu index4 after Vietnam/Hotel/Venice/
+Temple, scene56), including visible combat. The runner now provides `crowd-disco`
+with the existing ten-bot active move/fire/respawn route; all crowd routes focus
+their window after startup. `crowd-projection-disco-{144,60}` use Classic,
+3440x1440 device output/FOV73, with captures, CPU/texture/update traces disabled.
+All 33 gameplay checkpoints per run are foreground/visible/non-minimized,
+window client640x480. Configuration resolution is not window size or fullscreen.
+
+The 144 recorder hits its bounded 20,000-row limit before spawn+55s. Both rates
+therefore use the complete common spawn+5..50s window (45 seconds), selected from
+coverage rather than frame-time values, with clock evidence on both sides:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Fresh guest presents / mean FPS | 6,479 / 144.0020 | 2,699 / 60.0003 |
+| Median / p95 interval, ms | 6.980 / 7.307 | 16.655 / 17.047 |
+| p99 / worst interval, ms | 7.486 / 10.335 | 17.135 / 17.503 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000125 | 1.000145 |
+| Living-player checkpoints | 28/33 | 26/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/5/9 | 2/6/10 |
+
+These successful host presents are fresh guest frames, without interpolated
+presents; they do not measure GPU completion, monitor scanout or physical input
+latency. Actor proximity is asynchronous and is not visibility. Different combat
+outcomes prevent a causal speedup claim. Both runs exit cleanly, preserve signed
+profiles/canonical fixtures and recycle disposable disks. Reports, commands,
+`crowd-metrics.json` and `actor-metrics.json` remain in their isolated run roots.
+This does not reproduce or resolve the reported 144-to-110 drop across maps;
+full-game, denser crowd, Online and native Mac coverage remain incomplete.
+
+`crowd-projection-fullscreen-144` repeats that route after an explicit window
+toggle immediately following initial focus (exact command retained in the run).
+All 33 gameplay checkpoints report fullscreen and foreground, client1920x1060;
+the device still renders3440x1440. This is not native3440x1440 monitor acceptance.
+The same complete +5..50s window has 6,479 fresh guest presents, 143.9998FPS,
+median6.980/p95 7.300/p99 7.442/worst11.623ms, minimum rolling count144 and game
+clock/wall ratio1.000115. There are 27/33 living-player checkpoints and at most
+3/5/7 nearby living bots. It exits cleanly, preserves fixtures/profiles and
+recycles its disposable disks. No owned game process remains. This extends
+Windows coverage; it does not prove a causal gain or eliminate the crowd report.
+
+## 2026-10-24 — Reuse memory validation within one mouse update
+
+The shared terminal, mounted-gun and ordinary-camera routing now accepts a
+caller-owned mapping snapshot. Windows and SDL input adapters create it afresh
+for every mouse update, after replay/focus setup. Consecutive accesses can reuse
+the OS-validated bounds and permission; changing mappings requires a new query,
+and read access cannot grant writes. The cache never crosses a guest callback,
+another input update or frame. Standalone helpers create their own local scope.
+Sensitivity, raw motion consumption, native timing, terminal clicks, gun limits
+and player eligibility remain unchanged. This is shared code with host VM
+adapters; actual Mac execution remains outstanding (MAC-001).
+
+`tests/mouse_region.c` compiles the actual Windows/SDL mouse-adapter bodies with
+controlled OS maps. Ordinary aiming uses one query instead of four; separate
+read-only FOV maps use two. Read-only/inaccessible player updates, interval bounds,
+integer overflow and terminal/native-pause behavior are checked. Deliberately
+retaining the snapshot between updates and disabling reuse both fail the tests.
+Together with existing guarded terminal/mounted, camera/decal and text-scope
+fixtures, 29 distinct checks pass; context/backlog checks pass 21. The supported
+full Windows build and its native tests pass, including the actual Windows input
+adapter. Controlled SDL adapter bodies are not native Mac event/capture tests.
+
+Before this change, `crowd-deferred-profile-144` repeated the focused ten-bot
+Hotel route on `8baa45d` with CPU sampling. Complete 110s/150s cumulative guest-main
+reports yield 6,876 samples and 28.4s CPU over 40s; 1,438 samples have VM-query
+leaves. Mouse handling accounts for 77 samples in one such chain; decal projection
+and text measurement remain larger contributors. Nearest-public names can
+misidentify static functions. `diagnostic-summary.json` aggregates duplicate
+resolved chains and verifies raw leaf/chain totals against each report header.
+Actor observations found 28/33 living-player checkpoints, at most 2/4/8 living
+bots within 10/20/30 units. This diagnostic is not clean pacing evidence or proof
+that the reported crowd slowdown is resolved.
+
+The new Windows executable is built from `8baa45d` plus this mouse change,
+SHA-256 `54208feccbca764d06dd27daec4fe65eed2dc6914da3e307f164e54c06674a44`.
+Host remains Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11,
+RTX4070SUPER driver32.0.16.1742. See the bounded live results below.
+
+`crowd-mouse-region-{144,60}` run the same active Hotel route at 3440x1440/FOV73,
+Classic, with CPU/texture/update tracing and captures disabled. Each of 33 gameplay
+checkpoints is foreground, visible and non-minimized; client640x480, not fullscreen.
+The complete spawn+5..55s windows contain:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9999 | 2,999 / 60.0005 |
+| Median / p95 interval, ms | 6.976 / 7.281 | 16.666 / 17.034 |
+| p99 / worst interval, ms | 7.407 / 8.454 | 17.151 / 17.441 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 0.999811 | 0.999921 |
+| Living-player checkpoints | 26/33 | 27/33 |
+| Maximum nearby living bots at 10/20/30 units | 3/6/6 | 3/5/6 |
+
+Mouse turns, movement, fire and respawn inputs complete with active scene39,
+ten configured bots and no pause at all gameplay checkpoints. Both children exit
+cleanly; signed saves/canonical fixture checks pass and disposable disks are
+recycled. Exact observations remain in each run's `crowd-metrics.json` and
+`actor-metrics.json`. These are successful guest host presents, not GPU completion,
+scanout or physical-input latency, and contain no interpolated presents. Changing
+combat/spawns and lower nearby density than the earlier 114-FPS window prevent
+a causal frame-time improvement claim. Full-game, denser crowd, Online and Mac
+acceptance remain open; no complete crowd-slowdown fix is claimed.
+
+## 2026-10-24 — Defer unused replacement work in Classic
+
+On `fix/native-water-rounding`, common RHI and legacy GL now defer new optional
+replacement reads/uploads until Enhanced is selected and the texture is bound.
+Originals remain visible while replacements arrive. Existing caches still switch
+immediately; requests already submitted can finish after returning to Classic.
+Content changes still invalidate old requests/resources, and explicit original
+dumping retains its behavior. No game timing, actor logic or personal setting
+changes are part of this fix. It removes confirmed unused work; it does not
+establish the cause or resolution of the Hotel 114-FPS window below.
+
+Windows loader tests pass all 24 cases, covering both streaming modes and both
+adapters, missing/rejected data, failures, Classic content changes, late Enhanced
+activation and cached switching. The supported full Windows builder and its
+native tests pass. Context/backlog tests pass 21 cases. Native Mac execution
+remains unverified (MAC-011); both renderer implementations share the policy.
+
+The executable built from `3cac8e4` plus this change has SHA-256
+`dd5daf3da024e1404cac98c69ce1eca9a7fe6dbc062cc4edacade4f4ac078329`.
+Host: Windows 11 Pro x64 10.0.26300, MSVC14.44.35207, D3D11, RTX4070SUPER,
+driver32.0.16.1742. `crowd-classic-defer-trace` ran the ten-bot Hotel route at
+native144, 3440x1440, FOV73. Its complete 288-row trace contains only `deferred`
+outcomes, with zero replacement read/image/view stages. The trace stays below
+its cap; this diagnostic is not a pacing measurement. All four gameplay
+checkpoints retain scene39, active match7 and ten bots. Child exit is clean,
+fixture signatures are preserved and disposable disks recycled.
+
+`classic-defer-switch` then exercised the actual Venice pause/Video Options
+Apply route: Classic → Enhanced → Classic → Enhanced → Classic. Inspected menu
+captures show Apply disabled after commits; reopening reads the applied value.
+The trace records 206 deferred rows before the first Apply, then 39 completed
+Enhanced uploads (29,895,748 bytes) across the session, within 367 total rows.
+Reviewed resumed scene captures show no obvious blank/corrupt surfaces; this
+does not certify the pack's artwork or all scenes. The reused command labels
+name the opposite mode because that older route started Enhanced; actual menu
+values and trace stages are authoritative. `switch-results.json` records this
+mapping. This captured run is not performance evidence. Exit/signatures/fixture
+checks pass and disposable disks are recycled.
+
+Clean `crowd-deferred-clean-{144,60}` Hotel runs then use the same route,
+3440x1440/FOV73/Classic, no captures or CPU/texture/update tracing, and bounded
+read-only actor checkpoints. An explicit focus request succeeds: all 33 gameplay
+checkpoints are foreground, visible, non-minimized, client640x480 (not fullscreen).
+The complete measured windows are spawn+5..55s:
+
+| Metric | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,199 / 143.9995 | 2,999 / 60.0001 |
+| Median / p95 interval, ms | 6.979 / 7.278 | 16.665 / 17.041 |
+| p99 / worst interval, ms | 7.411 / 9.551 | 17.160 / 17.693 |
+| Lowest rolling one-second present count | 144 | 60 |
+| Sampled game-clock / wall-time ratio | 1.000048 | 1.000072 |
+| Living-player checkpoints | 28/33 | 25/33 |
+| Maximum nearby living bots at 10/20/30 units | 2/4/6 | 2/4/7 |
+
+These are successful guest-frame host presents, with zero interpolated presents;
+they do not measure GPU completion, scanout or input latency. The player/AI route
+is nondeterministic, proximity is not visibility, and the earlier slow run was
+unfocused with more close actors. Thus this passing sample does **not** prove the
+reported crowded-match slowdown fixed or quantify this change's speedup. Exit,
+fixture/signature checks and disk recycling pass in both runs. Full-game behavior,
+denser repeat workloads, Online and native Mac validation remain outstanding.
+Per-run `crowd-metrics.json` and `actor-metrics.json` retain exact observations.
+
+## 2026-10-24 — Active Hotel route reproduces a short 114-FPS window
+
+The unchanged `8eb2d05` playable runtime was tested on a second multiplayer map,
+Hotel (scene39). The old input route left the player dead at five of eight
+gameplay checkpoints. `stability_transitions_game.py --scenario crowd-hotel`
+now uses frequent ordinary movement/fire/respawn inputs, retains the original
+eight-second startup wait and does not edit health, AI or game memory. Both
+accepted native144 and Original60 runs observe a living player at **26 of 33**
+command checkpoints. These counts are not alive-time percentages.
+
+`--watch-actors` observes bounded actor-slot positions/health and rechecks the
+pool pointer; the existing network observer shares the reader and retains its
+fields. Reads can cross updates. Proximity does not establish visibility or
+line of sight. Native144 observed at most 5/6/7 living bots within 10/20/30 guest
+world units while the player was alive; Original60 observed 4/5/8. All accepted
+gameplay checkpoints retain one human/ten configured bots, scene39, active match
+state7 and no pause. A separate captured setup verified the map selection and
+Hotel gameplay; its screenshots are not performance measurements.
+
+The same executable SHA-256 is
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+Windows 11 Pro x64 10.0.26300, MSVC14.44.35207-built D3D11 runtime, RTX4070SUPER
+driver32.0.16.1742. Both runs render3440x1440, FOV73, Classic textures, with no
+captures, per-update traces or CPU sampler. Windows are visible/non-minimized,
+unfocused, client640x480; foreground/fullscreen acceptance remains separate.
+The following complete host-clock windows are spawn+5..+55s:
+
+| Metric | Native144 | Original60 (`--native-fps 0`) |
+| --- | ---: | ---: |
+| Guest presents / mean FPS | 7,146 / 142.9438 | 2,999 / 60.0002 |
+| Median / p95 interval, ms | 6.996 / 7.393 | 16.672 / 17.027 |
+| p99 / worst interval, ms | 8.598 / 12.989 | 17.139 / 17.658 |
+| Lowest rolling one-second present count | **114** | 60 |
+| Sampled game-clock / wall-time ratio | 1.000084 | 1.000138 |
+
+No interpolated presents are counted. The native slow window starts16.453s after
+the spawn checkpoint, about103ms after an E press. The neighboring observations
+show death, then respawn with the same dual-pistol loadout. This locates a useful
+reproduction near the reported110FPS dip; it does **not** prove its cause or that
+five bots were visible during that second. GPU completion/scanout, exact combat
+parity, other maps/online and Mac acceptance remain unverified. No runtime fix or
+performance improvement is claimed by this test-only change.
+
+The first active-route attempt (`crowd-hotel-active-144`) shortened the startup
+wait to four seconds and failed the unchanged active-state assertion because
+the spawn checkpoint was still in countdown state5. It is excluded from the
+accepted comparison. The original wait was restored before both accepted runs.
+All test children exit cleanly and preserve signed saves/canonical fixtures;
+disposable disks are recycled. Offline execution of the actual observer functions
+checks local/network field shape and invalid pool/entity bounds. Runtime source
+and binary are unchanged; no rebuild or new PR was needed.
+
+Evidence: isolated `crowd-dense-setup`, `crowd-hotel-current-144` (old inputs),
+`crowd-hotel-ready-{144,60}` directories and corresponding logs. `crowd-metrics.json`
+and `actor-metrics.json` retain exact intervals/observations; native `slow-window.json`
+retains the114-frame window and neighboring input/state evidence. The ignored
+analysis scripts are `logs/crowd_beta_analyze.py` and `logs/crowd_actor_analysis.py`.
+`--trace-textures` exposes the existing bounded upload-stage trace for the next
+diagnostic pass; it and CPU sampling must not be treated as clean pacing evidence.
+
+The completed `crowd-hotel-profile-144` diagnostic retains 409 texture rows, below
+the 8,192 cap, with coverage beyond the measured window. That window contains 13
+successful Classic-mode replacement uploads totaling 12,845,180 bytes, plus 35
+rejected reads. Image/view CPU spans total 4.496ms, largest 1.2125ms; queued request
+duration and GPU completion are different measurements. This confirms unused
+replacement work but does not attribute the 114-FPS window to it. Between complete
+110s and 150s CPU reports, guest-main CPU time grows 28.4s; VM-query leaves account
+for 1,253 of 6,910 samples. Prompt measurement and perspective/camera paths remain
+visible in the chains. Nearest-public-symbol names are not precise static function
+identities. The prompt hook already scopes reads, and `sub_000405C0` only calls it
+once; another scope around that helper would not remove its required queries.
+`diagnostic-summary.json` retains counts and chains. No sampled timing is added
+to the clean comparison above. Context/backlog checks pass (21 tests, 3.35s), and
+the context/whitespace checks pass. The gameplay slowdown remains unresolved.
+
+## 2026-10-24 — Crowded-menu scan overhead and ten-bot measurements
+
+On `fix/native-water-rounding`, `pc_menu_text.inc` now reuses a writable OS
+region within each synchronous keyboard-row search. Previously, large ordinary
+menus repeated a VM query for every row on every keyboard-detection pass. The
+new scan still validates each row's bounds, re-queries on a region change and
+discards the region before returning to guest dispatch. It retains original
+callbacks, edit limits and the 256-row traversal bound. No simulation rate,
+NPC behavior or input binding changed. Shared Windows/Mac VM adapters are used;
+native Mac execution remains unverified (MAC-059).
+
+The tracked `crowd-venice` route configures ten bots and replays movement,
+firing and respawn inputs. The runner records roster and actual window state,
+allows explicit resolution/FOV and clean Present profiling without per-update
+traces. Its optional existing 200Hz CPU sampler is diagnostic only. Before the
+fix, the complete 50s cumulative guest-main sample contained 4,429 VM-query
+leaves out of 8,646 samples; dispatch/menu-label/choice chains dominated those
+queries. Static functions resolve to nearest public symbols, so those names
+alone do not identify exact source functions. Source inspection and the scan
+fixture establish the repeated row-query work.
+
+Supported Windows build and bundled tests pass. Focused menu/text/FOV/layout
+and context/backlog checks: **41 passed, 2 Mac-only skips** (27.57s). The tests
+include actual supported-US text-edit routines, 200 descending rows with one
+query, mapping/protection changes, partial/invalid rows and cyclic lists. Both
+eager-query and stale-cache mutations fail. No patch changed; the complete
+builder/patch loader is used. Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207,
+D3D11, RTX 4070 SUPER, driver 32.0.16.1742. Built from `db58eec` plus the
+`pc_menu_text.inc` change; executable SHA-256:
+`a01f8040655548a8241fe3b246a00706f460621ddd5b78db7974e36991e1bdf0`.
+
+At 3440x1440 rendered resolution, FOV73, Classic textures, native144, no captures
+or per-update/stack trace, the matching 1.4s input-free ten-bot menu window changes
+from **63.29 FPS / 18.899ms worst** to **143.99 FPS / 8.241ms worst** (88/200
+complete intervals). Both windows are visible, non-minimized, unfocused and have
+640x480 clients. These are short sequential samples, not full-menu acceptance.
+The initial after-build run (`crowd-menu-scan-144`) overlapped pytest in the menu
+and first second of gameplay (test log completed at run+86.7s). It is retained
+but excluded from these final numbers. `crowd-menu-clean-144` repeats the route
+after all test/build activity ended, with no concurrent diagnostic sampler.
+
+The clean native144 gameplay window (spawn+5..+55s) has **7,199 guest
+presents, 144.0021 FPS, 6.980ms median, 7.313ms p95, 7.512ms p99, 8.875ms worst**,
+zero interpolated presents and zero intervals above 33.33ms. The lowest rolling
+one-second count is 144. Spawn-to-combat-six game-clock/wall ratio is 0.999976;
+all active checkpoints retain Venice scene46, match state7, unpaused and roster
+655617 (one human/ten configured bots). The run exits cleanly and preserves
+signed profiles/canonical fixture; disposable disks are recycled.
+
+The post-fix **Original60** run (`--native-fps 0`, same route/device/FOV) has
+2,999 guest presents, 60.0006 FPS, median16.669ms, p9517.042ms, p9917.171ms,
+worst17.528ms, no interpolated/over33.33ms intervals, rolling minimum60 and
+game-clock/wall ratio0.999976 in the corresponding 50s window. It also exits
+cleanly with the ten-bot checkpoints and unchanged signed profiles/fixture.
+This validates sampled clock rate and route behavior, not exact combat parity.
+
+Before this change, the same background route averaged 143.961 FPS but included
+one **22.857ms** interval, 47.24ms after an E-key input. A separate verified
+foreground/fullscreen run averaged 143.9999 FPS, worst8.935ms. Its client was
+1920x1060 while the device rendered 3440x1440. The post-window screenshot showed
+a death camera and a nearby character. Window modes, combat outcomes, RNG and
+assets differ; these are not causal gameplay speedup or identical-mechanics
+comparisons. Ten configured bots does not prove ten visible bots. Neither
+before nor after reproduced the reported 110 FPS sustained dip. The intermittent
+respawn hitch and broader crowded-match/online/other-map acceptance remain open.
+Present timestamps measure successful host calls, not GPU completion, scanout
+or input latency. This does not complete the native-high-refresh goal.
+
+Evidence: `logs/crowd-menu-build.log`, `logs/crowd-menu-tests.log`,
+`logs/crowd-menu-clean-comparison.json`,
+`logs/crowd_beta_analyze.py`, `logs/crowd_menu_compare.py`, isolated
+`crowd-beta-current-{144,60}`, `crowd-beta-active-144`, `crowd-beta-cpu-144`, and
+`crowd-menu-scan-{144,60}` and `crowd-menu-clean-144` directories. Each retains executable/runner hashes,
+commands, state checkpoints and bounded timing records. PR #322 is reverified
+merged into main at base `2252af1`; this branch has no separate PR. Work stays
+grouped on the same branch.
+
+## 2026-10-24 — Continuous water enabled with native beta presets
+
+On `fix/native-water-rounding`, common-RHI 120/144 beta presets now enable the
+persistent water field without a test flag. Original60 and legacy GL keep
+original output. `TSFP_SURFACE_NATIVE_TEST=0` remains a diagnostic opt-out;
+older experimental paths stay separate. Allocation/shader setup failure latches
+original output until scene/device reset, avoiding repeated setup attempts on
+every frame. Empty resets do not change renderer texture bindings. Algorithms,
+original byte feedback, event ordering and the one-authored-tick cosmetic delay
+are unchanged from the previously captured opt-in implementation.
+
+Three focused CPU tests pass (3.23s), covering default/override policy, actual
+guest dispatch/ABI and the real HLE adapter's failure/retry behavior. The new
+adapter fixture runs in the existing dual-host native-timing CI group. The
+supported Windows build and bundled checks pass; complete patch loader reports
+zero runtime-file changes. No patch or shader changed in this revision. Repository checks found a stale
+last-patch assertion from before the capture/render tail; the test now checks
+the complete handoff/capture/render order. Guide text was condensed to preserve
+the enforced 64-KiB file limit.
+Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207, D3D11, RTX 4070 SUPER driver
+32.0.16.1742. Built from `2b03306` plus this revision's three native-water source
+changes; executable SHA-256:
+`e551214b38d0337bcba398ba554511afceff80d3e2acc0776e245ad678de7549`.
+
+Two sequential isolated Scotland runs use this same executable, 1280x720,
+minimized, default water policy, no image readback. Native144 and true Original60
+(`--native-fps 0`) complete the committed `surface-native-long` route. A 90.306s
+stationary dwell has matching sampled position/look/health and authored clock
+rates 59.99615/59.99580 ticks per wall second. Both spend four pistol rounds in
+the two-second firing hold, pause (only 9/8 ticks between pre-pause observation
+and the paused checkpoint), then resume (332/334 ticks by the next checkpoint).
+Native logs show creation/use of the field; Original60 creates no native owners.
+Both exit cleanly, preserve signed profiles/canonical fixture, and recycle disks.
+
+| Complete intervals in the same 60-second host-clock window | Native144 | Original60 |
+| --- | ---: | ---: |
+| Guest presents | 8,639 | 3,599 |
+| Mean FPS | 144.0005 | 60.0004 |
+| Median / p95 interval (ms) | 6.957 / 7.319 | 16.656 / 17.034 |
+| p99 / worst interval (ms) | 7.474 / 8.610 | 17.147 / 17.411 |
+| Interpolated presents / intervals above 33.33ms | 0 / 0 | 0 / 0 |
+
+These are host Present intervals, not GPU completion, scanout or input latency.
+The recorder's 20,000-frame cap excludes the end of the native run; only a fully
+covered central minute is analyzed, while game-clock behavior uses the full
+90-second dwell. One ordered pair, unmatched RNG and no new frame captures do
+not prove identical wave trajectories, all-scene appearance, first-use hitch
+cost or crowded-match performance. Prior unchanged-kernel image/GPU evidence is
+recorded below. Native Mac GPU/gameplay, broader scenes and full-game correctness
+remain incomplete. This beta-default change does not complete the active goal.
+
+Repository context/backlog checks pass (21 tests, 3.28s); context against base
+`2252af1` and whitespace checks pass.
+
+Evidence: `logs/water-beta-{build,policy-cpu}.log`,
+`logs/water-beta-long-{144,60}.log`, and the corresponding isolated directories;
+`water-beta-long-144/comparison.json` contains exact clock windows/metrics.
+No new PR was opened. The preceding integration PR #322 is verified merged into
+main at this branch's base `2252af1`; follow-ups remain grouped on this branch.
+
+## 2026-10-24 — Preserve water resources across live FPS changes
+
+The opt-in native water path now suspends its timing/output state on switching
+to Original60, retaining the bounded GPU owners and source identities. Returning
+to native reinitializes from the next authored input without rebuilding identical
+images and shaders. Constructor/scene and device teardown still release owners;
+Original60 performs no coupled updates. This removes unnecessary resource work,
+not a measured guarantee about switch latency. The original initialization rule
+still permits a held image before the first authored tick after re-enabling.
+
+The committed `scotland_switch` route applies 144/120/Original60/144 in one
+process and requires all four 90-image segments. Its first run caught outdated
+navigation into Keyboard and Mouse and correctly failed complete-cycle validation;
+that run contributes no preset-switch evidence. The corrected initial cycle
+(`water-native-cycle`) completed: fresh pairs were 89/89, 89/89, 89/89 and 88/89.
+The last segment's sole repeated pair precedes its first whole tick. All segments
+retain nonflat variation; reviewed menu captures show applied presets/gray Apply,
+and shoreline screenshots show ordinary water at 60 and 144. These different-time
+captures do not prove matching wave trajectories or switch latency.
+
+The shared guest/cache checks pass (3 cases, 3.41 s), including suspension without
+allocation/stale output, native resumption, local time mismatch and constructor
+cleanup. The image-analysis suite passes 23 cases. Supported Windows/MSVC/D3D11
+build and bundled checks pass. Executable SHA-256:
+`f30a158ef95936849c546e76d99f88b2f75b098ffb1d992ef4a01e64bc663137`, built from
+`595668c` plus these source changes. No patch/hook layout or shader algorithm
+changed. Logs: `water-native-suspend-build.log`, `water-native-suspend-cpu.log`,
+`water-native-cycle-analysis.log`. Native Mac execution remains unverified.
+
+The rebuilt retained-owner cycle (`water-native-retained-cycle`) also completes
+all four segments: 89/89, 89/89, 89/89 and 88/89 changed pairs. The tracked resource
+`82962910` is created once at frame 5578 before capture and is never recreated
+through the cycle. The current runner's resource-identity/creation assertions
+also pass when applied to that completed run. The sole held pair remains before
+the first authored return tick; resource retention does not change that timing
+rule. The final saved preset is 144. Profiles/signatures and the canonical fixture
+are unchanged, disposable partitions recycled, and the process exits cleanly.
+Logs: `water-native-retained-cycle.log`; captures/results/provenance are under
+its isolated run directory. These image-readback runs exclude switch-latency and
+pacing claims. Full-game dynamics/visual parity, long-run behavior and native Mac
+remain open; the new water path is still opt-in. No new PR was opened.
+
+## 2026-10-24 — Opt-in continuous water reaches the original ripple shader
+
+On `fix/native-water-rounding`, the persistent coupled field now drives the
+original final water shader under `TSFP_SURFACE_NATIVE_TEST=1`. The guest retains
+original whole-tick disturbance/RNG, smoothing and byte-feedback calls, then the
+render thread advances the cosmetic field using exact native phase. Between
+whole updates, the field advances and the final shader draws again. This is a
+one-authored-tick cosmetic phase delay relative to completed original feedback;
+it does not delay gameplay input. Original60 and default settings are unchanged.
+Owners persist across frames, reset at constructor/scene/device boundaries, and
+release before the RHI device. There are no per-frame readbacks in normal use.
+
+Windows/MSVC/D3D11 supported build and bundled checks pass. The 14 surface CPU
+cases pass, including actual guest adapter cadence/stack checks and every owner
+allocation failure. All 31 GPU cases pass in 187.99 s, including packed alpha
+height, output restoration and existing original-shader/byte controls. Binary
+SHA-256: `56ce178a050b3c6d3a604e74610b5bc8d0d5b0e6e326eb017e18310b8a26be50`
+(base `61301df` plus the persistent-water source changes).
+
+Bounded isolated Scotland runs at native120 and native144 both produce 360 final
+GPU images with 359/359 changed consecutive pairs. Their captures include 176
+and 200 frames respectively with zero whole ticks. Neither collapsed to a flat
+image. The routes also complete movement, pause and resume, preserve valid
+profiles/the fixture, and recycle disposable disks. Reviewed screenshots show
+normal shoreline rendering. Synchronous readback changes workload: these results
+are image freshness, not measured 120/144 frame pacing or full-game parity.
+Logs: `water-visible-build.log`, `water-visible-surface-cpu.log`,
+`water-visible-gpu.log`, `water-visible-game.log`, `water-visible-120-game.log`.
+Images/stats live in `private/test-saves/water-visible-{120,144}`.
+
+A separate capture-free native144 ordered pair uses the same executable and
+1280x720 minimized Scotland route on RTX 4070 SUPER (driver 617.42). In the eight
+seconds ending at the stationary start label, each run records 1,152 guest
+presents: baseline/new mean 6.94459/6.94452 ms (both ~144 FPS), p95
+7.313/7.339 ms, p99 7.484/7.542 ms, maximum 7.851/8.488 ms. These are host
+Present intervals, not GPU execution or scanout. Background patch tests were
+running, and one ordered pair cannot isolate marginal cost. Both complete
+movement/pause/resume and profile-preservation checks. Evidence:
+`private/test-saves/water-cost-native/paired-pacing.json` and paired runner logs.
+
+Patch compatibility checks passed in two stages: 19 cases on the initial full
+run, then both texture/main branch-switch cases (119.64 s) after removing an
+unnecessary optional-texture context dependency from the new patch. Reapplying
+the complete stack changed zero runtime files. Context/index and whitespace
+checks pass. Logs: `water-visible-patches.log`, `water-visible-patch-switch.log`.
+The user's related-PR merge order is now recorded in root `AGENTS.md`.
+
+The path stays opt-in. Sustained pacing, first-use allocation/shader hitches,
+visual comparison against Original60,
+local time overrides, FPS switches, broader scene/event coverage and native Mac
+GPU execution remain acceptance gaps. Legacy GL keeps original output. No new
+PR was opened; related work remains on the same branch.
+
+## 2026-10-24 — Shared water solver executes inside the game renderer
+
+`pc_surface_gpu_begin_bytes` now initializes the shared GPU owner directly from
+the game's completed input and first-pass byte views. The owned residual field
+preserves clipping, quantization and acceleration saturation; inputs remain
+sampled only. Existing controlled trajectories use this entry point, while the
+capture replay retains an independent unpack/residual setup.
+
+The opt-in `TSFP_SURFACE_GPU_CAPTURE=1` branch runs this solver inside the existing
+deferred capture callback. It records states after 5/12 and after
+5/12 + 5/12 + 1/6, then releases all diagnostic resources before returning.
+The bounded native144 Scotland session completed cleanly with unchanged valid
+profiles and recycled disks. Its 16 samples cover level ticks 300-317; readback
+and per-sample creation disturb pacing, so this is not a performance test.
+
+The full GPU suite passes 31 cases in 182.59 s, including the live runtime's 32
+float fields compared with independent replay within 32 float epsilons
+(3.815e-6). Original shader/byte endpoint comparisons remain exact. The two CPU
+owner/cache cases pass in 2.84 s, covering all 37 allocation-failure stages.
+The supported Windows build and bundled checks pass. Executable SHA-256:
+`5db64564f6663cf1f6a4b10ebf801774d6f82c2746a7031db8a2fbdec03a9940`, built from
+`15d774c` plus these shared input/probe changes.
+
+Logs: `water-runtime-gpu-build.log`, `water-runtime-owner-cpu.log`,
+`water-byte-entry-gpu.log`, `water-runtime-gpu-game.log`. Copied identities,
+source hashes and fields are in `private/test-saves/water-runtime-gpu`.
+The new solver still does not control visible water. Persistent resource reuse,
+event/fractional-time scheduling, final-shader hookup, sustained pacing and Mac
+execution remain open. The normal game path has no probe allocations or readbacks.
+No new PR was opened.
+
+## 2026-10-24 — Coupled water validated against completed gameplay feedback
+
+The opt-in `TSFP_SURFACE_CAPTURE` hook now copies the original feedback input,
+first pass and second pass from actual GPU images after their queued draws.
+Earlier D3D capture files contained stale system-memory copies of render targets;
+those copies cannot validate the solver against live fields. The new bounded
+probe leaves guest passes/state unchanged and uses isolated test output files.
+
+Windows build and its bundled checks passed from `0cec704` plus the capture
+changes. Executable SHA-256:
+`60e6dedf3f164ef06004ed63dc970e28f11f2d72259ff0f5296fd8fdf8958023`.
+Two bounded Scotland routes, Original60 and native144, captured 16 distinct input
+fields each at level ticks 300-315. Both exited cleanly, exercised movement and
+pause/resume, retained profile hashes/signatures and recycled disposable disks.
+These diagnostics synchronize the GPU and are not frame-pacing measurements.
+
+The RTX 4070 SUPER replay matches the captured original first-pass red and
+second-pass green/blue/alpha exactly for all 32 fields. The coupled solver also
+matches all 32 endpoints with steps of 1, two halves, and 5/12 + 5/12 + 1/6
+(96 endpoint comparisons). The capture tests pass in 12.13 s. An initial attempt
+to compare these hardware bytes directly against WARP differed by one byte;
+that cross-adapter comparison is not an exact golden. Existing WARP tests use
+their own original shader reference; no solver tolerance was relaxed here.
+The asset-free timing group passes 22 cases in 27.50 s. All 21 patch-update cases
+pass in 542.79 s, including fresh/repeated application, historical upgrades,
+branch switches, line endings and conflict preservation (`water-live-patches.log`).
+
+Evidence: `logs/water-live-capture-build.log`, `water-live-host.log`,
+`water-live-feedback.log`, `water-live-feedback-original.log`,
+`water-live-gpu.log` (initial cross-adapter difference), `water-live-gpu-final.log`;
+local capture provenance and fields are under `private/test-saves/water-live-feedback*`.
+The new solver still does not drive visible game water. These checks validate
+the operator on real fields, not event cadence, queued splash coverage, scene
+reloads, fractional final-shader integration, performance or Mac execution.
+Those and the broader high-refresh acceptance work remain open. No new PR.
+
+## 2026-10-24 — Bounded GPU water resource reuse
+
+On `fix/native-water-rounding`, `graphics/surface_gpu_cache.h` now manages up to
+five coupled-water owners keyed by resource, generation, coefficients and four
+retained source images. Repeated draws reuse GPU resources without allocation;
+changed identity replaces them transactionally. Failure leaves the old entry
+intact and returns NULL for fallback. Scene/device cleanup releases all references.
+The new cache remains fixture-only: guest/HLE reset and event hooks are not wired.
+
+Windows MSVC asset-free timing checks pass 21 cases in 25.68 s, including every
+allocation failure during cache replacement and checks for retained references,
+capacity limits and recreation. The D3D11 WARP suite passes 28 cases in 160.72 s,
+including deliberate broken-implementation controls. All 40 RTX 4070 SUPER
+field/rate/smoothing trajectories pass through the cache with unchanged original
+byte boundaries and final output. Logs: `water-cache-host-suite.log`,
+`water-cache-gpu-suite.log`, `water-cache-hardware-{0,1,2,3}.log`.
+
+These are isolated lifetime and shader checks, not an in-game performance gain
+or level-reload proof. The normal playable build is unchanged. Mac execution,
+actual game integration, sustained frame pacing and broader gameplay acceptance
+remain open under MAC-060. No new PR was opened.
+
+## 2026-10-24 — Shared ownership for the coupled GPU water kernel
+
+`graphics/surface_gpu.h` now owns the candidate's mode/basis/state/forcing/world/
+scratch images, shaders, time buffer and draw states. The GPU fixture uses this
+shared owner instead of managing those resources itself. Creation unwinds on
+failure; reset requires initialization before more updates. Each operation
+restores color/depth targets and viewports and clears temporary bindings.
+Original disturbances, smoothing and byte-boundary passes are still separate;
+there is no game resource registry or enabled guest hook yet.
+
+All 40 RTX field/rate/smoothing trajectories still match the original byte
+boundaries and final output. Lifecycle checks additionally verify reset and
+external input copying, invalid input/time/alias rejection, zero-time preservation,
+multiple and empty viewport restoration, color/depth identity, temporary texture
+and buffer unbinding, and an untouched sentinel target. The CPU failure fixture
+cleans up every one of 32 injected RHI allocation failures and recreates.
+The asset-free timing group passes 20 cases in 25.48 s; the GPU suite passes 28
+in 159.55 s, including deliberately broken reset and output-restoration controls.
+The final empty-viewport and invalidated-output additions pass the hardware
+profile-0 check separately (water-owner-final-lifecycle.log).
+Logs: water-owner-host-suite.log, water-owner-gpu-suite.log,
+water-owner-lifecycle.log, water-owner-empty-viewport.log,
+water-owner-hardware-{1,2,3}.log.
+
+Timing remains sensitive to the isolated workload: two capture-free runs pass
+their endpoint checks but show 144-Hz means from 0.075534 to 0.739911 ms across
+smoothing/run conditions. Read-only telemetry during the repeat observes GPU
+clocks moving between low-power states and 2520 MHz; it does not identify the
+clock at every measured frame. This is not a controlled regression/speedup result
+or a game frame-time measurement. Logs: water-owner-cost.log,
+water-owner-cost-repeat.log, water-owner-clocks.csv. No GPU settings were changed.
+Live hook/event integration, sustained scene profiling and Mac execution remain
+open. No new PR or playable binary was produced.
+
+## 2026-10-24 — Water candidate now passes RTX hardware checks
+
+Two distinct corrections were needed. The standalone hardware diagnostic had
+skipped initialization of the four captured wrap samplers when omitting older
+storage probes. Binding them at common setup removes its first-tick mismatch.
+That initial failure and its timings below were confounded by fixture setup.
+The correctly configured run then failed at tick 21: the RTX converts nearby
+float outputs to different bytes at 0.649169921875, while the old correction
+assumed the ideal half-byte threshold 0.649019607843137. A direct GPU sweep
+reproduces that transition (logs/water-hardware-quantizer.log).
+
+The shared boundary shader now uses the original shader's value whenever their
+arithmetic disagreement fits the existing 32-float-epsilon guard (3.815e-6),
+without guessing the GPU's conversion threshold. Larger differences remain
+untouched; fractional frames still execute the candidate's own evolution.
+No tolerance was increased. Direct checks cover the observed pair and reject
+a larger difference; an unconditional-copy mutation must fail.
+
+All 40 RTX 4070 SUPER field/rate/smoothing combinations now match every original
+byte G/B boundary and final ripple RGB, including 120/144, mid-tick rate changes,
+jitter and pause/resume. Every higher-rate advancing frame produces fresh final
+output. Maximum prequantization difference is 3.219e-6. Evidence:
+logs/water-hardware-canonical.log and water-hardware-canonical-{1,2,3}.log.
+This is controlled original-shader validation, not live scene acceptance.
+
+With no parallel tests, the noise-profile timestamp run passes all endpoint
+checks. At 144, mean candidate GPU span is 0.075883 ms without smoothing and
+0.076961 ms with it; p95 is 0.140288/0.143360 ms. Original 60-Hz passes average
+0.010121/0.011844 ms; candidate 60 averages 0.107264/0.108201 ms. These are
+isolated 128-square field costs including submission bubbles, not game frame
+times or a measured game speedup (logs/water-hardware-canonical-cost.log).
+Resource lifecycle/hooks, queued splashes, actual event delivery, Mac GPU checks
+and scene/performance acceptance remain open. No new PR or playable binary.
+The complete WARP suite passes 26 cases in 146.83 seconds, including the new
+unguarded-copy mutation (logs/water-hardware-canonical-suite.log). Context and
+whitespace checks pass. These results do not enable the unintegrated candidate.
+
+## 2026-10-24 — Initial hardware probe (superseded by corrections above)
+
+The same follow-up branch now has explicit D3D11 hardware correctness and timing
+commands. On this Windows host's NVIDIA GeForce RTX 4070 SUPER (10de:2783,
+feature level 11.0), the candidate differs at the first authored boundary;
+the mismatch reproduces with both mild and original-noise input, independently
+of timestamp instrumentation. In the mild case, first-cell green is 127/255
+instead of the original 128/255. Maximum boundary error over 60 ticks is
+0.0901961 and final ripple RGB error is 0.6156863; noise final error reaches 1.
+This contradicts hardware readiness. The candidate remains uncalled by gameplay;
+no new playable binary or PR was produced, and no accuracy guard was widened.
+
+`--hardware-check` retains boundary comparisons and freshness checks. Optional
+`--benchmark` uses disjoint-checked GPU timestamps, with no pixel readback or
+query wait inside the measured submission sequence. It retains the final byte
+comparison and currently exits unsuccessfully on that mismatch, before reaching
+120/144 schedules. Initial noise-profile spans were 0.009899 ms mean for the
+original 60-Hz passes and 0.106240 ms for the candidate at 60. These isolated
+spans include submission bubbles; they do not measure game FPS or establish
+acceptable high-refresh cost. Logs: water-hardware-cost.log,
+water-hardware-check.log, water-hardware-mild.log. Next: isolate the first-step
+hardware difference before resource/hook integration; Mac GPU execution and
+full-game coverage remain unfinished.
+
+The full WARP regression suite passes 25 cases in 141.81 seconds. A test-helper
+return-value warning was removed; the affected base case then passes without
+warnings in 2.80 seconds. Context and whitespace checks pass. Driver version:
+32.0.16.1742. Validation changes are test-only; no production shader was altered.
+
+## 2026-10-24 — Water coefficients for variable frame times
+
+Continuing the same branch, the candidate no longer builds and caches full
+coefficient textures for each distinct frame interval. Shared mode packing
+creates two immutable 128-square float4 textures (512 KiB of coefficient pixel
+data). A shared GPU shader computes the fractional update using that data and
+a 16-byte delta/scale uniform. New intervals need no coefficient image allocation
+or full-image upload. This removes a concrete integration cost, but game frame
+time and GPU performance have not been measured.
+
+The portable fixture covers real, repeated and complex eigenvalues, irregular
+split composition, tiny/full intervals and invalid/overflow rejection; its
+maximum measured arithmetic difference is 2.027e-6. Four focused CPU checks
+pass in 5.47 s; the final packing check including overflow rejection passes in
+1.20 s. Ten focused GPU cases pass in 72.16 s, with all 40 field/rate/smoothing
+trajectories byte-exact at every original boundary and final ripple output.
+The added 144-Hz schedule varies intervals by +/-0.1 ms and retains fresh output
+on every advancing frame. Existing pause and negative controls remain.
+Evidence: logs/water-mode-cpu.log, logs/water-mode-cpu-final.log,
+logs/water-mode-gpu.log.
+The full updated GPU suite passes all 25 cases in 141.24 seconds, including
+the new matrix-diagonal mutation (`logs/water-mode-full-suite.log`). Repository
+context and staged whitespace checks pass; the existing byte-error guard is unchanged.
+
+The renderer's RHI contract allows self-contained passes to change shader/state
+bindings but requires output/viewport restoration and texture unbinding. Actual
+resource lifecycle/hook integration, queued splashes, game GPU cost, scene
+coverage and Mac execution remain unfinished. No new PR or playable build.
+
+## 2026-10-23 — Exact intervals for authored water boundaries
+
+On `fix/native-water-rounding`, the actual timing producer demonstrates why the
+water candidate must not accumulate float deltas: one second at 144 Hz sums to
+59.999998569489 ticks even in a double, missing a boundary if truncated. New
+host-only `PcNativeStep` fields preserve exact elapsed units, starting phase and
+units per tick. The shared guest hook publishes them during native updates and
+clears them in Original mode, without changing guest timing words or pacing.
+
+Shared `graphics/surface_interval.h` splits these units into fractional pieces
+at authored boundaries, with at most four pieces for existing three-tick catch-up.
+Zero-time pauses produce none. Four focused checks pass (5.37 s), including a
+required failing phase-reset mutation; the entire asset-free native timing group
+passes 18 cases (23.70 s). Tests cover mixed presets, odd counter frequencies,
+jitter, pause/resume, stalls, frequency reset and rejected-input nonmutation.
+Evidence: logs/water-exact-interval.log, logs/water-clock-host-suite.log.
+The frame-clock suite passes nine cases (10.48 s), and all 24 original-shader
+GPU cases pass with the shared splitter and pause check (133.40 s). All 32
+field/rate/smoothing trajectories retain exact byte boundaries/final colors;
+pause output is unchanged. Logs: water-clock-flip-gate.log and
+water-clock-gpu-suite.log. Repository context and staged whitespace checks pass.
+
+The GPU water fixture now uses this production clock/splitter rather than its
+private rational clock and checks frozen output across a mid-motion pause.
+Resource initialization, actual guest time scopes, gameplay hook integration,
+queued splashes, GPU cost and Mac execution remain unfinished. No new PR or
+playable build; the metadata does not enable the experimental water path.
+
+## 2026-10-23 — Original water-noise input in fractional validation
+
+Continuing on `fix/native-water-rounding`, the saved Original60 Scotland capture
+and pinned game code establish noise before smoothing/feedback, with additive
+ONE/ONE RGB blending and a 128-square immutable A8L8 source. The expanded GPU
+fixture uses the original effect-19 pixel and four-instruction vertex programs,
+that source texture, captured sampler/blend state, and controlled UV offsets.
+Queued gameplay splash geometry and actual RNG scheduling remain separate work.
+
+The two focused cases pass in 14.56 seconds: every authored byte G/B boundary
+and final byte ripple RGB match at 60/120/144 and mixed rates, with smoothing
+off/on. Maximum arithmetic disagreement for this input is 2.563e-6. Original
+smoothed 60-Hz output changes on 27/60 frames and the candidate matches that;
+all higher/mixed-rate outputs change every frame. Duplicating a noise draw only
+in the candidate must fail. Evidence: logs/water-noise-integration.log and
+private/pipeline/water-disturbance-draw-state.json.
+The full updated suite passes 24 cases in 132.19 seconds, including the added
+channel-preservation check (`logs/water-noise-full-suite.log`). No cases skipped
+on this machine. Repository context and staged whitespace checks pass.
+
+No runtime source or playable build changed. Noise tests require the private
+capture and explicitly skip without it. Mac GPU, queued splashes, runtime
+ownership, scene coverage and game GPU cost remain pending. No new PR opened.
+
+## 2026-10-23 — Preserve second-pass water saturation
+
+On the same `fix/native-water-rounding` branch, near-limit initial velocities
+and heights exposed two more missing original limits: signed acceleration after
+the fourth neighbor contribution, and height clipping before damping. The
+shared residual now includes the acceleration clamp; a shared boundary helper
+caps height at the authored damping value and bounds velocity. Limits apply at
+original boundaries, preserving fractional evolution between them.
+
+Eight focused Windows common-RHI/WARP cases pass in 54.18 seconds. All 24
+field/rate/smoothing trajectories match every original byte G/B boundary and
+final byte ripple RGB. Removing either new limit must fail. The extreme field's
+60-Hz ripple output changes on 53/60 frames without smoothing, 52/60 with it,
+exactly matching the original; 120/144 and mixed-rate output changes on every
+frame. Evidence: logs/water-saturation-before.log and
+logs/water-saturation-controls.log.
+The complete shader suite passes all 22 cases in 117.52 seconds
+(`logs/water-saturation-full-suite.log`); context and whitespace checks pass.
+
+This remains an uncalled candidate, not a new playable build. Actual disturbance
+submission, runtime ownership/scheduling, GPU cost, scene coverage and Mac
+execution remain pending under MAC-060. No additional PR opened.
+
+## 2026-10-23 — Retain water-gradient clipping across fractional updates
+
+Continuing on `fix/native-water-rounding`, a strong signed initial height pulse
+exposed missing first-pass clipping in the candidate. Subtracting the original
+float shader output measured rounding only, because that output was already
+clipped. Shared `surface_gradient_shader.h` now supplies the unclipped gradient;
+subtracting it from actual byte red retains both effects as held forcing.
+The old path differed at tick 0 and reached 0.192156881 byte-state error.
+
+The corrected Windows common-RHI/WARP fixture matches every authored G/B
+boundary and final byte ripple RGB for mild and strong initial fields at
+60/120/144, with smoothing off/on. It also matches through 144/120/60/144
+switches made within authored ticks: all 117 final byte frames remain fresh.
+Maximum pre-quantization disagreement across these 16 combinations is 3.219e-6.
+All five focused cases pass (33.83 s), including deliberate removal of clipping
+correction. Evidence: logs/water-impulse-before.log, logs/water-impulse-switch.log.
+The complete updated shader suite passes all 19 cases in 97.52 seconds
+(`logs/water-clipping-full-suite.log`); repository context and whitespace checks pass.
+
+No new PR or game binary. This candidate is still uncalled by gameplay. Actual
+disturbance shaders, other saturation cases, runtime integration, capture-free
+GPU cost and Mac GPU/gameplay remain unverified. MAC-060 remains awaiting
+validation; the broad high-refresh goal is not complete.
+
+## 2026-10-23 — Preserve authored rounding during fractional water updates
+
+After PR #321 reached main through integration PR #322, follow-up branch
+`fix/native-water-rounding` (base 2252af1) tests a held-input treatment of rounding.
+No new PR is opened yet; the remaining work will stay together on this branch.
+It measures the first feedback pass's rounding residual, holds it for the authored
+interval, and advances the coupled GPU field on every native frame. Steps split
+at original 60-Hz boundaries; the original smoothing and persistent byte write
+occur at those boundaries. It does not interpolate between saved frame outputs.
+
+Raw fractional transforms can differ from the original arithmetic by about one
+millionth. Near a byte midpoint that changed the rounded state and later ripples:
+the first observed mismatch was tick 14, blue 0.566666484 versus 0.566667438.
+A shared boundary shader resolves only these close decisions using original
+second-pass arithmetic evaluated at the boundary. Both proximity to the midpoint
+and disagreement with that arithmetic must fit 32 float epsilons; a distant
+state is never substituted. Normal play is still unchanged.
+
+Windows x64/MSVC/common-RHI WARP verifies all 60 authored boundaries
+with zero byte G/B difference at 60/120/144, with and without original smoothing.
+Largest measured pre-quantization arithmetic difference is 3.100e-6. Tests start
+from an actual byte target, matching the captured format. They also reject
+missing residual forcing and missing boundary handling. This resolves the
+previous storage gap for this controlled trajectory, not all water inputs:
+disturbances, clipping, live rate changes, runtime resources, game GPU cost and
+Mac GPU/gameplay remain open. No new game binary or personal-data change.
+All 17 GPU cases pass in 83.64 seconds. The six schedules also match final byte
+ripple RGB exactly and produce fresh byte ripple output on every frame (60/60,
+120/120, 144/144, with smoothing off and on). The focused portable forcing test
+passes. Evidence: logs/water-rounding-flow-suite.log.
+After rebasing onto integrated main 2252af1, the complete patch stack verifies
+and updates nine runtime files. The repeated GPU suite passes all 17 cases in
+82.79 seconds against that runtime; the focused native coupled test passes
+(1.15 seconds). See logs/water-rounding-main-suite.log. This branch checkpoint
+has no new PR yet, and no new Mac or gameplay result is inferred.
+
+## 2026-10-23 — Combined open-PR integration
+
+Integration branch combines #305, #307, #308, #309, #310, #311, #313 and #321 on
+main 2e3e55a, preserving their heads as merge ancestors. Independent evidence
+and test registrations are retained; the bounded build guide consolidates
+vehicle diagnostics while their detailed history remains here and in the
+native-high-refresh regression record.
+
+Texture diagnostics and background reads overlapped. Per-request timing now
+travels by value through the bounded queue: the renderer owns CSV state, the
+reader only timestamps its request, and the renderer completes the resource
+stages. Cancellation discards the pending record; synchronous reads complete
+before cancellation. Total duration includes queue/frame waits, not GPU time.
+The combined RHI/legacy-GL tests cover both streaming modes, stage ordering,
+resource failures, cancellation, binding preservation and fallback: 22 pass.
+The remaining focused timing/vehicle/trace/filter/panel/UI tests pass (132 plus
+two Windows texture-control compile cases in the initial run); the Mac-only
+adapter fixture skips locally. Full patch application and repository-context
+checks pass. Supported Windows build fd40ce7 and built-in checks pass, including
+virtual SDL controller/keyboard routing. Later merge c1f5aed adds #321's uncalled water helpers
+and tests only, with no gameplay hook. Its GPU/CPU checks, historical upgrades
+and final combined CI are pending.
+
+PR #307's old Windows CI failure is a missing Tk panedwindow.tcl installation,
+not a vehicle assertion (475 other checks passed,91 skipped). Fresh combined CI
+must pass before merging. Original evidence limits remain: no general FPS or
+full gameplay parity claim, private-XBE tests skip on hosted CI, and native Mac
+gameplay is unverified. This integration does not publish a release.
+
+## 2026-10-23 — Preserve alpha-height for final ripple generation
+
+PR #321 now follows the candidate's reconstructed field through the original
+final ripple shader. The supported effect-22 table selects callback 0x2C320 and
+pixel definition 0x4BC318; that shader reads **alpha** height from cardinal
+neighbors. The old diagnostic reconstruction's alpha=1 would erase the slopes.
+Shared `graphics/surface_state_shader.h` now materializes the original channel
+contract before the final pass, and a constant-alpha mutation must fail.
+
+Windows x64/MSVC/common-RHI WARP, captured 128x128 wrapped geometry: reconstructed
+final float output matches the float32 Original60 reference within 0.000010908
+at 60/120/144, with fresh ripple output on every tested candidate update. This
+is still an uncalled experimental helper. The final actual-byte target is also
+tested, so final output rounding is distinct from feedback storage precision.
+All 14 GPU cases pass in 72.15 seconds; candidate and float-reference final byte
+RGB are identical in the tested 64/128 clamp and 128-wrap cases at all three rates.
+
+The original-byte feedback discrepancy survives final ripple generation. With
+original smoothing included, final red/green RMS versus the float-state path is
+0.057236962 on a float output and 0.057267247 on an actual byte output. This
+rules out a harmless uniform height offset as the entire remaining difference.
+These are controlled synthetic fields, not scene images or an FPS measurement.
+Runtime integration, storage fidelity and Windows/Mac gameplay acceptance remain
+open. No playable binary or personal data changed.
+
+## 2026-10-23 — Include original water smoothing in the storage reference
+
+Follow-up PR #321 adds a separate Original60 WARP reference that executes the
+original cardinal smoothing shader before both original feedback passes. The
+128x128 wrapped quad and +/-1-texel cardinal offsets match the retained Scotland
+draw capture. Every smoothing output is compared with an explicit four-neighbor
+calculation; a zero-radius mutation must fail. This is additional reference
+coverage, not a candidate implementation or gameplay change.
+
+With the same center/edge input, one second of float32 smoothing plus feedback
+produces mean blue 0.576436446 and standard deviation 0.000468331. Original byte
+storage produces 0.562230514 and 0.023116937. Combined G/B RMS difference is
+0.019286352. Smoothing therefore does not remove the nonlinear storage gap.
+The mixed-format controls also diverge (blue RMS 0.07635..0.08011); here the
+smoothing target uses the first-feedback target's selected format. Unlike the
+earlier feedback-only ablation, these are three-pass format controls.
+
+No game rebuild or enablement; Mac GPU/gameplay and full-scene validation remain
+pending. All 13 GPU cases pass in 58.56 seconds, including the new missing-offset
+negative control. Details are in the high-refresh regression record.
+
+## 2026-10-23 — Match water solver boundaries to captured gameplay
+
+Follow-up branch `fix/native-water-boundaries` is based on main 2e3e55a after
+PR #316 merged. During the original investigation, a bounded Original60 Scotland
+run on the preserved playable binary (source 4adb6b0, SHA-256
+0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab) captured host
+frame 3600. Four draws use the verified original six-instruction water vertex
+program. Their targets are 128x128 byte textures, with **wrapped** U/V and linear
+filtering. The feedback quad spans 0..128 with UVs 0..1 and enabled screen-space
+undo. This contradicts applying the earlier clamped DCT prototype directly to
+this game path; its old results remain controlled clamp evidence only.
+
+The shared transform now accepts an axis extent. New `graphics/surface_basis.h`
+provides the real orthonormal Hartley basis and periodic stencil coefficients,
+while retaining clamp/DCT as a diagnostic. The GPU fixture adds 128x128 checks
+and mirrors the captured quad, viewport, screen-space conversion and wrapped
+sampling. A seam-adjacent pulse makes a deliberate clamped-basis substitution
+fail. Correct periodic 60/120/144 results match the original shader pair's float32
+reference within 0.000001908, with every reconstructed frame fresh. Original
+byte-feedback RMS remains approximately 0.036930 in this field and is unresolved.
+
+Windows x64/MSVC/common-RHI WARP: all 11 GPU cases pass in 48.61 seconds.
+The new asset-free basis test passes for both boundaries at 1/7/64/128, including
+orthonormality, neighbor-stencil eigenvalues and invalid inputs (maximum error
+4.623e-14). Mac CI of this extension is pending; no water GPU/gameplay acceptance
+on Mac is claimed. No candidate hook is enabled or new game binary built.
+The bounded observation ended cleanly, signed profiles/fixture were preserved,
+and disposable partition images were recycled. One 9,220,188-byte private draw
+capture is retained; it establishes host draw state, not live feedback pixels
+or performance. See the detailed regression record and logs/water-wrapped-suite.log.
+
+## 2026-10-23 — Coupled fractional water operator candidate
+
+Independent branch `fix/native-water-coupling`, based on main 5c44696. The
+existing experimental water update scales acceleration/travel independently
+and raises damping to the timestep power. This misses coupling between velocity
+and displacement: even the controlled float32 fixed-neighbor fixture diverges
+from the original 60-step result at 120/144. The shared candidate computes the
+fractional power of the complete affine update, including its centering term.
+It is not connected to gameplay and does not enable the water experiment.
+
+Windows x64, MSVC native test compiler, common RHI/D3D11 WARP: the asset-free
+CPU fixture passes 65 controlled modes at all three rates, split-step composition,
+identity and invalid-input guards (maximum trajectory error 0.0000023031).
+Additional cases compare positive/repeated/complex eigenvalue paths against
+the independent original equations. The full native-timing suite passes: 67
+tests in 85.65 seconds; this preserves the existing timing regression coverage.
+All eight original-shader GPU cases pass in 30.74 seconds. The corrected
+fixed-neighbor GPU result differs from the actual original shader's 60-step
+float32 reference by at most 0.0000008345. A 64x64 clamped spatial-field diagnostic
+uses shared separable GPU DCT/inverse transforms and per-mode updates; maximum reconstructed error
+against the original shader pair's float32 reference is 0.000002027. All
+60/120/144 candidate updates change both the spectral state and reconstructed
+world field. Asymmetric corner impulses, checkerboard and noise match independent
+CPU transform/round-trip references within 0.000002862. Reused scratch and basis
+resources avoid allocation per update in the fixture. Removing velocity retention
+or the inverse transpose in disposable headers fails the GPU comparisons as
+required (three negative controls).
+
+Original byte-storage behavior remains different (combined G/B RMS approximately
+0.031375). This work closes the controlled linear coupling gap, not byte rounding,
+authored smoothing/disturbances, guest vertex-coordinate conventions, runtime
+resource/state integration or complete water appearance. No gameplay build/run or
+performance claim follows from these checks. Mac CPU CI, native GPU/scene work
+and runtime integration remain pending under MAC-060. No personal saves/settings
+were used. Evidence: logs/water-coupling-gpu-suite.log and the detailed coupled
+operator section in docs/native-high-refresh-regressions.md.
+
+The follow-up fixture executes the original six-instruction water vertex program
+through the production translator and WARP, preserving the existing results.
+Synthetic input geometry remains a limit. Three mixed-storage controls show that
+first-pass-only byte rounding, second-pass-only byte rounding and gradient-only
+rounding all differ from the original both-byte field (RMS blue differences
+0.012476, 0.045231 and 0.041304). The first-only result includes repeated rounding
+of copied velocity/displacement; gradient rounding alone does not reproduce it.
+These controls reject simple partial-format fixes, not solve nonlinear rounding.
+All eight updated GPU cases pass in 31.96 seconds. See the detailed regression
+table and logs/water-original-vertex.log. PR #316 head 67f9663 passed all selected
+Windows/Mac native, transition and ancillary CI checks; the newer fixture
+follow-up requires its own CI run. Mac game/GPU water acceptance remains open.
+## 2026-10-22 — Respawn hitch diagnostic, cause still open
+
+Two bounded Windows diagnostics use the unchanged integrated `20dc25d` binary
+and the same native144, ten-bot Venice, Classic 3440x1440/FOV73 setup below.
+Read-only observations bracket initial guest-thread cycles/CPU time, guest
+frame, health and roster with QPC. No stack suspension is used. These polling
+runs are diagnostic evidence, not clean pacing benchmarks or a performance fix.
+
+`vehicle-integrated-respawn-thread` records 34,914 observations, including
+16,433 active-route observations confirming ten bots and four health
+restorations. The largest interval in spawn+5..55 seconds is 25.856 ms, ending
+83.418 ms after E key-down and about 65 ms after health has already returned.
+The Present call takes 0.070 ms. A surrounding 26.323-ms CPU observation bracket
+contains 35,207,451 cycles and 15.625 ms of coarse CPU time; the largest query
+takes 0.0402 ms. Reduced cycle growth in the middle does not establish a wait
+reason, precise CPU utilization or the responsible routine. Other gaps are
+unrelated to respawn, so a single cause remains unproven.
+
+`vehicle-integrated-respawn-mmio` adds read-only samples of the emulated PFB
+flush bit and DMA PUT/GET words. It records 34,871 observations, 16,423 in the
+active route, ten bots and five health restorations. The larger hitch does not
+recur: the worst selected interval is 14.332 ms, with no pending handshake in
+its six surrounding samples. A 10.646-ms interval shortly after respawn contains
+one set flush-bit sample followed by cleared samples. This does not establish
+handshake latency or exclude short waits missed by the nominal 4-ms sampler;
+it supplies no basis for changing acknowledgement policy. Native-frame GPU
+timing is not supplied by `pc_gpu_timing.inc`, whose begin hook is only in the
+retired interpolated redraw path. The stack follow-up below narrows the next
+check without attributing the original large gap.
+
+Both sessions exit cleanly, preserve signed isolated profiles and the canonical
+fixture, and recycle disposable disks. Normal playable SHA `0072d5b4...efc7ab`
+is restored; candidate SHA remains `f6f5cd1a...a4f610`. No runtime change or
+rebuild. Evidence: the named runs, `logs/respawn-thread-analysis.json` and
+`logs/respawn-mmio-analysis.json`. All selected runtime, upgrades, transitions,
+launcher and issue CI checks pass at `128fa06`; native Mac gameplay/performance
+and the broader high-refresh goal remain unverified.
+
+### Timestamped stack follow-up
+
+Three further bounded 165-second sessions retain that executable and route.
+An external diagnostic samples only the owned initial guest thread in active
+scene 46/state 7, with QPC, health, roster and up to 16 native frames. Each resolves
+all collected samples to at least three frames. The first version unwinds while
+suspended; its selected-window median pause is 0.4553 ms, totaling 5.001 seconds
+over 50 seconds. That overhead is substantial. The replacement copies up to
+128 KiB of stack while suspended, resumes immediately and unwinds the copy.
+Controlled sleeping-thread checks recover the expected call chain. These are
+diagnostics, not clean benchmarks; even the revised sampler consumes CPU and
+can perturb scheduling. Symbol labels can be the nearest available public
+symbol, especially when the displacement is large.
+
+| Diagnostic | Selected-window samples | Median / p99 suspension ms | Worst Present interval ms |
+| --- | ---: | ---: | ---: |
+| `vehicle-integrated-respawn-stack` | 10,682 | 0.4553 / 0.6587 | 17.194 |
+| `vehicle-integrated-respawn-snapshot` | 10,802 | 0.0188 / 0.1344 | 12.701 |
+| `vehicle-integrated-respawn-nopack` | 10,801 | 0.0184 / 0.1320 | 9.456 |
+
+The revised with-pack run catches `NtReadFile` beneath `tsfp_texture_upload`
+in the 12.701-ms frame, 38.105 ms after E with observed health 1.75. Suspension
+accounts for 0.0965 ms inside that interval; another sample is in the original
+GPU-flush path. The earlier 17.194-ms frame also contains a texture-file open.
+The loader intentionally reads/caches replacement views even in Classic mode
+to support live switching. Its log has 131 loads/127 distinct keys in the revised
+run, so most are first loads rather than repeated loads of the same replacement.
+
+The final control empties only the disposable child's optional-pack/dump
+environment paths. It has no replacement-load log entries or sampled
+`tsfp_texture_upload` frames. Installed files/settings stay intact. This
+strengthens the synchronous texture-loading lead but does not measure each
+upload's duration, establish a causal FPS gain, reproduce the 25.856-ms event
+or eliminate other hitches: bot outcomes differ between runs. Do not remove
+texture support or change GPU acknowledgement policy on this evidence. Next
+measure file-read and GPU-resource creation durations per texture upload.
+
+All three sessions preserve valid isolated profiles, exit cleanly, recycle
+disposable disks and restore the normal playable executable. Raw stacks,
+symbol tables and helper/build hashes are retained in each named run; analyses
+are `logs/respawn-{stack,snapshot,nopack}-analysis.json`. No runtime change or
+game rebuild. All selected CI passes at `44b9c76`. Actual Mac gameplay/performance
+and broad high-refresh acceptance remain open.
+
+## 2026-10-22 — Integrated physics crowded-match pacing
+
+Capture-free Windows runs compare the integrated physics/camera build `20dc25d`
+with the normal playable `4adb6b0` executable. Both use the established ten-bot
+Venice setup route, unlimited score, native144, Classic textures, 3440x1440 and
+FOV 73. Earlier separate setup captures verify the menu sequence; these new runs
+do not include a roster sampler. No competing TSFP process or owned build, test or CPU profiler runs
+during their measurement windows; other background OS/app activity is uncontrolled. Each uses isolated Test Lab saves/settings,
+exits cleanly and preserves valid profile signatures. Disposable disks are
+recycled and the normal executable is restored.
+
+| Build | Guest presents | Mean FPS | p95 / p99 ms | Worst ms | Slowest full second |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Integrated `20dc25d` | 7,189 | 143.803 | 7.737 / 8.116 | 27.428 | 141 |
+| Playable `4adb6b0` | 7,194 | 143.901 | 7.782 / 8.195 | 34.091 | 141 |
+
+The strict analyzer includes complete successful-present intervals between
+spawn-observation+5 and +55 seconds, with consecutive clock evidence bracketing
+the window. All presentations are fresh guest frames, none interpolated. Scene 46,
+active match state 7 and unpaused checkpoints cover the window. Game-clock/wall
+ratios across the longer combat checkpoints are 0.999959 / 0.999937. These are
+minimized host Present measurements, not GPU completion, scanout or physical
+input acceptance. Hardware is the same Windows x64 i7-13700K / RTX 4070 SUPER
+host used for earlier crowd tests. Bots/death/respawn outcomes differ, so this
+supports no substantial integration slowdown in this route, not a speedup,
+exact gameplay parity, elimination of the reported 110-FPS dips or locked 144 FPS.
+The separate unproven HUD-panel optimization from PR305 is absent from both.
+
+The largest gap in each new run ends 67.273 / 47.697 ms after an E key-down whose
+preceding checkpoint has zero health; the measured Present bodies themselves
+are only 0.069 / 0.068 ms. This is a respawn correlation, not a proven wait/CPU/GPU
+cause. Other slow frames do not share it, including the previously retained
+60.555-ms outlier. Keep that broader hitch investigation open.
+
+Candidate EXE SHA is `f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+playable SHA is `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`.
+Evidence: `vehicle-integrated-crowd-144`, `crowd-playable-compare-144`, their
+source provenance/Present CSVs and `logs/integrated-crowd-comparison.json`.
+No runtime change or rebuild is made for this validation. All selected CI passes
+at preceding head `ba23126`; native Mac gameplay/performance remain unverified.
+
+## 2026-10-22 — Vehicle exit and return to on-foot controls
+
+Same-build Windows probes on `20dc25d` now verify jeep entry, three seconds of
+throttle, five seconds of settling, exit, walking and on-foot pause/resume at
+genuine Original60, native120 and native144. All three restore weapon 4 and camera mode 0 from
+vehicle mode 24. One second of forward input moves the player 7.988814 / 8.001610 / 7.990989
+world units; the jeep does not move during that walking interval. Player/jeep
+separation grows from about 1.9 to 8.35–8.37 units. Each run contains 114 settled pause
+observations with zero game delta and unchanged body/camera positions.
+
+The default vehicle-exit key is **Y**, delivering logical input 0x40. Original
+`D2470` tests that pressed mask and passes it to `17DA00`. Earlier E/F/R probes
+are excluded: they did not issue the required exit action, and stayed seated
+in Original60. F and R explicitly delivered 0x20/0x10. Raw Xbox analog button
+indices must not be treated as guest logical action bits. No binding or runtime
+mechanic changed; the control guide now lists the confirmed key.
+
+All three accepted runs have zero bots, health 1.75, unchanged signed Test Lab saves,
+isolated settings and reviewed exit/movement captures. Solver summaries
+independently verify native=0/native=1, and trace output stays below both limits.
+Evidence is in `vehicle-integrated-exit-y-{original60,120,144}` and
+`logs/vehicle-exit-comparison.json`. EXE SHA-256 remains
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`;
+host/toolchain are Windows x64, MSVC 14.44 / SDK 10.0.26100, common D3D11 renderer.
+These short captured synthetic-input runs do not measure pacing, physical input,
+all seat/vehicle types or exact trajectories. Broader terrain/contact handling,
+campaign/multiplayer and native Mac acceptance remain open. No rebuild needed.
+All selected CI passes at preceding test/evidence head `05009b1`.
+
+## 2026-10-22 — Native144 corner-contact evidence and overlap checks
+
+The same `20dc25d` Windows executable completes a new bounded native144 run.
+Normal walking inputs detour through X/Z (30,35) and (0,20) around the column
+that blocked the prior approach; jeep inputs remain unchanged. Entry, throttle,
+pause/resume and profile-preservation checks pass. The trace independently
+verifies native mode and records 241 solver entries, 660 allocated target
+records and 655 selected records while the jeep is within Z60..80. The vehicle
+continues onto the bank, ending near X-8.420/Z105.204; the capture confirms this.
+
+The first object contact differs from genuine Original60: native144 touches a
+side-facing plane near body Z67.488, normal (-0.9962,-0.0654,+0.0573), whereas
+Original60 touches the front near Z67.118, normal (-0.0551,0,-0.9921). Within
+the recorded window, the native144 allocated object records contain four
+side-facing normals and no front-facing ones; Original60 has 28 front-facing
+records. Selection can already have merged these arena records. They establish
+different geometry entering the solver, not untouched producer output. Small
+position/yaw differences exist before contact. This supports a corner-grazing
+explanation and does not demonstrate a skipped solver contact; it does not yet
+isolate all sources of the trajectory difference or certify broader handling.
+
+The native144 run has 3,516 asynchronous body observations, zero steering,
+zero bots and 114 stationary settled-pause samples. Its frame-bracketed camera
+distance near Z30 is 10.01738 units versus 10.15778 in the genuine Original60
+run (valid ownership/mode24/FOV55; native144 read 0.105 ms). This is short-route
+behavior evidence with synthetic inputs and captures, not pacing or scanout
+acceptance. The normal playable executable is restored. The failed earlier144
+approach remains excluded; evidence is in `vehicle-integrated-solver-144-detour`
+and the updated `logs/vehicle-solver-comparison.json` / camera check.
+
+Original `168720` already specifies penetration escape velocity in world units
+per second: 60 * 0.2 * clamp(-depth,0,0.1), combined with restitution. It does
+not need an FPS multiplier. The rigid-motion fixture now checks 576 additional
+cases against an independent generalized impulse equation: four signed/capped
+depths, three restitution values, unit/quantized normals, centered/eccentric
+points, static contact kinds0/2 and Original60/native120/native144/irregular
+intervals. These closing contacts use speed12, inverse mass0.5 and unit inverse
+inertia. Linear tolerance includes authored drag; angular response and kinetic
+energy have separate checks. Removing only the penetration term fails the new
+assertion. Maximum linear/angular errors are 0.000034368 / 0.000008169.
+
+All 19 vehicle tests pass in 44.82 seconds, including prior counterfactuals.
+The new checks require the supported private US XBE; asset-free hosted CI skips
+those original-routine cases. No runtime mechanics change or new game build was
+made for this audit. Native Mac gameplay, full terrain handling and pacing
+remain open. All selected CI passes at preceding head `fcdbad2`; fresh test/docs
+head checks must be tracked separately.
+
+## 2026-10-22 — Correction to live vehicle reference-clock labels
+
+The solver trace exposed a validation-label error: prior live `vehicle-*-60`
+runs supplied `--native-fps 60`, which activates the native clock at 60 Hz.
+Their saved provenance and `[NATIVE-TIMING] 60 fresh` log messages confirm this;
+the new solver trace reports `native=1`. They are native60 comparisons, not
+Original60. This applies to vehicle-live/driver, integrated camera/camfix,
+settled-steering and terrain/terrain-repeat evidence. The observed values remain
+valid for those runs, but their former Original60 labels and any implied live
+original-clock parity are withdrawn. Offline fixtures explicitly disabling the
+native policy still exercise Original60 and are unaffected. A real original
+clock run must explicitly select zero/disabled native timing and verify it.
+
+The bounded runner now accepts `--native-fps 0` explicitly. The new
+`vehicle-integrated-solver-original60` run independently verifies `native=0`
+in every solver record; its native60/native120 controls verify `native=1`.
+This corrects the reference for this contact probe only, not every historical
+camera, steering or terrain comparison.
+
+## 2026-10-22 — Synchronous vehicle contact diagnostic
+
+The read-only background contact probe at native120 observed 534 stable arena
+reads, all with 500 free entries and no contacts. Original `171FB0` resets that
+arena immediately after solving; these observations cannot establish that no
+contact was generated. This repeat stopped at the pillar, unlike the earlier120
+run, with changed instrumentation and a slightly different approach. Neither
+outcome alone isolates a frame-rate-dependent collision failure.
+
+An opt-in shared diagnostic now captures generated and selected contact lists
+at the exact `172114 -> 171560` solver entry, alongside body state and time
+intervals. It validates memory spans, body identity and finite values, writes no
+guest state, and caps output at 16,000 rows or 8 MiB. Disabled builds take only
+the cached enable check. This is investigation infrastructure, not a collision
+fix or performance evidence. All 86 local timing/vehicle checks, four full-stack
+and historical upgrades, and 21 context/backlog checks pass. Supported Windows
+build `20dc25d` passes; the virtual-pad routing check explicitly skips because
+Windows refuses foreground activation. EXE SHA-256 is
+`f6f5cd1ab20e8c2797ae1a42d47583dfff42d648e1efba77a04e5e2f79a4f610`.
+No production collision mechanics changed. Native Mac gameplay remains pending.
+All selected Windows/Mac runtime, upgrade, transition, launcher and issue CI
+checks pass at code head `20dc25d`; the subsequent runner/evidence revision must
+be tracked separately from that verified head.
+
+On that same executable, original60/native60/native120 probes record
+453 / 663 / 870 solver entries, with 945 / 1,385 / 1,750 selected target contacts.
+Each includes contacts with the pillar, followed by reduced forward velocity;
+all three stop near Z67.946 / 68.027 / 67.622. Reviewed captures agree. The
+allocated `generated` arena is captured after selection can merge records;
+it is not an untouched contact-generation trace. Every recorded selected address
+belongs to that entry's allocated arena, and these runs are below output caps.
+First-contact positions, normals, penetration depths and approach velocities
+differ, so this does not isolate the earlier pass-through or prove exact handling.
+The native144 attempt gets stuck on the walking approach and never enters the
+jeep; it is excluded from contact acceptance.
+
+Each accepted run has 114 stationary settled-pause samples and unchanged valid
+profiles. Separate frame-bracketed camera/body samples near Z30 measure
+10.15778 / 10.13406 / 10.03145 world units at original60/native60/native120,
+with valid camera ownership/mode24/FOV55; reads take at most 0.120 ms. These are
+asynchronous diagnostics with captures and synthetic controls, not pacing or
+scanout measurements. Evidence: `logs/vehicle-solver-comparison.json`,
+`logs/vehicle-solver-camera-check.json` and per-run trace/provenance/captures.
+The normal playable executable is restored and verified. Full handling, broader
+original-versus144 comparisons, physical input and Mac acceptance remain open.
+
+## 2026-10-22 — Controlled contact impulse audit
+
+The original rigid-motion fixture now supplies identical zero-depth static
+contacts to the original solver and integrator, independently of the live
+approach. All 864 combinations pass: three normal axes, both signs, centered
+and positive/negative eccentric points, three inverse masses, closing speeds
+4/12, separating speed4, rest, Original60, native120/144 and irregular native
+intervals. Expected linear/angular response comes from the independent
+frictionless inelastic impulse equation with unit inverse inertia. Kinetic
+energy must not increase and all unused vector components must remain zero
+within roundoff. The `missing-wall` mutation removes the original contact solve
+only in these cases and fails their analytical response assertion.
+
+Maximum linear difference is 0.000133514 velocity units and angular difference
+0.000000954. The linear bound includes the original integrator's verified
+0.001*v drag over one authored tick plus 0.00002 roundoff; an initial assertion
+that ignored drag correctly needed its physical expectation corrected.
+Separating/resting contacts need no impact notification, so that counter is
+required only for closing cases. The full vehicle suite passes 19 tests in
+48.77 seconds, including its existing and new mutations. Evidence:
+`logs/native-wall-contact-test.log` and `logs/native-contact-regressions.log`.
+
+This narrows the live obstacle investigation; it does not resolve the pillar
+outcome. Geometry generation, contact selection and world-space contact offsets
+remain controlled by this fixture. The original call path `170500 -> 16D380`,
+with an additional `175510` call for vehicle class `0x400000`, and selection
+`170690` are investigation targets. No production physics change or new game
+build follows from passing these checks. The fixture requires the supported
+private US XBE; asset-free hosted CI skips it. Actual Mac execution and broader
+vehicle handling remain unverified under MAC-060.
+
+## 2026-10-22 — Straight vehicle obstacle comparison remains unresolved
+
+The same corrected `fb261e1` Windows executable was tested against the Siberia
+ice pillar with no bots, six seconds for vehicle entry, no steering commands,
+and the same three-second throttle plus two further three-second bursts.
+Read-only observations include body position, quaternion and velocity, with
+matching frame brackets. Steering remains below 0.001 magnitude throughout.
+Native60 and native144 stop at the pillar near Z67.987 and Z67.912; native120
+continues onto the bank near Z109.037. Reviewed captures confirm those outcomes.
+A repeat native60 run also stops, near Z67.568, with a different final pose.
+
+The approach is still not identical. Near Z66, sampled X values at 60/120/144
+are -11.38515 / -11.41138 / -11.17424; quaternion-derived yaw is approximately
+2.168 / 1.943 / 2.192 degrees. The repeated native60 sample is X-11.30164,
+yaw2.087 degrees. The divergence occurs around the pillar edge near Z67;
+the 120 run retains forward velocity while the other runs turn and stop.
+This reproduces an unresolved terrain outcome on the current executable,
+but does not isolate its cause to collision code or establish a rate-specific
+failure. No production physics change was made from these observations.
+The prior six-bot replay's alternate path occurred at144, not120; keep both
+records instead of treating either short replay as complete handling acceptance.
+
+All four bounded sessions exit cleanly, retain health 1.75 and unchanged valid
+profile signatures, and pass stationary settled pause (119 / 114 / 114 / 114
+samples for 60/120/144/60-repeat). Disposable disks are recycled and the normal
+playable executable is restored. Evidence: isolated
+`vehicle-integrated-terrain-{60,120,144,60-repeat}` reports/captures/provenance
+and `logs/vehicle-terrain-comparison.json`. These are asynchronous observations
+with captures and synthetic input, not exact trajectories or frame-pacing
+measurements. A controlled obstacle/contact comparison is needed before a
+mechanics change. Full terrain handling and native Mac gameplay remain open.
+All selected CI checks pass at documentation head `a2c9db6`; these checks do
+not resolve the observed live difference. PR #307 remains draft.
+
+## 2026-10-22 — Vehicle chase-camera fractional time correction
+
+The camera-distance suspicion is now reproduced independently of image age.
+Bounded no-bot Siberia runs of integrated code `d0116a7` read the jeep and
+active camera positions together, retain matching frame-counter brackets and
+verify the player's camera link, chase mode 24 and FOV 55. At vehicle Z near
+30, camera/body separation is 10.445 world units at native60 and 15.133 at
+native144. Each selected read completes within 0.247 ms; capture cadence is
+approximately 0.2 seconds at both presets. These are behavior diagnostics,
+not pacing or monitor-scanout measurements. Evidence:
+`logs/vehicle-camera-before.json` and isolated `vehicle-integrated-camera-*`.
+
+Original chase update `CA040` gates on whole game ticks, while its elapsed
+interval comes from physics history through `165650`. Fractional frames are
+therefore discarded. A second whole-tick load at `CA424` controls five spring
+substeps per tick. The shared numeric correction admits every positive live
+interval at entry and supplies one substep group when that interval has no
+whole tick. The original duration is divided among those substeps; authored
+spring constants, target construction, collisions and whole/catch-up groups
+remain in the original routine. Original60 behavior stays unchanged.
+
+A full-original camera fixture reproduces the tracking deficit before the fix
+and passes afterward. It includes the original history average, spring,
+orientation helpers and publication, with unobstructed collision services,
+controlled history windows/targets and host CRT math. Comparisons cover both
+horizontal axes, reversal, quarter/normal/triple speed, 60/120/144, irregular
+intervals, fresh fractional updates, stale-whole pause and ABI. Two-second
+checkpoints align carried-tick phases. Moving-target tolerance is one authored
+sample's travel plus 0.03 units of integration margin, scaled for fast time;
+maximum observed error is 0.144440 units. Independently removing either gate
+or substep-count correction fails (the latter is checked before entering a
+zero-count loop). Three asset-free tests exercise actual global-load lowering
+at both sites and an unrelated address. The registered both-host suite runs
+these without game assets; full-original cases require the verified US XBE.
+
+The combined timing/physics/generation/frame-clock/input/projection suite
+passes 151 tests in 174.45 seconds; 21 context/backlog checks also pass.
+Source fix `24d0ad5` is integrated with main `acf4464` (keyboard/storage
+changes), preserving both historical-fixture exclusions. The integrated
+vehicle/input/menu/storage/fixture/context selection passes 60 tests with two
+Mac-only local skips; four current/historical patch upgrades pass. Integrated
+`fb261e1` passes the supported full Windows build and built-in checks (MSVC
+14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Its EXE SHA-256 is
+`992d6788a3357c8e02c67762b0731c65d53020a2b6c6dbd8dae1b65594f96289`.
+The normal playable executable is restored and hash-verified after each test.
+Native Mac gameplay and broader geometry remain unverified under MAC-060.
+This fix does not establish full vehicle or full-game fidelity.
+
+The corrected executable completes the same bounded, no-bot Siberia route at
+Native60, native120 and native144. Frame-bracketed observations retain valid
+camera ownership, mode24 and FOV55. Camera/body distances in world units at
+matched vehicle positions are:
+
+| Vehicle Z | Native60 | Native120 | Native144 |
+| --- | ---: | ---: | ---: |
+| Near 10 | 7.82404 | 7.93013 | 7.79685 |
+| Near 20 | 10.03926 | 9.93714 | 9.86945 |
+| Near 30 | 10.10340 | 10.10925 | 9.97361 |
+
+This removes the large pre-fix lag in this route; it is not exact trajectory
+parity. Each preset has one short run, asynchronous 20 ms reads, synthetic
+inputs and renderer captures approximately every 0.2 seconds. The largest
+selected-read duration is 0.479 ms. Captures show the expected chase view;
+their pose age is not treated as synchronized. All presets pass both signed
+steering windows and stationary settled pause (115 / 114 / 115 samples with
+zero game delta and XYZ span). Total observations are 3,502 / 3,532 / 3,518.
+Profiles remain unchanged with valid signatures; disposable disks are recycled.
+Evidence: `vehicle-integrated-camfix-{60,120,144}` reports, captures and
+provenance, and `logs/vehicle-camera-comparison.json`. All selected runtime,
+upgrade, transition, launcher and issue CI checks pass at built source
+`fb261e1`. Native Mac gameplay, terrain/contact, physical input, exit and frame
+pacing remain separate acceptance requirements.
+
+## 2026-10-22 — Vehicle integration with main
+
+Vehicle candidate `d0116a7` integrates main `7545d4b`, including its
+mounted-input, boost-resource, crowded-map and clock-handoff fixes. Conflict
+resolution retains both physics history and boost-clock tests and both numeric
+policy helpers. The patch sequence retains coefficient precision before surface
+preservation, vehicle physics before live surface support, then full-float
+surface support and native flip handoff. Historical fixtures exclude the full
+dependent set. The complete patch sequence applies. Combined Windows timing,
+physics, generation, frame-clock, mounted/terminal-input, text-scope and
+projection checks pass: 147 tests in 195.31 seconds. Four fresh/repeated and
+historical upgrade checks pass in 106.87 seconds; 88 context/backlog/scope
+checks also pass. The supported full Windows build and built-in checks pass
+(MSVC 14.44.35207, SDK 10.0.26100, common Xbox/D3D11 frontend). Candidate
+EXE SHA-256 is
+`30d1e377a38e33f20c7ba9bee2430e74bd9239be8d4ff31e2bbdbb41fe8e0747`.
+Draft PR #307 contains this integration; broader live handling and actual Mac
+gameplay acceptance remain pending.
+
+The initial integrated 144 live run shows jeep entry/driving and pause/resume,
+but its private observer confused a body handle with a pointer and produced
+no steering data. A corrected observer collected 1,967 samples in the next
+run, but the player died before jeep entry; exclude it from driving comparison.
+The subsequent native60 run collected 1,957 samples and showed signed
+steering, eligible wheel response and throttle. Its 128 settled pause samples
+have zero game delta and no position change. Despite the run name ending
+`60-empty`, six bots remained enabled; it is not an empty-map reference.
+These asynchronous observations and captures are neither completed-update
+traces nor frame-pacing measurements. Evidence and exclusions are retained in
+`logs/vehicle-integrated-live-summary.json` and each disposable run's provenance.
+
+The corrected, no-bot Siberia route completes at native60, native120 and
+native144 using the same `d0116a7` executable and isolated settings. The normal
+None bot preset is confirmed by roster and captures. A bounded normal-input
+approach accounts for the different spawn, then waits six seconds for entry
+before testing right/left steering, release, three-second throttle and pause.
+Both signed steering windows exceed 0.9 magnitude at every preset; live
+observations total 3,502 / 3,507 / 3,536 samples. Settled pause windows contain
+128 / 128 / 129 observations, all with zero game delta and zero XYZ span.
+Profiles/signatures remain unchanged and disposable partitions are recycled.
+
+These are single short diagnostic runs per preset, with 20 ms asynchronous
+reads and synthetic inputs. Nearest half-second right-steering samples are
+-0.88718 / -0.86954 / -0.88497; left samples are 0.87706 / 0.85964 / 0.87013.
+Sampled displacement during throttle is 29.959 / 29.571 / 29.660 world units;
+window endpoints are asynchronous, so this is not exact trajectory parity.
+The driving images show a possible camera-distance difference, but the
+180-frame capture cadence is different in wall time at each preset. A
+synchronized camera check is required before assigning a regression.
+Vehicle exit was not verified. Terrain/contact, exact response timing,
+physical input, pacing and native Mac gameplay remain open. Evidence:
+`private/test-saves/vehicle-integrated-settled-{60,120,144}` and
+`logs/vehicle-nobots-comparison.json`. Earlier no-bot setup probes that missed
+the jeep or sent right input during the entry animation are excluded from
+matched steering acceptance.
+
+All selected CI checks pass for code commit `d0116a7`, including both host
+runtime, upgrade and transition jobs in workflow 39851684749. A subsequent
+documentation commit must be tracked separately from that verified code head.
+
+The current candidate pair is retained in `private/build-recovery/vehicle-d0116a7`;
+its older `464f850` and `60e5b36` executable/symbol pairs were superseded and
+recycled, with their diagnostic evidence preserved. The normal playable
+`4adb6b0` pair is restored between owned tests; its hash is verified. Generated
+code and object files correspond to `d0116a7`, so preserve the normal pair and
+force a fresh link for any further build.
+
+## 2026-10-22 — Vehicle steering response candidate
+
+The WIP `fix/native-vehicle-physics` branch now preserves the original steering
+easing response on fractional updates. Original `172EE0` multiplies steering
+error by live game time and then 0.07. Linear subdivision makes the remaining
+error decay more slowly at native rates. The shared coefficient rule now covers
+only site `17306A`, retaining the speed-dependent steering target, wheel
+eligibility, Original60, whole/catch-up and overshooting-weight behavior.
+
+The expanded full-original driver fixture fails before this correction at
+native120, then passes with the correction and rejects the `legacy-steering`
+negative control. It checks left/right/released steering, vehicle speed and its
+target clamp, quarter/normal/triple time, 60/120/144, irregular intervals, fresh
+wheel output, pause and ABI. Two asset-free synthetic SSE checks also pass,
+including an unrelated site and preserved upper lanes. Physics and world
+geometry remain controlled boundaries. All 117 timing/physics/translator/
+generation checks pass in 153.58 seconds, plus 77 context/backlog/scope checks.
+The 135 steering stage comparisons differ from their Original60 reference by
+at most 0.000000238. Supported Windows build `464f850` and all built-in checks
+pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend).
+This historical candidate was superseded by integrated `d0116a7`; its
+EXE SHA-256 is
+`a3794aa372fd1e975dbe67444c7b7b4c4de476abaa8545d9ada5ac58080a9068`.
+The prior playable `4adb6b0` executable was restored and its hash verified.
+Live handling acceptance remains pending; current-main integration is recorded above.
+This is not an established fix for the earlier pillar/bank trajectory difference.
+See MAC-060 and the steering audit in the high-refresh regression record.
+
+## 2026-10-22 — Vehicle and rigid-body timing candidate
+
+On `fix/native-vehicle-physics` (WIP candidate), original-routine tests exposed
+another native timing gap: at steady 120/144 FPS the rigid-body clock and vehicle
+spring update consumed only 0.5/0.4167 seconds per second. The candidate processes
+every advancing interval, splits long rigid-body intervals into bounded substeps,
+and preserves the vehicle's linear adjustment and integer rest-timer cadence.
+Returning to Original 60 rebases its old averaged timestep after pause, avoiding
+native-sized history temporarily slowing original physics.
+
+Windows validation: 67 timing tests passed, followed by four focused checks
+covering slow/fast motion, catch-up, the original secondary solver-step
+selection and history handoff. All 114 translator/context/backlog companion
+checks and four full-stack install/upgrade checks also passed. The extended
+four-case vehicle test file now also passes with the original moving-body,
+force/drag, quaternion/matrix and single support-contact routines. At 144 versus
+60, one-second forced X displacement is 8.977188 versus 8.948050 units; final
+velocity is 11.995511 versus 11.995525. A supported body stops at all three rates,
+and negative controls reject both the old clock and missing contact resolution.
+
+A separate original two-contact diagnostic found 480/960/1152 shared random
+draws at 60/120/144. The candidate now gives additional primary solves a private
+advancing sequence at the two shuffle sites, while authored steps retain their
+shared effects. Three-contact original-routine checks produce the same 960
+shared draws and final seed at all three rates. Expanded fast-motion checks
+also exposed a rounding-induced ninth collision substep (3.375 simulated
+seconds for 3 requested); a bounded eighth-step correction restores 3 seconds.
+Final Windows validation passes 70 timing/vehicle tests, including the
+20,000-partition rounding contract, 115 translator/generation/context/backlog
+companions, and four full-stack patch install/upgrade cases.
+
+The subsequent original entity-publication test exposed a second sleep timer:
+ten counts expired in 0.1667/0.0833/0.0694 seconds at 60/120/144. The candidate
+now preserves authored ticks at its direct byte-memory decrement. Full
+original publication, bounds, sleep/wake and vehicle-component routines pass
+focused checks: ten-count sleep lasts 0.1667 seconds at every rate, or 0.6667
+at quarter speed; wake resumes on the next fractional update. Position and
+velocity are published each advancing frame. The follow-up passes 110 timing,
+vehicle and generation regressions and four fresh/install/upgrade cases;
+live driving and rendering are still separate acceptance work.
+The first full build exposed a missing generated physics body at link time:
+the manual scanner did not recognize a comma-separated `_gen` declaration.
+The declaration is now standalone and a production-scanner regression passes.
+The corrected Windows build at `ba4f0bf` passes supported generation, linking
+and build tests. Bounded Siberia sessions at all three presets verify entry,
+visible driving, terrain contact and pause/resume, but expose an unresolved
+acceleration discrepancy. The same roughly 2.97-second sampled throttle window
+travels 29.96 game units at native60, versus 19.88/22.39 at requested 120/144;
+starting positions are nearly identical, health stays unchanged and authored
+time advances 179/178/178 ticks. These captured runs are not pacing benchmarks
+or full handling acceptance. Further driver/force/contact investigation is
+required. The candidate executable is retained locally for diagnosis; the
+previous tested crowd-performance executable was restored for normal play.
+Shared implementation and tests are registered for both CI hosts; native Mac
+execution is pending (MAC-060). No PR/release published for this candidate.
+
+Driver follow-up identifies a concrete missing input update: original dispatcher
+`17DA00` skips fractional frames at `17DA03`, even though vehicle simulation
+consumes and clears throttle/brake inputs on them. A new original-routine
+fixture reproduces 60 throttle updates and half the intended integrated power
+at native120. The shared gate correction supplies fresh input on every advancing
+native interval. Original60 remains unchanged; forward/reverse/braking, release,
+pause and slow/fast/irregular timing are covered. This fixes the proven input
+defect. Supported Windows build `67c1864` passes, and fresh matched live throttle
+windows now travel 29.695/29.678/29.674 units at requested 60/120/144, a spread
+below 0.1%. All use 178 authored ticks, unchanged health and near-identical
+starting positions. Later terrain contact diverges: 60/120 stop against the
+pillar while 144 proceeds onto the bank. Collision acceptance therefore remains
+open; these capture-enabled runs do not establish locked frame rates. All exit
+cleanly with fixture/profile signatures unchanged. The latest candidate EXE/PDB
+are retained locally, and the prior playable crowd build is restored.
+Windows validation passes 112 timing/vehicle/translator/generation cases and
+77 repository-context/backlog/CI-scope cases after this correction.
+
+Further contact audit finds `1667C0` discards character velocity at gate
+`166899` on zero-whole native updates. The shared policy now uses positive
+fractional game time there. Original contact math passes body/static/character,
+rotation, speeds, pause and ABI cases; old-gate controls fail at native120.
+The original solver plus `16E780/16DA90` forwarding path demonstrates the
+corrected normal/vector velocity reaches a body callback. In that controlled
+moving-support case body motion was already correct; this fixes contact
+information, not a proven terrain-trajectory cause. Windows validation passes
+113 timing/vehicle/translator/generation cases, followed by the expanded
+original-notification case. Full game build/live character-contact and native
+Mac validation of this last correction are pending. The existing playable
+binary and retained `67c1864` candidate remain unchanged.
+
+Spawn follow-up corrects `172AB5`: object creation previously skipped inherited
+joint velocity and angular momentum on fractional native frames. Original
+history-copy, spawn, setters and matrix math now pass at 60/120/144; restoring
+the old gate fails at native120. Controlled services supply allocation, model
+orientation and owner transforms. Pause, disabled inheritance, missing history
+and allocation failure are covered. This is a one-time spawn fix, not a change
+to continuous animation colliders. All 114 timing/vehicle/translator/generation
+regressions and 77 context/backlog/scope checks pass. Supported Windows build
+`3e1ee87` and its built-in tests also pass, covering both the character-contact
+and spawn-motion source additions. Candidate EXE/PDB are retained under
+`private/build-recovery/vehicle-3e1ee87`; executable SHA-256 is
+`6cfe6c7a5b5fe71b0f128b520e1e08affd1e50e3fbd672de783c34f21387c42e`.
+The previous `67c1864` binary pair was recycled and the normal playable
+`4adb6b0` pair restored with its hash verified. No live gameplay was launched
+for these two additions; live spawn/contact and native Mac acceptance remain
+pending. Build evidence is `logs/native-spawn-motion-build.log`.
+
+Actor/vehicle callback follow-up finds a separate conversion error: entity
+post-update already publishes velocity per authored tick, but `17CAE0` divides
+it by the event's fractional interval again on carried-tick frames. A linked
+original-routine fixture reproduces the same contact reporting 5.2 then 10.4
+units/second at120. Native divide `17CBD6` now retains the constant 60 conversion
+to units/second; its gate and original-mode behavior stay unchanged. Direct
+and queued event delivery now agree across60/120/144, including the original
+suspension impulse response. This is controlled single-contact evidence,
+not a live character/vehicle or static-terrain acceptance result.
+The combined timing, vehicle, numeric-join and generation suite passes all
+115 tests (146.56 seconds); 77 context/backlog/scope checks also pass.
+Supported Windows build `60e5b36` and its built-in checks pass
+(`logs/native-actor-impact-build.log`). Live acceptance remains pending.
+A bounded 144 FPS Siberia probe walks into the parked jeep and records the
+original actor callback `17CAE0` from player collision (`C4A41` return).
+Pause/resume passes, health remains 1.75 and the isolated profile is unchanged.
+This proves callback entry, not the taken branch, impulse magnitude or driving
+parity. The retained candidate is now `private/build-recovery/vehicle-60e5b36`;
+the previous `3e1ee87` pair was recycled and playable `4adb6b0` restored with
+its hash verified. See the regression record for evidence and remaining limits.
+## 2026-10-22 — Crowded-scene CPU accounting and hash trace coverage
+
+The unchanged playable `4adb6b0` baseline was exercised in two further bounded,
+isolated Venice/ten-bot native 144 runs with 3440x1440 rendering. Both retained
+the visible fullscreen 1920x1060 client, with no foreground observations.
+`crowd-fullscreen-thread-4adb-144` adds read-only thread CPU/cycle counters at a
+nominal 4 ms interval. Its slowest nearly-five-second window records 135.919 FPS
+and 96.02% main-thread CPU use (7.065 CPU ms per present); an overlapping window
+records 135.971 FPS and 97.31% CPU. Present calls total 43.584/44.010 ms across
+those five-second windows. Faster windows near 144 FPS use about 76% CPU. These
+counters include busy waits and cannot identify exact routines, but implicate
+main-thread CPU budget rather than spending most of the slowdown off-CPU.
+
+`crowd-fullscreen-stack-4adb-144` adds external saved-stack sampling. It does
+not reproduce the sustained dip: minimum rolling five-second FPS is 143.4.
+It does capture a 27.450-ms respawn interval (Present call 0.092 ms), with six
+samples spanning it. Two land in texture-upload code and two in texture-file
+opening. The measured suspension overlap is 0.181 ms; across the active 50-second
+window median suspension is 0.0175 ms, p99 0.139 ms and total 322.627 ms. This remains
+perturbed diagnostic evidence, not causal stage duration. Both runs exit cleanly
+with valid unchanged profiles/fixture and recycled disposable disks; the normal
+playable executable is unchanged. Per-run thread/window/stack JSON and raw CSVs
+retain the observations. The roughly 110 FPS user report remains unreproduced.
+
+The existing upload collector omitted source-key hashing and cached calls. The
+follow-up shared RHI/legacy-GL source now adds hash begin/end timestamps and a
+`cached` outcome with no read/image/view work. This closes a measurement gap;
+it does not change the key, loader behavior, texels, resource reuse or budgets.
+Disabled tracing still performs no clock/file work; the row/byte cap is unchanged.
+Forty-eight focused texture runtime/tool tests pass in 6.32 seconds, including
+all twenty cached hashes, stage ordering, unchanged fallback/resource counts
+and disabled/failed/bounded collection. The supported Windows build and built-in
+checks pass at `018f2be`, with the virtual-pad focus route explicitly skipped.
+Actual native Mac gameplay is unverified. Earlier trace evidence below
+uses the original narrower schema and must not be reinterpreted as hash timing.
+
+The bounded `texture-hash-fullscreen-144` run on that main-based diagnostic build
+records 279 calls (127 loaded, 152 rejected reads), with no cached calls observed;
+cached coverage is supplied by the loader fixture. The CSV is 52,795 bytes,
+well below both caps. All 50 window observations verify ten bots, active Venice,
+visible/non-minimized 1920x1060 client and no foreground focus. In the strict
+spawn+5..55-second window, 43 calls total 0.710 ms hashing, 2.254 ms opening,
+2.338 ms transfer, 0.002 ms validation, 3.841 ms image creation and 0.065 ms views.
+The four worst intervals (14.420/14.019/12.734/11.794 ms) contain no upload calls.
+An interval of 10.813 ms overlaps eight calls totaling 2.237 ms, including 0.100 ms
+hashing. The earlier 27.450-ms event is not reproduced, and this run does not
+justify a hashing optimization. It remains a stage diagnostic, not clean pacing
+or a single-change comparison against the older playable baseline. The EXE hash
+is `a9a6737f3645928ae98ee5d9a283ec80607372f83c1a05db34e2a09819a58c5c`.
+The session exits cleanly with valid unchanged profiles/fixture, recycled disks
+and the normal playable EXE restored. Evidence: per-run CSVs/JSON/provenance and
+`logs/texture-hash-fullscreen-analysis.json`. Main-thread CPU pressure during the
+sustained dips remains the next focus; neither cause nor full-game coverage is
+resolved by the texture measurements.
+
+## 2026-10-22 — Opt-in texture-upload timing
+
+A focused diagnostic branch from main `acf4464` adds per-attempt monotonic
+CPU timestamps for file open, transfer/allocation, validation, image creation
+and view creation. The shared collector covers common RHI and legacy GL;
+Classic preloading, live switching, original texels, fallback and resource
+budgets remain unchanged. It is disabled unless `TSFP_TEXTURE_UPLOAD_TRACE`
+names an output file, bounded to 8,192 rows/below 4 MiB, and emits no clocks or
+file I/O when disabled. Trace output itself can perturb frame pacing.
+
+This follows sampled texture-file work in slow frames on the separate PR307
+vehicle integration build. The new branch is based on main and does not contain
+that unmerged vehicle work; do not compare its FPS as a single-change vehicle
+benchmark. No hitch or performance improvement is claimed by instrumentation.
+Forty-eight focused texture runtime/tool tests pass locally in 6.37 seconds,
+including disabled/failed/bounded output and real-loader stage/fallback checks.
+The existing both-host runtime workflow includes the expanded test module.
+The supported Windows build and built-in checks pass at `2230901`; virtual-pad
+foreground routing explicitly skips because Windows refused focus. All selected
+runtime, transition, launcher-compatibility and issue CI passes on Windows/Mac;
+patch upgrades and launcher builds are out of scope/skipped for this source-only
+change. Actual native Mac trace/gameplay remains unverified under MAC-060.
+
+The bounded, minimized `texture-upload-main-144` run uses the established configured ten-bot
+Venice route, native 144, Classic 3440x1440/FOV73, isolated Test Lab saves/settings,
+no captures and no stack/CPU sampler. Spawn and combat checkpoints verify active
+scene 46/state 7/unpaused; there is no fresh roster sample. EXE SHA256 is
+`4ddb452a1ec1aa7bcab68a179cd06e98627cd5fb1fa11aab142d3334bb141930`.
+Its 44,677-byte CSV contains 280 attempts: 129 loaded and 151 rejected reads. All 129
+successful-load log entries have records; the row/byte limit is not approached.
+
+In the strict complete-interval spawn+5..55-second window, 46 attempts comprise
+15 loads and 31 rejected reads. Cumulative recorded time is 2.867 ms opening,
+4.590 ms transfer/allocation/close, 0.003 ms validation, 4.339 ms image creation
+and 0.079 ms view creation. The longest single active-window attempt is 1.237 ms.
+The worst 12.639-ms Present interval overlaps eight attempts totaling 2.215 ms;
+its Present call is 0.087 ms. Subsequent 12.462/12.428/11.942-ms intervals have no
+recorded uploads. The original 25.856-ms event is not reproduced. This directly
+limits the texture-loading hypothesis: these fresh attempts add some work but
+do not account for most observed slow-frame time. Key hashing and cached calls
+precede this collector, while CSV output follows its end; those costs and other
+frame work remain outside these spans. No loader optimization or FPS gain is
+justified by this run alone.
+
+The session exits cleanly with unchanged valid profiles, preserved fixture and
+recycled disposable disks. The normal playable executable is restored. Evidence:
+per-run source provenance, upload/Present CSVs and
+`logs/texture-upload-main-analysis.json`. This is diagnostic CPU wall timing,
+not GPU completion, scanout, a clean pacing benchmark or full-game acceptance.
+
+### Window-state follow-up on the playable baseline
+
+All selected CI checks pass at diagnostic head `bb8f3ad`, including Windows/Mac
+runtime and patch transitions; scope-selected skips remain skips. A follow-up
+audit found the earlier crowded-map timing runs used `--minimized`. Their
+evidence cannot establish normal foreground gameplay performance.
+
+Two bounded Windows runs of the unchanged playable `4adb6b0` executable
+(`0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`)
+retain the same configured Venice route, ten bots, native 144, Classic,
+3440x1440 render resolution/FOV73 and isolated Test Lab data. Neither enables
+native/texture traces, captures or CPU/stack sampling. The shared Present CSV
+and one-second read-only window/roster observations remain enabled. Both verify
+active scene 46/state 7 and ten bots throughout the strict spawn+5..55-second
+window. Render-device initialization confirms 3440x1440; client dimensions below
+describe the window, not the render target.
+
+`crowd-visible-4adb-144` records 7,194 successful guest presents, 143.898 interval
+FPS, minimum rolling five-second 143.6 FPS, p99 8.193 ms and maximum 20.808 ms.
+Its 50 observations are visible/non-minimized, with a 640x480 client and no
+foreground samples. `crowd-fullscreen-4adb-144` confirms the fullscreen flag,
+with 50 visible/non-minimized 1920x1060 client observations, also no foreground
+samples despite a focus request. It records 7,099 successful guest presents,
+142.006 interval FPS, minimum rolling five-second 132.6 FPS, p99 8.995 ms and
+maximum 28.385 ms. Guest-swap logs also dip to 136.3/134.6/134.5 FPS in late combat
+windows. The worst interval's Present call itself takes 0.092 ms.
+
+This exposes a larger sustained dip than the small-window run, but does not
+isolate window mode as its cause: bot encounters/deaths are nondeterministic,
+Windows did not grant foreground focus, and the user's roughly 110 FPS drop is
+still unreproduced. Neither run measures GPU completion or scanout. Next compare
+work versus pacing/wait time during the observed slower combat windows; do not
+infer a texture fix or locked 144 from a near-cap average. Both runs exit normally,
+preserve valid profiles/fixture and recycle disposable disks. The playable EXE
+hash remains unchanged. Local evidence is each run's `window-analysis.json`,
+`window-observations.jsonl`, report, Present CSV and provenance. Native Mac
+foreground gameplay remains unverified.
+## 2026-10-22 — Skip diagnostic name scans when filtering is disabled
+
+The focused `perf/disabled-trace-name-scan` branch starts from main `acf4464`.
+Runtime `trace_only_match` calculated `strlen(name)` before checking whether a
+name filter was configured. Every traced guest-function entry therefore scanned
+its diagnostic label during normal play, even with `RECOMP_TRACE_ONLY` absent.
+Saved Windows crowded-map samples include `strlen` beneath `recomp_trace_enter`.
+The additive shared patch moves this calculation below the existing empty-filter
+return. It retains enabled matching, hit caps, trace budgets, watch/dump/profile
+hooks and renderer-idle callbacks. No game updates, AI or rendering are throttled.
+
+The full patch stack applies. Six actual-function checks cover absent/empty
+filters (zero scans across 10,000 entries), enabled exact-name and per-filter hit
+limits, zero/negative limits, and a required failing eager-scan mutation.
+Together with runtime-scope tests, 73 checks pass locally in 6.62 seconds. The new
+suite runs in the existing Windows/macOS runtime workflow. A further 35 context,
+backlog and patch-tracking checks pass in 10.40 seconds. A local component-only
+benchmark compiles the actual before/after filter in separate translation units
+with MSVC `/O2`: five alternating 20-million-call trials give median 2.296 ns per
+disabled call before and 0.959 ns after. This hot-label microbenchmark is not a
+game FPS measurement (`logs/trace-filter-component-bench.json`). The complete
+fresh-checkout and repeated-build patch transition passes (20.15 seconds).
+The supported Windows build at `7b5f042` and built-in checks pass; virtual-pad
+foreground routing explicitly skips because Windows refused focus. Candidate
+SHA-256 is `0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`.
+
+The isolated 165-second ten-bot Venice/unlimited session completes with player
+movement, firing, damage/death and respawn observations. The strict 50-second
+window beginning five seconds after spawn contains 7,162 successful guest
+presents: 143.281 interval FPS, minimum rolling five-second FPS 137.6,
+p99 interval 8.392 ms and maximum 24.227 ms (Present call 0.097 ms). Twenty
+intervals exceed 9 ms; one exceeds 16.67 ms. The recorder reaches its 20,000-row
+cap later, 16.7 seconds after the analysis window; endpoint coverage and continuous
+frame IDs verify the complete measured window. No CPU/stack/native/texture
+tracing or capture ran; Present CSV and one-second window/roster reads remained.
+All 50 observations confirm ten bots and a visible, nonminimized window, but zero
+foreground observations. Renderer configuration is Classic/3440x1440/FOV73 at
+native 144; the client measures 1920x1060. AI/deaths are nondeterministic, and the
+older normal binary differs beyond this fix, so this is not a controlled speedup
+comparison or foreground play acceptance. Presents do not establish GPU completion.
+
+Evidence: `logs/trace-filter-build.log`, `logs/trace-filter-fullscreen-144.log`
+and `logs/trace-filter-window-analysis.json`. Profile bytes/signatures and the
+canonical fixture remain unchanged; disposable disks are recycled and the normal
+playable executable/symbol pair is restored. Native Mac gameplay remains pending.
+Eliminating the disabled scans is verified; a measurable game FPS gain and the
+reported 110 FPS slowdown remain unverified.
+## 2026-10-22 — PFB worker wake rework
+
+Runtime `bf4b755` replaces the rejected direct-clear shortcut with a notification
+to the existing worker, retaining its busy-bit/DMA/fence service and activity
+accounting. Queued auto-reset event requests survive arrival before the wait.
+Windows waits on the event plus its high-resolution timer. Native Mac uses a
+condition-variable event wait with a monotonic deadline. A follow-up retains
+the original 50-ms ceiling for diagnostic idle values above 50,000 us; the
+normal 500-us path and compiled Windows behavior are unchanged. Shutdown drains
+notifier users before releasing the event. Missing event creation and diagnostic
+`RECOMP_PFB_WAKE_ACK=0` retain polling. No console/game clock changes.
+
+The supported Windows regeneration/build and built-in tests pass (foreground
+virtual-pad routing skipped). Retained binary SHA-256:
+`2da9e5b31c4b63df90824a1dd240535f9edeeb235f68c55bc56072f820d9cb8c`.
+Four bounded ten-bot Venice runs at Classic 3440x1440/FOV73 complete loading,
+combat/respawns and the strict 50-second post-spawn measurement window. All
+recorded intervals are successful guest Present calls, with continuous frame
+IDs and recorder coverage beyond both endpoints.
+
+| Configuration | Interval FPS | Minimum rolling 5-s FPS | p99 / max interval (ms) | Main-thread CPU | Process CPU cores | Observed game ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native144, notification off | 143.982 | 143.6 | 8.291 / 12.327 | 78.57% | 1.347 | 59.990 |
+| Native144, notification on | 144.000 | 143.8 | 7.513 / 10.041 | 58.44% | 1.036 | 59.990 |
+| Original60, notification on | 60.001 | 59.8 | 17.249 / 18.681 | 29.35% | 0.519 | 59.986 |
+| Native120, notification on | 120.000 | 119.8 | 8.875 / 10.923 | 51.10% | 0.962 | 60.013 |
+
+The paired 144 runs use the same executable and settings except notification.
+Main-thread CPU time falls 25.6% (39.281 to 29.219 seconds over about 50 seconds),
+and intervals above 9 ms fall from 15 to 4. Combat is nondeterministic: dead-state
+observations differ (30.3% off, 35.3% on). All 50 window observations per run are
+visible/nonminimized but nonforeground; client size is 1920x1060. Read-only 4-ms
+CPU counters and 1-Hz window/roster observations remain enabled. These measurements
+support this bounded improvement, not a clean foreground benchmark, GPU completion,
+scanout or resolution of the user's 110-FPS crowded-match report. Sparse level
+clock observations do not certify every simulation system or complete playability.
+
+Runs `gpu-wake-{on,off}-bf4-144`, `gpu-wake-on-bf4-original60` and
+`gpu-wake-on-bf4-120` preserve profile bytes/signatures and the canonical fixture,
+recycle disposable disk images, and restore the normal executable/symbol pair
+(hash `0072d5b4651b25b886e11fa1d939e4e2ef4f5306e347422f570135c068efc7ab`).
+Logs include per-run window analyses, CPU summaries and exact adapter provenance.
+
+The second paired map, Hotel (verified scene39, ten bots), also completes with
+the same binary and settings. In `gpu-wake-{on,off}-bf4-hotel144`, on/off results
+are 143.840/142.260 interval FPS, minimum rolling five-second 142.8/127.6 FPS,
+p99 7.533/8.895 ms, main-thread CPU 49.98%/82.57%, total process 0.864/1.361
+cores, and game clock 59.990/60.013 ticks/s. Intervals over9 ms number3/55.
+Dead-state observations differ (29.5%/39.4%); foreground observations remain0.
+Profiles/fixture are unchanged and normal binaries restored after both runs.
+
+**Residual outliers remain:** the enabled Hotel run's maximum interval is
+43.776 ms, worse than the control's 18.558 ms, despite improved typical pacing.
+The 43.776-ms frame ends59.3 ms after a read-only observed dead-to-alive transition;
+its Present/Swap span is only0.088 ms. Another24.537-ms interval occurs2.2 seconds
+after an observed respawn. These correlations do not identify a cause. Preserve
+`logs/gpu-wake-hotel-hitch.json` and the underlying CPU/window/Present records;
+next investigate the slow frame's actual wait/stack before changing more timing.
+The worker-notification change is not an all-hitches fix.
+
+Final Windows notifier/lifter/mutation/wait-selection checks: 19 pass, one
+Mac-only check skips. Native runtime CI at `af96547` passes, including the actual
+Mac event adapter's queued/consumed signals, timeout, delayed wake and manual
+reset checks. This is native host-unit evidence, not Mac gameplay. Its historical
+Mac-stack upgrade check exposed declaration placement inside old patch context;
+the declaration is moved before CreateEventA so the old SetEvent/timer context
+remains intact. The fresh/repeated and historical Mac-stack upgrade tests both
+pass locally (46.32 seconds); final-head CI is pending. Full-game and native Mac gameplay
+acceptance remain outstanding; PR #310 remains draft/unmerged.
+
+## 2026-10-22 — PFB flush acknowledgement investigation
+
+Same-binary (`7b5f042`, SHA-256
+`0e343bbd6596a7c8f4439290e18cc8ddc90916478145077374202180b742e01e`)
+bounded ten-bot Venice runs compare `RECOMP_NV2A_ACK_IDLE_US=0` against the
+default 500. Both complete with valid, unchanged isolated profiles and preserved
+fixture; disposable disks are recycled and the normal executable/symbol pair is
+restored. In the fully covered 50-second post-spawn windows, no-sleep/default
+respectively measure 144.000/143.939 interval FPS, p99 7.423/8.229 ms, maximum
+9.301/12.602 ms, and main-thread CPU 53.57%/82.41%. Total process CPU rises from
+1.323 to 1.559 core equivalents without sleep. Dead-state observations differ
+(47.8% versus 42.8%); combat is nondeterministic. All window observations are
+visible/nonminimized but nonforeground. These asynchronous CPU/Present diagnostics
+support investigating acknowledgement latency; they do not prove the cause of
+the user's 110 FPS drops or justify a permanently spinning worker. No setting
+was changed outside the disposable child environment. Evidence is retained in
+`logs/ack-comparison.json` and the two `ack-*-7b5-144` test directories.
+
+Source inspection and disassembly of the verified supported XBE identify the
+PFB flush write at `0x3D66C3` and busy-bit poll at `0x3D66D0`. The existing
+runtime worker clears the same `0x10000` bit in plain-memory register
+`0xFD100410`; its idle wait defaults to 500 microseconds. A main-based prototype
+on `perf/gpu-flush-ack` adds a post-store callback at exactly that instruction,
+servicing the same acknowledgement immediately while retaining the worker for
+other duties. Exact-address/lifecycle guards and atomic bit preservation keep
+other registers, interrupt delivery, DMA, host GPU work and the console clock
+outside its scope. The generic lifter retains default no-op behavior for other
+titles. Regeneration and the supported Windows build at `92ffa8b` pass, including
+built-in checks (foreground virtual-pad routing explicitly skips). Candidate
+SHA-256 is `702cca547d8b05797c985cc2bd7b0e174aee82a646779890907c3ee129213620`.
+The prototype fails live gameplay validation and must remain unmerged.
+
+The initial prototype passes 80 focused acknowledgement, timing and generation
+checks (86.20 seconds), plus the full fresh/repeated-stack check (20.17 seconds).
+An explicit cached `RECOMP_PFB_SYNC_ACK=0` diagnostic fallback then adds
+same-binary on/off comparison capability without saved-settings changes. Its
+final 15 lifting/actual-runtime/mutation cases pass, with 21 context/backlog
+checks passing after refreshing the stale patch index. Omitted/reordered
+callbacks and clearing unrelated register bits are required failing mutations.
+
+Same-binary disabled control `gpu-ack-off-92f-144` completes the ten-bot route:
+143.901 interval FPS, p99 8.256 ms, main-thread CPU 83.06%, total process 1.376
+core equivalents, and observed level-clock rate 59.99 ticks/second. The enabled
+run `gpu-ack-on-92f-144` stops presenting after 72.446 seconds while loading the
+match; scene stays 101 and level ticks stop at 4275. Its measurement-window
+assertion fails, so no enabled gameplay FPS result is accepted. A second bounded
+run (`gpu-ack-load-stack-92f`) reproduces the stall. Its 6,992 saved-stack samples
+show the later `sub_003D65B0` wait under `sub_003D6870`/Swap; this routine polls
+the GPU tag at `[device+0x934]+0x400B10` against the completion-counter bits at
+`*[device+0x30]`. It is not still waiting for the first PFB busy bit.
+
+The stack run suspends briefly to copy a stack before resuming/unwinding; maximum
+suspension is 1.0552 ms. It establishes the persistent wait location, not clean
+frame pacing. All three runs terminate within their bounds, preserve profile
+bytes/signatures and fixture, recycle disposable disks, and restore the normal
+playable executable/symbol pair. A clean runner exit does not pass scene
+acceptance. Direct acknowledgement is rejected pending rework of the full
+worker handshake; Original 60 and Mac gameplay tests are deferred until the
+loading regression is resolved. The draft PR explicitly records this failure.
+## 2026-10-23 — Texture streaming integration correction (PR #311)
+
+The initial background-loading candidate 25e0059 is not accepted. Its Enhanced
+visual run recorded zero completed replacements: Future Perfect calls host Swap,
+while the queue pump was attached only to the older Present path. Earlier Hotel
+FPS gains and Venice 60/120 measurements therefore do not validate the intended
+loader and are withdrawn from performance/compatibility conclusions. Original
+views remained visible, which allowed the mistake to evade the earlier smoke runs.
+
+The pump now lives in common present_resolve, used by Swap, Present and the public
+frame helper. The skipped-Swap branch returns before it. The regression fixture
+executes the actual production frame bodies, checks exactly one completion per
+presented frame and none for skips, and delivers real DDS loads through Swap.
+Both selected modes failed before repair; all 15 texture tests pass afterward.
+Legacy GL already delegates Swap to its Present adapter and needs no second pump.
+
+The visual probe also exposed a harness limitation: replay mode deliberately
+suppresses host shortcuts. Neither guest F10 injection nor the attempted host
+window command switches texture modes during replay. The ineffective command was
+removed; captures labeled Classic/Enhanced are both Enhanced and are not proof of
+switching. Live switching remains unverified by this probe.
+
+The shared queue/cancellation/format tests and prior build/CI results retain only
+their stated CPU/compile scope. The supported Windows build at 86b2c1c and its
+built-in checks passed (foreground virtual-pad routing skipped). The bounded
+Venice 144-FPS Enhanced run completed 132 uploads across 128 keys, with maximum
+recorded replacement residency 136,053,628 bytes. Two inspected gameplay captures
+showed no obvious blank/corrupt surfaces; this is not full asset acceptance.
+Capture/texture tracing were enabled, so this run is excluded from performance
+comparisons. Corrected rate checks and live switching are recorded below;
+broader comparisons, final-head CI and Mac scene validation remain pending. The
+normal playable executable/symbol pair was restored and profiles/fixture preserved.
+No claim that crowded-map dips are fixed; the full goal remains active/incomplete.
+
+Corrected-build Hotel comparison: Windows x64/MSVC 17.14.40/D3D11, source
+86b2c1c, executable SHA-256
+998adf71af5d69ecf3c6311fabb92ca01e128a692a4cb00770e1c59f2054ee1c.
+Both bounded runs used Enhanced textures, native 144, ten bots, requested
+3440x1440/FOV73 and observed 1920x1060 client area. Each measured the complete
+50-second window from spawn+5 to spawn+55, with successful guest Present records,
+captures/texture tracing off, read-only CPU observations on, and no concurrent
+local builds/test suites. Source 86b2c1c passed selected Windows/Mac runtime,
+patch-upgrade/transition and launcher CI checks; this is not Mac scene acceptance.
+
+| Measurement | Background reads | Synchronous reads |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.24 FPS | 142.06 FPS |
+| Lowest rolling five-second rate | 139.8 FPS | 132.8 FPS |
+| 99th-percentile frame interval | 8.467 ms | 8.738 ms |
+| Maximum frame interval | 11.653 ms | 11.493 ms |
+| Frames over 9 ms | 26 | 45 |
+| Frames over 16.67 ms | 0 | 0 |
+| Observed level-clock ticks/second | 59.989 | 60.013 |
+
+These are a single on/off pair with nondeterministic AI and deaths (36.7% versus
+37.8% of health observations), not causal proof or a full gameplay comparison.
+Both windows were visible but foreground in zero of 50 samples; requested
+fullscreen did not establish foreground ownership. API presents do not measure
+monitor scanout. Sparse level-clock observations do not establish animation,
+physics or weapon parity. Private evidence: texture-stream-86b-hotel144-on/off
+test-save directories and texture-stream-86b-comparison.json. Both sessions
+completed and restored the normal playable pair; fixture/profiles were preserved.
+A reverse-order repeat (synchronous first, then background) used the same
+executable, settings, strict 50-second window and instrumentation. No local
+build/test suites ran alongside either measurement. Results:
+
+| Measurement | Background repeat | Synchronous repeat |
+| --- | ---: | ---: |
+| Average successful Present rate | 143.18 FPS | 142.64 FPS |
+| Lowest rolling five-second rate | 136.0 FPS | 136.2 FPS |
+| 99th-percentile frame interval | 8.477 ms | 8.661 ms |
+| Maximum frame interval | 10.323 ms | 18.655 ms |
+| Frames over 9 ms | 17 | 30 |
+| Frames over 16.67 ms | 0 | 1 |
+| Observed level-clock ticks/second | 60.014 | 60.011 |
+
+Both pairs favor background loading in average rate and >9-ms frame counts,
+but the minimum rolling five-second rate does not consistently improve. These
+four samples support a modest scoped pacing improvement, not locked 144 FPS or
+a complete fix for NPC-related dips. Death observations in the repeat were
+28.6%/25.3%; AI events remain unpaired. All 50 window samples were visible and
+none foreground. Evidence: texture-stream-86b-hotel144-off-repeat/on-repeat.
+Both sessions preserved profiles and restored the normal playable binary.
+Broader rate/scene coverage and foreground gameplay remain outstanding.
+The following checks extend this same executable's Windows coverage.
+
+Corrected Enhanced Venice runs at Original 60 and native120 completed with ten
+bots and isolated Test Lab profiles. Same resolution/FOV/client and instrumentation
+limits as the Hotel runs above; these are rate checks, not paired combat parity.
+Original 60 explicitly disabled native timing with target=0/cap=60. Each result
+uses a complete 50-second successful guest-Present window, spawn+5 to spawn+55:
+
+| Measurement | Original 60 | Native 120 |
+| --- | ---: | ---: |
+| Average successful Present rate | 59.9997 FPS | 120.0025 FPS |
+| Lowest rolling five-second rate | 59.8 FPS | 119.8 FPS |
+| 99th-percentile frame interval | 18.015 ms | 9.505 ms |
+| Maximum frame interval | 18.682 ms | 11.204 ms |
+| Observed level-clock ticks/second | 59.989 | 59.988 |
+
+Both were visible but foreground in zero of 50 samples. Death observations were
+30.0%/40.4%, so these runs cannot establish equivalent encounters or animation,
+weapon and movement behavior. Capture/texture trace were off; the actual Enhanced
+delivery check remains the separate traced run. Evidence directories:
+texture-stream-86b-venice-original60 and texture-stream-86b-venice120. Both restored
+the normal playable binary and preserved the fixture/profile signatures.
+
+The separate texture-stream-86b-menu-switch-views run exercised actual paused
+Video Options at native144 in Venice. Classic selection enabled Apply; applying
+grayed it out. Resumed gameplay had paused=0; reopening the page read Classic
+from the effective mode, with Apply disabled. Enhanced was then selected/applied,
+Apply returned to gray, and gameplay resumed with paused=0. Inspected Classic and
+Enhanced gameplay stills showed no obvious blank/corrupt surfaces; different
+death-camera poses prevent a pixel-matched art-quality comparison. The run
+completed 126 replacement uploads and preserved profiles/fixture. These
+capture/trace-enabled runs are excluded from performance comparisons. The
+explicit menu setter does not log mode changes; only the host toggle does.
+This validates the Windows in-session menu route, not physical F10 delivery,
+restart persistence (selection is session-only), Mac scenes or full asset coverage.
+
+CI follow-up: Windows native runtime at merge 9bf5630 failed one online-host test
+because missing cryptography caused fallback to Git OpenSSL, whose certificate
+generation timed out after 30 seconds (471 passed, 83 skipped, 18 subtests).
+Mac runtime and both patch-upgrade jobs passed. The Windows job now installs the
+existing requirements-release.txt pins used by the packaged companion; pin-only
+changes select native checks and trigger the workflow. Production hosting code
+is unchanged. Local online-host/scope checks pass (77 tests); fresh CI is pending.
+
 ## 2026-10-22 — Keyboard/storage PR #306 validation
 
 The integrated Windows build at aba3346 and built-in tests passed with alphabetical
@@ -411,6 +6097,70 @@ before recording Mac fixture success. Gameplay source is unchanged by this
 test-only follow-up, so the retained Windows candidate still has the fix.
 The focused input, Mac-tooling and repository companion suite passes 116
 tests with one unavailable-host skip on Windows (10.43 seconds).
+## 2026-10-22 — HUD panel text validation overhead (candidate)
+
+On `perf/arcade-panel-text-scope`, the shared HUD panel now reuses the existing
+read-only mapping scope across its width/fit measurements and text draws.
+Its placement flushes stay outside the scope; scratch writes still query live
+protection. The original font sizing, labels, rendering and gameplay cadence
+are unchanged. The preceding crowded-Venice CPU profile identifies text
+validation as remaining work, but is not an isolated FPS comparison.
+
+The complete patch stack applies. Ten focused scope tests pass on Windows,
+including both host feature configurations and a failing no-panel-scope
+mutation. A modeled panel falls from five read queries to one, retaining three
+measurements, ten draws, thirteen translated scratch-write checks and fresh
+validation on the next operation. Supported Windows build `4a4aa02` and built-in
+checks pass (MSVC 14.44.35207, SDK 10.0.26100, common Xbox frontend). A bounded
+native144 Venice/10-bot run at 3440x1440, FOV 73, Classic reaches match state 7;
+reviewed captures show readable RANK/ordinal labels during death/respawn. This
+is a rendering smoke check, not a pixel comparison or FPS benchmark: another
+game session remained open, and capture/test overhead was present. The profile
+and canonical fixture remained valid and unchanged; disposable partitions were
+cleaned. Full rendered comparison and native Mac gameplay remain pending.
+Broader patch-upgrade/context/backlog/CI-scope validation passes:
+109 tests in 588.40 seconds. See MAC-002.
+
+Initial Mac CI found one stale placement-source assertion expecting the direct
+panel callback. The assertion now requires its scoped callback at the same
+placement tag; the existing behavioral scope tests still verify execution and
+lifetime. No runtime change or game rebuild is needed for that test correction.
+
+At repair head `c580949`, hosted native runtime CI passes on Windows (461 passed,
+82 skipped, 18 subtests) and Mac (436 passed, 74 skipped, 18 subtests). Mac's
+asset-free RHI HLSL/menu-pixel/readback/present checks also pass. These do not
+establish native Mac gameplay or complete rendering fidelity.
+Both hosts' patch-upgrade/transition jobs and all other selected PR checks
+also pass at that repair head.
+
+The first isolated pacing comparison is mixed, so no FPS improvement is claimed.
+Windows 11 x64, i7-13700K, RTX 4070 SUPER, driver 32.0.16.1742, D3D11;
+Venice, ten bots, Classic, 3440x1440, vertical FOV 73, target 144. Both minimized
+runs disable captures and CPU sampling and cover the same 50-second window,
+five seconds after the spawn observation. The normal `4adb6b0` binary has
+identical `src/` and `patches/` to base main `31052eb`.
+
+| Build | Mean FPS | p95 interval | p99 interval | Maximum interval |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline `4adb6b0` | 143.32 | 8.134 ms | 8.972 ms | 25.334 ms |
+| Candidate `4a4aa02` | 143.59 | 8.240 ms | 9.127 ms | 27.790 ms |
+
+These are successful host guest-present intervals, not GPU completion or scanout.
+Bots, deaths and respawns vary between runs, and both runs are close to the cap.
+Local repair checks ended about two seconds before the initial baseline window.
+A baseline repeat was excluded from the clean comparison because another game
+opened before its measurement window; further candidate repeats are deferred
+while that session runs. The candidate run preserved the fixture/profile and
+cleaned its disposable partitions. Raw evidence is retained locally in
+`private/test-saves/panel-{base,candidate}-144` and
+`logs/panel-144-comparison.json`; the latter also labels the excluded repeat.
+PR #305 remains a draft pending stronger performance evidence.
+
+Candidate EXE/PDB retained in `private/build-recovery/panel-4a4aa02`, EXE SHA256
+`55440352d61716a05c4237acc788a258020aca636d7ac46c899e24b4219e3d82`.
+The normal playable `4adb6b0` executable is restored with its hash verified.
+This branch starts at main `31052eb`; mounted-input PR #304 and the separate
+vehicle-physics candidate are not incorporated into this performance candidate.
 
 ## 2026-10-22 — Pending PR integration
 
@@ -18750,3 +24500,2518 @@ No fresh four-peer gameplay, native Mac execution, checkpoint or campaign
 acceptance was performed. Existing Story validation gaps and MAC-013 remain;
 source integration does not complete Story co-op. Personal settings/saves were
 preserved. No release or merge of Story into main was performed.
+
+## 2026-10-24 — #74 hybrid-256 metal material batch
+
+Continued from 28f5400a on the #74 texture branch. Seven individual generated
+material drafts used catalog-verified originals; four passed offline layout and
+repeat review. Added d7d5700cb3aafcb6, dbe50dd84be9d5d8, f202e661b5f1e111 and
+f7d8f57b6f20f646. Actual source artwork is 1254 square; compiled sizes are three
+1024-square assets and one 512-square asset with full mip chains. Two use DXT1;
+two use RGBA8 after measured compression error and detail loss. No native 4K
+source claim. Three drafts remain held for tread/contrast/fastener corrections;
+b2ba2e001048f470 remains original pending alpha semantics review.
+
+Windows offline audit: 2,050 replacements; public pack 1,852,072,267 bytes
+(1.73 GiB), private pack 1,852,799,281 bytes, below 6 GiB. Native DDS parser,
+original aspect/opaque alpha, full mip layout and hash checks pass. All 2,046
+previous public DDS/JSON pairs match the audited production pack; retained
+original icon keys are absent. Only four LFS pointers and sanitized sidecars
+were added to the checkout; no duplicate pack, game copy or release staging.
+Temporary output is 267,681,218 bytes, with 754,238 bytes below 256 MiB. Further
+art batches need to recycle verified disposable references before adding more
+temporary images. Source artwork is retained. Workspace logical/allocation
+snapshot: 9,038,116,021 bytes; free disk 45,725,478,912 bytes before LFS staging.
+
+Queue: 4,435 need artwork, 163 drafts need review, 164 icons intentionally
+original, 2,050 installed among 6,812 known supported keys. Classification is
+not completion. Private hybrid-256-validation.json, hybrid-256-prompts.json,
+per-asset prompt records and refreshed worklist/hybrid-plan retain provenance.
+No game launch, runtime change or release publication; scene appearance and
+Windows/Mac validation remain pending near completion. MAC-011 stays open.
+
+Repository context and staged/unstaged whitespace checks pass. The unchanged
+build-test guide needed local LF normalization: Windows CRLF expansion exceeded
+the 65,536-byte context guard; its tracked content did not change.
+
+
+## 2026-10-24 — #74 hybrid-257 masonry and carved materials
+
+Eight individual built-in image-generation drafts accepted after original/UV,
+large-scale identity and compiled repeat comparisons. Added bfe9664f816e43d9,
+c72d94206ced80b6, c7e12b45ed0a9910, e22ad8247b4fa564, e29efb4211a7acb9,
+e46f2404b9a64aee, e4970af57beea5ad and 14f2fa45dd515c54. These cover rock atlas,
+rail/masonry, molded wall, riveted brickwork, carved stone motifs, stepped
+marble strips, divided stonework and a small meander tile. No character icons.
+Actual source size: 1254 square. Seven compiled at 1024 square, one at 512;
+all LANCZOS downsampled, with full mips. Six RGBA8 files preserve fine details
+that DXT1 lost; two DXT1 files passed compression review. This is not native
+4K art and is not final in-game appearance validation.
+
+All eight passed the Windows native DDS parser, original aspect/opaque alpha,
+full-mip, metadata and hash checks. Every prior private DDS/JSON file (4,100)
+was verified unchanged; all 2,050 prior public pairs match the audited pack.
+Full release auditor passes with original-icon exclusions. Compiled comparison
+sheets retain original atlas boundaries and deliberate geometry; they do not
+prove scene adjacency. No game launch, source/runtime change or publication.
+
+Public pack: 2,058 entries, 1,882,833,405 bytes (1.75 GiB). Private pack:
+1,883,573,148 bytes. Both remain below 6 GiB. Temp output: 267,949,135 bytes,
+486,321 bytes below 256 MiB. Recoverable reference PNGs from hybrid-256 and
+hybrid-257 reclaimed 790,952 and 684,469 bytes respectively after catalog payload
+and decoded-pixel verification; recovery receipts and all generated art remain.
+Workspace logical/allocated snapshot is 9,100,210,254 bytes, separate from pack
+budget; free disk 44,608,274,432 bytes after LFS staging. New checkout assets
+are pointers with sanitized metadata, not another hydrated pack.
+
+Refreshed queue: 4,427 need artwork, 163 drafts require review, 164 icons
+intentionally original and 2,058 installed among 6,812 supported known keys.
+Private hybrid-257-generation.json, hybrid-257-prompts.json and
+hybrid-257-validation.json retain prompts, source dimensions and review evidence.
+Remaining unsupported/undiscovered formats and scene/host validation are still
+open. Continue #74; MAC-011 remains awaiting validation. Recycle verified
+redundant temporary comparisons before another disk-based reference batch.
+
+
+## 2026-10-24 — #74 hybrid-258 concrete, brick and rock
+
+Six more accepted replacements: 375415186a75f6ce, 65d6157d68e002f3,
+77183c7890a9aa52, 7729fdf024e42e57, 852ef7fa1700f593 and 88be41d1f2825f62.
+All are 1024 square, downsampled LANCZOS from actual 1254-square built-in
+image-generation sources; four RGBA8 and two DXT1 with complete mips. Mean
+luminance changes are roughly -1% to -5%. Atlas 187e29d9bea9fa6c and fractured
+panel 76669676fbbe8298 remain held for excessive brightness/warmth and damage
+contrast (about +14% and +11%). Original artwork remains active for those keys.
+
+Windows native DDS parser, mip/aspect/opaque-alpha/hash and whole-pack audits
+pass. All 4,116 prior private DDS/JSON files and 2,058 prior public pairs were
+verified unchanged. Both compiled repeat sheets were manually reviewed; this
+preserves original boundary lighting, not proof of seamless scene adjacency.
+No gameplay or host/runtime changes; MAC-011 scene validation remains pending.
+Private offline-batch-compile.py now reuses the reviewed decisions and existing
+encoder/auditor tools, reducing repeated batch work without automatic art approval.
+
+Public pack: 2,064 entries, 1,906,603,317 bytes (1.78 GiB); private pack:
+1,907,352,666 bytes, both below 6 GiB. Temporary output: 267,592,311 bytes,
+843,145 bytes below 256 MiB. Reclaimed 1,096,350 bytes of redundant previews
+with byte-exact reconstruction and 1,495,538 bytes of original PNG references
+after exact decoded-pixel verification. Primary before/after sheets, generated
+sources, prompts and recovery receipts remain; previously denied targets were
+untouched. Workspace logical/allocated snapshot: 9,155,257,348 bytes; free disk
+44,278,362,112 bytes after LFS staging. No duplicate full pack or game copy.
+
+Queue: 4,419 need artwork, 165 drafts require review, 164 icons intentionally
+original, 2,064 installed among 6,812 known supported keys. Public metadata
+and LFS pointers are local to #74; no release or push. Provenance is retained
+in private hybrid-258-generation/prompts/review/validation.json. Full scope,
+unsupported/undiscovered assets and final scene/hardware validation remain open.
+
+
+## 2026-10-24 — #74 hybrid-259 focused material corrections
+
+Resolved three held keys: e3d6a97496f76048 (tread plate), fe89c21ad41d913f
+(fastened panel) and 76669676fbbe8298 (cracked concrete). All are 1024-square
+DXT1 with full mips, downsampled from 1254-square corrected built-in image
+sources. Tone/layout review and native DDS/mip/aspect/opaque-alpha/hash checks
+pass. Whole-pack audit preserves all 4,128 prior private files and 2,064 public
+pairs. Compiled repeat review completed offline; relief and scene appearance
+still require near-completion validation. No gameplay or runtime change.
+
+Correction to hybrid-256 review: fe89's original has three fasteners, including
+a faint top-center one. It was not an added fastener; the correction targeted
+size/contrast and preserved all original positions. fd205d978aa73156 remains
+held for brightness/mottling; 187e29d9bea9fa6c improves tone but moves atlas
+boundaries, so remains original. Historical drafts/prompts are retained with
+sibling prompt records and hybrid-259 provenance; no prior artwork overwritten.
+
+Public pack: 2,067 entries, 1,908,701,589 bytes (1.78 GiB); private pack:
+1,909,456,003 bytes. Temporary output: 268,025,827 bytes, 409,629 below 256 MiB.
+Retired 502,858 bytes of this batch's lossless original PNG references only
+after exact recovered-pixel/hash checks. Source art and review receipts remain.
+Workspace logical/allocated snapshot: 9,174,332,851 bytes; free disk
+44,158,656,512 bytes after LFS staging. No duplicate pack or game copy.
+Queue: 4,419 need art, 162 drafts require review, 164 icons intentionally original
+and 2,067 installed/6,812 known supported keys. Worklist and hybrid plan updated.
+Local #74 only, no push/publication; full overhaul and MAC-011 validation open.
+
+
+## 2026-10-24 — #74 hybrid-260 narrow wood trims
+
+Five replacements accepted offline: 43e3ba328bf66163, 327ad34d022472ae,
+44ba0ad3f49f3e24, 46b6144006f09c65 and 5405db3f5ff207dd. Four are
+1024x256 DXT1 and the small secondary strip is 256x64, all with full mips.
+Original rail pairs, molding bands, knots and notch sequence were compared
+against catalog originals. Compiled repeat sheets were reviewed; actual scene
+adjacency, relief and brightness remain deferred to final scene validation.
+
+Direct generation returned 3:1 artwork for 4:1 originals, so those drafts were
+held. Technical references placed the exact original in a 4:1 central region
+of a padded 3:1 canvas. Built-in imagegen returned 2169/2170x725 sources;
+explicitly reviewed regions were extracted with <=1% aspect rounding before
+resampling to exact original proportions. Full source artwork, prompts,
+region coordinates, hashes and prior drafts remain private. No native 4K claim.
+Three guided drafts remain held: warm wood 19eeebe57d9532f3 is too dark;
+4c42cc4ea79918da needs tone/band correction; cdb590fd9b291846 needs region
+proportion and fracture-relief review. They are not counted as installed.
+
+Native DDS/mip/aspect/opaque-alpha/hash and full-pack checks pass. All 4,134
+prior private files and 2,067 prior public pairs are unchanged. Original
+character-icon exclusions remain enforced. Public pack: 2,072 entries,
+1,909,413,495 bytes (1.78 GiB); private pack: 1,910,177,837 bytes, below 6 GiB.
+Reclaimed 255,022 bytes of this batch's original PNGs and technical guides
+after exact catalog-pixel reconstruction and contained path/hash checks.
+Temporary output is 268,262,446 bytes, 173,010 below 256 MiB. Source art,
+selected review evidence and receipts remain; previously denied targets untouched.
+Workspace logical/allocated snapshot: 9,218,169,509 bytes; free disk
+43,829,936,128 bytes. No duplicate game, pack or packaging tree.
+
+Queue: 4,411 need artwork, 165 drafts require review, 164 icons intentionally
+original and 2,072 installed among 6,812 known supported keys. Worklist and
+hybrid plan refreshed. Local #74 only; no gameplay, push or publication.
+Full scope and final scene/hardware validation remain open. Evidence is in
+private hybrid-260-generation/review/region-diagnostics/validation.json.
+
+
+## 2026-10-24 — #74 hybrid-261 stone and plaster materials
+
+Six replacements accepted offline: moss-edged stone 895b51c4af53cee1,
+grooved gray-purple rock b411b1efa6fc205d, salmon plaster variants
+d7429025f4ac0143/e94671d1d7c3dcec, two-tone masonry f3c65dd55f3413cc and
+small worn masonry fadf264d71425a0d. Outputs are one 1024-square, one
+512-square, three 512x256 and one 256-square, all full-mip RGBA8 after DXT1
+exceeded the existing RGB error threshold. Actual accepted sources are three
+1254-square and three 1774x887 images, downsampled without aspect changes.
+Built-in imagegen artwork, original layout/tone comparisons and source hashes
+are preserved. No native 4K claim. Held: c2c5465c7fdf9482 loses the original
+coarse grain scale; fcbd0022acc0f6e6 retains joints but is 13.4% too dark.
+
+Native DDS, full mip chains, original aspect, opaque alpha, hash identity and
+whole-pack audits pass. Both compiled repeat sheets reviewed. Stronger groove
+relief and actual model/scene adjacency still require final scene validation;
+repeat sheets do not establish seamlessness everywhere. All 4,144 prior private
+files and 2,072 prior public pairs remain unchanged. Character-icon exclusions
+are enforced; no gameplay or runtime modification.
+
+Public pack: 2,078 entries, 1,918,852,833 bytes (1.79 GiB); private pack:
+1,919,627,016 bytes, below 6 GiB. Reclaimed 568,986 bytes of redundant
+hybrid-258/259 repeat sheets after byte-exact reconstruction, retaining primary
+comparisons, and 259,630 bytes of this batch's original PNG references after
+exact catalog-pixel verification. Contained paths and hashes checked before
+removal; sources, prompts, receipts and previously denied targets retained.
+Temporary output: 268,176,631 bytes, 258,825 below 256 MiB. Workspace snapshot:
+9,260,661,318 logical/allocated bytes; free disk 43,433,066,496 bytes after LFS
+staging. No full pack/game duplicate. Private offline-batch-stage.py reuses
+public sanitization/LFS staging and preservation audits, requiring recorded
+manual compiled review before staging; it never publishes.
+
+Queue: 4,403 need art, 167 drafts require review, 164 icons intentionally
+original, 2,078 installed among 6,812 known supported keys. Worklist/hybrid
+plan refreshed. Changes local to #74; no push or release. Full overhaul and
+final scene/hardware validation remain open. Evidence: private hybrid-261
+selection/prompts/generation/review/diagnostics/validation and cleanup receipts.
+
+
+## 2026-10-24 — #74 hybrid-262 timber, painted wood and weathered trim
+
+Four replacements accepted offline: mottled vertical trim 7a0f9b5585a20c2f,
+pale split timber 7d1a914c2e9cb14c, pale-blue painted wood b7d7e2b939076aad
+and framed pale wooden inset d1020d42ec9cc84e. Actual sources are two
+887x1774 and two 1774x887 built-in imagegen outputs, downsampled to two
+512x1024 and two 1024x512 full-mip DDS files. One DXT1; three RGBA8 after
+DXT1 exceeded the existing RGB error threshold. No native 4K claim.
+
+Direct inspection corrected incomplete routing descriptions: the mossy board
+atlas 926b4b49c8b40d5b includes small grilles at both edges; the mottled trim
+material is uncertain, so its prompt did not invent generic wood grain. Both
+grilles remain visible with five opening rows in the enlarged original/generated
+comparison, but the atlas is held for 14.1% lower exposure. Other held drafts:
+3d782221b2dc79db is 14.8% darker, 82bb1398e5e0d6ad is 16.6% darker, and
+98a4b917a67596de shifts neutral tan toward yellow (mean RGB172/140/101 to
+185/145/90). Source art, full prompts and specific correction briefs retained.
+
+Original/compiled repeat review and native DDS/mip/aspect/opaque-alpha/hash
+checks pass. All 4,156 previous private files and 2,078 previous public pairs
+are unchanged; icon exclusions remain enforced. Existing repeat discontinuities,
+stronger grain and final mapped appearance remain scene-validation work.
+No gameplay, runtime change or publication.
+
+Public pack: 2,082 entries, 1,927,592,427 bytes (1.80 GiB); private pack:
+1,928,373,250 bytes, below 6 GiB. Retired 387,703 bytes of redundant260/261
+repeat sheets after byte-exact reconstruction and 476,762 bytes of this batch's
+original PNG references after exact catalog-pixel checks. Explicit contained
+paths/hashes verified before removal; primary comparisons, sources, prompts,
+receipts and previously denied targets preserved. Temporary output268,078,860
+bytes, headroom356,596 below256 MiB. Texture workspace snapshot9,295,039,044
+logical/allocated bytes; free disk43,278,512,128 bytes. No duplicate full pack.
+
+Private offline-batch-prepare.py and offline-batch-ingest.py reuse bounded
+reference preparation and source retention/comparison routines for later batches;
+neither approves artwork. Queue4,395 need art/171 drafts/164 retained originals/
+2,082 installed among6,812 known supported keys. Worklist/hybrid plan refreshed.
+Local #74 only. Full overhaul and final scene/hardware validation remain open.
+Evidence: private hybrid-262 selection/prompts/generation/review/diagnostics,
+detail-diagnostics, validation and cleanup receipts.
+
+
+## 2026-10-24 — #74 hybrid-263 focused tone and grain corrections
+
+Accepted tan timber98a4b917a67596de after correcting the yellow cast while
+preserving vertical flecks and pore positions. Actual source1774x887,
+downsampled to1024x512 DXT1 with11 mips. Corrected mean RGB165/130/104
+versus original172/140/101;6% lower luminance and muted contrast accepted
+offline. Final scene color match remains pending. Original/compiled repeat
+review and native DDS/mip/aspect/opaque-alpha/hash checks pass. All4,164
+previous private files and2,082 prior public pairs unchanged; icons excluded.
+
+Five other corrections remain held. Numeric exposure-lift prompts overshot:
+3d782221b2dc79db +43.8%,82bb1398e5e0d6ad +38.6%,926b4b49c8b40d5b +98%,
+fcbd0022acc0f6e6 +46.9% relative to original. This strategy must not be
+repeated blindly. Plasterc2c5465c7fdf9482 improves grain but still loses coarse
+structure at original scale (luminance std11.55 vs17.48; gradient10.42 vs15.02).
+Visual review accompanies metrics; numbers alone do not approve artwork.
+All old drafts and prompts remain, with pre-hybrid-263 prompt snapshots.
+
+Public pack2,083 entries/1,927,942,329 bytes (1.80 GiB); private pack
+1,928,724,906 bytes, below6 GiB. Reclaimed131,576 redundant repeat bytes and
+357,460 original-reference bytes after byte-exact/pixel-exact reconstruction,
+contained path and hash checks. Primary comparisons, source artwork, prompts
+and receipts retained; denied targets untouched. Temporary268,102,408 bytes,
+333,048 headroom below256 MiB. Workspace9,314,556,480 logical/allocated bytes;
+free disk43,162,746,880 bytes. No duplicate full pack or game copy.
+
+Queue4,395 need art/170 drafts/164 original icons/2,083 installed among6,812
+known supported keys. Worklist/hybrid plan refreshed. Private preparation and
+ingestion helpers now support explicit correction-lane inputs and preserve
+prior prompt provenance. Local #74 only; no gameplay, push or publication.
+Full overhaul and final scene/hardware validation remain open. Evidence:
+private hybrid-263 generation/review/diagnostics/detail-diagnostics/validation.
+
+
+## 2026-10-24 - #74 hybrid-264 masonry, cliff and plaster materials
+
+Accepted six replacements: moss-stained masonry, three-course brick, ochre
+weathered plaster, craggy cliff, edged concrete and quiet mottled plaster.
+Actual generated sources are 1774x887, downsampled to four 1024x512 and two
+512x256 outputs. Five use RGBA8 to preserve detail; quiet plaster uses DXT1.
+All have full mip chains and opaque alpha. Native DDS, dimensions, aspect,
+alpha, hashes, full-pack and manual compiled-repeat checks pass. All 4,166
+prior private files and 2,083 prior public pairs remain unchanged.
+
+Two drafts remain held: 8ce897566f9cdd60 fills original black lower-course edge
+regions (mean RGB below 1 becomes above 162), and c10d92048ae03ba1 darkens
+lighting by 17.7% with overemphasized grooves. Neither enters the pack. Accepted
+moss contrast and warm plaster color still require consolidated scene review.
+Repeat previews verify layout and repetition, not actual scene adjacency.
+
+Public pack: 2,089 entries / 1,939,915,751 bytes (1.81 GiB); private pack:
+1,940,707,948 bytes, below 6 GiB. Reclaimed 332,087 redundant preview bytes
+and 432,800 exact-recoverable reference bytes with verified reconstruction,
+contained-path and hash checks. Source artwork, prompts, selected comparisons
+and receipts remain. Temporary files: 268,102,113 bytes, with 333,343 bytes
+headroom below 256 MiB. Texture workspace: 9,356,942,004 logical/allocated
+bytes; free disk: 42,957,705,216 bytes. No duplicate game or full pack.
+
+Refreshed queue: 4,387 need art, 172 drafts need review, 164 retained original
+icons, 2,089 installed among 6,812 known supported keys. Original icons remain
+excluded. Unsupported/undiscovered coverage and final scene/hardware validation
+remain open. Local #74 changes only; no gameplay, push or publication. Evidence:
+private hybrid-264 generation/review/validation/stone-edge diagnostics and
+reference/preview retirement receipts. No runtime or delivery contract changes.
+
+
+## 2026-10-24 - #74 hybrid-265 architectural trim and wood
+
+Accepted five materials: rusty brick/plaster band, pale stone molding, worn
+brown-band plaster, framed dark wood and pale knotty wood. Sources are actual
+1774x887 built-in imagegen outputs, downsampled to1024x512 with11 mips.
+Three use DXT1; two use RGBA8 where compression loses fine detail. Full native
+DDS, mip/aspect/opaque-alpha/hash, pack and manual compiled-repeat checks pass.
+All4,178 previous private files and2,089 prior public pairs remain unchanged.
+Original icons excluded; final scene tone/adjacency and hardware tests pending.
+
+Three drafts held: eb1ef38d4d6f6603 is17.2% darker and needs detailed carved
+motif correspondence review; e16c5380d1af201f needs correspondence checks for
+prominent bright upper hinge elements against faint original hardware;
+ba78fe749a088658 preserves ridge pitch but broadens/darkens grooves and
+increases orange contrast. The original-scale focus rules out a ridge-count
+change; do not report missing ridges. No held draft was installed.
+
+Pack2,094 entries, public1,946,558,585/private1,947,358,956 bytes, about1.81GiB
+under6GiB. Reclaimed222,686 redundant repeat-preview bytes and353,236 exact
+reference bytes after reconstruction/path/hash checks. Source artwork, prompts,
+selected comparisons, layout focus and receipts retained. Temporary268,257,051
+bytes,178,405 headroom below256MiB. Texture workspace9,391,481,842 logical and
+allocated bytes; free disk42,744,799,232. No full duplicate pack or game copy.
+Queue4,379needart/175drafts/164originalicons/2,094installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final validation remain open. Evidence:
+private hybrid-265 prompts/generation/review/validation and retirement receipts.
+
+
+## 2026-10-24 - #74 hybrid-266 small panels and chipped surfaces
+
+Accepted four replacements: four-pane green-gray frame, quiet tan impressed
+surface, gray industrial hinged/vented panel and pale mint chipped material.
+Actual square1254 sources downsampled to two512 and two256 square outputs;
+threeDXT1 and oneRGBA8, full10/9 mip chains. Original four hinge positions and
+five-column/four-row vent grid retained in accepted2ff8f7496eec6a2e. Manual
+compiled2x2 comparison, native DDS, mip/aspect/opaque-alpha/hash and full-pack
+checks pass. All4,188 prior private files/2,094 prior public pairs unchanged.
+Tone changes (-10.9%,+12.3%,-11%, -2.1% before compression) remain explicit
+scene-review items; acceptance includes layout and material review, not just
+brightness thresholds. Original repetition boundaries remain visible.
+
+Held1e42b870f3b4d520 loses small dark edge marks;2384dc9128899e5c reinterprets
+faint rectangles as multi-slot vents;2febd9d6e5abd127 omits paired lower-center
+dots;30cc197b429f9731 is19.3% darker and substitutes diamond mesh for the
+central ribbed strip. Preserve original cues before installation. All source
+artwork and prompts remain; no held draft installed and no original icons added.
+
+Pack2,098 entries/public1,947,302,795/private1,948,109,919 bytes (1.81GiB),
+below6GiB. Reclaimed252,059 redundant own265 repeat/focus bytes and30,312
+new reference bytes after exact reconstruction, resolved-path and SHA checks.
+Selected comparisons and all authoritative source/provenance remain. Temporary
+268,297,379bytes,138,077 headroom below256MiB; workspace9,419,870,544 logical
+and allocated bytes; diskfree47,133,229,056. No full game or pack duplicate.
+Queue4,371needart/179drafts/164originalicons/2,098installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final scene/hardware validation remain
+open. Evidence: private hybrid-266 prompts/generation/review/validation and
+reference/preview retirement receipts. Runtime/delivery contracts unchanged.
+
+
+## 2026-10-24 - #74 hybrid-267 fine materials and parquet
+
+Accepted three replacements: gray-purple granular surface, quiet warm tan
+impressed surface and interlocking parquet. Actual square1254 sources emitted
+two256 and one512 outputs, oneRGBA8/twoDXT1 with full9/10 mip chains. Native
+DDS, mip/aspect/opaque-alpha/hash/full-pack and manual2x2 repeat checks pass.
+All4,196 prior private files and2,098 prior public pairs remain unchanged.
+Original icons excluded. Granular material is finer at original scale (gradient
+11.90 versus14.54, std13.21 versus17.45); broad brightness stays within1.2%.
+Accepted as modern material detail; mapped scale and scene tone remain pending.
+
+Five held drafts:37bc5679f46153e7 changes overlapping-cell topology;
+3e0cf1111ceac7e4 replaces the broad black upper atlas region with metal;
+655f690b5265ad50 extends the inset downward and darkens13.3%;7bfa8be6661571f2
+shifts bottom notch dark columns31-36 to29-33 at64px;89ad1b5859be47af moves
+the darkest mortar-gap row38 to33 and increases coarse gradient12.20 to22.10.
+None installed. Small original references need an exact enlarged-reference
+experiment to reduce structural drift; this is not yet a demonstrated remedy.
+
+Pack2,101 entries/public1,947,871,871/private1,948,684,068 bytes (1.81GiB),
+below6GiB. Retired421,117 redundant own262/263 comparisons and266 repeat bytes,
+plus40,363 new reference bytes after exact reconstruction/path/SHA checks.
+All source art, prompts, selected264-267 comparisons and receipts remain.
+Temporary268,198,948 bytes,236,508 headroom below256MiB; texture workspace
+9,451,957,148 logical/allocated bytes; diskfree46,907,170,816. No duplicatepack.
+Queue4,363needart/184drafts/164originalicons/2,101installed among6,812 known
+supported keys. Worklist/hybrid plan refreshed. Local #74 only; no gameplay,
+push or publication. Full coverage and final scene/hardware validation remain
+open. Evidence: private hybrid-267 prompts/generation/review/validation,
+detail-diagnostics and retirement receipts. Runtime/delivery contract unchanged.
+
+
+## 2026-10-24 - #74 hybrid-268 enlarged-reference correction experiment
+
+Eight held assets regenerated from exact512px NEAREST enlargements of their
+32/64px originals. Five now pass:37bc5679f46153e7 overlapping-cell grouping;
+3e0cf1111ceac7e4 reserved black atlas band;7bfa8be6661571f2 notch positions;
+89ad1b5859be47af mortar gap;2febd9d6e5abd127 paired dark marks. Actual1254-square
+sources emitted two256 and three512 outputs, fourDXT1/oneRGBA8 with full mips.
+Native DDS/mip/aspect/opaque-alpha/hash/full-pack/manual repeat checks pass.
+All4,202 prior private files and2,101 prior public pairs remain unchanged.
+
+Post-encode original-scale checks verify notch spans exactly (left rows29-34,
+bottom columns31-36), gap darkest row38, first nonblack atlas row10 and top8
+rows meanRGB below1. Paired marks retain contrast at original coordinates.
+Original gaps and panel proportions are preserved; mapped scene appearance
+still needs final review. This is evidence the enlarged references help these
+five corrections, not a guarantee of perfect generation for every asset.
+
+Three remain held:655f690b5265ad50 has a brown/rust cast and11.3% lower mean;
+1e42b870f3b4d520 restores marks but invents extra rail subdivisions;
+30cc197b429f9731 overshoots brightness by24%. Enlarged original inspection
+corrects an earlier interpretation:30cc DOES have faint diamond-like central
+mottling. The earlier draft exaggerated it; it was not wholly invented.
+Prior sources and prompts remain, with pre-hybrid-268 prompt snapshots.
+
+Pack2,106 entries/public1,949,708,719/private1,950,529,381 bytes (1.82GiB),
+below6GiB. Reclaimed143,453 own267 repeat bytes,28,317 references and56,613
+technical guide bytes after exact reconstruction/path/SHA checks. Guide recipes,
+hashes and source resolutions remain in provenance; all authored artwork kept.
+Temporary268,396,583 bytes,38,873 headroom below256MiB; next batch requires
+verified preview retirement first. Workspace9,479,266,318 logical/allocated;
+diskfree46,713,053,184. No duplicate full pack or game. Queue4,363needart,
+179drafts,164originalicons,2,106installed among6,812 known supported keys.
+Local #74 only; no gameplay, push or publication. Full coverage and final
+scene/hardware validation remain open. Evidence: private hybrid-268 selection,
+prompts/generation/review/validation/correction-diagnostics/original-clarification
+and three retirement receipts. Runtime/delivery contract unchanged.
+
+
+## 2026-10-24 - #74 hybrid-269 guided material batch
+
+Five of eight new 64x64 opaque candidates were accepted after original/generated
+comparisons and separate decorative/ambiguous-atlas layout review. Gray granular
+material, ochre pitted material and the ambiguous highlight panel use 256x256;
+ornamental maroon/gold bands and the three-fastener tread panel use 512x512.
+All five encode as DXT1 with full mips from actual 1254x1254 built-in imagegen
+sources. Exact 512x512 NEAREST references guide layout only; outputs are not
+native 4K artwork. Source artwork and prompts remain private.
+
+Held d9937dc8fda0c4fb is 17.3% darker. Inset 16293cce3e63dc8f retains geometry
+but has darker faces and more dominant white edges (-11.6% mean luminance).
+Terracotta 2d7d1f0ed0bf2c03 expands lower branching cracks; the original does
+contain faint lower marks, so the problem is prominence rather than wholly
+invented cracks. Held drafts are excluded from pack assets. The decorative
+engraving is a modern interpretation; the ambiguous highlight panel's scene
+purpose remains unverified.
+
+Native Windows DDS parser, dimensions/mips, opaque alpha, content hashes,
+full-pack audit, original-character-icon exclusion and both compiled 2x2
+repeat reviews pass. Prior 4,212 private pack files passed unchanged checks;
+2,106 previous public pairs match the pack. Encoding completed before the
+second repeat preview was blocked by the 256 MiB temporary guard. The verified
+119,143-byte focus sheet was retired, then existing assets and the first
+preview were reverified unchanged and reporting completed without re-encoding.
+No storage-limit increase or duplicate pack was needed.
+
+Pack: 2,111 entries; sanitized DDS/JSON 1,950,191,167 bytes (1.82 GiB), private
+pack 1,951,020,713 bytes. Temporary outputs 268,359,802 bytes, 75,654 bytes below
+256 MiB. Earlier reviewed previews retired for this batch total 446,959 bytes;
+exactly recoverable originals/guides total 139,387 bytes. Hashes, reconstruction
+recipes and receipts remain; all generated sources/prompts are retained.
+Texture workspace logical/allocated size is 9,507,741,942 bytes; free disk space
+46,471,827,456 bytes at audit. The pack budget is distinct from source-art disk use.
+
+Queue: 4,355 need art, 182 drafts require review, 164 retained original icons,
+2,111 installed among 6,812 known supported keys. Unsupported/undiscovered
+assets and final scene/hardware validation remain open. Local #74 changes only;
+no gameplay, commit, push or release. Evidence: private hybrid-269 selection,
+prompts, generation, review, diagnostics, retirement and validation records.
+
+
+## 2026-10-24 - #74 hybrid-270 narrow metal trims
+
+Seven of eight opaque 4:1 metal candidates are installed after individual
+UV-layout and repeated-feature review: divided brushed trim, four-blade
+louvers, finned strip, paired inset plates with fasteners and bracket, repeated
+ribs, perforated panel and baked-highlight strip. Six outputs are 1024x256;
+the small finned strip is 512x128. All are DXT1 with complete mip chains.
+The oval band f18b1d0f32e2de94 remains held: the draft compresses artwork and
+adds black first/last rows inside the intended texture region. A tighter crop
+would exceed the allowed aspect deviation; it is not a valid layout repair.
+
+Built-in imagegen received exact NEAREST1536x384 enlargements on 1536x512
+canvases with 64-pixel black technical top/bottom padding. Actual generated
+sources are 2172x724. Manually reviewed extraction regions remove padding only,
+retain original internal gutters and differ from 4:1 by 0 to 0.37% before
+resampling to exact original aspect. Full sources, region coordinates, guide
+recipes/hashes and prompts are retained privately; no native-4K claim.
+
+Original-reference clarification: 71567f123bbaae3a has six troughs, not five
+as mistakenly specified in its prompt. Original and compiled original-scale
+profiles both place the troughs at x70,75,80,85,90,95. The generated image
+followed the reference. Preserve that result and the historical prompt; do
+not change it to fit the incorrect number. Corrugated-strip checks retain
+sixteen original-aligned rib windows, maximum peak offset one original texel.
+Five sampled perforation row profiles have equal dark-component counts and
+centers within half an original texel; the central seam is also a component.
+These are bounded checks alongside manual full-image/2x2 repeat review, not
+proof of all scene topology or lighting. Source-scale brightness changes range
+from -10.6% to +10.7% for accepted drafts and remain subject to scene validation.
+
+Native Windows DDS parser, dimensions/mips, alpha, hashes, full-pack audit,
+original-character-icon exclusion and both compiled repeat reviews pass.
+Prior 4,222 private files and 2,111 public DDS/JSON pairs remain unchanged.
+Pack: 2,118 replacements; sanitized files 1,951,286,143 bytes (1.82 GiB),
+private pack 1,952,130,564 bytes. Temporary output 268,089,134 bytes leaves
+346,322 bytes below 256 MiB. Retired 568,678 bytes of exactly reconstructed
+old comparisons/repeats plus 136,570 bytes of recoverable references and
+237,117 bytes of guides, retaining receipts and all authored sources/prompts.
+Workspace logical/allocated size 9,526,929,538 bytes; free disk space
+46,342,639,616 bytes at audit. No pack duplication or storage-cap increase.
+
+Queue: 4,347 need art, 183 drafts need review, 164 retained original icons,
+2,118 installed among 6,812 supported keys. Unsupported/undiscovered assets
+and final runtime/hardware validation remain incomplete. Work is local on #74;
+no gameplay, commit, push or publication. Evidence: private hybrid-270
+selection, prompts, generation, review, geometry diagnostics, original count
+clarification, post-encode geometry, retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 hybrid-271 very narrow 8:1 trims
+
+Four of eight new opaque 8:1 candidates passed artwork and compiled review:
+fafe3af293685c61 silver patterned strip at 2048x256;79f1d5dbf5cb3a20 repeating
+panel strip and 2d0985d8ce8906cb grille strip at 1024x128; ad4fc9d9abae1a53
+four-rivet band at 512x64. All use DXT1 with full mips. Accepted source-scale
+luminance changes range from -10.9% to -0.5%; later scene lighting remains open.
+Specialist inspection preserved the silver strip's fixed reflection-like dark
+clusters without claiming their material/scene identity is known.
+
+Guides are exact NEAREST 1536x192 enlargements on 1536x512 canvases with 160 px
+black technical top/bottom padding. Generated sources are 2172x724. Accepted
+manually reviewed regions differ from 8:1 by 0.18-0.55% before resampling to
+exact original aspect. The private compiler now describes each crop using
+actual original dimensions, instead of a hard-coded 4:1 recipe. Full artwork,
+source sizes/hashes, extraction regions, prompts and guide recipes remain
+private; these are not native 4K images.
+
+Held 540a9cf140785f09, fa5a2704c4c05210 and 95d1b646b6039fdd expand artwork
+height, yielding 5.07%, 2.34% and 3.04% aspect mismatch. Diagnostic comparisons
+show the measured extents but do not approve stretching/cropping away the
+error. The teal strip also overstates rust, and the blue paint gains hard
+boundaries. Held 307059597814103f matches the main highlight/boundary but
+fills a near-black lower atlas field: original rows 24-26 RGB mean 4.6 become
+24.0/22.3/19.6. Whole-image luminance cannot establish local dark-field fidelity.
+
+Native Windows DDS parser, mip/dimension/aspect/opaque-alpha/hash checks,
+full-pack audit, character-icon exclusions and manual compiled 2x2 repeat review
+pass. Post-encode original-scale profiles retain all ten grille trough centers
+x104..140 step 4 and all four rivet-highlight peaks x11/45/75/109. Two lower
+marks remain at x112 and 239-240 versus original 112/240, centroid offset <= 0.5.
+These checks supplement visual review; scene adjacency, lighting and scale
+remain unverified. All 4,236 prior private files and 2,118 public pairs unchanged.
+
+Pack 2,122 entries; sanitized DDS/JSON 1,951,833,906 bytes (1.82 GiB), private
+pack 1,952,686,939 bytes. Temporary output 268,123,920 bytes, headroom 311,536
+below 256 MiB. Retired 126,297 bytes of verified 270 repeats and recoverable
+271 references 186,388/guides 257,136 bytes. Reconstruction/hash receipts and
+all generated source artwork/prompts retained. Texture-workspace logical and
+allocated size 9,539,160,306 bytes; disk free 46,311,170,048 bytes at audit.
+No extra game/pack copy or storage-cap increase.
+
+Queue: 4,339 need art, 187 drafts require review, 164 original icons, 2,122 installed
+among 6,812 supported keys. Unsupported/undiscovered assets and final runtime/
+hardware checks remain incomplete. Local #74 work only; no gameplay, commit,
+push or publication. Evidence: private hybrid-271 selection, prompts, generation,
+padding/geometry diagnostics, review, post-encode geometry, retirement receipts
+and validation report.
+
+
+## 2026-10-24 - #74 hybrid-272 metal and molding strips
+
+Six of eight opaque 4:1 candidates passed artwork and compiled review: warm
+red/brass band ffadbf926dcf0084 at 512x128; two-slot trim 16b89c26fce9b6b5,
+tread plate 29f9b73bd48e516c, pale jointed strip 335056938e008198, clamped rail
+4df69a84970d5003 and asymmetric molding 2b3dab4f94656b51 at 1024x256.
+All use DXT1 and complete mip chains. Three complete rail clamps plus the
+partial right-edge clamp survive; the molding's left returns continue off the
+right edge without an invented closing frame. Accepted source-scale luminance
+changes range from -9.1% to +6.3%; scene lighting and scale remain pending.
+
+Exact NEAREST1536x384 original enlargements sit in 1536x512 guides with 64-pixel
+black top/bottom technical padding. All actual imagegen sources are 2172x724.
+Reviewed source regions remove padding only, with 0-0.93% aspect rounding before
+exact original 4:1 outputs. Full sources, sizes, extraction coordinates, prompts,
+hashes and guide recipes remain private. No native 4K claim.
+
+Held b03c32125d718402 expands the artwork to 549 pixels high (1.09% aspect
+error) and intensifies corrosion. Held b9e78713059ddd5b compresses it to 536
+pixels high (1.31% aspect error), moving the lower rail/edge upward. Both exceed
+the existing 1% extraction tolerance. Diagnostic previews show measured artwork
+regions; they do not authorize shaving edges or stretching to pass the gate.
+
+Native Windows DDS parser, dimensions/mips, alpha/aspect/hash checks, full-pack
+audit, original-character-icon exclusions and both manual compiled 2x2 repeat
+reviews pass. Sampled post-encode tread inset spans match x33-100 and x161-228
+at original rows 6/7. Two slot boundaries remain within one original texel at
+rows 17/19. The joint's dark mark matches x133-139 at rows 21/23, with a different
+corner taper at row 25. Brass highlight peak row 17 and groove minimum row 13
+remain unchanged. These are bounded checks alongside full-image review, not
+pixel-exact or scene equivalence. All 4,244 previous private pack files and
+2,122 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,128 replacements; sanitized files 1,952,753,732 bytes (1.82 GiB), private
+pack 1,953,619,504 bytes. Temporary output 268,230,202 bytes leaves 205,254 bytes
+below 256 MiB. Retired 197,605 bytes of verified old comparisons/repeats plus
+156,153 bytes of recoverable references and 259,099 bytes of guides. Exact
+reconstruction/hash receipts remain, as do all generated artwork and prompts.
+Texture-workspace logical/allocated size is 9,560,599,506 bytes; free disk space
+45,914,234,880 bytes at audit. No duplicate pack or storage-cap increase.
+
+Queue: 4,331 need art, 189 drafts require review, 164 retained original icons,
+2,128 installed among 6,812 supported keys. Unsupported/undiscovered assets and
+final runtime/hardware validation remain incomplete. Work stays local on #74;
+no gameplay, commit, push or publication. Evidence: private hybrid-272 selection,
+prompts, generation, padding diagnostics, review, post-encode geometry,
+retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 architectural strips, hybrid-273
+
+Added five reviewed replacements: orange weathered panel, framed marble,
+granular olive-gray strip, pale corroded corrugation and pale segmented panel.
+All use 1024x256 DXT1 with complete 11-level mip chains. Built-in imagegen sources
+are 2172x724 padded atlases, guided by exact NEAREST enlargements of original
+4:1 textures. Explicitly reviewed technical crops retain the artwork; source
+aspect rounding is 0.18-0.91%. These are not native 4K images. Full sources and
+prompts remain private. Two proportion-drift drafts and one overbright metal
+draft remain held; none is installed. Character/profile icons remain original.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash
+checks and both manual compiled-repeat sheets pass. Original-scale orange seam
+minimum remains row 50; corrugation trough/ridge remain rows 8/32. Five pale-panel
+seam probes differ by at most one original texel. These bounded probes support
+full-image review, not scene or pixel-exact equivalence. All 4,256 prior private
+pack files and 2,128 prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2,133 replacements; sanitized files 1,953,629,482 bytes (1.82 GiB), private
+pack 1,954,505,389 bytes. Temporary outputs total 268,228,996 bytes, leaving
+206,460 bytes below 256 MiB. Retired 276,148 bytes of exactly reconstructed old
+previews, plus 172,044 bytes of verified original references and 270,816 bytes
+of exact guides. Reconstruction/hash receipts, authored sources and prompts
+remain. Texture workspace logical/allocated size is 9,581,527,499 bytes; disk
+free space is 45,776,424,960 bytes at audit. One pack; no cap increase.
+
+Queue: 4,323 need art, 192 drafts need review, 164 retained original icons and
+2,133 installed among 6,812 supported keys. Coverage and final scene/hardware
+validation remain incomplete. Changes are local on #74; no gameplay, commit,
+push or publication. Evidence: private hybrid-273 selection/prompts/generation,
+padding diagnostics, review, post-encode geometry, retirement and validation.
+
+
+## 2026-10-24 - #74 ornament and mechanical strips, hybrid-274
+
+Added eight reviewed replacements: gold leaf-scroll molding, two gray mechanical
+panels, four-slab masonry, dark blue-gray banded surface, rusty trim, a central
+mechanical channel and four louvers. All use DXT1 with full mip chains: ornament
+2048x512 (12 levels), seven strips 1024x256 (11 levels). Built-in imagegen sources
+are 2172x724 padded atlases. Exact original 4:1 NEAREST guides preserve coordinate
+cues; reviewed technical extraction has at most 0.56% aspect rounding. These are
+not native 4K sources. Full source artwork and prompt provenance remain private.
+All eight passed individual layout review; no new held draft in this batch.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash
+checks and two decoded 2x2 repeat comparisons pass. Bounded original-scale probes
+survive encoding: mechanical slot minimum row21 and rail highlight row37;
+slab joint minima x63/127/191; rusty ridge row12; channel transitions rows17/43.
+Four louver highlights match within one original texel (third is row45 versus44).
+Ornament motifs and stepped grille/hardware received visual review. These checks
+do not prove scene adjacency or exact pixel equivalence. All 4,266 previous
+private pack files and 2,133 previous public DDS/JSON pairs remain unchanged.
+
+Pack: 2,141 replacements; sanitized files 1,955,554,970 bytes (1.82 GiB), private
+pack 1,956,447,324 bytes. Temporary outputs total 268,290,698 bytes, leaving
+144,758 bytes below 256 MiB. Retired 273,730 bytes of exactly reconstructable
+old previews, plus 139,792 bytes of verified references and 231,605 bytes of
+exact guides. Source art, prompts and reconstruction/hash receipts remain.
+Texture workspace logical/allocated size is 9,602,542,413 bytes; disk free space
+45,610,409,984 bytes at audit. One active pack; storage caps unchanged.
+
+Queue: 4,315 need art, 192 drafts need review, 164 retained original icons and
+2,141 installed among 6,812 supported keys. Remaining coverage, unsupported or
+undiscovered assets and final scene/hardware validation are incomplete. Work
+stays local on #74; no gameplay, commit, push or publication. Evidence: private
+hybrid-274 selection/prompts/generation, padding diagnostics, review, source and
+post-encode geometry, retirement receipts and validation report.
+
+
+## 2026-10-24 - #74 worn plaster and banded trim, hybrid-275
+
+Added five reviewed 1024x 256 DXT 1 replacements with complete 11-level mip chains:
+ochre/red trim, cracked plaster, stained cream trim, olive-gray banded surface
+and two-tone gray plaster. Built-in imagegen sources are 2172x 724 padded atlases;
+exact original NEAREST guides and reviewed technical crops preserve 4: 1 layout
+with at most 0.55% source aspect rounding. Full sources/prompts remain private;
+these are not native 4K sources. Three drafts remain held: red/gold ornament
+became sculpted leaves, panel lighting/recess details drifted, and a dark mottled
+surface changed its broad cavities/lower edge. None of these held keys is installed.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash,
+original-icon exclusions and two manual decoded-repeat reviews pass. Post-encode
+original-scale probes retain separator row 38, brown line row 33, lower seam row 46
+and gray-band transition row 31. Lower rail peak differs by one texel. Main crack
+branches remain visually aligned, but threshold 35 row 40 probes lose two tiny
+dark spans at x 164-165 and 175-176; fine shading is not pixel-exact. This limitation
+is recorded, not treated as scene equivalence. All 4, 282 previous private pack
+files and 2, 141 prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2, 146 replacements; sanitized files 1, 956, 430, 720 bytes (1.82 GiB), private
+pack 1, 957, 333, 186 bytes. Temporary output 268, 243, 203 bytes leaves 192, 253 bytes
+below 256 MiB. Retired 340, 903 bytes of exactly reconstructable old previews,
+175, 995 bytes of verified references and 271, 191 bytes of exact guides. Authored
+art, prompts and reconstruction/hash receipts remain. Texture-workspace logical
+and allocated size 9, 624, 416, 433 bytes; free disk 45, 489, 065, 984 bytes at audit.
+One active pack; storage caps unchanged.
+
+Queue: 4, 307 need art, 195 drafts need review, 164 retained original icons and
+2, 146 installed among 6, 812 supported keys. Remaining coverage and final scene/
+hardware validation are incomplete. Work remains local on #74; no gameplay,
+commit, push or publication. Private hybrid-275 selection/prompts/generation,
+padding/geometry diagnostics, review, retirement receipts and validation retain
+provenance and measured limitations.
+
+
+## 2026-10-24 - #74 trim and small grille, hybrid-276
+
+Added three reviewed DXT1 replacements: rust-gray parallel trim and pale panel
+with small grille at 1024x256 (11 mip levels), and ambiguous gray-brown highlight
+strip at 512x128 (10 levels). Built-in imagegen sources are 2172x724 padded atlases;
+exact original NEAREST guides and reviewed technical crops preserve 4:1 layout
+with at most 0.55% source aspect rounding. Full artwork and prompts remain private;
+these are not native 4K sources. Five drafts remain held: ornament became leaf
+relief, ridge shadows/gouges darkened, faint grid lost a line, four-hole panel
+was compressed by 6.05% in aspect, and off-white panels lost center subdivisions.
+
+Native Windows DDS parser, full-pack audit, dimensions/mips, alpha/aspect/hash,
+original-icon exclusions and manual decoded-repeat review pass. Post-encode
+trim ridge peaks remain rows 18/44 and center highlight row 15. The grille keeps
+five openings: original-scale dark spans match at rows 29/31, with at most one
+texel difference at row 27. These bounded checks supplement full-image review;
+scene adjacency remains unverified. All 4,292 prior private pack files and 2,146
+prior public DDS/JSON pairs remain unchanged.
+
+Pack: 2,149 replacements; sanitized files 1,956,825,096 bytes (1.82 GiB), private
+pack 1,957,733,672 bytes. Temporary output 268,196,016 bytes leaves 239,440 bytes
+below 256 MiB. Retired 276,472 bytes of verified old previews, 137,616 bytes of
+original references and 219,399 bytes of exact guides. Reproduction/hash receipts,
+authored artwork and prompts remain. Texture-workspace logical/allocated size
+9,645,733,475 bytes; free disk 45,173,239,808 bytes at audit. One active pack;
+storage caps unchanged.
+
+Queue: 4,299 need art, 200 drafts need review, 164 retained original icons, 2,149
+installed among 6,812 supported keys. Coverage and final scene/hardware validation
+remain incomplete. Local #74 work only; no gameplay, commit, push or publication.
+Private hybrid-276 selection/prompts/generation, padding diagnostics, review,
+post-encode geometry, retirement receipts and validation retain evidence.
+
+
+## 2026-10-24 - #74 wall panels and trims, hybrid-277
+
+Added four reviewed 1024x256 DXT1 replacements with 11 mip levels: paired vent
+inserts, tan beveled panel, dark olive-brown stained strip and green-gray worn
+band. Built-in imagegen sources retain full 2172x724 artwork; reviewed technical
+padding extraction has at most 0.55% aspect rounding. These are downsampled
+material restorations, not native 4K artwork. Four drafts remain held for tile
+brightness, omitted central-support subdivision and altered fastener treatment.
+
+Native Windows DDS parser, dimensions/mips/alpha/aspect/hash, full-pack audit,
+original-icon exclusions and manual decoded repeat review pass. Vent side edges
+match original-scale columns 37/101/153/217; top edge differs by one texel and
+bottom edge matches. Tan lower-bevel peak remains row 59. All 4,298 prior private
+files and 2,149 public DDS/JSON pairs remain unchanged. Scene adjacency and Mac
+GPU appearance remain untested; no runtime or host-specific code changed.
+
+Pack: 2,153 replacements; sanitized files 1,957,525,696 bytes (1.82 GiB), private
+pack 1,958,442,405 bytes. Temporary output 268,193,629 bytes leaves 241,827 bytes
+below 256 MiB. Retired 235,181 bytes of byte-reproduced old previews, 137,933 bytes
+of verified catalog references and 235,878 bytes of exact NEAREST guides. Full
+source art, prompts and reconstruction/hash receipts remain. Texture workspace
+logical/allocated size 9,667,187,324 bytes; free disk 44,922,400,768 bytes at audit.
+The 6 GiB pack and 512 MiB runtime residency caps are unchanged.
+
+Queue: 4,291 need art, 204 drafts need review, 164 retained original icons, 2,153
+installed among 6,812 supported keys. Local #74 work only; no gameplay, commit,
+push or publication. Private hybrid-277 selection/prompts/generation, padding
+and post-encode diagnostics, review, retirement receipts and validation record
+the evidence. The new four sanitized DDS/JSON pairs are staged as LFS pointers;
+there are now 107 new pairs staged since task base.
+
+
+## 2026-10-24 - #74 masonry trim variants, hybrid-278
+
+Added five reviewed 1024x256 DXT1 replacements with 11 mip levels: corroded seam
+trim, matte and reflective lower-band variants, divided concrete strip and a
+long inset panel. Built-in imagegen sources are 2172x724 padded atlases; reviewed
+technical crops preserve original 4:1 layout with at most 0.73% aspect rounding.
+Full source artwork and prompts remain private; these are not native 4K sources.
+Three drafts are held: rough stone is 17.8% darker, cornice has 5.23% aspect
+error with shifted lower blocks, brick atlas adds a divider and changes courses.
+
+Native Windows DDS parser, full-pack audit, mip/alpha/aspect/hash checks, original
+icon exclusions and both decoded repeat sheets pass offline review. Post-encode
+separator row 25 matches for both band variants; sampled upper joint gradients
+move by 0-2 original texels. Corroded seam minimum is row 27 versus original 28.
+Concrete upper trim remains row 16, lower trim is 61 versus 62. Inset left edge
+26 and bottom row 53 match; right edge is 226 versus 227. These bounded probes
+supplement visual review, not exact pixel equivalence or scene validation.
+All 4,306 prior private files and 2,153 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,158 replacements; sanitized files 1,958,401,446 bytes (1.82 GiB), private
+pack 1,959,328,298 bytes. Temporary output 268,198,345 bytes leaves 237,111 bytes
+below 256 MiB. Retired 259,885 bytes of byte-reproduced previews, 129,991 bytes of
+verified catalog references and 221,983 bytes of exact guides; reconstruction
+receipts remain. Texture workspace logical/allocated size 9,688,808,536 bytes;
+free disk 44,744,888,320 bytes at audit. One private pack; storage caps unchanged.
+
+Queue: 4,283 need art, 207 drafts need review, 164 original icons, 2,158 installed
+among 6,812 supported keys. Coverage, final scenes and Mac GPU validation remain
+incomplete. Local #74 only; no gameplay, commit, push or publication. Five new
+sanitized DDS/JSON pairs are staged as LFS pointers (112 new pairs since base).
+Private hybrid-278 selection/prompts/generation, diagnostics, review, retirement
+receipts, post-encode geometry and validation preserve the evidence.
+
+
+## 2026-10-24 - #74 ornament, brick and slabs, hybrid-279
+
+Added three reviewed DXT1 replacements: ornate molding at 2048x512/12 mip levels,
+brick strip at 512x128/10 levels and four slabs at 1024x256/11 levels. Built-in
+imagegen sources are 2172x724 padded atlases; reviewed technical crops preserve
+original 4:1 layout with at most 0.73% aspect rounding. Full artwork/prompts
+remain private; none is native 4K. Five drafts remain held for compressed molding
+framing, altered frieze contours and three dark materials losing 10.8-22.9% value.
+The granular strip's black-border framing remains explicitly unapproved.
+
+Native Windows DDS parser, full-pack audit, mip/alpha/aspect/hash and icon
+exclusion checks pass. Manual decoded repeat review and original-scale probes
+retain brick molding/mortar minima at rows 3/12/18 and highlight at 30. Ornate
+principal grooves and sampled recess positions differ by at most one original
+texel; the windows supplement visual count review and do not independently prove
+count. Slab joint minima are 62/125/189 versus original 61/125/188. Scene adjacency
+and Mac GPU appearance remain untested. All 4,316 prior private files and 2,158
+public DDS/JSON pairs remain unchanged.
+
+Pack: 2,161 replacements; sanitized files 1,959,320,110 bytes (about 1.82 GiB),
+private pack 1,960,253,167 bytes. Temporary output 268,021,741 bytes leaves 413,715
+bytes below 256 MiB. A guide preflight stopped before writing when 321,325 bytes
+would exceed remaining temporary space. Retired 427,806 bytes of byte-reproduced
+old previews, then 222,040 bytes of verified catalog references and 321,325 bytes
+of exact guides. Reconstruction/hash receipts and full sources remain. Texture
+workspace logical/allocated size 9,711,094,918 bytes; free disk 44,676,661,248 bytes
+at audit. One active pack; 6 GiB pack and 512 MiB residency limits unchanged.
+
+Queue: 4,275 need art, 212 drafts need review, 164 retained original icons, 2,161
+installed among 6,812 supported keys. Coverage and final validation are incomplete.
+Local #74 only; no gameplay, commit, push or publication. Three new sanitized
+DDS/JSON pairs staged as LFS pointers (115 new pairs since base). Private
+hybrid-279 selection/prompts/generation, diagnostics, review, retirement receipts,
+post-encode geometry and validation retain evidence.
+
+
+## 2026-10-24 - #74 wood and panel variants, hybrid-280
+
+Added three reviewed 1024x256 DXT1 replacements with 11 mip levels: wood/floral
+wallpaper atlas, wood/scratched-gold atlas and dark horizontal grain. Built-in
+imagegen sources are 2172x724 padded atlases; technical crops retain original
+4:1 layout with at most 0.91% aspect rounding. Printed floral centers have
+reinterpreted detail, not exact reconstruction. Full artwork/prompts remain
+private; these are not native 4K sources. Five drafts remain held: teeth became
+round holes, frame grew heavier, subtle cracks became large black seams, and
+three drafts lost 15.1-27.6% brightness (including frame/ambiguous material).
+
+Native Windows DDS parser, full-pack, mip/alpha/aspect/hash, icon exclusions and
+manual decoded repeat checks pass. Both atlases retain main partition/rail
+gradients at original columns 85/242. Scratched-atlas slat minima retain original
+rows 12/25/38/51; floral first seam is 13 versus 12, others match. Dark grain
+minimum stays row 47; central stain mean is 20.4 versus original 25.2, a measured
+tone difference for later scene review. Overall dark-wood brightness is -8.4%.
+These bounded checks do not prove exact pixels, scene adjacency or Mac GPU output.
+All 4,322 prior private files and 2,161 public DDS/JSON pairs remain unchanged.
+
+Pack: 2,164 replacements; sanitized files 1,959,845,560 bytes (about 1.83 GiB),
+private pack 1,960,784,883 bytes. Temporary output 268,267,711 bytes leaves 167,745
+bytes below 256 MiB. Retired only this batch's 150,591-byte original references
+and 248,313-byte exact guides after reproduction/hash verification; full source
+art and receipts remain. Texture workspace logical/allocated size 9,730,731,895
+bytes; free disk 44,549,840,896 bytes at audit. One active pack, unchanged caps.
+
+Queue: 4,267 need art, 217 drafts need review, 164 retained original icons, 2,164
+installed among 6,812 supported keys. Coverage and final validation remain
+incomplete. Local #74 only; no gameplay, commit, push or publication. Three new
+sanitized DDS/JSON pairs staged as LFS pointers (118 new pairs since task base).
+Private hybrid-280 selection/prompts/generation, padding/geometry diagnostics,
+review, retirement receipts and validation preserve evidence.
+
+
+### 2026-10-24: #74 narrow trim batch 281 (local only)
+
+Four of eight generated strips accepted: rust molding, curved blue-gray segments,
+weathered plaster and dark neutral trim. Three drafts exceed the 1% strip-aspect
+tolerance; the layered gray trim brightened 18.3% and remains held. Full sources
+and prompts remain private. Sources are 2172x724 padded atlases, with reviewed
+material regions downsampled to 1024x128 DXT1 and 11 mip levels; not native 4K.
+
+Native DDS parser, alpha/aspect/mips/hashes, full-pack audit and original-icon
+exclusion passed. All 4,328 prior private files and 2,164 prior public pairs
+remain unchanged. Manual decoded repeat review passed. Molding row probes
+7/16/24, plaster ridge25 and trim lips0/31 match; eight curved-channel spans
+differ by at most one original texel. Scene validation remains pending.
+
+Pack: 2,168 replacements; sanitized 1,960,196,716 bytes; private 1,961,144,084.
+Queue: 4,259 need art, 221 drafts require review, 164 retained originals.
+Texture workspace: 9,742,190,642 bytes logical/allocated; 44,454,850,560 free
+at audit. Temporary outputs: 268,126,876 bytes, 308,580 below the 256 MiB limit.
+Retired only 293,004 bytes of byte-reproduced old previews and 277,721 bytes
+of new exact-reconstructable references/guides, with parent/hash checks and
+receipts. Source art, saves/settings and the single pack remain intact.
+
+Sanitized new DDS LFS pointers/JSON are staged locally on #74; 122 new pairs
+since task base. No gameplay, commit, push or publication in this batch.
+
+
+### 2026-10-24: #74 narrow trim batch 282 (local only)
+
+Two of eight generated strips accepted: worn ochre paint and pale masonry.
+Six drafts remain held: changed rib rhythm, compressed bronze atlas, merged
+silver-rail bottom cutouts, expanded/brightened tan tiles, expanded turquoise
+strip and darkened gray trim. Full artwork and prompts remain private. Sources
+are 2172x724 padded atlases; reviewed material regions become 1024x128 DXT1
+with 11 mip levels. These are downsampled detail restorations, not native 4K.
+
+Native DDS parser, alpha/aspect/mip/hash validation, full-pack audit and original
+icon exclusions pass. All 4,336 prior private files and 2,168 public pairs remain
+unchanged. Decoded 2x2 repeats reviewed; original-scale ochre seam231 and masonry
+seams58/116/161/210 match. Fine mineral detail and paint flaking are reinterpreted;
+scene validation remains pending. No game launch, commit, push or publication.
+
+Pack: 2,170 replacements, sanitized 1,960,372,294 bytes; private 1,961,323,774.
+Queue: 4,251 need art, 227 drafts require review, 164 retained originals.
+Texture workspace: 9,753,132,385 bytes logical/allocated; disk free44,387,782,656
+at audit. Temporary outputs268,258,540 bytes with176,916 bytes headroom below
+256 MiB. Only new references/guides totaling249,756 bytes were retired after
+exact reconstruction, resolved-parent and hash verification. One active pack,
+source artwork and user saves/settings preserved. 124 new sanitized pairs are
+staged locally since task base.
+
+
+### 2026-10-24: #74 rectangular material batch 283 (local only)
+
+Four of eight drafts accepted: warm speckled panel, brown-gray weathered strip,
+gray granular strip and aged floral wallpaper. Tread plate omitted its original
+black lower atlas field and brightened34.6%; orange and dark wall dimmed18.9%
+and17.2%; ornate scrollwork deepened/enlarged relief. These four remain held.
+Full generated sources1774x887 are retained with prompts and provenance. Outputs
+use1024x512 or512x256 RGBA8 with full mip chains, not native4K art.
+
+Native DDS, dimensions/mips/alpha/hashes, full-pack audit and original-icon
+exclusions passed. All4,340 prior private files and2,170 public pairs remain
+unchanged. Decoded repeats reviewed. Highlight row2, weathered center/edge37/59
+and gray-strip center/edge30/63 match; weathered upper band differs by one
+original texel. Floral border-shading minima differ by up to two texels; the
+fine printed details are reinterpreted. Scene validation remains pending.
+
+Pack2,174 entries: sanitized1,967,364,242 bytes, private1,968,322,628. Queue
+4,243 need art,231 drafts require review,164 retained originals. Workspace
+9,791,565,895 bytes logical/allocated; disk free44,243,222,528 at audit. Temporary
+outputs268,168,260 bytes with267,196 headroom below256MiB. Reproduced and retired
+373,853 bytes of old comparison previews plus265,263 bytes of new original
+references using exact reconstruction and resolved-parent/hash checks. All
+source art, saves/settings and one active pack preserved.128 new pairs staged
+locally since task base. No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 panel and trim batch 284 (local only)
+
+Six of eight drafts accepted: pale layered trim, cracked red/pale surface,
+blue-gray crossrail panel, mottled brown-gray material, paired silver fastener
+panels and weathered pink-gray atlas. The ledge brightened 14.2%; the facade
+openings became too dark. Both remain held. The facade was removed from the
+new private pack before staging after encoded review, with exact new-file
+hash/parent checks and a recovery receipt retaining metadata. Source art stays.
+
+Originals used exact NEAREST 512x256 layout guides. Full generated sources are
+1774x887; outputs range from 256x128 to 1024x512, DXT1 or RGBA8 with full mips.
+Native DDS, alpha/aspect/mips/hashes, full-pack audit and icon exclusions pass.
+All 4,348 prior private files and 2,174 public pairs remain unchanged. Decoded
+repeats reviewed, including the facade rejection. Trim rows 12/14/26, crossrail
+16, mottling23, pink-gray seam19 and red boundaries29/64/94 match at original
+scale. Fastener dark-pixel probes differ by up to one column and three rows;
+changed highlights make these diagnostic, not proof of identical contours.
+Scenes remain untested. No gameplay, commit, push or publication.
+
+Pack: 2,180 entries; sanitized 1,969,310,695 bytes; private 1,970,279,290.
+Queue: 4,235 need art, 233 drafts require review, 164 retained originals.
+Workspace: 9,822,009,510 bytes logical/allocated; disk free 44,053,565,440 at
+audit. Temporary outputs 268,406,231 bytes, 29,225 below 256 MiB; recycle
+reproducible previews before another batch. Retired 82,540 bytes of reproduced
+281/282 repeat sheets and 178,702 bytes of newly reconstructed references/guides
+with resolved-parent and hash checks. Artwork, saves/settings and one active
+pack preserved. 134 new sanitized pairs staged locally since task base.
+
+
+### 2026-10-24: #74 wall, window and trim batch 285 (local only)
+
+Five of eight drafts accepted: gray banded wall with baked shadow, pale
+ornamental trim, blue-gray service wall, floral wallpaper and curved window
+frame. Changed scroll relief, broken-glass contours and stronger pseudo-lettering
+remain held. Generated sources are 1774x887; compiled outputs are 512x256 or
+1024x512 DXT1 with complete mip chains. Native DDS and full-pack audits passed.
+All 4,360 prior private files and 2,180 public pairs stayed unchanged; all 164
+retired icon keys remain excluded. Original-scale trim rows23/36/46/54 and
+window mullions46/83 match. Banded-wall transitions differ by at most one texel;
+service-rail gradients differ by up to two. Wallpaper border minima differ by
+one, while a broad stripe minimum moved five because shading changed. The
+follow-up explicitly distinguishes local contrast from boundary movement;
+wallpaper contrast and all scenes remain pending runtime review.
+
+Pack:2,185 entries; sanitized1,970,273,767 bytes; private1,971,250,977.
+Queue:4,227 need art,236 drafts require review,164 retained originals.
+At batch audit, texture workspace9,846,436,744 bytes logical/allocated;
+disk free43,376,676,864; temporary268,297,789 with137,667 bytes headroom.
+Retired353,979 bytes of exactly reconstructed older previews and297,414 bytes
+of new original references/guides. Sources/provenance and one pack retained.
+139 new sanitized pairs staged locally since task base. No gameplay or publication.
+
+
+### 2026-10-24: #74 tile, grille and plaster batch 286 (local only)
+
+Seven of eight drafts accepted: terracotta tile grid, striped woven material,
+bracketed pale wall, stained green tile grid, two-row grille, eroded two-tone
+plaster and fine terracotta material. Dark chipped slabs remain held after a
+12.4% luminance reduction and exaggerated recess edges. Inspection corrected
+ambiguous queue descriptions before prompting: the plaster boundary is irregular,
+the dark slabs have chipped recesses, and the terracotta field has no brick grid.
+
+Full sources1774x887; outputs512x256 or1024x512 with complete mips. Six use DXT1;
+the striped woven material uses RGBA8 to preserve detail. Native parser,
+alpha/aspect/mips/hash, full-pack audit and icon exclusions passed. All4,370
+prior private files and2,185 prior public pairs remained unchanged. Both decoded
+repeat sheets reviewed; actual scene adjacency and gameplay remain untested.
+Tile grout columns63/127/191 and row64 match. Red stripe spans differ by one
+texel; sampled irregular tile seams and grille dark cores differ by at most two.
+Initial uniform-grid search windows missed the original wider central cell;
+enlarged original/decoded comparison and corrected windows are recorded alongside
+the original diagnostic, rather than hiding the mismatch. These are bounded
+feature probes, not whole-image equivalence or scene certification.
+
+Pack:2,192 entries; sanitized1,974,383,305 bytes; private1,975,372,326.
+Queue:4,219 need art,237 drafts require review,164 retained originals.
+Texture workspace9,880,068,272 bytes logical/allocated; disk free43,223,863,296
+at audit. Temporary268,208,656 bytes with226,800 headroom below256MiB.
+Retired451,714 bytes of byte-reconstructed previews and528,118 bytes of new
+original references/guides. The initial redundant PowerShell Split-Path parent
+check emitted a parameter-set error; the preceding Python resolved-parent check
+and exact bytes plus PowerShell hash check had passed. The receipt records this;
+subsequent removals use terminating errors and System.IO.Path.GetDirectoryName.
+No source art, recovery record, game data, save or setting was removed.146 new
+sanitized pairs staged locally since task base. No gameplay, commit, push or release.
+
+
+### 2026-10-24: #74 rough material and panel batch 287 (local only)
+
+Six of eight drafts accepted: gray-green rocky material, lit sandstone,
+small pale mottled strip, corrugated industrial wall, cross-seamed gray panel
+and cream/olive banded panel. Brighter chipped masonry and darker six-rail
+hardware with enlarged end caps remain held. Full sources1774x887; outputs
+256x128,512x256 or1024x512. Rock and sandstone use RGBA8 to preserve fine
+color detail; the other four use DXT1. All have complete mip chains.
+
+NativeDDS, alpha/aspect/mips/hash, full-pack and icon exclusion checks passed.
+All4,384 prior private files and2,192 prior public pairs remain unchanged.
+Both decoded2x2 repeats reviewed; all scene/gameplay acceptance remains pending.
+Sandstone vertical light peaks158/345 match; lower light row192 becomes191.
+Panel seam column48/row125, notch bottom119 and band transitions17/41 match.
+Upper rib dark cores differ by at most3 original texels as shading changes;
+this is not a complete contour proof. Grain, light strength and seam contrast
+remain explicit scene-review concerns. No native4K source claim.
+
+Pack:2,198 entries; sanitized1,980,786,212 bytes; private1,981,785,424.
+Queue:4,211 need art,239 drafts require review,164 retained originals.
+Texture workspace9,916,514,935 bytes logical/allocated; disk free43,052,109,824
+at audit. Temporary267,566,438 bytes,869,018 headroom below256MiB.
+
+Recycled966,637 bytes of five diagnostic previews with resolved-parent/hash
+checks. The258/259 contact sheets were redundant; their current/previous source
+hashes, original payload provenance and review reports were verified and retained.
+Their old JPEG rendering recipe was not byte-exact recovered. The286 comparison
+and two repeat sheets were reproduced byte-for-byte before removal. Neither
+cleanup type removed artwork or recovery records. The receipt distinguishes them.
+Retired999,227 bytes of new original references and149,395 bytes of separate
+NEAREST guides after exact reconstruction. Three512x256 originals doubled as
+edit references, avoiding duplicate guides. One game/build/pack and personal
+saves/settings preserved.152 new sanitized pairs staged locally since base.
+No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 wood, plaster and granular batch 288 (local only)
+
+Six of eight drafts accepted: weathered wood, small blue-gray panel, ochre
+material, pink-beige mottling, diagonal brown bands and pink-to-gray eroded
+plaster. Gray tiles retain stronger crack/grain contrast and about8.8% higher
+brightness; rust is more saturated and about11.4% darker. Both remain held.
+Original inspection identified the large brown surface as wood, preserving
+knots and plank cuts rather than following its earlier inferred ground label.
+
+All full sources1774x887. Wood is resampled to2048x1024 for its1024x512 original;
+other outputs are256x128 or512x256. This is not native4K source artwork. All
+six use DXT1 and full mip chains. NativeDDS, alpha/aspect/mips/hash, full-pack
+and retired-icon checks passed. All4,396 prior private files and2,198 public
+pairs stayed unchanged. Both decoded repeat sheets reviewed; scene validation
+remains pending, especially wood highlights and diagonal-material roughness.
+
+Sampled wood cut rows49/227/276 become48/227/276; small-panel partitions17/37
+match. Five sustained pink-to-gray color transitions differ by at most one
+original texel. The initial largest-gradient probe picked lower-layer speckle
+at some columns; color profiles and follow-up are retained with that limitation.
+These measurements do not establish full contours, scene adjacency or gameplay.
+
+Pack:2,204 entries; sanitized1,982,557,935 bytes; private1,983,567,402.
+Queue:4,203 need art,241 drafts require review,164 retained originals.
+Texture workspace9,947,625,704 bytes logical/allocated; disk free42,639,245,312
+at audit. Temporary267,530,303 bytes with905,153 headroom below256MiB.
+Retired one296,789-byte redundant257comparison after source hash/provenance and
+resolved-parent/file-hash checks; exact historical JPEG recipe not recovered,
+but all artwork, original game/catalog and review records retained. New original
+references909,904 bytes and seven exactNEAREST guides126,476 bytes were retired
+after exact reconstruction. The1024x512 original served directly as its guide.
+No game data, saves/settings or source art removed.158 new sanitized pairs
+staged locally since base. No gameplay, commit, push or publication.
+
+
+### 2026-10-24: #74 plaster, columns and corrugation batch 289 (local only)
+
+Four of eight drafts accepted: pale streaked plaster, recessed-column strip,
+dark corrugation and pink-gray chipped plaster. Diagonal ridges, inset panel
+and red ribs remain held for excessive darkness/relief; the grimy wall became
+about 12.8% brighter. Held sources and review decisions remain private.
+
+All full artwork sources are 1774x887, generated with built-in imagegen. Accepted
+outputs are 512x256 or 1024x512 DXT1 with full mip chains, downsampled from the
+sources; no native 4K claim. Alpha/aspect/mips/hash checks, native DDS parser,
+full-pack audit and original-icon exclusions pass. All 4,408 prior private
+pack files and 2,204 prior public pairs remain unchanged. Decoded 2x2 comparisons
+were reviewed. Eight column-face highlight peaks differ by at most one original
+texel; the central corrugation probe finds 20 peaks in both images, within two
+texels. These brightness probes do not prove full geometry or scene adjacency.
+Plaster streaks, column relief, reflection intensity and the exposed-layer
+interpretation remain final scene-review concerns.
+
+Pack: 2,208 replacements, 1,983,433,251 sanitized bytes; private pack 1,984,449,553.
+Queue: 4,195 need art, 245 drafts need correction/review, 164 retained originals.
+Texture workspace 9,977,224,787 bytes logical/allocated; disk free 42,344,361,984
+at audit. Temporary outputs 267,761,946 bytes, 673,510 below the 256 MiB limit.
+The eight original reference PNGs (183,753 bytes) and eight NEAREST guides
+(218,441 bytes) were removed only after exact reconstruction plus resolved-parent
+and file-hash verification. Source artwork, original game/catalog, prompts and
+recovery records remain. No duplicate game/pack/staging tree created.
+162 new sanitized pairs are staged locally since base; no gameplay, commit,
+push or publication. Repository context and whitespace checks passed.
+
+
+### 2026-10-24: #74 subtle material batch 290 (local only)
+
+Four of eight drafts accepted: dark worn brown-gray surface, smooth pale plaster
+with a narrow left border, rough gray material and fine gray speckled material.
+Three other drafts retain square reference-sampling artifacts in their generated
+material detail/borders; chipped plaster has excessively pronounced cracks.
+These remain held despite modest whole-image luminance changes. Downsampling to
+hide those artifacts is not treated as a high-fidelity correction.
+
+All sources are 1774x887 from built-in imagegen. Accepted outputs are 512x256 or
+1024x512 DXT1 with full mips, downsampled and recorded as such. Native parser,
+alpha/aspect/mips/hash, full-pack and retired-icon audits pass. All 4,416 prior
+private files and 2,208 prior public pairs remain unchanged. Four decoded 2x2
+comparisons reviewed. The pale-plaster left-border transition remains at original
+column 4; top worn highlight moves from row 10 to 11. These bounded brightness
+probes supplement visual inspection; local grain, border shading and scene
+adjacency still require final scene review. No gameplay performed.
+
+Pack: 2,212 replacements; 1,984,570,713 sanitized bytes and 1,985,593,770 private
+pack bytes. Queue: 4,187 need art, 249 drafts need correction/review, 164 retained
+originals. Workspace 10,004,888,354 bytes logical/allocated; disk free
+42,168,995,840 at audit. Temporary outputs 267,620,143 bytes, with 815,313 bytes
+headroom under 256 MiB. Three older batch287 previews (324,419 bytes) were
+reproduced byte-exactly then retired after parent/hash checks. New original refs
+(320,413 bytes) and NEAREST guides (345,049 bytes) were likewise verified and
+retired. Full artwork, game/catalog, prompts, review/provenance records remain.
+166 sanitized pairs are staged locally since base. No commit, push or publication.
+Repository context and whitespace check results are in hybrid-290-validation.json.
+
+
+### 2026-10-24: #74 panel and trim batch 291 (local only)
+
+Six of eight drafts accepted: dusty red-brown panel, tan-olive slab, soft gray
+field, olive-gray panel, rounded gray masonry trim and paired tan molding.
+Dark red-streaked material and maroon-bordered gray wall remain held for excess
+darkness/roughness. Native-resolution original PNGs were supplied directly,
+without enlarged guide duplicates. No obvious square sampling patterns were
+found in this batch; different assets/prompts prevent a causal A/B claim.
+
+All sources are 1774x887 from built-in imagegen. Accepted outputs are 512x256 or
+1024x512 DXT1 with full mips and recorded downsampling. Native DDS, full-pack,
+alpha/aspect/mips/hash and original-icon checks pass. All 4,424 prior private
+files and 2,212 prior public pairs remain unchanged. Both decoded repeat sheets
+reviewed. Gray trim grooves remain at original rows 42/104; tan black recess
+spans 18:29, sampled highlights differ by at most one texel, olive seam 186->185.
+Initial vertical-joint probe windows mistakenly used half-scale coordinates and
+missed the joints. Corrected original-scale windows give 61/169/60->61/170/61;
+the failed diagnostic and correction are retained. These probes do not prove
+complete contours, adjacent scene matches or gameplay. Local stain contrast,
+roughness, gray reflection and tan lower shadow need final scene review.
+
+Pack: 2,218 replacements; 1,986,407,979 sanitized bytes, 1,987,441,222 private pack
+bytes. Queue: 4,179 need art, 251 drafts need correction/review, 164 retained
+originals. Workspace 10,031,483,798 bytes logical/allocated; disk free
+41,999,122,432 at audit. Temporary outputs 267,837,895 bytes, 597,561 below the
+256 MiB limit. Eight new reference PNGs (260,004 bytes) retired after exact
+catalog reconstruction plus resolved-parent/file-hash checks; no extra guides
+or other cleanup in this batch. Source artwork, prompts, provenance and game
+files remain. 172 new sanitized pairs are staged locally since base.
+No gameplay, commit, push or publication. Context/whitespace results are recorded
+in hybrid-291-validation.json after execution.
+
+
+### 2026-10-24: #74 plaster, corrugation and rust batch 292 (local only)
+
+Four of eight drafts accepted: beige cracked plaster, pale mottled plaster,
+center-highlight corrugation and rusty orange-gray panel. Gray trim, salmon
+plaster, diagonal-shadow corrugation and dark coarse material remain held for
+excess darkness/roughness, saturation, gold-shifted reflection or checkered
+clusters. Native-original references were used directly; no extra guides.
+
+All sources are 1774x887 from built-in imagegen. Outputs are 512x256 or1024x512,
+with full mips and recorded downsampling. Three use DXT1; the rusty panel uses
+RGBA8 because its DXT1 error exceeded the compiler threshold. Native DDS,
+alpha/aspect/mips/hash, full-pack and original-icon checks pass. All 4,436 prior
+private files and 2,218 prior public pairs remain unchanged. Decoded 2x2 review
+completed. Rust divider208->210 and bottom edge123->123 at original scale.
+The raw corrugation profile has19 versus18 local maxima, including a tiny
+secondary maximum in one original rib. Spacing-filtered profiles each have18
+peaks within two texels. Both diagnostics and local sample values remain;
+this filtering does not independently certify geometry. Highlight centroid
+moves127.47/67.44->127.12/64.10, a3.34-row rise that needs final scene review.
+Plaster crack relief, rust chroma and local reflection intensity remain untested
+in game; no gameplay or full-scene fidelity claim.
+
+Pack:2,222 replacements;1,989,729,957 sanitized bytes,1,990,770,022 private pack
+bytes. Queue:4,171 need art,255 drafts need correction/review,164 retained originals.
+Workspace10,061,596,604 bytes logical/allocated; disk free41,952,358,400 at audit.
+Temporary268,042,751 bytes,392,705 below256MiB. Eight new reference PNGs239,789
+bytes retired after exact catalog reconstruction and resolved-parent/hash checks.
+Full source art, prompts, game/catalog and recovery records remain.176 new
+sanitized pairs staged since base; no commit, push or publication. Repository
+context/whitespace results are recorded in hybrid-292-validation.json.
+
+
+## Texture overhaul issue #74: hybrid batch 293
+
+October 24, 2026; local Windows asset work on the #74 branch at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Added five reviewed replacements:
+ochre peeled plaster e4cb082746a4a5ba, paired tan panels e5b9f9915808f2be,
+olive separator panel e9730a0acb02ceeb, blue-gray ribbed atlas f38669797af2a99a,
+and pale weathered panel f907c0ff3e2c3d7f. Built-in imagegen sources are1774x887;
+plaster is resampled to2048x1024, others to1024x512. This is not native4K artwork.
+Four use DXT1; plaster uses RGBA8 because DXT1 RGB error5.24 exceeded threshold5.
+Full mip chains, opacity, format/hash checks and native DDS parser passed.
+
+Held three drafts: ed2ab1820b86687a changes the broad red reflection and darkens
+9.5%; f6e57f11d4c93290 introduces repeating checkered/diagonal detail;
+f9c86a478102d1f8 darkens18.4% and adds unsupported coarse relief. Full source art
+and prompts remain for correction. Decoded comparisons preserve broad layouts.
+Sampled seam column130 and separator row63 match originals; pale rails8/121
+become8/119. Raw rib maxima26vs24 are shading-sensitive and do not certify rib
+counts or atlas contours. Plaster relief, panel warmth, marks, baked reflections
+and scene adjacency still need final consolidated scene review. No game launch.
+
+Pack:2,227 replacements;2,002,314,739 sanitized bytes,2,003,363,335 private pack
+bytes including metadata, below6GiB. Coverage2227/6812 known supported keys;
+4,163 need artwork,258 drafts require review,164 original icons remain excluded.
+All4,444 prior private files and2,222 prior public pairs verified unchanged.
+Texture workspace10,101,766,523 logical/allocated bytes; free disk41,883,615,232
+at audit. Temporary outputs267,799,987 bytes,635,469 below256MiB. These figures
+cover the texture workspace, not the entire project. No duplicate game/pack/ZIP.
+
+Retired five older288/289 comparison/repeat previews after byte-exact recreation
+and resolved-parent/SHA verification, reclaiming492,297 bytes. New native-size
+original references668,777 bytes were catalog/pixel/hash verified then retired.
+No separate enlarged guides. Denied cleanup targets were not touched. Artwork,
+prompts, provenance, game, saves and settings retained.181 new pairs staged since
+task base; docs/config remain local. No commit, push or release. Evidence and
+repository checks: private hybrid-293-validation.json and associated records.
+
+
+## Texture overhaul issue #74: hybrid batch 294
+
+October24,2026; local Windows asset work on #74, base28f5400a49a24529e8a3ee5711db3d5d7c444da7.
+Added gray tile grid3fe39c6744a95fa7 at1024squareDXT1, worn tiles457dbbe4cd507129
+at512squareRGBA8, irregular gray masonryc22f99f073690ef7 at1024squareRGBA8.
+Built-in imagegen sources1254square, downsampled; no native4K claim. Native DDS,
+full mip/alpha/aspect/hash and full-pack checks passed. The two RGBA8 assets
+exceeded the DXT1 error threshold. Decoded2x2 comparisons manually reviewed.
+Gray-tile seam column128/row127 match; worn-tile column62->63, row65 matches.
+Masonry top-joint columns53/100/144/223 become53/101/145/223; upper horizontal
+seams20/40/68 match. These bounded intensity probes supplement visual review,
+not complete contours or scene proof. Worn-tile contrast, crack detail and scene
+adjacency remain final review concerns. No playtesting or runtime change.
+
+Held five drafts:43be1406a19ed958 changed pale mortar to dark inset seams;
+b0c072b2d19377df has checkered fine detail and stronger orange;
+b14cc8fb3952635b is15.5% brighter/golder with changed shadow footprint;
+b21faa6448837f33 is7.1% darker/olive; c658bf9f0896a7df has repeated diagonal
+stipple and overly distinct peeling. Sources/prompts retained for correction.
+
+2,230 replacements,2,010,005,389 sanitized bytes,2,011,059,191 private pack bytes,
+below6GiB.4,155 need art,263 drafts require review,164 original icons excluded.
+All4,454 prior private files and2,227 public pairs verified unchanged.184newpairs
+staged sincebase; no commit/push/release. Pack is partial and scene validation open.
+Texture workspace10,140,042,766 logical/allocated bytes; diskfree41,672,429,568.
+Temporary output267,797,564bytes,637,892 below256MiB. Full artwork storage is
+separate from the pack cap. Reclaimed400,368bytes from five290/291review sheets
+after byte-exact recreation and parent/hash checks;798,879new reference bytes
+catalog/pixel/hash verified then retired. No denied cleanup targets touched;
+no duplicate game,pack,ZIP or release staging. Game/saves/settings preserved.
+Evidence:private hybrid-294-prompts/generation/review/validation/postencode-probes
+and retirement receipts. Repository checks recorded in validation after completion.
+
+
+## Texture overhaul issue #74: hybrid batch 295
+
+October24,2026; local Windows asset-only work on #74 at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four additions: dark red mottling
+c757a887e850485f, framed olive panelc78448042941be5c, streaked gray panel
+cbd7b38e93c3e9be and soft gray-green bandee900309297dfa18. Built-in imagegen
+sources1254square; output512square except streaked panel1024square. All DXT1
+with full mips. No native4K claim. Native DDS, alpha/aspect/hash, full-pack and
+original-icon exclusion checks passed; all4,460 previous private files and2,230
+public pairs verified unchanged. Decoded repeat comparisons manually reviewed.
+
+Framed-panel rails7/98, thin lightline33 match; bottom121->122, sides5/122->4/123.
+Streaked panel bottom boundaries231/249 match; soft band shadow68/light108 match.
+These are intensity probes, not complete contour/hardware/scene proof. Absolute
+mean luminance red30.42->27.38, olive120.29->111.19, streaked64.80->69.51,
+soft band127.81->118.41; quadrant evidence retained. Broad distribution and
+layout are retained, but darker red/olive/soft band, brighter streaks, detailed
+hardware and paint contrast remain scene concerns. No game launch.
+
+Held c420549e08570264 for stronger cracks/brightening,cebf6af867a01408 for darker
+molding shadows/changed pale color,f30eecd6f0464a6f for exaggerated pebbly/checkered
+relief, andf7406363bd36bcc4 for patterned grain/sharper light falloff. Full sources,
+prompts and review reasons retained.2,234 replacements,4,147 need art,267 drafts
+require review,164 original icons excluded; full overhaul remains incomplete.
+
+Sanitized pack2,011,230,215bytes; private pack2,012,291,012bytes,below6GiB.
+Texture workspace10,167,146,034logical/allocated bytes; free disk41,477,885,952
+at audit. Temporary output267,644,441bytes,791,015below256MiB. Reclaimed454,389
+bytes from five292/293review sheets after byte-exact reconstruction/parent/hash
+checks; new native references495,407bytes catalog/pixel/hash verified then retired.
+No duplicate game/pack/ZIP or denied cleanup attempts. Artwork/provenance and
+user game/saves/settings preserved.188newpairs staged sincebase; no commit/push/
+release. Private hybrid-295-validation.json records evidence and repository checks.
+
+
+## Texture overhaul issue #74: hybrid batch 296
+
+October24,2026; local Windows asset-only work on #74, task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four additions: rose-gray mottling
+393555e7155b6071, green worn masonry398ef9c9ad0538c0,64-cell tile grid
+3a29fe5a345678ef and16-cell reflective grid3a84018bd04c9567. Built-in imagegen
+sources1254square; outputs1024square. Three DXT1, masonryRGBA8 after DXT1 error
+exceeded5. No native4K claim. Native DDS, full mips/alpha/aspect/hash, full-pack
+and original-icon exclusion checks passed. All4,468 prior private files and2,234
+public pairs unchanged. Four decoded repeat comparisons and boundary crops reviewed.
+
+Eight-by-eight row seams match; one column minimum128->127, all others match.
+Four-by-four column seams match; central row dark minimum124->128 is influenced
+by rising reflection, while the inspected negative seam gradient remains127.
+Reflection peak126 and halfmaxwidth19 match; excess-light centroid122.90->123.03,
+peak luminance251.75->254.69. Five sampled masonry course minima match; final
+229->223 probe selected changing surface shading below the pale lip. Follow-up
+lip maximum226 matches. Both initial and follow-up diagnostics retained. These
+bounded intensity profiles do not certify full contours, tiling in actual scenes,
+fine chips or all lighting. Original/reference appearance remains the final standard.
+
+Held15cb94e1409cc0f9 for14.7% darkening/larger patterned gravel,
+1655cdb6d068d2e5 for lace/lattice grass structure,1f6bcc92fd3a26fc for11.8%
+darkening/embossed diagonal detail,1f7c64655b676d3b for over-sharp damp illumination
+and coarse relief. Full sources and prompts retained for correction. No game launch.
+
+Pack2,238 replacements,2,018,921,253sanitized bytes;2,019,988,952private bytes,
+below6GiB.4,139needart,271drafts,164retainedoriginal icons.192newpairs staged
+sincebase; no commit/push/release. Full overhaul and scene validation incomplete.
+Texture workspace10,203,149,874logical/allocated bytes; free disk41,110,798,336
+at audit. Temporary output267,770,184bytes,665,272below256MiB. Reclaimed397,945
+bytes from two294review sheets after byte-exact reconstruction and parent/hash
+checks;847,790new reference bytes catalog/pixel/hash verified then retired. Sources,
+review decisions, game/saves/settings preserved. No denied cleanup attempts or
+duplicate extracts,packs,ZIPs. Evidence:hybrid-296-validation.json, prompts,
+postencode-probes, boundary-followup and retirement receipts. Repository checks
+recorded after completion. Native runtime behavior and delivery contracts unchanged.
+
+
+## Texture overhaul issue #74: hybrid batch 297
+
+October 24, 2026; local Windows asset work on #74 at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. This focused correction batch tested
+separating fixed macro layout from independently repainted microtexture, using
+native originals as the sole image references. Five previously held keys passed:
+b0c072b2d19377df (flaking material), 1f7c64655b676d3b (damp masonry),
+c658bf9f0896a7df (plaster), f30eecd6f0464a6f (cracked surface), and
+f7406363bd36bcc4 (lit wall). Sources are 1254 square, downsampled to 1024 square.
+Four use DXT1; the cracked surface uses RGBA8 after compression error exceeded 5.
+Built-in imagegen only; no native 4K claim. Previous full sources and prompt
+records are preserved and hashed; per-key prior prompts were archived before updates.
+
+Full-source and decoded repeat review found reduced prominent pattern artifacts
+on accepted keys. The soil still has enlarged patterned gravel; grass retains
+lace-like shapes and oversized leaf fragments; dark blocks retain embossed
+striations. Those three remain held. This bounded result does not prove the
+prompt method works generally. Peeling edges, fine relief, color and scene lighting
+remain final validation concerns. No gameplay was launched.
+
+Native DDS, full mip/alpha/aspect/hash, full-pack and original-icon exclusion
+checks passed. All 4,476 prior private files and 2,238 public pairs were unchanged.
+Plaster seam columns 127/215 match. Masonry course rows 54/106/161/206 become
+56/106/161/206; crack crossings 86/168 become 84/169. Seven tile seam columns
+match. The rail minimum changes 43->48, selecting different dark parts of the
+band; follow-up top and bright-edge gradients remain at 39/46. Both profiles
+are retained. Light-pool peaks move -1/+3 rows; centroids move +1.44/+1.42 rows.
+These are bounded samples, not complete contour or scene validation.
+
+Pack: 2,243 replacements, 2,027,311,715 sanitized bytes; 2,028,388,217 private
+bytes including metadata, below 6 GiB. The correction backlog fell from 271 to
+266; 4,139 still need artwork and 164 original icons remain excluded. There are
+197 new pairs staged since the task base. No commit, push or release.
+
+Texture workspace: 10,243,017,172 logical/allocated bytes; free disk 40,744,808,448
+at audit. Temporary output: 267,762,458 bytes, 672,998 below 256 MiB. Reclaimed
+530,200 bytes from three older comparison/repeat previews after byte-exact
+reconstruction and resolved-parent/hash checks. New references of 975,561 bytes
+were catalog/pixel/hash verified before retirement. No denied cleanup targets,
+duplicate game/pack/ZIP or user saves/settings were touched. Evidence and final
+repository checks: private hybrid-297-validation.json and associated records.
+
+
+## Texture overhaul issue #74: hybrid batch 298
+
+October 24, 2026; local Windows asset work at base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Four new panel/window materials accepted:
+cc81869c18f06c35, deae52dc1c20f778, ff206a6627a23576, 5065bfcfd29b4d55.
+Built-in imagegen sources are1254square, downsampled to1024square for the barred
+grid and512square for the other three; all DXT1 with complete mip chains. No
+native4K claim. Source art, prompts and all held drafts remain private.
+
+Four drafts remain held: ced5 lower stripe shift/narrowing and lost faint grid;
+e029 atlas bottom padding/pipe changes; e894 altered reflection/highlight and
+scratches; 5d40 soft bright rail replaced by a dark groove. Initial cc/deae prompt
+counts were incorrect: visual reference/output both retain six full dark insert
+rows and six full interior columns plus side strips respectively. These mistakes
+are recorded, not used as evidence of compliance.
+
+Full sources and decoded2x2 repeats reviewed. Barred-grid row peaks67/131/195
+match; six of seven column peaks match and one shifts-1. Other raw extrema
+shift up to5pixels because opposite bevel edges become darkest. Follow-up narrow
+profiles retain cc bands mostly-1pixel, nine-pane transition edges about1pixel,
+six-cell central mullion+1 and lower rail-1. Original and follow-up measurements
+are retained; no claim of exact contour equivalence. Bevels, framing contrast,
+glass grime, brightness and small geometry offsets await scene validation.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon exclusion checks
+passed. All4486prior private files and2243public pairs unchanged. Pack now2247
+replacements:2,028,536,541sanitized bytes,2,029,620,009private bytes, below6GiB.
+4131need artwork;270drafts require correction;164retained originals.201new pairs
+staged since task base. No commit/push/release or gameplay.
+
+Texture workspace10,266,068,009logical/allocated bytes;40,161,804,288free at audit.
+Temporary output268,078,408bytes,357,048headroom below256MiB.294,794bytes of new
+original references verified against catalog/pixels/hash, then removed through
+resolved-parent/SHA native PowerShell checks. No duplicate extract/pack/ZIP,
+denied cleanup target, source artwork, game, save or setting touched. Current
+comparison/repeat retained; next batch should retire reproducible older previews
+before further exports. Evidence:private hybrid-298-validation.json, prompts,
+review, postencode-probes, profile-followup and reference-retirement records.
+Repository checks recorded after completion; runtime/delivery behavior unchanged.
+
+
+## Texture overhaul issue #74: hybrid batch 299
+
+October 24, 2026; local Windows asset work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous goal turn made verified progress
+with four additions; this turn adds three: 5db71ff9470d9cc7 (rounded-rim panel),
+7f4d67e8e998c1b4 (concrete with hole), cf26c294c9b28118 (streaked concrete).
+Built-in imagegen sources are 1254 square, downsampled to 1024 square; all DXT1
+with complete mip chains. No native 4K claim. Full source and decoded 2x2 repeats
+reviewed. No game launch, commit, push or release.
+
+Five drafts remain held: ddfc/e0 paired pale panels gained patterned diagonal
+microflecks and enlarged fasteners; 5dd1 moved lower hardware to mid-height and
+is about 7.9% darker; 7514 changed soft angular mottling to sharply defined
+peeling-like islands and is about 10.2% darker; 8be7 strengthened orange marks
+and coarse sandy texture. Full sources and prompt provenance remain available.
+
+Straight rim profiles differ by 0-1 original pixels. Rounded groove positions
+at rows 190/210/225 match; row235 shifts +1. At row240 the bounded minimum moves
+236->242. Follow-up profiles show different bands becoming darkest at the
+curved/horizontal junction and sharper groove shading; this sample is not claimed
+matched or proof of complete contour fidelity. Main hole dark centroid changes
+less than 0.05 pixels in each axis, but below-60 area grows 40->53 pixels. The
+lower concrete mark centroid changes about 0.2 pixels and area 6->7. Region
+brightness and all profiles are retained. Apparent hole size, bevel contrast,
+pitting, darker vignette and streak definition remain scene-review concerns.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and 164-original-icon exclusion
+checks passed. All 4,494 previous private files and 2,247 public pairs unchanged.
+Pack now 2,250 replacements: 2,030,634,813 sanitized bytes; 2,031,723,511 private
+bytes including metadata, below 6 GiB. There are 4,123 keys needing artwork,
+275 held drafts and 164 retained originals. 204 new pairs staged since task base.
+
+Texture workspace: 10,291,905,450 logical/allocated bytes; free disk 39,936,598,016
+at audit. Temporary output: 267,636,648 bytes, 798,808 headroom below 256 MiB.
+Retired four older review previews (296 repeat,297 comparison and both repeats),
+742,151 bytes total, after byte-exact in-memory reconstruction and source/DDS
+hash checks. Retired 663,931 bytes of newly exported originals after catalog,
+pixel/hash verification. Native PowerShell resolved-parent/SHA checks guarded
+all removals. No denied cleanup targets, source artwork, game, saves or settings
+touched; no duplicate extracts, packs or ZIPs. Current reviews remain. Evidence:
+private hybrid-299 validation, prompts, review, postencode-probes, corner-followup
+and retirement receipts. Repository checks recorded after completion. Shared
+runtime, host adapter and delivery contracts unchanged; scene testing deferred.
+
+
+## Texture overhaul issue #74: hybrid batch 300
+
+October 24, 2026; local Windows asset work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous turn made verified progress.
+This batch adds four:662c18a45b7b1d9a(dark-band tiles),98cb1b3effb3613c(reflective
+tiles),e91c0944336ee52b(reflection plus dark-band tiles),cb159851f6b78902(staggered
+blocks). All built-in imagegen sources1254square ->1024square DXT1, full mips.
+No native4K claim; full sources and decoded2x2 comparisons reviewed. No gameplay,
+commit,push or release. Source artwork and prompts retained privately.
+
+Held e126f17e2e9c614a for embossed/checker grain, warmer/brighter tone and bevels;
+f6009fc775ed8c83 for thickened dark seam network/coarse material;
+f5358d8500a921fc for overly prominent pale lines/mottling requiring exact network
+review;9b992b6554aa69e1 for thin seams becoming strongly raised rails. No failed
+artwork was downsampled to hide defects or installed.
+
+Grid seams generally match or differ one original pixel. The unbanded reflective
+center-row minimum124->128 is confounded by highlight slope; full profiles retain
+positive gradient125 and negative gradient127->126. Original and follow-up probes
+remain; no exact contour claim. Reflection peak rows127->126 and125->126,
+half-maximum widths28->29 and24->26, excess centroids126.64->125.31 and
+124.33->123.66. Both intended darker third rows remain distinct from the unbanded
+variant. Block course rows61/125/191 match; nine of ten vertical joints match,
+one87->88. Reflection intensity/width, tile bevel/stain contrast, block brightness
+and mortar grains remain scene concerns. Repeat review is not scene adjacency proof.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon exclusion checks
+passed. All4500previous private files and2250public pairs unchanged. Pack2254:
+2,033,432,509sanitized bytes;2,034,528,031private bytes including metadata, below6GiB.
+4115keys need artwork,279drafts require correction,164original icons retained.
+208new pairs staged since task base. Shared runtime/delivery contracts unchanged.
+
+Texture workspace10,321,073,963logical/allocated bytes;39,557,058,560disk free at
+audit. Temporary output267,617,052bytes,818,404headroom below256MiB. Retired298
+comparison/repeat315,950bytes after byte-exact reconstruction and source/DDS hashes.
+Retired701,623new reference bytes after catalog/pixel/hash verification. Native
+PowerShell resolved-parent/SHA checks guarded explicit removals. Sources, provenance,
+game,saves/settings and denied cleanup targets untouched; no duplicate pack/extract/
+ZIP. Evidence:private hybrid-300-validation,prompts,review,postencode-probes,
+reflection-seam-followup and retirement receipts. Repository checks recorded after
+completion. Full overhaul and consolidated scene validation remain incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 301
+
+October 24, 2026; local Windows work at task base
+28f5400a49a24529e8a3ee5711db3d5d7c444da7. Previous/current turns made progress.
+Added8203cc78a27bf227(cream wall/base),839aaca07193018c(vignetted concrete),
+a3a42c3e2b35f9f4(pale concrete panel),e4265427f9359e73(brushed band/reflection).
+Built-in imagegen sources1254square ->1024square DXT1, complete mip chains.
+No native4K claim; source and decoded2x2 comparisons reviewed. No game launch,
+commit,push or release. Full source art and prompt provenance remain private.
+
+Held8e856bdaa2124487 for invented stronger upright/cracks and uncertain subtle
+structure;d5b156815296a1e7 for stronger raised grooves, rust and patterned grain,
+about8% darker;db33031d58e50e68 for diagonal/checker grain and groove relief;
+d3f28ae463a3db71 for enlarged mottling, raised rails and about14.5% brightness gain.
+Failed drafts remain outside the pack and are not downsampled to hide defects.
+
+Cream molding rows202/225 match. Purple-base RGB means72.79/63.46/77.13 become
+66.37/60.94/80.75. Concrete seam94 matches; center mean171.38->171.31 while
+upper/sides/bottom darken. Pale panel seams15/240 become16/239, central mean
+149.78->158.98. Brushed boundaries/reflection92/114/173 match; reflection width7
+unchanged, excess centroid173.354->173.283, peak mean200.73->213.24. These are
+bounded offline samples, not complete contour or scene proofs. Base hue, stronger
+vignette, concrete pitting/brightness and reflection intensity remain scene concerns.
+
+Native DDS, alpha/aspect/mip/hash, full-pack and164-original-icon checks passed.
+All4508prior private files and2254public pairs unchanged. Pack2258replacements:
+2,036,230,205sanitized bytes;2,037,332,619private bytes including metadata, below6GiB.
+4107keys need art,283drafts need correction,164original icons retained.212new pairs
+staged sincebase. Shared runtime/host adapter/delivery contracts unchanged.
+
+Texture workspace10,350,600,248logical/allocated bytes;39,281,250,304free at audit.
+Temporary output267,646,714bytes,788,742headroom below256MiB. Retired299comparison/
+repeat300,391bytes after byte-exact reconstruction and source/DDS hash checks.
+Retired705,101new reference bytes after catalog/pixel/hash verification. Explicit
+native PowerShell resolved-parent/SHA removals only. No denied cleanup targets,
+source artwork, game,saves/settings or duplicate pack/extract/ZIP touched. Current
+reviews retained. Evidence:private hybrid-301-validation,review,prompts,
+postencode-probes and retirement receipts. Repository checks recorded after
+completion. Consolidated scene validation and full overhaul remain incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 302
+
+October 24, 2026; Windows local source branch74-enhancement-gfx-overhaul-to-modernize-textures
+at base28f5400a49a24529e8a3ee5711db3d5d7c444da7. Added three masonry materials:
+7b8bb162d117829b (mossy/light-pool blocks), aee4ffe2ffe12b06 (pale vignetted blocks),
+be3b2c513af451f3 (small mossy masonry). Built-in imagegen produced1254-square
+sources; outputs1024-square RGBA8 with11mips. Full source and decoded2x2 reviews
+completed. No native4K claim, game launch, commit, push or release.
+
+Held c75c1af0028d5d5c for coarse patterned grain/upper-strip relief,
+c81dfaec85ad5725 for orange saturation/brightness and deeper flaking,
+cafe4de72f7ba948 for excessive moss/sharpened weathering,
+d1423d3132561c0a for dark mortar/orange palette and15% luminance reduction,
+f97d261210df6889 for chain-like mineral pattern and heavier mortar.
+All full sources and prompts remain private; failed drafts are outside the pack.
+
+Pale-wall joint samples57/108 match,164->163 and213->214. Mossy-block sample106
+matches,161->162; broad upper minimum48->54 is illumination-confounded (local
+original trough54), lower209->206 selects a different part of rough shaded mortar.
+Raw profiles retained; not full contour proof. Center region means135.289->128.912,
+134.549->143.751 and119.809->106.568 respectively. Pale lower vignette23.378->32.609.
+Mortar contrast, baked illumination and stronger relief remain scene concerns.
+
+Native DDS, alpha/aspect/mips/hash, full-pack and164-original-icon checks passed.
+All4516prior private files and2258public pairs verified unchanged.2261replacements,
+2,053,008,503sanitized bytes;2,054,116,040private pack bytes including metadata,
+below6GiB.4099need art,288drafts need review,164retained originals.215new pairs
+staged sincebase. Shared runtime, host adapters and optional delivery unchanged.
+
+Texture workspace10,400,241,323logical/allocated bytes;37,911,212,032free at audit.
+Temporary output267,473,866bytes,961,590headroom below256MiB. Retired300/301
+comparison/repeat previews626,407bytes after byte-exact reconstruction and hashes;
+new references1,371,114bytes after catalog/pixel/hash verification. Native PowerShell
+resolved-parent/SHA removal receipts retained. No denied cleanup target, source
+artwork, game, saves/settings or duplicate pack/extract/ZIP touched. Evidence:
+private hybrid-302-selection/prompts/generation/review/validation/postencode-probes
+and retirement receipts. Full overhaul and consolidated scene validation incomplete.
+
+## Launcher v1.3.1 release preparation (2026-10-24)
+
+Prepared from main `aed726e1` on `release/launcher-v1.3.1`. Advances the shared
+version and numeric assembly attributes to ship existing launcher improvements:
+60/120/180/240 FPS Beta presets, capture-health reporting with bounded gameplay
+breadcrumbs in diagnostic exports, and launcher-specific release changelogs.
+The FPS/capture features require compatible game runtimes; this release contains
+only launchers. Optional texture delivery and Classic/Enhanced controls remain
+as implemented in v1.3.0. Package paths, update manifest names and one ZIP per
+platform remain unchanged. No personal files or game assets are modified.
+
+Validation is pending below and in the release PR/workflow. Windows and Mac
+must both pass the existing build, behavioral and package checks before public
+upload. Mac Developer ID signing/notarization remains unavailable, as documented
+in the release publisher. No gameplay validation is claimed by a launcher build.
+
+Local Windows x64 validation passed using .NET Framework 4.8 and checksum-pinned
+artwork: the complete `build-launcher.ps1 -Test -RequireArtwork` suite, all 31
+publisher regressions, backlog consistency, repository-context validation and
+whitespace checks. Build output is isolated in ignored `build/l131`; logs are
+under this source worktree's ignored build directory. Hosted Windows/Mac checks
+and exact public-package verification remain release gates.
+
+
+## Texture PR #350 integration repair (2026-10-24)
+
+Merged main0577c4d6 into the issue74 branch to resolve overlapping appended
+STATUS and systems-guide notes. Preserved both texture and launcher/runtime
+content; condensed repeated texture batch narratives in the bounded systems
+guide, retaining detailed results above. All main documentation lines remain
+in order. The PR delta remains215texture pairs and five supporting files;
+texture payloads/catalog are unchanged from11e4db11 and their verified LFS upload.
+Context refresh/check against main and staged whitespace checks passed.
+No runtime changes beyond main, gameplay tests, main merge or release performed.
+Issue74 remains open; final scene validation is still pending.
+
+## Launcher v1.3.1 publication and history recovery (2026-10-24)
+
+PR #347 merged at `17780aa8aa3a5711140a84162df83db780678214`. Hosted run
+40157152003 passed Windows and native Mac builds/regressions plus complete
+package verification. Publication then failed before release creation because
+its shallow checkout could not resolve `launcher-v1.3.0..17780aa8` for the new
+filtered changelog. Its already-created tag was preserved.
+
+Recovered the exact hosted artifacts, verified both receipts/archives with the
+tracked publisher, and invoked the unchanged publisher from that exact source
+in this full-history checkout. Launcher v1.3.1 is public with eight assets and
+one ZIP per platform. Public ZIP/manifest/receipt/hash checks passed; the v1.3.0
+updater installed the downloaded Windows ZIP, restored v1.3.0 after an injected
+failure and preserved all game/ISO/save/settings/texture/rollback fixtures.
+Embedded artwork matches the pins. The old client discovers launcher1.3.1 and
+gamev0.3.2. No published binary or tag was replaced; no game build was released.
+
+The follow-up on `fix/launcher-publish-history` gives the publication job its own
+full Git history. A new regression failed against the shallow checkout before
+passing with the fix. No launcher/runtime code changes. The original workflow
+run remains failed at publication; the verified release was recovered separately.
+
+## Optional texture download availability (2026-10-25)
+
+Investigation on main `0ccf654f8089e2625130755c15657c6777683bd9` found that
+`config/texture-download.json` still declared `published: false`. No optional
+texture release existed. Launcher v1.3.1 correctly rejected this placeholder;
+committed Git LFS textures do not provide a downloadable part index.
+
+On `fix/texture-download-publication`, audited the 2,261 committed replacements
+(2,053,008,503 bytes installed) using hard links to existing immutable local LFS
+objects. Verified DDS headers, dimensions, complete mip chains, formats, hashes,
+sanitized metadata, catalog identity and retained-original policy. No second DDS
+working copy, personal saves/settings, private art or newer uncommitted textures
+were used. All 17 texture publication/packaging tests and three subtests passed.
+Publication uses `texture-release.py` and one bounded temporary ZIP at a time.
+
+Published `textures-v0.1.0-beta.1` as a prerelease without changing GitHub Latest.
+All 49 bounded ZIP parts and the generated schema-3 index passed remote asset
+size/hash verification. The generated `config/texture-download.json` replaces
+the unavailable placeholder; merging this PR activates existing launchers.
+
+Used the actual public Windows v1.3.1 app assembly in an isolated harness. It
+parsed all 2,261 textures/49 parts, downloaded `textures-029.zip`, verified and
+installed its four replacements, then reported zero remaining download bytes
+for the same part. Every indexed installed hash matched. Save, settings, ISO and
+unrelated custom-texture fixtures remained unchanged. This was a bounded real
+download/installation check, not a full 1.91 GiB install or gameplay test. Mac live
+download/UI execution remains unrun on this Windows host; both hosts use the
+unchanged shared downloader/installer. No new launcher binary is required.
+
+
+## Current-build live vehicle contact comparison (2026-10-25)
+
+After PR #359 merged as `40600133`, continued acceptance on the unchanged
+Windows executable SHA256
+`50d7323a80c45c657ac5fc716220d62870c4a6406c25136702120988adb58325`.
+Source `4ff0d5ff` has the same tree as that squash merge. This investigation
+changes no runtime physics or timing coefficients.
+
+Used disposable no-bot Siberia sessions, normal walking/vehicle controls and
+read-only body observations. A synchronous solver-entry trace retained generated
+and selected contacts for body slot88 in Z45..75, below its 16,000-row/8MiB caps.
+Original mode is verified by trace native=0; 180/240 use native=1. The route uses
+three seconds of throttle, a release, two seconds of throttle, settling, exit,
+on-foot movement and pause/resume. Host holds were 3.0016..3.0021s and
+2.0016..2.0019s; release gaps were 1.3785..1.3819s. These are publication times,
+not guest consumption times. Captures/tracing perturb timing; no pacing,
+physical-input latency or deterministic trajectory claim follows from them.
+
+Both native routes pass entry, exit action delivery, weapon restoration,
+on-foot travel (8.00/8.26 units) and pause/resume checks. A second true Original60
+route passes those checks too. Canonical signed profiles/fixture remain intact;
+owned game processes and disposable save partitions are cleaned up. Reviewed
+native stopped captures show the jeep against the Siberia pillar. Original60 v2
+retains valid earlier driving/contact data but failed its final walking-distance
+check against a snow wall; the later route turns away before walking. Do not
+count v2 as a complete passing route.
+
+The repeated original run changes the interpretation of older endpoint evidence.
+All four sampled starting poses agree: position(-12.109511,1.117227,7.079708),
+zero velocity and identity quaternion. Nevertheless Original60 v2 stops near
+(-13.219,1.163,68.067), while v3 glances past the pillar and stops near
+(-8.826,1.135,86.343). Their first selected non-up contacts are at Z67.206 and
+Z68.061, with front-facing versus side-facing normals. Native180/240 contact at
+Z67.136/67.126 and stop near Z68.075/67.739. Before impact, nearest-Z64 forward
+velocities are 11.801/11.810 original and 11.768/11.763 native; lateral positions
+in the native runs lie between the two original runs. This narrows the evidence:
+the existing live route is sensitive even at Original60 and cannot attribute
+post-impact differences to native timing by itself. It does not prove handling
+parity or rule out a high-refresh defect.
+
+Evidence stays private under `private/test-saves/vehicle-integrated-contact-*`;
+`logs/vehicle-contact-current-summary.json` records trace hashes, exact states,
+input boundaries and exclusions, produced by the ignored
+`private/pipeline/summarize-vehicle-contact.py`. Trace row counts are2495
+(original v2),7205(native180),11684(native240),1269(original v3). No private game
+assets or generated code are committed. Next discriminate off-center contact
+response using controlled geometry and coherent solver state; do not tune
+forces, steering or collision coefficients to match a single asynchronous
+endpoint. Full handling, campaign and physical Mac acceptance remain open.
+
+
+## Two-body collision impulse contract (2026-10-25)
+
+On `test/native-vehicle-contact-acceptance`, extended the existing original-US-XBE
+rigid-motion fixture rather than tuning physics from the variable live pillar
+route. No production runtime, geometry, coefficients or executable changed.
+`native_rigid_motion.c` now lifts original166060 in addition to1667C0/16FC00 and
+checks 432 isolated frictionless two-body impacts against a separate double
+precision generalized impulse equation. Both bodies have distinct masses and
+existing spin; cases vary three-dimensional normals, lever arms, diagonal and
+rotated positive-definite world inverse-inertia tensors, approaching/separating
+motion, Original60/native120/144/180/240 and an extra0.7ms secondary step.
+
+The checks compare relative point velocity, both force impulses and both torque
+impulses, including conservation of total linear/angular impulse about the world
+origin. Largest measured component error in the focused run is0.000000649 at a
+0.00001 absolute bound. Independent mutations remove the second mass contribution
+or its torque response and must fail in the new cases. The complete existing
+vehicle timing file passes all19 tests in56.64s, retaining its clock, RNG,
+secondary-step, sleep/wake, steering, camera and other regression mutations.
+
+Original16DF60 damage/effect notification is a checked service boundary after
+force accumulation. This test observes a single impulse before integration and
+drag; it does not supply terrain broadphase, deterministic live controls,
+frictional contacts or a complete vehicle collision replay. It narrows the
+low-level response uncertainty and provides a regression contract; it does not
+prove live handling parity or rule out collision-selection/integration defects.
+Both-host CI already selects this test file, but original-routine checks require
+the private supported XBE and skip in asset-free CI. Physical Mac validation
+remains open under MAC-060. No private assets/generated guest code are tracked.
+
+
+## Forced/damped material scrolling at native rates (2026-10-25)
+
+On `fix/native-material-motion`, the original127500 material update exposed an
+arithmetic rate dependence beyond its earlier cache/timing gate. The authored
+step damps/adds force to velocity, then moves U/V using that updated velocity.
+Fractional Euler steps change the product and the travel sum. A held-force test
+without drag gives U0.614500 at Original60 versus0.608501 at120 after two seconds
+(about0.006 texture repeats less travel); original constant-velocity-only tests
+did not cover this case.
+
+Shared `pc_native_material.h` and five numeric sites now split the complete
+velocity/travel affine map in raw time at current game speed. Damping, held
+forcing and travel are normalized together; zero/weak damping have stable limits.
+Original mode, whole/catch-up raw time, pause and unsupported/nonpositive decay
+bases retain original arithmetic. Original force-table samples, force clamp, UV
+wrapping, image/resource/event order, material layout and saves stay owned by the
+original routine. This advances fresh material state, not rendered-frame blends.
+Varying within-tick force sampling and complete visual parity remain separate.
+
+The asset-free helper passes180 fractional partitions against an independent
+one-step recurrence. The original surface/cache fixture checks48 normal/quarter
+speed schedules at60/120/144/180/240 and mixed intervals with held forcing/drag,
+plus pause and exact original fallback. Independent controls remove damping,
+forcing or travel normalization and must fail. Full timing/vehicle suites pass
+115 tests in229.77s; the final test-only expansion adds exact fallback checks
+and its eight focused tests pass again in22.11s. The forced/damped controlled
+case reaches about0.000003 maximum U/V error rather than the previous0.006.
+GPU calls in that fixture are spies; this does not prove live varying forces.
+
+Supported Windows build and bundled checks pass on base40600133 with executable
+SHA256 `3e24f6f93f4f95734902d559885db62627f343dbafda174a0713e57a3b569999`.
+Bounded Scotland runs at native240, native120 and trueOriginal60 pass movement,
+pause/resume, canonical signed profile preservation and owned-process cleanup.
+Reviewed native captures show the path, weapon, scenery and NPC. The integrated
+read-only native120/Original60 censuses each retain40 observations identifying
+one active material with forcing0.002, drag0.007 and direction(-0.6,0.4). All40
+native samples have positive fractional raw time and equal frame brackets. This
+establishes activation/identity, not coherent completed-update or pixel parity.
+The first late standalone census could not open the already-closed240 child;
+it records zero rows and is rejected evidence. The rerun attaches at owned-child
+creation. These captured/observed tests make no performance or latency claim.
+
+Evidence: `logs/material-{forced-before,forced-after,focused-final,timing-full,
+final-compatibility,build}.log` and isolated
+`private/test-saves/material-motion-scotland{240,120,-original60}`.
+Both-host CI selects the asset-free math and existing original-XBE fixture;
+private-XBE skips do not certify physical Mac behavior. MAC-060 remains Awaiting
+validation. Main advanced to7bd271cf (controller diagonal correction) during
+validation; integration and final-build evidence follow separately.
+
+
+Material follow-up integration: merged current main7bd271cf without conflicts as
+65058c27, preserving its controller diagonal movement/look correction. The
+supported Windows rebuild and bundled checks pass; final executable SHA256 is
+`835ca768b4f576889d86089311026e7124d8ca4fa725e9aae0b28c5902b3a09d`.
+Nine focused tests (including main's expanded locomotion, final material/cache,
+asset-free math and reload controls) pass in25.85s;21 context/backlog tests pass
+in5.66s. Context refresh/check against7bd271cf and whitespace checks pass.
+
+The rebuilt `material-motion-main240` Scotland run passes scene4, healthy player,
+12.535 units of movement and pause/resume checks. Canonical signed profiles are
+preserved and its owned process/partition clean up. Reviewed forward capture
+shows weapon/scenery/path. Its read-only census retains40 equal-frame-bracket
+samples of the same active material;36 have positive fractional raw time.
+`logs/material-live-summary.json` records all four runs' executable/report hashes,
+movement and census exclusions. This captured run is not pacing or pixel-parity
+evidence. No production source changes follow this rebuild; final notes are data
+only. Physical Mac, live varying forcing, full visual fidelity and broad
+native-refresh acceptance remain open.
+
+
+## Coherent live character-growth comparison (2026-10-25, PR #361)
+
+The current pushed material head38a1d1cf passed all applicable hosted jobs before
+this follow-up. Replaced the earlier asynchronous matrix/time comparison with
+an explicitly opt-in CPU trace around original126029->120AB0. Shared
+`pc_native_character_trace.h` / `pc_native_character_trace_guest.inc` copy both
+matrices, actual scoped raw/game deltas, age, coefficients and model identity in
+one update. Mapped reads are checked independently before/after guest execution;
+removal is represented without reading freed model memory. CSV is bounded to
+8192 complete pair rows/8MiB. Disabled, failed-open and capped traces select the
+original callee directly. No clock/growth/gameplay policy changes in this step.
+
+Collector/writer tests cover identity/frame/scene mismatches, copied values,
+removal, invalid/unreadable data and row/byte caps. The complete original scale
+fixture produces identical behavior/stdout with tracing enabled and after a
+latched file-open failure. Full timing/vehicle suites pass116 tests in175.98s.
+The first supported build caught an ESI declaration-order omission in the manual
+translation unit. The corrected adapter uses its existing manual TLS contract;
+the clock fixture now reproduces that include order. All three focused checks
+pass again (4.75s). The supported Windows rebuild/bundled checks pass, executable
+SHA256 `4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`.
+The final test-only include-order expansion and documentation do not change that
+runtime. Original scale construction and cleanup still execute unmodified.
+
+Bounded ten-bot Disco runs at native240 and trueOriginal60 complete all four
+spawn/combat checkpoints in scene56, unpaused with roster655617. Both preserve
+canonical signed profiles, close their owned processes and recycle disposable
+partitions. Each trace contains its maximum8192 complete pairs, all in scene56;
+these are valid capped prefixes, not whole-match or full-effect-lifetime captures.
+No removal rows occur in these prefixes; live cleanup is therefore not certified
+by them. Native240 includes7919 positive fractional updates. An independent
+analysis reconstructs the caller's original x87/SSE factors and normalization
+from the actual captured deltas, then checks determinant growth per update and
+across continuous model identities:
+
+| CPU trace | Maximum pair relative error | Continuous sequences (20+ updates) | Maximum cumulative relative error |
+| --- | ---: | ---: | ---: |
+| Native240 | 3.357e-7 | 28 | 3.267e-6 |
+| Original60 | 2.937e-7 | 83 | 5.092e-6 |
+
+The native fractional old-path prediction has median relative error0.000190968,
+versus0.0000000594 for the repaired rule. This identifies actual live execution
+of the fractional repair rather than merely a successful scene launch. It does
+not compare identical rendered pixels, random combat paths or physical latency.
+Reviewed combat-one captures show weapons, muzzle/impact effects, casings, NPCs,
+scenery and HUD, not a continuous size/appearance comparison of these models.
+
+The old ideal-volume comparison can also disagree while each actual update is
+correct. In the longest new native sequence (346 updates over1.695s), measured
+volume differs1.252% from an ideal repeated-one-tick curve but only0.000101%
+from the recorded-input rule. Its11 whole/catch-up updates predict a1.2521%
+ideal-curve deficit; fractional rounding contributes about0.000296%. Preserving
+original whole/catch-up arithmetic explains that new trace. This does not
+retroactively identify the exact cause of the older asynchronous0.8..1.1%
+samples, whose input/phase history was never captured coherently. Do not change
+scale coefficients to force those samples onto a constant-speed ideal curve.
+
+Evidence: private runs `character-coherent-disco240` and
+`character-coherent-disco-original60`; their CSV/provenance/analysis files and
+`logs/character-coherent-{focused,order,timing,build-fixed,analysis240,
+analysis-original60}.log`. CSV SHA256 values are0fa35b98aed9bb6ae4ab94ec1ddebe7e26162879597b6ce27ae63814c49a1e35
+(native) and54e5caf04651707c9e1b3f2ae2a83feac36f22a560fb5c2e331c01a50bfd0706
+(original). Tracing/readback/captures perturb timing, so these runs are not FPS,
+GPU completion or scanout measurements. Physical Mac and broad rendered-effect/
+full-game acceptance remain open under MAC-060. The bounded systems guide also
+condenses historical uncalled-water descriptions while retaining current owner,
+spatial/alpha-height contracts and links to the detailed regression history.
+
+
+## Clean current-build Scotland pacing (2026-10-25, PR #361)
+
+Measured the unchanged4d09cd2c Windows executable with character/contact/update/
+surface tracing, CPU sampling and frame captures disabled. No heavy build/test
+work ran during either accepted measurement. Both use Enhanced mode, FOV73 and
+requested3440x1440 rendering; device creation confirms3440x1440, while all ten
+window checkpoints report a visible foreground1920x1060 client. This does not
+certify a physical ultrawide display or every replacement texture.
+
+The first native240 attempt, `material-clean-scotland240`, completed its session
+but all ten window checkpoints were background. Its strict pacing validator
+rejected it; no foreground-performance result is inferred from that run. The
+Scotland long route lacked the crowd runner's focus restoration. Added the same
+owned-window focus action before `water-stable-start`, with settling before the
+measurement, to the bounded public runner. No normal-game runtime behavior or
+binary changes are involved.
+
+Accepted runs `material-clean-scotland240-v2` and
+`material-clean-scotland-original60` use identical executable, effective command
+stream and runner hashes. Their complete50s windows start five seconds after
+`water-stable-start`. Validation requires recorder clock neighbors on both sides,
+consecutive clock/frame records, strictly increasing guest frame IDs and all ten
+scene4/match-state7/unpaused/foreground checkpoints. Stable look direction,
+roster257 and unchanged health are recorded. Native water owner creation and
+advancing native actions are present in the240 log; there is no GPU readback.
+
+| Path | Fresh guest intervals | Average FPS | Lowest1s /5s FPS | p99 interval | Worst interval | Sampled game/wall ratio |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native240 |11999|240.0017|240 /240|4.866ms|5.850ms|0.999936|
+| Original60 |2999|60.0003|60 /60|17.371ms|17.834ms|0.999827|
+
+Neither has interpolated presents. Every measured native interval is below the
+144-FPS6.944ms budget; individual intervals still vary, so the average/bin counts
+do not mean uniform240-FPS frame times. The native recorder reaches its20000-row
+cap after the accepted window and retains the required clock neighbors; its cap
+does not truncate this window. These successful host Present intervals do not
+measure GPU completion, scanout or physical input latency. Different selected
+caps are not a causal before/after optimization comparison. Standing Scotland
+water acceptance is distinct from crowded fights, physical Mac or all levels.
+
+Both sessions also execute firing, pause and resume after the measured window;
+pause/resume flags pass, canonical profile bytes/signatures remain intact and
+owned processes/partitions clean up. Present CSV SHA256 values are
+edc28425d675f35ab468e6097f4b7120d77a8ba0920cfebcb3e65b6cf8197c02(native) and
+8f06e70fb874ba186767d6c202eb4b4f42bd1c49fdc7ecdcf3fd05ba07de786f(original).
+Private per-run `material-pacing-summary.json` files preserve clocks, bins,
+provenance, actual clients and exclusions. The ignored bounded adapters are
+`private/pipeline/material-clean-pacing.py` and `summarize-material-pacing.py`.
+Logs use `material-clean-scotland*`; the first rejected run remains available.
+All34 frame-statistics/profile/context/backlog checks pass(4.53s). No new build
+is required for the runner-focus/documentation-only change. Broad high-refresh
+and physical Mac acceptance remain open.
+
+
+## Live Windows process audio output presence (2026-10-25, PR #361)
+
+Closed a live-output evidence gap beyond fake-device and original sound-event
+fixtures, without changing audio production code. Used the unchanged Windows
+executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+in separate isolated ten-bot Disco runs at native240 and trueOriginal60.
+
+A bounded private Windows SDK helper receives only the owned game PID, retains
+its process handle and exits when that process closes. It queries that PID's
+render sessions through IAudioSessionControl2, ISimpleAudioVolume and
+IAudioMeterInformation, plus endpoint mute/volume getters. It does not record
+waveforms, open microphone/capture clients, change volume/mute, or report other
+applications' sessions/device names. Each numeric sample is timestamped in the
+same QPC domain as the runner. The helper is hidden, read-only and limited to
+180s; both owned helpers exit0. No current build or audio setting is replaced.
+
+The selected gameplay windows begin two seconds after the spawn checkpoint and
+end at combat-six. Meter coverage exists on both sides. Spawn/combat-one/four/
+six retain scene56, active match7, ten configured bots and foreground visibility.
+This selects actual combat observations rather than relying on menu output.
+
+| Selected path | Gameplay window | Samples | Valid unmuted game-session samples | Nonzero mixed-output samples | Largest observation gap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Native240 |65.796s|324|324|324|218.020ms|
+| Original60 |65.792s|322|322|322|224.871ms|
+
+Session and endpoint mute are false and their levels are positive throughout
+these samples. Game-session volume remains1.0; no setter is used. Minimum sampled
+peaks are0.05530(native)/0.06203(original), with maximum0.99000 in both. These are
+Windows session meter peaks of all game output, including music and all voices;
+they are not a waveform or isolated gun-sound comparison. Random combat paths
+prevent amplitude-parity claims. The roughly200ms getter cadence cannot detect
+brief underruns or certify event cadence, audible synchronization, device
+fidelity, physical latency, or heard speaker/headset output. Captures and metering
+also make these runs unsuitable for frame-pacing claims.
+
+Both game sessions complete normally and preserve canonical profile bytes and
+signatures, with disposable partition/owned-process cleanup. Existing shared
+XAudio/SDL gain, mute/live-volume and buffer/stream timing tests pass25 checks
+(5.50s). No production audio change was justified by this observation. Physical
+Mac audio/gameplay and broader per-event/voice acceptance remain open.
+
+Evidence is private under `audio-output-disco240` and
+`audio-output-disco-original60`: audio-meter.jsonl, audio-meter-provenance.json,
+audio-output-summary.json and helper exit records. Numeric JSONL SHA256 values
+arec01e76b66c627ba32046f2335ae3b749a241a568af7f07681fcf42ec8d90b6c3
+(native) and9c856d5753f14ad2ae5adbf71ee2c444f40e4601830c35304a70518fa36d5622
+(original). Private helper/adapter sources and exact hashes remain in the run
+provenance; logs are `audio-output-*`. No audio files, private assets or binaries
+are committed. All applicable PR checks passed on f971dac0 before this data-only
+acceptance record; subsequent-head checks remain separate.
+
+
+## Mixed-rate Online match completion and rematches (2026-10-25)
+
+This acceptance closes the previously untested mixed-rate completed-match/
+rematch route, within the Windows loopback scope below. It does not establish
+full multiplayer or full-game correctness. PR #361 subsequently merged into
+main as063789df after all applicable Windows/macOS hosted checks passed.
+
+Both runs use executable SHA256
+`4d09cd2cda5f686532c0664a0121905f44d9e87d2a9616a18c462030d2841b46`
+and unchanged runner `tools/test-online-bot-motion.py` SHA256
+`68200a6278eaf877be968738196752fb1847206fdcce2f0a3b3652ed0dde7b63`.
+This executable predates main's later controller/mouse-capture changes included
+in0b69b149/063789df; these are not claims about a newly rebuilt main executable.
+The production Online directory/browser/bridge uses a local directory server
+and ephemeral UDP ports on loopback, with automatic public hosting disabled.
+Personal settings and saves are not used.
+
+Reproduce from the supported Windows checkout, with the private US XBE and
+canonical unlocked Test Lab fixture, using the venv Python:
+
+```text
+python tools/test-online-bot-motion.py --tag current-mixed-results-0-240 --host-fps 0 --guest-fps 240 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+python tools/test-online-bot-motion.py --tag current-mixed-results-240-0 --host-fps 240 --guest-fps 0 --short-match --require-results --seconds 180 --post-results-seconds 20 --inspect-results-tabs --rematch --require-rematch-results
+```
+
+Here0 selects true Original60. The180-second deadline applies separately to
+completion of each round, with bounded menu/setup time outside that deadline.
+Both runs report completed=true; total durations are287.422s and294.000s,
+with40,392 and41,724 asynchronous observations respectively. Each has two human
+slots and six bots, host/guest roles1/2, Online mode15, five-point limit and
+matching configuration[2,1,6] on both peers throughout the sampled transitions.
+Both first rounds and both rematches reach at least five points and publish
+results-ready1/match-state8 on both peers. The runner compares all eight final
+records sorted by slot: names, sixteen kill counts, deaths, ranks, score and
+character. It excludes row order and raw padding. All four comparisons pass.
+Independent inspection confirms the four semantic tables match across peers.
+
+Normal E/Down input navigates Results -> Scores -> Options and requests Rematch.
+The fresh round requires match-state7, results-ready0, reset level clock and all
+eight actor scores zero before the second completed-round comparison. Both
+runs pass. Reviewed native-host Results/Options and Original-guest Scores
+captures show populated menus and score rows; the native overlay says target240
+(Beta). The two zero-score human rows and six bot rows agree with the recorded
+first-round table. No unresponsive or blank captured results screen is observed.
+
+All four signed test profiles retain SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`;
+length/HMAC and the canonical fixture manifest pass. Run locks and disposable
+partition images are removed. Both owned games remain alive until the runner's
+intentional termination/cleanup (exit_codes_before_cleanup=[null,null]); this
+is not evidence of a graceful game exit. No production runtime changes follow
+from these passing results.
+
+Private evidence: `logs/online-bots-current-mixed-results-{0-240,240-0}` contains
+provenance, checkpoints, menu inputs, observations, both final tables and owned
+window screenshots. Provenance JSON SHA256 is
+`58b94cb58cb5f30d094c2b0fb7779f64d3da7e7a74bd4cd0073cdaa02250a675`
+(60 host) / `c2db5a2d4bf71f3f435038948985cb0023a4549486ba8de1a35ba4611eab96c4`
+(240 host). Rematch table JSON SHA256 is
+`54d7151e0f4206a8a0fd376a89a177fa9dbe21a9f0c9029ba6922e1425e8e4ce`
+/ `0a7547108462ae95ba0e6c123073ab1ba7af03d021703e70d4190fafdde13f6c`.
+
+Two simultaneous game instances, asynchronous ReadProcessMemory observations
+and captures are not clean FPS/latency measurements. Selected240 is not a claim
+of locked240 throughout. Randomized combat paths are not trajectory, damage,
+weapon cadence or AI decision parity. Local loopback does not prove real LAN/
+Internet loss/reordering behavior, human input responsiveness or Mac networking.
+Full campaign, wider rendered acceptance and physical Mac remain open.
+
+The existing results/guest-dispatch regression suites pass10 tests in11.35s
+(`tests/test_network_bot_results.py`, `tests/test_network_guest_dispatch.py`).
+Repository context/index and whitespace checks pass. These fixture results
+supplement the observed Online rounds; they do not expand their runtime scope.
+
+
+## Merged-main Hart Attack timeout and pause (2026-10-25)
+
+The supported `tsfp.ps1 -Action Build -SkipTextures` rebuild with CL_MPCount=2
+passes its bundled checks after integrating main063789df. Source branch
+validate/native-mixed-rate-results46110f39 adds only acceptance documentation
+above that main revision. Resulting executable SHA256:
+`63934f0ba48d8fdffc3a05ced89d5d4e1c3a80592bf1f75534df71e405d67f46`.
+Unlike the preceding Online records, this build includes the merged controller/
+mouse changes. It is not a published release or a Mac gameplay validation.
+
+The existing bounded `tests/stability_transitions_game.py` runner uses isolated
+unlocked Test Lab copies, default native surfaces, Classic textures, requested
+1280x720/FOV55, renderer captures, actor observations and Present profiling;
+per-update native tracing and CPU profiling are disabled. Run names
+`hart-main-original60`/`hart-main-native240` select `--native-fps 0`/`240`, with
+`--no-native-trace --watch-actors --profile-presents`, total bounds360s/260s.
+Runner SHA256 is
+`ca881e2d36b86b73803d7310492a3cf8e03d70a51855af054e4f3d1e3611ba15`.
+A preceding `challenge-main-original60` session only calibrates menus; it never
+reaches gameplay and is excluded from behavioral acceptance.
+
+Reproducible input route (ordinary virtual keys, no guest-state edits): from
+Story highlighted on Main, Down/Down/E enters Challenge; Down/E selects Cut-Out
+Shoot-Out; E opens Hart Attack's briefing, E opens character selection, E marks
+Corporal Hart Ready, and another E starts. Allow menu transitions and loading,
+restore focus, then observe15s. Escape pauses; observe8s. E on Continue resumes;
+observe3s. Hold W3s, release/wait2s, hold primary fire3s, release/wait2s; observe
+30s, another30s, then20s through timeout. The runner supplies the usual startup
+profile input; the initial exploration needed extra menu time. Exact submitted
+commands remain in each isolated commands.jsonl/report.json and the private
+`private/pipeline/hart-challenge-route.json`; both tests use the same gameplay
+command sequence. Their menu/setup wall durations differ and are not compared.
+
+Both actual scene64/match-state7 sessions remain alive with health0.8. Hart
+Attack's reviewed briefing sets90seconds and18targets. These are intentional
+zero-score runs, not successful medal attempts. Both rendered results show
+Game Over/0points/Retry Level, with health unchanged. The sampled transition
+from match-state7 to8 has exactly the same level-tick bracket[5581,5584], about
+93.1 game seconds including the start countdown, in both modes. The wall bracket
+widths are50.155ms Original/50.363ms native; these asynchronous20Hz observations
+do not identify an exact transition frame or establish finer timing parity.
+
+All159 paused clock observations per run stay fixed: Original846ticks across
+7.9722s, native862ticks across7.9660s. Valid paused position observations stay
+fixed too:159 Original/158 native. One native player snapshot is unavailable;
+the initial strict position analysis rejects that missing sample, and the final
+report explicitly excludes/counts it rather than treating it as stationary.
+The clock/pause fields remain available in all159 observations. No claim of
+fully atomic memory snapshots or motion during the missing observation follows.
+
+Two separate approximately30s unpaused windows have game/wall ratios
+0.999770/0.999647 Original and0.998864/1.000173 native. The shorter resumed window
+ratios0.996422/1.003383 are more affected by whole-tick/sample boundaries. All
+sampled points in those windows retain scene64/state7/unpaused. Each firing
+hold changes pistol magazine16->8 with reserve84 unchanged. The forward input
+moves24.0555/24.4098 world units, confirming movement response, not exact movement
+parity; polled input/asynchronous observations do not fix the same update/RNG
+schedule. Target hits/scoring, damage, winning objectives and target animation
+cadence remain unverified by this zero-score route.
+
+These capture-bearing runs are not sustained pacing evidence. The Original late
+window's diagnostic Present log averages58.066FPS with p9941.526ms/worst45.026ms;
+renderer dumps/input polling/observation overhead remains included. The native
+recorder reaches its20,000-row cap at99.191s, so its missing late-window rows are
+not treated as zero FPS or a completed240FPS pacing window. A separate capture-
+free current-build repeat is recorded below. Neither capture-bearing result
+replaces clean pacing evidence or certifies physical latency/scanout/all-map performance.
+
+Both runner sessions return0 with clean game exits, valid HMAC/profile length,
+canonical fixture verification, and disposable lock/partition cleanup. Each
+profile retains SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`.
+Private reports and captures live under the run names in private/test-saves;
+comparison summary `logs/hart-main-comparison.json` records intervals/ratios and
+missing observations. report.json hashes are
+`9b9b18c7adc4e1d43620d1dbbc35cc79fbefafc48c8964eb18b584594ea7a63d`
+(Original) and
+`ae6d2eb34ba5b5b30b2cbff25df0a27c1acc1f35bd0079f9748d7c11571fee32`
+(native). No production timing change is justified by these passing behavior
+checks. Wider Challenge/Arcade gameplay, full campaign/rendered fidelity,
+remote-network behavior and physical Mac acceptance remain incomplete.
+
+
+Capture-free Hart Attack repeats on the same63934f0b executable use the same
+menu/gameplay commands through the existing runner, with `--no-native-trace
+--no-captures --profile-presents --profile-delay-seconds 110 --seconds 260` and
+native0/240. `watch-actors` and CPU/effect tracing are off; the runner's normal
+player snapshots/input polling and requested20Hz wait observations remain.
+A private wrapper `private/pipeline/run-hart-clean.py` waits for the owned runner
+to prepare commands, submits the reviewed JSON route and joins that same process.
+It runs each game separately. Both runner sessions return0 and preserve the
+canonical signed profile/cleanup. Both timeout again with unchanged health,
+pause-clock hold, normal movement and magazine16->8. No new game-policy change.
+
+For pacing, use the second late30s wait, excluding one second at each end.
+Strict surrounding Present rows cover both window boundaries; neither file is
+capped. All selected rows are guest frames with consecutive guest IDs, not
+interpolated frames. The sampled scene stays64/state7/unpaused and the selected
+test window stays visible/unminimized/foreground. This late phase is stationary
+after the movement/fire sequence; it is not target-hit or crowded-combat pacing.
+
+| Measurement | Original60 | Native240 |
+| --- | ---: | ---: |
+| Complete observed window (seconds) | 27.969387 | 27.999316 |
+| Selected fresh Present rows | 1,679 | 6,720 |
+| FPS between first/last selected rows | 60.000146 | 239.997154 |
+| Complete one-second bins (min/max frames) | 59/61 | 240/240 |
+| p99 interval (ms) | 17.2877 | 4.7130 |
+| Worst interval (ms) | 17.7802 | 5.7361 |
+| Game/wall ratio over sampled late wait | 1.000465 | 1.000023 |
+
+Original one-second bin59/61 variation accompanies the60.000 average; averages
+are not uniform-frame promises. There are3,609/14,428 total recorded rows, below
+the20,000 cap. Capture-free is not overhead-free: file input, memory observation
+and Present logging remain. No physical input latency, GPU completion/scanout,
+all-map240 guarantee or cause-of-speedup claim follows.
+
+Device logs confirm1280x720; the runner's selected test window reports640x480
+client (the title/shadow path also reports640x480). Keep these distinct; this
+is not certification of a physical1280x720 display or ultrawide gameplay.
+The earlier capture pair likewise reports a640x480 selected client. Canonical
+profile SHA090cced7 is unchanged in all four gameplay runs.
+
+Private evidence: `private/test-saves/hart-clean-{original60,native240}` retains
+commands/reports/states/provenance and run0-presents.csv; numeric summary is
+`logs/hart-clean-comparison.json`. Present CSV SHA256:
+`b916afb4ff68bc691ab8ea76e7128a23e3d3267a8f25d96009fe2ce994c13958`
+(Original) /
+`f93557b1a7d808faf72f77f9da8f076b10c03a4be697fead563056768349a549`
+(native). Report SHA256:
+`f1af9fc6c6d3042aed4d9f03784a67df136f94d1e5bb86349e472fb78c9739e9`
+/
+`02f7e0f0e381ccbfdfb9e4babb56a0ac37fe500c3097965ed10cdf8047290e5b`.
+These repeats address the capture/cap measurement gap for this mode/window only.
+Physical Mac, winning Challenge routes and wider gameplay remain unverified.
+
+
+## TREE callback fractional phase gate (2026-10-25)
+
+An audit of remaining whole-game-tick entry gates identifies original US
+`sub_001D88B0`. Initializer1D8A10 finds the TREE-tagged entity, initializes active
+state/phase and registers this callback at1D8A94. The callback initially reads
+4E7944 only as a zero-time gate, then overwrites EAX with entity state. Its
+phase at entity+1A4 advances with float4E794C divided by ticks-per-second; its
+pose at+C8 is derived directly from that phase using the original exponential.
+It emits a crossing event near phase1 and a terminal effect/clamp at80, clears
+active state, and multiplies E0 by the original-0.1 factor.
+
+The original whole-tick gate discards fractional intervals even though its body
+integrates fractional time. A fixture executing the original routine reproduces
+phase0.25 after one game second at native240, with no phase1 event yet. The
+unchanged-policy regression fails its one-second phase check (including native
+slow-time schedules) before the repair. Changing only the audited gate to test
+positive live float time makes phase advance correctly at60/120/144/180/240.
+Original mode retains its original gate; carried whole fields remain unchanged.
+The adjacent1D8AB0 callback has per-call additions and is deliberately outside
+this change pending its own integration audit, not assumed safe from proximity.
+
+`tests/native_tree_motion.c`, selected by existing `test_native_timing.py` on
+both CI hosts, translates/executes the pinned private US routine rather than a
+rewritten phase model. Two effect services are spies; other original arithmetic,
+branching, loads/stores and stack operations execute. Exact constants are read
+from the verified XBE, including complete x87 doubles. Forty rate/slow/phase
+schedules verify phase and analytic pose, one crossing/one finish with event-time
+bounds, pause (including stale carried ticks), terminal clamp/state/retirement,
+unchanged clock words and preserved callee-saved registers/stack/x87 depth.
+Whole/catch-up sequences produce identical entity bytes/event counts in native
+and Original modes. A negative control replacing only the generated gate load
+with its original value must fail; no generated game file is edited.
+
+The asset-free `native_timing_guest.c` clock fixture additionally checks ten
+rate/slow schedules, one-second phase accumulation, unchanged neighbor sites,
+pause and Original fallback on both hosted platforms. This policy test does
+not stand in for original pose/event execution when private-XBE cases skip.
+The two focused checks pass4.50s. All117 timing/vehicle checks pass231.84s;
+21 repository/backlog checks pass3.35s. The supported Windows rebuild and bundled
+checks pass, producing executable SHA256
+`a35525a76633b3d99d7571b1b9efdef9faad443739ae905ae4e7938a588b3690`.
+Repository context/index and whitespace checks pass. No private assets or
+generated game sources are committed. Live registration/activation/rendered TREE behavior,
+physical Mac execution, complete effect services and broader game coverage are
+not established by this routine fixture. No all-scenes or all-bugs claim follows.
+
+
+## TRAP solver mixed-clock repair (2026-10-25)
+
+PR #363's TREE-only head9955d2f2 passes all applicable Windows/macOS hosted
+runtime/transition/PR validation and launcher compatibility checks. This related
+TRAP audit/fix stays in that same PR; no new PR is created.
+
+The adjacent original US1D8AB0 is not the same kind of consumer as TREE.
+Initializer1D8C40 finds the TRAP-tagged entity, sets+C0=-88/+E0=0/state1A0=0,
+and registers1D8AB0. The original whole-game-tick gate selects one solver call;
+inside it, the sine-table force adds a fixed50-times-sine impulse to+E0 once
+per call, while+C0 motion and phase+1A4 consume converted whole game ticks.
+It emits one sound/control request, clamps/bounces at90 with the authored-0.1
+factor, increments a discrete counter and removes the callback beyond11.
+
+Broad native conversion substitutes the current fractional frame interval at
+1D8AF5(phase) and1D8B6A(travel), even though the gate still selects whole-tick
+calls and their fixed impulse. The resulting impulse/time mismatch changes
+motion, phase and event progression. An original-routine fixture fails before
+the repair (first discrepant native slow schedule has2,397 mismatched frame
+states). A naive always-open gate is independently rejected because it adds
+extra fixed impulses even with the corrected converted spans.
+
+Keep only these two converted reads in the authored carried-tick units. The
+original integer gate and fixed impulse/lookup/clamp/retirement logic stay
+unchanged on positive intervals. A pause-only override rejects a stale whole
+count when live game time is zero. Clock words are never rewritten. Other
+continuous conversions, including neighboring sites, continue to use live
+fractional time. There is no new adapter, save field, retained per-entity cache,
+solver coefficient or RNG policy.
+
+This is an intermediate correctness repair of the60Hz-authored nonlinear
+solver, not a claim that TRAP now supplies a fresh fractional pose each native
+frame. Its rendered motion cadence still follows the original solver calls.
+Smooth fractional trap motion needs a separate coupled integration/presentation
+investigation that preserves the verified impulse/event behavior; opening the
+gate alone is not that solution. The overall native-refresh goal stays open.
+
+`tests/native_trap_motion.c` executes the original1D8AB0 body, original153C20
+sine-table initialization and original12010 sine helper, using constants from
+the verified US XBE. Sound/control and callback-removal services are boundary
+spies; the spy honors removal by ceasing later dispatch. No rewritten pendulum
+or synthetic sine table replaces the engine routines. At every frame in40
+rate/slow/carried-phase schedules (60/120/144/180/240, slow1/4, four phases,
+ten game seconds), native state matches Original entity bytes and service
+counts. Original run always emits one sound/control and one removal. Restoring
+either converted read independently must fail. The old mixed-clock path and
+an always-open gate are separate controls that diverge on sub-tick schedules.
+Catch-up step sequences preserve full state/service counts; native pause and
+zero-carried positive intervals preserve state. Asset-free native clock tests
+also cover converted spans, neighboring continuous sites, Original fallback
+and stale-tick pause on both CI hosts. Private-XBE skips are not Mac gameplay.
+
+Three focused TREE/TRAP/clock checks pass9.95s. All118 timing/vehicle checks
+pass243.24s;21 repository/backlog checks pass4.07s. The supported Windows rebuild
+and bundled checks pass. Executable SHA256:
+`1fe73b2c0ef114dfccb3da46cec9f3ff76647515f496e1ce36b9d7bfcf090d8e`.
+Context/index and whitespace checks pass. Subsequent-head hosted checks remain
+separate from9955d2f2 results. Live TRAP/TREE
+registration/activation/rendering, complete service effects and physical Mac
+remain unverified. No game performance improvement is claimed from the offline
+fixture; old pacing evidence retains its explicit executable hashes and limits.
+
+
+## Mansion TREE live activation and phase (2026-10-25, PR #363)
+
+Both scripted callbacks are located in Mansion of Madness (Story index4,
+scene1), not the opening mission (scene2). Read-only archive analysis finds
+SETU entry882ae5ed in `pak/story/l_1_st.pak`: its callback records69/381 select
+indices50/42 from4D2B10, which point to TREE initializer1D8A10 and TRAP
+initializer1D8C40. The original loader maps serialized header90/94 to runtime
+CC/D0, relocates callback records at strideC8, and resolves fields38/3C through
+that function table. A first attempt using runtime offsets directly in the
+serialized header was rejected; tag-byte hits alone in other archives do not
+establish callback ownership. The unlocked in-game menu independently shows
+Mansion of Madness, and runtime observations confirm scene1/mission4.
+
+The current1fe73b2c executable completes separate isolated entrance routes at
+native240 and trueOriginal60, with canonical profiles preserved. From Story,
+select the fifth mission, accept difficulty/start, skip the movie with Escape,
+restore focus, then use ordinary W holds3s/2s/1.3s toward the door and E to enter.
+Both runs reach the foyer and activate TREE through the normal script. Native
+manual exploration adds idle time before and after activation; compare the
+activation interval rather than overall run duration. The bound is600s; both sessions stop earlier and
+return0 with clean game exits. TRAP is present upstairs but remains inactive:
+no TRAP initializer/callback trace is observed, so live trap behavior stays open.
+
+The private read-only observer validates the owned executable path and handle,
+walks the original tag lookup at75D318, resolves entity handles through72F5E8
+(stride2E8; index=handle>>22), checks the generation word at+2C and rechecks the
+lookup/pool identity. It reads bounded entity blocks approximately20Hz, capped
+at480s/8MiB, and stops when the owned process exits. It never writes guest
+memory. The stable TREE identity agrees with the bounded original-function
+trace; each run contains one1D8A10 entry and subsequent1D88B0 execution.
+
+| Observation | Native240 | Original60 |
+| --- | ---: | ---: |
+| Active TREE observations | 91 | 91 |
+| Terminal phase (game seconds) | 4.571001 | 4.583338 |
+| Conservative activation-duration bracket (wall seconds) | 4.5277–4.6288 | 4.5290–4.6300 |
+| Maximum sampled pose/phase formula error (degrees) | 0.00000313 | 0.00000380 |
+
+Duration brackets include before/after inactive samples and each read interval;
+they overlap. The terminal phases differ by less than one original tick, as
+expected from different threshold-crossing step sizes. All active samples have
+monotonic phase; both paths reach+C8=80 and clear active state1A0. The sampled
+pose matches the original exponential evaluated at its observed phase. This
+is stronger live timing evidence than entry/reaching-scene checks, but the
+asynchronous blocks are not atomic per-update traces or proof of every frame.
+
+Reviewed captures show the correct mission selection, entrance and populated
+foyer scene in both modes. They do not independently identify the rendered
+TREE mesh; the visible burning chandelier must not be equated with the TREE
+tag merely because it appears near the event. Full target visual appearance,
+complete event-service behavior and physical Mac remain unverified. Captures,
+function traces and process reads make these diagnostic runs unsuitable for
+clean FPS, physical latency or scanout claims.
+
+All canonical/test profiles retain090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695,
+with valid length/HMAC; run locks/disposable partitions are removed. Evidence
+is private under `scripted-scene1-{native240,original60}`: report/commands,
+scripted-objects.jsonl, observer-provenance, trace logs and captures. Comparison
+summary: `logs/scripted-tree-live-comparison.json`. Observation SHA256:
+`93dbe5de9b9df2c497418d9b54a640469754a55eff722660e4b424f7a5b36df1`
+(native) / `c0dd9779e0663a76c15283dd150910fa37800b322652907ce322a30bfec5ec9b`
+(original). No production code change follows from this passing comparison.
+All applicable Windows/macOS hosted checks pass on source head09087c1b;
+subsequent documentation-head checks remain separate.
+
+
+Mansion coverage clarification (2026-10-25): the native diagnostic lingered
+about90seconds between door-use and its final checkpoint, then ended in player
+death/state8. Original ended about2.19seconds after door-use, alive/state7.
+These unmatched endpoints do not compare survival, damage rate or full mission
+progression. All91 active TREE samples per run precede the terminal endpoint
+and retain state7; the accepted callback phase/clamp comparison is unchanged.
+
+A separate bounded `scripted-attic-native240` calibration attempt retries through
+the normal menu but does not reach the TRAP trigger. Its valid observed TRAP
+states remain idle with phase0, and the uncapped trace has no1D8C40/1D8AB0 entry.
+The route adjustment stayed outside the doorway after retry; command edits made
+after earlier inputs mean this is calibration, not a reproducible acceptance
+route. The executed-event report remains authoritative. The reader ends at its
+480s bound; later input is not claimed covered by that reader. The owned game
+exits cleanly, with signed profile/canonical fixture and partition/lock cleanup.
+No runtime regression or live TRAP success is inferred from this attempt.
+All applicable checks on5cfb1542 pass. No production code changes in this audit.
+
+
+## Story co-op main integration (2026-10-26)
+
+Integrated fetched main e9d9fae into online-story-coop from7bc3c63. Preserved
+Story adapters and main timing/render/input changes. The bounded transition
+runner retains both scenario families, the input publisher, Story world reads
+and main actor/effect/window/native-clock diagnostics. Detailed context moved
+to linked systems-details/build-test-details pages to retain the64KiB limit.
+
+Windows11 AMD64: optimized supported build completed compilation, native test
+checks, executable sealing and matching crash-symbol creation. Its redirected
+PowerShell process returned1 despite the successful final build/test messages;
+no compiler/linker/test failure appeared. Source menu/Story/guest fixtures:
+15passed2platformskips. Online/context/native-timing regressions139passed.
+Context check against7bc3c63 and CRLF-aware whitespace check pass. Logs:
+logs/story-resume-build.log, story-resume-source-tests.log and
+story-resume-integration.log (ignored). Fresh four-peer acceptance is separate
+and in progress; this integration does not establish completed Story co-op.
+Mac Online remains blocked on MAC-013, with no native-host validation here.

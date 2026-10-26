@@ -7,8 +7,16 @@ import pytest
 from test_cutscene_letterbox import compile_and_run, ROOT, RUNTIME
 
 
-def test_menu_text(tmp_path):
-    compile_and_run(tmp_path, (ROOT / 'tests/menu_text.c').read_text(encoding='utf-8'))
+@pytest.mark.parametrize('mutation', ['none', 'per-row-query', 'stale-region'])
+def test_menu_text(tmp_path, mutation):
+    source = (ROOT / 'tests/menu_text.c').read_text(encoding='utf-8')
+    if mutation != 'none':
+        adapter = (ROOT / 'src/pc_menu_text.inc').read_text(encoding='utf-8')
+        old, new = ('if(pc_guest_region_remaining(&region,host,1)<0x10c) {', 'if(1) {') if mutation == 'per-row-query' else (
+            'PcGuestRegion region={0};', 'static PcGuestRegion region={0};')
+        assert old in adapter
+        source = source.replace('#include "pc_menu_text.inc"', adapter.replace(old, new))
+    compile_and_run(tmp_path, source, fails=mutation != 'none')
 
 
 def test_original_keyboard(tmp_path):

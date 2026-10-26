@@ -8,6 +8,7 @@ static DWORD test_tick_count(void) { return 0; }
 #include "hle/hle_d3d8_texture.c"
 #undef GetTickCount
 #include <assert.h>
+#include "framebuffer_surface_stubs.h"
 
 static uint8_t memory[4096];
 ptrdiff_t g_xbox_mem_offset;
@@ -72,9 +73,52 @@ static void bind_screen(unsigned stage, uint32_t va)
     assert(g_bound[stage] == &fake_texture);
 }
 
+/* Cache aliases may disagree about framebuffer status. Compare both outputs
+ * against the original two independent searches, including a full cache. */
+static void check_bound_lookup(void)
+{
+    IDirect3DTexture8 hosts[3];
+    texture_entry saved[TEXTURE_CACHE];
+    unsigned state = 17;
+    for (int count = 0; count <= TEXTURE_CACHE; count++) {
+        g_texture_count = count;
+        for (int i = 0; i < count; i++) {
+            state = state * 1664525u + 1013904223u;
+            g_textures[i].host = &hosts[(state >> 16) % 3];
+            g_textures[i].framebuffer = (state >> 29) == 0;
+        }
+        memcpy(saved, g_textures, sizeof(saved));
+        for (int target = -1; target < 4; target++) {
+            IDirect3DTexture8 *host = target < 0 ? NULL :
+                target == 3 ? &white : &hosts[target];
+            texture_entry *expected = NULL;
+            int expected_fb = 0, actual_fb = -1;
+            for (int i = 0; host && i < count; i++) {
+                if (g_textures[i].host == host) {
+                    expected = &g_textures[i];
+                    break;
+                }
+            }
+            for (int i = 0; host && i < count; i++) {
+                if (g_textures[i].host == host && g_textures[i].framebuffer) {
+                    expected_fb = 1;
+                    break;
+                }
+            }
+            assert(bound_host_entry(host, &actual_fb) == expected);
+            assert(actual_fb == expected_fb);
+            assert(bound_host_entry(host, NULL) == expected);
+            assert(memcmp(saved, g_textures, sizeof(saved)) == 0);
+        }
+    }
+    memset(g_textures, 0, sizeof(g_textures));
+    g_texture_count = 0;
+}
+
 int main(void)
 {
     const uint32_t va = 128;
+    check_bound_lookup();
     g_xbox_mem_offset = (ptrdiff_t)memory;
     HLE_MEM32(va + 4) = 0x204000;
     HLE_MEM32(va) = COMMON_TYPE_TEXTURE;

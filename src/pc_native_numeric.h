@@ -3,9 +3,47 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 #include <string.h>
+#include "pc_gpu_ack.h"
+/* Entry callbacks precede this audited US affine-transform fast path. */
+extern int pc_model_transform_entry(void);
+#define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
+#include "pc_native_material.h"
+#include "pc_native_statistics_guest.h"
+#include "pc_native_trap_guest.h"
+#undef RECOMP_AFTER_STORE32
+#define RECOMP_AFTER_STORE32(site,address) \
+    do { PC_GPU_ACK_AFTER_STORE32(site,address); \
+         if((site)==0x1D8BFDu)pc_native_trap_contact_store((uint32_t)(address)); } while(0)
+extern void sub_000D1FD0(void);
+static inline void pc_native_player_statistics(void)
+{ pc_native_statistics_guest(sub_000D1FD0); }
+/* Only these audited US127500 multiplications receive the material pointer
+ * and its already-clamped/scaled forcing register. All original loads/stores,
+ * force sampling, wrapping and procedural resource/event order still execute. */
+static inline float pc_native_material_multiply(uint32_t site,float left,float right,
+                                               uint32_t parameters,float forcing)
+{
+    if(g_tsfp_native_timing_active) {
+        const float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        const float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        const float drag=*(const float *)((uintptr_t)(parameters+0x18u)+g_xbox_mem_offset);
+        PcMaterialMotion c;
+        if(pc_material_motion(raw,game,drag,&c)) {
+            if(site==0x12765Bu)return (float)((double)left*right*c.force_scale);
+            if(site==0x1276FDu || site==0x127705u)return (float)(c.decay*right);
+            unsigned offset=site==0x12773Bu?8:12;
+            float direction=*(const float *)((uintptr_t)(parameters+offset)+g_xbox_mem_offset);
+            double velocity=site==0x12773Bu?right:left;
+            float adjusted=(float)(c.velocity*velocity+c.forcing*direction*forcing);
+            return site==0x12773Bu?left*adjusted:adjusted*right;
+        }
+    }
+    return left*right;
+}
 /* These original integer-to-float reads are continuous motion consumers of
  * the engine delta (animation, particles, camera easing). Native updates use
  * the adjacent fractional delta. Integer arithmetic and counters keep using
@@ -23,13 +61,20 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
 extern uint32_t pc_native_visual_store(uint32_t site,uint32_t value);
 extern float pc_native_visual_sample(uint32_t value);
 extern float pc_native_weapon_sway(float original);
+extern uint32_t pc_native_demo_cursor_reset(uint32_t value);
+extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
 /* Observe only the level clock's direct stores, without changing their
  * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
-    ((address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
+    ((site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
+     (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
+/* Select TRAP's coupled fractional kicks/travel and contact clock together.
+ * Original and whole/catch-up calls retain their authored conversion. */
 #define RECOMP_I32_TO_F32_AT(site,address,value) \
-    (((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
+    ((((site)==0x1D8AF5u || (site)==0x1D8B6Au) && (address)==0x4E7944u) ? \
+     pc_native_trap_ticks((int32_t)(value)) : \
+     ((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
      pc_native_visual_sample((uint32_t)(value)) : RECOMP_I32_TO_F32((address),(value)))
 /* US script dispatcher sub_00228870 uses this load only as a pause gate.
  * At native rates a zero whole tick still contains fractional game time.
@@ -88,6 +133,17 @@ extern float pc_native_weapon_sway(float original);
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
+    /* The rigid-body clock divides its elapsed interval across this many
+     * solver steps. A carried whole count can be zero while time advances.
+     * Split long intervals as well, so each native substep is <= one tick.
+     * The denominator uses this same integer register, not a float hook. */
+    if ((site==0x171FB9u || site==0x17208Eu || site==0x172119u) &&
+        address==0x4E7944u && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if (!(delta>0.f) || !isfinite(delta)) return 0;
+        if (delta<2147483648.f) return (uint32_t)ceilf(delta);
+        return value;
+    }
     /* Animated surfaces cache their procedural-texture dispatch per view.
      * A zero-whole native frame can arrive on a new console vblank and cache
      * a no-op; the following whole tick then sees that same vblank and loses
@@ -103,7 +159,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * The procedural-texture dispatcher likewise must not evolve its image
      * during a zero-float pause; its gate register is replaced by a render-
      * state return value before use. Positive intervals stay original. */
-    if ((site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
+    if(site==0x1D8AB0u && address==0x4E7944u && pc_native_trap_fraction()>0.f)return 1;
+    /* TRAP and player-statistics clocks freeze when a local pause leaves
+     * stale whole ticks. Whole/catch-up TRAP calls keep their original gate. */
+    if ((site == 0xD2079u || site == 0x1D8AB0u || site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
         return 0;
@@ -111,12 +170,43 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0)
         return 1;
-    if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Vehicle chase camera CA040 integrates the averaged physics interval.
+     * Its entry gate otherwise drops fractional time. CA424 chooses five
+     * spring substeps per carried tick and divides the live duration among
+     * them; supply one group when advancing time has no whole tick. Keep
+     * original/multi-tick groups intact, and never divide by zero. */
+    if (site == 0xCA424u && address == 0x4E7944u &&
+        g_tsfp_native_timing_active) {
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        return game>0.f ? (value ? value : 1u) : 0u;
+    }
+    /* Driver dispatch must replenish throttle/brake inputs on every vehicle
+     * update: 17E680 consumes and clears them even on fractional frames.
+     * 17DA03 is only an entry gate; its EAX is overwritten before use.
+     * Contact gate 166899 likewise only guards converting a character's
+     * displacement to velocity. Its temporary EDI is restored immediately;
+     * the conversion already divides by the live fractional game interval.
+     * Spawn gate 172AB5 similarly guards joint-displacement inheritance:
+     * skipping a fractional spawn permanently loses its initial motion.
+     * EAX is overwritten, and 172B01 already divides by live game time. */
+    /* Character-effect dispatch 1260C0 gates attached-effect timers and
+     * transforms which already consume fractional time. Its EAX is replaced
+     * before use by the effect flags; skipping subticks loses elapsed time. */
+    /* The reload/mode input consumer compares the whole tick directly.
+     * Press edges expire after this update, so an advancing fractional frame
+     * must enter it too. Its animation timer already uses fractional time. */
+    /* TREE callback 1D88B0 advances its phase with the live float delta and
+     * derives its pose from that phase. Its gate otherwise discards subticks.
+     * EAX is replaced by the entity state before use; event crossings, clamp
+     * and retirement still belong to the original routine. */
+    if ((site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
+         site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
-         site == 0x2B93DAu || site == 0x14A5CDu) &&
+         site == 0x2B93DAu || site == 0x14A5CDu || site == 0x17E6C3u ||
+         site == 0x17DA03u || site == 0x166899u || site == 0x172AB5u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -133,8 +223,10 @@ static inline int pc_native_float_branch(uint32_t site, int taken)
     return taken;
 }
 extern int pc_native_rocking_branch(uint32_t site,int taken);
+extern int pc_native_walk_accept_clear_slide(void);
 #define RECOMP_FLOAT_BRANCH_AT(site, taken) \
-    (((site)==0xA8526u || (site)==0xA86C0u) ? \
+    ((site)==0xC596Cu ? ((taken) || pc_native_walk_accept_clear_slide()) : \
+    ((site)==0xA8526u || (site)==0xA86C0u) ? \
     pc_native_rocking_branch((uint32_t)(site),pc_native_float_branch((uint32_t)(site),(taken))) : (taken))
 extern uint32_t pc_native_rocking_gate(uint32_t site,uint32_t value);
 extern float pc_native_rocking_add(uint32_t site,float left,float right);
@@ -192,6 +284,17 @@ static inline float pc_native_force_add(float force,float velocity)
     }
     return force+velocity;
 }
+/* 171560 sums eight secondary steps of primary/8. A rounded sum just below
+ * primary otherwise takes a ninth step (12.5% extra time). Snap only within
+ * the float addition error bound at the eighth boundary; Original 60 and
+ * genuine intermediate sums retain their exact arithmetic. */
+static inline float pc_native_physics_elapsed(float elapsed,float step)
+{
+    float sum=elapsed+step,full=step*8.f;
+    if(g_tsfp_native_timing_active && step>0.f && isfinite(full) &&
+       fabsf(sum-full)<=full*(4.f*FLT_EPSILON))return full;
+    return sum;
+}
 /* Escort recovery is dispatched once per match update, even on zero game
  * ticks. Preserve its original wall-time rate and one-charge catch-up cap;
  * the match dispatcher owns pause and the five-game-second recovery delay. */
@@ -204,11 +307,14 @@ static inline float pc_native_boost_recover(float left,float charge)
     return left+charge;
 }
 #define RECOMP_F32_ADD_AT(site,left,right) \
-    (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
+    ((site)==0x1D8B46u ? pc_native_trap_force((float)(left),(float)(right)) : \
+    (site)==0x1D8B7Au ? pc_native_trap_travel((float)(left),(float)(right),g_esi) : \
+    ((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
     pc_native_hit_add((float)(left),(float)(right)) : \
     (site)==0xD4853u ? pc_native_force_add((float)(left),(float)(right)) : \
     (site)==0x6552Du ? pc_native_boost_recover((float)(left),(float)(right)) : \
     (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
+    (site)==0x17164Fu ? pc_native_physics_elapsed((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
 /* The mode-0x11 movement boost subtracts one fixed resource charge per
@@ -230,7 +336,8 @@ static inline float pc_native_boost_drain(float left,float charge)
     (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
+    ((site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
+    (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
@@ -240,6 +347,11 @@ extern uint32_t pc_native_kind35_gate(uint32_t value);
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* The old physics clock averages fifteen rendered-frame deltas, but only
+     * runs on whole ticks. Native simulation consumes this frame's elapsed
+     * time directly; the three count loads above partition that exact span. */
+    if (site==0x172099u && g_tsfp_native_timing_active)
+        right=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
     /* Airborne player paths relax the view-height offset by 0.8 per original
      * update, including at slow game speed. Split that factor in raw time;
      * using game time would change the original slow-motion response. The
@@ -267,14 +379,17 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
             return fminf(high,fmaxf(low,left*powf(right,exponent)));
         }
     }
-    /* The player aim/weapon-offset easing already multiplies the error by
-     * game delta before these six coefficient multiplies. Linear subdivision
+    /* Player aim/weapon-offset and vehicle steering easing multiply the error
+     * by game delta before these coefficient multiplies. Linear subdivision
      * changes its settling rate. Match the original 60-Hz response at the
      * current game speed: scale the authored weight to one raw tick, then
      * split its remaining-error factor over this fractional raw interval.
+     * Vehicle 17306A uses 0.07 after the steering error's time multiply;
+     * leave its speed-dependent target and wheel distribution unchanged.
      * Keep whole/catch-up updates and the original snap branches unchanged. */
     if ((site == 0x25ABCEu || site == 0x25AC1Eu || site == 0x25AC80u ||
-         site == 0x25ACCAu || site == 0x25B13Cu || site == 0x25B16Du) &&
+         site == 0x25ACCAu || site == 0x25B13Cu || site == 0x25B16Du ||
+         site == 0x17306Au) &&
         g_tsfp_native_timing_active) {
         float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
         float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
@@ -299,8 +414,14 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
 }
 /* Smooth only the final visual sway value passed to weapon updates. Keep the
  * integer sine crossing and its random-amplitude event unchanged. */
+extern float pc_native_demo_timer_multiply(uint32_t site,float left,float right);
 #define RECOMP_F32_MUL_AT(site, left, right) \
-    ((site)==0x1C4539u && g_tsfp_native_timing_active ? \
+    (((site)==0x12765Bu || (site)==0x1276FDu || (site)==0x127705u || \
+      (site)==0x12773Bu || (site)==0x127791u) ? \
+     pc_native_material_multiply((uint32_t)(site),(float)(left),(float)(right),g_edi,g_xmm4.f[0]) : \
+     ((site)==0x433E2u || (site)==0x43473u) ? \
+     pc_native_demo_timer_multiply((uint32_t)(site),(float)(left),(float)(right)) : \
+     (site)==0x1C4539u && g_tsfp_native_timing_active ? \
      pc_native_weapon_sway((float)(left))*(float)(right) : \
      pc_native_multiply((uint32_t)(site), (float)(left), (float)(right)))
 /* Scripted camera direction closes 1 / remaining_ticks of the angular gap
@@ -311,6 +432,13 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
  * and negative cases copy the target directly without reaching this divide. */
 static inline float pc_native_divide(uint32_t site, float left, float right)
 {
+    /* Entity post-update A7360 already normalizes +F8/+FC/+100 to movement
+     * per authored tick. The vehicle's actor-contact callback converts that
+     * velocity to units/second; dividing by the event interval again made
+     * carried-tick contacts stronger than intervening fractional contacts.
+     * Preserve callback cadence and the original-mode conversion. */
+    if (site == 0x17CBD6u && g_tsfp_native_timing_active)
+        return left;
     /* Track blending uses an integer keyframe span. The original float delta
      * matched it; fractional catch-up no longer does. Normalize by the span
      * actually selected at 0xCD851, retaining the original multi-tick path. */
@@ -339,6 +467,15 @@ extern float pc_native_kind35_turn(float value);
  * carried whole ticks; skipped decisions do not advance the shared RNG. */
 static inline uint32_t pc_native_push_imm(uint32_t site,uint32_t value)
 {
+    /* Vehicle adjustment: one authored step per original live update, capped
+     * at one even for catch-up/fast game speed; slow motion uses game time. */
+    if (site==0x17E6ECu && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        float factor;memcpy(&factor,&value,sizeof factor);
+        factor*=raw>0.f && game>0.f ? fminf(1.f,fminf(raw,game)) : 0.f;
+        memcpy(&value,&factor,sizeof value);
+    }
     if (site==0x2B963Fu && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
         if (delta!=1.0f) {
@@ -359,13 +496,53 @@ static inline int pc_native_skip_aim_random(void)
 /* Test the constant site outside the helper so other calls remain direct,
  * including on compilers that decline to inline function-pointer helpers. */
 #define RECOMP_PUSH_IMM_U32_AT(site,value) \
-    ((site)==0x2B963Fu ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+    (((site)==0x2B963Fu || (site)==0x17E6ECu) ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+/* Vehicle rest (176673 MOV) and rigid-body sleep (171F83 memory DEC) still
+ * decrement integer bytes. Compensate only their load on intervals without
+ * an authored tick; the byte DEC then retains the stored count. Its actual
+ * stored result feeds the generated flags (rigid-body sleep consumes ZF).
+ * At fast game speed the original updater runs at raw 60-Hz cadence; at
+ * slow speed it runs on game ticks. Do not intersect the two carried clocks,
+ * whose phases can diverge across pauses. Existing expired values stay due. */
+static inline uint32_t pc_native_load_u8(uint32_t site,uint32_t value)
+{
+    if ((site==0x176673u || site==0x171F83u) && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        uint32_t address=game<raw ? 0x4E7944u : 0x4E7940u;
+        if (!(game>0.f) || !*(const uint32_t *)((uintptr_t)address+g_xbox_mem_offset))
+            return (value+1u)&255u;
+    }
+    return value;
+}
+#define RECOMP_LOAD_U8_AT(site,value) \
+    (((site)==0x176673u || (site)==0x171F83u) ? \
+     pc_native_load_u8((site),(uint32_t)(value)) : (uint32_t)(value))
+extern void pc_native_character_scale(void);
+extern int pc_native_character_trace_requested(void);
+extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
+extern void pc_native_physics_solver(void),pc_native_physics_random(void);
+extern int pc_native_walk_trace_requested(void);
+extern int pc_native_walk_collision_requested(void),pc_native_walk_sweep_requested(void);
+extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
+#define PC_NATIVE_WALK_CALLEE(site,function) \
+    ((site)==0xC5AD6u && pc_native_walk_collision_requested() ? pc_native_walk_collision : \
+    (((site)==0xC55E6u || (site)==0xC5668u || (site)==0xC577Cu || \
+      (site)==0xC58ABu || (site)==0xC5259u || (site)==0xC5283u || (site)==0xC4B68u) && \
+      pc_native_walk_sweep_requested()) ? pc_native_walk_sweep : (function))
+#define PC_NATIVE_PHYSICS_CALLEE(site,function) \
+    ((site)==0x172114u ? pc_native_physics_solver : \
+    ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0xF0CA7u ? pc_native_kind35_target : \
+    ((site)==0xD2CB7u ? pc_native_player_statistics : \
+    (site)==0x120BBFu ? pc_native_character_scale : \
+    ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
+    (site)==0xF0CA7u ? pc_native_kind35_target : \
     ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
      (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \
-    ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : (function))
+    ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : \
+    PC_NATIVE_WALK_CALLEE(site,PC_NATIVE_PHYSICS_CALLEE(site,function)))
 #endif

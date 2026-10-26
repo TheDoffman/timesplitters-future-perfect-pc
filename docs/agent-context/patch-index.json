@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "241490fd61e8a128ede2e35bc2698c4f61b0944998c01b5ef8aac74cbbf1bf43",
+  "loaderSha256": "e00e04af4574b2177104c11260e17f8b4d9034ddfaf49b468f5edbfaf3911b6e",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -11,10 +11,30 @@
       ]
     },
     {
+      "name": "dsound-output-headroom.patch",
+      "sha256": "fbecc56980dbb1bfcad954290bdfced1eea75746e7a99d6ef312cac32d633df2",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp"
+      ]
+    },
+    {
       "name": "dsound-stream-lifecycle.patch",
       "sha256": "60a2605a7f37ec583e522b5c0442ac6c5613f68101c071a590a44c41193bbdc7",
       "targets": [
         "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
+      "name": "gpu-pfb-flush-ack.patch",
+      "sha256": "57e2b78f8c7735ecc0d08f25e8c0f6c8b5bd4172243bdab4d5dac3970a79d7df",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h",
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py"
       ]
     },
     {
@@ -141,6 +161,20 @@
       ]
     },
     {
+      "name": "texture-upload-streaming.patch",
+      "sha256": "b24c42f30f2fd87286aa65ac149ee38b7ced762cd3c15c2ff24b3033096b86f0",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
+      "name": "trace-filter-disabled-scan.patch",
+      "sha256": "8599c1a44b4ad15260513a71353ff18b3b4d99da2693272584827949ef94cb0a",
+      "targets": [
+        "src/kernel/recomp_trace.c"
+      ]
+    },
+    {
       "name": "zz-pc-network.patch",
       "sha256": "ef7f95291d224cc90533c04ba04edf06d32278479756d9b79a29f9fc5489c821",
       "targets": [
@@ -178,6 +212,41 @@
       ]
     },
     {
+      "name": "zz-pushbuffer-diagnostic-policy.patch",
+      "sha256": "7b6c4d99c3b1f470ead7866dad84c49c1bdf60e98b9409776d137af2f9812e24",
+      "targets": [
+        "src/kernel/nv2a_pb_scan.c"
+      ]
+    },
+    {
+      "name": "zz-sampler-caller-depth.patch",
+      "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
+      "targets": [
+        "src/kernel/recomp_sample.c"
+      ]
+    },
+    {
+      "name": "zz-shader-source-lookup.patch",
+      "sha256": "d643a9d35f288f6ffb82db34c654a5d798afc533277d11ae65c6b66234fcf0e1",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "zz-strided-vertex-copy.patch",
+      "sha256": "ed32291d77d8afca9e71c47505dfb176941c98def32250a3543997c6dd0fa283",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zz-texel-sample-lanes.patch",
+      "sha256": "a88ff19bcf29efbc9bc5f7d0be71ea47f7ca38edc1cdb6960d80adc5e9549e2a",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
       "name": "zzz-mac-renderer.patch",
       "sha256": "e0aeb83038f92d837f4cf6d010f5eca7d0f608c7f9cef0dd1f44920022dbee74",
       "targets": [
@@ -194,6 +263,13 @@
         "src/hle/hle_d3d8_state.c",
         "src/hle/hle_d3d8_texture.c",
         "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zzzz-global-compare-load.patch",
+      "sha256": "fad5684ca9c16bdb143063e9075957103a7b6e6ca821c57e9b1fc038497a174e",
+      "targets": [
+        "tools/recomp/lifter.py"
       ]
     },
     {
@@ -832,6 +908,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-text-panel-scope.patch",
+      "sha256": "12bee5ce031652ca52ea1ae6b85132ba13ec8ffd4449ff63f70852cfed979aff",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-replay.patch",
       "sha256": "50d4b55ae7b955eb00fbd3e734f39fed3322d6c8a7bac6925747fc84c9a720a8",
       "targets": [
@@ -1018,6 +1101,13 @@
       "sha256": "d63496f657730f3e854eb3723808912f882efe7706aaa41c706f5b66ae267bfe",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-controller-profile-routing.patch",
+      "sha256": "bdf7c9c5010ba2e1e50fdcf3867a57cdb2b01fd28a32be105c67b112bd59448b",
+      "targets": [
+        "src/input/input_bindings.c"
       ]
     },
     {
@@ -1334,6 +1424,15 @@
       ]
     },
     {
+      "name": "zzzz-native-vehicle-physics.patch",
+      "sha256": "b569546c0f46f0d36e508b412c96b1bca3fbb8089adc128900e168a48eaee228",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-surface-live.patch",
       "sha256": "db83501d3f08446e7d9cc7f54e0eed3f1797293b21be2947640b7756c1cab396",
       "targets": [
@@ -1354,6 +1453,87 @@
         "src/hle/hle_d3d8.c",
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "zz-native-surface-capture.patch",
+      "sha256": "7ee3d1a062600a9d8e6ce7b3504aeeef6411270042ce9f209ff5c3cc36a3cdb5",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-native-surface-render.patch",
+      "sha256": "730daaec33b28497ce63b88ba223d200b498e1dbbc72eeda23b19108912f8c48",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_internal.h",
+        "src/d3d/d3d8_resources.c",
+        "src/hle/hle_d3d8_texture.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-native-trace-quiet.patch",
+      "sha256": "7766d9430ae33f7c3535937559a324784352f9535a13674a43024306d5a5275a",
+      "targets": [
+        "src/kernel/recomp_trace.c"
+      ]
+    },
+    {
+      "name": "zz-native-demo-timing.patch",
+      "sha256": "8737f59c9623e28300ab75ec41209f77b0976f28d6215ebd04539ce0883e77c6",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zz-texture-bind-scan.patch",
+      "sha256": "3d0d8f0856b07d0e9906fe576d1c2881c8a9524aa79d9849f9682f5c035c2c24",
+      "targets": [
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zz-keyboard-reload-buffer.patch",
+      "sha256": "5ab49667e0661962fffbbdcfb98478705d84b0eaebc4ab4faaf4c990524e0be9",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "zz-model-transform-entry.patch",
+      "sha256": "2ec16f2b7b176e1a542e49dd648f830dbfb50b1fd8f54ad37b287f184d360d45",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "zz-zero-base-indices.patch",
+      "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-temporal-uplink-map.patch",
+      "sha256": "42b03d3b0f05e5db7342700d8fe9a5bb8983acd4d43c72a1660bace14d295a03",
+      "targets": [
+        "src/d3d/d3d8_screencopy.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-radial-stick-deadzone.patch",
+      "sha256": "6719d10e202746e0d5d7f29ed418f63bcc1b0ecb610ffbd9f5691eb2de43675e",
+      "targets": [
+        "src/input/input_bindings.c"
       ]
     }
   ]

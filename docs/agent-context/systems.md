@@ -1,293 +1,6 @@
 # Subsystem entry points
 
-Original Story25A420 puts human actors on team1, but the ordinary33ACB0 network
-pump overwrites them from per-controller Arcade team data. The shared Story
-team adapter normalizes that D7550 call for validated human pool slots.
-D7570 also writes slot+1 directly while initializing remote bodies. Initial
-construction precedes the eligible setter scope, so initialization wrappers
-alone did not correct remote teams. The existing Story frame adapter validates
-real body/context/pool backlinks and calls the original setter for a human
-whose team differs from1, before NPC updates. This keeps derived team color
-consistent and never changes controller ownership or NPC assignments.
-NPC factions, lobby colors, other team callers and other modes remain original.
-Original-US and source contracts bind the intended caller and shared-team value;
-The latest Windows four-peer probe confirms all four human teams are1 on every peer.
-
-NPC pose replication uses the shared numeric `PcCharacterPose` model in
-`src/pc_character_pose.h`. Bot snapshots retain their existing binary layout;
-the shared collector/validator and `pc_character_pose_present` handle primary
-clips, crossfades, overlays and blend channels for both bot and Story replicas.
-The internal Story SNP2 snapshot is372 bytes, including optional pose and hit
-bounds. Original353990 has a256-byte outgoing stack buffer, so it is transported
-as164-byte physical and240-byte pose messages, with match/slot/sequence and a
-shared checksum. Guests assemble complete matching parts before applying pose
-state; absence needs only the physical message. Missing/reordered or mixed
-parts cannot cause partial state application.
-Guests retain local model/asset/bone handles, strip already-applied root-motion
-flags, evaluate valid replicas without advancing a second animation simulation,
-and restore authoritative bounds after local evaluation. The replica guard
-checks match, slot, entity backlink and spawn generation for all32 actor slots.
-Only the host runs Story NPC scripts. Expanded sender scratch spans are checked
-and the wire magic/length distinguishes the new snapshot from SNP1. Source
-checks pass; changed four-peer pose/combat runtime acceptance is pending.
-
-Opt-in Story hit tracing composes with the existingBB6C0 damage wrapper. It
-records only valid human-source/NPC-victim pairs, original replay state, network
-ID, damage and health before/after, up to128 observations. The original damage
-body executes once with its original result/stack behavior; tracing changes no
-health, ownership or hit routing. Disabled/non-Story paths remain untouched.
-
-The first-level handoffs award pistol25/eight magazines and rifle32/six
-magazines through original1BA2B0/1BFCA0.
-`pc_story_loadout.inc` observes that actual host event and sends a versioned
-pointer-free loadout command to remote humans, through the existing reliable
-Story channel. Each guest waits for a ready, locally owned context and invokes
-the original ammo/inventory/select APIs on its own actor. Host identity,
-match generation, recipient mask and bounded authored values are validated.
-Replicated NPC animation must not execute the guest218910/21B540 inventory
-callbacks again. Those callbacks are host-only in this scope. Separate pending
-commands and per-weapon replay tracking preserve both awards, including for the
-original co-op guest and two-player sessions, without refilling an owned weapon.
-Periodic resend recovers readiness races; per-slot generation/serial tracking
-prevents refill on replay. Existing inventory and weapon selection are retained
-when the grant already exists. Local/Arcade/native fallbacks remain original.
-The changed Windows four-peer probe passes: each player receives weapon14 with
-16 loaded/112 reserve rounds, moves independently, and consumes three rounds
-when firing. Peer actor positions remain consistent; combat hits, NPC/world
-interaction and restart/next-level behavior require separate acceptance.
-
-First-level starts: stockCF060 can select later scene pads during remote setup,
-including for original co-op slot1. Before the first checkpoint, Online Story
-uses authored first-player/second-player pads1f40/1f62 and extra signed16
-indices7f02/7f03. The pad/tag/inverse-index
-adapters resolve private32-byte copies of the authored1f40 primary start, offset
-by minus/plus2 world units onX. Original coordinates, room and heading remain
-otherwise intact, and the original player placement/collision and spawn packet
-run normally. The original read-only25EE60(0) checkpoint predicate ends the opening override;
-a first active body alone does not establish that network setup has finished.
-Checkpoint selection stays original. Cached initial packets resolve locally; Local Story and other scenes are unchanged. The changed Windows four-peer probe confirmed matching starts four units apart,
-health35 and subsequent three/four-unit bounded movement by both extra humans.
-The later loadout adapter supplies the authored grant to the added humans, as
-verified by the four-peer opening/movement/ammo probe described above.
-
-Story NPC creation is separate from controller membership. The stock spawn RPC
-only names a slot and assumes its body already exists; the first restored Story
-spawn run reached NPC scripts but crashed guests on a null slot. Shared
-`pc_story_npc.inc` records scalar constructor identity and replaces that NPC-only
-pre-spawn notification with a host-authored post-spawn creation/state message
-on the original reliable channel. Guests construct through original DAC30,
-retain local pointers, apply identity/team/initial physical state and roster
-membership, and leave Story script simulation to the host. Messages carry no
-guest pointers; host identity, generation, sequence, slot, loaded character kind
-and finite scalar values are checked. Early arrivals queue until scene readiness.
-The first changed four-peer run constructed NPCs on all guests without the old
-null-body crash, but the host first spawn preceded guest readiness and later
-script roster changes were missing. The frame adapter now republishes recorded
-NPC state every six simulation ticks through the reliable channel, including
-absence and current roster membership. Same-tick calls do not retransmit; only
-the host publishes. This supplies creation recovery and ongoing physical state;
-The changed Windows four-peer probe retained the same NPC identities on every
-peer, recovered the early body and reflected its later removal; sampled NPC
-positions differed by at most0.012 game units. Full NPC animation/combat/world acceptance remains unverified. Human starts
-and four-player firearm handoff now pass their separate changed runtime probe.
-
-Story NPC activity: Local spawn stacks establish D8E30 ->15EAE0 ->27F8E0 ->
-15F8C0 at the opening. D8E30 first calls3568C0 fromD8E5D; its ordinary network
-path rejects every actor without a controller record. `pc_story_network_actor_active`
-accepts only that caller's valid non-player Story actor, with matching pool index,
-entity backlink and no player context. It leaves controller enumeration, humans,
-other modes and the later original358560 host-ownership gate unchanged. The changed runtime reaches host NPC scripts and spawns; its four-peer
-physical-state acceptance is described above.
-The caller supplies its actual entity from original D8E30's EBX register. This
-also accepts a dormant script actor whose pooled active-body pointer is0, while
-rejecting a prototype that refers to a different active body. An inactive script
-must be allowed to run before it can create its first body.
-
-NPC lifecycle tracing can also observe the original offline Story path when
-both `TSFP_STORY_TRACE` and `TSFP_STORY_TRACE_LOCAL` are explicitly set. The Local
-path additionally requires network disabled, active Story mode4 and rule10.
-Scripted spawn observations include bounded numeric guest return candidates
-from128 stack bytes, to locate its original activation path. No Local behavior
-changes; ordinary launches do not enable this diagnostic.
-
-NPC initialization investigation: the paired scene setup matches the Local
-reference (budget index8/count5, model record count26). `pc_story_network_npc_trace`
-separately observes model-cache creation, character-list setup, scripted spawn
-and its stock network request/replay gate, with independent eight-call budgets.
-It retains original behavior and return/stack effects. This distinguishes missing
-resources, allocation failure and rejected spawn events; no NPC fix is claimed.
-The changed lifecycle run observes all five D73B0 cache calls returning1 and the
-bootstrap returning, while the host never enters15F8C0/35CF80 through the opening
-timeout. This points investigation upstream of scripted spawn requests. The
-scene's placed-NPC count at setup+30 is0 Online; its Local value is not yet
-measured, so that value alone does not establish a missing scene record.
-
-The opt-in authored-record startup trace emits at most24 observations per
-process for records with network/count masks, recording caller, active scene/
-flags/count, normalization and original predicate result. It observes both
-adapted and rejected guard paths, with no second predicate execution. The first
-authored-record runtime probe still had no NPC/firearm handoff after60s; the
-remaining initialization gate is unresolved.
-
-Story authored records: original6B100 rejects bit31 in network matches, and its
-00400000 co-op mask requires exactly two contexts. `pc_story_network_asset`
-adapts these inputs for connected Story gameplay with up to four players, without
-changing global player counts or difficulty checks. The argument is restored
-after the original predicate; masks for solo-only records remain restrictive.
-The preceding four-peer handoff fix kept all contexts alive/stage1 for60s, but
-only four human characters existed and every player remained unarmed. Source
-tests verify the new filter; NPC/opening acceptance still needs a changed build.
-
-Story movie handoff: original class3B receiver352BC0 invokes GO2D38C0 on a
-changed generation while still in phase15, before switching to10. The guest
-pending-copy call2D398D is accepted only during an active Story intro, so its
-selected mission/difficulty/stage and pending spawn token advance with the host.
-The first natural four-peer intro reached gameplay on all peers, but guest stage
-stayed0 and opening failed before this correction; combat remains unverified.
-The ready adapter also skips original357540's Arcade staging-pad/body loop for
-a pending Story gameplay start. That loop explicitly replaces each cached pad
-with original6C1E0's team selection. Original Story scripts and the pending
-context adapter retain responsibility for authored starts; later ready calls,
-ordinary multiplayer and native fallback retain original behavior.
-
-Initialization/spawn calls D2FD0/D3C50/D2CE0/D50E0 made during script suspension
-now share the bounded script-state trace. This separately observes the original
-context reset path after phase15, without changing ownership or state writes.
-The source fixture checks that the original reset still executes and retains
-the suspension flag and return/stack effects. Runtime cause remains unverified.
-A separate bounded pad-source diagnostic records CF060 input cache1504,
-random-selection switch6B988C, original pad result and caller before fallback.
-It distinguishes network-provided pads from the authored Story selection; no
-selection policy changes are implied by this diagnostic.
-
-`pc_story_network_script_trace` observes original D4B00/D4BE0 directly because
-their script suspension writes bypass D2CE0. It retains the original call and
-side effects, records peer/caller/context/result before and after, and limits
-opt-in output to 32 calls independently of startup tracing. No script state is
-forced, replicated or suppressed by this diagnostic.
-The changed four-peer run recorded D4B00 from caller1E4B9B on every peer at
-different ticks, suspending each local context. No D4BE0 restore appeared through
-a further 20 seconds. Host context 0 changed from 256 to 2 as remote contexts
-initialized, while guest-owned contexts stayed 256. The reset writer remains
-unresolved; no script-control or world-synchronization fix is claimed.
-
-Story rule10's original CF060 selector returns -1 when the player index exceeds
-the valid authored starts. `pc_story_network_spawn_pad` preserves valid results;
-for connected Story slots 2/3 only, an explicit -1 retries the original selector
-with a scoped first-player lookup index, then restores the real context slot.
-This reuses an authored start without changing ownership or copying bodies.
-Source tests cover slot/stack preservation, valid-pad passthrough and non-Story
-and lobby guards. A changed four-instance run observed missing starts for slots
-2/3 resolving to authored pad D9 and all players placed in the start area. It
-still failed before movement because one peer retained script flag 02000000.
-Original D4B00 sets that flag and writes context state 256 directly; D4BE0 clears
-it and restores state 2. This bypasses the traced D2CE0 setter. Script authority
-and coordinated suspension/restoration remain unresolved; no flag is forced.
-
-Four-player lobby admission passed, but the first four-player load check failed:
-slot 3 stayed stationary and its owning peer changed context state 2 to 256 at
-tick 14. Firing was not reached. The opt-in Story trace separately observes up
-to eight original D2CE0 requests for state 256, including caller/context/result,
-because repeated preparation exhausted the generic sixteen-observation budget.
-This trace calls the original setter unchanged; its cause remains unresolved.
-A changed trace build then passed four-player load/movement with matching
-positions and active contexts, without reproducing state 256. This does not fix
-the intermittent failure. All four firing-input captures were unarmed views;
-shots, hits and Story world authority remain unverified.
-
-Online Story now publishes host mission/difficulty through the existing reliable
-lobby configuration sender. Publication preserves capacity/ownership header
-bytes; the start adapter normalizes the occupied roster only at GO. Story lobby
-admission uses a four-human limit. Guest descriptor4E99D4/tick1A8F30 shares the
-Story header and own-profile Progress action; guest Y cannot open Options.
-Host Scotland/Hard, guest Progress/Back and removal of the hidden load opt-in
-passed a bounded paired Windows check. Guest footer labels remain wrong despite
-correct Progress routing. Guest readiness now uses original359EB0(0,1) only when local node774028+2FA
-is unready; its A callback is removed. Footer B/X records are applied after the
-original dynamic Ready caption update. The guest footer/Confirm and host GO load were reviewed live; the changed
-pair then failed an inactive second engine context, so gameplay acceptance is
-still unresolved;
-briefing/year/icons, world authority and next-level coordination remain open.
-
-`pc_story_load.inc` adds a typed Story start adapter for an Online Story connection. It validates counts and
-mission records, substitutes scene/difficulty/Cortez and the observed Local
-flags in the host's existing start config, then derives the guest selection from
-that reliable config. `pc_network_bots_guest_config` invokes it before the
-original serializer/pending copy; only the pending-copy function identity may
-activate the per-instance Story mode afterward. The host derives occupied slot extent from the
-original controller roster rather than byte0, which the stock builder left at
-map capacity16 in the failed paired load. Holes, frontend network mode, phase,
-role and local ownership are retained; only the host rewrites the capacity to
-the occupied extent. Guests require the received count within four. Bounded
-opt-in trace reports actual wrapper address/counts. Other connection modes retain their original behavior.
-The first partial-config version reached both pending-load hooks but crashed in
-`sub_0008DC70`; exact matching dumps are recorded in the investigation receipt.
-The current direct-load variant calls the original Story stage builder
-`sub_00065940(config)` once on the host at lobby phase11 with stage1 and scoped
-frontend mode4/mission/difficulty. The earlier `sub_002D2C70` route reset stage0
-internally and built an intro config before the adapter rewrote scene/flags. Before the factory it supplies the original Local Story
-rule10/variant2 selection; mode4's factory reads these fields instead of resetting
-them. Received experimental configs must match this Story rule pair. It restores original guest registers/frontend fields
-and the network header before normalizing counts and selecting direct gameplay.
-Pending phase10 and guests consume that same config without rebuilding/reseeding
-it. Factory runs passed the previously observed loader fault, but both mode14
-and one-view mode4 reached Game Over with health60. The mode choice did not
-explain that failure. Original Local Story additionally supplies rule10/variant2
-before factory construction; the current correction supplies that selection
-before rule-dependent initialization. Runtime acceptance and world/script
-synchronization remain separate requirements. No life/death/pause flags are forced;
-the paired probe still rejects Game Over and requires live cross-observed movement.
-Opt-in `pc_story_failure_trace` wraps the original failure entry points67450,
-66FC0 and main evaluator681C0, plus context init/state D2FD0/D3C50/D2CE0, through
-a separate reproducible patch. It records engine context count and up to four
-context states at+114 (not actor-body health), and
-the guest caller and original state/result changes (bounded16 observations),
-then preserves the original return/side effects. Native/disabled paths remain
-direct pass-through. This identifies the initiating predicate without masking it.
-The opt-in startup adapter `pc_story_network_frame` runs before evaluator681C0.
-Original rule10 bypasses the network state6 spawn loop, leaving both contexts
-inactive after network setup. Once per pending load, at initial state7 with clear
-result flags, the adapter calls original D50E0(context,1) for each context still
-in initial state4 or16. State4 is observed after skipping Arcade ready placement;
-accepting only16 skipped the original spawn entirely. The adapter then runs
-the original evaluator; it never forces health, result or pause flags. Actual
-runtime activation, ownership and full-view behavior still require validation.
-These host hooks require the Windows Online adapter; shared source provides
-inert native fallback until MAC-013 supplies native XNet transport/session mode.
-
-Story host controls live in `src/pc_story_lobby.inc`, dispatched by
-`pc_display_menu_lookup`. Only connected Story host role 1/lobby phase 11
-overrides the original host tick (descriptor `0x004E99C4`). Y opens the original
-Story level builder with scoped frontend-mode changes. Selection
-stores the mission and explicitly opens difficulty under the captured network
-parent, bypassing the original local selector's frontend/load changes; difficulty
-confirmation stores the host's choice and returns to the captured lobby, bypassing the
-original local-game launch. X opens the local Player Progress descriptor.
-`pc_story_lobby_button` rewrites level/difficulty row callbacks to the existing
-synthetic `STORY_SELECT_CB`, at the verified US row-builder callsites. Its lookup
-dispatches by descriptor/stage. This avoids profile-guided indirect-call guards
-calling the original known callback directly before manual lookup; no generated
-code or new synthetic addresses are needed. Opt-in `TSFP_STORY_TRACE` reports
-row rewriting and mission confirmation for live integration checks.
-Difficulty uses an allocated descriptor and four caption buffers (144 bytes
-total), built through the existing synthetic `STORY_BUILD_CB`. Its custom builder
-creates Easy/Normal/Hard rows and highlights the saved difficulty without changing
-the network frontend mode. Back returns to level selection; confirmation stores
-the difficulty choice and returns to the captured lobby. The original local
-difficulty builder is bypassed; scoping it to mode 4 still returned to the lobby
-in the live probe. Selection/back dispatch recognize the allocated descriptor.
-The host footer keeps its physical action IDs and substitutes Back/Player
-Progress captions. Callback tests cover routing, input preservation, invalid
-choices and mode isolation. Custom difficulty, confirmation and own Progress/Back
-were reviewed in the isolated Windows run recorded in STATUS.md.
-Story choices now live in `story_lobby_mission`/`story_lobby_difficulty`, preserving
-guest frontend fields while the network lobby is active. The host header row's
-draw callback is rewritten to the existing synthetic builder callback; scoped
-lookup invokes the original Story row renderer with the selected mission as a
-temporary row ID, restoring it afterward. Its actual header geometry remains
-unverified. This is an incomplete lobby layer: briefing, guest controls, settings
-replication and Story GO/loading are still outstanding. Native Online remains
-dependent on MAC-013's transport adapter.
+See [systems-details](systems-details.md) for detailed adapter contracts and validation routes.
 
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
@@ -295,6 +8,11 @@ Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for inpu
 `pc_menu_*`, `pc_ui_layout.h`, `pc_cutscene.h`, `pc_camera.h` for menus/camera;
 `pc_debug_options.def` for the shared debug fields/keys/labels/capabilities;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
+For movement regressions, compare player-position displacement in game as well
+as sampled stick values: the title attenuates diagonals after the binding
+sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
+relative mode is owned by `src/native/input_sdl.c` and should recover from
+focus changes only when gameplay capture was requested.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 
@@ -305,43 +23,116 @@ private source art and original assets stay local. Networking: `src/pc_network*`
 `pc_online*`, runtime HLE/kernel patches and `tools/online.py`. Crash capture:
 `src/pc_crash*`, `pc_hang_policy.h`, runtime crash hooks and launcher diagnostics.
 Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
+`audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
+XAudio applies it once to the master; SDL applies it once per stream. This
+quiets the output at 100% without changing saved Music/Sound sliders, their
+curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
 Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
-| Area | Start here (tracked root unless noted) | Useful checks/docs |
-| --- | --- | --- |
-| Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |
-| Mouse/menu handling | `src/pc_menu_mouse_guest.inc`, `pc_menu_choices.inc`, `pc_menu_sliders.inc`, `pc_menu_team.inc` | `tests/test_menu_mouse.py`, `test_terminal_mouse.py`, `test_ui_layout.py` |
-| Auto-look / camera / cutscene | `src/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
-| Display model and native UI | `src/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/test_pc_display_modes.py`, `test_debug_settings_model.py` |
-| GPU clear / screen copies / sampling | `src/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/shared-platform.md` |
-| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
-| Texture production and audit | `tools/texture-worklist.py`, `tools/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures.md` |
-| System Link / online / bots | `src/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/online.py` | `tests/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
-| Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/test_discord_presence.py`, `test_discord_macos.py` |
-| Saves and profiles | Runtime save-routing patch; `tools/testing_profile.py`, `tools/test-native-mac.py` | `docs/testing-profile.md`, `tests/test_testing_profile.py` |
-| Crash/hang diagnostics | `src/pc_crash.c`, `pc_hang_policy.h`, `tools/crash-symbols.py` | `tests/test_crash_capture.py`, `test_native_crash.py`, `test_crash_symbols.py` |
-| Guest lift/runtime correctness | Runtime `tools/recomp/`, manual hooks, `tools/recomp-generation.py` | `tests/test_recomp_float_joins.py`, `test_recomp_vehicle_joins.py` |
-| Audio/movie startup | Runtime `src/hle/` sound and XMV files | `tests/test_audio_timing.py`, `test_xmv_stop.py` |
+The 2026-10-24 #74 material continuation adds 215 reviewed metal, masonry,
+rock, plaster, carved, granular and wood replacements, bringing the optional
+pack to 2,261 entries. Sanitized DDS/JSON and config/texture-pack.json change
+together; source artwork, prompts and held drafts remain private. Square sources
+are 1254 pixels, downsampled to 1024, 512 or 256; rectangular sources are
+1774x887 or 887x1774, usually downsampled to 512/1024 on the long edge.
+One1774x887 wood source is resampled to2048x1024 for a1024x512 original; this
+is not native4K artwork. RGBA8 preserves
+fine detail when DXT1 loses it. Narrow wood/metal sources are 2169/2170x725 or
+2172x724 padded atlases. The private compiler extracts explicitly reviewed
+regions with at most 1% aspect rounding, then emits exact original 4:1 or 8:1
+outputs, up to 2048 pixels long. Full source dimensions, extraction coordinates
+and resampling remain in private provenance; no native 4K claim.
 
-Names in this table are entry points, not a complete call graph. Read the
-applicable adapter plus one relevant test. Tests may encode historical migration
-or compatibility behavior, so confirm current defaults in root instructions and
-effective source. Preserve unknown/unsupported saved settings across hosts.
+The loader, key mapping, optional-delivery contract, host adapters and164original
+character-icon exclusions remain unchanged. Asset batches use native DDS,
+mip/aspect/alpha/hash, full-pack and decoded2x2 repeat checks. Original-scale
+feature profiles supplement manual review; extrema can select different bevel
+edges, so preserve initial measurements and follow-up evidence. These checks
+cannot establish complete contour equivalence, scene adjacency or final lighting.
 
-Ghost Gun living-actor reveal alignment (#181/#241) is handled by
-`pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
-returning to US caller `0x001232A9` is the final filtered screen-copy composite
-over the actor's projected bounds. In a full widescreen view it uses full-view
-placement, with deferred draws flushed before restoring the surrounding UI
-placement. Guest coordinates, UVs/tint and the five preceding blur passes stay
-unchanged. The separate humanoid ghost composite retains its existing guarded
-call site. Original 4:3 and split-view paths keep their existing behavior.
-`tests/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
-both platform wrappers and a local supported-US-routine check; see build/test
-for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
-native Mac visual validation remains pending under MAC-036.
+Hybrid production separates fixed macro layout from repainted microtexture.
+Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
+Do not downsample defects away, infer approval from classification, or treat
+whole-image brightness as proof of local fidelity. Native original references
+are normally sufficient. Enlarged references and revised prompts have improved
+some corrections, but those are asset-specific results, not a universal recipe.
+
+Narrow source extraction only removes explicitly reviewed atlas padding within
+the compiler's1%aspect tolerance; it cannot fix changed material geometry. Record
+actual source dimensions, crop coordinates, resampling and output format. Keep
+prior full artwork and prompt records for corrections. Confirm counts against
+the original: mistaken prompt counts have occurred for grooves and grid cells.
+
+Temporary outputs stay below256MiB. Retire only reproducible disposable reviews
+or catalog-verified exported originals with resolved-parent and SHA checks;
+preserve source art/provenance and never retry denied cleanup targets. One private
+pack and small public LFS pointers avoid duplicate hydrated copies. Detailed
+historical batch measurements, held reasons and storage audits remain in STATUS.md
+and private hybrid-N validation records; coverage is summarized in docs/textures.md.
+Scene testing remains deferred under the near-completion policy.
+
+Recent batches preserve separate baked-lighting variants and record
+original-scale joint, reflection and region-brightness samples alongside decoded
+repeat review. Measured offsets, uncertain extrema and altered contrast remain
+scene-validation concerns; these samples do not establish full contour parity.
+Detailed batch298-302 acceptances, held reasons, measurements and storage receipts
+remain in STATUS.md and private validation records. The latest batch adds three
+1024-square RGBA8 masonry textures from1254-square sources. Runtime, optional
+delivery and host-adapter contracts are unchanged.
+
+Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
+positive fractional game time for player/NPC effect updates. Its children already
+consume the float delta; dropping subticks delayed attached-effect timers.
+Original mode and zero-time pause retain their behavior. See runtime guide and
+the original-dispatcher fixture for tested versus stubbed nested coverage.
+
+Arcade HUD panels: `pc_display_ui.inc` gives both shared-panel callers
+US12EC8B (RANK) and12EA9B (SCORE) the left anchor. Their original compositor
+retains panel widths, spacing and sliding/fading; mismatched anchors otherwise
+overlap them on widescreen, including Original60. Each full panel flushes before
+placement changes and restores its enclosing placement. Other panel callers,
+4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
+the UI fixture tests both callers and guards, while Mac scenes remain unverified.
+
+Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
+weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
+Input edges follow raw whole ticks; pause can offset those from game whole ticks,
+so the old gate dropped a valid press. Eligibility, binding lookup, animation and
+ammo checks remain original; zero-time pause and Original60 remain unchanged.
+The generic CMP hook is documented in runtime.md. No host-specific adapter.
+Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
+`PcInput`, and read-only US state snapshots in `pc_reload_guest.h`. Win32 and
+SDL publish press/release events under their existing input locks, including
+collapsed down/up events and fresh Fire clicks between samples. The shared
+binding sampler applies action roles from configured keys to keyboard magnitudes
+before merging physical-pad contributions. A short Reload request lasts at
+least 34 ms and expires after 150 ms if the weapon never enters reload state 7.
+Already-held Fire is suppressed until release, reload completion or rejection;
+a fresh Fire press can interrupt. Monotonic press order preserves Fire after
+Reload within one poll, including events with identical clock timestamps.
+Context expires after 100 ms without an eligible
+local-player camera update; menu/capture/focus/controller transitions clear it.
+This does not queue rejected reloads indefinitely or alter ammo/animation logic.
+
+
+`pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
+It checks disjoint/wrap-safe buffers and magnitudes at most2^33, then uses local
+binary32 intermediates with explicit rounding, preserving final GPR/SSE state.
+Overlap/nonfinite/large inputs use the unchanged generated body. Entry callbacks
+precede all reads; no state persists across calls, no host adapter is needed.
+`pc_model_transform_guest.c` includes the generated type header and builds once
+for either host. Fallback NaN result payloads depend on host compiler allocation;
+rejection itself preserves every guest bit and floating-point exception flag.
+
+## Crash breadcrumbs and capture health
+
+See [crash breadcrumbs and capture health](systems-details.md).
+
+## Texture-upload timing diagnostic
+
+See [texture-upload timing diagnostic](systems-details.md).
 
 ## State and data boundaries
 
@@ -366,6 +157,27 @@ with builder `0x001A8DA0` and tick `0x001A8D30`. Its existing Options and charac
 actions still enter the ordinary multiplayer menus. Story lobby replacement is
 pending; a connected bridge is not evidence of Story loading or replication.
 
+The shared `graphics/present_metrics.h` recorder accepts optional
+`TSFP_FRAME_PROFILE_DELAY_MS` (0..600000, default0; malformed values use0).
+Only CSV rows are delayed from the first successful Present. Counters and the
+last-success timestamp keep advancing, preserving skipped/failed gaps without
+turning the startup delay into a false hitch. The 20,000-row cap is unchanged.
+No delay environment lookup occurs without a profile path. Common RHI and native
+GL share this behavior; native Mac execution remains pending (MAC-003).
+
+`pc_auto_look_camera` keeps two fresh `PcGuestRegion` slots for its consecutive
+current-player, player-record and control-setting accesses before the guest call.
+It retains the global's region while visiting high-RAM player data, so settings
+in the first region reuse validation. Bounded misses use `pc_guest_query_span`;
+the complete 0x1504-byte player record remains validated. Windows checks its
+pages in one bounded batch; Mach/full-region results may cover additional fields.
+Read permissions cannot grant writes.
+Snapshots are never consulted after guest execution or
+retained for the next invocation. The original bit-3 save/restore and controller,
+local-slot and menu rules are unchanged. `test_auto_look.py` checks host behavior
+plus real multi-page records, split/read-only maps, expiry and uncached/persistent
+mutations. Controller and menu paths retain their original preference behavior.
+
 Online bot presentation (#222) uses `pc_network_bot_motion.h` from the
 `pc_network_bots_guest_frame` hook. The transport still consumes each validated
 host snapshot once. The guest caches it and updates the displayed body, spatial
@@ -382,23 +194,55 @@ the other animation channels and crossfade controls stay atomic. US `5CEF0`
 can promote the secondary clip during zero-advance evaluation, so mixing fade
 duration/elapsed with another snapshot's clip identity can select an invalid clip.
 
-Camera and perspective corrections use `pc_display_memory.h` to retain one
-OS-validated writable region only after their original guest routine returns.
-The stack-local snapshot expires when the correction returns; no guest calls,
-allocations or protection changes may occur while it is reused. Bounds,
-overflow, read-only and guard/no-access rejection remain enforced. Other
-display/menu validation still uses its existing checks. This avoids repeating
-the VM query for camera, output and source matrices within the same region;
-it does not cache matrices, reduce updates or change projection arithmetic.
-Decal corrections validate the camera and its source matrix before the output
-because the original callers build their temporary output on the guest stack.
-Separate camera/stack regions therefore need two queries, not three.
+The bot score-network adapter admits configured AI at US return site67868,
+using EDI's actor slot in the original round score-limit scan. The stock
+controller-flag filter otherwise skips AI despite valid scores. Limit/team
+calculation and end-of-round authority remain original. Invalid slots, humans,
+disabled networking and native Mac retain fallback (MAC-052). The supported-US
+round routine fixture checks threshold decisions; the Online runner can require
+both peers' completed Results records.
+
+Camera and perspective corrections use `pc_display_memory.h` with a stack-local
+region after the original guest routine returns; no guest calls, allocations or
+protection changes may occur while it is reused. Bounds, overflow, read-only and
+guard/no-access rejection remain enforced. `pc_display_perspective_projection`
+does not re-query its output: supported US `151CF0` writes all 16 floats without
+guest callbacks before returning. Weapon/preview correction therefore needs no
+VM query; decals still validate their camera and source matrix afresh, independent
+of the output's guest-stack region. `pc_guest_span.h` supplies a fresh Windows
+resident-page query for known-size accesses spanning at most four OS pages.
+Every page must be valid/readable; writes require all pages writable. Failed,
+cold, guarded or larger spans fall back to the full-region query. Camera/source pairs can
+reuse that snapshot; different pages need fresh queries. Darwin retains its Mach
+region query. Unbounded string scans still use the full-region API. This avoids
+Windows scanning a large mapped allocation to find its end on each display guard.
+The general `pc_display_menu.c::guest_writable` also delegates to this adapter,
+with a fresh zeroed snapshot on every call, including calls around guest callbacks.
+HUD, viewports, menus and network display helpers retain their requested bounds;
+spans beyond four pages fall back to full-region validation. Darwin uses real
+Mach protection for these calls instead of the compatibility stub's synthetic
+4 KiB writable extent. This does not cache matrices, reduce updates or change
+projection arithmetic. `projection_output.c` checks the real
+US builder's output extent, arithmetic, canaries and stack; generated C stays local.
+
+Discord's `pc_display_menu.c::discord_guest_read` also uses a fresh local bounded
+span for each requested read, including individual string bytes. No permission
+snapshot survives the callback. Decoder fields, one-second sampling cadence,
+event-name cache and IPC submission remain unchanged. Windows resident reads
+avoid full-allocation queries; cold/large reads retain fallback and Mac retains
+Mach validation. `test_discord_presence.py::test_guest_read_memory` executes the
+production callback with real protection changes, exact copied bytes, rejected
+reads leaving output intact, fallback and retained/full-query negative controls.
 
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
 otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,
 suppressing the next case's Fire button. This is test isolation inside
 `tsfp_native_input_test`; ordinary frame/input behavior is unchanged.
+Its Confirm checks use the fixture's two active keyboard slots (E and Space),
+then verify that its retained third entry (Return) stays inactive. The keyboard
+profile parser deliberately caps bindings at two; the test must not require a
+third binding or change the shared parser to satisfy its fixture.
 
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`
 and `config/pc-display.ini` are personal. `private/game` is the single extracted
@@ -419,14 +263,17 @@ symbols, semantics and sanitized measured conclusions instead.
 
 ## Prompt text layout read scopes
 
-`pc_prompt_guest.inc` reads through `pc_prompts_read_region`; the bounded
-thread-local `pc_text_read_scope.h` cache uses existing OS VM query adapters.
+`pc_prompt_guest.inc` scans successive chunks through `pc_prompts_read_region`;
+`pc_prompts_read_span` validates the complete argument frame before dereferencing
+it. The bounded thread-local `pc_text_read_scope.h` cache uses fresh single-page
+Windows queries with full-region fallback; Darwin retains its Mach query.
 It is valid only during synchronous text layout, with no mapping/protection
 changes or event dispatch. Nested scopes retain intervals; the next outer scope
 clears them. Scratch writes still use a fresh protection query.
-The cached interval covers the full OS-validated region, so descending guest
-stack reads and earlier labels in the same mapping reuse one query. It never
-extends beyond that region or survives the outer layout scope.
+Cached intervals cover only the OS-validated page/region. Descending reads reuse
+them only when the requested minimum fits; crossing argument frames query again.
+Strings continue at the next validated chunk, preserving cross-page text. No
+interval extends beyond its bounds or survives the outer layout scope.
 The US outlined-label wrapper (`sub_00041E30`) retains this same scope over
 its four outline draws and foreground pass, then expires it at return.
 Scope wrapping, label construction/drawing and nested prompt measurement use the shared
@@ -448,8 +295,15 @@ and discard queued text on focus loss or owner changes.
 `src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
 character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
 Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
-`0x004D8D78` misses it. The original guest insertion/edit/Done routines retain
-selection replacement, limits and save behavior. Escape queues the owning menu's
+`0x004D8D78` misses it. The callback-row scan reuses one writable OS region only within
+that synchronous traversal (no guest calls), checking every row's bounds and
+querying again on a region change. It expires before dispatch, including nested
+menus; no row identity or permission survives a tick. Large non-keyboard menus
+therefore avoid a VM query per row. `test_menu_text.py` checks descending links,
+query counts, permission expiry, partial/invalid rows and cycles; eager-query and
+stale-region mutations must fail. Windows/Mac use their existing VM adapters.
+Original insertion/edit/Done routines retain selection replacement, limits and
+save behavior. Escape queues the owning menu's
 Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
 is excluded. Supported input follows the original Latin-1 tables; paste and
 arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry
@@ -548,6 +402,33 @@ Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
 in Windows and SDL, with zero-whole positive time, paused stale whole time,
 live return to Original60 and return to on-foot controls. Windows execution
 passes; native SDL self-test execution remains a host validation requirement.
+
+Both adapters now create a local `PcGuestRegion` after input replay/focus gating
+and share it through terminal, mounted and ordinary camera `_in_region` helpers.
+`pc_guest_memory_in_span` reuses bounds/permissions only during that host mouse
+operation, which invokes no guest callbacks or allocation. Every subsequent
+update queries afresh. `pc_camera_mouse_region` seeds the snapshot at the lower
+of the player and FOV field using their known extents (0x118 and 4 bytes).
+Misses use bounded resident-page queries on Windows, or the existing full-region
+fallback/Mach query. Only an actual returned span may cover another field;
+separate pages/maps get individual checks. Region changes and read-to-write checks retain OS validation;
+read access cannot grant writes. Standalone helper entry points create their own
+snapshot. This removes duplicate player queries without retaining memory facts
+across frames or changing motion, capture, terminal clicks or timing policy.
+
+## Player FOV through Zeppelin air lifts (#339)
+
+`gameplay_fov_scale` in `src/pc_display_menu.c` recognizes grounded (2), falling
+(4) and air-lift (0x800) movement. Original US `sub_00225C70` selects 0x800 in
+Zeppelin's four lift cylinders and returns to 4 outside them. Both player-camera
+callers retain the selected FOV; the projection and CPU frustum scale together.
+The scene, camera-owner, story and letterbox guards still apply, and the guest
+weapon lens is not rewritten. The shared hook needs no platform adapter.
+`test_cutscene_letterbox.py` covers lift/ascent/fall/landing, excluded cameras and
+a regression mutation. With the supported local XBE it also executes the original
+lift/state routines and all four region records through the production camera
+hook at default/90-degree FOV and three aspect ratios. The separate
+`test_native_timing.py` player-force fixture checks original exit/landing motion.
 
 ## Unified Video Options and native presets (PR #285)
 
@@ -689,6 +570,16 @@ co-op readiness. The new cinematic-ready adapter runs only original transport
 startup while skipping its gameplay actor loop, restoring all cinematic state
 afterward. Long intro stability and the changed handoff still need validation.
 
+## Frame-rate preset range
+
+`pc_frame_rate_settings.h` and launcher `GameSettings` expose Original60 plus
+120/180/240 Beta. Legacy144 sidecars load as120 without rewriting; direct144
+environment timing remains for regression comparison. `pc_native_rate.h` accepts
+180/240, and `pc_frame_rate_live.inc` publishes their immutable strings at the
+next guest update. Save/apply rollback and the 60-Hz console clock are unchanged.
+The overlay already labels every native target above60 Beta and displays actual
+measured FPS rather than rounding it to the preset interval.
+
 ## Direct keyboard inventory slots
 
 `pc_weapon_slots.def` appends host-only actions after the 24 Xbox controls;
@@ -710,6 +601,13 @@ weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
 
+Controller selection preserves the launcher's keyboard binding map. Shared
+`input_bindings.c` recognizes an explicitly selected pad with keyboard sources
+and no pad sources, then merges pad-only defaults from that selected slot at
+sampling time. Custom pad mappings (including unbound actions), entirely unbound
+profiles and saved keyboard keys remain intact. Focus/modal gating precedes the
+fallback; keyboard mode retains its existing first-free-pad sharing policy.
+
 `pc_keyboard_menu.inc` is included by `pc_display_menu.c`, adding Keyboard and
 Mouse to both main Settings and paused Options. It uses the original menu
 builders, callbacks, highlights and footer navigation. The controller-style
@@ -718,6 +616,14 @@ bindings pages draw a keyboard/mouse diagram with primary/alternate columns;
 `PC_BINDING_SLOTS` is two in the shared model and native dialogs; old keyboard
 profiles use their first two sources without modifying disk until saved.
 Controller profiles keep their existing source capacity.
+
+For gameplay stick axes, the shared binding sampler uses
+`pc_input_radial_axis_magnitude` from `pc_input.c` on both left and right
+sticks. It subtracts the configured deadzone once from the stick's radius,
+then applies one gain to both components. Keyboard WASD still uses the existing
+diagonal magnitude cap; stick halves bound to buttons retain their original
+per-source threshold. This prevents a physical diagonal from losing speed in
+movement or look while preserving custom bindings and both host adapters.
 
 `pc_binding_capture.h` handles opening-input release, capture, final-input
 release, Escape cancellation, focus loss and timeout. `pc_bindings.inc` owns
@@ -770,3 +676,229 @@ interception and drive-dialog handling. The common display fixture executes
 both Story pose preservation and host storage tests after resolving duplicates.
 Main's bot presentation helper remains alongside the separate Story replica path.
 No new OS adapter is introduced; native Online remains limited by MAC-013.
+
+## Experimental coupled water operator
+
+`pc_surface_capture.h` defines the copied original-feedback snapshot and validates
+the guest resource's input/first-pass/output indices and texture records.
+`pc_surface_capture_guest.h` validates mapped memory, calls the original feedback
+once, and submits eligible Scotland samples. `pc_surface_capture_hle.inc` reads
+the existing RHI images at that point in the deferred command stream. It writes
+at most 16 records to the explicitly requested `TSFP_SURFACE_CAPTURE` file,
+normalizes BGRA to RGBA, and stops on unsupported identity/storage or I/O failure.
+No image state is replaced. The older fractional/float experiments disable the
+probe. Each TSWATER1 record contains 23 little-endian metadata words plus three
+128-square RGBA8 images (input, first pass, second pass). GPU readback stalls
+make these diagnostic runs unsuitable for performance claims. Common RHI is
+supported by the source; legacy GL intentionally performs no capture.
+
+`graphics/surface_coupled.h` computes a fractional power of the coupled affine
+velocity/displacement step, anchored to the existing one-tick coefficients.
+`graphics/surface_coupled_shader.h` supplies one shader body with vector-type
+adapters. `graphics/surface_transform_shader.h` supplies separable transforms with an
+explicit axis extent. `graphics/surface_basis.h` owns clamped DCT-II and wrapped
+real Hartley weights and the corresponding diagonal-stencil eigenvalues, bounded
+to 128 texels per axis. The captured game path uses 128x128 **wrap**, so the
+earlier clamped DCT result is only a diagnostic. Texture-load/vector adapters
+remain separate from shared spectral policy. The current
+common-RHI fixture reuses basis/scratch resources and reconstructs the field
+after each fractional update. The production owner/scheduler is described below.
+Restoring coefficients belong to spatial eigenmodes; per-texel matrix powers
+cannot replace the spatial transform. Preserve authored disturbances, smoothing
+and byte storage. Historical float-only candidates and their rejected storage
+comparisons remain in `docs/native-high-refresh-regressions.md`.
+`graphics/surface_state_shader.h` encodes red scratch, green signed velocity plus
+0.5, blue height and alpha height. Effect22 samples alpha cardinal differences;
+constant alpha erases ripple slopes. The native final-view adapter packs this
+height channel too.
+`pc_surface_coupled_forced_step` stores the fractional response to a held forcing
+input in each row's fourth component; `TSFP_SURFACE_FORCED_SHADER` applies that
+input in the same spectral basis. The rounding fixture refreshes the measured
+first-pass residual at authored boundaries. `surface_gradient_shader.h` supplies
+the unclipped linear gradient: subtracting this from actual byte red retains
+both clipping and rounding. Subtracting the already-clipped float shader output
+loses the clipping contribution and fails strong initial impulses.
+`surface_feedback_residual` also includes the second pass's signed acceleration
+clamp after adding the fourth diagonal neighbor. `surface_limit_boundary`
+applies final velocity bounds and the height cap before damping at authored
+boundaries; it does not clip the internal state after every fractional piece.
+`surface_rounding_shader.h` canonicalizes nearby values with original shader
+arithmetic evaluated at that boundary, only within 32 float epsilons. It does
+not predict byte thresholds: a hardware probe found an RTX transition away
+from the ideal half-byte value. The earlier threshold-distance condition missed
+that transition. Larger disagreements remain untouched and detectable; fractional
+frames never use this authored-boundary correction.
+The fixture requires byte initial/persistent state. No runtime scheduler/resource
+owner calls this policy yet. The fixture covers mild/strong initial fields,
+near-limit signed velocities/heights and
+mixed-rate steps, including nonzero-phase switches; actual disturbance shaders,
+full scene saturation coverage and live game scheduling remain acceptance work.
+Original1956A0 dispatches disturbances1953B0, noise1952D0, smoothing1950B0,
+feedback195110, then output195280. Noise effect19/2BE30 uses pixel4BBD30 and
+vertex4BBBF8: immutable A8L8 noise adds into green (ONE/ONE, RGB writes) before
+smoothing. Fixtures retain these shaders at authored boundaries with controlled
+UV offsets; queued splash geometry and runtime RNG/event delivery need live
+acceptance.
+`graphics/surface_interval.h` splits exact host-side intervals into at most four
+pieces (the existing maximum three-tick catch-up can cross four partial pieces).
+Each piece marks authored start/end boundaries; zero elapsed time produces none.
+It consumes `PcNativeStep` metadata without rounding float deltas or resetting
+phase on rate changes. The GPU fixture uses this producer/splitter, including
+a pause during motion. It is not yet a resource owner or an enabled game hook;
+new resources and guest-local time overrides require explicit synchronization.
+`graphics/surface_mode.h` packs each spatial mode's immutable eigenvalue and
+fixed-point data into two float4s. `surface_evolve_shader.h` advances that mode
+using current state, held residual and a delta/scale uniform. Unlike the earlier
+fixture's per-delta coefficient-image cache, varying elapsed time requires only
+a 16-byte buffer update and no coefficient-image allocation/upload. Real,
+repeated and complex roots share this representation; CPU validation covers all
+three and authored GPU trajectories use the complex branch.
+`graphics/surface_gpu.h` now owns the coupled kernel's RHI images/views, shaders,
+buffer and raster/depth/blend states. Create it on the render thread with fixed
+coefficients/extent; begin from full single-mip float state/residual views, then
+advance by each positive fractional piece. Zero time preserves output. Reset
+invalidates the interval and the output accessor until a new begin; destroy before the device. Inputs
+with incompatible storage/shape or hazardous internal aliases are rejected.
+Creation failure unwinds every owned handle. It saves/restores output targets
+and all viewports, including an empty list, and unbinds temporary textures and
+its step buffer. It may leave other draw state changed under the RHI contract.
+The owner executes the GPU fixture trajectories and the opt-in live GPU probe.
+`pc_surface_gpu_begin_bytes` initializes from completed original input/first-pass
+sampled byte views, retaining first-pass clipping/rounding and second-pass
+acceleration saturation. It requires the authored center (128/255) and rejects
+aliases or incompatible storage before drawing. Its unpack/residual shaders and
+temporary residual image are owner-managed; ordinary float input remains supported.
+Original disturbances/smoothing/byte boundaries remain caller-owned.
+`graphics/surface_gpu_cache.h` provides a zero-initialized, render-thread registry
+bounded to the constructor's five resources. It keys owners by resource ID,
+generation, coefficients and four retained RHI image identities. Unchanged draws
+reuse their owner without allocation; replacement is transactional and a full
+registry returns NULL without evicting live entries. Clear before scene/device
+reset and advance generation for in-place reinitialization. Invalid or failed
+requests return NULL, never a stale owner. The opt-in native render hook now uses this registry.
+The ten 128-square float4 images contain 2.5 MiB of pixels per owner; this is not
+a total VRAM or in-game performance measurement.
+`TSFP_SURFACE_GPU_CAPTURE=1` runs the shared kernel on actual GPU views and
+writes fractional/full-tick fields to a `.gpu` sidecar. Its per-sample allocation
+and readback are diagnostic; they do not replace visible water or alter guest
+RNG/events. The persistent gameplay owner is separate. See the coupled-operator
+record in `docs/native-high-refresh-regressions.md` for capture details/limits.
+
+## Background replacement texture reads
+
+`texture_pack_stream.h` owns a shared single-reader queue for common RHI and
+legacy GL. The worker reads/validates DDS data without touching texture owners or
+GPU resources. Submit/cancel/pump run on the renderer thread; release and content
+changes cancel pending owners before reuse. A full 64-slot queue retries when the
+texture is next bound. Two completed payloads and one read bound CPU staging to
+72 MiB; the existing 512-MiB GPU budget and DDS/alpha rules still apply.
+
+Original views remain usable during loading. Each Present pumps at most one
+nonempty payload into GPU resources; F10 switches cached views immediately. The
+GL adapter restores the previous texture binding after upload. Shutdown joins
+the reader; normal cancellation never waits for disk. `TSFP_TEXTURE_STREAMING=0`
+selects the synchronous diagnostic fallback. Per-texture messages now require
+`TSFP_TEXTURE_PACK_TRACE=1`; explicit original dumping remains synchronous.
+
+Classic now defers new replacement requests in both adapters (`pack_checked=3`).
+Binding in Enhanced starts the deferred request; until completion the original
+remains visible. Returning to Classic retains cached replacements and permits
+already submitted requests to finish. Hash/content invalidation, cancellation
+and explicit original dumps still run. Deferred bindings in Classic perform no
+replacement I/O, GPU allocation or repeated trace writes. A `deferred` trace
+records the initial hash only; late activation has zero hash/source-byte fields.
+
+The common renderer pumps from present_resolve, shared by Swap and Present.
+The initial Present-only prototype never delivered replacements in this title;
+its apparent pacing gains are invalid evidence. Actual DDS upload records and
+rendered Enhanced scenes are required alongside queue unit tests.
+
+The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
+setter. Unlike the host toggle, that setter does not emit a mode log line.
+Reopening Video Options reads the effective mode; a pending row label alone is
+not evidence that the change was applied. Texture selection is session-only.
+
+Integration #308/#311: upload timing follows the queued request by value. Only
+the renderer opens/writes/closes the bounded CSV; the worker stamps read times
+in its exclusively owned record and publishes it under the queue lock. Completed
+records measure hash, worker read/validation and renderer image/view creation.
+Total duration includes queue/frame scheduling waits, not GPU completion.
+Cancellation discards the record with the payload; a full queue logs its failed
+attempt and starts a new record on retry. Disabled timing takes no clocks/files.
+
+`pc_surface_native.h` schedules the persistent cosmetic field from exact native
+clock metadata. It begins from post-event/smoothing byte input on authored updates,
+then evolves the remainder and intervening fractional frames. This places the
+cosmetic field one authored tick behind the original completed feedback, retaining
+original event/RNG ordering. It does not add input latency to gameplay. Duplicate
+frames do not advance; missing intervals, changed scopes and new identities wait
+for an authored update. Pause preserves phase. Original60 suspends the clocks and invalidates field
+readiness while retaining bounded GPU owners; constructor/device reset releases
+them. Returning to native waits for an authored boundary before reusing an owner. `pc_surface_native_hle.inc` resolves copied full texture identities,
+uses the five-entry retained-image cache, packs alpha-height through
+`pc_surface_gpu_pack`, and borrows that view only during the original final shader.
+No per-frame readback or queue flush belongs to this path. Older fractional/float/
+live experiments are mutually exclusive. Native Mac common-RHI execution remains
+unverified and legacy GL uses original output. Bounded Windows Scotland captures at 120/144 produce fresh final images on
+partial frames; sustained pacing, broader visual acceptance and Mac remain open.
+
+`pc_surface_gpu_cache_suspend` invalidates every output without freeing images,
+shaders or retained identities. The deferred `hle_d3d8_surface_native_suspend`
+clears the borrowed view and clocks, avoiding shader/resource recreation across
+an Original60 round trip. Original60 still performs no coupled updates. Full
+scene/device cleanup remains distinct. The creation log identifies actual
+new owners; unchanged identity reuse emits no allocation notice.
+
+Native water defaults on for common-RHI 120/144 beta presets; Original60 and
+legacy GL remain original. `pc_surface_native_policy` accepts an explicit
+`TSFP_SURFACE_NATIVE_TEST=0` recovery override and excludes old experiments.
+The HLE adapter latches allocation/shader failure until constructor/device reset,
+so fallback does not retry expensive setup each frame. Cleanup is registered
+before first allocation; empty resets do not alter RHI texture bindings.
+
+## Character status-effect model growth
+
+`pc_native_character_guest.h` normalizes only scale-constructor call120BBF:
+subdivide the one-raw-tick factor at current game speed. Original rotation,
+composition, cleanup and whole/catch-up arithmetic remain intact. The original
+helper fixture covers60..240, slow time, pause, jitter and live switches.
+
+`TSFP_CHARACTER_TRACE` selects126029->120AB0: matrices/deltas/identity/removal,
+validated mappings, cross-frame/scene rejection,8192rows/8MiB cap. Mapping caches
+never span guest execution. Disabled/failed/capped traces keep original callee.
+CPU evidence only; rendering/pacing and physical Mac remain unverified.
+
+## Temporal Uplink map display
+
+The shared HLE screen-copy hook saves Future Perfect's preclear map image
+and supplies its map region to the handheld texture later in the frame.
+Native GL implements the same texture-region transfer in
+`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
+state. The map geometry and gameplay controls remain guest-owned; this adapter
+only transfers the image that the game already drew.
+
+## Forced and damped material scrolling
+
+`pc_native_material.h` splits127500 velocity/travel in raw game time:
+12765Bforce,1276FD/127705drag,12773B/127791UV. Weak drag uses stable limits;
+Original/whole/catch-up/unsupported bases keep old math. Force/clamp, wrapping,
+resources/events, layout and pause stay original. Varying-force/rendered/Mac
+parity remain open; see surface/cache tests and STATUS.
+
+## Scripted object clocks
+
+TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
+Original phase/pose, events, terminal clamp, layout and whole updates remain.
+TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime.
+Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
+for the map, hook composition, rejected candidates and live/Mac acceptance limits.
+
+Statistics: D2CB7 scopes/restores D1FD0 float delta to carried ticks. Time totals
+keep Original addition cadence; distance stays per-frame. D2079 blocks stale
+ticks during pause. Shared helper adds no state/adapter; Original is unchanged.
+
+Story/main integration (2026-10-26): preserved Story adapters with current main
+timing/render/input contracts; 15 menu/Story/guest fixture passes,139 Online/
+context/native timing passes, optimized Windows build/native checks completed.
+The transition runner retains both scenario families and input publication.
+Fresh four-peer acceptance and native Mac Online remain separate.

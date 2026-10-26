@@ -12,6 +12,6 @@ static inline int pc_native_rate(void)
     if (!value || !*value) return 0;
     rate = strtol(value, &end, 10);
     if (*end) return 0;
-    return rate == 60 || rate == 120 || rate == 144 ? (int)rate : 0;
+    return rate == 60 || rate == 120 || rate == 144 || rate == 180 || rate == 240 ? (int)rate : 0;
 }
 #endif
