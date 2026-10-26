@@ -206,6 +206,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-070 | Independent function discovery and metadata | Awaiting validation |
 | MAC-071 | Independent analysis runner and publication | Awaiting validation |
 | MAC-072 | Independent symbol adapter and pipeline driver | Awaiting validation |
+| MAC-073 | Independent function catalog | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5777,6 +5778,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   `--generate`, build and validate isolated Story movement/fire/pause/resume.
 - **Mac implementation and evidence:** Windows results do not establish native
   scanner/generation/gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-073 - Independent function catalog
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production generation classifies measured functions using own
+  decoded evidence. Pointer candidates have separate measured entry blocks;
+  diagnostic categories never fabricate function extents or CRT symbol names.
+- **PC source:** Continuing PR #370;
+  `tools/function_catalog.py`, `function_evidence.py`, `function_categories.py`,
+  `patches/independent-classification.patch`, driver/fingerprint and original tests.
+- **PC validation:** Synthetic bounds, operands, ambiguity, graph and standalone
+  CLI tests; actual generation/build/game evidence recorded in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone implementation, no host-specific
+  classification policy. Tests registered for both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run catalog/evidence/category/fingerprint tests,
+  regenerate with `--generate`, compare executable generation, build and verify
+  isolated Story movement, firing and pause/resume.
+- **Mac implementation and evidence:** Windows checks do not establish Mac
+  generation or gameplay acceptance; see STATUS.md for measured scope.
 
 ## Entry template
 

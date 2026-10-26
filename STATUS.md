@@ -1,3 +1,53 @@
+## Independent function classification (2026-10-26)
+
+Continuing PR #370 from `4121be20`, production generation now calls project
+`function_catalog.py`, `function_evidence.py` and `function_categories.py`.
+The additive compatibility patch replaces eleven upstream module bodies.
+Decoded operands and bounded cross-reference ownership supply evidence;
+source strings, SDK section calls and graph consensus produce diagnostic labels.
+Pointer arrays and measured entry blocks remain separate from known function
+bounds. No CRT symbol identity is inferred from byte prefixes. Translation,
+runtime services and final provenance removal still require substantial work;
+the overall replacement goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **470 passed, 1 skipped in 787.60 seconds** in the combined patch-transition,
+  classifier/analyzer, adapter/driver, import/parser/fingerprint, Mac-tool,
+  isolated-profile and CI-scope suite.
+- **103 focused tests passed in 7.17 seconds**, including 31 new catalog,
+  evidence and category cases, driver/fingerprint tests and input contracts
+  (the latter run 97 existing analyzer consumers in subprocesses).
+- Standalone copied-module execution classifies a synthetic executable without
+  toolkit imports. Original fixtures cover alias/gap ownership, instruction
+  boundaries, decoded operands, narrow stores, pointer-array corroboration,
+  measured entry blocks, numeric-operation evidence, category ambiguity,
+  graph confidence/budgets, distinct source paths, invalid metadata and atomic
+  output/input preservation. A cosine body is not named as integer conversion;
+  a double-width left shift is not named as a right-shift helper.
+- **21 context/backlog checks passed.** Shared tests are registered for both
+  CI hosts. Catalog sources and compatibility entries invalidate generation.
+- Actual supported-US classification retains **15,845 measured functions**,
+  with **481 corroborated pointer arrays** and two scalar initializers.
+  The old 5,269 guessed 32-byte entries are not emitted as discovered functions.
+- All **21 generated C/header files preserve executable content**. Five are
+  byte-identical; sixteen differ only in the single-line category comments.
+  Full Windows build and native checks passed; generation fingerprint current.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; forward
+  movement 11.175 units, ammo 8 to 6, 40 paused samples with frozen simulation,
+  60 resumed samples with advancing ticks, backward movement 6.194 units.
+  Last checkpoint 87.375 seconds, exit 0; no crash artifacts or leftover
+  partitions/lock. Signed profiles unchanged; canonical fixture verified.
+- Tested executable SHA-256:
+  `039e89a32ac4b82838089fc2c635ebd62fe4467358b2be038229d7703b887d91`.
+
+The isolated run used injected input, minimized/background rendering, original
+60 FPS and skipped movies. It does not certify physical input, audio, foreground
+pacing or whole levels. Personal saves/settings were unused. Evidence:
+`logs/independent-classification-*` and
+`private/test-saves/independent-classification`. Native Mac generation/build/game
+acceptance remains pending under MAC-073.
+
 ## Independent library-symbol adapter and generation driver (2026-10-26)
 
 Continuing PR #370 from `a3aa7f74`, `xdk_catalog.py` owns scanner discovery,

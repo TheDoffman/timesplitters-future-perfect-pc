@@ -1,7 +1,7 @@
 """Project driver for parsing, disassembly, identification and C generation.
 
-The first two stages are standalone project tools. Identification and lifting
-currently run from the selected runtime tree while those replacements proceed.
+The first three stages are standalone project tools. Lifting currently runs
+from the selected runtime tree while its replacement proceeds.
 """
 import argparse
 from pathlib import Path
@@ -44,7 +44,7 @@ def build_commands(args, xbe, analysis_json):
     commands = {
         'parse': [sys.executable, str(own / 'xbe_image.py'), str(xbe), '--json', str(analysis_json)],
         'disasm': [sys.executable, str(own / 'analysis_runner.py'), str(xbe)],
-        'identify': [sys.executable, '-m', 'tools.func_id', str(xbe)],
+        'identify': [sys.executable, str(own / 'function_catalog.py'), str(xbe)],
         'lift': [sys.executable, '-m', 'tools.recomp', str(xbe), '--all' if args.all else '--game-only'],
     }
     parse, disasm, identify, lift = (commands[name] for name in STAGES)

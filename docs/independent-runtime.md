@@ -11,7 +11,7 @@ pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
 function discovery, labels, cross-references, analysis orchestration/output/cache,
-the library-symbol adapter and generation driver.
+the library-symbol adapter, generation driver and function classifier.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -55,7 +55,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Function discovery, labels and references | Project-owned `x86_functions.py` and `recomp_symbols.py`; production uses compatibility imports | Original discovery/metadata fixtures, existing consumer tests, semantic function/xref comparison, full regeneration/build and isolated gameplay; native Mac pending |
 | Analysis orchestration, configuration, cache and output | Project-owned `analysis_runner.py`, `analysis_config.py`, `analysis_cache.py`, `analysis_output.py`; compatibility imports serve production | Standalone XBE-to-JSON/assembly CLI, content-verified cache, seed/section/publication fixtures, generation/build and isolated gameplay; native Mac pending |
 | Library-symbol adapter and generation driver | Project-owned `xdk_catalog.py` and `compile_pipeline.py`; production compatibility entries use them | Protocol/seed/routing/failure fixtures, actual symbol and generated-code comparisons, Windows build and isolated gameplay; native Mac pending |
-| Function classification and x86-to-C translation | Still upstream | Own symbol classification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Function classification | Project-owned `function_catalog.py`, `function_evidence.py`, `function_categories.py`; production calls the standalone catalog | Bounded operands/xrefs, source/context/graph hypotheses, measured pointer-entry blocks, no guessed CRT names or function extents; generated executable-code comparison, build and isolated gameplay; native Mac pending |
+| x86-to-C translation | Still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -311,3 +312,38 @@ space. Personal settings and saves are outside the output path.
 Run the focused checks with `python -m pytest tests/test_disc_image.py -q`.
 CI runs them on Windows and macOS. Build/generation still need the existing
 toolkit until subsequent replacements are completed.
+
+## Function catalog: implementation and provenance
+
+`function_catalog.py` coordinates project instruction/reference evidence and
+category inference. It imports permitted Capstone through the own decoder and
+uses the validated project image model. The generation driver calls it directly;
+`independent-classification.patch` replaces eleven upstream module bodies with
+compatibility entries or retirement notices. Original tests include a copied
+standalone catalog operating on a synthetic executable without toolkit imports.
+Historical patch deletion text still awaits the final provenance audit.
+
+Function ranges remain the analyzer's measured ranges. Decoded operand evidence
+cannot mistake immediate payload bytes for instructions; xrefs in gaps have no
+owner. Pointer arrays need three entries, two distinct targets, a known function
+and bounded body probes for other targets. Only actual 32-bit immediate stores
+support constructor hypotheses. Unlisted targets receive measured entry-block
+records in a separate artifact, never estimated 32-byte function bodies.
+
+Source paths preserve full module identity. Whole-word string evidence and calls
+into actual named SDK sections give weak subsystem hints; ties remain unknown.
+Graph inference requires two distinct unanimous neighbors in bounded snapshot
+rounds. Scalar initializers require complete short SSE bodies with data reads
+and writes. Numeric operation observations explicitly do not assert CRT names:
+old prefix labels included a cosine body called a float-to-integer conversion
+and a left-shift body called a right-shift helper. Correcting those diagnostic
+labels must not exclude or substitute the original executable functions.
+
+The catalog emits identified functions, source modules, an empty CRT-identity
+list, pointer arrays, entry blocks and summary JSON. Inputs and output aliases
+are validated before publication; files are atomically replaced and the driver
+proceeds only on successful exit. There is no classifier cache. Own sources and
+compatibility entries participate in generation fingerprints. Labels, scores
+and array membership remain heuristic, not proof of source/library identity or
+complete C++ recovery. STATUS.md records actual host validation; MAC-073 keeps
+native Mac generation and gameplay acceptance separate.

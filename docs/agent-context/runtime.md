@@ -25,7 +25,16 @@ parser/analyzer directly and preserves title seed and per-title output routing.
 Custom metadata paths reach disassembly. The bridge also exposes the bounded
 identifier-only helper to importlib consumers; real runs validate the full XBE.
 Both enter the generation fingerprint.
-Function classification and translation still run from the runtime tree.
+`independent-classification.patch` replaces all eleven function-classifier
+module bodies. `function_catalog.py` now coordinates `function_evidence.py`
+and `function_categories.py` directly from the project generation driver.
+Decoded operands and bounded xref ownership supply evidence; source identifiers,
+actual SDK section calls and unanimous graph neighbors supply diagnostic labels.
+Pointer arrays and measured entry blocks are separate outputs, never guessed
+function records. Numeric instructions do not establish CRT symbol identity.
+The catalog preserves measured function bounds; all three sources and runtime
+bridges enter generation fingerprints. Original catalog/evidence/category tests
+include copied-module execution without the runtime. Translation remains upstream.
 
 `independent-disasm-traversal.patch` follows the input patch and removes the
 engine's scan/realignment/reachability/query methods in favor of inherited

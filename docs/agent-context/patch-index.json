@@ -38,6 +38,23 @@
       ]
     },
     {
+      "name": "independent-classification.patch",
+      "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
+      "targets": [
+        "tools/func_id/__init__.py",
+        "tools/func_id/__main__.py",
+        "tools/func_id/clustering.py",
+        "tools/func_id/config.py",
+        "tools/func_id/crt_identifier.py",
+        "tools/func_id/identify.py",
+        "tools/func_id/imm_scanner.py",
+        "tools/func_id/output.py",
+        "tools/func_id/rw_identifier.py",
+        "tools/func_id/stub_classifier.py",
+        "tools/func_id/vtable_scanner.py"
+      ]
+    },
+    {
       "name": "independent-disasm-input.patch",
       "sha256": "cf9d01d01af97a07d554a29966d4688dbd35c24453ec8efc682ba154410bfafe",
       "targets": [

@@ -181,4 +181,5 @@ def test_production_driver_routes_to_project_commands():
     assert result.returncode == 0, result.stderr
     assert str(ROOT / 'tools/xbe_image.py') in result.stdout
     assert str(ROOT / 'tools/analysis_runner.py') in result.stdout
-    assert 'tools.func_id' in result.stdout and 'tools.recomp' in result.stdout
+    assert str(ROOT / 'tools/function_catalog.py') in result.stdout
+    assert 'tools.recomp' in result.stdout

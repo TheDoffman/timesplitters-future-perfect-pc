@@ -18,10 +18,12 @@ def fingerprint(runtime):
                  if not p.name.startswith('test_'))
     paths.extend(p for p in (runtime / 'tools/disasm').glob('*.py')
                  if not p.name.startswith('test_'))
+    paths.extend(p for p in (runtime / 'tools/func_id').glob('*.py')
+                 if not p.name.startswith('test_'))
     result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(paths)}
     project = Path(__file__).resolve().parents[1]
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py'):
         result['project/tools/' + name] = hashlib.sha256(
             (project / 'tools' / name).read_bytes()).hexdigest()
     parser_bridge = runtime / 'tools/xbe_parser/xbe_parser.py'
