@@ -1,3 +1,78 @@
+## Packed vertex conversion follow-up
+
+`zz-vertex-expand-strides.patch` moves packed-format and common byte-width
+dispatch outside the vertex loop in common HLE code. It retains a fresh zeroed
+allocation, input bytes, arithmetic, stream-lookup/failure order and per-vertex
+attribute order. A thin selector retains the original generic fixed-function
+body. No game-clock policy, transformed-pose cache or retained vertex buffer is
+introduced. The prior crowd logs show zero fixed-function-declaration draws;
+an earlier optimization of that unused path was therefore not deployed alone.
+
+The actual applied functions pass48,000 reference comparisons across four FP
+rounding modes, including fresh/aliased streams, overlapping prefix writes,
+padding, allocation/lookup failures and source/destination guard pages. Five
+independent mutations compile and fail, including an extra-byte read that leaves
+output unchanged but faults at a guard page. The shared CI workflow includes
+all six positive/negative cases on both native hosts; physical Mac validation
+remains unavailable. Earlier byte-copy switch and scratch-reuse experiments
+were rejected for slowdown or negligible benefit.
+
+Seven alternating600,000-draw pairs of96 vertices using the deployed full-function
+fixture produce median candidate/reference CPU ratios0.43167 (32-byte packed),
+0.42457 (50-byte packed) and0.99288 (fixed function). These are synthetic CPU-
+kernel results, not live game FPS or full renderer fidelity. Receipt:
+`logs/vertex-expand-production-benchmark.json` with source and patch hashes.
+
+The normal Windows Release build/bundled checks now pass; executable SHA256
+`59887e0e28b21e2e54c5d1d6a14830b54e409cf8413370d86738dde0c632ba2d`, built
+from90f79e93 plus this patch (SHA2561387d8dea41a5127d5a44d0bb0a607481fe181540f142dc15595c234fa9738f2).
+The first build's controls gate failed a wall-clock assumption: Sleep(40)
+advanced GetTickCount64 only31ms, correctly leaving the34ms Reload pulse active
+(Reload255/Fire0). The fixture now waits40ms in that same clock domain; all16
+tested phase shifts0..15 pass. Production input arbitration is unchanged.
+The first selected Python batch had100 passes and one stale-index failure;
+refreshing the intended patch index resolves that check, with20 context checks
+passing afterward. The final six conversion cases pass in14.10s.
+Patch upgrades/transitions and context checks pass41 checks in662.56s. The
+new executable also completes the120s native144 opening replay: movement,
+changing/advancing hand clips, weapon14 handoff,32 rounds consumed (128 to96)
+and pause/resume all pass. Four interior samples freeze hand clip/time and
+player position exactly. Two reviewed retained frames show the gun/hand and
+canyon geometry without obvious breakage. This capture/trace-enabled run
+overlapped patch validation and is not clean pacing or full visual parity.
+The capture-free same-build crowded-scene comparison is still running; no
+live-game FPS gain or physical Mac acceptance is claimed yet.
+
+## Focused crowded-scene diagnostic
+
+All16 hosted checks pass at90f79e93. A new same32D1 Disco diagnostic uses an
+external owned-primary-thread sampler after verified ten-bot spawn. It retains
+all4257 timestamped samples, up to eight native PCs each, over45s with zero
+sampling failures/pre-existing suspensions/capacity overruns. Total suspension
+is1102.101ms (2.45% of the window), maximum1.358ms. Thus its nine five-second
+Present rates230.31..240.02 are diagnostic, not new clean pacing measurements.
+Each window has foreground active ten-bot observations and zero interpolation.
+The helper validates the executable path, resumes before symbol resolution and
+records executable/PDB/helper hashes. An asset-free live-process check rejects
+the wrong executable, records291 busy-function leaf samples and closes normally.
+
+Raw PCs and actual native unwind ranges expose false nearest-public labels:
+some addresses named pc_native_rocking_sub belong to later unnamed functions;
+VCRUNTIME's __NLG_Return2 export has a4976-byte inferred symbol extent covering
+separate unwind entries. An extent alone does not prove function identity.
+The private analyzer retains unnamed ranges rather than blaming that helper or
+non-local jumps. Model-tree/draw work is prominent, but the leaf cost is diffuse;
+no single culprit, causal optimization or repeat of the earlier177FPS dip is
+proved. Private receipt: `logs/owned-crowd-stack-analysis.json`.
+
+The preceding internal-report attempt retained23 complete cumulative snapshots
+through115s, then correctly rejected later caller-table exhaustion. Its four
+complete in-match differences held near239..240 and do not explain slower later
+windows. An initial collector missed Windows CRLF snapshots; its gameplay run
+passed but its collection check failed. Both failures remain in private evidence;
+neither is a game regression or complete-profile claim. Fixtures/profiles remain
+preserved and all diagnostic children/partitions close/recycle normally.
+
 ## Controlled below-target gameplay comparison
 
 The same32D1 executable completes an Original60 reference and native144

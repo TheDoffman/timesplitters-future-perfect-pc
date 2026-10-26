@@ -3907,6 +3907,16 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Packed vertex conversion (PR #367 follow-up):** Shared HLE
+  `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute
+  instead of per vertex while retaining fresh input, zero padding, arithmetic,
+  allocation/failure policy and per-vertex attribute order. The fixed-function
+  selector retains its generic body. No OS adapter is needed; the portable
+  noinline compiler boundary keeps its existing scope. Full-function reference,
+  alias/overlap, FP, guard-page and negative-control tests join both native CI
+  hosts. Windows CPU-kernel results are in STATUS; live Windows/Mac acceptance
+  and causal game FPS improvement remain **Awaiting validation**.
+
 - **Live register references (PR #367 follow-up):** Shared generator/template
   policy retains addresses of the same live integer/vector TLS cells in three profiled
   routines (18EA90/21450/214C0). No values are cached, ABI layout changed or

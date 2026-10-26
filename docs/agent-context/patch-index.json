@@ -261,6 +261,13 @@
       ]
     },
     {
+      "name": "zz-vertex-expand-strides.patch",
+      "sha256": "1387d8dea41a5127d5a44d0bb0a607481fe181540f142dc15595c234fa9738f2",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
       "name": "zzz-mac-renderer.patch",
       "sha256": "e0aeb83038f92d837f4cf6d010f5eca7d0f608c7f9cef0dd1f44920022dbee74",
       "targets": [

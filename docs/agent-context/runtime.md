@@ -1,5 +1,18 @@
 # Runtime and patch navigation
 
+`zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
+common `hle_d3d8.c`. Attribute/width dispatch moves outside the vertex loop;
+fresh stream-zero tails and converted prefixes still use a new zeroed allocation
+per draw. Parsed prefixes precede tails; per-vertex attribute order is preserved
+even when outputs overlap. Raw copies use exact byte widths, SHORT/NORMPACKED3
+arithmetic and generic width/format fallbacks remain, and stream lookups/failure
+checks keep their original order. The fixed-function selector tail-calls the
+unchanged generic body; the packed setup has a portable noinline boundary to
+retain that compiler scope. No guest clocks, vertex cache or retained pose is
+introduced. `test_vertex_expand.py` compares full output/stride/failure/stream/
+allocation/FP behavior against a frozen pre-change body, including guard pages
+and independent broken-copy/order/fallback controls. Live results belong in STATUS.
+
 `zz-stable-gpr-refs.patch` and the title's three-site selector keep references
 to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
 
@@ -41,6 +54,16 @@ not exist as strings in generated guest code; find a measured caller/address.
 Sol can request exact public source ranges and lexical references from the local
 broker; each result identifies the root/runtime revision and actual file hash.
 Generated guest C remains excluded from hosted retrieval.
+
+Profiler names alone do not prove function identity. DbgHelp may assign an
+unnamed static PC the nearest public name, and export-only inferred sizes may
+span unrelated native unwind entries. Retain raw executable RVAs and actual
+unwind bounds before changing a purported hot helper. Chained unwind fragments
+may also require primary-entry validation; unresolved identity stays explicit.
+The PC reporter's `symbol_complete` flag checks name truncation, not bounds.
+Reject dropped-chain windows as complete profiles and separate sampler pause/
+reporting overhead from clean Present measurements. See STATUS for the focused
+external diagnostic and its limitations.
 
 `tools/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
