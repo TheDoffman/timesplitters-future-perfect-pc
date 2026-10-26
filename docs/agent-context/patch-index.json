@@ -227,9 +227,9 @@
     },
     {
       "name": "zz-sampler-cache-retry.patch",
-      "sha256": "b8d885c598157dfdbb4456c31157990fa3d6a294dc0a82d3c9c999d181c3c704",
+      "sha256": "a050d8fe106cb66e11391df47310fa0eab9ea2cbe3f8a058f409f450b70b9541",
       "targets": [
-        "src/d3d/d3d8_states.c\r"
+        "src/d3d/d3d8_states.c"
       ]
     },
     {
@@ -1420,7 +1420,7 @@
     },
     {
       "name": "zz-native-trace-quiet.patch",
-      "sha256": "7766d9430ae33f7c3535937559a324784352f9535a13674a43024306d5a5275a",
+      "sha256": "1c63cf7a6c11634cedb316d73d359249bd8751dec2adfdadfaae8e7f37e94d8a",
       "targets": [
         "src/kernel/recomp_trace.c"
       ]

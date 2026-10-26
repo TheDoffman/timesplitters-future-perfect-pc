@@ -211,6 +211,15 @@ follows the existing renderer-idle callback. Per-thread configuration is read
 once, like existing diagnostic caches; explicit diagnostics retain their original
 budget, initialization and output. Crash/throw/unimplemented reports are untouched.
 
+The quiet guard now inlines its cached TLS load and outlines only first-use
+environment parsing. It retains per-thread startup configuration: changing the
+environment does not alter an initialized thread, while a new thread initializes
+independently. `test_trace_filter.py` compiles the complete tracing module and
+checks that distinction, concurrent quiet calls, enabled diagnostics and Windows
+idle cadence; a shared-cache mutation must fail. No process-wide cache or C
+atomic support is introduced. Private alternating native probes measure tracing
+cost only; game pacing requires a separately identified executable and scene.
+
 
 `zz-native-demo-timing.patch` follows the native surface stack and wraps US
 `43220` with `pc_native_demo_guest.inc`. Regenerate guest C: the original is

@@ -2,6 +2,8 @@
 
 Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
 
+Trace startup/thread and idle-callback acceptance: [quiet dispatch](runtime.md).
+
 Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
 
 Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).

@@ -1,3 +1,37 @@
+## Quiet trace initialization and CI index repair (2026-10-26, PR #367)
+
+The common trace guard now inlines its per-thread cached setting and outlines
+only first-use environment parsing. Explicit diagnostics and Windows render-idle
+callback order/cadence remain. Configuration is still per thread, not a shared
+process cache. The full-module tests cover initialized-main versus newly created
+thread settings, four concurrent quiet workers, enabled watch/dump/filter/profile
+paths and idle callbacks; the process-cache and removed-dispatch controls fail.
+The targeted trace suite passed17 checks in11.59s. The combined CI selection,
+launcher compatibility, backlog, repository-context and trace suite passed129
+checks plus26 subtests in14.60s (`logs/trace-guard-ci-contracts.log`).
+
+The supported Release build and bundled gates passed (exit0,
+`logs/build-trace-guard.log`); executable SHA256 is
+`024c6faa1886832f79b45cc33ef3829ede10c0915a4ecef35c76a0a01a50fb56`.
+Actual normal kernel code generation is recorded in
+`logs/trace-guard-normal-codegen.json`; cached dispatch no longer calls the
+environment-parsing helper. The entry body is1914 bytes versus1905 before, so
+this is not a code-size reduction. A private separate-caller/full-module probe
+at `/O2 /Ob2` used seven alternating50-million-call pairs per case. With the
+Windows idle callback enabled, the entry-only candidate/original median CPU-cost
+ratio was0.912723; entry+exit was0.827515. These are component timings, not game
+FPS or evidence that demanding240 is sustained. The fuller cold-dispatch and
+process-wide-cache experiments were not shipped. Physical Mac validation and
+new executable game pacing remain pending.
+
+The pushed244ffaa0 runtime CI failed because the generated patch index described
+CRLF bytes/targets for two newly written patches while Git stored LF bytes.
+Other Windows/Mac transition failures were downstream of this scope-job failure.
+Normalize those local patch files, regenerate the index, and verify every indexed
+hash and target against its staged Git blob, matching fresh-checkout bytes.
+The authoritative patch loader then verified zero changed runtime files; no
+generated code, gameplay clocks, settings or saves changed for this repair.
+
 ## Sampler allocation recovery and current native CPU attribution (2026-10-26)
 
 The common sampler cache previously recorded a NULL object after a failed

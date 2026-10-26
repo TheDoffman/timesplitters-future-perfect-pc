@@ -4328,6 +4328,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   module. Windows build/tests pass; native Mac execution is awaiting validation.
   Gameplay/performance evidence and limits are recorded in STATUS.
 
+  PR #367 follow-up outlines first-use parsing and inlines the cached TLS guard
+  in the same common module. Per-thread startup settings, concurrent quiet calls
+  and enabled diagnostics have a Windows full-module regression with a rejected
+  process-wide-cache mutation. The POSIX fixture uses pthreads; no new Mac adapter
+  or atomic compiler extension is needed. Physical Mac execution and game pacing
+  remain awaiting validation.
+
 
 - **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
   the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
