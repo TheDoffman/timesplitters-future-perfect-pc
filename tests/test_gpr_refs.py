@@ -13,10 +13,10 @@ from test_recomp_float_joins import ROOT,RUNTIME,config,FunctionTranslator
 def gpr_runs(tmp_path_factory):
     prior=dict(vars(config))
     try:
-        parent=bytes.fromhex('8b742404 8b06 8b4c2408 894e04 31c8 50 56')
+        parent=bytes.fromhex('8b742404 8b06 8b4c2408 894e04 31c8 f30f104610 0f28c8 0f57d2 0f58c1 0f114620 50 56')
         parent+=b'\xe8'+struct.pack('<i',0x1100-(0x1000+len(parent)+5))
-        parent+=bytes.fromhex('83c408 0306 334e04 894608 894e0c c3')
-        child=bytes.fromhex('8b442404 8b542408 8910 8b08 31d1 83c103 83c001 6683c207 b39a 66bf55aa 0fb6d3 c3')
+        parent+=bytes.fromhex('83c408 0f58c1 0f114620 0306 334e04 894608 894e0c c3')
+        child=bytes.fromhex('8b442404 8b542408 8910 8b08 31d1 83c103 83c001 6683c207 b39a 66bf55aa 0fb6d3 0f59c1 f30f105810 c3')
         image=parent+b'\x90'*(0x100-len(parent))+child
         config._install([config.Section('.text',0x1000,len(image),0,len(image),True)],0x1000,0x1000+len(image),'gpr-test')
         info={0x1000:{'name':'parent','end':0x1000+len(parent)},0x1100:{'name':'child','end':0x1100+len(child)}}
@@ -30,13 +30,17 @@ def gpr_runs(tmp_path_factory):
     folder=tmp_path_factory.mktemp('gpr-refs');compiler,env=native_compiler(folder)
     template=(RUNTIME/'templates/runtime/recomp_types.h').read_text(encoding='utf-8')
     results={}
-    for mode in range(7):
+    for mode in range(8):
         target=folder/str(mode);target.mkdir()
         header=template
         if mode==6:
             old='uint32_t *const _recomp_eax=&g_eax;'
             assert old in header
             header=header.replace(old,'uint32_t *const _recomp_eax=bad_cell(&g_eax);')
+        if mode==7:
+            old='RecompXmm *const _recomp_xmm0=&g_xmm0;'
+            assert old in header
+            header=header.replace(old,'RecompXmm *const _recomp_xmm0=bad_xmm_cell(&g_xmm0);')
         (target/'recomp_types.h').write_text(header)
         source=target/'refs.c';source.write_text((ROOT/'tests/gpr_refs.c').read_text().replace('/* GENERATED_FUNCTIONS */',generated))
         exe=target/('refs.exe' if os.name=='nt' else 'refs')
@@ -63,6 +67,11 @@ def test_copied_register_value_is_rejected(gpr_runs):
     assert result.returncode!=0 and 'FAIL:' in result.stderr,result.stdout+result.stderr
 
 
+def test_copied_vector_register_is_rejected(gpr_runs):
+    result=gpr_runs[7]
+    assert result.returncode!=0 and 'FAIL:' in result.stderr,result.stdout+result.stderr
+
+
 def test_deployed_reference_scope(tmp_path):
     source=tmp_path/'scope.c'
     source.write_text('#include <assert.h>\n#define RECOMP_NUMERIC_POLICY_HEADER "'+
@@ -80,3 +89,25 @@ def test_deployed_reference_scope(tmp_path):
     assert built.returncode==0,built.stdout+built.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_vector_alias_scope_precedes_optimization(tmp_path):
+    source=tmp_path/'aliases.c'
+    text='#define RECOMP_GENERATED_CODE\n#define RECOMP_GPR_REFS_SUPPORTED 1\n'
+    text+='#define RECOMP_NUMERIC_POLICY_HEADER "'+(ROOT/'src/pc_native_numeric.h').as_posix()+'"\n'
+    text+='#include "recomp_types.h"\nuint32_t before(void) { return xmm0.u[0]; }\n'
+    for name,site in (('selected',0x18ea90),('unchanged',0x18ea91),('selected_again',0x214c0)):
+        text+=f'#define RECOMP_REGISTER_SITE 0x{site:X}u\n#include "recomp_types.h"\n'
+        text+=f'uint32_t {name}(void) {{ RECOMP_DECLARE_GPRS(0x{site:X}u); return xmm0.u[0]; }}\n'
+    text+='#ifdef RECOMP_REGISTER_SITE\n#error site leaked beyond its include\n#endif\n'
+    source.write_text(text)
+    compiler,env=native_compiler(tmp_path)
+    includes=[RUNTIME/'templates/runtime',ROOT/'src']
+    command=([compiler,'/nologo','/EP',*('/I'+str(p) for p in includes),str(source)] if os.name=='nt'
+             else [compiler,'-E','-P',*('-I'+str(p) for p in includes),str(source)])
+    result=subprocess.run(command,capture_output=True,text=True,env=env,timeout=30)
+    assert result.returncode==0,result.stdout+result.stderr
+    for name,wanted in (('before','g_xmm0'),('selected','(*_recomp_xmm0)'),
+                        ('unchanged','g_xmm0'),('selected_again','(*_recomp_xmm0)')):
+        body=result.stdout.split('uint32_t '+name+'(void)',1)[1].split('}',1)[0]
+        assert 'return '+wanted+'.u[0];' in body,body

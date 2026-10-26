@@ -6,7 +6,7 @@
 #include <float.h>
 #include <string.h>
 #include "pc_gpu_ack.h"
-/* Keep references to the same live TLS cells in these profiled hot routines.
+/* Keep references to live integer/vector TLS cells in these profiled routines.
  * New generator files support this protocol; legacy/manual sources retain
  * their original aliases. No register values are copied or deferred. */
 #ifndef RECOMP_USE_GPR_REFS

@@ -1,3 +1,76 @@
+## Vector reference extension under validation
+
+The shared reference protocol now also addresses the same eight live RecompXmm
+cells in the existing three selected routines. No vector values are cached;
+partial lanes, callback visibility and Original/native clocks retain their
+existing behavior. MMX/x87 and EBP/SEH are unchanged. This is currently local
+source on afb8f7f7; D448 measurements below precede the vector extension.
+
+The isolated model compiler comparison now includes this header:3646 assembly
+instruction lines/five static GS:88 TLS-base reads, versus integer-only3920/93
+and direct-global5525/300. It is static compiler evidence, not dynamic cost,
+full-model equivalence or game FPS. Object file size33636 is not function size.
+Synthetic generated SSE/scalar/lane operations, unaligned loads, overlapping
+guest stack/data, nested raw-cell callbacks and four simultaneous threads match
+legacy results in all six enabled/disabled/mixed scopes. Independent copied-EAX
+and copied-XMM0 mutations fail their runtime visibility checks. The four
+reference tests and unchanged walking-contact fixture pass five checks in11.72s.
+The remaining timing/model/generation selection passes114 checks in343.67s;
+the walking fixture was already included in the focused five above.
+
+Full Windows builds fail with MSVC C1002 (optimizer heap exhaustion) in four
+unselected chunks2/6/8/11, including after a terminal failure and a separate
+lower-parallelism `/MP4` retry. The original conditional vector expressions
+therefore remain an unaccepted prototype. The generator now emits a site/type-
+header reinclude before each function; an intentional section outside the type
+guard chooses vector aliases during preprocessing. Unselected bodies regain
+their direct expressions before C optimization, selected bodies retain pointers
+to the same live cells, and the site macro is cleared after each include.
+Five reference tests pass in6.01s, including preprocessed global/selected/global/
+selected transitions and independent copied-cell controls. The supported normal
+Windows build and bundled checks now pass, without `/MP4` or changed compiler
+optimization. Executable SHA256:
+`32d13a20bb654267bc943af5960a4797dcf1f15c60af9de37a93e95ac839e856`.
+The actual scoped-header model comparison has3678 instruction lines/eight static
+TLS-base reads and33288 object-file bytes, versus direct-global5525/300/42139.
+The remaining115-check selection passes114 in344.24s; walking again exceeds the
+unchanged15s runtime limit during compilation, then passes alone in14.23s including
+compilation. Combined with the five reference tests, all120 selected checks have
+passed, with that concurrent-run timeout explicitly retained. Context20 passes
+in16.31s. No assertion or timeout is relaxed.
+
+Clean32D1 Disco runs `crowd-vector-scope-disco240` and
+`crowd-vector-scope-disco-original60` complete normally with profiles/signatures/
+fixture preserved and disposable partitions recycled. Same command hash and
+graphics/settings as D448 below:3440x1440 render/1920x1060 foreground client,
+FOV73, Enhanced selected/Classic fallback, no capture/sampler/trace and45 complete
+seconds from spawn+5. Each retains19 foreground ten-bot observations, individual
+bots16..19 distinct sampled positions and human health0..1.75 (mixed combat/death).
+
+- Native240:10440 guest Presents, average232.02263, minimum one-second177,
+  minimum five-second199.6, p995.761ms, worst7.571ms. Independent clock9730
+  calls/41.97550005s, game/wall0.9997896, maximum read span11.9us.
+- Original (`--native-fps 0`):2699 guest Presents, average59.99985, minimum
+  one/five-second60, p9917.246ms, worst17.970ms. Independent clock2519
+  calls/41.9818764s, game/wall1.0000347, maximum read span23.1us.
+
+Both have zero interpolation, increasing unique guest-frame IDs, timing-call/
+accepted-Present agreement within one in-flight call, and rejected held/wrong-
+rate controls. CSV hashes: native
+`60fbb3d6243485328c0807416cf7b16c4079ee12f0c83deafb5b59d5ba8ac906`,
+Original `56ddf1d85d9680c735f700c1d707238103d6a606a450436da07bc779bb719fb1`.
+Receipt: `logs/vector-scope-crowd-comparison.json`. Different AI/camera/death
+routes prevent attributing the change from D448225.37/min167 to this code;
+older cache-only230.48/min181 also overlaps these outcomes. No causal game FPS
+gain, absence of regression or sustained240 is proved. Present acceptance is not
+GPU completion/scanout or physical-input latency. Broader gameplay/visual and
+physical Mac acceptance remain open; the full high-refresh goal stays active.
+
+All hosted checks pass for afb8f7f7 (the integer-only candidate and Clang fixture
+repair): both native runtimes, patch upgrades/transitions, launchers and PR
+validation. The local vector extension has not yet been pushed or validated on
+the hosted Mac. The PR remains draft and the full high-refresh goal is incomplete.
+
 ## Register-reference CI repair and diagnostic follow-up
 
 The a65c6764 hosted Mac runtime selection passes677 checks, skips235 and passes18

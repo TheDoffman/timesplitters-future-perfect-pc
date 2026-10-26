@@ -3908,7 +3908,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
 - **Live register references (PR #367 follow-up):** Shared generator/template
-  policy retains addresses of the same live TLS cells in three profiled
+  policy retains addresses of the same live integer/vector TLS cells in three profiled
   routines (18EA90/21450/214C0). No values are cached, ABI layout changed or
   guest clock altered. Common generated-code/callback/alias/thread fixtures
   run on both hosts. Regeneration is required; legacy/manual sources keep

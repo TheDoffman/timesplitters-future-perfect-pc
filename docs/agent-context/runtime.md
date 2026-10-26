@@ -1,7 +1,7 @@
 # Runtime and patch navigation
 
 `zz-stable-gpr-refs.patch` and the title's three-site selector keep references
-to live GPR cells in profiled routines; see [contract/tests](gpr-refs.md).
+to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
 
 `zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
 to the existing Windows sampler. One exact executable symbol gets at most512

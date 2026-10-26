@@ -5,7 +5,7 @@ production state-module pixel fixture with Windows WARP; see [runtime](runtime.m
 The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Live register-cell references: [three-site policy and tests](gpr-refs.md).
+Live integer/vector register references: [three-site policy and tests](gpr-refs.md).
 
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;

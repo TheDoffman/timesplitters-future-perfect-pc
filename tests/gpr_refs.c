@@ -34,12 +34,16 @@ RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 static RECOMP_TLS unsigned owner,traces,stores;
 static RECOMP_TLS uint32_t bad_value;
 uint32_t *bad_cell(uint32_t *p) {bad_value=*p;return &bad_value;}
+static RECOMP_TLS RecompXmm bad_xmm;
+RecompXmm *bad_xmm_cell(RecompXmm *p) {bad_xmm=*p;return &bad_xmm;}
 static void trace_entry(uint32_t site) {
     ++traces;
     if(site==0x1100u) {
         uint32_t data=MEM32(g_esp+4);
         CHECK(MEM32(g_esp+8)==g_eax); /* parent writes are already globally visible */
         if(data+4<g_esp || data+4>=g_esp+12)CHECK(MEM32(data+4)==g_ecx);
+        for(unsigned lane=0;lane<4;lane++)CHECK(g_xmm0.u[lane]==MEM32(data+32+lane*4));
+        g_xmm0.u[2]^=3;g_xmm1.u[3]^=0x100;
         g_ebx^=0xabcdef00u+owner;g_edi^=0x80000000u;
 #ifdef _WIN32
         SwitchToThread();
@@ -82,10 +86,15 @@ static void work(unsigned which) {
         MEM32(stack)=0x12345678;MEM32(stack+4)=data;MEM32(stack+8)=random^0xfedcba98u;
         g_eax=random;g_ecx=~random;g_edx=random+7;g_esp=stack;g_ebx=random^0x55555555;
         g_esi=random+99;g_edi=random^0x33333333;g_ebp=0x88776655;g_seh_ebp=g_ebp;
+        RecompXmm *xs[]={&g_xmm0,&g_xmm1,&g_xmm2,&g_xmm3,&g_xmm4,&g_xmm5,&g_xmm6,&g_xmm7};
+        for(unsigned r=0;r<8;r++)for(unsigned lane=0;lane<4;lane++)
+            xs[r]->u[lane]=0x3f800000u+r*0x20000u+lane*0x1000u+which*0x100u;
+        for(unsigned lane=0;lane<4;lane++)MEM32(data+16+lane*4)=0x3f000000u+(step&63)*0x1000u+lane*0x100u;
         parent();CHECK(g_esp==stack+4);
         uint32_t regs[]={g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp};
         for(unsigned i=0;i<9;i++)hash=hash_word(hash,regs[i]);
-        for(unsigned i=0;i<16;i+=4)hash=hash_word(hash,MEM32(data+i));
+        for(unsigned r=0;r<8;r++)for(unsigned lane=0;lane<4;lane++)hash=hash_word(hash,xs[r]->u[lane]);
+        for(unsigned i=0;i<64;i+=4)hash=hash_word(hash,MEM32(data+i));
         for(unsigned i=0;i<48;i+=4)hash=hash_word(hash,MEM32(stack-16+i));
     }
     CHECK(traces==4000 && stores>=8000);results[which]=hash;
