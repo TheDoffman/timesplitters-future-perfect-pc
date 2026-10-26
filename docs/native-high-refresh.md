@@ -320,6 +320,19 @@ animation observations**, **Complete a mixed-preset Online rematch** and
 **Current-build live vehicle contact comparison**. The private receipts named
 there preserve hashes and rejected controls; game assets stay untracked.
 
+## Procedural wind
+
+Shared source now subdivides the coupled procedural wind oscillator instead
+of holding its angle between whole ticks. Each object owns solver history;
+pauses preserve it, registration/reuse resets it, and unsupported time scopes
+retain their original stepping. This is simulation, without pose interpolation.
+The repository tests include original registration, frame/clock ordering,
+two-owner matrix/point propagation and paused resume when the local verified
+XBE is present. These CPU checks do not establish live GPU output or FPS.
+The source integration still needs a normal rebuilt game and live acceptance;
+physical Mac and other timing-scope coverage remain open. See
+[wind contracts and validation](agent-context/native-wind.md).
+
 ## Deferred character voices
 
 The exact `164E00` entry gate now admits positive fractional game time for

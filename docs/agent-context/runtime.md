@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Procedural wind: [coupled simulation, ownership, exact-clock admission and validation](native-wind.md).
+
 `zz-state-layout-slots.patch` prepares the render/texture-stage slot numbers
 for the recognized XDK layout once per layout change. It caches only integer
 mapping results: each draw still loads current guest values in original order

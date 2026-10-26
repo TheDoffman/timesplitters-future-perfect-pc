@@ -366,6 +366,7 @@ def test_reload_compare_gate(tmp_path, separated, mutation):
     policy=policy.replace('"pc_native_material.h"','"'+(ROOT/'src/pc_native_material.h').as_posix()+'"')
     policy=policy.replace('"pc_native_statistics_guest.h"','"'+(ROOT/'src/pc_native_statistics_guest.h').as_posix()+'"')
     policy=policy.replace('"pc_native_trap_guest.h"','"'+(ROOT/'src/pc_native_trap_guest.h').as_posix()+'"')
+    policy=policy.replace('"pc_native_wind_clock.h"','"'+(ROOT/'src/pc_native_wind_clock.h').as_posix()+'"')
     if mutation=='whole-tick-policy':
         assert policy.count('site == 0x1C2F09u')==1
         policy=policy.replace('site == 0x1C2F09u','site == 0xFFFFFFFFu')

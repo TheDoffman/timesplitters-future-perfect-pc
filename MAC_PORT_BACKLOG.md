@@ -3908,6 +3908,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Procedural wind simulation (PR #367 follow-up):** Shared
+  `pc_native_wind*` source and `zz-native-wind-history.patch` subdivide the
+  coupled oscillator with per-owner history and exact game-clock admission.
+  Original/whole/unsupported-scope loops remain authored; no host adapter,
+  setting or save format differs. The portable solver/ownership/clock and
+  wrapper-scan tests run on both CI hosts; original-code tests require the
+  supported local XBE. Windows local original graphs cover two-owner data/
+  matrices, pause/resume, fallback and missing-hook/frozen-matrix controls.
+  A normal current-source rebuild and live wind rendering/performance remain
+  pending; physical Mac acceptance remains **Awaiting validation**.
+  [Contract and limits](docs/agent-context/native-wind.md).
+
 - **Sampler allocation recovery (PR #367 follow-up):** Common
   `zz-sampler-cache-retry.patch` creates before replacing a sampler-cache owner,
   never retains failed entries, retries allocations while preserving live

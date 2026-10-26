@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Wind solver/ownership gate: [tests and limits](native-wind.md).
+
 Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
 
 Trace/thread/idle and live state-slot contracts: [common runtime](runtime.md).
@@ -18,10 +20,8 @@ recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
 controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
-`test_render_state_cache.py` compares complete pre/post-cache module binds,
-ownership and failures; `rhi_state_cache.h` checks real blend/stencil/scissor
-pixels on Windows WARP/Mac Vulkan. The Vulkan fixture defines `TSFP_RHI_RENDERER`
-for common display-policy declarations. See [runtime](runtime.md).
+Shared state-cache binding/failure and WARP/Vulkan pixel fixtures are described
+in [runtime](runtime.md). The Vulkan fixture defines `TSFP_RHI_RENDERER`.
 
 `test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
 mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator

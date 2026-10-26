@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "92d5407445e5cdccbcc77d5108814ddf291e7276c146af83bc68db4c3613200c",
+  "loaderSha256": "730895d6863687272ef9b06402ee72999aa7ed3d37b33b43c6cfe5b75947f58d",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1482,6 +1482,13 @@
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "zz-native-wind-history.patch",
+      "sha256": "9ac97150ccb5903ed2d5bcc7d3d0d0aac72109acf52000b5e75fc7c2cf3fb774",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

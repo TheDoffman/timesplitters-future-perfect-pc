@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Procedural wind: [ownership/time scopes](native-wind.md).
+
 Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
 
 GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the

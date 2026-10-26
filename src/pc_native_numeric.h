@@ -24,6 +24,7 @@ extern int g_tsfp_native_timing_active;
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
+#include "pc_native_wind_clock.h"
 #undef RECOMP_AFTER_STORE32
 #define RECOMP_AFTER_STORE32(site,address) \
     do { PC_GPU_ACK_AFTER_STORE32(site,address); \
@@ -352,12 +353,25 @@ static inline float pc_native_boost_drain(float left,float charge)
     ((site)==0x259060u ? pc_native_boost_drain((float)(left),(float)(right)) : \
     (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
+/* Only these wind loop reads depend on the exact published clock. Keep
+ * other numeric consumers independent of that clock and its host storage. */
+static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t value)
+{
+    if(address==0x4E7944u && g_tsfp_native_timing_active) {
+        float h=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(h==0.f)return 0;
+        if(pc_native_wind_clock_matches(&g_tsfp_native_step,h,value))return 1;
+    }
+    return value;
+}
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
     ((site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
     (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
-    pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
+    (((site)==0x1DDF7Bu || (site)==0x1DDF96u) ? \
+     pc_native_wind_global_load((uint32_t)(address),(uint32_t)(value)) : \
+     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value))))
 /* Player+0x1008 is halved by the US update at 0xD5F60. Its hit-response
  * vector (+0xF4/+0xF8/+0xFC) likewise decays by 0.9 after each world step.
  * Once the update runs every fractional frame, retain these decay rates in game time.
@@ -541,6 +555,7 @@ extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
+extern void pc_native_wind_step(void);
 extern int pc_native_walk_trace_requested(void);
 extern int pc_native_walk_collision_requested(void),pc_native_walk_sweep_requested(void);
 extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
@@ -553,7 +568,8 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0xD2CB7u ? pc_native_player_statistics : \
+    ((site)==0x1DDF91u ? pc_native_wind_step : \
+    (site)==0xD2CB7u ? pc_native_player_statistics : \
     (site)==0x120BBFu ? pc_native_character_scale : \
     ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \

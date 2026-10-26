@@ -1,3 +1,28 @@
+## Procedural wind integration in progress (2026-10-26, PR #367)
+
+Shared source now subdivides the wind callback's coupled angle/velocity map
+instead of holding its integer oscillator between native frames. Registration,
+per-owner history, exact game-clock admission, pause and authored fallback are
+implemented in `pc_native_wind*` with `zz-native-wind-history.patch`. No pose
+interpolation or save/config change is introduced. The complete patch stack
+applies to the local runtime. This source is not yet a rebuilt/live acceptance.
+
+Original-code CPU graphs against the actual shared headers pass 9,864
+solo/interleaved owner data/matrix comparisons, 371 paused updates with 361
+raw/game phase divergences, 47 byte-equal unmatched-scope fallbacks, and 360
+Original/native whole-fallback owner comparisons. World/model services and host
+timestamps are controlled. These are separate from the earlier nonlinear
+quarter-degree window checks; they do not prove full-game equivalence or FPS.
+The public wind module passes all3 tests, including the original-code graph
+when the verified XBE is available; it injects17 routines without tracking game
+code and rejects frozen-matrix/missing-registration controls. The timing suite
+passed102 cases; six copied-policy include failures were repaired and all6
+reruns pass. Patch tracking/upgrade checks passed33 cases with3 historical
+fixture-filter failures; those exclusions were repaired, and all4 affected/fresh
+reruns pass. No product logic was weakened to satisfy these fixtures. Additional25 generation/context/compiler and70 CI-scope/Mac-backlog checks pass. Live rendering/performance, scene lifetime, physical
+Mac and other timing-scope coverage remain pending. See
+[wind contracts and limits](docs/agent-context/native-wind.md).
+
 ## Electro Chimp health-bar alignment (2026-10-26, issue #102)
 
 At 1280×720 in an isolated, unlocked Windows Test Lab run, the vertical bars
