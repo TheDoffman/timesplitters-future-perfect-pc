@@ -4004,6 +4004,13 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   mesh/GPU rendering, collision services and physical Mac remain
   **Awaiting validation**; see STATUS for scope and measurements.
 
+- **Venice callback clock (PR #367 follow-up):** Shared numeric policy admits
+  positive fractional time at the original timed ambient callback's entry.
+  Original dispatcher/reset/countdown/event tests run through240 with controlled
+  sound consumers. No Mac adapter is needed; private-XBE checks skip without
+  assets. Audible/live scene and physical Mac acceptance remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
+
 - **Fresh TRAP steps (2026-10-25, PR #364):** Shared `pc_native_trap_guest.h`
   couples fractional force/travel with carried-tick contact lifetime, replacing
   PR363's held poses. Original/whole/catch-up arithmetic and state layout remain

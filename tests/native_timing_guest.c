@@ -340,6 +340,19 @@ static void tree_phase_clock(void)
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
+    /* Asset-free scope/pause contract for Venice's fractional callback gate. */
+    g_tsfp_native_timing_active=1;
+    for(unsigned r=0;r<4;r++) {
+        const unsigned rates[]={60,120,180,240};
+        FLOAT(0x4e794c)=60.f/rates[r];
+        assert(pc_native_global_load(0x222b60,0x4e7944,0)==1);
+        assert(pc_native_global_load(0x222b61,0x4e7944,0)==0);
+        assert(pc_native_global_load(0x222b60,0x1234,9)==9);
+    }
+    FLOAT(0x4e794c)=0;
+    assert(!pc_native_global_load(0x222b60,0x4e7944,1));
+    g_tsfp_native_timing_active=0;
+    assert(pc_native_global_load(0x222b60,0x4e7944,3)==3);
     WORD(0x563918)=123; WORD(0x4E8CEC)=60;
     setting=NULL; frame(); assert(original_calls==1);
     FLOAT(0x4E794C)=.25f;

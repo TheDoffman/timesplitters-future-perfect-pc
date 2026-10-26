@@ -108,6 +108,9 @@ and wide read spans. Capture-free runs retain lightweight snapshots; full native
 traces and renderer captures belong in separate diagnostic runs.144 remains a
 legacy diagnostic rate; the menu presets are60/120/180/240.
 
+`native_venice_callback.c` checks original dispatcher/timer/event/reset, pause,
+mixed intervals and the old-gate control through240; see the script-clock guide.
+
 `native_tree_motion.c` (via `test_native_timing.py`) executes the original US
 TREE callback1D88B0, with only its two effect services replaced by spies. It
 covers phase/pose, crossing and retirement times, single events, pause, slow

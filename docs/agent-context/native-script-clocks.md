@@ -3,6 +3,29 @@
 Authoritative policy: `src/pc_native_numeric.h` and shared
 `src/pc_native_trap_guest.h`. Generated guest C is read-only evidence.
 
+## Venice timed callback
+
+The three normal/challenge Venice descriptors route their +110 callback to
+US222B60. The original level dispatcher228870 already admits native subticks,
+but this callback had a second integer game-time gate. It subtracts live float
+seconds from its private timer, so skipping subticks loses elapsed time. The
+exact222B60 load now follows positive game time; its EAX is replaced by the
+state pointer before use. Original mode, reset222740 (six seconds), event156F,
+the authored900-second repeat, sound services and state layout remain original.
+Zero-float pause rejects a stale whole count. Other callback sites stay unchanged.
+
+`native_venice_callback.c` lifts the original dispatcher, reset and callback,
+with descriptor lookup and sound consumers controlled. The test verifies actual
+XBE descriptor pointers/names, then countdown/event/stack/callee-saved state at
+native120/144/180/240 normal/quarter intervals, a coalesced authored-tick
+Original60 reference, pause and600 mixed intervals.
+The old entry gate reproduces half elapsed time at120 and fails. This test is
+selected through existing `test_native_timing.py` on both hosts; original cases
+skip without the supported private XBE. This proves the selected CPU scheduling
+path, not audible output, every level callback or a live Venice match.
+The asset-free timing-hook fixture also checks exact site/address selection,
+advancing beta intervals, pause and Original fallback on both CI hosts.
+
 ## TRAP motion and contact lifetime
 
 US1D8AB0 rotates a tagged object using a sine-table impulse, drift, upper clamp,

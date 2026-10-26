@@ -13,6 +13,45 @@ class ObjectRockingQuantization(AssertionError):
     """Measured repeated live transforms; fixture/build errors remain failures."""
 
 
+def test_original_venice_ambient_callback(tmp_path):
+    import hashlib
+    import struct
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    path = ROOT / 'private/game/default.xbe'
+    if not path.is_file():
+        pytest.skip('Supported US XBE required for original level callback')
+    image = path.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(path))
+        # The three Venice descriptors route +110 through this exact callback;
+        # +11C names the normal/challenge Venice asset. No copied map is needed.
+        for descriptor in (0x50b2a8, 0x50b400, 0x50b558):
+            offset = config.va_to_file_offset(descriptor)
+            assert struct.unpack_from('<I', image, offset + 0x110)[0] == 0x222b60
+            name = struct.unpack_from('<I', image, offset + 0x11c)[0]
+            at = config.va_to_file_offset(name)
+            assert b'venice.raw' in image[at:at+30].split(b'\0')[0]
+        ranges = [(0x228870, 0x228b35), (0x222b60, 0x222bd2), (0x222740, 0x22275c)]
+        functions = {start: dict(name=f'sub_{start:08X}', end=end) for start, end in ranges}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())
+        code += '\n' + '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08x};'
+                              for a in (0x475c78, 0x475d30, 0x47d5d4))
+        source = (ROOT / 'tests/native_venice_callback.c').read_text()
+        source = source.replace('/* POLICY */', f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"')
+        source = source.replace('/* ROUTINES */', code).replace('/* CONSTANTS */', constants)
+        print(compile_and_run(tmp_path, source))
+        executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
+        broken = subprocess.run([str(executable), 'legacy-gate'], capture_output=True, text=True, timeout=15)
+        assert broken.returncode != 0 and 'Assertion' in broken.stderr
+        assert 'venice_callback fps=120' in broken.stdout
+    finally:
+        vars(config).update(previous)
+
+
 @pytest.mark.parametrize('source,mutation', [
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',

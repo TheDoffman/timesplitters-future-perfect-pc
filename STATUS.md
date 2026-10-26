@@ -1,3 +1,37 @@
+## Venice level callback elapsed-time repair (2026-10-26)
+
+A read-only inventory of remaining integer game-time gates identifies US222B60.
+The verified XBE's three Venice descriptors route +110 to that callback. The
+original level dispatcher228870 already admits fractional updates, but the
+callback's own whole-tick gate discards their duration before its float-seconds
+countdown. A lifted original dispatcher/reset/callback reproduction at120FPS
+leaves5.50000763 seconds after one game second from6, instead of about5.
+This establishes lost elapsed time in the selected callback, not a visible or
+audible live-scene observation. The inventory contains127 candidate records;
+the remaining records require individual investigation, not blanket gate edits.
+
+The shared exact222B60 gate now admits positive fractional game time. EAX is
+replaced by the state pointer before the timer uses it. Original mode, the
+six-second reset, event156F,900-second repeat, sound consumers and memory layout
+remain original. Pause with stale whole ticks stays frozen. No host adapter.
+
+The new original-routine test passes native120/144/180/240 normal/quarter
+intervals and a coalesced authored-tick Original60 reference, including original
+event reset, stack/callee-saved state, pause and600
+mixed intervals. Restoring only the old callback gate fails at120. Descriptor
+lookup and sound consumers are controlled. The public timing-hook fixture
+checks site/address boundaries, fractional rates, pause and Original fallback;
+both focused tests pass3.55s. The timing/vehicle run has123 passes and one15s
+timeout in an existing deliberately broken vehicle-steering case; that exact
+test passes in4.38s on an isolated rerun. All20 context checks pass3.44s. The
+supported Windows rebuild and bundled gates pass; executable SHA256 is
+`ab39f8192467f703b39d6bbd1560fedd84867d86f45ecf744ffcbeea9cbaee80`.
+The original test skips without
+the supported private XBE; asset-free scope checks still run on both hosts.
+Live Venice audio/gameplay, other level callbacks and physical Mac acceptance
+remain open. Logs: venice-callback-before.log, -after.log, -focused.log and
+-timing-suites.log; the full read-only inventory remains private.
+
 ## State-preparation constant-upload integration (2026-10-26)
 
 The retained preceding/optimized native22BE0 slices also pass with the original
