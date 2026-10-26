@@ -1,6 +1,29 @@
+## Controlled below-target gameplay comparison
+
+The same32D1 executable completes an Original60 reference and native144
+Venice replay with artificial30ms guest-main-thread holds separated by100ms
+waits. Other threads remain unrestricted. Native averages117.399 successful
+guest Presents/s over29.58s, while the console interrupt remains60Hz. This is
+artificial timing stress, not normal performance or input-latency evidence.
+
+Observed game/wall speed is1.000287 for Original and0.999696 for delayed native.
+Both consume two rounds, finish at the same sampled aim273/0, keep position
+frozen during the interior pause and resume. Eight moving segment speeds are
+close (Original6.834..7.422, native6.852..7.512 units/s); another segment is
+blocked in both. Final positions differ by0.000511 units. Asynchronous readings
+omit one incomplete native position sample, counted explicitly. These are
+sampled route results, not exact animation/shot/contact equivalence.
+
+Independent bounded timing-call/Present comparisons pass with one in-flight
+call allowance; held and half-rate counter controls fail. Both fixtures and
+profiles are preserved, helpers resume/exit cleanly and partitions are recycled.
+Private receipt: `logs/delayed-walk-comparison.json`. The initial whole-process
+single-core experiment starved interrupt/driver workers at3..5FPS and is rejected
+as a representative moderate slowdown comparison; it is not a timing-bug claim.
+
 ## Current vector-reference crowd and opening validation
 
-All16 hosted checks pass for code revision1a61f02e: native Windows/Mac,
+All16 hosted checks pass for code revision1a61f02e and documentation head6df2974b: native Windows/Mac,
 Windows/macOS patch upgrades/transitions, both launchers and PR validation.
 This establishes the hosted contract scope, not physical Mac gameplay.
 
@@ -46,7 +69,18 @@ Reviewed opening-space captures from Original60 and native144 and a native
 cockpit capture show no uniform brown overlay. This is selected visual evidence,
 not all cinematic frames or full rendering parity. The native144180s natural-
 intro run finishes its cinematic and reaches Story, but has only22s of player
-observations and does not prove the later weapon handoff. An initial Original
+observations and did not prove the later weapon handoff. A subsequent pair of
+300s natural-intro runs on the same32D1 executable now verifies that handoff:
+Original60 retains141.656s of player observations and native144 retains142.140s;
+both explicitly pass `opening_firearm_equipped_at_end`. First observed weapon14
+arrives at182.703/182.187s, about24.5s after each first player observation
+(158.172/157.672s). Both show advancing hand time and clips836/838/1180/1182/1184.
+Native reports guest Presents, zero interpolation and no presentation failures.
+These runs omit capture, walking/fire and pause replay; they do not establish
+exact animation phase, visual parity, input latency or clean pacing. Profiles
+and fixture are preserved and disposable partitions recycled. Private receipt:
+`logs/natural-long-comparison.json`, with runner/executable/evidence hashes.
+An initial Original
 natural-intro attempt incorrectly combined the fixed pause/stress replay:80s
 Escape skipped the cinematic,83s Escape paused gameplay, and the replay correctly
 failed. It is retained as invalid fixture timing, not reported as a game bug.
