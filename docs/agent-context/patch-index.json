@@ -72,6 +72,18 @@
       ]
     },
     {
+      "name": "independent-pipeline.patch",
+      "sha256": "943952cd92563c728bc4c47813c84148cce2eec61bbc8cd10cb307acc4f0edf2",
+      "targets": [
+        "tools/disasm/__init__.py",
+        "tools/disasm/__main__.py",
+        "tools/disasm/cache.py",
+        "tools/disasm/config.py",
+        "tools/disasm/disasm.py",
+        "tools/disasm/output.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

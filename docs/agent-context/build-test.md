@@ -1,10 +1,9 @@
 # Build, run and validation map
 
-Independent analysis modules (`recomp_image`, `x86_decode`, `x86_flow`,
-`x86_recovery`, `x86_functions`, `recomp_symbols`) are in both source hashes.
-Input tests run standalone imports and 97 existing consumer checks; flow,
-recovery, function and symbol fixtures cover bounds, ownership and discovery.
-Whole-run ASCII limits reject overlong suffixes. Remaining goals are in
+Independent `analysis_*`, `recomp_*` and `x86_*` modules enter both source
+hashes. Runner/cache tests cover standalone CLI, publication, seeds and outputs;
+input tests run 97 existing consumers. `independent-pipeline.patch` redirects
+production analysis. Symbol tooling/translation remain; see
 `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates

@@ -174,7 +174,7 @@ def test_invalid_or_truncated_instruction_has_no_record():
 
 
 def test_standalone_modules_and_cache_invalidation(tmp_path):
-    for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
+    for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
         shutil.copyfile(ROOT / 'tools' / name, tmp_path / name)
     path = write_xbe(tmp_path)
     script = """import sys
@@ -200,7 +200,7 @@ assert recovery.decode_at(image.entry_point, 1) == 1
 detector = FunctionDetector(recovery, image, build_xrefs(recovery, image), LabelManager())
 assert detector.detect_all() >= 1
 assert detector.functions[image.entry_point].num_instructions >= 1
-for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
+for name in ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xbe_image.py', 'xbe_kernel_exports.def'):
     before = source_fingerprint()
     with (Path(sys.argv[1]) / name).open('a') as stream: stream.write('\\n')
     assert before != source_fingerprint()
@@ -242,6 +242,13 @@ from tools.disasm.labels import LabelManager
 from tools.disasm.xrefs import XRefTracker
 assert FunctionDetector.__module__ == 'x86_functions'
 assert LabelManager.__module__ == XRefTracker.__module__ == 'recomp_symbols'
+from tools.disasm.disasm import Disassembler
+from tools.disasm.output import OutputWriter
+from tools.disasm import config
+assert Disassembler.__module__ == 'analysis_runner'
+assert OutputWriter.__module__ == 'analysis_output'
+assert config.__name__ == 'analysis_config'
+assert cache.AnalysisCache.__module__ == 'analysis_cache'
 before = cache.AnalysisCache._opts_key(False)
 cache.source_fingerprint = lambda: 'changed independent dependency'
 assert before != cache.AnalysisCache._opts_key(False)

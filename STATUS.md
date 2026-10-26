@@ -1,3 +1,48 @@
+## Independent analysis runner, cache and output (2026-10-26)
+
+Continuing PR #370 from `a8bf8f13`, production executable analysis now uses
+project-owned configuration, orchestration, seed/section handling, JSON/assembly
+publication and cache receipts in `tools/analysis_*.py`. The compatibility patch
+removes six upstream module bodies. Standalone analysis needs only the project
+modules, credited ABI data and permitted Capstone. Symbol identification,
+translation and runtime services still need replacement; the goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11 evidence:
+
+- **370 passed, 1 skipped in 12m11s** across the combined patch-transition,
+  analyzer/cache, previous analysis/import/parser/fingerprint, Mac-tool and CI
+  scope suite. The cache source-path correction has separate final fixture coverage.
+- **99 focused tests passed**, including 39 original runner/cache cases and the
+  existing consumer subprocess (97 checks). Standalone copied-module CLI tests
+  analyze a synthetic XBE with no toolkit imports, verify JSON/assembly, detect
+  changed outputs, force recomputation and preserve files during stats-only use.
+- Fixtures cover observed seed evidence, malformed records, extra non-executable
+  sections, missing sections, stale metadata, output naming, full instruction
+  bytes, atomic file replacement and invalid receipts after failed publication.
+  Moving identical XBE bytes invalidates cached source-path provenance; the final
+  39 runner/cache tests passed again after that correction.
+- **21 repository context/backlog checks passed.** Both source hashes and both-
+  host CI registration include the independent modules.
+- All five supported-US JSON documents are semantically identical: **15,845
+  functions, 297,911 references, 5,757 strings and 21,753 labels**, plus summary.
+  All **21 generated C/header files remain byte-identical**. Human assembly
+  listings intentionally use the project format; cache receipts use version 2.
+- Full Windows regeneration/build/native checks passed, including the final
+  cache provenance correction; the final production cache verifies successfully.
+- Isolated Scotland the Brave: start/pause/resume captures reviewed; movement
+  11.173 world units, loaded ammo 8 to 6, frozen pause ticks, resumed simulation,
+  backward movement 6.185 units. Last checkpoint 87.464 seconds, process exit 0;
+  no crash artifacts or leftover test partitions. Test profiles unchanged with
+  valid signatures; canonical fixture verified, personal settings/saves unused.
+  Tested executable SHA-256:
+  `2aaf74a41ef205b9c9fecd1b18bbd69037b071de6aa444f5b9449f2c6c75f6a3`.
+
+This bounded injected-input run used minimized/background rendering, original
+60 FPS and skipped movies. Physical input, audio, foreground pacing and full
+levels are not certified. Evidence: `logs/independent-analysis-*` and
+`private/test-saves/independent-analysis-final`. Native Mac acceptance remains pending
+under MAC-071; shared code and Windows results do not establish Mac gameplay.
+
 ## Independent function discovery and metadata (2026-10-26)
 
 Continuing the active replacement goal from `c390bd3d` in PR #370,

@@ -10,7 +10,7 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
-function discovery, labels and cross-references.
+function discovery, labels, cross-references and analysis orchestration/output/cache.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -52,7 +52,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Instruction traversal and reachability | Project-owned `x86_flow.py`; production engine inherits scan, realignment, reachability and queries | Synthetic edges/cycles/overlaps/limits, existing consumer tests, full regeneration and bounded gameplay; native Mac pending |
 | Table recovery and body/entry probes | Project-owned `x86_recovery.py`; production engine is now a compatibility import | Original table/shape/bounds fixtures, existing consumer tests, full regeneration/build and isolated gameplay; native Mac pending |
 | Function discovery, labels and references | Project-owned `x86_functions.py` and `recomp_symbols.py`; production uses compatibility imports | Original discovery/metadata fixtures, existing consumer tests, semantic function/xref comparison, full regeneration/build and isolated gameplay; native Mac pending |
-| Analysis orchestration, symbol tooling and x86-to-C translation | Still upstream around the replaced analysis components | Own configuration, cache/output/CLI, symbol identification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Analysis orchestration, configuration, cache and output | Project-owned `analysis_runner.py`, `analysis_config.py`, `analysis_cache.py`, `analysis_output.py`; compatibility imports serve production | Standalone XBE-to-JSON/assembly CLI, content-verified cache, seed/section/publication fixtures, generation/build and isolated gameplay; native Mac pending |
+| Symbol tooling and x86-to-C translation | Still upstream | Own symbol identification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -91,6 +92,31 @@ fill that evidence gap. The importer has a read-only verification command for
 when an original ISO is available.
 
 ## Current commands
+
+### Complete executable analysis
+
+```sh
+python tools/analysis_runner.py private/game/default.xbe -o private/pipeline/disasm --force
+python -m pytest tests/test_analysis_runner.py tests/test_analysis_cache.py -q
+```
+
+The runner uses only project analysis modules, the separately credited ABI table,
+Python and permitted Capstone. It can operate without the toolkit directory.
+Production `tools.disasm` entry points are compatibility imports supplied by
+`independent-pipeline.patch`. This does not yet remove the generation/runtime
+checkout dependency or upstream text in historical patches and test fixtures.
+
+Configuration derives addresses from the selected executable. Optional metadata
+must agree with it. Explicit extra sections are treated as code by decoding and
+entry probes; missing/empty requested sections fail before output publication.
+JSON retains the function/reference/label/string/summary interchange contract;
+human assembly listings use a project format and retain full instruction bytes.
+
+Cache receipts verify input, implementation, normalized options and output bytes.
+Observed seed status participates in the key. `--force` recomputes;
+`--stats-only` does not write outputs. Files are individually replaced atomically;
+failed publication invalidates the receipt, so mixed results cannot become a
+cache hit. Native Mac validation is pending under MAC-071.
 
 ### Disassembler input and instruction model
 
@@ -202,7 +228,7 @@ The reader was authored from [Caustik's XBE format description](https://xbdev.ne
 It validates file/virtual section extents, retail/debug entry and thunk decoding,
 certificate metadata, library versions and TLS initialization ranges. Analysis
 omits certificate secrets. It preserves the attributes and JSON consumed by the
-current disassembler/recompiler; those consumers remain upstream implementations.
+current disassembler/recompiler; the recompiler remains an upstream implementation.
 The supported title is the pinned US executable; synthetic debug images are not
 evidence that other titles or beta executables work.
 

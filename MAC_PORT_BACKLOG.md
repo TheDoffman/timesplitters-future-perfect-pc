@@ -204,6 +204,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-068 | Independent instruction traversal | Awaiting validation |
 | MAC-069 | Independent table and body recovery | Awaiting validation |
 | MAC-070 | Independent function discovery and metadata | Awaiting validation |
+| MAC-071 | Independent analysis runner and publication | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5735,6 +5736,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   isolated Story movement/fire/pause/resume while preserving the canonical fixture.
 - **Mac implementation and evidence:** Both-host CI registration; Windows
   results do not certify native Mac generation or gameplay.
+
+### MAC-071 - Independent analysis runner and publication
+
+- **Status:** Awaiting validation
+- **PC behavior:** Project-owned configuration, CLI, seed/section selection,
+  analysis sequencing, JSON/assembly output and content-verified cache. The
+  standalone analyzer needs no toolkit checkout; full generation still does.
+- **PC source:** Continuing PR #370; `tools/analysis_runner.py`,
+  `analysis_config.py`, `analysis_output.py`, `analysis_cache.py`,
+  `patches/independent-pipeline.patch` and both source fingerprints.
+- **PC validation:** Original runner/cache fixtures and existing consumer checks;
+  generation/build and bounded isolated game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone with the same source bridge;
+  pathlib, temporary-file publication and no Windows-only analysis behavior.
+- **Mac adaptation needed:** None identified; native acceptance remains pending.
+- **Mac acceptance checks:** Run runner/cache/input/fingerprint tests; regenerate
+  verified US metadata/code with `--generate`, build and run isolated Story
+  movement/fire/pause/resume. Confirm cache reuse and changed-output rejection.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  verification does not establish native Mac generation or gameplay.
 
 ## Entry template
 
