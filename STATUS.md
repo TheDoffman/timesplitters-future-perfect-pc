@@ -1,3 +1,110 @@
+## Pushed-array address recurrence and current crowd profile (2026-10-26)
+
+A bounded45s main-thread diagnostic of03ca7710/d999 retains4,260 samples with
+zero sampler failures/already-suspended/capacity errors. Its total suspension
+cost is1,089.631ms (maximum1.483ms); thread CPU time is27.531s. The first15s of
+combat have123 wait snapshots among1,412 samples; later periods reach the cap
+and wait more. These are diagnostic windows with sampling overhead, not clean
+FPS or a single-bottleneck claim. Scene56/active match/ten bots/foreground
+observations remain valid across the nine five-second windows.
+
+Release PDBs lack source-line records for these PCs. Matching entire existing
+COFF function sections against the sampled PE, ignoring typed relocation
+fields and retaining contained unwind fragments, identifies actual helpers.
+Every match rejects a flipped instruction-byte control; folded aliases stay
+explicit. This confirms56 leaf samples in `push_copy_attribute` and identifies
+the texture/checksum/state helpers without relying on their nearest labels.
+Old-PC matching now refuses a different current executable. Source/object/
+executable hashes remain in the private owned-sample receipts.
+
+The additive `zz-strided-vertex-increment.patch` replaces the per-vertex source
+multiply with an advancing32-bit source offset. Destination offsets retain
+`size_t`; wrapping, copy widths/order, fresh pointer resolution, read guards,
+fallback and per-draw allocations remain. Current MSVC code has no multiply
+inside any of the nine copy-case loops; each case initializes its source once.
+The normal helper shrinks from800 to776 code bytes. No timing, animation,
+geometry cache, input, settings or interpolation policy changes.
+
+Four full-gather tests pass, including24,000 randomized reference comparisons,
+large16,384/65,536-vertex buffers, guard pages for sizes1..64,1,536 direct wrapped
+source cases and compiling over-read/wrong-stride/widened-source controls.
+The pointer stub now widens the already-evaluated expression like production;
+it cannot hide an incorrectly widened accumulator. The supported Windows build
+and bundled gates pass. All21 patch-upgrade cases pass. Two context checks
+initially fail the existing guide-size budgets; details move to the linked
+vertex guide and outside the bounded runtime excerpt. Limits are unchanged,
+and all20 context tests then pass. Original failure logs remain retained.
+The clean live comparison below uses this same rebuilt executable.
+
+Six alternating timing pairs per size compare against the immediately preceding
+production helper/gather. Median ratios by vertex count1/3/16/96/512/16,384/
+65,536 are0.9582/1.0370/0.9483/0.8881/0.8059/0.9957/0.9803. The three-vertex
+case regresses about3.7%; large runs vary. A retained NPC frame has only five
+three-vertex draws among522 indexed draws, but not every indexed draw must use
+gathering. These are component timings, not a measured live FPS improvement.
+Post-conversion GPU replay does not exercise this pre-capture gathering stage.
+
+Capture/trace/sampler-free Disco runs use3440x1440/FOV73/fullscreen (actual
+client1920x1060), Enhanced selected with Classic fallback. Each45s gameplay
+window has19 foreground checkpoints and ten configured bots. Native240:
+232.039FPS, minimum1s201/5s216.8, p995.398ms/worst8.131ms; Original60:
+59.9996FPS, minimum1s/5s60, p9917.221ms/worst17.592ms. Guest Presents increase
+uniquely, interpolation stays zero and bounded independent timing-call/Present
+comparisons pass, rejecting held/wrong-rate counter controls. Game/wall ratios
+are0.999860/0.999877. Profiles/signatures/fixture stay intact and disposable
+partitions are recycled. Different AI/combat paths prevent a causal FPS claim
+against the previous228.466FPS run. Sustained240 and full-game acceptance remain
+open; successful Presents do not measure GPU completion or monitor scanout.
+Private `crowd-8b68-disco{240,-original60}` summaries and
+`logs/crowd-8b68-disco*-{summary,clock}.json` retain the measurements.
+
+New executable SHA256:
+`8b68e72af663ce764f9453f6bf909e1e2e3720cdc19885a9ae8604d76317a514`.
+Receipts: `logs/push-increment-build-receipt.json`,
+`logs/push-increment-codegen.json`, `logs/owned-d999-disco-analysis.json`,
+`logs/push-increment-gather-tests.log` and private
+`push-copy-recurrence-probe/sizes/results.json`. Both hosts share the HLE
+arithmetic; physical Mac performance/gameplay remains unverified.
+
+## Selected NPC pose and GPU replay observations (2026-10-26)
+
+The unchanged03ca7710/d999 Windows build completes an isolated ten-bot Disco
+route with the existing host-call recorder and completed-local-update trace.
+All24 consecutive v9 containers are complete (731–740 draws each); the paired
+completed CPU IDs are consecutive and ten intervals carry zero whole ticks.
+The actual render size is1280x720/FOV73. Camera movement prevents treating
+ordinary screen differences as independent NPC animation evidence.
+
+Reviewed prefix replays identify a visible NPC on the upper-left balcony.
+Fifty indexed-skinning draws within47..168 retain identical geometry in the
+selected28007/28008 pair. The actual shader reads `c[a0+96]`, but vertex input
+v0.x is-32/-28/-24: its effective matrix rows are64..75. An initial control
+incorrectly froze96..191 and had no effect; its source/results are retained.
+The generated shader uses60..63 for projection. Offline derivatives isolate
+the selected NPC parts, hold that camera matrix fixed and retain fresh64..75.
+
+The second interval has game_ticks0/delta0.637014. All50 selected palette
+banks change; actual GPU replay coverage changes by388 pixels. Freezing only
+the effective matrices restores the preceding coverage exactly (zero changed
+mask pixels, maximum channel difference1). The same geometry/resources and
+other second-frame state remain. Palette-relative linear transforms also
+change beyond conservative float32 storage-rounding envelopes in50 of104
+draw/palette-pair comparisons. All104 synthetic common rotation/translation
+controls stay within the envelopes. Repeated material draws mean these are
+not104 distinct anatomical bones. Pivot distances alone are inconclusive at
+articulated joints; the initial distance-only result is retained.
+
+This proves fresh submitted NPC pose data and selected replayed articulation
+on a zero-carried-tick update, independently of common camera/root motion.
+It does not prove every NPC/frame, normal scene occlusion/live framebuffer
+color, exact Original60 NPC speed/events, physical input/Mac or clean pacing.
+Capture/CSV overhead excludes this run from FPS claims. The bounded game exits
+cleanly; profiles/signatures/fixture remain intact and partitions are recycled.
+Receipts: `logs/npc-render-evidence.json`, private `npc-render-d999-disco240`
+correlation and `fixed-camera-npc-actual-rows/{results,relative-pose}.json`.
+No production code/executable changes follow from this passing observation.
+All16 hosted checks now pass for03ca7710, including both native hosts.
+
 ## Repeated shader-constant uploads (2026-10-26)
 
 The PR367 follow-up compares incoming constant registers by bytes and keeps
@@ -13,8 +120,8 @@ fixtures pass, including8,192 edge/random configurations across four rounding
 modes, aliases, FP flags, signed zero/NaNs, initial zeros, fresh/unchanged values,
 null/negative/clipped input and upload failure/zoom retry. Three broken variants
 must compile and then fail. All41 patch-upgrade/context checks pass. The new
-fixture is registered for both native CI hosts; new-head hosted results are
-separate from the prior16 successful checks atcc3f20f7.
+fixture is registered for both native CI hosts; all16 hosted checks pass
+at03ca7710, separately from the prior successful checks atcc3f20f7.
 
 Actual D3D11 GPU replays compare three retained adjacent/late firing frames and
 the constants-only frozen-pose control at prefixes232/282/300. Hand/weapon
@@ -56,7 +163,7 @@ This native run is lower than the previous C8 run's232.989FPS. Different bot/
 combat paths prevent a causal before/after conclusion; no live FPS improvement
 is claimed. Sustained240 in heavy crowds remains unachieved. Physical Mac,
 full-game acceptance and live framebuffer/physical-input limits remain open.
-An additional82 CI scope/gate tests pass; new-head hosted checks remain pending.
+An additional82 CI scope/gate tests pass; all16 hosted checks pass at03ca7710.
 
 ## Submitted and replayed firing-pose observations
 

@@ -63,12 +63,9 @@ Unrequired issue-form and issue-resolution workflows are scoped to their own
 source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
 missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
 
-`test_push_gather.py` compares complete production gathering against its frozen
-original:24,000 calls, fresh bytes, mixed formats/strides/offsets, holes/overlaps,
-invalid declarations/readability and allocation failure. Guard pages bound source
-and destination for sizes1..64; over-read/wrong-stride mutations must fail.
-Both native CI hosts run it. Its optional six-pair benchmark uses2million96-vertex
-draws per round, alternating methods; that CPU kernel result is not game FPS.
+`test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
+guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
+See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gathering).
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.

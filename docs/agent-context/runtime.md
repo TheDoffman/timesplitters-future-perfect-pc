@@ -2,6 +2,17 @@
 
 Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
 
+`zz-strided-vertex-increment.patch` follows the strided-copy specialization in
+common HLE `hle_d3d8_vertex.c`. Each attribute copy advances a32-bit guest
+source offset and a `size_t` destination offset instead of multiplying per
+vertex. Source arithmetic retains modulo2^32 behavior, including wrapped first
+indices and strides; destination arithmetic retains the original host width.
+`HLE_PTR` still resolves each read, scalar copy order/widths and the fallback
+remain, and each gather allocates/reads fresh data. No retained vertex/pose data.
+The full gather/guard/wrap fixture is described in [build-test](build-test.md).
+Host-call captures occur after gathering: replaying unchanged captured inputs
+does not independently exercise this optimization.
+
 Completed local aim/animation state: [optional shared trace](native-local-trace.md).
 
 `zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
@@ -45,6 +56,12 @@ controls. This is common RHI policy, independent of native FPS/guest updates.
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).
+
+When release PDBs lack line records, entire retained COFF function sections can
+be matched against the current PE while ignoring typed relocation fields.
+Require the primary native entry and complete remaining bytes, retain folded
+aliases and reject a changed instruction-byte control; a short prefix or nearest
+name alone is insufficient to attribute a secondary unwind fragment.
 
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in

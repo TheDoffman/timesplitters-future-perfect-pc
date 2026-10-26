@@ -41,6 +41,25 @@ layout (scenario0/1/2). Compare seven alternating method pairs and retain the
 source/patch hashes. This is CPU-kernel evidence, not game FPS, complete renderer
 fidelity or physical Mac acceptance. Live measurements belong in STATUS.
 
+## Pushed-array gathering
+
+`test_push_gather.py` compares complete production gathering against its frozen
+original:24,000 calls, fresh bytes, mixed formats/strides/offsets, holes/overlaps,
+invalid declarations/readability and allocation failure. Guard pages bound source
+and destination for sizes1..64. Additional16,384/65,536-vertex draws exercise
+large buffers;1,536 direct-helper cases check zero/reversed/wrapped32-bit source
+strides and first indices against the original expression. The pointer stub
+widens the already-evaluated expression like production, so it cannot hide an
+incorrect widened source accumulator. Over-read/wrong-stride/wide-source
+mutations must compile and fail. Both native CI hosts run it.
+
+`zz-strided-vertex-increment.patch` advances the guest offset modulo2^32 and
+the destination offset at `size_t` width. It keeps fresh `HLE_PTR` resolution,
+copy order/widths and the unusual-size fallback. Its optional six-pair benchmark
+uses2million96-vertex draws per round, alternating methods. Component timings
+are separate from game FPS; renderer captures occur after this gathering stage
+and cannot independently test it by replaying unchanged post-conversion inputs.
+
 ## Controls fixture clock
 
 The Windows `tests/pc_controls.c` expiry check uses GetTickCount64, matching the

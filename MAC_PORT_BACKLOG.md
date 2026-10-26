@@ -3907,6 +3907,17 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Pushed-array address recurrence (PR #367 follow-up):** Common
+  HLE strided copies advance a32-bit guest offset with original wrapping,
+  retaining fresh reads, copy widths/order, destination width and fallbacks.
+  Windows/Mac share `zz-strided-vertex-increment.patch`; no adapter or setting
+  changes. The existing portable full-gather fixture adds large buffers,
+  modular-wrap cases and a compiling widened-source negative control on both
+  native CI hosts. Windows full gather/wrap/guard checks and clean Original60/
+  native240 crowd runs pass; component timing gains and small-case/large-case
+  limits are recorded in [STATUS](STATUS.md#pushed-array-address-recurrence-and-current-crowd-profile-2026-10-26).
+  Physical Mac gameplay/performance remains **Awaiting validation**.
+
 - **Shader constant uploads (PR #367 follow-up):** Common RHI vertex shader
   state compares fresh constant bytes and skips invalidation for unchanged
   values; changed poses still upload, new buffers remain dirty, screen zoom

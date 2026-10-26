@@ -254,6 +254,13 @@
       ]
     },
     {
+      "name": "zz-strided-vertex-increment.patch",
+      "sha256": "6501e3c7797a1124e5a455b946212a0a467c3df604fa04390204acb45c0628e4",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
       "name": "zz-texel-sample-lanes.patch",
       "sha256": "a88ff19bcf29efbc9bc5f7d0be71ea47f7ca38edc1cdb6960d80adc5e9549e2a",
       "targets": [
