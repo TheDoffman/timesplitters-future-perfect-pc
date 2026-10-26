@@ -4004,10 +4004,11 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   mesh/GPU rendering, collision services and physical Mac remain
   **Awaiting validation**; see STATUS for scope and measurements.
 
-- **Venice callback clock (PR #367 follow-up):** Shared numeric policy admits
-  positive fractional time at the original timed ambient callback's entry.
-  Original dispatcher/reset/countdown/event tests run through240 with controlled
-  sound consumers. No Mac adapter is needed; private-XBE checks skip without
+- **Venice/Subway callback clocks (PR #367 follow-up):** Shared numeric policy
+  admits positive fractional time at the original timed callbacks' entries.
+  Original dispatch/reset/countdown/event tests run through240; Subway also
+  checks original RNG/nonrepeat choices with controlled sound completion.
+  No Mac adapter is needed; private-XBE checks skip without
   assets. Audible/live scene and physical Mac acceptance remain
   **Awaiting validation**. See STATUS and the script-clock guide.
 

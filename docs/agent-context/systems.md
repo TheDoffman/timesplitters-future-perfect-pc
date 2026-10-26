@@ -8,7 +8,7 @@ The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
 Live integer/vector register references: [four-site policy and tests](gpr-refs.md).
-Venice callback: [clock contract](native-script-clocks.md).
+Venice/Subway callbacks: [clock contract](native-script-clocks.md).
 
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;

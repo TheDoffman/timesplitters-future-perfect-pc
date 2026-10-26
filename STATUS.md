@@ -1,3 +1,46 @@
+## Subway callback time and random-event cadence (2026-10-26)
+
+Intersecting the private gate inventory with supported-XBE map callback/name
+fields identifies Venice and Subway candidates. This is a conservative source
+filter, not exhaustive callback coverage. The two Subway descriptors route
++110 to21AF90. The original dispatch/reset/callback reproduction consumes only
+0.25005341 seconds per game second at native60 quarter speed: its whole-tick
+entry gate drops elapsed time before the existing fractional countdown.
+
+The shared exact21AF90 load now admits positive fractional game time. EAX is
+replaced by the private state pointer before use. Original60, active-sound
+polling/completion, previous-variant exclusion, randomized next delay, sounds and
+state layout remain original. No new RNG or retained gameplay state is added.
+
+The Subway fixture executes original dispatcher228870, reset21AF50, callback
+21AF90, variant picker12380 and both integer/float LCG consumers153BB0/153BD0.
+Descriptor and sound consumers are controlled; completion is simulated at0.3
+game seconds. It compares three emitted variants and per-event RNG seeds
+exactly with a coalesced authored-tick Original60 reference at native60/120/
+144/180/240 normal/quarter intervals. Event times remain within0.15 game seconds
+after three events, and the final seed must equal seven total original draws.
+Pause with stale whole ticks must change neither seed, sound polling, callback
+count nor timer. Stack/callee-saved/FPU checks and exact public gate boundaries
+remain. Restoring only the old callback gate fails. The two original map cases
+pass5.06s. All106 timing checks pass178.47s and all20 context checks pass3.57s;
+the normal Windows rebuild and bundled gates pass. Executable SHA256 is
+`bf71d161f4d53c1f7b850a26f0c7e1ad9731a4502bd500477badfdad533e86e1`.
+
+The existing original map test is parameterized for both maps; both-host CI
+already selects it. Private-XBE checks skip without assets, while public scope
+checks run on both hosts. Logs: subway-callback-before.log, -after.log and
+-timing-suite.log; descriptor filtering is private. Live sound/audio-clock
+behavior, broader callbacks and physical Mac gameplay remain unverified.
+
+A clean current-build crowd attempt starts after the other game closes, but
+another checkout relaunches a game/build during the route. The owned test game
+is deliberately closed via WM_CLOSE after an exact executable-path check;
+the runner records an expected unexpected-exit error. This interrupted run is
+not accepted as clean pacing or a complete route. Fixture/signatures remain
+valid and disposable partitions are recycled. Receipt:
+logs/crowd-bf71-disco240-interrupted.json. Further clean tests require an
+exclusive window; the separate active Bugs chat's testing is preserved.
+
 ## Venice level callback elapsed-time repair (2026-10-26)
 
 A read-only inventory of remaining integer game-time gates identifies US222B60.

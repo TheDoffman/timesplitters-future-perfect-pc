@@ -209,10 +209,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * derives its pose from that phase. Its gate otherwise discards subticks.
      * EAX is replaced by the entity state before use; event crossings, clamp
      * and retirement still belong to the original routine. */
-    /* Venice's level callback already subtracts fractional seconds. Its entry
-     * gate must admit the same intervals as the level dispatcher; EAX is
-     * replaced by the callback state pointer before the timer uses it. */
-    if ((site == 0x222B60u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Venice/Subway callbacks already subtract fractional seconds. Their entry
+     * gates admit the same intervals as the level dispatcher; EAX is replaced
+     * by each callback's state pointer before the timer uses it. */
+    if ((site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||

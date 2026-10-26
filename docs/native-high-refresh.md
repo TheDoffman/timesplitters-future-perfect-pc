@@ -273,7 +273,7 @@ remains opt-in while that work is incomplete.
 ## Acceptance audit (2026-10-26)
 
 This audit distinguishes PR #367 rendering source `946867bd` and the subsequent
-Venice callback repair from earlier live builds. Rendering source946867bd and
+Venice/Subway callback repairs from earlier live builds. Rendering source946867bd and
 documentation follow-upa11fef65 pass all16 hosted checks. The callback repair's
 local original-routine/scope checks and normal Windows build pass; its hosted
 checks and clean live crowd acceptance remain separate pending gates.
@@ -290,7 +290,7 @@ or rendered results. The goal remains incomplete.
 | Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |
 | Physics | Original rigid/vehicle/falling/force/contact fixtures; repeated live Siberia approaches agree before contact, but even Original60 routes diverge at the pillar | Coherent off-center geometry/contact response and full handling. Variable asynchronous post-impact endpoints cannot justify coefficient tuning |
 | Weapons and effects | Original firing, sound, projectile, beam, sniper and reload fixtures; live firing/reload cycle; Temple floor-rocket lethality/lifetime/cleanup and respawn at Original60/180/240 | Specific delayed-trail, sniper-hit and pre-bridge NPC reports remain without targeted live confirmation |
-| Scripts and pause | Phase-swept events/reload and pause/resume checks; original Venice dispatcher/timed callback/reset and old-gate failure through240 | Live Venice event/audio confirmation; broader progression and interactions with moving actors/cameras. Other remaining integer gates require individual audit |
+| Scripts and pause | Phase-swept events/reload and pause/resume checks; original Venice/Subway dispatch/timed callbacks/reset and old-gate failures through240; Subway's real RNG and nonrepeat sequence | Live level event/audio confirmation; broader progression and interactions with moving actors/cameras. Other remaining integer gates require individual audit |
 | Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
 | Texture fluidity | Fractional water implementation, GPU-image cycle and resource reuse; texture contracts | Other animated/scrolling surfaces, filtering/alpha/transitions across scenes |
 | Cinematics and audio | Original polling clocks and real-file movie decoder tests; prior movie tint correction | Visible/audible synchronization across representative scenes and host output |

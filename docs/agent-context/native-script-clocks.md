@@ -26,6 +26,29 @@ path, not audible output, every level callback or a live Venice match.
 The asset-free timing-hook fixture also checks exact site/address selection,
 advancing beta intervals, pause and Original fallback on both CI hosts.
 
+## Subway timed callback
+
+The normal/challenge Subway descriptors route +110 to21AF90. Like Venice,
+its entry gate discarded subticks before subtracting float seconds. The exact
+load now follows positive game time; EAX is replaced by its state pointer first.
+Its active-sound polling, completion branch, random choice excluding the previous
+variant and randomized next delay retain their original control flow. Pause
+does not poll sound completion, change timers or consume random draws.
+
+`native_subway_callback.c` runs original228870,21AF50,21AF90,12380,153BB0 and
+153BD0: dispatch, reset, callback, nonrepeat choice and both LCG consumers.
+Sound lookup/playback/completion and descriptor lookup are controlled. Native
+60/120/144/180/240 normal/quarter intervals compare three actual event choices
+and RNG seed observations with a coalesced authored-tick Original60 reference.
+Completion is simulated at0.3 game seconds; that is not a live audio clock.
+Event times stay within0.15 game seconds after three events; chosen variants,
+per-event seeds and final seed after seven total draws must agree exactly.
+Scope/pause/stack/callee-saved/FPU checks remain independent. Restoring only the
+old gate reproduces0.25005341 consumed seconds per game second at native60
+quarter speed and fails. Both map fixtures share the parameterized original-code
+test and verify XBE descriptors before execution. Public timing-hook scope tests
+cover both exact sites. This does not validate sound output or all level callbacks.
+
 ## TRAP motion and contact lifetime
 
 US1D8AB0 rotates a tagged object using a sine-table impulse, drift, upper clamp,

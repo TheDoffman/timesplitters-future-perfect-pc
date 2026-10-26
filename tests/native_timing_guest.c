@@ -340,19 +340,23 @@ static void tree_phase_clock(void)
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
-    /* Asset-free scope/pause contract for Venice's fractional callback gate. */
+    /* Asset-free scope/pause contract for the fractional level callback gates. */
+    const uint32_t callback_sites[]={0x222b60,0x21af90};
     g_tsfp_native_timing_active=1;
     for(unsigned r=0;r<4;r++) {
         const unsigned rates[]={60,120,180,240};
         FLOAT(0x4e794c)=60.f/rates[r];
-        assert(pc_native_global_load(0x222b60,0x4e7944,0)==1);
-        assert(pc_native_global_load(0x222b61,0x4e7944,0)==0);
-        assert(pc_native_global_load(0x222b60,0x1234,9)==9);
+        for(unsigned s=0;s<2;s++) {
+            uint32_t site=callback_sites[s];
+            assert(pc_native_global_load(site,0x4e7944,0)==1);
+            assert(pc_native_global_load(site+1,0x4e7944,0)==0);
+            assert(pc_native_global_load(site,0x1234,9)==9);
+        }
     }
     FLOAT(0x4e794c)=0;
-    assert(!pc_native_global_load(0x222b60,0x4e7944,1));
+    for(unsigned s=0;s<2;s++)assert(!pc_native_global_load(callback_sites[s],0x4e7944,1));
     g_tsfp_native_timing_active=0;
-    assert(pc_native_global_load(0x222b60,0x4e7944,3)==3);
+    for(unsigned s=0;s<2;s++)assert(pc_native_global_load(callback_sites[s],0x4e7944,3)==3);
     WORD(0x563918)=123; WORD(0x4E8CEC)=60;
     setting=NULL; frame(); assert(original_calls==1);
     FLOAT(0x4E794C)=.25f;
