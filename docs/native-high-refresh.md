@@ -284,7 +284,7 @@ or rendered results. The goal remains incomplete.
 
 | Requirement | Evidence inspected | Remaining acceptance |
 | --- | --- | --- |
-| Fresh updates, speed and pacing | Clock/network fixtures; current D675 executable's clean45s ten-bot Disco pair:214.332FPS at240 (minimum1s132),59.9998 at Original60, increasing guest frames, zero interpolation and game/wall near1 | Sustained heavy240 remains unmet; attribute current load dips and cover other demanding scenes. Host Present calls are not scanout |
+| Fresh updates, speed and pacing | Clock/network fixtures; latest paced D675 executable's clean45s ten-bot Disco pair:214.332FPS at240 (minimum1s132),59.9998 at Original60, increasing guest frames, zero interpolation and game/wall near1 | Sustained heavy240 remains unmet. Later945 sampler-recovery build has build/API checks, no new clean pacing claim. Cover other demanding scenes; Host Presents are not scanout |
 | Opening handoff and animation | Original timeline/events, script controls, recorded opening comparisons; selected completed local body/hand/weapon observations through240 | Broader180/240 natural cinematic/handoff and scene rendering; selected clips do not establish all animation |
 | Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse and vehicle fixtures; completed local observations; original registered yaw callback through entity passes, cache and fresh transformed points | Live scripted-object/camera/vehicle/terminal transitions; GPU confirmation and physical-input feel/latency |
 | Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |
@@ -302,13 +302,16 @@ that coverage separate from CPU optimization measurements and Internet latency.
 Further scene/visual comparisons remain necessary. The user's request to defer
 the first mission changes investigation order, not its unresolved reports.
 
-The current executable's clean Original60/native240 crowd pair is complete;
+The D675 executable's clean Original60/native240 crowd pair is complete;
 the measured crowd dips still need attribution and repair. Keep the separate
 CPU diagnostic outside clean pacing acceptance. Any changed implementation
 needs source/executable hashes and complete foreground ten-bot windows without
 another game/build. Different AI routes do not establish a causal gain. Further
 acceptance also needs a different demanding scene or unresolved mechanic;
 repeating the same selected firing/NPC proof does not close those requirements.
+The later945 executable adds sampler allocation recovery. Its normal build and
+API binding/recovery checks do not establish a performance improvement or replace
+the separately versioned D675 gameplay/pacing evidence.
 
 Detailed evidence and limits are in STATUS under **State-preparation live register
 references**, **Pushed-array address recurrence and current crowd profile**,

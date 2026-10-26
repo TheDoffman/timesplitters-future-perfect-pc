@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
+
 Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
 
 Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).

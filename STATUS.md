@@ -1,3 +1,48 @@
+## Sampler allocation recovery and current native CPU attribution (2026-10-26)
+
+The common sampler cache previously recorded a NULL object after a failed
+allocation, so an identical descriptor hit that failed entry indefinitely. At
+capacity it also destroyed the victim and invalidated bound stages before
+attempting the allocation. The full-module reproduction fails both retry and
+retained-owner assertions before repair (`logs/sampler-retry-before.log`).
+
+`zz-sampler-cache-retry.patch` creates before committing cache ownership. Failed
+creation leaves the cache/count/cursor/bound stages intact and remains retryable;
+success keeps the existing replacement invalidation and rebind rules. Warnings
+are bounded at four per cache lifetime. The final six full-module and20 context
+checks pass together in5.80s,
+including pre-fix negative comparisons, nine repeated failures, full-cache
+replacement, live-owner retention, rebind, idempotent shutdown and unchanged
+normal bind digests. Existing no-reuse/mask/failed-entry controls still fail.
+This is a shared Windows/Mac resource-recovery fix, not a measured FPS gain.
+The final fixture also applies the sampler patch forward to the original module
+without the blend/depth/raster cache patch, then verifies the same recovery and
+normal bind digests. Capacity pressure uses32 distinct valid-range descriptors.
+The supported normal Windows build and bundled gates pass (exit0,
+`logs/build-sampler-retry.log`). New executable SHA256:
+`9457715bcbfa4e7a054952199fa05758a12282b18394c316cb4af7816430f098`.
+Its gameplay/pacing and current-head hosted checks remain separate; the clean
+crowd results below belong to D675, not this later executable.
+
+A separate current-D675 owned-thread diagnostic completes4,262 samples over
+45seconds, with zero read/already-suspended/capacity errors. It suspends only
+the verified owned game main thread, totaling1,088.0643ms (maximum2.8846ms),
+so its FPS is excluded from clean pacing. All nine five-second windows retain
+foreground ten-bot Disco observations. Native unwind bounds prevent assigning
+unmatched fragments to nearby symbol names. Whole retained HLE/D3D/kernel COFF
+sections match current PE bytes outside typed relocations; flipped code bytes
+are rejected. This identifies sampled fragments inside `texel_sample` (65 leaf
+samples), `hle_d3d8_shadow_apply_states` (54), `level0_checksum` (49) and
+`shadow_set_texture` (33). It does not cover every guest body or prove a causal
+optimization. Model/render/draw investigation remains necessary.
+
+Private evidence: `crowd-d675-owned-disco240/owned-sample{,-provenance}.json`,
+`owned-coff-matches.json`, `logs/owned-d675-disco-analysis.json` and
+`logs/sampler-final-tests.log`. The existing sampler-object cache and dynamic
+upload rings are already present; do not duplicate them. Full texture change
+detection must remain intact. Current sustained heavy240 acceptance is still
+unmet, as recorded below.
+
 ## Current build: clean crowd pacing and remaining load dips (2026-10-26)
 
 After Bugs completed its separate session, the supported Windows Build finished

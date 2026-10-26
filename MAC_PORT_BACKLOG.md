@@ -3907,6 +3907,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Sampler allocation recovery (PR #367 follow-up):** Common
+  `zz-sampler-cache-retry.patch` creates before replacing a sampler-cache owner,
+  never retains failed entries, retries allocations while preserving live
+  stages, and bounds repeated failure logging. Both hosts use this RHI policy;
+  no Mac adapter or gameplay clock differs. Six Windows full-module checks pass,
+  including the rejected pre-fix retry/eviction behavior and unchanged normal
+  binding digest. The updated normal Windows build and bundled gates pass;
+  its26 state/context checks include forward application to the original module.
+  Hosted Mac checks and physical driver-failure/gameplay
+  validation remain separate. This resource-recovery fix is not a measured FPS
+  improvement. [Evidence](STATUS.md#sampler-allocation-recovery-and-current-native-cpu-attribution-2026-10-26).
+
 - **Pushed-array address recurrence (PR #367 follow-up):** Common
   HLE strided copies advance a32-bit guest offset with original wrapping,
   retaining fresh reads, copy widths/order, destination width and fallbacks.

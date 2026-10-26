@@ -85,7 +85,53 @@ static void material(unsigned i) {
     scissor_enabled=(i>>3)&1;
     scissor_rect.left=(int32_t)i;scissor_rect.top=2;scissor_rect.right=320;scissor_rect.bottom=200;
 }
-int main(void) {
+static void sampler_failures(int at_capacity) {
+    unsigned i,before,killed_before;RhiSampler *held;
+    defaults();CHECK(d3d8_states_init()==S_OK);
+    if(!at_capacity) {
+        before=attempts[3];fail_mask=8;d3d8_states_apply_sampler(0);
+        CHECK(fail_mask==0&&!g_sampler_states[0]);
+        d3d8_states_apply_sampler(0);
+        CHECK(attempts[3]==before+2);
+        CHECK(g_sampler_states[0]&&g_sampler_states[0]->live);
+        held=g_sampler_states[0];before=attempts[3];
+        texture_states[0][D3DTSS_MAXANISOTROPY]=16;
+        texture_states[0][D3DTSS_ADDRESSU]=D3DTADDRESS_CLAMP;
+        for(i=0;i<9;i++) {
+            fail_mask=8;d3d8_states_apply_sampler(0);
+            CHECK(attempts[3]==before+i+1&&g_sampler_states[0]==held&&held->live);
+        }
+        d3d8_states_apply_sampler(0);
+        CHECK(attempts[3]==before+10&&g_sampler_states[0]->desc.max_anisotropy==16);
+    } else {
+        for(i=1;i<=32;i++) {
+            texture_states[0][D3DTSS_MAXANISOTROPY]=1+(i-1)%16;
+            texture_states[0][D3DTSS_ADDRESSU]=i>16?D3DTADDRESS_CLAMP:D3DTADDRESS_WRAP;
+            d3d8_states_apply_sampler(0);
+        }
+        CHECK(alive[3]==32);
+        texture_states[1][D3DTSS_MAXANISOTROPY]=1;
+        d3d8_states_apply_sampler(1);held=g_sampler_states[1];
+        CHECK(held&&held->live);before=attempts[3];killed_before=killed[3];
+        texture_states[0][D3DTSS_MAXANISOTROPY]=1;
+        texture_states[0][D3DTSS_ADDRESSU]=D3DTADDRESS_MIRROR;
+        fail_mask=8;d3d8_states_apply_sampler(0);
+        CHECK(held->live&&g_sampler_states[1]==held&&killed[3]==killed_before);
+        CHECK(g_sampler_states[0]&&g_sampler_states[0]->live);
+        d3d8_states_apply_sampler(0);
+        CHECK(attempts[3]==before+2&&!held->live&&g_sampler_states[1]==NULL);
+        CHECK(g_sampler_states[0]&&g_sampler_states[0]->desc.address_u==RHI_ADDRESS_MIRROR);
+        d3d8_states_apply_sampler(1);
+        CHECK(g_sampler_states[1]&&g_sampler_states[1]->live);
+        CHECK(g_sampler_states[1]->desc.max_anisotropy==1&&alive[3]==32);
+    }
+    d3d8_states_shutdown();d3d8_states_shutdown();
+    for(i=0;i<4;i++)CHECK(!alive[i]&&made[i]==killed[i]);
+    CHECK(peak[3]<=33);
+    puts("PASS: sampler failure retries, live owners retained, replaced stages rebind and shutdown owns once");
+}
+int main(int argc,char **argv) {
+    if(argc>1) { sampler_failures(!strcmp(argv[1],"sampler-replace"));return 0; }
     unsigned i,j,initial[3];defaults();CHECK(d3d8_states_init()==S_OK);
     for(i=0;i<2000;i++) { material(i%16);d3d8_states_apply(); }
     fprintf(stderr,"reuse-phase creates=%u,%u,%u\n",made[0],made[1],made[2]);

@@ -1,5 +1,22 @@
 # Runtime and patch navigation
 
+`zz-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
+Create a replacement before changing the cache count/cursor, destroying its
+victim or invalidating borrowed stage pointers. A failed allocation leaves no
+entry, so later applies retry while existing bindings remain usable. Successful
+replacement keeps the original bound-stage invalidation/rebind behavior.
+Failure warnings are capped at four per cache lifetime and reset on shutdown.
+Descriptors,32-entry capacity and the successful draw path remain unchanged.
+This is shared Windows/Mac RHI policy, not an FPS gain or a new backend cache.
+
+The full-module `test_render_state_cache.py` tests failures in empty/full caches;
+the pre-fix module must fail both recovery assertions. Nine repeated failures
+retain live owners and emit at most four warnings; successful replacement
+invalidates/rebinds borrowed stages and shutdown releases each owner once.
+Normal binding digests still match the pre-change module and no-reuse, lost-mask
+and cached-failure controls remain rejected. Both native CI hosts run these
+asset-free checks; they do not force a real driver/device allocation error.
+
 Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
 
 `zz-strided-vertex-increment.patch` follows the strided-copy specialization in
@@ -48,7 +65,7 @@ once. Failed creates are retried without inserting a null entry or evicting
 an existing object. Full zero-initialized descriptors replace blend/raster
 dirty hashes, with last-descriptor fast paths. Material transitions still
 translate current state and bind each draw; stencil reference and scissor
-rectangle remain dynamic. Sampler behavior is unchanged. The complete-module
+rectangle remain dynamic. Sampler recovery is covered separately above. The complete-module
 `test_render_state_cache.py` compares emitted binds against the pre-cache
 module and checks replacement, failure/retry, shutdown/restart and negative
 controls. This is common RHI policy, independent of native FPS/guest updates.
