@@ -17,7 +17,15 @@ Use `./Play-Native-Mac.command --check` for a read-only prerequisite check.
 
 Keep one verified extraction in `private/game`, containing `default.xbe`, `pak`
 and `xmv`. Transfer it once from the Windows checkout or extract your supported
-US Xbox ISO with the pinned upstream `tools.xiso`; preserve any existing copy.
+US Xbox ISO with the project's own Python importer; preserve any existing copy:
+
+```sh
+python3 tools/import-game.py --iso /path/to/game.iso --output private/game
+```
+
+Python 3.12+ is sufficient for extraction, before runtime setup. Use
+`--verify-only` instead of `--output` to check the image without writing files.
+See [replacement status and import limits](independent-runtime.md).
 Git does not transfer these ignored game files.
 
 From the project root, use Python 3.12 or newer, Xcode command-line tools, and

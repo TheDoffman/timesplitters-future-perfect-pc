@@ -1,5 +1,13 @@
 # Build, run and validation map
 
+`tools/import-game.py` / `disc_image.py` are the project-owned stdlib disc
+importer. `tsfp.ps1 Extract -Python ...` runs before Setup without entering
+the external checkout; Mac uses the same CLI. Existing files must match before
+any copy. `tests/test_disc_image.py` covers format failures, preservation,
+private supported-XBE input and a toolkit-free PowerShell fixture, on both CI
+hosts where applicable. This replaces import only; generation/runtime are still
+upstream. See `docs/independent-runtime.md` for the remaining replacement work.
+
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
 recorded geometry-service boundaries and independent missing-hook controls.

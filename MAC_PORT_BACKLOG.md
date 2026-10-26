@@ -198,6 +198,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
 | MAC-062 | Stable and named game release channels | Awaiting validation |
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
+| MAC-065 | Independent game-disc import | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5607,6 +5608,27 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Shared C# fixtures plus Windows host
   results are recorded in [STATUS.md](STATUS.md#release-channel-strategy-2026-10-22).
   Native execution/visual acceptance is pending; Windows is not Mac evidence.
+
+### MAC-065 - Independent game-disc import
+
+- **Status:** Awaiting validation
+- **PC behavior:** Import the supported game image without the external toolkit;
+  reuse identical files and stop on conflicts without replacing user data.
+- **PC source:** Uncommitted on `feature/independent-game-import`;
+  `tools/disc_image.py`, `tools/import-game.py`, `tsfp.ps1`, `tests/test_disc_image.py`.
+- **PC validation:** 32 focused importer tests passed, including a temporary image
+  carrying the verified private XBE and a PowerShell project without external or
+  venv directories. Full original ISO is unavailable. See
+  [STATUS](STATUS.md#independent-disc-import-2026-10-26).
+- **Existing Mac support:** Same stdlib implementation and Python CLI; no separate
+  Mac parsing/extraction logic. Standard APFS hard-link publication is required.
+- **Mac adaptation needed:** No additional adapter; validate native filesystem
+  behavior and a supported original ISO. Game/runtime generation is unaffected.
+- **Mac acceptance checks:** Run public fixtures on macOS and verify/import an
+  available original ISO once, preserving the authoritative extraction; check
+  case aliases, redirected paths, interrupted import and identical-file reuse.
+- **Mac implementation and evidence:** Shared tests registered in both-host CI;
+  local execution and full retail-disc import remain unverified on Mac.
 
 ## Entry template
 

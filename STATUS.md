@@ -1,3 +1,35 @@
+## Independent disc import (2026-10-26)
+
+This is the first functional step toward replacing the external toolkit's code,
+not completion of the runtime/recompiler rewrite. Work is on
+`feature/independent-game-import`, based on main
+`fba57e948dfda17ad5174121413583c5d29d46da`, separately from vendoring PR #369.
+The implementation and remaining stages are described in
+[the independent-runtime plan](docs/independent-runtime.md).
+
+`tools/disc_image.py` and `tools/import-game.py` are new project implementations
+using Python's standard library and published XDVDFS format descriptions.
+`tsfp.ps1 Extract` now runs them outside the external checkout and accepts an
+explicit Python executable before Setup. Mac uses the same Python CLI. Existing
+runtime/compiler, patches, generated game code and native binaries are unchanged.
+
+Windows 11 x64 / Python 3.12.14: **32 importer tests passed**; combined importer,
+CI-selection, Mac build-tool, context and backlog tests: **146 passed, 1 skipped**. Fixtures cover
+asymmetric directory trees, partition-relative addressing, bounded reads/copies,
+malformed extents/names/cycles, output conflicts, disk-space/read failures,
+exclusive publication, identical-file reuse and input preservation. A disposable
+PowerShell project imports successfully with no external checkout or virtual
+environment. A temporary synthetic image containing the existing supported US
+XBE imports with the required SHA-256. No full game-data duplicate was created.
+
+The original ISO path in the existing local receipt no longer exists. Full
+retail-disc traversal/extraction remains unverified; the private-XBE fixture is
+not evidence of the original ISO's directory layout or all assets. Existing
+`private/game`, personal settings and saves were preserved. Game rebuild/play
+was unnecessary for this extraction-only change. Public fixtures are registered
+for Windows/macOS CI; Mac native filesystem/full-ISO evidence remains pending
+under MAC-065. Output filesystems need hard-link support (normal NTFS/APFS).
+
 ## Electro Chimp health-bar alignment (2026-10-26, issue #102)
 
 At 1280×720 in an isolated, unlocked Windows Test Lab run, the vertical bars

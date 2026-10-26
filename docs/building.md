@@ -41,6 +41,18 @@ The equivalent individual steps are still available for troubleshooting:
 .\tsfp.ps1 Build
 ```
 
+Disc extraction now uses this project's standard-library Python importer and
+can run before Setup, with no external toolkit checkout:
+
+```powershell
+.\tsfp.ps1 Extract -Python 'C:\path\to\python.exe' -Iso 'C:\path\to\game.iso'
+```
+
+Use `python tools/import-game.py --iso /path/to/game.iso --verify-only` for a
+read-only check on either host. Existing matching files are reused; conflicts
+stop without replacement. See [independent replacement status](independent-runtime.md)
+for import limits and the runtime/recompiler work that is still outstanding.
+
 Setup installs dependencies into `.venv`, clones the pinned toolkit, initializes
 SDL and XbSymbolDatabase, builds the symbol matcher, and fetches FFmpeg 8.1 for
 intro movie playback. The FFmpeg download has a pinned SHA-256; if its mutable

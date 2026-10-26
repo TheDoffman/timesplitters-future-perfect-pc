@@ -92,19 +92,24 @@ try {
             Write-Output 'Executable hash matches the US Xbox build (45410066).'
         }
     }
+    elseif ($Action -eq 'Extract') {
+        if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
+        $isoPath = (Resolve-Path -LiteralPath $Iso).Path
+        $importPython = if ($Python) { $Python } else { $envPython }
+        if (!(Test-Path -LiteralPath $importPython -PathType Leaf)) {
+            throw 'Supply -Python with Python 3.12 or newer, or run Setup first.'
+        }
+        Invoke-Checked $importPython @((Join-Path $projectRoot 'tools\import-game.py'),
+            '--iso', $isoPath, '--output', $gameRoot)
+        Assert-Game
+        @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
+            Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
+    }
     else {
         if (!(Test-Path -LiteralPath $envPython)) { throw 'Run Setup first.' }
         Push-Location $toolRoot
         try {
             switch ($Action) {
-                'Extract' {
-                    if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
-                    $isoPath = (Resolve-Path -LiteralPath $Iso).Path
-                    Invoke-Checked $envPython @('-m', 'tools.xiso', 'unpack', $isoPath, '-o', $gameRoot)
-                    Assert-Game
-                    @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
-                        Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
-                }
                 'Test' {
                     Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest',
