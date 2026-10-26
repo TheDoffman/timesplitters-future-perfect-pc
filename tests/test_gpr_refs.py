@@ -77,8 +77,8 @@ def test_deployed_reference_scope(tmp_path):
     source.write_text('#include <assert.h>\n#define RECOMP_NUMERIC_POLICY_HEADER "'+
         (ROOT/'src/pc_native_numeric.h').as_posix()+'"\n#include "recomp_types.h"\n'+
         'int main(void) { assert(RECOMP_USE_GPR_REFS==1);\n'+
-        'unsigned selected[]={0x18ea90,0x21450,0x214c0};\n'+
-        'unsigned unchanged[]={0,0x18ea8f,0x18ea91,0x2144f,0x21451,0x214bf,0x214c1,0x151e80};\n'+
+        'unsigned selected[]={0x18ea90,0x21450,0x214c0,0x22be0};\n'+
+        'unsigned unchanged[]={0,0x18ea8f,0x18ea91,0x2144f,0x21451,0x214bf,0x214c1,0x22bdf,0x22be1,0x22ff0,0x22790,0x151e80};\n'+
         'for(unsigned i=0;i<sizeof(selected)/sizeof(*selected);i++)assert(RECOMP_GPR_ANCHORS(selected[i]));\n'+
         'for(unsigned i=0;i<sizeof(unchanged)/sizeof(*unchanged);i++)assert(!RECOMP_GPR_ANCHORS(unchanged[i]));\nreturn 0;}\n')
     compiler,env=native_compiler(tmp_path);exe=tmp_path/('scope.exe' if os.name=='nt' else 'scope')

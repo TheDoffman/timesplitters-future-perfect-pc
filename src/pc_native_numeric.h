@@ -14,7 +14,7 @@
 #endif
 #ifndef RECOMP_GPR_ANCHORS
 #define RECOMP_GPR_ANCHORS(site) \
-    ((site)==0x18EA90u || (site)==0x21450u || (site)==0x214C0u)
+    ((site)==0x18EA90u || (site)==0x21450u || (site)==0x214C0u || (site)==0x22BE0u)
 #endif
 /* Entry callbacks precede this audited US affine-transform fast path. */
 extern int pc_model_transform_entry(void);

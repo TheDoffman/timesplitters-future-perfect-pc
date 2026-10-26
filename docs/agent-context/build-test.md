@@ -19,7 +19,7 @@ ownership and failures; `rhi_state_cache.h` checks real blend/stencil/scissor
 pixels on Windows WARP/Mac Vulkan. The Vulkan fixture defines `TSFP_RHI_RENDERER`
 for common display-policy declarations. See [runtime](runtime.md).
 
-`test_gpr_refs.py` covers integer/vector live-cell references, callbacks, aliasing,
+`test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
 mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator
 patch follows model-entry policy; old fixture stacks omit both until upgrade.
 Only generated unused labels are exempted from this fixture's fatal warnings.

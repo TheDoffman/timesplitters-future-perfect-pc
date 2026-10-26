@@ -16,7 +16,8 @@ expressions in unselected large bodies. The fixture checks global/selected/
 global/selected transitions in preprocessed output, as well as runtime behavior.
 
 The title policy in `src/pc_native_numeric.h` enables references only for
-the profiled model-node renderer18EA90, state setter21450 and state flush214C0.
+the profiled model-node renderer18EA90, state setter21450, state flush214C0
+and state preparation22BE0.
 Other sites select their existing global aliases. The template default is off
 for titles without this policy. EBP and the existing SEH frame bridge are
 unchanged. This applies to Original and native modes without changing clocks.
@@ -35,7 +36,7 @@ exercise integer/partial writes, vector/scalar lane operations, unaligned loads,
 guest-stack/data aliasing, nested calls and
 callbacks that inspect the real cells. Results and intermediate-state digests
 match the legacy mode. Mutations redirecting EAX or XMM0 to a copied value fail.
-The deployment selector also checks all three sites and neighboring exclusions.
+The deployment selector also checks all four sites and neighboring exclusions.
 Tests run on Windows/macOS; Windows uses events/threads and POSIX uses pthreads
 only inside the fixture. Clang permits the generator's fall-through block labels
 with `-Wno-unused-label`; other `-Wall -Wextra` warnings remain fatal. Positive
@@ -62,3 +63,15 @@ preprocessor-scoped header measures3678 instruction lines/eight TLS-base reads;
 its supported Windows build passes. Compiler-output counts are not dynamic cost
 or live-game acceptance; see STATUS for current gameplay evidence.
 See STATUS for current build/tests and unverified measurements.
+
+The22BE0 extension is based on the complete unmodified generated translation
+unit with normal compiler/policy/headers: the baseline target matches the
+normal object outside typed relocations. Its selector-enabled code changes
+8,774 to6,844 bytes and116 to93 static TLS-base loads. An isolated-body compile
+does not reproduce the production inline context and is not the deployment
+performance baseline. Private native text/string slices retain all instructions
+and typed relocations; controlled out-of-line services compare memory, GPRs,
+vectors, FPU/FP flags and callback/dispatch observations across four rounding
+modes and six scenarios. Native timings are component evidence with mocked
+services. Slices omit unwind metadata and must never enter the game build.
+Normal-build, live-game and physical-host acceptance remain separate in STATUS.

@@ -29,7 +29,7 @@ introduced. `test_vertex_expand.py` compares full output/stride/failure/stream/
 allocation/FP behavior against a frozen pre-change body, including guard pages
 and independent broken-copy/order/fallback controls. Live results belong in STATUS.
 
-`zz-stable-gpr-refs.patch` and the title's three-site selector keep references
+`zz-stable-gpr-refs.patch` and the title's four-site selector keep references
 to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
 
 `zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`

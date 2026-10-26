@@ -1,3 +1,40 @@
+## State-preparation live register references (2026-10-26)
+
+The shared title policy additionally selects22BE0 for live integer/vector cell
+references. It retains addresses of the original thread-local register cells,
+not copied values: nested calls, callbacks and partial writes remain immediate.
+The existing three selected sites remain enabled; clocks, generated guest code,
+MMX/x87, gameplay policy and production compiler flags are unchanged.
+
+A current-executable/PDB audit identifies116 static TLS-base loads in the
+8,774-byte production preparation body. Compiling the entire unmodified generated
+translation unit reproduces that baseline outside identical typed relocation
+fields. Enabling22BE0 produces6,844 bytes,93 TLS-base loads and the same27 calls.
+An initial command-line function-macro experiment was invalid (MSVC ignored its
+selector); the corrected forced-include policy asserts its selection and makes
+that warning fatal. Isolated-body compiles do not reproduce production inlining
+and are not the performance baseline.
+
+Private native slices preserve the complete target instructions, typed
+relocations and string sections. Four rounding modes and six scenarios compare
+full8MiB guarded guest memory, GPR/vector/FPU/FP state, nested callback and dispatch
+observations over10,000 calls per variant. All pass. Seven alternating million-call
+timing pairs per scenario give median candidate/reference ratios0.443..0.547.
+These are helper timings with controlled out-of-line service spies, not measured
+game FPS gains or proof of every real service interaction. Private slices omit
+unwind metadata and never enter the game build.
+
+All25 focused register-reference/context tests pass in9.40s. The supported normal
+Windows build and bundled gates pass. Its complete preparation body matches the
+executed candidate outside identical typed relocations; executable SHA-256 is
+`3c5beb5424be89d976b2e7a52e18ce61cc0ff49fbf9cff5e53864e77ddfce830`.
+Receipts: ignored logs/state-prepare-deployed-codegen.json,
+gpr-state-prepare-full-chunk.json and gpr-state-prepare-native-execution.json.
+Clean live crowd comparison for this executable remains pending: a game from
+another checkout is running and is preserved. Prior crowd results below are
+for the preceding executable, not this extension. Physical Mac gameplay and
+performance, broad mechanics and sustained heavy240 remain unverified.
+
 ## Pushed-array address recurrence and current crowd profile (2026-10-26)
 
 A bounded45s main-thread diagnostic of03ca7710/d999 retains4,260 samples with

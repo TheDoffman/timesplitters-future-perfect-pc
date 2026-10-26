@@ -3951,8 +3951,8 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and causal game FPS improvement remain **Awaiting validation**.
 
 - **Live register references (PR #367 follow-up):** Shared generator/template
-  policy retains addresses of the same live integer/vector TLS cells in three profiled
-  routines (18EA90/21450/214C0). No values are cached, ABI layout changed or
+  policy retains addresses of the same live integer/vector TLS cells in four profiled
+  routines (18EA90/21450/214C0/22BE0). No values are cached, ABI layout changed or
   guest clock altered. Common generated-code/callback/alias/thread fixtures
   run on both hosts. Regeneration is required; legacy/manual sources keep
   existing aliases. No Mac adapter is needed. Windows build/tests and live
