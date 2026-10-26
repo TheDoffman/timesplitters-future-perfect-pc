@@ -47,6 +47,13 @@ not attributing the cost to one instruction or claiming a causal speed gain.
 The240 pacing gaps below remain open; refreshed checks for this follow-up are
 pending. The overall goal remains active.
 
+The2d9472b0 hosted Mac suite passes675 tests, skips235 and passes18 subtests,
+but its deliberate private-path mutation fails compilation under Clang's
+`-Werror=empty-body` rather than reaching the expected runtime assertion.
+The variant now uses an explicit no-op expression instead of an empty body;
+strict compiler flags and the runtime privacy assertion remain enabled.
+Production collector/game code is unchanged by this fixture correction.
+
 ## Immutable render-state reuse candidate (2026-10-26)
 
 `perf/native-crowd-render-cost` builds on merged main `e9d9faeb`. The gameplay

@@ -22,7 +22,7 @@ def test_sample_pc_locations(tmp_path,mutation):
     elif mutation=='disabled-work':
         source=source.replace('if (!dump || !s_pc_symbol[0]) return;','/* mutation: disabled work */')
     elif mutation=='private-path':
-        source=source.replace('file = at + 1;','; /* mutation: retain private path */')
+        source=source.replace('file = at + 1;','(void)at; /* mutation: retain private path */')
     fixture=tmp_path/'sample_pc.c'
     fixture.write_text((ROOT/'tests/sample_pc_locations.c').read_text().replace('/* PRODUCTION_PC_REPORT */',source))
     compiler,env=native_compiler(tmp_path)
