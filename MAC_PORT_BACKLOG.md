@@ -5615,7 +5615,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Setup reconstructs the pinned runtime from bundled source,
   without downloading the original runtime repository. Existing checkouts and
   patch ledgers are preserved; third-party dependency downloads keep their pins.
-- **PC source:** Uncommitted on `feature/self-contained-runtime`;
+- **PC source:** `f57875a5`, [PR #369](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/369);
   `vendor/ts3FPrecomp`, `tools/prepare-runtime.py`, `tsfp.ps1`, shared CI and packaging.
 - **PC validation:** See [STATUS](STATUS.md#self-contained-runtime-source-2026-10-26).
 - **Existing Mac support:** `tools/build-native-mac.py --setup` uses the same
@@ -5625,8 +5625,9 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac acceptance checks:** Run snapshot/patch tests and native setup/build on
   Apple Silicon, verify executable modes and direct SDL/XbSymbolDatabase pins,
   inspect package source ZIPs and confirm existing local files survive setup.
-- **Mac implementation and evidence:** Shared entry points implemented; native
-  Mac build and package execution unavailable on this Windows host.
+- **Mac implementation and evidence:** At `f57875a5`, macOS CI passed snapshot
+  and historical patch upgrades, runtime regressions and asset-free GPU contracts.
+  Native Mac game build/package execution with private data remains unverified.
 
 ## Entry template
 

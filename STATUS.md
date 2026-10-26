@@ -16,13 +16,20 @@ this is build/source-distribution validation, not a new gameplay claim.
 The executable SHA-256 is `ca10ea2adc61757dd4b7375850665c5a58654ce6c70fe270f563cb3ccdef6787`.
 Evidence: ignored `logs/runtime-vendor-build.log`.
 
-Focused snapshot/CI/Mac-tool/texture checks initially passed 116 tests with one
-skip; context/backlog/CI/Mac-package checks passed 109 tests. Full snapshot,
-patch-transition and related build-tool checks are still running; their final
-result will replace this pending note. Snapshot tests disable all Git transports,
-exercise corruption/failure preservation, and reconstruct usable pristine Git
-history. Both-host CI is pending. Native Mac game build/package execution is
-unavailable on this Windows host; see MAC-064. Separate dependency downloads
+Full snapshot, patch-transition, CI-scope, Mac build-tool and Mac-package suite:
+**161 passed, 1 skipped** in 768.90 seconds on Windows (Python 3.12.14).
+Context/backlog/CI/Mac-package checks separately passed 109 tests. Snapshot tests
+disable all Git transports, exercise corruption/failure preservation, reconstruct
+usable pristine Git history, and apply all 177 patches twice. Evidence:
+ignored `logs/runtime-vendor-tests.log`.
+
+At implementation commit `f57875a577accb915e054f86407788731c15a08b`,
+[PR #369](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/369)
+CI passed Mac snapshot/patch upgrades, native runtime regressions and asset-free
+GPU contracts, both launcher builds and the dual-platform launcher gate.
+Windows runtime/patch CI was still running when this record was written; see
+PR checks for its final result. Native Mac game build/package execution with
+private game data remains unverified; see MAC-064. Separate dependency downloads
 (SDL, symbol database, Python/FFmpeg/SDKs) and user-supplied game data remain.
 
 ## Electro Chimp health-bar alignment (2026-10-26, issue #102)
