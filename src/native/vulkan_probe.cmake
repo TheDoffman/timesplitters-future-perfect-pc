@@ -9,7 +9,7 @@ if(TSFP_VULKAN_SDK)
         "${TSFP_NATIVE_DIR}/../../tests/rhi_menu_sampling.c"
         "${TSFP_VK_SOURCE}/rhi.c" "${TSFP_VK_SOURCE}/rhi_shader_cache.c"
         "${TSFP_VK_SOURCE}/d3d8_compile.c" "${TSFP_VK_SOURCE}/d3d8_resources.c"
-        "${TSFP_VK_SOURCE}/d3d8_screencopy.c")
+        "${TSFP_VK_SOURCE}/d3d8_screencopy.c" "${TSFP_VK_SOURCE}/d3d8_states.c")
     target_include_directories(tsfp_rhi_vulkan_test PRIVATE "${TSFP_VK_SOURCE}"
         "${TSFP_RUNTIME_DIR}/src" "${TSFP_RUNTIME_DIR}/src/config" "${TSFP_NATIVE_DIR}/.." "${TSFP_NATIVE_DIR}/../../tests")
     target_link_libraries(tsfp_rhi_vulkan_test PRIVATE platform)

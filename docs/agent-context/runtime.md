@@ -1,5 +1,17 @@
 # Runtime and patch navigation
 
+`zz-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
+32-entry descriptor caches for immutable blend, depth/stencil and rasterizer
+objects. Current bindings borrow cache objects; shutdown destroys each owner
+once. Failed creates are retried without inserting a null entry or evicting
+an existing object. Full zero-initialized descriptors replace blend/raster
+dirty hashes, with last-descriptor fast paths. Material transitions still
+translate current state and bind each draw; stencil reference and scissor
+rectangle remain dynamic. Sampler behavior is unchanged. The complete-module
+`test_render_state_cache.py` compares emitted binds against the pre-cache
+module and checks replacement, failure/retry, shutdown/restart and negative
+controls. This is common RHI policy, independent of native FPS/guest updates.
+
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).

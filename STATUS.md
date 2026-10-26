@@ -1,3 +1,57 @@
+## Immutable render-state reuse candidate (2026-10-26)
+
+`perf/native-crowd-render-cost` builds on merged main `e9d9faeb`. The gameplay
+profile below includes repeated driver allocations from `d3d8_states_apply`:
+the previous frontend remembers only its current blend/depth/rasterizer object
+and recreates it after material switches. `zz-render-state-cache.patch` retains
+up to32 complete immutable descriptors/objects per category, using exact
+zero-initialized descriptor comparisons and a last-descriptor fast path.
+Replacement releases one cache owner; shutdown releases all owners once.
+Failed creation leaves the cache intact and retries on the next request.
+Current guest state still translates/binds each draw, including dynamic stencil
+reference and scissor rectangle. No animation, geometry, texture, timing, save
+or input data is retained by this change. Sampler policy is unchanged.
+
+The complete production state module emits identical descriptor/bind digests
+to its pre-cache counterpart through2288 material/pressure draws, failure/retry
+and shutdown/restart. In its2000-draw reuse phase, original blend/depth/raster
+creates2000/1000/2000 objects versus4/4/6 with the cache. Ownership stays within
+32 retained objects per category (33 transiently while creating a replacement);
+all owners are released. Independent no-reuse, lost-mask and failed-hit mutations
+are rejected. Focused4 checks pass. This proves reduced object creation in the
+fixture, not a measured game FPS improvement.
+
+Windows WARP pixel readbacks additionally pass cached alpha blend A/B/A,
+dynamic stencil-reference rejection/acceptance, moving scissor rectangles and
+capacity replacement using real RHI objects and the production module. Those
+checks join the existing common Mac Vulkan target. Five combined GPU/cache
+checks pass in5.05s. The broader renderer/patch migration selection passes
+55 tests with one Mac-only skip in647.56s. Supported Windows build and bundled
+checks pass; candidate executable SHA256 is
+`28041c9960003a17d46d92fe7cec7bae130850ff89b0ede804a92abca9477dc7`.
+Physical Mac validation remains pending under MAC-060.
+
+The first candidate Temple run exits0 with ten bots and preserved fixture,
+profiles and signatures, but overlaps the regression suite and is excluded
+from clean performance comparison. The subsequent isolated capture/sampler-free
+240 run (`crowd-state-cache-clean-temple240`) completes45s with10744 guest
+Presents:238.7781/s average,218 minimum one-second bin,232 minimum five-second
+rate, p99 4.885ms and worst7.506ms. Zero interpolation; independent19 timing-call
+observations measure10018 calls/41.9718s =238.6842/s and agree with accepted
+Presents within one in-flight call. Level-clock speed is0.999878 game seconds
+per wall second; maximum read span13.6us. All ten bots retain9..19 distinct
+sampled positions, with foreground19 active checkpoints. Human health spans
+0..1.75, so this again includes death. Profiles/fixture/signatures and disk
+cleanup pass, exit0. Present CSV SHA256:
+`2cbc26fa2cc2225baa18d07d83ac3b07f04912010349a456d25a63c291830996`.
+
+The one-second minimum is lower than the earlier225; differing AI/routes and
+mixed combat/death prevent a causal speed comparison. This run does **not**
+establish an FPS improvement or resolve the crowded240 pacing gap. The proven
+benefit is fewer immutable object creations with matching binds/pixels in the
+controlled fixtures. Current-head hosted checks, broader live rendering and
+physical Mac acceptance remain pending. The overall goal remains active.
+
 ## Crowded Temple follow-up (2026-10-26)
 
 PR #366 is merged into main `e9d9faeb`; Windows/macOS runtime, patch

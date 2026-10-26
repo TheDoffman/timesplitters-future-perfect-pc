@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Immutable render-state reuse (2026-10-26, uncommitted):** Common RHI
+  `zz-render-state-cache.patch` retains up to32 exact descriptors each for
+  blend, depth/stencil and rasterizer state objects across material switches.
+  Dynamic stencil references/scissor rectangles and all guest updates remain
+  fresh. Shared complete-module bind/ownership fixtures join Windows/macOS CI.
+  No OS adapter or legacy-GL change is needed. Windows build/tests pass as
+  recorded in STATUS; physical Mac scene/rendered acceptance remains
+  **Awaiting validation**.
+
 - **Player clear-slide guard (2026-10-25, PR #366):** Shared
   `pc_native_walk_guest.h` scopes fractional C54A0 calls so a completed clear
   slide selects the existing small-motion guard. Blocked/Original/whole paths

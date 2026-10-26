@@ -219,6 +219,13 @@
       ]
     },
     {
+      "name": "zz-render-state-cache.patch",
+      "sha256": "243749c7fec58e460465bd70e286b92debfbf5621475cc09613393b6715af4d5",
+      "targets": [
+        "src/d3d/d3d8_states.c"
+      ]
+    },
+    {
       "name": "zz-sampler-caller-depth.patch",
       "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
       "targets": [

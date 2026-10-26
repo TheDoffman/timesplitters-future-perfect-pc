@@ -1,5 +1,17 @@
 # Build, run and validation map
 
+`tests/test_render_state_cache.py` compiles the complete common state module
+against observable RHI services on Windows/macOS. It reconstructs the pre-cache
+module by reversing only `zz-render-state-cache.patch` in a temporary tree,
+then compares every emitted descriptor and dynamic bind through material
+changes and capacity pressure. Create failures/retries, bounded ownership,
+shutdown/restart and three independent mutations are checked. It runs in both
+native-runtime CI jobs; mocked RHI calls do not replace rendered GPU acceptance.
+`rhi_state_cache.h` additionally exercises the production module on real RHI
+objects: alpha blend/reuse, stencil-reference changes, moving scissor rectangles
+and replacement must produce expected readback pixels. The existing Windows
+WARP and native Mac Vulkan targets both include it.
+
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
 recorded geometry-service boundaries and independent missing-hook controls.
