@@ -113,6 +113,14 @@ def main():
     assert not args.trace_network_poses or args.lan_role
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
+    # Bounded foreground tests must not compete with another checkout or play
+    # session. Never close the other process; leave it to its owner instead.
+    import csv
+    inventory=subprocess.run(['tasklist.exe','/FI','IMAGENAME eq futureperfect_recomp.exe',
+                              '/FO','CSV','/NH'],capture_output=True,text=True,check=True,timeout=10)
+    existing=[row[1] for row in csv.reader(inventory.stdout.splitlines())
+              if len(row)>1 and row[0].lower()=='futureperfect_recomp.exe']
+    assert not existing, f'Another game is running (PIDs {", ".join(existing)}); wait for its owner before testing'
     if args.profile_pc_symbol and (not args.profile_cpu or len(args.profile_pc_symbol)>=96 or any(c in args.profile_pc_symbol for c in '\t\r\n')):
         parser.error('--profile-pc-symbol requires --profile-cpu and a symbol shorter than 96 characters without tabs/newlines')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256

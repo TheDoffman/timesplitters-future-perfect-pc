@@ -18,6 +18,44 @@ challenge coverage at other aspect ratios and a native Mac build/visual check
 remain pending (MAC-063). The related #101 texture report was previously
 resolved by asset re-extraction and this patch does not change textures.
 
+## Main integration and foreground combat regression (2026-10-26, PR #367)
+
+The absent6f7e678c CI runs were caused by a conflict with main's merged #368
+health-bar change. Merge5ab7b2de preserves that fix and both validation histories;
+the runtime guide's detailed health-bar note now sits outside the bounded
+advisory excerpt. All16 exact-head5ab7b2de hosted checks pass, including both
+native runtime/patch hosts and launcher/release gates. This establishes the
+asset-free Mac contracts, including state-layout parity, not physical Mac play.
+The supported combined Windows build and bundled gates pass (exit0,
+`logs/build-main-healthbar-merge.log`), producing SHA256
+`8db5c2f4a2804dc2dfc4cb5eedeff2457aa8a9a65487ff6c499df23a87dc6258`.
+
+The old rocket route lacked a focus step. It now focuses before navigating;
+the analyzer rejects absent/background/minimized/invisible checkpoint windows
+and background effect samples. Five new negative cases plus existing contracts
+pass28 tests; combined analyzer/context checks pass48 in3.83s. The bounded
+Windows runner also refuses to launch if any other `futureperfect_recomp.exe`
+exists; a live unrelated checkout process was detected without changing its
+session or the test directory. This is test isolation, not a gameplay change.
+
+On the combined executable, the capture-free120 FPS Temple floor-shot route
+passes: one rocket consumed, health1.75 to0, respawn restored,8.016818 walking
+distance,6.10 game seconds over6.103 wall seconds,127 complete effect samples,
+no missing player reads, explosion age error0.004750 seconds and disappearance
+bounds0.699872..0.750131 seconds. All required windows/effect samples are active
+foreground and effects are empty after settling. This establishes selected
+lethality/lifetime/recovery, not unsaturated damage equivalence, audio or FPS.
+`private/test-saves/regression-merged-rocket120/rocket-impact-results.json`
+and its provenance/report bind the result to this build and route.
+
+Capture-on attempts failed route/clock acceptance at3440x1440 and are excluded
+(`logs/*capture-invalid.json`). The capture-free Original60 comparison lost
+foreground at its final walk while another checkout game was running; it too
+is excluded as a complete comparison (`logs/rocket60-focus-lost-invalid.json`).
+That game remains untouched in accordance with the user's request to let Bugs
+finish first. The Original60 repeat and broader live acceptance remain pending;
+no new game launch is permitted by the test runner while that process exists.
+
 ## State-layout mapping preparation (2026-10-26, PR #367)
 
 The retained Disco CPU diagnostic includes54 leaf samples in common shadow-state
