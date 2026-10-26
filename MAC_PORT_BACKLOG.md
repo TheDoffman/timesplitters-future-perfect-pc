@@ -3907,7 +3907,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
-- **Player clear-slide guard (2026-10-25, local follow-up):** Shared
+- **Player clear-slide guard (2026-10-25, PR #366):** Shared
   `pc_native_walk_guest.h` scopes fractional C54A0 calls so a completed clear
   slide selects the existing small-motion guard. Blocked/Original/whole paths
   retain their branch; no geometry, response constants or save layout changes.
