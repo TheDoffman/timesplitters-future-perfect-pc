@@ -290,6 +290,13 @@
       ]
     },
     {
+      "name": "zzzz-world-health-bars.patch",
+      "sha256": "d709292e51fb5710709caaf1a8f5aa10e0cd6cd6e47f28f2736c1722c6a10a7c",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
       "name": "zzzzz-mac-high-refresh.patch",
       "sha256": "2679504ee0f1ab8fa232e53790302671e9ae77daf38d64994fcdb885fcd19a87",
       "targets": [

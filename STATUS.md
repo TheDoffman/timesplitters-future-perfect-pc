@@ -1,3 +1,23 @@
+## Electro Chimp health-bar alignment (2026-10-26, issue #102)
+
+At 1280×720 in an isolated, unlocked Windows Test Lab run, the vertical bars
+in Monkeying Around → Electro Chimp Discomatic were visibly pulled toward the
+center instead of following the monkeys. A D3D frame replay isolated them to
+an untextured, transformed 16-byte screen-space draw at depth near 1. Menu
+rectangles use depth near 0. The camera already projects the bars for the wide
+view, so applying the centered 4:3 HUD placement a second time causes the
+drift.
+
+`patches/zzzz-world-health-bars.patch` leaves those projected draws across the
+full output while retaining the normal HUD placement for other sprites. A
+repeat challenge run at 1280×720 showed bars alongside moving monkeys. The
+Windows Release game build, `tsfp_pc_display_test`, patch-stack validation,
+`tools/repo-context.py check --base HEAD`, and the focused
+`test_fresh_checkout_and_repeated_build` patch-transition test passed. Full
+challenge coverage at other aspect ratios and a native Mac build/visual check
+remain pending (MAC-063). The related #101 texture report was previously
+resolved by asset re-extraction and this patch does not change textures.
+
 ## Fractional clear-slide repair (2026-10-25, current branch)
 
 `fix/native-player-wall-contact` starts from merged main6aeaa8b1/PR #364.
