@@ -9,18 +9,30 @@ data, transformed pose or allocation survives that draw. Stream lookups and
 their failure order, padding, SHORT/NORMPACKED3 arithmetic and width/format
 fallbacks retain their existing behavior.
 
+`zz-vertex-expand-tiles.patch` follows that patch and bounds every attribute/tail
+pass to32 vertices, rather than sweeping a large expanded buffer repeatedly.
+Advance to `begin + min(vertices - begin,32)` to keep the final partial tile
+within range without unsigned wrap. All vertices are still converted. Compare
+tiny, partial-tile and large draws; a96-vertex benchmark alone missed the initial
+whole-buffer kernel's slowdown above16,000 vertices.
+
 The selector tail-calls the unchanged generic fixed-function body or the packed
 setup. A portable noinline compiler boundary preserves the generic compiler
 scope; no OS rendering adapter or guest-clock change is added.
 
 `tests/test_vertex_expand.py` compiles the full production functions against
-`vertex_expand_reference.inc`, the frozen pre-change HLE body.48,000 comparisons
-span four rounding modes, fresh/aliased streams, overlapping prefix outputs,
+`vertex_expand_reference.inc`, the frozen pre-change HLE body.48,000 layout comparisons
+span vertex counts0..1024, four rounding modes, fresh/aliased streams, overlapping prefix outputs,
 zero padding, lookup/allocation failure and source/destination guard pages.
 Widened raw-copy, read-only extra-byte, wrong-stride, reversed-order and missing-
-fallback mutations must compile and then fail. The extra-byte mutation preserves
+fallback plus repeated tile-origin mutations must compile and then fail. The extra-byte mutation preserves
 output and must still fail at a guard page. Guard cases must reach conversion, rather
 than accidentally passing because stream validation rejected their layout.
+Protected cases use4/132/260 vertices and16 usable pages plus one guard page;
+they span multiple tiles while keeping destination allocations16-byte aligned.
+Another128 cases compare complete large outputs near4,096/16,384/65,536 vertices
+in both packed layouts, using NORMPACKED3 and SHORT4 under all four rounding
+modes. Keep these checks distinct from performance timings/checksums.
 Both native CI hosts run the fixture. It needs no game assets.
 
 The optional executable arguments `<scenario> <enabled>` time600,000 draws of

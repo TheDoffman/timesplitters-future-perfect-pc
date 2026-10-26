@@ -2,7 +2,7 @@
 
 Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
 
-Vertex conversion: [full-function parity, guards and CPU timing](vertex-expand.md).
+Vertex conversion: [tiled full-function parity, guards and CPU timing](vertex-expand.md).
 Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fixture-clock).
 
 Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is

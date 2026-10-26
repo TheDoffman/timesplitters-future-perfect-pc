@@ -1,7 +1,8 @@
 # Runtime and patch navigation
 
 `zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
-common `hle_d3d8.c`. Attribute/width dispatch moves outside the vertex loop;
+common `hle_d3d8.c`; `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+Attribute/width dispatch moves outside the vertex loop within each tile;
 fresh stream-zero tails and converted prefixes still use a new zeroed allocation
 per draw. Parsed prefixes precede tails; per-vertex attribute order is preserved
 even when outputs overlap. Raw copies use exact byte widths, SHORT/NORMPACKED3

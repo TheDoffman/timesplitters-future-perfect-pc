@@ -3908,8 +3908,9 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
 - **Packed vertex conversion (PR #367 follow-up):** Shared HLE
-  `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute
-  instead of per vertex while retaining fresh input, zero padding, arithmetic,
+  `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute;
+  the following `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+  Both retain fresh input, zero padding, arithmetic,
   allocation/failure policy and per-vertex attribute order. The fixed-function
   selector retains its generic body. No OS adapter is needed; the portable
   noinline compiler boundary keeps its existing scope. Full-function reference,

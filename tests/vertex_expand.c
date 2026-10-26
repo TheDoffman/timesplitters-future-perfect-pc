@@ -24,17 +24,17 @@ static struct shadow_program g_programs[1];
 static int g_shadow_vs_is_program=1,g_shadow_vs_slot;
 static unsigned alloc_count,stream_count;static uint64_t stream_hash;
 static int fail_alloc,missing_stream;
-static uint8_t sources[3][32768];static uint32_t strides[3];
+static uint8_t sources[3][131072];static uint32_t strides[3];
 static uint8_t *source_override[3],*input_override;
 static uint8_t *guard_base[2],*guard_pointer[2];static unsigned guard_used;static int guard_output;
-static size_t page_size;
+static size_t page_size,guard_span;
 static uint8_t *guard_mapping(void) {
 #ifdef _WIN32
-    uint8_t *base=VirtualAlloc(NULL,2*page_size,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);DWORD old;
-    assert(base&&VirtualProtect(base+page_size,page_size,PAGE_NOACCESS,&old));
+    uint8_t *base=VirtualAlloc(NULL,guard_span+page_size,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE);DWORD old;
+    assert(base&&VirtualProtect(base+guard_span,page_size,PAGE_NOACCESS,&old));
 #else
-    uint8_t *base=mmap(NULL,2*page_size,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0);
-    assert(base!=MAP_FAILED&&!mprotect(base+page_size,page_size,PROT_NONE));
+    uint8_t *base=mmap(NULL,guard_span+page_size,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0);
+    assert(base!=MAP_FAILED&&!mprotect(base+guard_span,page_size,PROT_NONE));
 #endif
     return base;
 }
@@ -42,15 +42,15 @@ static void guard_release(uint8_t *base) {
 #ifdef _WIN32
     assert(VirtualFree(base,0,MEM_RELEASE));
 #else
-    assert(!munmap(base,2*page_size));
+    assert(!munmap(base,guard_span+page_size));
 #endif
 }
 static void *tracked_calloc(size_t n,size_t size){
     ++alloc_count;if(fail_alloc)return NULL;
     if(!guard_output)return calloc(n,size);
-    assert(n&&size&&n*size<=page_size&&guard_used<2);
+    assert(n&&size&&n*size<=guard_span&&guard_used<2);
     uint8_t *base=guard_mapping();
-    uint8_t *p=base+page_size-n*size;guard_base[guard_used]=base;guard_pointer[guard_used++]=p;return p;
+    uint8_t *p=base+guard_span-n*size;guard_base[guard_used]=base;guard_pointer[guard_used++]=p;return p;
 }
 static void tracked_free(void *p){
     for(unsigned i=0;i<guard_used;i++)if(p&&p==guard_pointer[i]){guard_release(guard_base[i]);guard_pointer[i]=NULL;return;}
@@ -65,7 +65,7 @@ static const void *hle_d3d8_stream_vertices(uint32_t stream,uint32_t first,uint3
 /* CANDIDATE */
 static uint32_t random_state=0x6342abcdu;
 static uint32_t random_word(void){random_state^=random_state<<13;random_state^=random_state>>17;random_state^=random_state<<5;return random_state;}
-static void compare(unsigned vertices,unsigned input_stride,uint32_t first){
+static int compare(unsigned vertices,unsigned input_stride,uint32_t first){
     UINT a_stride=input_stride,b_stride=input_stride;int a_failed,b_failed;
     alloc_count=stream_count=0;stream_hash=0;
     feclearexcept(FE_ALL_EXCEPT);
@@ -78,7 +78,8 @@ static void compare(unsigned vertices,unsigned input_stride,uint32_t first){
     assert(exceptions==fetestexcept(FE_ALL_EXCEPT));
     assert(a_failed==b_failed&&a_stride==b_stride&&(a==NULL)==(b==NULL));
     assert(allocations==alloc_count&&streams==stream_count&&hash==stream_hash);
-    if(a)assert(!memcmp(a,b,(size_t)vertices*a_stride));free(a);free(b);
+    if(a)assert(!memcmp(a,b,(size_t)vertices*a_stride));
+    int converted=a!=NULL;free(a);free(b);return converted;
 }
 static void guard_checks(void){
 #ifdef _WIN32
@@ -86,27 +87,32 @@ static void guard_checks(void){
 #else
     page_size=(size_t)sysconf(_SC_PAGESIZE);
 #endif
+    guard_span=16*page_size;
     uint8_t *maps[2];
     for(unsigned i=0;i<2;i++){
         maps[i]=guard_mapping();
-        memset(maps[i],0xa7+i,page_size);
+        memset(maps[i],0xa7+i,guard_span);
     }
     fail_alloc=missing_stream=0;g_ff_active=0;g_shadow_vs_is_program=1;g_shadow_vs_slot=0;
-    for(unsigned size=1;size<=64;size++){
+    const unsigned counts[]={4,132,260};
+    for(unsigned test=0;test<sizeof(counts)/sizeof(*counts);test++){
+      unsigned count=counts[test];
+      for(unsigned size=1;size<=64;size++){
         memset(g_programs,0,sizeof g_programs);struct shadow_program *p=g_programs;
         p->packed_count=1;p->packed_stream[0]=1;p->packed_raw[0]=1;p->packed_size[0]=size;p->expanded_bytes=128;
-        strides[1]=size;input_override=maps[0]+page_size-4*size;source_override[1]=maps[1]+page_size-4*size;
-        guard_used=0;guard_output=1;compare(4,size,0);assert(guard_used==2&&!guard_pointer[0]&&!guard_pointer[1]);guard_output=0;
-    }
-    for(unsigned components=1;components<=4;components++){
+        strides[1]=size;input_override=maps[0]+guard_span-count*size;source_override[1]=maps[1]+guard_span-count*size;
+        guard_used=0;guard_output=1;compare(count,size,0);assert(guard_used==2&&!guard_pointer[0]&&!guard_pointer[1]);guard_output=0;
+      }
+      for(unsigned components=1;components<=4;components++){
         struct shadow_program *p=g_programs;p->packed_raw[0]=0;p->packed_format[0]=(components<<4)|5;p->packed_size[0]=components*2;
-        strides[1]=components*2;input_override=maps[0]+page_size-64;source_override[1]=maps[1]+page_size-4*strides[1];
-        guard_used=0;guard_output=1;compare(4,16,0);assert(guard_used==2);guard_output=0;
+        strides[1]=components*2;input_override=maps[0]+guard_span-count*16;source_override[1]=maps[1]+guard_span-count*strides[1];
+        guard_used=0;guard_output=1;compare(count,16,0);assert(guard_used==2);guard_output=0;
+      }
+      g_programs[0].packed_format[0]=0x16;g_programs[0].packed_size[0]=4;strides[1]=4;source_override[1]=maps[1]+guard_span-count*4;
+      guard_used=0;guard_output=1;compare(count,16,0);assert(guard_used==2);guard_output=0;
+      g_programs[0].packed_format[0]=0x05;g_programs[0].packed_size[0]=0;strides[1]=0;source_override[1]=maps[1]+guard_span;
+      guard_used=0;guard_output=1;compare(count,16,0);assert(guard_used==2);guard_output=0;
     }
-    g_programs[0].packed_format[0]=0x16;g_programs[0].packed_size[0]=4;strides[1]=4;source_override[1]=maps[1]+page_size-16;
-    guard_used=0;guard_output=1;compare(4,16,0);assert(guard_used==2);guard_output=0;
-    g_programs[0].packed_format[0]=0x05;g_programs[0].packed_size[0]=0;strides[1]=0;source_override[1]=maps[1]+page_size;
-    guard_used=0;guard_output=1;compare(4,16,0);assert(guard_used==2);guard_output=0;
     input_override=source_override[1]=NULL;
     for(unsigned i=0;i<2;i++)guard_release(maps[i]);
 }
@@ -154,6 +160,32 @@ static void bench_setup(int scenario){
         p->packed_format[2]=0x16;p->packed_out[2]=20;
     }
 }
+static void large_checks(void){
+    const unsigned counts[]={4095,4096,4097,16383,16384,16385,65535,65536};
+    int modes[]={FE_TONEAREST,FE_DOWNWARD,FE_UPWARD,FE_TOWARDZERO};
+    uint8_t *large[3];
+    for(unsigned s=0;s<3;s++){
+        large[s]=malloc(4*1024*1024);assert(large[s]);
+        for(unsigned i=0;i<4*1024*1024;i++)large[s][i]=(uint8_t)random_word();
+    }
+    fail_alloc=guard_output=0;g_shadow_vs_is_program=1;g_shadow_vs_slot=0;
+    for(unsigned mode=0;mode<4;mode++){
+        assert(!fesetround(modes[mode]));
+        for(int scenario=0;scenario<=2;scenario+=2){
+            for(unsigned shorts=0;shorts<2;shorts++){
+                bench_setup(scenario);input_override=large[0];
+                source_override[1]=large[1];source_override[2]=large[2];
+                if(shorts){g_programs[0].packed_format[2]=0x45;g_programs[0].packed_size[2]=8;g_programs[0].expanded_bytes=36;}
+                for(unsigned i=0;i<sizeof(counts)/sizeof(*counts);i++){
+                    assert(compare(counts[i],scenario==2?50:32,0));
+                    assert(alloc_count==1&&stream_count==2);
+                }
+            }
+        }
+    }
+    assert(!fesetround(FE_TONEAREST));input_override=source_override[1]=source_override[2]=NULL;
+    for(unsigned s=0;s<3;s++)free(large[s]);
+}
 static double clock_seconds(void) {
 #ifdef _WIN32
     LARGE_INTEGER f,n;QueryPerformanceFrequency(&f);QueryPerformanceCounter(&n);return (double)n.QuadPart/f.QuadPart;
@@ -186,9 +218,9 @@ int main(int argc,char **argv){
         if(trial%29==0)g_shadow_vs_is_program=0;
         if(trial%31==0)g_shadow_vs_slot=-1;
         if(trial%37==0)g_programs[0].packed_count=0;
-        compare(trial%129,stride,trial%13==0?NO_FIRST_VERTEX:trial%7);
+        compare(trial%1025,stride,trial%13==0?NO_FIRST_VERTEX:trial%7);
       }
     }
-    assert(!fesetround(FE_TONEAREST));source_override[1]=source_override[2]=NULL;guard_checks();
-    puts("PASS:48000 full-function output/stride/failure/stream/allocation/FP comparisons and source/destination guard pages");return 0;
+    assert(!fesetround(FE_TONEAREST));source_override[1]=source_override[2]=NULL;guard_checks();large_checks();
+    puts("PASS:48000 layouts plus128 large full-function/FP cases and multi-tile source/destination guard pages");return 0;
 }

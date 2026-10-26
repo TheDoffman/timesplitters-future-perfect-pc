@@ -1,3 +1,38 @@
+## Bounded packed-vertex tiles
+
+The additive `zz-vertex-expand-tiles.patch` bounds each tail/attribute pass to
+32 vertices. This addresses the previous whole-buffer kernel's measured large-
+draw slowdown while retaining fresh allocation/input, conversion arithmetic,
+stream lookups and attribute order within every vertex. The final partial tile
+uses subtraction before addition to avoid unsigned wrap.
+
+The expanded fixture passes all seven positive/negative cases in20.22s:
+48,000 configurations over0..1024 vertices and four rounding modes, plus128
+successful full-output large cases around4096/16384/65536 using NORMPACKED3 and
+SHORT4 in both packed layouts. Source/destination guards span4/132/260 vertices;
+an independent repeated-tile-origin mutation fails. Large cases require actual
+successful conversion, so allocation failure cannot silently count as parity.
+
+The fresh three-pair size sweep gives candidate/original CPU ratios0.39364/
+0.39430 at96 vertices,0.85759/0.96067 at16,384 and0.91440/0.89246 at65,536 for
+the32-/50-byte packed layouts. One-vertex results1.01144/0.99201 and fixed-
+function96 result1.00011 are near parity. This removes the measured large-case
+loss in these layouts; it does not prove every layout or causal game FPS gains.
+128-/64-/32-vertex and alternative tail-copy variants were compared before
+selecting32. Receipts: `logs/vertex-tile-variants.json` and
+`logs/vertex-expand-tile32-range-benchmark.json`; earlier128-tile evidence remains.
+
+The supported Windows build and bundled gates pass. Executable SHA256
+`510c25e2b3a6390b26c5f34697e9c43f9e8f8a795180b722d39f07d8e3b19e83`, built
+fromaf448300 plus the tile patch SHA256
+`217d7875a319e0200c1f7c66173eb75f9ed8daa2ea8d21eb6cd7fddfb3c8efdd`.
+The120s native180 opening replay passes movement, hand/weapon14 handoff, firing
+and pause/resume:32 rounds consumed128 to96, four interior samples freeze hand
+clip/time and position, and clips1180/1188/1190 advance. A retained frame shows
+gun/canyon geometry without obvious breakage. This diagnostic overlapped patch
+validation and is not clean pacing or complete visual parity. Patch-transition,
+current-head hosted and clean crowded-scene acceptance are pending.
+
 ## Packed vertex conversion follow-up
 
 `zz-vertex-expand-strides.patch` moves packed-format and common byte-width
@@ -40,8 +75,26 @@ and pause/resume all pass. Four interior samples freeze hand clip/time and
 player position exactly. Two reviewed retained frames show the gun/hand and
 canyon geometry without obvious breakage. This capture/trace-enabled run
 overlapped patch validation and is not clean pacing or full visual parity.
-The capture-free same-build crowded-scene comparison is still running; no
-live-game FPS gain or physical Mac acceptance is claimed yet.
+The capture-free same-build Disco comparison completes45s windows: Original60
+averages59.99990, minimum one/five-second60/60, p9917.256ms/worst17.652ms;
+native240 averages220.35042, minimum154/174.4, p996.563ms/worst9.457ms. Each
+retains19 foreground ten-bot checkpoints, unique increasing guest frames, zero
+interpolation and independent timing-call/Present bounds with held/wrong-rate
+controls rejected. Game/wall speed1.000343/0.999882; individual bots occupy
+16..19/15..19 sampled positions. Fixture/profiles/signatures remain preserved
+and partitions recycled. Receipt: `logs/packed-5988-crowd-comparison.json`.
+The latest native result is lower than the earlier32D1 232.02/min177 result
+on a different AI/camera/death route. A causal live regression is unproven,
+but the performance concern remains unresolved and PR367 stays draft.
+
+Expanded CPU measurements now expose a real size-dependent kernel regression:
+three alternating pairs per size across1..65,536 vertices retain gains through
+4,096 in the two synthetic packed layouts, but candidate/reference ratios rise
+to1.029..1.111 at16,384 and1.124..1.244 at65,536. Actual live draw-size frequency
+is unmeasured. Receipt: `logs/vertex-expand-range-benchmark.json`. The next
+candidate needed bounded vertex tiles so attribute passes do not span the whole
+large buffer; the measured repair is described above.
+No live-game FPS gain, absence of regression or physical Mac acceptance is claimed.
 
 ## Focused crowded-scene diagnostic
 

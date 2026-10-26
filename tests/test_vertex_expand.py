@@ -9,7 +9,7 @@ from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('mutation',[None,'overread','read-only-overread','wrong-step','reverse-attributes','missing-fallback'])
+@pytest.mark.parametrize('mutation',[None,'overread','read-only-overread','wrong-step','reverse-attributes','missing-fallback','tile-origin'])
 def test_vertex_expand(tmp_path,mutation):
     text=(ROOT/'external/ts3FPrecomp/src/hle/hle_d3d8.c').read_text(encoding='utf-8')
     start=text.index('struct shadow_program {')
@@ -30,13 +30,15 @@ def test_vertex_expand(tmp_path,mutation):
     elif mutation=='read-only-overread':
         old='case 12: SHADOW_EXPAND_COPY_RAW(12); break;'
         new='''case 12:
-            for (v=0;v<vertices;v++) {
+            for (v=block_begin;v<block_end;v++) {
                 volatile uint8_t extra=input[(size_t)v*step+12];(void)extra;
                 memcpy(output+(size_t)v*out_stride,input+(size_t)v*step,12);
             }
             break;'''
     elif mutation=='wrong-step':
         old='input + (size_t)v * step';new='input + (size_t)v * (step + 1u)'
+    elif mutation=='tile-origin':
+        old='input + (size_t)v * step';new='input + (size_t)(v - block_begin) * step'
     elif mutation=='reverse-attributes':
         old='for (k = 0; k < p->packed_count; k++)';new='for (k = p->packed_count - 1; k >= 0; k--)'
     elif mutation=='missing-fallback':
