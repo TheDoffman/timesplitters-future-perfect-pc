@@ -1,10 +1,10 @@
 # Build, run and validation map
 
-`recomp_image.py`, `x86_decode.py`, `x86_flow.py` and `x86_recovery.py` own
-image/operand inputs, traversal, table recovery and body probes. Their hashes
-invalidate both caches. `test_recomp_input.py` checks standalone use and 97
-consumer tests; flow/recovery fixtures check edges, ownership, limits and shapes.
-Probes are read-only and bounded. Full replacement gates remain in
+Independent analysis modules (`recomp_image`, `x86_decode`, `x86_flow`,
+`x86_recovery`, `x86_functions`, `recomp_symbols`) are in both source hashes.
+Input tests run standalone imports and 97 existing consumer checks; flow,
+recovery, function and symbol fixtures cover bounds, ownership and discovery.
+Whole-run ASCII limits reject overlong suffixes. Remaining goals are in
 `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates

@@ -34,6 +34,8 @@ RELEASE_INPUTS = {
 CPU_TOOLS = {
     'tools/x86_flow.py', 'tests/test_x86_flow.py',
     'tools/x86_recovery.py', 'tests/test_x86_recovery.py',
+    'tools/x86_functions.py', 'tools/recomp_symbols.py',
+    'tests/test_x86_functions.py', 'tests/test_recomp_symbols.py',
     'tools/recomp_image.py', 'tools/x86_decode.py', 'tests/test_recomp_input.py',
     'tools/xbe_image.py', 'tools/xbe_kernel_exports.def', 'tests/test_xbe_image.py',
     'tools/disc_image.py', 'tools/import-game.py', 'tests/test_disc_image.py',

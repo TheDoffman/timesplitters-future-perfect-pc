@@ -63,6 +63,15 @@
       ]
     },
     {
+      "name": "independent-functions.patch",
+      "sha256": "719ea6f4b9e9f164d3eae2739a7dcb6fe9304cbf48ed98168425ba05045a8452",
+      "targets": [
+        "tools/disasm/functions.py",
+        "tools/disasm/labels.py",
+        "tools/disasm/xrefs.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

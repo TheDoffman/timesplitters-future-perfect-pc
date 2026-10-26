@@ -9,7 +9,8 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
-classification, traversal, direct-edge reachability and table/body recovery.
+classification, traversal, direct-edge reachability, table/body recovery,
+function discovery, labels and cross-references.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -50,7 +51,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Disassembler input and instruction model | Project-owned `recomp_image.py` and `x86_decode.py`; production consumer uses them with permitted Capstone | Mapping/operand fixtures, cache invalidation, full regeneration and bounded gameplay; native Mac pending |
 | Instruction traversal and reachability | Project-owned `x86_flow.py`; production engine inherits scan, realignment, reachability and queries | Synthetic edges/cycles/overlaps/limits, existing consumer tests, full regeneration and bounded gameplay; native Mac pending |
 | Table recovery and body/entry probes | Project-owned `x86_recovery.py`; production engine is now a compatibility import | Original table/shape/bounds fixtures, existing consumer tests, full regeneration/build and isolated gameplay; native Mac pending |
-| Function discovery and x86-to-C translation | Still upstream, using the independent input layer | Independent control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Function discovery, labels and references | Project-owned `x86_functions.py` and `recomp_symbols.py`; production uses compatibility imports | Original discovery/metadata fixtures, existing consumer tests, semantic function/xref comparison, full regeneration/build and isolated gameplay; native Mac pending |
+| Analysis orchestration, symbol tooling and x86-to-C translation | Still upstream around the replaced analysis components | Own configuration, cache/output/CLI, symbol identification; translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -103,7 +105,8 @@ terminator. A zero/negative instruction limit performs no decode.
 The production engine inherits those methods through
 `independent-disasm-traversal.patch`, after the input patch. The subsequent
 `independent-disasm-z-recovery.patch` replaces the remaining engine methods with
-`x86_recovery.CodeRecovery`. Function-boundary discovery is still upstream.
+`x86_recovery.CodeRecovery`. The later `independent-functions.patch` replaces
+function-boundary discovery as described below.
 The traversal source is included in both cache fingerprints. Its independent
 tests are in `tests/test_x86_flow.py`; the consumer integration test asserts
 that production traversal methods originate in the project module.
@@ -130,6 +133,31 @@ assertions verify recovery method origins. The standalone test executes recovery
 without toolkit imports. Existing upstream consumer tests remain a compatibility
 check and must be replaced/removed before the final fixture/provenance audit.
 
+`tools/x86_functions.py` owns candidate discovery, body measurement, shared-tail
+entries and the call graph. Ordered interval snapshots distinguish gaps from
+owned bodies. Direct calls, installed callbacks, entry/prologue/padding evidence,
+immediate references and corroborated pointer tables nominate entries. Separate
+aliases keep callable tails without splitting their owning function. Bounded
+tail rounds and a finite alias worklist propagate discovered targets. Body
+measurement follows decoded extents and known branch/table destinations; it
+stops at missing instructions or the next function/section boundary.
+
+`tools/recomp_symbols.py` owns labels, string candidates and indexed references.
+A label's evidence priority controls replacement. Duplicate names retain their
+other address mappings when one address is renamed. Reference queries return copied list
+containers, so list edits do not change the indices. Kernel references update the kernel
+index on insertion. The legacy `data_read` schema denotes an absolute memory
+operand, not a claim about read versus write semantics. Printable ASCII string
+limits apply to the whole null-terminated run; overlong runs do not yield false
+suffix labels. The supported-US comparison removed one 255-byte suffix of a
+512-byte run, retaining all function and reference records semantically.
+
+`independent-functions.patch` replaces the former function/label/reference module
+bodies with compatibility exports. Original tests are in `test_x86_functions.py`
+and `test_recomp_symbols.py`; the standalone fixture and production class-origin
+assertions cover integration. Configuration, analysis orchestration/cache/output,
+symbol identification and translation are still upstream and remain goal work.
+
 `tools/recomp_image.py` builds a read-only image from the independent XBE parser,
 without requiring cached JSON or the external toolkit. Explicit or exactly named
 sibling analysis JSON must match that executable's layout and imports; unrelated
@@ -144,7 +172,7 @@ operand classification used by production disassembly. It follows the
 with the existing pinned standard dependency. Direct transfers, absolute memory
 references, address-like immediates and indexed table candidates retain the
 consumer interface. A candidate is not proof of a function or table; recovery,
-function discovery, labels, cross-references and translation remain upstream.
+analysis orchestration, symbol identification and translation remain upstream.
 
 `patches/independent-disasm-input.patch` removes the old loader/model/classifier
 bodies and connects the new implementations. It adapts code-probe reads and adds

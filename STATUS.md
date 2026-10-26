@@ -1,3 +1,47 @@
+## Independent function discovery and metadata (2026-10-26)
+
+Continuing the active replacement goal from `c390bd3d` in PR #370,
+`x86_functions.py` supplies function candidates, body extents, callable shared
+tails and call graphs. `recomp_symbols.py` supplies labels, strings and indexed
+references. `independent-functions.patch` replaces the three upstream module
+bodies with compatibility imports. Config/cache/output orchestration, symbol
+identification, translation and runtime services remain upstream; the overall
+goal is **not complete**.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **331 passed, 1 skipped in 11m24s** across patch transitions, function/symbol
+  analysis, previous analysis layers, import/parser/fingerprints, Mac tools and CI scope.
+- **80 focused tests passed**: 20 original function/symbol cases, 58 input checks
+  (including a subprocess running 97 existing consumer tests), and 2 generation-
+  fingerprint tests. The standalone fixture actually discovers a function using
+  only project modules/data and permitted Capstone, with no toolkit imports.
+- **21 context/backlog checks passed**. Original programs cover normal calls,
+  shared tails/epilogues, forward branches, switch tables, indirect callback
+  slots, data/code pointer tables, long callbacks, alias cycles, candidate ranks,
+  interval bounds and repeatable call graphs. Metadata cases cover duplicate
+  names, confidence replacement, kernel indices, query lists and string bounds.
+- Full supported-US comparison: **15,845 function records and 297,911 reference
+  records semantically identical**, including function bounds and call graphs.
+  One old 255-byte string/label suffix at `0x004B5769` was removed: it belonged
+  to a 512-byte printable run, exceeding the 256-byte whole-string limit.
+  All remaining strings and labels matched; no new labels were added.
+- Regeneration kept **21 generated C/header files byte-identical**. Windows build
+  and native regression checks passed.
+- Isolated Scotland the Brave session: reviewed start/pause/resume captures,
+  movement by 11.178 world units, loaded ammo 8 to 6 after firing, frozen ticks
+  during pause, resumed simulation and backward movement. Last checkpoint
+  87.466 seconds; exit 0 and no crash artifacts. Signed test profiles unchanged,
+  canonical fixture verified and test partitions recycled; personal data unused.
+
+Replay/state injection, minimized/background rendering, original 60 FPS and
+skipped movies do not certify physical input, audio, foreground pacing or full
+levels. Tested executable SHA-256:
+`090b48198729d9d07905cfa4df63c6f656537ea8945a00251a202a34e0f2e685`.
+Evidence: `logs/independent-functions-*` and
+`private/test-saves/independent-functions`. Native Mac acceptance remains pending
+under MAC-070; Windows evidence does not establish Mac generation/gameplay.
+
 ## Independent table and body recovery (2026-10-26)
 
 The active replacement goal continues from `d6231896` in PR #370.

@@ -203,6 +203,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-067 | Independent disassembler input | Awaiting validation |
 | MAC-068 | Independent instruction traversal | Awaiting validation |
 | MAC-069 | Independent table and body recovery | Awaiting validation |
+| MAC-070 | Independent function discovery and metadata | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5713,6 +5714,27 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   pause/resume. Verify cache invalidation and preserve the canonical fixture.
 - **Mac implementation and evidence:** Tests registered in both-host CI;
   Windows validation does not establish native Mac generation or gameplay.
+
+### MAC-070 - Independent function discovery and metadata
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production analysis uses project-owned candidate/body/tail
+  discovery, labels, strings and indexed references. Shared tails keep their
+  owner's extent; overlong ASCII runs no longer create suffix labels.
+- **PC source:** Continuing PR #370; `tools/x86_functions.py`,
+  `tools/recomp_symbols.py`, `patches/independent-functions.patch`, both source
+  fingerprints and `tests/test_x86_functions.py` / `test_recomp_symbols.py`.
+- **PC validation:** Original miniature programs and metadata edge cases plus
+  existing consumer tests. Semantic function/reference comparison and full
+  generation/build/gameplay evidence are recorded in STATUS.md.
+- **Existing Mac support:** Shared Python and permitted pinned Capstone; same
+  source-root bridge, no host-specific analysis algorithm.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run shared function/symbol/input/fingerprint tests;
+  regenerate the verified US image and compare callable ranges; rebuild and run
+  isolated Story movement/fire/pause/resume while preserving the canonical fixture.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  results do not certify native Mac generation or gameplay.
 
 ## Entry template
 
