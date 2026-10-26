@@ -1,3 +1,48 @@
+## State-layout mapping preparation (2026-10-26, PR #367)
+
+The retained Disco CPU diagnostic includes54 leaf samples in common shadow-state
+application. Each draw recomputed the same recognized-XDK render-state and
+texture-stage slot mappings. `zz-state-layout-slots.patch` retains those integer
+mapping results until the layout changes. It retains no guest pointer, state
+value or pose. Every draw reads guest state in original order, including reads
+after host callbacks; missing older-XDK render states remain zero. Conversion,
+changed-state comparison, effect overrides, required texture-operation replay,
+pixel-shader forwarding and diagnostics remain on their original paths.
+
+The complete-module fixture reverses the new patch to build its reference, then
+compares ordered host-call digests over3840 draws across all three layouts,
+alternating memory bases, randomized full/partial/unchanged values, effect changes
+and guest writes during host calls. Disabling layout invalidation and retaining
+guest values both break parity. The three new checks plus existing spirit-state
+and combiner-constant checks pass6 tests in5.64s. Repository/context/scope/backlog
+checks pass90 tests in3.54s. The new fixture is registered on both native CI hosts;
+physical Mac execution remains pending.
+
+A private full-module `/O2 /Ob2` component probe performs seven alternating
+two-million-draw runs per variant. Host-call digests match and the median
+candidate/original CPU-time ratio is0.551020 (`logs/state-slots-probe.log` and
+`private/pipeline/state-slots-probe/receipt.json`). Host services are stubs; this
+does not establish game FPS or whole-frame CPU savings. The supported normal
+Windows build and bundled gates pass (exit0, `logs/build-state-layout-slots.log`),
+producing executable SHA256
+`0f005661815cff0487b9da7657d5dbee11698135351c22c0e024a0eaf5a900b4`.
+The same-executable/command45-second ten-bot Disco pair completes with19 active
+foreground checkpoints each. Native240 averages238.376586 guest Presents/s,
+minimum1s218/5s232.4, p994.900ms/worst5.843ms; Original60 averages60.000701,
+minimum1s59/5s59.8, p9917.131ms/worst17.588ms. Both have increasing guest frames,
+zero interpolation, ten bots with observed position changes and18 passing
+read-bounded timing-call/Present comparisons. Independent sampled game/wall is
+1.000295315 and0.999810743 respectively. No captures/native CSV/CPU sampler or
+other game/compiler runs during the measured windows. Request3440x1440/FOV73/
+enhanced/borderless; actual client1920x1060. Canonical and isolated profile bytes
+remain SHA090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695,
+8040 bytes with valid HMACs; disposable virtual disks are recycled.
+`logs/crowd-slots-disco-comparison.json` binds both summaries/clock controls.
+Different AI/death routes and host conditions prevent causal FPS comparisons
+with earlier runs. These are successful host Present intervals, not monitor
+scanout/physical input latency or proof of simultaneous bot visibility.
+Sustained demanding240 and broader game/platform acceptance remain unfinished.
+
 ## Current Temple crowd pair (2026-10-26, PR #367)
 
 Executable024c6faa completed capture-free45-second Temple ten-bot windows at

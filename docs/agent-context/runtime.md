@@ -1,5 +1,16 @@
 # Runtime and patch navigation
 
+`zz-state-layout-slots.patch` prepares the render/texture-stage slot numbers
+for the recognized XDK layout once per layout change. It caches only integer
+mapping results: each draw still loads current guest values in original order
+and retains conversion, comparison, effect overrides, texture-operation replay,
+pixel-shader forwarding and diagnostics. Render states absent from older layouts
+still read as zero. No guest address/pointer, state value, pose or texture is
+retained by this optimization. The full-module `test_state_layout_slots.py`
+compares ordered host-call digests against the reverse-patched original across
+all three layouts, changing memory bases/values and host-call feedback. Layout
+invalidation and stale-value negative controls must differ from the original.
+
 `zz-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
 Create a replacement before changing the cache count/cursor, destroying its
 victim or invalidating borrowed stage pointers. A failed allocation leaves no

@@ -2,7 +2,7 @@
 
 Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
 
-Trace startup/thread and idle-callback acceptance: [quiet dispatch](runtime.md).
+Trace/thread/idle and live state-slot contracts: [common runtime](runtime.md).
 
 Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
 

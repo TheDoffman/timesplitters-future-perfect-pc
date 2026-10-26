@@ -4336,6 +4336,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   remain awaiting validation.
 
 
+- **State-layout slot preparation (2026-10-26, PR #367):** Shared
+  `zz-state-layout-slots.patch` reuses only layout-to-slot integer mappings in
+  common HLE state forwarding. Each draw still reads live guest values; no Mac
+  adapter is needed. Full-module original/current parity and layout/stale-value
+  controls run on both native CI hosts through `test_state_layout_slots.py`.
+  Windows source checks pass; physical Mac execution and live performance are
+  awaiting validation. Component timing does not establish game FPS gains.
+
 - **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
   the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
   Shared rate parsing and deferred live apply accept180/240; saved144 preferences
