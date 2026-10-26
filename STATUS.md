@@ -1,3 +1,107 @@
+## Repeated shader-constant uploads (2026-10-26)
+
+The PR367 follow-up compares incoming constant registers by bytes and keeps
+the existing scalar stores, Hor+ work and copy order. Identical values leave
+an already-clean bank clean; changed values and pending writes still upload.
+New buffers remain dirty, target-dependent zoom still invalidates, and failed
+maps retain pending data/zoom state for retry. This changes common Windows/Mac
+RHI code; legacy GL's direct uniforms remain unchanged. No timing or pose
+sampling policy changes. The tail `vsh-constant-dirty.patch` is authoritative.
+
+The supported Windows build and bundled gates pass. Four production-function
+fixtures pass, including8,192 edge/random configurations across four rounding
+modes, aliases, FP flags, signed zero/NaNs, initial zeros, fresh/unchanged values,
+null/negative/clipped input and upload failure/zoom retry. Three broken variants
+must compile and then fail. All41 patch-upgrade/context checks pass. The new
+fixture is registered for both native CI hosts; new-head hosted results are
+separate from the prior16 successful checks atcc3f20f7.
+
+Actual D3D11 GPU replays compare three retained adjacent/late firing frames and
+the constants-only frozen-pose control at prefixes232/282/300. Hand/weapon
+coverage matches before/after, adjacent poses remain distinct, and freezing
+constants restores the preceding coverage. Model channel differences are at
+most1 level (weapon pixels match); whole-frame differences are at most2.
+An unchanged pre-change helper also produces2-level background variation.
+Initial zero-/one-level assertions and repeat controls are retained rather
+than described as exact pixel parity. Coverage uses a measured2-level noise
+threshold. These are selected offline replay results, not live color parity.
+
+Seven alternating before/after pairs per saved frame,1,500 replays per run at
+1280x720, exclude the first100 intervals and final GPU readback. Median paired
+interval ratios are0.99148/0.98601/0.98214: about0.85/1.40/1.79% lower, with15
+of21 pairs lower and individual ratios0.94133..1.03684. This is a modest,
+variable renderer-only result, not a measured live-game FPS gain. The separate
+capture survey predicts233 uploads becoming76–77 under its normal no-Hor+/
+zoom assumptions; that count is a simulation, not an instrumented GPU count.
+
+Source/patch/executable/PDB hashes: `logs/vsh-constant-build-receipt.json`.
+New Windows executable SHA256:
+`d999c9c7ef19816757a1a0655c9eaeff5dd5391895c63a087d2c3f35dbb51d2e`.
+Detailed evidence: `logs/vsh-constant-dirty-tests-final.log`,
+`logs/vsh-constant-dirty-stack-tests.log` and private
+`vsh-constant-render-benchmark/{gpu-parity,timing}/results.json`.
+The same new executable completes capture/trace/sampler-free Disco240 and
+Original60 runs at3440x1440/FOV73/fullscreen (actual client1920x1060), Enhanced
+selected with Classic fallback. Each45s gameplay window has19 foreground
+checkpoints and ten configured bots; native bots have14–19 distinct sampled
+positions. Native:228.466FPS, minimum1s180/5s189.4, p995.821ms/worst6.974ms;
+Original:60.000FPS, minimum1s/5s60, p9917.265ms/worst17.788ms. Both have unique
+increasing guest Presents, zero interpolation and independent bounded timing-
+call/Present agreement (held/wrong-rate counter controls rejected). Sampled
+game/wall ratios are1.000336/1.000086. Profiles/signatures/fixture are preserved;
+disposable partitions are recycled. Receipts: `crowd-d999-disco{240,-original60}`
+private run summaries and `logs/crowd-d999-disco*-{summary,clock}.json`.
+
+This native run is lower than the previous C8 run's232.989FPS. Different bot/
+combat paths prevent a causal before/after conclusion; no live FPS improvement
+is claimed. Sustained240 in heavy crowds remains unachieved. Physical Mac,
+full-game acceptance and live framebuffer/physical-input limits remain open.
+An additional82 CI scope/gate tests pass; new-head hosted checks remain pending.
+
+## Submitted and replayed firing-pose observations
+
+The unchanged c8e1/cc3f20f7 Windows build now has selected renderer-boundary
+evidence beyond CPU timelines. A no-bot Venice/native240/Classic/FOV73 route
+records24 consecutive host-call frames using the existing recorder, with no
+live GPU readbacks. The actual host/replay render size is1280x720; the capture
+header still reports the title's logical640x480. Each complete v9 container has
+335 draws and no recorded missing-bind/target or incomplete-write warnings.
+
+Offline Windows D3D11 GPU replays isolate reviewed draw ranges232..281 (hands)
+and282..299 (gun), using prefixes232/282/300 to cancel each frame's background.
+The same68 draws retain identical mesh bytes, shader programs and textures
+across all24 frames, while their submitted shader-constant state changes every
+frame. Every replay produces a distinct hand and gun coverage mask. Adjacent
+coverage changes range1,634..6,883 hand pixels and2,406..6,934 gun pixels.
+
+The completed CPU observations between each output Present and the following
+Present have consecutive IDs, an advancing firing clip1160 and17 zero-carried-
+tick updates. Their game deltas are0.302808..0.369696 console units. In the first
+adjacent pair both carry zero ticks: the visible hand/gun coverage changes by
+3,286/2,621 pixels. An offline control replaces only the second capture's677
+VS_CONSTANTS payloads with the preceding frame's values (419 payloads change).
+This restores the previous hand/gun coverage exactly, despite retaining all
+other second-frame chunks. It demonstrates that the changed submitted state
+produces the new visible poses, rather than an unrelated checksum changing.
+
+Repeated-capture model pixels match; occasional background1-level rounding
+noise is excluded by the coverage threshold. Initial overly strict whole-frame
+hash controls and their one-/two-background-pixel differences are retained.
+A live-readback probe shows the expected firing geometry, but readback overhead
+pushes most intervals beyond a whole tick; it is not fractional-render evidence.
+Offline replay brightness also differs from the live readback, so exact live
+pixel/color parity remains unverified. The host-call burst's5.069..6.510ms
+intervals include capture overhead and are not clean pacing measurements.
+
+Both bounded games exit cleanly and preserve fixture/profiles/signatures;
+partitions and redundant captures are recycled, retaining selected source/control
+frames, readbacks, hashes and results. Receipt:
+`logs/rendered-local-pose-evidence.json`; detailed renderer/CPU correlation and
+GPU replay/coverage controls remain in the isolated capture directory. This is
+selected submitted-pose/GPU-replay evidence, not all live framebuffer/bone,
+all-game, physical Mac, monitor scanout or input-latency acceptance. No production
+code or executable changes were made; all16 checks remain passed atcc3f20f7.
+
 ## Completed local aim and animation observations
 
 The shared, default-off `TSFP_NATIVE_LOCAL_TRACE` diagnostic now records local
@@ -15,15 +119,31 @@ hashes are recorded in `logs/local-state-build-receipt.json`. Paired no-bot Veni
 routes use the same executable and synthetic commands:3440x1440 host device,
 1920x1060 client, FOV73,24 mouse steps, held fire and pause/resume.
 
-| Observation | Native240 | Original60 |
-| --- | ---: | ---: |
-| Completed CPU-state rows |5765|1426|
-| Actual yaw steps / total absolute rotation |24 /60 degrees|24 /60 degrees|
-| Yaw steps on zero-carried-tick updates |9|0|
-| Stable firing hand/weapon pairs, all advancing |623|155|
-| Those firing pairs with zero carried ticks |467|0|
-| Interior pause observations, all frozen |481|120|
-| Rounds consumed (weapon3, reserve unchanged30) |4|4|
+| Observation | Original60 | Native120 | Native180 | Native240 |
+| --- | ---: | ---: | ---: | ---: |
+| Completed CPU-state rows |1426|2875|4311|5765|
+| Actual yaw steps / total absolute rotation |24 /60 degrees|24 /60 degrees|24 /60 degrees|24 /60 degrees|
+| Yaw steps on zero-carried-tick updates |0|7|8|9|
+| Stable firing hand/weapon pairs, all advancing |155|311|467|623|
+| Those firing pairs with zero carried ticks |0|155|311|467|
+| Interior pause observations, all frozen |120|241|361|481|
+| Rounds consumed (weapon3, reserve unchanged30) |4|4|4|4|
+
+The legacy144 diagnostic also passes on this same build:3449 rows,24 actual
+yaw steps (all24 on zero-carried ticks),373 advancing firing pairs/218 fractional
+pairs,289 frozen pause observations and four rounds. This does not add144 to
+the public60/120/180/240 choices. The menu's60 choice maps to Original0, so the
+Original60 comparison covers that setting rather than the diagnostic native60.
+Every added route preserves fixture/profiles/signatures, exits cleanly and
+recycles its partitions. Receipts: `logs/local-state-all-presets-results.json`
+and `logs/local-state-with-legacy144-results.json`.
+
+Positive stable-identity/same-speed body, hand and weapon timeline increments
+also retain a median normalized advance of approximately1/60 per game-time unit
+at every tested rate, matching Original60. This checks that fresh timeline
+updates do not merely run the animations faster; holds, wraps and discontinuities
+are excluded. It is not complete root/event/render parity. Per-track counts,
+ranges and medians are in `logs/local-state-animation-speed.json`.
 
 All rows have valid body/hand/weapon/camera records and consecutive completed
 frame IDs. Native body animation also advances on all3,790 eligible positive
@@ -39,6 +159,17 @@ freshness, GPU completion, scanout or physical input latency. The native run
 overlapped offline timing tests; both CSV-writing runs are excluded from clean
 pacing claims. Public presets/menus/mechanics are unchanged. Broader rendering,
 physical Mac gameplay and sustained240 acceptance remain open.
+
+The separate c8e1 trace/capture/sampler-free Disco240 run completes a45s window:
+mean232.98929FPS, minimum1s183/5s198.8, p995.570ms/worst6.556ms. All19 active
+foreground checkpoints retain ten bots (each16..19 distinct sampled positions).
+Game/wall speed1.000334, unique guest frames and independent timing-call/Present
+bounds pass; no local trace file is created. Fixture/profiles/signatures and
+cleanup pass. This is current-build pacing evidence, not a causal improvement
+over510c's231.60/min196 on a different AI route. Source is committed/pushed as
+cc3f20f7; all16 hosted checks now pass, including both native hosts and patch
+upgrades/transitions. Per-run receipts live under
+`private/test-saves/crowd-c8e1-disco240`.
 
 ## Current-build Disco cost investigation
 

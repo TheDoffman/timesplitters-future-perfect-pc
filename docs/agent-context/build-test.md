@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
+
 Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
 
 Local aim/animation CPU observations: [completed-update trace](native-local-trace.md).

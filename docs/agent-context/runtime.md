@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
+
 Completed local aim/animation state: [optional shared trace](native-local-trace.md).
 
 `zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in

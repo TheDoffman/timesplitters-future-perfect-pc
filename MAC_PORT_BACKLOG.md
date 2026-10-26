@@ -3907,6 +3907,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Shader constant uploads (PR #367 follow-up):** Common RHI vertex shader
+  state compares fresh constant bytes and skips invalidation for unchanged
+  values; changed poses still upload, new buffers remain dirty, screen zoom
+  retains its policy and failed maps retry. Windows/Mac share the same
+  `d3d8_vsh.c` tail patch; legacy GL retains its direct uniform path. Portable
+  original-reference/alias/FP/dirty/failure fixtures run on both native CI hosts.
+  Windows selected GPU replay preserves hand/weapon coverage and fresh poses;
+  seven alternating timing pairs per frame show modest0.85–1.79% lower median
+  renderer intervals, with variability. See [STATUS](STATUS.md#repeated-shader-constant-uploads-2026-10-26)
+  for source hashes, pixel-rounding controls and scope. Physical Mac GPU/live
+  acceptance remains **Awaiting validation**; Windows does not verify it.
+
 - **Completed local state diagnostics (PR #367 follow-up):** Shared
   `pc_native_local_trace.h` observes local aim/camera and animation timelines
   at the completed US gameplay-update boundary in Original/native modes.
