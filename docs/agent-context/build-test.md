@@ -1,5 +1,14 @@
 # Build, run and validation map
 
+Runtime setup now uses `tools/prepare-runtime.py` on Windows, Mac and CI.
+It verifies `vendor/ts3FPrecomp` and reconstructs the exact pinned shallow Git
+checkout without a remote. Existing correct-pin checkouts retain edits and
+generated files. Third-party submodules/packages still use their own pins.
+`tests/test_runtime_snapshot.py` covers offline import, corruption, atomic
+failure, preservation, full patch application and source ZIP inclusion.
+Changes to the snapshot/importer select every runtime CI suite. Mac execution
+still needs its host; Windows tests do not establish native Mac build success.
+
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
 recorded geometry-service boundaries and independent missing-hook controls.

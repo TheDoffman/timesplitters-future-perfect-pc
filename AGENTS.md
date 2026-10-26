@@ -154,6 +154,10 @@ providers, perform handoffs or limit themselves to advisory work.
   `requirements.txt`, and the verified FFmpeg download in `tools/fetch-video.ps1`.
   Do not independently upgrade dependencies on one device. Intentional version
   changes must update the shared scripts/documentation and relevant checks.
+  The pristine runtime is tracked in `vendor/ts3FPrecomp/source`; prepare its
+  ignored working checkout with `tools/prepare-runtime.py`, without cloning the
+  original runtime repository. Preserve snapshot bytes and credits. Runtime
+  edits still belong in the shared patch stack; never patch the snapshot itself.
 - Native Mac builds select the common Xbox/Vulkan frontend on macOS 26+ by
   default (`--renderer auto`), using the SDK pinned in `config/vulkan-sdk.json`.
   Older hosts select legacy GL; `--renderer gl` is the explicit fallback on

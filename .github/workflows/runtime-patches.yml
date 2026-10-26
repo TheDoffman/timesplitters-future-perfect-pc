@@ -6,6 +6,7 @@ on:
     paths:
       - src/**
       - patches/**
+      - vendor/**
       - tests/**
       - tools/**
       - config/**
@@ -121,15 +122,10 @@ jobs:
                             if line.startswith('pytest=='))
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
-      - name: Check out pinned upstream source only
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: nemonicicon/ts3FPrecomp
-          ref: ${{ needs.plan.outputs.revision }}
-          path: external/ts3FPrecomp
-          persist-credentials: false
+      - name: Prepare bundled runtime without a network clone
+        run: python tools/prepare-runtime.py
       - name: Test patch tracking, branch switches and historical upgrades
-        run: python -m pytest tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short
+        run: python -m pytest tests/test_runtime_snapshot.py tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short
 
   native:
     name: Native runtime (${{ matrix.os }})
@@ -167,14 +163,9 @@ jobs:
                             if line.startswith('pytest=='))
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
-      - name: Check out pinned upstream source only
+      - name: Prepare bundled runtime without a network clone
         if: needs.plan.outputs.native == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: nemonicicon/ts3FPrecomp
-          ref: ${{ needs.plan.outputs.revision }}
-          path: external/ts3FPrecomp
-          persist-credentials: false
+        run: python tools/prepare-runtime.py
       - name: Apply shared runtime patches
         if: needs.plan.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches

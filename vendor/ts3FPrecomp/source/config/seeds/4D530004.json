@@ -1,0 +1,384 @@
+[
+ {
+  "start": "0x00015C5A",
+  "note": "[observed at run time] PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00029F10",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00033AF0",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00034CF0",
+  "note": "[observed at run time] PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x000E3730",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001CF6AC",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001CFF94",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x0002C800",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x000CFDE0",
+  "note": "[observed at run time] PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001BCF20",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001C8D00",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001C8EC0",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x0005E7E0",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001D0F0C",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x001D0638",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF658); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x001D0679",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF688); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x001D069D",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF670); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x001D08BA",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF538, 0x001CF550); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x001D120B",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF58C); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x001D4B77",
+  "note": "[static scan] XPP class-driver callback: its address is stored only in XPP's driver tables (at 0x001CF69C); starts right after a ret/tail jump. Seeded statically with 0x001D0F0C, the table neighbour run 18 called."
+ },
+ {
+  "start": "0x00032250",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00045D00",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x000E6070",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00036500",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x0003E8E0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x0003ECC0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00046D70",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00096DE0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00097E90",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00099A40",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00099DE0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000AF9F0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000AFDD0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000C5230",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000C9870",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000CD100",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000CDF70",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000E5D50",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000E6A20",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000EB8D0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000EBB10",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000F6EA0",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000FB800",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000FF940",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000FFB50",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x000FFE40",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00100030",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x0010F150",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00114000",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00118440",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00129270",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x0015E880",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00168100",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00169A70",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x0016A300",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x00170740",
+  "note": "[static scan] Static: 16-byte-aligned function pointer stored in .data/.rdata, right after nop/int3 padding or a function end, with a normal prologue. Seeded with run 22's observed 0x00045D00 / 0x000E6070, which are the same kind (the detector had folded them into the preceding function)."
+ },
+ {
+  "start": "0x001BCC40",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x001943D7",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0002B110",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0002FB60",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00030BC0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000328A0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0004F100",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0005DD50",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00061000",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00062760",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00062770",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00062780",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000627E0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00062870",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0007BE80",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000BA9C0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000E8210",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000E8930",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x000EC2F0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x001117C0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0011DF50",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0011E310",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00122590",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0012F750",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0012F830",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0012F9D0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0012FB20",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00131FD0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x001325A0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00132A40",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x00178CA0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm) and starting right after nop padding or a function end, outside every detected function. Same kind as run 22's observed 0x00032250 (a cache delete callback)."
+ },
+ {
+  "start": "0x0016C330",
+  "note": "[observed at run time] Indirect-call target observed at runtime; decodes as a function body.",
+  "observed": true
+ },
+ {
+  "start": "0x00097A80",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm), right after nop padding, but folded by the detector into the preceding function. Same kind as run 28's observed 0x0016C330."
+ },
+ {
+  "start": "0x00179030",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm), right after nop padding, but folded by the detector into the preceding function. Same kind as run 28's observed 0x0016C330."
+ },
+ {
+  "start": "0x001790D0",
+  "note": "[static scan] Static: address taken by an immediate in code (listing XREF data_imm), right after nop padding, but folded by the detector into the preceding function. Same kind as run 28's observed 0x0016C330."
+ }
+]

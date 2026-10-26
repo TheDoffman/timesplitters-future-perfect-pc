@@ -198,6 +198,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
 | MAC-062 | Stable and named game release channels | Awaiting validation |
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
+| MAC-064 | Self-contained runtime source | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5607,6 +5608,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Shared C# fixtures plus Windows host
   results are recorded in [STATUS.md](STATUS.md#release-channel-strategy-2026-10-22).
   Native execution/visual acceptance is pending; Windows is not Mac evidence.
+
+### MAC-064 - Self-contained runtime source
+
+- **Status:** Awaiting validation
+- **PC behavior:** Setup reconstructs the pinned runtime from bundled source,
+  without downloading the original runtime repository. Existing checkouts and
+  patch ledgers are preserved; third-party dependency downloads keep their pins.
+- **PC source:** Uncommitted on `feature/self-contained-runtime`;
+  `vendor/ts3FPrecomp`, `tools/prepare-runtime.py`, `tsfp.ps1`, shared CI and packaging.
+- **PC validation:** See [STATUS](STATUS.md#self-contained-runtime-source-2026-10-26).
+- **Existing Mac support:** `tools/build-native-mac.py --setup` uses the same
+  Python importer, original commit, source bytes and complete shared patch stack.
+  Mac release source ZIPs include the tracked snapshot.
+- **Mac adaptation needed:** No separate implementation; run native host checks.
+- **Mac acceptance checks:** Run snapshot/patch tests and native setup/build on
+  Apple Silicon, verify executable modes and direct SDL/XbSymbolDatabase pins,
+  inspect package source ZIPs and confirm existing local files survive setup.
+- **Mac implementation and evidence:** Shared entry points implemented; native
+  Mac build and package execution unavailable on this Windows host.
 
 ## Entry template
 

@@ -13,9 +13,11 @@ spec.loader.exec_module(launcher)
 
 SUITES = ('transitions', 'native', 'gpu', 'release')
 FULL_INPUTS = {
+    '.gitattributes',
     '.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
     'tools/ci-runtime-scope.py', 'tests/test_ci_runtime_scope.py',
     'tools/apply-patches.py', 'tests/test_patch_tracking.py',
+    'tools/prepare-runtime.py', 'tests/test_runtime_snapshot.py',
     'tests/test_patch_updates.py', 'tests/fixtures/launcher-patch-stacks.json',
     'tests/fixtures/renderer-patch-stacks.json',
 }
@@ -43,7 +45,7 @@ CPU_TOOLS = {
 def affected(paths, *, full=False):
     selected = set(SUITES) if full else set()
     for path in paths:
-        if path in FULL_INPUTS:
+        if path in FULL_INPUTS or path.startswith('vendor/'):
             selected.update(SUITES)
         elif path.startswith('patches/'):
             # Patches can change arbitrary upstream source/CMake. Preserve

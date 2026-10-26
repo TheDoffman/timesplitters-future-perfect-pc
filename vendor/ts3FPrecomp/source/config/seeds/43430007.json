@@ -1,0 +1,290 @@
+[
+ {
+  "start": "0x001FFFF0",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00200030",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x002000A0",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00207B00",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x0020EDBB",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283770",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283B00",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283B40",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283C40",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283C80",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283D20",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283E10",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283E90",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283EF0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283F40",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00283FA0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284010",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284CE0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284D70",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284DE0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284E10",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284E80",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284EF0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284F10",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284F30",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284F90",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00284FD0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00285050",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x002850A0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x002C0D2E",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x0001F720",
+  "note": "Indirect-call target observed at runtime (in a fight, called 100+ times before the crash). Starts straight after sub_0001F6A7's ret with no padding, and dispatches through the jump table at 0x2E3EF0."
+ },
+ {
+  "start": "0x00024DD0",
+  "note": "Indirect-call target in the attract-mode fight, via sub_001E2800's object-update list. Starts straight after a ret with no padding. Unresolved, the cdecl call's recovery over-popped 4 bytes per call and the main thread's esp climbed into the heap."
+ },
+ {
+  "start": "0x000256F0",
+  "note": "Indirect-call target in the attract-mode fight, via sub_001E2800's object-update list. Starts straight after a ret with no padding. Unresolved, the cdecl call's recovery over-popped 4 bytes per call and the main thread's esp climbed into the heap."
+ },
+ {
+  "start": "0x0005B868",
+  "note": "Tail of character 0x0B's handler sub_0005B7F0 (table 0x2EE668), reached by its je after a float compare: push 1; push 2; push esi; call 0x4F490; pop esi; pop ebx; ret. Starts straight after a ret with no padding. Stubbed, the branch skipped the tail and left esi/ebx on the stack; about 10 s into a match every caller returned with wrong registers and the game loop ran logic without ever reaching Swap (the fight freeze)."
+ },
+ {
+  "start": "0x00064B0B",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000BE06C",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000BE7BC",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000BE892",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000D0398",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000E2B54",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000ECB7D",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000ECB88",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000ECC17",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x000ECC22",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x0013F855",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x0016875C",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x00168832",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001A2389",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001A41F7",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001A7BEF",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001B17B5",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001B9743",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001BB713",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001C97C0",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001D2A29",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001D3D31",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x001D6991",
+  "note": "Called but never detected: starts straight after a ret with no padding, like 0x0005B868 (the fight freeze). Found by listing the lift's unresolved-call stubs whose preceding byte is a ret; most are tails of fighter move/state handlers. Stubbed, a call here skips the code and returns with the handler's saved registers still on the stack."
+ },
+ {
+  "start": "0x00038FB0",
+  "note": "Indirect-call target in the fight, via sub_001E2800's object-update list (position += velocity). Starts straight after a ret with no padding. Unresolved, each call over-popped the stack (RECOMP_ABI_CHECK: sub_001E2800 esp-too-high) and the heap walk faulted at about 95 s."
+ },
+ {
+  "start": "0x00039210",
+  "note": "Indirect-call target in the fight, via sub_001E2800's object-update list (position += velocity). Starts straight after a ret with no padding. Unresolved, each call over-popped the stack (RECOMP_ABI_CHECK: sub_001E2800 esp-too-high) and the heap walk faulted at about 95 s."
+ },
+ {
+  "start": "0x00018CE0",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00022C30",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00039B40",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00039CC0",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00039E40",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x0008F380",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x0016D650",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00172510",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00173CF0",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00178060",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00178160",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x0017A8A0",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ },
+ {
+  "start": "0x00197D70",
+  "note": "Callback installed with `mov dword ptr [reg+disp], imm` and never detected: it starts straight after a ret with no padding and dispatches through a switch table instead of reaching a ret, so the immediate-reference probe rejected it (upstream 26de405 addresses that probe). Found by a static scan of immediate stores into .text; 0x39B40/0x39CC0/0x39E40 were seen unresolved in fights."
+ }
+]

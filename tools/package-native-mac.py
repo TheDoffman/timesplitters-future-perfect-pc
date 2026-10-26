@@ -237,7 +237,8 @@ def main():
     (stage/'Source/README.txt').write_text('Project source and the exact runtime patch are in pc-port-source.zip.\n'
         'Enhanced textures are an optional launcher download; source archives omit them.\n'
         'Source builds may use assets/textures; explicit offline bundles include Textures.\n'
-        'Runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'+native['runtime_revision']+'\n'
+        'Bundled runtime source: vendor/ts3FPrecomp in pc-port-source.zip; prepare with tools/prepare-runtime.py.\n'
+        'Runtime origin (credit): https://github.com/nemonicicon/ts3FPrecomp/tree/'+native['runtime_revision']+'\n'
         'SDL: https://github.com/libsdl-org/SDL/tree/'+run('git','-C',upstream/'third_party/SDL','rev-parse','HEAD')+'\n'
         'Build with tools/build-native-mac.py; package with tools/package-native-mac.py.\n')
     (stage/'README.txt').write_text(f'''TimeSplitters: Future Perfect PC {args.version} - experimental Apple Silicon build

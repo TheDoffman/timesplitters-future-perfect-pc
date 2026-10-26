@@ -1,3 +1,30 @@
+## Self-contained runtime source (2026-10-26)
+
+On `feature/self-contained-runtime`, based on main
+`fba57e948dfda17ad5174121413583c5d29d46da`, setup and CI now prepare the
+runtime from tracked `vendor/ts3FPrecomp` instead of fetching the original
+runtime repository. The 624 pristine files (7.84 MiB of source), eight gitlinks,
+raw commit and manifest reconstruct the unchanged upstream revision
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Credits/licenses are preserved.
+All 624 staged blobs match the original Git identities. A fresh checkout with
+`core.autocrlf=true` also passes snapshot verification.
+
+Windows x64 validation: the supported `tsfp.ps1 Build` completed, including
+native path, controls, settings, texture, display, debug, prompt, network,
+Discord and hang-policy checks. No game behavior was intentionally changed;
+this is build/source-distribution validation, not a new gameplay claim.
+The executable SHA-256 is `ca10ea2adc61757dd4b7375850665c5a58654ce6c70fe270f563cb3ccdef6787`.
+Evidence: ignored `logs/runtime-vendor-build.log`.
+
+Focused snapshot/CI/Mac-tool/texture checks initially passed 116 tests with one
+skip; context/backlog/CI/Mac-package checks passed 109 tests. Full snapshot,
+patch-transition and related build-tool checks are still running; their final
+result will replace this pending note. Snapshot tests disable all Git transports,
+exercise corruption/failure preservation, and reconstruct usable pristine Git
+history. Both-host CI is pending. Native Mac game build/package execution is
+unavailable on this Windows host; see MAC-064. Separate dependency downloads
+(SDL, symbol database, Python/FFmpeg/SDKs) and user-supplied game data remain.
+
 ## Electro Chimp health-bar alignment (2026-10-26, issue #102)
 
 At 1280×720 in an isolated, unlocked Windows Test Lab run, the vertical bars

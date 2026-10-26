@@ -86,11 +86,7 @@ def main():
         run(sys.executable, '-m', 'venv', runtime_root / '.venv')
     if args.setup:
         run(PYTHON, '-m', 'pip', 'install', '-r', ROOT / 'requirements.txt')
-        if not UPSTREAM.exists():
-            run('git', 'init', UPSTREAM)
-            run('git', '-C', UPSTREAM, 'remote', 'add', 'origin', 'https://github.com/nemonicicon/ts3FPrecomp.git')
-            run('git', '-C', UPSTREAM, 'fetch', '--depth', '1', 'origin', revision)
-            run('git', '-C', UPSTREAM, 'checkout', '--detach', revision)
+        run(PYTHON, ROOT / 'tools/prepare-runtime.py', '--destination', UPSTREAM)
     actual = subprocess.check_output(['git', '-C', str(UPSTREAM), 'rev-parse', 'HEAD'], text=True).strip()
     if actual != revision:
         raise SystemExit('Runtime checkout differs from the shared pin; no changes made.')

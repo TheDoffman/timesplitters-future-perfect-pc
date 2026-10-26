@@ -16,6 +16,9 @@ live in tracked `src/`, `tools/`, `config/` defaults and `patches/*.patch`.
 `external/ts3FPrecomp` is the ignored, patched runtime checkout, NOT a second
 authoritative source tree. Its generated guest C is under
 `titles/futureperfect/src/recomp/gen/`, NOT `build/windows/generated`.
+The pristine base is tracked in `vendor/ts3FPrecomp/source`; the offline
+`tools/prepare-runtime.py` importer creates the ignored checkout at the same
+upstream pin. Keep changes in shared patches, not the pristine snapshot.
 Use runtime-relative paths when inspecting upstream: `src/hle/`, `src/d3d/`,
 `src/kernel/`, `titles/futureperfect/src/recomp_manual.c`.
 

@@ -1,0 +1,10 @@
+[
+ {
+  "start": "0x00157334",
+  "note": "XPP device-type init (XInitDevices calls [record+4]); lone pointer inside a record in the executable XPP section, so no table pass sees it. Observed at runtime."
+ },
+ {
+  "start": "0x00157C64",
+  "note": "XPP device-type init (XInitDevices calls [record+4]); lone pointer inside a record in the executable XPP section, so no table pass sees it. Observed at runtime."
+ }
+]

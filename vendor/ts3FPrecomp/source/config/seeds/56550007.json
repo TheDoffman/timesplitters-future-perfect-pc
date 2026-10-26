@@ -1,0 +1,42 @@
+[
+ {
+  "start": "0x000A2752",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x002583C4",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00258CA9",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x0018F20E",
+  "note": "Out-of-line tail of sub_0018F160 (its je at 0x0018F16D), parked after the ret 8 at 0x0018F20B; observed as [STUB] in run 1. Pops esi saved by sub_0018F160, so the seed gate's unsaved-pop test does not apply; checked by hand."
+ },
+ {
+  "start": "0x00165679",
+  "note": "Out-of-line tail of sub_00165570 (its jcc at 0x00165582), parked after a ret 0xC; found statically (same shape as 0x0018F20E). Pops edi/esi saved by its function; checked by hand."
+ },
+ {
+  "start": "0x0018020E",
+  "note": "Out-of-line tail of sub_00180140 (its jcc at 0x00180157), parked after a ret 0xC; found statically (same shape as 0x0018F20E). Pops edi saved by its function; checked by hand."
+ },
+ {
+  "start": "0x0018A167",
+  "note": "Out-of-line tail of sub_00189F40 (its jcc at 0x00189FE2), parked after a ret 8; found statically (same shape as 0x0018F20E). Pops edi/esi saved by its function; checked by hand."
+ },
+ {
+  "start": "0x001A61CB",
+  "note": "Out-of-line tail of sub_001A6160 (its jcc at 0x001A616E), parked after a ret 8; found statically (same shape as 0x0018F20E). Pops esi saved by its function; checked by hand."
+ },
+ {
+  "start": "0x001BEC6A",
+  "note": "Out-of-line tail of sub_001BEC50 (its jcc at 0x001BEC56), parked after a ret; found statically (same shape as 0x0018F20E); decodes as a function body."
+ },
+ {
+  "start": "0x0011C447",
+  "note": "Out-of-line tail of sub_0011C390 (its jcc at 0x0011C3EA), parked after an unconditional jmp; found statically (same shape as 0x0018F20E); decodes as a function body."
+ }
+]

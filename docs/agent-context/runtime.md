@@ -1,5 +1,14 @@
 # Runtime and patch navigation
 
+The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.
+`tools/prepare-runtime.py` verifies blob SHA-256/Git identities, gitlinks, tree
+and original commit before creating the ignored runtime checkout. It retains
+`d90c929...` as shallow HEAD so existing patch ledgers, pristine `git archive`
+fixtures and packaging provenance remain valid. Do not edit snapshot files;
+runtime changes remain in the shared patch stack. The origin URL is attribution,
+not a setup dependency. `tests/test_runtime_snapshot.py` exercises the importer
+with Git transports disabled and applies the entire current stack twice.
+
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).

@@ -197,7 +197,10 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 ## Credits & license
 
 Built on **[nemonicicon/ts3FPrecomp](https://github.com/nemonicicon/ts3FPrecomp)**,
-with local runtime patches and platform adapters. The project statically
+with local runtime patches and platform adapters. The pinned runtime and
+recompiler source are bundled in this repository; setup and CI no longer download
+that repository. See [bundled runtime source](docs/building.md#bundled-runtime-source)
+for verification and the remaining third-party dependencies. The project statically
 recompiles the Xbox executable into native code; it does not recover the
 original C/C++ source. See [upstream and licensing](docs/building.md#upstream-and-licensing).
 

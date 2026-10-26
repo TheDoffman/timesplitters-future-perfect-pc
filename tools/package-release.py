@@ -97,7 +97,8 @@ def main():
         local_patch = subprocess.check_output(['git', '-C', str(upstream), 'diff', '--binary'])
         source.writestr('runtime-local.patch', local_patch)
     (source_dir/'README.txt').write_text(
-        'pc-port-source.zip contains the project source and local runtime patch for this build.\n'
+        'pc-port-source.zip contains the project, bundled pristine runtime source and local runtime patch for this build.\n'
+        'tools/prepare-runtime.py reconstructs the runtime locally; no original runtime repository download is needed.\n'
         'Enhanced textures are an optional launcher download; source archives omit them.\n'
         'Source builds may use assets/textures; explicit offline bundles include Textures.\n'
         f'Base runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'

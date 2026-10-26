@@ -67,10 +67,7 @@ try {
             Invoke-Checked $Python @('-m', 'venv', (Join-Path $projectRoot '.venv'))
         }
         Invoke-Checked $envPython @('-m', 'pip', 'install', '-r', (Join-Path $projectRoot 'requirements.txt'))
-        if (!(Test-Path -LiteralPath $toolRoot)) {
-            Invoke-Checked 'git' @('clone', 'https://github.com/nemonicicon/ts3FPrecomp.git', $toolRoot)
-            Invoke-Checked 'git' @('-C', $toolRoot, 'checkout', '--detach', $revision)
-        }
+        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\prepare-runtime.py'), '--destination', $toolRoot)
         $actualRevision = & git -C $toolRoot rev-parse HEAD
         if ($LASTEXITCODE -ne 0 -or $actualRevision -ne $revision) { throw 'Tool checkout differs from the pinned revision.' }
         Apply-LocalPatches

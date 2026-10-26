@@ -1,0 +1,70 @@
+{
+  "_title": "007: Nightfire (0x45410026), XDK 4831",
+  "_why": [
+    "XbSymbolDatabase does not cover XMV, the video library, so these",
+    "addresses had no names and could not be replaced by name.",
+    "",
+    "scripts/section_calls.py finds six calls crossing into the XMV section",
+    "(0x0012FD60..0x001571F4), all from the movie code at",
+    "0x000E8A00..0x000E8CF0, and they are named from how it calls them. This",
+    "older library has no Start (the first Update starts playback) and fetches",
+    "a DirectSound stream per audio track through XMVPlaybackGetAudioStream.",
+    "See docs/technical/video-playback.md."
+  ],
+  "symbols": [
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1244767,
+      "name": "XMVPlaybackCreate",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x0012FE5F. From 0x000E8BB2: (4, path, &handle at 0x002FF75C)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1246099,
+      "name": "XMVPlaybackDestroy",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x00130393. From 0x000E8A18, with the handle."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1246235,
+      "name": "XMVPlaybackGetStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x0013041B. From 0x000E8BCB: (handle, &info); the caller checks width 640 and height 480."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1246344,
+      "name": "XMVPlaybackCreateAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 20,
+      "_note": "0x00130488. From 0x000E8C32 in a loop over the audio stream count: (handle, index, 0, 0, 0)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1246725,
+      "name": "XMVPlaybackGetAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x00130605. From 0x000E8C44: (handle, index, &stream at 0x002FF764)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1246756,
+      "name": "XMVPlaybackUpdate",
+      "call": "stdcall",
+      "stack_bytes": 16,
+      "_note": "0x00130624. From 0x000E8CA3 and 0x000E8D25: (handle, surface, &status, 0); status 1 is a new picture, 2 and 3 the end."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "_title": "Breakdown (0x4E4D0009), XDK 5659",
+  "_why": [
+    "XbSymbolDatabase does not cover XMV, the video library, so these",
+    "addresses had no names and could not be replaced by name.",
+    "",
+    "scripts/section_calls.py finds eight calls crossing into the XMV section",
+    "(0x001DBD00..0x00203D1C). Create, Destroy and GetStreamInfo sit at the",
+    "same offsets into the section as Future Perfect's and Black's (+0x10D,",
+    "+0x651, +0x735); the rest moved between XDK builds and are named from",
+    "how the player code at 0x00188930..0x00189740 calls them. See",
+    "docs/technical/video-playback.md."
+  ],
+  "symbols": [
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1949197,
+      "name": "XMVPlaybackCreate",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x001DBE0D, from 0x00188E21: (4, path built by sub_0019D700 into the player at +0x24, &handle at the player's +0)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1950545,
+      "name": "XMVPlaybackDestroy",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x001DC351, from 0x00188E40 and 0x00189740, with the handle."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1950773,
+      "name": "XMVPlaybackGetStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x001DC435, from 0x00188946. The caller reads width and height from +0 and +4 and the audio stream count from +0xC (capped at 6) into its +0xA4."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1950801,
+      "name": "XMVPlaybackGetAudioStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x001DC451, from 0x00188F4B in a loop over the audio stream count: (handle, index, &info)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1950953,
+      "name": "XMVPlaybackCreateAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 20,
+      "_note": "0x001DC4E9, from 0x00188F8C, once per audio stream: (handle, index, 0, info or NULL, &stream)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1951336,
+      "name": "XMVPlaybackStart",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x001DC668, from 0x0018924B, with the handle, before the first Update."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1951795,
+      "name": "XMVPlaybackUpdate",
+      "call": "stdcall",
+      "stack_bytes": 16,
+      "_note": "0x001DC833, from 0x00189269 and 0x001892C0: (handle, one of the D3DSurfaces the player embeds at +0xB0 in 0x18-byte steps, &status, 0)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1953456,
+      "name": "XMVPlaybackGetCurrentTime",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x001DCEB0, from 0x001892CC after each Update: QueryPerformanceCounter minus a start time at the playback's +0xB0, divided by a rate computed at start-up; the result goes to the player's +0x110."
+    }
+  ]
+}

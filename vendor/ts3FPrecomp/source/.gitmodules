@@ -1,0 +1,29 @@
+[submodule "third_party/XbSymbolDatabase"]
+	path = third_party/XbSymbolDatabase
+	url = https://github.com/Cxbx-Reloaded/XbSymbolDatabase.git
+	ignore = untracked
+[submodule "third_party/Cxbx-Reloaded"]
+	path = third_party/Cxbx-Reloaded
+	url = https://github.com/Cxbx-Reloaded/Cxbx-Reloaded.git
+[submodule "third_party/xemu"]
+	path = third_party/xemu
+	url = https://github.com/xemu-project/xemu.git
+[submodule "third_party/nxdk"]
+	path = third_party/nxdk
+	url = https://github.com/XboxDev/nxdk.git
+[submodule "third_party/Vulkan-Headers"]
+	path = third_party/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+	ignore = untracked
+[submodule "third_party/volk"]
+	path = third_party/volk
+	url = https://github.com/zeux/volk.git
+	ignore = untracked
+[submodule "third_party/VulkanMemoryAllocator"]
+	path = third_party/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+	ignore = untracked
+[submodule "third_party/SDL"]
+	path = third_party/SDL
+	url = https://github.com/libsdl-org/SDL.git
+	ignore = untracked
