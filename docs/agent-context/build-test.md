@@ -1,5 +1,12 @@
 # Build, run and validation map
 
+`tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
+synthetic bounds/decoding and optional private-US metadata. Build drivers pass
+`TSFP_PROJECT_ROOT` to the compatibility bridge, including shared Mac deps.
+The generation fingerprint includes reader, export data and bridge. Windows
+reruns the full pipeline on staleness; Mac requires `--generate`. See
+`docs/independent-runtime.md` for provenance and remaining upstream components.
+
 `tools/import-game.py` / `disc_image.py` are the project-owned stdlib disc
 importer. `tsfp.ps1 Extract -Python ...` runs before Setup without entering
 the external checkout; Mac uses the same CLI. Existing files must match before

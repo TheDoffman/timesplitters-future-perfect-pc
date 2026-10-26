@@ -59,6 +59,8 @@ $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'
 if (!(Test-Path -LiteralPath $controlsPath)) {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'config\pc-controls.default.json') -Destination $controlsPath
 }
+$previousProjectRoot = $env:TSFP_PROJECT_ROOT
+$env:TSFP_PROJECT_ROOT = $projectRoot
 Push-Location $projectRoot
 try {
     if ($Action -eq 'Setup') {
@@ -174,7 +176,7 @@ try {
                         Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', (Join-Path $gameRoot 'default.xbe'))
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
-                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
+                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries')
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
@@ -324,4 +326,7 @@ try {
         finally { Pop-Location }
     }
 }
-finally { Pop-Location }
+finally {
+    Pop-Location
+    $env:TSFP_PROJECT_ROOT = $previousProjectRoot
+}

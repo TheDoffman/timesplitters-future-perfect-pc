@@ -1,5 +1,14 @@
 # Runtime and patch navigation
 
+`independent-xbe-reader.patch` replaces the installed Python XBE parser with a
+bridge to project-owned `tools/xbe_image.py` (source root selected by the build
+drivers' `TSFP_PROJECT_ROOT`, ancestor lookup for ordinary direct commands).
+It also redirects two ordinal audits to the separately credited nxdk CC0 ABI
+table. No original parser body runs; other generation/runtime stages remain
+upstream. Reader/table/bridge changes invalidate the generator fingerprint;
+Windows rebuilds all stages. Parser fixtures and patch transition tests cover
+this boundary; game regeneration and isolated gameplay provide title evidence.
+
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).

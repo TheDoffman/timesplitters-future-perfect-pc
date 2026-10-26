@@ -38,6 +38,15 @@
       ]
     },
     {
+      "name": "independent-xbe-reader.patch",
+      "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
+      "targets": [
+        "tools/kernel_audit/gen_ordinal_remap.py",
+        "tools/validate_ordinals.py",
+        "tools/xbe_parser/xbe_parser.py"
+      ]
+    },
+    {
       "name": "mac-platform.patch",
       "sha256": "1c4ebb79cf61cd3434851ae809e397532e104480e81ff278d20b75e8ef434639",
       "targets": [

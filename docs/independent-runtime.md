@@ -7,8 +7,8 @@ files into this repository does not meet that objective. The earlier vendoring
 proposal in PR #369 remains a separate, unmerged availability solution.
 
 **The replacement is not complete.** The current game still executes using the
-pinned runtime and its patches. Only disc import has an independent replacement
-in this first change. Do not present the port as an original implementation of
+pinned runtime and its patches. Disc import and executable analysis now have
+independent implementations. Do not present the port as an original implementation of
 the complete Xbox runtime or recompiler.
 
 ## Replacement sequence and acceptance
@@ -16,7 +16,7 @@ the complete Xbox runtime or recompiler.
 | Area | Current replacement status | Evidence required before removing the old implementation |
 | --- | --- | --- |
 | Disc catalog and extraction | Implemented in `tools/disc_image.py` and `tools/import-game.py`; Windows Extract uses it, same Python CLI available on Mac | Format fixtures, bounds/cycles/names, output preservation, private supported-XBE fixture; full original ISO extraction on both hosts remains unverified |
-| Executable parser and analysis model | Still upstream | Independent XBE section mapping, certificates, TLS, imports and entry decoding; synthetic malformed/valid fixtures and verified-US metadata; no upstream Python imports |
+| Executable parser and analysis model | Implemented in `tools/xbe_image.py`; production generation uses the compatibility bridge | Synthetic valid/malformed images, verified-US metadata equality, regeneration and bounded gameplay; native Mac validation pending |
 | Function discovery and x86-to-C translation | Still upstream | Independent decoder integration and control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -56,6 +56,37 @@ fill that evidence gap. The importer has a read-only verification command for
 when an original ISO is available.
 
 ## Current commands
+
+Executable analysis uses the same project-owned reader on Windows and Mac:
+
+```sh
+python tools/xbe_image.py private/game/default.xbe --json private/game/default_analysis.json
+python -m pytest tests/test_xbe_image.py tests/test_recomp_generation.py -q
+```
+
+The reader was authored from [Caustik's XBE format description](https://xbdev.net/fileformats/xbe/NonOfficialXBEFileFormat.pdf).
+It validates file/virtual section extents, retail/debug entry and thunk decoding,
+certificate metadata, library versions and TLS initialization ranges. Analysis
+omits certificate secrets. It preserves the attributes and JSON consumed by the
+current disassembler/recompiler; those consumers remain upstream implementations.
+The supported title is the pinned US executable; synthetic debug images are not
+evidence that other titles or beta executables work.
+
+`tools/xbe_kernel_exports.def` is the unmodified CC0 export declaration table
+from [XboxDev/nxdk at 03acd1415f7ccc3127bcfb629224aacdd95d783c](https://github.com/XboxDev/nxdk/blob/03acd1415f7ccc3127bcfb629224aacdd95d783c/lib/xboxkrnl/xboxkrnl.exe.def),
+credited to Stefan Schmidt in its SPDX header. This standard ABI data is retained
+as an allowed third-party dependency; it is not ts3FPrecomp parser code.
+
+`patches/independent-xbe-reader.patch` removes the installed upstream parser body
+and routes its old module entry point to this reader. The two ordinal audit
+consumers use the new table reader too. Build drivers set `TSFP_PROJECT_ROOT`
+to the source checkout, including Mac builds sharing another checkout's ignored
+dependencies. Direct toolkit commands can discover the containing project, or
+must set that variable when dependencies are elsewhere. There is no fallback to
+the old parser. The patch's deletion records remain historical upstream text.
+The independent source, export data and bridge enter the generation fingerprint.
+Windows automatically reruns all four stages when that fingerprint changes;
+Mac continues to require `--generate` for stale generation.
 
 Python 3.12 or newer is sufficient; Git, the runtime checkout and third-party
 Python packages are unnecessary for disc import:

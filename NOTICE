@@ -27,6 +27,11 @@ FFmpeg, Python/Tcl/Tk and bundled Online dependencies, retain their own terms.
 Keep the applicable license and attribution files with redistributed code and
 builds. Public game packages include them in Licenses and Support.
 
+The project-owned XBE reader uses the CC0-1.0 kernel export declarations from
+XboxDev/nxdk, Copyright 2017 Stefan Schmidt, commit
+03acd1415f7ccc3127bcfb629224aacdd95d783c. The unchanged SPDX-credited data is
+in tools/xbe_kernel_exports.def; provenance is in docs/independent-runtime.md.
+
 Original game material
 ----------------------
 This license does not grant rights to the original TimeSplitters executable,

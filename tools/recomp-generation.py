@@ -16,6 +16,13 @@ def fingerprint(runtime):
     paths.extend((runtime / 'config/extra_symbols').glob('*.json'))
     result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(paths)}
+    project = Path(__file__).resolve().parents[1]
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def'):
+        result['project/tools/' + name] = hashlib.sha256(
+            (project / 'tools' / name).read_bytes()).hexdigest()
+    parser_bridge = runtime / 'tools/xbe_parser/xbe_parser.py'
+    if parser_bridge.is_file():
+        result['tools/xbe_parser/xbe_parser.py'] = hashlib.sha256(parser_bridge.read_bytes()).hexdigest()
     # The lift scans these declarations to emit wrappers and original-body
     # pointers. Function-body edits only require compiling, but changing the
     # exported/imported names requires regenerating the guest C first.

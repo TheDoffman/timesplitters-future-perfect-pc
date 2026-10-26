@@ -199,6 +199,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-062 | Stable and named game release channels | Awaiting validation |
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
 | MAC-065 | Independent game-disc import | Awaiting validation |
+| MAC-066 | Independent executable analysis | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5629,6 +5630,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   case aliases, redirected paths, interrupted import and identical-file reuse.
 - **Mac implementation and evidence:** Shared tests registered in both-host CI;
   local execution and full retail-disc import remain unverified on Mac.
+
+### MAC-066 - Independent executable analysis
+
+- **Status:** Awaiting validation
+- **PC behavior:** Generate from the project-owned XBE reader instead of the
+  upstream parser, keeping section/import/TLS metadata compatible.
+- **PC source:** PR #370, continuing `feature/independent-game-import`;
+  `tools/xbe_image.py`, `tools/xbe_kernel_exports.def`,
+  `patches/independent-xbe-reader.patch`, both build drivers and fingerprints.
+- **PC validation:** Synthetic parser fixtures and exact private-US analysis
+  comparison passed; full build/game evidence is recorded in STATUS.md.
+- **Existing Mac support:** The same stdlib reader, ABI data and bridge run on
+  both hosts. The Mac driver sets the source root when reusing ignored deps.
+- **Mac adaptation needed:** None identified; native validation remains pending.
+- **Mac acceptance checks:** Run parser and generation tests, generate the
+  verified US executable with `--generate`, build, and run isolated Story
+  movement/fire/pause/resume. Also exercise `--runtime-root` with shared deps.
+- **Mac implementation and evidence:** Shared source and both-host CI test
+  registration; Windows evidence does not establish native Mac gameplay.
 
 ## Entry template
 

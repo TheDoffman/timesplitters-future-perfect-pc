@@ -1,3 +1,52 @@
+## Independent executable analysis (2026-10-26)
+
+Second replacement stage, continuing PR #370 on `feature/independent-game-import`
+after `213e32dc`. `tools/xbe_image.py` now supplies the production parser/model;
+the patch replaces the old parser body with a bridge and redirects two ordinal
+audits. The disassembler, translator and game runtime still contain upstream
+code. [Scope and provenance](docs/independent-runtime.md) distinguish authored
+parser code from the separately credited nxdk CC0 kernel ABI declarations.
+
+Windows 11 x64, Python 3.12.14, MSVC 2022 x64 Release, D3D11 backend:
+
+- **39 parser tests and 2 generation-fingerprint tests passed.** Public fixtures
+  cover retail/debug decoding, bounds, overlapping sections, truncation,
+  malformed metadata, unterminated strings/imports, optional directories,
+  zero-fill mapping, independent CLI and the actual patch's import bridge.
+- The supported US XBE passed its pinned SHA-256. New analysis exactly matches
+  the previous JSON: 23 sections, 151 imports, entry point, libraries and TLS.
+  Kernel audits agree on 193 thunk cases and 131 documented rows; all 151 title
+  imports resolve without ordinal remapping.
+- Full parse/disassemble/identify/lift regeneration through the Windows build
+  produced **21 byte-identical C/header files**. The reader, export data and
+  bridge participate in the generation fingerprint; stale Windows builds now
+  rerun the full pipeline. Build and its native regression tests passed.
+- Context/CI-scope/backlog checks: **90 passed**. Parser/fingerprint/backlog
+  combined focused rerun: **42 passed**. Combined patch-upgrade, parser,
+  fingerprint, Mac-driver and CI-scope suite: **154 passed, 1 skipped** in
+  11m28s. Previous-stage importer regression: **32 passed**.
+- Bounded isolated Story session: Scotland the Brave loaded; reviewed rendered
+  menu, gameplay, pause and resumed frames. Forward movement displaced the
+  player 11.175 world units; firing reduced loaded ammo from 8 to 6; pause held
+  simulation ticks constant, resume advanced them, and backward movement worked.
+  Last checkpoint was at 87.466 seconds; runner exited successfully, no crash
+  artifacts, test partitions recycled and canonical Test Lab fixture verified.
+  Test input used replay/state injection with the window minimized and background
+  rendering. This is not physical-input, foreground pacing, audio, complete-level
+  or full-game validation. Startup videos were skipped by the standard test runner.
+
+Tested executable SHA-256:
+`847764206f57775e2c65a27f4f04562edddce8fe24a7ed1edb7d51fe36a30b75`.
+Local evidence: `logs/independent-xbe-build.log`,
+`logs/independent-xbe-generation-comparison.json`, and
+`private/test-saves/independent-xbe/{provenance,report,saved-profiles}.json`
+with selected PNGs. No personal saves/settings were used.
+
+Mac uses the same reader and explicit source-root routing for shared dependency
+checkouts. Native Mac generation/gameplay remains unverified; see MAC-066.
+The original full ISO remains unavailable (MAC-065). Neither stage completes
+the independent runtime/recompiler replacement.
+
 ## Independent disc import (2026-10-26)
 
 This is the first functional step toward replacing the external toolkit's code,
