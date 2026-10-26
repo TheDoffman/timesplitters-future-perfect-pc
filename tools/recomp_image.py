@@ -176,7 +176,7 @@ def load_image(xbe_path, analysis_json=None):
 
 def source_fingerprint():
     """Include independent dependencies in the existing disassembly cache key."""
-    names = ('recomp_image.py', 'x86_decode.py', 'xbe_image.py', 'xbe_kernel_exports.def')
+    names = ('recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'xbe_image.py', 'xbe_kernel_exports.def')
     result = hashlib.sha256()
     for name in names:
         result.update(name.encode('ascii') + b'\0')

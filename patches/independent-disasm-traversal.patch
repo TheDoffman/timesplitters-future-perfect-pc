@@ -1,0 +1,332 @@
+--- a/tools/disasm/engine.py
++++ b/tools/disasm/engine.py
+@@ -14,11 +14,12 @@
+ from capstone import CS_OP_IMM, CS_OP_MEM, CS_OP_REG
+ 
+ from . import config
++from .loader import InstructionTraversal
+ from .loader import (BinaryImage, SectionInfo, Instruction, classify_instruction,
+                      make_decoder, read_code_window)
+ 
+ 
+-class DisasmEngine:
++class DisasmEngine(InstructionTraversal):
+     """
+     x86-32 disassembly engine backed by Capstone.
+ 
+@@ -26,93 +27,8 @@
+     (reachability validation) modes.
+     """
+ 
+-    def __init__(self, image: BinaryImage):
+-        self.image = image
+-        self._cs = make_decoder()
+-
+-        # Instruction cache: address -> Instruction
+-        self.instructions: Dict[int, Instruction] = {}
+-
+-        # Sorted address list (built lazily for range queries)
+-        self._sorted_addrs: Optional[List[int]] = None
+-
+-        # Embedded jump tables: table VA -> end VA (exclusive).
+-        # Populated by resync_jump_tables() from the indexed indirect jumps
+-        # recorded during the sweep.
+-        self.jump_tables: Dict[int, int] = {}
+-        self._jt_candidates: Set[int] = set()
+-        # Displacements of `call [reg*4 + disp]`: function-pointer tables.
+-        self.call_tables: Set[int] = set()
+-        # Displacement the dispatch names -> where the table actually starts.
+-        # They differ when the index can be negative (memcpy's tail table) or
+-        # never takes the low values, and jump_table_entries() is asked by the
+-        # displacement, which is what the instruction carries.
+-        self._jt_by_disp: Dict[int, int] = {}
+-        # Candidates already resynced. resync_jump_tables() runs more than
+-        # once -- decode_at() keeps finding dispatches the sweep had out of
+-        # phase -- and a table must not be measured twice.
+-        self._jt_done: Set[int] = set()
+-
+-    def _classify_instruction(self, cs_insn: CsInsn) -> Instruction:
+-        insn = classify_instruction(cs_insn, self.image.base_address, self.image.image_size)
+-        if insn.call_table is not None:
+-            self.call_tables.add(insn.call_table)
+-        if insn.jump_table is not None:
+-            self._jt_candidates.add(insn.jump_table)
+-        return insn
+-
+-    def linear_sweep(self, section: SectionInfo,
+-                     progress_callback=None) -> int:
+-        """
+-        Linear sweep disassembly of a section.
+-
+-        Decodes all bytes sequentially. On invalid byte sequences,
+-        skips forward and resumes decoding.
+-
+-        Returns number of instructions decoded.
+-        """
+-        data = self.image.get_section_data(section)
+-        if not data:
+-            return 0
+-
+-        va_start = section.virtual_addr
+-        total = len(data)
+-        count = 0
+-        offset = 0
+-
+-        while offset < total:
+-            # Decode from current offset to end of section
+-            chunk = data[offset:]
+-            chunk_va = va_start + offset
+-            last_end_offset = offset
+-
+-            for cs_insn in self._cs.disasm(chunk, chunk_va):
+-                insn = self._classify_instruction(cs_insn)
+-                self.instructions[insn.address] = insn
+-                count += 1
+-                last_end_offset = (cs_insn.address + cs_insn.size) - va_start
+-
+-            # Progress reporting
+-            if progress_callback and last_end_offset > offset:
+-                progress_callback(min(last_end_offset, total), total)
+-
+-            if last_end_offset > offset:
+-                offset = last_end_offset
+-            else:
+-                # Capstone couldn't decode anything - skip one byte
+-                offset += 1
+-
+-            # If we've decoded to near the end, we're done
+-            if offset >= total:
+-                break
+-
+-        # Invalidate sorted address cache
+-        self._sorted_addrs = None
+-
+-        if progress_callback:
+-            progress_callback(total, total)
+-
+-        return count
++
++
+ 
+     def resync_jump_tables(self, min_entries: int = 3,
+                            max_entries: int = 512) -> int:
+@@ -342,65 +258,6 @@
+         return [self.image.read_u32_at_va(a) or 0
+                 for a in range(start, end, 4)]
+ 
+-    def decode_at(self, addr: int, max_insns: int = 4096) -> int:
+-        """
+-        Decode a stream starting exactly at `addr`, realigning the sweep.
+-
+-        linear_sweep decodes each section as one stream and resyncs only by
+-        skipping a byte when capstone fails. Where it enters a run of data --
+-        a jump table, alignment padding, an embedded constant -- it comes out
+-        the far side misaligned and stays that way until it happens to fall
+-        back into step. Everything downstream keys off self.instructions, so an
+-        address the sweep stepped over simply does not exist: recursive_descent
+-        stops dead there (it only reads this dict, it never decodes), and
+-        _pass_call_targets drops the candidate.
+-
+-        That is how Halo 2276 ended up with 46 direct call targets that never
+-        became functions. 0x00017AB0 is named in a caller's own call list, is
+-        16-aligned, and sits in a 5.7 KB hole between two detected functions --
+-        the strongest evidence a function start can have, discarded because a
+-        byte-skip upstream put the stream out of phase.
+-
+-        Decoding stops as soon as it lands on an address already decoded: at
+-        that point the streams have converged and the rest is already correct.
+-        So this rewrites only the out-of-phase run, not the section.
+-
+-        Overlapping decodes are left in place rather than evicted. On x86 two
+-        valid instruction streams really can share bytes, and the callers that
+-        matter walk forward by end_address from a known start, so each follows
+-        its own chain. Evicting the old one would corrupt whichever function
+-        was already using it.
+-
+-        Returns the number of instructions newly decoded.
+-        """
+-        section = self.image.get_section_at_va(addr)
+-        if section is None or not section.executable:
+-            return 0
+-        data = self.image.get_section_data(section)
+-        if not data:
+-            return 0
+-
+-        offset = addr - section.virtual_addr
+-        if offset < 0 or offset >= len(data):
+-            return 0
+-
+-        added = 0
+-        for cs_insn in self._cs.disasm(data[offset:], addr):
+-            if cs_insn.address != addr and cs_insn.address in self.instructions:
+-                break  # resynced with the existing stream
+-            if cs_insn.address not in self.instructions:
+-                self.instructions[cs_insn.address] = \
+-                    self._classify_instruction(cs_insn)
+-                added += 1
+-            insn = self.instructions[cs_insn.address]
+-            if insn.is_terminator:
+-                break
+-            if added >= max_insns:
+-                break
+-
+-        if added:
+-            self._sorted_addrs = None
+-        return added
+ 
+     def block_tail_jump(self, addr: int, max_insns: int = 256):
+         """
+@@ -897,139 +754,10 @@
+                 return False  # ran off the section without terminating
+         return False
+ 
+-    def recursive_descent(self, start_addresses: List[int],
+-                          section_bounds: List[Tuple[int, int]]) -> Set[int]:
+-        """
+-        Recursive descent from given start addresses.
+-
+-        Follows control flow to determine reachable instructions.
+-
+-        Returns set of reachable instruction addresses.
+-        """
+-        reachable: Set[int] = set()
+-        worklist = list(start_addresses)
+-        visited_starts: Set[int] = set()
+-
+-        def in_bounds(addr: int) -> bool:
+-            return any(s <= addr < e for s, e in section_bounds)
+-
+-        while worklist:
+-            addr = worklist.pop()
+-            if addr in visited_starts:
+-                continue
+-            visited_starts.add(addr)
+-
+-            # Walk the instruction stream linearly from this start point
+-            while True:
+-                if addr in reachable:
+-                    break  # Already explored from here
+-                if not in_bounds(addr):
+-                    break
+-
+-                insn = self.instructions.get(addr)
+-                if insn is None:
+-                    # Tried calling decode_at here to realign, on the theory
+-                    # that descent was being truncated by the same out-of-phase
+-                    # runs decode_at fixes for call targets. Measured on Halo
+-                    # 2276: +138 reachable instructions out of 640k (0.02%),
+-                    # zero new functions, and one tail_jump_target lost. Not
+-                    # worth the risk of following a bad decode deeper.
+-                    #
+-                    # It is small because descent starts from function heads the
+-                    # sweep already decoded and stops at ret/jmp, so it seldom
+-                    # walks into a hole in the first place -- the call-target
+-                    # path in _pass_call_targets already catches the cases that
+-                    # matter. See docs/technical/ms-fusion-adoption-plan.md.
+-                    break
+-
+-                reachable.add(addr)
+-
+-                # Follow call targets (but continue past the call)
+-                if insn.is_call and insn.call_target is not None:
+-                    if in_bounds(insn.call_target) and insn.call_target not in visited_starts:
+-                        worklist.append(insn.call_target)
+-
+-                # Follow conditional jump targets (and continue fall-through)
+-                if insn.is_cond_jump and insn.jump_target is not None:
+-                    if in_bounds(insn.jump_target) and insn.jump_target not in visited_starts:
+-                        worklist.append(insn.jump_target)
+-
+-                # Unconditional jump: follow target, stop linear walk
+-                if insn.is_jump:
+-                    if insn.jump_target is not None and in_bounds(insn.jump_target):
+-                        if insn.jump_target not in visited_starts:
+-                            worklist.append(insn.jump_target)
+-                    break
+-
+-                if insn.is_ret:
+-                    break
+-
+-                addr = insn.end_address
+-
+-        return reachable
+-
+-    def get_instruction(self, address: int) -> Optional[Instruction]:
+-        """Get a decoded instruction by address."""
+-        return self.instructions.get(address)
+-
+-    def _ensure_sorted_addrs(self):
+-        """Build sorted address list if not cached."""
+-        if self._sorted_addrs is None:
+-            self._sorted_addrs = sorted(self.instructions.keys())
+-
+-    def instruction_covering(self, addr: int) -> Optional[Instruction]:
+-        """The decoded instruction whose bytes contain `addr` but do not start
+-        at it, or None.
+-
+-        A hit means the sweep already has a coherent decode across this
+-        address, so anything claiming a function starts here is claiming an
+-        instruction boundary in the middle of an instruction. That is worth
+-        distrusting: realigning there splits whatever the address sits in.
+-        """
+-        self._ensure_sorted_addrs()
+-        # Scan back over the longest an x86 instruction can be, rather than
+-        # looking only at the nearest preceding start. Overlapping decodes are
+-        # allowed here -- decode_at leaves the stream it realigned over in
+-        # place -- so `addr` can be a recorded boundary *and* sit inside an
+-        # instruction the sweep decoded. Checking one neighbour misses exactly
+-        # that case, which is the one worth catching.
+-        i = bisect.bisect_left(self._sorted_addrs, addr)
+-        j = bisect.bisect_left(self._sorted_addrs, addr - 15)
+-        for k in range(i - 1, j - 1, -1):
+-            if k < 0:
+-                break
+-            insn = self.instructions[self._sorted_addrs[k]]
+-            if insn.address < addr < insn.address + insn.size:
+-                return insn
+-        return None
+-
+-    def get_instructions_in_range(self, start: int, end: int) -> List[Instruction]:
+-        """Get all instructions in address range [start, end), sorted."""
+-        self._ensure_sorted_addrs()
+-        import bisect
+-        lo = bisect.bisect_left(self._sorted_addrs, start)
+-        hi = bisect.bisect_left(self._sorted_addrs, end)
+-        return [self.instructions[self._sorted_addrs[i]]
+-                for i in range(lo, hi)]
+-
+-    def instruction_count(self) -> int:
+-        return len(self.instructions)
+-
+-    def get_call_targets(self) -> Set[int]:
+-        """Return all direct call target addresses."""
+-        targets = set()
+-        for insn in self.instructions.values():
+-            if insn.call_target is not None:
+-                targets.add(insn.call_target)
+-        return targets
+-
+-    def get_indirect_call_refs(self) -> Dict[int, List[int]]:
+-        """
+-        Return memory addresses referenced by indirect calls.
+-        Maps: memory_address -> [calling_instruction_addresses]
+-        """
+-        refs: Dict[int, List[int]] = {}
+-        for insn in self.instructions.values():
+-            if insn.is_call and insn.memory_ref is not None:
+-                refs.setdefault(insn.memory_ref, []).append(insn.address)
+-        return refs
++
++
++
++
++
++
++
+--- a/tools/disasm/loader.py
++++ b/tools/disasm/loader.py
+@@ -4,3 +4,4 @@
+ from recomp_image import (BinaryImage, SectionInfo, KernelImport, DATA_SECTION_NAMES,
+                           load_image, _find_analysis_json, source_fingerprint, read_code_window)
+ from x86_decode import Instruction, classify_instruction, make_decoder
++from x86_flow import InstructionTraversal

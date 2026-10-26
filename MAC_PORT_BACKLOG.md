@@ -201,6 +201,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-065 | Independent game-disc import | Awaiting validation |
 | MAC-066 | Independent executable analysis | Awaiting validation |
 | MAC-067 | Independent disassembler input | Awaiting validation |
+| MAC-068 | Independent instruction traversal | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5671,6 +5672,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   movement/fire/pause/resume. Confirm source edits invalidate cached analysis.
 - **Mac implementation and evidence:** Tests registered for both CI hosts;
   Windows results do not establish native Mac generation or gameplay.
+
+### MAC-068 - Independent instruction traversal
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly inherits project-owned linear scan,
+  bounded realignment, cached direct-edge reachability and instruction queries.
+  Function/table/prologue recovery remains in the existing toolkit for now.
+- **PC source:** Active independent-replacement goal, continuing PR #370;
+  `tools/x86_flow.py`, `patches/independent-disasm-traversal.patch`, cache and
+  generation fingerprints, `tests/test_x86_flow.py`.
+- **PC validation:** Synthetic cycles, calls, branches, invalid bytes, overlap,
+  convergence, zero targets and instruction-limit tests; production method-origin
+  assertions and existing consumer tests. Build/game results are in STATUS.md.
+- **Existing Mac support:** Shared Python and pinned Capstone; no host-specific
+  traversal path. Existing source-root bridge also handles shared dependencies.
+- **Mac adaptation needed:** None identified; native acceptance remains pending.
+- **Mac acceptance checks:** Run flow/input/fingerprint tests, regenerate the
+  verified US game, rebuild and run isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  validation does not establish native Mac gameplay.
 
 ## Entry template
 

@@ -47,13 +47,13 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
         path = runtime / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py'):
         path = project / 'tools' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
     monkeypatch.setattr(generation, '__file__', str(project / 'tools/recomp-generation.py'))
     for path in (project / 'tools/xbe_image.py', project / 'tools/xbe_kernel_exports.def',
-                 project / 'tools/recomp_image.py', project / 'tools/x86_decode.py',
+                 project / 'tools/recomp_image.py', project / 'tools/x86_decode.py', project / 'tools/x86_flow.py',
                  runtime / 'tools/xbe_parser/xbe_parser.py', runtime / 'tools/disasm/engine.py'):
         generation.record(runtime)
         assert generation.current(runtime)

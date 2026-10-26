@@ -1,10 +1,11 @@
 # Build, run and validation map
 
-`recomp_image.py` / `x86_decode.py` own the disassembler's image view and
-instruction classification. Their source hashes invalidate analysis and build
-caches. `test_recomp_input.py` checks mappings, targets, standalone loading and
-runs the patched consumer's 97 disassembler tests. Probes use bounded windows;
-exact data reads cannot cross section/zero-fill boundaries.
+`recomp_image.py`, `x86_decode.py` and `x86_flow.py` own image views, instruction
+classification, traversal and reachability. Their hashes invalidate both caches.
+`test_recomp_input.py` checks standalone inputs and runs 97 consumer tests;
+`test_x86_flow.py` checks edges, holes, limits and overlaps. Probes use bounded
+windows; exact reads cannot cross section/zero-fill boundaries. Remaining goal
+milestones are in `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

@@ -47,6 +47,14 @@
       ]
     },
     {
+      "name": "independent-disasm-traversal.patch",
+      "sha256": "e3a86d5d3e34172b55cc01964cd2fddc3a3dbe603cb55fa9745380c63f70c5c0",
+      "targets": [
+        "tools/disasm/engine.py",
+        "tools/disasm/loader.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

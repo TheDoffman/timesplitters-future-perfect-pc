@@ -1,3 +1,50 @@
+## Active replacement goal: instruction traversal (2026-10-26)
+
+The user requested an active goal to finish the remaining independent runtime
+and toolchain. Its milestones and completion gates are tracked in
+[docs/independent-runtime.md](docs/independent-runtime.md#active-goal-and-completion-gates).
+The goal is **not complete**. This accepted Windows component continues PR #370
+from `8a9a48c3`; it does not replace function/table/prologue recovery or translation.
+
+`tools/x86_flow.py` supplies production linear sweep, bounded realignment,
+cached direct-edge reachability, overlap/range queries and call-reference
+queries through `independent-disasm-traversal.patch`. Scanning resumes after
+invalid bytes; realignment preserves overlaps and stops on convergence or a
+terminator. Reachability follows explicit cached edges without decoding holes
+or inventing indirect targets. Both cache fingerprints include its source.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **264 passed, 1 skipped in 11m01s** across patch transitions, traversal,
+  input/parser/import/fingerprint, Mac tooling and CI scope.
+- **79 focused tests passed**: 19 traversal, 58 input (including the 97-test
+  existing consumer suite), and 2 generation-fingerprint tests. Standalone
+  traversal executes from a temporary copy containing only project modules,
+  ABI data and permitted Capstone, with no toolkit import.
+- **21 context/backlog tests passed**. Synthetic traversal cases cover calls,
+  conditional/unconditional edges, cycles, unknown targets, holes, zero targets,
+  range unions, invalid/truncated bytes, limits, convergence and overlaps.
+- Full supported-US regeneration completed; **21 generated C/header files
+  remained byte-identical**. Windows build and its native tests passed.
+  Disassembly took 69.47 seconds versus 98.91 in the preceding run; this is not
+  a controlled performance comparison.
+- Bounded isolated Scotland the Brave test: reviewed gameplay, movement by
+  11.175 world units, loaded ammo 8 to 6 after firing, pause holding simulation
+  ticks constant, resume advancing ticks, and backward movement. Last checkpoint
+  87.468 seconds; successful exit, no crash artifacts, unchanged signed test
+  profiles, verified canonical fixture and recycled test partitions.
+
+The game test used injected replay/state input, a minimized/background window,
+original 60 FPS settings and skipped startup movies. It does not certify physical
+input, foreground pacing, audio or complete levels. Personal saves/settings were
+not used. Tested executable SHA-256:
+`918710723cdd20883607cb7f0ffa624e0dbe2a0d17541ea1dd214d257b4055f6`.
+Local evidence is in `logs/independent-flow-*` and
+`private/test-saves/independent-flow`; the source inventory in
+`logs/independence-source-inventory.json` counts tracked toolkit files still
+present (including tests, bridges and adapted files), not ownership percentages.
+Native Mac acceptance remains pending under MAC-068.
+
 ## Independent disassembler input (2026-10-26)
 
 Third replacement step, continuing PR #370 from `74551892` on

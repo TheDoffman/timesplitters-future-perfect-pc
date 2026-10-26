@@ -9,8 +9,36 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
-classification. Do not present the port as an original implementation of
+classification, traversal and direct-edge reachability. Do not present the port as an original implementation of
 the complete Xbox runtime or recompiler.
+
+## Active goal and completion gates
+
+The user requested completion of the remaining replacement as an active goal
+on 2026-10-26. Work proceeds through the milestones below without requiring a
+new request for each component. Keep each accepted stage reviewable in Git;
+the goal does not authorize merging into main. Host validation remains separate
+from implementation status.
+
+1. **Own the tooling.** Finish instruction traversal, table/prologue recovery,
+   function discovery, labels/cross-references, analysis caches/output, symbol
+   integration and x86-to-C translation. Retain permitted Capstone; verify
+   integer/flags, floating point, indirect calls and ABI behavior.
+2. **Own the guest execution foundation.** Replace memory, executable loading,
+   dispatch, kernel objects/imports, threads/TLS, timing, filesystems and saves.
+3. **Own the device services.** Replace graphics/GPU commands, audio/movies,
+   input/devices and networking around permitted host libraries/adapters.
+4. **Own the title and delivery integration.** Replace title entry/hooks/build
+   targets, migrate patches into original source, and update packaging/tests.
+5. **Prove independence.** Audit executable and shipped source dependencies,
+   fixtures, headers and historical copied text. Generate/build/test/package
+   with the old toolkit and vendored snapshot unavailable. Retain notices for
+   any third-party material still shipped. Verify isolated game behavior and
+   record unavailable host checks accurately before assessing completion.
+
+The goal stays active while required implementation or acceptance work remains.
+Finishing a component, passing a build or exhausting a work session is not
+completion of the whole goal. The table below and STATUS.md record progress.
 
 ## Replacement sequence and acceptance
 
@@ -19,6 +47,7 @@ the complete Xbox runtime or recompiler.
 | Disc catalog and extraction | Implemented in `tools/disc_image.py` and `tools/import-game.py`; Windows Extract uses it, same Python CLI available on Mac | Format fixtures, bounds/cycles/names, output preservation, private supported-XBE fixture; full original ISO extraction on both hosts remains unverified |
 | Executable parser and analysis model | Implemented in `tools/xbe_image.py`; production generation uses the compatibility bridge | Synthetic valid/malformed images, verified-US metadata equality, regeneration and bounded gameplay; native Mac validation pending |
 | Disassembler input and instruction model | Project-owned `recomp_image.py` and `x86_decode.py`; production consumer uses them with permitted Capstone | Mapping/operand fixtures, cache invalidation, full regeneration and bounded gameplay; native Mac pending |
+| Instruction traversal and reachability | Project-owned `x86_flow.py`; production engine inherits scan, realignment, reachability and queries | Synthetic edges/cycles/overlaps/limits, existing consumer tests, full regeneration and bounded gameplay; native Mac pending |
 | Function discovery and x86-to-C translation | Still upstream, using the independent input layer | Independent control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -61,6 +90,22 @@ when an original ISO is available.
 
 ### Disassembler input and instruction model
 
+`tools/x86_flow.py` now owns the next layer: linear scanning across valid runs,
+bounded realignment at an explicit address, finite reachability over cached
+direct edges, overlap/range queries and direct/indirect call-reference queries.
+Calls retain fall-through; unconditional jumps and returns stop it. Missing
+decodes and unknown indirect jump targets end a path, without inventing code.
+Realignment preserves overlapping streams and stops at a known successor or
+terminator. A zero/negative instruction limit performs no decode.
+
+The production engine inherits those methods through
+`independent-disasm-traversal.patch`, after the input patch. Table recovery,
+prologue/body probes and function boundaries still come from the existing
+engine/detector; their presence is not concealed by the new base class.
+The traversal source is included in both cache fingerprints. Its independent
+tests are in `tests/test_x86_flow.py`; the consumer integration test asserts
+that production traversal methods originate in the project module.
+
 `tools/recomp_image.py` builds a read-only image from the independent XBE parser,
 without requiring cached JSON or the external toolkit. Explicit or exactly named
 sibling analysis JSON must match that executable's layout and imports; unrelated
@@ -75,7 +120,8 @@ operand classification used by production disassembly. It follows the
 with the existing pinned standard dependency. Direct transfers, absolute memory
 references, address-like immediates and indexed table candidates retain the
 consumer interface. A candidate is not proof of a function or table; recovery,
-control-flow algorithms, labels, cross-references and translation remain upstream.
+table/prologue recovery, function discovery, labels, cross-references and
+translation remain upstream.
 
 `patches/independent-disasm-input.patch` removes the old loader/model/classifier
 bodies and connects the new implementations. It adapts code-probe reads and adds
