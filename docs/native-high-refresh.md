@@ -316,6 +316,17 @@ animation observations**, **Complete a mixed-preset Online rematch** and
 **Current-build live vehicle contact comparison**. The private receipts named
 there preserve hashes and rejected controls; game assets stay untracked.
 
+## Deferred character voices
+
+The exact `164E00` entry gate now admits positive fractional game time for
+queued character voices and their cooldown. Original caller, scheduler and RNG
+tests cover 576 schedules through 240 FPS, stale actor handles, pause and
+36 whole/catch-up parity cases. The original delays and selection rules remain.
+The full timing suite passes 108 tests; this establishes CPU timing behavior.
+A rebuilt game and audible confirmation remain pending while the separate
+Bugs chat finishes its live session. See the deferred actor voice entry in
+[STATUS](../STATUS.md) for evidence and controlled service boundaries.
+
 ## NPC firing timing
 
 The shared native timing path also scopes the NPC firing transaction

@@ -4004,6 +4004,14 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   mesh/GPU rendering, collision services and physical Mac remain
   **Awaiting validation**; see STATUS for scope and measurements.
 
+- **Deferred actor voices (PR #367 follow-up):** Shared numeric policy repairs
+  exact164E00 elapsed-time admission. Original normal caller, queue setters,
+  scheduler and RNG fixtures cover timing/cooldown/handles through240 with
+  controlled voice definitions/audio consumers. No host adapter or audio clock
+  change is added. Public scope checks run on both hosts; original routines
+  skip without the private XBE. Live/audible and physical Mac acceptance remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
+
 - **Registered yaw callback (PR #367 follow-up):** Shared numeric policy admits
   fractional entry at224170. Original registration/entity passes, dirty yaw
   cache and affine point fixtures verify fresh CPU propagation through240;

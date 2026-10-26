@@ -1,3 +1,34 @@
+## Deferred actor voice timing and cooldown (2026-10-26)
+
+The164E00 inventory candidate resolves to deferred character-audio requests.
+Original normal-frame caller1CE2E0 invokes it directly at1CE3B3; it is outside
+the physics substep scope. Its own whole-tick gate discards float seconds from
+pending requests and the shared cooldown. An original caller/queue/scheduler
+reproduction at native60 quarter speed consumes0.06249994 seconds during a
+quarter game-second interval, instead of0.25, in both the request and cooldown.
+
+Only exact164E00 admission now follows positive game time. The original one-
+second pending voice,0.2-second secondary delay, five-second cooldown, actor
+generation checks, selection and event ordering remain. The actual caller's
+153C00 helper saves/restores the separate float RNG; it is not a tick-based
+seed reset, and is unchanged. Scheduler choices use the independent main RNG.
+
+Original normal caller, setters/reset, scheduler/default choice and main RNG
+helpers execute in576 rate/slow/phase/voice-path/stale-generation cases through
+240. Valid requests consume one expected64-bit RNG recurrence; stale requests
+consume none. Largest delivery-time error is0.016666667 simulated game seconds.
+Pause freezes request/cooldown/main-RNG observations. Thirty-six whole/catch-up
+cases retain byte-equal queue/timer/RNG/event observations. Old-gate and disabled
+generation controls fail at their intended assertions. The focused original/
+public scope pair passes5.68s. The full timing suite passes108 tests in198.56s;
+20 context tests pass in3.52s. A game rebuild and its bundled GUI checks are
+deferred while the separate Bugs chat owns the live game/build session, per
+the user's instruction. These offline results do not validate a new executable.
+Other frame services, voice definitions and audio consumers remain controlled.
+Private-XBE originals skip without that asset; public scope checks run on both
+CI hosts. Live/audible output, full caller integration and physical Mac gameplay
+remain unverified. Logs: actor-voice-clock-before.log, -after.log and -focused.log.
+
 ## Registered yaw callback and fresh CPU pose propagation (2026-10-26)
 
 US224170 gates float-seconds yaw motion on whole game ticks. A reproduction

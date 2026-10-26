@@ -60,6 +60,63 @@ def test_original_level_ambient_callback(tmp_path, level, descriptors, callback,
         vars(config).update(previous)
 
 
+def test_original_actor_voice_clock(tmp_path):
+    import hashlib
+    import re
+    import struct
+    from capstone import Cs, CS_ARCH_X86, CS_MODE_32
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    path = ROOT/'private/game/default.xbe'
+    if not path.is_file():
+        pytest.skip('Supported US XBE required for original actor voice clock')
+    image = path.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(path))
+        ranges = [(0x1ce2e0,0x1ce404),(0x164e00,0x164f5e),(0x1648d0,0x1648fa),
+                  (0x164920,0x16495e),(0x164900,0x16491e),(0x164960,0x1649dc),
+                  (0x153b40,0x153b7a),(0x3c9ed0,0x3c9f04),(0x153c00,0x153c20)]
+        functions = {a:dict(name=f'sub_{a:08X}',end=e) for a,e in ranges}
+        translator = FunctionTranslator(image,functions)
+        pieces = {a:translator.translate_function(a,f) for a,f in functions.items()}
+        code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())+'\n'+'\n'.join(pieces.values())
+        # Mutations disable only the original generation checks, never production.
+        for target in ('00164EC6','00164F52'):
+            needle = f'if (CMP_NE(_fa, _fb)) goto loc_{target};'
+            assert code.count(needle)==1
+            code = code.replace(needle,f'if (!ignore_generation && CMP_NE(_fa, _fb)) goto loc_{target};')
+        source = (ROOT/'tests/native_actor_voice_clock.c').read_text()
+        defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        parent = pieces[0x1ce2e0]
+        parent_calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',parent))
+        parent_calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',parent))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code))|parent_calls
+        services = '\n'.join(f'void {n}(void){{frame_service();}}' if n in parent_calls else
+                             f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}'
+                             for n in sorted(calls-defined))
+        addresses = set(range(0x1ce404,0x1ce420,4))
+        decoder = Cs(CS_ARCH_X86,CS_MODE_32)
+        for a,e in ranges:
+            offset = config.va_to_file_offset(a)
+            for instruction in decoder.disasm(image[offset:offset+e-a],a):
+                addresses.update(int(x,16) for x in re.findall(r'\[0x([0-9a-f]+)\]',instruction.op_str)
+                                 if 0x470000<=int(x,16)<0x4a0000)
+        constants = '\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source = source.replace('/* POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT/"src/pc_native_numeric.h").as_posix()}"')
+        source = source.replace('/* ROUTINES */',code).replace('/* FRAME_SERVICES */',services).replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+        executable = tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        for mutation in ('legacy-gate','ignore-generation'):
+            result = subprocess.run([str(executable),mutation],capture_output=True,text=True,timeout=15)
+            assert result.returncode!=0 and 'Assertion' in result.stderr
+            assert 'UNEXPECTED' not in result.stderr
+            marker = 'fabsf(MEMF(0x74c3d0)-.75f)' if mutation=='legacy-gate' else 'primary_events==!(stale&1)'
+            assert marker in result.stderr
+    finally:
+        vars(config).update(previous)
+
+
 def test_original_scripted_yaw_callback(tmp_path):
     import hashlib
     import re

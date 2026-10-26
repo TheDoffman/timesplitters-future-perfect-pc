@@ -83,6 +83,34 @@ whole ticks for a damping loop while separately integrating float time, and
 1DDF10 already integrates float motion before a whole-count helper loop. Those
 sites need their own operator/event analysis; neither is changed here.
 
+## Deferred actor voice clock
+
+US164E00 is a deferred actor-audio scheduler, not a physics step. Original
+normal-frame caller1CE2E0 invokes it at1CE3B3 without coalescing the game delta.
+The scheduler's integer entry gate discarded fractional seconds from the
+one-second pending voice,0.2-second secondary request and five-second cooldown.
+Only that entry load now follows positive game time. EAX is unused after the
+gate; queue ordering, handle-generation tests, voice selection and stores remain.
+
+`native_actor_voice_clock.c` executes original normal-frame caller, queue/reset
+setters1648D0/164920/164960, scheduler164E00, default selection164900, main RNG
+153B40 and64-bit multiply3C9ED0. It also executes153C00: that helper saves/restores
+the separate float RNG from7497CC/D0 according to whole ticks; it does not seed
+it from a tick count. Its existing protocol remains. Other frame services,
+voice definitions and audio consumers are controlled boundaries.
+
+576 cases cover rates through240, normal/quarter intervals, four carried phases,
+three voice paths and independent stale primary/secondary generations. The
+original queued delays, cooldown admission/re-admission and single main RNG
+draw agree with an independent64-bit recurrence; stale actors deliver/draw
+nothing. Pause with stale whole ticks holds timers, delivery and main RNG.
+The largest event-time error is one original tick in simulated game time.
+36 whole/catch-up cases preserve byte-equal queue/timer/RNG/event observations.
+Old-gate and disabled-generation controls fail at their intended assertions.
+Public scope tests cover this exact site on both hosts. Private-XBE originals
+skip without the supported asset. This is request scheduling, not audible PCM,
+physical audio latency, all caller services or live scene acceptance.
+
 ## TRAP motion and contact lifetime
 
 US1D8AB0 rotates a tagged object using a sine-table impulse, drift, upper clamp,

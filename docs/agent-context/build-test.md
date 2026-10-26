@@ -108,8 +108,8 @@ and wide read spans. Capture-free runs retain lightweight snapshots; full native
 traces and renderer captures belong in separate diagnostic runs.144 remains a
 legacy diagnostic rate; the menu presets are60/120/180/240.
 
-Level/yaw callback fixtures check original dispatch/timers/events/reset,
-RNG, pose propagation, pause and old-gate controls through240; see the script-clock guide.
+Script clock fixtures cover original dispatch/timers/events/reset, RNG,
+pose/voice queues, pause and old-gate controls through240; see the script-clock guide.
 
 `native_tree_motion.c` (via `test_native_timing.py`) executes the original US
 TREE callback1D88B0, with only its two effect services replaced by spies. It

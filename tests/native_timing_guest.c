@@ -341,7 +341,7 @@ int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* Asset-free scope/pause contract for the fractional level callback gates. */
-    const uint32_t callback_sites[]={0x222b60,0x21af90,0x224170};
+    const uint32_t callback_sites[]={0x222b60,0x21af90,0x224170,0x164e00};
     g_tsfp_native_timing_active=1;
     for(unsigned r=0;r<4;r++) {
         const unsigned rates[]={60,120,180,240};
