@@ -197,6 +197,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 | MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
 | MAC-062 | Stable and named game release channels | Awaiting validation |
+| MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5669,6 +5670,21 @@ STATUS. Physical Mac and rendered-effect parity remain Awaiting validation.
   unavailable/read-only media, immediate profile creation, restart persistence and profile
   preservation. Use a disposable save location; never redirect an automated
   Test Lab session onto personal saves.
+
+### MAC-063 - Projected enemy health bars (issue #102)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The Electro Chimp Discomatic health bars follow moving
+  monkeys at widescreen resolution instead of drifting toward the center.
+- **Source:** `102-electro-chimp-health-bars` and
+  `patches/zzzz-world-health-bars.patch` in the shared D3D compatibility path.
+- **Windows evidence:** Release build, display test, patch-stack validation,
+  focused patch-transition test, and isolated 1280×720 challenge replay passed.
+- **Mac adaptation needed:** Confirm that the native renderer uses the same
+  projected-draw placement. Apply equivalent placement only if its path differs.
+- **Mac acceptance:** Build on a Mac and inspect the challenge at 16:9 and
+  ultrawide ratios; check that health bars track the monkeys and ordinary HUD
+  elements remain in place. Native Mac validation is pending.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

@@ -136,6 +136,15 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
+`zzzz-world-health-bars.patch` handles #102 after the other display patches.
+Electro Chimp's enemy bars are screen-space draws with 16-byte transformed
+vertices and depth near 1. Their positions already follow the widened camera;
+the automatic 4:3 HUD squeeze otherwise shifts them toward the screen center.
+The patch spans those draws across the output while leaving ordinary HUD
+sprites and explicitly placed overlays on their existing paths. Validate with
+Monkeying Around → Electro Chimp Discomatic at a widescreen resolution and
+compare each bar with its moving monkey.
+
 `zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
 draws with minimum index zero pass their current index bytes directly to the
 synchronous host draw; other ranges retain allocation/rebasing. Vertex gathering,
