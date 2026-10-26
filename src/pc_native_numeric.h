@@ -6,6 +6,16 @@
 #include <float.h>
 #include <string.h>
 #include "pc_gpu_ack.h"
+/* Keep references to the same live TLS cells in these profiled hot routines.
+ * New generator files support this protocol; legacy/manual sources retain
+ * their original aliases. No register values are copied or deferred. */
+#ifndef RECOMP_USE_GPR_REFS
+#define RECOMP_USE_GPR_REFS 1
+#endif
+#ifndef RECOMP_GPR_ANCHORS
+#define RECOMP_GPR_ANCHORS(site) \
+    ((site)==0x18EA90u || (site)==0x21450u || (site)==0x214C0u)
+#endif
 /* Entry callbacks precede this audited US affine-transform fast path. */
 extern int pc_model_transform_entry(void);
 #define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())

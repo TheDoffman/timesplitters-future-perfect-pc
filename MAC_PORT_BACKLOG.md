@@ -3907,6 +3907,15 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Live register references (PR #367 follow-up):** Shared generator/template
+  policy retains addresses of the same live TLS cells in three profiled
+  routines (18EA90/21450/214C0). No values are cached, ABI layout changed or
+  guest clock altered. Common generated-code/callback/alias/thread fixtures
+  run on both hosts. Regeneration is required; legacy/manual sources keep
+  existing aliases. No Mac adapter is needed. Windows build/tests and live
+  measurements are recorded in STATUS as available; physical Mac acceptance
+  remains **Awaiting validation**.
+
 - **Native PC locations (PR #367 follow-up):** The existing opt-in Windows
   CPU sampler can report bounded instruction RVAs, symbol offsets and PDB
   source basenames/lines for one requested symbol. DbgHelp is Windows-specific;

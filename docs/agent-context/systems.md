@@ -4,9 +4,8 @@ GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the
 production state-module pixel fixture with Windows WARP; see [runtime](runtime.md).
 The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.
 
-Native player contact: [fractional clear-slide policy and trace](native-player-contact.md).
-C54A0 keeps an eligible clear slide through its original small-motion guard;
-opt-in C4700 pairs distinguish actual sweep results from sampled positions.
+Native player contact: [clear-slide policy/trace](native-player-contact.md).
+Live register-cell references: [three-site policy and tests](gpr-refs.md).
 
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;

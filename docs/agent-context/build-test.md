@@ -5,19 +5,14 @@ recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
 controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
-`tests/test_render_state_cache.py` compiles the complete common state module
-against observable RHI services on Windows/macOS. It reconstructs the pre-cache
-module by reversing only `zz-render-state-cache.patch` in a temporary tree,
-then compares every emitted descriptor and dynamic bind through material
-changes and capacity pressure. Create failures/retries, bounded ownership,
-shutdown/restart and three independent mutations are checked. It runs in both
-native-runtime CI jobs; mocked RHI calls do not replace rendered GPU acceptance.
-`rhi_state_cache.h` additionally exercises the production module on real RHI
-objects: alpha blend/reuse, stencil-reference changes, moving scissor rectangles
-and replacement must produce expected readback pixels. The existing Windows
-WARP and native Mac Vulkan targets both include it.
-The Vulkan fixture target explicitly defines `TSFP_RHI_RENDERER`; without it,
-Mac's common display-policy declarations are hidden even with Vulkan linked.
+`test_render_state_cache.py` compares complete pre/post-cache module binds,
+ownership and failures; `rhi_state_cache.h` checks real blend/stencil/scissor
+pixels on Windows WARP/Mac Vulkan. The Vulkan fixture defines `TSFP_RHI_RENDERER`
+for common display-policy declarations. See [runtime](runtime.md).
+
+`test_gpr_refs.py` covers generated live-cell references, callbacks, aliasing,
+mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator
+patch follows model-entry policy; old fixture stacks omit both until upgrade.
 
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e00e04af4574b2177104c11260e17f8b4d9034ddfaf49b468f5edbfaf3911b6e",
+  "loaderSha256": "92d5407445e5cdccbcc77d5108814ddf291e7276c146af83bc68db4c3613200c",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1425,6 +1425,14 @@
       "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
       "targets": [
         "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zz-stable-gpr-refs.patch",
+      "sha256": "c149f9508f16f898959a170ff49aef8ed75ecf065710ebbc8f1099762c828bbc",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/translator.py"
       ]
     },
     {

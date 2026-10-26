@@ -1,3 +1,82 @@
+## Live register reference candidate (PR #367 follow-up)
+
+On `perf/native-crowd-render-cost`, the common generator now supports retaining
+addresses of the same live thread-local register cells through a translated
+function. The title enables it only for model renderer18EA90, state setter21450
+and state flush214C0. Every operation still reads/writes the actual cell; nested
+calls, callbacks and guest-memory aliases see changes immediately. Register
+values are not copied or deferred. Other routines, legacy/manual sources,
+Original/native clocks, EBP/SEH and settings retain their existing behavior.
+See `docs/agent-context/gpr-refs.md` for the protocol and acceptance limits.
+
+The supported Windows build and bundled checks pass. Executable SHA256:
+`c27dcfe9ac78d5f0b3e9ffa2747c5d09258459f582f2231b3355e5752c2b7be4`,
+built on4511b06e plus this uncommitted generator/title policy. Generated-code,
+model-transform and native-timing selection passes117 tests in374.10s. The
+additional register-reference/patch-history selection passes38 in613.54s,
+including the deployed three-site selector. Generated parent/child fixtures
+compare legacy, enabled, disabled and mixed scopes across four concurrent
+threads, nested raw-cell callbacks, partial writes and overlapping stack/data;
+redirecting a register to a copied value is rejected.
+
+All hosted checks pass for the prior4511b06e revision. Hosted Windows/macOS
+checks for this candidate and physical Mac gameplay remain pending.
+
+The initial struct representation completes `crowd-gpr-refs-disco240` with
+unchanged profiles/signatures/fixture and disposable disks recycled. Complete
+45s has10503 unique/increasing guest Presents, average233.4204, minimum one-second
+184/five-second199.2, p995.776ms, worst9.161ms and zero interpolation. Nineteen
+foreground ten-bot checkpoints retain match state7; independently bounded clock
+reads measure9783 calls/41.97229645s, game/wall0.9998659 and maximum read span9.4us.
+Held/wrong-rate controls are rejected; accepted Presents agree within one call.
+CSV SHA256 `7427fb4b6a9a6aeff02b75a00b60e3953d92ebeec91134b06977459c291c228f`.
+These nondeterministic AI/combat/death routes do not establish a causal FPS gain;
+successful Present intervals are not GPU completion/scanout or input latency.
+
+The exact struct macro's isolated21450 helper comparison is slower than direct
+aliases in all six alternating20-million-call pairs (ratios1.045..1.074).
+It is therefore superseded by individual constant pointers, still declared
+after callbacks/fast returns. The actual revised header macro measures ratios
+0.920..0.938 (median0.928), with matching entire6MiB arena and nine-register
+results after100,000 calls. This is helper CPU evidence, not a game FPS gain.
+The revised supported Windows build and bundled checks pass; executable SHA256
+`d4489222fe75ad6f118ebb79ff2b7911876acdaf56912732cd2403801ddfa7b7`.
+The118-check native/model/generator/reference selection passes117 in353.97s;
+one walking fixture times out at its unchanged15s runtime limit during concurrent
+compilation, then passes alone in6.47s (including compilation). No assertion or
+timeout is relaxed. All20 context checks pass in37.31s. C27 above belongs to
+the superseded struct representation.
+
+Clean D448 Disco runs `crowd-gpr-individual-disco240` and
+`crowd-gpr-individual-disco-original60` complete normally, with identical input
+command hashes, fixture/profile/signature preservation and disposable partitions
+recycled. Both use D3D11,3440x1440 render/1920x1060 foreground borderless client,
+FOV73, Enhanced selected with Classic fallback, no capture/sampler/trace, and a
+complete45s spawn+5..50 window after recorder delay70s. Original uses
+`--native-fps 0`, not native60. Each has19 foreground ten-bot observations;
+individual bots occupy16..19 distinct sampled positions, human health0..1.75.
+
+- Original:2699 guest Presents, average60.00029, minimum one/five-second60,
+  p9917.285ms, worst18.213ms. Independent clock2518 calls/41.97967925s,
+  game/wall1.0000870, maximum read span12.9us.
+- Native240:10141 guest Presents, average225.36575, minimum one-second167,
+  minimum five-second169.8, p996.225ms, worst7.588ms. Independent clock9460
+  calls/41.9707112s, game/wall0.9999036, maximum read span13.6us.
+
+Both have zero interpolated frames, increasing unique guest-frame IDs,
+timing-call/Present agreement within one in-flight call and rejected held/
+wrong-rate controls. Present CSV hashes are
+Original `c68ab14882ce98da17e453edde9ee0b728516796b492d8d5f99db02cf5d5b2f4`
+and native `4adc52ff0c23acffd764b0da9f9d921e2e1449af15a2d983674d6c78c84f3b0b`.
+The combined ignored receipt is `logs/gpr-crowd-current-comparison.json`.
+The native result is lower than the earlier cache-only230.48/min181 result;
+different combat/camera/death routes prevent causal attribution. This establishes
+neither a game FPS improvement nor sustained240. Sampled bot movement is not
+simultaneous visibility; these counters do not establish full model equivalence,
+visual fidelity, GPU completion, scanout or physical input latency. The candidate
+remains draft; full-game, crowded high-refresh and physical Mac acceptance remain
+open. The overall goal remains active and incomplete.
+
 ## Remaining crowd-cost diagnostics (2026-10-26, PR #367 follow-up)
 
 All hosted checks passed for457b5e20 before this diagnostic follow-up, including
