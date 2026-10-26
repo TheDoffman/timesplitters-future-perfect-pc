@@ -99,4 +99,3 @@ int main(void)
     }
     free(memory);puts("PASS: original contact acceptance reproduces rewind and isolates final branch");return 0;
 }
-
