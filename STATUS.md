@@ -1,3 +1,48 @@
+## Remaining wind-animation CPU input hold (2026-10-26)
+
+Original1DDF10 and its nonlinear AB050 helper reproduce a separate hold on
+f55088bf. Under controlled constant wind, three seconds at native240 make720
+Euler-matrix consumer calls but only180 changed Euler input pairs: all540
+zero-whole-tick intervals hold both angles. At120/180 the held counts are180/
+360 respectively. Native60 changes on all180 frames, and three-second endpoint
+angles agree closely across rates. Fractional forcing already accumulates each
+frame; the whole-tick helper loop still owns angle advancement. This is selected
+CPU input evidence, not proof of visible gameplay stutter or a completed fix.
+
+No production change is made: the helper also applies damping, velocity clamps,
+piecewise restoring forces, angular wrapping and authored thresholds. Simply
+running it on every fractional frame would alter those mechanics. Next work is
+the coupled operator and original initializer/wind/matrix propagation. Wind and
+the Euler consumer are controlled in this direct-call audit. Original1DE250's
+1DE3A3 branch statically registers1DDF10. Initial private failures came from an
+AB050 range missing its final store/ret and a per-rate reset excluding its data
+block; both were corrected before accepting the observation. Accepted helper
+range ends after retAB372. Logs and provenance remain private under
+`logs/audit-wind-oscillator.py` and `logs/wind-oscillator-audit.{json,log}`.
+
+## Preserve authored damping while updating rotation (2026-10-26)
+
+On source f55088bf, original US2238D0 executes48 schedules across Original60
+and native60/120/144/180/240, normal/quarter time and four carried phases.
+Every advancing native call changes angle+C8. Velocity+E0 remains bit-equal
+to the independent authored tick-by-tick multiplication by0.9997400045394897.
+The maximum ten-game-second difference against the coalesced Original reference
+is0.0704956055 angle units, within one initial authored displacement0.52359879.
+Zero-whole/zero-float pause, stack, preserved registers and unchanged clocks
+pass. A control replacing both integer loop counts with positive-float admission
+fails the exact decay assertion. This is intentional whole-tick damping plus
+fresh fractional rotation, not another fractional entry-gate defect.
+
+Original2256BC registers2238D0 and initializes velocity from frequency times
+0.5235987901687622; its two-stage switch selects model2CF. This registration
+identification is static XBE evidence. The numerical audit invokes the original
+callback directly with inactive audio consumers controlled. It does not establish
+live object activation/rendering, audible sound, physical Mac or clean FPS.
+No production change follows from this passing audit. Keep the remaining1DDF10
+operator/callee audit distinct. Private reproducible harness and receipts:
+`logs/audit-damping-2238.py`, `logs/damping-2238-audit.log` and
+`logs/damping-2238-audit.json`. Game assets/generated translation remain local.
+
 ## Deferred actor voice timing and cooldown (2026-10-26)
 
 The164E00 inventory candidate resolves to deferred character-audio requests.

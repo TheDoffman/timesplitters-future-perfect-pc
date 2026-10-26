@@ -83,6 +83,40 @@ whole ticks for a damping loop while separately integrating float time, and
 1DDF10 already integrates float motion before a whole-count helper loop. Those
 sites need their own operator/event analysis; neither is changed here.
 
+An original-code audit of2238D0 on f55088bf confirms its count is intentional:
+entity+E0 is multiplied by0.9997400045394897 once per whole game tick, then
+entity+C8 integrates that current velocity using fractional game time divided
+by the fixed tick frequency. Registration2256BC initializes E0 to frequency
+times0.5235987901687622; the original initializer's switch selects model2CF.
+Forty-eight direct-callback schedules through240, normal/quarter speed and
+four carried phases preserve exact authored velocity decay and fresh advancing
+native angles. The largest ten-game-second position difference from coalesced
+Original60 is0.0704956055 angle units, below one initial authored displacement
+(0.52359879). Zero-whole/zero-float pause and stack/preserved-register checks
+pass. Replacing the loop counts with positive-float admission fails the exact
+decay comparison. The private receipt is `logs/damping-2238-audit.json`.
+This audit controls inactive audio consumers and invokes the callback directly;
+it does not validate live registration, visible geometry, sound or frame pacing.
+Do not change2238D8/223924 into boolean admission gates. The separate1DDF10
+callee/operator audit remains open.
+
+The subsequent1DDF10/AB050 direct-callback reproduction on f55088bf identifies
+a separate held-input path. Fractional wind forcing accumulates into F0/F4,
+but only whole ticks invoke the nonlinear AB050 step that updates E8/EC.
+The following151650 calls run every frame with those same Euler inputs between
+ticks. Over three game seconds at240, all540 zero-tick intervals among720
+consumer calls retain both inputs;180 inputs change.120/180 show180/360 held
+intervals respectively. Endpoints agree closely with native60 under controlled
+constant wind. This establishes selected CPU input holds, not a live GPU defect.
+Original initializer1DE250 registers1DDF10 in the1DE3A3 branch. AB050 also clamps
+velocities, wraps angles and applies piecewise restoring forces/stop thresholds;
+a boolean gate replacement would repeat that authored map too often. Fractional
+operator design and original initializer/wind/matrix propagation checks remain
+required before a production change. Private reproducible evidence is in
+`logs/audit-wind-oscillator.py` and `logs/wind-oscillator-audit.{json,log}`.
+Use the full AB050 range through its ret atAB372 (exclusive endAB373); the
+first private attempt omitted that return and is not accepted evidence.
+
 ## Deferred actor voice clock
 
 US164E00 is a deferred actor-audio scheduler, not a physics step. Original
