@@ -1,5 +1,13 @@
 # Runtime and patch navigation
 
+`independent-disasm-input.patch` replaces the disassembler loader with imports
+from project `recomp_image.py`, and its instruction model/classifier/Capstone
+creation with `x86_decode.py`. The existing engine still owns sweep, candidate
+registration and function/table discovery. Probe reads use `read_code_window`;
+exact data reads remain strict. The analysis cache includes all independent
+input source hashes, and the generation fingerprint includes disassembler
+source too. `test_recomp_input.py` exercises the real patched consumer suite.
+
 `independent-xbe-reader.patch` replaces the installed Python XBE parser with a
 bridge to project-owned `tools/xbe_image.py` (source root selected by the build
 drivers' `TSFP_PROJECT_ROOT`, ancestor lookup for ordinary direct commands).

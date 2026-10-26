@@ -199,7 +199,8 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 The project statically recompiles the Xbox executable into native code; it does
 not recover the original C/C++ source. An [independent replacement of the runtime
 and tooling](docs/independent-runtime.md) is in progress. Disc import and XBE analysis use
-project-owned code; game builds still use the documented runtime dependencies.
+project-owned code, along with the disassembler's input layer. Game builds still
+use the documented runtime dependencies.
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

@@ -32,6 +32,7 @@ RELEASE_INPUTS = {
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
+    'tools/recomp_image.py', 'tools/x86_decode.py', 'tests/test_recomp_input.py',
     'tools/xbe_image.py', 'tools/xbe_kernel_exports.def', 'tests/test_xbe_image.py',
     'tools/disc_image.py', 'tools/import-game.py', 'tests/test_disc_image.py',
     'tools/recomp-generation.py', 'tools/online.py', 'tools/online_theme.py',

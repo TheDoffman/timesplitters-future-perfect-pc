@@ -1,5 +1,11 @@
 # Build, run and validation map
 
+`recomp_image.py` / `x86_decode.py` own the disassembler's image view and
+instruction classification. Their source hashes invalidate analysis and build
+caches. `test_recomp_input.py` checks mappings, targets, standalone loading and
+runs the patched consumer's 97 disassembler tests. Probes use bounded windows;
+exact data reads cannot cross section/zero-fill boundaries.
+
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass
 `TSFP_PROJECT_ROOT` to the compatibility bridge, including shared Mac deps.

@@ -1,3 +1,57 @@
+## Independent disassembler input (2026-10-26)
+
+Third replacement step, continuing PR #370 from `74551892` on
+`feature/independent-game-import`. `tools/recomp_image.py` now owns the
+disassembler's binary view; `tools/x86_decode.py` owns its instruction model,
+Capstone setup and operand classification. The production patch removes the
+previous implementations and connects the project modules. Function discovery,
+control-flow algorithms and x86-to-C translation still contain upstream code;
+this does not complete the independent recompiler/runtime.
+
+The image view parses the executable itself and rejects conflicting analysis
+JSON. Exact reads respect headers, sections and virtual zero fill; code probes
+use short windows at section ends. Both analysis-cache keys and generation
+fingerprints include the new source dependencies. See
+[implementation and provenance](docs/independent-runtime.md).
+
+Windows 11 x64, Python 3.12.14, pinned Capstone 5.0.9, MSVC 2022 Release, D3D11:
+
+- **58 input tests passed**, including a subprocess running the patched
+  consumer's **97 disassembler tests**. Synthetic fixtures cover mapping,
+  malformed extents, stale/foreign analysis, operand targets, dynamic addresses,
+  truncation and cache invalidation. An isolated directory of only project
+  modules/data plus permitted Capstone works without the toolkit.
+- Input tests plus generation-fingerprint checks: **60 passed**. Context and
+  Mac-backlog checks: **21 passed**. Combined patch-upgrade, input, parser,
+  importer, fingerprint, Mac-tool and CI-scope suite: **245 passed, 1 skipped**
+  in 11m02s.
+- Full supported-US instruction comparison: **1,403,940 decoded instructions,
+  zero classification/model mismatches** against the previous implementation.
+  The independent parser's supported-XBE hash validation remains in the suite
+  and the Windows build validates the pinned hash before generation.
+- Full regeneration ran disassembly (98.91 seconds; previous run 97.16 seconds),
+  identification and translation. **All 21 generated C/header files are byte
+  identical** to the previous stage. Windows build and native regression tests
+  passed; this comparison is not a controlled performance benchmark.
+- A bounded isolated Scotland the Brave session loaded and rendered gameplay.
+  Forward movement displaced the player 11.175 world units; firing changed
+  loaded ammo from 8 to 6; pause held simulation ticks constant and resume
+  advanced them. Backward movement also worked. Last checkpoint: 87.202 seconds.
+  Reviewed gameplay/pause captures, successful runner exit, no crash artifacts,
+  unchanged signed test profiles, verified canonical fixture, recycled test
+  partitions. Personal saves/settings were not used.
+
+Gameplay used replay/state injection with a minimized window and background
+rendering, original 60 FPS settings, and the standard startup-video skip. This
+does not certify physical input, foreground pacing, audio, complete levels or
+the whole game. Tested executable SHA-256:
+`c6d3bb5204aa998cdcca84c5bb47f18fcc3fec361d1658d9f0421f07e3d4a9e6`.
+Local evidence: `logs/independent-disasm-{build,tests}.log`,
+`logs/independent-disasm-{classifier-comparison,generation-comparison,gameplay-summary}.json`
+and `private/test-saves/independent-disasm` reports/captures. Native Mac
+generation/gameplay remains pending under MAC-067; the same modules and tests
+are wired into both-host CI.
+
 ## Independent executable analysis (2026-10-26)
 
 Second replacement stage, continuing PR #370 on `feature/independent-game-import`

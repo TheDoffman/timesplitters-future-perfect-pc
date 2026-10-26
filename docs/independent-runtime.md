@@ -8,7 +8,8 @@ proposal in PR #369 remains a separate, unmerged availability solution.
 
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
-independent implementations. Do not present the port as an original implementation of
+independent implementations, as do the disassembler's image view and instruction
+classification. Do not present the port as an original implementation of
 the complete Xbox runtime or recompiler.
 
 ## Replacement sequence and acceptance
@@ -17,7 +18,8 @@ the complete Xbox runtime or recompiler.
 | --- | --- | --- |
 | Disc catalog and extraction | Implemented in `tools/disc_image.py` and `tools/import-game.py`; Windows Extract uses it, same Python CLI available on Mac | Format fixtures, bounds/cycles/names, output preservation, private supported-XBE fixture; full original ISO extraction on both hosts remains unverified |
 | Executable parser and analysis model | Implemented in `tools/xbe_image.py`; production generation uses the compatibility bridge | Synthetic valid/malformed images, verified-US metadata equality, regeneration and bounded gameplay; native Mac validation pending |
-| Function discovery and x86-to-C translation | Still upstream | Independent decoder integration and control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Disassembler input and instruction model | Project-owned `recomp_image.py` and `x86_decode.py`; production consumer uses them with permitted Capstone | Mapping/operand fixtures, cache invalidation, full regeneration and bounded gameplay; native Mac pending |
+| Function discovery and x86-to-C translation | Still upstream, using the independent input layer | Independent control-flow recovery; flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -56,6 +58,41 @@ fill that evidence gap. The importer has a read-only verification command for
 when an original ISO is available.
 
 ## Current commands
+
+### Disassembler input and instruction model
+
+`tools/recomp_image.py` builds a read-only image from the independent XBE parser,
+without requiring cached JSON or the external toolkit. Explicit or exactly named
+sibling analysis JSON must match that executable's layout and imports; unrelated
+JSON is never selected by a broad search. Headers use the actual header size.
+Exact reads stay within a single file-backed region, rejecting virtual zero fill
+and cross-region reads. Code probes accept a shorter window at a section boundary
+instead of reading unrelated bytes that happen to follow it in the file.
+
+`tools/x86_decode.py` supplies the instruction model, Capstone decoder setup and
+operand classification used by production disassembly. It follows the
+[Capstone Python detail/operand API](https://www.capstone-engine.org/lang_python.html)
+with the existing pinned standard dependency. Direct transfers, absolute memory
+references, address-like immediates and indexed table candidates retain the
+consumer interface. A candidate is not proof of a function or table; recovery,
+control-flow algorithms, labels, cross-references and translation remain upstream.
+
+`patches/independent-disasm-input.patch` removes the old loader/model/classifier
+bodies and connects the new implementations. It adapts code-probe reads and adds
+the independent dependencies to the disassembly cache key. The build generation
+fingerprint includes both the new source and the remaining disassembler source.
+This prevents a changed reader/classifier from reusing stale analysis or C.
+Deletion text in patches still records historical upstream code.
+
+Tests: `python -m pytest tests/test_recomp_input.py -q`. Synthetic fixtures check
+data reads, probe windows, stale JSON and x86 targets, including dynamic operands
+that must not be treated as static addresses. A temporary directory containing
+only the project modules and export data proves the input layer runs without the
+toolkit. When the patched checkout is available, the test also runs its existing
+97 disassembler tests against the new input layer. This stage does not replace
+the full disassembler or recompiler.
+
+### Executable analysis and disc import
 
 Executable analysis uses the same project-owned reader on Windows and Mac:
 

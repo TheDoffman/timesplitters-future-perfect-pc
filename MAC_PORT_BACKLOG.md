@@ -200,6 +200,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
 | MAC-065 | Independent game-disc import | Awaiting validation |
 | MAC-066 | Independent executable analysis | Awaiting validation |
+| MAC-067 | Independent disassembler input | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5649,6 +5650,27 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   movement/fire/pause/resume. Also exercise `--runtime-root` with shared deps.
 - **Mac implementation and evidence:** Shared source and both-host CI test
   registration; Windows evidence does not establish native Mac gameplay.
+
+### MAC-067 - Independent disassembler input
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly uses a project-owned executable view
+  and instruction model/classifier, retaining pinned Capstone. Exact reads and
+  probe windows respect section boundaries; input changes invalidate caches.
+- **PC source:** Continuing PR #370 on `feature/independent-game-import`;
+  `tools/recomp_image.py`, `tools/x86_decode.py`,
+  `patches/independent-disasm-input.patch`, `tools/recomp-generation.py`.
+- **PC validation:** Original synthetic mappings/operand fixtures and the
+  patched consumer's disassembler tests pass. Full-title classification matches
+  1,403,940 decoded instructions. Build/game evidence is recorded in STATUS.md.
+- **Existing Mac support:** Same Python modules and pinned Capstone; uses the
+  existing explicit source-root bridge for shared dependency checkouts.
+- **Mac adaptation needed:** None identified; native validation pending.
+- **Mac acceptance checks:** Run the shared input/consumer fixtures, regenerate
+  the verified US game with `--generate`, rebuild, then test isolated Story
+  movement/fire/pause/resume. Confirm source edits invalidate cached analysis.
+- **Mac implementation and evidence:** Tests registered for both CI hosts;
+  Windows results do not establish native Mac generation or gameplay.
 
 ## Entry template
 

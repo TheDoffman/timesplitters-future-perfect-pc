@@ -43,17 +43,18 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
     for name in ('scripts/recompile.py', 'templates/runtime/recomp_types.h',
                  'titles/futureperfect/src/recomp_manual.c',
                  'titles/futureperfect/src/recomp/gen/recomp_funcs.h',
-                 'tools/xbe_parser/xbe_parser.py'):
+                 'tools/xbe_parser/xbe_parser.py', 'tools/disasm/engine.py'):
         path = runtime / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py'):
         path = project / 'tools' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
     monkeypatch.setattr(generation, '__file__', str(project / 'tools/recomp-generation.py'))
     for path in (project / 'tools/xbe_image.py', project / 'tools/xbe_kernel_exports.def',
-                 runtime / 'tools/xbe_parser/xbe_parser.py'):
+                 project / 'tools/recomp_image.py', project / 'tools/x86_decode.py',
+                 runtime / 'tools/xbe_parser/xbe_parser.py', runtime / 'tools/disasm/engine.py'):
         generation.record(runtime)
         assert generation.current(runtime)
         path.write_text('changed')
