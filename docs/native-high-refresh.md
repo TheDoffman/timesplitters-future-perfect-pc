@@ -270,19 +270,23 @@ perceptual smoothness remain acceptance work. A passing first-mission test
 does not establish native 144 FPS correctness across the full game. The mode
 remains opt-in while that work is incomplete.
 
-## Acceptance audit (2026-10-24)
+## Acceptance audit (2026-10-26)
 
-This audit uses source `82b27c31`, the regression record, current test bodies and
-the Windows build identified in STATUS. Earlier observations retain their named
-build scope. Passing isolated routines does not establish their complete callers
-or the rendered result. The goal remains incomplete.
+This audit distinguishes the current PR #367 source `946867bd` from earlier
+live builds. Its normal Windows build, focused reference/context tests and all16
+hosted checks pass; clean live crowd acceptance for that executable is pending.
+The preceding `5d7b263f` also passes all16 hosted checks. The rows below retain their
+actual evidence scope: later compiler optimizations do not silently revalidate
+earlier scenes. Passing isolated routines does not establish complete callers
+or rendered results. The goal remains incomplete.
 
 | Requirement | Evidence inspected | Remaining acceptance |
 | --- | --- | --- |
-| Fresh updates, speed and pacing | Native clock and network cadence fixtures; current Disco and preceding Temple guest-frame/Present traces | Sustained performance across representative demanding scenes; reported dips remain |
-| Opening handoff and animation | Original animation timeline/event fixture, script dispatch controls, recorded opening comparison | Current 180/240 rendered opening comparison and natural cinematic timing |
-| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse, camera and vehicle fixtures | Live camera/vehicle/terminal transitions; physical-input feel |
-| Physics | Original rigid-body, vehicle, falling, force and contact fixtures | Representative real collision geometry and interactions |
+| Fresh updates, speed and pacing | Clock/network fixtures; preceding8b68 executable's clean45s ten-bot Disco pair:232.039FPS at240,59.9996 at Original60, increasing guest frames, zero interpolation and game/wall near1 | Current3c5b executable's clean comparison; sustained heavy240 and other demanding scenes. Host Present calls are not scanout |
+| Opening handoff and animation | Original timeline/events, script controls, recorded opening comparisons; selected completed local body/hand/weapon observations through240 | Broader180/240 natural cinematic/handoff and scene rendering; selected clips do not establish all animation |
+| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse and vehicle fixtures; completed local aim/animation observations and controlled below-target movement | Live camera/vehicle/terminal transitions; physical-input feel and latency |
+| Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |
+| Physics | Original rigid/vehicle/falling/force/contact fixtures; repeated live Siberia approaches agree before contact, but even Original60 routes diverge at the pillar | Coherent off-center geometry/contact response and full handling. Variable asynchronous post-impact endpoints cannot justify coefficient tuning |
 | Weapons and effects | Original firing, sound, projectile, beam, sniper and reload fixtures; live firing/reload cycle; Temple floor-rocket lethality/lifetime/cleanup and respawn at Original60/180/240 | Specific delayed-trail, sniper-hit and pre-bridge NPC reports remain without targeted live confirmation |
 | Scripts and pause | Phase-swept events/reload and pause/resume checks | Broader progression and interactions with moving actors/cameras |
 | Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
@@ -295,6 +299,20 @@ Mixed-preset loopback now supplies bounded movement/combat observations. Keep
 that coverage separate from CPU optimization measurements and Internet latency.
 Further scene/visual comparisons remain necessary. The user's request to defer
 the first mission changes investigation order, not its unresolved reports.
+
+The next live gate is the current executable's clean Original60/native240 crowd
+pair, without captures, CPU sampling or pose tracing. Keep its source/executable
+hashes and complete foreground ten-bot windows; do not measure it alongside
+another running game. This checks integration and pacing, not a causal gain
+from different AI routes. Subsequent acceptance should cover a different scene
+or unresolved mechanic rather than repeat the same selected firing/NPC proof.
+
+Detailed evidence and limits are in STATUS under **State-preparation live register
+references**, **Pushed-array address recurrence and current crowd profile**,
+**Selected NPC pose and GPU replay observations**, **Completed local aim and
+animation observations**, **Complete a mixed-preset Online rematch** and
+**Current-build live vehicle contact comparison**. The private receipts named
+there preserve hashes and rejected controls; game assets stay untracked.
 
 ## NPC firing timing
 

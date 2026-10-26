@@ -1,3 +1,33 @@
+## State-preparation constant-upload integration (2026-10-26)
+
+The retained preceding/optimized native22BE0 slices also pass with the original
+US3D9520 constant-upload callee, lifted from the checksum-verified supported
+XBE. The upload updates actual packed constants and emits guest command data;
+other out-of-line services remain controlled. Four rounding modes and six
+scenarios each run10,000 calls per variant. The four active-upload scenarios
+require10,000 uploads and10,000 command writes each; every upload emits144 bytes.
+Both variants agree on full8MiB guest memory, register/vector/FPU state,
+callback observations and a digest of every emitted packet. A candidate-only
+packet corruption fails the comparison. No performance measurement is taken
+alongside the other running game.
+
+Initial test setups used routing masks that produced no packets; those runs
+are excluded from command-output acceptance. Matching the authored routing
+index enables real writes and is checked explicitly. The actual original
+callee publishes its local frame through the existing global frame bridge;
+the earlier spy's absolute global-frame-preservation assertion is inappropriate
+for that callee. The integration check retains exact stack-return checks and
+compares the full actual frame/register state between variants instead. No
+generator or runtime frame behavior is changed. Receipt and recipe remain
+private: logs/state-prepare-real-upload.json and
+private/pipeline/check-state-prepare-real-upload.py. This is selected CPU command
+integration, not GPU execution, full service behavior, live FPS or Mac acceptance.
+
+The acceptance audit in docs/native-high-refresh.md now distinguishes current
+source/build checks from preceding live crowd, local animation, selected GPU
+pose, loopback rematch and vehicle-contact evidence. Unresolved mechanics and
+physical-host coverage remain explicit; the full goal is not complete.
+
 ## State-preparation live register references (2026-10-26)
 
 The shared title policy additionally selects22BE0 for live integer/vector cell
