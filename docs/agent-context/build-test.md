@@ -1,5 +1,11 @@
 # Build, run and validation map
 
+`native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
+checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
+recorded geometry-service boundaries and independent missing-hook controls.
+They check acceptance/ABI rather than complete real geometry. See the
+[contact trace schema](native-player-contact.md) before interpreting live CSVs.
+
 <!-- packet:start -->
 Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
 checks fingerprints, regenerates, builds and tests MSVC x64. Output:

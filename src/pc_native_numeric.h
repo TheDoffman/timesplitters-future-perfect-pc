@@ -223,8 +223,10 @@ static inline int pc_native_float_branch(uint32_t site, int taken)
     return taken;
 }
 extern int pc_native_rocking_branch(uint32_t site,int taken);
+extern int pc_native_walk_accept_clear_slide(void);
 #define RECOMP_FLOAT_BRANCH_AT(site, taken) \
-    (((site)==0xA8526u || (site)==0xA86C0u) ? \
+    ((site)==0xC596Cu ? ((taken) || pc_native_walk_accept_clear_slide()) : \
+    ((site)==0xA8526u || (site)==0xA86C0u) ? \
     pc_native_rocking_branch((uint32_t)(site),pc_native_float_branch((uint32_t)(site),(taken))) : (taken))
 extern uint32_t pc_native_rocking_gate(uint32_t site,uint32_t value);
 extern float pc_native_rocking_add(uint32_t site,float left,float right);
@@ -522,6 +524,14 @@ extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
+extern int pc_native_walk_trace_requested(void);
+extern int pc_native_walk_collision_requested(void),pc_native_walk_sweep_requested(void);
+extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
+#define PC_NATIVE_WALK_CALLEE(site,function) \
+    ((site)==0xC5AD6u && pc_native_walk_collision_requested() ? pc_native_walk_collision : \
+    (((site)==0xC55E6u || (site)==0xC5668u || (site)==0xC577Cu || \
+      (site)==0xC58ABu || (site)==0xC5259u || (site)==0xC5283u || (site)==0xC4B68u) && \
+      pc_native_walk_sweep_requested()) ? pc_native_walk_sweep : (function))
 #define PC_NATIVE_PHYSICS_CALLEE(site,function) \
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
@@ -534,5 +544,5 @@ extern void pc_native_physics_solver(void),pc_native_physics_random(void);
      (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
      (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \
     ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : \
-    PC_NATIVE_PHYSICS_CALLEE(site,function))
+    PC_NATIVE_WALK_CALLEE(site,PC_NATIVE_PHYSICS_CALLEE(site,function)))
 #endif

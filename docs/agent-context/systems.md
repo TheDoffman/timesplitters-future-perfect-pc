@@ -1,5 +1,9 @@
 # Subsystem entry points
 
+Native player contact: [fractional clear-slide policy and trace](native-player-contact.md).
+C54A0 keeps an eligible clear slide through its original small-motion guard;
+opt-in C4700 pairs distinguish actual sweep results from sampled positions.
+
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
 `pc_display*`, `pc_settings*`, `pc_refresh*` for display/configuration;

@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Native walking's C54A0 scope and C596C clear-slide branch are shared through
+`pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
+in use. See [policy, diagnostic schema and tests](native-player-contact.md).
+
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
