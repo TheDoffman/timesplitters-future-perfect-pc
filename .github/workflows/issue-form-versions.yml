@@ -6,8 +6,8 @@ on:
     paths:
       - .github/ISSUE_TEMPLATE/**
       - .github/workflows/issue-form-versions.yml
-      - tools/issue-forms.py
-      - tests/test_issue_forms.py
+      - tools/ci/issue-forms.py
+      - tests/repository/test_issue_forms.py
       - VERSION
       - tools/launcher/LauncherVersion.cs
   release:
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - run: python -m unittest discover -s tests -p test_issue_forms.py -v
+      - run: python -m unittest discover -s tests/repository -p test_issue_forms.py -v
 
   versions:
     needs: validate
@@ -56,4 +56,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TARGET_BRANCH: ${{ github.event.repository.default_branch }}
-        run: python tools/issue-forms.py versions --pull-request --base-branch "$TARGET_BRANCH"
+        run: python tools/ci/issue-forms.py versions --pull-request --base-branch "$TARGET_BRANCH"

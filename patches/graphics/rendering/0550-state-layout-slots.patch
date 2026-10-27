@@ -1,0 +1,44 @@
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -863,6 +863,19 @@
+     }
+ }
+ 
++/* Cache address-independent layout slots, never guest values or pointers. */
++static int slot_layout = -1;
++static int rs_slots[sizeof g_rs_map / sizeof g_rs_map[0]];
++static uint32_t ts_slots[sizeof g_ts_map / sizeof g_ts_map[0]];
++static void prepare_slots(void)
++{
++    if (slot_layout == (int)g_layout) return;
++    for (size_t i=0;i<sizeof g_rs_map/sizeof g_rs_map[0];i++)
++        rs_slots[i]=rs_slot(g_rs_map[i].xbox);
++    for (size_t i=0;i<sizeof g_ts_map/sizeof g_ts_map[0];i++)
++        ts_slots[i]=ts_slot(g_ts_map[i].xbox);
++    slot_layout=(int)g_layout;
++}
+ void hle_d3d8_shadow_apply_states(IDirect3DDevice8 *dev)
+ {
+     size_t i;
+@@ -871,9 +884,11 @@
+     if (!dev || !state_ready())
+         return;
+ 
++    prepare_slots();
+     for (i = 0; i < sizeof g_rs_map / sizeof g_rs_map[0]; i++) {
+         uint32_t x = g_rs_map[i].xbox;
+-        uint32_t v = guest_rs(x);
++        int slot=rs_slots[i];
++        uint32_t v=slot<0 ? 0u : HLE_MEM32(hle_var_D3D_g_RenderState+4u*(uint32_t)slot);
+         DWORD host_value;
+ 
+         if (g_prev_valid && g_prev_rs[x] == v)
+@@ -894,7 +909,7 @@
+ 
+         for (i = 0; i < sizeof g_ts_map / sizeof g_ts_map[0]; i++) {
+             uint32_t x = g_ts_map[i].xbox;
+-            uint32_t v = HLE_MEM32(base + 4 * ts_slot(x));
++            uint32_t v = HLE_MEM32(base + 4 * ts_slots[i]);
+             DWORD host_value;
+ 
+             /* The host's SetTexture rewrites COLOROP whenever a texture is

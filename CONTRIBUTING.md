@@ -19,12 +19,15 @@ and logs. Never upload game files, ISOs, generated game code or personal saves.
 
 ## Send a change
 
+See the [repository layout](docs/development/repository-layout.md) for file locations,
+naming conventions and the distinction between source and local build data.
+
 1. For a large change, discuss the approach in an issue or Discussion first.
 2. Fork the repository and make a focused branch from the latest `main`.
 3. For code changes, read [AGENTS.md](AGENTS.md), the shared project rules, and
    the [repository map](docs/agent-context/README.md). Update each affected
    subsystem guide in the same change; CI checks this maintenance requirement.
-   Use the [build guide](docs/building.md) or [Mac guide](docs/macos.md) as needed.
+   Use the [build guide](docs/development/building.md) or [Mac guide](docs/players/macos.md) as needed.
 4. Keep the change focused and run the checks relevant to it. Explain what you
    tested, on which platform, and what remains untested. Use disposable test
    saves and settings; leave personal files alone. Documentation-only changes
@@ -45,4 +48,4 @@ CI reports on every PR, including documentation changes. All required checks
 must pass and the branch must include the latest `main` before merging. Use
 GitHub's **Update branch** button (or merge `main` into your branch) when needed.
 Maintainers can choose **Enable auto-merge** on an individual PR to merge it
-after these requirements are met. See [CI and branch protection](docs/ci.md).
+after these requirements are met. See [CI and branch protection](docs/development/ci.md).

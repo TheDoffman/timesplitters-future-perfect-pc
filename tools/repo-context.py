@@ -82,17 +82,20 @@ def packet(root, query):
 
 
 def patch_index(root):
-    spec = importlib.util.spec_from_file_location('context_patch_loader', root / 'tools/apply-patches.py')
+    spec = importlib.util.spec_from_file_location('context_patch_loader', root / 'tools/build/apply-patches.py')
     loader = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(loader)
     paths = [root / name for name in tracked(root)
-             if re.fullmatch(r'patches/[^/]+\.patch', name)]
+             if name.startswith('patches/') and name.endswith('.patch')
+             and 'legacy' not in Path(name).parts]
     records = loader.patch_records(paths)
+    locations = {p.name: p.relative_to(root).as_posix() for p in paths}
     # Existing Windows worktrees can retain CRLF despite the LF attribute.
     # Normalize loader text for fresh Linux/macOS checkout reproducibility.
-    loader_bytes = (root / 'tools/apply-patches.py').read_text(encoding='utf-8').encode('utf-8')
+    loader_bytes = (root / 'tools/build/apply-patches.py').read_text(encoding='utf-8').encode('utf-8')
     return {'version': 1, 'loaderSha256': hashlib.sha256(loader_bytes).hexdigest(),
-            'patches': [{'name': record['name'], 'sha256': record['sha256'],
+            'patches': [{'name': record['name'], 'path': locations[record['name']],
+                         'sha256': record['sha256'],
                          'targets': sorted(set(re.findall(r'^\+\+\+ b/(.+)$', record['content'], re.M)))}
                         for record in records]}
 
@@ -105,11 +108,12 @@ def find(root, query, limit=20):
     """Literal query; newest effective patches first; do not scan ignored runtime/assets."""
     names = tracked(root)
     patches = patch_index(root)['patches']
-    indexed = {'patches/' + p['name'] for p in patches}
-    experiments = sorted(p.relative_to(root).as_posix() for p in (root / 'patches').glob('*.patch')
+    indexed = {p['path'] for p in patches}
+    experiments = sorted(p.relative_to(root).as_posix() for p in (root / 'patches').rglob('*.patch')
+                         if 'legacy' not in p.relative_to(root / 'patches').parts
                          if p.relative_to(root).as_posix() not in indexed)
     candidates = [(p, 'untracked experiment') for p in experiments]
-    candidates += [('patches/' + p['name'], 'active order ' + str(i + 1))
+    candidates += [(p['path'], 'active order ' + str(i + 1))
                    for i, p in reversed(list(enumerate(patches)))]
     candidates += [(n, 'tracked source') for n in names if n.startswith(('src/', 'tools/launcher/', 'tests/'))
                    and Path(n).suffix in ('.c', '.h', '.inc', '.def', '.cs', '.xaml', '.py')]

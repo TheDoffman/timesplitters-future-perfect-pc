@@ -1,0 +1,238 @@
+--- a/tools/recomp/manual_scan.py
++++ b/tools/recomp/manual_scan.py
+@@ -1,77 +1,7 @@
+-"""
+-What recomp_manual.c defines.
+-
+-Single source of truth, deliberately. Both the recompiler (deciding what NOT to
+-generate) and gen_dangling_stubs.py (deciding what still needs a stub) have to
+-agree on what counts as a definition. When they each had their own regex they
+-disagreed, and every disagreement is a link error: a definition missed by one
+-becomes "already defined", a definition invented by the other becomes
+-"unresolved external".
+-"""
+-
+-import os
+-import re
++"""Compatibility entry for project C-source observations."""
++from pathlib import Path
+ import sys
+-
+-# A definition is "void sub_XXXXXXXX(void)" followed by a body -- on the same
+-# line (`void sub_X(void) { esp += 4; return; }`) or the next. A declaration
+-# ends in ';' and must not match.
+-DEF_RE = re.compile(r"^void (\w*?(?:sub_)?([0-9A-Fa-f]{8}))\(void\)\s*(?:\{|$)", re.M)
+-_SUB_DEF_RE = re.compile(r"^void (sub_([0-9A-Fa-f]{8}))\(void\)\s*(?:\{|$)", re.M)
+-# recomp_manual.c wraps rather than replaces some functions: it defines sub_X
+-# itself and calls the generated body as sub_X_gen.
+-_WRAP_RE = re.compile(r"^extern void (sub_([0-9A-Fa-f]{8}))_gen\(void\);", re.M)
+-
+-
+-def strip_disabled(src):
+-    """Remove '#if 0 ... #endif' regions.
+-
+-    recomp_manual.c keeps disabled overrides around as documentation. A
+-    definition inside one is not a definition; counting it makes the
+-    recompiler skip a function that then nothing defines.
+-    """
+-    out, depth = [], 0
+-    for line in src.splitlines(keepends=True):
+-        s = line.strip()
+-        if re.match(r"^#if\s+0\b", s):
+-            depth += 1
+-        elif depth and re.match(r"^#if(def|ndef)?\b", s):
+-            depth += 1  # nested conditional inside a disabled block
+-        elif depth and s.startswith("#endif"):
+-            depth -= 1
+-        elif depth == 0:
+-            out.append(line)
+-    return "".join(out)
+-
+-
+-def definition_names(path):
+-    """Names of functions actually defined (compiled) in `path`."""
+-    if not os.path.exists(path):
+-        return set()
+-    live = strip_disabled(open(path, encoding="utf-8", errors="replace").read())
+-    return {m.group(1) for m in _SUB_DEF_RE.finditer(live)}
+-
+-
+-_REF_RE = re.compile(r"\bsub_([0-9A-Fa-f]{8})\b")
+-
+-
+-def scan(path):
+-    """(skip, wrap, referenced) for functions the manual file handles.
+-
+-    skip:       defined by hand -- gen must declare but not define them.
+-    wrap:       manual calls the generated body as sub_X_gen -- gen must still
+-                emit it, renamed.
+-    referenced: every sub_XXXXXXXX the hand-written code mentions at all. Those
+-                must keep the sub_ name in the generated output: recomp_manual.c
+-                declares and calls sub_00350C10, so if a naming pass renamed it
+-                to SwapCopy_D3D_..., gen defines that and nothing defines
+-                sub_00350C10. Correctness beats a prettier name.
+-    """
+-    if not os.path.exists(path):
+-        print(f"WARNING: {path} not found; excluding nothing.", file=sys.stderr)
+-        return set(), set(), set()
+-    live = strip_disabled(open(path, encoding="utf-8", errors="replace").read())
+-    skip = {int(m.group(2), 16) for m in _SUB_DEF_RE.finditer(live)}
+-    wrap = {int(m.group(2), 16) for m in _WRAP_RE.finditer(live)}
+-    referenced = {int(m.group(1), 16) for m in _REF_RE.finditer(live)}
+-    return skip, wrap, referenced
++# Some consumers load this path with importlib without a package context.
++sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
++from tools.xbe_parser.xbe_parser import XBEParser
++from c_source_scan import scan, definition_names, strip_disabled
+--- a/tools/recomp/output.py
++++ b/tools/recomp/output.py
+@@ -1,113 +1,8 @@
+-"""
+-Output formatting and statistics for the recompiler.
+-"""
+-
+-import json
+-import os
+-
++"""Compatibility entry for project translation reports."""
++from tools.xbe_parser.xbe_parser import XBEParser
++from generation_output import write_summary, print_stats
++from generation_output import generate_header as _generate_header
+ from . import config
+ 
+-
+-def write_summary(stats, output_dir):
+-    """Write a JSON summary of translation results."""
+-    # The split/gen paths never create this directory, so a run that writes its
+-    # generated C elsewhere would do all the work and then die at the last step.
+-    os.makedirs(output_dir, exist_ok=True)
+-    summary_path = os.path.join(output_dir, "summary.json")
+-    with open(summary_path, "w", encoding="utf-8") as f:
+-        json.dump(stats, f, indent=2)
+-    return summary_path
+-
+-
+-def print_stats(stats):
+-    """Print translation statistics to stderr."""
+-    if isinstance(stats, dict) and "total" in stats:
+-        # Single batch stats
+-        _print_batch_stats(stats)
+-    else:
+-        # Per-category stats
+-        total_translated = 0
+-        total_failed = 0
+-        total_funcs = 0
+-        total_lines = 0
+-
+-        for cat, cat_stats in sorted(stats.items()):
+-            _print_batch_stats(cat_stats, prefix=f"  {cat}: ")
+-            total_translated += cat_stats.get("translated", 0)
+-            total_failed += cat_stats.get("failed", 0)
+-            total_funcs += cat_stats.get("total", 0)
+-            total_lines += cat_stats.get("total_lines", 0)
+-
+-        print(f"\n  Total: {total_translated}/{total_funcs} translated, "
+-              f"{total_failed} failed, {total_lines} lines of C")
+-
+-
+-def _print_batch_stats(stats, prefix=""):
+-    """Print stats for a single batch."""
+-    total = stats.get("total", 0)
+-    translated = stats.get("translated", 0)
+-    failed = stats.get("failed", 0)
+-    lines = stats.get("total_lines", 0)
+-    out_file = stats.get("output_file", "")
+-    out_size = stats.get("output_size", 0)
+-
+-    pct = (translated / total * 100) if total > 0 else 0
+-    size_kb = out_size / 1024
+-
+-    print(f"{prefix}{translated}/{total} functions ({pct:.1f}%), "
+-          f"{failed} failed, {lines} lines, {size_kb:.1f} KB -> {out_file}")
+-
+-
+-def generate_header(func_list, output_path, abi_db=None,
+-                    title="Xbox title"):
+-    """
+-    Generate a C header with forward declarations for all translated functions.
+-    Uses ABI data for proper signatures when available.
+-    """
+-    abi_db = abi_db or {}
+-
+-    lines = [
+-        "/**",
+-        f" * {config.banner_name(title)} - Recompiled Function Declarations",
+-        " * Auto-generated by tools/recomp",
+-        " */",
+-        "",
+-        "#ifndef RECOMP_FUNCTIONS_H",
+-        "#define RECOMP_FUNCTIONS_H",
+-        "",
+-        '#include "recomp_types.h"',
+-        "",
+-    ]
+-
+-    for addr, func_info in sorted(func_list):
+-        name = func_info.get("name", f"sub_{addr:08X}")
+-        abi_info = abi_db.get(addr, {})
+-        cc = abi_info.get("calling_convention", "cdecl")
+-        num_params = abi_info.get("estimated_params", 0)
+-        return_hint = abi_info.get("return_hint", "int_or_void")
+-
+-        if return_hint in ("float_sse", "float"):
+-            ret_type = "float"
+-        elif return_hint == "int_zero":
+-            ret_type = "int"
+-        elif num_params == 0 and return_hint == "int_or_void":
+-            ret_type = "void"
+-        else:
+-            ret_type = "uint32_t"
+-
+-        is_thiscall = cc in ("thiscall", "thiscall_cdecl")
+-        params = []
+-        if is_thiscall:
+-            params.append("void *this_ptr")
+-        for i in range(num_params):
+-            params.append(f"uint32_t a{i+1}")
+-        param_str = ", ".join(params) if params else "void"
+-
+-        lines.append(f"{ret_type} {name}({param_str});")
+-
+-    lines.extend(["", "#endif /* RECOMP_FUNCTIONS_H */", ""])
+-
+-    with open(output_path, "w", encoding="utf-8") as f:
+-        f.write("\n".join(lines))
+-
+-    return output_path
++def generate_header(func_list, output_path, abi_db=None, title="Xbox title"):
++    return _generate_header(func_list, output_path, abi_db, config.banner_name(title))
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -134,25 +134,8 @@
+     return None
+ 
+ 
+-def write_if_changed(path, text):
+-    """Write text to path only when it differs from what is already there.
+-
+-    Every regen rewrites all 54 chunks of generated C. If the bytes are
+-    identical the mtime bump still forces the compiler to redo the whole
+-    365 MB at /O2, which is minutes of a saturated box for a one-function
+-    change. Comparing first makes an unchanged chunk free.
+-
+-    Returns True if the file was written.
+-    """
+-    try:
+-        with open(path, "r", encoding="utf-8") as f:
+-            if f.read() == text:
+-                return False
+-    except OSError:
+-        pass
+-    with open(path, "w", encoding="utf-8") as f:
+-        f.write(text)
+-    return True
++from tools.xbe_parser.xbe_parser import XBEParser as _ProjectXBEParser
++from generation_output import write_if_changed
+ 
+ 
+ def _fixup_icall_esp_save(lines):

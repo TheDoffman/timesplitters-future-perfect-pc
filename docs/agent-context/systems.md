@@ -1,54 +1,56 @@
 # Subsystem entry points
 
+Product division faults: [shared adapter and limits](independent.md).
+
+
+Procedural wind: [ownership/time scopes](native-wind.md).
+
+Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
+
+GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
+header configuration are in [runtime](runtime.md).
+
+Native player contact: [clear-slide policy/trace](native-player-contact.md).
+Live integer/vector register references: [four-site policy and tests](gpr-refs.md).
+Script/audio clocks: [contracts](native-script-clocks.md).
+
 <!-- packet:start -->
-Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
-`pc_display*`, `pc_settings*`, `pc_refresh*` for display/configuration;
-`pc_menu_*`, `pc_ui_layout.h`, `pc_cutscene.h`, `pc_camera.h` for menus/camera;
-`pc_debug_options.def` for the shared debug fields/keys/labels/capabilities;
+Tracked policy: `src/input/` owns controls, bindings and prompts;
+`src/interface/` owns display, settings, menus and refresh configuration;
+`src/gameplay/` owns simulation and camera policy;
+`src/diagnostics/` owns shared debug fields, crashes and hang reporting;
 `src/graphics/` for common shader/math policy; `src/native/` for host adapters.
 For movement regressions, compare player-position displacement in game as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
 focus changes only when gameplay capture was requested.
+Windows gameplay confinement now uses the tiny center rectangle from
+`pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
+still drive aim; absolute pointer drift cannot reach the border. Initial capture,
+move/resize and repair share the same foreground-only rectangle calculation.
+Menu/settings/Escape/focus release remain owned by `pc_controls.c`; repair never
+resets held input. This is a Win32 adapter fix (#381); SDL already uses relative
+mode. The launcher-only trigger has not been independently established.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 
-Textures: root `src/texture_pack*`, `texture_mode*`, runtime `src/d3d/` and HLE
-texture hooks; offline tooling `tools/texture-*`. Sanitized replacements now live
-in `assets/textures` (DDS via Git LFS), audited by `tools/build_textures.py` for optional delivery;
-private source art and original assets stay local. Networking: `src/pc_network*`,
-`pc_online*`, runtime HLE/kernel patches and `tools/online.py`. Crash capture:
-`src/pc_crash*`, `pc_hang_policy.h`, runtime crash hooks and launcher diagnostics.
+Textures: `src/textures/`, runtime `src/d3d/` and HLE
+texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
+in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
+private source art and original assets stay local. Networking: `src/network/`, runtime HLE/kernel patches and `tools/network/online.py`. Crash capture:
+`src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
 curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
-Consult `docs/shared-platform.md` for shared versus adapter responsibilities.
+Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
 
-The 2026-10-24 #74 material continuation adds 215 reviewed metal, masonry,
-rock, plaster, carved, granular and wood replacements, bringing the optional
-pack to 2,261 entries. Sanitized DDS/JSON and config/texture-pack.json change
-together; source artwork, prompts and held drafts remain private. Square sources
-are 1254 pixels, downsampled to 1024, 512 or 256; rectangular sources are
-1774x887 or 887x1774, usually downsampled to 512/1024 on the long edge.
-One1774x887 wood source is resampled to2048x1024 for a1024x512 original; this
-is not native4K artwork. RGBA8 preserves
-fine detail when DXT1 loses it. Narrow wood/metal sources are 2169/2170x725 or
-2172x724 padded atlases. The private compiler extracts explicitly reviewed
-regions with at most 1% aspect rounding, then emits exact original 4:1 or 8:1
-outputs, up to 2048 pixels long. Full source dimensions, extraction coordinates
-and resampling remain in private provenance; no native 4K claim.
-
-The loader, key mapping, optional-delivery contract, host adapters and164original
-character-icon exclusions remain unchanged. Asset batches use native DDS,
-mip/aspect/alpha/hash, full-pack and decoded2x2 repeat checks. Original-scale
-feature profiles supplement manual review; extrema can select different bevel
-edges, so preserve initial measurements and follow-up evidence. These checks
-cannot establish complete contour equivalence, scene adjacency or final lighting.
+The #74 material continuation and validation limits are recorded in
+[material validation](../textures/material-validation.md).
 
 Hybrid production separates fixed macro layout from repainted microtexture.
 Failed drafts stay held for specific UV, hardware, motif, tone or pattern defects.
@@ -67,18 +69,9 @@ Temporary outputs stay below256MiB. Retire only reproducible disposable reviews
 or catalog-verified exported originals with resolved-parent and SHA checks;
 preserve source art/provenance and never retry denied cleanup targets. One private
 pack and small public LFS pointers avoid duplicate hydrated copies. Detailed
-historical batch measurements, held reasons and storage audits remain in STATUS.md
-and private hybrid-N validation records; coverage is summarized in docs/textures.md.
+historical batch measurements, held reasons and storage audits remain in docs/project/STATUS.md
+and private hybrid-N validation records; coverage is summarized in docs/textures/textures.md.
 Scene testing remains deferred under the near-completion policy.
-
-Recent batches preserve separate baked-lighting variants and record
-original-scale joint, reflection and region-brightness samples alongside decoded
-repeat review. Measured offsets, uncertain extrema and altered contrast remain
-scene-validation concerns; these samples do not establish full contour parity.
-Detailed batch298-302 acceptances, held reasons, measurements and storage receipts
-remain in STATUS.md and private validation records. The latest batch adds three
-1024-square RGBA8 masonry textures from1254-square sources. Runtime, optional
-delivery and host-adapter contracts are unchanged.
 
 Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
 positive fractional game time for player/NPC effect updates. Its children already
@@ -96,23 +89,26 @@ the UI fixture tests both callers and guards, while Mac scenes remain unverified
 
 Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
 weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
-Input edges follow raw whole ticks; pause can offset those from game whole ticks,
+Input edges follow raw ticks; pause can offset those from game ticks,
 so the old gate dropped a valid press. Eligibility, binding lookup, animation and
 ammo checks remain original; zero-time pause and Original60 remain unchanged.
 The generic CMP hook is documented in runtime.md. No host-specific adapter.
 Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
-`PcInput`, and read-only US state snapshots in `pc_reload_guest.h`. Win32 and
-SDL publish press/release events under their existing input locks, including
-collapsed down/up events and fresh Fire clicks between samples. The shared
-binding sampler applies action roles from configured keys to keyboard magnitudes
-before merging physical-pad contributions. A short Reload request lasts at
+`PcInput`, and US state snapshots in `pc_reload_guest.h`. Win32 and SDL publish
+press/release events under input locks, including collapsed down/up events.
+The shared sampler applies configured key roles before merging pad input.
+A short Reload request lasts at
 least 34 ms and expires after 150 ms if the weapon never enters reload state 7.
 Already-held Fire is suppressed until release, reload completion or rejection;
 a fresh Fire press can interrupt. Monotonic press order preserves Fire after
 Reload within one poll, including events with identical clock timestamps.
 Context expires after 100 ms without an eligible
 local-player camera update; menu/capture/focus/controller transitions clear it.
-This does not queue rejected reloads indefinitely or alter ammo/animation logic.
+Rejected reloads expire without altering ammo/animation logic.
+Fire presses use the shared key-edge path and a
+34 ms pulse to cross 60 Hz polls; held input stays live. Reload clears earlier
+Fire pulses; later presses can interrupt. Context resets discard pulses.
+Pad input stays separate.
 
 
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.
@@ -257,23 +253,23 @@ frames and is capped at 8,192 rows/below 4 MiB; do not use it as clean pacing da
 Cached rows have zero read/image/view stages and retain existing request/cache state.
 The legacy GL path also closes a trace with `path_rejected` for an oversized path.
 Older `2230901` traces began after hashing and excluded cached calls.
-See `docs/textures.md` and the runtime tests for usage and failure/bound checks.
+See `docs/textures/textures.md` and the runtime tests for usage and failure/bound checks.
 
 | Area | Start here (tracked root unless noted) | Useful checks/docs |
 | --- | --- | --- |
-| Bindings, input prompts | `src/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/pc_controls.c`, `tests/pc_prompts.c`, `docs/windows-settings.md` |
-| Mouse/menu handling | `src/pc_menu_mouse_guest.inc`, `pc_menu_choices.inc`, `pc_menu_sliders.inc`, `pc_menu_team.inc` | `tests/test_menu_mouse.py`, `test_terminal_mouse.py`, `test_ui_layout.py` |
-| Auto-look / camera / cutscene | `src/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
-| Display model and native UI | `src/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/test_pc_display_modes.py`, `test_debug_settings_model.py` |
-| GPU clear / screen copies / sampling | `src/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/shared-platform.md` |
-| Texture loading and formats | `src/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_pack_stream.h`, `texture_mode.c` | `tests/test_texture_runtime.py`, `tests/texture_pack_tools.py` |
-| Texture production and audit | `tools/texture-worklist.py`, `tools/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures.md` |
-| System Link / online / bots | `src/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/online.py` | `tests/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
-| Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/test_discord_presence.py`, `test_discord_macos.py` |
-| Saves and profiles | Runtime save-routing patch; `tools/testing_profile.py`, `tools/test-native-mac.py` | `docs/testing-profile.md`, `tests/test_testing_profile.py` |
-| Crash/hang diagnostics | `src/pc_crash.c`, `pc_hang_policy.h`, `tools/crash-symbols.py` | `tests/test_crash_capture.py`, `test_native_crash.py`, `test_crash_symbols.py` |
-| Guest lift/runtime correctness | Runtime `tools/recomp/`, manual hooks, `tools/recomp-generation.py` | `tests/test_recomp_float_joins.py`, `test_recomp_vehicle_joins.py` |
-| Audio/movie startup | Runtime `src/hle/` sound and XMV files | `tests/test_audio_timing.py`, `test_xmv_stop.py` |
+| Bindings, input prompts | `src/input/pc_controls.c`, `pc_input.c`, `pc_bindings.inc`, `pc_prompts.c` | `tests/input/pc_controls.c`, `tests/input/pc_prompts.c`, `docs/players/windows-settings.md` |
+| Mouse/menu handling | `src/interface/pc_menu_mouse_guest.inc`, `pc_menu_choices.inc`, `pc_menu_sliders.inc`, `pc_menu_team.inc` | `tests/input/test_menu_mouse.py`, `test_terminal_mouse.py`, `test_ui_layout.py` |
+| Auto-look / camera / cutscene | `src/gameplay/pc_auto_look_guest.inc`, `pc_camera.h`, `pc_cutscene.h`, `pc_ui_layout.h` | `tests/gameplay/test_auto_look.py`, `test_cutscene_letterbox.py`, `test_camera_feed.py` |
+| Display model and native UI | `src/interface/pc_display.c`, `pc_display_*.inc`, `pc_settings.c`, `src/native/` | `tests/graphics/test_pc_display_modes.py`, `test_debug_settings_model.py` |
+| GPU clear / screen copies / sampling | `src/graphics/pc_clear_rhi.inc`, `src/graphics/`, runtime `src/d3d/` | `tests/graphics/test_rhi_menu_sampling.py`, `tests/rhi/`, `docs/development/shared-platform.md` |
+| Texture loading and formats | `src/textures/texture_pack.c`, `texture_pack_format.h`, `texture_pack_io.h`, `texture_pack_stream.h`, `texture_mode.c` | `tests/textures/test_texture_runtime.py`, `tests/textures/texture_pack_tools.py` |
+| Texture production and audit | `tools/textures/texture-worklist.py`, `tools/textures/texture-hybrid-plan.py` | Root AGENTS texture rules, `docs/textures/textures.md` |
+| System Link / online / bots | `src/network/pc_network.c`, `pc_network_guest.inc`, `pc_network_bots*`, `pc_online.c`, `tools/network/online.py` | `tests/network/test_network_guest_dispatch.py`, `test_online.py`, `test_network_identity.py` |
+| Discord presence | `src/pc_discord*` plus runtime integration patches | `tests/network/test_discord_presence.py`, `test_discord_macos.py` |
+| Saves and profiles | Runtime save-routing patch; `tools/testing/testing_profile.py`, `tools/testing/test-native-mac.py` | `docs/development/testing-profile.md`, `tests/repository/test_testing_profile.py` |
+| Crash/hang diagnostics | `src/diagnostics/pc_crash.c`, `pc_hang_policy.h`, `tools/release/crash-symbols.py` | `tests/diagnostics/test_crash_capture.py`, `test_native_crash.py`, `test_crash_symbols.py` |
+| Guest lift/runtime correctness | Runtime `tools/recomp/`, manual hooks, `tools/build/recomp-generation.py` | `tests/compiler/test_recomp_float_joins.py`, `test_recomp_vehicle_joins.py` |
+| Audio/movie startup | Runtime `src/hle/` sound and XMV files | `tests/media/test_audio_timing.py`, `test_xmv_stop.py` |
 
 Names in this table are entry points, not a complete call graph. Read the
 applicable adapter plus one relevant test. Tests may encode historical migration
@@ -288,16 +284,16 @@ game input, clock policy, frame target and saved settings are unchanged. See the
 runtime guide for register guards and the required regeneration boundary.
 
 Ghost Gun living-actor reveal alignment (#181/#241) is handled by
-`pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
+`pc_display_weapon_effect` in `src/interface/pc_display_ui.inc`. The integer rectangle
 returning to US caller `0x001232A9` is the final filtered screen-copy composite
 over the actor's projected bounds. In a full widescreen view it uses full-view
 placement, with deferred draws flushed before restoring the surrounding UI
 placement. Guest coordinates, UVs/tint and the five preceding blur passes stay
 unchanged. The separate humanoid ghost composite retains its existing guarded
 call site. Original 4:3 and split-view paths keep their existing behavior.
-`tests/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
+`tests/graphics/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
 both platform wrappers and a local supported-US-routine check; see build/test
-for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
+for test prerequisites. Windows scene confirmation is recorded in `docs/project/STATUS.md`;
 native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
@@ -396,8 +392,8 @@ the canonical local fixture and must remain unchanged. Test runners copy it into
 bounded disposable test roots. `private/texture-remaster/pack` is the one active
 6-GiB-capped art-production pack; source art and original game assets stay ignored.
 Sanitized compiled DDS/JSON replacements are tracked in `assets/textures` and
-published as optional packs; `tools/texture-repository.py` stages them with LFS,
-`tools/build_textures.py` audits them. Leave pointers unhydrated for unrelated
+published as optional packs; `tools/textures/texture-repository.py` stages them with LFS,
+`tools/textures/build_textures.py` audits them. Leave pointers unhydrated for unrelated
 source work. Optional pack publication must reject missing LFS content. Ordinary
 game packages omit textures; existing installed packs and runtime fallback remain.
 
@@ -427,17 +423,17 @@ hooks in `pc_tutorial_ui.inc`, `pc_display_ui.inc` and `pc_prompt_guest.inc`.
 implicit declarations. Do not extend caches across menu ticks or frames.
 Tests cover region boundaries/expiry and actual prompt-hook scratch ABI/fallbacks.
 Issue #105 also requires the runtime late-frame pacing patch; caching alone
-measured 30 FPS. See STATUS.md for measured acceptance and Mac limits.
+measured 30 FPS. See docs/project/STATUS.md for measured acceptance and Mac limits.
 
 ## Physical keyboard text entry (#136)
 
-`src/pc_text_input.h` defines the shared bounded per-dialog text queue and edit
+`src/input/pc_text_input.h` defines the shared bounded per-dialog text queue and edit
 commands. Windows `pc_controls.c` supplies WM_CHAR/WM_UNICHAR; native Mac
 `input_sdl.c` supplies SDL text events and starts/stops text input on its main
 thread. Both adapters suppress keyboard menu bindings while a text owner is active
 and discard queued text on focus loss or owner changes.
 
-`src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
+`src/interface/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
 character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
 Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
 `0x004D8D78` misses it. The callback-row scan reuses one writable OS region only within
@@ -484,7 +480,7 @@ scope supplies the tag only for complete single-player non-4:3 views.
 
 ## Mounted and CCTV gun mouse aim (#182)
 
-`src/pc_mounted.h` handles guest player mode `0x80` before ordinary player
+`src/input/pc_mounted.h` handles guest player mode `0x80` before ordinary player
 camera updates in both `pc_controls.c` and `native/input_sdl.c`. The US guest
 `sub_0025D520`/`sub_00258A20` aim an AGUN through player entity data `+0xC14`;
 ordinary player yaw/pitch do not turn it. The shared helper validates its AGUN
@@ -495,7 +491,7 @@ multiplication. Invalid ownership, pause, focus loss and stale motion consume
 input without falling through to hidden player angles. Terminal mode `0x2000`
 and its left-click mapping retain `pc_terminal_mouse` behavior. Controller
 input remains in the guest routines. The separate vehicle-seat mode `0x8000`
-is not routed by this helper. `tests/test_mounted_mouse.py` runs the guarded C
+is not routed by this helper. `tests/gameplay/test_mounted_mouse.py` runs the guarded C
 fixture on Windows/macOS; physical Mac validation is tracked under MAC-001.
 The mounted helper receives the adapter's explicit native-timing selection.
 Native mode accepts finite positive game-float time at `4E794C`; Original60
@@ -523,7 +519,7 @@ across frames or changing motion, capture, terminal clicks or timing policy.
 
 ## Player FOV through Zeppelin air lifts (#339)
 
-`gameplay_fov_scale` in `src/pc_display_menu.c` recognizes grounded (2), falling
+`gameplay_fov_scale` in `src/interface/pc_display_menu.c` recognizes grounded (2), falling
 (4) and air-lift (0x800) movement. Original US `sub_00225C70` selects 0x800 in
 Zeppelin's four lift cylinders and returns to 4 outside them. Both player-camera
 callers retain the selected FOV; the projection and CPU frustum scale together.
@@ -547,8 +543,8 @@ retains its frontend/pause-specific alignment and common highlights are rounded.
 
 The merge retains main's nested text-read scope and fresh scratch-write checks
 rather than the older per-hook stack-query optimization. The real-protection
-fixture in `tests/pc_prompts.c` retains boundary/ABI checks; query reduction is
-measured inside the cache by `tests/text_read_scope.c`, because reads now execute
+fixture in `tests/input/pc_prompts.c` retains boundary/ABI checks; query reduction is
+measured inside the cache by `tests/input/text_read_scope.c`, because reads now execute
 in a separately compiled translation unit. Mounted mouse aim remains ahead of
 ordinary camera input in both adapters; fractional terminal handling is retained.
 Native high-refresh validation is MAC-060, distinct from crane MAC-058 and
@@ -560,10 +556,10 @@ The branch pack now contains 2,046 accepted replacements. The same keyed DDS
 files serve Windows and the common native Mac renderer; loader contracts are
 unchanged. Menu coverage is 574/750 keys, with 164 original character icons, eight
 intentional functional originals and four unresolved replacements.
-`config/texture-originals.json` records excluded icon keys; the worklist rejects
+`config/textures/texture-originals.json` records excluded icon keys; the worklist rejects
 installed replacements for those keys and hybrid planning retains the original
 lane. Character model materials remain in scope. Source resampling and original-detail
-recovery are distinguished from newly generated art in `docs/main-menu-textures.md`.
+recovery are distinguished from newly generated art in `docs/textures/main-menu-textures.md`.
 Offline acceptance does not certify mapped scene appearance or Mac GPU behavior.
 
 The original-icon policy also includes historical public DDS/JSON hashes.
@@ -689,7 +685,7 @@ live, debounces writes, flushes on exit, and restores previous values on error.
 
 Capture starts once in the new page update. Native descriptor +12 is a per-frame
 callback, not a destructor; installing capture cleanup there cancels it every
-frame. The callback fixture in `tests/fov_settings.c` exercises both native
+frame. The callback fixture in `tests/graphics/fov_settings.c` exercises both native
 per-frame callbacks and requires a selectable capture instruction row.
 
 ## Host storage choices in Create Profile
@@ -750,7 +746,7 @@ after each fractional update. The production owner/scheduler is described below.
 Restoring coefficients belong to spatial eigenmodes; per-texel matrix powers
 cannot replace the spatial transform. Preserve authored disturbances, smoothing
 and byte storage. Historical float-only candidates and their rejected storage
-comparisons remain in `docs/native-high-refresh-regressions.md`.
+comparisons remain in `docs/analysis/native-high-refresh-regressions.md`.
 `graphics/surface_state_shader.h` encodes red scratch, green signed velocity plus
 0.5, blue height and alpha height. Effect22 samples alpha cardinal differences;
 constant alpha erases ripple slopes. The native final-view adapter packs this
@@ -826,7 +822,7 @@ a total VRAM or in-game performance measurement.
 writes fractional/full-tick fields to a `.gpu` sidecar. Its per-sample allocation
 and readback are diagnostic; they do not replace visible water or alter guest
 RNG/events. The persistent gameplay owner is separate. See the coupled-operator
-record in `docs/native-high-refresh-regressions.md` for capture details/limits.
+record in `docs/analysis/native-high-refresh-regressions.md` for capture details/limits.
 
 ## Background replacement texture reads
 
@@ -907,26 +903,36 @@ subdivide the one-raw-tick factor at current game speed. Original rotation,
 composition, cleanup and whole/catch-up arithmetic remain intact. The original
 helper fixture covers60..240, slow time, pause, jitter and live switches.
 
-Optional `TSFP_CHARACTER_TRACE` selects `pc_native_character_trace_guest.inc`
-only at126029->120AB0. `pc_native_character_trace.h` retains synchronous copied
-before/after matrices, actual scoped deltas, age, identity and removal. It checks
-mapped reads, drops mismatched identities/frames/scenes, and caps8192rows/8MiB.
-Mapping caches never span guest execution. Disabled/failed/capped traces select
-the original callee; no timing or growth policy changes. This is CPU update
-evidence, not rendered parity or pacing. Physical Mac remains unverified.
+`TSFP_CHARACTER_TRACE` selects126029->120AB0: matrices/deltas/identity/removal,
+validated mappings, cross-frame/scene rejection,8192rows/8MiB cap. Mapping caches
+never span guest execution. Disabled/failed/capped traces keep original callee.
+CPU evidence only; rendering/pacing and physical Mac remain unverified.
+
+## Temporal Uplink map display
+
+The shared HLE screen-copy hook saves Future Perfect's preclear map image
+and supplies its map region to the handheld texture later in the frame.
+Native GL implements the same texture-region transfer in
+`src/native/gl_screen_copy.inc`, preserving framebuffer bindings and scissor
+state. The map geometry and gameplay controls remain guest-owned; this adapter
+only transfers the image that the game already drew.
 
 ## Forced and damped material scrolling
 
-`pc_native_material.h` splits the original127500 affine velocity/travel map in
-raw time at the current game speed. Shared numeric policy routes only12765B
-(forcing),1276FD/127705 (damping),12773B/127791 (U/V travel), using the original
-parameter pointer and held forcing register. Coupling travel to velocity matters:
-normalizing damping alone still changes texture displacement. Zero drag uses the
-finite acceleration limit; weak damping uses a stable series. Original mode,
-whole/catch-up raw intervals and unsupported/nonpositive decay bases retain
-original arithmetic. This changes no material state layout or resource ownership.
-Original force-table sampling, clamp, UV wrapping, procedural image dispatch and
-pause still execute. It does not normalize a force that changes within an authored
-interval or prove all live material behavior. Asset-free partitions and original
-surface/caching fixtures cover the arithmetic; live visual/Mac acceptance remains
-separate. See STATUS for measured before/after error and current build evidence.
+`pc_native_material.h` splits127500 velocity/travel in raw game time:
+12765Bforce,1276FD/127705drag,12773B/127791UV. Weak drag uses stable limits;
+Original/whole/catch-up/unsupported bases keep old math. Force/clamp, wrapping,
+resources/events, layout and pause stay original. Varying-force/rendered/Mac
+parity remain open; see surface/cache tests and STATUS.
+
+## Scripted object clocks
+
+TREE1D88B0 admits fractional time at its gate; EAX is overwritten before use.
+Original phase/pose, events, terminal clamp, layout and whole updates remain.
+TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime.
+Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
+for the map, hook composition, rejected candidates and live/Mac acceptance limits.
+
+Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
+cadence; distance stays per-frame. D2079 blocks paused stale ticks.
+Impact sparks: see [native spark timing](native-impact-sparks.md).

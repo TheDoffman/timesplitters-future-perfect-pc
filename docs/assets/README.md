@@ -1,8 +1,8 @@
 # README visuals
 
 - `online-host.png`, `online-join.png`, `online-invitation.png`: actual Windows
-  Tk widgets rendered from `tools/online.py` at source revision `ed8bff1`,
-  captured on 2026-10-17 for `docs/multiplayer.md`. Main-window captures are
+  Tk widgets rendered from `tools/network/online.py` at source revision `ed8bff1`,
+  captured on 2026-10-17 for `docs/players/multiplayer.md`. Main-window captures are
   820 x 750; the invitation dialog is expanded to 700 x 330 so all buttons fit.
   These are documentation previews with isolated example data, not evidence
   of a connected match. Identity checks and hosting are stubbed only in an
@@ -23,8 +23,9 @@
   The launcher was built on Windows x64 with the existing private banner/logo
   resources. Rendering opens no game, performs no update, and includes no
   personal settings, paths or saves. Screenshot resolution: 1152 x 772.
-- `download-launcher.svg`: self-contained download button matching the
-  launcher's silver/blue palette. Its link and accessible label are in the README.
+- `download-windows-launcher.svg` and `download-mac-launcher.svg`: the two
+  platform download buttons used by the README. Links and accessible labels
+  live in the README; the superseded generic button has been removed.
 
 The PNG documents the interface, including its embedded branding. Raw source
 artwork and original game assets remain private. Keep one launcher preview here

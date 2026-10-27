@@ -15,7 +15,7 @@ param([switch]$PrepareOnly, [switch]$Draft, [string]$Branch = 'main', [string]$C
 $ErrorActionPreference = 'Stop'
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (!(Test-Path -LiteralPath $python)) { throw 'Run setup.ps1 first.' }
-$releaseArguments = @((Join-Path $PSScriptRoot 'tools\publish-release.py'))
+$releaseArguments = @((Join-Path $PSScriptRoot 'tools\release\publish-release.py'))
 $releaseArguments += @('--branch', $Branch)
 if ($ChannelName) { $releaseArguments += @('--channel-name', $ChannelName) }
 if ($NotesFile) { $releaseArguments += @('--notes-file', $NotesFile) }

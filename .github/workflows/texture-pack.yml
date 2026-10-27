@@ -5,20 +5,20 @@ on:
     paths:
       - 'assets/textures/**'
       - '.gitattributes'
-      - 'config/texture-pack.json'
-      - 'tools/build_textures.py'
-      - 'tools/texture-repository.py'
-      - 'tools/texture-release.py'
-      - 'tests/test_build_textures.py'
+      - 'config/textures/texture-pack.json'
+      - 'tools/textures/build_textures.py'
+      - 'tools/textures/texture-repository.py'
+      - 'tools/textures/texture-release.py'
+      - 'tests/textures/test_build_textures.py'
       - '.github/workflows/texture-pack.yml'
   push:
     branches: [main]
     paths:
       - 'assets/textures/**'
-      - 'config/texture-pack.json'
-      - 'tools/build_textures.py'
-      - 'tools/texture-repository.py'
-      - 'tools/texture-release.py'
+      - 'config/textures/texture-pack.json'
+      - 'tools/textures/build_textures.py'
+      - 'tools/textures/texture-repository.py'
+      - 'tools/textures/texture-release.py'
       - '.gitattributes'
       - '.github/workflows/texture-pack.yml'
   workflow_dispatch:
@@ -44,9 +44,11 @@ jobs:
           import json, sys
           from pathlib import Path
           sys.path.insert(0, 'tools')
+          from project_paths import configure
+          configure()
           from build_textures import ensure_pack
           pack, records, identity = ensure_pack()
-          manifest = json.loads(Path('config/texture-pack.json').read_text())
+          manifest = json.loads(Path('config/textures/texture-pack.json').read_text())
           assert manifest['schema'] == 2 and manifest['delivery'] == 'optional'
           assert manifest['texture_count'] == identity['texture_count']
           assert manifest['installed_bytes'] == identity['installed_bytes']

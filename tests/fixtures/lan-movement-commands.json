@@ -1,5 +1,5 @@
 {
-  "_scope": "Explicit Vietnam Deathmatch with no bots; host/client must run concurrently on isolated loopback addresses. Validate actual movement with tools/network_movement_stats.py; menu timing alone is not acceptance.",
+  "_scope": "Explicit Vietnam Deathmatch with no bots; host/client must run concurrently on isolated loopback addresses. Validate actual movement with tools/analysis/network_movement_stats.py; menu timing alone is not acceptance.",
   "host": [
     {
       "wait": 24

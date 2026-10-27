@@ -1,0 +1,177 @@
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -4389,6 +4389,8 @@
+     static int seen;
+ #if defined(_WIN32) || defined(__APPLE__)
+     uint32_t src = HLE_ARG(0), dst = HLE_ARG(3);
++    static IDirect3DTexture8 *map_source;
++    static unsigned long map_source_swap;
+ #endif
+ 
+     first_call(&seen, "D3DDevice_CopyRects", HLE_ARG(0));
+@@ -4461,13 +4463,25 @@
+                 r.right = (LONG)dw;
+                 r.bottom = (LONG)dh;
+                 p.x = p.y = 0;
+-                if (SUCCEEDED(host_CopyBackBufferRectToTexture(tex, &r, &p)))
++                if (sw == 640 && sh == 480 && dw == 128 && dh == 128 &&
++                    map_source_swap == g_shadow_swaps && map_source) {
++                    /* Future Perfect composes the Uplink's map in the screen
++                     * copy before clearing that screen. Its later 128x128
++                     * CopyRects must sample the saved map, not the cleared
++                     * back buffer. The 136x181 map area is in guest pixels;
++                     * the host copy scales it to the handheld texture. */
++                    RECT map_region = {176, 0, 312, 181};
++                    if (SUCCEEDED(host_CopyTextureRegionScaled(tex, map_source, &map_region)))
++                        from_screen++;
++                    map_source = NULL;
++                } else if (SUCCEEDED(host_CopyBackBufferRectToTexture(tex, &r, &p)))
+                     from_screen++;
+                 if (said_rect++ < 4)
+                     fprintf(stderr, "[HLE-D3D8] the title copies the top left %ux%u of its "
+                             "screen into texture 0x%08X\n", dw, dh, dst_parent);
+             } else if (tex && SUCCEEDED(host_CopyBackBufferToTexture(tex))) {
+                 from_screen++;
++                if (dw == sw && dh == sh) { map_source=tex; map_source_swap=g_shadow_swaps; }
+                 if (from_screen == 1)
+                     fprintf(stderr, "[HLE-D3D8] the title reads its own screen back: "
+                             "copying the host frame into texture 0x%08X (%ux%u)\n",
+diff --git a/src/hle/hle_d3d8_record.c b/src/hle/hle_d3d8_record.c
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1951,7 +1951,7 @@
+ 
+ /* ----------------------------------------------------------- screen copies */
+ 
+-typedef struct { IDirect3DTexture8 *dst; int has_rect; RECT src; POINT at; } dq_screen_copy;
++typedef struct { IDirect3DTexture8 *dst, *source; int has_rect; RECT src; POINT at; } dq_screen_copy;
+ 
+ static void op_screen_copy(const void *arg)
+ {
+@@ -1962,7 +1962,9 @@
+     if (hle_d3d8_interp_predicting) return;
+ #endif
+ 
+-    if (p->has_rect)
++    if (p->has_rect == 2)
++        host_CopyTextureRegionScaled(p->dst, p->source, &p->src);
++    else if (p->has_rect)
+         host_CopyBackBufferRectToTexture(p->dst, &p->src, &p->at);
+     else
+         host_CopyBackBufferToTexture(p->dst);
+@@ -1999,6 +2001,21 @@
+     return xbox_D3D8CopyBackBufferRectToTexture(dst, src, at);
+ }
+ 
++HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
++                                     IDirect3DTexture8 *src, const RECT *region)
++{
++    if (hle_d3d8_interp_rec && region) {
++        dq_screen_copy p;
++        memset(&p, 0, sizeof p);
++        p.dst = dst;
++        p.source = src;
++        p.has_rect = 2;
++        p.src = *region;
++        hle_d3d8_interp_op(op_screen_copy, &p, sizeof p);
++    }
++    return xbox_D3D8CopyTextureRegionScaled(dst, src, region);
++}
++
+ /* --------------------------------------------- the frame-start state, kept
+  *
+  * capture_snapshot's list, as ops, in the same order and for the same
+diff --git a/src/hle/hle_d3d8_record.h b/src/hle/hle_d3d8_record.h
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -139,6 +139,8 @@
+ HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *dst);
+ HRESULT host_CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                          const POINT *at);
++HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
++                                     IDirect3DTexture8 *src, const RECT *region);
+ 
+ /* ----------------------------------------------------------- device calls */
+ 
+diff --git a/src/d3d/d3d8_xbox.h b/src/d3d/d3d8_xbox.h
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1267,6 +1267,8 @@
+                                          IDirect3DSurface8 *depth);
+ #endif
+ HRESULT       xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst);
++HRESULT       xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
++                                               IDirect3DTexture8 *src, const RECT *region);
+ /* The same for one of CopyRects' rectangles: `src` in the title's own
+    pixels, copied to the same size at `at` in the texture (NULL: its
+    corner), as CopyRects does -- it does not scale. A title draws a small
+diff --git a/src/d3d/d3d8_screencopy.c b/src/d3d/d3d8_screencopy.c
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -190,17 +190,33 @@
+  * texture. With src: that rectangle of the frame, in the title's own
+  * pixels, to the same size at `at` in the texture -- CopyRects does not
+  * scale. */
+-static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at, RhiView *source);
++static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
++                               RhiView *source, const RECT *scaled_region);
+ 
+ HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
+-    return copy_to_texture(dst, NULL, NULL, NULL);
++    return copy_to_texture(dst, NULL, NULL, NULL, NULL);
++}
++
++HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
++                                         IDirect3DTexture8 *src, const RECT *region)
++{
++    D3D8Texture *texture = (D3D8Texture *)src;
++    if (!texture || !texture->srv || !region) return E_INVALIDARG;
++    RhiImageDesc desc;
++    RECT physical;
++    rhi_image_get_desc(texture->image, &desc);
++    physical.left=(LONG)((double)region->left*desc.width/texture->width);
++    physical.right=(LONG)((double)region->right*desc.width/texture->width);
++    physical.top=(LONG)((double)region->top*desc.height/texture->height);
++    physical.bottom=(LONG)((double)region->bottom*desc.height/texture->height);
++    return copy_to_texture(dst, NULL, NULL, texture->srv, &physical);
+ }
+ 
+ HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                              const POINT *at)
+ {
+-    return copy_to_texture(dst, src, at, NULL);
++    return copy_to_texture(dst, src, at, NULL, NULL);
+ }
+ 
+ /* Snapshot an offscreen colour image before a draw samples its own target.
+@@ -208,10 +224,11 @@
+ HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source)
+ {
+     if (!source) return E_INVALIDARG;
+-    return copy_to_texture(dst, NULL, NULL, source);
+-}
+-
+-static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at, RhiView *source)
++    return copy_to_texture(dst, NULL, NULL, source, NULL);
++}
++
++static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
++                               RhiView *source, const RECT *scaled_region)
+ {
+     D3D8Texture *tex = (D3D8Texture *)dst;
+     RhiImage *dst_image;
+@@ -262,6 +279,12 @@
+     c.scale_x = dst_w ? (float)back_w / (float)dst_w : 1.0f;
+     c.scale_y = dst_h ? (float)back_h / (float)dst_h : 1.0f;
+     c.off_x = c.off_y = 0.0f;
++    if (scaled_region) {
++        c.scale_x = dst_w ? (float)(scaled_region->right - scaled_region->left) / dst_w : 1.0f;
++        c.scale_y = dst_h ? (float)(scaled_region->bottom - scaled_region->top) / dst_h : 1.0f;
++        c.off_x = (float)scaled_region->left;
++        c.off_y = (float)scaled_region->top;
++    }
+     if (src) {
+         /* The rectangle is in the title's pixels and the frame may be
+          * rendered larger (RECOMP_RES_SCALE): one texture pixel is

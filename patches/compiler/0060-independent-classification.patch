@@ -1,0 +1,2458 @@
+--- a/tools/func_id/__init__.py
++++ b/tools/func_id/__init__.py
+@@ -1 +1 @@
+-"""Function identification tool for Xbox static recompilation."""
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/__main__.py
++++ b/tools/func_id/__main__.py
+@@ -1,70 +1,6 @@
+-"""
+-CLI entry point for the function identification tool.
+-
+-Usage:
+-    python3 -m tools.func_id game_files/default.xbe [-v]
+-    python3 -m tools.func_id game_files/default.xbe --functions path/to/functions.json -v
+-"""
+-
+-import argparse
+-import sys
+-
+-from .identify import run
+-
+-
+-def main():
+-    parser = argparse.ArgumentParser(
+-        description="Identify RenderWare, CRT, and game functions in an Xbox XBE"
+-    )
+-    parser.add_argument(
+-        "xbe_path",
+-        help="Path to default.xbe"
+-    )
+-    parser.add_argument(
+-        "--functions",
+-        help="Path to functions.json (default: tools/disasm/output/functions.json)"
+-    )
+-    parser.add_argument(
+-        "--strings",
+-        help="Path to strings.json (default: tools/disasm/output/strings.json)"
+-    )
+-    parser.add_argument(
+-        "--xrefs",
+-        help="Path to xrefs.json (default: tools/disasm/output/xrefs.json)"
+-    )
+-    parser.add_argument(
+-        "--output", "-o",
+-        help="Output directory (default: tools/func_id/output)"
+-    )
+-    parser.add_argument(
+-        "--verbose", "-v",
+-        action="store_true",
+-        help="Print detailed progress"
+-    )
+-
+-    args = parser.parse_args()
+-
+-    try:
+-        # Derive address ranges from the XBE being analyzed so classification
+-        # is per-title, not tied to the reference fallback layout.
+-        from . import config
+-        config.configure_from_xbe(args.xbe_path)
+-
+-        summary = run(
+-            xbe_path=args.xbe_path,
+-            functions_path=args.functions,
+-            strings_path=args.strings,
+-            xrefs_path=args.xrefs,
+-            output_dir=args.output,
+-            verbose=args.verbose,
+-        )
+-    except FileNotFoundError as e:
+-        print(f"Error: {e}", file=sys.stderr)
+-        sys.exit(1)
+-    except Exception as e:
+-        print(f"Error: {e}", file=sys.stderr)
+-        raise
+-
++"""Compatibility CLI for the project function catalog."""
++from ..disasm.loader import BinaryImage
++from function_catalog import main
+ 
+ if __name__ == "__main__":
+-    main()
++    raise SystemExit(main())
+--- a/tools/func_id/clustering.py
++++ b/tools/func_id/clustering.py
+@@ -1,448 +1 @@
+-"""
+-Label propagation for function classification.
+-
+-Uses the call graph, address proximity, and string references to
+-propagate RW/CRT/game labels to unclassified functions.
+-
+-Strategies:
+-- Forward:   if a majority of callers of F are RW → F is likely RW
+-- Backward:  if F calls mostly RW functions → F is likely RW
+-- Proximity: unlabeled functions between same-category functions inherit label
+-"""
+-
+-from collections import defaultdict
+-
+-from . import config
+-
+-
+-def propagate_labels(functions, rw_results, crt_results, imm_refs, strings,
+-                     verbose=False, sections=None):
+-    """
+-    Propagate category labels through the call graph and by proximity.
+-
+-    Args:
+-        functions: List of function dicts (with calls_to, called_by).
+-        rw_results: Dict func_addr -> RW identification info.
+-        crt_results: Dict func_addr -> CRT identification info.
+-        imm_refs: Dict rdata_addr -> [func_addr, ...].
+-        strings: List of string dicts from strings.json.
+-        verbose: Print progress info.
+-        sections: XBE section list from _parse_xbe_sections, for XDK-caller
+-            classification. Without it that pass is skipped.
+-
+-    Returns:
+-        dict: func_addr (int) -> {
+-            "category": str,
+-            "subcategory": str or None,
+-            "confidence": float,
+-            "method": str
+-        }
+-        This includes new classifications found by propagation only.
+-    """
+-    # Build lookup structures
+-    func_by_addr = {}
+-    for f in functions:
+-        addr = int(f["start"], 16)
+-        func_by_addr[addr] = f
+-
+-    # Build call graph
+-    callees = defaultdict(set)
+-    callers = defaultdict(set)
+-    for f in functions:
+-        addr = int(f["start"], 16)
+-        for target in f.get("calls_to", []):
+-            t = int(target, 16)
+-            callees[addr].add(t)
+-            callers[t].add(addr)
+-
+-    # Current labels: merge RW and CRT results
+-    labels = {}
+-    for addr, info in rw_results.items():
+-        labels[addr] = info["category"]
+-    for addr, info in crt_results.items():
+-        labels[addr] = "crt"
+-
+-    # Build string ref map for game sub-classification
+-    string_refs = _build_string_ref_map(imm_refs, strings)
+-
+-    propagated = {}
+-    sorted_addrs = sorted(func_by_addr.keys())
+-
+-    # Iterative propagation with majority voting
+-    for iteration in range(config.MAX_CLUSTER_ITERATIONS):
+-        new_labels = 0
+-
+-        # Forward: if >= 2/3 of callers have the same RW label → propagate
+-        for addr in sorted_addrs:
+-            if addr in labels:
+-                continue
+-            caller_set = callers.get(addr, set())
+-            if len(caller_set) < 2:
+-                continue
+-
+-            rw_count = 0
+-            rw_subcounts = defaultdict(int)
+-            for c in caller_set:
+-                if c in labels and labels[c].startswith("rw_"):
+-                    rw_count += 1
+-                    rw_subcounts[labels[c]] += 1
+-
+-            # Require >= 2/3 of callers to be RW, minimum 2 RW callers
+-            if rw_count >= 2 and rw_count / len(caller_set) >= 0.67:
+-                best = max(rw_subcounts, key=rw_subcounts.get)
+-                labels[addr] = best
+-                propagated[addr] = {
+-                    "category": best,
+-                    "subcategory": None,
+-                    "confidence": config.CONFIDENCE_CLUSTER_CALL,
+-                    "method": "cluster_forward",
+-                }
+-                new_labels += 1
+-
+-        # Backward: if >= 2/3 of callees are RW → propagate
+-        for addr in sorted_addrs:
+-            if addr in labels:
+-                continue
+-            callee_set = callees.get(addr, set())
+-            if len(callee_set) < 2:
+-                continue
+-
+-            rw_count = 0
+-            rw_subcounts = defaultdict(int)
+-            for c in callee_set:
+-                if c in labels and labels[c].startswith("rw_"):
+-                    rw_count += 1
+-                    rw_subcounts[labels[c]] += 1
+-
+-            if rw_count >= 2 and rw_count / len(callee_set) >= 0.67:
+-                best = max(rw_subcounts, key=rw_subcounts.get)
+-                labels[addr] = best
+-                propagated[addr] = {
+-                    "category": best,
+-                    "subcategory": None,
+-                    "confidence": config.CONFIDENCE_CLUSTER_CALL,
+-                    "method": "cluster_backward",
+-                }
+-                new_labels += 1
+-
+-        if verbose:
+-            print(f"  Iteration {iteration + 1}: {new_labels} new labels")
+-
+-        if new_labels == 0:
+-            break
+-
+-    # RW region call-graph propagation: within the RW code region,
+-    # propagate RW labels more aggressively (any connection suffices).
+-    # The linker places RW code together, so functions in this region
+-    # connected to known RW functions are very likely RW.
+-    rw_region_count = _rw_region_propagation(
+-        sorted_addrs, labels, propagated, callees, callers
+-    )
+-    if verbose:
+-        print(f"  RW region propagation: {rw_region_count} new labels")
+-
+-    # Iterative proximity propagation - each pass can fill one more layer
+-    total_prox = 0
+-    for prox_pass in range(20):
+-        prox_count = _proximity_propagation(sorted_addrs, labels, propagated)
+-        total_prox += prox_count
+-        if prox_count == 0:
+-            break
+-    if verbose:
+-        print(f"  Proximity propagation: {total_prox} new labels ({prox_pass + 1} passes)")
+-
+-    # RW API consumer detection: game functions that call RW functions
+-    rw_consumer_count = _classify_rw_consumers(
+-        sorted_addrs, labels, propagated, callees
+-    )
+-    if verbose:
+-        print(f"  RW API consumers: {rw_consumer_count} functions")
+-
+-    # XDK library section caller detection
+-    xdk_caller_count = _classify_xdk_callers(
+-        sorted_addrs, labels, propagated, callees, sections
+-    )
+-    if verbose:
+-        print(f"  XDK section callers: {xdk_caller_count} functions")
+-
+-    # Game sub-classification via string references
+-    game_sub_count = _classify_game_subcategories(
+-        sorted_addrs, labels, propagated, string_refs
+-    )
+-    if verbose:
+-        print(f"  Game sub-classification: {game_sub_count} functions categorized")
+-
+-    return propagated
+-
+-
+-def _rw_region_propagation(sorted_addrs, labels, propagated, callees, callers):
+-    """
+-    Within the RW code region, propagate RW labels aggressively.
+-
+-    If a function is inside the RW code region and has ANY call-graph
+-    connection to a known RW function, classify it as RW. This is more
+-    aggressive than global propagation because the linker places RW
+-    object code contiguously.
+-
+-    Iterates until convergence.
+-    """
+-    # Determine RW code region from current labels
+-    rw_addrs = [a for a in sorted_addrs if a in labels and labels[a].startswith("rw_")]
+-    if len(rw_addrs) < 10:
+-        return 0
+-
+-    rw_code_lo = min(rw_addrs)
+-    rw_code_hi = max(rw_addrs)
+-
+-    # Build set of addresses in the RW region
+-    region_addrs = [a for a in sorted_addrs if rw_code_lo <= a <= rw_code_hi]
+-
+-    total_count = 0
+-    for iteration in range(20):
+-        count = 0
+-        for addr in region_addrs:
+-            if addr in labels:
+-                continue
+-
+-            # Check if this function has any connection to a known RW function
+-            connected_rw = False
+-            rw_subcounts = defaultdict(int)
+-
+-            for c in callers.get(addr, set()):
+-                if c in labels and labels[c].startswith("rw_"):
+-                    connected_rw = True
+-                    rw_subcounts[labels[c]] += 1
+-            for c in callees.get(addr, set()):
+-                if c in labels and labels[c].startswith("rw_"):
+-                    connected_rw = True
+-                    rw_subcounts[labels[c]] += 1
+-
+-            if connected_rw:
+-                best = max(rw_subcounts, key=rw_subcounts.get) if rw_subcounts else "rw_core"
+-                labels[addr] = best
+-                propagated[addr] = {
+-                    "category": best,
+-                    "subcategory": None,
+-                    "confidence": 0.70,
+-                    "method": "rw_region_propagation",
+-                }
+-                count += 1
+-
+-        total_count += count
+-        if count == 0:
+-            break
+-
+-    return total_count
+-
+-
+-def _proximity_propagation(sorted_addrs, labels, propagated):
+-    """
+-    Propagate labels based on address proximity.
+-
+-    Globally: requires BOTH neighbors to be labeled (high confidence).
+-    Within the RW code region: single-sided propagation (if ONE adjacent
+-    neighbor is RW and the gap is small, propagate). This handles chains
+-    of unknowns within the contiguous RW code block.
+-    """
+-    rw_addrs = [a for a in sorted_addrs if a in labels and labels[a].startswith("rw_")]
+-    rw_code_lo = min(rw_addrs) if rw_addrs else 0
+-    rw_code_hi = max(rw_addrs) if rw_addrs else 0
+-
+-    count = 0
+-    for i in range(1, len(sorted_addrs) - 1):
+-        addr = sorted_addrs[i]
+-        if addr in labels:
+-            continue
+-
+-        prev_addr = sorted_addrs[i - 1]
+-        next_addr = sorted_addrs[i + 1]
+-        prev_lbl = labels.get(prev_addr)
+-        next_lbl = labels.get(next_addr)
+-
+-        in_rw_region = rw_code_lo <= addr <= rw_code_hi
+-
+-        if in_rw_region:
+-            # Within RW region: single-sided propagation with wider gap
+-            rw_neighbor = None
+-            if prev_lbl and prev_lbl.startswith("rw_") and (addr - prev_addr) <= 0x2000:
+-                rw_neighbor = prev_lbl
+-            elif next_lbl and next_lbl.startswith("rw_") and (next_addr - addr) <= 0x2000:
+-                rw_neighbor = next_lbl
+-
+-            if rw_neighbor:
+-                labels[addr] = rw_neighbor
+-                propagated[addr] = {
+-                    "category": rw_neighbor,
+-                    "subcategory": None,
+-                    "confidence": 0.60,
+-                    "method": "cluster_proximity",
+-                }
+-                count += 1
+-        else:
+-            # Outside RW region: require both neighbors
+-            if (addr - prev_addr) > config.PROXIMITY_GAP:
+-                continue
+-            if (next_addr - addr) > config.PROXIMITY_GAP:
+-                continue
+-
+-            if prev_lbl and next_lbl:
+-                if prev_lbl.startswith("rw_") and next_lbl.startswith("rw_"):
+-                    labels[addr] = prev_lbl
+-                    propagated[addr] = {
+-                        "category": prev_lbl,
+-                        "subcategory": None,
+-                        "confidence": config.CONFIDENCE_CLUSTER_PROXIMITY,
+-                        "method": "cluster_proximity",
+-                    }
+-                    count += 1
+-
+-    return count
+-
+-
+-def _classify_rw_consumers(sorted_addrs, labels, propagated, callees):
+-    """
+-    Classify unlabeled functions that call RW functions as 'game_engine'.
+-    These are the game's interface to the RenderWare engine (rendering,
+-    world management, asset loading, etc.).
+-    """
+-    count = 0
+-    # Get the RW code region bounds
+-    rw_addrs = [a for a in sorted_addrs if a in labels and labels[a].startswith("rw_")]
+-    if not rw_addrs:
+-        return 0
+-    rw_code_lo = min(rw_addrs)
+-
+-    for addr in sorted_addrs:
+-        if addr in labels:
+-            continue
+-        # Only classify functions BEFORE the RW region (game code calling RW)
+-        if addr >= rw_code_lo:
+-            continue
+-
+-        callee_set = callees.get(addr, set())
+-        rw_calls = sum(1 for c in callee_set
+-                       if c in labels and labels[c].startswith("rw_"))
+-        if rw_calls >= 1:
+-            labels[addr] = "game_engine"
+-            propagated[addr] = {
+-                "category": "game_engine",
+-                "subcategory": "engine",
+-                "confidence": 0.65,
+-                "method": "rw_consumer",
+-            }
+-            count += 1
+-
+-    return count
+-
+-
+-def _xdk_ranges(sections):
+-    """[(lo, hi, category)] for the XDK sections this title actually has.
+-
+-    Derived from the XBE, never from a constant: these sections sit at
+-    completely different addresses in every title, so a hardcoded VA table is
+-    right for exactly one game and silently mislabels every other.
+-    """
+-    if not sections:
+-        return []
+-    return [(s["va"], s["va"] + s["size"], cat)
+-            for s in sections
+-            if (cat := config.XDK_SECTION_CATEGORIES.get(s.get("name")))]
+-
+-
+-def _classify_xdk_callers(sorted_addrs, labels, propagated, callees, sections):
+-    """
+-    Classify unlabeled functions by which XDK library sections they call.
+-
+-    Functions that call into D3D → game_render, DSOUND/WMADEC → game_audio,
+-    XMV → game_video, XONLINE/XNET → game_network, XPP → game_input.
+-
+-    With no section table there is nothing trustworthy to match against, so
+-    this classifies nothing rather than guessing.
+-    """
+-    count = 0
+-    xdk_ranges = _xdk_ranges(sections)
+-    if not xdk_ranges:
+-        return 0
+-
+-    for addr in sorted_addrs:
+-        if addr in labels:
+-            continue
+-
+-        callee_set = callees.get(addr, set())
+-        if not callee_set:
+-            continue
+-
+-        # Check which XDK sections this function calls
+-        xdk_cats = {}
+-        for target in callee_set:
+-            for lo, hi, cat in xdk_ranges:
+-                if lo <= target < hi:
+-                    xdk_cats[cat] = xdk_cats.get(cat, 0) + 1
+-
+-        if xdk_cats:
+-            # Pick the most-called XDK category
+-            best_cat = max(xdk_cats, key=xdk_cats.get)
+-            labels[addr] = best_cat
+-            propagated[addr] = {
+-                "category": best_cat,
+-                "subcategory": best_cat.replace("game_", ""),
+-                "confidence": 0.70,
+-                "method": "xdk_caller",
+-            }
+-            count += 1
+-
+-    return count
+-
+-
+-def _build_string_ref_map(imm_refs, strings):
+-    """Build map of func_addr -> list of referenced string texts."""
+-    str_by_addr = {}
+-    for s in strings:
+-        addr = int(s["address"], 16)
+-        str_by_addr[addr] = s["string"].lower()
+-
+-    func_strings = defaultdict(list)
+-    for rdata_addr, func_addrs in imm_refs.items():
+-        if rdata_addr in str_by_addr:
+-            text = str_by_addr[rdata_addr]
+-            for fa in func_addrs:
+-                func_strings[fa].append(text)
+-
+-    return func_strings
+-
+-
+-def _classify_game_subcategories(sorted_addrs, labels, propagated, string_refs):
+-    """
+-    For unlabeled functions, try to sub-classify as game categories
+-    based on referenced string content.
+-    """
+-    count = 0
+-    for addr in sorted_addrs:
+-        if addr in labels:
+-            continue
+-
+-        refs = string_refs.get(addr, [])
+-        if not refs:
+-            continue
+-
+-        best_cat = None
+-        best_score = 0
+-        combined_text = " ".join(refs)
+-
+-        for cat, keywords in config.GAME_SUBCATEGORIES.items():
+-            score = sum(1 for kw in keywords if kw in combined_text)
+-            if score > best_score:
+-                best_score = score
+-                best_cat = cat
+-
+-        if best_cat and best_score >= 1:
+-            labels[addr] = f"game_{best_cat}"
+-            propagated[addr] = {
+-                "category": f"game_{best_cat}",
+-                "subcategory": best_cat,
+-                "confidence": 0.60,
+-                "method": "string_keyword",
+-            }
+-            count += 1
+-
+-    return count
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/config.py
++++ b/tools/func_id/config.py
+@@ -1,384 +1,4 @@
+-"""
+-Configuration constants for the function identification tool.
+-
+-Defines section address ranges, CRT byte-level signatures, and
+-confidence thresholds for each identification method.
+-
+-The address layout below is a reference fallback. Call configure_from_xbe()
+-with the XBE being analyzed to derive the real section ranges; otherwise any
+-address past the reference table is misclassified.
+-"""
+-
+-from typing import List, Optional, Tuple
+-
+-# ============================================================
+-# Section Address Ranges (reference fallback - see configure_from_xbe())
+-# ============================================================
+-
+-# .text section: game code + CRT + RenderWare engine
+-TEXT_VA_START = 0x00011000
+-TEXT_VA_SIZE = 2863616
+-TEXT_VA_END = TEXT_VA_START + TEXT_VA_SIZE  # 0x002BD000
+-TEXT_RAW_ADDR = 0x00001000
+-
+-# .rdata section: read-only data (strings, vtables, constants)
+-RDATA_VA_START = 0x0036B7C0
+-RDATA_VA_SIZE = 289684
+-RDATA_VA_END = RDATA_VA_START + RDATA_VA_SIZE  # 0x003B2394
+-RDATA_RAW_ADDR = 0x0035C000
+-
+-# .data section
+-DATA_VA_START = 0x003B2360
+-DATA_VA_SIZE = 3904988
+-DATA_VA_END = DATA_VA_START + DATA_VA_SIZE
+-DATA_RAW_ADDR = 0x003A3000
+-
+-# XBE base address (all Xbox XBEs link at 0x00010000)
+-XBE_BASE_ADDRESS = 0x00010000
+-
+-# ============================================================
+-# VA-to-file-offset helpers
+-# ============================================================
+-
+-SECTIONS = [
+-    # (name, va_start, va_size, raw_addr)
+-    (".text",   0x00011000, 2863616, 0x00001000),
+-    ("XMV",     0x002CC200, 163124,  0x002BD000),
+-    ("DSOUND",  0x002F3F40, 52668,   0x002E5000),
+-    ("WMADEC",  0x00300D00, 105828,  0x002F2000),
+-    ("XONLINE", 0x0031AA80, 124764,  0x0030C000),
+-    ("XNET",    0x003391E0, 78056,   0x0032B000),
+-    ("D3D",     0x0034C2E0, 83828,   0x0033F000),
+-    ("XGRPH",   0x00360A60, 8300,    0x00350000),
+-    ("XPP",     0x00362AE0, 36052,   0x00353000),
+-    (".rdata",  0x0036B7C0, 289684,  0x0035C000),
+-    (".data",   0x003B2360, 3904988, 0x003A3000),
+-    ("DOLBY",   0x0076B940, 29056,   0x0040C000),
+-    ("XON_RD",  0x00772AC0, 5416,    0x00414000),
+-    (".data1",  0x00774000, 224,     0x00416000),
+-]
+-
+-
+-def va_to_file_offset(va):
+-    """Convert a virtual address to a file offset in the XBE."""
+-    for name, sec_va, sec_size, sec_raw in SECTIONS:
+-        if sec_va <= va < sec_va + sec_size:
+-            return va - sec_va + sec_raw
+-    return None
+-
+-
+-# ============================================================
+-# XDK Library Section Ranges (statically linked Xbox SDK libs)
+-# ============================================================
+-# Maps section name -> (va_start, va_end, game_category)
+-# Functions calling into these sections get classified accordingly.
+-# Populated per-title by configure_from_xbe(); the values below are the
+-# reference fallback only.
+-
+-# Section NAME -> category. The VAs must come from the XBE being analysed, not
+-# from here: these sections sit at completely different addresses in every
+-# title. This table used to carry Burnout 3's VAs, which meant every other
+-# title had its own .text misclassified wherever it happened to overlap them --
+-# on Half-Life 2 all eight ranges landed inside .text, mislabelling 4,498
+-# functions including 2,697 as "game_audio" and 884 as "game_video" in a title
+-# that has no video section at all.
+-XDK_SECTION_CATEGORIES = {
+-    "D3D":     "game_render",
+-    "D3DX":    "game_render",
+-    "XGRPH":   "game_render",
+-    "DSOUND":  "game_audio",
+-    "WMADEC":  "game_audio",
+-    "DOLBY":   "game_audio",
+-    "XACTENG": "game_audio",
+-    "XMV":     "game_video",
+-    "WMVDEC":  "game_video",
+-    "XONLINE": "game_network",
+-    "XNET":    "game_network",
+-    "XPP":     "game_input",
+-}
+-
+-# Category assigned to a statically linked Xbox SDK section by its name.
+-# Name-based and title-agnostic; titles that ship a section not listed here
+-# simply get no XDK classification from it.
+-XDK_CATEGORY_BY_NAME = {
+-    "D3D":      "game_render",
+-    "DSOUND":   "game_audio",
+-    "WMADEC":   "game_audio",
+-    "WMADECXM": "game_audio",
+-    "XMV":      "game_video",
+-    "XONLINE":  "game_network",
+-    "XNET":     "game_network",
+-    "XGRPH":    "game_render",
+-    "XPP":      "game_input",
+-    "DOLBY":    "game_audio",
+-}
+-
+-_configured_from: Optional[str] = None
+-
+-
+-def configured_from() -> Optional[str]:
+-    """Path of the XBE this layout was derived from, or None if fallback."""
+-    return _configured_from
+-
+-
+-def _install(sections: List[Tuple[str, int, int, int]], origin: str) -> None:
+-    """Install a derived layout. sections is (name, va_start, va_size, raw_addr)."""
+-    global SECTIONS, TEXT_VA_START, TEXT_VA_SIZE, TEXT_VA_END, TEXT_RAW_ADDR
+-    global RDATA_VA_START, RDATA_VA_SIZE, RDATA_VA_END, RDATA_RAW_ADDR
+-    global DATA_VA_START, DATA_VA_SIZE, DATA_VA_END, DATA_RAW_ADDR
+-    global XDK_SECTIONS, _configured_from
+-
+-    SECTIONS = sorted(sections, key=lambda s: s[1])
+-    _configured_from = origin
+-
+-    by_name = {name: (va, size, raw) for name, va, size, raw in SECTIONS}
+-
+-    text = by_name.get(".text")
+-    rdata = by_name.get(".rdata")
+-    data = by_name.get(".data")
+-    # Some titles ship no .rdata; fall back to .data so the read-only range
+-    # is never left pointing at another game's layout.
+-    rdata = rdata or data
+-    data = data or rdata
+-
+-    if text:
+-        va, size, raw = text
+-        TEXT_VA_START, TEXT_VA_SIZE, TEXT_RAW_ADDR = va, size, raw
+-        TEXT_VA_END = va + size
+-    if rdata:
+-        va, size, raw = rdata
+-        RDATA_VA_START, RDATA_VA_SIZE, RDATA_RAW_ADDR = va, size, raw
+-        RDATA_VA_END = va + size
+-    if data:
+-        va, size, raw = data
+-        DATA_VA_START, DATA_VA_SIZE, DATA_RAW_ADDR = va, size, raw
+-        DATA_VA_END = va + size
+-
+-    XDK_SECTIONS = {
+-        name: (va, va + size, XDK_CATEGORY_BY_NAME[name])
+-        for name, va, size, _raw in SECTIONS
+-        if name in XDK_CATEGORY_BY_NAME
+-    }
+-
+-
+-def configure_from_xbe(xbe_path: str) -> None:
+-    """Derive the address layout from the XBE being analyzed.
+-
+-    Without this the tool uses the reference fallback above, which only matches
+-    the one title it was captured from -- every function past that table's end
+-    lands outside the .text/.rdata/.data ranges and is misclassified.
+-    """
+-    from tools.xbe_parser.xbe_parser import XBEParser
+-
+-    xbe = XBEParser(xbe_path).parse()
+-    has_size = [s for s in xbe.sections if s.raw_size > 0]
+-    if not has_size:
+-        raise ValueError(f"XBE has no non-empty sections: {xbe_path}")
+-
+-    sections = [
+-        (s.name, s.virtual_addr, s.virtual_size, s.raw_addr)
+-        for s in has_size
+-    ]
+-    _install(sections, xbe_path)
+-
+-# ============================================================
+-# CRT Byte Signatures
+-# ============================================================
+-# Each entry: (name, pattern_bytes, mask_bytes_or_None, max_func_size)
+-# mask: 0xFF = must match, 0x00 = wildcard
+-# max_func_size: upper bound on expected function size (0 = no check)
+-
+-CRT_SIGNATURES = [
+-    # memcpy - push ebp; mov ebp,esp; push edi; push esi; mov esi,[ebp+0C]; mov edi,[ebp+08]; mov ecx,[ebp+10]
+-    ("memcpy",
+-     bytes([0x55, 0x8B, 0xEC, 0x57, 0x56, 0x8B, 0x75, 0x0C, 0x8B, 0x7D, 0x08, 0x8B, 0x4D, 0x10]),
+-     None, 512),
+-
+-    # memset - push ebp; mov ebp,esp; push edi; mov edi,[ebp+08]; mov eax,[ebp+0C]; mov ecx,[ebp+10]
+-    ("memset",
+-     bytes([0x55, 0x8B, 0xEC, 0x57, 0x8B, 0x7D, 0x08, 0x8B, 0x45, 0x0C, 0x8B, 0x4D, 0x10]),
+-     None, 256),
+-
+-    # strlen - mov ecx,[esp+04]; test ecx,03
+-    ("strlen",
+-     bytes([0x8B, 0x4C, 0x24, 0x04, 0xF7, 0xC1, 0x03, 0x00, 0x00, 0x00]),
+-     None, 256),
+-
+-    # strcmp - push esi; mov esi,[esp+08]; push edi; mov edi,[esp+10]
+-    ("strcmp",
+-     bytes([0x56, 0x8B, 0x74, 0x24, 0x08, 0x57, 0x8B, 0x7C, 0x24, 0x10]),
+-     None, 256),
+-
+-    # strncmp - push edi; push esi; mov edi,[esp+10]; mov esi,[esp+0C]; mov ecx,[esp+14]
+-    ("strncmp",
+-     bytes([0x57, 0x56, 0x8B, 0x7C, 0x24, 0x10, 0x8B, 0x74, 0x24, 0x0C, 0x8B, 0x4C, 0x24, 0x14]),
+-     None, 256),
+-
+-    # strcpy - push esi; mov esi,[esp+0C]; push edi; mov edi,[esp+0C]
+-    ("strcpy",
+-     bytes([0x56, 0x8B, 0x74, 0x24, 0x0C, 0x57, 0x8B, 0x7C, 0x24, 0x0C]),
+-     None, 256),
+-
+-    # _ftol - MSVC float-to-long: fnstcw [esp-2]; ...
+-    ("_ftol",
+-     bytes([0xD9, 0x44, 0x24, 0x00]),
+-     bytes([0xFF, 0xFF, 0xFF, 0x00]),
+-     64),
+-
+-    # _ftol2 - push ebp; mov ebp,esp; sub esp,20; and esp,F0
+-    ("_ftol2",
+-     bytes([0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20, 0x83, 0xE4, 0xF0]),
+-     None, 128),
+-
+-    # _chkstk - push ecx; cmp eax,1000
+-    ("_chkstk",
+-     bytes([0x51, 0x3D, 0x00, 0x10, 0x00, 0x00]),
+-     None, 64),
+-
+-    # _alloca_probe - push ecx; cmp eax,1000  (same as _chkstk on Xbox)
+-    ("_alloca_probe",
+-     bytes([0x51, 0x3D, 0x00, 0x10, 0x00, 0x00]),
+-     None, 64),
+-
+-    # _allmul - 64-bit multiply: mov eax,[esp+08]; mov ecx,[esp+10]
+-    ("_allmul",
+-     bytes([0x8B, 0x44, 0x24, 0x08, 0x8B, 0x4C, 0x24, 0x10]),
+-     None, 128),
+-
+-    # _alldiv - 64-bit divide: push edi; push esi; push ebx
+-    ("_alldiv",
+-     bytes([0x57, 0x56, 0x53, 0x33, 0xFF, 0x8B, 0x44, 0x24, 0x14]),
+-     None, 256),
+-
+-    # _allrem - 64-bit remainder: push edi; push esi; push ebx
+-    ("_allrem",
+-     bytes([0x57, 0x56, 0x53, 0x33, 0xFF, 0x8B, 0x4C, 0x24, 0x18]),
+-     None, 256),
+-
+-    # _aullshr - 64-bit unsigned shift right: cmp cl,40
+-    ("_aullshr",
+-     bytes([0x80, 0xF9, 0x40, 0x73]),
+-     None, 48),
+-
+-    # _allshr - 64-bit signed shift right: cmp cl,40
+-    ("_allshr",
+-     bytes([0x80, 0xF9, 0x40, 0x73]),
+-     None, 48),
+-
+-    # _allshl - 64-bit shift left: cmp cl,40
+-    ("_allshl",
+-     bytes([0x80, 0xF9, 0x40, 0x73]),
+-     None, 48),
+-
+-    # _purecall - push ... ; call ... (typically just calls an error handler)
+-    # push 0x19 (STATUS_NOT_IMPLEMENTED); call RtlRaiseStatus
+-    ("_purecall",
+-     bytes([0x6A, 0x19]),
+-     None, 16),
+-
+-    # memmove - push ebp; mov ebp,esp; push edi; push esi; mov esi,[ebp+0C]; mov ecx,[ebp+10]; mov edi,[ebp+08]
+-    ("memmove",
+-     bytes([0x55, 0x8B, 0xEC, 0x57, 0x56, 0x8B, 0x75, 0x0C, 0x8B, 0x4D, 0x10, 0x8B, 0x7D, 0x08]),
+-     None, 512),
+-
+-    # memcmp - push ebp; mov ebp,esp; push esi; push edi; mov esi,[ebp+08]; mov edi,[ebp+0C]; mov ecx,[ebp+10]
+-    ("memcmp",
+-     bytes([0x55, 0x8B, 0xEC, 0x56, 0x57, 0x8B, 0x75, 0x08, 0x8B, 0x7D, 0x0C, 0x8B, 0x4D, 0x10]),
+-     None, 256),
+-
+-    # strcat - mov ecx,[esp+04]; push edi; test ecx,03
+-    ("strcat",
+-     bytes([0x8B, 0x4C, 0x24, 0x04, 0x57, 0xF7, 0xC1, 0x03, 0x00, 0x00, 0x00]),
+-     None, 256),
+-
+-    # _CIcos - fcos; ret
+-    ("_CIcos",
+-     bytes([0xD9, 0xFF, 0xC3]),
+-     None, 8),
+-
+-    # _CIsin - fsin; ret
+-    ("_CIsin",
+-     bytes([0xD9, 0xFE, 0xC3]),
+-     None, 8),
+-
+-    # _CIsqrt - fsqrt; ret
+-    ("_CIsqrt",
+-     bytes([0xD9, 0xFA, 0xC3]),
+-     None, 8),
+-
+-    # _fmod - MSVC fmod: push ebp; mov ebp,esp; sub esp,0C
+-    ("fmod",
+-     bytes([0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]),
+-     None, 256),
+-
+-    # sprintf / _sprintf - push ebp; mov ebp,esp; lea eax,[ebp+10]
+-    ("sprintf",
+-     bytes([0x55, 0x8B, 0xEC, 0x8D, 0x45, 0x10]),
+-     None, 128),
+-]
+-
+-# ============================================================
+-# Confidence Thresholds
+-# ============================================================
+-
+-CONFIDENCE_RW_STRING_REF = 0.95    # Function directly references an RW ID string
+-CONFIDENCE_RW_ZONE = 0.85          # Function references data in an RW .rdata zone
+-CONFIDENCE_CRT_SIGNATURE = 0.90    # CRT byte-pattern match
+-CONFIDENCE_CLUSTER_CALL = 0.75     # Label propagation via call graph
+-CONFIDENCE_CLUSTER_PROXIMITY = 0.65  # Label propagation via address proximity
+-
+-# Maximum address gap for proximity clustering
+-PROXIMITY_GAP = 0x1000
+-
+-# Maximum clustering iterations
+-MAX_CLUSTER_ITERATIONS = 10
+-
+-# ============================================================
+-# RenderWare Module Categories
+-# ============================================================
+-
+-RW_CATEGORIES = {
+-    "src/plcore/":       "rw_plcore",
+-    "src/pipe/p2/xbox/": "rw_pipe_xbox",
+-    "src/pipe/p2/":      "rw_pipe",
+-    "driver/xbox/":      "rw_driver_xbox",
+-    "driver/common/":    "rw_driver_common",
+-    "os/xbox/":          "rw_os_xbox",
+-    "world/pipe/p2/xbox/": "rw_world_pipe_xbox",
+-    "world/pipe/p2/":    "rw_world_pipe",
+-    "world/":            "rw_world",
+-    "src/":              "rw_core",
+-}
+-
+-# ============================================================
+-# Game Sub-classification Keywords
+-# ============================================================
+-
+-GAME_SUBCATEGORIES = {
+-    "vehicle":  ["vehicle", "car ", "wheel", "engine", "gear", "throttle", "brake",
+-                 "steer", "turbo", "boost", "rpm", "speed", "crash", "takedown",
+-                 "jolt", "wreck", "drift"],
+-    "audio":    ["sound", "audio", "music", "sfx", "voice", "wma", "dsp",
+-                 "volume", "pitch", "reverb", "impulse", "speaker", "channel"],
+-    "camera":   ["camera", "cam_", "look back", "bumper", "follow"],
+-    "physics":  ["collid", "collisi", "physics", "rigid", "force", "velocity",
+-                 "mass", "angular", "gravity", "friction", "momentum"],
+-    "ui":       ["menu", "hud", "font", "screen", "button", "press", "select",
+-                 "gamertag", "profile"],
+-    "network":  ["online", "xbox live", "session", "host", "join", "rank",
+-                 "sign in", "sign out", "matchmak"],
+-    "io":       ["save", "load", "partition", "device\\", "\\tdata", "content",
+-                 "savemeta", "saveimage"],
+-    "render":   ["render", "draw", "shader", "vertex", "texture", "material",
+-                 "d3d", "pixel"],
+-    "debug":    ["assert", "error", "warning", "debug"],
+-}
+-
+-# ============================================================
+-# Default Paths
+-# ============================================================
+-
+-DEFAULT_FUNCTIONS_JSON = "tools/disasm/output/functions.json"
+-DEFAULT_STRINGS_JSON = "tools/disasm/output/strings.json"
+-DEFAULT_XREFS_JSON = "tools/disasm/output/xrefs.json"
+-DEFAULT_OUTPUT_DIR = "tools/func_id/output"
++"""Compatibility defaults for the project function catalog."""
++from ..disasm.loader import BinaryImage
++from function_catalog import (DEFAULT_FUNCTIONS_JSON, DEFAULT_STRINGS_JSON,
++                              DEFAULT_XREFS_JSON, DEFAULT_OUTPUT_DIR)
+--- a/tools/func_id/crt_identifier.py
++++ b/tools/func_id/crt_identifier.py
+@@ -1,108 +1 @@
+-"""
+-CRT/MSVC runtime function identification via byte-level signatures.
+-
+-Matches the first N bytes of each function against curated patterns
+-for common MSVC CRT functions (memcpy, strlen, _ftol, _chkstk, etc.).
+-"""
+-
+-from . import config
+-
+-
+-def identify_crt_functions(xbe_data, functions, verbose=False):
+-    """
+-    Identify CRT functions by matching byte signatures.
+-
+-    Args:
+-        xbe_data: Raw bytes of the entire XBE file.
+-        functions: List of function dicts.
+-        verbose: Print progress info.
+-
+-    Returns:
+-        dict: func_addr (int) -> {
+-            "name": str,
+-            "confidence": float,
+-            "method": "crt_signature",
+-            "pattern_len": int
+-        }
+-    """
+-    results = {}
+-    # Track which signature names have been matched to avoid duplicates
+-    # (e.g., _chkstk and _alloca_probe share the same bytes)
+-    matched_names = {}
+-
+-    if verbose:
+-        print(f"  Matching {len(config.CRT_SIGNATURES)} CRT signatures against {len(functions)} functions...")
+-
+-    for func in functions:
+-        func_addr = int(func["start"], 16)
+-        func_size = func.get("size", 0)
+-
+-        # Read first 32 bytes of the function from XBE
+-        file_offset = config.va_to_file_offset(func_addr)
+-        if file_offset is None:
+-            continue
+-
+-        # Read enough bytes for signature matching
+-        read_len = min(32, len(xbe_data) - file_offset)
+-        if read_len < 2:
+-            continue
+-        func_bytes = xbe_data[file_offset:file_offset + read_len]
+-
+-        # Try each signature
+-        for sig_name, pattern, mask, max_size in config.CRT_SIGNATURES:
+-            if len(func_bytes) < len(pattern):
+-                continue
+-
+-            # Size check: if max_size > 0, function shouldn't be too large
+-            if max_size > 0 and func_size > max_size * 2:
+-                continue
+-
+-            if _match_pattern(func_bytes, pattern, mask):
+-                # Prefer longer pattern matches (more specific)
+-                if func_addr in results:
+-                    if len(pattern) <= results[func_addr]["pattern_len"]:
+-                        continue
+-
+-                # If this name is already matched to a different address,
+-                # keep the one with smaller function size (more likely correct)
+-                if sig_name in matched_names:
+-                    prev_addr = matched_names[sig_name]
+-                    prev_size = results[prev_addr].get("func_size", 0)
+-                    if func_size > 0 and prev_size > 0 and func_size >= prev_size:
+-                        continue
+-                    # New match is better, remove old one
+-                    del results[prev_addr]
+-
+-                results[func_addr] = {
+-                    "name": sig_name,
+-                    "confidence": config.CONFIDENCE_CRT_SIGNATURE,
+-                    "method": "crt_signature",
+-                    "pattern_len": len(pattern),
+-                    "func_size": func_size,
+-                }
+-                matched_names[sig_name] = func_addr
+-
+-    # Clean up internal fields
+-    for r in results.values():
+-        del r["func_size"]
+-
+-    if verbose:
+-        print(f"  Identified {len(results)} CRT functions")
+-        for addr in sorted(results):
+-            print(f"    0x{addr:08X}: {results[addr]['name']}")
+-
+-    return results
+-
+-
+-def _match_pattern(func_bytes, pattern, mask):
+-    """Match a byte pattern against function bytes, with optional mask."""
+-    if mask is None:
+-        return func_bytes[:len(pattern)] == pattern
+-    for i in range(len(pattern)):
+-        if mask[i] == 0xFF:
+-            if func_bytes[i] != pattern[i]:
+-                return False
+-        elif mask[i] != 0x00:
+-            if (func_bytes[i] & mask[i]) != (pattern[i] & mask[i]):
+-                return False
+-    return True
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/identify.py
++++ b/tools/func_id/identify.py
+@@ -1,315 +1,3 @@
+-"""
+-Main orchestrator for function identification.
+-
+-Loads all input data, runs identification phases in order,
+-and produces enriched output.
+-"""
+-
+-import json
+-import os
+-import time
+-from collections import defaultdict
+-
+-from . import config
+-from .imm_scanner import scan_immediate_refs
+-from .rw_identifier import identify_rw_functions
+-from .crt_identifier import identify_crt_functions
+-from .stub_classifier import classify_stubs
+-from .vtable_scanner import scan_vtables
+-from .clustering import propagate_labels
+-from .output import write_results
+-
+-
+-def run(xbe_path, functions_path=None, strings_path=None, xrefs_path=None,
+-        output_dir=None, verbose=False):
+-    """
+-    Run the full function identification pipeline.
+-
+-    Args:
+-        xbe_path: Path to the XBE file.
+-        functions_path: Path to functions.json (or default).
+-        strings_path: Path to strings.json (or default).
+-        xrefs_path: Path to xrefs.json (or default).
+-        output_dir: Output directory (or default).
+-        verbose: Print progress info.
+-
+-    Returns:
+-        dict: Summary statistics.
+-    """
+-    functions_path = functions_path or config.DEFAULT_FUNCTIONS_JSON
+-    strings_path = strings_path or config.DEFAULT_STRINGS_JSON
+-    xrefs_path = xrefs_path or config.DEFAULT_XREFS_JSON
+-    output_dir = output_dir or config.DEFAULT_OUTPUT_DIR
+-
+-    t_start = time.time()
+-
+-    # ── Phase 0: Load inputs ──────────────────────────────────
+-    if verbose:
+-        print("Phase 0: Loading inputs...")
+-
+-    xbe_data = _load_binary(xbe_path)
+-    functions = _load_json(functions_path)
+-    strings = _load_json(strings_path)
+-    xrefs = _load_json(xrefs_path)
+-
+-    if verbose:
+-        print(f"  XBE: {len(xbe_data):,} bytes")
+-        print(f"  Functions: {len(functions):,}")
+-        print(f"  Strings: {len(strings):,}")
+-        print(f"  Xrefs: {len(xrefs):,}")
+-
+-    # ── Phase 1: Immediate operand scan + xref merge ─────────
+-    if verbose:
+-        print("\nPhase 1: Scanning immediate operands + merging xrefs...")
+-    t1 = time.time()
+-    imm_refs = scan_immediate_refs(xbe_data, functions, verbose=verbose)
+-
+-    # Merge data_read xrefs that target .rdata/.data into imm_refs
+-    xref_merge_count = _merge_xref_data_reads(xrefs, functions, imm_refs, verbose)
+-
+-    if verbose:
+-        print(f"  Merged {xref_merge_count:,} data_read xrefs")
+-        print(f"  Total unique data addresses after merge: {len(imm_refs):,}")
+-        print(f"  Done in {time.time() - t1:.1f}s")
+-
+-    # ── Phase 2: RenderWare identification ────────────────────
+-    if verbose:
+-        print("\nPhase 2: RenderWare identification...")
+-    t2 = time.time()
+-    rw_results, rw_modules = identify_rw_functions(
+-        strings, imm_refs, functions, verbose=verbose
+-    )
+-    if verbose:
+-        print(f"  Done in {time.time() - t2:.1f}s")
+-
+-    # ── Phase 3: CRT identification ──────────────────────────
+-    if verbose:
+-        print("\nPhase 3: CRT identification...")
+-    t3 = time.time()
+-    crt_results = identify_crt_functions(xbe_data, functions, verbose=verbose)
+-    if verbose:
+-        print(f"  Done in {time.time() - t3:.1f}s")
+-
+-    # Remove any CRT matches that overlap with RW (RW wins)
+-    for addr in list(crt_results.keys()):
+-        if addr in rw_results:
+-            del crt_results[addr]
+-
+-    # ── Phase 3b: Stub classification ────────────────────────
+-    if verbose:
+-        print("\nPhase 3b: Stub classification...")
+-    t3b = time.time()
+-    stub_results = classify_stubs(xbe_data, functions, verbose=verbose)
+-    if verbose:
+-        print(f"  Done in {time.time() - t3b:.1f}s")
+-
+-    # Remove stubs that overlap with RW or CRT
+-    for addr in list(stub_results.keys()):
+-        if addr in rw_results or addr in crt_results:
+-            del stub_results[addr]
+-
+-    # Section table from the XBE itself. Both label propagation and vtable
+-    # scanning need it, and neither may use a hardcoded one -- see
+-    # config.XDK_SECTION_CATEGORIES.
+-    xbe_sections = _parse_xbe_sections(xbe_data)
+-
+-    # ── Phase 4: Label propagation ───────────────────────────
+-    if verbose:
+-        print("\nPhase 4: Label propagation...")
+-    t4 = time.time()
+-    propagated = propagate_labels(
+-        functions, rw_results, crt_results, imm_refs, strings,
+-        verbose=verbose, sections=xbe_sections
+-    )
+-    if verbose:
+-        print(f"  Done in {time.time() - t4:.1f}s")
+-
+-    # ── Phase 5: Vtable scanning ──────────────────────────────
+-    if verbose:
+-        print("\nPhase 5: Vtable scanning...")
+-    t5 = time.time()
+-
+-    if verbose and xbe_sections:
+-        code_count = sum(1 for s in xbe_sections if s.get("executable"))
+-        data_count = len(xbe_sections) - code_count
+-        print(f"  XBE sections: {len(xbe_sections)} ({code_count} code, {data_count} data)")
+-
+-    vtable_results, vtables = scan_vtables(
+-        xbe_data, functions, imm_refs, verbose=verbose,
+-        sections=xbe_sections if xbe_sections else None
+-    )
+-    # Only classify functions not already labeled by earlier phases
+-    already_labeled = set(rw_results) | set(crt_results) | set(propagated) | set(stub_results)
+-    vtable_new = {a: v for a, v in vtable_results.items() if a not in already_labeled}
+-    if verbose:
+-        print(f"  New classifications from vtable: {len(vtable_new)}")
+-        print(f"  Done in {time.time() - t5:.1f}s")
+-
+-    # Merge vtable results into propagated for output
+-    propagated.update(vtable_new)
+-
+-    # Add discovered vtable thunks as new function entries
+-    func_starts = {int(f["start"], 16) for f in functions}
+-    thunk_count = 0
+-    for addr, info in vtable_results.items():
+-        if addr not in func_starts and info.get("method") == "vtable_thunk":
+-            est_size = 32  # estimate; refined later if re-disassembled
+-            functions.append({
+-                "start": f"0x{addr:08X}",
+-                "end": f"0x{addr + est_size:08X}",
+-                "size": est_size,
+-                "name": f"sub_{addr:08X}",
+-                "section": ".text",
+-                "insn_count": 8,
+-                "type": "vtable_thunk",
+-                "vtable_addr": f"0x{info.get('vtable_addr', 0):08X}",
+-                "vtable_index": info.get("vtable_index", -1),
+-            })
+-            thunk_count += 1
+-    if verbose and thunk_count:
+-        print(f"  Added {thunk_count} vtable thunks to function list")
+-
+-    # ── Phase 6: Write output ────────────────────────────────
+-    if verbose:
+-        print("\nPhase 6: Writing output...")
+-
+-    summary = write_results(
+-        functions, rw_results, crt_results, propagated, rw_modules,
+-        output_dir, verbose=verbose, stub_results=stub_results
+-    )
+-
+-    if verbose:
+-        print(f"\nTotal time: {time.time() - t_start:.1f}s")
+-        print(f"Output written to: {output_dir}/")
+-
+-    return summary
+-
+-
+-def _merge_xref_data_reads(xrefs, functions, imm_refs, verbose):
+-    """
+-    Merge data_read xrefs into the imm_refs map.
+-
+-    The xref database has 77K+ data_read entries (from mov [addr] style
+-    instructions) that the imm_scanner misses. Merging these gives a
+-    much more complete picture of data references.
+-
+-    Returns the count of new entries added.
+-    """
+-    # Build sorted function start list for binary search
+-    func_starts = sorted(int(f["start"], 16) for f in functions)
+-
+-    rdata_lo = config.RDATA_VA_START
+-    rdata_hi = config.RDATA_VA_END
+-    data_lo = config.DATA_VA_START
+-    data_hi = config.DATA_VA_END
+-
+-    count = 0
+-    for xref in xrefs:
+-        if xref["type"] != "data_read":
+-            continue
+-
+-        target = int(xref["to"], 16)
+-        if not ((rdata_lo <= target < rdata_hi) or (data_lo <= target < data_hi)):
+-            continue
+-
+-        source = int(xref["from"], 16)
+-
+-        # Find containing function
+-        lo, hi = 0, len(func_starts) - 1
+-        while lo <= hi:
+-            mid = (lo + hi) // 2
+-            if func_starts[mid] <= source:
+-                lo = mid + 1
+-            else:
+-                hi = mid - 1
+-        func_addr = func_starts[hi] if hi >= 0 else None
+-
+-        if func_addr is not None:
+-            if target not in imm_refs:
+-                imm_refs[target] = []
+-                count += 1
+-            if func_addr not in imm_refs[target]:
+-                imm_refs[target].append(func_addr)
+-
+-    return count
+-
+-
+-def _parse_xbe_sections(xbe_data):
+-    """
+-    Parse section info directly from XBE headers.
+-
+-    Returns list of dicts: {name, va, size, raw, executable}
+-    Returns None if parsing fails (falls back to config).
+-    """
+-    import struct
+-
+-    if len(xbe_data) < 0x180:
+-        return None
+-
+-    # XBE header magic check
+-    if xbe_data[:4] != b'XBEH':
+-        return None
+-
+-    try:
+-        # Section headers offset and count
+-        sec_headers_offset = struct.unpack_from('<I', xbe_data, 0x120)[0]
+-        num_sections = struct.unpack_from('<I', xbe_data, 0x11C)[0]
+-
+-        # XBE base address
+-        base_addr = struct.unpack_from('<I', xbe_data, 0x104)[0]
+-
+-        # Adjust section headers offset to be relative to file start
+-        sec_offset = sec_headers_offset - base_addr
+-
+-        sections = []
+-        for i in range(num_sections):
+-            off = sec_offset + i * 56  # Each section header is 56 bytes
+-            if off + 56 > len(xbe_data):
+-                break
+-
+-            flags = struct.unpack_from('<I', xbe_data, off + 0)[0]
+-            va = struct.unpack_from('<I', xbe_data, off + 4)[0]
+-            vsize = struct.unpack_from('<I', xbe_data, off + 8)[0]
+-            raw_addr = struct.unpack_from('<I', xbe_data, off + 12)[0]
+-            raw_size = struct.unpack_from('<I', xbe_data, off + 16)[0]
+-            name_addr = struct.unpack_from('<I', xbe_data, off + 20)[0]
+-
+-            # Read section name
+-            name_off = name_addr - base_addr
+-            if 0 <= name_off < len(xbe_data) - 16:
+-                name_end = xbe_data.index(b'\0', name_off) if b'\0' in xbe_data[name_off:name_off+32] else name_off+8
+-                name = xbe_data[name_off:name_end].decode('ascii', errors='replace')
+-            else:
+-                name = f"sec_{i}"
+-
+-            executable = bool(flags & 0x4)  # Section flag for executable
+-
+-            sections.append({
+-                "name": name,
+-                "va": va,
+-                "size": vsize,
+-                "raw": raw_addr,
+-                "raw_size": raw_size,
+-                "executable": executable,
+-            })
+-
+-        return sections if sections else None
+-
+-    except Exception:
+-        return None
+-
+-
+-def _load_binary(path):
+-    """Load a binary file."""
+-    if not os.path.exists(path):
+-        raise FileNotFoundError(f"XBE file not found: {path}")
+-    with open(path, "rb") as f:
+-        return f.read()
+-
+-
+-def _load_json(path):
+-    """Load a JSON file."""
+-    if not os.path.exists(path):
+-        raise FileNotFoundError(f"JSON file not found: {path}")
+-    with open(path, "r", encoding="utf-8") as f:
+-        return json.load(f)
++"""Compatibility entry for the project function catalog."""
++from ..disasm.loader import BinaryImage
++from function_catalog import run
+--- a/tools/func_id/imm_scanner.py
++++ b/tools/func_id/imm_scanner.py
+@@ -1,128 +1 @@
+-"""
+-Immediate operand scanner for .text section bytes.
+-
+-Scans raw x86 bytes for `push imm32` and `mov reg, imm32` instructions
+-whose immediate values fall within .rdata (or .data) address ranges.
+-This captures string/data references that the xref database misses
+-because it only tracked CS_OP_MEM operands, not CS_OP_IMM.
+-"""
+-
+-import struct
+-from collections import defaultdict
+-
+-from . import config
+-
+-
+-def scan_immediate_refs(xbe_data, functions, verbose=False):
+-    """
+-    Single-pass scan of the .text section bytes for immediate operands
+-    referencing .rdata addresses.
+-
+-    Args:
+-        xbe_data: Raw bytes of the entire XBE file.
+-        functions: List of function dicts (with 'start' hex string keys).
+-        verbose: Print progress info.
+-
+-    Returns:
+-        dict: rdata_addr (int) -> list of func_start_addr (int)
+-              Maps each .rdata address found as an immediate operand
+-              to the function(s) containing that reference.
+-    """
+-    # Build sorted function start list for binary search lookup
+-    func_starts = sorted(int(f["start"], 16) for f in functions)
+-
+-    # Section boundaries
+-    text_file_start = config.TEXT_RAW_ADDR
+-    text_file_end = text_file_start + config.TEXT_VA_SIZE
+-    text_bytes = xbe_data[text_file_start:text_file_end]
+-    text_va_base = config.TEXT_VA_START
+-
+-    rdata_lo = config.RDATA_VA_START
+-    rdata_hi = config.RDATA_VA_END
+-    data_lo = config.DATA_VA_START
+-    data_hi = config.DATA_VA_END
+-
+-    if verbose:
+-        print(f"  Scanning {len(text_bytes):,} bytes of .text section...")
+-        print(f"  .rdata range: 0x{rdata_lo:08X} - 0x{rdata_hi:08X}")
+-
+-    # Results: rdata_addr -> set of code addresses that reference it
+-    refs_by_rdata_addr = defaultdict(set)
+-    total_refs = 0
+-
+-    # Single-pass scan
+-    i = 0
+-    end = len(text_bytes) - 5  # Need at least opcode + 4 bytes
+-
+-    while i < end:
+-        b = text_bytes[i]
+-        imm_val = None
+-
+-        # push imm32: opcode 0x68, followed by 4-byte LE immediate
+-        if b == 0x68:
+-            imm_val = struct.unpack_from("<I", text_bytes, i + 1)[0]
+-            if _in_data_range(imm_val, rdata_lo, rdata_hi, data_lo, data_hi):
+-                code_va = text_va_base + i
+-                refs_by_rdata_addr[imm_val].add(code_va)
+-                total_refs += 1
+-            i += 5
+-            continue
+-
+-        # mov reg, imm32: opcodes 0xB8-0xBF (mov eax/ecx/edx/ebx/esp/ebp/esi/edi, imm32)
+-        if 0xB8 <= b <= 0xBF:
+-            imm_val = struct.unpack_from("<I", text_bytes, i + 1)[0]
+-            if _in_data_range(imm_val, rdata_lo, rdata_hi, data_lo, data_hi):
+-                code_va = text_va_base + i
+-                refs_by_rdata_addr[imm_val].add(code_va)
+-                total_refs += 1
+-            i += 5
+-            continue
+-
+-        # mov r/m32, imm32 with Mod R/M: opcode 0xC7 /0
+-        # e.g., mov [ebp-XX], imm32 or mov dword ptr [addr], imm32
+-        # We only care about the imm32 part, but the instruction length varies
+-        # Skip this for now - push/mov-reg cover most string refs
+-
+-        i += 1
+-
+-    if verbose:
+-        print(f"  Found {total_refs:,} immediate references to .rdata/.data")
+-        print(f"  Unique .rdata/.data addresses referenced: {len(refs_by_rdata_addr):,}")
+-
+-    # Map code addresses to their containing functions
+-    rdata_to_funcs = defaultdict(set)
+-    for rdata_addr, code_addrs in refs_by_rdata_addr.items():
+-        for code_addr in code_addrs:
+-            func_addr = _find_containing_function(code_addr, func_starts)
+-            if func_addr is not None:
+-                rdata_to_funcs[rdata_addr].add(func_addr)
+-
+-    if verbose:
+-        n_funcs = len(set().union(*rdata_to_funcs.values())) if rdata_to_funcs else 0
+-        print(f"  Mapped to {n_funcs:,} unique functions")
+-
+-    # Convert sets to sorted lists for JSON serialization
+-    return {addr: sorted(funcs) for addr, funcs in rdata_to_funcs.items()}
+-
+-
+-def _in_data_range(val, rdata_lo, rdata_hi, data_lo, data_hi):
+-    """Check if an immediate value falls in .rdata or .data VA range."""
+-    return (rdata_lo <= val < rdata_hi) or (data_lo <= val < data_hi)
+-
+-
+-def _find_containing_function(code_addr, sorted_func_starts):
+-    """
+-    Binary search to find which function contains code_addr.
+-    Returns the function start address, or None if not found.
+-    """
+-    lo, hi = 0, len(sorted_func_starts) - 1
+-    while lo <= hi:
+-        mid = (lo + hi) // 2
+-        if sorted_func_starts[mid] <= code_addr:
+-            lo = mid + 1
+-        else:
+-            hi = mid - 1
+-    # hi now points to the last func_start <= code_addr
+-    if hi >= 0:
+-        return sorted_func_starts[hi]
+-    return None
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/output.py
++++ b/tools/func_id/output.py
+@@ -1,212 +1 @@
+-"""
+-Output writers for function identification results.
+-
+-Produces JSON files and a human-readable summary.
+-"""
+-
+-import json
+-import os
+-from collections import Counter
+-
+-
+-def write_results(functions, rw_results, crt_results, propagated,
+-                  rw_modules, output_dir, verbose=False, stub_results=None):
+-    """
+-    Write all output files.
+-
+-    Args:
+-        functions: Original function list.
+-        rw_results: RW identification results.
+-        crt_results: CRT identification results.
+-        propagated: Clustering/propagation results.
+-        rw_modules: RW module -> function mappings.
+-        output_dir: Directory to write output files.
+-        verbose: Print progress info.
+-        stub_results: Stub classification results (optional).
+-    """
+-    os.makedirs(output_dir, exist_ok=True)
+-    stub_results = stub_results or {}
+-
+-    # Build the enriched function database
+-    enriched = _build_enriched_db(functions, rw_results, crt_results,
+-                                  propagated, stub_results)
+-
+-    # Write files
+-    _write_json(os.path.join(output_dir, "identified_functions.json"), enriched)
+-    _write_json(os.path.join(output_dir, "rw_modules.json"),
+-                _serialize_rw_modules(rw_modules))
+-    _write_json(os.path.join(output_dir, "crt_functions.json"),
+-                _serialize_crt(crt_results))
+-
+-    summary = _build_summary(enriched, rw_results, crt_results, propagated, rw_modules)
+-    _write_json(os.path.join(output_dir, "summary.json"), summary)
+-
+-    if verbose:
+-        _print_summary(summary)
+-
+-    return summary
+-
+-
+-def _build_enriched_db(functions, rw_results, crt_results, propagated,
+-                       stub_results):
+-    """Build enriched function entries with classification info."""
+-    enriched = []
+-    for f in functions:
+-        addr = int(f["start"], 16)
+-        entry = {
+-            "start": f["start"],
+-            "end": f["end"],
+-            "size": f["size"],
+-            "name": f["name"],
+-            "section": f["section"],
+-        }
+-
+-        if addr in crt_results:
+-            info = crt_results[addr]
+-            entry["category"] = "crt"
+-            entry["identified_name"] = info["name"]
+-            entry["confidence"] = info["confidence"]
+-            entry["method"] = info["method"]
+-        elif addr in rw_results:
+-            info = rw_results[addr]
+-            entry["category"] = info["category"]
+-            entry["module"] = info.get("module", "")
+-            entry["source_file"] = info.get("source_file", "")
+-            entry["confidence"] = info["confidence"]
+-            entry["method"] = info["method"]
+-        elif addr in propagated:
+-            info = propagated[addr]
+-            entry["category"] = info["category"]
+-            entry["subcategory"] = info.get("subcategory")
+-            entry["confidence"] = info["confidence"]
+-            entry["method"] = info["method"]
+-            if "vtable_addr" in info:
+-                entry["vtable_addr"] = f"0x{info['vtable_addr']:08X}"
+-                entry["vtable_index"] = info["vtable_index"]
+-        elif addr in stub_results:
+-            info = stub_results[addr]
+-            entry["category"] = info["category"]
+-            entry["stub_type"] = info.get("stub_type", "")
+-            entry["confidence"] = info["confidence"]
+-            entry["method"] = info["method"]
+-        else:
+-            entry["category"] = "unknown"
+-            entry["confidence"] = 0.0
+-            entry["method"] = "none"
+-
+-        enriched.append(entry)
+-
+-    return enriched
+-
+-
+-def _build_summary(enriched, rw_results, crt_results, propagated, rw_modules):
+-    """Build summary statistics."""
+-    total = len(enriched)
+-    cat_counts = Counter(e["category"] for e in enriched)
+-    method_counts = Counter(e["method"] for e in enriched)
+-
+-    # Group subcategories
+-    rw_total = sum(v for k, v in cat_counts.items() if k.startswith("rw_"))
+-    game_total = sum(v for k, v in cat_counts.items() if k.startswith("game_"))
+-    crt_total = cat_counts.get("crt", 0)
+-    data_init_total = cat_counts.get("data_init", 0)
+-    unknown_total = cat_counts.get("unknown", 0)
+-
+-    # Count vtable functions specifically
+-    vtable_total = sum(1 for e in enriched if e.get("method") in ("vtable_scan", "vtable_ctor"))
+-
+-    # RW modules with function counts
+-    rw_module_summary = {}
+-    for name, mod in rw_modules.items():
+-        rw_module_summary[name] = {
+-            "category": mod["category"],
+-            "path": mod["path"],
+-            "num_functions": len(mod["functions"]),
+-        }
+-
+-    return {
+-        "total_functions": total,
+-        "classification": {
+-            "renderware": rw_total,
+-            "crt": crt_total,
+-            "data_init": data_init_total,
+-            "game_classified": game_total,
+-            "vtable_methods": vtable_total,
+-            "unknown": unknown_total,
+-        },
+-        "percentages": {
+-            "renderware": round(rw_total / total * 100, 1) if total else 0,
+-            "crt": round(crt_total / total * 100, 1) if total else 0,
+-            "data_init": round(data_init_total / total * 100, 1) if total else 0,
+-            "game_classified": round(game_total / total * 100, 1) if total else 0,
+-            "unknown": round(unknown_total / total * 100, 1) if total else 0,
+-        },
+-        "by_category": {k: v for k, v in sorted(cat_counts.items())},
+-        "by_method": {k: v for k, v in sorted(method_counts.items())},
+-        "rw_modules": rw_module_summary,
+-        "rw_module_count": len(rw_modules),
+-    }
+-
+-
+-def _serialize_rw_modules(rw_modules):
+-    """Serialize RW modules for JSON output."""
+-    result = {}
+-    for name, mod in sorted(rw_modules.items()):
+-        result[name] = {
+-            "address": f"0x{mod['address']:08X}",
+-            "category": mod["category"],
+-            "path": mod["path"],
+-            "functions": [f"0x{a:08X}" for a in mod["functions"]],
+-            "num_functions": len(mod["functions"]),
+-        }
+-    return result
+-
+-
+-def _serialize_crt(crt_results):
+-    """Serialize CRT results for JSON output."""
+-    result = []
+-    for addr in sorted(crt_results):
+-        info = crt_results[addr]
+-        result.append({
+-            "address": f"0x{addr:08X}",
+-            "name": info["name"],
+-            "confidence": info["confidence"],
+-        })
+-    return result
+-
+-
+-def _print_summary(summary):
+-    """Print a human-readable summary to stdout."""
+-    print("\n" + "=" * 60)
+-    print("FUNCTION IDENTIFICATION SUMMARY")
+-    print("=" * 60)
+-    total = summary["total_functions"]
+-    cls = summary["classification"]
+-    pct = summary["percentages"]
+-
+-    print(f"  Total functions:    {total:,}")
+-    print(f"  RenderWare:         {cls['renderware']:,}  ({pct['renderware']}%)")
+-    print(f"  CRT/MSVC:           {cls['crt']:,}  ({pct['crt']}%)")
+-    print(f"  Data init stubs:    {cls['data_init']:,}  ({pct['data_init']}%)")
+-    print(f"  Game (classified):  {cls['game_classified']:,}  ({pct['game_classified']}%)")
+-    vtable_count = cls.get('vtable_methods', 0)
+-    if vtable_count:
+-        print(f"    (vtable methods): {vtable_count:,}")
+-    print(f"  Unknown:            {cls['unknown']:,}  ({pct['unknown']}%)")
+-
+-    print(f"\n  RW source modules:  {summary['rw_module_count']}")
+-
+-    print("\n  By category:")
+-    for cat, count in sorted(summary["by_category"].items(), key=lambda x: -x[1]):
+-        print(f"    {cat:30s} {count:6,}")
+-
+-    print("\n  By method:")
+-    for method, count in sorted(summary["by_method"].items(), key=lambda x: -x[1]):
+-        print(f"    {method:30s} {count:6,}")
+-    print("=" * 60)
+-
+-
+-def _write_json(path, data):
+-    """Write data as formatted JSON."""
+-    with open(path, "w", encoding="utf-8") as f:
+-        json.dump(data, f, indent=2, ensure_ascii=False)
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/rw_identifier.py
++++ b/tools/func_id/rw_identifier.py
+@@ -1,284 +1 @@
+-"""
+-RenderWare module identification.
+-
+-Uses the 67 RW source file ID strings embedded in .rdata to classify
+-functions as belonging to specific RenderWare modules.
+-
+-Strategy:
+-1. Parse RW ID strings and their .rdata addresses
+-2. Define tight .rdata zones around RW strings (capped) for initial seeds
+-3. Bootstrap: use seed functions' .rdata references to define a broader
+-   RW data region, then find all functions referencing that region
+-4. Use .text code region density to fill remaining gaps
+-"""
+-
+-import re
+-from collections import defaultdict
+-
+-from . import config
+-
+-# Maximum zone size for initial tight zones around RW ID strings
+-MAX_ZONE_SIZE = 0x400
+-
+-# Padding around the inferred RW data region boundaries
+-RW_DATA_REGION_PADDING = 0x200
+-
+-
+-def identify_rw_functions(strings, imm_refs, functions, verbose=False):
+-    """
+-    Identify RenderWare functions using bootstrapped region analysis.
+-
+-    Args:
+-        strings: List of string dicts from strings.json.
+-        imm_refs: Dict of rdata_addr -> [func_start_addr, ...] from imm_scanner.
+-        functions: List of function dicts.
+-        verbose: Print progress info.
+-
+-    Returns:
+-        tuple: (rw_results, rw_modules)
+-    """
+-    # Step 1: Parse RW ID strings
+-    rw_strings = _parse_rw_strings(strings)
+-    if verbose:
+-        print(f"  Found {len(rw_strings)} RenderWare ID strings")
+-
+-    # Step 2: Classify each RW string into a subcategory
+-    for rw in rw_strings:
+-        rw["category"] = _classify_rw_path(rw["path"])
+-
+-    # Step 3: Initialize module tracking
+-    rw_results = {}
+-    rw_modules = {}
+-
+-    rw_string_addrs = {rw["address"]: rw for rw in rw_strings}
+-    for rw in rw_strings:
+-        rw_modules[rw["filename"]] = {
+-            "address": rw["address"],
+-            "category": rw["category"],
+-            "path": rw["path"],
+-            "functions": [],
+-        }
+-
+-    # Step 4: Find seed functions via tight .rdata zones
+-    zones = _build_rdata_zones(rw_strings)
+-    if verbose:
+-        print(f"  Built {len(zones)} tight .rdata zones (max 0x{MAX_ZONE_SIZE:X})")
+-
+-    # Direct string references
+-    for rw in rw_strings:
+-        addr = rw["address"]
+-        if addr in imm_refs:
+-            for func_addr in imm_refs[addr]:
+-                _add_rw_result(rw_results, rw_modules, func_addr,
+-                               rw["category"], rw["filename"], rw["path"],
+-                               config.CONFIDENCE_RW_STRING_REF, "rw_string_ref")
+-
+-    # Zone-based seeds
+-    for rdata_addr, func_addrs in imm_refs.items():
+-        if rdata_addr in rw_string_addrs:
+-            continue
+-        zone = _find_zone(rdata_addr, zones)
+-        if zone is not None:
+-            for func_addr in func_addrs:
+-                if func_addr not in rw_results:
+-                    _add_rw_result(rw_results, rw_modules, func_addr,
+-                                   zone["category"], zone["filename"], zone["path"],
+-                                   config.CONFIDENCE_RW_ZONE, "rw_zone")
+-
+-    seed_count = len(rw_results)
+-    if verbose:
+-        print(f"  Seed functions: {seed_count}")
+-
+-    # Step 5: Define RW data region from the RW string cluster range
+-    # The RW ID strings form a known cluster in .rdata. Data between
+-    # them and slightly beyond is RW-related. We use this fixed range
+-    # rather than bootstrapping from referenced addresses (which can
+-    # expand to cover all of .rdata).
+-    func_to_rdata = defaultdict(set)
+-    for rdata_addr, func_addrs in imm_refs.items():
+-        for fa in func_addrs:
+-            func_to_rdata[fa].add(rdata_addr)
+-
+-    rw_string_addrs_list = sorted(rw_string_addrs.keys())
+-    if rw_string_addrs_list:
+-        # The RW data region spans from before the first RW string to
+-        # after the last, with generous padding for nearby data tables
+-        rw_data_lo = rw_string_addrs_list[0] - 0x1000
+-        rw_data_hi = rw_string_addrs_list[-1] + 0x1000
+-        rw_data_lo = max(rw_data_lo, config.RDATA_VA_START)
+-        rw_data_hi = min(rw_data_hi, config.RDATA_VA_END)
+-    else:
+-        rw_data_lo = rw_data_hi = 0
+-
+-    if verbose:
+-        print(f"  RW data region: 0x{rw_data_lo:08X} - 0x{rw_data_hi:08X} "
+-              f"({(rw_data_hi - rw_data_lo) // 1024}KB)")
+-
+-    # Step 6: Find functions referencing the RW data region
+-    # Require at least 2 references to .rdata within the RW region
+-    # (single refs could be coincidental)
+-    region_count = 0
+-    for rdata_addr, func_addrs in imm_refs.items():
+-        if not (rw_data_lo <= rdata_addr < rw_data_hi):
+-            continue
+-        if rdata_addr in rw_string_addrs:
+-            continue
+-        for func_addr in func_addrs:
+-            if func_addr in rw_results:
+-                continue
+-            # Check if this function has multiple refs into the RW data region
+-            all_refs = func_to_rdata.get(func_addr, set())
+-            rw_region_refs = sum(1 for r in all_refs if rw_data_lo <= r < rw_data_hi)
+-            if rw_region_refs >= 2:
+-                # Assign to nearest RW module by .rdata zone
+-                best_zone = _find_nearest_zone(rdata_addr, zones)
+-                cat = best_zone["category"] if best_zone else "rw_core"
+-                mod = best_zone["filename"] if best_zone else "unknown"
+-                path = best_zone["path"] if best_zone else ""
+-                _add_rw_result(rw_results, rw_modules, func_addr,
+-                               cat, mod, path, 0.80, "rw_data_region")
+-                region_count += 1
+-
+-    if verbose:
+-        print(f"  RW data region identifications: {region_count} functions")
+-
+-    # Step 7: Expand into single-ref functions that are in the RW code range
+-    rw_func_addrs = sorted(rw_results.keys())
+-    if len(rw_func_addrs) >= 10:
+-        rw_code_lo = min(rw_func_addrs)
+-        rw_code_hi = max(rw_func_addrs)
+-        if verbose:
+-            print(f"  RW code region: 0x{rw_code_lo:08X} - 0x{rw_code_hi:08X}")
+-
+-        # Functions in the RW code range that reference the RW data region
+-        # even with just 1 reference
+-        code_region_count = 0
+-        for rdata_addr, func_addrs in imm_refs.items():
+-            if not (rw_data_lo <= rdata_addr < rw_data_hi):
+-                continue
+-            for func_addr in func_addrs:
+-                if func_addr in rw_results:
+-                    continue
+-                if rw_code_lo <= func_addr <= rw_code_hi:
+-                    best_zone = _find_nearest_zone(rdata_addr, zones)
+-                    cat = best_zone["category"] if best_zone else "rw_core"
+-                    mod = best_zone["filename"] if best_zone else "unknown"
+-                    path = best_zone["path"] if best_zone else ""
+-                    _add_rw_result(rw_results, rw_modules, func_addr,
+-                                   cat, mod, path, 0.75, "rw_code_region")
+-                    code_region_count += 1
+-
+-        if verbose:
+-            print(f"  RW code+data region identifications: {code_region_count} functions")
+-
+-    if verbose:
+-        print(f"  Total RW-identified functions: {len(rw_results)}")
+-
+-    # Deduplicate function lists in modules
+-    for mod in rw_modules.values():
+-        mod["functions"] = sorted(set(mod["functions"]))
+-
+-    return rw_results, rw_modules
+-
+-
+-def _add_rw_result(rw_results, rw_modules, func_addr, category, module,
+-                   source_file, confidence, method):
+-    """Add a function to the RW results."""
+-    rw_results[func_addr] = {
+-        "category": category,
+-        "module": module,
+-        "source_file": source_file,
+-        "confidence": confidence,
+-        "method": method,
+-    }
+-    if module in rw_modules:
+-        rw_modules[module]["functions"].append(func_addr)
+-
+-
+-def _parse_rw_strings(strings):
+-    """Extract RenderWare ID strings and parse their paths."""
+-    rw_strings = []
+-    rw_pattern = re.compile(
+-        r'@@?\(?#\)?\$Id:\s*//RenderWare/RW36Active/rwsdk/(.+?)#\d+\s*\$'
+-    )
+-
+-    for s in strings:
+-        text = s["string"]
+-        idx = text.find("@@")
+-        if idx < 0:
+-            continue
+-        clean = text[idx:]
+-
+-        m = rw_pattern.search(clean)
+-        if m:
+-            path = m.group(1).strip()
+-            filename = path.rsplit("/", 1)[-1] if "/" in path else path
+-            rw_strings.append({
+-                "address": int(s["address"], 16),
+-                "path": path,
+-                "filename": filename,
+-                "category": None,
+-            })
+-
+-    rw_strings.sort(key=lambda x: x["address"])
+-    return rw_strings
+-
+-
+-def _classify_rw_path(path):
+-    """Classify an RW source path into a subcategory."""
+-    for prefix, category in config.RW_CATEGORIES.items():
+-        if path.startswith(prefix):
+-            return category
+-    return "rw_unknown"
+-
+-
+-def _build_rdata_zones(rw_strings):
+-    """
+-    Build .rdata zones around RW ID strings with capped size.
+-    """
+-    zones = []
+-    for i, rw in enumerate(rw_strings):
+-        zone_start = rw["address"]
+-        if i + 1 < len(rw_strings):
+-            natural_end = rw_strings[i + 1]["address"]
+-        else:
+-            natural_end = config.RDATA_VA_END
+-
+-        zone_end = min(natural_end, zone_start + MAX_ZONE_SIZE)
+-
+-        zones.append({
+-            "start": zone_start,
+-            "end": zone_end,
+-            "filename": rw["filename"],
+-            "path": rw["path"],
+-            "category": rw["category"],
+-        })
+-
+-    return zones
+-
+-
+-def _find_zone(rdata_addr, zones):
+-    """Binary search for the zone containing rdata_addr."""
+-    lo, hi = 0, len(zones) - 1
+-    while lo <= hi:
+-        mid = (lo + hi) // 2
+-        if zones[mid]["start"] <= rdata_addr < zones[mid]["end"]:
+-            return zones[mid]
+-        elif rdata_addr < zones[mid]["start"]:
+-            hi = mid - 1
+-        else:
+-            lo = mid + 1
+-    return None
+-
+-
+-def _find_nearest_zone(rdata_addr, zones):
+-    """Find the nearest zone to a given .rdata address."""
+-    best = None
+-    best_dist = float("inf")
+-    for z in zones:
+-        mid = (z["start"] + z["end"]) // 2
+-        dist = abs(rdata_addr - mid)
+-        if dist < best_dist:
+-            best_dist = dist
+-            best = z
+-    return best
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/stub_classifier.py
++++ b/tools/func_id/stub_classifier.py
+@@ -1,131 +1 @@
+-"""
+-Formulaic stub function classifier.
+-
+-Identifies mechanically-generated stub functions:
+-- SSE float chains: sequences of movss/addss/subss/mulss/divss ending in ret
+-- These form the game's data-driven parameter initialization system:
+-  thousands of tiny functions that copy/compute float values between
+-  .rdata constants and .data globals.
+-
+-General pattern: F3 0F XX 05 [addr] repeated N times, ending with C3 (ret).
+-Each SSE instruction is 8 bytes (prefix F3 0F + opcode + ModR/M 05 + 4-byte addr).
+-"""
+-
+-from . import config
+-
+-# SSE scalar float opcodes we recognize (after F3 0F prefix)
+-_SSE_OPCODES = {
+-    0x10,  # movss xmm, m32 (load)
+-    0x11,  # movss m32, xmm (store)
+-    0x58,  # addss
+-    0x59,  # mulss
+-    0x5C,  # subss
+-    0x5E,  # divss
+-    0x51,  # sqrtss
+-    0x5D,  # minss
+-    0x5F,  # maxss
+-}
+-
+-
+-def classify_stubs(xbe_data, functions, verbose=False):
+-    """
+-    Identify formulaic stub functions by byte-pattern matching.
+-
+-    Args:
+-        xbe_data: Raw bytes of the entire XBE file.
+-        functions: List of function dicts.
+-        verbose: Print progress info.
+-
+-    Returns:
+-        dict: func_addr (int) -> {
+-            "category": str,
+-            "stub_type": str,
+-            "confidence": float,
+-            "method": str
+-        }
+-    """
+-    results = {}
+-    by_type = {"float_copy": 0, "float_chain": 0, "double_op": 0}
+-
+-    for func in functions:
+-        func_addr = int(func["start"], 16)
+-        func_size = func.get("size", 0)
+-
+-        # Only check functions up to ~120 bytes (longest observed chains)
+-        if func_size < 9 or func_size > 120:
+-            continue
+-
+-        file_offset = config.va_to_file_offset(func_addr)
+-        if file_offset is None or file_offset + func_size > len(xbe_data):
+-            continue
+-
+-        func_bytes = xbe_data[file_offset:file_offset + func_size]
+-
+-        # Check for SSE float chain: all 8-byte F3 0F XX 05 [addr] ops + C3
+-        if func_bytes[-1] == 0xC3 and func_bytes[0:2] == b'\xF3\x0F':
+-            if _is_sse_chain(func_bytes):
+-                n_ops = (func_size - 1) // 8
+-                if n_ops == 2:
+-                    stub_type = "float_copy"
+-                    by_type["float_copy"] += 1
+-                else:
+-                    stub_type = "float_chain"
+-                    by_type["float_chain"] += 1
+-                results[func_addr] = {
+-                    "category": "data_init",
+-                    "stub_type": stub_type,
+-                    "confidence": 0.99,
+-                    "method": "stub_pattern",
+-                }
+-                continue
+-
+-        # F2 0F prefix = SSE2 double operations (same structure)
+-        if func_bytes[-1] == 0xC3 and func_bytes[0:2] == b'\xF2\x0F':
+-            if _is_sse_chain(func_bytes, double=True):
+-                by_type["double_op"] += 1
+-                results[func_addr] = {
+-                    "category": "data_init",
+-                    "stub_type": "double_op",
+-                    "confidence": 0.95,
+-                    "method": "stub_pattern",
+-                }
+-                continue
+-
+-    if verbose:
+-        print(f"  Float copy stubs:    {by_type['float_copy']:,}")
+-        print(f"  Float chain stubs:   {by_type['float_chain']:,}")
+-        print(f"  Double op stubs:     {by_type['double_op']:,}")
+-        print(f"  Total data_init:     {len(results):,}")
+-
+-    return results
+-
+-
+-def _is_sse_chain(func_bytes, double=False):
+-    """
+-    Check if function bytes form a chain of SSE scalar operations + ret.
+-
+-    Each operation is 8 bytes: [F3/F2] 0F XX 05 [4-byte-addr]
+-    The chain ends with C3 (ret).
+-    Total size = N * 8 + 1 (where N >= 2).
+-    """
+-    body_len = len(func_bytes) - 1  # exclude final C3
+-    if body_len % 8 != 0:
+-        return False
+-    if body_len < 16:  # need at least 2 ops
+-        return False
+-
+-    prefix = b'\xF2' if double else b'\xF3'
+-
+-    for i in range(0, body_len, 8):
+-        if func_bytes[i] != prefix[0]:
+-            return False
+-        if func_bytes[i + 1] != 0x0F:
+-            return False
+-        opcode = func_bytes[i + 2]
+-        if opcode not in _SSE_OPCODES:
+-            return False
+-        if func_bytes[i + 3] != 0x05:
+-            return False
+-        # bytes 4-7 are the address (any value is fine)
+-
+-    return True
++"""Retired classification module; use project function_catalog instead."""
+--- a/tools/func_id/vtable_scanner.py
++++ b/tools/func_id/vtable_scanner.py
+@@ -1,325 +1 @@
+-"""
+-C++ vtable scanner for function classification.
+-
+-Scans data sections (.rdata, .data, etc.) for arrays of consecutive
+-.text pointers that form C++ virtual function tables. Each vtable
+-corresponds to a class, and its entries are virtual methods.
+-
+-Key feature: discovers THUNK FUNCTIONS that are only called via vtable
+-ICALLs. These are valid code entry points between `ret` instructions
+-that the function detector misses because there's no direct `call`.
+-
+-Typical MSVC vtable layout in .rdata:
+-  [vfunc_0_ptr][vfunc_1_ptr][vfunc_2_ptr]...
+-
+-Thunk pattern (after ret of previous function):
+-  mov ecx, [ecx+N]   ; adjust this pointer
+-  test ecx, ecx       ; null check
+-  jne target           ; jump to real method
+-  xor eax, eax
+-  ret N
+-"""
+-
+-import struct
+-from collections import defaultdict
+-
+-from . import config
+-
+-
+-# Minimum number of consecutive code pointers to qualify as a vtable
+-MIN_VTABLE_ENTRIES = 3
+-
+-
+-def scan_vtables(xbe_data, functions, imm_refs, verbose=False, sections=None):
+-    """
+-    Scan data sections for C++ vtables and classify virtual methods.
+-
+-    Also discovers thunk functions: valid code entry points that are
+-    referenced by vtables but not in the known function list.
+-
+-    Args:
+-        xbe_data: Raw XBE file bytes.
+-        functions: List of function dicts from disassembly.
+-        imm_refs: Dict of immediate reference data.
+-        verbose: Print progress info.
+-        sections: Optional list of section dicts with keys:
+-            name, va (int), size (int), raw (int), executable (bool)
+-            If None, falls back to config-based section detection.
+-
+-    Returns:
+-        tuple: (vtable_results, vtables)
+-    """
+-    # Build set of known function starts
+-    func_starts = set()
+-    for f in functions:
+-        func_starts.add(int(f["start"], 16))
+-
+-    # Determine code and data ranges from section info
+-    if sections:
+-        # Code ranges: only the main .text section (where lifted functions live)
+-        text_ranges = [(s["va"], s["va"] + s["size"])
+-                       for s in sections if s["name"] == ".text"]
+-        # Scan ALL sections with raw data for vtables.
+-        # Xbox vtables can be in ANY section (including .text itself!)
+-        data_sections = [{"name": s["name"], "va": s["va"],
+-                          "size": min(s["size"], s.get("raw_size", s["size"])),
+-                          "raw": s["raw"]}
+-                         for s in sections
+-                         if s["raw"] > 0 and s.get("raw_size", s["size"]) > 0]
+-    else:
+-        text_ranges = _get_code_ranges()
+-        data_sections = _get_data_sections()
+-
+-    # Scan all data sections for vtable structures
+-    raw_vtables = _find_vtables(xbe_data, func_starts, text_ranges, data_sections)
+-
+-    if verbose:
+-        print(f"  Raw vtable candidates: {len(raw_vtables)}")
+-
+-    # Filter false positives
+-    vtables = _filter_vtables(raw_vtables)
+-
+-    if verbose:
+-        total_entries = sum(len(vt["entries"]) for vt in vtables)
+-        print(f"  Validated vtables: {len(vtables)}")
+-        print(f"  Total virtual methods: {total_entries}")
+-
+-    # Find thunks: vtable entries not in func_starts
+-    discovered_thunks = set()
+-    for vt in vtables:
+-        for entry in vt["entries"]:
+-            if entry not in func_starts:
+-                discovered_thunks.add(entry)
+-
+-    if verbose and discovered_thunks:
+-        print(f"  Discovered vtable thunks (new functions): {len(discovered_thunks)}")
+-        for addr in sorted(discovered_thunks)[:10]:
+-            print(f"    0x{addr:08X}")
+-        if len(discovered_thunks) > 10:
+-            print(f"    ... and {len(discovered_thunks) - 10} more")
+-
+-    # Find constructors
+-    constructors = _find_constructors(vtables, xbe_data, functions)
+-
+-    if verbose:
+-        print(f"  Constructors found: {len(constructors)}")
+-
+-    # Build classification results
+-    results = {}
+-    for i, vt in enumerate(vtables):
+-        cls_id = f"cls_{i:03d}"
+-        vt["class_id"] = cls_id
+-
+-        for idx, entry_addr in enumerate(vt["entries"]):
+-            if entry_addr not in results:
+-                is_thunk = entry_addr in discovered_thunks
+-                results[entry_addr] = {
+-                    "category": "game_vtable",
+-                    "subcategory": cls_id,
+-                    "confidence": 0.75 if is_thunk else 0.85,
+-                    "method": "vtable_thunk" if is_thunk else "vtable_scan",
+-                    "vtable_addr": vt["address"],
+-                    "vtable_index": idx,
+-                }
+-
+-    # Add constructors
+-    for func_addr, vt_info in constructors.items():
+-        if func_addr not in results:
+-            results[func_addr] = {
+-                "category": "game_vtable",
+-                "subcategory": vt_info["class_id"],
+-                "confidence": 0.80,
+-                "method": "vtable_ctor",
+-                "vtable_addr": vt_info["vtable_addr"],
+-                "vtable_index": -1,
+-            }
+-
+-    if verbose:
+-        print(f"  Functions classified by vtable: {len(results)}")
+-
+-    return results, vtables
+-
+-
+-def _get_code_ranges():
+-    """Get all code section VA ranges from config."""
+-    ranges = [(config.TEXT_VA_START, config.TEXT_VA_END)]
+-
+-    # Add any other code sections defined in config
+-    if hasattr(config, 'SECTIONS'):
+-        skip_names = {".data", ".data1", "XIPS", "EnglishXlate", "JapaneseXlate",
+-                      "GermanXlate", "FrenchXlate", "SpanishXlate", "ItalianXlate"}
+-        for name, va, size, _ in config.SECTIONS:
+-            if name not in skip_names and name != ".text":
+-                ranges.append((va, va + size))
+-
+-    return ranges
+-
+-
+-def _get_data_sections():
+-    """Get all data sections to scan for vtables."""
+-    sections = []
+-
+-    # Primary scan range: .rdata or .data
+-    if hasattr(config, 'RDATA_RAW_ADDR'):
+-        sections.append({
+-            "name": "rdata",
+-            "va": config.RDATA_VA_START,
+-            "size": config.RDATA_VA_SIZE,
+-            "raw": config.RDATA_RAW_ADDR,
+-        })
+-
+-    # Also scan all data sections from SECTIONS list
+-    if hasattr(config, 'SECTIONS'):
+-        data_names = {".data", ".data1", "DOLBY"}
+-        for name, va, size, raw in config.SECTIONS:
+-            if name in data_names:
+-                sections.append({
+-                    "name": name,
+-                    "va": va,
+-                    "size": size,
+-                    "raw": raw,
+-                })
+-
+-    return sections
+-
+-
+-def _is_code_address(va, text_ranges):
+-    """Check if VA falls within the .text section and looks like a valid function addr."""
+-    # Reject obviously non-function addresses (misaligned or too small)
+-    if va < 0x10000:
+-        return False
+-    for lo, hi in text_ranges:
+-        if lo <= va < hi:
+-            return True
+-    return False
+-
+-
+-def _find_vtables(xbe_data, func_starts, text_ranges, data_sections):
+-    """
+-    Scan data sections for sequences of consecutive code pointers.
+-
+-    Accepts any VA in a code section range as a potential vtable entry,
+-    not just known func_starts. This discovers thunk functions.
+-    """
+-    vtables = []
+-
+-    for section in data_sections:
+-        sec_raw = section["raw"]
+-        sec_va = section["va"]
+-        sec_size = section["size"]
+-
+-        if sec_raw + sec_size > len(xbe_data):
+-            sec_size = len(xbe_data) - sec_raw
+-        if sec_size <= 0:
+-            continue
+-
+-        sec_bytes = xbe_data[sec_raw:sec_raw + sec_size]
+-
+-        i = 0
+-        while i < len(sec_bytes) - 4:
+-            # Align to 4 bytes
+-            if i % 4 != 0:
+-                i += 4 - (i % 4)
+-                continue
+-
+-            val = struct.unpack_from('<I', sec_bytes, i)[0]
+-
+-            # Check if this looks like a code pointer
+-            if not _is_code_address(val, text_ranges):
+-                i += 4
+-                continue
+-
+-            # Found a code pointer - scan forward for more
+-            entries = []
+-            j = i
+-            while j < len(sec_bytes) - 4:
+-                val = struct.unpack_from('<I', sec_bytes, j)[0]
+-                if _is_code_address(val, text_ranges):
+-                    entries.append(val)
+-                    j += 4
+-                else:
+-                    break
+-
+-            if len(entries) >= MIN_VTABLE_ENTRIES:
+-                vtables.append({
+-                    "address": sec_va + i,
+-                    "entries": entries,
+-                    "section": section["name"],
+-                })
+-                i = j
+-            else:
+-                i += 4
+-
+-    return vtables
+-
+-
+-def _filter_vtables(vtables):
+-    """
+-    Filter out false positive vtable candidates.
+-    """
+-    filtered = []
+-
+-    for vt in vtables:
+-        entries = vt["entries"]
+-
+-        # Filter: all entries identical
+-        if len(set(entries)) == 1:
+-            continue
+-
+-        # Filter: arithmetic progression (likely data table)
+-        if len(entries) >= 4:
+-            diffs = [entries[j+1] - entries[j] for j in range(len(entries) - 1)]
+-            if len(set(diffs)) == 1 and diffs[0] <= 16:
+-                continue
+-
+-        # Filter: mostly sequential small-increment (data table)
+-        if len(entries) >= 6:
+-            small_diffs = sum(1 for j in range(len(entries) - 1)
+-                            if abs(entries[j+1] - entries[j]) <= 8)
+-            if small_diffs > len(entries) * 0.8:
+-                continue
+-
+-        filtered.append(vt)
+-
+-    return filtered
+-
+-
+-def _find_constructors(vtables, xbe_data, functions):
+-    """
+-    Find constructor functions that embed vtable addresses as immediates.
+-    """
+-    vtable_addrs = {}
+-    vtable_methods = set()
+-    for vt in vtables:
+-        addr_bytes = struct.pack('<I', vt["address"])
+-        vtable_addrs[addr_bytes] = vt
+-        vtable_methods.update(vt["entries"])
+-
+-    if not vtable_addrs:
+-        return {}
+-
+-    constructors = {}
+-
+-    for f in functions:
+-        func_addr = int(f["start"], 16)
+-        func_size = f.get("size", 0)
+-        if func_size < 8 or func_size > 8192:
+-            continue
+-
+-        file_offset = config.va_to_file_offset(func_addr)
+-        if file_offset is None or file_offset + func_size > len(xbe_data):
+-            continue
+-
+-        func_bytes = xbe_data[file_offset:file_offset + func_size]
+-
+-        for addr_bytes, vt in vtable_addrs.items():
+-            pos = func_bytes.find(addr_bytes)
+-            if pos >= 0:
+-                if func_addr not in vtable_methods:
+-                    constructors[func_addr] = {
+-                        "class_id": vt.get("class_id", "cls_???"),
+-                        "vtable_addr": vt["address"],
+-                    }
+-                break
+-
+-    return constructors
++"""Retired classification module; use project function_catalog instead."""
