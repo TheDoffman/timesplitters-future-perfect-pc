@@ -10,7 +10,7 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('mutation', [None, 'drop-taps', 'held-fire'])
+@pytest.mark.parametrize('mutation', [None, 'drop-taps', 'held-fire', 'drop-fire-taps'])
 def test_reload_keys(tmp_path, mutation):
     compiler, env = native_compiler(tmp_path)
     output = tmp_path / ('reload.exe' if os.name == 'nt' else 'reload')
@@ -22,8 +22,13 @@ def test_reload_keys(tmp_path, mutation):
         for name in ('pc_input.h', 'pc_input.c', 'pc_reload_input.h'):
             text = (ROOT / 'src' / name).read_text()
             if name == 'pc_reload_input.h':
-                old, new = (('pressed=1;', 'pressed=0;') if mutation == 'drop-taps' else
-                            ('r->blocked_fire=(*fire?2:0)|(*secondary?4:0);', 'r->blocked_fire=0;'))
+                replacements = {
+                    'drop-taps': ('pressed=1;', 'pressed=0;'),
+                    'held-fire': ('r->blocked_fire=(*fire?2:0)|(*secondary?4:0);', 'r->blocked_fire=0;'),
+                    'drop-fire-taps': ('if(pressed_fire&2)r->fire_pulse_until[0]=now+34;',
+                                       'if(pressed_fire&2)r->fire_pulse_until[0]=now;'),
+                }
+                old, new = replacements[mutation]
                 assert text.count(old) == 1
                 text = text.replace(old, new)
             (include / name).write_text(text)

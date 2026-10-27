@@ -15,6 +15,8 @@ RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp;
+void tsfp_guest_divide_error(uint32_t site,unsigned reason)
+{ (void)site;(void)reason;assert(!"unexpected guest divide fault"); }
 enum { PLAYER=0x1000, LINK=0x2000, ACTOR=0x3000, WEAPON=0x4000,
        STATE=0x5000, TABLE=0x6000, STACK=0x9000 };
 static unsigned reloads,mode_changes,blocked,busy;
@@ -107,6 +109,35 @@ static void buffered_host_taps(void)
     }
     printf("PASS: %u buffered taps through original decoder and reload consumer\n",cases);
 }
+static void buffered_fire_taps(void)
+{
+    const unsigned rates[]={60,120,144,180,240};
+    unsigned cases=0;
+    for(unsigned rate=0;rate<5;rate++)for(unsigned width=1;width<=20;width+=4)
+    for(unsigned phase=0;phase<17;phase++) {
+        unsigned fps=rates[rate],frame=1,edges=0;
+        PcInput input={0};unsigned char roles[256]={0};roles[1]=2;
+        pc_input_focus(&input,1);pc_input_capture(&input,1);
+        pc_reload_context(&input.reload,PLAYER,1,0,0);
+        PcNativeTiming clock={0};pc_native_timing_step(&clock,0,1000,fps,0);
+        reset_poll();
+        for(unsigned t=0;t<300;t++) {
+            if(t==100+phase)pc_input_key_at(&input,1,1,t);
+            if(t==100+phase+width)pc_input_key_at(&input,1,0,t);
+            if(t*fps<frame*1000)continue;
+            PcNativeStep step=pc_native_timing_step(&clock,t,1000,fps,0);
+            pc_reload_context(&input.reload,PLAYER,1,0,t);
+            int reload=0,fire=input.keys[1]?255:0,secondary=0;
+            pc_reload_sample(&input.reload,roles,1,t,&reload,&fire,&secondary);
+            /* X is a digital surrogate for Fire here: execute the actual
+             * Xbox 60 Hz edge decoder with the shared host Fire magnitude. */
+            edges+=!!poll_edge(step,fire?1:0);
+            frame++;
+        }
+        assert(edges==1);cases++;
+    }
+    printf("PASS: %u short Fire taps through original input decoder\n",cases);
+}
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
@@ -182,6 +213,7 @@ temporal:
         assert(seen>0);
     }
     buffered_host_taps();
+    buffered_fire_taps();
     free(memory);puts("PASS: original reload edges, remapping, native rates, pause and eligibility");
     return 0;
 }
