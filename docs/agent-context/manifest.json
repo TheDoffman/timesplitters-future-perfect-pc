@@ -9,7 +9,7 @@
     {"id": "investigation", "file": "docs/agent-context/investigation.md", "keywords": ["investigate", "investigation", "debug", "performance", "stuck", "slow", "sol", "context", "compaction", "hypothesis"]}
   ],
   "owners": [
-    {"patterns": ["patches/**", "tools/apply-patches.py", "tools/recomp-generation.py"], "guide": "docs/agent-context/runtime.md"},
+    {"patterns": ["patches/**", "vendor/**", "tools/apply-patches.py", "tools/recomp-generation.py"], "guide": "docs/agent-context/runtime.md"},
     {"patterns": ["src/**", "config/*.default.*", "assets/textures/**", "config/texture-pack.json"], "guide": "docs/agent-context/systems.md"},
     {"patterns": ["tools/launcher/**", "tools/build-launcher.ps1", "tools/build-mac-launcher.py", "tools/launcher-*.py", "tools/issue-*.py", "tools/known-issues*.py", ".github/ISSUE_TEMPLATE/**", ".github/workflows/issue*.yml", ".github/workflows/launcher*.yml"], "guide": "docs/agent-context/launcher.md"},
     {"patterns": ["tsfp.ps1", "setup.ps1", "requirements*.txt", "Play*.cmd", "Play*.command", "tools/**", "tests/**", "config/vulkan-sdk.json", ".github/workflows/runtime-patches.yml"], "guide": "docs/agent-context/build-test.md"},

@@ -1,0 +1,63 @@
+{
+  "_title": "Black (0x45410083), XDK 5849, D3D8LTCG",
+  "_why": [
+    "XbSymbolDatabase does not cover XMV, the video library, so these five",
+    "addresses had no names and could not be replaced by name.",
+    "",
+    "They were found by scripts/section_calls.py, which reports the calls that",
+    "cross into a section from outside it: the XMV section spans",
+    "0x0023EB40..0x00266874 and the title reaches all of it through these five.",
+    "The names are the XDK's own, deduced from how the callers use each one --",
+    "see docs/technical/video-playback.md for the derivation.",
+    "",
+    "Addresses are per title, not per XDK version: a statically linked library",
+    "lands wherever the linker put it. Only the behaviour is shared."
+  ],
+  "symbols": [
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 2354253,
+      "name": "XMVPlaybackCreate",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x0023EC4D. Third argument is the address of the caller's handle field; returns non-zero on failure, which makes the title call its error callback."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 2355601,
+      "name": "XMVPlaybackDestroy",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x0023F191. The caller zeroes its handle field straight afterwards."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 2355829,
+      "name": "XMVPlaybackGetStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x0023F275. Copies three fields out of the playback object at +0x40, +0x44 and +0x48 into the caller's struct at +0, +4 and +0xC."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 2355857,
+      "name": "XMVPlaybackStart",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x0023F291. The caller sets its own playing flag afterwards."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 2356316,
+      "name": "XMVPlaybackUpdate",
+      "call": "stdcall",
+      "stack_bytes": 16,
+      "_note": "0x0023F45C. Writes a status through its third argument: 0 keeps playing, 1 means finished and makes the title set its done flag, 2 and 3 are the paused or stopped states."
+    }
+  ]
+}
