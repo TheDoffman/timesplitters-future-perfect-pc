@@ -20,7 +20,7 @@ multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
 extension, string-instruction lowering, condition expressions, SSE/MMX/x87
 emission, control transfers, instruction/block lifting and lifter context,
-helper recognition, naming and batch/output orchestration.
+helper recognition, naming, batch/output orchestration and translator entry discovery.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -85,7 +85,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Control transfers and block lifting | Project-owned call/branch/table handling, dispatch and block condition propagation | Compiled/decoded/negative-control checks and Windows title acceptance; native Mac pending MAC-093/094 |
 | Lifter context, helpers and naming | Project-owned class/registry, bounded helper recognition and SDK-derived name data | Standalone/bounds/compiler checks and deterministic generation; native Mac pending MAC-095 |
 | Batch translation and dispatch output | Project-owned database loading, declarations, split publication, stubs and dispatch | Compiled search/allocation/override tests and production output comparison; native Mac pending MAC-096 |
-| x86-to-C function orchestration | Function scheduling and joins still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
+| Translator context and entry discovery | Project-owned context, callback tables, split CFG ownership and switch-arm recovery | Bounded graph fixtures, compiled recovered function and generation comparison; native Mac pending MAC-097 |
+| x86-to-C function orchestration | C function scheduling/emission and joins still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -865,3 +866,16 @@ allocation failure and an empty table. Publication is atomic per file and
 removes only obsolete outputs owned by the selected prefix. See the owning
 [guide](agent-context/independent.md), STATUS.md and MAC-096 for contracts and
 host evidence. Historical patches and shipped fixtures remain audit work.
+
+
+## Translator context and late entry discovery
+
+The original `tools/translation_discovery.py` replaces sixteen FunctionTranslator
+methods for context setup, bounded byte/table reads, callback recovery, split
+CFG ownership, switch-arm entries, frame metadata and unresolved return cleanup.
+The installed class binds these original methods while retaining its remaining
+C emission/flag-join implementation. Synthetic graphs and a compiled recovered
+function verify behavior, including rejection of mapped holes and incomplete
+arms. Bounds and entry-flag heuristics do not establish complete symbolic
+execution or architectural EFLAGS semantics. See STATUS.md and MAC-097 for
+production generation/build/game evidence and native Mac validation limits.

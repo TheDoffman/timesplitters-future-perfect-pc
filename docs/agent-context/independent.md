@@ -460,3 +460,42 @@ compiles emitted outputs and checks selection, stub stack behavior, both search
 paths, allocation failure, empty/extreme addresses, repeat publication, stale
 cleanup and standalone imports. Both CI hosts select these tests; generation
 fingerprints include the module. STATUS.md and MAC-096 record measured acceptance.
+
+
+## Original translator context and entry discovery
+
+`translation_discovery.py` owns function-context initialization and the late
+translator discovery pass (distinct from the earlier whole-image analyzer).
+`independent-translation-discovery.patch` replaces sixteen methods and injects
+two shared read/decode helpers into the remaining FunctionTranslator. Its
+constructor uses the original project decoder/lifter and retains database
+identity for batch-added entries; trace/override maps are instance-local.
+
+Callback bounds are inferred from immediate/register moves and comparisons in
+functions containing register calls. Explicit destination/subregister writes
+and volatile registers across calls invalidate constants. This bounded heuristic
+is not arbitrary symbolic execution. Tables reject incomplete mapped words and
+unsupported gaps. Function reads validate the whole mapped physical span.
+Strong entries separate sections; indexed-jump/conditional bridges can reclaim
+reachable weak seeds. CFG decoding iterates until table destinations stabilize.
+Standalone switch arms require closed decoded paths and the existing entry-flag
+prefix screen; it does not prove whole-graph EFLAGS liveness. Return-cleanup
+recognition remains a bounded straight-line heuristic and stops at calls/jumps.
+
+`test_translation_discovery.py` uses synthetic bytes/metadata, section holes,
+alias clobbers, table sentinels/bias/duplicates, reachable/unreachable weak seeds,
+partial/flag-dependent arms, known call targets and return cleanup. One installed
+consumer test compiles and executes a recovered split function's table arms.
+Standalone import/constructor checks exclude the toolkit. Both CI hosts select
+the suite, and generation fingerprints include the module. The function emitter,
+flag-join merges, runtime storage and old fixtures remain replacement work.
+STATUS.md and MAC-097 record acceptance and platform limits.
+
+
+Windows CI follow-up: the crash-helper heartbeat fixture must poll through
+FileNotFoundError/PermissionError while the helper atomically replaces its JSON.
+`wait_for_armed_health` keeps the original absolute eight-second deadline; JSON
+corruption and other I/O errors still fail. Portable deterministic tests prove
+transient recovery, malformed-data rejection and persistent-denial timeout.
+Native helper death, report, dump and heartbeat assertions remain unchanged.
+This test-only repair does not change the helper, launcher or game behavior.

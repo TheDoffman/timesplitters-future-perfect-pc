@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Batch tests](independent.md).
+[Discovery tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
@@ -92,9 +92,8 @@ with fast entry disabled). Rejected inputs leave all bits/FP flags unchanged.
 Public fixtures/mutations run on both hosts; US-body tests need the private XBE.
 Camera/mothership/spawn/rigid fixtures include the shared helper.
 
-Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
-helper death and the portable ring; `test_native_crash.py` checks Darwin output.
-Both hosts run these and shared UI identity/failure/ZIP tests.
+Crash capture/heartbeat and bounded Windows sharing retries: `test_crash_capture.py`.
+Darwin: `test_native_crash.py`. Both hosts run shared UI identity/failure/ZIP tests.
 
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240

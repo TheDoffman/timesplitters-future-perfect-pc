@@ -231,6 +231,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-094 | Independent instruction and block lifting | Awaiting validation |
 | MAC-095 | Independent lifter context and helper recognition | Awaiting validation |
 | MAC-096 | Independent batch translation and dispatch output | Awaiting validation |
+| MAC-097 | Independent translator context and entry discovery | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6423,3 +6424,21 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   timing regressions passed. Native Mac title generation/build/gameplay need its
   host and supported private US data. CI checks alone cannot establish title
   behavior. See STATUS.md for measured results and exact CI revisions.
+
+
+### MAC-097 - Independent translator context and entry discovery
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up in `tools/translation_discovery.py`,
+  `tests/test_translation_discovery.py` and the additive discovery patch.
+  Original context/CFG/table/entry logic serves the remaining function emitter.
+- Mac support: portable Python around the shared project decoder and permitted
+  Capstone; generated C uses the existing shared runtime ABI. Both CI hosts
+  select synthetic/compiled contracts. No separate host algorithm is required.
+- Remaining validation: Windows final generation, Release/native checks and isolated
+  first-mission movement/fire/pause/resume passed. All 21 generated files match
+  the accepted batch baseline. Final 100 focused checks and eight crash-capture
+  checks passed; 379 regressions passed before the final read-window correction.
+  All 56 patch/context/backlog/snapshot checks passed.
+  Native Mac title generation/build/gameplay need its host and private US data.
+  See STATUS.md for actual CI failures/repair, measured results and limitations.

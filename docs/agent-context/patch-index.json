@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1687c84506fa9bbd4010ee1b75351b359ea2f13128390e98b7b11e9e975d16a7",
+  "loaderSha256": "1b48b76fa8c0e90dde75e8f1236aa8b70d48b011a50a92cd3ba2f4493f5dcb69",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1819,6 +1819,13 @@
     {
       "name": "independent-translation-batch.patch",
       "sha256": "e674d046a0214b0fbaafd83b924ea051adcde3988f7b8fb56875dadbc3181ffc",
+      "targets": [
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-discovery.patch",
+      "sha256": "5346b46263a230c7e30122bf595d67db4f12a56c78d50349ab89bd1971dd4d2f",
       "targets": [
         "tools/recomp/translator.py"
       ]

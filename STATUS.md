@@ -1,3 +1,66 @@
+## Independent translator context and entry discovery (Windows acceptance passed, 2026-10-27)
+
+Original `translation_discovery.py` replaces sixteen FunctionTranslator methods:
+context setup, bounded function/table reads, static callbacks, split CFG ownership,
+switch-arm recovery, frame/convention metadata and unresolved return cleanup.
+The effective translator binds these methods plus two project read/decode helpers.
+Whole physical spans are checked, explicit destination/subregister writes invalidate
+callback-bound constants, and volatile registers are invalidated across calls.
+Metadata/table recognition remains heuristic. Closed-path and entry-prefix checks
+for recovered arms do not establish whole-graph EFLAGS liveness. The C function
+emitter, flag joins and indirect-call stack recovery remain inherited work.
+
+Local **379 translator/generation/private-join/timing regressions passed in
+319.17s** before the final return-read-window correction. Review found that
+remaining file bytes must subtract the mapped offset; that is now fixed and
+covered by a truncated-image test. Final **100 discovery/batch/CI-selection checks
+passed in 7.84s**, including **17 original discovery tests** and 10 batch tests.
+Synthetic cases exercise holes, alias clobbers, sentinels/biased table slots,
+reachable and unreachable weak seeds, incomplete/flag-dependent arms, frame
+metadata and bounded cleanup. An installed-consumer fixture compiles and executes
+both recovered switch arms and a direct branch. Standalone imports/initialization
+exclude the toolkit. Earlier focused checks passed 26 tests (7.40s).
+All **56 historical patch/context/backlog/snapshot checks passed in 584.35s**.
+
+CI for preceding commit **dbdb1b29 failed** in Windows
+`test_helper_heartbeat_and_death`: reading an atomically replaced heartbeat JSON
+raised PermissionError. Its other **1,323 runtime tests passed**, with 242 skips
+and 18 subtests; three downstream gates propagated that failure. The fixture now
+polls through missing-file/sharing errors within its unchanged absolute eight-
+second deadline. JSON corruption, other I/O failures and persistent denial still
+fail. Two deterministic portable cases cover those boundaries; all **eight real/
+portable crash-capture tests passed locally in 16.09s**. Helper/launcher/game
+behavior and native report/death assertions are unchanged. New-revision CI is
+pending; this repair does not make the preceding failed revision green.
+
+Final supported-US regeneration completed in **84.12s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 generated C/header files match the accepted batch baseline by SHA-256
+and size**. The standard final Release build/native checks passed, with current
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `dbdb1b29`.
+Executable SHA-256:
+`9dca1fa7fe548540c785b3d4db15bb70c90b1ec1c1e2f7b0e763bdee4dba404b`.
+
+The isolated `independent-discovery` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.197 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**91.940s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no game, lock, disposable partition,
+BMP or crash dump remained.
+
+Evidence: `logs/discovery-regressions.log`, `logs/discovery-final-focused.log`,
+`logs/discovery-crash-capture.log`, `logs/discovery-historical.log`,
+`logs/discovery-build.log`, `logs/independent-discovery-comparison.json`,
+`logs/independent-discovery-game-check.json`, `logs/discovery-game-protected-check.json`
+and `private/test-saves/independent-discovery`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-097). Runtime/header/title implementations and shipped fixtures still need
+replacement. The full-independence goal remains active.
+
 ## Independent batch translation and dispatch (Windows acceptance passed, 2026-10-27)
 
 The complete old BatchTranslator and certificate-title helper are replaced by
@@ -13,7 +76,7 @@ transaction across all outputs. Historical patches and notices remain required.
 
 **All 17 CI checks passed for preceding commit `d85a00fc`.** New-stage CI is
 pending this commit. Local **363 translator/generation/private-join/timing
-regressions passed in 347.36s**, including **11 original batch tests**. The
+regressions passed in 347.36s**, including **10 original batch tests**. The
 focused batch/dispatch/manual suite passed **23 checks in 6.01s**; a separate
 CI-selection/inherited dispatch/manual run passed **86 checks in 0.41s**.
 The historical/context/backlog/snapshot run passed 55 checks and found a missing
