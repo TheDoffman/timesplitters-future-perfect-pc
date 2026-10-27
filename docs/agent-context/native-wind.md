@@ -8,7 +8,7 @@ an authored restoring segment held to its next exact tick boundary. Contact
 projection and wrap rebasing belong to that same interval. Original and
 whole/catch-up calls still execute the original oscillator and loop count.
 
-`zz-native-wind-history.patch` wraps the original `A5CE0` registration and
+`0460-native-wind-history.patch` wraps the original `A5CE0` registration and
 `1DDF10` callback, retaining both generated bodies. Each `_gen` declaration must be on its own
 `extern void ...;` line so `manual_scan` recognizes both wrappers. Only registration slot3
 with callback `1DDF10` creates/resets a wind owner; another slot3 callback or

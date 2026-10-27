@@ -5,6 +5,9 @@ working-memory layer, not a replacement for root `AGENTS.md`, source, or tests.
 It describes the tracked baseline; uncommitted patches and installed binaries
 may differ. Check branch, diff and build provenance before drawing conclusions.
 
+File placement and naming: [repository layout](../repository-layout.md).
+Player/developer documentation: [guide index](../README.md).
+
 Hosted GPT/Codex contributors use these guides with their usual model and tools.
 The separately installed LOCAL SMART controller is optional. Its Sol advisory
 roles, budgets and evidence protocol apply to that integration; ordinary hosted

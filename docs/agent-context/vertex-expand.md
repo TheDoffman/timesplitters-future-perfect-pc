@@ -1,6 +1,6 @@
 # Packed vertex conversion checks
 
-`zz-vertex-expand-strides.patch` changes common HLE `hle_d3d8.c`. The parsed
+`0600-vertex-expand-strides.patch` changes common HLE `hle_d3d8.c`. The parsed
 declaration places converted attributes in a prefix before the unchanged
 stream-zero tail. Attribute/width dispatch moves outside the vertex loop;
 per-vertex attribute order remains, including overlapping prefix outputs.
@@ -9,7 +9,7 @@ data, transformed pose or allocation survives that draw. Stream lookups and
 their failure order, padding, SHORT/NORMPACKED3 arithmetic and width/format
 fallbacks retain their existing behavior.
 
-`zz-vertex-expand-tiles.patch` follows that patch and bounds every attribute/tail
+`0610-vertex-expand-tiles.patch` follows that patch and bounds every attribute/tail
 pass to32 vertices, rather than sweeping a large expanded buffer repeatedly.
 Advance to `begin + min(vertices - begin,32)` to keep the final partial tile
 within range without unsigned wrap. All vertices are still converted. Compare
@@ -53,7 +53,7 @@ widens the already-evaluated expression like production, so it cannot hide an
 incorrect widened source accumulator. Over-read/wrong-stride/wide-source
 mutations must compile and fail. Both native CI hosts run it.
 
-`zz-strided-vertex-increment.patch` advances the guest offset modulo2^32 and
+`0570-strided-vertex-increment.patch` advances the guest offset modulo2^32 and
 the destination offset at `size_t` width. It keeps fresh `HLE_PTR` resolution,
 copy order/widths and the unusual-size fallback. Its optional six-pair benchmark
 uses2million96-vertex draws per round, alternating methods. Component timings
