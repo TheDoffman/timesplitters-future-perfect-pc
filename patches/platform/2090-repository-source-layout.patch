@@ -1,0 +1,335 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -56,12 +56,26 @@
+     message(STATUS "ABI check enabled: callee-saved registers verified per call")
+ endif()
+ 
++# Project source files are grouped by responsibility; public header basenames
++# remain stable for the upstream runtime and generated guest translation units.
++if(TSFP_PC_CONTROLS_DIR)
++    set(TSFP_SHARED_SOURCE "${TSFP_PC_CONTROLS_DIR}")
++elseif(TSFP_NATIVE_DIR)
++    set(TSFP_SHARED_SOURCE "${TSFP_NATIVE_DIR}/..")
++endif()
++if(TSFP_SHARED_SOURCE)
++    foreach(group diagnostics gameplay graphics input interface network runtime storage textures)
++        include_directories("${TSFP_SHARED_SOURCE}/${group}")
++    endforeach()
++    include_directories("${TSFP_SHARED_SOURCE}/../tests/support")
++endif()
++
+ # Add xboxrecomp as a subdirectory -- this builds all 6 runtime libraries
+ # and provides the 'xboxrecomp' umbrella target to link against.
+ add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    add_executable(tsfp_pc_debug_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_debug.c")
++    add_executable(tsfp_pc_debug_test "${TSFP_PC_CONTROLS_DIR}/../tests/diagnostics/pc_debug.c")
+     target_link_libraries(tsfp_pc_debug_test PRIVATE xbox_input)
+ endif()
+ 
+@@ -77,7 +91,7 @@
+ file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS "src/recomp/gen/*.c")
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    add_executable(tsfp_pc_prompts_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_prompts.c")
++    add_executable(tsfp_pc_prompts_test "${TSFP_PC_CONTROLS_DIR}/../tests/input/pc_prompts.c")
+     target_link_libraries(tsfp_pc_prompts_test PRIVATE xbox_input)
+ endif()
+ 
+@@ -114,11 +128,11 @@
+     target_compile_definitions(${PROJECT_NAME} PRIVATE
+         RECOMP_NUMERIC_POLICY_HEADER="pc_native_numeric.h")
+     if(TSFP_PC_CONTROLS_DIR)
+-        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_model_transform_guest.c"
+-            "${TSFP_PC_CONTROLS_DIR}/guest_integer_fault.c")
++        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/gameplay/pc_model_transform_guest.c"
++            "${TSFP_PC_CONTROLS_DIR}/runtime/guest_integer_fault.c")
+     else()
+-        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../pc_model_transform_guest.c"
+-            "${TSFP_NATIVE_DIR}/../guest_integer_fault.c")
++        target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../gameplay/pc_model_transform_guest.c"
++            "${TSFP_NATIVE_DIR}/../runtime/guest_integer_fault.c")
+     endif()
+ endif()
+ 
+@@ -134,15 +148,15 @@
+ 
+ # Windows crash capture is separate from the native Mac adapter.
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_crash.c")
+-    set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/pc_crash.c" PROPERTIES COMPILE_OPTIONS "/Zi")
+-    add_executable(tsfp_crash_helper "${TSFP_PC_CONTROLS_DIR}/../tools/crash_helper.c")
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/diagnostics/pc_crash.c")
++    set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/diagnostics/pc_crash.c" PROPERTIES COMPILE_OPTIONS "/Zi")
++    add_executable(tsfp_crash_helper "${TSFP_PC_CONTROLS_DIR}/../tools/build/crash_helper.c")
+     target_include_directories(tsfp_crash_helper PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     target_link_libraries(tsfp_crash_helper PRIVATE dbghelp bcrypt user32)
+     target_compile_options(tsfp_crash_helper PRIVATE /W4 /Zi)
+     target_link_options(tsfp_crash_helper PRIVATE /DEBUG)
+     add_dependencies(${PROJECT_NAME} tsfp_crash_helper)
+-    add_executable(tsfp_hang_policy_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_hang_policy.c")
++    add_executable(tsfp_hang_policy_test "${TSFP_PC_CONTROLS_DIR}/../tests/diagnostics/pc_hang_policy.c")
+     target_include_directories(tsfp_hang_policy_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+ endif()
+ 
+@@ -161,12 +175,12 @@
+ 
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_network.c")
+-    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_online.c")
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/network/pc_network.c")
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/network/pc_online.c")
+     target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_BINARY_DIR}/generated")
+     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 bcrypt)
+-    add_executable(tsfp_pc_network_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_network.c"
+-        "${TSFP_PC_CONTROLS_DIR}/pc_network.c")
++    add_executable(tsfp_pc_network_test "${TSFP_PC_CONTROLS_DIR}/../tests/network/pc_network.c"
++        "${TSFP_PC_CONTROLS_DIR}/network/pc_network.c")
+     target_include_directories(tsfp_pc_network_test PRIVATE "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_BINARY_DIR}/generated")
+     target_link_libraries(tsfp_pc_network_test PRIVATE ws2_32 bcrypt)
+ endif()
+@@ -233,20 +247,20 @@
+         set_source_files_properties(src/main.c PROPERTIES COMPILE_DEFINITIONS TSFP_PC_CONTROLS)
+     endif()
+     set_source_files_properties(src/recomp_manual.c PROPERTIES COMPILE_DEFINITIONS TSFP_PC_CONTROLS)
+-    add_executable(tsfp_pc_controls_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_controls.c")
++    add_executable(tsfp_pc_controls_test "${TSFP_PC_CONTROLS_DIR}/../tests/input/pc_controls.c")
+     target_link_libraries(tsfp_pc_controls_test PRIVATE xbox_input)
+-    add_executable(tsfp_pc_settings_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_settings.c")
++    add_executable(tsfp_pc_settings_test "${TSFP_PC_CONTROLS_DIR}/../tests/input/pc_settings.c")
+     target_link_libraries(tsfp_pc_settings_test PRIVATE xbox_input)
+ endif()
+ 
+ if(TSFP_PC_CONTROLS_DIR)
+-    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_display_menu.c")
+-    set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/pc_display_menu.c" PROPERTIES
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/interface/pc_display_menu.c")
++    set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/interface/pc_display_menu.c" PROPERTIES
+         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
+ endif()
+ 
+ if(TSFP_PC_CONTROLS_DIR)
+-    add_executable(tsfp_pc_display_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_display.c" "${TSFP_PC_CONTROLS_DIR}/pc_display.c")
++    add_executable(tsfp_pc_display_test "${TSFP_PC_CONTROLS_DIR}/../tests/graphics/pc_display.c" "${TSFP_PC_CONTROLS_DIR}/interface/pc_display.c")
+     target_include_directories(tsfp_pc_display_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     target_link_libraries(tsfp_pc_display_test PRIVATE user32)
+ endif()
+@@ -257,35 +271,35 @@
+     target_compile_options(${PROJECT_NAME} PRIVATE -O2 -fno-vectorize -fno-slp-vectorize)
+     enable_testing()
+     set(TSFP_TESTS "${TSFP_NATIVE_DIR}/../../tests")
+-    add_executable(tsfp_native_platform_test "${TSFP_TESTS}/native_platform.c")
++    add_executable(tsfp_native_platform_test "${TSFP_TESTS}/gameplay/native_platform.c")
+     target_link_libraries(tsfp_native_platform_test PRIVATE platform)
+     add_test(NAME native_platform COMMAND tsfp_native_platform_test)
+-    add_executable(tsfp_native_mmio_test "${TSFP_TESTS}/native_mmio.c" "${TSFP_NATIVE_DIR}/mmio.c")
++    add_executable(tsfp_native_mmio_test "${TSFP_TESTS}/gameplay/native_mmio.c" "${TSFP_NATIVE_DIR}/mmio.c")
+     target_include_directories(tsfp_native_mmio_test PRIVATE "${TSFP_NATIVE_DIR}" "${XBOXRECOMP_DIR}/include")
+     target_link_libraries(tsfp_native_mmio_test PRIVATE platform)
+     add_test(NAME native_mmio COMMAND tsfp_native_mmio_test)
+-    add_executable(tsfp_native_paths_test "${TSFP_TESTS}/native_paths.c")
++    add_executable(tsfp_native_paths_test "${TSFP_TESTS}/gameplay/native_paths.c")
+     target_link_libraries(tsfp_native_paths_test PRIVATE xboxrecomp)
+     add_test(NAME native_paths COMMAND tsfp_native_paths_test "${CMAKE_BINARY_DIR}/path-tests")
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+-    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../pc_display_menu.c")
+-    set_source_files_properties("${TSFP_NATIVE_DIR}/../pc_display_menu.c" PROPERTIES
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c")
++    set_source_files_properties("${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c" PROPERTIES
+         INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
+     target_include_directories(${PROJECT_NAME} PRIVATE "${TSFP_NATIVE_DIR}/..")
+     target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_NATIVE_DISPLAY TSFP_NATIVE_PROMPTS)
+ endif()
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    set_property(SOURCE "${TSFP_PC_CONTROLS_DIR}/pc_display_menu.c" APPEND PROPERTY
++    set_property(SOURCE "${TSFP_PC_CONTROLS_DIR}/interface/pc_display_menu.c" APPEND PROPERTY
+         COMPILE_DEFINITIONS TSFP_PC_DISCORD)
+-    add_executable(tsfp_pc_discord_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_discord.c"
+-        "${TSFP_PC_CONTROLS_DIR}/pc_discord_model.c")
++    add_executable(tsfp_pc_discord_test "${TSFP_PC_CONTROLS_DIR}/../tests/network/pc_discord.c"
++        "${TSFP_PC_CONTROLS_DIR}/network/pc_discord_model.c")
+     target_include_directories(tsfp_pc_discord_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+-    set_property(SOURCE "${TSFP_NATIVE_DIR}/../pc_display_menu.c" APPEND PROPERTY
++    set_property(SOURCE "${TSFP_NATIVE_DIR}/../interface/pc_display_menu.c" APPEND PROPERTY
+         COMPILE_DEFINITIONS TSFP_PC_DISCORD)
+ endif()
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -17,10 +17,10 @@
+ # Shared debug overlay reads the same native update target as the title clock.
+ target_link_libraries(xbox_input PRIVATE xbox_config)
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_controls.c"
+-                                      "${TSFP_PC_CONTROLS_DIR}/texture_mode.c"
+-                                      "${TSFP_PC_CONTROLS_DIR}/pc_input.c"
+-                                      "${TSFP_PC_CONTROLS_DIR}/pc_settings.c")
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/input/pc_controls.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/textures/texture_mode.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/input/pc_input.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/interface/pc_settings.c")
+     target_include_directories(xbox_input PUBLIC "${TSFP_PC_CONTROLS_DIR}")
+     # Keep the define private: adding it to generated game sources would
+     # recompile millions of unchanged lines for a host-input change.
+@@ -32,7 +32,7 @@
+ endif()
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_prompts.c")
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/input/pc_prompts.c")
+ endif()
+ 
+ if(MSVC)
+@@ -48,7 +48,7 @@
+ 
+ # PC diagnostics use the same host-input library as the settings dialog.
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_debug.c")
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/diagnostics/pc_debug.c")
+     target_include_directories(xbox_input PRIVATE "${CMAKE_BINARY_DIR}/generated")
+     file(STRINGS "${TSFP_PC_CONTROLS_DIR}/../VERSION" TSFP_PC_VERSION LIMIT_COUNT 1)
+     target_compile_definitions(xbox_input PRIVATE TSFP_PC_VERSION="${TSFP_PC_VERSION}")
+@@ -58,12 +58,12 @@
+ if(APPLE AND TSFP_NATIVE_DIR)
+     # Compile the same portable input model used by the Windows adapter.
+     target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/input_sdl.c"
+-                                      "${TSFP_NATIVE_DIR}/../pc_input.c"
++                                      "${TSFP_NATIVE_DIR}/../input/pc_input.c"
+                                       "${TSFP_NATIVE_DIR}/config_files.c"
+                                       "${TSFP_NATIVE_DIR}/text_bitmap_macos.m"
+                                       "${TSFP_NATIVE_DIR}/settings_macos.m"
+-                                      "${TSFP_NATIVE_DIR}/../pc_prompts.c"
+-                                      "${TSFP_NATIVE_DIR}/../pc_debug.c")
++                                      "${TSFP_NATIVE_DIR}/../input/pc_prompts.c"
++                                      "${TSFP_NATIVE_DIR}/../diagnostics/pc_debug.c")
+     enable_language(OBJC)
+     set_source_files_properties("${TSFP_NATIVE_DIR}/settings_macos.m" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+     target_link_libraries(xbox_input PUBLIC "-framework Cocoa" "-framework CoreText")
+@@ -76,13 +76,13 @@
+ endif()
+ 
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_discord.c"
+-                                      "${TSFP_PC_CONTROLS_DIR}/pc_discord_model.c")
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/network/pc_discord.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/network/pc_discord_model.c")
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+-    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../pc_discord.c"
+-        "${TSFP_NATIVE_DIR}/../pc_discord_model.c" "${TSFP_NATIVE_DIR}/crash_posix.c")
++    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../network/pc_discord.c"
++        "${TSFP_NATIVE_DIR}/../network/pc_discord_model.c" "${TSFP_NATIVE_DIR}/crash_posix.c")
+     target_link_libraries(xbox_input PUBLIC "-framework CoreGraphics" "-framework CoreFoundation")
+ endif()
+ 
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -20,18 +20,18 @@
+         rhi_shader_cache.c
+     )
+     if(TSFP_PC_CONTROLS_DIR)
+-        target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/texture_pack.c")
++        target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/textures/texture_pack.c")
+         target_include_directories(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+         target_compile_definitions(xbox_d3d8 PUBLIC TSFP_TEXTURE_PACK)
+         add_executable(tsfp_texture_toggle_test
+-            "${TSFP_PC_CONTROLS_DIR}/../tests/texture_toggle.c"
+-            "${TSFP_PC_CONTROLS_DIR}/texture_pack.c"
+-            "${TSFP_PC_CONTROLS_DIR}/texture_mode.c")
++            "${TSFP_PC_CONTROLS_DIR}/../tests/textures/texture_toggle.c"
++            "${TSFP_PC_CONTROLS_DIR}/textures/texture_pack.c"
++            "${TSFP_PC_CONTROLS_DIR}/textures/texture_mode.c")
+         target_include_directories(tsfp_texture_toggle_test PRIVATE
+             "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}"
+             "${CMAKE_CURRENT_SOURCE_DIR}/..")
+         target_compile_definitions(tsfp_texture_toggle_test PRIVATE TSFP_TEXTURE_PACK)
+-        add_executable(tsfp_texture_format_test "${TSFP_PC_CONTROLS_DIR}/../tests/texture_pack_format.c")
++        add_executable(tsfp_texture_format_test "${TSFP_PC_CONTROLS_DIR}/../tests/textures/texture_pack_format.c")
+         target_include_directories(tsfp_texture_format_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     endif()
+     if(WIN32)
+@@ -83,8 +83,8 @@
+     else()
+         target_sources(xbox_d3d8 PRIVATE
+             "${TSFP_NATIVE_DIR}/renderer_rhi_sdl.c" "${TSFP_NATIVE_DIR}/renderer_host_sdl.c"
+-            "${TSFP_NATIVE_DIR}/../texture_mode.c"
+-            "${TSFP_NATIVE_DIR}/../texture_pack.c")
++            "${TSFP_NATIVE_DIR}/../textures/texture_mode.c"
++            "${TSFP_NATIVE_DIR}/../textures/texture_pack.c")
+         target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}" "${TSFP_NATIVE_DIR}/..")
+         target_compile_definitions(xbox_d3d8 PUBLIC TSFP_RHI_RENDERER TSFP_PC_DISPLAY TSFP_TEXTURE_PACK)
+         target_link_libraries(xbox_d3d8 PUBLIC platform SDL3::SDL3)
+@@ -100,7 +100,7 @@
+ else()
+     if(APPLE AND TSFP_NATIVE_DIR)
+         add_library(xbox_d3d8 STATIC "${TSFP_NATIVE_DIR}/renderer_gl.c"
+-            "${TSFP_NATIVE_DIR}/../texture_mode.c"
++            "${TSFP_NATIVE_DIR}/../textures/texture_mode.c"
+             "${TSFP_NATIVE_DIR}/renderer_host_sdl.c" rhi.c)
+     else()
+         add_library(xbox_d3d8 STATIC d3d8_gl.c)
+@@ -127,10 +127,10 @@
+ endif()
+ 
+ if(TSFP_PC_CONTROLS_DIR)
+-    target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_display.c")
++    target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/interface/pc_display.c")
+     target_compile_definitions(xbox_d3d8 PRIVATE TSFP_PC_DISPLAY)
+     if(WIN32)
+-        add_executable(tsfp_pc_clear_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_clear.c")
++        add_executable(tsfp_pc_clear_test "${TSFP_PC_CONTROLS_DIR}/../tests/graphics/pc_clear.c")
+         target_include_directories(tsfp_pc_clear_test PRIVATE "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../hle")
+         target_link_libraries(tsfp_pc_clear_test PRIVATE xbox_d3d8)
+     endif()
+@@ -143,7 +143,7 @@
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+-    target_sources(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/../pc_display.c")
++    target_sources(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/../interface/pc_display.c")
+     target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}/..")
+ endif()
+ 
+--- a/tools/xbe_parser/xbe_parser.py
++++ b/tools/xbe_parser/xbe_parser.py
+@@ -7,8 +7,8 @@
+ explicit = os.environ.get('TSFP_PROJECT_ROOT')
+ roots = [Path(explicit)] if explicit else list(Path(__file__).resolve().parents)
+ for root in roots:
+-    if (root / 'tools/xbe_image.py').is_file():
+-        sys.path.insert(0, str(root / 'tools'))
++    if (root / 'tools/compiler/xbe_image.py').is_file():
++        sys.path.insert(0, str(root / 'tools/compiler'))
+         break
+ else:
+     raise ImportError('Project XBE reader missing; set TSFP_PROJECT_ROOT to the source checkout')
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -50,7 +50,7 @@
+ if(TSFP_PC_CONTROLS_DIR)
+     target_include_directories(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+     if(WIN32)
+-        target_sources(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_refresh.c")
++        target_sources(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}/interface/pc_refresh.c")
+     endif()
+ elseif(APPLE AND TSFP_NATIVE_DIR)
+     target_include_directories(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/..")
+--- a/src/replay/CMakeLists.txt
++++ b/src/replay/CMakeLists.txt
+@@ -20,7 +20,7 @@
+ # Windows normally gets the shared texture mode from xbox_input. Replay
+ # deliberately omits that library; native Mac's renderer already owns it.
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+-    target_sources(d3d8_replay PRIVATE "${TSFP_PC_CONTROLS_DIR}/texture_mode.c")
++    target_sources(d3d8_replay PRIVATE "${TSFP_PC_CONTROLS_DIR}/textures/texture_mode.c")
+     target_include_directories(d3d8_replay PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+ endif()
+ target_include_directories(d3d8_replay PRIVATE

@@ -1,20 +1,20 @@
 # Documentation
 
 Start with [install and play](../README.md#start-playing) for released builds,
-or [repository layout](repository-layout.md) for source and local file locations.
+or [repository layout](development/repository-layout.md) for source and local file locations.
 
 | Task | Guides |
 | --- | --- |
-| Install and use the launcher | [Launcher](launcher.md), [Windows implementation](windows-launcher.md), [Mac launcher](mac-launcher.md) |
-| Configure the game | [Windows settings](windows-settings.md), [Mac setup and controls](macos.md), [high refresh rates](native-high-refresh.md) |
-| Play online | [Multiplayer](multiplayer.md), [Discord presence](discord-presence.md) |
-| Use textures | [Textures](textures.md), [alpha handling](texture-alpha.md), [menu textures](main-menu-textures.md) |
-| Troubleshoot | [Known issues](known-issues.md), [Windows crash logger](windows-crash-logger.md), [high-refresh regressions](native-high-refresh-regressions.md) |
-| Build and contribute | [Building](building.md), [contributing](../CONTRIBUTING.md), [shared platform](shared-platform.md), [independent runtime](independent-runtime.md) |
-| Test and release | [Test profiles](testing-profile.md), [CI](ci.md), [releasing](releasing.md), [launcher releases](launcher-releases.md), [launcher compatibility](launcher-compatibility.md) |
-| Investigate internals | [Subsystem map](agent-context/README.md), [patch maintenance](../patches/README.md), [online bot investigation](online-bots-investigation.md) |
-| Check progress | [Measured status](../STATUS.md), [Mac backlog](../MAC_PORT_BACKLOG.md) |
+| Install and use the launcher | [Launcher](players/launcher.md), [Windows implementation](players/windows-launcher.md), [Mac launcher](players/mac-launcher.md) |
+| Configure the game | [Windows settings](players/windows-settings.md), [Mac setup and controls](players/macos.md), [high refresh rates](analysis/native-high-refresh.md) |
+| Play online | [Multiplayer](players/multiplayer.md), [Discord presence](players/discord-presence.md) |
+| Use textures | [Textures](textures/textures.md), [alpha handling](textures/texture-alpha.md), [menu textures](textures/main-menu-textures.md) |
+| Troubleshoot | [Known issues](players/known-issues.md), [Windows crash logger](players/windows-crash-logger.md), [high-refresh regressions](analysis/native-high-refresh-regressions.md) |
+| Build and contribute | [Building](development/building.md), [contributing](../CONTRIBUTING.md), [shared platform](development/shared-platform.md), [independent runtime](development/independent-runtime.md) |
+| Test and release | [Test profiles](development/testing-profile.md), [CI](development/ci.md), [releasing](release/releasing.md), [launcher releases](release/launcher-releases.md), [launcher compatibility](release/launcher-compatibility.md) |
+| Investigate internals | [Subsystem map](agent-context/README.md), [patch maintenance](../patches/README.md), [online bot investigation](analysis/online-bots-investigation.md) |
+| Check progress | [Measured status](project/STATUS.md), [Mac backlog](project/MAC_PORT_BACKLOG.md) |
 
-Keep player guides at stable paths so existing README, issue and release links
-continue to work. Technical subsystem notes belong in `agent-context/`;
+Player guides live in `players/`; update callers and relative links when moving
+a guide. Historical external links may refer to its previous repository path. Technical subsystem notes belong in `agent-context/`;
 documentation screenshots and download buttons belong in `assets/`.

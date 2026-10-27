@@ -92,5 +92,5 @@ consultation invalidate its evidence, requiring a fresh local assessment.
 
 Implementation: `tools/router/repository-evidence.mjs` and
 `tools/router/advisory-evidence.mjs`; contracts:
-`tests/repository-evidence.test.mjs`. The machine supervisor/router adapter is
+`tests/repository/repository-evidence.test.mjs`. The machine supervisor/router adapter is
 installed separately; repository instructions remain usable without it.

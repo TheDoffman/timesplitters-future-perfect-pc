@@ -20,7 +20,7 @@ The selector tail-calls the unchanged generic fixed-function body or the packed
 setup. A portable noinline compiler boundary preserves the generic compiler
 scope; no OS rendering adapter or guest-clock change is added.
 
-`tests/test_vertex_expand.py` compiles the full production functions against
+`tests/graphics/test_vertex_expand.py` compiles the full production functions against
 `vertex_expand_reference.inc`, the frozen pre-change HLE body.48,000 layout comparisons
 span vertex counts0..1024, four rounding modes, fresh/aliased streams, overlapping prefix outputs,
 zero padding, lookup/allocation failure and source/destination guard pages.
@@ -62,7 +62,7 @@ and cannot independently test it by replaying unchanged post-conversion inputs.
 
 ## Controls fixture clock
 
-The Windows `tests/pc_controls.c` expiry check uses GetTickCount64, matching the
+The Windows `tests/input/pc_controls.c` expiry check uses GetTickCount64, matching the
 adapter's clock. Sleep(40) can advance that coarse clock only31ms, short of the
 34ms Reload pulse. Wait for at least40 tick-clock milliseconds before asserting
 expiry. Optional `TSFP_TEST_RELOAD_PHASE_MS` (0..20) shifts the test poll and

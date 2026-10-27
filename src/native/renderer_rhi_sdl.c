@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "../../tests/interpolation_depth_device.h"
+#include "../../tests/support/interpolation_depth_device.h"
 #include "renderer_host_selftest.inc"
 
 static SDL_Window *native_window;

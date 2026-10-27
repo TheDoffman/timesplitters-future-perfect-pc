@@ -6,7 +6,7 @@ if(TSFP_VULKAN_SDK)
     endif()
     set(TSFP_VK_SOURCE "${TSFP_RUNTIME_DIR}/src/d3d")
     add_executable(tsfp_rhi_vulkan_test
-        "${TSFP_NATIVE_DIR}/../../tests/rhi_menu_sampling.c"
+        "${TSFP_NATIVE_DIR}/../../tests/graphics/rhi_menu_sampling.c"
         "${TSFP_VK_SOURCE}/rhi.c" "${TSFP_VK_SOURCE}/rhi_shader_cache.c"
         "${TSFP_VK_SOURCE}/d3d8_compile.c" "${TSFP_VK_SOURCE}/d3d8_resources.c"
         "${TSFP_VK_SOURCE}/d3d8_screencopy.c" "${TSFP_VK_SOURCE}/d3d8_states.c")

@@ -15,7 +15,7 @@ for the rest, then undefines the site. This avoids growing conditional vector
 expressions in unselected large bodies. The fixture checks global/selected/
 global/selected transitions in preprocessed output, as well as runtime behavior.
 
-The title policy in `src/pc_native_numeric.h` enables references only for
+The title policy in `src/gameplay/pc_native_numeric.h` enables references only for
 the profiled model-node renderer18EA90, state setter21450, state flush214C0
 and state preparation22BE0.
 Other sites select their existing global aliases. The template default is off

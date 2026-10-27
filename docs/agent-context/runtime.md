@@ -2,6 +2,15 @@
 
 Guest call frames, dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
+The final `platform/2090-repository-source-layout.patch` routes the runtime CMake
+source/test paths and Python compiler bridge into the responsibility folders.
+It runs after all historical patches; prior ledgers still unwind before applying it.
+
+Active patches now live in responsibility folders under `patches/`; consult
+[the folder map](../../patches/README.md). Recursive discovery excludes legacy
+and sorts stable basenames globally before dependency overrides. Folder moves
+preserve exact ledger bytes and runtime output. Duplicate active names fail.
+
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`
 prefixes without changing patch bytes, effective order or context options.
@@ -15,12 +24,12 @@ Product lowering and its fatal divide boundary are documented in [own tooling](i
 Independent tooling: [ownership and validation](independent.md), including compiled inherited SAR sweeps.
 
 The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.
-`tools/prepare-runtime.py` verifies blob SHA-256/Git identities, gitlinks, tree
+`tools/build/prepare-runtime.py` verifies blob SHA-256/Git identities, gitlinks, tree
 and original commit before creating the ignored runtime checkout. It retains
 `d90c929...` as shallow HEAD so existing patch ledgers, pristine `git archive`
 fixtures and packaging provenance remain valid. Do not edit snapshot files;
 runtime changes remain in the shared patch stack. The origin URL is attribution,
-not a setup dependency. `tests/test_runtime_snapshot.py` exercises the importer
+not a setup dependency. `tests/repository/test_runtime_snapshot.py` exercises the importer
 with Git transports disabled and applies the entire current stack twice. Importer changes select all runtime CI suites; Mac execution still requires its host.
 
 Procedural wind: [coupled simulation, ownership, exact-clock admission and validation](native-wind.md).
@@ -140,19 +149,19 @@ Reject dropped-chain windows as complete profiles and separate sampler pause/
 reporting overhead from clean Present measurements. See STATUS for the focused
 external diagnostic and its limitations.
 
-`tools/apply-patches.py:patch_records` defines effective order (not just filename
+`tools/build/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
 then applies the entire current top-level stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
 The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640×480 screen snapshot before a clear, then a 128×128 map texture
+frame: a 640Ã—480 screen snapshot before a clear, then a 128Ã—128 map texture
 copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)–(312,181) into
+host texture for that frame and copies guest region (176,0)â€“(312,181) into
 the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
 on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
-production RHI fixture in `tests/rhi_screen_copy.h` checks that the saved
+production RHI fixture in `tests/support/rhi_screen_copy.h` checks that the saved
 image survives a clear. Reproduce visually with Scotland the Brave's Uplink
 map mode; inspect the hologram rather than a replay-only frame, since replay
 captures do not serialize host screen copies.
@@ -167,7 +176,7 @@ shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
 have depth near 1 and already follow the widened camera, so the automatic 4:3
 HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
 near .001 and explicitly placed overlays retain their placement. Validate
-with Monkeying Around → Electro Chimp Discomatic and Something to Crow
+with Monkeying Around â†’ Electro Chimp Discomatic and Something to Crow
 About's shielded robot at a widescreen resolution.
 
 `0620-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
@@ -211,10 +220,10 @@ No generated guest input or controller behavior is rewritten by this patch.
 
 The final `radial-stick-deadzone` patch changes shared analog axis sampling in
 `src/input/input_bindings.c` to use the root `pc_input` radial helper for both
-movement and look. `tools/apply-patches.py:patch_records` places it after
+movement and look. `tools/build/apply-patches.py:patch_records` places it after
 `0390-keyboard-reload-buffer.patch` so the historical keyboard patch still
 applies during branch transitions. Keyboard normalization and stick-button
-thresholds are unchanged; `tests/test_patch_updates.py` covers those transitions.
+thresholds are unchanged; `tests/repository/test_patch_updates.py` covers those transitions.
 
 ## Source ownership and execution
 
@@ -315,7 +324,7 @@ render hook above supplies persistent owners and event/fractional integration.
 
 Issue #222 changes the shared include reached by the existing bot frame wrapper;
 it adds no guest wrapper, wire field, generated-code edit or patch dependency.
-`src/pc_network_bot_motion.h` owns replica presentation between host snapshots.
+`src/network/pc_network_bot_motion.h` owns replica presentation between host snapshots.
 The existing title integration includes it through `pc_network_bots_guest.inc`.
 Apply the complete patch stack and use the supported builder as usual.
 Vehicle exit uses the original logical input mask 0x40 in `D2470` (`D254F`
@@ -374,7 +383,7 @@ their original value. Their clocks use the slower raw/game authored cadence,
 including phase-shifted carried ticks. The loader places it after the numeric policy
 and before `-native-surface-live.patch`. Historical pre-native stacks exclude
 this dependent patch; current full-stack application and unwind remain required.
-See `tests/test_native_vehicle_timing.py` for synthetic byte semantics and local
+See `tests/gameplay/test_native_vehicle_timing.py` for synthetic byte semantics and local
 original vehicle/rigid-clock fixtures. The original solver/body math and a
 controlled support-contact path now run in `native_rigid_motion.c`, followed by
 the original `1719E0/165A40/9E840` entity publication/bounds path and
@@ -455,7 +464,7 @@ function entries therefore do not scan diagnostic labels when
 `RECOMP_TRACE_ONLY` is absent/empty. Enabled exact-name matching and per-filter
 hit limits retain the original implementation; watch/dump/profile, trace budget
 and renderer-idle behavior are unchanged. This applies to both host builds.
-`tests/test_trace_filter.py` compiles the actual patched function and requires a
+`tests/diagnostics/test_trace_filter.py` compiles the actual patched function and requires a
 restored-eager-scan mutation to fail. Removed scan counts are not an FPS result.
 `0040-gpu-pfb-flush-ack.patch` adds a default-no-op `RECOMP_AFTER_STORE32` hook to
 ordinary 32-bit MOV memory stores. It runs after the original write, excludes
@@ -494,7 +503,7 @@ Generated functions often have address-based names. Do not infer a menu handler
 from a plausible label. Search only the evidenced address/symbol, inspect bounded
 lines and trace the actual caller. `recomp_manual.c` wraps selected functions;
 generated declarations are in `recomp_funcs.h`. Use
-`python tools/recomp-generation.py external/ts3FPrecomp` to check the fingerprint.
+`python tools/build/recomp-generation.py external/ts3FPrecomp` to check the fingerprint.
 New HLE declarations/manual wrapper names can require generation even when a
 small function-body change only needs compilation. Follow the builder's check.
 
@@ -514,8 +523,8 @@ within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
 remain structural dependencies even though higher-FPS behavior is disabled.
 The loader orders the late-frame correction explicitly; do not rely on filename
-length. Its actual Arm-body contract is in `tests/test_frame_clock.py` using
-`tests/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
+length. Its actual Arm-body contract is in `tests/gameplay/test_frame_clock.py` using
+`tests/gameplay/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
 already signalled vblank without another tick, and no signal means no bypass.
 The bypass no longer requires the retired interpolation idle callback.
 `-native-flip-handoff.patch` follows the timing tail and moves the prior gate
@@ -531,7 +540,7 @@ The unverified #105 per-thread flip-gate experiment was excluded from the active
 stack; its recovery copy remains in ignored logs. The verified repair combines scoped
 prompt-read validation with the late-frame pacing correction, not thread-owner
 changes. Windows measured 53.8-54.3 FPS in weapon set versus the original ~20;
-see STATUS.md for scope, provenance and pending Mac validation.
+see docs/project/STATUS.md for scope, provenance and pending Mac validation.
 
 Create a new patch against the **correct preceding effective stack**, validate
 hunk counts/context with the complete loader and transition tests. A dry-run of
@@ -555,7 +564,7 @@ Start with this chain, then verify the current source and conditional branch:
 1. Guest call declarations/manual hooks connect lifted Xbox calls to HLE. Inspect
    runtime `titles/futureperfect/src/recomp_manual.c`, `src/hle/hle.h`, relevant
    `HLE_EXPORT`/`HLE_ORIGINAL` declarations and `tools/recomp/`. Root
-   `tools/recomp-generation.py` fingerprints these inputs. New wrapper names can
+   `tools/build/recomp-generation.py` fingerprints these inputs. New wrapper names can
    require regeneration; a host implementation body edit may only need a build.
 2. `src/hle/hle_d3d8.c` implements `D3DDevice_Swap` and Present integration. The
    observed desktop Swap path counts a guest swap (`xbox_FpsCountSwap`), arms the
@@ -584,8 +593,8 @@ be investigated by LOCAL without transmitting it to the hosted advisor.
 Common Xbox frontend: `d3d8_device.c`, `d3d8_resources.c`, `d3d8_states.c`,
 `d3d8_shaders.c`, `d3d8_screencopy.c`, `d3d8_display.c`; backend selection through
 `rhi.c`, `rhi_d3d11.c`, `rhi_vulkan.c`. Legacy Mac GL remains separate. Shared
-algorithms live in root `src/graphics/` and settings in `src/pc_debug_options.def`.
-See [shared-platform](../shared-platform.md) for adapter and GPU contract details.
+algorithms live in root `src/graphics/` and settings in `src/diagnostics/pc_debug_options.def`.
+See [shared-platform](../development/shared-platform.md) for adapter and GPU contract details.
 
 Original rendering defaults to 60 and the console interrupt clock remains 60 Hz.
 At `c932bee`, launcher opt-in native 120/144 beta settings require a compatible
@@ -594,7 +603,7 @@ Historical interpolation names and tests do not restore the retired engine. API 
 counts are not GPU completion or display scanout. To investigate slowdowns,
 compare stable/slow/stable timing, distinguish CPU work, GPU work, synchronization
 and intentional waits, then run one discriminating intervention. Issue #105 measured repeated text VM queries plus late-frame gate quantization;
-see STATUS.md for its scoped Windows acceptance.
+see docs/project/STATUS.md for its scoped Windows acceptance.
 
 ## Auto display and cinematic matte hook
 
@@ -702,14 +711,14 @@ frames without a simulation tick and expires old requests after 150 ms. Host-onl
 bindings are appended after Xbox controls and never emit controller buttons.
 SDL focus loss clears the request/rearm state; capture state is atomic across
 SDL and guest threads. Regenerate guest bodies through the supported build when
-adding/changing the wrapper, and run `tests/test_weapon_slots.py` on both hosts.
+adding/changing the wrapper, and run `tests/input/test_weapon_slots.py` on both hosts.
 
 ## Keyboard menu callback integration
 
 The additive `keyboard-settings-menu` patch blocks port-0 input dispatch during
 shared binding capture (before controller/focus guards), and limits parsed
 keyboard profiles to two sources per action. Controller profiles retain four.
-The themed editor lives in `src/pc_keyboard_menu.inc`, included by the existing
+The themed editor lives in `src/interface/pc_keyboard_menu.inc`, included by the existing
 display-menu hook. It uses verified unused callback bytes in the US executable;
 no generated C is edited. Menu construction, updates, row drawing and live saves
 remain shared between Windows and native Mac. Device illustration geometry
@@ -738,7 +747,7 @@ unchanged other routes, rejection and override removal.
 
 ## Replacement texture frame completion
 
-`patches/0360-texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
+`patches/graphics/textures/0360-texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
 `present_resolve`, guarded by TSFP_TEXTURE_PACK. This covers the title
 `dev_Swap` path, the older `dev_Present` path and the public frame helper. Legacy GL calls
 the same shared queue pump from its own Present adapter. This completes
