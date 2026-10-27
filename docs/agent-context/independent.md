@@ -36,7 +36,9 @@ dispatch and existing LOCK handlers remain intact. Native fixtures include x86
 memory/register oracles and decoded SET/CMOV/branch consumers; historical text
 fixtures follow the new emission. Hashes, loader order and both-host CI include
 this stage. Full flag provenance, atomic replacement and native Mac gameplay
-remain separate work. See MAC-083 and STATUS.md for measured acceptance.
+remain separate work. Windows bit-stage game acceptance now passed; see MAC-083
+and STATUS.md. Patch-index hashes must use LF patch bytes as stored in Git;
+normalize a stale local CRLF copy before refreshing the index.
 
 `independent-translation-product.patch` follows bit lowering and removes the
 multiply/divide method bodies in favor of `translation_product.py`. Inputs are

@@ -1682,13 +1682,13 @@
     },
     {
       "name": "independent-translation-product.patch",
-      "sha256": "9b36a192bd982f850c20c552d15921e845e548aad126bde16e328b5e6de9614b",
+      "sha256": "a854cfd7319dc85d935fd6c4fad68c4532afeb19ebf4dff11628c285d4834497",
       "targets": [
-        "templates/runtime/recomp_types.h\r",
-        "titles/futureperfect/CMakeLists.txt\r",
-        "tools/recomp/lifter.py\r",
-        "tools/recomp/test_lifter_sar_width.py\r",
-        "tools/recomp/translator.py\r"
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_sar_width.py",
+        "tools/recomp/translator.py"
       ]
     },
     {

@@ -18,7 +18,7 @@ complete patch stack, 11 UI layout tests, fresh-checkout patch transition,
 bundled runtime snapshot test, and context check pass.
 Native Mac validation remains pending (MAC-082).
 
-## Independent bit-operation lowering (game acceptance pending, 2026-10-27)
+## Independent bit-operation lowering (Windows acceptance passed, 2026-10-27)
 
 On `feature/independent-bit-operations`, the next original lowering module
 replaces non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP. Word/dword signed memory
@@ -45,17 +45,24 @@ Windows validation:
   passed in 53.86 seconds**, including fresh patch installation and UI layout.
   The normal incremental Windows rebuild and native checks also passed. The
   existing main shield entry keeps MAC-082; product lowering is now MAC-084.
-- **New game acceptance is pending.** The isolated runner refused to launch
-  because another installed copy was running. The user requested that session
-  remain open while other checks finish. No new game was launched; all 19
-  protected personal/save/fixture files retained their hashes. Earlier gameplay
-  evidence below predates this build and does not validate the new bit stage.
+- **Isolated Windows game acceptance passed:** Original60 Scotland the Brave,
+  injected inputs, forward **11.195 units**, backward **6.186 units**, ammo
+  **8 to 6**, **40 frozen pause samples** and **60 advancing resume samples**.
+  Final checkpoint **83.558 seconds**, runner exit 0. Reviewed start, pause and
+  resume captures. All 19 protected files unchanged; no lock, partitions or
+  crash dump remained. This does not certify physical input, audio, movies,
+  foreground pacing or a full campaign.
+- CI's scope job found a stale patch index: the local product patch still had
+  CRLF bytes although Git stored LF. Normalized that local file to its existing
+  Git bytes and refreshed the index (no production change). The same scope
+  suite now passes locally: **116 tests and 26 subtests**. CI rerun pending.
+
 
 Executable SHA-256:
 `c1f6536d373e1758f894cbc15cc95051cfb39fb44fb37f842be430d4fbf655ab`.
 Evidence: `logs/bitops-focused.log`, `logs/bitops-generation.log`,
 `logs/independent-bitops-comparison.json`, `logs/bitops-build.log`,
-`logs/bitops-patch-checks.log`, `logs/bitops-game-deferred.json`,
+`logs/bitops-patch-checks.log`, `logs/independent-bitops-game-check.json`, `logs/bitops-ci-scope-repair.log`,
 `logs/bitops-main-integration-tests.log`, `logs/bitops-main-build.log`.
 Native Mac generation/build/gameplay remain unverified (MAC-083). The earlier
 product stage is included on this branch after PR #370 merged independently.
