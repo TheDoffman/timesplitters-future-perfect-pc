@@ -31,8 +31,8 @@ math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
 `tests/test_repo_context.py` checks effective patch order rather than only
-filename sorting. Independent translation-moves, translation-integer and then
-translation-bits are final, after radial stick deadzone and title instrumentation
+filename sorting. Independent translation-moves, translation-integer, translation-bits and
+translation-product are final, after radial stick deadzone and title instrumentation
 that their removed handlers contain. Historical fixtures omit replacements until
 the complete-stack upgrade. Update the ordering assertion when intentionally
 adding another final patch.

@@ -1,5 +1,8 @@
 # Subsystem entry points
 
+`src/guest_integer_fault.c` logs divide site/reason and raises a fatal Windows exception or POSIX SIGFPE (abort fallback). Translation preserves results and publishes EBP first. Guest SEH remains unimplemented; native product fixtures test the host boundary.
+
+
 Procedural wind: [ownership/time scopes](native-wind.md).
 
 Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).

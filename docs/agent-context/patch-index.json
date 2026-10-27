@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a3c05e8daa2e3325fbe7e78c5e8991692f6fdd32b33daf77cfe6d04c2c7d883e",
+  "loaderSha256": "cbc2f95f46c00f48cfeb1448d1f37db2119fdc360ae8706cab088c0e326f0657",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1671,6 +1671,17 @@
         "tools/recomp/test_lifter_rotate_width.py",
         "tools/recomp/test_lifter_sar_width.py",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-product.patch",
+      "sha256": "9b36a192bd982f850c20c552d15921e845e548aad126bde16e328b5e6de9614b",
+      "targets": [
+        "templates/runtime/recomp_types.h\r",
+        "titles/futureperfect/CMakeLists.txt\r",
+        "tools/recomp/lifter.py\r",
+        "tools/recomp/test_lifter_sar_width.py\r",
+        "tools/recomp/translator.py\r"
       ]
     }
   ]

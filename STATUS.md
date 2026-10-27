@@ -1,3 +1,94 @@
+## Desktop relocation rebuild and gameplay verification (2026-10-27)
+
+Reconfigured the Windows build after moving out of OneDrive. Preserved the old
+CMake cache/internal configuration and rebuilt the installed CMake 4.4.4 Python
+entry-point launchers with the new interpreter path; no package upgrade.
+The normal `tsfp.ps1 -Action Build` reapplied the full patch stack (zero runtime
+file changes), generated fresh Visual Studio projects, rebuilt Release, passed
+its native checks and generated matching crash symbols. All 46 current cache/
+solution/project files are free of old checkout paths. One obsolete, unreferenced
+project was preserved with the old configuration under ignored recovery logs.
+
+Isolated Original60 Scotland the Brave test passed with injected inputs. Reviewed
+start, pause and resume captures; moved **11.175 units forward** and **6.185 units
+backward**, ammo **8 to 6**, **40 frozen pause samples** and **60 advancing resume
+samples**. Final checkpoint **92.411 seconds**, runner exit 0; no remaining run
+lock, virtual partitions or crash dumps. All 19 protected personal settings/save/
+fixture files were preserved. This bounded background-rendering test does not
+certify physical input, audio, foreground pacing, movies or a full campaign.
+
+Rebuilt executable SHA-256:
+`95d969a6e741bb8d09c2c09ce796d53de6f67a0f3016cc14792cb9e211cb12ae`.
+Evidence: `logs/relocated-windows-build.log`, `logs/relocated-cmake-verification.json`,
+`logs/relocated-product-game-check.json`, `private/test-saves/relocated-product`.
+The earlier cache-reconfiguration requirement below is now resolved. Source
+replacement remains in progress; this rebuild did not change production source.
+
+## Independent multiply and divide lowering (in progress, 2026-10-27)
+
+Continuing PR #370 from `88566e9d`, `translation_product.py` replaces MUL/IMUL/
+DIV/IDIV lowering and `guest_integer_fault.c` supplies a shared fatal diagnostic
+boundary. All integer widths, explicit IMUL forms, divisor aliasing and quotient
+checks are covered by original native fixtures. Signed division avoids C signed
+overflow; faults precede result writes. Multiply CF/OF consumers are integrated;
+other undefined flags are not fabricated. Guest SEH remains separate work.
+
+Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- Final focused checks after the SAR fixture repair: **131 passed in 42.73
+  seconds**. Direct SAR checks with MSVC: **5 passed, 14 subtests passed in
+  2.73 seconds**. Earlier product-only checks: **6 passed in 7.31 seconds**.
+- Original native fixtures cover all byte multiply pairs, all AX values with
+  ten boundary divisors, 12,000 word/dword seeded/boundary cases, register and
+  memory divisor aliases, one-read memory behavior and unchanged fault results.
+  Windows ML64 provides actual x86 results and defined CF/OF comparisons.
+  Full decoded functions execute SET/CMOV/JO and zero/overflow fault cases.
+- Full Windows build and native checks passed; source fingerprint is current.
+  **15,838 functions translated, zero failures, 50 unresolved stubs**. Four of
+  21 generated C/header files are identical; the type header adds only the own
+  fault prototype. In 16 main C files, names/order/outside-body text are
+  identical: **2,846 changed bodies, 12,992 unchanged**. All changed bodies
+  contain product emission; representative multiply/divide diffs were reviewed.
+  This is structural evidence, not complete semantic equivalence.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures, forward
+  **11.193 units**, backward **6.288 units**, ammo **8 to 6**; 40 pause samples
+  had frozen ticks and 60 resume samples advanced. Last checkpoint **94.942
+  seconds**, runner exit 0. Profiles/signatures/canonical fixture preserved;
+  no partitions, run lock or crash dumps remained; personal data unused.
+- Tested executable SHA-256:
+  `28aadf3e8c1b39279ca1e77d11c74a0b4654cf3627fb51cadb6433b5a605febe`.
+- Broader suite: **564 passed, one fixture-update race failed in 986.64 seconds**.
+  The subsequent run was interrupted by OneDrive relocating Desktop files.
+  After recovery, the complete patch/context/backlog rerun passed:
+  **42 passed in 887.98 seconds**, including the affected transition.
+  Native product fixtures also passed from the relocated checkout:
+  **6 passed in 11.45 seconds**; generation fingerprint remains current.
+- Relocation recovery verified all 19 edited files against a separate backup,
+  all 147,065 initially audited residual files present, no missing tracked
+  files and a clean full Git integrity check. XBE/executable hashes match.
+  Moved worktree registrations and active directory links are repaired.
+  The existing CMake cache still contains old absolute paths and needs
+  reconfiguration before the next compilation. This is recovery validation,
+  not a new build or gameplay run. Logs: `logs/relocation-integrity-results.json`
+  and `logs/independent-product-recovery-tests.log`.
+
+The preceding `88566e9d` runtime CI failed on both hosts: the inherited SAR
+fixture still assumed two emitted statements and a signed-cast expression.
+These checks ran with CI's Clang but skipped locally without a GNU-style
+compiler. The fixture now executes the whole emitted block and keeps its value
+sweeps/negative controls; it uses the shared native compiler adapter so MSVC
+also exercises them. This is test-only; the executable above is unchanged.
+A direct fixture run also exposed an import-order error in the repair, corrected
+by importing the consumer bridge before discovering the project compiler helper.
+Prior launcher/texture CI passed; corrected-head CI remains separate.
+
+Bounded gameplay used injected input, background/minimized rendering, original
+60 FPS and skipped movies. It does not certify physical input, foreground pacing,
+audio or full levels. Native Mac generation/build/gameplay and signal/crash
+integration remain unverified (MAC-082). Guest SEH and the overall replacement
+remain incomplete. Evidence: `logs/independent-product-*`, generation baseline
+`private/pipeline/product-acceptance-baseline`, `private/test-saves/independent-product`.
+
 ## Independent shift and rotate lowering (2026-10-26)
 
 Continuing PR #370 from `9c2e509b`, project `translation_bits.py` replaces seven

@@ -217,6 +217,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
 | MAC-080 | Independent scalar integer lowering | Awaiting validation |
 | MAC-081 | Independent shift and rotate lowering | Awaiting validation |
+| MAC-082 | Independent multiply and divide lowering | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6118,6 +6119,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Native Mac generation and gameplay remain
   unverified. Dynamic zero-count conditional provenance and complete flag lowering
   remain separate replacement work on both hosts.
+
+### MAC-082 - Independent multiply and divide lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own width-aware products and quotients, sampled divisors,
+  defined multiplication carry/overflow and explicit fatal divide errors before
+  quotient/remainder writes. Guest SEH remains separate foundation work.
+- **PC source:** Continuing PR #370 from `88566e9d`; `translation_product.py`,
+  `guest_integer_fault.c`, `independent-translation-product.patch` and consumers.
+- **PC validation:** Original compiled references, native x86 oracle, aliases,
+  divide fault state and real host adapter; see STATUS.md for current results.
+- **Existing Mac support:** Shared lowering and C adapter use POSIX SIGFPE;
+  portable fixtures run with undefined-behavior sanitization in Mac CI.
+- **Mac adaptation needed:** No separate arithmetic implementation; native
+  signal/crash integration and supported-title acceptance remain unverified.
+- **Mac acceptance checks:** Run product/consumer/native fault fixtures, regenerate
+  with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Native Mac generation/build/gameplay are
+  pending. CI is distinct from title gameplay and guest SEH remains unfinished.
 
 ## Entry template
 

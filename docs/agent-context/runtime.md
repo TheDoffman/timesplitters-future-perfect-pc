@@ -1,5 +1,8 @@
 # Runtime and patch navigation
 
+Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
+
+
 Independent tooling: [ownership and validation](independent.md), including compiled inherited SAR sweeps.
 
 The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.
