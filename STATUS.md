@@ -29072,3 +29072,23 @@ The captured sequence is limited to this weapon and scene; an across-weapon
 visual sweep and native Mac validation remain pending. Evidence stays in
 ignored `private/test-saves/high-refresh/native-180-issue371-fixed-*` and
 `logs/issue371-fixed-contact.jpg`.
+
+## Issue #337 follow-up: brief Fire clicks at high refresh (2026-10-27)
+
+The earlier Reload fix buffered only Reload. Primary/secondary Fire still
+depended on the held key state at the sampling instant, so a short mouse click
+could end before the original 60 Hz decoder polled it. A shared 34 ms
+press-edge pulse now carries configured Fire keys across that gap, without
+changing physical controller input or sustained holds. Reload clears older
+Fire pulses; a later fresh Fire press can interrupt Reload. A new public
+replay first failed against the old code, then passed 680 click schedules at
+60/120/144/180/240 FPS plus repeated clicks, held Fire, remapping and input
+lifecycle checks. The private-US fixture passed 425 Fire schedules through
+the original digital decoder, using X as a surrogate button edge. This is
+synthetic input evidence; physical mouse feel and native Mac gameplay still
+need validation. The Windows Release build and bundled tests pass. An isolated
+180 FPS Test Lab Story replay delivered seven 1 ms Fire clicks and consumed
+exactly seven rounds (128 to 121), with no crash or native presentation error;
+the run's saved validation is in ignored
+`private/test-saves/high-refresh/native-180-short-fire-issue337-validation.json`.
+Changes are on a local branch and are not yet pushed.

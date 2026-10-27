@@ -104,6 +104,20 @@ def gameplay_checks(samples):
                 ammunition_consumed=fired)
 
 
+def short_fire_checks(samples):
+    """Seven 1 ms clicks must each consume a round in isolated Story gameplay."""
+    def total(sample):
+        by_type={}
+        for slot in sample.get('ammo',[]):
+            item=by_type.setdefault(slot['type'],dict(reserve=slot['reserve'],loaded=0))
+            item['loaded']+=slot['loaded']
+        return sum(v['reserve']+v['loaded'] for v in by_type.values()) if by_type else None
+    before=next((total(s) for s in samples if 84<=s['seconds']<86 and total(s) is not None),None)
+    after=next((total(s) for s in reversed(samples) if 112<=s['seconds']<115 and total(s) is not None),None)
+    return dict(short_fire_seven_rounds=before is not None and after is not None and before-after>=7,
+                short_fire_ammo_before=before,short_fire_ammo_after=after)
+
+
 def opening_firearm_check(samples):
     # Give the opening handoff a full minute after the first observed Story
     # player. Short menu/intro smoke tests cannot establish its completion.
@@ -123,6 +137,8 @@ def main():
     parser.add_argument('--capture', action='store_true')
     parser.add_argument('--stress', action='store_true',
                         help='replay walking, firing and camera turns after the intro')
+    parser.add_argument('--short-fire', action='store_true',
+                        help='replay seven 1 ms Fire clicks and check each shot in isolated gameplay')
     parser.add_argument('--pause-check', action='store_true')
     parser.add_argument('--no-intro-skip', action='store_true',
                         help='let the opening cinematic finish naturally for timing diagnosis')
@@ -145,6 +161,8 @@ def main():
     args = parser.parse_args()
     if not args.native and args.fps!=60:
         parser.error('The original timing reference is fixed at 60 FPS; use --native for higher rates.')
+    if args.short_fire and (args.seconds<116 or args.stress):
+        parser.error('--short-fire needs at least 116 seconds and cannot combine with --stress')
     if args.label and not re.fullmatch(r'[a-zA-Z0-9-]{1,32}',args.label):
         parser.error('--label must contain 1-32 letters, digits or hyphens')
     runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -161,6 +179,7 @@ def main():
     if args.trace_handoff: tag += '-handoff'
     if args.trace_handoff and args.handoff_watch!='equipped': tag += '-'+args.handoff_watch
     if args.resources: tag += '-stability'
+    if args.short_fire: tag += '-short-fire'
     if args.label: tag += '-'+args.label
     (run / 'runtime.ini').write_text(f'frame_target = 0\nframe_interp = 1\nframe_cap = 60\nfps_overlay = 1\nfullscreen = {int(not args.windowed)}\nvrr = 1\n')
     (run / 'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
@@ -179,6 +198,9 @@ def main():
             events += [(start, f'key {key} 1'), (stop, f'key {key} 0')]
         for at in range(87000, 112000, 700):
             events += [(at, 'key 1 1'), (at+180, 'key 1 0')]
+    if args.short_fire:
+        for at in (87000,91000,95000,99000,103000,107000,111000):
+            events += [(at, 'key 1 1'), (at+1, 'key 1 0')]
     assert len(events)<=256, 'PC replay hook accepts at most 256 events'
     (run / 'input.txt').write_text('\n'.join(f'{at} {event}' for at,event in sorted(events))+'\n')
     env.update(TSFP_PC_INPUT_REPLAY=str(run / 'input.txt'), RECOMP_WINDOW_BACKGROUND='1' if args.windowed else '0',
@@ -430,6 +452,9 @@ def main():
                           resumed=any(t>84 and not pause for t,_,_,pause in states))
         if args.stress and args.seconds >= 116:
             checks.update(gameplay_checks(game_samples))
+        if args.short_fire and args.seconds >= 116:
+            fire_check=short_fire_checks(game_samples)
+            checks['short_fire_seven_rounds']=fire_check['short_fire_seven_rounds']
         checks.update(opening_firearm_check(game_samples))
         (run/(tag+'-validation.json')).write_text(json.dumps(dict(
             completed=completed,exit_code=process.returncode if process else None,
@@ -475,6 +500,9 @@ def main():
     if args.stress and args.seconds >= 116:
         observed=gameplay_checks(game_samples)
         assert all(observed.values()), f'Replayed gameplay did not progress: {observed}'
+    if args.short_fire:
+        observed=short_fire_checks(game_samples)
+        assert observed['short_fire_seven_rounds'], f'Short Fire clicks did not all fire: {observed}'
     handoff=opening_firearm_check(game_samples)
     assert all(handoff.values()), f'Opening firearm handoff did not complete: {handoff}'
     assert any(scene==2 and not flags & 0x20000000 for _,scene,flags,_ in states), 'Did not reach Story gameplay'
