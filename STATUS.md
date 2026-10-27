@@ -1,3 +1,55 @@
+## Story HANDLE FIRST follow-up - 2026-10-26
+
+Uncommitted on `online-story-coop`, base `0252b4e`, Windows x64/D3D11.
+The supported build and its native checks pass with matching crash symbols.
+Current executable SHA-256:
+`09eb81f253119b7dcc23b4b45eeca78f4a584e3da986546d48767ea5ef6e36d9`.
+Compatibility: `646f2905254e2db3e3c861240aa0310261906fdf3be61f52ea9165dac404a3df`.
+The supported US XBE was verified. Build-local `_CL_=/MP2` bounded compiler
+children after an earlier D8040 process-communication failure.
+
+The bounded two-player run passed lobby controls, coordinated intro/gameplay,
+movement, firearm/ammunition checks, actual first-checkpoint capture, host-only
+checkpoint selection and coordinated restore. Both peers retained weapon14 and
+restored inventory. The reviewed guest checkpoint capture shows the weapon.
+Both runners exited0 and recycled test partitions. Receipt:
+`logs/story-followup-checkpoint-receipt.json`, build `5fd8c66c...`, before the final
+menu-spacing-only correction. No health injection, teleport or full mission was
+used. Guest traces record84 successful NPC shot replays; this establishes actual
+presentation-path delivery, not every weapon/effect or Internet/WAN behavior.
+
+Opening captures show the guest world without an early standing human. SLD2
+separates awards from actual host equip. Reviewed lobby title/status text is
+centered with thumbnail space. Difficulty trophies use the original row drawer;
+the final lobby-only run verifies bronze/silver/gold trophies with the original
+nine-unit icon gutter and clear label spacing.
+
+Continuous NPC poses use the unreliable channel; lifecycle/death and periodic
+recovery stay reliable. Host roster retirement removes dead guest collision
+bodies through the original destructor. Story hit encoding covers32 slots;
+the host owns NPC death even when the lethal hit comes from a guest.
+Production-source fixtures pass; later sniper encounters, death timing and
+intermittent visibility still need encounter playtesting.
+
+The original completion dump resolves to `35B5D0+0x155` after scene101.
+Gameplay payload pumps now require valid human bodies/contexts across frontend
+transitions, benefiting other Online modes. Original stage-building fixtures
+cover first-mission outro, then rewards, host-only Continue and coordinated
+next-stage launch. Full completion and next-level runtime behavior remain for
+user playtesting; later mission gameplay has not been implemented or accepted.
+Shared bot replay also accepts targetless shots already allowed by the codec,
+with an ordinary Online guest regression. Final source suite:46 passed,2 skips.
+Fresh/repeated patch application and historical Mac migration pass. The latter excludes the
+new dependent Story wrappers from its old Mac-only starting stack.
+
+HANDLE FIRST remains incomplete: explosive-container destruction and Splitter
+camouflage are still under investigation. Matching prop IDs were observed on
+both peers; no guessed pointer/ID codec or rendering flags were introduced.
+Four-player checkpoint restore, native Mac Online (MAC-013), Internet/WAN and
+physical controllers remain unverified. HANDLE LATER is unchanged. Personal
+saves/settings and the canonical fixture are preserved. No commit/push, release
+or merge into main was performed in this follow-up.
+
 ## Story co-op checkpoint before pause - 2026-10-22
 
 Current Windows x64 implementation remains incomplete. The latest four-instance
@@ -27072,3 +27124,97 @@ with final host-accepted hits and reload states. Logs: story-authority-four.log,
 story-damage-build.log and story-damage-tests.log in ignored logs/. Earlier
 failed receipts and the matched crash recovery remain preserved separately.
 No release, push, or merge of Story into main was performed.
+
+## Manual local Story co-op launcher (2026-10-26)
+
+Test-StoryCoop.ps1 opens two isolated Windows Online Story games (optional
+-Players 4) with a private loopback lobby directory. Saves, controls, display
+settings and Online settings stay in disposable Test Lab copies; users host/join
+through the normal menus. Sessions wait for all windows to close, cap logs and
+recycle only known test disks. Personal data and the canonical fixture are preserved.
+
+Windows x64, source base 0252b4e plus this uncommitted launcher change; existing
+sealed Release executable a21c4df5d04a506a3c46e33b4805257222d1de845bad0944b26798fdba32b8da,
+D3D11 RHI, Original 60 FPS. Eighteen launcher/profile tests passed. A bounded
+eight-second two-game startup/cleanup smoke passed outside the restricted sandbox;
+sandboxed graphics startup raised invalid-handle exceptions in both games. The
+smoke verifies startup/lifecycle, not menu navigation or mission completion. Prior
+four-peer first-mission gameplay evidence remains separate. Native Mac Online is
+still unavailable (MAC-013); no Mac gameplay validation claimed.
+
+
+## First-mission HANDLE FIRST bug repairs (2026-10-26, uncommitted)
+
+Windows x64, source base0252b4e plus local changes, supported US executable,
+D3D11 RHI, Original60 FPS. Scope is the first Online Story mission; the notes'
+HANDLE LATER disconnect/exit/Game Over flows and other missions are unchanged.
+
+The opening black screen was reproduced with a natural two-player intro.
+Read-only observations showed matching camera matrices but the guest's
+camera+21C world-render bit0 disabled by original CB110's Local Story single-view
+policy. The shared cinematic adapter now applies the host's world-render enable
+to each guest's owned camera, retaining local camera handles and unrelated flags.
+Typed camera cues resolve local authored assets and run no host callbacks on
+guests. Numeric fades/poses use bounded matching fragments. Context+14F8 is a
+first-person weapon animation selector, not a cinematic detector.
+The changed two-player early60/900-tick captures visibly render the tilted
+opening on Player2, where the prior build was black. The later sniper cutscene
+still needs direct scene validation; it uses the same world-render/cue adapter.
+
+NPC replicas receive actual constructor transforms and resolved model variants,
+rebuild on spawn-generation reuse, and publish every actual first-mission
+simulation tick instead of every sixth tick. Source checks cover constructor
+inputs, stale generations, animation cadence and the original evaluator ABI.
+Intermittent invisible bodies and animation smoothness still require human scene
+review; construction/cadence fixes alone do not establish complete NPC fidelity.
+
+Host objective kind0/1 records now reach guest Status/HUD through SOJ1, with
+host/epoch/identity guards and deferred local HUD notifications; executable
+kind2 scripts are never replayed. Runtime objective states first3 agree on both
+peers. First-mission ground/bomb decisions are host-owned; guests replay actual
+numeric creation arguments and retain local trail handles. All first192 recorded
+ground-effect serials/positions/colors match exactly between host and guest in
+logs/story-bugs-effects-parity.json. Network transit still adds delivery latency.
+
+The host has Restart from Checkpoint, disabled until a valid capture. Original
+local bookmark APIs capture each peer's own engine pointers; only checkpoint
+index and serial travel over the wire. Extra humans use the original bookmark
+capture/restore ABI. Pause rows use compact original font metrics and an11-unit
+host Options origin adjustment. The reviewed bounds-check-pause.png fits all9
+rows between the header/footer. Guest reload rows remain absent. The earlier
+changed two-peer run passed host-only coordinated level restart and fresh handoff.
+Checkpoint route attempts stopped at canyon/wreck geometry, so a real checkpoint
+reload has not yet been certified; source protocol/bookmark tests pass.
+
+Supported Windows builds completed with native tests, matching symbols and
+network seals. Production-source fixtures, manual launcher/profile checks,
+Story evidence and repository context checks passed51 tests; historical Mac-only
+patch migration also passed. Native fallback compilation is distinct from Mac
+Online acceptance, which remains blocked on MAC-013. No Internet/WAN, physical
+controller, full-level completion or later-mission validation is claimed.
+
+Current build:12ce6e4bd196cded1a8f95619c05901782629ad375d6d4cc73fcd42460f51b73
+Compatibility:6dbfefbb33594ed1047d2164157778c35de1ae971024480cc59a382b38ed196b
+Final four-peer scope: lobby admission, first-mission loading, all active
+contexts, shared teams, independent movement, firearm handoffs and ammo checks
+passed before the optional checkpoint walk. The guest Status tab visibly showed
+Reach the rebel base / INCOMPLETE. All192 recorded ground-effect events match
+the host on all three guests (logs/story-bugs-four-effects-parity.json).
+The overall checkpoint-probe receipt is failed, because the bounded walk never
+captured a checkpoint; do not label the complete scenario passed. A capture-limit
+failure in the preceding attempt was a runner assertion, not a game crash.
+Redundant old route frames were recycled before repeating.
+
+The final natural two-player intro also reached matching first-mission ticks;
+reviewed early60/900 frames confirm Player2's opening world is visible. Movement,
+weapon/ammo checks and actual host NPC damage passed, but canyon geometry and
+the bounded route limit prevented checkpoint capture. Receipt:
+logs/story-bugs-natural-final-receipt.json. Checkpoint restoration, the later
+sniper sequence and intermittent NPC visibility/smoothness remain explicit
+human-playtest gaps. No complete mission was attempted.
+
+Personal saves/settings and the canonical Test Lab fixture remain preserved;
+all runners shut down and recycled their disposable partition images. Temporary
+compiler/patch-test fixtures and redundant walk screenshots were recycled.
+The incomplete Story lobby bullet has no actionable bug description; clarification
+was requested. No push, release or merge into main was performed.

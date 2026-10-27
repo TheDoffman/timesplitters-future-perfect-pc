@@ -50,6 +50,8 @@ def main():
     parser.add_argument('--fire-probe',action='store_true',help='Check first-level firearm and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
+    parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
+    parser.add_argument('--presentation-probe',action='store_true',help='Retain five early-opening frames per peer for cinematic/black-screen review')
     parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
     parser.add_argument('--script-observe-seconds',type=int,default=0,choices=range(31),metavar='0..30',help='Passive diagnostic wait if a peer is script-suspended; does not replace failed startup evidence')
     parser.add_argument('--receipt-id',help='Caller nonce for interpreter-independent receipt identity')
@@ -57,6 +59,7 @@ def main():
     assert not args.lobby_controls or args.load_probe
     assert not args.lobby_only or args.lobby_controls
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
+    assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and args.mission==0 and not args.lobby_only)
     assert not args.combat_probe or (args.fire_probe and args.mission==0 and args.players==4)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -104,13 +107,14 @@ def main():
     address=f'http://127.0.0.1:{directory.server_port}'
     client=Client(address)
     children={};streams=[]
-    deadline=time.monotonic()+(600 if args.restart_probe else 450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
+    deadline=time.monotonic()+(600 if args.restart_probe or args.checkpoint_probe else 450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
 
     def launch(role,code=None):
         command=[sys.executable,str(ROOT/'tests/stability_transitions_game.py'),
             '--run-name',runs[role].name,'--scenario','story-pair','--pair-role',('host' if role=='host' else 'guest'),'--directory',address]
         if code:command+=['--lobby-code',code]
         if args.load_probe:command+=['--pair-load-probe']
+        if args.presentation_probe:command+=['--story-presentation-probe']
         output=(evidence_root/(role+'-runner.log')).open('wb');streams.append(output)
         child=subprocess.Popen(command,cwd=ROOT,stdout=output,stderr=subprocess.STDOUT,
             creationflags=subprocess.CREATE_NO_WINDOW)
@@ -328,9 +332,9 @@ def main():
                     restart_capture('guest','guest-pause',keys=[27],wait=2)
                     restart_capture('guest','guest-unpause',keys=[27],wait=2)
                     result['restart_host_pause']=restart_capture('host','host-pause',keys=[27],wait=2)
-                    # Restart Level is the penultimate row, before Quit to Desktop.
+                    # Restart Level precedes Checkpoint and Quit to Desktop.
                     # Original confirmation defaults to No; Up explicitly selects Yes.
-                    restart_capture('host','host-restart-confirm',keys=[38,38,69],wait=2)
+                    restart_capture('host','host-restart-confirm',keys=[38,38,38,69],wait=2)
                     restart_capture('host','host-restart-yes',keys=[38,69],wait=2)
                     restart_deadline=time.monotonic()+80
                     prior_ticks={role:s['game_tick'] for role,s in fired.items()}
@@ -415,6 +419,59 @@ def main():
                     for role,s in observations.items():
                         value=npc_health(s)
                         assert npc_health_agrees(expected_health,value),(role,'NPC health differs from host',value,expected_health)
+                if args.checkpoint_probe:
+                    probe_serial=0
+                    def checkpoint_capture(role,label,**step):
+                        nonlocal probe_serial
+                        probe_serial+=1
+                        append(role,label=label,world_probe=True,probe_serial=probe_serial,**step)
+                        return wait_for(lambda:(c if (c:=captured(role,label)) and c.get('command',{}).get('probe_serial')==probe_serial else None),'Missing checkpoint capture '+label)
+                    current=checkpoint_capture('host','checkpoint-walk',wait=.2)
+                    controls=read_json(runs['host']/'controls.json')['mouse'];sensitivity=controls['sensitivity']
+                    waypoint=0;route=[(-6,-6),(-6,15),(0,40),(30,50),(18,32),(30,21),(40,15),(54,16),(58,15)]
+                    walk=[]
+                    for index in range(48):
+                        masks=current.get('story_checkpoints',[])
+                        if masks and masks[0]:break
+                        local=current.get('local_player') or {};position=local.get('position',[])
+                        assert len(position)==3 and local.get('health',0)>0,('Host unavailable before checkpoint',current)
+                        pads=[p for p in current.get('story_scene',{}).get('checkpoint_pads',[]) if (p.get('flags') or 0)&0x1800000]
+                        # The flagged pairs are real checkpoints; initial starts
+                        # lack that flag. The first trigger is only a route hint.
+                        if len(pads)>=2 and len(route)==9:
+                            route.append((pads[1]['position'][0],pads[1]['position'][2]))
+                        while waypoint<len(route)-1 and math.dist((position[0],position[2]),route[waypoint])<6:waypoint+=1
+                        enemies=[c for c in current.get('world',{}).get('characters',[]) if c.get('kind',[None])[0]==91 and
+                            c.get('health',0)>0 and (c.get('visibility_flags',0)&0x10) and math.dist(position,c['position'])<10]
+                        if enemies:
+                            target=min(enemies,key=lambda c:math.dist(position,c['position']));delta=[a-b for a,b in zip(target['position'],position)];delta[1]+=1.1
+                            yaw=math.degrees(math.atan2(delta[0],delta[2]));pitch=math.degrees(math.atan2(delta[1],math.hypot(delta[0],delta[2])))
+                            dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                            dy=round((local['look'][1]-pitch)/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                            current=checkpoint_capture('host','checkpoint-shot',mouse=[dx,dy],keys=[1],hold_seconds=1.5,wait=.2)
+                            continue
+                        point=route[waypoint];yaw=math.degrees(math.atan2(point[0]-position[0],point[1]-position[2]))
+                        dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                        dy=round(local['look'][1]/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                        # Keep a numeric walk history and one rotating screenshot.
+                        current=checkpoint_capture('host','checkpoint-walk',mouse=[dx,dy],keys=[87],hold_seconds=1.5,wait=.2)
+                        walk.append(dict(position=current.get('local_player',{}).get('position'),masks=current.get('story_checkpoints'),route=route,waypoint=waypoint))
+                    result['checkpoint_walk']=walk
+                    masks=current.get('story_checkpoints',[])
+                    assert masks and masks[0],('First checkpoint not reached by bounded real-input route',walk[-3:])
+                    expected=masks[0]
+                    ready=wait_for(lambda:(states if all(s.get('story_checkpoints')==[expected]*args.players for s in states.values()) else None)
+                        if (states:={role:read_json(run/'current.json',{}) for role,run in runs.items()}) else None,'Peers did not capture first checkpoint')
+                    result['checkpoint_captured']=ready
+                    result['checkpoint_pause']=checkpoint_capture('host','checkpoint-pause',keys=[27],wait=2)
+                    checkpoint_capture('host','checkpoint-confirm',keys=[38,38,69],wait=2)
+                    checkpoint_capture('host','checkpoint-yes',keys=[38,69],wait=2)
+                    def checkpoint_ready():
+                        states={role:read_json(run/'current.json',{}) for role,run in runs.items()}
+                        return states if all(s.get('game_state')==7 and s.get('scene')==2 and s.get('context_states')==[2]*args.players and
+                            s.get('story_checkpoints')==[expected]*args.players and '[PC-STORY-RESTART]' in (runs[role]/'run0.err').read_text(errors='replace') for role,s in states.items()) else None
+                    result['checkpoint_restored']=wait_for(checkpoint_ready,'Checkpoint reload did not restore playable peers')
+                    result['checkpoint_after']={role:checkpoint_capture(role,'checkpoint-after',wait=2) for role in roles}
                 result['status']='load-probe-passed'
     except BaseException as error:
         result['status']='failed';result['error']=str(error)

@@ -469,3 +469,74 @@ call site. Original 4:3 and split-view paths keep their existing behavior.
 both platform wrappers and a local supported-US-routine check; see build/test
 for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
 native Mac visual validation remains pending under MAC-036.
+
+First-mission presentation repairs (2026-10-26): `pc_story_cinematic.inc`
+replicates a validated numeric fade record and primary human pose during the
+opening before the host pistol grant, or an authored script camera. Context
++14F8 is a first-person weapon animation selector, not a cinematic detector.
+SCY2/SPY2 fragments share a checksum, epoch and sequence; guests assemble both
+before applying a pose. D4B00/D4BE0 wrappers capture host camera actions by the
+loaded camera tag (C6100 lookup), never pointers or script callbacks. Replay
+scopes original local-Story camera loops to the owned context and restores all
+pool/current globals and CPU state. Native/non-Story fallback remains original.
+Runtime screenshots and scope are recorded in STATUS; source tests alone do not
+establish the reported persistent post-sniper black screen is resolved.
+
+`pc_story_effects.inc` makes the first mission's216230/219CA0 random decisions
+host-only. The separate world-effects patch captures actual FFDA0 ground and
+EFBD0 explosion scalar arguments; SFW1 carries vectors/color, not handles.
+Guests replay original local creation APIs and update a locally owned projectile
+trail from host flight snapshots. A bounded replay window preserves a delayed
+one-shot event even after a newer flight sample. Other missions remain original.
+Match/host/finite/sequence guards reject invalid or obsolete data. Exact event
+serial/position trace comparison is distinct from visual timing review.
+
+The reproduced opening black screen had matching host/guest camera transforms
+but guest camera+21C bit0 clear. Original CB110 implements Local Story's shared
+single-view policy by disabling slot1; that is inappropriate for separate Online
+views. Cinematic snapshots carry the host's numeric world-render enable bit;
+guests apply only that bit to their own camera, retaining unrelated flags and
+local camera handles. Source tests explicitly reproduce the disabled guest view.
+
+### Story follow-up: firing, checkpoint inventory and completion
+
+`pc_story_shots.inc` observes successful `1BB5C0` firing, carrying numeric weapon
+transforms/aim/muzzle and actor slot/spawn. Humans publish only from their owning
+peer; the host validates the sender's assigned slot before relaying. Guests accept
+only host events, deduplicate serials, resolve local bodies and replay cosmetically.
+Remote actor/projectile damage is suppressed outside original incoming host damage.
+The shared bot presenter now accepts the codec's `UINT32_MAX` targetless shots.
+Story NPC hit identity reuses actor codec4 across32 slots; original reliable damage
+and host-only NPC death remain authoritative, including guest lethal hits.
+
+Continuous Story pose packets are unreliable; spawn/death/roster changes and
+60-tick recovery remain reliable. A dead NPC removed from the host roster destroys
+its guest body through original `A9070`, retaining its death animation until that
+retirement. Checkpoint inventory is reapplied through original `25EC70` only after
+all final network contexts reach state2; weapon selection follows inventory copy.
+
+Lobby title/status use measured bounds and preserve thumbnail space; difficulty
+uses original localized labels/style. `pc_story_network_stage_builder` adapts
+original `65940` at completion/ending boundaries: ending movie, rewards106, then
+host continuation. `pc_network_player_payload` guards `35BD70`/`35DB60` while
+joined human contexts/bodies are absent in frontend/movie transitions, preserving
+control/config transport. The matching12ce Windows dump resolves to `35B5D0`
+after scene101. First-mission completion and visual parity still require gameplay
+validation; source fixtures alone do not establish a completed mission.
+
+The opening handoff uses SLD2: award and actual host equip are distinct. A guest
+waits for the original host actor's equipped weapon before calling its inventory
+APIs. `A0130` world visibility is wrapped after its original culling/mask build;
+only human main-world-entity low16 view bits are hidden during the opening, until
+pistol equip or a captured checkpoint. Weapon/arm model pointers and animation
+remain local. Original visibility construction restores ordinary masks afterward.
+
+Difficulty row argument5 selects; argument6 draws. Synthetic BODY dispatch on the
+custom difficulty descriptor calls original `2CAD80` with a temporary selected
+mission/co-op profile scope, restoring globals afterward. Never route this trophy
+drawer to the selection callback. Header title/status form a measured vertical
+block as well as fitting available width. Story shot replay waits for the local
+weapon model/definition to be ready, with a bounded120-tick expiry.
+
+The custom difficulty builder calls original `71BE0(1,9.0,0)` before creating
+rows, reserving the original trophy gutter to keep icons clear of label text.

@@ -49,9 +49,11 @@ typedef struct StoryNpcReplica {
 static StoryNpcReplica story_npc_replicas[32];
 static uint32_t story_npc_publish_tick;
 static int story_npc_published;
+static uint32_t story_npc_lifecycle[32][5],story_npc_recovery[32];
 static void story_npc_reset(void)
 {
     story_npc_published=0;
+    memset(story_npc_lifecycle,0,sizeof story_npc_lifecycle);memset(story_npc_recovery,0,sizeof story_npc_recovery);
     memset(story_npc_replicas,0,sizeof story_npc_replicas);
     memset(story_npc_constructors,0,sizeof story_npc_constructors);
     memset(story_npc_kinds,0,sizeof story_npc_kinds);
@@ -163,7 +165,10 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
     s.magic=STORY_NPC_MAGIC;s.match=story_npc_match();s.slot=slot;
     s.serial=++story_npc_serial[slot];if(!s.serial) s.serial=++story_npc_serial[slot];
     s.first=story_npc_constructors[slot].first;s.second=story_npc_constructors[slot].second;
-    s.variant=story_npc_constructors[slot].variant;s.weapon=WORD_AT(actor+0x94u);
+    /* DAC30 resolves -1 through its local RNG. Replicas must use the host's
+       resolved variant, rather than rolling a different model-part mask. */
+    s.variant=*(const uint8_t *)((uintptr_t)(actor+0xc0du)+g_xbox_mem_offset);
+    s.weapon=WORD_AT(actor+0x94u);
     s.team=WORD_AT(actor+0x84u);
     s.in_roster=(uint32_t)story_npc_listed(actor);
     memcpy(s.flags,(const void *)((uintptr_t)(actor+0x24u)+g_xbox_mem_offset),sizeof s.flags);
@@ -195,17 +200,22 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
     }
     const uint32_t node=WORD_AT(0x00774028u),buffer=frame-768u;
     if(!guest_writable(node,0x35u)) return;
+    const uint32_t lifecycle[5]={s.match,s.present,s.spawn,s.in_roster,s.health<=0.f};
+    const uint32_t tick=WORD_AT(0x007de318u);
+    const uint32_t reliable=memcmp(story_npc_lifecycle[slot],lifecycle,sizeof lifecycle)!=0 ||
+        !story_npc_recovery[slot] || (uint32_t)(tick-story_npc_recovery[slot])>=60u;
+    if(reliable) {memcpy(story_npc_lifecycle[slot],lifecycle,sizeof lifecycle);story_npc_recovery[slot]=tick?tick:1u;}
     const uint32_t checksum=story_npc_checksum(&s);
     StoryNpcBaseMessage base;memcpy(base.state,&s,STORY_NPC_BASE_BYTES);base.checksum=checksum;
     memset((void *)((uintptr_t)buffer+g_xbox_mem_offset),0,sizeof base+4u);
     memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),&base,sizeof base);
     GuestRegisters saved;save_registers(&saved);g_esp=frame-1280u;
-    guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof base+4u,1u);
+    guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof base+4u,reliable);
     if(s.pose_present) {
         const StoryNpcPoseMessage pose={STORY_NPC_POSE_MAGIC,s.match,s.slot,s.serial,checksum,s.pose};
         memset((void *)((uintptr_t)buffer+g_xbox_mem_offset),0,sizeof pose+4u);
         memcpy((void *)((uintptr_t)(buffer+4u)+g_xbox_mem_offset),&pose,sizeof pose);
-        guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof pose+4u,1u);
+        guest_call(sub_00353A90,5,node,0x1eu,buffer,(uint32_t)sizeof pose+4u,reliable);
     }
     restore_registers(&saved);
     if(getenv("TSFP_STORY_TRACE")) {
@@ -247,14 +257,27 @@ static int story_npc_apply(const StoryNpcSpawn *s)
     if(entity && (!guest_writable(entity,0x25cu) || WORD_AT(entity+0x7cu)!=actor)) {
         restore_registers(&saved);return 0;
     }
-    if(entity && (!s->present || *(int16_t *)((uintptr_t)(actor+0x48u)+g_xbox_mem_offset)!=s->first ||
+    const StoryNpcReplica *previous=&story_npc_replicas[s->slot];
+    if(entity && (!s->present ||
+       (previous->entity==entity && previous->match==s->match && previous->spawn!=s->spawn) ||
+       *(int16_t *)((uintptr_t)(actor+0x48u)+g_xbox_mem_offset)!=s->first ||
        *(int16_t *)((uintptr_t)(actor+0x4au)+g_xbox_mem_offset)!=s->second)) {
         if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
         guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;entity=0;
     }
-    if(s->present && !entity) {
+    const int retired=s->present && !s->in_roster && s->health<=0.f;
+    if(retired && entity) {
+        if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
+        guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;entity=0;
+    }
+    if(s->present && !retired && !entity) {
+        uint32_t position[3],heading;
+        memcpy(position,s->position,sizeof position);memcpy(&heading,&s->heading,sizeof heading);
+        /* Give original construction the authored transform so its initial
+           spatial/model state is consistent before the first refresh. The
+           normal frame refresh also maintains room membership afterward. */
         entity=guest_call(sub_000DAC30,10,(uint32_t)s->first,(uint32_t)s->second,s->slot,
-            0u,0u,0u,0u,UINT32_MAX,1u,(uint32_t)s->variant);
+            position[0],position[1],position[2],heading,UINT32_MAX,1u,(uint32_t)s->variant);
         if(entity && guest_writable(entity,0x25cu) && WORD_AT(actor)==entity) {
             guest_call(sub_002402B0,2,s->script_id,entity);
         } else entity=0;
@@ -285,9 +308,9 @@ static int story_npc_apply(const StoryNpcSpawn *s)
     }
 
     restore_registers(&saved);
-    if(s->present && !entity) return 0;
+    if(s->present && !retired && !entity) return 0;
     StoryNpcReplica *replica=&story_npc_replicas[s->slot];
-    replica->entity=s->present?entity:0u;replica->spawn=s->spawn;
+    replica->entity=s->present && !retired?entity:0u;replica->spawn=s->spawn;
     replica->match=s->match;replica->pose_present=s->pose_present;
     memcpy(replica->center,s->bounds_center,12u);memcpy(replica->radius,s->bounds_radius,12u);
     story_npc_seen_match[s->slot]=s->match;story_npc_seen_serial[s->slot]=s->serial;
@@ -308,7 +331,11 @@ static void story_npc_pending_frame(void)
            Publish current state again, including deletion, on simulation ticks.
            This also keeps moving bodies authoritative without guest Story AI. */
         const uint32_t tick=WORD_AT(0x007DE318u),pool=WORD_AT(0x007356D8u);
-        if(story_npc_published && (uint32_t)(tick-story_npc_publish_tick)<6u) return;
+        /* Frozen guest skeletons cannot fill the five missing frames of the
+           old 10 Hz stream. Publish once per actual simulation tick; never
+           duplicate a snapshot when the frame adapter is called twice. */
+        const unsigned cadence=WORD_AT(0x0079094cu)==2u?1u:6u;
+        if(story_npc_published && (uint32_t)(tick-story_npc_publish_tick)<cadence) return;
         story_npc_published=1;story_npc_publish_tick=tick;
         if(pool) for(unsigned slot=story_npc_humans();slot<32u;slot++)
             if(story_npc_constructors[slot].valid)
@@ -369,8 +396,13 @@ void pc_story_network_npc_receive(void (*original)(void))
     if(story_network_session() && WORD_AT(0x0076B108u) && guest_writable(g_esp,20u)) {
         const uint32_t frame=g_esp,peer=WORD_AT(frame+4u),payload=WORD_AT(frame+8u);
         const uint32_t type=WORD_AT(frame+12u),length=WORD_AT(frame+16u);
+        if(story_shots_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_restart_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_loadout_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_objectives_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_checkpoint_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_effect_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_cine_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(getenv("TSFP_STORY_TRACE")) {
             static unsigned observations;
             if(observations++<16u) fprintf(stderr,
@@ -453,11 +485,30 @@ int pc_story_network_replica(uint32_t entity)
     (void)entity;return 0;
 #endif
 }
+
+/* Reuse the existing actor-slot codec for Story NPC hit requests. Scene IDs
+   can be absent or peer-local. Keep the stock reliable damage protocol and
+   never encode a human as a bot or accept a retired replica. */
+uint32_t pc_story_network_wire_entity(unsigned slot)
+{
+#ifdef _WIN32
+    if(!story_npc_session() || WORD_AT(0x0076b1a4u)!=15u || slot<story_npc_humans() || slot>=32u) return 0;
+    const uint32_t pool=WORD_AT(0x007356d8u),actor=pool+slot*0xea0u;
+    if(!pool || !guest_writable(actor,0xea0u) || WORD_AT(actor+8u)!=slot) return 0;
+    const uint32_t entity=WORD_AT(actor);
+    if(!guest_writable(entity,0x25cu) || WORD_AT(entity+0x7cu)!=actor || WORD_AT(entity+0x150u)) return 0;
+    if(WORD_AT(0x0076b140u)==1u) return story_npc_constructors[slot].valid?entity:0u;
+    return story_npc_replica_valid(entity,0)?entity:0u;
+#else
+    (void)slot;return 0;
+#endif
+}
 /* Replicas never run a second damage/death/script simulation. Only a locally
  * owned human may request a hit; the host applies it and republishes state. */
 int pc_story_network_damage(void)
 {
 #ifdef _WIN32
+    if(story_shots_damage()) return 1;
     if(!guest_writable(g_esp,8u)) return 0;
     const uint32_t context=WORD_AT(g_esp+4u);
     if(!guest_writable(context,0x58u) || !story_npc_replica_valid(WORD_AT(context),0)) return 0;

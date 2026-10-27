@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include "pc_online.h"
 #include "pc_character_pose.h"
+#include "pc_network_bots_state.h"
 #ifdef TSFP_NATIVE_DISPLAY
 #undef _WIN32
 #elif !defined(_WIN32)
@@ -13,24 +14,27 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 #ifdef _WIN32
-static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx;
+static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx,g_ecx,g_edx;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
-typedef struct GuestRegisters {uint32_t sp;} GuestRegisters;
-static void save_registers(GuestRegisters *r){r->sp=g_esp;}
-static void restore_registers(const GuestRegisters *r){g_esp=r->sp;}
+typedef struct GuestRegisters {uint32_t sp,ax,bx,cx,dx;} GuestRegisters;
+static void save_registers(GuestRegisters *r){*r=(GuestRegisters){g_esp,g_eax,g_ebx,g_ecx,g_edx};}
+static void restore_registers(const GuestRegisters *r){g_esp=r->sp;g_eax=r->ax;g_ebx=r->bx;g_ecx=r->cx;g_edx=r->dx;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p;}
 static PcOnlineMode online_mode=PC_ONLINE_STORY;
 PcOnlineMode pc_online_mode(void){return online_mode;}
 static int allocation_ok=1;
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align)
-{CHECK((n==64 || n==144) && align==4);return allocation_ok?(n==64?0x8000:0x8100):0;}
+{CHECK((n==32 || n==64 || n==144) && align==4);return allocation_ok?(n==32?0x140000:n==64?0x8000:0x8100):0;}
 static uint32_t next_parent,next_menu,ticks,selectors;
 static uint32_t header_mission,header_fallback;
 void sub_00197890(void){++header_fallback;g_esp+=4;}
 void sub_002CA9F0(void){CHECK(WORD_AT(WORD_AT(g_esp+4)+4)==0x5238c0);header_mission=WORD_AT(WORD_AT(g_esp+8)+0x14);g_esp+=4;}
 static volatile unsigned marker;
 static unsigned difficulty_rows,finalized,highlighted;
+static unsigned difficulty_draws;
+void sub_002CAD80(void)
+{CHECK(WORD_AT(0x78ad48)==12 && WORD_AT(0x5236c4)==2);++difficulty_draws;g_esp+=4;}
 static unsigned story_factories,story_broadcasts,story_generation;
 static int factory_intro;
 static unsigned context_spawns,ready_calls;
@@ -39,7 +43,31 @@ void sub_000CF060_gen(void){marker=16;}
 void sub_0009A420_gen(void){marker=27;}
 void sub_0025EE60(void){marker=31;}
 static unsigned story_checkpoint;
+static unsigned objective_popups;
+void sub_00227430(void){marker=32;}
 static unsigned restart_calls,restart_rows;
+static unsigned checkpoint_captures,checkpoint_extras,checkpoint_restores,checkpoint_extra_restores;
+static unsigned checkpoint_inventory_restores;
+static int checkpoint_final_restore;
+void pc_story_network_checkpoint_capture(void (*original)(void));
+static void checkpoint_capture_original(void)
+{
+    const uint32_t bit=1u<<WORD_AT(g_esp+4),bookmarks=WORD_AT(0x75f5d0);
+    WORD_AT(bookmarks+4)|=bit;WORD_AT(bookmarks+0x238+4)|=bit;
+    ++checkpoint_captures;g_esp+=4;
+}
+void sub_0025EF80(void){pc_story_network_checkpoint_capture(checkpoint_capture_original);}
+void sub_0025EAD0(void){marker=33;}void sub_0025EC70(void){marker=34;}
+void sub_000FFDA0(void){marker=35;}void sub_000FFE40(void){marker=36;}
+void sub_000EFBD0(void){marker=37;}void sub_00101660(void){marker=38;}
+void sub_000FF420(void){marker=39;}void sub_000FF490(void){marker=40;}
+void sub_000FF200(void){marker=41;}
+void sub_000C6100(void){marker=42;}void sub_000D4B00(void){marker=43;}
+void sub_000D4BE0(void){marker=44;}
+static unsigned cine_begins,cine_ends;
+static unsigned effect_emitters,effect_blasts,effect_trails,effect_moves,effect_deletes;
+static void checkpoint_restore_original(void)
+{CHECK(WORD_AT(0x7b0c7c)==WORD_AT(0x7b0c48));++checkpoint_restores;g_esp+=4;}
 static void restart_original(void){++restart_calls;g_eax=73;g_esp+=4;}
 void sub_000653B0(void){restart_original();}
 void sub_00359EB0(void){CHECK(0);}
@@ -49,9 +77,11 @@ void sub_0003F8D0(void){marker=14;} void sub_0003FCF0(void){marker=15;}
 void sub_00154FE0(void){marker=13;} void sub_00198E20(void){g_esp+=4;}
 static unsigned briefing_draws,status_draws;
 void sub_00065940(void){marker=7;}
+void sub_002EB030(void){marker=45;}
 void sub_00352640(void){marker=17;}void sub_00352650(void){marker=18;}void sub_00356490(void){marker=19;}
 void sub_000D50E0(void){marker=8;}
 void sub_00075B70(void){marker=1;} void sub_00071B10(void){marker=2;}
+void sub_00071BE0(void){marker=71;}
 void sub_00071C50(void){marker=3;} void sub_00079D60_gen(void){marker=4;}
 void sub_000771D0(void){marker=5;} void sub_000770E0(void){marker=6;}
 void sub_00079B70(void){CHECK(0);}
@@ -67,17 +97,66 @@ static unsigned char npc_sent[512],npc_sent_base[256],npc_sent_pose[256];
 static unsigned npc_base_size,npc_pose_size;
 static PcCharacterPose npc_last_pose;
 static unsigned npc_pose_calls;
+static unsigned story_shot_replays;
+void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
+{CHECK(entity==0x72000 && shot->serial==1);++story_shot_replays;}
+static uint32_t npc_constructor_position[4];
+static int32_t npc_constructor_variant;
 static unsigned story_hit_requests;
 void pc_network_bots_request_hit(uint32_t context){CHECK(context==0x79000);++story_hit_requests;}
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
-{CHECK(entity==0x72000);npc_last_pose=*pose;++npc_pose_calls;}
+{CHECK(entity==0x72000 || entity==0x74400);npc_last_pose=*pose;++npc_pose_calls;}
 void pc_network_bots_entity_refresh(uint32_t entity){CHECK(entity==0x72000);++npc_refreshes;}
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
-    if(fn==sub_000653B0) {CHECK(count==1 && args[0]==0);++restart_calls;return 0;}
+    if(fn==sub_000C6100) {CHECK(count==1);return args[0]==0x4352434d?0x180000:0;}
+    if(fn==sub_000D4B00 || fn==sub_000D4BE0) {
+        const uint32_t context=0x6000+0x1584;
+        CHECK(WORD_AT(0x7b0c48)==context && WORD_AT(0x790950)==1 && WORD_AT(0x7b0c7c)==context && args[0]==context);
+        if(fn==sub_000D4B00) {
+            CHECK(count==6 && args[1]==0x180000 && !args[2] && args[3]==4 && args[4]==11 && !args[5]);
+            ++cine_begins;WORD_AT(context+0x114)=256;
+        } else {CHECK(count==1 && !WORD_AT(context+0x1580));++cine_ends;WORD_AT(context+0x114)=2;}
+        return 0;
+    }
+    if(fn==sub_000653B0) {CHECK(count==1);++restart_calls;return 0;}
+    if(fn==sub_00227430) {CHECK(count==2 && args[1]==0);++objective_popups;return 0;}
+    if(fn==sub_000FFDA0) {
+        CHECK(count==6 && args[0]==0 && args[1]==2 && args[5]==65535);
+        CHECK(WORD_AT(args[2])==WORD_AT(0x170000) && WORD_AT(args[3])==WORD_AT(0x170010));
+        ++effect_emitters;return 0x150000;
+    }
+    if(fn==sub_000FFE40) {CHECK(count==2 && args[0]==0x150000);WORD_AT(0x150098)=args[1];return 0;}
+    if(fn==sub_000EFBD0) {
+        CHECK(count==8 && args[0]==39 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
+        ++effect_blasts;return 0;
+    }
+    if(fn==sub_00101660) {CHECK(count==5 && args[1]==0x7e && !args[2] && args[4]==65535);++effect_trails;return 0x160000;}
+    if(fn==sub_000FF420) {CHECK(count==2 && args[0]==0x160000 && args[1]==0x42200000);return 0;}
+    if(fn==sub_000FF490) {CHECK(count==2 && args[0]==0x160000);++effect_moves;return 0;}
+    if(fn==sub_000FF200) {CHECK(count==1 && args[0]==0x160000);++effect_deletes;return 0;}
+    if(fn==sub_0025EF80) {
+        CHECK(count==1);const uint32_t before=g_esp;g_esp-=16;
+        WORD_AT(g_esp)=0x1234;WORD_AT(g_esp+4)=args[0];sub_0025EF80();g_esp=before;return 0;
+    }
+    if(fn==sub_0025EAD0) {
+        CHECK(count==1 && g_edx==(1u<<g_ecx));
+        const unsigned slot=(g_ebx-WORD_AT(0x75f5d0))/0x238;
+        CHECK(slot>=2 && slot<4 && args[0]==WORD_AT(0x7b0c48)+slot*0x1584);
+        WORD_AT(g_ebx)=g_ecx;WORD_AT(g_ebx+4)|=g_edx;++checkpoint_extras;return 0;
+    }
+    if(fn==sub_0025EC70) {
+        CHECK(count==0);const unsigned slot=(g_ebx-WORD_AT(0x75f5d0))/0x238;
+        CHECK(slot<4 && g_eax==WORD_AT(0x7b0c48)+slot*0x1584);
+        if(checkpoint_final_restore) {
+            WORD_AT(WORD_AT(WORD_AT(g_eax+0x14)+0x7c)+0x54c+25)=1;
+            ++checkpoint_inventory_restores;
+        } else {CHECK(slot>=2);++checkpoint_extra_restores;}
+        return 0;
+    }
     if(fn==sub_001BA2B0) {
         CHECK(count==3 && ((args[1]==25 && args[2]==8) || (args[1]==32 && args[2]==6)));loadout_ammo+=args[2];return 8;
     }
@@ -87,14 +166,17 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
-        CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u && args[4]==1);
+        CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x32504e53u || WORD_AT(args[2]+4)==0x32505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
         if(WORD_AT(args[2]+4)==0x32504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
         if(WORD_AT(args[2]+4)==0x32505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
     }
     if(fn==sub_000DAC30) {
-        CHECK(count==10 && args[0]==12 && args[1]==12 && args[2]==2 && args[9]==UINT32_MAX);
+        CHECK(count==10 && args[0]==12 && args[1]==12 && args[2]==2);
+        memcpy(npc_constructor_position,args+3,sizeof npc_constructor_position);
+        npc_constructor_variant=(int32_t)args[9];
         const uint32_t actor=WORD_AT(0x7356d8)+args[2]*0xea0;
         WORD_AT(actor)=0x72000;WORD_AT(actor+8)=args[2];WORD_AT(0x7207c)=actor;
         WORD_AT(actor+0x48)=12u|(12u<<16);++npc_ctor_calls;return 0x72000;
@@ -119,10 +201,14 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_0009A420_gen){CHECK(count==1 && args[0]==0x1f40);return 0x78000;}
     if(fn==sub_000CF060_gen){CHECK(count==1 && WORD_AT(args[0])==0);++pad_fallbacks;return 77;}
     else if(fn==sub_0003D7B0 && count==1 && args[0]==0x17a8){return 0x33000;}
-    else if(fn==sub_0003D7B0){CHECK(count==1 && (args[0]==22 || args[0]==33));return args[0]==33?0xd000:0xb000;}
+    else if(fn==sub_0003D7B0 && count==1 && args[0]==0x17a7){return 0x33020;}
+    else if(fn==sub_0003D7B0){
+        if(count==1 && args[0]>=0x3d5 && args[0]<=0x3d7) return 0x8100+48+(args[0]-0x3d5)*32;
+        CHECK(count==1 && (args[0]==22 || args[0]==33));return args[0]==33?0xd000:0xb000;
+    }
     else if(fn==sub_00040F00){CHECK(count==2 && args[0]==0xb000);return 0xc000;}
     else if(fn==sub_0003F8D0){CHECK(count==0);}
-    else if(fn==sub_0003FCF0){CHECK(count==4 && args[2]==0xc000);float height=10.f;memcpy(&WORD_AT(args[1]),&height,4);}
+    else if(fn==sub_0003FCF0){CHECK(count==4);float height=10.f,width=100.f;memcpy(&WORD_AT(args[1]),&height,4);memcpy(&WORD_AT(args[0]),&width,4);}
     else if(fn==sub_0003FA10){CHECK(count==1);return 3;}
     else if(fn==sub_00154FE0){CHECK(count==2);return args[0];}
     else if(fn==sub_00041DC0){
@@ -161,11 +247,13 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     else if(fn==sub_00075B70){CHECK(count==5 && args[4]==0x1237e);difficulty_rows=0;}
     else if(fn==sub_00079D60_gen){
         if(count==6 && args[4]==0x2ebc30){++restart_rows;return 0;}
+        if(count==6 && args[4]==0x2ebd50){CHECK(args[2]<=1u);return 0;}
         static const char *names[]={"Easy","Normal","Hard"};
-        CHECK(count==6 && difficulty_rows<3 && args[1]==difficulty_rows && args[4]==0x1237d);
+        CHECK(count==6 && difficulty_rows<3 && args[1]==difficulty_rows && args[4]==0x1237d && args[5]==0x12020);
         CHECK(!strcmp((char *)(g_xbox_mem_offset+args[0]),names[difficulty_rows]));++difficulty_rows;
     }else if(fn==sub_000771D0){CHECK(count==1);++finalized;}
     else if(fn==sub_000770E0){CHECK(count==2);highlighted=args[1];}
+    else if(fn==sub_00071BE0) CHECK(count==3 && args[0]==1 && args[1]==0x41100000u && args[2]==0);
     else CHECK(fn==sub_00071B10 || fn==sub_00071C50);
     return 0;
 }
@@ -278,6 +366,14 @@ static void script_original(void)
 static void reset_original(void)
 {++script_original_calls;WORD_AT(0x6114)=2;g_eax=33;g_esp+=4;}
 static void frame_original(void){++failure_original_calls;g_esp+=4;}
+static void stage_original(void)
+{
+    CHECK(WORD_AT(0x78ad50)==2 && WORD_AT(0x78ad48)==0 && WORD_AT(0x7de458)==0x80008);
+    CHECK(WORD_AT(0x7de45c)&0x8000);CHECK(WORD_AT(0x79094c)==2 || WORD_AT(0x79094c)==106);
+    g_eax=77;g_esp+=4;
+}
+static void visibility_original(void)
+{WORD_AT(0x74010)=0x1234ffffu;WORD_AT(0x74410)=0x5678ffffu;WORD_AT(0x1c0010)=0x170000u;g_esp+=4;}
 static unsigned network_starts;
 static void ready_original(void){
     CHECK(WORD_AT(0x790950)==0 && !(WORD_AT(0x7de458)&0x20000000));
@@ -306,6 +402,16 @@ static void call(uint32_t address)
     g_esp=0x1000;WORD_AT(0x1004)=0x2000;
     void (*fn)(void)=story_lobby_lookup(address);CHECK(fn);
     fn();CHECK(g_esp==0x1004);
+}
+static unsigned effect_decisions;
+static void effect_factory_original(void){g_eax=0x150000;WORD_AT(0x150098)=0;g_esp+=4;}
+static void effect_decision_original(void)
+{
+    const uint32_t outer=g_esp;++effect_decisions;g_esp=0x2000;
+    WORD_AT(g_esp+4)=0;WORD_AT(g_esp+8)=2;WORD_AT(g_esp+12)=0x170000;
+    WORD_AT(g_esp+16)=0x170010;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+24)=65535;
+    pc_story_network_effect_create(effect_factory_original,0);
+    WORD_AT(0x150098)=0x7f123456;g_esp=outer+4;g_eax=99;
 }
 #endif
 int main(void)
@@ -346,17 +452,18 @@ int main(void)
     CHECK(story_lobby_options==2 && next_menu==story_difficulty_descriptor && next_parent==0x3000);
     CHECK(WORD_AT(story_difficulty_descriptor)==STORY_BUILD_CB);
     WORD_AT(0x2004)=story_difficulty_descriptor;
-    rewrite_row(0x2d6383,0x2cad80);rewrite_row(0x2d63c9,0x2cad80);
-    rewrite_row(0x2d640f,0x2cad80);
+    CHECK(!story_lobby_lookup(0x2cad80)); /* The trophy drawer is not a Select action. */
     call(STORY_BUILD_CB);CHECK(WORD_AT(0x78ad2c)==13 && selectors==1);
     CHECK(difficulty_rows==3 && finalized==1 && highlighted==0);
+    WORD_AT(0x5236c4)=1;const uint32_t original_mission=WORD_AT(0x78ad48);
+    call(STORY_BODY_CB);CHECK(difficulty_draws==1 && story_lobby_options==2 && WORD_AT(0x5236c4)==1 && WORD_AT(0x78ad48)==original_mission);
     call(STORY_BACK_CB);CHECK(story_lobby_options==1 && next_menu==0x5238e0);
     CHECK(story_lobby_mission==12 && WORD_AT(0x78ad48)==0xaabbccdd);
     WORD_AT(0x2004)=0x5238e0;call(STORY_SELECT_CB);
     CHECK(story_lobby_options==2 && next_menu==story_difficulty_descriptor);
     WORD_AT(0x2004)=story_difficulty_descriptor;
     WORD_AT(0x78ad54)=0x12345600;
-    WORD_AT(0x218c)=3;call(0x2cad80);CHECK(story_lobby_options==2);
+    WORD_AT(0x218c)=3;call(STORY_SELECT_CB);CHECK(story_lobby_options==2);
     WORD_AT(0x218c)=2;call(STORY_SELECT_CB);
     CHECK(story_lobby_difficulty==2 && WORD_AT(0x78ad54)==0x12345600 && !story_lobby_options);
     CHECK(next_menu==0x4e99c4 && !story_lobby_lookup(0x2cad80));
@@ -713,18 +820,22 @@ int main(void)
         WORD_AT(0x7de318)=10;g_esp=0x1800;story_npc_pending_frame();
         CHECK(npc_send_calls==wire_before+4 && g_esp==0x1800);
         StoryNpcSpawn state=npc_captured_spawn();CHECK(state.serial==2 && state.present && state.in_roster);
-        story_npc_pending_frame();WORD_AT(0x7de318)=15;story_npc_pending_frame();CHECK(npc_send_calls==wire_before+4);
+        story_npc_pending_frame();CHECK(npc_send_calls==wire_before+4);
+        WORD_AT(0x7de318)=11;story_npc_pending_frame();CHECK(npc_send_calls==wire_before+6);
         WORD_AT(0x74c37c)=2;WORD_AT(0x7de318)=16;story_npc_pending_frame();state=npc_captured_spawn();
-        CHECK(npc_send_calls==wire_before+6 && state.present && !state.in_roster);
+        CHECK(npc_send_calls==wire_before+8 && state.present && !state.in_roster);
         WORD_AT(actor)=0;WORD_AT(0x7de318)=22;story_npc_pending_frame();state=npc_captured_spawn();
-        CHECK(npc_send_calls==wire_before+7 && !state.present && !state.pose_present);
+        CHECK(npc_send_calls==wire_before+9 && !state.present && !state.pose_present);
         WORD_AT(0x76b1a4)=10;WORD_AT(0x7de318)=28;story_npc_pending_frame();
-        CHECK(npc_send_calls==wire_before+7);WORD_AT(0x76b1a4)=15;
+        CHECK(npc_send_calls==wire_before+9);WORD_AT(0x76b1a4)=15;
         WORD_AT(actor)=0;WORD_AT(0x74c37c)=2;WORD_AT(0x7a3580)=0x50000;WORD_AT(0x7a3584)=0x50ea0;
         WORD_AT(0x76b140)=2;WORD_AT(0x774040)=0;WORD_AT(0x31000)=0;
         npc_deliver(&packet,2);CHECK(npc_ctor_calls==0 && !story_npc_fresh[2]);
         npc_deliver(&packet,1);
         CHECK(g_esp==0x1804 && g_eax==0 && npc_ctor_calls==1 && npc_refreshes==1);
+        CHECK(!memcmp(npc_constructor_position,packet.position,sizeof packet.position) &&
+              !memcmp(npc_constructor_position+3,&packet.heading,sizeof packet.heading) &&
+              npc_constructor_variant==packet.variant && packet.variant>=0);
         CHECK(WORD_AT(actor)==0x72000 && WORD_AT(0x72230)==59 && WORD_AT(0x72258)==7 &&
               WORD_AT(actor+0x84)==5 && WORD_AT(0x74c37c)==3);
         float health,pos;memcpy(&health,&WORD_AT(0x721cc),4);memcpy(&pos,&WORD_AT(0x72064),4);
@@ -746,9 +857,37 @@ int main(void)
         StoryNpcSpawn other=queued;queued.serial=3;other.serial=3;other.position[0]=11.f;
         npc_deliver(&queued,1);npc_deliver(&other,2);CHECK(npc_refreshes==2); /* no mixed snapshots */
         npc_deliver(&other,1);CHECK(npc_refreshes==3);
-        queued.serial=4;queued.present=0;queued.pose_present=0;queued.in_roster=0;memset(&queued.pose,0,sizeof queued.pose);
-        npc_deliver(&queued,1);CHECK(WORD_AT(actor)==0 && WORD_AT(0x74c37c)==2 && npc_removed==1);
-        CHECK(!pc_story_network_replica(0x72000));npc_deliver(&queued,3);CHECK(npc_removed==1);
+        /* Reusing the same actor kind for a new host body must discard stale
+           model/room state. A serial-only refresh of the same body must not. */
+        other.serial=4;other.spawn=8;npc_deliver(&other,3);
+        CHECK(npc_ctor_calls==2 && npc_removed==1 && npc_refreshes==4 && WORD_AT(0x72258)==8);
+        npc_deliver(&packet,3);CHECK(npc_ctor_calls==2 && WORD_AT(0x72258)==8);
+        queued=other;queued.serial=5;queued.health=0;queued.in_roster=0;
+        npc_deliver(&queued,3);CHECK(WORD_AT(actor)==0 && WORD_AT(0x74c37c)==2 && npc_removed==2);
+        CHECK(!pc_story_network_replica(0x72000));npc_deliver(&queued,3);CHECK(npc_removed==2);
+        queued.serial=6;npc_deliver(&queued,3);CHECK(!WORD_AT(actor) && npc_ctor_calls==2 && npc_removed==2);
+        /* Host NPC shots accept targetless fire; only the host may send NPC
+           events, and each event is replayed once for its current body. */
+        story_shots_reset();WORD_AT(actor)=0x72000;WORD_AT(0x72258)=8;
+        StoryShot shot={0};shot.magic=STORY_SHOT_MAGIC;shot.match=story_npc_match();shot.slot=2;
+        shot.shot.serial=1;shot.shot.spawn=8;shot.shot.tick=WORD_AT(0x7de318);
+        shot.shot.target_slot=UINT32_MAX;shot.shot.weapon=7;
+        memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);WORD_AT(0x31000)=1;
+        CHECK(story_shots_receive(0x31000,0x32000,0x1e,sizeof shot));story_shots_frame();CHECK(!story_shot_replays);
+        WORD_AT(0x31000)=0;
+        CHECK(story_shots_receive(0x31000,0x32000,0x1e,sizeof shot));story_shots_frame();CHECK(!story_shot_replays);
+        WORD_AT(actor+0xd4)=7;WORD_AT(actor+0x18c)=0x180000;
+        story_shots_frame();CHECK(story_shot_replays==1);
+        CHECK(story_shots_receive(0x31000,0x32000,0x1e,sizeof shot));story_shots_frame();CHECK(story_shot_replays==1);
+        shot.shot.serial=2;shot.shot.aim[0]=NAN;memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);
+        story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(story_shots_seen[2]==1);
+        WORD_AT(0x76b140)=1;shot.slot=1;shot.shot.aim[0]=0;WORD_AT(0x3103c)=0;
+        memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);
+        story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(!story_shots_seen[1]);
+        WORD_AT(0x3103c)=1;WORD_AT(0x6000+0x1584+4)=UINT32_MAX;
+        story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(story_shots_seen[1]==2);
+        const unsigned before_relay=npc_send_calls;story_shots_frame();CHECK(npc_send_calls==before_relay+1);
+        story_shots_frame();CHECK(npc_send_calls==before_relay+1);
         online_mode=PC_ONLINE_ARCADE;g_esp=0x1800;pc_story_network_npc_receive(frame_original);
         CHECK(g_esp==0x1804 && failure_original_calls==originals_before+1);
     }
@@ -771,12 +910,15 @@ int main(void)
         CHECK(g_eax==11 && g_esp==0x1804 && story_loadout_host[0].serial==1 &&
               story_loadout_host[0].mask==14 && story_loadout_host[0].magazines==8);
         const unsigned sent_before=npc_send_calls;
-        g_esp=0x1800;WORD_AT(0x7de318)=10;story_loadout_frame();
-        CHECK(npc_send_calls==sent_before+1 && npc_sent_size==sizeof(StoryLoadout)+4 && g_esp==0x1800);
+        WORD_AT(0x50094)=0;g_esp=0x1800;WORD_AT(0x7de318)=10;story_loadout_frame();
+        StoryLoadout grant_only;memcpy(&grant_only,npc_sent+4,sizeof grant_only);
+        CHECK(!grant_only.equipped && npc_send_calls==sent_before+1);
+        WORD_AT(0x50094)=25;story_loadout_frame();
+        CHECK(npc_send_calls==sent_before+2 && npc_sent_size==sizeof(StoryLoadout)+4 && g_esp==0x1800);
         StoryLoadout wire;memcpy(&wire,npc_sent+4,sizeof wire);CHECK(story_loadout_valid(&wire));
         story_loadout_frame();WORD_AT(0x7de318)=69;story_loadout_frame();
-        CHECK(npc_send_calls==sent_before+1);
-        WORD_AT(0x7de318)=70;story_loadout_frame();CHECK(npc_send_calls==sent_before+2);
+        CHECK(npc_send_calls==sent_before+2);
+        WORD_AT(0x7de318)=70;story_loadout_frame();CHECK(npc_send_calls==sent_before+3);
         WORD_AT(0x76b140)=2;WORD_AT(0x774040)=0;WORD_AT(0x31000)=0;
         memcpy((uint8_t *)memory+0x90000,&wire,sizeof wire);
         WORD_AT(0x31000)=1;CHECK(story_loadout_receive(0x31000,0x90000,0x1e,sizeof wire+4));
@@ -790,7 +932,7 @@ int main(void)
         g_esp=0x1800;WORD_AT(g_esp+4)=0x31000;WORD_AT(g_esp+8)=0x90000;
         WORD_AT(g_esp+12)=0x1e;WORD_AT(g_esp+16)=sizeof wire+4;
         WORD_AT(0x76b1a4)=10;pc_story_network_npc_receive(frame_original);
-        CHECK(g_esp==0x1804 && story_loadout_pending[0].serial==1);
+        CHECK(g_esp==0x1804 && story_loadout_pending[0].serial==wire.serial);
         story_loadout_frame();CHECK(!loadout_grants); /* loading waits */
         const uint32_t contexts=0x6000,pool=0x50000;WORD_AT(0x7b0c48)=contexts;
         WORD_AT(contexts+0x1584+4)=UINT32_MAX;
@@ -802,7 +944,9 @@ int main(void)
             WORD_AT(entity+0x150)=context;WORD_AT(context+0x14)=entity;
             ((uint8_t *)memory)[actor+0x54c+25]=0;
         }
-        WORD_AT(0x76b1a4)=15;g_esp=0x1800;story_loadout_frame();
+        story_loadout_pending[0]=grant_only;
+        WORD_AT(0x76b1a4)=15;g_esp=0x1800;story_loadout_frame();CHECK(!loadout_ammo && !loadout_grants);
+        story_loadout_pending[0]=wire;story_loadout_frame();
         CHECK(loadout_ammo==8 && loadout_grants==1 && loadout_selections==1 && g_esp==0x1800);
         story_loadout_receive(0x31000,0x90000,0x1e,sizeof wire+4);story_loadout_frame();
         CHECK(loadout_ammo==8 && loadout_grants==1); /* no reliable replay refill */
@@ -834,7 +978,7 @@ int main(void)
         CHECK(g_esp==0x1804 && failure_original_calls==original_before+1); /* host original */
         WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_handoff(frame_original);
         CHECK(g_esp==0x1804 && failure_original_calls==original_before+1); /* guest suppressed */
-        StoryLoadout rifle=story_loadout_host[1],pistol=rifle;pistol.serial=1;pistol.weapon=25;pistol.magazines=8;
+        StoryLoadout rifle=story_loadout_host[1];rifle.equipped=1;StoryLoadout pistol=rifle;pistol.serial=1;pistol.weapon=25;pistol.magazines=8;
         WORD_AT(0x31000)=0;WORD_AT(0x774040)=0;
         memcpy((uint8_t *)memory+0x90000,&rifle,sizeof rifle);story_loadout_receive(0x31000,0x90000,0x1e,sizeof rifle+4);
         memcpy((uint8_t *)memory+0x90000,&pistol,sizeof pistol);story_loadout_receive(0x31000,0x90000,0x1e,sizeof pistol+4);
@@ -980,6 +1124,245 @@ int main(void)
         r->match^=1;CHECK(!pc_story_network_damage());r->match=story_npc_match();
         WORD_AT(0x76b140)=1;CHECK(!pc_story_network_damage());
         WORD_AT(0x76b140)=2;online_mode=PC_ONLINE_ARCADE;CHECK(!pc_story_network_damage());
+    }
+#endif
+#ifdef _WIN32
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=2;WORD_AT(0x774028)=0x30000;
+        WORD_AT(0x78cec8)=2;WORD_AT(0x78cecc)=0x100000;
+        uint8_t *objective=(uint8_t *)memory+0x100000;
+        memset(objective,0,0x98);objective[11]=2;
+        objective[0x4c+8]=2;objective[0x4c+11]=2; /* VM record must not cross the wire */
+        story_objectives_reset();const unsigned sends=npc_send_calls;
+        g_esp=0x1800;story_objectives_frame();CHECK(g_esp==0x1800 && npc_send_calls==sends+1);
+        StoryObjective s;memcpy(&s,npc_sent+4,sizeof s);
+        CHECK(s.magic==STORY_OBJECTIVE_MAGIC && s.index==0 && s.kind==0 && s.state==2);
+        story_objectives_frame();CHECK(npc_send_calls==sends+1);
+        WORD_AT(0x76b140)=2;WORD_AT(0x774040)=9;WORD_AT(0x31000)=8;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);objective[11]=1;
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        story_objectives_frame();CHECK(objective[11]==1);
+        WORD_AT(0x31000)=9;WORD_AT(0x7b0c48)=0x6000;
+        WORD_AT(0x6004)=0;WORD_AT(0x6114)=256;WORD_AT(0x6000+0x1584+4)=UINT32_MAX;
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        const unsigned popups=objective_popups;
+        story_objectives_frame();CHECK(objective[11]==2 && objective_popups==popups);
+        WORD_AT(0x6114)=2;story_objectives_frame();CHECK(objective_popups==popups+1);
+        story_objectives_frame();CHECK(objective_popups==popups+1);
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        story_objectives_frame();CHECK(objective_popups==popups+1);
+        s.serial++;s.kind=2;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        CHECK(story_objectives_pending[0].kind==0); /* never replay host script callbacks */
+        s.kind=0;s.match^=1;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        CHECK(story_objectives_pending[0].serial+1==s.serial);
+        WORD_AT(0x78cec8)=0;WORD_AT(0x78cecc)=0;story_objectives_reset();
+        WORD_AT(0x7bb1e8)=0x120000;WORD_AT(0x120004)=0x121000;
+        WORD_AT(0x121000)=0x2f5520;WORD_AT(0x7bb1e0)=0x122000;
+        pc_story_network_pause_style();
+        float scale;memcpy(&scale,&WORD_AT(0x122050),4);CHECK(scale==1.25f);
+        const float y=240.f;memcpy(&WORD_AT(0x120064),&y,4);
+        WORD_AT(0x76b140)=1;pc_story_network_pause_layout(0x120000);
+        float shifted;memcpy(&shifted,&WORD_AT(0x120064),4);CHECK(shifted==229.f);
+        WORD_AT(0x76b140)=2;pc_story_network_pause_layout(0x120000);
+        memcpy(&shifted,&WORD_AT(0x120064),4);CHECK(shifted==229.f);
+        WORD_AT(0x122050)=0;WORD_AT(0x121000)=0x2cbfc0;
+        pc_story_network_pause_style();CHECK(!WORD_AT(0x122050));
+    }
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=4;WORD_AT(0x790950)=4;
+        WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x75f5d0)=0x130000;
+        memset((uint8_t *)memory+0x130000,0,4*0x238);
+        for(unsigned i=0;i<4;i++) {
+            const uint32_t context=0x6000+i*0x1584,entity=0x74000+i*0x400,actor=0x50000+i*0xea0;
+            WORD_AT(context)=i;WORD_AT(context+0x14)=entity;
+            WORD_AT(entity+0x150)=context;WORD_AT(entity+0x7c)=actor;
+        }
+        story_checkpoint_reset();story_reload_epoch=0;g_esp=0x1800;WORD_AT(g_esp+4)=3;
+        pc_story_network_checkpoint_capture(checkpoint_capture_original);
+        CHECK(g_esp==0x1804 && checkpoint_captures==1 && checkpoint_extras==2 && story_checkpoint_serial==1);
+        CHECK(WORD_AT(0x130004)==8 && WORD_AT(0x130000+3*0x238+4)==8 && story_checkpoint_available(8));
+        const unsigned sends=npc_send_calls;
+        g_esp=0x1800;story_checkpoint_frame();CHECK(npc_send_calls==sends+1);
+        StoryCheckpoint s;memcpy(&s,npc_sent+4,sizeof s);
+        CHECK(s.magic==STORY_CHECKPOINT_MAGIC && s.index==3 && s.serial==1);
+        story_checkpoint_frame();CHECK(npc_send_calls==sends+1);
+        story_checkpoint_reset();memset((uint8_t *)memory+0x130000,0,4*0x238);
+        WORD_AT(0x76b140)=2;WORD_AT(0x774040)=9;WORD_AT(0x31000)=8;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_checkpoint_receive(0x31000,0x32000,0x1e,sizeof s) && !story_checkpoint_pending.serial);
+        WORD_AT(0x31000)=9;
+        CHECK(story_checkpoint_receive(0x31000,0x32000,0x1e,sizeof s) && story_checkpoint_pending.serial==1);
+        story_checkpoint_frame();
+        CHECK(checkpoint_captures==2 && checkpoint_extras==4 && story_checkpoint_serial==1 && !story_checkpoint_pending.serial);
+        CHECK(story_checkpoint_receive(0x31000,0x32000,0x1e,sizeof s) && !story_checkpoint_pending.serial);
+        g_esp=0x1800;WORD_AT(g_esp+4)=4;pc_story_network_checkpoint_capture(checkpoint_capture_original);
+        CHECK(checkpoint_captures==2 && g_esp==0x1804); /* guests cannot capture independently */
+        WORD_AT(0x7b0c7c)=0x6000+3*0x1584;g_esp=0x1800;
+        pc_story_network_checkpoint_restore(checkpoint_restore_original);
+        CHECK(checkpoint_restores==1 && checkpoint_extra_restores==2 && g_esp==0x1804);
+        CHECK(WORD_AT(0x7b0c7c)==0x6000+3*0x1584);
+        WORD_AT(0x7de30c)=7;
+        for(unsigned i=0;i<4;i++) {
+            WORD_AT(0x6000+i*0x1584+0x114)=2;
+            WORD_AT(0x130000+i*0x238+0x10)=25;
+        }
+        WORD_AT(0x6000+3*0x1584+0x114)=4;
+        checkpoint_final_restore=1;story_checkpoint_restore_inventory();CHECK(!checkpoint_inventory_restores);
+        WORD_AT(0x6000+3*0x1584+0x114)=2;
+        const unsigned selections=loadout_selections;
+        story_checkpoint_restore_inventory();CHECK(checkpoint_inventory_restores==4 && loadout_selections==selections+4);
+        CHECK(!story_checkpoint_restore_pending);
+        story_checkpoint_restore_inventory();CHECK(checkpoint_inventory_restores==4);
+        checkpoint_final_restore=0;
+        WORD_AT(0x76b140)=1;g_esp=0x1800;WORD_AT(g_esp+4)=8;
+        const unsigned reloads=restart_calls;pc_story_network_restart(restart_original);
+        CHECK(restart_calls==reloads+1 && story_checkpoint_serial==1 && story_reload_epoch==1);
+        StoryRestart restart;memcpy(&restart,npc_sent+4,sizeof restart);CHECK(restart.checkpoint==8);
+        WORD_AT(0x76b140)=2;story_reload_epoch=0;
+        memcpy((uint8_t *)memory+0x32000,&restart,sizeof restart);
+        CHECK(story_restart_receive(0x31000,0x32000,0x1e,sizeof restart));
+        CHECK(restart_calls==reloads+2 && story_checkpoint_serial==1 && story_reload_epoch==1);
+        WORD_AT(0x130004)=0;g_esp=0x1800;
+        pc_story_network_checkpoint_restore(frame_original);
+        CHECK(checkpoint_extra_restores==2 && g_esp==0x1804); /* fresh loads do not restore blank extras */
+        story_checkpoint_reset();
+    }
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=2;WORD_AT(0x774028)=0x30000;
+        story_effect_reset();g_esp=0x1800;
+        const float point=12.f,normal=1.f;
+        memcpy(&WORD_AT(0x170000),&point,4);memcpy(&WORD_AT(0x170010),&normal,4);
+        pc_story_network_effect_decision(effect_decision_original,0);
+        CHECK(effect_decisions==1 && g_esp==0x1804 && g_eax==99);
+        StoryEffect s;memcpy(&s,npc_sent+4,sizeof s);
+        CHECK(story_effect_valid(&s) && s.kind==0 && s.position[0]==12.f && s.color==0x7f123456);
+        WORD_AT(0x76b140)=2;WORD_AT(0x774040)=9;WORD_AT(0x31000)=8;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s) && !story_effect_count);
+        WORD_AT(0x31000)=9;
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s) && story_effect_count==1);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s) && story_effect_count==1);
+        WORD_AT(0x7de30c)=7;g_esp=0x1800;WORD_AT(0x150098)=0;
+        story_effect_frame();CHECK(effect_emitters==1 && WORD_AT(0x150098)==0x7f123456 && g_esp==0x1800);
+        story_effect_frame();CHECK(effect_emitters==1);
+        g_esp=0x1800;pc_story_network_effect_decision(effect_decision_original,0);
+        CHECK(effect_decisions==1 && g_esp==0x1804); /* no guest RNG/effect decision */
+        s.serial++;s.kind=2;s.a=2;s.b=0;s.options=0;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        CHECK(effect_trails==1 && effect_moves==1 && story_effect_trail==0x160000);
+        s.serial++;s.a=3;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        CHECK(effect_trails==1 && effect_moves==2);
+        s.serial++;s.a=0;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        CHECK(effect_deletes==1 && !story_effect_trail);
+        s.serial++;s.kind=1;s.a=39;s.b=UINT32_MAX;s.options=1;s.value=0.f;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==1);
+        s.serial++;s.position[0]=NAN;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s) && !story_effect_count);
+        s.position[0]=12.f;s.match^=1;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s) && !story_effect_count);
+        s.match^=1;s.serial=8;s.kind=2;s.a=0;s.b=0;s.options=0;s.value=0.f;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        s.serial=7;s.kind=1;s.a=39;s.b=UINT32_MAX;s.options=1;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
+        story_effect_reset();
+    }
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=2;
+        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
+        ((uint8_t *)memory)[0x7de400]=2;WORD_AT(0x790950)=2;WORD_AT(0x7de30c)=7;
+        WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x7b0c7c)=0x6000;
+        const uint32_t own=0x6000+0x1584;
+        WORD_AT(0x6000)=0;WORD_AT(0x6004)=0;WORD_AT(0x6008)=0;WORD_AT(0x6014)=0x74000;
+        WORD_AT(own)=1;WORD_AT(own+4)=0;WORD_AT(own+8)=0x1b0000;WORD_AT(own+0x14)=0x74400;
+        WORD_AT(0x74000+0x150)=0x6000;WORD_AT(0x74400+0x150)=own;
+        WORD_AT(0x733100)=0x180000;WORD_AT(0x733104)=1;WORD_AT(0x1800bc)=0x4352434d;
+        WORD_AT(0x70e164)=0x190000;WORD_AT(0x190020)=1;WORD_AT(0x1b021c)=0x112;
+        WORD_AT(0x774040)=9;WORD_AT(0x31000)=9;story_cine_reset();
+        StoryCinematic s;memset(&s,0,sizeof s);
+        s.magic=STORY_CINE_MAGIC;s.match=story_npc_match();s.serial=1;s.active=1;s.opening=1;
+        s.view_visible=1;s.pose_present=1;s.pose.clip=42;s.pose.next_clip=43;
+        s.cue_serial=1;s.cue_active=1;s.cue_tag=0x4352434d;s.cue_flags=4;s.cue_mode=11;
+        s.fade_present=1;s.fade[0]=0x3f000000;s.fade[2]=0x3f800000;s.fade[4]=0x3e800000;
+        CHECK(story_cine_valid(&s,1));
+        StoryCinematicBase base;memcpy(base.state,&s,STORY_CINE_BASE_BYTES);base.checksum=story_cine_checksum(&s);
+        StoryCinematicPose pose={STORY_CINE_POSE_MAGIC,s.match,s.serial,base.checksum,s.pose};
+        memcpy((uint8_t *)memory+0x32000,&base,sizeof base);memcpy((uint8_t *)memory+0x33000,&pose,sizeof pose);
+        WORD_AT(0x31000)=8;
+        CHECK(story_cine_receive(0x31000,0x32000,0x1e,sizeof base) && !story_cine_parts);
+        WORD_AT(0x31000)=9;
+        CHECK(story_cine_receive(0x31000,0x33000,0x1e,sizeof pose) && !story_cine_seen);
+        CHECK(story_cine_receive(0x31000,0x32000,0x1e,sizeof base) && story_cine_seen==1);
+        g_esp=0x1800;g_eax=123;story_cine_frame();
+        CHECK(cine_begins==1 && WORD_AT(0x1b021c)==0x113 && !WORD_AT(0x190020) && WORD_AT(0x190008)==s.fade[0]);
+        CHECK(g_esp==0x1800 && g_eax==123 && WORD_AT(0x7b0c48)==0x6000 && WORD_AT(0x790950)==2 && WORD_AT(0x7b0c7c)==0x6000);
+        story_cine_frame();CHECK(cine_begins==1);
+        CHECK(pc_story_network_cinematic_pose(0x74400) && npc_last_pose.clip==42);
+        WORD_AT(0x76b140)=1;CHECK(!pc_story_network_cinematic_pose(0x74000));
+        CHECK(pc_story_network_cinematic_pose(0x74400));WORD_AT(0x76b140)=0;
+        CHECK(!pc_story_network_cinematic_pose(0x74400));WORD_AT(0x76b140)=2;
+        s.view_visible=0;s.serial=2;s.cue_serial=2;s.cue_active=0;s.cue_tag=0;s.active=0;s.opening=0;s.pose_present=0;
+        memset(&s.pose,0,sizeof s.pose);memcpy(base.state,&s,STORY_CINE_BASE_BYTES);base.checksum=story_cine_checksum(&s);
+        memcpy((uint8_t *)memory+0x32000,&base,sizeof base);WORD_AT(own+0x1580)=0xdeadbeef;
+        CHECK(story_cine_receive(0x31000,0x32000,0x1e,sizeof base));story_cine_frame();
+        CHECK(cine_ends==1 && WORD_AT(0x1b021c)==0x112 && WORD_AT(own+0x114)==2 && !pc_story_network_cinematic_pose(0x74400));
+        story_cine_frame();CHECK(cine_ends==1);
+        s.serial=3;s.match^=1;memcpy(base.state,&s,STORY_CINE_BASE_BYTES);base.checksum=story_cine_checksum(&s);
+        memcpy((uint8_t *)memory+0x32000,&base,sizeof base);
+        CHECK(story_cine_receive(0x31000,0x32000,0x1e,sizeof base) && story_cine_seen==2);
+        s.match^=1;s.fade[0]=0x7fc00000;CHECK(!story_cine_valid(&s,1));
+        story_cine_reset();
+    }
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
+        story_lobby_mission=0;story_pending_stage=1;WORD_AT(0x79094c)=2;
+        WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de30c)=7;WORD_AT(0x7de400)=(WORD_AT(0x7de400)&~255u)|2u;
+        story_checkpoint_serial=0;story_loadout_reset();WORD_AT(0x7b0c48)=0x6000;
+        for(unsigned i=0;i<2;i++) {
+            const uint32_t context=0x6000+i*0x1584,entity=0x74000+i*0x400;
+            WORD_AT(context+0x14)=entity;WORD_AT(entity+0x150)=context;WORD_AT(entity+4)=0x1c0000+i*0x100;
+        }
+        g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
+        CHECK(g_esp==0x1804 && WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x56780000);
+        story_loadout_host[0].equipped=1;story_loadout_host[0].match=story_npc_match();g_esp=0x1800;
+        pc_story_network_world_visibility(visibility_original);
+        CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x5678ffff);
+        WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
+        CHECK(WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000);story_checkpoint_serial=1;
+        g_esp=0x1800;pc_story_network_world_visibility(visibility_original);CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000);
+        WORD_AT(0x76b140)=1;
+        WORD_AT(0x7de458)=0x880008;WORD_AT(0x7de45c)=0x8000;
+        g_esp=0x1800;WORD_AT(g_esp)=0x69518;
+        pc_story_network_stage_builder(stage_original);
+        CHECK(g_esp==0x1804 && g_eax==77 && WORD_AT(0x79094c)==2 && WORD_AT(0x7de458)==0x880008);
+        story_pending_stage=2;WORD_AT(0x79094c)=25;WORD_AT(0x7de458)=0x20000000;
+        g_esp=0x1800;WORD_AT(g_esp)=0x65ccf;pc_story_network_stage_builder(stage_original);
+        CHECK(g_esp==0x1804 && WORD_AT(0x79094c)==25 && WORD_AT(0x78ad50)==2);
+        WORD_AT(0x76b140)=2;story_pending_stage=3;g_esp=0x1800;
+        const unsigned calls=failure_original_calls;pc_story_network_advance(frame_original);
+        CHECK(g_esp==0x1804 && failure_original_calls==calls);
+        /* Frontend and movie payloads never dereference retired human bodies;
+           the shared guard also protects ordinary Online transitions. */
+        online_mode=PC_ONLINE_ARCADE;WORD_AT(0x79094c)=101;g_esp=0x1800;
+        pc_network_player_payload(frame_original);CHECK(failure_original_calls==calls && g_esp==0x1804);
+        WORD_AT(0x79094c)=2;WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=0;
+        g_esp=0x1800;pc_network_player_payload(frame_original);CHECK(failure_original_calls==calls);
+        WORD_AT(0x76b108)=0;g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==calls+1 && g_esp==0x1804);
     }
 #endif
     puts("PASS: Story host controls, network-mode preservation and difficulty return");

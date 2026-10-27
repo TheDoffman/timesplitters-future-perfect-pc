@@ -94,8 +94,11 @@ def test_story_original_config_stages(tmp_path):
         row=image[config.va_to_file_offset(0x4d1ac0):config.va_to_file_offset(0x4d1ac0)+0x44]
         movie=struct.unpack_from('<I',row,0x20)[0]
         scene=image[config.va_to_file_offset(0x51fc30+movie*36)]
+        outro=struct.unpack_from('<I',row,0x24)[0]
+        outro_scene=image[config.va_to_file_offset(0x51fc30+outro*36)]
         constants='\n'.join(f'MEM8(0x{0x4d1ac0+i:x})={value};' for i,value in enumerate(row))
         constants+=f'\nMEM8(0x{0x51fc30+movie*36:x})={scene};'
+        constants+=f'\nMEM8(0x{0x51fc30+outro*36:x})={outro_scene};'
         table=image[config.va_to_file_offset(0x6b284):config.va_to_file_offset(0x6b284)+40]
         constants+='\n'+'\n'.join(f'MEM8(0x{0x6b284+i:x})={value};' for i,value in enumerate(table))
     finally:
@@ -103,5 +106,5 @@ def test_story_original_config_stages(tmp_path):
     source=(ROOT/'tests/story_config_guest.c').read_text()
     output=compile_and_run(tmp_path,source.replace('/* ORIGINAL_STAGE_BUILDER */',code)
         .replace('/* ORIGINAL_MISSION_DATA */',constants)
-        .replace('INTRO_SCENE',str(scene)))
+        .replace('INTRO_SCENE',str(scene)).replace('OUTRO_SCENE',str(outro_scene)))
     assert 'PASS:' in output

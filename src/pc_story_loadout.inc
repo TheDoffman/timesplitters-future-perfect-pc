@@ -4,10 +4,10 @@
 #ifdef _WIN32
 extern void sub_001BA2B0(void),sub_001BFCA0(void),sub_001BA130(void);
 typedef struct StoryLoadout {
-    uint32_t magic,match,serial,mask,weapon,magazines;
+    uint32_t magic,match,serial,mask,weapon,magazines,equipped;
 } StoryLoadout;
-#define STORY_LOADOUT_MAGIC 0x31444c53u
-_Static_assert(sizeof(StoryLoadout)==24,"Story loadout wire layout");
+#define STORY_LOADOUT_MAGIC 0x32444c53u
+_Static_assert(sizeof(StoryLoadout)==28,"Story loadout wire layout");
 static StoryLoadout story_loadout_host[2],story_loadout_pending[2];
 static uint32_t story_loadout_actor,story_loadout_weapon,story_loadout_magazines;
 static uint32_t story_loadout_tick,story_loadout_applied_match[4][2],story_loadout_applied_serial[4][2];
@@ -36,7 +36,7 @@ static int story_loadout_valid(const StoryLoadout *s)
     return s->magic==STORY_LOADOUT_MAGIC && s->serial &&
         ((s->match>>8)&255u)==2u && ((s->match>>16)&255u)==10u &&
         s->mask && !(s->mask&~0xeu) && (s->weapon==25u || s->weapon==32u) &&
-        s->magazines && s->magazines<=64u;
+        s->magazines && s->magazines<=64u && s->equipped<=1u;
 }
 #endif
 
@@ -109,6 +109,15 @@ static void story_loadout_frame(void)
     if(!story_loadout_session()) return;
     if(WORD_AT(0x0076B140u)==1u) {
         if(!story_loadout_host[0].serial && !story_loadout_host[1].serial) return;
+        const uint32_t actor=WORD_AT(0x007356d8u);
+        for(unsigned item=0;item<2u;item++) {
+            StoryLoadout *s=&story_loadout_host[item];
+            /* The authored pistol grant precedes the first-person handoff's
+               equip action. Guests must not draw the weapon at the grant. */
+            if(s->serial && !s->equipped && guest_writable(actor,0xea0u) && WORD_AT(actor+0x94u)==s->weapon) {
+                s->equipped=1u;++s->serial;story_loadout_sent=0;
+            }
+        }
         const uint32_t frame=g_esp,tick=WORD_AT(0x007DE318u),node=WORD_AT(0x00774028u);
         if((story_loadout_sent && (uint32_t)(tick-story_loadout_tick)<60u) || frame<768u ||
            !guest_writable(frame-768u,768u) || !guest_writable(node,0x35u)) return;
@@ -127,7 +136,7 @@ static void story_loadout_frame(void)
     if(!contexts || !pool) return;
     for(unsigned item=0;item<2u;item++) {
         const StoryLoadout *s=&story_loadout_pending[item];
-        if(!story_loadout_valid(s) || s->match!=story_npc_match() ||
+        if(!story_loadout_valid(s) || !s->equipped || s->match!=story_npc_match() ||
            s->mask!=(((1u<<story_npc_humans())-1u)&~1u)) continue;
         for(unsigned slot=1u;slot<story_npc_humans();slot++) {
             const uint32_t context=contexts+slot*0x1584u,actor=pool+slot*0xea0u;

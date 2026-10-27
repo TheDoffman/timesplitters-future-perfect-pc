@@ -2,6 +2,38 @@
 
 See [build-test-details](build-test-details.md) for detailed adapter contracts and validation routes.
 
+Story NPC constructor/cadence fixtures in `tests/story_lobby.c` now require
+host coordinates, heading and resolved variant at construction, body replacement
+on a changed spawn generation, stale generation rejection, and one snapshot per
+distinct simulation tick. The isolated transition runner additionally observes
+local Story camera mode/script flags, mission-record status and per-player
+checkpoint masks; these read-only observations do not force gameplay state.
+
+The Story production fixture also verifies objective host-only publication,
+recovery refresh, script-kind rejection, wrong-host/match/duplicate rejection,
+Status updates while cinematic HUD is deferred, and exactly one original HUD
+notification after control returns. Pause font defaults are scoped to the
+original Story Options builder and leave frontend defaults intact.
+
+Checkpoint fixture coverage uses real adapter code with original-call spies:
+four validated contexts, original capture for each extra player, reliable
+host-only checkpoint identity, duplicate rejection, guest capture suppression,
+primary world-bookmark selection, extra player restore, current-context/ABI
+preservation and refusal to restore blank bookmarks on a fresh load. Live
+checkpoint execution and guest VM reconstruction require a changed game build.
+
+Manual Windows Story pairs: `Test-StoryCoop.ps1` invokes
+`tools/story_coop_local.py` (2 games, optional `-Players 4`). It verifies the sealed
+Release/data identity and recorded source hashes, serves an ephemeral loopback
+directory, and preconfigures isolated Online settings without synthetic input.
+Human testers select Story/Online and host/join normally. `testing_profile` owns
+disposable Test Lab copies and disk recycling; exclusive session/role markers
+prevent overlapping resets, logs cap at 4 MiB, and cleanup waits for owned games
+to exit. Default manual sessions wait for all windows to close; the Python
+`--seconds` option bounds startup smoke checks. `tests/test_story_coop_local.py`
+covers local routing, log bounds, partial launch cleanup and active marker
+preservation. See [testing profile](../testing-profile.md) for the menu route.
+
 <!-- packet:start -->
 Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` applies patches,
 checks fingerprints, regenerates, builds and tests MSVC x64. Output:
@@ -890,3 +922,26 @@ teams, owned movement/ammo, host-only level reload with fresh handoff, and
 original host receipt/application of guest NPC hits through death. All runners
 exited0 after the damage-authority correction. Full mission completion,
 checkpoint/Game Over handling and native Mac/Internet validation remain separate.
+
+Story presentation fixture coverage also checks split cinematic assembly,
+host authority, numeric fades, one-view camera replay and pose evaluator ABI.
+World-effects spies verify actual emitter color, original blast arguments and
+local trail lifecycle. The bounded pair runner `--presentation-probe` retains
+five early frames per peer. Read-only diagnostics name context+14F8 correctly
+as `firstperson_animation_mode`; +208 is a matrix buffer. World snapshots may
+include bounded authored checkpoint pad coordinates for ordinary input routing.
+No teleport, health or Story-state writes are part of that probe.
+
+`--checkpoint-probe` walks the opening canyon with ordinary input, optionally
+fires at live nearby enemies, and stops after the first coordinated checkpoint
+reload. It is bounded by48 route steps and600 seconds. Setup checkpoint rows
+store pad references at +12; diagnostics resolve the original9A420 pad tables
+before treating coordinates as route hints. Walk failure is missing checkpoint
+evidence, not a successful restoration. A rotating frame and numeric route
+history bound capture volume; never substitute a teleport or health write.
+
+Story follow-up fixtures cover deferred checkpoint inventory, dead-but-present
+body retirement, host-only successful-shot delivery/relay, invalid/duplicate shots,
+32-slot Story hit encoding/death authority, and frontend payload lifetime. The
+original-US stage fixture executes both the rewards106 and ending-movie builders.
+Keep these separate from first-mission completion and visual trophy checks.

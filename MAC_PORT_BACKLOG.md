@@ -2088,6 +2088,22 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- First-mission NPC/objective/pause repairs (uncommitted, 2026-10-26): shared
+  `pc_story_npc.inc` constructs replicas in their host room coordinates, uses
+  resolved variants, rebuilds reused generations and publishes every simulation
+  tick. `pc_story_objectives.inc` supplies host objective Status/HUD data without
+  copying VM callbacks. `pc_story_restart.inc` scopes compact pause metrics to
+  Story Options. Windows source/build and bounded startup evidence is recorded
+  in STATUS; opening visibility, guest Status and pause bounds are reviewed.
+  Checkpoint/sniper and intermittent NPC scene acceptance remain unverified.
+  The additional checkpoint, cinematic and effects adapters use shared source
+  (`pc_story_checkpoint.inc`, `pc_story_cinematic.inc`, `pc_story_effects.inc`)
+  and separate runtime patches. Native adapters need the same typed packets,
+  owned-view camera replay and local bookmark capture; no pointer transfer.
+  Native fallbacks retain original behavior. The remaining native XNet/session
+  adapter is still required before native/mixed-peer acceptance of NPC visibility,
+  animation, objectives and pause layout; Windows results do not establish it.
+
 - First-mission Story level restart (uncommitted, 2026-10-26): shared
   pc_story_restart.inc and the separate restart patch coordinate the original
   level reload and isolate NPC/loadout epochs. Source tests pass on Windows;
@@ -2095,7 +2111,7 @@ validation. This version bump alone is not publication evidence.
   Native fallback remains unchanged; Online still
   needs this entry's XNet transport/session adapter. Validate host confirmation,
   every peer reloading, fresh handoff and late old-packet rejection on native
-  and mixed hosts. Checkpoint restart is not implemented.
+  and mixed hosts. Checkpoint acceptance is tracked with the newer repairs above.
 - Story guest damage authority (uncommitted, 2026-10-26): shared damage
   dispatch suppresses replica health/death simulation before tracing and sends
   owned-human hits through the original reliable sender. Source checks and
@@ -5763,3 +5779,10 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
+
+MAC-013 follow-up (uncommitted): Story shot events, deferred checkpoint inventory,
+NPC retirement/hit encoding/death authority and completion staging are implemented
+in the shared Windows guest adapter. Targetless bot shots and gameplay payload
+lifetime also improve the existing Online modes. Mac Online transport/adapter
+work and native runtime validation remain required under MAC-013; portable fixture
+fallback checks do not establish native Mac multiplayer support.

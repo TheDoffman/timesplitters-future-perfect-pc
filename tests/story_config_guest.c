@@ -18,9 +18,9 @@ void recomp_icall_fail_log(uint32_t address){(void)address;assert(!"unexpected d
 static unsigned prepared;
 void sub_0035DE70(void){g_eax=0;g_esp+=4;}
 void sub_00355EC0(void){g_eax=MEM32(0x76b140)==1;g_esp+=4;}
-void sub_00064D10(void){assert(!"unexpected completed-mission path");}
+void sub_00064D10(void){g_eax=MEM8(0x7de455)==10 && MEM32(0x79094c)!=100 && MEM32(0x79094c)!=56;g_esp+=4;}
 void sub_000389B0(void){assert(!"unexpected movie completion path");}
-void sub_001CD590(void){assert(MEM32(g_esp+4)==MEM32(0x4d1ae0));++prepared;g_esp+=4;}
+void sub_001CD590(void){assert(MEM32(g_esp+4)==MEM32(0x4d1ae0) || MEM32(g_esp+4)==MEM32(0x4d1ae4));++prepared;g_esp+=4;}
 void sub_00064DD0(void){g_eax=12;g_esp+=4;}
 static unsigned ready_packets;
 void sub_0022D780(void){assert(!"unexpected custom-map asset filter");}
@@ -61,6 +61,10 @@ int main(void){
     assert(MEM8(0x10054)==2 && MEM8(0x10055)==10 && MEM8(0x10056)==2 && MEM8(0x10057)==2);
     assert(MEM32(0x10058)==0x80008 && MEM32(0x10060)==0 && MEM32(0x10064)==0 && MEM32(0x10068)==0);
     assert(MEM8(0x10014)==12 && MEM8(0x10015)==75 && prepared==1);
+    MEM32(0x79094c)=2;MEM8(0x7de455)=10;MEM32(0x7de458)=0x80008;MEM32(0x7de45c)=0x8000;
+    stage(2);assert(MEM8(0x10054)==106 && MEM8(0x10055)==9 && MEM8(0x10056)==3 && !MEM32(0x10058));
+    MEM32(0x79094c)=106;stage(2);
+    assert(MEM8(0x10054)==OUTRO_SCENE && MEM8(0x1009b)==MEM32(0x4d1ae4) && MEM32(0x10058)==0x20000000);
     /* The stock routine rejects cinematic eligibility before emitting ready.
        Its original transport tail remains usable without its player body loop. */
     MEM32(0x7de458)=0x20000000;MEM32(0x790950)=4;MEM32(0x79094c)=24;

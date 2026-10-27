@@ -49,7 +49,12 @@ void pc_story_network_activate(void) {++story_activates;}
 static int story_damage_handled;
 static unsigned story_trace_calls;
 int pc_story_network_damage(void){return story_damage_handled;}
+int pc_story_network_shot(void (*original)(void)){(void)original;return 0;}
+static uint32_t story_wire_entity;
+uint32_t pc_story_network_wire_entity(unsigned slot){return slot==23u?story_wire_entity:0u;}
 int pc_story_network_hit_trace(void (*original)(void)){(void)original;++story_trace_calls;return 0;}
+static uint32_t cinematic_replica;
+int pc_story_network_cinematic_pose(uint32_t entity){return entity && entity==cinematic_replica;}
 static uint32_t story_replica;
 int pc_story_network_replica(uint32_t entity){return entity && entity==story_replica;}
 int pc_story_network_replica_bounds(uint32_t entity)
@@ -402,6 +407,16 @@ int main(void)
         pc_network_bots_guest_decode(original);CHECK(g_eax==0 && g_esp==20);
         ((uint8_t *)memory)[0x300]=1;memory[0x200/4]=0x300;g_esp=16;
         pc_network_bots_guest_decode(original);CHECK(g_eax==0x11223344u && g_esp==20);
+        story_wire_entity=0x7600;
+        g_esp=16;memory[5]=0x7600;pc_network_bots_guest_serializable(original);CHECK(g_eax==1 && g_esp==20);
+        g_esp=16;g_eax=0x200;g_ecx=0x7600;memory[0x200/4]=0x300;
+        pc_network_bots_guest_encode(original);CHECK(((uint8_t *)memory)[0x301]==23 && memory[0x200/4]==0x302);
+        g_esp=16;g_ecx=0x200;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(g_eax==0x7600 && g_esp==20);
+        memory[5]=0x400;memory[0x400/4]=0x7600;memory[0x76b140/4]=1;g_esp=16;
+        pc_network_bots_guest_death_gate(original);CHECK(g_eax==1 && g_esp==20);
+        memory[0x76b140/4]=2;g_esp=16;pc_network_bots_guest_death_gate(original);CHECK(g_eax==0 && g_esp==20);
+        story_wire_entity=0;
     }
 #else
     g_esp=16;pc_network_bots_guest_serializable(original);CHECK(g_eax==0x11223344u && g_esp==20);
@@ -462,7 +477,12 @@ int main(void)
         story_replica=0x7300;memory[5]=story_replica;memory[6]=1;g_esp=16;
         pc_network_bots_guest_pose(original_pose);
         CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2);
-        story_replica=0;bot_weapon_poses=1;
+        story_replica=0;cinematic_replica=0x7200;memory[5]=cinematic_replica;g_esp=16;
+        pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2 && g_esp==20 && g_eax==0x11223344u);
+        memory[0x76b140/4]=1;g_esp=16;pc_network_bots_guest_pose(original_pose);
+        CHECK(pose_advance==0 && memory[6]==1 && bot_weapon_poses==2);
+        cinematic_replica=0;memory[0x76b140/4]=2;bot_weapon_poses=1;
         CHECK(memory[(0x7000+0x258)/4]==7);
         CHECK(!memcmp((uint8_t *)memory+0x7070,&last_bot.heading,4));
         CHECK(!memcmp(actor+0xbb4,last_bot.muzzle,12));
@@ -576,6 +596,13 @@ int main(void)
           memcpy(&center,(uint8_t *)memory+0x71a8,4);
           CHECK(fabsf(x-1.5f)<.001f && x==actor_x && fabsf(center-11.5f)<.001f);
           CHECK(!bot_incoming && bot_notices==3); }
+        /* The shared wire explicitly permits fire without an actor target. */
+        const unsigned shots_before=bot_shots;
+        last_bot.shot.serial=1000;last_bot.shot.spawn=last_bot.spawn;
+        last_bot.shot.target_slot=UINT32_MAX;last_bot.health=1.f;last_bot.body_present=1;
+        last_bot.tick+=3;bot_time=1.2;bot_incoming=1;g_esp=16;pc_network_bots_guest_frame(original);
+        bot_time=1.3;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(bot_shots==shots_before+1);
 
     }
 #else

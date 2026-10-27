@@ -257,6 +257,7 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+    pc_story_network_pause_style();
     if(pc_story_menu_button(original)) return;
 
 
@@ -541,12 +542,13 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
     extern void sub_001BB5C0(void);
     uint32_t actor,target,pool,previous_target,weapon,result;
     if(!guest_writable(entity,0x25cu) || shot->hand>1u || shot->mode>1u || shot->flags>1u ||
-       shot->weapon<0 || shot->weapon>=66 || shot->target_slot>=16u ||
+       shot->weapon<0 || shot->weapon>=66 ||
+       (shot->target_slot!=UINT32_MAX && shot->target_slot>=(pc_online_mode()==PC_ONLINE_STORY?32u:16u)) ||
        WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return;
     actor=WORD_AT(entity+0x7cu);pool=WORD_AT(0x007356d8u);
-    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,16u*0xea0u)) return;
-    target=WORD_AT(pool+shot->target_slot*0xea0u);
-    if(!guest_writable(target,0x25cu)) return;
+    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,(pc_online_mode()==PC_ONLINE_STORY?32u:16u)*0xea0u)) return;
+    target=shot->target_slot==UINT32_MAX?0u:WORD_AT(pool+shot->target_slot*0xea0u);
+    if(target && !guest_writable(target,0x25cu)) return;
     weapon=actor+0xa4u+shot->hand*0x130u;
     /* A late shot from the previous weapon must not use the new model. */
     if(WORD_AT(weapon+0x30u)!=(uint32_t)shot->weapon ||

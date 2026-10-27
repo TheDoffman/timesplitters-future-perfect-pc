@@ -1,5 +1,12 @@
 # Runtime and patch navigation
 
+The separate `*-story-checkpoints.patch` wraps original25EF80 and25F010 through
+the shared display adapter. Capture remains local and host-triggered; extra
+players use25EAD0 (EBX bookmark, ECX index, EDX mask, stack context). Restore
+uses25EC70 (EBX bookmark, EAX context) after primary0 restores world state.
+No checkpoint/VM pointer crosses the network. Regenerate after adding wrappers;
+native and non-Story entry paths continue calling the original body.
+
 `*-story-human-teams.patch` wraps D7550. Only the33ACDB network-team call for a
 validated human actor in live Story replaces the requested Arcade team with1,
 matching original Story25A420. Arguments are restored after the original setter;
@@ -755,3 +762,21 @@ Fresh four-peer acceptance and native Mac Online remain separate.
 The separate story-level-restart patch wraps original653B0 with pc_story_network_restart. Original bodies/register and return behavior remain the fallback. Connected first-mission Story uses the reliable reload event; no generated C is edited. The additional patch is excluded from the historical Mac networking migration fixture.
 
 The separate story-team-initialization patch wraps originalD7570 after its direct slot+1 team/color writes. It invokes the shared human-team adapter only after validating a real human pool slot. D7550 and the frame fallback retain their original responsibilities.
+
+The subsequent `*-story-world-effects.patch` wraps216230/219CA0 decisions and
+FFDA0/EFBD0 leaf creation, retaining generated originals through `_gen`.
+Apply after the checkpoint patch and regenerate all wrappers before building.
+Cinematic camera semantics reuse existing D4B00/D4BE0 trace wrappers; no generated
+C edits or camera pointers are added to the wire. Historical Mac-only migration
+fixtures exclude both new patches with their absent Story prerequisites.
+
+The Story follow-up patch wraps `65940` for the authored completion stage builder
+and `35BD70`/`35DB60` for gameplay payload lifetime. The shared payload guard
+requires allocated human contexts and bodies before stock `35B5D0` serialization;
+config/ready/control messages remain live through Story movies/rewards. Native
+non-controls builds retain original wrappers. See the Story follow-up in
+[systems details](systems-details.md) for authority and wire contracts.
+
+The subsequent opening-body patch wraps original `A0130` after its per-world-entity
+view-mask construction. Its shared Story adapter clears only main human entity
+low16 view bits during the opening; normal culling restores them afterward.

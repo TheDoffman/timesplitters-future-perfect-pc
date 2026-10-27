@@ -4,9 +4,13 @@
 #ifdef _WIN32
 extern void sub_001A8D30(void),sub_001A8F30(void),sub_002CB090(void);
 extern void sub_00197890(void),sub_002CA9F0(void),sub_00359EB0(void);
+extern void sub_002CAD80(void);
+extern void sub_00071BE0(void);
 extern void sub_00198E20(void),sub_0003D7B0(void),sub_00040F00(void),sub_00041DC0(void),sub_0003F8D0(void),sub_0003FCF0(void);
 #define STORY_BODY_CB 0x12020u
 static uint32_t story_body_menu,story_body_rect;
+static uint32_t story_header_rect;
+static float story_header_title_height;
 static uint32_t story_lobby_parent,story_lobby_descriptor,story_lobby_captions;
 static uint32_t story_difficulty_descriptor;
 static unsigned story_lobby_options;
@@ -75,9 +79,7 @@ static int pc_story_lobby_button(void (*original)(void))
     }
     if(!story_lobby_host() || !story_lobby_options) return 0;
     const int level=story_lobby_options==1u && callback==0x002CAFE0u && caller==0x002CB149u;
-    const int difficulty=story_lobby_options==2u && callback==0x002CAD80u &&
-        (caller==0x002D6383u || caller==0x002D63C9u || caller==0x002D640Fu);
-    if(!level && !difficulty) return 0;
+    if(!level) return 0;
     if(getenv("TSFP_STORY_TRACE"))
         fprintf(stderr,"[PC-STORY-SELECT] row callback %08X -> %08X stage=%u\n",
             callback,STORY_SELECT_CB,story_lobby_options);
@@ -117,7 +119,19 @@ static void story_lobby_status(uint32_t menu,uint32_t rect,uint32_t frame)
     sx*=.65f;sy*=.65f;
     memcpy(&WORD_AT(0x007E7270u),&sx,4u);memcpy(&WORD_AT(0x007E7280u),&sy,4u);
     guest_call(sub_0003F8D0,0);
-    const float x=bounds[0]+8.f,y=bounds[1]+(bounds[3]-bounds[1])*.88f;
+    guest_call(sub_0003FCF0,4,frame-16u,frame-12u,caption,0u);
+    float width,height;memcpy(&width,&WORD_AT(frame-16u),4u);memcpy(&height,&WORD_AT(frame-12u),4u);
+    const float available=(bounds[2]-bounds[0])*.78f-16.f;
+    if(isfinite(width) && width>available && available>0.f) {
+        const float fit=available/width;sx*=fit;sy*=fit;width=available;height*=fit;
+        memcpy(&WORD_AT(0x007E7270u),&sx,4u);memcpy(&WORD_AT(0x007E7280u),&sy,4u);
+        guest_call(sub_0003F8D0,0);
+    }
+    if(!isfinite(width) || width<0.f) width=0.f;
+    if(!isfinite(height) || height<0.f) height=12.f;
+    const float title_height=story_header_title_height>0.f?story_header_title_height:20.f;
+    const float x=bounds[0]+8.f+(available-width)*.5f;
+    const float y=bounds[1]+((bounds[3]-bounds[1])-(title_height+height+4.f))*.5f+title_height+4.f;
     uint32_t xb,yb;memcpy(&xb,&x,4u);memcpy(&yb,&y,4u);
     const uint32_t color=guest_call(sub_00154FE0,2,0x7f7f7f7fu,WORD_AT(menu+0xf4u));
     guest_call(sub_00041DC0,4,xb,yb,caption,color);
@@ -143,10 +157,13 @@ static void story_lobby_header(void)
     /* The original briefing heading takes opacity directly from its menu;
        list rows instead fade from item+34, absent for this static heading. */
     if(scoped) WORD_AT(menu+4u)=0x005238C0u;
-    sub_002CA9F0();
+    const uint32_t previous_rect=story_header_rect;const float previous_height=story_header_title_height;
+    story_header_rect=rect;story_header_title_height=0.f;
+    sub_002CA9F0();story_header_rect=previous_rect;
     if(scoped) WORD_AT(menu+4u)=descriptor;
     WORD_AT(item+0x14u)=id;
     story_lobby_status(menu,rect,frame);
+    story_header_title_height=previous_height;
 }
 
 static void story_lobby_body(void)
@@ -157,6 +174,40 @@ static void story_lobby_body(void)
     story_body_menu=old_menu;story_body_rect=old_rect;
 }
 #endif
+
+int pc_story_lobby_title(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    if(!story_header_rect || WORD_AT(frame)!=0x002cabf3u || frame<256u ||
+       !guest_writable(story_header_rect,16u) || !guest_writable(frame-128u,128u)) return 0;
+    float bounds[4];memcpy(bounds,(const void *)((uintptr_t)story_header_rect+g_xbox_mem_offset),16u);
+    const float available=(bounds[2]-bounds[0])*.78f-16.f;
+    if(!(available>0.f)) return 0;
+    GuestRegisters saved;save_registers(&saved);g_esp=frame-128u;
+    guest_call(sub_0003FCF0,4,frame-16u,frame-12u,WORD_AT(frame+12u),0u);
+    float width,height;memcpy(&width,&WORD_AT(frame-16u),4u);memcpy(&height,&WORD_AT(frame-12u),4u);
+    const uint32_t old_x=WORD_AT(frame+4u),old_y=WORD_AT(frame+8u),old_sx=WORD_AT(0x007e7270u),old_sy=WORD_AT(0x007e7280u);
+    if(isfinite(width) && width>available) {
+        float sx,sy;memcpy(&sx,&old_sx,4u);memcpy(&sy,&old_sy,4u);
+        const float fit=available/width;sx*=fit;sy*=fit;width=available;height*=fit;
+        memcpy(&WORD_AT(0x007e7270u),&sx,4u);memcpy(&WORD_AT(0x007e7280u),&sy,4u);
+        guest_call(sub_0003F8D0,0);
+    }
+    if(!isfinite(width) || width<0.f) width=0.f;
+    const float x=bounds[0]+8.f+(available-width)*.5f;memcpy(&WORD_AT(frame+4u),&x,4u);
+    if(!isfinite(height) || height<0.f) height=20.f;
+    story_header_title_height=height;
+    const float y=bounds[1]+((bounds[3]-bounds[1])-(height*1.65f+4.f))*.5f;
+    memcpy(&WORD_AT(frame+8u),&y,4u);
+    restore_registers(&saved);original();WORD_AT(frame+4u)=old_x;WORD_AT(frame+8u)=old_y;
+    WORD_AT(0x007e7270u)=old_sx;WORD_AT(0x007e7280u)=old_sy;
+    save_registers(&saved);g_esp=frame-128u;guest_call(sub_0003F8D0,0);restore_registers(&saved);
+    return 1;
+#else
+    (void)original;return 0;
+#endif
+}
 
 void pc_story_lobby_details(void (*original)(void))
 {
@@ -274,19 +325,30 @@ static void story_lobby_selector(void (*original)(void))
     WORD_AT(0x0078AD48u)=mission;WORD_AT(0x0078AD54u)=difficulty;
 }
 static void story_lobby_levels(void) { story_lobby_selector(sub_002CB090); }
+static void story_lobby_difficulty_draw(void)
+{
+    /* Sixth row argument is drawing, fifth is selection. Keep the original
+       trophy/profile renderer separate from the Online confirmation action. */
+    const uint32_t mission=WORD_AT(0x0078ad48u),players=WORD_AT(0x005236c4u);
+    WORD_AT(0x0078ad48u)=story_lobby_mission;WORD_AT(0x005236c4u)=2u;
+    sub_002CAD80();
+    WORD_AT(0x0078ad48u)=mission;WORD_AT(0x005236c4u)=players;
+}
 static void story_lobby_difficulties(void)
 {
     GuestRegisters r;const uint32_t menu=WORD_AT(g_esp+4u);
     save_registers(&r);
     /* Build this dialog independently of the local Story builder's profile
        and frontend globals. All actions remain within the network menu parent. */
-    guest_call(sub_00075B70,5,0xa000u,story_difficulty_descriptor+16u,
+    guest_call(sub_00075B70,5,0x0800a000u,story_difficulty_descriptor+16u,
         0x42280000u,0u,STORY_BACK_CB);
     guest_call(sub_00071B10,4,1u,0x40000000u,1u,1u);
-    guest_call(sub_00071C50,1,0x26200u);
+    /* Original difficulty rows reserve nine menu units for the trophy. */
+    guest_call(sub_00071BE0,3,1u,0x41100000u,0u);
+    guest_call(sub_00071C50,1,0x22200u);
     for(uint32_t i=0;i<3u;i++)
-        guest_call(sub_00079D60_gen,6,story_difficulty_descriptor+48u+i*32u,
-            i,0u,0u,STORY_SELECT_CB,0u);
+        guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x3d5u+i),
+            i,0u,0u,STORY_SELECT_CB,STORY_BODY_CB);
     guest_call(sub_000771D0,1,menu);
     const uint32_t selected=story_lobby_difficulty;
     guest_call(sub_000770E0,2,menu,selected<3u?selected:0u);
@@ -344,7 +406,12 @@ static void story_lobby_difficulty_select(void)
 static void (*story_lobby_lookup(uint32_t address))(void)
 {
     if(!story_lobby_member()) return NULL;
-    if(address==STORY_BODY_CB) return story_lobby_body;
+    if(address==STORY_BODY_CB) {
+        const uint32_t menu=WORD_AT(g_esp+4u);
+        if(story_lobby_options==2u && story_difficulty_descriptor && guest_writable(menu,8u) &&
+           WORD_AT(menu+4u)==story_difficulty_descriptor) return story_lobby_difficulty_draw;
+        return story_lobby_body;
+    }
     if(address==0x001A8F30u && !story_lobby_host()) return story_lobby_guest_tick;
     if(address==STORY_BUILD_CB && guest_writable(WORD_AT(g_esp+4u),8u)) {
         const uint32_t descriptor=WORD_AT(WORD_AT(g_esp+4u)+4u);
@@ -377,7 +444,6 @@ static void (*story_lobby_lookup(uint32_t address))(void)
     case 0x001A8D30u:return story_lobby_tick;
     case 0x002CB090u:if(story_lobby_options) return story_lobby_levels;break;
     case 0x002CAFE0u:if(story_lobby_options) return story_lobby_level_select;break;
-    case 0x002CAD80u:if(story_lobby_options==2u) return story_lobby_difficulty_select;break;
     }
     return NULL;
 }

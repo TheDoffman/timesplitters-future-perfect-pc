@@ -26,6 +26,9 @@ int pc_story_network_hit_trace(void (*original)(void));
 int pc_story_network_damage(void);
 int pc_story_network_replica(uint32_t entity);
 int pc_story_network_replica_bounds(uint32_t entity);
+int pc_story_network_cinematic_pose(uint32_t entity);
+int pc_story_network_shot(void (*original)(void));
+uint32_t pc_story_network_wire_entity(unsigned slot);
 #endif
 static void pc_network_bots_guest_config(void (*original)(void))
 {
@@ -124,6 +127,10 @@ static void pc_network_bots_guest_pose(void (*original)(void))
 #ifdef _WIN32
     uint32_t stack=g_esp;
     uint32_t entity=*(uint32_t *)((uintptr_t)(stack+4u)+g_xbox_mem_offset);
+    if(pc_story_network_cinematic_pose(entity)) {
+        uint32_t *advance=(uint32_t *)((uintptr_t)(stack+8u)+g_xbox_mem_offset),saved=*advance;
+        *advance=0;original();*advance=saved;return;
+    }
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==2u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
        pc_network_enabled() &&
@@ -147,6 +154,13 @@ static void pc_network_bots_guest_death_gate(void (*original)(void))
 {
 #ifdef _WIN32
     uint32_t context=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
+    if(context) {
+        const uint32_t entity=*(uint32_t *)((uintptr_t)context+g_xbox_mem_offset);
+        for(unsigned slot=0;entity && slot<32u;slot++) if(pc_story_network_wire_entity(slot)==entity) {
+            g_eax=*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u;
+            g_esp+=4u;return;
+        }
+    }
     if(context && pc_network_bots_guest_slot(*(uint32_t *)((uintptr_t)context+g_xbox_mem_offset))<16u) {
         g_eax=*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u;
         g_esp+=4u;return;
@@ -194,6 +208,7 @@ static void pc_network_bots_guest_bounds(void (*original)(void))
 static void pc_network_bots_guest_shot(void (*original)(void))
 {
 #ifdef _WIN32
+    if(pc_story_network_shot(original)) return;
     PcNetworkBotShot shot;unsigned slot=16u;
     if(*(uint32_t *)((uintptr_t)0x0076b140u+g_xbox_mem_offset)==1u &&
        *(uint32_t *)((uintptr_t)0x0076b1a4u+g_xbox_mem_offset)==15u &&
@@ -260,6 +275,9 @@ static void pc_network_bots_guest_serializable(void (*original)(void))
 #ifdef _WIN32
     const uint32_t entity=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     unsigned index;
+    if(entity) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==entity) {
+        g_eax=1u;g_esp+=4u;return;
+    }
     if(entity) for(index=0;index<16u;index++) {
         if(pc_network_bots_guest_entity(index)==entity) {
             g_eax=1u;g_esp+=4u;return;
@@ -272,6 +290,11 @@ static void pc_network_bots_guest_encode(void (*original)(void))
 {
 #ifdef _WIN32
     unsigned index;
+    if(g_ecx) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==g_ecx) {
+        uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
+        uint8_t *bytes=(uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+        bytes[0]=4u;bytes[1]=(uint8_t)index;*cursor+=2u;g_esp+=4u;return;
+    }
     if (g_ecx) for (index=0;index<16u;index++) {
         if (pc_network_bots_guest_entity(index)==g_ecx) {
             uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
@@ -289,7 +312,9 @@ static void pc_network_bots_guest_decode(void (*original)(void))
     uint32_t *cursor=(uint32_t *)((uintptr_t)g_ecx+g_xbox_mem_offset);
     const uint8_t *bytes=(const uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
     if (bytes[0]==4u) {
-        g_eax=pc_network_bots_guest_entity(bytes[1]);*cursor+=2u;
+        g_eax=pc_story_network_wire_entity(bytes[1]);
+        if(!g_eax) g_eax=pc_network_bots_guest_entity(bytes[1]);
+        *cursor+=2u;
         g_esp+=4u;return;
     }
 #endif
@@ -458,7 +483,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             if(state.shot.serial!=seen_shots[index]) {
                 seen_shots[index]=state.shot.serial;
                 if(state.shot.serial && state.shot.spawn==state.spawn && state.tick-state.shot.tick<=30u &&
-                   state.shot.target_slot<humans+bots && state.health>0.f)
+                   (state.shot.target_slot==UINT32_MAX || state.shot.target_slot<humans+bots) && state.health>0.f)
                     pc_network_bots_present_shot(entity,&state.shot);
             }
             /* Pose, weapon and spatial refreshes can overwrite local bounds.

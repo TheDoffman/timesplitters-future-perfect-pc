@@ -2,6 +2,33 @@
 
 See [systems-details](systems-details.md) for detailed adapter contracts and validation routes.
 
+Story NPC replicas now construct at the host coordinates/heading, using the
+host-resolved appearance variant rather than a second random choice. Reused
+body generations rebuild local model/spatial state even when character kinds
+match. Frozen poses publish once per actual simulation tick (formerly every
+six ticks); duplicate calls within one tick still do not resend. Production
+fixture coverage includes constructor placement and same-kind body replacement;
+changed live visibility/pacing acceptance remains separate.
+
+First-mission `pc_story_objectives.inc` publishes only numeric objective kinds
+0/1 and status/flags, never kind2 executable VM records. Guests validate host,
+match, sequence and authored identity before updating their Status data. The
+original 227430 notification path runs once after the owning local player exits
+script control. The original pause row factory uses 1.25 row scale for the
+first-mission Story Options builder only, fitting added actions between header
+and footer; other menus keep their original metrics.
+
+Checkpoint support uses shared `pc_story_checkpoint.inc` and separate wrappers
+for original25EF80 capture/25F010 restore. Reliable packets contain only the
+authored checkpoint index and match/sequence; each peer calls its own engine
+snapshot routines and retains local VM/object pointers. Added players use the
+original25EAD0/25EC70 register ABI with their separately allocated bookmarks.
+Restore scopes the current context to primary0 for the Local co-op world
+snapshot, then restores the owning context. Checkpoint restart is host-only and
+requires a matching captured mask on every receiving peer. The host pause row
+uses the original checkpoint confirmation and stays disabled before capture.
+Unit fixtures cover this contract; live checkpoint acceptance remains pending.
+
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
 `pc_display*`, `pc_settings*`, `pc_refresh*` for display/configuration;
@@ -914,3 +941,7 @@ teams, owned movement/ammo, host-only level reload with fresh handoff, and
 original host receipt/application of guest NPC hits through death. All runners
 exited0 after the damage-authority correction. Full mission completion,
 checkpoint/Game Over handling and native Mac/Internet validation remain separate.
+
+First-mission camera/fade/pose and random-effect authority contracts are in
+[systems-details.md](systems-details.md); pause layout uses original menu origin
+with an11-unit host-only adjustment after original finalization.

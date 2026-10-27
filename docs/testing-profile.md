@@ -1,5 +1,33 @@
 # Reusable gameplay test profile
 
+For manual **Windows Online Story co-op** testing on one PC, run:
+
+```powershell
+.\Test-StoryCoop.ps1
+# Optional: four separate game windows
+.\Test-StoryCoop.ps1 -Players 4
+```
+
+The helper verifies the sealed Release build and game data, opens two games by
+default, and starts a loopback-only lobby directory. No port forwarding or public
+IP lookup is needed. In each game select **Test Lab → Story → Online**. In one
+Online browser click **Start New Match**, return to that game and select
+**Start New Match** there too. In the other browsers click **Refresh**, select
+the host's lobby, then **Join selected**. The host chooses **Time to Split**
+and starts once everyone is present. Use Alt+Tab to switch games; E/Space confirms
+and F goes back. Online Story remains experimental and only the first mission is
+currently in scope; checkpoint restoration and Game Over handling remain incomplete.
+
+Keep the terminal open until all game windows close. There is no manual time
+limit; Ctrl+C in the terminal ends the launched games. The helper resets isolated
+Test Lab copies under `private/test-saves/story-manual-*`, uses windowed 960×540
+at Original 60 FPS, and isolates controls, both display configurations and Online
+settings. Logs are capped at 4 MiB each; known disposable disks are recycled after
+the games exit. Personal saves/settings and the canonical fixture are preserved.
+If a hard interruption leaves `story-manual.lock` or a role's `run.lock`, close
+that session's games before removing its stale markers. A build is required
+before the helper can run; it does not compile automatically.
+
 The local **Test Lab** profile unlocks story levels, Arcade content/characters
 and challenges. Collectible/pickup progress is preserved from a fresh profile,
 so collection can still be tested. Story completion masks and challenge awards

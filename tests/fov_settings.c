@@ -136,7 +136,7 @@ void sub_00075B70(void) {
     CHECK(isfinite(width) && width>0 && left>=0 && left+width<=100.f);
     g_esp+=4;
 }
-STUB(sub_00071B10) STUB(sub_00071C50)
+STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00071BE0)
 STUB(sub_000771D0)
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
@@ -169,11 +169,13 @@ void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 void sub_00079710(void) { separators++;g_esp+=4; }
 STUB(sub_00074910) STUB(sub_001A0A60)
-STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490)
+    STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490) STUB(sub_002EB030)
 STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
 STUB(sub_002402B0) STUB(sub_00353A90)
+STUB(sub_0025EAD0) STUB(sub_0025EC70) STUB(sub_000C6100) STUB(sub_000D4B00) STUB(sub_000D4BE0)
 STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
 STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00) STUB(sub_00041DC0)
+STUB(sub_002CAD80)
 static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }

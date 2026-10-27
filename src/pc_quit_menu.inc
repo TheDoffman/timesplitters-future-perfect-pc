@@ -97,4 +97,7 @@ void pc_display_menu_finish(void (*original)(void))
     }
 #endif
     original();
+#if defined(_WIN32) && !defined(TSFP_QUIT_MENU_TEST)
+    if(paused) pc_story_network_pause_layout(menu);
+#endif
 }
