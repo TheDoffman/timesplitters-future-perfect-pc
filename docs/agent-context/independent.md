@@ -32,6 +32,21 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+String lowering is owned by `translation_strings.py` through the final
+`independent-translation-strings.patch`. MOVS/STOS/LODS and CMPS/SCAS use
+byte/word/dword elements, direction-aware indices, address-size-specific count
+and index updates, and FS source offsets. Bulk copy uses widened guest-span
+bounds and disjointness; overlaps use ordered element reads/writes. Compare
+operands are read once. Repeated compares retain the ZF/CF consumer ABI and
+incoming zero-count preservation; single compares publish ordinary CMP
+snapshots. The translator declares their required storage even without a
+conditional consumer. SIMD MOVSD/CMPSD stay on their existing route.
+Native compiled fixtures cover overlap, counts, directions, widths, FS and
+16-bit wrap; Windows x86 oracles validate memory/register/ZF/CF results. Decoded
+consumers and inherited carry/zero-preload negative controls run with both host
+compilers. Complete repeat EFLAGS, memory protection/MMIO and resumable faults
+remain execution-foundation work. See STATUS.md and MAC-088 for acceptance.
+
 `independent-translation-compare.patch` follows exchange. `translation_compare.py`
 owns CMP/TEST snapshots and register-self-test normalization shared by fused
 and ordinary consumers, retaining the existing snapshot ABI and direct 32-bit

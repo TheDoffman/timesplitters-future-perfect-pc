@@ -17,7 +17,8 @@ executable layout configuration, HLE symbol planning/thunk emission,
 indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
 multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
-exchange/compare-exchange lowering.
+exchange/compare-exchange lowering, comparison snapshots and implicit sign
+extension and string-instruction lowering.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -74,6 +75,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Bit tests, scans and byte swaps | Project-owned `translation_bitops.py` supplies non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP | Native width/offset/alias and x86 references, captured flag consumers, generation/build/game; atomic forms and full flag provenance remain separate |
 | Exchange and compare-exchange | Project-owned `translation_exchange.py` and original template atomics supply XCHG/XADD/CMPXCHG | Compiled values/flags, x86 oracles, aliases, decoded consumers and contention; generation/build/game acceptance in STATUS.md, native Mac pending |
 | Comparison snapshots and implicit sign extension | Project-owned `translation_compare.py` supplies CMP/TEST, self-test normalization and CBW/CWD/CWDE/CDQ | Compiled width/carry/memory-hook/state fixtures and decoded consumers; measured host acceptance in STATUS.md and MAC-087 |
+| String instructions | Project-owned `translation_strings.py` replaces string and direction emission | Original native/decoded contracts and Windows generation/build/game acceptance passed; native Mac pending (MAC-088) |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -721,3 +723,24 @@ https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.h
 This replaces snapshot/emission bodies, not general branch conditions or the
 complete flags register. Fused branch rereads, AF and guest faults remain separate
 orchestration/foundation work. See STATUS.md and MAC-087 for validation.
+
+
+## String-instruction lowering
+
+String lowering is owned by `translation_strings.py` through the final
+`independent-translation-strings.patch`. MOVS/STOS/LODS and CMPS/SCAS use
+byte/word/dword elements, direction-aware indices, address-size-specific count
+and index updates, and FS source offsets. Bulk copy uses widened guest-span
+bounds and disjointness; overlaps use ordered element reads/writes. Compare
+operands are read once. Repeated compares retain the ZF/CF consumer ABI and
+incoming zero-count preservation; single compares publish ordinary CMP
+snapshots. The translator declares their required storage even without a
+conditional consumer. SIMD MOVSD/CMPSD stay on their existing route.
+Native compiled fixtures cover overlap, counts, directions, widths, FS and
+16-bit wrap; Windows x86 oracles validate memory/register/ZF/CF results. Decoded
+consumers and inherited carry/zero-preload negative controls run with both host
+compilers. Complete repeat EFLAGS, memory protection/MMIO and resumable faults
+remain execution-foundation work. See STATUS.md and MAC-088 for acceptance.
+
+Source basis: Intel SDM, MOVS/STOS/LODS, CMPS/SCAS and REP instruction
+semantics: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.

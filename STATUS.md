@@ -1,3 +1,49 @@
+## Independent string-instruction lowering (Windows acceptance passed, 2026-10-27)
+
+Project code replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
+widths and CLD/STD. It preserves repeated element ordering for overlapping
+copies, uses guarded bulk copies for disjoint flat spans, samples compare
+operands once, and supports 16-bit count/index wrap and FS source offsets.
+Single CMPS/SCAS now publish ordinary comparison snapshots; repeated compares
+retain the existing ZF/CF and incoming zero-count contract. Full EFLAGS, MMIO
+and guest fault recovery remain separate work.
+
+All **16 CI checks passed** on comparison-stage revision `2b8c3f48`.
+The next string stage passed **126 focused checks in 68.31 seconds**, including
+original compiled contracts, Windows x86 oracles, decoded consumers and
+inherited comparison negative controls executed with MSVC. Decoded single
+compares exposed missing snapshot declarations in translator orchestration;
+the patch now declares both snapshot and comparison storage as needed.
+Generation translated **15,838 functions with zero failures**, retaining
+**50 unresolved stubs**. **14,517 functions stayed byte-identical**; **1,320**
+changed bodies match exact old/new string emission substitutions (ignoring
+comments/whitespace). One additional body now implements a previously omitted
+single CMPSD at `0x007F2B90`, whose opcode was verified in the supported XBE.
+All five other generated C/header files, function names/order and surrounding
+text are unchanged. No unexplained changes remain. This is bounded structural
+evidence, not a full equivalence proof. Unimplemented instruction sites fell
+from 730 to 729.
+
+The normal Windows Release build and native checks passed with process-local
+`CL_MPCount=2`, a current generation fingerprint and matching crash symbols.
+Executable SHA-256:
+`7770ffc0bfd1688ad7531e397d6c11346318cee8a14d226f87b2e3fb36c921e5`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **89.597 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no remaining run lock, disposable partitions or crash dump. This used injected
+inputs, minimized/background rendering and skipped movies; physical input,
+audio, foreground pacing and full campaign coverage remain unverified.
+
+**56 historical patch/context/backlog/snapshot checks passed in 892.45 seconds.**
+Evidence: `logs/strings-focused.log`, `logs/strings-generation.log`,
+`logs/independent-strings-comparison.json`, `logs/strings-build.log`,
+`logs/strings-game.log`, `logs/independent-strings-game-check.json`,
+`logs/strings-patch-checks.log`.
+Native Mac title validation is pending (MAC-088); no full-independence claim.
+
 ## Independent comparison snapshots and sign extension (2026-10-27)
 
 After repairing PR #375's Clang condition warning, all **16 CI checks passed**

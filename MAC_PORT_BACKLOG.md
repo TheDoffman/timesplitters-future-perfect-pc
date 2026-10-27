@@ -222,6 +222,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-085 | Shared impact spark timing (issue #371) | Awaiting validation |
 | MAC-086 | Independent exchange lowering and atomic helpers | Awaiting validation |
 | MAC-087 | Independent comparison snapshots and sign extension | Awaiting validation |
+| MAC-088 | Independent string-instruction lowering | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6230,6 +6231,23 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   build, then verify isolated movement, firing and pause/resume.
 - **Mac implementation and evidence:** Shared implementation; native Mac
   generation/build/gameplay unverified. Full flags and guest faults remain work.
+
+### MAC-088 - Independent string-instruction lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Original byte/word/dword MOVS/STOS/LODS/CMPS/SCAS and
+  direction emission, including repeats, overlapping copies and address-size wrap.
+- **PC source:** Uncommitted continuation of PR #375; `translation_strings.py`
+  and `independent-translation-strings.patch`.
+- **PC validation:** 126 focused and 56 patch/context checks passed; normal
+  generation/build/native checks and isolated game acceptance passed. See STATUS.md.
+- **Existing Mac support:** Shared Python emission and portable C; new fixtures
+  are registered in both-host CI. Only the supplemental x86 oracle is Windows-only.
+- **Mac adaptation needed:** None identified; native title acceptance pending.
+- **Mac acceptance checks:** Run string/consumer tests and patch upgrades;
+  regenerate/build and verify isolated movement, firing and pause/resume.
+- **Mac implementation and evidence:** Shared implementation; native title
+  generation/build/gameplay unverified. Complete flags and guest faults remain work.
 
 ## Entry template
 

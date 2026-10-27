@@ -191,3 +191,8 @@ a stale last-patch assertion is not evidence of a loader failure.
 Comparison-stage fixtures retain strict Clang warnings. Compare source snapshots
 with decoded consumers separately from full branch/flag ownership. Treat fused
 comparison rereads as a remaining orchestration boundary, not snapshot coverage.
+
+String replacement checks distinguish repeated element ordering from bulk copy,
+zero-count flag preservation from new comparisons, and native instruction
+oracles from the full decoded translator. Single compares need snapshot locals
+even when there is no conditional consumer; repeated compares need ZF storage.

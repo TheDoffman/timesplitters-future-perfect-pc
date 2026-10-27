@@ -36,6 +36,7 @@ RELEASE_INPUTS = {
 CPU_TOOLS = {
     'tools/translation_product.py', 'tests/test_translation_product.py',
     'tools/translation_bitops.py', 'tests/test_translation_bitops.py',
+    'tools/translation_strings.py', 'tests/test_translation_strings.py',
     'tools/translation_compare.py', 'tests/test_translation_compare.py',
     'tools/translation_exchange.py', 'tests/test_translation_exchange.py',
     'tools/translation_bits.py', 'tests/test_translation_bits.py',
