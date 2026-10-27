@@ -592,3 +592,38 @@ cleanup retain their existing names; newly added patches follow patches/README.
 The combined renamed ledger preserves all 149 effective runtime file hashes.
 Historical fixtures keep their old-stage memberships and then upgrade to the
 entire current stack. CI reconciliation does not establish new title behavior.
+
+## Indirect guest-call dispatch
+
+`0195-independent-guest-dispatch.patch` replaces the ICALL, SAFE, SAFE_AT and
+ITAIL implementation with shared project lookup/invocation helpers and lazy
+recovery macros. It follows the guest ABI patch. Manual entries retain priority
+over generated entries and kernel bridges. Calls record the truncated target
+before range validation; kernel synthetic addresses and an unloaded code range
+remain admitted. Only valid calls observe their site. Tail jumps use the same
+resolver without call-ring/range admission and retain refusal form 2.
+
+On success the callee's register/stack results survive. On failure diagnostics
+see the original frame before recovery. SAFE arguments remain unevaluated on
+success; invalid targets evaluate the saved stack for logging and again for
+recovery, preserving diagnostic side effects. Disabled feedback does not evaluate
+the site expression. Trace storage, feedback providers, ABI diagnostics, HLE
+argument-frame helpers and nonlocal-jump services remain separate dependencies.
+The runtime header as a whole is not yet independent.
+
+`test_guest_dispatch.py` compiles the production header and extracted dispatch
+with ABI checks and feedback independently on/off. Each configuration runs
+4,096 state/event cases covering resolver precedence, range endpoints, target
+truncation, trace overflow/timing, lazy arguments, diagnostic stack changes,
+callee register/stack results and tail failures. Four compiled negative controls
+lose lookup priority, recovery timing, recording or tail classification and must
+fail. The existing guarded-call fixture now extracts the whole helper interface
+without weakening its generated-call assertions. Both runtime CI hosts select
+the tests. Production generation, build and game evidence is recorded in STATUS.
+
+The generated table defines `RECOMP_DISPATCH_H` before including the runtime
+types and supplies its public pointer typedef later. Dispatch helpers declare
+an independent compatible pointer type and lookup prototypes, so either include
+order works. A regression compiles the actual batch-generated table with the
+production header and executes a lookup; isolated macro fixtures alone did not
+cover this translation-unit boundary.

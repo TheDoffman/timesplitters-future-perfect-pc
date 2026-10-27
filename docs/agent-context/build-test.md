@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Guest ABI/CLI and main reconciliation](independent.md). [Layout](../repository-layout.md).
+[Guest dispatch, ABI/CLI and main reconciliation](independent.md). [Layout](../repository-layout.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

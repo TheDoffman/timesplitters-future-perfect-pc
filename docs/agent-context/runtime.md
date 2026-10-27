@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Guest register/memory primitives and translation tooling are in [own interfaces](independent.md).
+Guest dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`

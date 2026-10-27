@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "46875b5f98b50d7d675b27c21458a9879b0697f89be26e6cd55aa99f8b68eb3d",
+  "loaderSha256": "a90abe7abb6461531ae993a064600e59eb51bec00759b6b6e1be62ff4d986afe",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1851,6 +1851,14 @@
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
+      "name": "0195-independent-guest-dispatch.patch",
+      "sha256": "78ec0360b7cdeb0e3b8301f08f42fb1b07c97473b2c78694005fb95c047b61a2",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_icall_guarded_runtime.py"
       ]
     }
   ]

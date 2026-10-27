@@ -240,6 +240,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-098 | Independent complete function emission | Awaiting validation |
 | MAC-099 | Independent translation command line | Awaiting validation |
 | MAC-100 | Project guest register and memory primitives | Awaiting validation |
+| MAC-101 | Project indirect guest-call dispatch | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6517,3 +6518,22 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Historical runtime upgrades passed; the missing backlog queue row was repaired.
   Native Mac title build/gameplay require its host and private data. Remaining header helpers, memory mapping and kernel
   storage are separate work.
+
+
+### MAC-101 - Project indirect guest-call dispatch
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up based on `b19e8634` in
+  `patches/0195-independent-guest-dispatch.patch`, `tests/guest_dispatch.c`
+  and `tests/test_guest_dispatch.py`. Original common dispatch helpers replace
+  repeated inherited indirect-call bodies while preserving lookup priority,
+  diagnostics, trace admission, lazy expressions and stack recovery.
+- Mac support: shared C implementation; no new platform adapter. Both CI hosts
+  select the same full-header/isolated ABI/feedback matrix and negative controls.
+- Remaining validation: 175 focused Windows checks, supported-US generation
+  and the corrected Release build/native checks passed. Windows gameplay
+  acceptance is pending: the bounded runs booted but their scripted navigation
+  and movement checks did not pass under substantial concurrent-game load.
+  The user requested leaving that other game open. See STATUS.md for failures,
+  repairs and remaining checks. Native Mac title build/gameplay require its
+  host and private US data. Passing asset-free CI is a separate claim.

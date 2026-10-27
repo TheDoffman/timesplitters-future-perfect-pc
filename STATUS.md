@@ -1,3 +1,57 @@
+## Independent indirect guest-call dispatch (2026-10-27)
+
+PR #375 continues from `b19e8634`, whose 17 CI checks all passed. Its local
+reconciliation/historical suite passed all 70 tests in 888.42 seconds. The
+next additive patch replaces ICALL/SAFE/SAFE_AT/ITAIL with project-owned
+target resolution, invocation and failure-recovery code. Manual/generated/
+kernel precedence, trace admission, observer/diagnostic order, lazy argument
+evaluation and existing stack outcomes remain intact. ABI-check machinery,
+HLE argument frames and other runtime helpers are still separate replacement
+work; this is not a claim that the whole header/runtime is independent.
+
+Original compiled dispatch contracts passed against the pre-change header
+(four ABI/feedback configurations) and the replacement candidate (eight full/
+isolated configurations plus four compile-first rejected mutations). Every
+positive configuration exercises 4,096 state/event cases. The final focused
+suite passed all 175 checks in 86.27 seconds, including the actual generated
+dispatch table, inherited translator consumers, guest ABI, hooks and GPR paths.
+
+The first Release build exposed the generated dispatch-table include order:
+`RECOMP_DISPATCH_H` suppresses the public pointer type until after the header,
+so eager inline helpers could not use it. A new real batch/table consumer test
+failed before the fix. Compatible private pointer/lookup declarations repair
+that boundary; all 13 candidate dispatch checks then passed. Behavioral
+assertions and build requirements were retained.
+
+Supported-US generation passed: 15,838 translated, zero failures, the same
+50 unresolved stubs and 738 unimplemented instruction sites (164.75s lift).
+Of 21 generated C/header files, 20 remain byte-identical to the pre-stage
+baseline; only the intended header changed. The corrected Windows x64 Release
+build, bundled native checks and matching crash-symbol packaging passed using
+MSVC 14.44 with CL_MPCount=3. The executable SHA-256 is
+`971d8bf883228abcff10bb8a0e2ec65da25bd1982b4e7cd9a6d30539d213d0c7`,
+built from this implementation working tree based on `b19e8634`.
+
+**Gameplay acceptance remains pending.** Two bounded, isolated Original60
+sessions booted with XAudio2 initialized and rendered menus; the first also
+rendered Scotland the Brave's opening sequence. Both runners exited cleanly,
+but the scenario assertions did not pass: the first attempted movement while
+cutscene input was suppressed, and the second's fixed menu sequence reached
+the new-profile editor. Reviewed captures confirm those states. The runs were
+about 12-16 FPS versus about 56 FPS in the prior guest-ABI acceptance run.
+A separate game process was consuming substantial CPU; contention is
+a possible cause, not a proven explanation or evidence of performance parity.
+The user requested leaving that game open and finishing other checks, so a
+clean replay is deferred. Confirm playable state before movement in that replay.
+All 26 protected files retained hash, size and modification time; no owned game
+lock or disposable partitions remained. No personal saves/settings were used.
+Native Mac title gameplay and a full campaign remain unverified (MAC-101).
+
+The first historical run was stopped after the include-order defect made its
+patch obsolete; it is not counted as passing. The corrected historical run
+passed all 70 snapshot, tracking, upgrade, context and backlog checks in
+1276.42 seconds. No production patch changes followed that passing run.
+
 ## Independence branch CI reconciliation (2026-10-27)
 
 Commit `96caf309` received no workflow runs because PR #375 conflicted with
