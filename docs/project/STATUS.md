@@ -1,3 +1,14 @@
+## PR #382 CI path repairs (2026-10-27)
+
+The texture audit's inline Python still imported from the old flat tools
+directory. It now initializes the shared grouped import paths; the original
+import failure is reproduced locally and the corrected import passes.
+The standalone Mac RHI CMake project also bypasses the title's include setup;
+it now supplies the grouped shared-header directories before adding runtime
+targets. Texture/path/context regressions: 33 passed on Windows. Native Mac
+validation is delegated to the PR's existing CI job, not inferred from Windows.
+These repairs do not change runtime behavior or the earlier gameplay limits.
+
 ## Repository responsibility folders (2026-10-27)
 
 On `cleanup/repository-folders`, 717 source, tool, test, configuration and

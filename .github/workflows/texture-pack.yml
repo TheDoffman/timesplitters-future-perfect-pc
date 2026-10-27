@@ -44,6 +44,8 @@ jobs:
           import json, sys
           from pathlib import Path
           sys.path.insert(0, 'tools')
+          from project_paths import configure
+          configure()
           from build_textures import ensure_pack
           pack, records, identity = ensure_pack()
           manifest = json.loads(Path('config/textures/texture-pack.json').read_text())
