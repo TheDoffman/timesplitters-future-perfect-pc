@@ -67,7 +67,7 @@ def condition(jump, setter, operands):
     if setter not in ('xadd','cmpxchg'):
         return None
     bits, _ = _width(operands, 2)
-    z = '(_fa == 0)'
+    z = '!_fa'
     s = f'((_fa & 0x{1 << (bits-1):X}u) != 0)'
     relation = '!=' if setter == 'cmpxchg' else '=='
     o = f'(((_fas < 0) {relation} (_fbs < 0)) && ((_fas < 0) != {s}))'

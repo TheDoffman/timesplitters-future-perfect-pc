@@ -36,7 +36,8 @@ in the runtime template use MSVC intrinsics or Clang/GCC sequentially consistent
 atomics at all three widths; old 32-bit ABI names are aliases only. The header
 and module enter existing generation fingerprints. Captured result/operand/
 carry state supplies zero, sign, parity, overflow and ordered conditions, plus
-zero-flag joins. Full architectural flags and other LOCK families remain work.
+zero-flag joins. Zero predicates use logical negation so CMOV wrapping stays
+Clang-clean under -Werror. Full architectural flags and other LOCK families remain work.
 Fixtures execute decoded consumers, native x86 references and four-thread ADD,
 CAS and exchange-lock contention. Aligned mapped RAM follows host contracts;
 MMIO, alignment/page-crossing faults and guest exception delivery are not

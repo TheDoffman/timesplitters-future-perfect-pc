@@ -13,7 +13,7 @@
      if setter == "__zf_from_dest" and ops:
          return f"({_fmt_operand_read(ops[0])} == 0)"
 +    if setter in ("xadd", "cmpxchg"):
-+        return "(_fa == 0)"
++        return "!_fa"
      if setter == "cmp" and len(ops) >= 2:
          return "(_fa == _fb)"
      if setter == "test" and len(ops) >= 2:
@@ -304,7 +304,7 @@
          out = _lift(_release_sequence("lock xadd"))
 -        self.assertIn("MEM32(eax)", out, out)
 +        self.assertIn("_fa = _exchange_result;", out, out)
-+        self.assertIn("if (!(_fa == 0))", out, out)
++        self.assertIn("if (!!_fa)", out, out)
 +        self.assertNotIn("MEM32(eax)", out, out)
  
      def test_lock_cmpxchg_does_not_inherit_stale_flags(self):

@@ -10,6 +10,10 @@ upstream and its notices remain required.
 
 Windows validation:
 
+- CI at `703f9fa7` found one Mac Clang warning-as-error in decoded CMOV:
+  redundant parentheses around equality. Zero predicates now use logical
+  negation; the compiled consumer test stays enabled with -Werror. CI rerun
+  pending; the other 1,190 Mac tests passed.
 - **152 final checks passed in 74.32 seconds**, covering compiled arithmetic,
   x86 instruction oracles, aliases, decoded consumers, four-thread contention,
   legacy numeric-address macros, fresh/repeated patches, generation and context.

@@ -1704,7 +1704,7 @@
     },
     {
       "name": "independent-translation-exchange.patch",
-      "sha256": "f7364a475748918fe408a5e9b04afd2d0a42c189e84f4850782783a743f99713",
+      "sha256": "7e76cae50d18e74fc38b69aad3d20cf06f012de0f3e7be1176d2d8679f85f05e",
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/lifter.py",
