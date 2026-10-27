@@ -1,16 +1,16 @@
 # Build, run and validation map
 
+Patch renames and fixture cleanup: [layout](../repository-layout.md).
+
 [Own translation and flag tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
-Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
+Sampler, trace/thread/idle and state-slot tests: [runtime](runtime.md).
 
-Trace/thread/idle and live state-slot contracts: [common runtime](runtime.md).
+Shader upload tests: [RHI fixture](vsh-constants.md).
 
-Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
-
-Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
+Opening replay: [intro versus gameplay](native-opening-checks.md).
 
 Local aim/animation CPU observations: [completed-update trace](native-local-trace.md).
 

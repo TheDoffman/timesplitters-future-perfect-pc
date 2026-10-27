@@ -30,7 +30,7 @@ class Compatibility(unittest.TestCase):
         for path in ('tools/build-game-icon.ps1', 'tests/test_game_icon.py',
                      'tests/package_launcher.py', 'tools/package-release.py',
                      'tools/release/ImportGame.cs', 'requirements.txt',
-                     'patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch',
+                     'patches/1150-game-icon.patch',
                      'tests/native_compiler.py',
                      'tests/test_launcher_startup.py'):
             with self.subTest(path=path):

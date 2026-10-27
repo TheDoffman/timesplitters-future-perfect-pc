@@ -175,6 +175,8 @@ and audio fidelity remain unverified. See [measured progress](STATUS.md) and the
 
 ## Guides & support
 
+[All documentation](docs/README.md) · [Repository layout and naming](docs/repository-layout.md)
+
 | Playing | Development |
 | --- | --- |
 | [Windows launcher](docs/launcher.md) | [Build from source](docs/building.md) |

@@ -12,6 +12,11 @@ entries rather than duplicating them, and retain completed entries as history.
 Include commit/PR references when available; label local changes uncommitted
 until those references exist. Keep paths relative to the repository.
 
+The 2026-10-27 repository organization change renames patch paths and updates
+their references without changing payloads, order or platform behavior; no Mac
+adapter work is required. Windows validation and native Mac execution limits
+are recorded in [STATUS](STATUS.md#repository-organization-2026-10-27).
+
 ## Integration and ID reconciliation (2026-10-19)
 
 The integration branch `codex/shared-platform-baseline` combines main `5131d29`
@@ -228,7 +233,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Ash repeatedly leave and re-enter the jeep without an enemy target. Preserve
   the original driver, vehicle-mode and combat checks.
 - **Source:** `100-captain-ash-buggin-out-in-the-car`;
-  `patches/recomp-zf-join-polarity.patch`, `tests/test_recomp_vehicle_joins.py`
+  `patches/0310-recomp-zf-join-polarity.patch`, `tests/test_recomp_vehicle_joins.py`
   and `tests/vehicle_companion.c`. Windows Test and runtime CI include the tests.
 - **Mac support:** Shared Python recompiler and patch stack; no OS adapter is
   required. Existing generation fingerprinting invalidates old generated C.
@@ -448,7 +453,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   `272f930` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
   `tools/launcher/IconBuilder.cs`, `GameMonogram.cs`, `GameMonogram.NOTICE.txt`,
   `tools/build-game-icon.ps1`, `tsfp.ps1`,
-  `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch`,
+  `patches/1150-game-icon.patch`,
   `tools/publish-release.py` and `tests/test_game_icon.py`.
 - **Mac support:** Existing native build and runtime paths are unchanged. ICO
   resources and RC compilation are Windows-only. No Mac app bundle/Dock icon
@@ -572,7 +577,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   draw instead of an input rejected by the graphics API.
 - **Source:** Commit `Fix Ghost Gun humanoid rendering and target feedback` on
   `111-bug-ghosts-are-still-not-visible-with-ghost-gun`; runtime patch
-  `zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch`,
+  `1130-ghost-target-feedback.patch`,
   `tests/ghost_targets.py`, `tsfp.ps1`. Separate from the floating-skull fix #17.
 - **Shared Mac support:** HLE retains the automatic depth surface for same-size
   full-frame targets when the native adapter can bind it. Mismatched native
@@ -851,7 +856,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   mode `0x2000`, preserving its 4–251 bounds and normal aiming on exit.
   Left-click emits Confirm only in terminal menus; release is required when
   entering/leaving with a held button. Shared context is in `src/pc_input.c`
-  and the sampling hook in `patches/zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch`.
+  and the sampling hook in `patches/0940-terminal-mouse-select.patch`.
   Both `src/pc_controls.c` and `src/native/input_sdl.c` call this shared helper;
   no additional Mac adapter is required. `tests/test_terminal_mouse.py` is
   included in Windows/macOS CI. Windows build and physical terminal checks
@@ -873,12 +878,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Native multiplayer still depends on MAC-013; Windows checks do not establish
   native multiplayer support. [Measured scope](STATUS.md#nonzero-player-mouse-look-issue-18--2026-10-16).
 - **PC behavior:** PC mouse counts update camera angles directly, with zoom/FOV scaling and no controller deadzone or turn-speed curve.
-- **PC source:** Audited revision above; `src/pc_controls.c`, `src/pc_input.c`, `patches/pc-controls.patch`, `tests/pc_controls.c`.
+- **PC source:** Audited revision above; `src/pc_controls.c`, `src/pc_input.c`, `patches/0230-pc-controls.patch`, `tests/pc_controls.c`.
 - **PC validation:** Input regression and deterministic mission replay, including zoom scaling, are recorded in [Windows validation](STATUS.md#validation); physical mouse fidelity remains a separate check.
 - **Existing Mac support:** SDL relative counts now feed the shared `pc_input_look` camera model through the guest wrapper. Controller right-stick input stays independent; configured sensitivity, inversion and FOV scaling are shared with Windows.
 - **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use. Native adapter tests now cover equal counts batched or applied per event, both pitch limits and stale motion suppression.
 - **Mac acceptance checks:** Equal counts give equal angles across polling rates; zoom scaling, inversion and pitch limits work; pause/settings/focus changes cause no jump or unwanted shot. Use isolated settings and a short mission check.
-- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. Further native adapter checks for batched/per-event counts, pitch limits and stale motion passed; see [capture and camera validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15). [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/0860-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. Further native adapter checks for batched/per-event counts, pitch limits and stale motion passed; see [capture and camera validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15). [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 - **Local source check (2026-10-17):** Terminal mouse C fixture passed
   on Apple Silicon with Clang. This does not verify native window input, rendering
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
@@ -956,12 +961,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   plus representative prompts/tutorial wrapping, before marking it verified.
 - **Status:** Awaiting validation
 - **PC behavior:** Formatted menu/HUD hints show current bindings, [Unbound] or [Mouse], and switch back to controller icons on deliberate controller activity.
-- **PC source:** Audited revision above; `src/pc_prompts.c`, `src/pc_prompt_guest.inc`, `patches/pc-prompts.patch`, `tests/pc_prompts.c`.
+- **PC source:** Audited revision above; `src/pc_prompts.c`, `src/pc_prompt_guest.inc`, `patches/0280-pc-prompts.patch`, `tests/pc_prompts.c`.
 - **PC validation:** Windows wiring and regression coverage are present; no new Windows execution was performed for this audit.
 - **Existing Mac support:** The shared formatter and guest text wrappers now compile on Mac. SDL keyboard/mouse and player-1 controller activity update the shared prompt model. Menu captures show current keyboard labels; saved binding changes update formatter output.
 - **Mac adaptation needed:** Finish representative live gameplay hint checks and physical keyboard/controller switching. Original artwork and literal tutorial text are unchanged; a first-mission tutorial still says START, which is not a formatted prompt token.
 - **Mac acceptance checks:** Menu and gameplay hints reflect saved bindings immediately; meaningful controller input switches icons; releases, held buttons and drift do not cause flicker. Preserve original artwork-based diagrams.
-- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `patches/zzzzzzzzzzzz-native-prompts.patch`, `src/pc_prompt_guest.inc`, `src/pc_guest_memory.h`, `src/native/input_sdl.c`, `src/native/prompt_selftest.inc`, `src/native/settings_selftest.inc`. Passed custom/unbound/mouse labels, deliberate pad activity, held/release/drift suppression, SDL virtual-pad integration, live saved binding and guarded guest ABI tests. Reviewed main/paused Display menus show [E] Select and [F] Back. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `patches/0850-native-prompts.patch`, `src/pc_prompt_guest.inc`, `src/pc_guest_memory.h`, `src/native/input_sdl.c`, `src/native/prompt_selftest.inc`, `src/native/settings_selftest.inc`. Passed custom/unbound/mouse labels, deliberate pad activity, held/release/drift suppression, SDL virtual-pad integration, live saved binding and guarded guest ABI tests. Reviewed main/paused Display menus show [E] Select and [F] Back. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-003 — Debug settings and on-screen performance information
 
@@ -976,12 +981,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 - **Status:** Awaiting validation
 - **PC behavior:** F12 opens debug settings; F9 toggles FPS. Options show guest/shown FPS, frame intervals, issue counters and recent logs, with bounded optional performance logging.
-- **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
+- **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/0240-pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
 - **PC validation:** Windows implementation and test scripts exist; current Windows runtime behavior was not retested during this audit.
 - **Existing Mac support:** F9 toggles a host-only OpenGL text overlay; F12 and the Game Settings menu open a Cocoa debug panel. Both use the shared statistics, options, configuration and diagnostic classifier. POSIX log reading handles truncation/replacement and runs on the main thread.
 - **Mac adaptation needed:** Implementation is present. Finish visual Cocoa layout, physical F9/F12 and live fullscreen panel/focus checks. A synthetic shortcut smoke run does not establish physical event delivery.
 - **Mac acceptance checks:** Toggle in windowed/fullscreen modes; distinguish guest and interpolated presents; save/cancel and issue-counter reset work; log polling stays off the render thread; preserve unrelated JSON.
-- **Mac implementation and evidence:** Commit `149939f`, integrated into `main`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/zzzzzzzzzzzzzz-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
+- **Mac implementation and evidence:** Commit `149939f`, integrated into `main`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/0870-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
 - **Current-main follow-up (2026-10-17):** PC latency diagnostics were added in
   `e2f655a`. `PcDebugOptions` now has five fields, but Cocoa `save:` initializes
   only four, so Save writes `show_latency=false` even when it was previously
@@ -1004,7 +1009,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 - **Caller diagnostics (2026-10-24, uncommitted):** The existing Windows-only
   `recomp_sample.c` profiler now retains all captured caller frames (maximum32)
-  and reports bounded-table overflow via `zz-sampler-caller-depth.patch`.
+  and reports bounded-table overflow via `0510-sampler-caller-depth.patch`.
   Thread suspension and unwind depend on Win32/DbgHelp; Mac keeps its existing
   disabled sampler. Portable insertion/mutation tests run on both hosts, but a
   Mac sampling adapter and live attribution remain unimplemented. Existing Mac
@@ -1124,7 +1129,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Existing Mac support:** Four independent 2D samplers and T0-T3 coordinates now reach the fixed vertex, GPU program and CPU fallback paths. Ordinary/projected 2D, linear coordinate scaling, passthrough and absent stages are implemented, with per-stage wrap/filter state. High-bit FVF coordinate-size flags are no longer mistaken for programmable shader handles.
 - **Mac adaptation needed:** Implement remaining dependent/dot-product and other Xbox texture modes, plus cube/volume integration with MAC-006. Continue matched scene/material checks and frame-time profiling; the 120-present setting is a target, not a demonstrated sustained rate.
 - **Mac acceptance checks:** Use distinguishable multi-stage GPU fixtures plus matched mission captures; verify fallback agreement, alpha/depth behavior and interpolation. Reproduce the reported disappearing world separately before attributing its cause.
-- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/renderer_gl.c`, `gl_fragment.inc`, `gl_vertex.inc`, `gl_bridge.inc`, `multitexture_selftest.inc`, `vertex_selftest.inc` (all latter paths under `src/native/`), and `patches/zzzzzzzzzzz-shared-linear-formats.patch`. Real-GPU four-stage fixtures passed distinct coordinates, projected/linear inputs and FVF/GPU/CPU agreement. Reviewed first-mission captures show improved terrain, weapons and NPC surfaces. Complete fidelity and the reported world-disappearance case remain unverified. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/renderer_gl.c`, `gl_fragment.inc`, `gl_vertex.inc`, `gl_bridge.inc`, `multitexture_selftest.inc`, `vertex_selftest.inc` (all latter paths under `src/native/`), and `patches/0840-shared-linear-formats.patch`. Real-GPU four-stage fixtures passed distinct coordinates, projected/linear inputs and FVF/GPU/CPU agreement. Reviewed first-mission captures show improved terrain, weapons and NPC surfaces. Complete fidelity and the reported world-disappearance case remain unverified. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 - **Branch reconciliation (2026-10-17):** `mac-port` at `1a8f4dd` contains
   `5cba184`, whose actual diff adds dependent AR/GB and DOTPRODUCT/DOT_ST
   sampling, signed mappings/source selection and GPU fixtures despite its
@@ -1301,7 +1306,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **PC behavior:** Windows can copy the full backbuffer or a rectangle into a texture for later draws.
 - **Issue #21 channel-clear follow-up (this revision):** The lobby uses destination
   alpha as a temporary text mask. `src/pc_clear_rhi.inc` and
-  `patches/zzzzzzzzzzzzzzzzz-channel-clears.patch` preserve partial colour clears,
+  `patches/0910-channel-clears.patch` preserve partial colour clears,
   including clearing alpha without erasing the finished RGB image. Capture
   version 8 records the channel flags and still accepts older captures.
   `tests/pc_clear.c` checks all 15 masks on the Windows GPU; portable mapping
@@ -1386,7 +1391,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Status:** Awaiting validation
 - **PC behavior:** Display settings offers Apply/Keep/Revert with a 15-second automatic rollback, persisted resolution and widescreen camera/HUD handling.
 - **Issue #19 decal projection follow-up (`19-floating-decals`):** `src/pc_display_menu.c`,
-  `src/pc_display_menu.h` and `patches/zzzzzzzzzz-decal-projection.patch` make
+  `src/pc_display_menu.h` and `patches/0810-decal-projection.patch` make
   both depth-biased decal passes use the active camera's horizontal and vertical
   aperture, preserving their depth bias. This is shared guest code; the existing
   Mac build includes the same manual wrappers and display source, so no native
@@ -1931,7 +1936,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 - **Status:** Awaiting validation
 - **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**
-  `patches/replay-texture-mode-link.patch` supplies the existing shared
+  `patches/0320-replay-texture-mode-link.patch` supplies the existing shared
   `src/texture_mode.c` to standalone Windows `d3d8_replay`, which intentionally
   omits `xbox_input`. This fixes the unresolved `tsfp_texture_is_4k` release
   build error without adding a second mode policy or the full input library.
@@ -1961,7 +1966,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   `src/texture_mode.c` now shares initialization and toggle behavior, with
   Win32 once/atomic operations and POSIX pthread/C11 atomic operations as thin
   adapters. The common native renderer links this source through
-  `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-texture-mode-shared.patch`;
+  `patches/1780-texture-mode-shared.patch`;
   an explicit pack still defaults to replacements unless Classic is requested.
   This prevents the Windows alpha from introducing unresolved mode symbols in
   the current Mac common-renderer build. The existing PC-only F10/menu UI still
@@ -2027,7 +2032,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 - **Issue #74 transfer (2026-10-16):** Windows F10 and the PC Settings menu now
   carry the existing live Classic/4K switch in `src/texture_mode.c`,
-  `src/pc_controls.c`, `src/pc_settings.c` and `patches/texture-toggle.patch`.
+  `src/pc_controls.c`, `src/pc_settings.c` and `patches/0350-texture-toggle.patch`.
   Uncompressed original identities and alpha-compatible replacement formats,
   including RGBA DDS, are handled in `src/texture_pack_format.h` and
   `src/texture_pack.c`. Catalog, embedded/non-PAK inventory and artwork tools
@@ -2123,7 +2128,7 @@ validation. This version bump alone is not publication evidence.
   `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips
   Debug log polling and performance-log writes, retaining FPS measurement and
   saved options. Sources: `src/pc_debug_output.h`, `src/pc_debug.c`,
-  `tools/play.py`, `patches/zzzzzzzzzzzzzzzzz-pc-debug-quiet.patch`,
+  `tools/play.py`, `patches/0920-pc-debug-quiet.patch`,
   `tests/pc_debug.c`. Native defaults are unchanged. Mac adaptation is queued:
   native startup would need equivalent stream suppression; shared Debug checks
   alone do not verify a full native quiet run. Acceptance: isolated normal/quiet
@@ -2136,8 +2141,8 @@ validation. This version bump alone is not publication evidence.
   This retains the original packet encoder; it does not remove host frame
   stalls. The existing network epoch and simulation/heartbeat/timeout clocks
   are preserved. Sources: `src/pc_network_guest.inc`,
-  `patches/zzzzzzzzzzzzzzz-pc-network-movement.patch`,
-  `patches/zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch`,
+  `patches/0890-pc-network-movement.patch`,
+  `patches/0900-pc-network-state-refresh.patch`,
   `tests/network_guest_dispatch.c`, `tests/test_patch_updates.py` on
   `20-player-desync-when-strafing-multiplayer` over `c8f8b31`.
   The native fallback still delegates to the original guest pump; portable
@@ -2152,8 +2157,8 @@ validation. This version bump alone is not publication evidence.
   host/join discovery and routes compatible peers through the directory bridge.
 - **PC source:** Main through `16fcea5` (PRs #4 and #5);
   `src/pc_network.c`, `src/pc_network_guest.inc`, `src/pc_online.c`,
-  `src/pc_display_menu.c`, `patches/zz-pc-network.patch`,
-  `patches/zzz-pc-online.patch`, and `tools/online*.py`.
+  `src/pc_display_menu.c`, `patches/0470-pc-network.patch`,
+  `patches/0640-pc-online.patch`, and `tools/online*.py`.
 - **PC validation:** Main records local two-instance lobby/match loading in
   `docs/multiplayer.md`; cross-internet routing/full-match validation is pending.
 - **Existing Mac support:** The shared menu/display and original guest XNet
@@ -2267,7 +2272,7 @@ validation. This version bump alone is not publication evidence.
 
 - **Status:** Awaiting validation
 - **Issue #24 follow-up (2026-10-16, this revision):** The same existing
-  `patches/recomp-float-joins.patch` from `837692d` also fixes the controller
+  `patches/0300-recomp-float-joins.patch` from `837692d` also fixes the controller
   sensitivity slider's shared clamp at guest address `0x002EABEB`.
   `tests/controller_sensitivity.c` and `tests/test_recomp_float_joins.py` execute
   the original slider callback with its XBE constants, covering 0.05 steps,
@@ -2280,7 +2285,7 @@ validation. This version bump alone is not publication evidence.
 - **PC behavior:** Restore the original horizontal-distance rejection for pickups
   by preserving SSE comparison snapshots across control-flow joins. The old
   translation ignored this rejection; pickup radii and input bindings are unchanged.
-- **PC source:** Focused `fix-pickup-range` change (this commit): `patches/recomp-float-joins.patch`,
+- **PC source:** Focused `fix-pickup-range` change (this commit): `patches/0300-recomp-float-joins.patch`,
   `tools/recomp-generation.py`, `tsfp.ps1`, `tests/test_recomp_float_joins.py`,
   `tests/pickup_collision.c`.
 - **PC validation:** The original US pickup tick reproduces the out-of-range grant
@@ -2318,8 +2323,8 @@ validation. This version bump alone is not publication evidence.
   FlushEx return packets correctly during story/level transitions.
 - **PC source:** Audio fix prepared on `fix/issue-8-audio-timing`, published through
   the user-requested `8-audio-issues` branch; original validation base is main
-  `4189924`: `patches/dsound-audio-timing.patch`,
-  `patches/dsound-stream-lifecycle.patch`, `tools/recomp-generation.py`,
+  `4189924`: `patches/0010-dsound-audio-timing.patch`,
+  `patches/0030-dsound-stream-lifecycle.patch`, `tools/recomp-generation.py`,
   `tests/test_recomp_generation.py`, `tests/audio_stream_timing.c`,
   `tests/audio_buffer_timing.c`, `tests/test_audio_timing.py`, `tsfp.ps1`, and
   `.github/workflows/runtime-patches.yml`.
@@ -2353,7 +2358,7 @@ validation. This version bump alone is not publication evidence.
   the train and weapon, instead of overlaying an earlier background-only copy.
   Consecutive effect taps retain a stable snapshot; rebinding after other
   textures refreshes it within the same frame.
-- **PC source:** `patches/zzzzzzz-framebuffer-sampling-passes.patch`, modifying
+- **PC source:** `patches/0760-framebuffer-sampling-passes.patch`, modifying
   shared `src/hle/hle_d3d8_texture.c`; `tests/framebuffer_sampling.c`,
   `tests/test_framebuffer_sampling.py`, `tests/test_patch_updates.py`,
   `tsfp.ps1` and `.github/workflows/runtime-patches.yml`. Delivered on branch
@@ -2387,7 +2392,7 @@ validation. This version bump alone is not publication evidence.
   subtitles and scope overlays remain.
 - **PC source:** Branch `33-remove-the-letter-boxes-in-cut-scenes`, based
   on `5c9effd`: `src/pc_cutscene.h`, `src/pc_display_menu.c`,
-  `patches/zzzzzzzzzzzzzzz-cutscene-letterbox.patch`,
+  `patches/0880-cutscene-letterbox.patch`,
   `tests/cutscene_letterbox.c`, `tests/test_cutscene_letterbox.py`.
 - **PC validation:** Full Windows Release build/native checks, 27 patch transition
   checks and four letterbox tests passed. Original US cinematic routines execute
@@ -3026,7 +3031,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   from the indicators; original font size and wrapping remain in use.
 - **Source:** [PR #55](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/55),
   branch `11-objectives-tab-not-showing-health-and-shield` (issue #11);
-  `patches/zzzzzzzzzzzzzzzzz-story-objectives-health.patch`,
+  `patches/0930-story-objectives-health.patch`,
   `src/pc_objectives.h`, `tests/test_objectives_health.py`,
   `tests/objectives_health.c`, `tests/objectives_layout.c`.
 - **Mac support:** Shared guest wrapper with no operating-system or renderer
@@ -3154,7 +3159,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Source:** Commit `6485069`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
   `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
   `src/pc_display_menu.c`, `src/pc_display_menu.h`,
-  `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
+  `patches/0830-model-projection.patch`, `tests/test_decal_projection.py`.
 - **Shared Mac support:** The perspective hook is already enabled by
   `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
   platform defines pass the source wrapper tests. No new OS/graphics adapter is
@@ -3181,7 +3186,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Source:** Commit `3e747a5`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
   `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
   `src/pc_display_ui.inc`,
-  `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
+  `patches/1020-arcade-rank-anchor.patch`,
   `tests/ui_layout.c` and `tests/test_ui_layout.py`.
 - **Shared Mac support:** The existing native LEFT placement adapter and shared
   widget scope handle this hook under `TSFP_NATIVE_DISPLAY`; no new adapter is
@@ -3440,8 +3445,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Current project rules permit focused branches on either platform.
 - **Source:** Main `0dc9fea`; `tools/build-native-mac.py`, `tsfp.ps1`,
   `tools/network-identity.py`, `src/pc_debug.c`,
-  `patches/zzzz-pc-debug-latency-watermark.patch`,
-  `patches/zzzzzzzzzzzzzz-native-debug.patch`, and `AGENTS.md`.
+  `patches/0700-pc-debug-latency-watermark.patch`,
+  `patches/0870-native-debug.patch`, and `AGENTS.md`.
   The original integration gaps were found during source review; repair evidence
   is recorded below.
 - **Initial audit findings (repaired below):** The native builder used the shared
@@ -3492,7 +3497,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   identity line on normal and interpolated frames, independently of the optional
   performance line, allowing screenshots to identify the running build.
 - **Source:** `e2f655a`, integrated in main; `src/pc_debug.c`,
-  `tools/network-identity.py`, `patches/zzzz-pc-debug-latency-watermark.patch`.
+  `tools/network-identity.py`, `patches/0700-pc-debug-latency-watermark.patch`.
 - **Native adaptation (2026-10-17, `codex/mac-build-watermark`):**
   `src/native/gl_debug.inc` now draws `pc_debug_watermark()` independently at the
   lower right, through the existing normal/interpolated host-presentation path.
@@ -3931,7 +3936,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
 - **Procedural wind simulation (PR #367 follow-up):** Shared
-  `pc_native_wind*` source and `zz-native-wind-history.patch` subdivide the
+  `pc_native_wind*` source and `0460-native-wind-history.patch` subdivide the
   coupled oscillator with per-owner history and exact game-clock admission.
   Original/whole/unsupported-scope loops remain authored; no host adapter,
   setting or save format differs. The portable solver/ownership/clock and
@@ -3943,7 +3948,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   [Contract and limits](docs/agent-context/native-wind.md).
 
 - **Sampler allocation recovery (PR #367 follow-up):** Common
-  `zz-sampler-cache-retry.patch` creates before replacing a sampler-cache owner,
+  `0500-sampler-cache-retry.patch` creates before replacing a sampler-cache owner,
   never retains failed entries, retries allocations while preserving live
   stages, and bounds repeated failure logging. Both hosts use this RHI policy;
   no Mac adapter or gameplay clock differs. Six Windows full-module checks pass,
@@ -3957,7 +3962,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 - **Pushed-array address recurrence (PR #367 follow-up):** Common
   HLE strided copies advance a32-bit guest offset with original wrapping,
   retaining fresh reads, copy widths/order, destination width and fallbacks.
-  Windows/Mac share `zz-strided-vertex-increment.patch`; no adapter or setting
+  Windows/Mac share `0570-strided-vertex-increment.patch`; no adapter or setting
   changes. The existing portable full-gather fixture adds large buffers,
   modular-wrap cases and a compiling widened-source negative control on both
   native CI hosts. Windows full gather/wrap/guard checks and clean Original60/
@@ -3987,8 +3992,8 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   **Awaiting validation**.
 
 - **Packed vertex conversion (PR #367 follow-up):** Shared HLE
-  `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute;
-  the following `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+  `0600-vertex-expand-strides.patch` dispatches byte widths/formats per attribute;
+  the following `0610-vertex-expand-tiles.patch` bounds passes to32 vertices.
   Both retain fresh input, zero padding, arithmetic,
   allocation/failure policy and per-vertex attribute order. The fixed-function
   selector retains its generic body. No OS adapter is needed; the portable
@@ -4015,7 +4020,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   rendering policy. Mac gameplay acceptance remains **Awaiting validation**.
 
 - **Immutable render-state reuse (2026-10-26, commit8d87314c):** Common RHI
-  `zz-render-state-cache.patch` retains up to32 exact descriptors each for
+  `0490-render-state-cache.patch` retains up to32 exact descriptors each for
   blend, depth/stencil and rasterizer state objects across material switches.
   Dynamic stencil references/scissor rectangles and all guest updates remain
   fresh. Shared complete-module bind/ownership fixtures join Windows/macOS CI.
@@ -4205,7 +4210,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   focus, and test secondary fire with a remapped key. See STATUS for evidence.
 
 - **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
-  `zzzz-global-compare-load.patch` let advancing native frames consume reload
+  `0650-global-compare-load.patch` let advancing native frames consume reload
   edges even when raw/game whole-tick phases differ after pause. Original60,
   paused-time blocking and original weapon/binding checks are retained.
   Windows original-decoder/reload integration and asset-free branch/mutation
@@ -4285,7 +4290,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   and game/wall0.999985. It is not sustained240 or Mac gameplay. See STATUS.
 
 - **Texture survey lanes (2026-10-24, PR #328 follow-up):** Shared
-  `zz-texel-sample-lanes.patch` groups four existing independent checksum lanes
+  `0580-texel-sample-lanes.patch` groups four existing independent checksum lanes
   while retaining exact sampled bytes/order and checksums. It changes no texture
   update/upload policy or OS adapter. Windows production-code checks include
   scalar/footprint/bounds parity and tail/overread negative controls; both native
@@ -4321,7 +4326,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   audible output and physical gameplay remain pending; see STATUS.
 
 - **Acknowledgement-worker diagnostics (2026-10-24, PR #328):** Shared
-  `zz-pushbuffer-diagnostic-policy.patch` caches the survey launch flag alongside
+  `0480-pushbuffer-diagnostic-policy.patch` caches the survey launch flag alongside
   the existing executor flag and avoids guest-offset lookup when disabled.
   No OS adapter or acknowledgement/clock policy changes. Eight Windows checks
   compile the complete scanner, preserving independent scan/execute modes and
@@ -4368,7 +4373,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   see STATUS for scope and the earlier physics-mutation checkpoint.
 
 - **Quiet trace dispatch (2026-10-24, PR #325):** Shared
-  `zz-native-trace-quiet.patch` bypasses disabled diagnostic helpers when the
+  `0450-native-trace-quiet.patch` bypasses disabled diagnostic helpers when the
   launcher supplies a nonpositive trace budget and no watch/dump/filter/profile
   switch. Renderer-idle callbacks and explicit diagnostics remain. No Mac
   adapter is needed; the existing cross-host trace test compiles the actual
@@ -4384,7 +4389,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
 
 
 - **State-layout slot preparation (2026-10-26, PR #367):** Shared
-  `zz-state-layout-slots.patch` reuses only layout-to-slot integer mappings in
+  `0550-state-layout-slots.patch` reuses only layout-to-slot integer mappings in
   common HLE state forwarding. Each draw still reads live guest values; no Mac
   adapter is needed. Full-module original/current parity and layout/stale-value
   controls run on both native CI hosts through `test_state_layout_slots.py`.
@@ -4446,7 +4451,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Shared `pc_native_demo_guest.inc` and numeric sites `433E2/43473` remove the
   minimum-one-tick timer step at native rates. The wrapper preserves the input
   interval across controllers and restores raw time after exit/EOF overrides,
-  retaining the original game pause. `zz-native-demo-timing.patch` connects the
+  retaining the original game pause. `0420-native-demo-timing.patch` connects the
   same guest wrapper on both hosts; no OS adapter is needed. Windows original-
   program fixtures cover duration, zero time, one/four controllers, completion
   and mutations; native Mac execution and live demo lifecycle remain pending.
@@ -4470,7 +4475,7 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   or legacy GL rendering change is introduced. See STATUS for measured scope.
 - **Persistent visible water candidate (`fix/native-water-rounding`, 2026-10-24):**
   `pc_surface_native*.h`/`.inc`, shared GPU packing, and
-  `zz-native-surface-render.patch` connect exact native intervals to the original
+  `0440-native-surface-render.patch` connect exact native intervals to the original
   ripple shader with retained owners and scene/device cleanup. Common RHI uses
   the same implementation on Windows and native Mac; legacy GL remains original.
   Opt-in only, with a one-authored-tick cosmetic phase delay to preserve event/RNG
@@ -4662,7 +4667,7 @@ See STATUS for exact measurements and the corrected reference scope.
 
 - **Vehicle/rigid-clock candidate (2026-10-22):** WIP branch
   `fix/native-vehicle-physics`; shared `src/pc_native_numeric.h`,
-  `src/pc_native_timing_guest.inc`, and `patches/zzzz-native-vehicle-physics.patch`.
+  `src/pc_native_timing_guest.inc`, and `patches/0690-native-vehicle-physics.patch`.
   No OS-specific behavior or new adapter. Native intervals reach the original
   rigid solver and spring updater; linear adjustment and byte rest timer retain
   authored time units. Original-clock handoff rebases its timestep history.
@@ -4763,7 +4768,7 @@ See STATUS for exact measurements and the corrected reference scope.
   Actual native Mac tracing remains pending for this extension.
 
 - **Disabled trace-filter work (2026-10-22, `perf/disabled-trace-name-scan`):**
-  Shared `trace-filter-disabled-scan.patch` avoids scanning every guest function
+  Shared `0370-trace-filter-disabled-scan.patch` avoids scanning every guest function
   name when `RECOMP_TRACE_ONLY` is absent/empty. Enabled matching/hit limits and
   all other diagnostics retain their behavior. No host adapter is needed.
   Six actual-function/mutation cases are registered for both hosts and pass on
@@ -5572,7 +5577,7 @@ See STATUS for exact measurements and the corrected reference scope.
   the opt-in native rate; normal play retains main's fixed-60 default. No second
   timing model or higher-frequency console clock was introduced.
 - **Overlay follow-up:** Shared `src/pc_debug.c` reads the native rate for its
-  target label and hides offline RTT. `zzzzzzz-native-debug-target.patch`
+  target label and hides offline RTT. `0770-native-debug-target.patch`
   links the shared overlay to runtime configuration on both hosts. Actual Mac
   compilation and overlay display remain awaiting validation.
 - **Remaining adaptation:** Validate compilation, waitable-timer behavior,
@@ -5723,7 +5728,7 @@ STATUS. Physical Mac and rendered-effect parity remain Awaiting validation.
 - **PC behavior:** The Electro Chimp Discomatic health bars follow moving
   monkeys at widescreen resolution instead of drifting toward the center.
 - **Source:** `102-electro-chimp-health-bars` and
-  `patches/zzzz-world-health-bars.patch` in the shared D3D compatibility path.
+  `patches/0720-world-health-bars.patch` in the shared D3D compatibility path.
 - **Windows evidence:** Release build, display test, patch-stack validation,
   focused patch-transition test, and isolated 1280×720 challenge replay passed.
 - **Mac adaptation needed:** Confirm that the native renderer uses the same
@@ -5822,7 +5827,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   upstream parser, keeping section/import/TLS metadata compatible.
 - **PC source:** PR #370, continuing `feature/independent-game-import`;
   `tools/xbe_image.py`, `tools/xbe_kernel_exports.def`,
-  `patches/independent-xbe-reader.patch`, both build drivers and fingerprints.
+  `patches/0210-independent-xbe-reader.patch`, both build drivers and fingerprints.
 - **PC validation:** Synthetic parser fixtures and exact private-US analysis
   comparison passed; full build/game evidence is recorded in STATUS.md.
 - **Existing Mac support:** The same stdlib reader, ABI data and bridge run on
@@ -5842,7 +5847,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   probe windows respect section boundaries; input changes invalidate caches.
 - **PC source:** Continuing PR #370 on `feature/independent-game-import`;
   `tools/recomp_image.py`, `tools/x86_decode.py`,
-  `patches/independent-disasm-input.patch`, `tools/recomp-generation.py`.
+  `patches/0070-independent-disasm-input.patch`, `tools/recomp-generation.py`.
 - **PC validation:** Original synthetic mappings/operand fixtures and the
   patched consumer's disassembler tests pass. Full-title classification matches
   1,403,940 decoded instructions. Build/game evidence is recorded in STATUS.md.
@@ -5862,7 +5867,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   bounded realignment, cached direct-edge reachability and instruction queries.
   Table/prologue recovery is now covered by MAC-069; function discovery remains upstream.
 - **PC source:** Active independent-replacement goal, continuing PR #370;
-  `tools/x86_flow.py`, `patches/independent-disasm-traversal.patch`, cache and
+  `tools/x86_flow.py`, `patches/0080-independent-disasm-traversal.patch`, cache and
   generation fingerprints, `tests/test_x86_flow.py`.
 - **PC validation:** Synthetic cycles, calls, branches, invalid bytes, overlap,
   convergence, zero targets and instruction-limit tests; production method-origin
@@ -5882,7 +5887,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   case realignment, block boundaries and read-only body/prologue probes. Function
   detection and translation remain upstream.
 - **PC source:** Continuing PR #370 on `feature/independent-game-import`;
-  `tools/x86_recovery.py`, `patches/independent-disasm-z-recovery.patch`, source
+  `tools/x86_recovery.py`, `patches/0090-independent-disasm-z-recovery.patch`, source
   fingerprints and `tests/test_x86_recovery.py`.
 - **PC validation:** Synthetic table ownership/alias/bounds and probe-shape
   fixtures plus existing consumer tests. Build/game evidence is in STATUS.md.
@@ -5902,7 +5907,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   discovery, labels, strings and indexed references. Shared tails keep their
   owner's extent; overlong ASCII runs no longer create suffix labels.
 - **PC source:** Continuing PR #370; `tools/x86_functions.py`,
-  `tools/recomp_symbols.py`, `patches/independent-functions.patch`, both source
+  `tools/recomp_symbols.py`, `patches/0100-independent-functions.patch`, both source
   fingerprints and `tests/test_x86_functions.py` / `test_recomp_symbols.py`.
 - **PC validation:** Original miniature programs and metadata edge cases plus
   existing consumer tests. Semantic function/reference comparison and full
@@ -5924,7 +5929,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   standalone analyzer needs no toolkit checkout; full generation still does.
 - **PC source:** Continuing PR #370; `tools/analysis_runner.py`,
   `analysis_config.py`, `analysis_output.py`, `analysis_cache.py`,
-  `patches/independent-pipeline.patch` and both source fingerprints.
+  `patches/0110-independent-pipeline.patch` and both source fingerprints.
 - **PC validation:** Original runner/cache fixtures and existing consumer checks;
   generation/build and bounded isolated game evidence in STATUS.md.
 - **Existing Mac support:** Shared Python/Capstone with the same source bridge;
@@ -5943,7 +5948,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   adapters/orchestration; parsing and disassembly call project scripts directly.
   The separately licensed XbSymbolDatabase library still supplies signatures.
 - **PC source:** Continuing PR #370; `tools/xdk_catalog.py`,
-  `tools/compile_pipeline.py`, `patches/independent-symbol-driver.patch`,
+  `tools/compile_pipeline.py`, `patches/0120-independent-symbol-driver.patch`,
   generation fingerprint, catalog/driver tests and both-host CI registration.
 - **PC validation:** Original protocol/routing/failure fixtures and existing
   scanner consumers; symbol/generated-output/build/game evidence in STATUS.md.
@@ -5964,7 +5969,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   diagnostic categories never fabricate function extents or CRT symbol names.
 - **PC source:** Continuing PR #370;
   `tools/function_catalog.py`, `function_evidence.py`, `function_categories.py`,
-  `patches/independent-classification.patch`, driver/fingerprint and original tests.
+  `patches/0060-independent-classification.patch`, driver/fingerprint and original tests.
 - **PC validation:** Synthetic bounds, operands, ambiguity, graph and standalone
   CLI tests; actual generation/build/game evidence recorded in STATUS.md.
 - **Existing Mac support:** Shared Python/Capstone implementation, no host-specific
@@ -5983,7 +5988,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   translation reports/declaration headers and atomic generated-text publication.
   Existing definitions/wrappers and unchanged generated-file timestamps persist.
 - **PC source:** Continuing PR #370; `tools/c_source_scan.py`,
-  `tools/generation_output.py`, `patches/z-independent-generation-support.patch`,
+  `tools/generation_output.py`, `patches/0380-independent-generation-support.patch`,
   generation fingerprint, original tests and shared CI registration.
 - **PC validation:** Scanner/output and existing title-wrapper fixtures;
   generation/build/isolated game evidence recorded in STATUS.md.
@@ -6003,7 +6008,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   restart/CFG traversal and basic-block construction around permitted Capstone.
   CLI output paths resolve before changing subprocess directories.
 - **PC source:** Continuing PR #370; `tools/translation_decode.py`,
-  `patches/independent-translation-decode.patch`, command-builder compatibility,
+  `patches/0160-independent-translation-decode.patch`, command-builder compatibility,
   generation fingerprint and original/shared consumer tests.
 - **PC validation:** Operand/bounds/segment/CFG/overlap/restart fixtures and
   existing translator consumers; generation/build/game evidence in STATUS.md.
@@ -6022,7 +6027,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Translation uses own executable layout and HLE marker/symbol
   planning, with original-body retention and guest ABI thunk generation.
 - **PC source:** Continuing PR #370; `tools/translation_layout.py`,
-  `tools/translation_hooks.py`, `patches/independent-translation-bindings.patch`,
+  `tools/translation_hooks.py`, `patches/0130-independent-translation-bindings.patch`,
   generation fingerprints and original/shared/native consumer tests.
 - **PC validation:** Bounds/replacement, lexical marker, symbol ambiguity and
   ABI fixtures; generated thunks execute with production register-frame macros.
@@ -6044,7 +6049,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Own cumulative branch ledgers and separate seed export;
   unresolved diagnostics use selected XBE layout and recorded function bounds.
 - **PC source:** Continuing PR #370; `tools/branch_feedback.py`,
-  `tools/unresolved_report.py`, `patches/independent-branch-diagnostics.patch`,
+  `tools/unresolved_report.py`, `patches/0050-independent-branch-diagnostics.patch`,
   source fingerprints and original/shared consumer fixtures.
 - **PC validation:** Standalone and production CLI, crash/saturation/overlap,
   input preservation and layout tests; measured build/game checks in STATUS.md.
@@ -6062,7 +6067,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Own register/subregister, address and memory C expressions;
   decoder preserves address overrides, with offset wrapping before FS addition.
 - **PC source:** Continuing PR #370; `tools/translation_operands.py`, address
-  metadata in `translation_decode.py`, `independent-translation-operands.patch`,
+  metadata in `translation_decode.py`, `0190-independent-translation-operands.patch`,
   generation hashes and original/native/consumer fixtures.
 - **PC validation:** Native subregister/address/floating-stack execution and
   actual runtime pointer/memory macros; build/game evidence in STATUS.md.
@@ -6080,7 +6085,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Own MOV/MOVZX/MOVSX/LEA/PUSH/POP emission preserves title
   hooks and implements segment-free LEA and stack width/address/alias ordering.
 - **PC source:** Continuing PR #370; `tools/translation_moves.py`,
-  `independent-translation-moves.patch`, final replacement ordering in the
+  `0180-independent-translation-moves.patch`, final replacement ordering in the
   patch loader, generation hashes and original/native/consumer fixtures.
 - **PC validation:** Native sign extension, hook order/frame publication,
   stack aliases/word widths and trace bytes; generation/game details in STATUS.md.
@@ -6099,7 +6104,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   computes carry/borrow, retains result snapshots and the byte-decrement hook.
   INC/DEC preserve carry; NOT preserves flags; NEG avoids signed-overflow C.
 - **PC source:** Continuing PR #370 from `830958be`;
-  `tools/translation_integer.py`, `independent-translation-integer.patch`,
+  `tools/translation_integer.py`, `0170-independent-translation-integer.patch`,
   generation fingerprints, final patch ordering and original native fixtures.
 - **PC validation:** Native exhaustive-byte/seeded-word/dword results and carries,
   decoded carry chains, memory accesses and title hooks; see STATUS.md for
@@ -6121,7 +6126,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   prior flag interpretation. Word double shifts accept count 16; larger counts
   use an explicit no-change policy for architecturally undefined results.
 - **PC source:** Continuing PR #370 from `9c2e509b`; `translation_bits.py`,
-  `independent-translation-bits.patch`, fingerprints, fixtures and final ordering.
+  `0150-independent-translation-bits.patch`, fingerprints, fixtures and final ordering.
 - **PC validation:** Native bit-step and actual x86 instruction value/carry
   comparisons across byte values and count encodings, wider seeded/boundary
   cases; see STATUS.md for generation/build/game evidence and scope.
@@ -6141,7 +6146,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   shield over its body on wide displays instead of shifting toward the old
   4:3 center. Ordinary HUD sprites and explicit placements stay unchanged.
 - **Source:** `358-enemy-shield-effects-offset`,
-  `patches/zzzz-world-shields.patch`, shared D3D compatibility path.
+  `patches/0730-world-shields.patch`, shared D3D compatibility path.
 - **Windows evidence:** User's 3440×1440 capture, D3D draw bisection, and
   placement replay identify the 24-byte projected shield strips. Release
   build, captured-frame replay, and isolated live validation at 3440×1440
@@ -6158,7 +6163,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   defined multiplication carry/overflow and explicit fatal divide errors before
   quotient/remainder writes. Guest SEH remains separate foundation work.
 - **PC source:** `8763627e` on `feature/independent-bit-operations`; `translation_product.py`,
-  `guest_integer_fault.c`, `independent-translation-product.patch` and consumers.
+  `guest_integer_fault.c`, `0200-independent-translation-product.patch` and consumers.
 - **PC validation:** Original compiled references, native x86 oracle, aliases,
   divide fault state and real host adapter; see STATUS.md for current results.
 - **Existing Mac support:** Shared lowering and C adapter use POSIX SIGFPE;

@@ -23,8 +23,9 @@
   The launcher was built on Windows x64 with the existing private banner/logo
   resources. Rendering opens no game, performs no update, and includes no
   personal settings, paths or saves. Screenshot resolution: 1152 x 772.
-- `download-launcher.svg`: self-contained download button matching the
-  launcher's silver/blue palette. Its link and accessible label are in the README.
+- `download-windows-launcher.svg` and `download-mac-launcher.svg`: the two
+  platform download buttons used by the README. Links and accessible labels
+  live in the README; the superseded generic button has been removed.
 
 The PNG documents the interface, including its embedded branding. Raw source
 artwork and original game assets remain private. Keep one launcher preview here
