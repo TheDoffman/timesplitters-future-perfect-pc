@@ -227,6 +227,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-090 | Independent SSE emission | Awaiting validation |
 | MAC-091 | Independent MMX emission | Awaiting validation |
 | MAC-092 | Independent x87 emission | Awaiting validation |
+| MAC-093 | Independent control-transfer emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6350,3 +6351,20 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   production definition and runs the same C via MSVC too (47 focused checks
   passed locally). This changes tests only; repaired CI is pending and native
   Mac title acceptance remains unverified.
+
+### MAC-093 - Independent control-transfer emission
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up in
+  `tools/translation_control.py`, `tests/test_translation_control.py` and
+  `patches/independent-translation-control.patch`. Original call/return/branch,
+  bounded jump-table and callee-cleanup emission preserves the common guest ABI.
+- Mac support: portable Python/C emission through existing shared runtime
+  interfaces; no duplicate host algorithm. CI selects the shared contracts.
+- Remaining validation: Windows generation, Release build and isolated first-
+  mission movement/fire/pause/resume passed. All 304 regressions and 56 patch/
+  context/backlog/snapshot checks passed. Native Mac generation/build/gameplay
+  still require supported private US data; CI unit/GPU checks alone do not prove
+  title behavior. See STATUS.md for evidence, preserved personal data and
+  rendering/input/audio limits. New-stage CI is pending; the preceding Windows
+  string-fixture timeout is addressed by caching setup with coverage unchanged.

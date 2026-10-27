@@ -763,3 +763,6 @@ and FP environment remain upstream; game acceptance is tracked separately.
 
 The additive `independent-x87-fixture.patch` exports the inherited classification
 C fixture and includes production SET_LO16; it does not alter generated code.
+
+The control-transfer emitter now follows x87 in the additive stack; call ABI,
+local dispatch and table-boundary contracts are in [independent.md](independent.md).

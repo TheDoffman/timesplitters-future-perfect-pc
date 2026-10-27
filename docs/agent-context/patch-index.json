@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1cf491a10b3b6b634103d9b50f924fcbcdf42472e61a92599bd11ff6e06711d6",
+  "loaderSha256": "8b9a9f9de9b8531e105ea3dd5b452a0c12dad8e90a68d1f68722839ac9d4dfe3",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1792,6 +1792,14 @@
         "tools/recomp/test_lifter_fpu.py",
         "tools/recomp/test_lifter_fpu_reverse.py",
         "tools/recomp/test_lifter_frndint.py"
+      ]
+    },
+    {
+      "name": "independent-translation-control.patch",
+      "sha256": "537e0f523354d04ce3efa0f378bf141366ea2deb99071a9d6b2e71df38131844",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_callee_pop.py"
       ]
     }
   ]

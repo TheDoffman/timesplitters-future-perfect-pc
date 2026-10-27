@@ -1,3 +1,66 @@
+## Independent control-transfer emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_control.py` now replaces ten upstream Lifter methods and
+its conditional-target helper through an additive patch. It owns call/return/
+tail emission, counter-width handling, bounded jump tables and callee cleanup
+lookup. Indirect targets are captured before the return-address push; manual
+and guarded calls retain their dispatch/stack contracts. Forced return values
+also apply to conditional/traced tail exits. Existing native nonlocal-jump and
+runtime ABI helpers remain; full translation orchestration is still upstream.
+
+All **304 translator/generation/private-join/timing checks passed in 359.29s**
+on the final source. **Nine focused control fixtures passed**, including copied
+module imports, compiled calls/returns/frames/guards, stack recovery on failed
+lookups, CX/ECX loops, native nonlocal jumps, bounded tables and decoded programs.
+All **56 historical patch/context/backlog/snapshot checks passed in 533.24s**;
+**86 CI selection/gate checks passed**. A Windows Update restart interrupted
+an earlier local run; the completed reruns replace that interrupted evidence.
+
+Generation comparison caught a missing predecessor zero-flag snapshot in nine
+functions before build acceptance: the old join probe recognizes `_flags /*`.
+The new fallback branch retains that marker. A decoded mixed-predecessor fixture
+executes the known path, and a negative control fails if its snapshot is removed.
+Final supported US regeneration translated **15,838 functions, zero failures**,
+with the existing **50 unresolved stubs / 738 unimplemented sites** unchanged.
+**15,209 function bodies are byte-identical; all 629 changed bodies differ only
+in comments/whitespace.** Names/order and surrounding file text are unchanged;
+five other generated C/header files are identical. This verifies the generated
+change scope for this title, not universal x86 equivalence.
+
+Windows x64 Release built with Python 3.12.14, Capstone 5.0.9, MSVC 2022 and
+process-local `CL_MPCount=2`, using the working tree based on `d0de4605`.
+Native/build checks passed; generator fingerprints and crash symbols match.
+Existing MSBuild shared-intermediate-directory warnings remain. Executable SHA:
+`ec2aa681fa73cda4be9bdd74c45464de29419c40dd897838a9b36e2d4705b305`.
+
+Isolated Original60/D3D11 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammunition **8 to 6**, **40 frozen pause / 60 advancing
+resume samples**, last checkpoint **96.470s**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files retained their hashes, sizes and
+modification times**. No run lock, disposable partition images, redundant BMPs
+or crash dump remained. Input was injected, rendering minimized/background and
+startup movies skipped. Physical input, listening/audio quality, foreground
+pacing, the full campaign and native Mac title behavior remain unverified.
+
+CI on preceding `d0de4605` finished **12 successful / 4 failed checks**: Windows
+runtime had one 90-second string-fixture execution timeout, causing three gate
+failures; Mac runtime/GPU and both patch-upgrade jobs passed. The string fixture
+now caches six immutable input patterns, still resets/compares both full buffers
+for every case, and retains all cases, assertions and the 90-second limit.
+Local timing fell **3.30s to 1.20s**, and all five string tests passed. The CI
+runner's slowdown is not established by that local measurement; new CI remains
+pending this commit. The earlier x87 missing-macro failure is repaired.
+
+Evidence: `logs/control-focused.log`, `logs/control-regressions-final.log`,
+`logs/control-patch-checks.log`, `logs/control-ci-selection.log`,
+`logs/control-generation.log`, `logs/independent-control-comparison.json`,
+`logs/control-installed-ast-audit.json`, `logs/control-build.log`,
+`logs/control-game.log`, `logs/independent-control-game-check.json`,
+`logs/string-fixture-before.log`, `logs/string-fixture-after.log`.
+MAC-093 tracks native Mac acceptance. The full replacement goal remains active;
+remaining orchestration, runtime/header/storage/device/title code and final
+provenance/dependency removal are not complete.
+
 ## x87 CI fixture repair (2026-10-27)
 
 Mac native CI on `3ad34bc7` failed because the inherited FXAM/FNSTSW
@@ -14,8 +77,10 @@ accepted x87 game executable and its recorded gameplay evidence below are
 unchanged; no new game build or Mac gameplay claim is made for this test repair.
 Evidence: `logs/x87-ci-fixture-checks.log`, `logs/x87-ci-fixture-apply.log`.
 Replacement control-flow preparation remains separate and is not integrated.
-New CI results are pending publication of this repair; MAC-092 remains awaiting
-native Mac title validation.
+Repair `d0de4605` passed Mac runtime/GPU CI and both patch-upgrade jobs.
+Windows runtime CI later timed out in the string fixture; see the control-stage
+entry above for its setup optimization. Native Mac title validation remains
+pending under MAC-092.
 
 ## Independent x87 emission (Windows acceptance passed, 2026-10-27)
 

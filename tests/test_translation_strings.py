@@ -62,6 +62,7 @@ def test_compiled_element_semantics_and_register_preservation(tmp_path):
 static uint32_t eax,ecx,esi,edi,_fa,_fb; static int32_t _fas,_fbs;
 static int g_df,_flags,_cf;static unsigned accesses;
 static _Alignas(8) unsigned char actual[131104],expected[131104];
+static _Alignas(8) unsigned char initial[6][131104];
 static void *address(uint32_t p){if(p>=sizeof actual-4){fprintf(stderr,"invalid address %u\n",p);exit(90);}++accesses;return actual+p;}
 #define XBOX_PTR(p) address((uint32_t)(p))
 #define XBOX_FS_BASE 65536u
@@ -76,13 +77,12 @@ static uint32_t read_bytes(uint32_t p,unsigned n){uint32_t v=0;for(unsigned b=0;
 static void write_bytes(uint32_t p,unsigned n,uint32_t v){for(unsigned b=0;b<n;++b)expected[p+b]=(unsigned char)(v>>(b*8));}
 static uint32_t update(uint32_t initial,int64_t delta,int narrow){uint32_t v=initial+(uint32_t)delta;return narrow?(initial&0xffff0000u)|(v&65535):v;}
 static int check(const struct test *t,unsigned count,int backwards,unsigned scenario,int initial_flags){
-for(unsigned i=0;i<sizeof actual;++i)actual[i]=(unsigned char)((i*37u+(i>>3)*11u+scenario*7u)&255u);
-memcpy(expected,actual,sizeof actual);
+if(!t->narrow&&scenario==4)return 0;
+memcpy(actual,initial[scenario],sizeof actual);
+memcpy(expected,initial[scenario],sizeof expected);
 uint32_t s=120,d=420;
 if(scenario==1)d=s+t->size; if(scenario==2)d=s-t->size;
 if(scenario==3)d=s; if(scenario==4){s=backwards?0:65536-t->size;d=s;}
-if(scenario==5)memset(actual,0x31,sizeof actual),memset(expected,0x31,sizeof expected);
-if(!t->narrow&&scenario==4)return 0;
 eax=0xcdef3131u;ecx=count;esi=s;edi=d;
 if(t->narrow){ecx|=0x12340000u;esi|=0xabcd0000u;edi|=0x98760000u;}
 uint32_t si=esi,di=edi,c=ecx,a=eax,last_l=0,last_r=0;
@@ -114,6 +114,9 @@ if(_fa!=last_l||_fb!=last_r||_fas!=sl||_fbs!=sr)return 4;}
 else if(_fa!=0x12345678||_fb!=0x23456789||_fas!=-123||_fbs!=-456)return 5;
 return 0;}
 int main(void){unsigned counts[]={0,1,2,7};
+/* Cache immutable input patterns; reset both full buffers for every case. */
+for(unsigned scenario=0;scenario<6;++scenario)for(unsigned i=0;i<sizeof actual;++i)
+initial[scenario][i]=scenario==5?0x31:(unsigned char)((i*37u+(i>>3)*11u+scenario*7u)&255u);
 for(unsigned i=0;i<sizeof tests/sizeof tests[0];++i)for(unsigned c=0;c<4;++c)for(int df=0;df<2;++df)for(unsigned scenario=0;scenario<6;++scenario)for(int flags=0;flags<4;++flags){
 int r=check(&tests[i],counts[c],df,scenario,flags);if(r){fprintf(stderr,"case=%u count=%u df=%d scenario=%u flags=%d error=%d\n",i,counts[c],df,scenario,flags,r);return r;}}
 puts("PASS string widths, single/repeat modes, zero count, overlap, direction, address wrap, FS, reads and preserved state");return 0;}

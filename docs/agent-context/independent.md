@@ -341,3 +341,39 @@ fixture through the host compiler adapter, including MSVC, so the inherited
 GCC/Clang-only skip cannot hide missing declarations on Windows. The additive
 `independent-x87-fixture.patch` changes test setup only; expected status patterns,
 TOP/sign coverage and stack preservation checks remain intact.
+
+## Original control-transfer emission
+
+`translation_control.py`, installed after x87 by
+`independent-translation-control.patch`, owns direct/indirect calls, returns,
+tails, conditional targets, LOOP counter widths, bounded jump-table scanning
+and callee cleanup lookup. Ten Lifter methods and `_emit_cond_goto` delegate to
+this module; remaining dispatch/block orchestration and runtime ABI helpers
+still need replacement. The existing native setjmp/longjmp interface is retained.
+
+Indirect target capture precedes the guest return-address push. Keep each
+indirect call in one complete emitted statement: the existing recovery postpass
+places the stack snapshot before that statement and adjacent argument pushes.
+Fallback branches also retain the `_flags /*` marker used by the existing join
+probe to save predecessor zero flags. The decoded mixed-known/unknown join
+fixture executes the known path and rejects a removed predecessor snapshot.
+Guard misses still use the safe dispatcher. Conditional/manual/traced tails
+apply the configured forced-return value on their taken exit. CX loops preserve
+upper ECX; incomplete callee bodies cannot establish exact cleanup. Backward
+table scans remain possible when fewer than four image bytes follow the table
+end; opcode displacement words are excluded and local arms retained.
+
+The original control suite compiles guest-stack/frame/guard/failure cases,
+returns and tails, native nonlocal jumps and decoded production translations.
+It also checks standalone imports, bounded table reads, malformed/short bodies
+and the actual stack-recovery postpass. The installed-binding contract checks
+production routing separately from subprocess injection. Both CI hosts select
+these tests; generation fingerprints include the module. Generation/build and
+isolated title acceptance are recorded in STATUS.md and MAC-093.
+
+The string fixture caches its six immutable memory patterns once, then restores
+both complete buffers before every case. It retains the full width/repetition/
+address-size/segment/direction/count/overlap/flag matrix and whole-buffer and
+register assertions. This removes repeated pattern synthesis from a Windows CI
+fixture that exceeded its existing 90-second execution limit; the timeout and
+runtime emitter are unchanged. Local timing is recorded separately in STATUS.md.
