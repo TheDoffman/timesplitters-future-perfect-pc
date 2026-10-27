@@ -1,9 +1,9 @@
 # Build, run and validation map
 
 Generation hashes cover own translation/diagnostic tools and bridges. Native
-integer fixtures cover widths, carry, snapshots, memory reads and decoded chains;
-move fixtures cover hooks and stack aliases. The loader replays title patches
-before own move/integer bodies. Shared CI runs original and inherited consumers;
+integer/bit fixtures cover widths, carry and snapshots, with ML64 shift/rotate
+references on Windows; moves cover hooks/stack aliases. Title patches precede
+own move/integer/bit bodies. Shared CI runs original and inherited consumers;
 scope and host limits are in `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates

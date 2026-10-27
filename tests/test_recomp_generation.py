@@ -47,7 +47,7 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
         path = runtime / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
-    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py'):
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py'):
         path = project / 'tools' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
@@ -56,7 +56,7 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
                  project / 'tools/recomp_image.py', project / 'tools/x86_decode.py', project / 'tools/x86_flow.py', project / 'tools/x86_recovery.py', project / 'tools/x86_functions.py', project / 'tools/recomp_symbols.py',
                  project / 'tools/analysis_cache.py', project / 'tools/analysis_config.py', project / 'tools/analysis_output.py', project / 'tools/analysis_runner.py',
                  project / 'tools/xdk_catalog.py', project / 'tools/compile_pipeline.py',
-                 project / 'tools/function_evidence.py', project / 'tools/function_categories.py', project / 'tools/function_catalog.py', project / 'tools/c_source_scan.py', project / 'tools/generation_output.py', project / 'tools/translation_decode.py', project / 'tools/translation_layout.py', project / 'tools/translation_hooks.py', project / 'tools/branch_feedback.py', project / 'tools/unresolved_report.py', project / 'tools/translation_operands.py', project / 'tools/translation_moves.py', project / 'tools/translation_integer.py',
+                 project / 'tools/function_evidence.py', project / 'tools/function_categories.py', project / 'tools/function_catalog.py', project / 'tools/c_source_scan.py', project / 'tools/generation_output.py', project / 'tools/translation_decode.py', project / 'tools/translation_layout.py', project / 'tools/translation_hooks.py', project / 'tools/branch_feedback.py', project / 'tools/unresolved_report.py', project / 'tools/translation_operands.py', project / 'tools/translation_moves.py', project / 'tools/translation_integer.py', project / 'tools/translation_bits.py',
                  runtime / 'tools/xbe_parser/xbe_parser.py', runtime / 'tools/disasm/engine.py', runtime / 'tools/xdk_symbols/__main__.py', runtime / 'tools/func_id/__main__.py'):
         generation.record(runtime)
         assert generation.current(runtime)

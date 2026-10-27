@@ -1,6 +1,17 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-translation-bits.patch` follows integer lowering and removes seven
+shift/rotate handlers in favor of `translation_bits.py`. Counts are masked to
+five bits, operations retain operand width and zero counts preserve emitted
+state. Carry rotates use an explicit width-plus-one ring. Double shifts accept
+the defined word count of 16; larger word counts explicitly leave state alone.
+Known constant no-ops preserve predecessor flag interpretation in block lowering
+and carry discovery. Rotate/double-shift carry consumers request and read `_cf`.
+Carry rotates declare `_cf` even at constant zero: their guarded C still names it.
+Native fixtures compare values/carry with bit-step references and, on Windows
+x64, ML64 hardware instructions. Dynamic zero-count flag interpretation and
+complete overflow/other flag conditions remain separate replacement work.
 `independent-translation-integer.patch` follows moves and replaces scalar
 ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT handlers with `translation_integer.py`.
 Inputs are sampled and masked at operand width before carry/borrow calculation;

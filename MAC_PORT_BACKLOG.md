@@ -214,6 +214,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-078 | Independent C operand emission | Awaiting validation |
 | MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
 | MAC-080 | Independent scalar integer lowering | Awaiting validation |
+| MAC-081 | Independent shift and rotate lowering | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5942,6 +5943,27 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Windows results do not establish native
   Mac generation or gameplay. Flag-condition lowering and other families remain
   separate replacement work.
+
+### MAC-081 - Independent shift and rotate lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own shifts/rotates honor widths and count masking, preserve
+  zero-count emitted state and publish carry; known constant no-ops retain the
+  prior flag interpretation. Word double shifts accept count 16; larger counts
+  use an explicit no-change policy for architecturally undefined results.
+- **PC source:** Continuing PR #370 from `9c2e509b`; `translation_bits.py`,
+  `independent-translation-bits.patch`, fingerprints, fixtures and final ordering.
+- **PC validation:** Native bit-step and actual x86 instruction value/carry
+  comparisons across byte values and count encodings, wider seeded/boundary
+  cases; see STATUS.md for generation/build/game evidence and scope.
+- **Existing Mac support:** Shared lowering and portable C reference fixtures;
+  the Windows ML64 hardware reference is additional host-specific evidence.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run bit/integer/operand/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Native Mac generation and gameplay remain
+  unverified. Dynamic zero-count conditional provenance and complete flag lowering
+  remain separate replacement work on both hosts.
 
 ## Entry template
 

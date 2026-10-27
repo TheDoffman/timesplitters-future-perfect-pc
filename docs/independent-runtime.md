@@ -15,7 +15,7 @@ the library-symbol adapter, generation driver, function classifier, manual-sourc
 scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
 indirect-branch feedback, unresolved-address diagnostics, C operand emission,
-basic data-transfer/stack lowering and scalar integer arithmetic/logic emission.
+basic data-transfer/stack lowering, scalar integer arithmetic/logic, and shifts/rotates.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -67,6 +67,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | C operand emission | Project-owned `translation_operands.py`; lifter imports replace its formatter bodies and tables | Native subregister/FS/address-width/floating-stack and production memory-macro tests, standalone copy, existing consumers, regeneration/build/game; native Mac pending |
 | Basic data-transfer and stack instructions | Project-owned `translation_moves.py` supplies MOV, MOVZX, MOVSX, LEA, PUSH and POP | Native extension/hook/stack-alias/segment/trace contracts, standalone copies, existing consumers, generation/build/game; native Mac pending |
 | Scalar integer arithmetic and logic | Project-owned `translation_integer.py` supplies ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT | Native result/carry/snapshot and decoded-sequence contracts, standalone copies, consumers, generation/build/game; complete flag lowering remains separate |
+| Shifts and rotates | Project-owned `translation_bits.py` supplies SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR | Native bit-step and Windows x64 hardware value/carry comparisons, no-op/carry routing, consumers and generation/build/game; complete flag provenance remains separate |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -575,3 +576,30 @@ until the complete stack. This stage retains the existing flag snapshot ABI;
 conditional lowering, complete AF/PF/OF behavior, other instruction families and
 runtime services still require replacement. Generation/build/game evidence and
 native Mac gaps are recorded separately in STATUS.md and MAC-080.
+
+
+## Shift and rotate lowering
+
+`translation_bits.py` owns SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR emission.
+Count masking precedes width handling, shifts publish computed results rather
+than rereading the destination, and rotations preserve result snapshots. Carry
+rotates use a width-plus-one ring without relying on the old runtime helper.
+Zero counts leave emitted flag state unchanged. Word double shifts at count 16
+are implemented; larger counts leave state unchanged as explicit policy for an
+architecturally undefined result. Logical shifts beyond operand width use zero
+carry; undefined flags are not claimed to reproduce a particular x86 core.
+
+Original native tests compare all byte values and all 256 count encodings, plus
+word/dword boundary and seeded values, with single-bit reference calculations.
+Windows x64 additionally assembles actual x86 instructions with ML64 and compares
+results and architecturally defined carry. These are value/carry tests, not a
+claim of complete flag emulation. Copied modules run without the toolkit.
+
+Known constant no-ops retain the preceding flag interpretation in block lowering
+and carry discovery. Rotate/double-shift carry branches request and consume the
+published carry. Carry rotates still declare carry at constant zero because their
+guarded generated C references it. Dynamic zero-count conditions across setters,
+overflow/parity/auxiliary flags and complete conditional lowering still require
+replacement. Four inherited expression fixtures follow the new emitted forms;
+compiled behavioral checks remain active. Hashes and both-host CI include the
+module. STATUS.md and MAC-081 separate implementation from host acceptance.

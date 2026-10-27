@@ -1,3 +1,59 @@
+## Independent shift and rotate lowering (2026-10-26)
+
+Continuing PR #370 from `9c2e509b`, project `translation_bits.py` replaces seven
+handlers covering SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR. Counts are masked before
+width handling; zero counts preserve emitted state; carry rotates use an explicit
+width-plus-one ring. Computed shift results feed snapshots without rereading the
+destination. Word double shifts accept count 16; larger word counts leave state
+unchanged as explicit policy for undefined results. Logical shifts beyond operand
+width use zero carry, without promising particular hardware's undefined flags.
+
+Known constant no-ops retain the preceding flag interpretation in block lowering
+and carry discovery. Rotate/double-shift carry consumers request and read the
+published `_cf`. Carry rotates declare `_cf` even when a constant-zero guard
+prevents execution, because the emitted C still names it. Dynamic zero-count conditions crossing different setter kinds,
+overflow/parity/auxiliary flags and complete flag lowering remain separate work.
+
+Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- Focused checks: **128 passed in 16.67 seconds** after the final carry-declaration fix.
+  Initial broad suite: **586 passed, 5 failed in 675.76 seconds** while a
+  temporary UTF-8 patch-edit error affected transition fixtures. The failed
+  installer was transactional and left runtime sources unchanged. After repair,
+  the complete patch/context rerun passed: **41 passed in 686.75 seconds**.
+  Final context/backlog checks: **21 passed in 4.73 seconds**.
+- Original compiled fixtures cover all byte values and 256 count encodings,
+  both incoming carries, and 1,024 boundary/seeded samples for each wider width.
+  Values, carry, upper register preservation and snapshots are compared against
+  bit-by-bit reference calculations. Windows ML64 also executes actual x86
+  instructions and compares results and architecturally defined carry. These
+  tests do not establish complete flag emulation or native Mac gameplay.
+- Copied modules run without the toolkit. Installed identities, known-zero flag
+  routing, rotate/double-shift carry routing and inherited consumers pass. Four
+  inherited expression fixtures follow new code; compiled behavioral checks stay.
+- Generation: **15,838 functions translated, zero failures, 50 unresolved stubs**.
+  Five of 21 C/header files are identical (headers/HLE/dispatch/unresolved stubs).
+  In the 16 main C files, all function names/order and text outside bodies are
+  identical; **3,209 bodies change, 12,629 remain identical**. Changed bodies
+  contain new bit-operation emission. This is structural evidence, not complete
+  semantic equivalence. Representative changes were reviewed.
+- Full Windows build/native checks and the generation fingerprint passed.
+- Isolated Scotland the Brave reached gameplay; reviewed start/pause/resume
+  captures, forward movement **11.171 units**, backward **6.185 units**, ammo
+  **8 to 6**, 40 paused samples with frozen ticks and 60 resumed samples with
+  advancing ticks. Last checkpoint **93.585 seconds**, runner exit 0. Profiles,
+  signatures and canonical fixture were preserved; no remaining partitions,
+  run lock or crash dumps. Personal saves/settings were unused.
+- Tested executable SHA-256: `8736634a481b441f7418b5a6b3f0dc8bc10666cc704d2bde0ca8ef9f1966c52d`
+
+Bounded gameplay uses injected input, background/minimized rendering, original
+60 FPS and skipped movies. Physical input, foreground pacing, audio and full
+levels remain outside that check. All three workflows on preceding `9c2e509b`
+passed. New-head CI and native Mac generation/build/gameplay remain separate;
+MAC-081 records the host gap. Evidence: `logs/independent-bits-*`, generation
+baseline `private/pipeline/bits-acceptance-baseline`, and
+`private/test-saves/independent-bits`. The overall replacement goal stays active.
+
 ## Independent scalar integer lowering (2026-10-26)
 
 Continuing PR #370 from `830958be`, project `translation_integer.py` replaces

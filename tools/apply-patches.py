@@ -83,7 +83,8 @@ def patch_records(paths):
         paths.append(radial)
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
-    for name in ('independent-translation-moves.patch', 'independent-translation-integer.patch'):
+    for name in ('independent-translation-moves.patch', 'independent-translation-integer.patch',
+                 'independent-translation-bits.patch'):
         replacement = by_name.get(name)
         if replacement:
             paths.remove(replacement)
