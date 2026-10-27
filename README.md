@@ -194,6 +194,12 @@ To contribute, read the [contributing guide](CONTRIBUTING.md),
 [project rules](AGENTS.md) and [code of conduct](CODE_OF_CONDUCT.md).
 Report security vulnerabilities privately using the [security policy](SECURITY.md).
 
+## Support the project
+
+Enjoying the project? [Buy me a coffee on Ko-fi](https://ko-fi.com/thedoffman)
+to support continued work on TimeSplitters and the discoveries shared along the way.
+Thank you for being part of the project!
+
 ## Credits & license
 
 The project statically recompiles the Xbox executable into native code; it does
