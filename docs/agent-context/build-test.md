@@ -1,5 +1,8 @@
 # Build, run and validation map
 
+`test_cutscene_letterbox.py` and `test_recomp_float_joins.py` link the production
+`guest_integer_fault.c` on both hosts for translated divide-error calls.
+
 [Own translation and flag tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
@@ -17,13 +20,12 @@ Local aim/animation CPU observations: [completed-update trace](native-local-trac
 Vertex conversion: [tiled full-function parity, guards and CPU timing](vertex-expand.md).
 Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fixture-clock).
 
-Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is
-recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
-controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
-Broken variants must compile before their runtime checks reject them.
+Windows `--profile-pc-symbol` requires `--profile-cpu`; provenance records it.
+`test_sample_pc_locations.py`: bounds, negative controls and asset-free Win32/PDB
+integration; see [runtime](runtime.md). Broken variants must compile, then fail.
 
-Shared state-cache binding/failure and WARP/Vulkan pixel fixtures are described
-in [runtime](runtime.md). The Vulkan fixture defines `TSFP_RHI_RENDERER`.
+State-cache binding/failure and WARP/Vulkan pixel fixtures:
+[runtime](runtime.md). Vulkan defines `TSFP_RHI_RENDERER`.
 
 `test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
 mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator
@@ -55,11 +57,9 @@ also cover focus loss, stale held buttons, menu return and a clip released by
 another component while the game remains foreground.
 <!-- packet:end -->
 
-Native SDL input validation checks both active Confirm slots (E and Space) and
-rejects the retained third fixture entry (Return), matching the shared keyboard
-profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual host;
-this self-test correction does not change gameplay bindings or certify physical
-keyboard input.
+Native SDL checks Confirm E/Space and rejects third-slot Return, matching the
+two-slot cap. Run `tools/build-native-mac.py --test` on Mac. This self-test change
+preserves gameplay bindings and does not certify physical keyboard input.
 
 PR CI's candidate `PR validation` gate in `runtime-patches.yml` selects runtime
 and launcher work for one head and checks Windows/Mac worker results with

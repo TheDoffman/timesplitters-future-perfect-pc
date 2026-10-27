@@ -88,9 +88,11 @@ def compile_and_run(tmp_path, source, expect_success=True):
     includes = RUNTIME / 'templates/runtime'
     if Path(compiler).stem.lower() == 'cl':
         command = [compiler, '/nologo', '/O2', '/I' + str(includes), str(path),
-                   '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'float_join.obj')]
+                   str(ROOT / 'src/guest_integer_fault.c'),
+                   '/Fe:' + str(executable)]
     else:
-        command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
+        command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path),
+                   str(ROOT / 'src/guest_integer_fault.c'), '-lm', '-o', str(executable)]
     built = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=15)

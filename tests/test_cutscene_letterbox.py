@@ -23,11 +23,12 @@ def compile_and_run(tmp_path, source, fails=False):
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/we4028', '/we4029', '/we4142',
                    '/I' + str(includes), '/I' + str(ROOT / 'src'), '/I' + str(ROOT / 'tests'),
-                   '/I' + str(RUNTIME / 'src/d3d'), str(fixture), '/Fe:' + str(exe),
-                   '/Fo:' + str(tmp_path / 'test.obj')]
+                   '/I' + str(RUNTIME / 'src/d3d'), str(fixture),
+                   str(ROOT / 'src/guest_integer_fault.c'), '/Fe:' + str(exe)]
     else:
         command = [compiler, '-std=gnu11', '-O2', '-I' + str(includes), '-I' + str(ROOT / 'src'), '-I' + str(ROOT / 'tests'),
-                   '-I' + str(RUNTIME / 'src/d3d'), str(fixture), '-lm', '-o', str(exe)]
+                   '-I' + str(RUNTIME / 'src/d3d'), str(fixture),
+                   str(ROOT / 'src/guest_integer_fault.c'), '-lm', '-o', str(exe)]
     result = subprocess.run(command, cwd=tmp_path, env=environment,
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
