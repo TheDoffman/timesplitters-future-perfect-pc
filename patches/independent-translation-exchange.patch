@@ -1,0 +1,311 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -25,6 +25,7 @@
+ import translation_bits as _project_bits
+ import translation_product as _project_product
+ import translation_bitops as _project_bitops
++import translation_exchange as _project_exchange
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -352,6 +353,8 @@
+         return "_flags"
+     if setter == "__zf_from_dest" and ops:
+         return f"({_fmt_operand_read(ops[0])} == 0)"
++    if setter in ("xadd", "cmpxchg"):
++        return "(_fa == 0)"
+     if setter == "cmp" and len(ops) >= 2:
+         return "(_fa == _fb)"
+     if setter == "test" and len(ops) >= 2:
+@@ -373,6 +376,10 @@
+     if not cond_info:
+         return None
+     cmp_macro, test_macro, desc = cond_info
++
++    if flag_setter in ("xadd", "cmpxchg"):
++        expression = _project_exchange.condition(jcc, flag_setter, flag_ops)
++        return (expression, desc) if expression is not None else None
+ 
+     if flag_setter in ("bt", "bts", "btr", "btc", "bsf", "bsr"):
+         expression = _project_bitops.condition(jcc, flag_setter)
+@@ -831,25 +838,6 @@
+         # ZF/SF not modified by rotations - can't resolve most conditions
+         return None
+ 
+-    # ── cmpxchg: compares accumulator with dest, sets ZF on match ──
+-    if flag_setter == "cmpxchg":
+-        # ZF comes from the compare the instruction already did, and the lift
+-        # snapshots it into _fa/_fb. Re-reading eax here would test a value
+-        # cmpxchg may have just replaced.
+-        if jcc in ("je", "jz"):
+-            return "(_fa == _fb)", desc
+-        if jcc in ("jne", "jnz"):
+-            return "(_fa != _fb)", desc
+-        return None
+-
+-    # ── xadd: exchange and add, flags from addition ──
+-    if flag_setter == "xadd":
+-        if jcc in ("je", "jz"):
+-            return f"({lhs} == 0)", desc
+-        if jcc in ("jne", "jnz"):
+-            return f"({lhs} != 0)", desc
+-        return None
+-
+     # ── repe cmpsb / repne scasb: string comparison ──
+     if "cmps" in flag_setter or "scas" in flag_setter:
+         if jcc in ("je", "jz"):
+@@ -1344,7 +1332,7 @@
+             return self._lift_movsx(insn, ops)
+         if m == "lea":
+             return self._lift_lea(insn, ops)
+-        if m == "xchg":
++        if m in ("xchg", "lock xchg"):
+             return self._lift_xchg(insn, ops)
+ 
+         # ── Stack ──
+@@ -1564,51 +1552,8 @@
+         if m in ("bsf", "bsr"):
+             return self._lift_scan(insn, ops, m)
+ 
+-        # ── Atomic read-modify-write ──
+-        #
+-        # "lock xadd" and "lock cmpxchg" are what InterlockedIncrement and
+-        # InterlockedCompareExchange compile to, so they carry a title's
+-        # reference counts and its lock-free lists. Both used to fall through
+-        # to the TODO below: a refcount that never moved and a compare-and-swap
+-        # that never swapped. Harmless while every guest thread ran
+-        # synchronously, and not once the runtime began spawning real ones.
+-        #
+-        # Emitted through RECOMP_ATOMIC_*, which are genuinely atomic. A
+-        # read-modify-write that races is the exact bug these instructions are
+-        # there to prevent, so lowering them to a plain sequence would swap one
+-        # silent race for another.
+-        # Capstone keeps the prefix in the mnemonic, so the locked and
+-        # unlocked spellings both arrive here. Both lift atomically: an
+-        # unlocked xadd on memory is single-CPU-safe on the console and
+-        # costs nothing extra to make safe here.
+-        atomic_m = m[5:] if m.startswith("lock ") else m
+-        if atomic_m in ("xadd", "cmpxchg") and len(ops) >= 2:
+-            width = _operand_width(ops[0]) or 4
+-            if width == 4 and ops[0].type == "mem":
+-                addr = _fmt_mem(ops[0])
+-                src = _fmt_operand_read(ops[1])
+-                if atomic_m == "xadd":
+-                    # dst = dst + src, and src receives dst's old value.
+-                    return [
+-                        "{ uint32_t _old = RECOMP_ATOMIC_ADD32("
+-                        f"XBOX_PTR({addr}), {src});",
+-                        "  " + _fmt_operand_write(ops[1], "_old") + " }"
+-                        f"  /* {m} */",
+-                    ]
+-                # cmpxchg: compare eax with dst; on a match store src, else
+-                # load dst into eax. ZF says which happened, and it is
+-                # snapshotted rather than recomputed -- eax may have just been
+-                # overwritten, so re-reading it to decide the branch would test
+-                # the wrong pair.
+-                return [
+-                    "{ uint32_t _cmp = eax;",
+-                    "  uint32_t _old = RECOMP_ATOMIC_CAS32("
+-                    f"XBOX_PTR({addr}), _cmp, {src});",
+-                    "  _fa = _old; _fb = _cmp;",
+-                    "  _fas = (int32_t)_fa; _fbs = (int32_t)_fb;",
+-                    "  if (_old != _cmp) eax = _old; }"
+-                    f"  /* {m} */",
+-                ]
++        if m in ("xadd", "lock xadd", "cmpxchg", "lock cmpxchg"):
++            return self._lift_exchange(insn, ops)
+ 
+         # ── Unhandled ──
+         #
+@@ -1625,16 +1570,8 @@
+ 
+     _lift_lea = _project_moves.lea
+ 
+-    def _lift_xchg(self, insn, ops):
+-        if len(ops) < 2:
+-            return [f"/* xchg: bad operands */"]
+-        a = _fmt_operand_read(ops[0])
+-        b = _fmt_operand_read(ops[1])
+-        return [
+-            f"{{ uint32_t _tmp = {a};",
+-            _fmt_operand_write(ops[0], b),
+-            _fmt_operand_write(ops[1], "_tmp") + " }",
+-        ]
++    _lift_xchg = _project_exchange.exchange
++    _lift_exchange = _project_exchange.exchange
+ 
+     # ── Stack ──
+ 
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -892,6 +892,8 @@
+ 
+         last_setter = None
+         for insn in instructions:
++            if insn.mnemonic.removeprefix("lock ") in ("xadd", "cmpxchg"):
++                return True  # Own exchange arithmetic publishes captured carry.
+             if insn.mnemonic in ("rcl", "rcr", "mul", "imul", "bt", "bts", "btr", "btc"):
+                 return True  # Own carry producers publish their captured value.
+             if _constant_bit_noop(insn):
+@@ -1299,7 +1301,7 @@
+         # cmpxchg belongs here too: it snapshots the compare it performed,
+         # because eax may be replaced before the branch reads the result.
+         if any(insn.mnemonic in ("cmp", "test", "bsf", "bsr", "cmpxchg",
+-                                 "lock cmpxchg", "inc", "dec")
++                                 "lock cmpxchg", "xadd", "lock xadd", "inc", "dec")
+                or insn.mnemonic in _RESULT_SNAPSHOT_SETTERS
+                for insn in instructions):
+             lines.append("    uint32_t _fa = 0, _fb = 0;")
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -273,27 +273,82 @@
+  * for a buffer that has no native counterpart, leaving the caller to fall back
+  * to the guest's own longjmp.
+  */
+-/* Atomic read-modify-write, for the lock-prefixed instructions.
+- *
+- * "lock xadd" and "lock cmpxchg" are what InterlockedIncrement and
+- * InterlockedCompareExchange compile to, so they carry a title's reference
+- * counts and its lock-free lists. They used to lift to a TODO comment, which
+- * meant a refcount that never moved and a compare-and-swap that never swapped
+- * -- harmless while every guest thread ran synchronously, and not once the
+- * runtime began spawning real ones.
+- *
+- * Genuinely atomic, not merely correct in isolation: the guest's own threads
+- * now run on real host threads, so a read-modify-write that races is exactly
+- * the bug these instructions exist to prevent.
+- */
++/* TSFP own atomics begin: sequentially consistent operations on mapped RAM.
++ * Naturally aligned operands follow the host intrinsic contract. Guest MMIO,
++ * alignment/page-crossing faults and guest exception delivery are separate.
++ * Unlocked XADD/CMPXCHG retain the existing stronger atomic-memory policy. */
++#ifndef TSFP_GUEST_ATOMIC_PRIMITIVES
++#define TSFP_GUEST_ATOMIC_PRIMITIVES
++#include <stdint.h>
+ #if defined(_MSC_VER)
+ #include <intrin.h>
+-#define RECOMP_ATOMIC_ADD32(p, v)     ((uint32_t)_InterlockedExchangeAdd((volatile long *)(p), (long)(v)))
+-#define RECOMP_ATOMIC_CAS32(p, cmp, val)     ((uint32_t)_InterlockedCompareExchange((volatile long *)(p),                                            (long)(val), (long)(cmp)))
++static inline uint8_t tsfp_atomic_exchange8(void *address, uint32_t value) {
++    return (uint8_t)_InterlockedExchange8((volatile char *)address, (char)value);
++}
++static inline uint8_t tsfp_atomic_add8(void *address, uint32_t value) {
++    return (uint8_t)_InterlockedExchangeAdd8((volatile char *)address, (char)value);
++}
++static inline uint8_t tsfp_atomic_cas8(void *address, uint32_t compare, uint32_t value) {
++    return (uint8_t)_InterlockedCompareExchange8((volatile char *)address, (char)value, (char)compare);
++}
++static inline uint16_t tsfp_atomic_exchange16(void *address, uint32_t value) {
++    return (uint16_t)_InterlockedExchange16((volatile short *)address, (short)value);
++}
++static inline uint16_t tsfp_atomic_add16(void *address, uint32_t value) {
++    return (uint16_t)_InterlockedExchangeAdd16((volatile short *)address, (short)value);
++}
++static inline uint16_t tsfp_atomic_cas16(void *address, uint32_t compare, uint32_t value) {
++    return (uint16_t)_InterlockedCompareExchange16((volatile short *)address, (short)value, (short)compare);
++}
++static inline uint32_t tsfp_atomic_exchange32(void *address, uint32_t value) {
++    return (uint32_t)_InterlockedExchange((volatile long *)address, (long)value);
++}
++static inline uint32_t tsfp_atomic_add32(void *address, uint32_t value) {
++    return (uint32_t)_InterlockedExchangeAdd((volatile long *)address, (long)value);
++}
++static inline uint32_t tsfp_atomic_cas32(void *address, uint32_t compare, uint32_t value) {
++    return (uint32_t)_InterlockedCompareExchange((volatile long *)address, (long)value, (long)compare);
++}
+ #else
+-#define RECOMP_ATOMIC_ADD32(p, v)     ((uint32_t)__sync_fetch_and_add((volatile uint32_t *)(p), (uint32_t)(v)))
+-#define RECOMP_ATOMIC_CAS32(p, cmp, val)     ((uint32_t)__sync_val_compare_and_swap((volatile uint32_t *)(p),                                            (uint32_t)(cmp), (uint32_t)(val)))
+-#endif
++static inline uint8_t tsfp_atomic_exchange8(void *address, uint32_t value) {
++    return __atomic_exchange_n((uint8_t *)address, (uint8_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint8_t tsfp_atomic_add8(void *address, uint32_t value) {
++    return __atomic_fetch_add((uint8_t *)address, (uint8_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint8_t tsfp_atomic_cas8(void *address, uint32_t compare, uint32_t value) {
++    uint8_t expected = (uint8_t)compare;
++    __atomic_compare_exchange_n((uint8_t *)address, &expected, (uint8_t)value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
++    return expected;
++}
++static inline uint16_t tsfp_atomic_exchange16(void *address, uint32_t value) {
++    return __atomic_exchange_n((uint16_t *)address, (uint16_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint16_t tsfp_atomic_add16(void *address, uint32_t value) {
++    return __atomic_fetch_add((uint16_t *)address, (uint16_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint16_t tsfp_atomic_cas16(void *address, uint32_t compare, uint32_t value) {
++    uint16_t expected = (uint16_t)compare;
++    __atomic_compare_exchange_n((uint16_t *)address, &expected, (uint16_t)value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
++    return expected;
++}
++static inline uint32_t tsfp_atomic_exchange32(void *address, uint32_t value) {
++    return __atomic_exchange_n((uint32_t *)address, (uint32_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint32_t tsfp_atomic_add32(void *address, uint32_t value) {
++    return __atomic_fetch_add((uint32_t *)address, (uint32_t)value, __ATOMIC_SEQ_CST);
++}
++static inline uint32_t tsfp_atomic_cas32(void *address, uint32_t compare, uint32_t value) {
++    uint32_t expected = (uint32_t)compare;
++    __atomic_compare_exchange_n((uint32_t *)address, &expected, (uint32_t)value, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
++    return expected;
++}
++#endif
++/* Existing consumers can keep the old interface while the runtime is replaced. */
++#define RECOMP_ATOMIC_ADD32(p, v) tsfp_atomic_add32((void *)(p), (v))
++#define RECOMP_ATOMIC_CAS32(p, c, v) tsfp_atomic_cas32((void *)(p), (c), (v))
++#endif /* TSFP_GUEST_ATOMIC_PRIMITIVES */
++/* TSFP own atomics end */
+ 
+ #include <setjmp.h>
+ jmp_buf *recomp_setjmp_slot(uint32_t buf_va);
+--- a/tools/recomp/test_lifter_atomics.py
++++ b/tools/recomp/test_lifter_atomics.py
+@@ -30,23 +30,23 @@
+ class AtomicLiftTest(unittest.TestCase):
+     def test_xadd_is_atomic_and_returns_the_old_value(self):
+         generated = _lift("xadd", "edx")
+-        self.assertIn("RECOMP_ATOMIC_ADD32", generated)
++        self.assertIn("tsfp_atomic_add32", generated)
+         self.assertIn("_old", generated)
+         self.assertNotIn("TODO", generated)
+ 
+     def test_cmpxchg_is_a_real_compare_and_swap(self):
+         generated = _lift("cmpxchg", "edx")
+-        self.assertIn("RECOMP_ATOMIC_CAS32", generated)
++        self.assertIn("tsfp_atomic_cas32", generated)
+         # eax is only replaced when the comparand did not match.
+-        self.assertIn("if (_old != _cmp) eax = _old;", generated)
++        self.assertIn("if (_exchange_compare != _exchange_old) {", generated)
+         self.assertNotIn("TODO", generated)
+ 
+     def test_cmpxchg_snapshots_the_flags_before_touching_eax(self):
+         # The ZF a following jz reads must come from the compare cmpxchg did,
+         # not from eax after it may have been overwritten.
+         generated = _lift("cmpxchg", "edx")
+-        cmp_at = generated.index("_fa = _old; _fb = _cmp;")
+-        eax_at = generated.index("if (_old != _cmp) eax = _old;")
++        cmp_at = generated.index("_fa = _exchange_result;")
++        eax_at = generated.index("if (_exchange_compare != _exchange_old) {")
+         self.assertLess(cmp_at, eax_at)
+ 
+     def test_lock_prefixed_forms_lift_the_same_way(self):
+@@ -54,4 +54,4 @@
+             with self.subTest(mnemonic=m):
+                 generated = _lift(m, "edx")
+                 self.assertNotIn("TODO", generated)
+-                self.assertIn("RECOMP_ATOMIC_", generated)
++                self.assertIn("tsfp_atomic_", generated)
+--- a/tools/recomp/test_lifter_lock_flags.py
++++ b/tools/recomp/test_lifter_lock_flags.py
+@@ -108,7 +108,9 @@
+     def test_the_branch_reads_the_sum(self):
+         """xadd sets ZF from the sum, which is what its destination now holds."""
+         out = _lift(_release_sequence("lock xadd"))
+-        self.assertIn("MEM32(eax)", out, out)
++        self.assertIn("_fa = _exchange_result;", out, out)
++        self.assertIn("if (!(_fa == 0))", out, out)
++        self.assertNotIn("MEM32(eax)", out, out)
+ 
+     def test_lock_cmpxchg_does_not_inherit_stale_flags(self):
+         """A `cmp` before a `lock cmpxchg` must not decide the cmpxchg's jcc.

@@ -27,6 +27,21 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+`independent-translation-exchange.patch` follows bitops, removing XCHG and
+XADD/CMPXCHG bodies in favor of `translation_exchange.py`. Byte/word/dword
+operands and addresses are sampled before writes; XADD writes its source first
+for same-register aliases. Memory exchange is implicitly atomic; unlocked
+XADD/CMPXCHG retain the prior stronger atomic-memory policy. Original helpers
+in the runtime template use MSVC intrinsics or Clang/GCC sequentially consistent
+atomics at all three widths; old 32-bit ABI names are aliases only. The header
+and module enter existing generation fingerprints. Captured result/operand/
+carry state supplies zero, sign, parity, overflow and ordered conditions, plus
+zero-flag joins. Full architectural flags and other LOCK families remain work.
+Fixtures execute decoded consumers, native x86 references and four-thread ADD,
+CAS and exchange-lock contention. Aligned mapped RAM follows host contracts;
+MMIO, alignment/page-crossing faults and guest exception delivery are not
+implemented here. See MAC-085 and STATUS.md for host acceptance.
+
 `independent-translation-bitops.patch` follows product lowering, replacing
 non-LOCK bit tests/modifications, scans and byte swaps with `translation_bitops.py`.
 BT forces CF publication too; carry and scan-zero consumers use sampled flags.

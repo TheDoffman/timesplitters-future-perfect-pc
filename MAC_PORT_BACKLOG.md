@@ -219,6 +219,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-082 | Projected enemy shield effects (issue #358) | Awaiting validation |
 | MAC-083 | Independent bit tests, scans and byte swaps | Awaiting validation |
 | MAC-084 | Independent multiply and divide lowering | Awaiting validation |
+| MAC-085 | Independent exchange lowering and atomic helpers | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6173,6 +6174,24 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   build and verify isolated movement, firing and pause/resume.
 - **Mac implementation and evidence:** Shared source implemented; native Mac
   generation/build/gameplay unverified. LOCK and full flag provenance are deferred.
+
+### MAC-085 - Independent exchange lowering and atomic helpers
+
+- **Status:** Awaiting validation
+- **PC behavior:** XCHG/XADD/CMPXCHG use original lowering, sampled addresses,
+  byte/word/dword atomics and captured arithmetic conditions.
+- **PC source:** `feature/independent-exchange`; `translation_exchange.py`
+  and `independent-translation-exchange.patch` (including original host helpers).
+- **PC validation:** Native reference, decoded-consumer and concurrency fixtures;
+  generation/build/game results are recorded in STATUS.md.
+- **Existing Mac support:** Shared emission and Clang sequentially consistent
+  atomics. Portable tests use the same helper bodies with pthread contention.
+- **Mac adaptation needed:** No separate algorithms. Confirm aligned mapped-RAM
+  operations in the native title; MMIO and guest fault semantics remain separate.
+- **Mac acceptance checks:** Run exchange/consumer/contention tests, regenerate,
+  build and verify isolated movement/fire/pause on the native host.
+- **Mac implementation and evidence:** Shared implementation complete; native
+  Mac generation/build/gameplay pending. Windows x86 oracle is supplemental.
 
 ## Entry template
 

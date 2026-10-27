@@ -5,6 +5,11 @@ The root AGENTS rule identifies the bundled pristine base and offline importer;
 the ignored patched runtime remains the place to inspect effective behavior.
 Snapshot content is provenance, not a second place to implement fixes.
 
+The exchange replacement is the final loader stage after bitops. Historical
+checkpoint fixtures defer it until the complete title stack; fresh installs and
+upgrades still exercise it. Check recorded patch hashes against Git LF bytes
+when local context passes but a clean CI checkout reports a stale index.
+
 <!-- packet:start -->
 Before a broad search, read the repository map and relevant subsystem guide,
 then use the bounded patch finder. Keep exact path/symbol findings in ignored

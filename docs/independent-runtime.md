@@ -16,7 +16,8 @@ scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
 indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
-multiply/divide lowering, and non-LOCK bit tests/scans/byte swapping.
+multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
+exchange/compare-exchange lowering.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -71,6 +72,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Shifts and rotates | Project-owned `translation_bits.py` supplies SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR | Native bit-step and Windows x64 hardware value/carry comparisons, no-op/carry routing, consumers and generation/build/game; complete flag provenance remains separate |
 | Multiply and divide | Project-owned `translation_product.py` supplies MUL/IMUL/DIV/IDIV; shared `guest_integer_fault.c` stops invalid division before result writes | Width/alias/overflow and native x86 comparisons, decoded flag consumers, host fault adapter, generation/build/game; guest SEH and native Mac acceptance remain separate |
 | Bit tests, scans and byte swaps | Project-owned `translation_bitops.py` supplies non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP | Native width/offset/alias and x86 references, captured flag consumers, generation/build/game; atomic forms and full flag provenance remain separate |
+| Exchange and compare-exchange | Project-owned `translation_exchange.py` and original template atomics supply XCHG/XADD/CMPXCHG | Compiled values/flags, x86 oracles, aliases, decoded consumers and contention; generation/build/game acceptance in STATUS.md, native Mac pending |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -665,3 +667,33 @@ instruction dispatch. LOCK-prefixed operations remain in the existing atomic
 handler for a separate replacement stage. Complete flag provenance, preserved
 flags across different setters, guest memory faults and other instruction/runtime
 families remain separate work; this stage does not establish full independence.
+
+
+## Exchange and compare-exchange
+
+`translation_exchange.py` owns XCHG, XADD and CMPXCHG, including LOCK spellings
+on memory. Original byte/word/dword atomic helpers in the runtime template use
+MSVC intrinsics or Clang/GCC sequentially consistent operations. Existing
+RECOMP_ATOMIC_ADD32/CAS32 names now alias these implementations. This removes
+the previous helper bodies without replacing the rest of the upstream header.
+Memory XCHG is implicitly atomic. Unlocked memory XADD/CMPXCHG preserve the
+existing stronger host-atomic policy rather than modelling every guest race.
+
+Operands and effective addresses are sampled before writes. XADD writes its
+source before its destination, including overlapping subregisters; CMPXCHG
+compares the original accumulator and only replaces it on failure. Captured
+result, signed inputs and carry drive conditional branches, SET and CMOV;
+zero-flag joins use the result snapshot. Other instruction flag provenance and
+a complete architectural flags register remain separate work.
+
+Original fixtures compare all byte input pairs and seeded word/dword values
+with portable references and Windows x86 instructions, then exercise aliasing,
+mapped-address sampling, decoded consumers and four-thread contention. ADD
+return-value sums, CAS increments and exchange-protected counters check the
+actual helper bodies. Host atomics follow their aligned-RAM contracts; guest
+MMIO, alignment/page-crossing faults, exception delivery and other LOCK families
+remain separate foundation work. The source basis is Intel SDM instruction
+semantics and standard compiler atomics, not copied lowering implementation:
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+and https://learn.microsoft.com/en-us/cpp/intrinsics/interlockedexchangeadd-intrinsic-functions.
+See STATUS.md and MAC-085 for measured Windows and pending native Mac acceptance.

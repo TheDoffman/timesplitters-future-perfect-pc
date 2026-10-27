@@ -1,3 +1,52 @@
+## Independent exchange lowering (2026-10-27)
+
+On `feature/independent-exchange`, based on merged main `fd317882`, original
+code replaces XCHG/XADD/CMPXCHG lowering at byte, word and dword widths,
+including locked memory spellings. Effective addresses and inputs are sampled
+before writes; captured arithmetic results feed branches, SET, CMOV and zero
+joins. Original sequentially consistent helpers replace the previous atomic
+helper bodies, with MSVC and Clang/GCC adapters. Other runtime code remains
+upstream and its notices remain required.
+
+Windows validation:
+
+- **152 final checks passed in 74.32 seconds**, covering compiled arithmetic,
+  x86 instruction oracles, aliases, decoded consumers, four-thread contention,
+  legacy numeric-address macros, fresh/repeated patches, generation and context.
+- **56 historical patch/context/backlog/snapshot checks passed in 980.20 seconds**.
+  These preceded the final two compatibility-macro pointer casts; the final
+  152 checks include fresh/repeated installation and execution of those casts.
+- Supported US XBE SHA-256 verified. Final generation translated **15,838
+  functions with zero failures**, retaining **50 existing unresolved stubs**.
+  **37 function bodies changed; 15,801 stayed identical**. Function order/names
+  and text outside C function bodies stayed identical. Ten complete generated
+  C/header files stayed identical; the types header changed only in the atomic
+  helper section. This is structural evidence, not full semantic equivalence.
+- Normal Windows Release build and native checks passed; generation fingerprint
+  is current and matching crash symbols were produced. The corrected build has
+  no C4022 pointer warnings; existing MSBuild intermediate-directory warnings
+  remain. An earlier, superseded build exposed the integer-to-pointer boundary;
+  both emission and compatibility aliases now cast the actual XBOX_PTR address
+  type, and the native fixtures exercise that interface.
+- **Isolated gameplay acceptance passed:** Original60 Scotland the Brave,
+  injected background/minimized input with startup movies skipped. Forward
+  **11.175 units**, backward **6.185 units**, ammo **8 to 6**, **40 frozen pause
+  samples** and **60 advancing resume samples**; final checkpoint **88.124
+  seconds**, runner exit 0. Reviewed start, pause and resume captures. All
+  **19 protected settings/save/fixture files remained unchanged**; no run lock,
+  disposable partitions or crash dump remained. This bounded test does not
+  certify physical input, audio, movies, foreground pacing or a full campaign.
+
+Executable SHA-256:
+`88e6cf84258d04261c1ba75a896e60288ef6a38fda1f81491af401d7df730b49`.
+Evidence: `logs/exchange-final-checks.log`, `logs/exchange-patch-checks.log`,
+`logs/exchange-final-generation.log`, `logs/independent-exchange-comparison.json`,
+`logs/exchange-final-build.log`, `logs/independent-exchange-game-check.json`,
+`logs/exchange-game.log`.
+Native Mac generation/build/gameplay remain pending (MAC-085). Host atomic
+contracts cover aligned mapped RAM; MMIO, guest alignment/page-crossing faults,
+exception delivery, other LOCK families and complete flags remain separate work.
+
 ## Shielded enemy effect alignment (2026-10-27, issue #358)
 
 A user capture from Something to Crow About showed the robot shield pulled
@@ -55,7 +104,8 @@ Windows validation:
 - CI's scope job found a stale patch index: the local product patch still had
   CRLF bytes although Git stored LF. Normalized that local file to its existing
   Git bytes and refreshed the index (no production change). The same scope
-  suite now passes locally: **116 tests and 26 subtests**. CI rerun pending.
+  suite passed locally: **116 tests and 26 subtests**. All 16 CI checks passed
+  on `5b931e4b`; PR #374 was subsequently merged.
 
 
 Executable SHA-256:
