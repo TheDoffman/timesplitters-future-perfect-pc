@@ -1,0 +1,179 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -20,6 +20,7 @@
+ 
+ from .disasm import Instruction, Operand, LOOP_JUMPS
+ from .config import is_code_address, is_data_address, va_to_file_offset
++import translation_moves as _project_moves
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -1747,98 +1748,13 @@
+ 
+     # ── MOV family ──
+ 
+-    def _lift_mov(self, insn, ops):
+-        if nops := len(ops) < 2:
+-            return [f"/* mov: bad operands */"]
+-        src = _fmt_operand_read(ops[1])
+-        # A title may reinterpret a specific global load used as a time gate.
+-        # Keep instruction addresses out of the generic lifter and keep the
+-        # actual memory read single-evaluation under the default policy.
+-        if (ops[0].type == "reg" and ops[1].type == "mem" and
+-                ops[1].mem_size == 4 and not ops[1].mem_base and
+-                not ops[1].mem_index and not ops[1].mem_seg):
+-            src = f"RECOMP_LOAD_GLOBAL_U32(0x{insn.address:X}, {_fmt_mem(ops[1])}, {src})"
+-        # Byte loads can feed title-owned discrete timers. The generic
+-        # default preserves the original load, with single evaluation.
+-        if ops[0].type == "reg" and ops[1].type == "mem" and ops[1].mem_size == 1:
+-            src = f"RECOMP_LOAD_U8_AT(0x{insn.address:X}, {src})"
+-        # Title-owned observation of direct 32-bit global stores. The
+-        # policy returns the value to write; default semantics are unchanged.
+-        if (ops[0].type == "mem" and ops[0].mem_size == 4 and
+-                not ops[0].mem_base and not ops[0].mem_index and
+-                not ops[0].mem_seg):
+-            src = f"RECOMP_STORE_GLOBAL_U32(0x{insn.address:X}, {_fmt_mem(ops[0])}, {src})"
+-        out = [_fmt_operand_write(ops[0], src)]
+-        # `mov ebp, esp` establishes this function's frame. Publish it, because
+-        # ebp is a per-function local and a callee with no prologue of its own
+-        # reads its caller's frame through ebp -- MSVC emits those routinely for
+-        # shared tails (Halo's CRT float formatting is one). Without the
+-        # publish, such a callee starts from an uninitialised ebp and its
+-        # [ebp-N] stores land wherever that garbage points.
+-        if (ops[0].type == "reg" and ops[0].reg == "ebp" and
+-                ops[1].type == "reg" and ops[1].reg == "esp"):
+-            out.append("g_ebp = ebp; /* publish frame for frameless callees */")
+-            # g_seh_ebp too. A callee with no prologue inherits through
+-            # g_seh_ebp, not g_ebp, but only tail jumps and the SEH helpers
+-            # ever wrote it -- so one reached by an ordinary call read whatever
+-            # frame the last tail jump had left behind. Wreckless hit this in
+-            # setjmp: it saved that stale ebp into the jmp_buf, and the longjmp
+-            # that should have resumed the catch restored a frame two calls
+-            # dead, so the exception unwound past every handler and off the top
+-            # of the stack.
+-            out.append("g_seh_ebp = ebp;")
+-        # A title may service a known emulated hardware handshake after a
+-        # completed store. Default policy emits no code; never reorder the write.
+-        if (ops[0].type == "mem" and ops[0].mem_size == 4 and not ops[0].mem_seg):
+-            out.append(f"RECOMP_AFTER_STORE32(0x{insn.address:X}, {_fmt_mem(ops[0])});")
+-        return out
+-
+-    def _lift_movzx(self, insn, ops):
+-        if len(ops) < 2:
+-            return [f"/* movzx: bad operands */"]
+-        src = _fmt_operand_read(ops[1])
+-        if ops[1].type == "mem":
+-            if ops[1].mem_size == 1:
+-                src = f"ZX8({src})"
+-            elif ops[1].mem_size == 2:
+-                src = f"ZX16({src})"
+-        elif ops[1].type == "reg":
+-            r = ops[1].reg
+-            if r in ("al", "bl", "cl", "dl", "ah", "bh", "ch", "dh"):
+-                src = f"ZX8({src})"
+-            elif r in ("ax", "bx", "cx", "dx", "si", "di", "bp", "sp"):
+-                src = f"ZX16({src})"
+-        return [_fmt_operand_write(ops[0], src)]
+-
+-    def _lift_movsx(self, insn, ops):
+-        if len(ops) < 2:
+-            return [f"/* movsx: bad operands */"]
+-        src = _fmt_operand_read(ops[1])
+-        if ops[1].type == "mem":
+-            accessor = _smem_accessor(ops[1].mem_size)
+-            addr = _fmt_mem(ops[1])
+-            src = f"(uint32_t)(int32_t){accessor}({addr})"
+-        elif ops[1].type == "reg":
+-            r = ops[1].reg
+-            if r in ("al", "bl", "cl", "dl", "ah", "bh", "ch", "dh"):
+-                src = f"SX8({src})"
+-            elif r in ("ax", "bx", "cx", "dx", "si", "di", "bp", "sp"):
+-                src = f"SX16({src})"
+-            else:
+-                # movsx's source is always narrower than its destination, so a
+-                # register that matches neither list is a gap in these lists and
+-                # not a legitimate case. Say so in the output: the bug this
+-                # replaces was silent, because falling through here emits the
+-                # plain LO16()/LO8() read and drops the sign without a trace.
+-                return [_fmt_operand_write(ops[0], src)
+-                        + f" /* movsx: unhandled source register {r}, sign NOT extended */"]
+-        return [_fmt_operand_write(ops[0], src)]
+-
+-    def _lift_lea(self, insn, ops):
+-        if len(ops) < 2 or ops[1].type != "mem":
+-            return [f"/* lea: unexpected operands */"]
+-        addr_expr = _fmt_mem(ops[1])
+-        return [_fmt_operand_write(ops[0], addr_expr)]
++    _lift_mov = _project_moves.mov
++
++    _lift_movzx = _project_moves.movzx
++
++    _lift_movsx = _project_moves.movsx
++
++    _lift_lea = _project_moves.lea
+ 
+     def _lift_xchg(self, insn, ops):
+         if len(ops) < 2:
+@@ -1853,33 +1769,9 @@
+ 
+     # ── Stack ──
+ 
+-    def _lift_push(self, insn, ops):
+-        if len(ops) < 1:
+-            return ["/* push: no operand */"]
+-        val = _fmt_operand_read(ops[0])
+-        if ops[0].type == "imm":
+-            val = f"RECOMP_PUSH_IMM_U32_AT(0x{insn.address:X}, {val})"
+-        return [f"PUSH32(esp, {val});"]
+-
+-    def _lift_pop(self, insn, ops):
+-        if len(ops) < 1:
+-            return ["/* pop: no operand */"]
+-        if ops[0].type == "reg":
+-            r = ops[0].reg
+-            # Segment register pop → discard from stack
+-            if r in ("fs", "gs", "cs", "ds", "es", "ss"):
+-                return [f"{{ uint32_t _tmp; POP32(esp, _tmp); }} /* pop {r} - segment register */"]
+-            # Sample esp at each pop in a traced function. An epilogue that ends
+-            # `mov esp, ebp` restores esp unconditionally, so any drift inside
+-            # the function is erased before a return-time trace can see it --
+-            # yet the pops run *before* that restore, so drift is exactly what
+-            # breaks them. This is the only point the drift is observable.
+-            if self.trace_exit_name:
+-                return [f'RECOMP_TRACE_ESP("{self.trace_exit_name}", "pop {r}");',
+-                        f"POP32(esp, {r});"]
+-            return [f"POP32(esp, {r});"]
+-        else:
+-            return [f"{{ uint32_t _tmp; POP32(esp, _tmp); {_fmt_operand_write(ops[0], '_tmp')} }}"]
++    _lift_push = _project_moves.push
++
++    _lift_pop = _project_moves.pop
+ 
+     # ── ALU binary operations ──
+ 
+--- a/tools/recomp/test_lifter_movsx_registers.py
++++ b/tools/recomp/test_lifter_movsx_registers.py
+@@ -211,18 +211,11 @@
+                 self.assertIn(f"ZX{width}(", zx,
+                               f"movzx fell through on {src_reg}: {zx}")
+ 
+-    def test_unhandled_source_register_is_loud(self):
+-        """A source matching neither list must announce itself in the output.
+-
+-        movsx's source is always narrower than its destination, so there is no
+-        legitimate unmatched case: reaching this branch means the lists have a
+-        gap. Emitting the marker is what turns the next occurrence of this bug
+-        into something a grep finds, rather than a wrong number in a game.
+-        """
+-        stmt = _lift("movsx",
+-                     Operand(type="reg", reg="eax"),
+-                     Operand(type="reg", reg="mm0"))
+-        self.assertIn("movsx: unhandled source register", stmt)
++    def test_invalid_extension_source_is_rejected(self):
++        """An impossible vector-to-integer MOVSX must fail before C emission."""
++        with self.assertRaisesRegex(ValueError, "Extension requires"):
++            _lift("movsx", Operand(type="reg", reg="eax"),
++                  Operand(type="reg", reg="mm0"))
+ 
+ 
+ if __name__ == "__main__":

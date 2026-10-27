@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "730895d6863687272ef9b06402ee72999aa7ed3d37b33b43c6cfe5b75947f58d",
+  "loaderSha256": "a3c05e8daa2e3325fbe7e78c5e8991692f6fdd32b33daf77cfe6d04c2c7d883e",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -35,6 +35,117 @@
         "src/platform/win32_compat.h",
         "templates/runtime/recomp_types.h",
         "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "independent-branch-diagnostics.patch",
+      "sha256": "61eed65f600ec7e319df6bb429694b5a36c301a61c063d521fe6ee30969f8464",
+      "targets": [
+        "tools/recomp/analyze_unresolved.py",
+        "tools/recomp/icall_feedback.py"
+      ]
+    },
+    {
+      "name": "independent-classification.patch",
+      "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
+      "targets": [
+        "tools/func_id/__init__.py",
+        "tools/func_id/__main__.py",
+        "tools/func_id/clustering.py",
+        "tools/func_id/config.py",
+        "tools/func_id/crt_identifier.py",
+        "tools/func_id/identify.py",
+        "tools/func_id/imm_scanner.py",
+        "tools/func_id/output.py",
+        "tools/func_id/rw_identifier.py",
+        "tools/func_id/stub_classifier.py",
+        "tools/func_id/vtable_scanner.py"
+      ]
+    },
+    {
+      "name": "independent-disasm-input.patch",
+      "sha256": "cf9d01d01af97a07d554a29966d4688dbd35c24453ec8efc682ba154410bfafe",
+      "targets": [
+        "tools/disasm/cache.py",
+        "tools/disasm/engine.py",
+        "tools/disasm/loader.py"
+      ]
+    },
+    {
+      "name": "independent-disasm-traversal.patch",
+      "sha256": "e3a86d5d3e34172b55cc01964cd2fddc3a3dbe603cb55fa9745380c63f70c5c0",
+      "targets": [
+        "tools/disasm/engine.py",
+        "tools/disasm/loader.py"
+      ]
+    },
+    {
+      "name": "independent-disasm-z-recovery.patch",
+      "sha256": "5df360ee3f9f879bc5f2fe1c86d5eb53c9537099917cb03d4156bce497215fce",
+      "targets": [
+        "tools/disasm/engine.py",
+        "tools/disasm/loader.py"
+      ]
+    },
+    {
+      "name": "independent-functions.patch",
+      "sha256": "719ea6f4b9e9f164d3eae2739a7dcb6fe9304cbf48ed98168425ba05045a8452",
+      "targets": [
+        "tools/disasm/functions.py",
+        "tools/disasm/labels.py",
+        "tools/disasm/xrefs.py"
+      ]
+    },
+    {
+      "name": "independent-pipeline.patch",
+      "sha256": "943952cd92563c728bc4c47813c84148cce2eec61bbc8cd10cb307acc4f0edf2",
+      "targets": [
+        "tools/disasm/__init__.py",
+        "tools/disasm/__main__.py",
+        "tools/disasm/cache.py",
+        "tools/disasm/config.py",
+        "tools/disasm/disasm.py",
+        "tools/disasm/output.py"
+      ]
+    },
+    {
+      "name": "independent-symbol-driver.patch",
+      "sha256": "2d4fb951d557bccab32aeaa70d639ae8176ea48d6f6b3a2962f398501d255da5",
+      "targets": [
+        "scripts/recompile.py",
+        "tools/xdk_symbols/__init__.py",
+        "tools/xdk_symbols/__main__.py"
+      ]
+    },
+    {
+      "name": "independent-translation-bindings.patch",
+      "sha256": "f31fb8937bc4e915809f3b179e88c01cc0fd0b270d8e78fb50d85df1022594df",
+      "targets": [
+        "tools/recomp/config.py",
+        "tools/recomp/hle.py"
+      ]
+    },
+    {
+      "name": "independent-translation-decode.patch",
+      "sha256": "965b124c7a809a7235f49ba5823290e9e93134aac96af9e1fd93e56d6af944ca",
+      "targets": [
+        "tools/recomp/disasm.py"
+      ]
+    },
+    {
+      "name": "independent-translation-operands.patch",
+      "sha256": "fc17fc0c1359886eeee490f6497df0cb8738a9d67d969c970c10f26706e59edf",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "independent-xbe-reader.patch",
+      "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
+      "targets": [
+        "tools/kernel_audit/gen_ordinal_remap.py",
+        "tools/validate_ordinals.py",
+        "tools/xbe_parser/xbe_parser.py"
       ]
     },
     {
@@ -172,6 +283,15 @@
       "sha256": "8599c1a44b4ad15260513a71353ff18b3b4d99da2693272584827949ef94cb0a",
       "targets": [
         "src/kernel/recomp_trace.c"
+      ]
+    },
+    {
+      "name": "z-independent-generation-support.patch",
+      "sha256": "52fd9c252e3b17d643c12aede272008f1b2ea054a4760f61d5bdde7d02fefd87",
+      "targets": [
+        "tools/recomp/manual_scan.py",
+        "tools/recomp/output.py",
+        "tools/recomp/translator.py"
       ]
     },
     {
@@ -336,6 +456,20 @@
         "src/d3d/d3d8_overlay.c",
         "src/hle/hle_d3d8.c",
         "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "zzzz-translation-consumer-fixtures.patch",
+      "sha256": "7f0bbeec43638d1d5d555cbbdbf131594ba7181ad1b1c9fd5cc21402688273b7",
+      "targets": [
+        "tools/recomp/test_icall_guarded_runtime.py",
+        "tools/recomp/test_incdec_result.py",
+        "tools/recomp/test_lifter_double_shift.py",
+        "tools/recomp/test_lifter_rep_compare_flags.py",
+        "tools/recomp/test_lifter_sar_width.py",
+        "tools/recomp/test_reserved_idents.py",
+        "tools/recomp/test_result_sign_width.py",
+        "tools/recomp/test_sar_width.py"
       ]
     },
     {
@@ -1485,7 +1619,7 @@
     },
     {
       "name": "zz-stable-gpr-refs.patch",
-      "sha256": "1528ced3d5bcfcf32e6150ce8cd140c2d04b88b6b4fcdf10814d0cf6c0c21edb",
+      "sha256": "69f2cbe27a75948b95c995a05bd6c1940afbc18bdb158c69c2967015dba01c3c",
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/translator.py"
@@ -1514,6 +1648,36 @@
       "sha256": "6719d10e202746e0d5d7f29ed418f63bcc1b0ecb610ffbd9f5691eb2de43675e",
       "targets": [
         "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "independent-translation-moves.patch",
+      "sha256": "aff7178e08b14fe5f1ff3191361b2267442a1086e48f01bd192278ca49b7a572",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_movsx_registers.py"
+      ]
+    },
+    {
+      "name": "independent-translation-integer.patch",
+      "sha256": "6782343f54102de70dce78e71800991375cf0c5943c1fc9d2e47dba804a4c485",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_carry_flag.py",
+        "tools/recomp/test_lifter_carry.py"
+      ]
+    },
+    {
+      "name": "independent-translation-bits.patch",
+      "sha256": "f36eb7e9ef5f32578436cf81e1c7df0e29cf3154d1fcd4b1a81197567f4cfe8d",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_carry_flag.py",
+        "tools/recomp/test_lifter_double_shift.py",
+        "tools/recomp/test_lifter_rotate_carry.py",
+        "tools/recomp/test_lifter_rotate_width.py",
+        "tools/recomp/test_lifter_sar_width.py",
+        "tools/recomp/translator.py"
       ]
     }
   ]

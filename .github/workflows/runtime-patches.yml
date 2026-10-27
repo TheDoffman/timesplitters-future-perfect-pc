@@ -132,7 +132,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -189,7 +189,12 @@ jobs:
             tests/test_texture_runtime.py tests/texture_pack_tools.py tests/test_texture_hybrid_plan.py
             tests/texture_archive_signatures.py tests/texture_embedded_scan.py
             tests/texture_nonpak.py tests/texture_variants.py
-            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
+            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py tests/test_disc_image.py tests/test_xbe_image.py tests/test_recomp_input.py tests/test_x86_flow.py tests/test_x86_recovery.py tests/test_x86_functions.py tests/test_recomp_symbols.py tests/test_analysis_cache.py tests/test_analysis_runner.py tests/test_xdk_catalog.py tests/test_compile_pipeline.py
+            tests/test_branch_feedback.py tests/test_unresolved_report.py
+            tests/test_translation_decode.py tests/test_translation_operands.py tests/test_translation_moves.py tests/test_translation_integer.py tests/test_translation_bits.py
+            tests/test_translation_layout.py tests/test_translation_hooks.py
+            tests/test_c_source_scan.py tests/test_generation_output.py
+            tests/test_function_evidence.py tests/test_function_categories.py tests/test_function_catalog.py
             tests/test_native_compiler.py tests/test_audio_timing.py tests/test_audio_output_gain.py
             tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_wind.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_native_demo_timing.py tests/test_reload_keys.py

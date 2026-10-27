@@ -16,7 +16,823 @@ In an isolated Test Lab run, the user confirmed the shield follows the robot;
 two fresh frame captures show it over the robot. With the newer main, the
 complete patch stack, 11 UI layout tests, fresh-checkout patch transition,
 bundled runtime snapshot test, and context check pass.
-Native Mac validation remains pending (MAC-065).
+Native Mac validation remains pending (MAC-082).
+
+## Independent shift and rotate lowering (2026-10-26)
+
+Continuing PR #370 from `9c2e509b`, project `translation_bits.py` replaces seven
+handlers covering SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR. Counts are masked before
+width handling; zero counts preserve emitted state; carry rotates use an explicit
+width-plus-one ring. Computed shift results feed snapshots without rereading the
+destination. Word double shifts accept count 16; larger word counts leave state
+unchanged as explicit policy for undefined results. Logical shifts beyond operand
+width use zero carry, without promising particular hardware's undefined flags.
+
+Known constant no-ops retain the preceding flag interpretation in block lowering
+and carry discovery. Rotate/double-shift carry consumers request and read the
+published `_cf`. Carry rotates declare `_cf` even when a constant-zero guard
+prevents execution, because the emitted C still names it. Dynamic zero-count conditions crossing different setter kinds,
+overflow/parity/auxiliary flags and complete flag lowering remain separate work.
+
+Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- Focused checks: **128 passed in 16.67 seconds** after the final carry-declaration fix.
+  Initial broad suite: **586 passed, 5 failed in 675.76 seconds** while a
+  temporary UTF-8 patch-edit error affected transition fixtures. The failed
+  installer was transactional and left runtime sources unchanged. After repair,
+  the complete patch/context rerun passed: **41 passed in 686.75 seconds**.
+  Final context/backlog checks: **21 passed in 4.73 seconds**.
+- Original compiled fixtures cover all byte values and 256 count encodings,
+  both incoming carries, and 1,024 boundary/seeded samples for each wider width.
+  Values, carry, upper register preservation and snapshots are compared against
+  bit-by-bit reference calculations. Windows ML64 also executes actual x86
+  instructions and compares results and architecturally defined carry. These
+  tests do not establish complete flag emulation or native Mac gameplay.
+- Copied modules run without the toolkit. Installed identities, known-zero flag
+  routing, rotate/double-shift carry routing and inherited consumers pass. Four
+  inherited expression fixtures follow new code; compiled behavioral checks stay.
+- Generation: **15,838 functions translated, zero failures, 50 unresolved stubs**.
+  Five of 21 C/header files are identical (headers/HLE/dispatch/unresolved stubs).
+  In the 16 main C files, all function names/order and text outside bodies are
+  identical; **3,209 bodies change, 12,629 remain identical**. Changed bodies
+  contain new bit-operation emission. This is structural evidence, not complete
+  semantic equivalence. Representative changes were reviewed.
+- Full Windows build/native checks and the generation fingerprint passed.
+- Isolated Scotland the Brave reached gameplay; reviewed start/pause/resume
+  captures, forward movement **11.171 units**, backward **6.185 units**, ammo
+  **8 to 6**, 40 paused samples with frozen ticks and 60 resumed samples with
+  advancing ticks. Last checkpoint **93.585 seconds**, runner exit 0. Profiles,
+  signatures and canonical fixture were preserved; no remaining partitions,
+  run lock or crash dumps. Personal saves/settings were unused.
+- Tested executable SHA-256: `8736634a481b441f7418b5a6b3f0dc8bc10666cc704d2bde0ca8ef9f1966c52d`
+
+Bounded gameplay uses injected input, background/minimized rendering, original
+60 FPS and skipped movies. Physical input, foreground pacing, audio and full
+levels remain outside that check. All three workflows on preceding `9c2e509b`
+passed. New-head CI and native Mac generation/build/gameplay remain separate;
+MAC-081 records the host gap. Evidence: `logs/independent-bits-*`, generation
+baseline `private/pipeline/bits-acceptance-baseline`, and
+`private/test-saves/independent-bits`. The overall replacement goal stays active.
+
+## Independent scalar integer lowering (2026-10-26)
+
+Continuing PR #370 from `830958be`, project `translation_integer.py` replaces
+six handler bodies covering ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT. Operands
+are sampled and masked at their width before carry/borrow calculation, and
+result snapshots use the computed value rather than rereading memory. INC/DEC
+retain carry, NOT retains snapshots, and NEG uses unsigned subtraction, including
+INT_MIN. The title's byte-decrement hook remains explicit. The replacement
+follows historical title instrumentation and the move replacement in patch order.
+
+Validation on Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022:
+
+- Focused checks: **124 passed in 13.36 seconds**. Broad tooling/patch suite:
+  **587 passed in 815.60 seconds**. Final context/backlog checks: **21 passed
+  in 3.54 seconds**; context/index and staged whitespace checks passed.
+- Original native fixtures execute all byte input pairs/carries for eleven
+  operations, 10,000 seeded word/dword input pairs and boundary combinations.
+  They check result/carry, preserved subregister bits, source/result snapshots,
+  a sign-extended immediate, memory access counts and the byte-decrement hook.
+- Decoded NEG/ADC/SBB/PUSH/CMP/ADD/SUB sequences run through production block
+  lowering and compiled production ABI macros, checking carry propagation and
+  operand aliasing. Copied integer/operand modules run without the toolkit.
+  Installed handler identity and inherited consumers pass; two inherited C-text
+  fixtures now expect the new expressions, including negative carry checks.
+- Supported-US executable hash and generation fingerprint verified. Generation
+  reports **15,838 translated functions and zero failures**. Five of 21 C/header
+  files are byte-identical (headers, HLE, dispatch and unresolved stubs). Across
+  the 16 main C files, all function names/order and text outside function bodies
+  are identical. 13,235 bodies change and 2,603 remain identical. Changed bodies
+  contain the new scalar emission; this structural comparison is not a complete
+  semantic-equivalence proof. Existing unimplemented-instruction counts remain.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave:
+  forward movement 11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused
+  samples with frozen ticks and 60 resumed samples advancing. Last checkpoint
+  92.742 seconds; exit 0; start/pause/resume captures reviewed. Profiles,
+  signatures and canonical fixture preserved; no crash artifacts or remaining
+  partitions/lock. Personal saves/settings unused.
+- Tested executable SHA-256:
+  `2dc703c1fec4d0f43a33166f112c7fc54042c3a5b070a34ef212e7a2872dbc66`.
+
+This stage retains the existing flag snapshot interface. Conditional lowering,
+complete AF/PF/OF behavior, other opcode families and runtime services remain
+replacement work. The game check uses injected input, minimized/background
+rendering, original 60 FPS and skipped movies; physical input, foreground pacing,
+audio and full levels remain outside its coverage. All three workflows on
+preceding `830958be` passed, including Windows/macOS native checks. New-head
+CI remains separate and pending.
+Native Mac generation/build/gameplay acceptance remains separate (MAC-080).
+Evidence: `logs/independent-integer-*`, generation baseline under
+`private/pipeline/integer-acceptance-baseline`, and
+`private/test-saves/independent-integer`. The overall replacement goal stays active.
+
+## Independent data-transfer and stack lowering (2026-10-26)
+
+Continuing PR #370 from `dc48f8df`, project `translation_moves.py` replaces
+MOV/MOVZX/MOVSX/LEA/PUSH/POP emission. The compatibility patch removes the old
+method bodies after replaying historical title instrumentation. Own emission
+retains load/store/after-store/push policy hooks and frame publication. LEA
+ignores segment bases; word stack operations honor operand-size overrides;
+POP memory addresses resolve after the stack increment. POP ESP overwrites
+that increment with the popped value. Trace names encode UTF-8 bytes safely.
+Other opcode families, flags, runtime macros and services remain separate work.
+
+Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- Focused checks: **119 passed in 8.78 seconds**. The broader suite initially
+  passed 578 tests and failed four fixture checks: three historical snapshots
+  incorrectly included this new patch without its required title hooks, and
+  one asserted the previous last patch. The repaired fixtures still upgrade
+  to the complete stack and check repeat application. Final patch/context rerun:
+  **41 passed in 675.65 seconds**. Context/backlog checks: **21 passed in 3.48
+  seconds**; final context/index and staged whitespace checks passed.
+- Original native fixtures compile emitted instructions against production
+  macros: byte/word sign extension, preserving subregister writes, title hook
+  ordering, frame publication, segment-free LEA, PUSH/POP ESP/SP, post-increment
+  memory destinations, word overrides and quoted/non-ASCII trace bytes.
+  Copied modules run without the toolkit; installed translator consumers pass.
+- Regeneration: **5 of 21 files byte-identical**. Full comparison of the other
+  16 accounts for comments, signed-memory expression spelling, stack temporary
+  forms and **six POP ESP corrections**. No unexplained changes remain. This
+  is not a claim of identical semantics for the corrected instructions.
+  Supported-US executable hash and generation fingerprint verified.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave:
+  forward movement 11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused
+  samples with frozen ticks and 60 resumed samples advancing. Last checkpoint
+  93.601 seconds; exit 0; start/pause/resume captures reviewed. Profiles and
+  signatures/canonical fixture preserved; no crash artifacts or partitions/lock.
+  Personal saves/settings unused.
+- Tested executable SHA-256:
+  `37ff244afbb4532885514245f584da1ce614896a007888b3f0324760007645f9`.
+
+Injected input, minimized/background rendering, original 60 FPS and skipped
+movies do not establish physical input, audio, foreground pacing or full-level
+coverage. All three workflows on preceding `dc48f8df` passed. New-head CI and
+native Mac generation/build/gameplay remain separate; MAC-079 records the gap.
+Evidence: `logs/independent-moves-*`, the ignored generation baseline under
+`private/pipeline/move-acceptance-baseline`, and
+`private/test-saves/independent-moves`. The overall replacement goal remains
+active, with upstream notices retained while remaining source/data is used.
+
+## Independent C operand emission (2026-10-26)
+
+Continuing PR #370 from `6e51a54b`, the lifter's operand formatter bodies and
+tables are replaced by project `translation_operands.py`. Own emission handles
+register/subregister reads and preserving writes, immediates, FS-relative
+addresses, integer/signed/float memory, and the runtime's floating stack. The
+decoder retains address width, so a 16-bit offset wraps before adding FS.
+Invalid forms fail before C emission. Existing zero/no-op segment/system policy
+remains explicit; this stage does not supply privileged-register emulation,
+80-bit floating arithmetic, opcode/flag handlers, naming data or runtime macros.
+
+Windows / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- **577 tests passed in 721.99 seconds**; final context/backlog: **21 passed in 3.60 seconds**. Focused checks: **142 passed in 7.31 seconds**.
+- Native fixtures execute 1,000 input pairs through all 16 subregister forms,
+  32-bit address arithmetic, 16-bit wrapping before FS and floating-stack indexing.
+  A separate native fixture uses the **actual production pointer and memory
+  macros** with emitted integer, signed, float and double reads/writes.
+  High absolute address spellings produce the same pointer as signed literals.
+  Copied modules run without the toolkit; installed lifter consumers pass.
+- Regeneration: **17 of 21 files byte-identical**. Four change only negative
+  absolute addresses to unsigned 32-bit literals, plus **78 added 16-bit offset
+  casts** in decoded address-override expressions. Full-text comparison after
+  accounting for those two changes found no other differences. These casts are
+  a behavior correction, not a claim of bit-identical translation. Source
+  fingerprint and supported-US executable hash verified.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave
+  passed: forward movement 11.175 units, backward 6.185 units, ammo 8 to 6,
+  40 paused samples with frozen ticks and 60 resumed samples advancing. Last
+  checkpoint 100.417 seconds; exit 0; start/pause/resume captures reviewed.
+  Profiles/signatures and canonical fixture preserved; no crash artifacts or
+  remaining partitions/lock. Personal saves/settings unused.
+- Tested executable SHA-256:
+  `5b34c7d17aa844925b17912b46b0e48073253872703d7db1c70883eeee008383`.
+
+The game run used injected input, minimized/background rendering, original
+60 FPS and skipped movies. Physical input, audio, foreground pacing and full
+levels remain unverified. All three workflows for preceding `6e51a54b` passed,
+including Windows/macOS native checks. New-head CI and native Mac generation,
+build and gameplay acceptance remain separate; MAC-078 records the gap.
+Evidence: `logs/independent-operands-*`, the ignored generation baseline under
+`private/pipeline/operand-acceptance-baseline`, and
+`private/test-saves/independent-operands`. The overall replacement goal stays
+active; upstream notices remain while remaining source/data is still used.
+
+## Independent branch feedback and unresolved diagnostics (2026-10-26)
+
+Continuing PR #370 from `c2dc8494`, production compatibility entries now use
+project `branch_feedback.py` and `unresolved_report.py`. Feedback accumulates
+flags, site targets and saturation, including site-only crash observations.
+Separate seed export retains known aliases, including zero-size aliases inside
+another recorded body. Explicit function bounds avoid unrelated-title filtering.
+
+The reporter replaces a captured section table and guessed function lengths
+with selected-XBE layout/backing and recorded entry/interior/end relationships.
+All overlaps remain visible; it emits diagnostic JSON, never an inferred
+function/seed list. Hashes identify the files used, not a verified association
+between user-selected function metadata and the executable. Publication is
+atomic per file; paired ledgers are single-writer and not a database transaction.
+
+Validation on Windows / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022:
+
+- **550 tests passed in 725.95 seconds**, before the final alias correction. Final focused tests: **122 passed in 3.81 seconds**,
+  after the zero-size alias correction. Original cases cover truncated input,
+  malformed ledgers, failed publication, cumulative/saturated sets, overlaps,
+  output collisions, real mapping/BSS, empty inputs and standalone copied CLIs.
+  Installed feedback and report entries and existing consumers pass.
+- Verified supported-US XBE SHA-256. **209 selected metadata probes** (function
+  entries/ends and section starts) report 106 known entries, 87 recorded ends and
+  16 addresses outside recorded bodies. These are constructed boundary probes,
+  not live unresolved-branch observations.
+- **Final Windows build and native checks passed** after the alias correction.
+  All **21 generated C/header files are byte-identical** to the previous verified
+  stage; source fingerprint is current.
+- Final rebuilt executable passed isolated Scotland the Brave: forward movement
+  11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused samples with frozen
+  ticks and 60 resumed samples with advancing ticks. Last checkpoint 95.596
+  seconds, exit 0; start/pause/resume captures reviewed. Profiles/signatures and
+  canonical fixture preserved, no crash artifacts or remaining partitions/lock.
+  Personal saves/settings unused. Injected input, minimized rendering, original
+  60 FPS and skipped movies do not certify physical input, foreground pacing,
+  audio or full levels.
+- Tested executable SHA-256:
+  `caf9d99611e8eff9e79ca5d304a1dd80f9806494df6e0c7bf0c79c83e53e55e7`.
+
+All three workflows on preceding `c2dc8494` passed, including native runtime
+and patch transitions on Windows/macOS. This confirms the previous stage's
+Clang fixture repair; it does not establish native Mac gameplay. New-head CI
+is separate. MAC-077 records pending native generation/build/game acceptance.
+The full tooling/runtime/title/provenance replacement goal remains active;
+upstream notices remain required. Evidence: `logs/independent-branch-diagnostics-*`
+and `private/test-saves/independent-branch-diagnostics-final`.
+
+## Independent translator layout and runtime-hook tooling (2026-10-26)
+
+Continuing PR #370 from `15ecdd91`, production config/HLE modules now alias
+project `translation_layout.py` and `translation_hooks.py`. Layout starts empty,
+uses the own XBE reader and validates a replacement before publishing it. Missing
+ranges and zero addresses cannot retain an earlier executable's values. Hook
+planning uses lexical marker discovery, unique symbol/address binding, measured
+near-return cleanup, strict register-position parsing and a 24-argument runtime
+frame bound. Own emission retains title-body precedence and original pointers.
+Runtime ABI macros/services, lowering and remaining orchestration/provenance
+work are still upstream; this stage does not complete the active goal.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **576 passed, 1 skipped in 825.01 seconds** in the combined patch-transition,
+  tooling, fingerprint, Mac-tool, profile, CI-scope and title-wrapper suite.
+  **61 focused checks passed again** after the fixture-only CI repair below.
+  **35 final patch-transition/tracking checks passed in 736.35 seconds** with
+  the repaired fixture patch installed; **21 context/backlog checks passed**.
+- Original cases cover empty/replaced/failed layouts, bounds and BSS, marker
+  decoys/conditionals, malformed catalogs/register conventions, duplicate and
+  ambiguous symbols, oversized frames and standalone copied modules. Generated
+  plain/register thunks compile and execute with production register-frame
+  macros, checking stack restoration, argument order, imports and original calls.
+- All **23 supported-US sections and public layout fields**, plus **138 boundary
+  queries**, matched the previous configured layout in the draft comparison.
+  Final regeneration preserves **70 hook bodies and all declarations** exactly
+  as C tokens. **20 of 21 generated files are byte-identical**; the remaining
+  hook file changes formatting/declaration order only. Imports remain 13 of 14,
+  original bodies 46 of 65 requested. Generation fingerprint is current.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave
+  passed with three reviewed captures: forward movement 11.175 units, ammo 8 to
+  6, 40 paused samples with frozen ticks, 60 resumed samples with advancing ticks,
+  backward movement 6.185 units, last checkpoint 87.600 seconds, exit 0.
+  Profiles/signatures and canonical fixture verified; no crash artifacts or
+  remaining partitions/lock. Personal saves/settings were unused.
+- Tested executable SHA-256:
+  `4b172ca825ac327a4c2cf9332db4f1e0adc0c16601c2bfbff02d7813a9a8c938`.
+
+CI on the preceding decoder commit passed both launcher/texture workflows and
+patch-upgrade jobs, but failed native consumers on both hosts. The newly enabled
+broader consumer run exposed stale isolated C scaffolding: missing fast-entry
+defaults, result temporaries and dispatch globals/signature; it also exposed an
+outdated SAR text assertion and a Windows-only onexit collision check on Mac.
+The fixture-only patch repairs these without changing generated game code.
+The affected portable fixtures passed **24 tests and 26 subtests** with actual
+MSVC through a local compiler-argument adapter; final Clang/Mac CI is separate
+evidence. Unavailable GCC/Clang tests still report skips in ordinary local runs.
+
+The game check used injected input, minimized/background rendering, original
+60 FPS and skipped movies; physical input, audio, foreground pacing and whole
+levels remain unverified. Evidence: `logs/independent-translation-bindings-*`,
+`logs/independent-translation-fixtures-*`, and
+`private/test-saves/independent-translation-bindings`. MAC-076 records native
+Mac generation/build/game acceptance as pending. The broader suite above
+preceded the fixture-only repair; final focused/native and patch checks validate
+that repair separately.
+
+## Independent translator decoding (2026-10-26)
+
+Continuing PR #370 from `00d60e43`, the production translator now uses project
+`translation_decode.py` for operand/instruction models, restart-bounded linear
+decoding, reachable decoding and block construction. Capstone remains permitted.
+The compatibility patch replaces the entire former decoder implementation.
+Blocks reference decoded leaders, preserve overlapping entries and cannot invent
+fall-through across missing bytes. Unreferenced bytes after returns do not create
+new blocks. The command builder also accepts older callers without `json` and
+the CLI resolves relative output paths before changing subprocess directories.
+Core lowering, configuration/HLE, runtime/title services and final provenance
+removal remain unfinished; the overall independent-runtime goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **499 passed, 1 skipped in 183.41 seconds** in the corrected-source independent
+  tooling, fingerprint, Mac-tool, isolated-profile, CI-scope and title-wrapper
+  suite. **50 focused tests passed** and **21 context/backlog checks passed**.
+- **35 patch-transition/tracking checks passed** within the earlier combined
+  run: 533 passed, 1 skipped in 1114.21 seconds. That run collected the decoder
+  before its final leader correction; the corrected-source rerun above supplies
+  final decoder acceptance. The compatibility patch was unchanged between runs.
+- Original fixtures cover operand widths/segments/signed displacement, guest
+  targets, restart straddles, CFG calls/loops/stops, phantom edges, gaps, return
+  padding, overlapping entries, standalone copied modules and production imports.
+  Existing translator consumers through the production bridge: **352 passed,
+  41 skipped, 87 subtests passed**. Native C
+  fixtures requiring cc/gcc/clang on PATH and unsupported flag cases retain skips;
+  passing Python consumers do not claim execution of those skipped fixtures.
+- Initial generation exposed orphan blocks after returns and five extra
+  unresolved stubs. The corrected leader policy removes those additions.
+  All **21 final generated C/header files are byte-identical** to the prior
+  accepted generation; the source fingerprint is current. Earlier draft/build
+  results are superseded by the final comparison and full rebuild.
+- **Full final Windows build and native checks passed.** Isolated Scotland the
+  Brave passed with reviewed start/pause/resume captures: movement 11.216 units,
+  ammo 8 to 6, 40 paused samples with frozen ticks, 60 resumed samples with
+  advancing simulation, backward movement 6.185 units. Last checkpoint 97.833
+  seconds; exit 0, no crash artifacts or leftover partitions/lock. Signed profiles
+  unchanged; canonical fixture verified. Personal saves/settings were unused.
+- Tested executable SHA-256:
+  `bc4e3b3d4e4fc3dcbd83953f4680546bc241d65efdece4d02845cd667d070b96`.
+
+The run used injected input, minimized/background rendering, original 60 FPS
+and skipped movies. It does not certify physical input, audio, foreground pacing
+or whole levels. Evidence: `logs/independent-translation-decode-*`,
+`logs/independent-translation-final-generated.diff` and
+`private/test-saves/independent-translation-decode`. Native Mac generation/build/
+game acceptance remains pending under MAC-075. All three CI workflows passed
+for the preceding generation-support commit; new-head CI is separate evidence.
+
+## Independent manual-source and generation-output support (2026-10-26)
+
+Continuing PR #370 from `78466ed1`, production generation now uses project
+`c_source_scan.py` and `generation_output.py`. The compatibility patch replaces
+manual-source scanning, translation reports/header output and the translator's
+text writer. The scanner distinguishes definitions from prototypes and ignores
+comment/string decoys; known preprocessor branches are resolved and unknown
+conditions remain possible. It is not a complete C preprocessor. Atomic text
+publication preserves previous output on failures and unchanged timestamps.
+Core x86-to-C translation, runtime services and final provenance removal remain
+upstream work; the overall goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **516 passed, 1 skipped in 774.16 seconds** in the combined patch-transition,
+  independent-tooling, fingerprint, Mac-tool, isolated-profile, CI-scope and
+  title-wrapper consumer suite.
+- **48 focused tests passed in 56.02 seconds**: 18 original scanner/output cases,
+  two generation-fingerprint cases and 28 existing camera/crane/vehicle consumers.
+  Fresh-process tests cover direct translator and standalone importlib scanner
+  imports. Cases exercise literal/unknown conditional branches, spliced lines,
+  comments/literals/macros, definitions versus prototypes, wrapper registration,
+  CRLF/timestamp preservation, failed publication cleanup, report totals and
+  inferred-header input validation/comment escaping.
+- **21 context/backlog checks passed.** Shared CI registers the new modules;
+  both sources participate in generation fingerprints.
+- The supported title preserves all **138 manual definitions** and **137
+  generated-body wrappers**. Four references found only in comments/text are
+  no longer reported. All **21 generated C/header files are byte-identical**.
+- **Full Windows build and native checks passed on retry without source changes.**
+  The initial build's debug-settings Save check failed. Its isolated rerun and
+  the full build rerun passed; the initial failure's cause is not established.
+  Logs retain both results. Generation fingerprint is current.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; forward
+  movement 11.173 units, ammo 8 to 6, 40 paused samples with frozen ticks,
+  60 resumed samples with advancing simulation, backward movement 6.185 units.
+  Last checkpoint 87.368 seconds, exit 0; no crash artifacts or leftover
+  partitions/lock. Signed profiles unchanged; canonical fixture verified.
+- Tested executable SHA-256:
+  `2b22053307a2851f4b5d0e21b8c5408800ffda2e115b778b769a70dbaa7af06b`.
+
+The run used injected input, minimized/background rendering, original 60 FPS
+and skipped movies. It does not certify physical input, audio, foreground pacing
+or whole levels. Personal saves/settings were unused. Evidence:
+`logs/independent-generation-support-*` and
+`private/test-saves/independent-generation-support`. Native Mac generation/build/
+game acceptance remains pending under MAC-074.
+
+## Independent function classification (2026-10-26)
+
+Continuing PR #370 from `4121be20`, production generation now calls project
+`function_catalog.py`, `function_evidence.py` and `function_categories.py`.
+The additive compatibility patch replaces eleven upstream module bodies.
+Decoded operands and bounded cross-reference ownership supply evidence;
+source strings, SDK section calls and graph consensus produce diagnostic labels.
+Pointer arrays and measured entry blocks remain separate from known function
+bounds. No CRT symbol identity is inferred from byte prefixes. Translation,
+runtime services and final provenance removal still require substantial work;
+the overall replacement goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **470 passed, 1 skipped in 787.60 seconds** in the combined patch-transition,
+  classifier/analyzer, adapter/driver, import/parser/fingerprint, Mac-tool,
+  isolated-profile and CI-scope suite.
+- **103 focused tests passed in 7.17 seconds**, including 31 new catalog,
+  evidence and category cases, driver/fingerprint tests and input contracts
+  (the latter run 97 existing analyzer consumers in subprocesses).
+- Standalone copied-module execution classifies a synthetic executable without
+  toolkit imports. Original fixtures cover alias/gap ownership, instruction
+  boundaries, decoded operands, narrow stores, pointer-array corroboration,
+  measured entry blocks, numeric-operation evidence, category ambiguity,
+  graph confidence/budgets, distinct source paths, invalid metadata and atomic
+  output/input preservation. A cosine body is not named as integer conversion;
+  a double-width left shift is not named as a right-shift helper.
+- **21 context/backlog checks passed.** Shared tests are registered for both
+  CI hosts. Catalog sources and compatibility entries invalidate generation.
+- Actual supported-US classification retains **15,845 measured functions**,
+  with **481 corroborated pointer arrays** and two scalar initializers.
+  The old 5,269 guessed 32-byte entries are not emitted as discovered functions.
+- All **21 generated C/header files preserve executable content**. Five are
+  byte-identical; sixteen differ only in the single-line category comments.
+  Full Windows build and native checks passed; generation fingerprint current.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; forward
+  movement 11.175 units, ammo 8 to 6, 40 paused samples with frozen simulation,
+  60 resumed samples with advancing ticks, backward movement 6.194 units.
+  Last checkpoint 87.375 seconds, exit 0; no crash artifacts or leftover
+  partitions/lock. Signed profiles unchanged; canonical fixture verified.
+- Tested executable SHA-256:
+  `039e89a32ac4b82838089fc2c635ebd62fe4467358b2be038229d7703b887d91`.
+
+The isolated run used injected input, minimized/background rendering, original
+60 FPS and skipped movies. It does not certify physical input, audio, foreground
+pacing or whole levels. Personal saves/settings were unused. Evidence:
+`logs/independent-classification-*` and
+`private/test-saves/independent-classification`. Native Mac generation/build/game
+acceptance remains pending under MAC-073.
+
+## Independent library-symbol adapter and generation driver (2026-10-26)
+
+Continuing PR #370 from `a3aa7f74`, `xdk_catalog.py` owns scanner discovery,
+protocol decoding, supplemental-symbol validation/merging and atomic output.
+The separately MIT-licensed XbSymbolDatabase dependency remains credited and
+supplies the signature database; it is not claimed as project-owned code.
+`compile_pipeline.py` owns stage selection, title seeds, output routing and
+failure handling. Parsing/disassembly invoke project scripts directly; custom
+analysis JSON paths are now passed to disassembly. Compatibility entries replace
+three upstream module bodies. Function classification, translation and runtime
+services still require replacement; the overall goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **394 passed, 1 skipped in 689.79 seconds** in the final combined
+  patch-transition, adapter/driver/analyzer, import/parser/fingerprint, Mac-tool
+  and CI-scope suite after repairing the module-consumer compatibility failure.
+- **101 final focused tests passed**: 24 catalog/driver cases, 17 runner
+  cases, 58 input checks and two fingerprint tests. Nested subprocesses run
+  eight existing scanner consumers and 97 analyzer consumers. Copied-module
+  tests parse/analyze without toolkit imports and decode scanner output using
+  project sources only. The full suite caught an importlib bridge omission;
+  the corrected bridge exposes the identifier helper, whose bounded header-only
+  probe is separate from the full image validation required before execution.
+- Fixtures cover exact Release-preferred CLI discovery, parameter/register
+  widths, malformed records, supplemental validation/precedence/deduplication,
+  scanner failures/timeouts, input preservation, stage selection, per-title and
+  explicit seeds, custom metadata, manual exclusions, output paths and early
+  failure. Subprocess arguments remain arrays without shell evaluation.
+- **21 context/backlog checks passed.** Sources/bridges enter the generation
+  fingerprint and tests are registered for both CI hosts.
+- Production regeneration reproduced all **379 library symbols** and **21,114
+  classification records** semantically. All **21 generated C/header files are
+  byte-identical**. Full Windows build and native checks passed.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; movement
+  11.175 world units, ammo 8 to 6, 40 pause samples with frozen ticks, 60 resume
+  samples with advancing simulation, backward movement 6.185 units. Last
+  checkpoint 87.410 seconds; exit 0, no crash artifacts or leftover partitions.
+  Signed test profiles unchanged; canonical fixture verified, personal data unused.
+- Tested executable SHA-256:
+  `d288864293c456388d4b72e6922070cb0d12ddb6a33e99cebceb453525c7b17b`.
+
+Injected input, minimized/background rendering, original 60 FPS and skipped
+movies do not certify physical input, audio, foreground pacing or complete
+levels. Evidence: `logs/independent-symbol-driver-*` and
+`private/test-saves/independent-symbol-driver-final`. Native Mac acceptance remains
+pending under MAC-072; Windows results do not establish Mac gameplay.
+
+## Independent analysis runner, cache and output (2026-10-26)
+
+Continuing PR #370 from `a8bf8f13`, production executable analysis now uses
+project-owned configuration, orchestration, seed/section handling, JSON/assembly
+publication and cache receipts in `tools/analysis_*.py`. The compatibility patch
+removes six upstream module bodies. Standalone analysis needs only the project
+modules, credited ABI data and permitted Capstone. Symbol identification,
+translation and runtime services still need replacement; the goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11 evidence:
+
+- **370 passed, 1 skipped in 12m11s** across the combined patch-transition,
+  analyzer/cache, previous analysis/import/parser/fingerprint, Mac-tool and CI
+  scope suite. The cache source-path correction has separate final fixture coverage.
+- **99 focused tests passed**, including 39 original runner/cache cases and the
+  existing consumer subprocess (97 checks). Standalone copied-module CLI tests
+  analyze a synthetic XBE with no toolkit imports, verify JSON/assembly, detect
+  changed outputs, force recomputation and preserve files during stats-only use.
+- Fixtures cover observed seed evidence, malformed records, extra non-executable
+  sections, missing sections, stale metadata, output naming, full instruction
+  bytes, atomic file replacement and invalid receipts after failed publication.
+  Moving identical XBE bytes invalidates cached source-path provenance; the final
+  39 runner/cache tests passed again after that correction.
+- **21 repository context/backlog checks passed.** Both source hashes and both-
+  host CI registration include the independent modules.
+- All five supported-US JSON documents are semantically identical: **15,845
+  functions, 297,911 references, 5,757 strings and 21,753 labels**, plus summary.
+  All **21 generated C/header files remain byte-identical**. Human assembly
+  listings intentionally use the project format; cache receipts use version 2.
+- Full Windows regeneration/build/native checks passed, including the final
+  cache provenance correction; the final production cache verifies successfully.
+- Isolated Scotland the Brave: start/pause/resume captures reviewed; movement
+  11.173 world units, loaded ammo 8 to 6, frozen pause ticks, resumed simulation,
+  backward movement 6.185 units. Last checkpoint 87.464 seconds, process exit 0;
+  no crash artifacts or leftover test partitions. Test profiles unchanged with
+  valid signatures; canonical fixture verified, personal settings/saves unused.
+  Tested executable SHA-256:
+  `2aaf74a41ef205b9c9fecd1b18bbd69037b071de6aa444f5b9449f2c6c75f6a3`.
+
+This bounded injected-input run used minimized/background rendering, original
+60 FPS and skipped movies. Physical input, audio, foreground pacing and full
+levels are not certified. Evidence: `logs/independent-analysis-*` and
+`private/test-saves/independent-analysis-final`. Native Mac acceptance remains pending
+under MAC-071; shared code and Windows results do not establish Mac gameplay.
+
+## Independent function discovery and metadata (2026-10-26)
+
+Continuing the active replacement goal from `c390bd3d` in PR #370,
+`x86_functions.py` supplies function candidates, body extents, callable shared
+tails and call graphs. `recomp_symbols.py` supplies labels, strings and indexed
+references. `independent-functions.patch` replaces the three upstream module
+bodies with compatibility imports. Config/cache/output orchestration, symbol
+identification, translation and runtime services remain upstream; the overall
+goal is **not complete**.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **331 passed, 1 skipped in 11m24s** across patch transitions, function/symbol
+  analysis, previous analysis layers, import/parser/fingerprints, Mac tools and CI scope.
+- **80 focused tests passed**: 20 original function/symbol cases, 58 input checks
+  (including a subprocess running 97 existing consumer tests), and 2 generation-
+  fingerprint tests. The standalone fixture actually discovers a function using
+  only project modules/data and permitted Capstone, with no toolkit imports.
+- **21 context/backlog checks passed**. Original programs cover normal calls,
+  shared tails/epilogues, forward branches, switch tables, indirect callback
+  slots, data/code pointer tables, long callbacks, alias cycles, candidate ranks,
+  interval bounds and repeatable call graphs. Metadata cases cover duplicate
+  names, confidence replacement, kernel indices, query lists and string bounds.
+- Full supported-US comparison: **15,845 function records and 297,911 reference
+  records semantically identical**, including function bounds and call graphs.
+  One old 255-byte string/label suffix at `0x004B5769` was removed: it belonged
+  to a 512-byte printable run, exceeding the 256-byte whole-string limit.
+  All remaining strings and labels matched; no new labels were added.
+- Regeneration kept **21 generated C/header files byte-identical**. Windows build
+  and native regression checks passed.
+- Isolated Scotland the Brave session: reviewed start/pause/resume captures,
+  movement by 11.178 world units, loaded ammo 8 to 6 after firing, frozen ticks
+  during pause, resumed simulation and backward movement. Last checkpoint
+  87.466 seconds; exit 0 and no crash artifacts. Signed test profiles unchanged,
+  canonical fixture verified and test partitions recycled; personal data unused.
+
+Replay/state injection, minimized/background rendering, original 60 FPS and
+skipped movies do not certify physical input, audio, foreground pacing or full
+levels. Tested executable SHA-256:
+`090b48198729d9d07905cfa4df63c6f656537ea8945a00251a202a34e0f2e685`.
+Evidence: `logs/independent-functions-*` and
+`private/test-saves/independent-functions`. Native Mac acceptance remains pending
+under MAC-070; Windows evidence does not establish Mac generation/gameplay.
+
+## Independent table and body recovery (2026-10-26)
+
+The active replacement goal continues from `d6231896` in PR #370.
+`tools/x86_recovery.py` now owns measured switch-table spans, dispatch/epilogue
+preservation, case/continuation realignment, block extent/tail queries, saved-
+register entry checks and bounded prologue/accessor/virtual-dispatch/body probes.
+`independent-disasm-z-recovery.patch` replaces the remaining disassembly engine
+with a compatibility import of the project class. Function detection, analysis
+metadata/output/cache orchestration, translation and the runtime remain upstream.
+The overall independence goal is **not complete**.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **311 passed, 1 skipped in 11m03s** across patch transitions, recovery,
+  traversal, input/parser/import/fingerprint, Mac tooling and CI scope.
+- **107 focused checks passed**: 47 original recovery fixtures, 58 input checks
+  (including a subprocess running the existing 97-test consumer suite), and
+  2 generation-fingerprint tests. Standalone recovery runs using only project
+  modules/data and permitted Capstone, without toolkit imports.
+- **21 context/backlog checks passed**. Original fixtures cover table aliases,
+  negative indices, unused slots, dispatch ownership, local pointer clusters,
+  bounds/zero fill, repeat passes, exact operand shapes, count limits and
+  read-only probes. Both cache keys include the recovery source.
+- Full supported-US regeneration kept **21 generated C/header files byte-
+  identical**. Windows build and native regression checks passed. The disassembly
+  function-recovery summary counts matched the preceding stage.
+- Bounded isolated Scotland the Brave session: reviewed start/pause/resume
+  captures, movement by 11.216 world units, loaded ammo 8 to 6 after firing,
+  frozen simulation ticks during pause, advancing ticks after resume, and
+  backward movement. Last checkpoint 93.801 seconds; exit 0, no crash artifacts.
+- Test profiles unchanged and signatures valid; canonical fixture verified;
+  disposable partitions recycled. Personal saves/settings were not used.
+
+The game check used replay/state injection in a minimized/background window,
+original 60 FPS settings and skipped startup movies. It does not certify physical
+input, audio, foreground pacing or complete levels. Tested executable SHA-256:
+`5605d42c84b812f825017a95a6635f102dcd5682060d36a510b60b442c741268`.
+Local evidence: `logs/independent-recovery-*` and
+`private/test-saves/independent-recovery`. MAC-069 tracks native Mac acceptance;
+Windows evidence does not establish Mac generation or gameplay.
+
+## Active replacement goal: instruction traversal (2026-10-26)
+
+The user requested an active goal to finish the remaining independent runtime
+and toolchain. Its milestones and completion gates are tracked in
+[docs/independent-runtime.md](docs/independent-runtime.md#active-goal-and-completion-gates).
+The goal is **not complete**. This accepted Windows component continues PR #370
+from `8a9a48c3`; it does not replace function/table/prologue recovery or translation.
+
+`tools/x86_flow.py` supplies production linear sweep, bounded realignment,
+cached direct-edge reachability, overlap/range queries and call-reference
+queries through `independent-disasm-traversal.patch`. Scanning resumes after
+invalid bytes; realignment preserves overlaps and stops on convergence or a
+terminator. Reachability follows explicit cached edges without decoding holes
+or inventing indirect targets. Both cache fingerprints include its source.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 Release / D3D11:
+
+- **264 passed, 1 skipped in 11m01s** across patch transitions, traversal,
+  input/parser/import/fingerprint, Mac tooling and CI scope.
+- **79 focused tests passed**: 19 traversal, 58 input (including the 97-test
+  existing consumer suite), and 2 generation-fingerprint tests. Standalone
+  traversal executes from a temporary copy containing only project modules,
+  ABI data and permitted Capstone, with no toolkit import.
+- **21 context/backlog tests passed**. Synthetic traversal cases cover calls,
+  conditional/unconditional edges, cycles, unknown targets, holes, zero targets,
+  range unions, invalid/truncated bytes, limits, convergence and overlaps.
+- Full supported-US regeneration completed; **21 generated C/header files
+  remained byte-identical**. Windows build and its native tests passed.
+  Disassembly took 69.47 seconds versus 98.91 in the preceding run; this is not
+  a controlled performance comparison.
+- Bounded isolated Scotland the Brave test: reviewed gameplay, movement by
+  11.175 world units, loaded ammo 8 to 6 after firing, pause holding simulation
+  ticks constant, resume advancing ticks, and backward movement. Last checkpoint
+  87.468 seconds; successful exit, no crash artifacts, unchanged signed test
+  profiles, verified canonical fixture and recycled test partitions.
+
+The game test used injected replay/state input, a minimized/background window,
+original 60 FPS settings and skipped startup movies. It does not certify physical
+input, foreground pacing, audio or complete levels. Personal saves/settings were
+not used. Tested executable SHA-256:
+`918710723cdd20883607cb7f0ffa624e0dbe2a0d17541ea1dd214d257b4055f6`.
+Local evidence is in `logs/independent-flow-*` and
+`private/test-saves/independent-flow`; the source inventory in
+`logs/independence-source-inventory.json` counts tracked toolkit files still
+present (including tests, bridges and adapted files), not ownership percentages.
+Native Mac acceptance remains pending under MAC-068.
+
+## Independent disassembler input (2026-10-26)
+
+Third replacement step, continuing PR #370 from `74551892` on
+`feature/independent-game-import`. `tools/recomp_image.py` now owns the
+disassembler's binary view; `tools/x86_decode.py` owns its instruction model,
+Capstone setup and operand classification. The production patch removes the
+previous implementations and connects the project modules. Function discovery,
+control-flow algorithms and x86-to-C translation still contain upstream code;
+this does not complete the independent recompiler/runtime.
+
+The image view parses the executable itself and rejects conflicting analysis
+JSON. Exact reads respect headers, sections and virtual zero fill; code probes
+use short windows at section ends. Both analysis-cache keys and generation
+fingerprints include the new source dependencies. See
+[implementation and provenance](docs/independent-runtime.md).
+
+Windows 11 x64, Python 3.12.14, pinned Capstone 5.0.9, MSVC 2022 Release, D3D11:
+
+- **58 input tests passed**, including a subprocess running the patched
+  consumer's **97 disassembler tests**. Synthetic fixtures cover mapping,
+  malformed extents, stale/foreign analysis, operand targets, dynamic addresses,
+  truncation and cache invalidation. An isolated directory of only project
+  modules/data plus permitted Capstone works without the toolkit.
+- Input tests plus generation-fingerprint checks: **60 passed**. Context and
+  Mac-backlog checks: **21 passed**. Combined patch-upgrade, input, parser,
+  importer, fingerprint, Mac-tool and CI-scope suite: **245 passed, 1 skipped**
+  in 11m02s.
+- Full supported-US instruction comparison: **1,403,940 decoded instructions,
+  zero classification/model mismatches** against the previous implementation.
+  The independent parser's supported-XBE hash validation remains in the suite
+  and the Windows build validates the pinned hash before generation.
+- Full regeneration ran disassembly (98.91 seconds; previous run 97.16 seconds),
+  identification and translation. **All 21 generated C/header files are byte
+  identical** to the previous stage. Windows build and native regression tests
+  passed; this comparison is not a controlled performance benchmark.
+- A bounded isolated Scotland the Brave session loaded and rendered gameplay.
+  Forward movement displaced the player 11.175 world units; firing changed
+  loaded ammo from 8 to 6; pause held simulation ticks constant and resume
+  advanced them. Backward movement also worked. Last checkpoint: 87.202 seconds.
+  Reviewed gameplay/pause captures, successful runner exit, no crash artifacts,
+  unchanged signed test profiles, verified canonical fixture, recycled test
+  partitions. Personal saves/settings were not used.
+
+Gameplay used replay/state injection with a minimized window and background
+rendering, original 60 FPS settings, and the standard startup-video skip. This
+does not certify physical input, foreground pacing, audio, complete levels or
+the whole game. Tested executable SHA-256:
+`c6d3bb5204aa998cdcca84c5bb47f18fcc3fec361d1658d9f0421f07e3d4a9e6`.
+Local evidence: `logs/independent-disasm-{build,tests}.log`,
+`logs/independent-disasm-{classifier-comparison,generation-comparison,gameplay-summary}.json`
+and `private/test-saves/independent-disasm` reports/captures. Native Mac
+generation/gameplay remains pending under MAC-067; the same modules and tests
+are wired into both-host CI.
+
+## Independent executable analysis (2026-10-26)
+
+Second replacement stage, continuing PR #370 on `feature/independent-game-import`
+after `213e32dc`. `tools/xbe_image.py` now supplies the production parser/model;
+the patch replaces the old parser body with a bridge and redirects two ordinal
+audits. The disassembler, translator and game runtime still contain upstream
+code. [Scope and provenance](docs/independent-runtime.md) distinguish authored
+parser code from the separately credited nxdk CC0 kernel ABI declarations.
+
+Windows 11 x64, Python 3.12.14, MSVC 2022 x64 Release, D3D11 backend:
+
+- **39 parser tests and 2 generation-fingerprint tests passed.** Public fixtures
+  cover retail/debug decoding, bounds, overlapping sections, truncation,
+  malformed metadata, unterminated strings/imports, optional directories,
+  zero-fill mapping, independent CLI and the actual patch's import bridge.
+- The supported US XBE passed its pinned SHA-256. New analysis exactly matches
+  the previous JSON: 23 sections, 151 imports, entry point, libraries and TLS.
+  Kernel audits agree on 193 thunk cases and 131 documented rows; all 151 title
+  imports resolve without ordinal remapping.
+- Full parse/disassemble/identify/lift regeneration through the Windows build
+  produced **21 byte-identical C/header files**. The reader, export data and
+  bridge participate in the generation fingerprint; stale Windows builds now
+  rerun the full pipeline. Build and its native regression tests passed.
+- Context/CI-scope/backlog checks: **90 passed**. Parser/fingerprint/backlog
+  combined focused rerun: **42 passed**. Combined patch-upgrade, parser,
+  fingerprint, Mac-driver and CI-scope suite: **154 passed, 1 skipped** in
+  11m28s. Previous-stage importer regression: **32 passed**.
+- Bounded isolated Story session: Scotland the Brave loaded; reviewed rendered
+  menu, gameplay, pause and resumed frames. Forward movement displaced the
+  player 11.175 world units; firing reduced loaded ammo from 8 to 6; pause held
+  simulation ticks constant, resume advanced them, and backward movement worked.
+  Last checkpoint was at 87.466 seconds; runner exited successfully, no crash
+  artifacts, test partitions recycled and canonical Test Lab fixture verified.
+  Test input used replay/state injection with the window minimized and background
+  rendering. This is not physical-input, foreground pacing, audio, complete-level
+  or full-game validation. Startup videos were skipped by the standard test runner.
+
+Tested executable SHA-256:
+`847764206f57775e2c65a27f4f04562edddce8fe24a7ed1edb7d51fe36a30b75`.
+Local evidence: `logs/independent-xbe-build.log`,
+`logs/independent-xbe-generation-comparison.json`, and
+`private/test-saves/independent-xbe/{provenance,report,saved-profiles}.json`
+with selected PNGs. No personal saves/settings were used.
+
+Mac uses the same reader and explicit source-root routing for shared dependency
+checkouts. Native Mac generation/gameplay remains unverified; see MAC-066.
+The original full ISO remains unavailable (MAC-065). Neither stage completes
+the independent runtime/recompiler replacement.
+
+## Independent disc import (2026-10-26)
+
+This is the first functional step toward replacing the external toolkit's code,
+not completion of the runtime/recompiler rewrite. Work is on
+`feature/independent-game-import`, based on main
+`fba57e948dfda17ad5174121413583c5d29d46da`, separately from vendoring PR #369.
+The implementation and remaining stages are described in
+[the independent-runtime plan](docs/independent-runtime.md).
+
+`tools/disc_image.py` and `tools/import-game.py` are new project implementations
+using Python's standard library and published XDVDFS format descriptions.
+`tsfp.ps1 Extract` now runs them outside the external checkout and accepts an
+explicit Python executable before Setup. Mac uses the same Python CLI. Existing
+runtime/compiler, patches, generated game code and native binaries are unchanged.
+
+Windows 11 x64 / Python 3.12.14: **32 importer tests passed**; combined importer,
+CI-selection, Mac build-tool, context and backlog tests: **146 passed, 1 skipped**. Fixtures cover
+asymmetric directory trees, partition-relative addressing, bounded reads/copies,
+malformed extents/names/cycles, output conflicts, disk-space/read failures,
+exclusive publication, identical-file reuse and input preservation. A disposable
+PowerShell project imports successfully with no external checkout or virtual
+environment. A temporary synthetic image containing the existing supported US
+XBE imports with the required SHA-256. No full game-data duplicate was created.
+
+The original ISO path in the existing local receipt no longer exists. Full
+retail-disc traversal/extraction remains unverified; the private-XBE fixture is
+not evidence of the original ISO's directory layout or all assets. Existing
+`private/game`, personal settings and saves were preserved. Game rebuild/play
+was unnecessary for this extraction-only change. Public fixtures are registered
+for Windows/macOS CI; Mac native filesystem/full-ISO evidence remains pending
+under MAC-065. Output filesystems need hard-link support (normal NTFS/APFS).
 
 ## Self-contained runtime source (2026-10-26)
 

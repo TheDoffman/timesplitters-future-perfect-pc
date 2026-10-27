@@ -14,8 +14,21 @@ def fingerprint(runtime):
                  if p.is_file() and p.suffix in ('.py', '.json', '.txt')
                  and '__pycache__' not in p.parts and not p.name.startswith('test_'))
     paths.extend((runtime / 'config/extra_symbols').glob('*.json'))
+    paths.extend(p for p in (runtime / 'tools/xdk_symbols').glob('*.py')
+                 if not p.name.startswith('test_'))
+    paths.extend(p for p in (runtime / 'tools/disasm').glob('*.py')
+                 if not p.name.startswith('test_'))
+    paths.extend(p for p in (runtime / 'tools/func_id').glob('*.py')
+                 if not p.name.startswith('test_'))
     result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(paths)}
+    project = Path(__file__).resolve().parents[1]
+    for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py'):
+        result['project/tools/' + name] = hashlib.sha256(
+            (project / 'tools' / name).read_bytes()).hexdigest()
+    parser_bridge = runtime / 'tools/xbe_parser/xbe_parser.py'
+    if parser_bridge.is_file():
+        result['tools/xbe_parser/xbe_parser.py'] = hashlib.sha256(parser_bridge.read_bytes()).hexdigest()
     # The lift scans these declarations to emit wrappers and original-body
     # pointers. Function-body edits only require compiling, but changing the
     # exported/imported names requires regenerating the guest C first.

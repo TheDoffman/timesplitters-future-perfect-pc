@@ -59,6 +59,8 @@ $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'
 if (!(Test-Path -LiteralPath $controlsPath)) {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'config\pc-controls.default.json') -Destination $controlsPath
 }
+$previousProjectRoot = $env:TSFP_PROJECT_ROOT
+$env:TSFP_PROJECT_ROOT = $projectRoot
 Push-Location $projectRoot
 try {
     if ($Action -eq 'Setup') {
@@ -89,19 +91,24 @@ try {
             Write-Output 'Executable hash matches the US Xbox build (45410066).'
         }
     }
+    elseif ($Action -eq 'Extract') {
+        if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
+        $isoPath = (Resolve-Path -LiteralPath $Iso).Path
+        $importPython = if ($Python) { $Python } else { $envPython }
+        if (!(Test-Path -LiteralPath $importPython -PathType Leaf)) {
+            throw 'Supply -Python with Python 3.12 or newer, or run Setup first.'
+        }
+        Invoke-Checked $importPython @((Join-Path $projectRoot 'tools\import-game.py'),
+            '--iso', $isoPath, '--output', $gameRoot)
+        Assert-Game
+        @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
+            Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
+    }
     else {
         if (!(Test-Path -LiteralPath $envPython)) { throw 'Run Setup first.' }
         Push-Location $toolRoot
         try {
             switch ($Action) {
-                'Extract' {
-                    if (!$Iso) { throw 'Supply -Iso with the full path to your Xbox ISO.' }
-                    $isoPath = (Resolve-Path -LiteralPath $Iso).Path
-                    Invoke-Checked $envPython @('-m', 'tools.xiso', 'unpack', $isoPath, '-o', $gameRoot)
-                    Assert-Game
-                    @{ iso = $isoPath; xbe_sha256 = $expectedHash } | ConvertTo-Json |
-                        Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
-                }
                 'Test' {
                     Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest',
@@ -167,7 +174,7 @@ try {
                         Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', (Join-Path $gameRoot 'default.xbe'))
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
-                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
+                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries')
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
@@ -317,4 +324,7 @@ try {
         finally { Pop-Location }
     }
 }
-finally { Pop-Location }
+finally {
+    Pop-Location
+    $env:TSFP_PROJECT_ROOT = $previousProjectRoot
+}

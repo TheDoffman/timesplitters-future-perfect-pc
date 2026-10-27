@@ -1,0 +1,103 @@
+--- a/tools/recomp/test_icall_guarded_runtime.py
++++ b/tools/recomp/test_icall_guarded_runtime.py
+@@ -75,7 +75,7 @@
+ volatile uint32_t g_icall_trace[ICALL_TRACE_SIZE], g_icall_trace_idx;
+ volatile uint64_t g_icall_count;
+ uint32_t g_xbox_code_lo = 0x00010000u, g_xbox_code_hi = 0x00020000u;
+-uint32_t g_esp, eax;
++uint32_t g_esp, eax, g_icall_saved_esp, g_icall_dispatch_form;
+ #define esp g_esp
+ #define PUSH32(sp, v) do { (sp) -= 4; } while (0)
+ #define RECOMP_ICALL_OBSERVE(va, flags) ((void)0)
+@@ -95,7 +95,9 @@
+ }
+ recomp_func_t recomp_lookup_kernel(uint32_t va) { (void)va; return 0; }
+ void recomp_icall_fail_log(uint32_t va) { (void)va; fails++; }
+-void recomp_icall_not_code_log(uint32_t va) { (void)va; fails++; }
++void recomp_icall_not_code_log(uint32_t va, uint32_t saved_esp) {
++    (void)va; (void)saved_esp; fails++;
++}
+ IS_CODE
+ SAFE_AT
+ static void site(void) {
+--- a/tools/recomp/test_incdec_result.py
++++ b/tools/recomp/test_incdec_result.py
+@@ -13,6 +13,8 @@
+     if not cc and Path(r'C:\Program Files\LLVM\bin\clang.exe').exists(): cc=r'C:\Program Files\LLVM\bin\clang.exe'
+     if not cc: pytest.skip('C compiler unavailable')
+     code='''#include <stdint.h>
++/* Isolated functions use the runtime default: no title-specific fast entry. */
++#define RECOMP_FAST_ENTRY(site) 0
+ #include <stdio.h>
+ static uint32_t eax,esp;
+ #define LO8(v) ((uint8_t)(v))
+--- a/tools/recomp/test_lifter_double_shift.py
++++ b/tools/recomp/test_lifter_double_shift.py
+@@ -35,7 +35,8 @@
+ 
+ _PRELUDE = '''#include <stdint.h>
+ #include <stdio.h>
+-static uint32_t eax, edx, ecx;
++static uint32_t eax, edx, ecx, _fa;
++static int32_t _fas;
+ #define LO8(v) ((uint8_t)(v))
+ '''
+ 
+--- a/tools/recomp/test_lifter_rep_compare_flags.py
++++ b/tools/recomp/test_lifter_rep_compare_flags.py
+@@ -52,6 +52,8 @@
+ 
+ PRELUDE = r"""
+ #include <stdint.h>
++/* Isolated functions use the runtime default: no title-specific fast entry. */
++#define RECOMP_FAST_ENTRY(site) 0
+ #include <stdio.h>
+ #include <string.h>
+ static uint32_t eax, ecx, esi, edi, esp;
+--- a/tools/recomp/test_lifter_sar_width.py
++++ b/tools/recomp/test_lifter_sar_width.py
+@@ -200,7 +200,7 @@
+     def test_sar_al_1_on_0x80(self):
+         """The measured case, pinned on its own: 0x80 >> 1 is 0xC0, not 0x40."""
+         stmt = _sar(Operand(type="reg", reg="al"), Operand(type="imm", imm=1))
+-        self.assertIn("(int8_t)LO8(eax)", stmt)
++        self.assertRegex(stmt, r"\(int8_t\)\s*\(?LO8\(eax\)")
+         src = PRELUDE + (
+             "int main(void){ uint32_t eax = 0xAAAAAA80u; " + stmt +
+             " printf(\"%02X\\n\", LO8(eax)); return 0; }")
+--- a/tools/recomp/test_reserved_idents.py
++++ b/tools/recomp/test_reserved_idents.py
+@@ -91,6 +91,11 @@
+             with self.subTest(name=name):
+                 self.assertIn(name, _FUNC_RESERVED_IDENT,
+                               f"{name} is missing from the reserved set")
++                # onexit remains reserved for Windows portability; the positive
++                # mangling sweep covers it on every host, but only Windows
++                # headers declare it and supply this negative-control premise.
++                if name == "onexit" and os.name != "nt":
++                    continue
+                 rc, _ = _compile(f"void {name}(void);\nvoid {name}(void) {{ }}")
+                 self.assertNotEqual(
+                     rc, 0,
+--- a/tools/recomp/test_result_sign_width.py
++++ b/tools/recomp/test_result_sign_width.py
+@@ -39,6 +39,8 @@
+     if not cc:
+         pytest.skip('C compiler unavailable')
+     code = '''#include <stdint.h>
++/* Isolated functions use the runtime default: no title-specific fast entry. */
++#define RECOMP_FAST_ENTRY(site) 0
+ #include <stdio.h>
+ static uint32_t eax,esp;
+ #define LO8(v) ((uint8_t)(v))
+--- a/tools/recomp/test_sar_width.py
++++ b/tools/recomp/test_sar_width.py
+@@ -11,6 +11,8 @@
+         cc=r'C:\Program Files\LLVM\bin\clang.exe'
+     if not cc: pytest.skip('C compiler unavailable')
+     code='''#include <stdint.h>
++/* Isolated functions use the runtime default: no title-specific fast entry. */
++#define RECOMP_FAST_ENTRY(site) 0
+     #include <stdio.h>
+     static uint32_t eax,ecx,edx,esp;
+     #define LO8(v) ((uint8_t)(v))
