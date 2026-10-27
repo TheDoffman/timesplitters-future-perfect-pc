@@ -1,0 +1,227 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -116,219 +116,12 @@
+     return base
+ 
+ 
+-# ── Operand formatting ──────────────────────────────────────
+-
+-# Debug (dr0-dr15), control (cr0-cr15) and test (tr0-tr7) registers. Capstone
+-# names them, guest code can reach them because an Xbox title runs at ring 0,
+-# and there is nothing behind them here -- no breakpoint hardware, no paging,
+-# no cache control. They used to fall through _fmt_reg's `return name`, which
+-# put a bare `dr0` into the generated C: not a stub but an undeclared
+-# identifier, so one instruction failed the whole translation unit and with it
+-# the whole title. Panzer Dragoon Orta hit it at sub_0021118E, in a region the
+-# disassembler had walked as code but is data.
+-#
+-# They degrade like the segment registers just below: a read is a defined 0, a
+-# write is a no-op, and both carry a comment naming what they were, so they
+-# read as deliberate in the output instead of looking like a missing case.
+-_SYSTEM_REGS = frozenset(
+-    [f"dr{i}" for i in range(16)]
+-    + [f"cr{i}" for i in range(16)]
+-    + [f"tr{i}" for i in range(8)]
++# Operand expressions belong to the project; the instruction handlers remain here.
++from translation_operands import (
++    _SYSTEM_REGS, _fmt_reg, _fmt_set_reg, _fmt_imm, _mem_accessor,
++    _smem_accessor, _fmt_fpu_operand, _fmt_mem, _fmt_mem_read,
++    _fmt_mem_write, _operand_width, _fmt_operand_read, _fmt_operand_write,
+ )
+-
+-
+-def _fmt_reg(name, size=4):
+-    """Format a register name as a C expression."""
+-    if not name:
+-        return "0"
+-
+-    # Segment registers → constants
+-    if name in ("fs", "gs", "cs", "ds", "es", "ss"):
+-        return f"0 /* seg:{name} */"
+-
+-    # Debug / control / test registers → constants
+-    if name in _SYSTEM_REGS:
+-        return f"0 /* {name}: system register, not modelled */"
+-
+-    # Map sub-registers to expressions on 32-bit locals
+-    SUB_REGS = {
+-        "al": "LO8(eax)", "ah": "HI8(eax)", "ax": "LO16(eax)",
+-        "bl": "LO8(ebx)", "bh": "HI8(ebx)", "bx": "LO16(ebx)",
+-        "cl": "LO8(ecx)", "ch": "HI8(ecx)", "cx": "LO16(ecx)",
+-        "dl": "LO8(edx)", "dh": "HI8(edx)", "dx": "LO16(edx)",
+-        "si": "LO16(esi)", "di": "LO16(edi)",
+-        "bp": "LO16(ebp)", "sp": "LO16(esp)",
+-    }
+-    if name in SUB_REGS:
+-        return SUB_REGS[name]
+-    return name
+-
+-
+-def _fmt_set_reg(name, value_expr):
+-    """Format assignment to a register, handling sub-register writes."""
+-    # Segment registers → no-op
+-    if name in ("fs", "gs", "cs", "ds", "es", "ss"):
+-        return f"/* mov {name}, {value_expr} - segment register */;"
+-
+-    # Debug / control / test registers → no-op. See _SYSTEM_REGS.
+-    if name in _SYSTEM_REGS:
+-        return f"/* mov {name}, {value_expr} - system register */;"
+-
+-    SET_MAP = {
+-        "al": f"SET_LO8(eax, {value_expr})",
+-        "ah": f"SET_HI8(eax, {value_expr})",
+-        "ax": f"SET_LO16(eax, {value_expr})",
+-        "bl": f"SET_LO8(ebx, {value_expr})",
+-        "bh": f"SET_HI8(ebx, {value_expr})",
+-        "bx": f"SET_LO16(ebx, {value_expr})",
+-        "cl": f"SET_LO8(ecx, {value_expr})",
+-        "ch": f"SET_HI8(ecx, {value_expr})",
+-        "cx": f"SET_LO16(ecx, {value_expr})",
+-        "dl": f"SET_LO8(edx, {value_expr})",
+-        "dh": f"SET_HI8(edx, {value_expr})",
+-        "dx": f"SET_LO16(edx, {value_expr})",
+-        "si": f"SET_LO16(esi, {value_expr})",
+-        "di": f"SET_LO16(edi, {value_expr})",
+-        "bp": f"SET_LO16(ebp, {value_expr})",
+-        "sp": f"SET_LO16(esp, {value_expr})",
+-    }
+-    if name in SET_MAP:
+-        return SET_MAP[name] + ";"
+-    return f"{name} = {value_expr};"
+-
+-
+-def _fmt_imm(val):
+-    """Format an immediate value as a C hex literal."""
+-    if val == 0:
+-        return "0"
+-    if val <= 9:
+-        return str(val)
+-    if val > 0x7FFFFFFF:
+-        return f"0x{val:08X}u"
+-    return f"0x{val:X}"
+-
+-
+-def _mem_accessor(size):
+-    """Return the MEM macro name for a given operand size."""
+-    return {1: "MEM8", 2: "MEM16", 4: "MEM32"}.get(size, "MEM32")
+-
+-
+-def _smem_accessor(size):
+-    """Return the signed MEM macro for a given operand size."""
+-    return {
+-        1: "SMEM8", 2: "SMEM16", 4: "SMEM32", 8: "SMEM64",
+-    }.get(size, "SMEM32")
+-
+-
+-def _fmt_fpu_operand(op):
+-    """Format an x87 memory or stack-register operand for reading."""
+-    if op.type == "mem":
+-        accessor = "MEMD" if op.mem_size == 8 else "MEMF"
+-        return f"{accessor}({_fmt_mem(op)})"
+-    if op.type == "reg":
+-        name = op.reg or ""
+-        if name == "st":
+-            return "fp_st(0)"
+-        if name.startswith("st(") and name.endswith(")"):
+-            return f"fp_st({name[3:-1]})"
+-    return None
+-
+-
+-def _fmt_mem(op):
+-    """Format a memory operand as a C expression (the address computation).
+-
+-    An fs-relative operand is offset by XBOX_FS_BASE. The prefix used to be
+-    dropped, which put the TIB at guest address 0 -- the same address a null
+-    pointer dereferences. Two things went wrong there and both were silent: a
+-    null check written as `cmp byte [ecx], 0` read the TIB's first byte (0xFF,
+-    the end-of-chain marker) and decided the pointer was fine, and a store
+-    through a null pointer overwrote the exception-chain head instead of
+-    faulting. With the TIB moved off page zero, that page can be left
+-    unmapped and both become immediate, locatable faults.
+-    """
+-    parts = []
+-    if getattr(op, "mem_seg", None) == "fs":
+-        parts.append("XBOX_FS_BASE")
+-    if op.mem_base:
+-        parts.append(_fmt_reg(op.mem_base))
+-    if op.mem_index:
+-        idx = _fmt_reg(op.mem_index)
+-        if op.mem_scale and op.mem_scale > 1:
+-            parts.append(f"{idx} * {op.mem_scale}")
+-        else:
+-            parts.append(idx)
+-    if op.mem_disp:
+-        if op.mem_disp < 0:
+-            # Negative displacement - but we stored unsigned, check sign
+-            if op.mem_disp > 0x80000000:
+-                # Actually negative (two's complement)
+-                signed_disp = op.mem_disp - 0x100000000
+-                if parts:
+-                    parts.append(f"- {_fmt_imm(-signed_disp)}")
+-                else:
+-                    parts.append(_fmt_imm(op.mem_disp))
+-            else:
+-                parts.append(_fmt_imm(op.mem_disp))
+-        else:
+-            parts.append(_fmt_imm(op.mem_disp))
+-    if not parts:
+-        return "0"
+-    return " + ".join(parts)
+-
+-
+-def _fmt_mem_read(op):
+-    """Format reading from a memory operand."""
+-    accessor = _mem_accessor(op.mem_size)
+-    addr = _fmt_mem(op)
+-    return f"{accessor}({addr})"
+-
+-
+-def _fmt_mem_write(op, value_expr):
+-    """Format writing to a memory operand."""
+-    accessor = _mem_accessor(op.mem_size)
+-    addr = _fmt_mem(op)
+-    return f"{accessor}({addr}) = {value_expr};"
+-
+-
+-_REG_WIDTH = {
+-    "al": 1, "ah": 1, "bl": 1, "bh": 1, "cl": 1, "ch": 1, "dl": 1, "dh": 1,
+-    "ax": 2, "bx": 2, "cx": 2, "dx": 2, "si": 2, "di": 2, "bp": 2, "sp": 2,
+-}
+-
+-
+-def _operand_width(op):
+-    """Byte width of an operand, or None when it carries no width of its own.
+-
+-    Memory operands know their size; registers imply it by name; immediates do
+-    not have one and take it from the other operand. Getting this wrong makes a
+-    narrow compare test a widened value - "cmp word ptr [x], -1" against
+-    0xFFFFFFFF never matches, because a 16-bit -1 is 0xFFFF.
+-    """
+-    if op.type == "mem":
+-        return getattr(op, "mem_size", None) or 4
+-    if op.type == "reg":
+-        return _REG_WIDTH.get(str(op.reg).lower(), 4)
+-    return None
+-
+-
+-def _fmt_operand_read(op):
+-    """Format reading any operand type."""
+-    if op.type == "reg":
+-        return _fmt_reg(op.reg)
+-    elif op.type == "imm":
+-        return _fmt_imm(op.imm)
+-    elif op.type == "mem":
+-        return _fmt_mem_read(op)
+-    return "/* unknown operand */"
+-
+-
+-def _fmt_operand_write(op, value_expr):
+-    """Format writing to any operand type. Returns a C statement."""
+-    if op.type == "reg":
+-        return _fmt_set_reg(op.reg, value_expr)
+-    elif op.type == "mem":
+-        return _fmt_mem_write(op, value_expr)
+-    return f"/* cannot write to {op.type} */;"
+ 
+ 
+ # ── Condition code mapping ───────────────────────────────────

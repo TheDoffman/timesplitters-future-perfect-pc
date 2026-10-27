@@ -200,6 +200,24 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
 | MAC-064 | Self-contained runtime source | Awaiting validation |
 
+| MAC-065 | Independent game-disc import | Awaiting validation |
+| MAC-066 | Independent executable analysis | Awaiting validation |
+| MAC-067 | Independent disassembler input | Awaiting validation |
+| MAC-068 | Independent instruction traversal | Awaiting validation |
+| MAC-069 | Independent table and body recovery | Awaiting validation |
+| MAC-070 | Independent function discovery and metadata | Awaiting validation |
+| MAC-071 | Independent analysis runner and publication | Awaiting validation |
+| MAC-072 | Independent symbol adapter and pipeline driver | Awaiting validation |
+| MAC-073 | Independent function catalog | Awaiting validation |
+| MAC-074 | Independent generation support | Awaiting validation |
+| MAC-075 | Independent translator decoding | Awaiting validation |
+| MAC-076 | Independent translation layout and hook planning | Awaiting validation |
+| MAC-077 | Independent branch feedback and unresolved diagnostics | Awaiting validation |
+| MAC-078 | Independent C operand emission | Awaiting validation |
+| MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
+| MAC-080 | Independent scalar integer lowering | Awaiting validation |
+| MAC-081 | Independent shift and rotate lowering | Awaiting validation |
+
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
 - **Status:** Awaiting validation
@@ -5760,6 +5778,346 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** At `f57875a5`, macOS CI passed snapshot
   and historical patch upgrades, runtime regressions and asset-free GPU contracts.
   Native Mac game build/package execution with private data remains unverified.
+
+### MAC-065 - Independent game-disc import
+
+- **Status:** Awaiting validation
+- **PC behavior:** Import the supported game image without the external toolkit;
+  reuse identical files and stop on conflicts without replacing user data.
+- **PC source:** Uncommitted on `feature/independent-game-import`;
+  `tools/disc_image.py`, `tools/import-game.py`, `tsfp.ps1`, `tests/test_disc_image.py`.
+- **PC validation:** 32 focused importer tests passed, including a temporary image
+  carrying the verified private XBE and a PowerShell project without external or
+  venv directories. Full original ISO is unavailable. See
+  [STATUS](STATUS.md#independent-disc-import-2026-10-26).
+- **Existing Mac support:** Same stdlib implementation and Python CLI; no separate
+  Mac parsing/extraction logic. Standard APFS hard-link publication is required.
+- **Mac adaptation needed:** No additional adapter; validate native filesystem
+  behavior and a supported original ISO. Game/runtime generation is unaffected.
+- **Mac acceptance checks:** Run public fixtures on macOS and verify/import an
+  available original ISO once, preserving the authoritative extraction; check
+  case aliases, redirected paths, interrupted import and identical-file reuse.
+- **Mac implementation and evidence:** Shared tests registered in both-host CI;
+  local execution and full retail-disc import remain unverified on Mac.
+
+### MAC-066 - Independent executable analysis
+
+- **Status:** Awaiting validation
+- **PC behavior:** Generate from the project-owned XBE reader instead of the
+  upstream parser, keeping section/import/TLS metadata compatible.
+- **PC source:** PR #370, continuing `feature/independent-game-import`;
+  `tools/xbe_image.py`, `tools/xbe_kernel_exports.def`,
+  `patches/independent-xbe-reader.patch`, both build drivers and fingerprints.
+- **PC validation:** Synthetic parser fixtures and exact private-US analysis
+  comparison passed; full build/game evidence is recorded in STATUS.md.
+- **Existing Mac support:** The same stdlib reader, ABI data and bridge run on
+  both hosts. The Mac driver sets the source root when reusing ignored deps.
+- **Mac adaptation needed:** None identified; native validation remains pending.
+- **Mac acceptance checks:** Run parser and generation tests, generate the
+  verified US executable with `--generate`, build, and run isolated Story
+  movement/fire/pause/resume. Also exercise `--runtime-root` with shared deps.
+- **Mac implementation and evidence:** Shared source and both-host CI test
+  registration; Windows evidence does not establish native Mac gameplay.
+
+### MAC-067 - Independent disassembler input
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly uses a project-owned executable view
+  and instruction model/classifier, retaining pinned Capstone. Exact reads and
+  probe windows respect section boundaries; input changes invalidate caches.
+- **PC source:** Continuing PR #370 on `feature/independent-game-import`;
+  `tools/recomp_image.py`, `tools/x86_decode.py`,
+  `patches/independent-disasm-input.patch`, `tools/recomp-generation.py`.
+- **PC validation:** Original synthetic mappings/operand fixtures and the
+  patched consumer's disassembler tests pass. Full-title classification matches
+  1,403,940 decoded instructions. Build/game evidence is recorded in STATUS.md.
+- **Existing Mac support:** Same Python modules and pinned Capstone; uses the
+  existing explicit source-root bridge for shared dependency checkouts.
+- **Mac adaptation needed:** None identified; native validation pending.
+- **Mac acceptance checks:** Run the shared input/consumer fixtures, regenerate
+  the verified US game with `--generate`, rebuild, then test isolated Story
+  movement/fire/pause/resume. Confirm source edits invalidate cached analysis.
+- **Mac implementation and evidence:** Tests registered for both CI hosts;
+  Windows results do not establish native Mac generation or gameplay.
+
+### MAC-068 - Independent instruction traversal
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly inherits project-owned linear scan,
+  bounded realignment, cached direct-edge reachability and instruction queries.
+  Table/prologue recovery is now covered by MAC-069; function discovery remains upstream.
+- **PC source:** Active independent-replacement goal, continuing PR #370;
+  `tools/x86_flow.py`, `patches/independent-disasm-traversal.patch`, cache and
+  generation fingerprints, `tests/test_x86_flow.py`.
+- **PC validation:** Synthetic cycles, calls, branches, invalid bytes, overlap,
+  convergence, zero targets and instruction-limit tests; production method-origin
+  assertions and existing consumer tests. Build/game results are in STATUS.md.
+- **Existing Mac support:** Shared Python and pinned Capstone; no host-specific
+  traversal path. Existing source-root bridge also handles shared dependencies.
+- **Mac adaptation needed:** None identified; native acceptance remains pending.
+- **Mac acceptance checks:** Run flow/input/fingerprint tests, regenerate the
+  verified US game, rebuild and run isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  validation does not establish native Mac gameplay.
+
+### MAC-069 - Independent table and body recovery
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production disassembly uses project-owned table measurement,
+  case realignment, block boundaries and read-only body/prologue probes. Function
+  detection and translation remain upstream.
+- **PC source:** Continuing PR #370 on `feature/independent-game-import`;
+  `tools/x86_recovery.py`, `patches/independent-disasm-z-recovery.patch`, source
+  fingerprints and `tests/test_x86_recovery.py`.
+- **PC validation:** Synthetic table ownership/alias/bounds and probe-shape
+  fixtures plus existing consumer tests. Build/game evidence is in STATUS.md.
+- **Existing Mac support:** Shared Python and pinned Capstone; the source-root
+  bridge handles the same module in shared dependency checkouts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run recovery/input/fingerprint tests, regenerate
+  the verified US image, rebuild and validate isolated Story movement, firing,
+  pause/resume. Verify cache invalidation and preserve the canonical fixture.
+- **Mac implementation and evidence:** Tests registered in both-host CI;
+  Windows validation does not establish native Mac generation or gameplay.
+
+### MAC-070 - Independent function discovery and metadata
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production analysis uses project-owned candidate/body/tail
+  discovery, labels, strings and indexed references. Shared tails keep their
+  owner's extent; overlong ASCII runs no longer create suffix labels.
+- **PC source:** Continuing PR #370; `tools/x86_functions.py`,
+  `tools/recomp_symbols.py`, `patches/independent-functions.patch`, both source
+  fingerprints and `tests/test_x86_functions.py` / `test_recomp_symbols.py`.
+- **PC validation:** Original miniature programs and metadata edge cases plus
+  existing consumer tests. Semantic function/reference comparison and full
+  generation/build/gameplay evidence are recorded in STATUS.md.
+- **Existing Mac support:** Shared Python and permitted pinned Capstone; same
+  source-root bridge, no host-specific analysis algorithm.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run shared function/symbol/input/fingerprint tests;
+  regenerate the verified US image and compare callable ranges; rebuild and run
+  isolated Story movement/fire/pause/resume while preserving the canonical fixture.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  results do not certify native Mac generation or gameplay.
+
+### MAC-071 - Independent analysis runner and publication
+
+- **Status:** Awaiting validation
+- **PC behavior:** Project-owned configuration, CLI, seed/section selection,
+  analysis sequencing, JSON/assembly output and content-verified cache. The
+  standalone analyzer needs no toolkit checkout; full generation still does.
+- **PC source:** Continuing PR #370; `tools/analysis_runner.py`,
+  `analysis_config.py`, `analysis_output.py`, `analysis_cache.py`,
+  `patches/independent-pipeline.patch` and both source fingerprints.
+- **PC validation:** Original runner/cache fixtures and existing consumer checks;
+  generation/build and bounded isolated game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone with the same source bridge;
+  pathlib, temporary-file publication and no Windows-only analysis behavior.
+- **Mac adaptation needed:** None identified; native acceptance remains pending.
+- **Mac acceptance checks:** Run runner/cache/input/fingerprint tests; regenerate
+  verified US metadata/code with `--generate`, build and run isolated Story
+  movement/fire/pause/resume. Confirm cache reuse and changed-output rejection.
+- **Mac implementation and evidence:** Both-host CI registration; Windows
+  verification does not establish native Mac generation or gameplay.
+
+### MAC-072 - Independent symbol adapter and pipeline driver
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production symbol scanning and generation use project-owned
+  adapters/orchestration; parsing and disassembly call project scripts directly.
+  The separately licensed XbSymbolDatabase library still supplies signatures.
+- **PC source:** Continuing PR #370; `tools/xdk_catalog.py`,
+  `tools/compile_pipeline.py`, `patches/independent-symbol-driver.patch`,
+  generation fingerprint, catalog/driver tests and both-host CI registration.
+- **PC validation:** Original protocol/routing/failure fixtures and existing
+  scanner consumers; symbol/generated-output/build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python subprocess argv and path handling;
+  exact scanner executable lookup supports native and Windows names.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run catalog/driver/fingerprint tests, scan the
+  supported US image with the pinned native database, regenerate with
+  `--generate`, build and validate isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows results do not establish native
+  scanner/generation/gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-073 - Independent function catalog
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production generation classifies measured functions using own
+  decoded evidence. Pointer candidates have separate measured entry blocks;
+  diagnostic categories never fabricate function extents or CRT symbol names.
+- **PC source:** Continuing PR #370;
+  `tools/function_catalog.py`, `function_evidence.py`, `function_categories.py`,
+  `patches/independent-classification.patch`, driver/fingerprint and original tests.
+- **PC validation:** Synthetic bounds, operands, ambiguity, graph and standalone
+  CLI tests; actual generation/build/game evidence recorded in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone implementation, no host-specific
+  classification policy. Tests registered for both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run catalog/evidence/category/fingerprint tests,
+  regenerate with `--generate`, compare executable generation, build and verify
+  isolated Story movement, firing and pause/resume.
+- **Mac implementation and evidence:** Windows checks do not establish Mac
+  generation or gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-074 - Independent generation support
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production generation uses own manual-source inspection,
+  translation reports/declaration headers and atomic generated-text publication.
+  Existing definitions/wrappers and unchanged generated-file timestamps persist.
+- **PC source:** Continuing PR #370; `tools/c_source_scan.py`,
+  `tools/generation_output.py`, `patches/z-independent-generation-support.patch`,
+  generation fingerprint, original tests and shared CI registration.
+- **PC validation:** Scanner/output and existing title-wrapper fixtures;
+  generation/build/isolated game evidence recorded in STATUS.md.
+- **Existing Mac support:** Shared standard-library implementation; native text
+  newlines and atomic file replacement use host APIs through Python.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run scanner/output/fingerprint and title-wrapper
+  tests, regenerate with `--generate`, compare generated code, build and verify
+  isolated Story movement, firing and pause/resume.
+- **Mac implementation and evidence:** Windows evidence does not establish native
+  generation or gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-075 - Independent translator decoding
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production translator uses own instruction/operand decoding,
+  restart/CFG traversal and basic-block construction around permitted Capstone.
+  CLI output paths resolve before changing subprocess directories.
+- **PC source:** Continuing PR #370; `tools/translation_decode.py`,
+  `patches/independent-translation-decode.patch`, command-builder compatibility,
+  generation fingerprint and original/shared consumer tests.
+- **PC validation:** Operand/bounds/segment/CFG/overlap/restart fixtures and
+  existing translator consumers; generation/build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone implementation and tests;
+  no host-specific instruction or block policy.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original decoder/driver/fingerprint and existing
+  translator tests with available native C compiler; regenerate with `--generate`,
+  review output, build and verify isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows checks do not prove native
+  compiler or gameplay acceptance; see STATUS.md for measured scope and skips.
+
+### MAC-076 - Independent translation layout and hook planning
+
+- **Status:** Awaiting validation
+- **PC behavior:** Translation uses own executable layout and HLE marker/symbol
+  planning, with original-body retention and guest ABI thunk generation.
+- **PC source:** Continuing PR #370; `tools/translation_layout.py`,
+  `tools/translation_hooks.py`, `patches/independent-translation-bindings.patch`,
+  generation fingerprints and original/shared/native consumer tests.
+- **PC validation:** Bounds/replacement, lexical marker, symbol ambiguity and
+  ABI fixtures; generated thunks execute with production register-frame macros.
+  CI consumer scaffolding is updated for the current ABI and platform-specific
+  header collision checks; portable consumer C also executes through MSVC.
+  Actual generation/build/game evidence and limitations are in STATUS.md.
+- **Existing Mac support:** Common Python policy and runtime ABI macros; tests
+  use the shared compiler helper on both hosts. No separate host hook planner.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original layout/hook/fingerprint fixtures and
+  translator consumers, compile/execute the generated thunk fixture, regenerate
+  with `--generate`, build and verify isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows/native-C results do not prove
+  Mac generation or game acceptance; see STATUS.md for measured host evidence.
+
+### MAC-077 - Independent branch feedback and unresolved diagnostics
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own cumulative branch ledgers and separate seed export;
+  unresolved diagnostics use selected XBE layout and recorded function bounds.
+- **PC source:** Continuing PR #370; `tools/branch_feedback.py`,
+  `tools/unresolved_report.py`, `patches/independent-branch-diagnostics.patch`,
+  source fingerprints and original/shared consumer fixtures.
+- **PC validation:** Standalone and production CLI, crash/saturation/overlap,
+  input preservation and layout tests; measured build/game checks in STATUS.md.
+- **Existing Mac support:** Shared Python policy and own image/recovery tools;
+  original tests registered in the common native CI suite.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original diagnostics and consumer fixtures;
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows evidence does not certify native
+  Mac generation or gameplay. See STATUS.md for actual results and limitations.
+
+### MAC-078 - Independent C operand emission
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own register/subregister, address and memory C expressions;
+  decoder preserves address overrides, with offset wrapping before FS addition.
+- **PC source:** Continuing PR #370; `tools/translation_operands.py`, address
+  metadata in `translation_decode.py`, `independent-translation-operands.patch`,
+  generation hashes and original/native/consumer fixtures.
+- **PC validation:** Native subregister/address/floating-stack execution and
+  actual runtime pointer/memory macros; build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python expressions and runtime ABI interfaces;
+  compiler fixtures and existing translator consumers run in both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run operand/decoder/fingerprint and consumer tests,
+  regenerate with `--generate`, build, verify isolated movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows source/native-C evidence does not
+  establish Mac generation/gameplay or full x87 precision; see STATUS.md.
+
+### MAC-079 - Independent data-transfer and stack lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own MOV/MOVZX/MOVSX/LEA/PUSH/POP emission preserves title
+  hooks and implements segment-free LEA and stack width/address/alias ordering.
+- **PC source:** Continuing PR #370; `tools/translation_moves.py`,
+  `independent-translation-moves.patch`, final replacement ordering in the
+  patch loader, generation hashes and original/native/consumer fixtures.
+- **PC validation:** Native sign extension, hook order/frame publication,
+  stack aliases/word widths and trace bytes; generation/game details in STATUS.md.
+- **Existing Mac support:** Shared Python lowering and existing guest ABI;
+  native compiler fixtures and inherited consumers registered on both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run move/operand/fingerprint/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows validation does not establish
+  Mac generation or gameplay. See STATUS.md for measured limits.
+
+### MAC-080 - Independent scalar integer lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own arithmetic/logic emission samples operands at their width,
+  computes carry/borrow, retains result snapshots and the byte-decrement hook.
+  INC/DEC preserve carry; NOT preserves flags; NEG avoids signed-overflow C.
+- **PC source:** Continuing PR #370 from `830958be`;
+  `tools/translation_integer.py`, `independent-translation-integer.patch`,
+  generation fingerprints, final patch ordering and original native fixtures.
+- **PC validation:** Native exhaustive-byte/seeded-word/dword results and carries,
+  decoded carry chains, memory accesses and title hooks; see STATUS.md for
+  generation, Windows build and isolated gameplay evidence.
+- **Existing Mac support:** Shared Python implementation and runtime ABI;
+  compiler fixtures and consumers are registered on both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run integer/move/operand/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows results do not establish native
+  Mac generation or gameplay. Flag-condition lowering and other families remain
+  separate replacement work.
+
+### MAC-081 - Independent shift and rotate lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own shifts/rotates honor widths and count masking, preserve
+  zero-count emitted state and publish carry; known constant no-ops retain the
+  prior flag interpretation. Word double shifts accept count 16; larger counts
+  use an explicit no-change policy for architecturally undefined results.
+- **PC source:** Continuing PR #370 from `9c2e509b`; `translation_bits.py`,
+  `independent-translation-bits.patch`, fingerprints, fixtures and final ordering.
+- **PC validation:** Native bit-step and actual x86 instruction value/carry
+  comparisons across byte values and count encodings, wider seeded/boundary
+  cases; see STATUS.md for generation/build/game evidence and scope.
+- **Existing Mac support:** Shared lowering and portable C reference fixtures;
+  the Windows ML64 hardware reference is additional host-specific evidence.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run bit/integer/operand/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Native Mac generation and gameplay remain
+  unverified. Dynamic zero-count conditional provenance and complete flag lowering
+  remain separate replacement work on both hosts.
 
 ## Entry template
 

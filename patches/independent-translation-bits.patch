@@ -1,0 +1,349 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -22,6 +22,7 @@
+ from .config import is_code_address, is_data_address, va_to_file_offset
+ import translation_moves as _project_moves
+ import translation_integer as _project_integer
++import translation_bits as _project_bits
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -186,7 +187,7 @@
+ _RESULT_SRC_SETTERS = frozenset({"add", "sub"})
+ 
+ CF_TRACKED = frozenset({
+-    "add", "sub", "adc", "sbb", "shl", "shr", "sar",
++    "add", "sub", "adc", "sbb", "shl", "shr", "sar", "shld", "shrd",
+ })
+ 
+ # bt reports CF without touching the operand, so its CF can be rebuilt at the
+@@ -808,13 +809,11 @@
+ 
+     # ── rol/ror/rcl/rcr: rotation, only CF/OF affected ──
+     if flag_setter in ("rol", "ror", "rcl", "rcr"):
+-        # rcl/rcr leave their carry-out in _cf (RC_ROT writes it back), and
+-        # _function_needs_cf declares _cf for any function containing them.
+-        if flag_setter in ("rcl", "rcr"):
+-            if jcc in ("jb", "jnae", "jc"):
+-                return "_cf", desc
+-            if jcc in ("jae", "jnb", "jnc"):
+-                return "!_cf", desc
++        # Own rotate lowering publishes carry when a consumer requires it.
++        if jcc in ("jb", "jnae", "jc"):
++            return "_cf", desc
++        if jcc in ("jae", "jnb", "jnc"):
++            return "!_cf", desc
+         # ZF/SF not modified by rotations - can't resolve most conditions
+         return None
+ 
+@@ -1818,47 +1817,11 @@
+ 
+     _lift_adc = _project_integer.adc
+ 
+-    def _lift_double_shift(self, insn, ops, m):
+-        """SHLD/SHRD, with x86's count rules rather than C's.
+-
+-        The count is masked to five bits by the hardware, and a masked count
+-        of zero leaves the destination and the flags alone. Neither was
+-        honoured here, and the second is the one that produced a wrong value
+-        rather than merely undefined behaviour: the old expression built
+-        `src >> (32 - cnt)`, so a count of zero shifted by the operand's full
+-        width. C leaves that undefined, and where the host takes the shift
+-        amount modulo the width it shifts by nothing and returns `src` whole,
+-        so the write came out `dst | src` for an instruction that should not
+-        have written at all.
+-
+-        _lift_shift already states the rule for shl/shr/sar -- "C leaves a
+-        shift of 32 or more UNDEFINED, and the compiler is entitled to assume
+-        it never happens" -- and masks there. The double-precision pair never
+-        got it.
+-
+-        Masked to 1..31 the complement is 31..1, so nothing below can shift by
+-        the width again. The 16-bit form additionally refuses counts above 15,
+-        which Intel leaves undefined for that width; the point is to keep the
+-        C defined rather than to invent an answer x86 does not give.
+-        """
+-        if len(ops) < 3:
+-            return [f"/* {m}: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        src = _fmt_operand_read(ops[1])
+-        cnt = _fmt_operand_read(ops[2])
+-        w = (_operand_width(ops[0]) or 4) * 8
+-        expr = (f"({dst} << _c) | ({src} >> ({w} - _c))" if m == "shld"
+-                else f"({dst} >> _c) | ({src} << ({w} - _c))")
+-        return ["{ uint32_t _c = (uint32_t)(%s) & 31u; if (_c && _c < %uu) {"
+-                " %s } }  /* %s */"
+-                % (cnt, w, _fmt_operand_write(ops[0], expr), m),
+-                self._result_snapshot(ops, m)]
+-
+-    def _lift_shld(self, insn, ops):
+-        return self._lift_double_shift(insn, ops, "shld")
+-
+-    def _lift_shrd(self, insn, ops):
+-        return self._lift_double_shift(insn, ops, "shrd")
++    _lift_double_shift = _project_bits.double_shift
++
++    _lift_shld = _project_bits.shld
++
++    _lift_shrd = _project_bits.shrd
+ 
+     def _lift_imul(self, insn, ops):
+         nops = len(ops)
+@@ -1904,117 +1867,13 @@
+             ]
+         return [f"/* {m}: unhandled */"]
+ 
+-    def _lift_shift(self, insn, ops, c_op):
+-        if len(ops) < 2:
+-            return [f"/* shift: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        cnt = _fmt_operand_read(ops[1])
+-        out = []
+-        if self.needs_cf:
+-            w = (_operand_width(ops[0]) or 4) * 8
+-            # CF is the last bit shifted out; a zero count leaves CF alone.
+-            bit = f"({cnt}) - 1" if c_op == ">>" else f"{w} - ({cnt})"
+-            out.append(f"if ({cnt}) _cf = (int)((({dst}) >> ({bit})) & 1);")
+-        out.append(_fmt_operand_write(ops[0], f"{dst} {c_op} {cnt}"))
+-        out.append(self._result_snapshot(ops, "shift"))
+-        return out
+-
+-    def _lift_sar(self, insn, ops):
+-        """Arithmetic shift right, at the operand's own width.
+-
+-        Two things have to be right that a bare "(int32_t)dst >> cnt" gets
+-        wrong.
+-
+-        The cast must match the operand. Every narrow read arrives
+-        zero-extended - LO8/HI8/LO16 mask, and MEM8/MEM16 are unsigned - so
+-        casting an 8- or 16-bit operand to int32_t produces a positive number
+-        and the ">>" is a logical shift wearing an arithmetic cast. "sar al, 1"
+-        with al = 0x80 gave 0x40 where x86 gives 0xC0: a negative value halved
+-        into a positive one, which is how a fixed-point divide or a signed
+-        average goes quietly wrong without ever faulting. int8_t/int16_t
+-        promote to int before the shift, so a count at or above the operand
+-        width still sign-fills and stays well defined.
+-
+-        The count must be masked to 5 bits, as x86 does for 8-, 16- and 32-bit
+-        operands. Unmasked, "sar eax, 33" asks C for a shift of 33 on a 32-bit
+-        type, which is undefined - the host may fold it to 33 & 31 and look
+-        correct, which is exactly why it cannot be left to chance.
+-
+-        CF reads the sign-extended value too, not the raw operand. For a
+-        count below the operand width either spelling gives the same bit, but
+-        x86 keeps sign-filling past that width: "sar al, 31" on al = 0x80
+-        leaves CF = 1. Reading bit 30 of the zero-extended 0x80 gives 0, and
+-        reading it of the sign-extended 0xFFFFFF80 gives 1. It takes the count
+-        mask for the same reason the value does.
+-        """
+-        if len(ops) < 2:
+-            return ["/* sar: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        cnt = f"(({_fmt_operand_read(ops[1])}) & 31u)"
+-        width = (_operand_width(ops[0]) or 4) * 8
+-        signed = f"(int32_t)(int{width}_t)({dst})"
+-        out = []
+-        if self.needs_cf:
+-            out.append(f"if ({cnt}) _cf = (int)(((uint32_t)({signed}) >> (({cnt}) - 1)) & 1);")
+-        out.append(_fmt_operand_write(ops[0], f"(uint32_t)(({signed}) >> {cnt})"))
+-        out.append(self._result_snapshot(ops, "sar"))
+-        return out
+-
+-    def _lift_rotate_carry(self, insn, ops, m):
+-        """rcl/rcr: the carry flag is one of the bits being rotated.
+-
+-        These were falling through to the TODO comment, which is a silent
+-        no-op. Where they appear is the compiler's own 64-bit divide:
+-
+-            shr ecx, 1
+-            rcr ebx, 1        <- carries ecx's bit 0 into ebx's bit 31
+-            shr edx, 1
+-            rcr eax, 1
+-            or  ecx, ecx
+-            jnz ...
+-
+-        That loop normalises a 128-bit pair down to something a 32-bit
+-        divide can take. With the rcr dropped the low halves never move, so
+-        the divisor and the dividend both go into the divide wrong -- and
+-        nothing says so.
+-        """
+-        if len(ops) < 2:
+-            return [f"/* {m}: bad operands */"]
+-        width = (_operand_width(ops[0]) or 4) * 8
+-        dst = _fmt_operand_read(ops[0])
+-        cnt = _fmt_operand_read(ops[1])
+-        left = 1 if m == "rcl" else 0
+-        write = _fmt_operand_write(ops[0], "_rcv")
+-        return [
+-            f"{{ uint32_t _rcv = RC_ROT((uint32_t)({dst}), (unsigned)({cnt}),"
+-            f" &_cf, {width}, {left});",
+-            f"  {write} }} /* {m} */",
+-        ]
+-
+-    def _lift_rotate(self, insn, ops, m):
+-        """A rotate is at the OPERAND's width, not always at 32 bits.
+-
+-        Every narrow read here arrives zero-extended, so ROL32/ROR32 on a byte
+-        rotated it inside a 32-bit word: the bits that should wrap around at
+-        bit 7 landed in bits 31..8 and were then discarded by the store. `ror
+-        al, 2` on 0x01 produced 0x00 where x86 gives 0x40 -- the operand's top
+-        bits silently deleted rather than rotated round.
+-
+-        The count is masked to 5 bits by the hardware and only then reduced
+-        modulo the width, so `rol al, 16` is the identity and `rol ax, 31` is a
+-        rotate by 15. Both of those came back as 0 before.
+-
+-        Same defect class as the `sar` width bug: a narrow operand evaluated at
+-        32 bits. That one was fixed; the rotates beside it were missed.
+-        """
+-        if len(ops) < 2:
+-            return [f"/* {m}: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        cnt = _fmt_operand_read(ops[1])
+-        bits = (_operand_width(ops[0]) or 4) * 8
+-        suffix = {8: "8", 16: "16"}.get(bits, "32")
+-        func = ("ROL" if m == "rol" else "ROR") + suffix
+-        return [_fmt_operand_write(ops[0], f"{func}({dst}, {cnt})")]
++    _lift_shift = _project_bits.shift
++
++    _lift_sar = _project_bits.sar
++
++    _lift_rotate_carry = _project_bits.rotate_carry
++
++    _lift_rotate = _project_bits.rotate
+ 
+     # ── Compare / Test (standalone) ──
+ 
+@@ -3925,7 +3784,9 @@
+         # instruction's flags standing as if they were its own.
+         flag_mnem = (curr.mnemonic[5:] if curr.mnemonic.startswith("lock ")
+                      else curr.mnemonic)
+-        if flag_mnem in FLAG_SETTERS:
++        if _project_bits.constant_noop(curr):
++            pass  # Retain the previous flag interpretation for a known no-op.
++        elif flag_mnem in FLAG_SETTERS:
+             last_flag_setter, last_flag_ops = normalise_zero_test(
+                 flag_mnem, list(curr.operands))
+         elif flag_mnem in _FLAGS_UNDEFINED:
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -25,6 +25,7 @@
+ from .lifter import (Lifter, lift_basic_block, detect_seh_helpers,
+                      _RESULT_SNAPSHOT_SETTERS,
+                      detect_setjmp_helpers, _func_ident, _operand_width)
++from translation_bits import constant_noop as _constant_bit_noop
+ 
+ 
+ def _merge_flag_states(states):
+@@ -891,6 +892,10 @@
+ 
+         last_setter = None
+         for insn in instructions:
++            if insn.mnemonic in ("rcl", "rcr"):
++                return True  # Emitted C references carry even behind a zero-count guard.
++            if _constant_bit_noop(insn):
++                continue
+             m = insn.mnemonic
+             if m in ("adc", "sbb", "stc", "clc", "cmc", "rcl", "rcr"):
+                 return True
+@@ -903,7 +908,7 @@
+                 cc = m[4:]
+             if (cc in FunctionTranslator._CARRY_CC
+                     and (last_setter in CF_TRACKED
+-                         or last_setter in ("inc", "dec", "rep-cmps")
++                         or last_setter in ("inc", "dec", "rep-cmps", "rol", "ror")
+                          or last_setter in BT_MODIFY)):
+                 return True
+             if m.startswith("rep") and ("cmps" in m or "scas" in m):
+--- a/tools/recomp/test_carry_flag.py
++++ b/tools/recomp/test_carry_flag.py
+@@ -63,7 +63,7 @@
+     # The exact idiom from Halo geometry.c: shr ecx,1 / rep stosd / adc ecx,ecx
+     out = _lift("shr", [ECX, ONE])
+     assert "_cf =" in out, out
+-    assert ") - 1" in out, out
++    assert "_bit_count - 1u" in out, out
+ 
+ 
+ def test_adc_consumes_and_reproduces_carry():
+--- a/tools/recomp/test_lifter_double_shift.py
++++ b/tools/recomp/test_lifter_double_shift.py
+@@ -127,7 +127,7 @@
+ def test_the_count_is_masked_and_zero_is_a_no_op(mnemonic):
+     body = _emitted(mnemonic)
+     assert "& 31u" in body
+-    assert "_c &&" in body
++    assert "_bit_count &&" in body
+ 
+ 
+ @pytest.mark.parametrize("mnemonic", ("shld", "shrd"))
+--- a/tools/recomp/test_lifter_rotate_carry.py
++++ b/tools/recomp/test_lifter_rotate_carry.py
+@@ -37,17 +37,18 @@
+             for reg in ("al", "ax", "eax"):
+                 with self.subTest(mnemonic=m, reg=reg):
+                     out = _emit(m, reg, 1)
+-                    self.assertIn("RC_ROT", out)
++                    self.assertIn("_bit_ring", out)
+                     self.assertNotIn("TODO", out)
+ 
+-    def test_the_operand_width_reaches_the_helper(self):
+-        self.assertIn("8,", _emit("rcr", "al", 1))
+-        self.assertIn("16,", _emit("rcr", "ax", 1))
+-        self.assertIn("32,", _emit("rcr", "eax", 1))
++    def test_the_operand_width_reaches_the_carry_ring(self):
++        self.assertIn("<< 8)", _emit("rcr", "al", 1))
++        self.assertIn("<< 16)", _emit("rcr", "ax", 1))
++        self.assertIn("<< 32)", _emit("rcr", "eax", 1))
+ 
+     def test_the_carry_is_read_and_written(self):
+-        """It is the whole point of the instruction: &_cf, not a copy."""
+-        self.assertIn("&_cf", _emit("rcr", "eax", 1))
++        """The incoming carry is sampled and the outgoing carry is published."""
++        self.assertIn("_cf != 0", _emit("rcr", "eax", 1))
++        self.assertIn("_cf =", _emit("rcr", "eax", 1))
+ 
+     def test_a_function_containing_one_declares_the_carry(self):
+         """Without this the generated C does not compile: _cf is only
+--- a/tools/recomp/test_lifter_rotate_width.py
++++ b/tools/recomp/test_lifter_rotate_width.py
+@@ -34,11 +34,11 @@
+ 
+ 
+ class RotateWidthTest(unittest.TestCase):
+-    def test_helper_matches_the_operand_width(self):
++    def test_expression_matches_the_operand_width(self):
+         for _w, reg, rol, ror in _WIDTHS:
+             with self.subTest(reg=reg):
+-                self.assertIn(rol, _emit("rol", reg, 3))
+-                self.assertIn(ror, _emit("ror", reg, 3))
++                self.assertIn(f"% {_w * 8}u", _emit("rol", reg, 3))
++                self.assertIn(f"% {_w * 8}u", _emit("ror", reg, 3))
+ 
+     def test_narrow_rotates_are_not_emitted_at_32_bits(self):
+         """The control. An unfixed lifter emits ROL32 for `rol al, 3`."""
+--- a/tools/recomp/test_lifter_sar_width.py
++++ b/tools/recomp/test_lifter_sar_width.py
+@@ -33,10 +33,9 @@
+     insn = Instruction(0, 2, "sar", "", "00")
+     insn.operands = [dst, cnt]
+     lifted = Lifter().lift_instruction(insn)
+-    # needs_cf is off, so the statements are the write and the result
+-    # snapshot the condition reads -- see Lifter._result_snapshot. The sweep
+-    # is about the write; the snapshot rides along harmlessly.
+-    assert len(lifted) == 2, lifted
++    # The project emitter includes declarations and a masked-count guard.
++    # Compile every emitted statement, including the result snapshot.
++    assert lifted, lifted
+     return " ".join(lifted)
+ 
+ 
+@@ -200,7 +199,7 @@
+     def test_sar_al_1_on_0x80(self):
+         """The measured case, pinned on its own: 0x80 >> 1 is 0xC0, not 0x40."""
+         stmt = _sar(Operand(type="reg", reg="al"), Operand(type="imm", imm=1))
+-        self.assertRegex(stmt, r"\(int8_t\)\s*\(?LO8\(eax\)")
++        # The compiled C0 result accepts equivalent signed or unsigned sign fill.
+         src = PRELUDE + (
+             "int main(void){ uint32_t eax = 0xAAAAAA80u; " + stmt +
+             " printf(\"%02X\\n\", LO8(eax)); return 0; }")

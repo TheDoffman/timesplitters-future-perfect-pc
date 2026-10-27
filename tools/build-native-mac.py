@@ -36,7 +36,8 @@ def select_renderer(requested, macos_version, minimum_macos):
 
 
 def run(*args, cwd=ROOT):
-    subprocess.run([str(a) for a in args], cwd=cwd, check=True)
+    environment = dict(os.environ, TSFP_PROJECT_ROOT=str(ROOT))
+    subprocess.run([str(a) for a in args], cwd=cwd, check=True, env=environment)
 
 
 def main():

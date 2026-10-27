@@ -197,10 +197,7 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 ## Credits & license
 
 The project statically recompiles the Xbox executable into native code; it does
-not recover the original C/C++ source. Runtime and recompiler source are included
-in this repository alongside the project's patches and platform adapters. See
-[bundled runtime source](docs/building.md#bundled-runtime-source) for verification
-and the remaining third-party dependencies.
+not recover the original C/C++ source. The pinned runtime source is bundled with its credits and licenses, and the [independent tooling replacement](docs/independent-runtime.md) is in progress. See [bundled runtime source](docs/building.md#bundled-runtime-source) for setup verification and remaining dependencies.
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

@@ -1,8 +1,8 @@
 # Build, run and validation map
 
-Runtime setup: [offline snapshot](runtime.md).
+[Own tooling](independent.md).
 
-Wind checks: [contracts](native-wind.md).
+Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
 Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
 
@@ -61,13 +61,13 @@ profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual hos
 this self-test correction does not change gameplay bindings or certify physical
 keyboard input.
 
-PR CI now offers a candidate `PR validation` gate in `runtime-patches.yml`.
-Its plan selects runtime and launcher work from the same head, reuses the
-Windows/Mac workers and checks selected results with `ci-pr-gate.py`. Existing
-required check names continue to report until the branch ruleset migrates.
-Unrequired issue-form and issue-resolution workflows are scoped to their own
-source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
-missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
+PR CI's candidate `PR validation` gate in `runtime-patches.yml` selects runtime
+and launcher work for one head and checks Windows/Mac worker results with
+`ci-pr-gate.py`. Native jobs allow 30 minutes: Windows exceeded the old 15-minute
+job budget after passing 1207 tests. Test selection stays intact.
+Existing required names remain until ruleset migration. Issue form/resolution
+jobs select their own sources. `test_ci_pr_gate.py` covers missing/failed/skipped
+results; `test_ci_runtime_scope.py` checks wiring.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
