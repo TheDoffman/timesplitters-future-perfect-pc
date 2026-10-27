@@ -530,7 +530,7 @@ or carries only `delivery: optional` and the exact-hash retired-icon policy.
 with retirements retain the published launcher 1.2.24+ requirement. Legacy bundled-policy fixtures still enforce complete asset identity
 and launcher compatibility. `tools/textures/texture-release.py` separately audits and
 publishes immutable schema-3 parts plus per-file hashes; the public index is
-`config/textures/texture-download.json`, distinct from the repository catalog. The initial
+`config/texture-download.json`, distinct from the repository catalog. The initial
 unpublished placeholder is replaced only after successful publication. Asset CI
 hydrates LFS for pack/auditor changes, not game or launcher version bumps.
 

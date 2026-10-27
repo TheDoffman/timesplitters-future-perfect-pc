@@ -176,7 +176,9 @@ declares retired replacements; older bundled packs retain their 1.2.22 minimum.
 
 `SettingsPage` owns both hosts' optional check/download/confirmation/cancel UI.
 `TextureBusyChanged` locks the WPF/Avalonia host navigation and update actions.
-`TextureDownload` reads schema-3 `config/textures/texture-download.json` (bounded to 8 MiB),
+Released launchers embed the `config/texture-download.json` URL; keep this public
+endpoint and the publisher's default path stable during repository moves.
+`TextureDownload` reads schema-3 `config/texture-download.json` (bounded to 8 MiB),
 verifies per-part/per-file hashes and adopts matching files from existing packs
 without receipts. Schema-1 receipts remain supported. Downloads merge keyed pairs
 through `TexturePack`'s per-part recovery journal; identical pairs aren't rewritten.

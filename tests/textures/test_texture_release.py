@@ -16,6 +16,19 @@ spec.loader.exec_module(release)
 
 
 class TextureReleaseTests(unittest.TestCase):
+    def test_released_launchers_keep_the_original_manifest_endpoint(self):
+        # This URL is already compiled into installed Windows/Mac launchers.
+        manifest = ROOT/'config/texture-download.json'
+        release.validate_manifest(json.loads(manifest.read_text(encoding='utf-8')))
+        launcher = (ROOT/'tools/launcher/TextureDownload.cs').read_text()
+        self.assertIn('/main/config/texture-download.json', launcher)
+        with patch('sys.argv', ['texture-release.py', 'publish', '--version', '1.2.3']), \
+             patch.object(release, 'credentials', return_value='fixture'), \
+             patch.object(release.RELEASE, 'GitHub', return_value=object()), \
+             patch.object(release, 'publish', return_value='fixture release') as publish:
+            release.main()
+        self.assertEqual(publish.call_args.args[2], manifest)
+
     def fixture(self, pack):
         words = [0]*32
         for index, value in {0: 0x20534444, 1: 124, 3: 1, 4: 1, 7: 1,

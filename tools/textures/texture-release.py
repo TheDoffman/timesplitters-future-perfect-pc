@@ -288,7 +288,7 @@ def main():
     parser.add_argument('command', choices=('publish', 'verify'))
     parser.add_argument('--pack', type=Path, default=ROOT/'assets/textures')
     parser.add_argument('--version')
-    parser.add_argument('--manifest', type=Path, default=ROOT/'config/textures/texture-download.json')
+    parser.add_argument('--manifest', type=Path, default=ROOT/'config/texture-download.json')
     parser.add_argument('--work', type=Path, default=ROOT/'build/texture-publication')
     parser.add_argument('--remote', action='store_true')
     args = parser.parse_args()

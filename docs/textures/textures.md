@@ -84,7 +84,7 @@ Older traces from `2230901` omit hashing and cached calls and lack hash columns.
    out of publication. Choose a new texture version; published versions are immutable.
 2. Run `python tools/textures/texture-release.py publish --version X.Y.Z`. This streams at
    most one bounded part at a time, verifies uploaded hashes and writes the public
-   schema-3 file index to `config/textures/texture-download.json`. It does not replace the
+   schema-3 file index to `config/texture-download.json`. It does not replace the
    separate repository catalog `config/textures/texture-pack.json`.
 3. Run `python tools/textures/texture-release.py verify --remote`, review and commit the
    generated download manifest, then merge it into main. Existing Windows and Mac

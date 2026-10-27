@@ -7,11 +7,13 @@ The standalone Mac RHI CMake project also bypasses the title's include setup;
 it now supplies the grouped shared-header directories before adding runtime
 targets. Texture/path/context regressions: 33 passed on Windows. Native Mac
 validation is delegated to the PR's existing CI job, not inferred from Windows.
-These repairs do not change runtime behavior or the earlier gameplay limits.
+The public texture manifest remains at config/texture-download.json: released
+launchers have that URL compiled in. Publisher and new launchers retain this
+single canonical endpoint. These repairs preserve the earlier gameplay limits.
 
 ## Repository responsibility folders (2026-10-27)
 
-On `cleanup/repository-folders`, 717 source, tool, test, configuration and
+On `cleanup/repository-folders`, 716 source, tool, test, configuration and
 documentation files are grouped by responsibility. Root status/backlog reports
 now live in `docs/project`; public launch/build commands and required root files
 remain stable. Vendor snapshot, asset lookup keys and private data retain their
@@ -28398,7 +28400,7 @@ run remains failed at publication; the verified release was recovered separately
 ## Optional texture download availability (2026-10-25)
 
 Investigation on main `0ccf654f8089e2625130755c15657c6777683bd9` found that
-`config/textures/texture-download.json` still declared `published: false`. No optional
+`config/texture-download.json` still declared `published: false`. No optional
 texture release existed. Launcher v1.3.1 correctly rejected this placeholder;
 committed Git LFS textures do not provide a downloadable part index.
 
@@ -28412,7 +28414,7 @@ Publication uses `texture-release.py` and one bounded temporary ZIP at a time.
 
 Published `textures-v0.1.0-beta.1` as a prerelease without changing GitHub Latest.
 All 49 bounded ZIP parts and the generated schema-3 index passed remote asset
-size/hash verification. The generated `config/textures/texture-download.json` replaces
+size/hash verification. The generated `config/texture-download.json` replaces
 the unavailable placeholder; merging this PR activates existing launchers.
 
 Used the actual public Windows v1.3.1 app assembly in an isolated harness. It
