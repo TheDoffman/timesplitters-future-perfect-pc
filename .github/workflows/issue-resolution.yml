@@ -5,15 +5,15 @@ on:
     paths:
       - .github/workflows/issue-resolution.yml
       - .github/workflows/issue-resolution-comments.yml
-      - tools/issue-resolution.py
-      - tests/test_issue_resolution.py
+      - tools/ci/issue-resolution.py
+      - tests/repository/test_issue_resolution.py
   push:
     branches: [main]
     paths:
       - .github/workflows/issue-resolution.yml
       - .github/workflows/issue-resolution-comments.yml
-      - tools/issue-resolution.py
-      - tests/test_issue_resolution.py
+      - tools/ci/issue-resolution.py
+      - tests/repository/test_issue_resolution.py
 
 permissions:
   contents: read
@@ -30,4 +30,4 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - run: python -m unittest discover -s tests -p test_issue_resolution.py -v
+      - run: python -m unittest discover -s tests/repository -p test_issue_resolution.py -v

@@ -2,9 +2,9 @@
  * register context into preallocated shared memory, notifies and waits boundedly.
  * Hashing, symbolication, log tails and hang samples happen in a separate process. */
 #include "crash_posix.h"
-#include "../pc_hang_policy.h"
-#include "../pc_breadcrumbs.h"
-#include "../pc_capture_health.h"
+#include "../diagnostics/pc_hang_policy.h"
+#include "../diagnostics/pc_breadcrumbs.h"
+#include "../diagnostics/pc_capture_health.h"
 #include <CommonCrypto/CommonDigest.h>
 #ifndef TSFP_CRASH_TEST
 #include <CoreGraphics/CoreGraphics.h>

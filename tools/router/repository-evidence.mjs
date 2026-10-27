@@ -14,10 +14,10 @@ function relative(name){
 }
 function sourceAllowed(name,namespace){
   try{relative(name);}catch{return false;}
-  if(name.split('/').some(p=>/^(?:private|assets|build|logs|gen|generated|node_modules|vendor|third_party)$/i.test(p)||/(?:^|[._-])(?:auth|credentials?|secrets?|tokens?|passwords?)(?:[._-]|$)/i.test(p)))return false;
+  if((name.split('/').includes('build')&&!name.startsWith('tools/build/')&&!name.startsWith('config/build/'))||name.split('/').some(p=>/^(?:private|assets|logs|gen|generated|node_modules|vendor|third_party)$/i.test(p)||/(?:^|[._-])(?:auth|credentials?|secrets?|tokens?|passwords?)(?:[._-]|$)/i.test(p)))return false;
   if(namespace==='runtime')return /^(?:CMakeLists\.txt$|src\/|tools\/recomp\/|scripts\/|templates\/|config\/extra_symbols\/|titles\/futureperfect\/(?:src\/|CMakeLists\.txt$))/.test(name)&&(/\.(?:c|h|cpp|hpp|inc|py|json|txt)$/.test(name)||name.endsWith('CMakeLists.txt'));
   return /^(?:src\/|tests\/|tools\/|patches\/|docs\/)/.test(name)&&(/\.(?:c|h|cpp|hpp|m|mm|inc|def|cs|xaml|py|mjs|js|cjs|ps1|sh|cmd|command|patch|md|json|txt|cmake|hlsl|glsl|metal|vert|frag)$/.test(name)||name.endsWith('CMakeLists.txt'))
-    || /^(?:tsfp\.ps1|setup\.ps1|requirements(?:-release)?\.txt|(?:README|AGENTS|STATUS|MAC_PORT_BACKLOG|CONTRIBUTING)\.md|Play(?:-Native-Mac)?\.command|Play(?:-Quiet|-Textures)?\.cmd|\.github\/(?:workflows|ISSUE_TEMPLATE)\/[^/]+\.ya?ml|config\/(?:[^/]+\.default\.(?:json|ini)|vulkan-sdk\.json|mac-launcher-sdk\.json|native-mac-runtime-licenses\.json|texture-pack\.json))$/.test(name);
+    || /^(?:tsfp\.ps1|setup\.ps1|requirements(?:-release)?\.txt|(?:README|AGENTS|STATUS|MAC_PORT_BACKLOG|CONTRIBUTING)\.md|Play(?:-Native-Mac)?\.command|Play(?:-Quiet|-Textures)?\.cmd|\.github\/(?:workflows|ISSUE_TEMPLATE)\/[^/]+\.ya?ml|config\/(?:[^/]+\.default\.(?:json|ini)|build\/(?:vulkan-sdk|mac-launcher-sdk|native-mac-runtime-licenses)\.json|textures\/texture-pack\.json))$/.test(name);
 }
 function safePath(root,name){
   relative(name);let current=root;
@@ -118,7 +118,7 @@ export function createRepositoryEvidence(cwd){
         candidates=candidates.filter(name=>/^patches\/.+\.patch$/.test(name)&&!name.split('/').includes('legacy'));
         try{
           patchIndex=JSON.parse(read(source,'docs/agent-context/patch-index.json').text);
-          const loader=read(source,'tools/apply-patches.py').text.replace(/\r\n/g,'\n');
+          const loader=read(source,'tools/build/apply-patches.py').text.replace(/\r\n/g,'\n');
           if(patchIndex.loaderSha256!==sha(loader))throw Error('stale_index');
           const order=new Map(patchIndex.patches.map((p,i)=>[p.path??'patches/'+p.name,i]));candidates.sort((a,b)=>(order.get(b)??-1)-(order.get(a)??-1));
         }catch{patchIndex=null;}

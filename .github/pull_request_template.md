@@ -16,12 +16,12 @@ after merge, so replace these instructions with the actual explanation.
 ## Validation
 
 Record relevant tests and host results. Mark unavailable checks as pending;
-Windows results do not establish Mac support. Update `STATUS.md` for runtime work.
+Windows results do not establish Mac support. Update `docs/project/STATUS.md` for runtime work.
 
 ## Shared implementation and platform validation
 
 Describe the shared implementation and any OS/graphics adapters. Link the
-entries updated in `MAC_PORT_BACKLOG.md` for outstanding adapter or validation
+entries updated in `docs/project/MAC_PORT_BACKLOG.md` for outstanding adapter or validation
 work. Explain genuine platform exceptions or explicitly PC-only scope. Shared
 source and a successful test on one host do not establish support on the other.
 For changes with no platform impact, explain why a backlog entry is unnecessary.

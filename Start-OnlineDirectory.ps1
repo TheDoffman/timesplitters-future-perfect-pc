@@ -60,7 +60,7 @@ if ($PublicAddress) { Write-Output "Friends use https://${PublicAddress}:$Port" 
 else { Write-Output 'Supply -PublicAddress for Internet hosting from this PC; without it, local hosts advertise their LAN address.' }
 Write-Output "On this PC use https://127.0.0.1:$Port and the same fingerprint."
 Write-Output 'Game hosts also forward their selected UDP port (default 30821); guests need no forwarding.'
-$arguments = @((Join-Path $root 'tools\lobby_server.py'), '--bind', '0.0.0.0', '--port', "$Port", '--cert', $certificate, '--key', $key)
+$arguments = @((Join-Path $root 'tools\network\lobby_server.py'), '--bind', '0.0.0.0', '--port', "$Port", '--cert', $certificate, '--key', $key)
 if ($PublicAddress) { $arguments += @('--public-address', $PublicAddress) }
 & $python @arguments
 if ($LASTEXITCODE -ne 0) { throw "Directory stopped with exit code $LASTEXITCODE." }

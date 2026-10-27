@@ -8,22 +8,22 @@ Generation hashes cover own translation/diagnostic tools and bridges. Native
 integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate
 references on Windows; moves cover hooks/stack aliases. Title patches precede
 own move/integer/bit/product bodies. Shared CI runs original and inherited consumers;
-scope and host limits are in `docs/independent-runtime.md`.
+scope and host limits are in `docs/development/independent-runtime.md`.
 
-`tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
+`tools/compiler/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass
 `TSFP_PROJECT_ROOT` to the compatibility bridge, including shared Mac deps.
 The generation fingerprint includes reader, export data and bridge. Windows
 reruns the full pipeline on staleness; Mac requires `--generate`. See
-`docs/independent-runtime.md` for provenance and remaining upstream components.
+`docs/development/independent-runtime.md` for provenance and remaining upstream components.
 
-`tools/import-game.py` / `disc_image.py` are the project-owned stdlib disc
+`tools/build/import-game.py` / `disc_image.py` are the project-owned stdlib disc
 importer. `tsfp.ps1 Extract -Python ...` runs before Setup without entering
 the external checkout; Mac uses the same CLI. Existing files must match before
-any copy. `tests/test_disc_image.py` covers format failures, preservation,
+any copy. `tests/compiler/test_disc_image.py` covers format failures, preservation,
 private supported-XBE input and a toolkit-free PowerShell fixture, on both CI
 hosts where applicable. This replaces import only; generation/runtime are still
-upstream. See `docs/independent-runtime.md` for the remaining replacement work.
+upstream. See `docs/development/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
@@ -37,7 +37,7 @@ memory/register oracles and decoded SET/CMOV/branch consumers; historical text
 fixtures follow the new emission. Hashes, loader order and both-host CI include
 this stage. Full flag provenance, atomic replacement and native Mac gameplay
 remain separate work. Windows bit-stage game acceptance now passed; see MAC-083
-and STATUS.md. Patch-index hashes must use LF patch bytes as stored in Git;
+and docs/project/STATUS.md. Patch-index hashes must use LF patch bytes as stored in Git;
 normalize a stale local CRLF copy before refreshing the index.
 
 `0200-independent-translation-product.patch` follows bit lowering and removes the
@@ -52,7 +52,7 @@ The SAR consumer fixture accepts the complete emitted block and uses the shared
 native compiler adapter; its compiled sweeps and negative controls remain.
 
 
-The active independent-replacement goal is in `docs/independent-runtime.md`.
+The active independent-replacement goal is in `docs/development/independent-runtime.md`.
 `0150-independent-translation-bits.patch` follows integer lowering and removes seven
 shift/rotate handlers in favor of `translation_bits.py`. Counts are masked to
 five bits, operations retain operand width and zero counts preserve emitted
@@ -199,7 +199,7 @@ input source hashes, and the generation fingerprint includes disassembler
 source too. `test_recomp_input.py` exercises the real patched consumer suite.
 
 `0210-independent-xbe-reader.patch` replaces the installed Python XBE parser with a
-bridge to project-owned `tools/xbe_image.py` (source root selected by the build
+bridge to project-owned `tools/compiler/xbe_image.py` (source root selected by the build
 drivers' `TSFP_PROJECT_ROOT`, ancestor lookup for ordinary direct commands).
 It also redirects two ordinal audits to the separately credited nxdk CC0 ABI
 table. No original parser body runs; other generation/runtime stages remain

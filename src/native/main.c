@@ -3,8 +3,8 @@
 #include "xbox_watchpoint.h"
 #include "recomp_config.h"
 #include "crash_posix.h"
-#include "../pc_discord.h"
-#include "../pc_native_rate.h"
+#include "../network/pc_discord.h"
+#include "../gameplay/pc_native_rate.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

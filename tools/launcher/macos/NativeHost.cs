@@ -68,7 +68,7 @@ namespace TimeSplitters.Launcher
         {
             if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
             string python=Path.Combine(root,".venv/bin/python");
-            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
+            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/build/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
             var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,WorkingDirectory=root};
             // The helper needs driver metadata only, not source hashes or build logs.
             var selection=new Dictionary<string,object>();

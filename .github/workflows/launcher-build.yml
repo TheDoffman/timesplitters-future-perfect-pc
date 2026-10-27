@@ -37,13 +37,13 @@ jobs:
         id: plan
         env:
           LAUNCHER_VALIDATION_SHA: ${{ inputs.source_ref }}
-        run: python tools/launcher-release.py plan
+        run: python tools/release/launcher-release.py plan
       - name: Test publication and recovery policy
-        run: python -m unittest discover -s tests -p test_launcher_release.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_release.py -v
       - name: Test compatibility automation policy
-        run: python -m unittest discover -s tests -p test_launcher_compatibility.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_compatibility.py -v
       - name: Test shared launcher layout and theme propagation
-        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_shared_ui.py -v
       - name: Install pinned packaging and icon test dependencies
         shell: bash
         run: |
@@ -55,17 +55,17 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test startup preferences, packaging and Windows game icons
-        run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py tests/test_game_icon.py -q --tb=short
+        run: python -m pytest tests/launcher/test_launcher_startup.py tests/launcher/package_launcher.py tests/repository/test_game_icon.py -q --tb=short
       - name: Recover checksum-pinned original artwork
         shell: powershell
-        run: ./tools/fetch-launcher-art.ps1
+        run: ./tools/build/fetch-launcher-art.ps1
       - name: Build release package and run Windows launcher regressions
         shell: powershell
         run: |
-          ./tools/build-launcher.ps1 -Test -RequireArtwork -BannerPath build/launcher-art/launcher-banner.png -LogoPath build/launcher-art/launcher-logo.png -BackdropPath build/launcher-art/launcher-backdrop.png
+          ./tools/build/build-launcher.ps1 -Test -RequireArtwork -BannerPath build/launcher-art/launcher-banner.png -LogoPath build/launcher-art/launcher-logo.png -BackdropPath build/launcher-art/launcher-backdrop.png
           Copy-Item build/launcher/launcher.ico build/launcher-art/launcher.ico
       - name: Verify Windows update package and record its source
-        run: python tools/launcher-release.py stamp --directory build/launcher --platform windows-x64
+        run: python tools/release/launcher-release.py stamp --directory build/launcher --platform windows-x64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: launcher-windows
@@ -104,15 +104,15 @@ jobs:
           name: launcher-build-inputs
           path: build
       - name: Test publication and recovery policy on Mac
-        run: python -m unittest discover -s tests -p test_launcher_release.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_release.py -v
       - name: Test compatibility automation policy
-        run: python -m unittest discover -s tests -p test_launcher_compatibility.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_compatibility.py -v
       - name: Test shared launcher layout and theme propagation
-        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
+        run: python -m unittest discover -s tests/launcher -p test_launcher_shared_ui.py -v
       - name: Build release package and run native launcher regressions
         run: |
           test "$(uname -m)" = arm64
-          python tools/build-mac-launcher.py --install-sdk --test --require-artwork --artwork-dir build/launcher-art --package
+          python tools/build/build-mac-launcher.py --install-sdk --test --require-artwork --artwork-dir build/launcher-art --package
       - name: Test packaged Mac update, repair and restart
         env:
           LAUNCHER_VERSION: ${{ needs.windows.outputs.version }}
@@ -120,7 +120,7 @@ jobs:
           "build/macos-launcher/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher"
           --verify-package "build/macos-launcher/TimeSplitters-Launcher-v${LAUNCHER_VERSION}-macos-arm64.zip" "$LAUNCHER_VERSION"
       - name: Verify Mac update package and record its source
-        run: python tools/launcher-release.py stamp --directory build/macos-launcher --platform macos-arm64
+        run: python tools/release/launcher-release.py stamp --directory build/macos-launcher --platform macos-arm64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: launcher-macos
@@ -154,4 +154,4 @@ jobs:
           pattern: launcher-*
           path: build/launcher-release
           merge-multiple: true
-      - run: python tools/launcher-release.py verify
+      - run: python tools/release/launcher-release.py verify

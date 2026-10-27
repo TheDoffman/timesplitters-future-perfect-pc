@@ -20,7 +20,7 @@ namespace TimeSplitters.Launcher
     }
     public static class TextureDownload
     {
-        public const string ManifestUrl = "https://raw.githubusercontent.com/" + ReleaseClient.Repository + "/main/config/texture-download.json";
+        public const string ManifestUrl = "https://raw.githubusercontent.com/" + ReleaseClient.Repository + "/main/config/textures/texture-download.json";
         public static TextureRelease Parse(string text)
         {
             var value = Json.Object(text);

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "54df4b67bc5c58e3adc45d7248e032663a9d61124f90c94bbdfc3ab182292664",
+  "loaderSha256": "e8e0ff34340c7b27863381d99dbc7f15b3afe2f2aa8aea80a49463b0be65a639",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1907,6 +1907,19 @@
         "tools/recomp/test_lifter_bit_string.py",
         "tools/recomp/test_lifter_bt_cf.py",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "2090-repository-source-layout.patch",
+      "path": "patches/platform/2090-repository-source-layout.patch",
+      "sha256": "7a240eff127e3c7b7456b3f2510df5e64a12b5cdfaf390db0b823e722af51692",
+      "targets": [
+        "src/d3d/CMakeLists.txt",
+        "src/hle/CMakeLists.txt",
+        "src/input/CMakeLists.txt",
+        "src/replay/CMakeLists.txt",
+        "titles/futureperfect/CMakeLists.txt",
+        "tools/xbe_parser/xbe_parser.py"
       ]
     }
   ]

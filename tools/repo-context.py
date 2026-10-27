@@ -82,7 +82,7 @@ def packet(root, query):
 
 
 def patch_index(root):
-    spec = importlib.util.spec_from_file_location('context_patch_loader', root / 'tools/apply-patches.py')
+    spec = importlib.util.spec_from_file_location('context_patch_loader', root / 'tools/build/apply-patches.py')
     loader = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(loader)
     paths = [root / name for name in tracked(root)
@@ -92,7 +92,7 @@ def patch_index(root):
     locations = {p.name: p.relative_to(root).as_posix() for p in paths}
     # Existing Windows worktrees can retain CRLF despite the LF attribute.
     # Normalize loader text for fresh Linux/macOS checkout reproducibility.
-    loader_bytes = (root / 'tools/apply-patches.py').read_text(encoding='utf-8').encode('utf-8')
+    loader_bytes = (root / 'tools/build/apply-patches.py').read_text(encoding='utf-8').encode('utf-8')
     return {'version': 1, 'loaderSha256': hashlib.sha256(loader_bytes).hexdigest(),
             'patches': [{'name': record['name'], 'path': locations[record['name']],
                          'sha256': record['sha256'],

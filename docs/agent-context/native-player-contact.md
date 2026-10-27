@@ -54,7 +54,7 @@ before and after every guest call. Mismatched frame/scene/tick or stack balance,
 unreadable required spans and write failures reject records without changing
 guest execution. The tracer never changes positions, collision results or clocks.
 
-`tests/native_walk_trace.c` exercises the production bridge and numeric dispatch
+`tests/gameplay/native_walk_trace.c` exercises the production bridge and numeric dispatch
 with controlled services: disabled/neighbor sites, nested pairs, returned EAX/ESP,
 argument reuse, slot/scene/tick filters, invalid reads/options and output bounds.
 It does not execute real collision geometry. `native_walk_policy.c` covers
