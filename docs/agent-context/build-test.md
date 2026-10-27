@@ -996,7 +996,7 @@ build and live Scotland the Brave Uplink view remain separate platform and
 visual validation routes. Replay captures alone cannot verify this effect
 because the host copies are not serialized into replay frames.
 
-## Coupled water operator checks
+## Coupled water and impact-spark checks
 
-See [water and procedural-surface validation](water-tests.md) for the complete
-CPU/GPU fixtures, live capture routes, controls, and acceptance limits.
+See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
+[spark timing](native-impact-sparks.md) for the original guest regression route.

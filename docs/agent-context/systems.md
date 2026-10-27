@@ -949,6 +949,6 @@ TRAP1D8AB0 now couples fractional kicks/travel and carried-tick contact lifetime
 Original whole/catch-up and pause remain exact. See [script clocks](native-script-clocks.md)
 for the map, hook composition, rejected candidates and live/Mac acceptance limits.
 
-Statistics: D2CB7 scopes/restores D1FD0 float delta to carried ticks. Time totals
-keep Original addition cadence; distance stays per-frame. D2079 blocks stale
-ticks during pause. Shared helper adds no state/adapter; Original is unchanged.
+Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
+cadence; distance stays per-frame. D2079 blocks paused stale ticks.
+Impact sparks: see [native spark timing](native-impact-sparks.md).
