@@ -217,7 +217,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * gate is replaced by entity flags before angle/clamp/event processing. */
     /* Deferred actor voice requests and their shared cooldown (164E00) also
      * consume float seconds; the entry EAX is discarded before queue handling. */
-    if ((site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Shared impact sparks (108780) integrate their segment positions with
+     * 73BBA8, the live fractional effect interval. Skipping zero-whole-tick
+     * frames leaves newly spawned geometry stale while it is still rendered. */
+    if ((site == 0x108793u || site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||

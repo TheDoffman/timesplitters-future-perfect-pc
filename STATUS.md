@@ -29056,3 +29056,19 @@ route. The executed-event report remains authoritative. The reader ends at its
 exits cleanly, with signed profile/canonical fixture and partition/lock cleanup.
 No runtime regression or live TRAP success is inferred from this attempt.
 All applicable checks on5cfb1542 pass. No production code changes in this audit.
+
+## Issue #371: weapon impact streaks at high refresh (2026-10-27)
+
+The supplied 180 FPS frame shows black rays extending from a sci-fi handgun
+impact. Shared type-9 impact sparks use fractional effect time but their original
+entry gate waits for a whole 60 Hz tick. The shared numeric policy now admits
+positive fractional intervals at 108793; paused and Original60 frames retain
+the original gate. The original guest updater fixture passes 60/120/180/240 FPS
+and a deliberately unhooked negative case; the neighboring beam fixtures pass.
+Windows Release build and its build tests passed. Isolated Test Lab firing at
+180 FPS passed the native validation checks; a short frame sequence around two
+sci-fi handgun shots shows the wall impact without a long black streak.
+The captured sequence is limited to this weapon and scene; an across-weapon
+visual sweep and native Mac validation remain pending. Evidence stays in
+ignored `private/test-saves/high-refresh/native-180-issue371-fixed-*` and
+`logs/issue371-fixed-contact.jpg`.
