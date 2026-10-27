@@ -29087,8 +29087,8 @@ lifecycle checks. The private-US fixture passed 425 Fire schedules through
 the original digital decoder, using X as a surrogate button edge. This is
 synthetic input evidence; physical mouse feel and native Mac gameplay still
 need validation. The Windows Release build and bundled tests pass. An isolated
-180 FPS Test Lab Story replay delivered seven 1 ms Fire clicks and consumed
-exactly seven rounds (128 to 121), with no crash or native presentation error;
-the run's saved validation is in ignored
-`private/test-saves/high-refresh/native-180-short-fire-issue337-validation.json`.
+120, 180 and 240 FPS Test Lab Story replays each delivered seven 1 ms Fire
+clicks and consumed exactly seven rounds (128 to 121), with no crash or native
+presentation error. Saved validations are in ignored
+`private/test-saves/high-refresh/native-{120,180,240}-short-fire-issue337-validation.json`.
 Changes are on a local branch and are not yet pushed.

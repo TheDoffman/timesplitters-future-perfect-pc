@@ -4198,8 +4198,8 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   60 Hz input polls, with earlier pulses cleared on Reload and all pending
   input reset on focus/capture/menu/eligibility changes. Windows and SDL already
   publish the same mouse/key edges; no new Mac adapter is needed. Windows
-  host schedules and original decoder replay pass at 60–240 FPS; a 180 FPS
-  isolated Story replay consumed seven rounds from seven 1 ms clicks. Native Mac
+  host schedules and original decoder replay pass at 60–240 FPS; isolated
+  120/180/240 FPS Story replays each consumed seven rounds from seven 1 ms clicks. Native Mac
   build and physical mouse checks remain pending on the Mac: click singly and
   repeatedly at 120/180/240, hold Fire, Reload while firing, switch menus and
   focus, and test secondary fire with a remapped key. See STATUS for evidence.
