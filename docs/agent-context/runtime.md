@@ -1,5 +1,10 @@
 # Runtime and patch navigation
 
+Bit-operation ownership, captured flags and native validation are in [own tooling](independent.md).
+
+Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
+
+
 Independent tooling: [ownership and validation](independent.md), including compiled inherited SAR sweeps.
 
 The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.

@@ -1,12 +1,14 @@
 # Subsystem entry points
 
+Product division faults: [shared adapter and limits](independent.md).
+
+
 Procedural wind: [ownership/time scopes](native-wind.md).
 
 Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
 
-GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the
-production state-module pixel fixture with Windows WARP; see [runtime](runtime.md).
-The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.
+GPU state-cache acceptance: shared Vulkan/WARP pixel fixture and frontend
+header configuration are in [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
 Live integer/vector register references: [four-site policy and tests](gpr-refs.md).

@@ -3,8 +3,8 @@
 The objective is to replace the code taken from `ts3FPrecomp` with this
 project's implementations. Standard dependencies such as SDL, FFmpeg,
 Capstone, the compiler and host graphics SDKs remain allowed. Copying upstream
-files into this repository does not meet that objective. The earlier vendoring
-proposal in PR #369 remains a separate, unmerged availability solution.
+files into this repository does not meet that objective. The bundled snapshot from PR #369 supplies interim offline availability;
+it does not count as original replacement code.
 
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
@@ -15,7 +15,8 @@ the library-symbol adapter, generation driver, function classifier, manual-sourc
 scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
 indirect-branch feedback, unresolved-address diagnostics, C operand emission,
-basic data-transfer/stack lowering, scalar integer arithmetic/logic, and shifts/rotates.
+basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
+multiply/divide lowering, and non-LOCK bit tests/scans/byte swapping.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -68,6 +69,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Basic data-transfer and stack instructions | Project-owned `translation_moves.py` supplies MOV, MOVZX, MOVSX, LEA, PUSH and POP | Native extension/hook/stack-alias/segment/trace contracts, standalone copies, existing consumers, generation/build/game; native Mac pending |
 | Scalar integer arithmetic and logic | Project-owned `translation_integer.py` supplies ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT | Native result/carry/snapshot and decoded-sequence contracts, standalone copies, consumers, generation/build/game; complete flag lowering remains separate |
 | Shifts and rotates | Project-owned `translation_bits.py` supplies SHL/SHR/SAR/SHLD/SHRD/ROL/ROR/RCL/RCR | Native bit-step and Windows x64 hardware value/carry comparisons, no-op/carry routing, consumers and generation/build/game; complete flag provenance remains separate |
+| Multiply and divide | Project-owned `translation_product.py` supplies MUL/IMUL/DIV/IDIV; shared `guest_integer_fault.c` stops invalid division before result writes | Width/alias/overflow and native x86 comparisons, decoded flag consumers, host fault adapter, generation/build/game; guest SEH and native Mac acceptance remain separate |
+| Bit tests, scans and byte swaps | Project-owned `translation_bitops.py` supplies non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP | Native width/offset/alias and x86 references, captured flag consumers, generation/build/game; atomic forms and full flag provenance remain separate |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -603,3 +606,62 @@ overflow/parity/auxiliary flags and complete conditional lowering still require
 replacement. Four inherited expression fixtures follow the new emitted forms;
 compiled behavioral checks remain active. Hashes and both-host CI include the
 module. STATUS.md and MAC-081 separate implementation from host acceptance.
+
+
+## Multiply and divide lowering
+
+`translation_product.py` replaces the two multiply/divide handler bodies.
+MUL/IMUL implement byte, word and dword implicit pairs and the explicit word/
+dword IMUL forms. Signed products fit a widened intermediate before truncation;
+CF and OF agree on whether the result fits. Other multiplication flags remain
+undefined. Consumer routing supports carry/overflow branches and SET/CMOV forms.
+
+DIV/IDIV sample the divisor before any result writes, including EAX/EDX aliases
+and memory addressed through them. Quotients must fit the destination width.
+Signed division uses unsigned magnitudes and sign restoration, including the
+64-bit minimum divided by minus one, without invoking signed C overflow. Byte
+results share AX; word results preserve the upper halves of EAX/EDX. Undefined
+division flags retain the existing snapshots without asserting hardware values.
+
+Zero and overflow faults preserve result registers, publish the local frame and
+call `src/guest_integer_fault.c`. The adapter logs guest site/reason and triggers
+the existing fatal host diagnostics (Windows noncontinuable integer-divide
+exception; POSIX SIGFPE with abort fallback). It does **not** implement guest SEH
+recovery; that remains execution-foundation work. Both title CMake host paths
+link the same adapter. Original compiled tests check portable arithmetic,
+Windows x86 instructions, aliases, memory-read counts, fault state, full decoded
+consumer functions and the actual host adapter. Local/CI/native Mac acceptance
+is recorded separately in STATUS.md and MAC-084.
+
+The preceding bit-stage CI exposed a stale inherited SAR statement-count/cast
+assertion, skipped locally without Clang/GCC. The product-stage compatibility
+patch retains the compiled width/count sweeps and negative controls, accepts the
+whole emitted block, and routes native compilation through the project helper
+so MSVC runs the same fixture. No production arithmetic change is involved.
+
+
+## Bit tests, scans and byte swapping
+
+`translation_bitops.py` owns non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP.
+Inputs and memory addresses are sampled before writes. Register/immediate indices
+wrap at operand width; memory/register indices select a signed bit string using
+unsigned arithmetic, including negative offsets and wrapping guest addresses.
+BT and modifying forms publish the tested bit once to CF. Carry branches,
+SET and CMOV consume that snapshot even when intervening moves overwrite inputs.
+Scans publish ZF from the sampled source and preserve the destination on zero as
+an explicit policy for an architecturally undefined result. BSWAP accepts dwords.
+
+The specification basis is Intel SDM volume 2A (BT through BTS, BSF/BSR, BSWAP):
+https://cdrdv2-public.intel.com/812383/253666-sdm-vol-2a.pdf.
+Original native fixtures cover all word values, seeded dwords, aliases, signed
+memory offsets, immediate wrapping and decoded consumers. Windows ML64 references
+compare defined register/memory results and flags with actual x86 instructions.
+Copied modules execute without the toolkit. Inherited textual fixtures follow the
+new emission while preserving behavioral checks. Generation fingerprints and
+Windows/macOS CI include the module; see STATUS.md and MAC-083 for acceptance.
+
+The additive compatibility patch follows product lowering and retains unrelated
+instruction dispatch. LOCK-prefixed operations remain in the existing atomic
+handler for a separate replacement stage. Complete flag provenance, preserved
+flags across different setters, guest memory faults and other instruction/runtime
+families remain separate work; this stage does not establish full independence.

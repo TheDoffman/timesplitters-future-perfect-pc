@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own tooling](independent.md).
+[Own translation and flag tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

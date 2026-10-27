@@ -5,9 +5,9 @@ The bundled snapshot supplies the remaining pinned runtime while project-owned t
 ## Generation and validation
 
 Generation hashes cover own translation/diagnostic tools and bridges. Native
-integer/bit fixtures cover widths, carry and snapshots, with ML64 shift/rotate
+integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate
 references on Windows; moves cover hooks/stack aliases. Title patches precede
-own move/integer/bit bodies. Shared CI runs original and inherited consumers;
+own move/integer/bit/product bodies. Shared CI runs original and inherited consumers;
 scope and host limits are in `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
@@ -26,6 +26,31 @@ hosts where applicable. This replaces import only; generation/runtime are still
 upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
+
+`independent-translation-bitops.patch` follows product lowering, replacing
+non-LOCK bit tests/modifications, scans and byte swaps with `translation_bitops.py`.
+BT forces CF publication too; carry and scan-zero consumers use sampled flags.
+Signed word/dword memory indices use unsigned floor-division arithmetic; zero
+scan results retain destinations as explicit undefined-result policy. Unrelated
+dispatch and existing LOCK handlers remain intact. Native fixtures include x86
+memory/register oracles and decoded SET/CMOV/branch consumers; historical text
+fixtures follow the new emission. Hashes, loader order and both-host CI include
+this stage. Full flag provenance, atomic replacement and native Mac gameplay
+remain separate work. Windows bit-stage game acceptance now passed; see MAC-083
+and STATUS.md. Patch-index hashes must use LF patch bytes as stored in Git;
+normalize a stale local CRLF copy before refreshing the index.
+
+`independent-translation-product.patch` follows bit lowering and removes the
+multiply/divide method bodies in favor of `translation_product.py`. Inputs are
+sampled before writes; all integer widths retain the implicit register pairs.
+Multiplication publishes CF/OF together, with overflow branch/SET/CMOV consumers.
+Division checks zero and quotient range before result writes, using unsigned
+magnitudes for signed division. Faults publish the local EBP and call the own
+fatal adapter; this does not implement guest SEH. CMake links that adapter on
+both hosts. Historical snapshots defer this patch with the other own handlers.
+The SAR consumer fixture accepts the complete emitted block and uses the shared
+native compiler adapter; its compiled sweeps and negative controls remain.
+
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
 `independent-translation-bits.patch` follows integer lowering and removes seven
