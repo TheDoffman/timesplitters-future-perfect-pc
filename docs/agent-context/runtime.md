@@ -749,3 +749,5 @@ Future Perfect reaches host_Swap from its HLE shadow frame boundary. A pump in
 dev_Present alone does not run for that path. Keep the completion call in the
 common resolve function, after the skipped-Swap guard; tests execute both actual
 entry bodies and verify one completion per presented frame, none for a skip.
+
+Standalone translator consumers gate live-register header/declarations on the supported protocol; see [register contracts](gpr-refs.md).

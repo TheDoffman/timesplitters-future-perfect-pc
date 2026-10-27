@@ -1612,7 +1612,7 @@
     },
     {
       "name": "zz-stable-gpr-refs.patch",
-      "sha256": "1528ced3d5bcfcf32e6150ce8cd140c2d04b88b6b4fcdf10814d0cf6c0c21edb",
+      "sha256": "69f2cbe27a75948b95c995a05bd6c1940afbc18bdb158c69c2967015dba01c3c",
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/translator.py"

@@ -75,3 +75,5 @@ vectors, FPU/FP flags and callback/dispatch observations across four rounding
 modes and six scenarios. Native timings are component evidence with mocked
 services. Slices omit unwind metadata and must never enter the game build.
 Normal-build, live-game and physical-host acceptance remain separate in STATUS.
+
+Standalone translate_function callers may supply their own register globals and C prelude without the complete runtime header. The stable-register patch gates the reincluded header and live-reference declaration on RECOMP_GPR_REFS_SUPPORTED. Normal generated translation units still define that protocol and retain reference selection; standalone consumers retain direct globals. The inherited compiled INC/DEC, REP compare, sign-width and SAR tests exercise this compatibility, while test_gpr_refs.py checks the enabled protocol.
