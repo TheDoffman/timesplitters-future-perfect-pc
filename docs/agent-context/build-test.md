@@ -2,7 +2,7 @@
 
 Source/tool/test paths now use responsibility folders; see
 [layout](../development/repository-layout.md). Commands share
-`tools/project_paths.py`; `tests/conftest.py` supplies fixture imports.
+`tools/project_paths.py` and `tests/conftest.py`. Portable probes avoid both.
 
 Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
 
