@@ -47,6 +47,18 @@ Atomic changed-file publication preserves existing output on failure and keeps
 unchanged timestamps/newlines. Original scanner/output and existing title-wrapper
 tests cover these contracts; both own modules enter generation fingerprints.
 
+`independent-translation-decode.patch` replaces the translator's instruction and
+operand model, bounded linear/CFG decoding and basic-block construction with
+`translation_decode.py`. It uses the project Capstone factory, preserves segment
+and width details, and splits linear streams at explicit restart anchors. CFG
+walks terminate at known boundaries; block edges only name decoded leaders.
+Overlapping entries converge on shared suffix blocks, and gaps cannot create
+fall-through. `test_translation_decode.py` includes standalone copied modules
+and the existing translator consumers. Generation hashes include this module;
+core lowering/configuration/HLE/translation orchestration remain upstream.
+The command builder accepts legacy options without `json` and verbatim explicit
+output paths; CLI entry resolves relative output paths before subprocess cwd changes.
+
 `independent-disasm-traversal.patch` follows the input patch and removes the
 engine's scan/realignment/reachability/query methods in favor of inherited
 `x86_flow.InstructionTraversal`. The subsequent recovery patch replaces the table/prologue methods. Both cache fingerprints include the new module. Synthetic

@@ -110,6 +110,13 @@
       ]
     },
     {
+      "name": "independent-translation-decode.patch",
+      "sha256": "965b124c7a809a7235f49ba5823290e9e93134aac96af9e1fd93e56d6af944ca",
+      "targets": [
+        "tools/recomp/disasm.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

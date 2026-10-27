@@ -1,3 +1,54 @@
+## Independent translator decoding (2026-10-26)
+
+Continuing PR #370 from `00d60e43`, the production translator now uses project
+`translation_decode.py` for operand/instruction models, restart-bounded linear
+decoding, reachable decoding and block construction. Capstone remains permitted.
+The compatibility patch replaces the entire former decoder implementation.
+Blocks reference decoded leaders, preserve overlapping entries and cannot invent
+fall-through across missing bytes. Unreferenced bytes after returns do not create
+new blocks. The command builder also accepts older callers without `json` and
+the CLI resolves relative output paths before changing subprocess directories.
+Core lowering, configuration/HLE, runtime/title services and final provenance
+removal remain unfinished; the overall independent-runtime goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **499 passed, 1 skipped in 183.41 seconds** in the corrected-source independent
+  tooling, fingerprint, Mac-tool, isolated-profile, CI-scope and title-wrapper
+  suite. **50 focused tests passed** and **21 context/backlog checks passed**.
+- **35 patch-transition/tracking checks passed** within the earlier combined
+  run: 533 passed, 1 skipped in 1114.21 seconds. That run collected the decoder
+  before its final leader correction; the corrected-source rerun above supplies
+  final decoder acceptance. The compatibility patch was unchanged between runs.
+- Original fixtures cover operand widths/segments/signed displacement, guest
+  targets, restart straddles, CFG calls/loops/stops, phantom edges, gaps, return
+  padding, overlapping entries, standalone copied modules and production imports.
+  Existing translator consumers through the production bridge: **352 passed,
+  41 skipped, 87 subtests passed**. Native C
+  fixtures requiring cc/gcc/clang on PATH and unsupported flag cases retain skips;
+  passing Python consumers do not claim execution of those skipped fixtures.
+- Initial generation exposed orphan blocks after returns and five extra
+  unresolved stubs. The corrected leader policy removes those additions.
+  All **21 final generated C/header files are byte-identical** to the prior
+  accepted generation; the source fingerprint is current. Earlier draft/build
+  results are superseded by the final comparison and full rebuild.
+- **Full final Windows build and native checks passed.** Isolated Scotland the
+  Brave passed with reviewed start/pause/resume captures: movement 11.216 units,
+  ammo 8 to 6, 40 paused samples with frozen ticks, 60 resumed samples with
+  advancing simulation, backward movement 6.185 units. Last checkpoint 97.833
+  seconds; exit 0, no crash artifacts or leftover partitions/lock. Signed profiles
+  unchanged; canonical fixture verified. Personal saves/settings were unused.
+- Tested executable SHA-256:
+  `bc4e3b3d4e4fc3dcbd83953f4680546bc241d65efdece4d02845cd667d070b96`.
+
+The run used injected input, minimized/background rendering, original 60 FPS
+and skipped movies. It does not certify physical input, audio, foreground pacing
+or whole levels. Evidence: `logs/independent-translation-decode-*`,
+`logs/independent-translation-final-generated.diff` and
+`private/test-saves/independent-translation-decode`. Native Mac generation/build/
+game acceptance remains pending under MAC-075. All three CI workflows passed
+for the preceding generation-support commit; new-head CI is separate evidence.
+
 ## Independent manual-source and generation-output support (2026-10-26)
 
 Continuing PR #370 from `78466ed1`, production generation now uses project

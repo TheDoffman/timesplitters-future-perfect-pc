@@ -12,7 +12,7 @@ independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
 function discovery, labels, cross-references, analysis orchestration/output/cache,
 the library-symbol adapter, generation driver, function classifier, manual-source
-scanner and generation output support.
+scanner, generation output support and translator instruction/block decoding.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -58,7 +58,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Library-symbol adapter and generation driver | Project-owned `xdk_catalog.py` and `compile_pipeline.py`; production compatibility entries use them | Protocol/seed/routing/failure fixtures, actual symbol and generated-code comparisons, Windows build and isolated gameplay; native Mac pending |
 | Function classification | Project-owned `function_catalog.py`, `function_evidence.py`, `function_categories.py`; production calls the standalone catalog | Bounded operands/xrefs, source/context/graph hypotheses, measured pointer-entry blocks, no guessed CRT names or function extents; generated executable-code comparison, build and isolated gameplay; native Mac pending |
 | Manual-source scanning and generation output | Project-owned `c_source_scan.py` and `generation_output.py`; production uses compatibility entries | Lexical/preprocessor/declaration fixtures, standalone consumer imports, unchanged-output timestamps and failure preservation; regeneration/build/game checks; native Mac pending |
-| x86-to-C translation | Core translation still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Translator instruction/operand and block model | Project-owned `translation_decode.py`; production compatibility imports use it | Original operand/segment/bounds/CFG/restart/overlap fixtures, existing translator consumers, full regeneration/build and isolated gameplay; native Mac pending |
+| x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -378,3 +379,31 @@ camera/crane/native-vehicle consumers exercise the integration. Both modules
 enter generation fingerprints and shared CI. Historical deleted upstream text
 still awaits final removal. STATUS.md records measured Windows validation;
 MAC-074 tracks native Mac acceptance without inferring it from shared source.
+
+## Translator instruction and block model
+
+`translation_decode.py` was authored for this project around permitted Capstone,
+using the project decoder factory. It owns translator-facing operands (including
+segment overrides, widths and signed displacements), instruction properties,
+bounded linear and worklist decoding, and basic blocks. Linear restart anchors
+partition supplied bytes so an instruction cannot straddle a known restart.
+CFG traversal follows explicit branches and fall-through within the supplied
+window; it does not infer indirect destinations or traverse callee bodies.
+
+Blocks connect only decoded leaders. Missing byte ranges cannot create a
+fall-through edge, and unreferenced bytes after a return do not establish a
+new block. Independently decoded overlapping entries split at their
+convergence instead of duplicating a shared suffix. Original synthetic fixtures
+cover these behaviors, and copied modules run without toolkit imports. The
+production compatibility patch replaces the complete old decoder body; own
+source and bridge hashes invalidate generation. Historical patch deletion text
+still awaits final provenance removal.
+
+A broader existing-consumer run exposed a command-builder compatibility gap:
+older callers omit the optional `json` attribute. The helper now accepts that
+shape and preserves explicitly supplied output paths; the CLI resolves relative
+paths before changing subprocess directories. Original tests verify both
+contracts. STATUS.md records actual generated-output/build/game comparisons,
+nested consumer results/skips and limits. MAC-075 tracks native Mac acceptance;
+core x86-to-C lowering, configuration/HLE and translator orchestration remain
+upstream and are not claimed as replaced.

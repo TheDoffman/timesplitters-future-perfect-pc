@@ -208,6 +208,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-072 | Independent symbol adapter and pipeline driver | Awaiting validation |
 | MAC-073 | Independent function catalog | Awaiting validation |
 | MAC-074 | Independent generation support | Awaiting validation |
+| MAC-075 | Independent translator decoding | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5819,6 +5820,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   isolated Story movement, firing and pause/resume.
 - **Mac implementation and evidence:** Windows evidence does not establish native
   generation or gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-075 - Independent translator decoding
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production translator uses own instruction/operand decoding,
+  restart/CFG traversal and basic-block construction around permitted Capstone.
+  CLI output paths resolve before changing subprocess directories.
+- **PC source:** Continuing PR #370; `tools/translation_decode.py`,
+  `patches/independent-translation-decode.patch`, command-builder compatibility,
+  generation fingerprint and original/shared consumer tests.
+- **PC validation:** Operand/bounds/segment/CFG/overlap/restart fixtures and
+  existing translator consumers; generation/build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python/Capstone implementation and tests;
+  no host-specific instruction or block policy.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original decoder/driver/fingerprint and existing
+  translator tests with available native C compiler; regenerate with `--generate`,
+  review output, build and verify isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows checks do not prove native
+  compiler or gameplay acceptance; see STATUS.md for measured scope and skips.
 
 ## Entry template
 

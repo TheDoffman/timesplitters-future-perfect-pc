@@ -105,6 +105,18 @@ def test_all_functions_explicit_generation_dir_and_zero_split(tmp_path, monkeypa
     assert args[args.index('--gen-dir') + 1] == str(output)
 
 
+def test_legacy_builder_options_and_cli_relative_output(tmp_path, monkeypatch):
+    options = SimpleNamespace(only=None, start='parse', text_only=False, seeds=[],
+        verbose=False, all=False, split=0, gen_dir='chosen', trace_all_entries=False,
+        work_dir=None, project=None, game_name=None)
+    commands = dict(pipeline.build_commands(options, tmp_path / 'sample.xbe', tmp_path / 'metadata.json'))
+    assert commands['lift'][commands['lift'].index('--gen-dir') + 1] == 'chosen'
+    monkeypatch.chdir(tmp_path)
+    calls = capture(monkeypatch)
+    assert pipeline.main([str(sample(tmp_path)), '--only', 'lift', '--gen-dir', 'chosen']) == 0
+    assert calls[0][1][calls[0][1].index('--gen-dir') + 1] == str(tmp_path / 'chosen')
+
+
 def test_stage_failure_stops_following_work(tmp_path, monkeypatch):
     calls = capture(monkeypatch, fail='disasm')
     assert pipeline.main([str(sample(tmp_path))]) == 1

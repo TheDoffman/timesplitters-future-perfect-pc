@@ -48,7 +48,7 @@ def build_commands(args, xbe, analysis_json):
         'lift': [sys.executable, '-m', 'tools.recomp', str(xbe), '--all' if args.all else '--game-only'],
     }
     parse, disasm, identify, lift = (commands[name] for name in STAGES)
-    if args.json or analysis_json.exists() or 'parse' in selected:
+    if getattr(args, 'json', None) or analysis_json.exists() or 'parse' in selected:
         disasm.extend(['--analysis-json', str(analysis_json)])
     if args.text_only:
         disasm.append('--text-only')
@@ -64,7 +64,7 @@ def build_commands(args, xbe, analysis_json):
             lift.extend([option, str(work / name)])
         lift.extend(['--icall-sites', str(work / 'recomp/icall_sites.json')])
     project = Path(args.project).resolve() if args.project else None
-    generated = Path(args.gen_dir).resolve() if args.gen_dir else project / 'src/recomp/gen' if project else None
+    generated = Path(args.gen_dir) if args.gen_dir else project / 'src/recomp/gen' if project else None
     if generated is not None:
         lift.extend(['--gen-dir', str(generated)])
     if project is not None and (project / 'src/recomp_manual.c').is_file():
@@ -100,7 +100,7 @@ def run(name, argv, dry_run=False):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('xbe')
-    parser.add_argument('--runtime', help='Tree providing the remaining identification and lifting stages')
+    parser.add_argument('--runtime', help='Tree providing the remaining lifting stage')
     parser.add_argument('--seeds', action='append')
     parser.add_argument('--no-seeds', action='store_true')
     for flag in ('trace-all-entries', 'text-only', 'all', 'dry-run'):
@@ -135,6 +135,10 @@ def main(argv=None):
         metadata = Path(args.json).resolve() if args.json else xbe.with_name(xbe.stem + '_analysis.json')
         if metadata == xbe:
             raise ValueError('Analysis JSON cannot replace the executable')
+        if args.gen_dir:
+            # Resolve user paths before run() changes the subprocess directory.
+            # The public command builder also accepts already-selected paths.
+            args.gen_dir = str(Path(args.gen_dir).resolve())
         for name, command in build_commands(args, xbe, metadata):
             if not run(name, command, args.dry_run):
                 return 1
