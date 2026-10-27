@@ -310,3 +310,8 @@ preview series policy is unchanged. Maintenance branches still need a Stable
 ancestor. Launcher tags, drafts, future versions and nonancestor previews are
 excluded. tests/test_publish_release.py verifies baseline selection and generated
 notes payload/range through the existing release test route. No host adapters change.
+
+Story branch preview preparation: `0.4.0-story-coop.1` uses channel ID
+`story-coop` and display name `Story Co-op Preview`. It follows the existing
+clean/pushed branch publisher, optional-texture policy and immutable preview tags.
+This version preparation is not publication or native Mac Online acceptance.
