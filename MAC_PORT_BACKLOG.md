@@ -210,6 +210,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-074 | Independent generation support | Awaiting validation |
 | MAC-075 | Independent translator decoding | Awaiting validation |
 | MAC-076 | Independent translation layout and hook planning | Awaiting validation |
+| MAC-077 | Independent branch feedback and unresolved diagnostics | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5863,6 +5864,24 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   with `--generate`, build and verify isolated Story movement/fire/pause/resume.
 - **Mac implementation and evidence:** Windows/native-C results do not prove
   Mac generation or game acceptance; see STATUS.md for measured host evidence.
+
+### MAC-077 - Independent branch feedback and unresolved diagnostics
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own cumulative branch ledgers and separate seed export;
+  unresolved diagnostics use selected XBE layout and recorded function bounds.
+- **PC source:** Continuing PR #370; `tools/branch_feedback.py`,
+  `tools/unresolved_report.py`, `patches/independent-branch-diagnostics.patch`,
+  source fingerprints and original/shared consumer fixtures.
+- **PC validation:** Standalone and production CLI, crash/saturation/overlap,
+  input preservation and layout tests; measured build/game checks in STATUS.md.
+- **Existing Mac support:** Shared Python policy and own image/recovery tools;
+  original tests registered in the common native CI suite.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original diagnostics and consumer fixtures;
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows evidence does not certify native
+  Mac generation or gameplay. See STATUS.md for actual results and limitations.
 
 ## Entry template
 

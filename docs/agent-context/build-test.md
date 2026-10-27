@@ -1,10 +1,10 @@
 # Build, run and validation map
 
-Generation hashes cover own decoding/layout/hook tools and bridges. Tests run
-standalone fixtures, current-ABI translator scaffolding and emitted thunks with
-production frame macros via `native_compiler`. The CLI resolves output paths
-before subprocess cwd changes. Scanner/output tests cover wrappers and atomic
-files. See `docs/independent-runtime.md` for scope and host validation limits.
+Generation hashes cover own translation and branch-diagnostic tools/bridges.
+Feedback/report tests cover cumulative crash observations, independent seed
+export, overlaps, real layout, failure preservation and toolkit-free CLIs.
+Shared CI also runs legacy consumers. See `docs/independent-runtime.md` for
+commands, provenance and host validation limits.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

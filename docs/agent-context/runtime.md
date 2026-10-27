@@ -1,6 +1,18 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-branch-diagnostics.patch` replaces feedback and unresolved-report
+bodies with `branch_feedback.py` and `unresolved_report.py`. Feedback unions
+observations before separate seed filtering, retains saturation and accepts
+site-only crash dumps. Strict ledgers and path checks precede per-file atomic
+publication; the pair is not a transactional database. Defaults now use project
+private/pipeline; old ledgers require explicit paths, never silent title mixing.
+Function bounds filter seeds only when explicitly selected. The diagnostic
+report requires an XBE and explicit metadata, shows all overlapping recorded
+bodies, real sections/backing and known entries/ends, and invents no function
+extent or library identity. Input hashes identify the files inspected; they do
+not prove a selected function map belongs to that XBE. Compatibility CLIs,
+standalone fixtures, generation hashes and shared CI cover both tools.
 `independent-translation-bindings.patch` aliases translator config/HLE modules
 to `translation_layout.py` and `translation_hooks.py`. Module identity preserves
 mutable legacy configuration for imported helpers. Layout starts empty, reads

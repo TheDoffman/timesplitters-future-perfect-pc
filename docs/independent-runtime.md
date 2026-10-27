@@ -13,7 +13,8 @@ classification, traversal, direct-edge reachability, table/body recovery,
 function discovery, labels, cross-references, analysis orchestration/output/cache,
 the library-symbol adapter, generation driver, function classifier, manual-source
 scanner, generation output support, translator instruction/block decoding,
-executable layout configuration and HLE symbol planning/thunk emission.
+executable layout configuration, HLE symbol planning/thunk emission,
+indirect-branch feedback and unresolved-address diagnostics.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -61,6 +62,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Manual-source scanning and generation output | Project-owned `c_source_scan.py` and `generation_output.py`; production uses compatibility entries | Lexical/preprocessor/declaration fixtures, standalone consumer imports, unchanged-output timestamps and failure preservation; regeneration/build/game checks; native Mac pending |
 | Translator instruction/operand and block model | Project-owned `translation_decode.py`; production compatibility imports use it | Original operand/segment/bounds/CFG/restart/overlap fixtures, existing translator consumers, full regeneration/build and isolated gameplay; native Mac pending |
 | Translator layout and HLE symbol bindings | Project-owned `translation_layout.py` and `translation_hooks.py`; production modules alias them | Metadata/bounds/replacement fixtures, lexical markers, unique bindings, return/register ABI checks, native generated-thunk execution, regeneration/build and isolated gameplay; native Mac pending |
+| Branch feedback and unresolved diagnostics | Project-owned `branch_feedback.py` and `unresolved_report.py`; compatibility CLIs use them | Cumulative observations, saturation, overlaps, independent seeds, real section/backing metadata, standalone CLI and production consumers; generation/build/game validation in STATUS.md, native Mac pending |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -449,3 +451,41 @@ while retaining compiled numeric checks, and applies the Windows-only onexit
 header-collision negative control on its actual host. This does not alter
 production generation. These inherited fixtures remain part of the final
 replacement/provenance work; passing them does not make them project originals.
+
+
+## Branch feedback and unresolved diagnostics
+
+`tools/branch_feedback.py` owns cumulative target flags and per-site target sets.
+Truncated dump lines are ignored; stored JSON is validated before publication.
+Saturation persists, and site-only observations survive missing target dumps.
+Repeated merges are idempotent. Files publish atomically one at a time, not as a
+multi-file transaction; rerun a merge after an I/O interruption to finish the
+pair. The tools are single-writer commands, not concurrent ledger services.
+
+```sh
+python tools/branch_feedback.py merge /path/to/icall_targets.dump
+python tools/branch_feedback.py --functions private/pipeline/disasm/functions.json seeds --xbe private/game/default.xbe --out private/pipeline/observed-seeds.json
+python tools/unresolved_report.py private/game/default.xbe --functions private/pipeline/disasm/functions.json --unresolved private/pipeline/recomp/unresolved_symbols.txt --out private/pipeline/unresolved-report.json
+python -m pytest tests/test_branch_feedback.py tests/test_unresolved_report.py -q
+```
+
+Default ledgers are `private/pipeline/recomp/icall_targets.json` and
+`icall_sites.json`. Existing legacy or other-title ledgers are never silently
+imported: select `--db` before the subcommand and `merge --sites-db` explicitly.
+The generation driver already reads the per-work-directory site ledger.
+Seed export preserves observations and filters recorded interiors only with
+explicit `--functions`; aliases at known starts remain eligible. Optional XBE
+probing uses the own decoder/recovery implementation; alignment alone is only
+a filter, not proof of executable code. Exporting seeds does not automatically
+add them to the normal title configuration.
+
+The unresolved reporter requires the selected executable and function map.
+It reports real section flags, file backing, headers and unmapped addresses,
+plus all recorded overlapping bodies and entry/end relationships. Empty inputs
+are valid. A recorded end does not establish underestimated size; no guessed
+function extent or addable-function file is emitted. Its versioned diagnostic
+JSON replaces the old heuristic report schema. Input hashes identify evidence,
+not a verified association between a user-selected map and executable.
+Compatibility entries support module and direct-script invocation; standalone
+copies run without the old toolkit. Runtime recording, indirect dispatch,
+core translation and the final provenance cleanup remain separate work.

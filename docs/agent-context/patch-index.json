@@ -38,6 +38,14 @@
       ]
     },
     {
+      "name": "independent-branch-diagnostics.patch",
+      "sha256": "61eed65f600ec7e319df6bb429694b5a36c301a61c063d521fe6ee30969f8464",
+      "targets": [
+        "tools/recomp/analyze_unresolved.py",
+        "tools/recomp/icall_feedback.py"
+      ]
+    },
+    {
       "name": "independent-classification.patch",
       "sha256": "f8db701d03791b2b6eb3794f6d4634d14deb018400b9c171acab4af5ab0bd1b6",
       "targets": [

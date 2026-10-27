@@ -1,3 +1,51 @@
+## Independent branch feedback and unresolved diagnostics (2026-10-26)
+
+Continuing PR #370 from `c2dc8494`, production compatibility entries now use
+project `branch_feedback.py` and `unresolved_report.py`. Feedback accumulates
+flags, site targets and saturation, including site-only crash observations.
+Separate seed export retains known aliases, including zero-size aliases inside
+another recorded body. Explicit function bounds avoid unrelated-title filtering.
+
+The reporter replaces a captured section table and guessed function lengths
+with selected-XBE layout/backing and recorded entry/interior/end relationships.
+All overlaps remain visible; it emits diagnostic JSON, never an inferred
+function/seed list. Hashes identify the files used, not a verified association
+between user-selected function metadata and the executable. Publication is
+atomic per file; paired ledgers are single-writer and not a database transaction.
+
+Validation on Windows / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022:
+
+- **550 tests passed in 725.95 seconds**, before the final alias correction. Final focused tests: **122 passed in 3.81 seconds**,
+  after the zero-size alias correction. Original cases cover truncated input,
+  malformed ledgers, failed publication, cumulative/saturated sets, overlaps,
+  output collisions, real mapping/BSS, empty inputs and standalone copied CLIs.
+  Installed feedback and report entries and existing consumers pass.
+- Verified supported-US XBE SHA-256. **209 selected metadata probes** (function
+  entries/ends and section starts) report 106 known entries, 87 recorded ends and
+  16 addresses outside recorded bodies. These are constructed boundary probes,
+  not live unresolved-branch observations.
+- **Final Windows build and native checks passed** after the alias correction.
+  All **21 generated C/header files are byte-identical** to the previous verified
+  stage; source fingerprint is current.
+- Final rebuilt executable passed isolated Scotland the Brave: forward movement
+  11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused samples with frozen
+  ticks and 60 resumed samples with advancing ticks. Last checkpoint 95.596
+  seconds, exit 0; start/pause/resume captures reviewed. Profiles/signatures and
+  canonical fixture preserved, no crash artifacts or remaining partitions/lock.
+  Personal saves/settings unused. Injected input, minimized rendering, original
+  60 FPS and skipped movies do not certify physical input, foreground pacing,
+  audio or full levels.
+- Tested executable SHA-256:
+  `caf9d99611e8eff9e79ca5d304a1dd80f9806494df6e0c7bf0c79c83e53e55e7`.
+
+All three workflows on preceding `c2dc8494` passed, including native runtime
+and patch transitions on Windows/macOS. This confirms the previous stage's
+Clang fixture repair; it does not establish native Mac gameplay. New-head CI
+is separate. MAC-077 records pending native generation/build/game acceptance.
+The full tooling/runtime/title/provenance replacement goal remains active;
+upstream notices remain required. Evidence: `logs/independent-branch-diagnostics-*`
+and `private/test-saves/independent-branch-diagnostics-final`.
+
 ## Independent translator layout and runtime-hook tooling (2026-10-26)
 
 Continuing PR #370 from `15ecdd91`, production config/HLE modules now alias
