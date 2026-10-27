@@ -1,25 +1,49 @@
 # Runtime patches
 
-Active patches live directly in this directory. `legacy/` contains five
-unwind-only migration patches for previously built runtimes. Both sets are
-required; a retired feature does not make its patch safe to remove.
+Active patches are grouped by primary responsibility. Cross-cutting patches
+stay together in the closest owning folder; do not split hunks to match the map.
+
+| Folder | Responsibility |
+| --- | --- |
+| `compiler/` | XBE reading, disassembly, instruction translation and compiler fixtures |
+| `diagnostics/` | Profiling, tracing, debug views, crashes and hangs |
+| `gameplay/timing/` | Simulation, animation, scripts, camera, weapons and object timing |
+| `gameplay/presentation/` | Frame scheduling, refresh settings and historical interpolation dependencies |
+| `graphics/rendering/` | Backends, shaders, buffers, geometry, GPU state and surfaces |
+| `graphics/textures/` | Loading, formats, streaming and Classic/Enhanced mode |
+| `graphics/interface/` | Menus, text, HUD, overlays and screen placement |
+| `input/` | Keyboard, mouse, controllers, prompts and menu interaction |
+| `media/` | Audio output/streaming and video playback lifecycle |
+| `network/` | Multiplayer services, synchronization and networked bots |
+| `platform/` | Host boot/adapters, launcher integration, identity and desktop services |
+| `storage/` | Save paths, host storage and profile persistence |
+| `legacy/` | Five unwind-only migration inputs for previously built runtimes |
+
+All sets are required; a retired feature does not make its patch safe to remove.
 
 ## Names and order
 
-Use `NNNN-description.patch`, for example `0400-mac-native-boot.patch`.
+Use `NNNN-description.patch`, for example `platform/0400-mac-native-boot.patch`.
 The four-digit number is a base-sort slot, not an issue number or version.
 The initial slots preserve the old alphabetical order with gaps of ten.
 Choose an unused slot between existing entries when insertion is necessary;
-do not renumber the stack just to add a patch. Keep descriptions lowercase
+do not renumber the stack just to add a patch. Basenames must be globally unique
+across active folders; duplicates fail before runtime files change. Keep descriptions lowercase
 with hyphens. An active and legacy version of one patch share a basename so
 the active version takes precedence during migration.
 
-`tools/apply-patches.py:patch_records` owns the **effective** application order.
-It starts with filename sorting and applies existing dependency overrides
+`tools/apply-patches.py:active_patch_paths` discovers active patches recursively,
+excluding every `legacy/` directory. `patch_records` owns the **effective**
+application order. It sorts basenames globally, regardless of folder, then applies dependency overrides
 (network/native boot, presentation, and final translator replacements).
 The generated [patch index](../docs/agent-context/patch-index.json) lists the
 actual order and touched runtime files. Never assume the number alone is the
 effective order or apply the files independently in a shell loop.
+
+Moving patches between folders preserves ledger identities, payload hashes,
+context options and effective order. Existing flat-layout ledgers remain valid
+without changing runtime bytes. The generated index records each current
+repository path separately from its stable basename.
 
 The numbered names replace the old repeated `z` prefixes. Patch payloads and
 context options are unchanged. Previously recorded runtime ledgers contain
@@ -37,6 +61,7 @@ patches. Git rename history supplies the old-to-new path correspondence.
    `tests/test_repo_context.py`, plus the tests for the behavior being changed.
    Prepare the local runtime with `python tools/prepare-runtime.py` first.
 
-Historical patch-stack fixtures describe migration scenarios. Keep their
-membership and ordering when updating paths; do not turn them into copies of
-the current stack.
+Historical patch-stack fixtures describe migration scenarios using stable
+basenames. Tests resolve these against the active folders (or explicitly use
+legacy versions). Keep their membership and ordering; do not turn them into
+copies of the current stack.

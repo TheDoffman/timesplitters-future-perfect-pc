@@ -1,6 +1,6 @@
 # Opening regression checks
 
-`tests/native_refresh_game.py` uses the isolated Test Lab copy under
+`tests/gameplay/native_refresh_game.py` uses the isolated Test Lab copy under
 `private/test-saves/high-refresh`. Confirm that its previous run has stopped
 before preparing another. Use a distinct evidence label for each comparison;
 preserve the canonical fixture and personal data.
@@ -10,8 +10,8 @@ walks/fires during85..115s. Run its Original reference and native diagnostic
 separately, for example:
 
 ```
-.venv/Scripts/python.exe tests/native_refresh_game.py --fps 60 --label opening-reference --stress --pause-check --seconds 120
-.venv/Scripts/python.exe tests/native_refresh_game.py --fps 144 --native --label opening-native --stress --pause-check --seconds 120
+.venv/Scripts/python.exe tests/gameplay/native_refresh_game.py --fps 60 --label opening-reference --stress --pause-check --seconds 120
+.venv/Scripts/python.exe tests/gameplay/native_refresh_game.py --fps 144 --native --label opening-native --stress --pause-check --seconds 120
 ```
 
 144 is a legacy diagnostic target, not a player-menu choice. The public choices
@@ -45,7 +45,7 @@ when comparing images. Different reload/idle phases in asynchronous captures
 do not establish a timing bug. Selected additional images and private capture
 wrappers must record their timing/provenance and stay bounded/ignored.
 
-Measured results and unverified cinematic/gameplay scope belong in STATUS.md.
+Measured results and unverified cinematic/gameplay scope belong in docs/project/STATUS.md.
 
 For below-target behavior, retain actual position/aim/ammo/pause observations
 alongside the independent timing-call/Present bounds. The private delayed-main

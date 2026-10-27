@@ -4,7 +4,7 @@
 #define g_xbox_mem_offset prompt_test_offset
 static uint32_t prompt_test_esp;
 static ptrdiff_t prompt_test_offset;
-#include "../pc_prompt_guest.inc"
+#include "../input/pc_prompt_guest.inc"
 #undef g_esp
 #undef g_xbox_mem_offset
 static char prompt_test_text[2048];

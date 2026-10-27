@@ -74,7 +74,12 @@ def renderer_environment(existing, root, manifest, driver=None):
     env = {k:v for k,v in existing.items() if not k.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
     renderer = manifest.get('renderer', 'gl')
     if renderer == 'vulkan':
-        import vulkan_sdk
+        try:
+            import vulkan_sdk  # Packaged installations keep this beside the launcher.
+        except ModuleNotFoundError:
+            from project_paths import configure
+            configure()
+            import vulkan_sdk
         try:
             gpu = vulkan_sdk.launch_environment(root, manifest, driver)
         except RuntimeError as error:
@@ -112,7 +117,7 @@ def main():
     executable = ROOT / 'build/macos/futureperfect_recomp'
     kind = subprocess.check_output(['file', str(executable)], text=True)
     if 'Mach-O 64-bit executable arm64' not in kind:
-        raise ValueError('Build the native runtime with tools/build-native-mac.py first.')
+        raise ValueError('Build the native runtime with tools/build/build-native-mac.py first.')
     manifest = json.loads((executable.parent / 'BUILD.json').read_text())
     if hashlib.sha256(executable.read_bytes()).hexdigest() != manifest.get('executable_sha256'):
         raise ValueError('Native executable differs from BUILD.json; rebuild before launching.')

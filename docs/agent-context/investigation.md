@@ -1,6 +1,15 @@
 # Investigation memory and handoffs
 
-[Repository layout](../repository-layout.md) distinguishes tracked source,
+Build commands now live under `tools/build/`; the evidence broker allows that
+tracked source directory while keeping generated build outputs excluded.
+Root status/backlog reports moved to `docs/project/`.
+
+The patch index keeps stable basename identities and a separate repository
+`path` for nested responsibility folders. Both `repo-context.py find` and the
+evidence broker use those paths and effective order; legacy patches are excluded
+from active search. The broker still accepts older flat-layout indexes.
+
+[Repository layout](../development/repository-layout.md) distinguishes tracked source,
 the pristine vendor snapshot, the patched external runtime and local outputs.
 Patch lookup/index entries now use readable numbered filenames; use the same
 finder and effective-order checks. Git rename history retains old spellings.
@@ -35,7 +44,7 @@ context is installed. Candidate
 math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
-`tests/test_repo_context.py` checks effective patch order rather than only
+`tests/repository/test_repo_context.py` checks effective patch order rather than only
 filename sorting. Independent translation-moves, translation-integer, translation-bits and
 translation-product are final, after radial stick deadzone and title instrumentation
 that their removed handlers contain. Historical fixtures omit replacements until
@@ -70,7 +79,7 @@ Local context and Sol should agree about paths, ownership, current timing policy
 and verification limits. The repository manifest is versioned; the machine's
 router installation is separate and must implement this integration.
 The optional reader's portable source is `tools/router/repository-context.mjs`;
-its contract tests are `tests/repository-context.test.mjs`. The installed router
+its contract tests are `tests/repository/repository-context.test.mjs`. The installed router
 copies that reader beside its supervisor and uses only its fixed guide allowlist.
 
 Automatic Sol packets remain within the existing 20-KB redacted disclosure
@@ -135,7 +144,7 @@ to each affected guide. It can check presence/freshness, not whether an explanat
 is intellectually correct. Reviewers must still compare it with source.
 
 The #105 pacing correction extends the effective patch tail: fixed-60 must be
-followed by late-frame-pacing. `tests/test_repo_context.py` checks that pair as
+followed by late-frame-pacing. `tests/repository/test_repo_context.py` checks that pair as
 well as excluding untracked experiments. Refreshing the index alone does not
 update explicit ordering contracts; keep those assertions aligned with the
 loader when deliberately extending its dependency order.
@@ -151,7 +160,7 @@ The demo-timer wrapper extends that tail after native surface rendering.
 The index-order regression now checks this final dependency explicitly.
 
 The 2026-10-22 root texture policy retains original character selection/profile
-icons via `config/texture-originals.json`. Consult the systems/build-test guides
+icons via `config/textures/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
 Historical artwork acceptance does not override the current user preference.
 
