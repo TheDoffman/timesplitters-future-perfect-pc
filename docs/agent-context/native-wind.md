@@ -34,15 +34,24 @@ together; failed proposals discard both histories before authored fallback.
 The implementation is shared C for Windows and native Mac. The public `test_native_wind.py` checks independent authored low-angle steps,
 exact clock guards, ownership and manual wrapper scanning without game assets.
 It also runs `native_wind_original.c` when the verified local XBE is available:
-17 original routines/constants are injected at test time, never tracked. That
+22 original routines/constants are injected at test time, never tracked. That
 check covers two-owner data/matrix equality, pause/resume, unmatched timing
 scopes and whole fallback, with frozen-matrix/missing-registration controls.
-Both CI hosts and the normal Windows build run the module; hosts without the
+The original second-pass wind controller/phase updater and callback setter now
+execute too; the fixture initializes the console refresh word to 60 and requires
+finite phase/scales and phase agreement with game elapsed time. A frozen-provider
+control fails. A three-game-second Original60 comparison covers 840 schedules
+(7 angles, 6 velocities, 4 carried phases, 5 rates) under the original changing wind
+inputs; maximum angle outside the existing sample window is 0.217468262 degrees,
+below the unchanged 0.25-degree limit. Contact/settling may legitimately leave
+matrices identical; builder/clock/independent-point checks still execute.
+Both CI hosts and `tsfp.ps1 -Action Test` run the module; hosts without the
 XBE skip the original-code check. These do not replace live host/visual acceptance.
 
 Local original-code fixtures execute the constructor, registration/removal,
-wind sampler, matrix/point routines, level-clock updater and original frame
-selection/dispatch. With controlled world/model services and synthetic host
+wind sampler/provider, matrix/point routines, level-clock updater and original
+frame selection/dispatch. Other weather-particle and model/world services remain
+controlled; entity+19C secondary rendering is not accepted by these CPU checks. With controlled world/model services and synthetic host
 timestamps, 9,864 two-owner solo/interleaved data/matrix comparisons pass;
 371 paused updates freeze data/matrices/history and resume the same trace.
 Wrong clock-domain, wrong tick-boundary and shared-owner controls fail.

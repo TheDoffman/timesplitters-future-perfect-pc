@@ -1,3 +1,25 @@
+## Original changing-wind regression coverage (2026-10-26, PR #367)
+
+The repository wind fixture now injects 22 original routines, adding the
+second-pass caller, weather controller, wind-phase updater, mode query and
+model-callback setter. It supplies a 60-Hz console refresh word, asserts finite
+raw/phase state and advancing game-time phase, and rejects a frozen-provider
+control. This fixes an incomplete fixture setup, not product timing logic.
+The original provider computes changing phase/spatial scales instead of the
+previous synthetic phase input. The public wind module passes 3 tests in 14.76s,
+including 840 Original60 comparison schedules over three game seconds. Maximum
+angle outside the existing reference sample window is 0.217468262 degrees,
+within its unchanged 0.25-degree limit. Two-owner independence, pause, fallback
+and point/matrix controls remain. Legitimate stationary/contact poses are not
+misclassified as stale calculations by the expanded corpus.
+
+Production solver and runtime hooks are unchanged from 618ec5bf, whose 16 hosted
+checks pass. Normal source generation also passed in 73.2s: one original body per
+wrapper, 507 registration calls through the wrapper, correct dispatch entries
+and no direct bypass. Other weather-particle/model/world services remain
+controlled. This is CPU regression coverage, not a current full game build,
+live GPU/performance result or complete scene lifetime acceptance.
+
 ## Procedural wind integration in progress (2026-10-26, PR #367)
 
 Shared source now subdivides the wind callback's coupled angle/velocity map

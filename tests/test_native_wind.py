@@ -68,6 +68,11 @@ def test_original_wind_registration_clock_and_two_owners(tmp_path):
         (0xa00b0, 0xa012e, "sub_000A00B0"),
         (0x1ce2e0, 0x1ce404, "sub_001CE2E0"),
         (0x68830, 0x69587, "sub_00068830"),
+        (0x1166d0, 0x116795, "sub_001166D0_actual"),
+        (0x11bbc0, 0x11bc5c, "sub_0011BBC0"),
+        (0x1ce420, 0x1ce630, "sub_001CE420"),
+        (0x9e720, 0x9e72f, "sub_0009E720"),
+        (0x3533f0, 0x3533f6, "sub_003533F0"),
     ]
     constants = (
         0x69588, 0x6958c, 0x69590, 0x69594, 0x69598, 0x6959c,
@@ -77,7 +82,7 @@ def test_original_wind_registration_clock_and_two_owners(tmp_path):
         0x475d0c, 0x475d10, 0x475d18, 0x475d4c, 0x476040, 0x4760cc,
         0x4760d0, 0x478628, 0x47862c, 0x478634, 0x47890c, 0x47d1f4,
         0x47d324, 0x47d57c, 0x47d580, 0x47d754, 0x47d800, 0x47d838,
-        0x47d83c,
+        0x47d83c, 0x47cff8, 0x47d840, 0x475cdc, 0x478674,
     )
     previous = dict(vars(config))
     try:
@@ -92,18 +97,24 @@ def test_original_wind_registration_clock_and_two_owners(tmp_path):
         source = source.replace('/* POLICY */', '#define RECOMP_NUMERIC_POLICY_HEADER "' + (ROOT / 'src/pc_native_numeric.h').as_posix() + '"')
         source = source.replace('/* TIMING_HEADER */', '#include "' + (ROOT / 'src/pc_native_timing.h').as_posix() + '"')
         source = source.replace('/* WIND_GUEST */', '#include "' + (ROOT / 'src/pc_native_wind_guest.inc').as_posix() + '"')
-        declarations = '\n'.join('void ' + name + '(void);' for name in sorted(set(re.findall(r'void (sub_[0-9A-F]{8}(?:_actual|_gen)?)\(void\)', source + code))))
-        source = source.replace('/* ORIGINAL_ROUTINES */', declarations + '\n' + code).replace('/* ORIGINAL_CONSTANTS */', values)
+        defined = set(re.findall(r'void (sub_[0-9A-F]{8}(?:_actual|_gen)?)\(void\)', source + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]{8})', code))
+        calls.update(re.findall(r'g_seh_ebp = ebp; (sub_[0-9A-F]{8})\(\); return;', code))
+        stubs = '\n'.join(f'void {name}(void){{g_eax=0;g_esp+=4;}}' for name in sorted(calls-defined))
+        declarations = '\n'.join('void ' + name + '(void);' for name in sorted(defined | calls))
+        source = source.replace('/* ORIGINAL_ROUTINES */', declarations + '\n' + stubs + '\n' + code).replace('/* ORIGINAL_CONSTANTS */', values)
         output = compile_and_run(tmp_path, source)
         assert 'multiowner comparisons=9864 original_registration_reuse_removal=PASS' in output
         assert 'pause_frames=371 divergent_raw_game_phases=361' in output
         executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
-        for mode, expected in [('scopes', 'original_byte_parity=47'), ('whole', 'whole fallback360 owner frames byte equal')]:
+        for mode, expected in [('scopes', 'original_byte_parity=47'), ('whole', 'whole fallback360 owner frames byte equal'), ('corpus', 'natural_corpus cases=840 failures=0')]:
             checked = subprocess.run([str(executable), mode], capture_output=True, text=True, timeout=15)
             assert checked.returncode == 0, checked.stdout + checked.stderr
             assert expected in checked.stdout
         frozen = subprocess.run([str(executable), 'freeze-matrix'], capture_output=True, text=True, timeout=15)
         assert frozen.returncode != 0 and 'expected[i]' in frozen.stderr
+        stopped = subprocess.run([str(executable), 'freeze-provider'], capture_output=True, text=True, timeout=15)
+        assert stopped.returncode != 0 and '0x7ac820' in stopped.stderr
         control = tmp_path / 'missing-registration'
         control.mkdir()
         broken = source.replace('pc_native_wind_register_guest(sub_000A5CE0_actual);', 'sub_000A5CE0_actual();')

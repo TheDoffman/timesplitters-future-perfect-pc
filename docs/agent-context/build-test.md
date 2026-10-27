@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Wind solver/ownership gate: [tests and limits](native-wind.md).
+Wind solver/ownership/forcing gate: [tests and limits](native-wind.md).
 
 Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
 

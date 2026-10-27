@@ -23,7 +23,7 @@ static double wind_start_phase,wind_exact_delta;
 static PcNativeTiming wind_host_clock;static int64_t wind_host_now;PcNativeStep g_tsfp_native_step;
 static unsigned matrices,zero_points,changed_points;static int bad_matrix;static double world_elapsed;static float last_point[3]; static float windx,windz;
 static float pitch,yaw;
-static int legacy_gate;
+static int legacy_gate,freeze_provider;
 RECOMP_TLS double g_fp_stack[8];RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 /* WIND_GUEST */
 
@@ -47,7 +47,9 @@ void sub_00151650(void){assert(MEM32(g_esp+4)==0x4000||MEM32(g_esp+4)==0x4800);p
 void sub_000A06C0(void){g_esp+=4;}
 void sub_0009E690(void){g_esp+=4;}
 void sub_000966E0(void){assert((MEM32(g_esp+4)==0x2000||MEM32(g_esp+4)==0x2800)&&MEM32(g_esp+8)==1&&MEM32(g_esp+12)==0);g_esp+=4;}
-void sub_0009E720(void){assert((MEM32(g_esp+4)==0x1000||MEM32(g_esp+4)==0x12e8)&&MEM32(g_esp+8)==0x1dde30);g_esp+=4;}
+void sub_0009E720(void);
+void sub_001166D0_actual(void);
+void sub_001166D0(void){if(freeze_provider)g_esp+=4;else sub_001166D0_actual();}
 void sub_00257860(void){assert(!"Unexpected constructor branch");}
 
 
@@ -128,7 +130,7 @@ void sub_002D2930(void){g_esp+=4;}
 void sub_002FB4C0(void){g_esp+=4;}
 void sub_00347CD0(void){g_esp+=4;}
 void sub_003493D0(void){g_esp+=4;}
-void sub_003533F0(void){fprintf(stderr,"UNEXPECTED sub_003533F0\n");abort();}
+void sub_003533F0(void);
 void sub_00358560(void){fprintf(stderr,"UNEXPECTED sub_00358560\n");abort();}
 void sub_000A7670(void);
 void sub_000A0C50(void);
@@ -220,11 +222,11 @@ static void init(float angle,float velocity){
  MEMF(0x30c8)=MEMF(0x47862c);MEMF(0x30cc)=MEMF(0x475d4c);MEMF(0x30d0)=MEMF(0x475d18);MEMF(0x30d4)=MEMF(0x476040);MEMF(0x30d8)=MEMF(0x47d1f4);
  MEMF(0x30e8)=angle;MEMF(0x30ec)=angle?360-angle:0;MEMF(0x30f0)=velocity;MEMF(0x30f4)=-velocity;
 
- world_elapsed=0;matrices=0;MEM32(0x7de318)=0;MEM32(0x7de30c)=7;wind_host_clock=(PcNativeTiming){0};wind_host_now=0;g_tsfp_native_step=pc_native_timing_step(&wind_host_clock,0,43200,240,0);MEM32(0x79094c)=4;MEM32(0x7de458)=0;MEM32(0x72f5e8)=0x1000;MEM32(0x7b4fac)=1;MEM32(0x7b4cc0)=0x1000;
+ world_elapsed=0;matrices=0;MEM32(0x4e8cec)=60;MEMF(0x7de300)=0;MEM32(0x7ac804)=0x7000;MEM32(0x7ac808)=0;MEM32(0x73d97c)=MEM32(0x73d994)=MEM32(0x73d9ac)=0;MEM32(0x7de318)=0;MEM32(0x7de30c)=7;wind_host_clock=(PcNativeTiming){0};wind_host_now=0;g_tsfp_native_step=pc_native_timing_step(&wind_host_clock,0,43200,240,0);MEM32(0x79094c)=4;MEM32(0x7de458)=0;MEM32(0x72f5e8)=0x1000;MEM32(0x7b4fac)=1;MEM32(0x7b4cc0)=0x1000;
  MEMF(0x7ac814)=100;MEMF(0x7ac818)=60;MEMF(0x7ac81c)=40;MEMF(0x7ac820)=windx;
  MEM16(0x1094)=0x32;MEM32(0x1020)=1;MEM32(0x1004)=0x2000;MEM32(0x2004)=0x2100;MEM32(0x2104)=1;MEM32(0x2010)=0x4000;MEM32(0x107c)=0x3000;
  g_esp=0x10000;MEM32(g_esp)=0x12345678;MEM32(g_esp+4)=0x1000;MEM32(g_esp+8)=0;
- sub_001DE250();assert(g_esp==0x10004&&MEM32(0x1160)==0x1ddf10&&MEM8(0x1032)==2);
+ sub_001DE250();assert(g_esp==0x10004&&MEM32(0x1160)==0x1ddf10&&MEM8(0x1032)==2&&MEM32(0x119c)==0x1dde30);
  assert(MEMF(0x30c8)==MEMF(0x47862c)&&MEMF(0x30cc)==MEMF(0x475d4c)&&MEMF(0x30d0)==MEMF(0x475d18)&&MEMF(0x30d4)==MEMF(0x476040)&&MEMF(0x30d8)==MEMF(0x47d1f4));
  MEM32(0x1024)=0x6000;MEM32(0x6028)=0x200;MEMF(0x1064)=3;MEMF(0x1068)=4;MEMF(0x106c)=5;
  MEMF(0x30e8)=angle;MEMF(0x30ec)=angle?360-angle:0;MEMF(0x30f0)=velocity;MEMF(0x30f4)=-velocity;
@@ -233,26 +235,27 @@ static void init(float angle,float velocity){
 }
 
 static const uint32_t owners[2]={0x1000,0x12e8};
-static unsigned char solo[2][3000][320];
+static unsigned char solo[2][3000][320];static int envelope_mode;static float start_angle=10,start_velocity=5;static unsigned initial_phase_units;
 static unsigned fresh[2];
 static void owner_register(uint32_t owner,uint32_t callback){
  g_esp=0x10000;MEM32(g_esp)=0x12345678;MEM32(g_esp+4)=owner;MEM32(g_esp+8)=3;MEM32(g_esp+12)=callback;
  sub_000A5CE0();assert(g_esp==0x10004&&MEM32(owner+0x160)==callback);
 }
 static void setup_pair(unsigned mode){
- g_tsfp_native_timing_active=1;windx=.2f;windz=-.2f;init(10,5);
+ g_tsfp_native_timing_active=1;windx=.2f;windz=-.2f;init(start_angle,start_velocity);
  memcpy((void *)(g_xbox_mem_offset+0x12e8),(void *)(g_xbox_mem_offset+0x1000),0x2e8);
  memcpy((void *)(g_xbox_mem_offset+0x2800),(void *)(g_xbox_mem_offset+0x2000),0x100);
  memcpy((void *)(g_xbox_mem_offset+0x2900),(void *)(g_xbox_mem_offset+0x2100),16);
  memcpy((void *)(g_xbox_mem_offset+0x3800),(void *)(g_xbox_mem_offset+0x3000),0x100);
  MEM32(0x12ec)=0x2800;MEM32(0x2804)=0x2900;MEM32(0x2810)=0x4800;MEM32(0x1364)=0x3800;MEM32(0x1314)=2;
  g_esp=0x10000;MEM32(g_esp)=0x12345678;MEM32(g_esp+4)=0x12e8;MEM32(g_esp+8)=0;
- sub_001DE250();assert(g_esp==0x10004&&MEM32(0x1448)==0x1ddf10);
- MEMF(0x38e8)=350;MEMF(0x38ec)=10;MEMF(0x38f0)=-5;MEMF(0x38f4)=5;
+ sub_001DE250();assert(g_esp==0x10004&&MEM32(0x1448)==0x1ddf10&&MEM32(0x1484)==0x1dde30);
+ MEMF(0x38e8)=start_angle?360-start_angle:0;MEMF(0x38ec)=start_angle;MEMF(0x38f0)=-start_velocity;MEMF(0x38f4)=start_velocity;
  MEMF(0x134c)=13;MEMF(0x1350)=24;MEMF(0x1354)=35;
  assert(wind_owners.count==2);
  MEM32(0x7b4fac)=2;
  if(mode<2)MEM32(owners[1-mode]+0x28)=0x80000000;
+ wind_host_clock.game_remainder=wind_host_clock.raw_remainder=initial_phase_units*60;
  fresh[0]=fresh[1]=0;
 }
 static void point_check(unsigned which){
@@ -282,6 +285,8 @@ static void pause_pair(void){
   MEM32(0x4e7944)=g_tsfp_native_step.game_ticks;MEMF(0x4e794c)=g_tsfp_native_step.game_delta;
   g_esp=0x10000;MEM32(g_esp)=0x12345678;g_ebx=0xfeed;g_esi=0xdead;g_edi=0xbeef;g_ebp=g_seh_ebp=0;
   sub_001CE2E0();assert(g_esp==0x10004&&!g_fp_top&&MEM32(0x7de318)==level);
+  float before_phase=MEMF(0x7ac820);g_esp=0x10000;MEM32(g_esp)=0x12345678;g_ebp=g_seh_ebp=0;sub_001CE420();assert(g_esp==0x10004&&!g_fp_top&&MEMF(0x7ac820)==before_phase);
+
   for(unsigned i=0;i<2;i++){
    assert(!memcmp(data[i],(void *)(g_xbox_mem_offset+0x3000+i*0x800),256));
    assert(!memcmp(data[i]+256,(void *)(g_xbox_mem_offset+0x4000+i*0x800),64));
@@ -292,14 +297,14 @@ static void pause_pair(void){
 }
 
 static void pair_frame(unsigned n,unsigned units,unsigned mode){
- unsigned tick=n*units/720,next=(n+1)*units/720,whole=next-tick;
+ unsigned tick=(initial_phase_units+n*units)/720,next=(initial_phase_units+(n+1)*units)/720,whole=next-tick;
  wind_host_now+=units;
  g_tsfp_native_step=pc_native_timing_step(&wind_host_clock,wind_host_now,43200,240,0);
  assert(g_tsfp_native_step.game_ticks==whole);
  wind_exact_delta=(double)g_tsfp_native_step.game_units/g_tsfp_native_step.units_per_tick;
  MEM32(0x4e7944)=whole;MEMF(0x4e794c)=g_tsfp_native_step.game_delta;
  MEM32(0x4e7940)=g_tsfp_native_step.raw_ticks;MEMF(0x4e7948)=g_tsfp_native_step.raw_delta;
- MEMF(0x7ac820)=.2f+(float)(((n+1)*wind_exact_delta)*.01);
+ /* The original second pass advances wind phase and spatial scales. */
  unsigned char before[2][64];for(unsigned i=0;i<2;i++)memcpy(before[i],(void *)(g_xbox_mem_offset+0x4000+i*0x800),64);
  unsigned callbacks=dispatch_callbacks;
  g_esp=0x10000;MEM32(g_esp)=0x12345678;g_ebx=0xfeed;g_esi=0xdead;g_edi=0xbeef;g_ebp=g_seh_ebp=0;
@@ -314,9 +319,12 @@ static void pair_frame(unsigned n,unsigned units,unsigned mode){
   unsigned char current[320];memcpy(current,(void *)(g_xbox_mem_offset+0x3000+i*0x800),256);
   memcpy(current+256,(void *)(g_xbox_mem_offset+0x4000+i*0x800),64);
   point_check(i);
-  if(!whole && n*units<43200){assert(memcmp(before[i],current+256,64));++fresh[i];}
-  if(mode==2)assert(!memcmp(current,solo[i][n],320));else memcpy(solo[i][n],current,320);
+  if(!whole && n*units<43200){if(!envelope_mode)assert(memcmp(before[i],current+256,64));++fresh[i];}
+  if(!envelope_mode){if(mode==2)assert(!memcmp(current,solo[i][n],320));else memcpy(solo[i][n],current,320);}
  }
+ g_esp=0x10000;MEM32(g_esp)=0x12345678;g_ebp=g_seh_ebp=0;sub_001CE420();assert(g_esp==0x10004&&!g_fp_top);
+ assert(isfinite(MEMF(0x7de300))&&isfinite(MEMF(0x7ac820))&&fabs(MEMF(0x7ac820)-(.2+(n+1)*units/43200.))<.0005);
+ for(unsigned i=0;i<3;i++)assert(isfinite(MEMF(0x7ac814+4*i))&&fabs(MEMF(0x7ac814+4*i))>0);
  if(mode==2&&n%97==31)pause_pair();
 }
 
@@ -362,9 +370,41 @@ static void check_whole_fallback(void){
  puts("PASS: Original/native whole fallback360 owner frames byte equal");
 }
 
-int main(int argc,char **argv){legacy_gate=argc>1&&!strcmp(argv[1],"legacy");bad_matrix=argc>1&&!strcmp(argv[1],"freeze-matrix");setbuf(stdout,NULL);void *m=calloc(1,0x800000);assert(m);g_xbox_mem_offset=(ptrdiff_t)m;
+static void check_original_envelope(void){
+static float reference[2][181][2];unsigned failures=0,cases=0;double maximum=0;
+const float angles[]={0,10,79,80,280,281,350},velocities[]={0,5,-5,90,-90,150};
+const unsigned steps[]={360,300,240,180,45};envelope_mode=1;
+for(unsigned ai=0;ai<7;ai++)for(unsigned vi=0;vi<6;vi++){
+ start_angle=angles[ai];start_velocity=velocities[vi];initial_phase_units=0;
+ setup_pair(2);g_tsfp_native_timing_active=0;
+ for(unsigned i=0;i<2;i++)for(unsigned axis=0;axis<2;axis++)reference[i][0][axis]=norm(MEMF(0x30e8+i*0x800+axis*4));
+ for(unsigned n=0;n<180;n++){
+  pair_frame(n,720,2);
+  for(unsigned i=0;i<2;i++)for(unsigned axis=0;axis<2;axis++)reference[i][n+1][axis]=norm(MEMF(0x30e8+i*0x800+axis*4));
+ }
+ for(unsigned phase=0;phase<4;phase++)for(unsigned k=0;k<5;k++){
+  initial_phase_units=phase*180;unsigned units=steps[k],frames=129600/units;setup_pair(2);double worst=0;
+  for(unsigned n=0;n<frames;n++){
+   pair_frame(n,units,2);unsigned tick=(initial_phase_units+(n+1)*units)/720;
+   for(unsigned i=0;i<2;i++)for(unsigned axis=0;axis<2;axis++){
+    unsigned lo=tick?tick-1:0,hi=tick+2<180?tick+2:180;float low=1e9f,high=-1e9f;
+    for(unsigned j=lo;j<=hi;j++){low=fminf(low,reference[i][j][axis]);high=fmaxf(high,reference[i][j][axis]);}
+    float value=norm(MEMF(0x30e8+i*0x800+axis*4));double error=fmax(0,fmax(low-value,value-high));
+    if(error>worst)worst=error;
+   }
+  }
+  cases++;if(worst>maximum)maximum=worst;
+  if(worst>.25){failures++;if(failures<=32)printf("REJECT angle=%g velocity=%g phase=%u units=%u max=%.9g\n",start_angle,start_velocity,phase,units,worst);}
+ }
+
+}
+printf("natural_corpus cases=%u failures=%u max=%.9g\n",cases,failures,maximum);
+assert(cases==840&&!failures);}
+
+int main(int argc,char **argv){legacy_gate=argc>1&&!strcmp(argv[1],"legacy");bad_matrix=argc>1&&!strcmp(argv[1],"freeze-matrix");freeze_provider=argc>1&&!strcmp(argv[1],"freeze-provider");setbuf(stdout,NULL);void *m=calloc(1,0x800000);assert(m);g_xbox_mem_offset=(ptrdiff_t)m;
 /* ORIGINAL_CONSTANTS */
 for(unsigned i=0;i<2048;i++)MEMF(0x7a38a0+4*i)=(float)sin(2*3.14159265358979323846*i/2048);
+if(argc>1&&!strcmp(argv[1],"corpus")){check_original_envelope();free(wind_owners.entries);free(m);return 0;}
 if(argc>1&&!strcmp(argv[1],"scopes")){check_scopes();free(wind_owners.entries);free(m);return 0;}
 if(argc>1&&!strcmp(argv[1],"whole")){check_whole_fallback();free(wind_owners.entries);free(m);return 0;}
 const unsigned steps[]={360,300,240,180,45};unsigned comparisons=0;
