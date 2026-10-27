@@ -611,6 +611,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                      (0x123d0,0x123f3),(0x124f0,0x12533),
                                      (0x126c0,0x12717)]),
     ('native_beam_lifetime.c', [(0x10a760,0x10ad71)]),
+    ('native_impact_sparks.c', [(0x108780,0x108b61)]),
     ('native_beam_geometry.c', [(0x104f30,0x1053ca),(0x1053d0,0x105615),
                                 (0x141a0,0x14532),(0x10a760,0x10ad71),
                                 (0x10bf5c,0x10bfca)]),
@@ -664,7 +665,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_impact_sparks.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -676,7 +677,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
-                          else [] if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
+                           else [] if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_npc_aim.c','native_impact_sparks.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
             if harness_name=='native_character_scale.c':
                 addresses.update(range(0x12609c,0x1260b4,4))
@@ -902,6 +903,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                      if any(start == 0x151e80 for start, _ in ranges) else '') + code))
     source=source.replace('"pc_input.c"', '"'+(ROOT/'src/pc_input.c').as_posix()+'"')
     output=compile_and_run(tmp_path,source)
+    if harness_name=='native_impact_sparks.c':
+        needle='RECOMP_LOAD_GLOBAL_U32(0x108793, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError,match='transformed'):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
     if harness_name=='native_walk_contact.c':
         for needle,replacement in (
             ('RECOMP_FLOAT_BRANCH_AT(0xC596C,','RECOMP_FLOAT_BRANCH_AT(0xFFFFFFFF,'),

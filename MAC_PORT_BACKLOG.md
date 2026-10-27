@@ -219,6 +219,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-082 | Projected enemy shield effects (issue #358) | Awaiting validation |
 | MAC-083 | Independent bit tests, scans and byte swaps | Awaiting validation |
 | MAC-084 | Independent multiply and divide lowering | Awaiting validation |
+| MAC-085 | Shared impact spark timing (issue #371) | Awaiting validation |
 | MAC-086 | Independent exchange lowering and atomic helpers | Awaiting validation |
 | MAC-087 | Independent comparison snapshots and sign extension | Awaiting validation |
 
@@ -6176,6 +6177,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Shared source implemented; native Mac
   generation/build/gameplay unverified. LOCK and full flag provenance are deferred.
 
+### MAC-085 - Shared impact spark timing (issue #371)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Weapon impact sparks update their geometry on every advancing
+  native frame instead of waiting for a complete 60 Hz tick, addressing the
+  black impact streaks seen at 180 FPS across weapons.
+- **PC source:** `48de7c0` on `371-laser-impact-flashes`; shared
+  `src/pc_native_numeric.h` and original guest regression fixture.
+- **PC validation:** Original US spark updater passes fractional/whole/pause
+  tests at 60, 120, 180 and 240 FPS, including an unhooked negative case.
+  Windows live firing validation is recorded separately in `STATUS.md`.
+- **Existing Mac support:** Shared numeric policy is compiled by both hosts.
+- **Mac adaptation needed:** None identified; native gameplay remains to be
+  checked on Mac.
+- **Mac acceptance checks:** Run the original spark fixture, build the native
+  game, and fire several weapons at nearby scenery at 60 and 120+ FPS while
+  inspecting impact effects and pause/resume.
+- **Mac implementation and evidence:** Native Mac validation pending; Windows
+  results do not establish visual parity.
+
 ### MAC-086 - Independent exchange lowering and atomic helpers
 
 - **Status:** Awaiting validation
@@ -6198,7 +6219,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Original CMP/TEST snapshots and CBW/CWD/CWDE/CDQ emission.
-- **PC source:** PR #375 comparison stage; `translation_compare.py`
+- **PC source:** PR #375, implementation `f941d1d4`; `translation_compare.py`
   and `independent-translation-compare.patch`.
 - **PC validation:** Native width, hook, carry and preservation contracts plus
   decoded consumers; generation/build/game evidence in STATUS.md.
