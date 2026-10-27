@@ -32,7 +32,7 @@ across active folders; duplicates fail before runtime files change. Keep descrip
 with hyphens. An active and legacy version of one patch share a basename so
 the active version takes precedence during migration.
 
-`tools/apply-patches.py:active_patch_paths` discovers active patches recursively,
+`tools/build/apply-patches.py:active_patch_paths` discovers active patches recursively,
 excluding every `legacy/` directory. `patch_records` owns the **effective**
 application order. It sorts basenames globally, regardless of folder, then applies dependency overrides
 (network/native boot, presentation, and final translator replacements).
@@ -57,9 +57,9 @@ patches. Git rename history supplies the old-to-new path correspondence.
 2. Update filename references in the loader, tests, fixtures and documentation.
 3. Stage intended patches, run `python tools/repo-context.py refresh`, then
    `python tools/repo-context.py check --base <task-base-revision>`.
-4. Run `tests/test_patch_tracking.py`, `tests/test_patch_updates.py` and
-   `tests/test_repo_context.py`, plus the tests for the behavior being changed.
-   Prepare the local runtime with `python tools/prepare-runtime.py` first.
+4. Run `tests/repository/test_patch_tracking.py`, `tests/repository/test_patch_updates.py` and
+   `tests/repository/test_repo_context.py`, plus the tests for the behavior being changed.
+   Prepare the local runtime with `python tools/build/prepare-runtime.py` first.
 
 Historical patch-stack fixtures describe migration scenarios using stable
 basenames. Tests resolve these against the active folders (or explicitly use

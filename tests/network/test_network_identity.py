@@ -6,6 +6,20 @@ from pathlib import Path
 import os
 import shutil
 import subprocess
+import sys
+
+
+def test_portable_probe_preserves_interpreter_search_path():
+    """The bundled runner must not bootstrap development-tool directories."""
+    runner = Path(__file__).with_name('portable_online.py')
+    check = (
+        "import runpy, sys; before=list(sys.path); "
+        "runpy.run_path(sys.argv[1], run_name='portable_probe_fixture'); "
+        "assert sys.path==before, (before,sys.path)"
+    )
+    result = subprocess.run([sys.executable, '-I', '-c', check, str(runner)],
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 spec = importlib.util.spec_from_file_location('network_identity', Path(__file__).resolve().parents[2] / 'tools/build/network-identity.py')
 module = importlib.util.module_from_spec(spec)

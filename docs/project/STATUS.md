@@ -63,6 +63,18 @@ Native Mac title gameplay remains unverified (MAC-102); full independence and
 full-campaign behavior are not claimed. The PR has not been merged into main.
 
 
+## Portable release probe isolation (2026-10-27, v0.3.5 preparation)
+
+The packaged Online check loaded the repository-layout bootstrap before its
+isolation assertion. That bootstrap added development tool directories to the
+bundled interpreter's search path, causing a release-test failure despite a
+correctly isolated package. The runner only needs the standard library before
+the probe, so the unused bootstrap is removed. The probe still asserts all
+imports come from packaged Support paths and runs content verification, Tk,
+certificate generation and three-peer HTTPS/UDP checks. A new subprocess
+regression in the existing Windows network-identity CI suite fails with the old
+bootstrap and passes with the correction. Game and launcher source are unchanged.
+
 ## Centered Windows gameplay cursor (2026-10-27, issue #381)
 
 Initial validation on `381-bug-mouse-cursor-window-contraint`, based on

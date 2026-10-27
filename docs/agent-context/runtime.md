@@ -14,6 +14,7 @@ preserve exact ledger bytes and runtime output. Duplicate active names fail.
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`
 prefixes without changing patch bytes, effective order or context options.
+Maintenance commands use `tools/build/` and `tests/repository/`.
 The loader retains its dependency overrides, and recorded old names unwind
 using their stored contents. Keep the five legacy migration patches.
 

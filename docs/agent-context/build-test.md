@@ -2,6 +2,7 @@
 
 Grouped paths: [layout](../development/repository-layout.md).
 Direct Python/CI imports use `tools/project_paths.py`; test fixtures use `tests/conftest.py`.
+Portable probes retain isolated imports.
 
 Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
 
