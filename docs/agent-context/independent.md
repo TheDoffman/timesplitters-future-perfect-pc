@@ -43,6 +43,10 @@ edges, with operand overwrites; decoded consumers and NaN/float tests compile.
 Private join and timing fixtures retain their independent behavioral oracles;
 actor-voice negative controls locate the original JNE target and wrap its
 current captured condition instead of depending on a legacy macro spelling.
+`independent-condition-fixture.patch` updates the inherited logical-condition
+spelling assertion and skips only compiler-dependent sweeps when a compiler is
+absent. Original sweeps/negative controls also run through the project MSVC
+harness, preventing the Windows compiler probe from hiding this fixture.
 Unknown flags still return no expression. Complete EFLAGS, mixed setters,
 zero-count shifts, caller flags and guest fault delivery remain work.
 

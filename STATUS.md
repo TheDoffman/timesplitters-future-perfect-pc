@@ -1,3 +1,16 @@
+## Condition-stage CI fixture repair (2026-10-27)
+
+Mac native CI on `46424293` found a stale inherited expression-text assertion
+for logical conditions; its entire class had been skipped locally when Clang
+was absent from PATH. The repair changes the expected spelling, keeps the
+behavioral sweeps/negative controls, and limits the compiler skip to those
+sweeps. The project harness also executes them with the selected host compiler.
+Production code and the accepted game executable are unchanged; the generation
+fingerprint remains current. **44 targeted checks passed in 14.79 seconds**,
+including the original 15 logical-condition sweeps and nine rejecting negative
+controls compiled with MSVC. Fresh install/repeated patch application passed
+in **28.35 seconds**. CI rerun is pending; this is not native Mac gameplay acceptance.
+
 ## Independent condition-code generation (Windows acceptance passed, 2026-10-27)
 
 PR #375 replaces the condition map, Jcc/SETcc/CMOVcc expressions, LAHF and

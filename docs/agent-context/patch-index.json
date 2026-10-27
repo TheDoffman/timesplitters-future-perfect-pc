@@ -63,6 +63,13 @@
       ]
     },
     {
+      "name": "independent-condition-fixture.patch",
+      "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
+      "targets": [
+        "tools/recomp/test_lifter_logic_above_below.py"
+      ]
+    },
+    {
       "name": "independent-disasm-input.patch",
       "sha256": "cf9d01d01af97a07d554a29966d4688dbd35c24453ec8efc682ba154410bfafe",
       "targets": [

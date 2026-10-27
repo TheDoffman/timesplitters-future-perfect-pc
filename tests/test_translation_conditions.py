@@ -227,3 +227,33 @@ puts("PASS decoded Jcc/SETcc/CMOVcc and LAHF with overwritten operands");return 
     source=tmp_path/'decoded.c';source.write_text(code,encoding='utf-8')
     run=subprocess.run([str(_compile(tmp_path,source))],capture_output=True,text=True,timeout=60)
     assert run.returncode==0,run.stdout+run.stderr
+
+
+def test_inherited_logic_sweeps_and_negative_controls_with_host_compiler(tmp_path):
+    script=r'''
+import json
+from tools.recomp import test_lifter_logic_above_below as fixture
+case=fixture.LogicAboveBelowTest()
+case.setUp()
+case.test_matches_how_the_lifter_spells_it_elsewhere()
+rows=[]
+for setter in fixture.SETTERS:
+ for jump,reference in fixture.REFERENCE.items():
+  expression=fixture._make_condition(jump,setter,case.ops)[0]
+  rows.append((fixture.SOURCE.replace('OP',fixture.C_OP[setter]).replace('COND',expression).replace('REF',reference),True))
+ for jump,old in (('jbe','0'),('jna','0'),('ja','1')):
+  rows.append((fixture.SOURCE.replace('OP',fixture.C_OP[setter]).replace('COND',old).replace('REF',fixture.REFERENCE[jump]),False))
+print(json.dumps(rows))
+'''
+    result=subprocess.run([sys.executable,'-c',script],cwd=ROOT/'external/ts3FPrecomp',
+        env=dict(os.environ,TSFP_PROJECT_ROOT=str(ROOT)),capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stdout+result.stderr
+    rows=json.loads(result.stdout)
+    code='\n'.join(source.replace('int main(void)',f'static int check_{i}(void)') for i,(source,_) in enumerate(rows))
+    code+='\nint main(void){\n'
+    for i,(_,success) in enumerate(rows):
+        code+=f'if ((check_{i}()==0)!={int(success)}) return {i+1};\n'
+    code+='return 0;}\n'
+    source=tmp_path/'legacy-logic.c';source.write_text(code,encoding='utf-8')
+    run=subprocess.run([str(_compile(tmp_path,source))],capture_output=True,text=True,timeout=30)
+    assert run.returncode==0,run.stdout+run.stderr
