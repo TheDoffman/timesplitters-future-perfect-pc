@@ -1,3 +1,57 @@
+## Independent scalar numeric support (2026-10-27)
+
+Based on `e56623d1` on `feature/independent-exchange`. All 17 CI checks on that
+prerequisite revision passed before installing this stage. The complete stack
+adds `0198-independent-scalar-support.patch` and direct MOVSX/MOVZX emission in
+`translation_moves.py`. The runtime header shrinks from 1,169 to 951 lines;
+all previous patch payloads remain byte-identical.
+
+MOVSX/MOVZX previously built SX/ZX helper names dynamically. An explicit scan
+of ignored generated C found 7,894 live calls: 2,032 SX16, 869 SX8, 2,103 ZX16
+and 2,890 ZX8. The new expressions mask the source once and perform signed
+extension with unsigned sign-bit flipping/subtraction. Partial destinations
+preserve their remaining bits. Direction displacement samples DF before one
+argument evaluation and uses defined unsigned wrapping. Unused scalar/x87,
+condition, carry, rotation, parity and byte-swap helpers are removed.
+
+The inherited rounding assertions now execute actual emitted FRNDINT/FIST;
+classification stops extracting unused helpers. The old numeric assertions and
+compiled extension regression sweeps remain enabled. New checks cover 8,718,336
+extension cases across complete byte/word values, source/destination registers,
+partial aliases, memory read counts and FS addressing; 262,172 direction cases;
+production/isolated headers; and seven compiling negative controls. All 24
+focused checks passed (27.08s), followed by all 707 compiler checks (242.52s).
+
+Production regeneration translated 15,838 functions with zero failures and
+unchanged 50 unresolved stubs / 738 unimplemented sites. All 16 C chunks match
+the independently predicted replacement of those 7,894 expressions byte-for-byte;
+the four other generated files are unchanged. The initial raw header prediction
+comparison failed only because the Windows patch tool wrote CRLF: all 951 lines
+match the candidate after newline normalization, and the generated header is
+byte-identical to the patched template. No production change was needed for that
+verification adjustment. The supported-US XBE hash was rechecked.
+
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with process-local `CL_MPCount=2`. The executable built from the working tree
+based on `e56623d1` has SHA-256
+`19393d537de1715f144340dde1a3c549fa65dfa4f431723458139b5030e415d7`.
+The isolated Original60 Story replay confirmed playable state before input.
+Movement measured 11.174544 forward / 6.184892 backward, ammunition fell 8 to 6,
+all 40 pause samples froze ticks, and all 60 resume samples advanced. The last
+checkpoint was 135.201 seconds; runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files retained hashes, sizes and modification times;
+no owned locks, disposable partitions or dumps remained. This used injected
+input, a minimized window, Classic textures and skipped startup movies; it does
+not establish physical input, audio listening or full-campaign behavior.
+All 73 historical-upgrade, patch-tracking, context, backlog and snapshot checks
+passed (875.08s). Final context/index and whitespace checks passed.
+
+Evidence is under ignored `logs/scalar-*`, `logs/independent-scalar-game-check.json`
+and `private/test-saves/independent-scalar`. Native Mac title
+acceptance remains pending MAC-104. Header service interfaces, FP environment,
+runtime services, title integration, inherited fixtures and final removal remain
+unfinished; passing emitted-instruction tests does not establish full independence.
+
 ## Independent vector support (2026-10-27)
 
 Based on `46e68827` on `feature/independent-exchange`, including main `31599ff4`

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "32a0e32ca0e932c6bfda39ea5d62731ac4e206b4b54898b691a12a54cfbd71f1",
+  "loaderSha256": "7e65c6ced0afe759e2a085fd705af4439966e07f77b0088e58f87c68325038c9",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2100,6 +2100,18 @@
       "sha256": "dfed17e127624c66441b8e5798f5cb1bec3dd26fa185ec61d9ec46da745791d0",
       "targets": [
         "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0198-independent-scalar-support.patch",
+      "path": "patches/compiler/0198-independent-scalar-support.patch",
+      "sha256": "d92d1cc63c6ed73bd61fef62df65eac7e2414eb5e57af80bf1b9f856bf3dfaa7",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_lifter_fpu.py",
+        "tools/recomp/test_lifter_frndint.py",
+        "tools/recomp/test_lifter_movsx_registers.py",
+        "tools/recomp/test_x87_classification.py"
       ]
     },
     {

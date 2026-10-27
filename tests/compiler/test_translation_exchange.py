@@ -65,7 +65,7 @@ def test_register_memory_alias_flags_and_hardware(tmp_path):
         run=subprocess.run([str(Path(compiler).with_name('ml64.exe')),'/nologo','/c',f'/Fo{obj}',str(source)],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
         assert run.returncode==0,run.stdout+run.stderr
         objects=[str(obj)]
-    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16','CMP_EQ'})
+    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16',})
     code=atomic_source()+r"""
 #include <stdio.h>
 #include <string.h>
@@ -222,7 +222,7 @@ print(json.dumps(out))
 '''
     run=subprocess.run([sys.executable,'-c',script],cwd=runtime,env=dict(os.environ,TSFP_PROJECT_ROOT=str(ROOT)),capture_output=True,text=True,timeout=30)
     assert run.returncode==0,run.stdout+run.stderr
-    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16','CMP_EQ'})
+    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16',})
     code=atomic_source()+r"""
 #include <stdio.h>
 #include <string.h>

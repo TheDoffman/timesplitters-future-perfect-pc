@@ -58,6 +58,11 @@ operation helpers after call frames, retaining an original `XMM_SCALAR`
 constructor. The source-layout patch still runs last. Historical payloads are
 unchanged; use the effective index rather than numeric sorting alone.
 
+`compiler/0198-independent-scalar-support.patch` follows vector support, removes
+obsolete numeric helpers and routes the preserved rounding assertions through
+actual emitted instructions. MOVSX/MOVZX use direct project expressions, so
+regeneration is required; the direction macro retains one argument evaluation.
+
 1. Keep runtime changes here; preserve `vendor/ts3FPrecomp/source` exactly.
 2. Update filename references in the loader, tests, fixtures and documentation.
 3. Stage intended patches, run `python tools/repo-context.py refresh`, then

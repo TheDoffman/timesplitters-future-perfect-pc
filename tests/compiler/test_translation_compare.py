@@ -116,7 +116,7 @@ print(json.dumps(out))
 """
     r=subprocess.run([sys.executable,'-c',script],cwd=ROOT/'external/ts3FPrecomp',env=dict(os.environ,TSFP_PROJECT_ROOT=str(ROOT)),capture_output=True,text=True,timeout=30)
     assert r.returncode==0,r.stdout+r.stderr
-    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16','CMP_EQ','CMP_NE','CMP_L','CMP_B','CMP_A','TEST_Z','TEST_S','RECOMP_FLAG_WIDTH','RECOMP_SIGNED'})
+    macros=_production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16',})
     code='#include <stdint.h>\n#include <stdio.h>\n'+macros+r"""
 static uint32_t eax,ebx,ecx,edx,esi,edi,esp,g_ebp,g_seh_ebp;
 #define RECOMP_FAST_ENTRY(site) 0

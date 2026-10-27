@@ -203,9 +203,7 @@ int main(void){memory[0x1080/4]=0x1020;memory[0x1084/4]=0x1040;ecx=0;eax=0;esp=1
 ecx=0;eax=1;esp=100;owner();if(eax!=22||esp!=104)return 2;
 ecx=1;eax=99;esp=100;owner();return eax!=11||esp!=104||unexpected_tail;}
 '''
-    # Production TEST emits these macros; the fixture uses their actual source.
-    from test_translation_moves import _production_macros
-    code=code.replace('#define RECOMP_FAST_ENTRY(site) 0',_production_macros({'TEST_Z','TEST_S','RECOMP_FLAG_WIDTH','RECOMP_SIGNED'})+'\n#define RECOMP_FAST_ENTRY(site) 0')
+    # The independent TEST/branch emission needs no legacy condition macros.
     source=tmp_path/'discovery.c';source.write_text(code,encoding='utf-8')
     assert subprocess.run([str(_compile(tmp_path,source))],timeout=30).returncode==0
 

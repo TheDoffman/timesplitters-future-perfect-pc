@@ -253,6 +253,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-101 | Project indirect guest-call dispatch | Awaiting validation |
 | MAC-102 | Project call checks and HLE argument frames | Awaiting validation |
 | MAC-103 | Project vector constructor and obsolete SIMD helper retirement | Awaiting validation |
+| MAC-104 | Direct scalar extension and numeric helper retirement | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6595,3 +6596,21 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   passed, as did all 73 historical/snapshot/context/backlog checks. All 26
   protected files were unchanged. Native Mac title acceptance remains pending. See STATUS.md for
   measurements and the injected-input/minimized-window acceptance limits.
+
+### MAC-104 - Direct scalar extension and numeric helper retirement
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up based on e56623d1, in
+  tools/compiler/translation_moves.py, patches/compiler/0198-independent-scalar-support.patch
+  and tests/compiler/test_scalar_support.py / scalar_support.c. Unsigned masking
+  and sign-bit transformation implement MOVSX/MOVZX with one source read;
+  string direction samples DF before its argument. Obsolete helpers are removed.
+- Mac support: common C/Python; no platform adapter. Both CI hosts run the
+  exhaustive extension/direction checks, preserved rounding assertions and
+  compiled negative controls alongside existing x87 and integer regressions.
+- Windows validation: all 17 prerequisite CI checks passed on e56623d1; all 24
+  focused and 707 compiler checks passed. Production generation matches the
+  7,894 predicted expression replacements; Release/native checks and isolated
+  movement/fire/pause/resume passed, with all 26 protected files unchanged.
+  All 73 historical/snapshot/context/backlog checks passed. Native Mac title
+  acceptance remains pending; see STATUS.md for measurements and bounded replay limitations.

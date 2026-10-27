@@ -9,8 +9,12 @@ it does not count as original replacement code.
 The vector-support stage (`0197-independent-vector-support.patch`) removes the
 obsolete inherited MMX/SSE helper bodies now superseded by the project emitters.
 The live model-transform constructor has an original bit-preserving body.
-This does not replace the remaining scalar/FP helpers, diagnostics, storage,
-kernel/device services or title integration. Acceptance is tracked in MAC-103.
+The scalar-support stage (`0198-independent-scalar-support.patch`) also retires
+obsolete numeric helpers and emits MOVSX/MOVZX directly from project code.
+Existing rounding/classification assertions test real instruction emission;
+direction and extension contracts have independent compiled oracles. Header
+service interfaces, FP environment, diagnostics, storage, kernel/device services
+and title integration remain. Acceptance is tracked in MAC-103 and MAC-104.
 
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have

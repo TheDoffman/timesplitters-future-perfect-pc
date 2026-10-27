@@ -62,7 +62,7 @@ def _production_macros(names):
 
 def test_data_moves_execute_with_runtime_macros(tmp_path):
     macros=_production_macros({'XBOX_PTR','MEM8','MEM16','MEM32','LO8','HI8','LO16',
-        'SET_LO8','SET_HI8','SET_LO16','SX8','SX16','ZX8','ZX16','PUSH32','POP32'})
+        'SET_LO8','SET_HI8','SET_LO16','PUSH32','POP32'})
     trace='caller "quoted"\\\n\U0001f642'
     source='''#include <stdint.h>
 #include <string.h>

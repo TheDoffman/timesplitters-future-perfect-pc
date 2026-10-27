@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
+sign handling; old numeric helpers are removed, while regression oracles execute
+real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).
+
 Vector helper retirement follows call frames in the loader, before layout
 routing. `XMM_SCALAR` remains the model-transform ABI with an original
 bit-preserving body; emitted SIMD operations need no legacy helper layer.

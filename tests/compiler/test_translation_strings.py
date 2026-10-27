@@ -151,7 +151,7 @@ print(json.dumps(out))
     assert result.returncode == 0, result.stdout+result.stderr
     from test_translation_moves import _production_macros
     code = '#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n'
-    code += _production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16','CMP_EQ','CMP_B','CMP_L','RECOMP_SIGNED','RECOMP_FLAG_WIDTH'})
+    code += _production_macros({'LO8','HI8','LO16','SET_LO8','SET_HI8','SET_LO16',})
     code += r'''
 static uint32_t eax,ebx,ecx,edx,esi,edi,esp,g_ebp,g_seh_ebp;
 static int g_df;static _Alignas(8) unsigned char mem[65540];

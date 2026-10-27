@@ -1,0 +1,431 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -346,57 +346,9 @@
+ typedef void (*recomp_foreign_longjmp_fn)(jmp_buf *target, int value,
+                                           uintptr_t armed_stack);
+ void recomp_set_foreign_longjmp(recomp_foreign_longjmp_fn fn);
+-#define RECOMP_DF_STEP(n) (g_df ? -(int32_t)(n) : (int32_t)(n))
+-
+-#define RECOMP_FCMP_CC(c) ((uint16_t)((c)==2 ? 0x4500u : (c)<0 ? 0x0100u : (c)>0 ? 0u : 0x4000u))
+-/* Values in the existing double-backed stack are all representable as normal
+- * x87 extended values, including binary64 subnormals. Empty stack tags and
+- * unsupported extended encodings are not represented by this stack model. */
+-static inline uint16_t recomp_fxam(double value) {
+-    return (uint16_t)((signbit(value) ? 0x0200u : 0u) |
+-        (isnan(value) ? 0x0100u : isinf(value) ? 0x0500u :
+-         value == 0.0 ? 0x4000u : 0x0400u));
+-}
+-
+-/* Result of an x87 compare, in the shape the status word wants:
+- *   -1 less, 0 equal, 1 greater, 2 unordered (either operand is NaN).
+- * The unordered case is not a curiosity: `fucompp` of a value with itself
+- * followed by `test ah, 0x44; jp` is how this era's CRT asks "is this a NaN",
+- * and collapsing it to "equal" answers no every time. */
+-#define RECOMP_FCMP(a, b)     (((a) != (a) || (b) != (b)) ? 2 : (a) < (b) ? -1 : (a) > (b) ? 1 : 0)
+-/* x87 rounding to an integral value under the guest RC bits (control word
+- * bits 10-11: 0 nearest-even, 1 down, 2 up, 3 toward zero). FRNDINT rounds
+- * this way, and so does FIST before its store; neither may follow the HOST's
+- * rounding mode, which the guest's fldcw never reaches. MSVC's CRT floor() and
+- * ceil() are `fldcw RC=down/up` (via _ctrlfp) around _frnd, a bare frndint,
+- * so a frndint lifted as rint() made both of them round to nearest.
+- * NaN, the infinities and values already integral come back unchanged, and a
+- * zero result keeps the operand's sign, as FRNDINT's does. */
+-static inline double recomp_frndint(double value, uint16_t control) {
+-    double rounded;
+-    if (!isfinite(value)) return value;
+-    switch((control>>10)&3) {
+-    case 1: rounded=floor(value); break;
+-    case 2: rounded=ceil(value); break;
+-    case 3: rounded=trunc(value); break;
+-    default: {
+-        double lo=floor(value), fraction=value-lo;
+-        rounded=lo;
+-        if(fraction>0.5 || (fraction==0.5 && fmod(lo,2.0)!=0.0)) rounded=lo+1.0;
+-        break;
+-    }
+-    }
+-    return rounded == 0.0 ? copysign(0.0, value) : rounded;
+-}
+-/* x87 integer stores use the guest RC bits, independently of host rounding.
+- * Masked invalid conversions store the signed integer-indefinite value. */
+-static inline int64_t recomp_fist(double value, uint16_t control, unsigned bits) {
+-    double rounded = recomp_frndint(value, control);
+-    double limit=ldexp(1.0,(int)bits-1);
+-    if(!isfinite(rounded) || rounded < -limit || rounded >= limit)
+-        return bits==64?INT64_MIN:-(INT64_C(1)<<(bits-1));
+-    return (int64_t)rounded;
+-}
++/* TSFP string direction: sample DF before evaluating the byte count once.
++ * Generated string instructions consume the displacement modulo 2^32. */
++#define RECOMP_DF_STEP(bytes) ((g_df != 0) ? (0u - (uint32_t)(bytes)) : (uint32_t)(bytes))
+ 
+ /* ================================================================
+  * ICALL trace ring buffer (for debugging indirect calls)
+@@ -598,176 +550,6 @@
+     return lanes;
+ }
+ /* TSFP scalar vector construction end. */
+-
+-/* ================================================================
+- * Flag computation helpers
+- *
+- * These macros compute x86 flags for conditional branches.
+- * Used by the lifter's pattern-matching output:
+- *   cmp a, b; jcc target  ->  if (COND(a, b)) goto target;
+- * ================================================================ */
+-
+-/* Unsigned comparison conditions (from CMP a, b -> a - b) */
+-#define CMP_EQ(a, b)  ((uint32_t)(a) == (uint32_t)(b))
+-#define CMP_NE(a, b)  ((uint32_t)(a) != (uint32_t)(b))
+-#define CMP_B(a, b)   ((uint32_t)(a) <  (uint32_t)(b))   /* below (CF=1) */
+-#define CMP_AE(a, b)  ((uint32_t)(a) >= (uint32_t)(b))   /* above or equal */
+-#define CMP_BE(a, b)  ((uint32_t)(a) <= (uint32_t)(b))   /* below or equal */
+-#define CMP_A(a, b)   ((uint32_t)(a) >  (uint32_t)(b))   /* above */
+-
+-/* Signed comparison conditions */
+-/* x86 evaluates the signed conditions at the operand width, not at 32 bits.
+-   The generated code passes LO8/HI8/LO16 sub-register reads straight in, and
+-   those zero-extend, so recover the width and sign-extend before comparing. */
+-#define RECOMP_FLAG_WIDTH(a, b) (sizeof(a) < sizeof(b) ? sizeof(a) : sizeof(b))
+-#define RECOMP_SIGNED(value, width) \
+-    ((width) == 1u ? (int32_t)(int8_t)(uint8_t)(uint32_t)(value) \
+-     : (width) == 2u ? (int32_t)(int16_t)(uint16_t)(uint32_t)(value) \
+-     : (int32_t)(uint32_t)(value))
+-#define CMP_L(a, b)   (RECOMP_SIGNED(a, RECOMP_FLAG_WIDTH(a, b)) <  \
+-                       RECOMP_SIGNED(b, RECOMP_FLAG_WIDTH(a, b)))  /* less */
+-#define CMP_GE(a, b)  (RECOMP_SIGNED(a, RECOMP_FLAG_WIDTH(a, b)) >= \
+-                       RECOMP_SIGNED(b, RECOMP_FLAG_WIDTH(a, b)))  /* >= */
+-#define CMP_LE(a, b)  (RECOMP_SIGNED(a, RECOMP_FLAG_WIDTH(a, b)) <= \
+-                       RECOMP_SIGNED(b, RECOMP_FLAG_WIDTH(a, b)))  /* <= */
+-#define CMP_G(a, b)   (RECOMP_SIGNED(a, RECOMP_FLAG_WIDTH(a, b)) >  \
+-                       RECOMP_SIGNED(b, RECOMP_FLAG_WIDTH(a, b)))  /* > */
+-
+-/* TEST-based conditions (AND without storing result) */
+-#define TEST_Z(a, b)  (((uint32_t)(a) & (uint32_t)(b)) == 0)  /* ZF=1 */
+-#define TEST_NZ(a, b) (((uint32_t)(a) & (uint32_t)(b)) != 0)  /* ZF=0 */
+-#define TEST_S(a, b)  (RECOMP_SIGNED((uint32_t)(a) & (uint32_t)(b), \
+-                                     RECOMP_FLAG_WIDTH(a, b)) < 0)  /* SF=1 */
+-
+-/* ================================================================
+- * Arithmetic with carry/overflow detection
+- * ================================================================ */
+-
+-/** Add with carry flag. Returns result, sets *cf. */
+-static inline uint32_t ADD32_CF(uint32_t a, uint32_t b, int *cf) {
+-    uint32_t r = a + b;
+-    *cf = (r < a);
+-    return r;
+-}
+-
+-/** Sub with carry (borrow) flag. Returns result, sets *cf. */
+-static inline uint32_t SUB32_CF(uint32_t a, uint32_t b, int *cf) {
+-    *cf = (a < b);
+-    return a - b;
+-}
+-
+-/* ================================================================
+- * Rotation / shift helpers
+- * ================================================================ */
+-
+-/* x86 masks the rotate count to 5 bits, and THEN the rotate is modulo the
+- * operand's own width -- so `rol al, 16` is a rotate by zero and `rol ax, 31`
+- * is a rotate by 15. A narrow rotate performed at 32 bits is not a rotate at
+- * all: the bits that should wrap around at bit 7 or 15 land above the operand
+- * and are discarded by the store, which turns `ror al, 2` on 0x01 into 0x00
+- * where x86 gives 0x40.
+- *
+- * The zero case is separated out because `val >> (32 - 0)` is a shift of a
+- * uint32_t by 32, which is undefined behaviour -- it happened to survive
+- * because x86 masks shift counts to 5 bits and gives back `val`, but the
+- * compiler is under no obligation to agree, least of all at -O2. */
+-static inline uint32_t ROL32(uint32_t val, int n) {
+-    n &= 31;
+-    return n ? ((val << n) | (val >> (32 - n))) : val;
+-}
+-
+-static inline uint32_t ROR32(uint32_t val, int n) {
+-    n &= 31;
+-    return n ? ((val >> n) | (val << (32 - n))) : val;
+-}
+-
+-/* rcl/rcr: rotate through the carry flag.
+- *
+- * The carry is a bit sitting one place above the operand's top bit, so the
+- * rotation is over width+1 bits. That is also why a count is reduced modulo
+- * width+1 for the 8- and 16-bit forms rather than modulo the width: a byte
+- * rotates through nine positions, not eight. The 32-bit form takes the count
+- * masked to five bits and no further, which is already inside 33.
+- *
+- * `cf` carries in and out.
+- */
+-static inline uint32_t RC_ROT(uint32_t val, unsigned n, int *cf,
+-                              unsigned width, int left) {
+-    unsigned mod = width + 1u;
+-    uint64_t mask = (width >= 32u) ? 0xFFFFFFFFull
+-                                   : ((((uint64_t)1 << width) - 1u));
+-    uint64_t x = (((uint64_t)(*cf & 1)) << width) | ((uint64_t)val & mask);
+-
+-    n &= 31u;
+-    if (width < 32u)
+-        n %= mod;
+-    if (n) {
+-        uint64_t full = (((uint64_t)1 << mod) - 1u);
+-        x = left ? ((x << n) | (x >> (mod - n)))
+-                 : ((x >> n) | (x << (mod - n)));
+-        x &= full;
+-    }
+-    *cf = (int)((x >> width) & 1);
+-    return (uint32_t)(x & mask);
+-}
+-
+-static inline uint8_t ROL8(uint8_t val, int n) {
+-    n = (n & 31) % 8;
+-    return n ? (uint8_t)((val << n) | (val >> (8 - n))) : val;
+-}
+-
+-static inline uint8_t ROR8(uint8_t val, int n) {
+-    n = (n & 31) % 8;
+-    return n ? (uint8_t)((val >> n) | (val << (8 - n))) : val;
+-}
+-
+-static inline uint16_t ROL16(uint16_t val, int n) {
+-    n = (n & 31) % 16;
+-    return n ? (uint16_t)((val << n) | (val >> (16 - n))) : val;
+-}
+-
+-static inline uint16_t ROR16(uint16_t val, int n) {
+-    n = (n & 31) % 16;
+-    return n ? (uint16_t)((val >> n) | (val << (16 - n))) : val;
+-}
+-
+-/* ================================================================
+- * Sign/zero extension
+- * ================================================================ */
+-
+-#define ZX8(v)   ((uint32_t)(uint8_t)(v))
+-#define ZX16(v)  ((uint32_t)(uint16_t)(v))
+-#define SX8(v)   ((uint32_t)(int32_t)(int8_t)(v))
+-#define SX16(v)  ((uint32_t)(int32_t)(int16_t)(v))
+-
+-/**
+- * x86 parity flag: 1 when the low byte of the result has an EVEN number of set
+- * bits (that is what PF means). Used by the x87 float-compare idiom
+- * `fnstsw ax; test ah, mask; jp/jnp`, which is how all pre-SSE code branches on
+- * a float comparison. Without a real parity here the branch was hardcoded and
+- * every such comparison went one fixed direction.
+- */
+-static inline int recomp_parity8(uint32_t x) {
+-    x &= 0xFFu; x ^= x >> 4; x ^= x >> 2; x ^= x >> 1;
+-    return (int)(~x & 1u);   /* 1 = even parity (PF set) */
+-}
+-#define RECOMP_PARITY8(x) recomp_parity8((uint32_t)(x))
+-
+-/* ================================================================
+- * Byte swap (for endian conversion if needed)
+- *
+- * Xbox is little-endian like x86, so these are rarely needed,
+- * but some games use bswap for network byte order or data parsing.
+- * ================================================================ */
+-
+-static inline uint32_t BSWAP32(uint32_t v) {
+-    return ((v >> 24) & 0xFF) | ((v >> 8) & 0xFF00) |
+-           ((v << 8) & 0xFF0000) | ((v << 24) & 0xFF000000u);
+-}
+-
+-static inline uint16_t BSWAP16(uint16_t v) {
+-    return (uint16_t)((v >> 8) | (v << 8));
+-}
+ 
+ /* ================================================================
+  * Indirect call dispatch
+--- a/tools/recomp/test_lifter_movsx_registers.py
++++ b/tools/recomp/test_lifter_movsx_registers.py
+@@ -153,7 +153,7 @@
+                 stmt = _lift("movsx",
+                              Operand(type="reg", reg=dst_reg),
+                              Operand(type="reg", reg=src_reg))
+-                self.assertIn("SX16(", stmt)
++                self.assertIn("^ 0x8000u", stmt)
+                 rc, out = self._sweep(src_reg, stmt, dest=dst_reg)
+                 self.assertEqual(rc, 0, f"{src_reg}: {out}\n  stmt: {stmt}")
+                 self.assertTrue(out.startswith("OK"), out)
+@@ -187,7 +187,8 @@
+         stmt = _lift("movsx",
+                      Operand(type="reg", reg="eax"),
+                      Operand(type="reg", reg="bp"))
+-        self.assertEqual(stmt, "eax = SX16(LO16(ebp));")
++        self.assertIn("LO16(ebp)", stmt)
++        self.assertIn("^ 0x8000u", stmt)
+         self.assertNotEqual(stmt, "eax = LO16(ebp);")
+ 
+     def test_movsx_and_movzx_accept_the_same_registers(self):
+@@ -206,9 +207,9 @@
+                            Operand(type="reg", reg=src_reg))
+                 zx = _lift("movzx", Operand(type="reg", reg=dst_reg),
+                            Operand(type="reg", reg=src_reg))
+-                self.assertIn(f"SX{width}(", sx,
++                self.assertIn(f"^ 0x{1 << (width-1):X}u", sx,
+                               f"movsx fell through on {src_reg}: {sx}")
+-                self.assertIn(f"ZX{width}(", zx,
++                self.assertIn(f"& 0x{(1 << width)-1:X}u", zx,
+                               f"movzx fell through on {src_reg}: {zx}")
+ 
+     def test_invalid_extension_source_is_rejected(self):
+--- a/tools/recomp/test_x87_classification.py
++++ b/tools/recomp/test_x87_classification.py
+@@ -11,9 +11,8 @@
+ 
+ def classification_source():
+     header=(Path(__file__).resolve().parents[2]/'templates/runtime/recomp_types.h').read_text()
+-    helper=re.search(r'static inline uint16_t recomp_fxam\(.*?\n}',header,re.S).group()
+-    helper+='\n'+re.search(r'static inline uint32_t tsfp_guest_insert_bits\(.*?\n}',header,re.S).group()
+-    macros='\n'.join(line for line in header.splitlines() if line.startswith(('#define RECOMP_FCMP(', '#define RECOMP_FCMP_CC(', '#define SET_LO16(')))
++    helper=re.search(r'static inline uint32_t tsfp_guest_insert_bits\(.*?\n}',header,re.S).group()
++    macros='\n'.join(line for line in header.splitlines() if line.startswith(('#define SET_LO16(',)))
+     source='#include <stdint.h>\n#include <math.h>\n#include <string.h>\n'+helper+'\n'+macros+'''
+ static double values[8];
+ static unsigned g_fp_top;
+--- a/tools/recomp/test_lifter_fpu.py
++++ b/tools/recomp/test_lifter_fpu.py
+@@ -112,7 +112,7 @@
+         self.assertIn("extern RECOMP_TLS double g_fp_stack[8];", main)
+         self.assertIn("extern RECOMP_TLS int g_fp_top;", main)
+         self.assertIn("extern RECOMP_TLS uint16_t g_fp_control_word;", runtime_types)
+-        self.assertIn("#define RECOMP_PARITY8(x)", runtime_types)
++        self.assertNotIn("#define RECOMP_PARITY8(x)", runtime_types)
+         self.assertIn("extern RECOMP_TLS uint16_t g_fp_control_word;", main)
+ 
+     def test_control_word_store_and_load_use_shared_state(self):
+--- a/tools/recomp/test_lifter_frndint.py
++++ b/tools/recomp/test_lifter_frndint.py
+@@ -7,7 +7,7 @@
+ A title that indexes a keyframe table with floor() and ceil() then reads one
+ key past the end once per animation loop.
+ 
+-The emitted text is checked here, and the helper is compiled and run: a text
++The emitted text is checked here, and emitted instructions run: a text
+ check cannot tell a correct nearest-even from one that rounds halves up.
+ """
+ 
+@@ -18,7 +18,7 @@
+ import unittest
+ from pathlib import Path
+ 
+-from .disasm import Instruction
++from .disasm import Instruction, Operand
+ from .lifter import Lifter
+ 
+ _ROOT = Path(__file__).resolve().parents[2]
+@@ -35,15 +35,39 @@
+         self.assertNotIn("rint(fp_top())", out.replace("recomp_frndint(fp_top()", ""))
+ 
+ 
+-class FrndintRuntimeTest(unittest.TestCase):
+-    def test_each_rounding_control_rounds_its_own_way(self):
+-        cc = next(filter(None, map(shutil.which, ("cc", "gcc", "clang"))), None)
+-        if not cc:
+-            self.skipTest("no C compiler available")
+-        source = r'''
++def rounding_source():
++    """Keep the original boundary oracle, now testing production x87 emission."""
++    rounding = Instruction(0, 2, "frndint", "", "")
++    rounding.operands = []
++    conversion = Instruction(0, 2, "fist", "dword ptr [0]", "")
++    conversion.operands = [Operand(type="mem", mem_size=4)]
++    wrappers = r"""
++RECOMP_TLS double g_fp_stack[8];
++RECOMP_TLS int g_fp_top;
++RECOMP_TLS uint16_t g_fp_control_word;
++static uint32_t integer_result[1];
++#define fp_top() g_fp_stack[g_fp_top]
++static double round_value(double value, uint16_t control) {
++    fp_top() = value; g_fp_control_word = control;
++/* ROUND */
++    return fp_top();
++}
++#undef MEM32
++#define MEM32(address) integer_result[(address) / 4u]
++static int64_t integer_value(double value, uint16_t control, unsigned bits) {
++    (void)bits;
++    fp_top() = value; g_fp_control_word = control;
++/* CONVERT */
++    return (int64_t)(int32_t)integer_result[0];
++}
++"""
++    wrappers = wrappers.replace('/* ROUND */', '\n'.join(Lifter().lift_instruction(rounding)))
++    wrappers = wrappers.replace('/* CONVERT */', '\n'.join(Lifter().lift_instruction(conversion)))
++    return r'''
+ #include <stdint.h>
+ #include <math.h>
+ #include "recomp_types.h"
++/* EMITTED_OPERATIONS */
+ 
+ ptrdiff_t g_xbox_mem_offset;
+ 
+@@ -54,35 +78,42 @@
+ 
+ int main(void) {
+     /* The defect: floor and ceil of a fraction above one half. */
+-    if (recomp_frndint(59.6, DOWN) != 59.0) return __LINE__;
+-    if (recomp_frndint(59.6, UP)   != 60.0) return __LINE__;
+-    if (recomp_frndint(59.4, UP)   != 60.0) return __LINE__;
+-    if (recomp_frndint(-2.5, DOWN) != -3.0) return __LINE__;
+-    if (recomp_frndint(-2.5, UP)   != -2.0) return __LINE__;
+-    if (recomp_frndint(-2.7, CHOP) != -2.0) return __LINE__;
+-    if (recomp_frndint(2.7, CHOP)  !=  2.0) return __LINE__;
++    if (round_value(59.6, DOWN) != 59.0) return __LINE__;
++    if (round_value(59.6, UP)   != 60.0) return __LINE__;
++    if (round_value(59.4, UP)   != 60.0) return __LINE__;
++    if (round_value(-2.5, DOWN) != -3.0) return __LINE__;
++    if (round_value(-2.5, UP)   != -2.0) return __LINE__;
++    if (round_value(-2.7, CHOP) != -2.0) return __LINE__;
++    if (round_value(2.7, CHOP)  !=  2.0) return __LINE__;
+     /* Nearest-even: halves go to the even neighbour. */
+-    if (recomp_frndint(2.5, NEAR)  !=  2.0) return __LINE__;
+-    if (recomp_frndint(3.5, NEAR)  !=  4.0) return __LINE__;
+-    if (recomp_frndint(-1.5, NEAR) != -2.0) return __LINE__;
+-    if (recomp_frndint(2.4, NEAR)  !=  2.0) return __LINE__;
++    if (round_value(2.5, NEAR)  !=  2.0) return __LINE__;
++    if (round_value(3.5, NEAR)  !=  4.0) return __LINE__;
++    if (round_value(-1.5, NEAR) != -2.0) return __LINE__;
++    if (round_value(2.4, NEAR)  !=  2.0) return __LINE__;
+     /* Integral values, huge values and non-finite values pass through. */
+-    if (recomp_frndint(60.0, DOWN) != 60.0) return __LINE__;
+-    if (recomp_frndint(60.0, UP)   != 60.0) return __LINE__;
+-    if (recomp_frndint(1e300, UP) != 1e300) return __LINE__;
+-    if (!isnan(recomp_frndint((double)NAN, DOWN))) return __LINE__;
+-    if (recomp_frndint((double)INFINITY, CHOP) != (double)INFINITY) return __LINE__;
++    if (round_value(60.0, DOWN) != 60.0) return __LINE__;
++    if (round_value(60.0, UP)   != 60.0) return __LINE__;
++    if (round_value(1e300, UP) != 1e300) return __LINE__;
++    if (!isnan(round_value((double)NAN, DOWN))) return __LINE__;
++    if (round_value((double)INFINITY, CHOP) != (double)INFINITY) return __LINE__;
+     /* A zero result keeps the operand's sign. */
+-    if (!signbit(recomp_frndint(-0.3, NEAR))) return __LINE__;
+-    if (!signbit(recomp_frndint(-0.7, UP)))   return __LINE__;
+-    if (signbit(recomp_frndint(0.3, DOWN)))   return __LINE__;
++    if (!signbit(round_value(-0.3, NEAR))) return __LINE__;
++    if (!signbit(round_value(-0.7, UP)))   return __LINE__;
++    if (signbit(round_value(0.3, DOWN)))   return __LINE__;
+     /* FIST shares the rounding, and keeps its integer indefinite. */
+-    if (recomp_fist(59.6, DOWN, 32) != 59) return __LINE__;
+-    if (recomp_fist(59.6, NEAR, 32) != 60) return __LINE__;
+-    if (recomp_fist((double)NAN, NEAR, 32) != INT32_MIN) return __LINE__;
++    if (integer_value(59.6, DOWN, 32) != 59) return __LINE__;
++    if (integer_value(59.6, NEAR, 32) != 60) return __LINE__;
++    if (integer_value((double)NAN, NEAR, 32) != INT32_MIN) return __LINE__;
+     return 0;
+-}
+-'''
++}'''.replace('/* EMITTED_OPERATIONS */', wrappers)
++
++
++class FrndintRuntimeTest(unittest.TestCase):
++    def test_each_rounding_control_rounds_its_own_way(self):
++        cc = next(filter(None, map(shutil.which, ("cc", "gcc", "clang"))), None)
++        if not cc:
++            self.skipTest("no C compiler available")
++        source = rounding_source()
+         with tempfile.TemporaryDirectory(prefix="frndint-runtime-") as tmp:
+             tmp = Path(tmp)
+             src, exe = tmp / "test.c", tmp / "test"
