@@ -1,6 +1,23 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-translation-bindings.patch` aliases translator config/HLE modules
+to `translation_layout.py` and `translation_hooks.py`. Module identity preserves
+mutable legacy configuration for imported helpers. Layout starts empty, reads
+own XBE metadata and validates replacement before publication; missing ranges
+and zero addresses cannot retain an earlier image. Hook markers use the lexical
+scanner, with known disabled branches excluded and unknown branches retained.
+Planning rejects ambiguous names/addresses and invalid register ABI frames;
+the current runtime frame holds at most 24 arguments. Return cleanup is consensus
+over decoded near returns in a supplied span, not a proof of code/data separation
+or tail-call ABI. Own thunk emission uses the existing guest ABI macros; native
+fixtures compile and execute the generated glue with those production macros.
+Both sources enter generation hashes and shared CI. Runtime services/macros,
+core lowering and translator orchestration still require replacement.
+`zzzz-translation-consumer-fixtures.patch` updates isolated C scaffolding for
+current fast-entry/result/dispatch ABI, retains executable SAR assertions, and
+limits the onexit header-collision negative control to Windows. It changes only
+tests; the generator fingerprint deliberately excludes test files.
 `independent-disasm-z-recovery.patch` follows traversal, replacing the remaining
 engine with a bridge to `x86_recovery.CodeRecovery`. It owns table measurement,
 realignment, read-only body/entry probes and block boundaries. Both fingerprints

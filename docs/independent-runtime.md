@@ -12,7 +12,8 @@ independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
 function discovery, labels, cross-references, analysis orchestration/output/cache,
 the library-symbol adapter, generation driver, function classifier, manual-source
-scanner, generation output support and translator instruction/block decoding.
+scanner, generation output support, translator instruction/block decoding,
+executable layout configuration and HLE symbol planning/thunk emission.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -59,6 +60,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Function classification | Project-owned `function_catalog.py`, `function_evidence.py`, `function_categories.py`; production calls the standalone catalog | Bounded operands/xrefs, source/context/graph hypotheses, measured pointer-entry blocks, no guessed CRT names or function extents; generated executable-code comparison, build and isolated gameplay; native Mac pending |
 | Manual-source scanning and generation output | Project-owned `c_source_scan.py` and `generation_output.py`; production uses compatibility entries | Lexical/preprocessor/declaration fixtures, standalone consumer imports, unchanged-output timestamps and failure preservation; regeneration/build/game checks; native Mac pending |
 | Translator instruction/operand and block model | Project-owned `translation_decode.py`; production compatibility imports use it | Original operand/segment/bounds/CFG/restart/overlap fixtures, existing translator consumers, full regeneration/build and isolated gameplay; native Mac pending |
+| Translator layout and HLE symbol bindings | Project-owned `translation_layout.py` and `translation_hooks.py`; production modules alias them | Metadata/bounds/replacement fixtures, lexical markers, unique bindings, return/register ABI checks, native generated-thunk execution, regeneration/build and isolated gameplay; native Mac pending |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -405,5 +407,45 @@ shape and preserves explicitly supplied output paths; the CLI resolves relative
 paths before changing subprocess directories. Original tests verify both
 contracts. STATUS.md records actual generated-output/build/game comparisons,
 nested consumer results/skips and limits. MAC-075 tracks native Mac acceptance;
-core x86-to-C lowering, configuration/HLE and translator orchestration remain
-upstream and are not claimed as replaced.
+core x86-to-C lowering and translator orchestration remain upstream and are
+not claimed as replaced.
+
+## Translator layout and HLE symbol bindings
+
+`translation_layout.py` starts with an empty layout instead of a captured game's
+fallback addresses. The project XBE reader supplies sections, entry and thunk
+addresses. New layouts validate before replacing the previous snapshot; failed
+reads preserve prior state. Missing data/text ranges and zero entry/thunk values
+are explicitly reset. Virtual classification and file-backed reads remain
+distinct, so BSS cannot read unrelated file bytes. Compatibility module identity
+keeps existing mutable-state consumers and their imported helpers consistent.
+
+`translation_hooks.py` owns runtime-hook marker discovery, symbol selection,
+unique name/address binding, original-body retention and guest thunk generation.
+It reuses the project lexical scanner: comments/literals and known inactive
+branches cannot fabricate markers; unknown macro branches remain possible.
+Exact duplicate symbols are one candidate, while ambiguous names, multiple
+LTCG variants and conflicting implemented names at one address are refused.
+Title-written bodies retain precedence. Return cleanup is consensus among
+decoded near returns in the supplied span; it cannot establish code/data
+separation or an external tail-call convention. Register-position name parsing
+is strict, and emitted frames must fit the current runtime's 24-argument limit.
+
+Original tests cover these rules, standalone copied modules, failed reads
+and layout replacement. Native C tests execute generated plain/register thunks,
+stack restoration, imports and original pointers with the production runtime's
+ABI macros. Those macros and HLE service implementations remain upstream;
+replacing the planning tool does not replace graphics/audio/device services.
+`independent-translation-bindings.patch` removes both old tool module bodies;
+historical deletion text still awaits final provenance removal. Shared CI and
+generation hashes include the own modules. STATUS.md records actual regeneration,
+build and game evidence; MAC-076 tracks pending native Mac acceptance.
+
+Running the broader translator consumer suite on CI exposed stale C fixtures:
+fast-entry defaults, result temporaries and indirect-dispatch declarations had
+not followed the production ABI. `zzzz-translation-consumer-fixtures.patch`
+repairs that scaffolding, accepts equivalent SAR sign-extension parentheses
+while retaining compiled numeric checks, and applies the Windows-only onexit
+header-collision negative control on its actual host. This does not alter
+production generation. These inherited fixtures remain part of the final
+replacement/provenance work; passing them does not make them project originals.

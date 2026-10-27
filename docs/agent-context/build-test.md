@@ -1,10 +1,10 @@
 # Build, run and validation map
 
-Generation hashes include own tooling/bridges. `translation_decode.py` owns the
-translator input/CFG model; its tests run standalone fixtures and existing
-consumers. The CLI resolves relative output paths before changing subprocess
-cwd. Scanner/output tests cover manual wrappers and atomic files. See
-`docs/independent-runtime.md` for scope and validation limits.
+Generation hashes cover own decoding/layout/hook tools and bridges. Tests run
+standalone fixtures, current-ABI translator scaffolding and emitted thunks with
+production frame macros via `native_compiler`. The CLI resolves output paths
+before subprocess cwd changes. Scanner/output tests cover wrappers and atomic
+files. See `docs/independent-runtime.md` for scope and host validation limits.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

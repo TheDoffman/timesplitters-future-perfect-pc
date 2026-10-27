@@ -209,6 +209,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-073 | Independent function catalog | Awaiting validation |
 | MAC-074 | Independent generation support | Awaiting validation |
 | MAC-075 | Independent translator decoding | Awaiting validation |
+| MAC-076 | Independent translation layout and hook planning | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5840,6 +5841,28 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   review output, build and verify isolated Story movement/fire/pause/resume.
 - **Mac implementation and evidence:** Windows checks do not prove native
   compiler or gameplay acceptance; see STATUS.md for measured scope and skips.
+
+### MAC-076 - Independent translation layout and hook planning
+
+- **Status:** Awaiting validation
+- **PC behavior:** Translation uses own executable layout and HLE marker/symbol
+  planning, with original-body retention and guest ABI thunk generation.
+- **PC source:** Continuing PR #370; `tools/translation_layout.py`,
+  `tools/translation_hooks.py`, `patches/independent-translation-bindings.patch`,
+  generation fingerprints and original/shared/native consumer tests.
+- **PC validation:** Bounds/replacement, lexical marker, symbol ambiguity and
+  ABI fixtures; generated thunks execute with production register-frame macros.
+  CI consumer scaffolding is updated for the current ABI and platform-specific
+  header collision checks; portable consumer C also executes through MSVC.
+  Actual generation/build/game evidence and limitations are in STATUS.md.
+- **Existing Mac support:** Common Python policy and runtime ABI macros; tests
+  use the shared compiler helper on both hosts. No separate host hook planner.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run original layout/hook/fingerprint fixtures and
+  translator consumers, compile/execute the generated thunk fixture, regenerate
+  with `--generate`, build and verify isolated Story movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows/native-C results do not prove
+  Mac generation or game acceptance; see STATUS.md for measured host evidence.
 
 ## Entry template
 

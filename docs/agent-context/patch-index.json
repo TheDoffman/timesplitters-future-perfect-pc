@@ -110,6 +110,14 @@
       ]
     },
     {
+      "name": "independent-translation-bindings.patch",
+      "sha256": "f31fb8937bc4e915809f3b179e88c01cc0fd0b270d8e78fb50d85df1022594df",
+      "targets": [
+        "tools/recomp/config.py",
+        "tools/recomp/hle.py"
+      ]
+    },
+    {
       "name": "independent-translation-decode.patch",
       "sha256": "965b124c7a809a7235f49ba5823290e9e93134aac96af9e1fd93e56d6af944ca",
       "targets": [
@@ -384,6 +392,20 @@
         "src/d3d/d3d8_overlay.c",
         "src/hle/hle_d3d8.c",
         "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "zzzz-translation-consumer-fixtures.patch",
+      "sha256": "7f0bbeec43638d1d5d555cbbdbf131594ba7181ad1b1c9fd5cc21402688273b7",
+      "targets": [
+        "tools/recomp/test_icall_guarded_runtime.py",
+        "tools/recomp/test_incdec_result.py",
+        "tools/recomp/test_lifter_double_shift.py",
+        "tools/recomp/test_lifter_rep_compare_flags.py",
+        "tools/recomp/test_lifter_sar_width.py",
+        "tools/recomp/test_reserved_idents.py",
+        "tools/recomp/test_result_sign_width.py",
+        "tools/recomp/test_sar_width.py"
       ]
     },
     {

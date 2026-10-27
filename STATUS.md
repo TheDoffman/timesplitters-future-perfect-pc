@@ -1,3 +1,61 @@
+## Independent translator layout and runtime-hook tooling (2026-10-26)
+
+Continuing PR #370 from `15ecdd91`, production config/HLE modules now alias
+project `translation_layout.py` and `translation_hooks.py`. Layout starts empty,
+uses the own XBE reader and validates a replacement before publishing it. Missing
+ranges and zero addresses cannot retain an earlier executable's values. Hook
+planning uses lexical marker discovery, unique symbol/address binding, measured
+near-return cleanup, strict register-position parsing and a 24-argument runtime
+frame bound. Own emission retains title-body precedence and original pointers.
+Runtime ABI macros/services, lowering and remaining orchestration/provenance
+work are still upstream; this stage does not complete the active goal.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **576 passed, 1 skipped in 825.01 seconds** in the combined patch-transition,
+  tooling, fingerprint, Mac-tool, profile, CI-scope and title-wrapper suite.
+  **61 focused checks passed again** after the fixture-only CI repair below.
+  **35 final patch-transition/tracking checks passed in 736.35 seconds** with
+  the repaired fixture patch installed; **21 context/backlog checks passed**.
+- Original cases cover empty/replaced/failed layouts, bounds and BSS, marker
+  decoys/conditionals, malformed catalogs/register conventions, duplicate and
+  ambiguous symbols, oversized frames and standalone copied modules. Generated
+  plain/register thunks compile and execute with production register-frame
+  macros, checking stack restoration, argument order, imports and original calls.
+- All **23 supported-US sections and public layout fields**, plus **138 boundary
+  queries**, matched the previous configured layout in the draft comparison.
+  Final regeneration preserves **70 hook bodies and all declarations** exactly
+  as C tokens. **20 of 21 generated files are byte-identical**; the remaining
+  hook file changes formatting/declaration order only. Imports remain 13 of 14,
+  original bodies 46 of 65 requested. Generation fingerprint is current.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave
+  passed with three reviewed captures: forward movement 11.175 units, ammo 8 to
+  6, 40 paused samples with frozen ticks, 60 resumed samples with advancing ticks,
+  backward movement 6.185 units, last checkpoint 87.600 seconds, exit 0.
+  Profiles/signatures and canonical fixture verified; no crash artifacts or
+  remaining partitions/lock. Personal saves/settings were unused.
+- Tested executable SHA-256:
+  `4b172ca825ac327a4c2cf9332db4f1e0adc0c16601c2bfbff02d7813a9a8c938`.
+
+CI on the preceding decoder commit passed both launcher/texture workflows and
+patch-upgrade jobs, but failed native consumers on both hosts. The newly enabled
+broader consumer run exposed stale isolated C scaffolding: missing fast-entry
+defaults, result temporaries and dispatch globals/signature; it also exposed an
+outdated SAR text assertion and a Windows-only onexit collision check on Mac.
+The fixture-only patch repairs these without changing generated game code.
+The affected portable fixtures passed **24 tests and 26 subtests** with actual
+MSVC through a local compiler-argument adapter; final Clang/Mac CI is separate
+evidence. Unavailable GCC/Clang tests still report skips in ordinary local runs.
+
+The game check used injected input, minimized/background rendering, original
+60 FPS and skipped movies; physical input, audio, foreground pacing and whole
+levels remain unverified. Evidence: `logs/independent-translation-bindings-*`,
+`logs/independent-translation-fixtures-*`, and
+`private/test-saves/independent-translation-bindings`. MAC-076 records native
+Mac generation/build/game acceptance as pending. The broader suite above
+preceded the fixture-only repair; final focused/native and patch checks validate
+that repair separately.
+
 ## Independent translator decoding (2026-10-26)
 
 Continuing PR #370 from `00d60e43`, the production translator now uses project
