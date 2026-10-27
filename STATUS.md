@@ -1,3 +1,23 @@
+## Shielded enemy effect alignment (2026-10-27, issue #358)
+
+A user capture from Something to Crow About showed the robot shield pulled
+toward the old 4:3 center at 3440×1440. D3D draw bisection isolated the
+shield to 24-byte projected, 20-vertex strips at depth .978526. Replaying
+the automatic placement draws unsqueezed moved the shield over the robot
+while explicit HUD placement remained intact. The existing #102 rule only
+recognized 16-byte projected health bars. The shared renderer patch now
+recognizes both formats at depth near 1, preserving the health-bar triangle
+guard and leaving shallow-depth HUD sprites unchanged. Windows Release game
+and replay builds succeeded on the original fba57e94 task base. Replaying the
+captured frame with the production rule matched the targeted comparison to
+within one 8-bit color step. The production-function fixture passed with the
+UI layout suite (11 tests). The fresh-checkout patch transition also passed.
+In an isolated Test Lab run, the user confirmed the shield follows the robot;
+two fresh frame captures show it over the robot. With the newer main, the
+complete patch stack, 11 UI layout tests, fresh-checkout patch transition,
+bundled runtime snapshot test, and context check pass.
+Native Mac validation remains pending (MAC-082).
+
 ## Independent bit-operation lowering (game acceptance pending, 2026-10-27)
 
 On `feature/independent-bit-operations`, the next original lowering module
@@ -21,6 +41,10 @@ Windows validation:
   generation fingerprint and matching crash symbols.
 - **56 patch-upgrade/context/backlog/snapshot checks passed in 1,119.23
   seconds**. Repository context and staged whitespace checks also passed.
+- After integrating main `c62b9d9f` (shield rendering), **33 integration checks
+  passed in 53.86 seconds**, including fresh patch installation and UI layout.
+  The normal incremental Windows rebuild and native checks also passed. The
+  existing main shield entry keeps MAC-082; product lowering is now MAC-084.
 - **New game acceptance is pending.** The isolated runner refused to launch
   because another installed copy was running. The user requested that session
   remain open while other checks finish. No new game was launched; all 19
@@ -28,10 +52,11 @@ Windows validation:
   evidence below predates this build and does not validate the new bit stage.
 
 Executable SHA-256:
-`1614ae4ebe061e3aa14ab72fd1c15aa69e16c3d86a0b70d0f94f002c685b30c1`.
+`c1f6536d373e1758f894cbc15cc95051cfb39fb44fb37f842be430d4fbf655ab`.
 Evidence: `logs/bitops-focused.log`, `logs/bitops-generation.log`,
 `logs/independent-bitops-comparison.json`, `logs/bitops-build.log`,
-`logs/bitops-patch-checks.log`, `logs/bitops-game-deferred.json`.
+`logs/bitops-patch-checks.log`, `logs/bitops-game-deferred.json`,
+`logs/bitops-main-integration-tests.log`, `logs/bitops-main-build.log`.
 Native Mac generation/build/gameplay remain unverified (MAC-083). The earlier
 product stage is included on this branch after PR #370 merged independently.
 The project still uses remaining ts3FPrecomp code and retains its notices.
@@ -125,7 +150,7 @@ Prior launcher/texture CI passed; corrected-head CI remains separate.
 Bounded gameplay used injected input, background/minimized rendering, original
 60 FPS and skipped movies. It does not certify physical input, foreground pacing,
 audio or full levels. Native Mac generation/build/gameplay and signal/crash
-integration remain unverified (MAC-082). Guest SEH and the overall replacement
+integration remain unverified (MAC-084). Guest SEH and the overall replacement
 remain incomplete. Evidence: `logs/independent-product-*`, generation baseline
 `private/pipeline/product-acceptance-baseline`, `private/test-saves/independent-product`.
 

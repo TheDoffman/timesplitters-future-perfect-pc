@@ -631,7 +631,7 @@ recovery; that remains execution-foundation work. Both title CMake host paths
 link the same adapter. Original compiled tests check portable arithmetic,
 Windows x86 instructions, aliases, memory-read counts, fault state, full decoded
 consumer functions and the actual host adapter. Local/CI/native Mac acceptance
-is recorded separately in STATUS.md and MAC-082.
+is recorded separately in STATUS.md and MAC-084.
 
 The preceding bit-stage CI exposed a stale inherited SAR statement-count/cast
 assertion, skipped locally without Clang/GCC. The product-stage compatibility
