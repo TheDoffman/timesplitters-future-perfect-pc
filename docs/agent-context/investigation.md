@@ -1,5 +1,10 @@
 # Investigation memory and handoffs
 
+[Repository layout](../repository-layout.md) distinguishes tracked source,
+the pristine vendor snapshot, the patched external runtime and local outputs.
+Patch lookup/index entries now use readable numbered filenames; use the same
+finder and effective-order checks. Git rename history retains old spellings.
+
 The context ownership map now assigns `vendor/**` to the runtime guide.
 The root AGENTS rule identifies the bundled pristine base and offline importer;
 the ignored patched runtime remains the place to inspect effective behavior.

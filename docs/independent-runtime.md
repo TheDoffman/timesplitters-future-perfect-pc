@@ -151,7 +151,7 @@ python -m pytest tests/test_analysis_runner.py tests/test_analysis_cache.py -q
 The runner uses only project analysis modules, the separately credited ABI table,
 Python and permitted Capstone. It can operate without the toolkit directory.
 Production `tools.disasm` entry points are compatibility imports supplied by
-`independent-pipeline.patch`. This does not yet remove the generation/runtime
+`0110-independent-pipeline.patch`. This does not yet remove the generation/runtime
 checkout dependency or upstream text in historical patches and test fixtures.
 
 Configuration derives addresses from the selected executable. Optional metadata
@@ -177,9 +177,9 @@ Realignment preserves overlapping streams and stops at a known successor or
 terminator. A zero/negative instruction limit performs no decode.
 
 The production engine inherits those methods through
-`independent-disasm-traversal.patch`, after the input patch. The subsequent
-`independent-disasm-z-recovery.patch` replaces the remaining engine methods with
-`x86_recovery.CodeRecovery`. The later `independent-functions.patch` replaces
+`0080-independent-disasm-traversal.patch`, after the input patch. The subsequent
+`0090-independent-disasm-z-recovery.patch` replaces the remaining engine methods with
+`x86_recovery.CodeRecovery`. The later `0100-independent-functions.patch` replaces
 function-boundary discovery as described below.
 The traversal source is included in both cache fingerprints. Its independent
 tests are in `tests/test_x86_flow.py`; the consumer integration test asserts
@@ -226,7 +226,7 @@ limits apply to the whole null-terminated run; overlong runs do not yield false
 suffix labels. The supported-US comparison removed one 255-byte suffix of a
 512-byte run, retaining all function and reference records semantically.
 
-`independent-functions.patch` replaces the former function/label/reference module
+`0100-independent-functions.patch` replaces the former function/label/reference module
 bodies with compatibility exports. Original tests are in `test_x86_functions.py`
 and `test_recomp_symbols.py`; the standalone fixture and production class-origin
 assertions cover integration. Configuration, analysis orchestration/cache/output,
@@ -248,7 +248,7 @@ references, address-like immediates and indexed table candidates retain the
 consumer interface. A candidate is not proof of a function or table; recovery,
 analysis orchestration, symbol identification and translation remain upstream.
 
-`patches/independent-disasm-input.patch` removes the old loader/model/classifier
+`patches/0070-independent-disasm-input.patch` removes the old loader/model/classifier
 bodies and connects the new implementations. It adapts code-probe reads and adds
 the independent dependencies to the disassembly cache key. The build generation
 fingerprint includes both the new source and the remaining disassembler source.
@@ -285,7 +285,7 @@ from [XboxDev/nxdk at 03acd1415f7ccc3127bcfb629224aacdd95d783c](https://github.c
 credited to Stefan Schmidt in its SPDX header. This standard ABI data is retained
 as an allowed third-party dependency; it is not ts3FPrecomp parser code.
 
-`patches/independent-xbe-reader.patch` removes the installed upstream parser body
+`patches/0210-independent-xbe-reader.patch` removes the installed upstream parser body
 and routes its old module entry point to this reader. The two ordinal audit
 consumers use the new table reader too. Build drivers set `TSFP_PROJECT_ROOT`
 to the source checkout, including Mac builds sharing another checkout's ignored
@@ -333,7 +333,7 @@ toolkit until subsequent replacements are completed.
 `function_catalog.py` coordinates project instruction/reference evidence and
 category inference. It imports permitted Capstone through the own decoder and
 uses the validated project image model. The generation driver calls it directly;
-`independent-classification.patch` replaces eleven upstream module bodies with
+`0060-independent-classification.patch` replaces eleven upstream module bodies with
 compatibility entries or retirement notices. Original tests include a copied
 standalone catalog operating on a synthetic executable without toolkit imports.
 Historical patch deletion text still awaits the final provenance audit.
@@ -382,7 +382,7 @@ names/counts and sanitize comment text. Unchanged decoded text retains existing
 bytes and timestamps, including existing CRLF; new files use host-native text
 newlines. Temporary writes/replacements preserve previous output on failures.
 
-`z-independent-generation-support.patch` replaces the manual scanner/output
+`0380-independent-generation-support.patch` replaces the manual scanner/output
 modules and translator's text-writer body after existing flag-join patch context.
 Standalone importlib and direct translator imports initialize own module paths
 through the parser bridge. Original tests cover lexical decoys, preprocessor
@@ -446,14 +446,14 @@ and layout replacement. Native C tests execute generated plain/register thunks,
 stack restoration, imports and original pointers with the production runtime's
 ABI macros. Those macros and HLE service implementations remain upstream;
 replacing the planning tool does not replace graphics/audio/device services.
-`independent-translation-bindings.patch` removes both old tool module bodies;
+`0130-independent-translation-bindings.patch` removes both old tool module bodies;
 historical deletion text still awaits final provenance removal. Shared CI and
 generation hashes include the own modules. STATUS.md records actual regeneration,
 build and game evidence; MAC-076 tracks pending native Mac acceptance.
 
 Running the broader translator consumer suite on CI exposed stale C fixtures:
 fast-entry defaults, result temporaries and indirect-dispatch declarations had
-not followed the production ABI. `zzzz-translation-consumer-fixtures.patch`
+not followed the production ABI. `0710-translation-consumer-fixtures.patch`
 repairs that scaffolding, accepts equivalent SAR sign-extension parentheses
 while retaining compiled numeric checks, and applies the Windows-only onexit
 header-collision negative control on its actual host. This does not alter

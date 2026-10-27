@@ -14,7 +14,7 @@ def state_slot_results(tmp_path_factory):
     text=(runtime/'hle/hle_d3d8_state.c').read_text()
     base=folder/'original';(base/'src/hle').mkdir(parents=True)
     (base/'src/hle/hle_d3d8_state.c').write_text(text)
-    reversed_patch=subprocess.run(['git','apply','--reverse',str(ROOT/'patches/zz-state-layout-slots.patch')],cwd=base,capture_output=True,text=True)
+    reversed_patch=subprocess.run(['git','apply','--reverse',str(ROOT/'patches/0550-state-layout-slots.patch')],cwd=base,capture_output=True,text=True)
     assert reversed_patch.returncode==0,reversed_patch.stderr
     original=(base/'src/hle/hle_d3d8_state.c').read_text()
     assert 'prepare_slots' not in original

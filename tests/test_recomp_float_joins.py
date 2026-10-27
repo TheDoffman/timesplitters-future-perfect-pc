@@ -130,7 +130,7 @@ def test_original_controller_sensitivity(tmp_path, monkeypatch, legacy_join):
         merge = translator._merge_flag_states
 
         def without_sse_join(states):
-            # Reproduce the generator before recomp-float-joins.patch: distinct
+            # Reproduce the generator before 0300-recomp-float-joins.patch: distinct
             # float comparisons at the shared clamp lost their flag snapshot.
             if (states and all(s and s[0] in {'comiss', 'ucomiss', 'comisd', 'ucomisd'} for s in states)
                     and any(s != states[0] for s in states[1:])):

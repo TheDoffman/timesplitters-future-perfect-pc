@@ -129,7 +129,7 @@ def test_patched_pipeline_imports_project_reader(tmp_path):
     runtime = ROOT / 'external/ts3FPrecomp'
     if not (runtime / '.git').exists():
         pytest.skip('Pinned runtime checkout unavailable')
-    patch = ROOT / 'patches/independent-xbe-reader.patch'
+    patch = ROOT / 'patches/0210-independent-xbe-reader.patch'
     targets = [line[6:] for line in patch.read_text().splitlines() if line.startswith('+++ b/')]
     for name in targets:
         content = subprocess.check_output(['git', '-C', str(runtime), 'show', 'HEAD:' + name])
