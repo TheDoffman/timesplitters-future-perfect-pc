@@ -1,5 +1,10 @@
 # Launcher internals
 
+Compatibility scope matching now uses the numbered patch filenames documented
+in [patch maintenance](../../patches/README.md); selection behavior is unchanged.
+The obsolete generic README download SVG was removed; the Windows and Mac
+buttons and launcher implementation remain unchanged.
+
 <!-- packet:start -->
 The desktop launcher is C# under `tools/launcher/`, NOT the guest recompilation
 runtime. Windows uses WPF; native Mac uses Avalonia plus thin platform adapters.

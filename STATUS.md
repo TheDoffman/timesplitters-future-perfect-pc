@@ -1,3 +1,18 @@
+## Independence branch CI reconciliation (2026-10-27)
+
+Commit `96caf309` received no workflow runs because PR #375 conflicted with
+new main changes. The feature branch incorporates main `7dbd127b`, preserving
+its mouse Fire fix, numbered patch filenames/documentation and support link.
+All branch-only replacement stages and their final application order remain.
+No patch folders were reorganized and the PR was not merged into main.
+
+The renamed ledger applied successfully with **zero runtime source changes**;
+all **149 patched runtime files** match their pre-reconciliation SHA-256 values.
+**41 focused tests and 26 subtests passed in 22.24s**, covering context/backlog,
+reload/Fire input, launcher selection and the independent guest ABI. Full
+historical migration checks and new-head CI are tracked separately. This is a
+CI prerequisite, not completion of the next runtime replacement stage.
+
 ## Project guest register and memory interface (Windows acceptance, 2026-10-27)
 
 `independent-guest-abi.patch` supplies project implementations of the register
@@ -915,6 +930,25 @@ Evidence: `logs/exchange-final-checks.log`, `logs/exchange-patch-checks.log`,
 Native Mac generation/build/gameplay remain pending (MAC-086). Host atomic
 contracts cover aligned mapped RAM; MMIO, guest alignment/page-crossing faults,
 exception delivery, other LOCK families and complete flags remain separate work.
+## Repository organization (2026-10-27)
+
+From main `9f40dc21`, `cleanup/repository-layout` replaces repeated alphabetical
+patch prefixes with numbered descriptive filenames and adds a documentation
+index, directory map and naming rules. All 212 patch payloads match the base
+byte for byte; the 207 active records retain effective order, hashes and context
+options. Full old-name ledger upgrade, rollback, unrecorded bootstrap and repeat
+application preserve every runtime byte. Only the unused generic download SVG
+and accidental controls-fixture backup were removed.
+
+Windows x64: 181 distinct tests passed, 5 skipped, plus 26 subtests, covering
+patch tracking/historical upgrades, runtime snapshot import, renderer state and
+layout, launcher selection, fixture routing, source parsing and repository
+context. The float-join module initially collected before runtime patching;
+after preparation its rerun passed 14 tests with 3 private-XBE skips (included
+in those totals). Context/index, guide links and staged whitespace checks pass.
+This is a source-organization change; no game rebuild or native Mac execution
+was performed, and no runtime payload or platform adapter changed. Older local
+worktrees with changes/unpublished commits and private data were retained.
 
 ## Shielded enemy effect alignment (2026-10-27, issue #358)
 
@@ -1634,7 +1668,7 @@ under MAC-071; shared code and Windows results do not establish Mac gameplay.
 Continuing the active replacement goal from `c390bd3d` in PR #370,
 `x86_functions.py` supplies function candidates, body extents, callable shared
 tails and call graphs. `recomp_symbols.py` supplies labels, strings and indexed
-references. `independent-functions.patch` replaces the three upstream module
+references. `0100-independent-functions.patch` replaces the three upstream module
 bodies with compatibility imports. Config/cache/output orchestration, symbol
 identification, translation and runtime services remain upstream; the overall
 goal is **not complete**.
@@ -1679,7 +1713,7 @@ The active replacement goal continues from `d6231896` in PR #370.
 `tools/x86_recovery.py` now owns measured switch-table spans, dispatch/epilogue
 preservation, case/continuation realignment, block extent/tail queries, saved-
 register entry checks and bounded prologue/accessor/virtual-dispatch/body probes.
-`independent-disasm-z-recovery.patch` replaces the remaining disassembly engine
+`0090-independent-disasm-z-recovery.patch` replaces the remaining disassembly engine
 with a compatibility import of the project class. Function detection, analysis
 metadata/output/cache orchestration, translation and the runtime remain upstream.
 The overall independence goal is **not complete**.
@@ -1724,7 +1758,7 @@ from `8a9a48c3`; it does not replace function/table/prologue recovery or transla
 
 `tools/x86_flow.py` supplies production linear sweep, bounded realignment,
 cached direct-edge reachability, overlap/range queries and call-reference
-queries through `independent-disasm-traversal.patch`. Scanning resumes after
+queries through `0080-independent-disasm-traversal.patch`. Scanning resumes after
 invalid bytes; realignment preserves overlaps and stops on convergence or a
 terminator. Reachability follows explicit cached edges without decoding holes
 or inventing indirect targets. Both cache fingerprints include its source.
@@ -1989,7 +2023,7 @@ live GPU/performance result or complete scene lifetime acceptance.
 Shared source now subdivides the wind callback's coupled angle/velocity map
 instead of holding its integer oscillator between native frames. Registration,
 per-owner history, exact game-clock admission, pause and authored fallback are
-implemented in `pc_native_wind*` with `zz-native-wind-history.patch`. No pose
+implemented in `pc_native_wind*` with `0460-native-wind-history.patch`. No pose
 interpolation or save/config change is introduced. The complete patch stack
 applies to the local runtime. This source is not yet a rebuilt/live acceptance.
 
@@ -2019,7 +2053,7 @@ rectangles use depth near 0. The camera already projects the bars for the wide
 view, so applying the centered 4:3 HUD placement a second time causes the
 drift.
 
-`patches/zzzz-world-health-bars.patch` leaves those projected draws across the
+`patches/0720-world-health-bars.patch` leaves those projected draws across the
 full output while retaining the normal HUD placement for other sprites. A
 repeat challenge run at 1280×720 showed bars alongside moving monkeys. The
 Windows Release game build, `tsfp_pc_display_test`, patch-stack validation,
@@ -2071,7 +2105,7 @@ no new game launch is permitted by the test runner while that process exists.
 
 The retained Disco CPU diagnostic includes54 leaf samples in common shadow-state
 application. Each draw recomputed the same recognized-XDK render-state and
-texture-stage slot mappings. `zz-state-layout-slots.patch` retains those integer
+texture-stage slot mappings. `0550-state-layout-slots.patch` retains those integer
 mapping results until the layout changes. It retains no guest pointer, state
 value or pose. Every draw reads guest state in original order, including reads
 after host callbacks; missing older-XDK render states remain zero. Conversion,
@@ -2176,7 +2210,7 @@ capacity it also destroyed the victim and invalidated bound stages before
 attempting the allocation. The full-module reproduction fails both retry and
 retained-owner assertions before repair (`logs/sampler-retry-before.log`).
 
-`zz-sampler-cache-retry.patch` creates before committing cache ownership. Failed
+`0500-sampler-cache-retry.patch` creates before committing cache ownership. Failed
 creation leaves the cache/count/cursor/bound stages intact and remains retryable;
 success keeps the existing replacement invalidation and rebind rules. Warnings
 are bounded at four per cache lifetime. The final six full-module and20 context
@@ -2567,7 +2601,7 @@ the texture/checksum/state helpers without relying on their nearest labels.
 Old-PC matching now refuses a different current executable. Source/object/
 executable hashes remain in the private owned-sample receipts.
 
-The additive `zz-strided-vertex-increment.patch` replaces the per-vertex source
+The additive `0570-strided-vertex-increment.patch` replaces the per-vertex source
 multiply with an advancing32-bit source offset. Destination offsets retain
 `size_t`; wrapping, copy widths/order, fresh pointer resolution, read guards,
 fallback and per-draw allocations remain. Current MSVC code has no multiply
@@ -2901,7 +2935,7 @@ acceptance remain open; no full-goal completion is claimed.
 
 ## Bounded packed-vertex tiles
 
-The additive `zz-vertex-expand-tiles.patch` bounds each tail/attribute pass to
+The additive `0610-vertex-expand-tiles.patch` bounds each tail/attribute pass to
 32 vertices. This addresses the previous whole-buffer kernel's measured large-
 draw slowdown while retaining fresh allocation/input, conversion arithmetic,
 stream lookups and attribute order within every vertex. The final partial tile
@@ -2950,7 +2984,7 @@ unfinished; the PR remains draft.
 
 ## Packed vertex conversion follow-up
 
-`zz-vertex-expand-strides.patch` moves packed-format and common byte-width
+`0600-vertex-expand-strides.patch` moves packed-format and common byte-width
 dispatch outside the vertex loop in common HLE code. It retains a fresh zeroed
 allocation, input bytes, arithmetic, stream-lookup/failure order and per-vertex
 attribute order. A thin selector retains the original generic fixed-function
@@ -3327,7 +3361,7 @@ caller chains. The model renderer18EA90 has241 leaf samples, versus105 texture
 survey,89 disabled-trace guard and85 affine-transform samples. These are
 diagnostic counts from a different AI route, not a clean FPS comparison.
 
-`zz-sampler-pc-locations.patch` now optionally reports original native PCs for
+`0520-sampler-pc-locations.patch` now optionally reports original native PCs for
 one exact executable symbol instead of losing their offsets in aggregation.
 It keeps the existing collection, resolves after threads resume, emits at
 most512 rows per thread/report, accounts for every omitted sample, and rejects
@@ -3375,7 +3409,7 @@ Production collector/game code is unchanged by this fixture correction.
 `perf/native-crowd-render-cost` builds on merged main `e9d9faeb`. The gameplay
 profile below includes repeated driver allocations from `d3d8_states_apply`:
 the previous frontend remembers only its current blend/depth/rasterizer object
-and recreates it after material switches. `zz-render-state-cache.patch` retains
+and recreates it after material switches. `0490-render-state-cache.patch` retains
 up to32 complete immutable descriptors/objects per category, using exact
 zero-initialized descriptor comparisons and a last-descriptor fast path.
 Replacement releases one cache owner; shutdown releases all owners once.
@@ -4029,7 +4063,7 @@ it is not an uninstrumented FPS measurement or exact CPU-share attribution.
 The profile and matched clean baseline use executable SHA256
 `7a10bad00f8ee2cf169a2597f066ef317b74a2fe12108c5e7c43c64ca3d717ca`.
 
-`zz-strided-vertex-copy.patch` dispatches by attribute size once before each
+`0560-strided-vertex-copy.patch` dispatches by attribute size once before each
 vertex loop, making common small copies constant-size so the compiler can
 inline them. It retains original32-bit guest address arithmetic, declaration
 order, zero-filled holes, readability checks, generic sizes and allocation
@@ -4511,7 +4545,7 @@ not clean FPS or CPU-share measurements. The run exits normally with signed
 profiles/fixture intact and disposable partitions recycled.
 
 The shared indexed-draw driver always allocated and rewrote indices, even
-when their minimum was zero. `zz-zero-base-indices.patch` skips that redundant
+when their minimum was zero. `0620-zero-base-indices.patch` skips that redundant
 allocation/copy for zero-based pushed-array draws. Other ranges retain their
 original rebasing and failure path. Vertex gathering, host primitive conversion,
 draw order and ordinary vertex-buffer draws remain unchanged; no index data is
@@ -5221,7 +5255,7 @@ This diagnostic does not measure uninstrumented FPS or prove a specific fix.
 The retained crowd shader profile has61 samples in `texel_sample` (92 in its
 pre-shader baseline). The original texture survey maintains four independent
 checksum lanes but updates one dynamically indexed lane per iteration.
-`zz-texel-sample-lanes.patch` explicitly processes each four-sample group,
+`0580-texel-sample-lanes.patch` explicitly processes each four-sample group,
 retaining the same positions/order, recurrence and final mixing. Remaining
 one/two/three samples use the original tail, and inputs below eight bytes keep
 their original byte hash. No sampling frequency, full-check interval, mip hash,
@@ -5365,7 +5399,7 @@ executable, and sampled instruction boundaries identify the hash multiply.
 Evidence: the named run's provenance, `flush-pc.json`, `jitter-summary.json`
 and retained disassembly. No Present pacing claim comes from this probe.
 
-`zz-shader-source-lookup.patch` adds source-address hints to the existing shared
+`0530-shader-source-lookup.patch` adds source-address hints to the existing shared
 shader cache, still comparing the full current microcode against immutable host
 code on every hinted hit. Mismatched bytes/counts fall back to content hashing,
 collision checking and original creation. Original guest calls, slot rebinding,
@@ -5526,7 +5560,7 @@ post-store wake hook before the PFB busy poll. Function-level sampling does not
 identify individual instructions or prove a physical GPU stall. The worker's
 full-run profile also includes repeated environment scanning under `nv2a_pb_scan`.
 
-`zz-pushbuffer-diagnostic-policy.patch` reads the pushbuffer survey flag once,
+`0480-pushbuffer-diagnostic-policy.patch` reads the pushbuffer survey flag once,
 matching its existing executor launch policy. Disabled diagnostics now return
 before requesting the guest-memory offset. Enabled survey decoding, executor-only
 mode, report contents and presence semantics (including empty/"0") remain.
@@ -6205,7 +6239,7 @@ Private-XBE checks skip without the asset; host CI is not full-game acceptance.
 
 ## 2026-10-24 — Skip disabled tracing dispatch during normal play
 
-`zz-native-trace-quiet.patch` adds a shared early return in trace entry/exit
+`0450-native-trace-quiet.patch` adds a shared early return in trace entry/exit
 when startup configuration explicitly disables the trace budget and provides
 no watch, dump, name-filter or call-profile switch. Entry still services the
 existing renderer-idle callback before returning. Explicit diagnostics retain
@@ -6964,7 +6998,7 @@ remain open. Related work stays on `perf/crowd-callers`; no new PR was opened.
 
 The opt-in Windows CPU sampler walked eight frames by default but retained only
 six in its caller-chain keys and reports. That cut off the gameplay parents of
-expensive host memory checks. `zz-sampler-caller-depth.patch` retains all captured
+expensive host memory checks. `0510-sampler-caller-depth.patch` retains all captured
 frames up to the existing 32-frame walk limit, clamps the reported requested
 depth, and reports dropped new chains when the unchanged 8,192-key table fills.
 Existing keys still accumulate after saturation. On x64 the bounded chain table
@@ -15822,7 +15856,7 @@ entity remained in the same jeep and Ash had no target. The original JNE at
 The recompiler saved each predecessor's zero flag but consumed it without
 negation, reversing the stay-mounted decision for a player driver.
 
-`recomp-zf-join-polarity.patch` gives joins with recoverable ZF on every edge an
+`0310-recomp-zf-join-polarity.patch` gives joins with recoverable ZF on every edge an
 explicit ZF-only state, snapshots before control transfer, and uses the proper
 condition polarity for branches, SETcc, CMOVcc and LOOPcc. Unknown predecessors
 remain unknown; no carry/sign/overflow information is inferred from ZF. The
@@ -19700,7 +19734,7 @@ The guarded-memory regression and full MSVC x64 Release build passed on Windows,
 including patch-stack validation and the real Windows adapter regression in
 `tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
 sent Fire instead of the terminal's Confirm action. The follow-up shared input
-context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+context and `0940-terminal-mouse-select.patch` now suppress the
 normal left-button binding while selecting and emit A/Confirm. A held button
 must be released across either transition to prevent accidental selection or
 firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
@@ -19734,7 +19768,7 @@ The guarded-memory regression and full MSVC x64 Release build passed on Windows,
 including patch-stack validation and the real Windows adapter regression in
 `tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
 sent Fire instead of the terminal's Confirm action. The follow-up shared input
-context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+context and `0940-terminal-mouse-select.patch` now suppress the
 normal left-button binding while selecting and emit A/Confirm. A held button
 must be released across either transition to prevent accidental selection or
 firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
@@ -19903,7 +19937,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   for additive glow at draws 462–463, after drawing the train and weapon.
   The HLE refreshed this texture only once per swap, so the final effect
   painted the earlier background over otherwise solid geometry.
-- Added `patches/zzzzzzz-framebuffer-sampling-passes.patch`. Switching away
+- Added `patches/0760-framebuffer-sampling-passes.patch`. Switching away
   from a framebuffer texture invalidates its cached copy. Rebinding it captures
   the scene including intervening geometry; consecutive taps retain a stable
   snapshot. Frame-zero initialization, changed texture identity and failed-copy
@@ -19961,7 +19995,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   and polling rather than eliminating all diagnostic computation.
 - Sources are `src/pc_debug_output.h`, `src/pc_debug.c`, `tests/pc_debug.c`,
   `tools/play.py`, `Play-Quiet.cmd` and the separate reproducible
-  `patches/zzzzzzzzzzzzzzzzz-pc-debug-quiet.patch`. The entry-point define is
+  `patches/0920-pc-debug-quiet.patch`. The entry-point define is
   source-specific so generated game C does not need unrelated recompilation.
   MAC-013 records the deferred native startup adaptation.
 - Supported Windows Release build completed all native build-script checks
@@ -20126,7 +20160,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
 - Source base `c17336b` (fetched `origin/main`); this revision adds regression
   coverage/documentation on `24-controller-sensitivity-slider-not-working-correctly`.
   The runtime correction is already present in `837692d`, through the shared
-  `patches/recomp-float-joins.patch`. No additional runtime change is required.
+  `patches/0300-recomp-float-joins.patch`. No additional runtime change is required.
 - Located the original controller sensitivity callback `0x002EAB30` and its
   shared clamp at `0x002EABEB`. Older generation discarded the comparison when
   decrement and increment paths met, causing the clamp to overwrite intermediate
@@ -20227,7 +20261,7 @@ full gameplay and campaign completion have not been verified.
   Git synchronization and rebuilding are still required between devices/branches.
 - Found and corrected a concrete gap: the Windows diagonal-movement speed fix
   was behind `TSFP_PC_CONTROLS`, so the Mac binding path skipped it. The new
-  `zzzzzzz-shared-input-model.patch` compiles the same `src/pc_input.c` on Mac
+  `0780-shared-input-model.patch` compiles the same `src/pc_input.c` on Mac
   and invokes its normalization from the shared binding parser. Windows's
   existing implementation/build path is unchanged. The Mac SDL regression now
   checks W+D speed normalization and release back to full straight-line speed.
@@ -20255,7 +20289,7 @@ full gameplay and campaign completion have not been verified.
   declarations. Replaying with the final layout could misread vertices or skip
   a draw entirely. Immediate-mode effects temporarily use a sixteen-float4
   layout, then return to their normal stream layout.
-- Added `zzzzzz-interpolation-layouts.patch` after the existing patch stack.
+- Added `0750-interpolation-layouts.patch` after the existing patch stack.
   It snapshots active declarations at frame start and copies successful layout
   changes into the replay in order, preserving the final guest state. The native
   executable was rebuilt; temporary culling/depth/CPU diagnostic edits were
@@ -20355,7 +20389,7 @@ full gameplay and campaign completion have not been verified.
   retaining the portable CPU interpreter as fallback/reference. Native game
   C now uses `-O2` with debug symbols and vectorization disabled for the scalar
   MMIO fault handler. Changes to pinned upstream sources are reproduced by
-  `zzzzz-mac-high-refresh.patch`; generated game C was not edited.
+  `0740-mac-high-refresh.patch`; generated game C was not edited.
 - Connected the shared draw replay/matrix interpolation with preservation of
   the completed guest image/depth. Cleared intermediate depth separately after
   visual comparison exposed missing fire/smoke, and added a real-GPU regression
@@ -20529,7 +20563,7 @@ full gameplay and campaign completion have not been verified.
 ## Native Mac controls and first story-level load — October 15
 
 - Added a Mac-only SDL event bridge to the shared JSON binding reader through
-  `zzzz-mac-input.patch`. Keyboard/mouse state is published atomically for guest
+  `0660-mac-input.patch`. Keyboard/mouse state is published atomically for guest
   worker polls. Main-thread Cocoa events handle focus loss, mouse capture and
   window close. A new launch raises the game window once; it does not steal
   focus back during play. Windows control code and generated game C are unchanged.
@@ -20589,7 +20623,7 @@ full gameplay and campaign completion have not been verified.
   DXT and A8 font texture uploads, and GPU readback. The loading worker exposed
   a missing current-context fault; a recursive lock now hands the context between
   guest threads. Cocoa window creation/event pumping remain on the main thread.
-- Added a separate reproducible `zzz-mac-renderer.patch`; prior patches and
+- Added a separate reproducible `0630-mac-renderer.patch`; prior patches and
   generated game code remain unchanged. The Mac backend is `src/native/renderer_gl.c`;
   the existing Windows and Linux backend source selection remains intact.
   Shared portable format helpers compile from the pinned upstream source.
@@ -20660,7 +20694,7 @@ full gameplay and campaign completion have not been verified.
 - The shared rules now distinguish the retained Windows compatibility build
   from one active native build in `build/macos`. Native build provenance is
   recorded in its ignored `BUILD.json`; runtime changes are reproducible from
-  `patches/zz-mac-native-boot.patch`, applied after the existing feature stack.
+  `patches/0400-mac-native-boot.patch`, applied after the existing feature stack.
 - Native tests recycled their known disposable partition images. The game
   probe's six images had 5,243,406,848 logical bytes but only 135,168 allocated
   bytes; the images are no longer in the project. Metadata/configuration and
@@ -20696,7 +20730,7 @@ in this section describe the state before the renderer connection.
   Made patch context whitespace handling explicit, avoiding reliance on the
   Windows machine's Git settings. The complete patch stack now applies and a
   second pass changes zero files. Conflict protection and CRLF tests pass.
-- Added `mac-platform.patch`: the upstream Apple anonymous-mapping function
+- Added `0220-mac-platform.patch`: the upstream Apple anonymous-mapping function
   returned descriptor 0 instead of creating a backing file. The native test
   failed before this fix and passes afterward. The patch uses an owned file
   descriptor, leaves no named backing file, and is restricted to `__APPLE__`.
@@ -20761,7 +20795,7 @@ in this section describe the state before the renderer connection.
   is approximately 2.5 GiB before source art and unsupported-format additions;
   the plan is not completed artwork or a guarantee of final full-game size.
 - Runtime changes are reproducible from the pinned upstream revision using
-  `pc-controls.patch`, `save-routing.patch`, and `texture-pack.patch`; the last
+  `0230-pc-controls.patch`, `0330-save-routing.patch`, and `0340-texture-pack.patch`; the last
   patch includes the renderer wiring shared by display and texture features.
   Fresh application in setup order and repeat-build checks pass.
 
@@ -20796,13 +20830,13 @@ in this section describe the state before the renderer connection.
   2022 / MSVC 19.44.35224 for Windows x64.
 - Compiled and loaded FFmpeg 8.1 movie support.
 - Fixed native profile device paths that bypassed `RECOMP_SAVE_DIR`, and
-  preserved the fix in `patches/save-routing.patch`. Ten native path regression
+  preserved the fix in `patches/0330-save-routing.patch`. Ten native path regression
   checks pass, including asset routing and switching between save directories.
 - Added player-1 keyboard/mouse controls: normalized WASD movement, Windows raw
   relative mouse motion, direct camera-angle updates, mouse buttons and wheel,
   editable sensitivity/invert-Y settings, focus-loss clearing and cursor
   capture/release. The launcher loads `config/pc-controls.json`.
-- Preserved the host integration and camera wrapper in `patches/pc-controls.patch`;
+- Preserved the host integration and camera wrapper in `patches/0230-pc-controls.patch`;
   the generated original `sub_000D2B80` body remains available as `_gen`.
 
 ## Validation
@@ -21352,7 +21386,7 @@ operand states and emitted `if (_flags)` with `_flags` initialized to zero.
 The horizontal rejection therefore never ran. Eligibility and vertical checks
 still ran, explaining early pickups rather than indiscriminate item grants.
 
-`patches/recomp-float-joins.patch` merges SSE comparison snapshots across those
+`patches/0300-recomp-float-joins.patch` merges SSE comparison snapshots across those
 paths, retaining their original ordered/unordered conditions. Pickup radii,
 weapon grants and input bindings are unchanged. No generated game C was edited.
 `tools/recomp-generation.py` records generator source hashes; Windows Build
@@ -21418,7 +21452,7 @@ Branch-switch fix on `fix/runtime-patch-branch-switch`, based on main
 built on `codex/integrate-display-textures`. Its texture-toggle patch remained
 applied after switching to main, preventing the installer from unwinding the
 controls dependency. A disposable source-only copy reproduced the reported
-`pc-controls.patch conflicts with the runtime checkout` error before the fix.
+`0230-pc-controls.patch conflicts with the runtime checkout` error before the fix.
 
 The loader now recognizes exact patches in `patches/legacy/` only for unwinding,
 then applies the current branch's active stack. An active copy takes precedence
@@ -21506,7 +21540,7 @@ MAC-014 retains pending native Mac validation and other-device synchronization.
 Local, uncommitted work on `fix/issue-8-audio-timing`, based on main
 `4189924038729030d890faa93edacdeccc74a1e1`. The user clarified that delayed
 cutscene audio concerns story cutscenes. The separate XMV video path was not
-changed. `patches/dsound-audio-timing.patch` fixes four reproduced runtime bugs:
+changed. `patches/0010-dsound-audio-timing.patch` fixes four reproduced runtime bugs:
 stream completion advancing through unheard audio after queue starvation;
 flush retaining the previous voice's timeline origin; refused buffer submissions
 discarding PCM; and ADPCM resume copying from the wrong offset inside a block.
@@ -21617,7 +21651,7 @@ music stream. Reducing headroom could not repair its corrupted input.
 The shared adapter intercepted ordinary Flush but neither FlushEx nor Release.
 The pinned XBE's stream stop routine calls FlushEx with zero timestamp and ASYNC;
 its Release method can destroy the stream while the host still retains packets.
-The new `dsound-stream-lifecycle.patch` retires the host voice and packet model
+The new `0030-dsound-stream-lifecycle.patch` retires the host voice and packet model
 only on final Release, preserving non-final references and allowing the allocator
 to reuse the same interface address with fresh format/queue state. It handles
 immediate FlushEx and zero-time ASYNC (packet callbacks completed in DoWork),
@@ -22624,13 +22658,13 @@ queued under MAC-021; other-device synchronization is unverified.
   2022 / MSVC 19.44.35224 for Windows x64.
 - Compiled and loaded FFmpeg 8.1 movie support.
 - Fixed native profile device paths that bypassed `RECOMP_SAVE_DIR`, and
-  preserved the fix in `patches/save-routing.patch`. Ten native path regression
+  preserved the fix in `patches/0330-save-routing.patch`. Ten native path regression
   checks pass, including asset routing and switching between save directories.
 - Added player-1 keyboard/mouse controls: normalized WASD movement, Windows raw
   relative mouse motion, direct camera-angle updates, mouse buttons and wheel,
   editable sensitivity/invert-Y settings, focus-loss clearing and cursor
   capture/release. The launcher loads `config/pc-controls.json`.
-- Preserved the host integration and camera wrapper in `patches/pc-controls.patch`;
+- Preserved the host integration and camera wrapper in `patches/0230-pc-controls.patch`;
   the generated original `sub_000D2B80` body remains available as `_gen`.
 
 ## Texture overhaul moved to issue #74 - October 16, 2026
@@ -26905,7 +26939,7 @@ through `xbox_input`, while replay deliberately links only the renderer. This
 was a missing target dependency, not stale generated game code.
 
 Focused branch `fix/replay-texture-mode-link` adds the shared source directly
-to standalone Windows replay through `patches/replay-texture-mode-link.patch`.
+to standalone Windows replay through `patches/0320-replay-texture-mode-link.patch`.
 The full input/kernel/audio dependency chain stays unnecessary. Native Mac's
 renderer already owns the same mode source; its existing build path is preserved.
 MAC-011 records this build fix and the unavailable Mac host validation.
@@ -29991,3 +30025,23 @@ The captured sequence is limited to this weapon and scene; an across-weapon
 visual sweep and native Mac validation remain pending. Evidence stays in
 ignored `private/test-saves/high-refresh/native-180-issue371-fixed-*` and
 `logs/issue371-fixed-contact.jpg`.
+
+## Issue #337 follow-up: brief Fire clicks at high refresh (2026-10-27)
+
+The earlier Reload fix buffered only Reload. Primary/secondary Fire still
+depended on the held key state at the sampling instant, so a short mouse click
+could end before the original 60 Hz decoder polled it. A shared 34 ms
+press-edge pulse now carries configured Fire keys across that gap, without
+changing physical controller input or sustained holds. Reload clears older
+Fire pulses; a later fresh Fire press can interrupt Reload. A new public
+replay first failed against the old code, then passed 680 click schedules at
+60/120/144/180/240 FPS plus repeated clicks, held Fire, remapping and input
+lifecycle checks. The private-US fixture passed 425 Fire schedules through
+the original digital decoder, using X as a surrogate button edge. This is
+synthetic input evidence; physical mouse feel and native Mac gameplay still
+need validation. The Windows Release build and bundled tests pass. An isolated
+120, 180 and 240 FPS Test Lab Story replays each delivered seven 1 ms Fire
+clicks and consumed exactly seven rounds (128 to 121), with no crash or native
+presentation error. Saved validations are in ignored
+`private/test-saves/high-refresh/native-{120,180,240}-short-fire-issue337-validation.json`.
+Changes are on a local branch and are not yet pushed.

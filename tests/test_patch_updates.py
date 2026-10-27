@@ -78,7 +78,7 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name in ('independent-translation-moves.patch', 'independent-translation-integer.patch', 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
             continue  # Requires title instrumentation absent from this checkpoint.
         if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch')):
             shutil.copyfile(patch,prior/patch.name)
@@ -141,13 +141,13 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name in ('independent-translation-moves.patch', 'independent-translation-integer.patch', 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
             continue  # Replaces handlers only after the complete instrumentation stack.
         if patch.name.endswith(('-texture-bind-scan.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch', '-temporal-uplink-map.patch')):
             continue  # Requires the later cross-platform renderer context.
         if patch.name.endswith('-text-panel-scope.patch'):
             continue  # Depends on the later shared panel/display wrapper.
-        if patch.name == 'texture-upload-streaming.patch':
+        if patch.name == '0360-texture-upload-streaming.patch':
             continue  # The historical state has neither texture-pack nor toggle.
         if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
             continue  # Depends on display/viewport hooks installed by the complete migration.
@@ -155,47 +155,47 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.
-        if patch.name in ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-white-flash-overlay.patch',
-                         'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-title-screen-matte.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-character-mouse.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-team-mouse.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-custom-choice-arrows.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-choice-arrows.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-setting-sliders.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-audio-menu-mouse.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-build-identity.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-menu-mode.patch',
-                          'zzzzzzzzzz-decal-projection.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
-                          'zzzzzzzzzzz-model-projection.patch',
-                          'zzzzzzzzzzzzzzzzz-channel-clears.patch',
-                          'zzzzzzzzzzzzzzzzzz-ui-layout.patch',
-                          'zzzzzzzzzzzzzzzzzz-ui-narrow.patch',
-                          'zzzzzzzzzzzzzzzzzzz-tutorial-layout.patch',
-                          'zzzzzzzzzzzzzzzzzzzz-fullscreen-effects.patch',
-                          'zzzzzzzzzzzzzzzzzzzzz-story-caption.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzz-objectives-ui-integration.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-spirit-rendering.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-source.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-footer.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-themed-footer.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-quit-desktop.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-footer-background.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-backdrop.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-main-menu-font.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-objectives-scope-coverage.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-sniper-scope-coverage.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-weapon-aim-overlays.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
+        if patch.name in ('1430-white-flash-overlay.patch',
+                         '1420-title-screen-matte.patch',
+                          '1400-menu-character-mouse.patch',
+                          '1380-menu-team-mouse.patch',
+                          '1370-menu-custom-choice-arrows.patch',
+                          '1350-menu-choice-arrows.patch',
+                          '1310-menu-setting-sliders.patch',
+                          '1290-audio-menu-mouse.patch',
+                          '1210-native-build-identity.patch',
+                          '1180-native-menu-mode.patch',
+                          '0810-decal-projection.patch',
+                          '1020-arcade-rank-anchor.patch',
+                          '0830-model-projection.patch',
+                          '0910-channel-clears.patch',
+                          '0950-ui-layout.patch',
+                          '0960-ui-narrow.patch',
+                          '0970-tutorial-layout.patch',
+                          '0980-fullscreen-effects.patch',
+                          '0990-story-caption.patch',
+                          '1000-objectives-ui-integration.patch',
+                          '1090-spirit-rendering.patch',
+                          '1100-menu-mouse.patch',
+                          '1130-ghost-target-feedback.patch',
+                          '1140-menu-mouse-source.patch',
+                          '1160-menu-mouse-footer.patch',
+                          '1170-menu-mouse-themed-footer.patch',
+                          '1190-quit-desktop.patch',
+                          '1200-menu-footer-background.patch',
+                          '1220-menu-backdrop.patch',
+                          '1230-main-menu-font.patch',
+                          '1240-objectives-scope-coverage.patch',
+                          '1250-sniper-scope-coverage.patch',
+                          '1280-weapon-aim-overlays.patch',
+                          '1300-special-weapon-overlays.patch',
+                          '1320-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name.endswith(('-keyboard-settings-menu.patch', '-keyboard-weapon-slots.patch', '-controller-profile-routing.patch', '-keyboard-reload-buffer.patch', '-radial-stick-deadzone.patch')):
             continue  # Needs shared-input locks/display wrappers absent in the old snapshot.
         if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
-        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
+        if patch.name not in ('0250-pc-display.patch', '0340-texture-pack.patch', '0350-texture-toggle.patch', '0400-mac-native-boot.patch', '0630-mac-renderer.patch', '0660-mac-input.patch', '0740-mac-high-refresh.patch', '0750-interpolation-layouts.patch', '0760-framebuffer-sampling-passes.patch', '0780-shared-input-model.patch', '0790-mac-feature-adapters.patch', '0800-shared-screen-space.patch', '0820-native-settings-init.patch', '0840-shared-linear-formats.patch', '0850-native-prompts.patch', '0860-native-camera.patch', '0870-native-debug.patch', '0880-cutscene-letterbox.patch', '0940-terminal-mouse-select.patch', '0930-story-objectives-health.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
@@ -225,9 +225,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
 
 
 def test_already_integrated_controls_and_display(checkout):
-    # Same result as the previously combined pc-controls.patch from main.
-    apply(checkout, 'pc-controls.patch')
-    apply(checkout, 'pc-display.patch')
+    # Same result as the previously combined 0230-pc-controls.patch from main.
+    apply(checkout, '0230-pc-controls.patch')
+    apply(checkout, '0250-pc-display.patch')
     assert installer.apply_patches(checkout, PATCHES)
     assert installer.apply_patches(checkout, PATCHES) == []
 
@@ -236,22 +236,22 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name in ('independent-translation-moves.patch', 'independent-translation-integer.patch', 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
+        if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch', 'independent-translation-cli.patch', 'independent-guest-abi.patch'):
             continue  # Added after the native timing hooks excluded below.
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
                                 '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch', '-native-visual-time.patch', '-native-movie-pacing.patch', '-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch')):
             continue  # This historical Mac stack predates native timing and network wrappers.
-        if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
-                              'zzzzzzzzzzzzzzz-pc-network-movement.patch',
-                                  'zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzz-pc-network-bots-test.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-combat.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-scoreboard.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-shots.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch'):
+        if patch.name not in ('0470-pc-network.patch', '0640-pc-online.patch',
+                              '0890-pc-network-movement.patch',
+                                  '0900-pc-network-state-refresh.patch',
+                                  '1010-pc-network-bots-test.patch',
+                                  '1030-pc-network-bot-combat.patch',
+                                  '1040-pc-network-bot-scoreboard.patch',
+                                  '1050-pc-network-bot-shots.patch',
+                                  '1060-pc-network-bot-bounds.patch',
+                                  '1070-pc-network-bot-authority.patch',
+                                  '1080-pc-network-bot-presentation.patch',
+                                  '1110-pc-network-bot-capacity.patch'):
             shutil.copyfile(patch, old_patches / patch.name)
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)
@@ -265,7 +265,7 @@ def texture_branch_patches(tmp_path):
     patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
         shutil.copyfile(patch, patches / patch.name)
-    shutil.copyfile(PATCHES / 'legacy/texture-toggle.patch', patches / 'texture-toggle.patch')
+    shutil.copyfile(PATCHES / 'legacy/0350-texture-toggle.patch', patches / '0350-texture-toggle.patch')
     return patches
 
 
@@ -274,7 +274,7 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name not in ('texture-toggle.patch', 'texture-upload-streaming.patch'):
+        if patch.name not in ('0350-texture-toggle.patch', '0360-texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
     shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
     return patches
@@ -335,18 +335,18 @@ def test_native_boot_source_conflict_preserves_all_files(checkout):
 
 
 def test_conflict_preserves_every_runtime_file(checkout):
-    apply(checkout, 'pc-controls.patch')
+    apply(checkout, '0230-pc-controls.patch')
     target = checkout / 'src/input/input_bindings.c'
     target.write_bytes(target.read_bytes().replace(
         b'pc_input_normalize_movement', b'custom_normalize_movement'))
     before = snapshot(checkout)
-    with pytest.raises(RuntimeError, match='pc-controls.patch conflicts'):
+    with pytest.raises(RuntimeError, match='0230-pc-controls.patch conflicts'):
         installer.apply_patches(checkout, PATCHES)
     assert snapshot(checkout) == before
 
 
 def test_windows_line_endings(checkout):
-    apply(checkout, 'pc-controls.patch')
+    apply(checkout, '0230-pc-controls.patch')
     for name, content in snapshot(checkout).items():
         (checkout / name).write_bytes(content.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
     assert installer.apply_patches(checkout, PATCHES)
@@ -362,11 +362,11 @@ def test_watermark_beside_native_overlay_guard(tmp_path, already_applied):
     installer.git(tree, 'init', '-q')
     original = '/* overlay */\nstatic int shown;\nstatic char line[96];\nvoid redraw(void);\n'
     target.write_text(original, encoding='utf-8')
-    (patches / 'zz-mac-native-boot.patch').write_text(
+    (patches / '0400-mac-native-boot.patch').write_text(
         '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
         '@@ -1,4 +1,5 @@\n /* overlay */\n+#ifdef _WIN32\n'
         ' static int shown;\n static char line[96];\n void redraw(void);\n', encoding='utf-8')
-    watermark = patches / 'zzzz-pc-debug-latency-watermark.patch'
+    watermark = patches / '0700-pc-debug-latency-watermark.patch'
     watermark.write_text(
         '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
         '@@ -1,4 +1,4 @@\n /* overlay */\n static int shown;\n'

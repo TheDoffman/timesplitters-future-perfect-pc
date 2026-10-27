@@ -1,16 +1,14 @@
 # Build, run and validation map
 
-[Guest ABI and CLI tests](independent.md).
+[Guest ABI/CLI and main reconciliation](independent.md). [Layout](../repository-layout.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
-Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
+Sampler, trace/thread/idle and state-slot tests: [runtime](runtime.md).
 
-Trace/thread/idle and live state-slot contracts: [common runtime](runtime.md).
+Shader upload tests: [RHI fixture](vsh-constants.md).
 
-Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
-
-Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
+Opening replay: [intro versus gameplay](native-opening-checks.md).
 
 Local aim/animation CPU observations: [completed-update trace](native-local-trace.md).
 
@@ -76,12 +74,13 @@ See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gatheri
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
-Reload #337: `test_native_timing.py` covers CMP policy/mutations; the private-US
-`native_reload_input.c` runs decoder/consumer plus425 buffered taps.
-`reload_phase_sweep.h`:864 schedules/1,728 presses against policy and US routines.
-`test_reload_keys.py`:1,360 host tap schedules at60..240, held/fresh Fire, expiry,
-lifecycle, both triggers/alternate bindings and equal-timestamp Reload/Fire
-release/repress ordering. Windows `pc_controls.c` tests the real event bridge.
+Reload/Fire #337: `test_native_timing.py` covers the US decoder;
+`reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
+covers 1,360 Reload and 680 Fire schedules at 60–240, priority, remaps and
+lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
+(X surrogate). Windows `pc_controls.c` checks the event bridge.
+`native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
+seven 1 ms clicks by ammo use.
 Both CI hosts run these; missing XBE skips originals. Physical keys/Mac gameplay
 remain separate checks.
 

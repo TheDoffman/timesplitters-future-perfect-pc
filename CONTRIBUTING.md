@@ -19,6 +19,9 @@ and logs. Never upload game files, ISOs, generated game code or personal saves.
 
 ## Send a change
 
+See the [repository layout](docs/repository-layout.md) for file locations,
+naming conventions and the distinction between source and local build data.
+
 1. For a large change, discuss the approach in an issue or Discussion first.
 2. Fork the repository and make a focused branch from the latest `main`.
 3. For code changes, read [AGENTS.md](AGENTS.md), the shared project rules, and

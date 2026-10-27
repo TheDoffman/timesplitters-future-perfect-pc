@@ -1,10 +1,10 @@
 # Live guest register references
 
-`zz-stable-gpr-refs.patch` extends the common generator/template protocol.
+`0540-stable-gpr-refs.patch` extends the common generator/template protocol.
 New generated files define `RECOMP_GPR_REFS_SUPPORTED`; each translated body
 declares `RECOMP_DECLARE_GPRS(site)` after entry callbacks and optional fast
 returns. Legacy/manual files retain their old aliases. Unresolved stubs use
-the globals directly. The patch applies after `zz-model-transform-entry.patch`;
+the globals directly. The patch applies after `0410-model-transform-entry.patch`;
 historical fixture stacks without that entry hook omit the dependent patch.
 Regenerate guest C with the supported build scripts; never edit generated C.
 
