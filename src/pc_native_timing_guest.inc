@@ -18,6 +18,7 @@ PcNativeStep g_tsfp_native_step;
 #define NT_WORD(va) (*(volatile uint32_t *)((uintptr_t)(va) + g_xbox_mem_offset))
 #define NT_FLOAT(va) (*(float *)((uintptr_t)(va) + g_xbox_mem_offset))
 #include "pc_native_pose_trace.h"
+#include "pc_native_local_trace.h"
 static uint32_t pc_native_pose_word(uint32_t address) { return NT_WORD(address); }
 static void pc_native_pose_trace(void)
 {
@@ -28,6 +29,16 @@ static void pc_native_pose_trace(void)
     LARGE_INTEGER now,frequency;
     QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
     if(frequency.QuadPart>0)pc_native_pose_record(&trace,&pose,(double)now.QuadPart/(double)frequency.QuadPart);
+}
+static void pc_native_local_trace(void)
+{
+    static PcNativeLocalTrace trace;
+    PcNativeLocalPose pose;
+    if(!pc_native_local_enabled(&trace) ||
+       !pc_native_local_collect(pc_native_pose_word,NT_WORD(g_esp),&pose))return;
+    LARGE_INTEGER now,frequency;
+    QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
+    if(frequency.QuadPart>0)pc_native_local_record(&trace,&pose,(double)now.QuadPart/(double)frequency.QuadPart);
 }
 static void pc_native_input_guest(void (*original)(void))
 {
@@ -102,6 +113,7 @@ static void pc_native_timing_guest(void (*original)(void))
     static int physics_history_pending;
     LARGE_INTEGER now, frequency;
     pc_native_pose_trace();
+    pc_native_local_trace();
     recomp_config_commit_native_rate();
     int rate = pc_native_rate();
     if (!rate) {

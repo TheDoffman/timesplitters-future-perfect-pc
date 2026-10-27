@@ -6,7 +6,7 @@ import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[1]
 
-@pytest.mark.parametrize('mutation',['none','overread','wrong-stride'])
+@pytest.mark.parametrize('mutation',['none','overread','wrong-stride','wide-source'])
 def test_push_gather(tmp_path,mutation):
     text=(ROOT/'external/ts3FPrecomp/src/hle/hle_d3d8_vertex.c').read_text(encoding='utf-8')
     fmt=text[text.index('static UINT vsdt_bytes('):text.index('/* The commands between BeginPush')]
@@ -14,7 +14,12 @@ def test_push_gather(tmp_path,mutation):
     end=text.index('/* Title RAM or the contiguous window. */',start)
     candidate=text[start:end]
     if mutation=='overread':candidate=candidate.replace('PUSH_COPY_BYTES(12)', 'PUSH_COPY_BYTES(16)')
-    if mutation=='wrong-stride':candidate=candidate.replace('(first + v) * sstride','(first + v) * 16u')
+    if mutation=='wrong-stride':
+        assert 'source += sstride' in candidate
+        candidate=candidate.replace('source += sstride','source += 16u')
+    if mutation=='wide-source':
+        assert 'uint32_t v, source;' in candidate
+        candidate=candidate.replace('uint32_t v, source;','uint32_t v; uintptr_t source;')
     reference=(ROOT/'tests/push_gather_reference.inc').read_text(encoding='utf-8')
     code=(ROOT/'tests/push_gather.c').read_text(encoding='utf-8').replace('/* FORMAT */',fmt).replace('/* REFERENCE */',reference).replace('/* CANDIDATE */',candidate).replace('out = calloc(', 'out = tracked_calloc(')
     source=tmp_path/'gather.c';source.write_text(code,encoding='utf-8')

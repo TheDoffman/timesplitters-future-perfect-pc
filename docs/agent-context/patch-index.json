@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e00e04af4574b2177104c11260e17f8b4d9034ddfaf49b468f5edbfaf3911b6e",
+  "loaderSha256": "730895d6863687272ef9b06402ee72999aa7ed3d37b33b43c6cfe5b75947f58d",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -219,8 +219,29 @@
       ]
     },
     {
+      "name": "zz-render-state-cache.patch",
+      "sha256": "243749c7fec58e460465bd70e286b92debfbf5621475cc09613393b6715af4d5",
+      "targets": [
+        "src/d3d/d3d8_states.c"
+      ]
+    },
+    {
+      "name": "zz-sampler-cache-retry.patch",
+      "sha256": "a050d8fe106cb66e11391df47310fa0eab9ea2cbe3f8a058f409f450b70b9541",
+      "targets": [
+        "src/d3d/d3d8_states.c"
+      ]
+    },
+    {
       "name": "zz-sampler-caller-depth.patch",
       "sha256": "72f05a93e7483f6092db4052dd19ae79ef9945d4f0529b74efcf85e6bdb4cca3",
+      "targets": [
+        "src/kernel/recomp_sample.c"
+      ]
+    },
+    {
+      "name": "zz-sampler-pc-locations.patch",
+      "sha256": "7dbba510e7b233dc00b98e3760ba46e5482011a7e072ce6f294b2b1868ad1186",
       "targets": [
         "src/kernel/recomp_sample.c"
       ]
@@ -233,8 +254,22 @@
       ]
     },
     {
+      "name": "zz-state-layout-slots.patch",
+      "sha256": "b991da70e5d648574a000332b2bb97de9d97e5fc807d4b3f8a0287b24bd20cd3",
+      "targets": [
+        "src/hle/hle_d3d8_state.c"
+      ]
+    },
+    {
       "name": "zz-strided-vertex-copy.patch",
       "sha256": "ed32291d77d8afca9e71c47505dfb176941c98def32250a3543997c6dd0fa283",
+      "targets": [
+        "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zz-strided-vertex-increment.patch",
+      "sha256": "6501e3c7797a1124e5a455b946212a0a467c3df604fa04390204acb45c0628e4",
       "targets": [
         "src/hle/hle_d3d8_vertex.c"
       ]
@@ -244,6 +279,20 @@
       "sha256": "a88ff19bcf29efbc9bc5f7d0be71ea47f7ca38edc1cdb6960d80adc5e9549e2a",
       "targets": [
         "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "zz-vertex-expand-strides.patch",
+      "sha256": "1387d8dea41a5127d5a44d0bb0a607481fe181540f142dc15595c234fa9738f2",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "zz-vertex-expand-tiles.patch",
+      "sha256": "217d7875a319e0200c1f7c66173eb75f9ed8daa2ea8d21eb6cd7fddfb3c8efdd",
+      "targets": [
+        "src/hle/hle_d3d8.c"
       ]
     },
     {
@@ -287,6 +336,13 @@
         "src/d3d/d3d8_overlay.c",
         "src/hle/hle_d3d8.c",
         "src/input/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "zzzz-world-health-bars.patch",
+      "sha256": "d709292e51fb5710709caaf1a8f5aa10e0cd6cd6e47f28f2736c1722c6a10a7c",
+      "targets": [
+        "src/d3d/d3d8_device.c"
       ]
     },
     {
@@ -1153,6 +1209,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-vsh-constant-dirty.patch",
+      "sha256": "aa5b1cd394783ce75ff00c12bca4eac794ace785f72ccf692091a849269bdaba",
+      "targets": [
+        "src/d3d/d3d8_vsh.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-world-effects.patch",
       "sha256": "9585b7dab28aa9b3196b29df030212aef3688f616314c25085530a047811de0e",
       "targets": [
@@ -1518,7 +1581,7 @@
     },
     {
       "name": "zz-native-trace-quiet.patch",
-      "sha256": "7766d9430ae33f7c3535937559a324784352f9535a13674a43024306d5a5275a",
+      "sha256": "1c63cf7a6c11634cedb316d73d359249bd8751dec2adfdadfaae8e7f37e94d8a",
       "targets": [
         "src/kernel/recomp_trace.c"
       ]
@@ -1558,6 +1621,21 @@
       "sha256": "fa8a3bb70616f1e6a7a8978b701e8a3ac015bbc255918338454872a9b8081e0d",
       "targets": [
         "src/hle/hle_d3d8_vertex.c"
+      ]
+    },
+    {
+      "name": "zz-stable-gpr-refs.patch",
+      "sha256": "1528ced3d5bcfcf32e6150ce8cd140c2d04b88b6b4fcdf10814d0cf6c0c21edb",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "zz-native-wind-history.patch",
+      "sha256": "9ac97150ccb5903ed2d5bcc7d3d0d0aac72109acf52000b5e75fc7c2cf3fb774",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {

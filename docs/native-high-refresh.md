@@ -270,21 +270,28 @@ perceptual smoothness remain acceptance work. A passing first-mission test
 does not establish native 144 FPS correctness across the full game. The mode
 remains opt-in while that work is incomplete.
 
-## Acceptance audit (2026-10-24)
+## Acceptance audit (2026-10-26)
 
-This audit uses source `82b27c31`, the regression record, current test bodies and
-the Windows build identified in STATUS. Earlier observations retain their named
-build scope. Passing isolated routines does not establish their complete callers
-or the rendered result. The goal remains incomplete.
+PR #367 source `e9ea817a` passes all16 hosted checks and normal Windows
+Build/bundled gates (executable `70a33689`). Current local timing/vehicle
+coverage includes127 checks across a full run and a targeted timeout rerun.
+Selected Temple rocket behavior passes at Original60 and native240 on this
+executable. Earlier crowd pacing remains tied to its older binaries; current
+wind-scene, crowd and broader physical-host acceptance remain pending.
+The rows below retain their
+actual evidence scope: later compiler optimizations do not silently revalidate
+earlier scenes. Passing isolated routines does not establish complete callers
+or rendered results. The goal remains incomplete.
 
 | Requirement | Evidence inspected | Remaining acceptance |
 | --- | --- | --- |
-| Fresh updates, speed and pacing | Native clock and network cadence fixtures; current Disco and preceding Temple guest-frame/Present traces | Sustained performance across representative demanding scenes; reported dips remain |
-| Opening handoff and animation | Original animation timeline/event fixture, script dispatch controls, recorded opening comparison | Current 180/240 rendered opening comparison and natural cinematic timing |
-| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse, camera and vehicle fixtures | Live camera/vehicle/terminal transitions; physical-input feel |
-| Physics | Original rigid-body, vehicle, falling, force and contact fixtures | Representative real collision geometry and interactions |
+| Fresh updates, speed and pacing | Clock/network fixtures; clean45s ten-bot Disco pair on0f005661:238.377FPS at240 (minimum1s218),60.0007 at Original60; Temple pair on024c6faa:237.999/60.0003. Increasing guest frames, zero interpolation and independent game/wall checks near1 | Sustained demanding240 remains unproven. These precede the combined main/wind 70a33689 build; current crowd pacing remains pending. Cover more scenes; successful host Presents are not scanout or a causal optimization comparison |
+| Opening handoff and animation | Original timeline/events, script controls, recorded opening comparisons; selected completed local body/hand/weapon observations through240 | Broader180/240 natural cinematic/handoff and scene rendering; selected clips do not establish all animation |
+| Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse and vehicle fixtures; completed local observations; original registered yaw callback through entity passes, cache and fresh transformed points | Live scripted-object/camera/vehicle/terminal transitions; GPU confirmation and physical-input feel/latency |
+| Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |
+| Physics | Original rigid/vehicle/falling/force/contact fixtures; repeated live Siberia approaches agree before contact, but even Original60 routes diverge at the pillar | Coherent off-center geometry/contact response and full handling. Variable asynchronous post-impact endpoints cannot justify coefficient tuning |
 | Weapons and effects | Original firing, sound, projectile, beam, sniper and reload fixtures; live firing/reload cycle; Temple floor-rocket lethality/lifetime/cleanup and respawn at Original60/180/240 | Specific delayed-trail, sniper-hit and pre-bridge NPC reports remain without targeted live confirmation |
-| Scripts and pause | Phase-swept events/reload and pause/resume checks | Broader progression and interactions with moving actors/cameras |
+| Scripts and pause | Phase-swept events/reload and pause/resume checks; original Venice/Subway dispatch/timed callbacks/reset and old-gate failures through240; Subway's real RNG and nonrepeat sequence | Live level event/audio confirmation; broader progression and interactions with moving actors/cameras. Other remaining integer gates require individual audit |
 | Menus and settings | Four presets, staged Apply, save/error contracts; weapon-menu scene checks | Broader visual/menu and native Mac checks |
 | Texture fluidity | Fractional water implementation, GPU-image cycle and resource reuse; texture contracts | Other animated/scrolling surfaces, filtering/alpha/transitions across scenes |
 | Cinematics and audio | Original polling clocks and real-file movie decoder tests; prior movie tint correction | Visible/audible synchronization across representative scenes and host output |
@@ -295,6 +302,48 @@ Mixed-preset loopback now supplies bounded movement/combat observations. Keep
 that coverage separate from CPU optimization measurements and Internet latency.
 Further scene/visual comparisons remain necessary. The user's request to defer
 the first mission changes investigation order, not its unresolved reports.
+
+The D675 executable's clean Original60/native240 crowd pair is complete;
+the measured crowd dips still need attribution and repair. Keep the separate
+CPU diagnostic outside clean pacing acceptance. Any changed implementation
+needs source/executable hashes and complete foreground ten-bot windows without
+another game/build. Different AI routes do not establish a causal gain. Further
+acceptance also needs a different demanding scene or unresolved mechanic;
+repeating the same selected firing/NPC proof does not close those requirements.
+The later945 executable adds sampler allocation recovery. Its normal build and
+API binding/recovery checks do not establish a performance improvement or replace
+the separately versioned D675 gameplay/pacing evidence.
+
+Detailed evidence and limits are in STATUS under **State-preparation live register
+references**, **Pushed-array address recurrence and current crowd profile**,
+**Selected NPC pose and GPU replay observations**, **Completed local aim and
+animation observations**, **Complete a mixed-preset Online rematch** and
+**Current-build live vehicle contact comparison**. The private receipts named
+there preserve hashes and rejected controls; game assets stay untracked.
+
+## Procedural wind
+
+Shared source now subdivides the coupled procedural wind oscillator instead
+of holding its angle between whole ticks. Each object owns solver history;
+pauses preserve it, registration/reuse resets it, and unsupported time scopes
+retain their original stepping. This is simulation, without pose interpolation.
+The repository tests include original registration, frame/clock ordering,
+two-owner matrix/point propagation and paused resume when the local verified
+XBE is present. These CPU checks do not establish live GPU output or FPS.
+The source integration still needs a normal rebuilt game and live acceptance;
+physical Mac and other timing-scope coverage remain open. See
+[wind contracts and validation](agent-context/native-wind.md).
+
+## Deferred character voices
+
+The exact `164E00` entry gate now admits positive fractional game time for
+queued character voices and their cooldown. Original caller, scheduler and RNG
+tests cover 576 schedules through 240 FPS, stale actor handles, pause and
+36 whole/catch-up parity cases. The original delays and selection rules remain.
+The full timing suite passes 108 tests; this establishes CPU timing behavior.
+A normal Windows rebuild and bundled gates now pass after Bugs finished;
+audible confirmation remains pending. See the deferred actor voice entry in
+[STATUS](../STATUS.md) for evidence and controlled service boundaries.
 
 ## NPC firing timing
 

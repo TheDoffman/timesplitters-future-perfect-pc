@@ -29,6 +29,18 @@ requires a matching captured mask on every receiving peer. The host pause row
 uses the original checkpoint confirmation and stays disabled before capture.
 Unit fixtures cover this contract; live checkpoint acceptance remains pending.
 
+Procedural wind: [ownership/time scopes](native-wind.md).
+
+Local completed aim/animation diagnostics: [scope and limits](native-local-trace.md).
+
+GPU state-cache acceptance: `src/native/vulkan_probe.cmake` now shares the
+production state-module pixel fixture with Windows WARP; see [runtime](runtime.md).
+The Vulkan test target defines `TSFP_RHI_RENDERER` for common frontend headers.
+
+Native player contact: [clear-slide policy/trace](native-player-contact.md).
+Live integer/vector register references: [four-site policy and tests](gpr-refs.md).
+Script/audio clocks: [contracts](native-script-clocks.md).
+
 <!-- packet:start -->
 Root tracked policy: `src/pc_input*`, `pc_controls*`, `pc_bindings.inc` for input;
 `pc_display*`, `pc_settings*`, `pc_refresh*` for display/configuration;

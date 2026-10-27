@@ -1,0 +1,51 @@
+--- a/src/d3d/d3d8_states.c
++++ b/src/d3d/d3d8_states.c
+@@ -298,16 +298,29 @@
+ static SamplerCacheEntry g_sampler_cache[SAMPLER_CACHE_SIZE];
+ static int               g_sampler_cache_count;
+ static int               g_sampler_cache_next;       /* replacement cursor */
++static unsigned          g_sampler_failure_warnings;
+ static RhiSamplerDesc    g_sampler_bound_desc[4];    /* what each stage holds */
+ 
+ static RhiSampler *sampler_cache_get(const RhiSamplerDesc *sd)
+ {
+     SamplerCacheEntry *e;
++    RhiSampler *state;
+     int i;
+ 
+     for (i = 0; i < g_sampler_cache_count; i++)
+         if (memcmp(&g_sampler_cache[i].desc, sd, sizeof(*sd)) == 0)
+             return g_sampler_cache[i].state;
++
++    /* Allocate before changing ownership or stage bindings. A failed create
++     * must remain retryable and must not discard a usable cached sampler. */
++    state = rhi_sampler_create(sd);
++    if (!state) {
++        if (g_sampler_failure_warnings < 4) {
++            ++g_sampler_failure_warnings;
++            fprintf(stderr, "D3D8: CreateSamplerState failed\n");
++        }
++        return NULL;
++    }
+ 
+     if (g_sampler_cache_count < SAMPLER_CACHE_SIZE) {
+         e = &g_sampler_cache[g_sampler_cache_count++];
+@@ -322,9 +335,7 @@
+             e->state = NULL;
+         }
+     }
+-    e->state = rhi_sampler_create(sd);
+-    if (!e->state)
+-        fprintf(stderr, "D3D8: CreateSamplerState failed\n");
++    e->state = state;
+     memcpy(&e->desc, sd, sizeof(*sd));
+     return e->state;
+ }
+@@ -338,6 +349,7 @@
+     }
+     g_sampler_cache_count = 0;
+     g_sampler_cache_next = 0;
++    g_sampler_failure_warnings = 0;
+     memset(g_sampler_bound_desc, 0, sizeof(g_sampler_bound_desc));
+ }
+ 
