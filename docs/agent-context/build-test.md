@@ -6,7 +6,8 @@ Source/tool/test paths now use responsibility folders; see
 
 Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
 
-CI inline Python uses project_paths; standalone tests/rhi supplies grouped includes.
+CI inline Python uses project_paths; standalone RHI and Mac crash/IPC fixtures
+supply grouped includes.
 
 [Own translation and flag tests](independent.md).
 

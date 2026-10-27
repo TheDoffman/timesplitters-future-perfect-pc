@@ -3,6 +3,8 @@
 Build/release/CI helpers now live under their matching `tools/` folders.
 Launcher implementation stays under `tools/launcher/`; installed package paths
 remain separate from repository source locations.
+NativeHost's inline Vulkan Python imports from `tools/build`; the native-launcher
+suite executes that embedded code against an isolated grouped helper fixture.
 
 The launcher compatibility selector follows the game-icon patch into
 `patches/platform/`. Its scope and tests are unchanged; nested runtime patches

@@ -17,7 +17,7 @@ pytestmark=pytest.mark.skipif(sys.platform!='darwin',reason='Darwin IPC adapter'
 @pytest.fixture(scope='module')
 def client(tmp_path_factory):
     exe=tmp_path_factory.mktemp('discord-native')/'client'
-    subprocess.run(['clang','-std=c11','-O2','-Wall','-Wextra','-Werror','-DTSFP_DISCORD_INTERVAL=200','-DTSFP_DISCORD_RETRY=100','-DTSFP_DISCORD_TEST_SOCKET','-I'+str(ROOT/'src'),str(ROOT/'tests/network/discord_ipc_client.c'),str(ROOT/'src/network/pc_discord.c'),str(ROOT/'src/network/pc_discord_model.c'),'-o',str(exe)],check=True)
+    subprocess.run(['clang','-std=c11','-O2','-Wall','-Wextra','-Werror','-DTSFP_DISCORD_INTERVAL=200','-DTSFP_DISCORD_RETRY=100','-DTSFP_DISCORD_TEST_SOCKET','-I'+str(ROOT/'src'),'-I'+str(ROOT/'src/network'),str(ROOT/'tests/network/discord_ipc_client.c'),str(ROOT/'src/network/pc_discord.c'),str(ROOT/'src/network/pc_discord_model.c'),'-o',str(exe)],check=True)
     return exe
 @pytest.mark.parametrize('initial',['normal','disconnect','oversize','error','no_ready','disabled','invalid','absent'])
 def test_native_protocol(client,tmp_path,initial):

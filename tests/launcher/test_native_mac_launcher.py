@@ -3,6 +3,9 @@
 
 import importlib.util
 import io
+import json
+import re
+import subprocess
 import sys
 from pathlib import Path
 import pytest
@@ -12,6 +15,22 @@ sys.path.insert(0,str(ROOT/'tools'))
 spec = importlib.util.spec_from_file_location('play_native', ROOT / 'tools/play-native-mac.py')
 launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
+
+
+def test_native_host_embedded_gpu_helper_finds_grouped_module(tmp_path):
+    source = (ROOT/'tools/launcher/macos/NativeHost.cs').read_text(encoding='utf-8')
+    literal = re.search(r'info\.ArgumentList\.Add\(("import pathlib(?:\\.|[^"\\])*")\);', source)
+    assert literal, 'Execute the production embedded Python, not a copied helper'
+    code = json.loads(literal[1])
+    module = tmp_path/'tools/build/vulkan_sdk.py'
+    module.parent.mkdir(parents=True)
+    module.write_text('def launch_environment(root, manifest):\n'
+                      '    return {"VK_TEST_DRIVER": manifest["vulkan_driver"]}\n')
+    result = subprocess.run([sys.executable, '-c', code, str(tmp_path),
+                             json.dumps({'vulkan_driver': 'moltenvk'})],
+                            capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout) == {'VK_TEST_DRIVER': 'moltenvk'}
 
 
 @pytest.mark.parametrize('value', ['NaN', 'Infinity', '-1', '0', '10.1', 'true', '"0.1"'])

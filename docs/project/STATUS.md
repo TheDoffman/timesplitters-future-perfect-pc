@@ -10,6 +10,11 @@ validation is delegated to the PR's existing CI job, not inferred from Windows.
 The public texture manifest remains at config/texture-download.json: released
 launchers have that URL compiled in. Publisher and new launchers retain this
 single canonical endpoint. These repairs preserve the earlier gameplay limits.
+Mac CI subsequently passed 1,169 tests but exposed missing grouped includes in
+the direct-clang Discord and crash fixtures (18 setup errors); both include
+paths are corrected. NativeHost's inline SDK helper also imports from
+`tools/build`, with a host-independent regression executing its actual embedded
+Python. Fresh CI supplies the native-host acceptance for these corrections.
 
 ## Repository responsibility folders (2026-10-27)
 

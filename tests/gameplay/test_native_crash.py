@@ -12,7 +12,7 @@ pytestmark=pytest.mark.skipif(sys.platform!='darwin',reason='Darwin crash adapte
 @pytest.fixture(scope='module')
 def client(tmp_path_factory):
     exe=tmp_path_factory.mktemp('native-crash')/'capture'
-    subprocess.run(['clang','-std=c11','-g','-O0','-Wall','-Wextra','-Werror','-DTSFP_CRASH_TEST','-I'+str(ROOT/'src'),str(ROOT/'tests/gameplay/native_crash.c'),str(ROOT/'src/native/crash_posix.c'),'-o',str(exe)],check=True)
+    subprocess.run(['clang','-std=c11','-g','-O0','-Wall','-Wextra','-Werror','-DTSFP_CRASH_TEST','-I'+str(ROOT/'src'),'-I'+str(ROOT/'src/diagnostics'),str(ROOT/'tests/gameplay/native_crash.c'),str(ROOT/'src/native/crash_posix.c'),'-o',str(exe)],check=True)
     subprocess.run(['dsymutil',str(exe)],check=True)
     return exe
 @pytest.mark.parametrize('mode,count',[('crash',1),('hang',1),('twice',2),('then-crash',2),('startup',0),('unarmed',0),('background',0),('modal',0),('responsive',0)])
