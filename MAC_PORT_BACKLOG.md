@@ -199,7 +199,6 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-062 | Stable and named game release channels | Awaiting validation |
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
 | MAC-064 | Self-contained runtime source | Awaiting validation |
-
 | MAC-065 | Independent game-disc import | Awaiting validation |
 | MAC-066 | Independent executable analysis | Awaiting validation |
 | MAC-067 | Independent disassembler input | Awaiting validation |
@@ -217,6 +216,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
 | MAC-080 | Independent scalar integer lowering | Awaiting validation |
 | MAC-081 | Independent shift and rotate lowering | Awaiting validation |
+| MAC-082 | Projected enemy shield effects (issue #358) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6118,6 +6118,23 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Native Mac generation and gameplay remain
   unverified. Dynamic zero-count conditional provenance and complete flag lowering
   remain separate replacement work on both hosts.
+
+### MAC-082 - Projected enemy shield effects (issue #358)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The shielded robot in Something to Crow About keeps its
+  shield over its body on wide displays instead of shifting toward the old
+  4:3 center. Ordinary HUD sprites and explicit placements stay unchanged.
+- **Source:** `358-enemy-shield-effects-offset`,
+  `patches/zzzz-world-shields.patch`, shared D3D compatibility path.
+- **Windows evidence:** User's 3440×1440 capture, D3D draw bisection, and
+  placement replay identify the 24-byte projected shield strips. Release
+  build, captured-frame replay, and isolated live validation at 3440×1440
+  pass. See `STATUS.md`.
+- **Mac adaptation needed:** Confirm native renderer follows the shared
+  projected-draw placement. Apply equivalent handling only if its path differs.
+- **Mac acceptance:** Build on Mac and inspect shielded robots at 16:9 and
+  ultrawide, plus health bars, HUD widgets and menu overlays.
 
 ## Entry template
 

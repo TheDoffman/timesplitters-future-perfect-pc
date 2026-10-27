@@ -149,14 +149,14 @@ does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
 <!-- packet:end -->
 
-`zzzz-world-health-bars.patch` handles #102 after the other display patches.
-Electro Chimp's enemy bars are screen-space draws with 16-byte transformed
-vertices and depth near 1. Their positions already follow the widened camera;
-the automatic 4:3 HUD squeeze otherwise shifts them toward the screen center.
-The patch spans those draws across the output while leaving ordinary HUD
-sprites and explicitly placed overlays on their existing paths. Validate with
-Monkeying Around → Electro Chimp Discomatic at a widescreen resolution and
-compare each bar with its moving monkey.
+`zzzz-world-health-bars.patch` handles #102; `zzzz-world-shields.patch` extends
+it for #358. Electro Chimp health bars use 16-byte transformed vertices; the
+shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
+have depth near 1 and already follow the widened camera, so the automatic 4:3
+HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
+near .001 and explicitly placed overlays retain their placement. Validate
+with Monkeying Around → Electro Chimp Discomatic and Something to Crow
+About's shielded robot at a widescreen resolution.
 
 `zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
 draws with minimum index zero pass their current index bytes directly to the

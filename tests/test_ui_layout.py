@@ -52,7 +52,7 @@ def test_guest_placement_hooks():
     assert 'if(FP_MEM32(g_esp)==0x0013BA9Cu)pc_display_health_side();' in manual
 
 
-@pytest.mark.parametrize("fixture_name", ["ui_viewport", "ui_screen_effects"])
+@pytest.mark.parametrize("fixture_name", ["ui_viewport", "ui_screen_effects", "world_projected_effects"])
 def test_production_viewport_and_scissor(tmp_path, fixture_name):
     source=(ROOT/'external/ts3FPrecomp/src/d3d/d3d8_device.c').read_text()
     def body(signature):
@@ -69,6 +69,8 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
         signatures=(
             'static BOOL draw_extent(const void *vertices, UINT stride, UINT count,\n                        float *lo_out, float *hi_out)',
             'BOOL d3d8_draw_escapes_squeeze(const void *vertices, UINT stride, UINT count)')
+    elif fixture_name=='world_projected_effects':
+        signatures=('void d3d8_place_2d_draw(const void *vertices, UINT stride, UINT count)',)
     implementations='\n'.join(body(name) for name in signatures)
     fixture=(ROOT/'tests'/f'{fixture_name}.c').read_text().replace('/* PRODUCTION */',implementations)
     path=tmp_path/'viewport.c';path.write_text(fixture)
