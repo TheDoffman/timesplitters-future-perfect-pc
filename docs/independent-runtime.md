@@ -76,7 +76,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Exchange and compare-exchange | Project-owned `translation_exchange.py` and original template atomics supply XCHG/XADD/CMPXCHG | Compiled values/flags, x86 oracles, aliases, decoded consumers and contention; generation/build/game acceptance in STATUS.md, native Mac pending |
 | Comparison snapshots and implicit sign extension | Project-owned `translation_compare.py` supplies CMP/TEST, self-test normalization and CBW/CWD/CWDE/CDQ | Compiled width/carry/memory-hook/state fixtures and decoded consumers; measured host acceptance in STATUS.md and MAC-087 |
 | String instructions | Project-owned `translation_strings.py` replaces string and direction emission | Original native/decoded contracts and Windows generation/build/game acceptance passed; native Mac pending (MAC-088) |
-| x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Condition expressions | Project-owned `translation_conditions.py` for captured flags and Jcc/SETcc/CMOVcc/LAHF | Native and mathematical oracles, decoded consumers; Windows acceptance below, native Mac pending (MAC-089) |
+| x86-to-C translation | Remaining lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -720,10 +721,26 @@ joins and operand-size prefixes; Windows x86 oracles also compare extension
 values and preserved flags. Inherited translator fixtures stay enabled.
 The semantics basis is Intel SDM volumes 2A/2B:
 https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.
-This replaces snapshot/emission bodies, not general branch conditions or the
-complete flags register. Fused branch rereads, AF and guest faults remain separate
-orchestration/foundation work. See STATUS.md and MAC-087 for validation.
+This stage replaced snapshot/emission bodies. Fused CMP/TEST branches already
+consume captured operands without rereads. Condition expressions are replaced
+in the later stage below; complete EFLAGS and guest faults remain work. See STATUS.md and MAC-087 for validation.
 
+
+## Condition-code generation
+
+Condition evaluation is owned by `translation_conditions.py` through the final
+`independent-translation-conditions.patch`. Jcc, SETcc, CMOVcc aliases and LAHF
+consume captured comparison/result values. Arithmetic signed conditions use
+SF xor OF; LAHF now includes defined auxiliary carry. ADC/SBB retain the source
+and original left operand in the snapshot ABI. LAHF requests carry storage;
+parity/overflow SETcc and CMOVcc dispatch use the shared alias map. Integer
+native x86 and independent mathematical oracles cover all byte pairs and wide
+edges, with operand overwrites; decoded consumers and NaN/float tests compile.
+Unknown flags still return no expression. Complete EFLAGS, mixed setters,
+zero-count shifts, caller flags and guest fault delivery remain work.
+The architectural reference is Intel SDM volume 1, EFLAGS and condition codes,
+and volume 2 instruction definitions (linked above). See STATUS.md and MAC-089
+for acceptance evidence and host limits.
 
 ## String-instruction lowering
 

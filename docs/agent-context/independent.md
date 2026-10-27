@@ -32,6 +32,20 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+Condition evaluation is owned by `translation_conditions.py` through the final
+`independent-translation-conditions.patch`. Jcc, SETcc, CMOVcc aliases and LAHF
+consume captured comparison/result values. Arithmetic signed conditions use
+SF xor OF; LAHF now includes defined auxiliary carry. ADC/SBB retain the source
+and original left operand in the snapshot ABI. LAHF requests carry storage;
+parity/overflow SETcc and CMOVcc dispatch use the shared alias map. Integer
+native x86 and independent mathematical oracles cover all byte pairs and wide
+edges, with operand overwrites; decoded consumers and NaN/float tests compile.
+Private join and timing fixtures retain their independent behavioral oracles;
+actor-voice negative controls locate the original JNE target and wrap its
+current captured condition instead of depending on a legacy macro spelling.
+Unknown flags still return no expression. Complete EFLAGS, mixed setters,
+zero-count shifts, caller flags and guest fault delivery remain work.
+
 String lowering is owned by `translation_strings.py` through the final
 `independent-translation-strings.patch`. MOVS/STOS/LODS and CMPS/SCAS use
 byte/word/dword elements, direction-aware indices, address-size-specific count
@@ -58,9 +72,8 @@ Windows x86 oracles also compare implicit-extension values and flag preservation
 Original-guest fixtures built by `test_recomp_float_joins.compile_and_run` link
 the shared `guest_integer_fault.c` adapter on both hosts; MSVC outputs each
 source object into the fixture directory. This keeps DIV/IDIV callees resolvable.
-The full inherited translator suite remains enabled. General branch-condition
-lowering, complete EFLAGS/AF, fused-branch rereads and fault delivery remain
-separate work. Generation hashes and both-host CI include this module; see
+The full inherited translator suite remains enabled. Complete EFLAGS provenance and fault delivery remain separate work.
+Fused CMP/TEST branches already consume sampled operands, without rereads. Generation hashes and both-host CI include this module; see
 MAC-087 and STATUS.md for host acceptance.
 
 `independent-translation-exchange.patch` follows bitops, removing XCHG and

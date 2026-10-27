@@ -223,6 +223,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-086 | Independent exchange lowering and atomic helpers | Awaiting validation |
 | MAC-087 | Independent comparison snapshots and sign extension | Awaiting validation |
 | MAC-088 | Independent string-instruction lowering | Awaiting validation |
+| MAC-089 | Independent condition-code generation | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6248,6 +6249,24 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate/build and verify isolated movement, firing and pause/resume.
 - **Mac implementation and evidence:** Shared implementation; native title
   generation/build/gameplay unverified. Complete flags and guest faults remain work.
+
+### MAC-089 - Independent condition-code generation
+
+- **Status:** Awaiting validation
+- **PC behavior:** Captured flags drive branches, conditional moves, SETcc and
+  LAHF, including signed overflow and defined auxiliary carry.
+- **PC source:** PR #375, this change; `translation_conditions.py`,
+  `translation_integer.py`, `independent-translation-conditions.patch`.
+- **PC validation:** 131 focused, 37 join, 109 timing and 56 patch/context
+  checks passed, plus supported-US
+  generation, Release build and isolated movement/firing/pause/resume. All 19
+  protected files unchanged; see STATUS.md for measured evidence and limits.
+- **Existing Mac support:** Shared Python/C generation, no host-specific feature path.
+- **Mac adaptation needed:** None identified; native title acceptance pending.
+- **Mac acceptance checks:** Run condition/consumer and patch upgrade tests;
+  regenerate/build and verify isolated movement, firing and pause/resume.
+- **Mac implementation and evidence:** Shared implementation, native title
+  generation/build/gameplay unverified; complete EFLAGS remains work.
 
 ## Entry template
 

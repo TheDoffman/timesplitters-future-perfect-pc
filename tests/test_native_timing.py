@@ -83,9 +83,12 @@ def test_original_actor_voice_clock(tmp_path):
         code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())+'\n'+'\n'.join(pieces.values())
         # Mutations disable only the original generation checks, never production.
         for target in ('00164EC6','00164F52'):
-            needle = f'if (CMP_NE(_fa, _fb)) goto loc_{target};'
-            assert code.count(needle)==1
-            code = code.replace(needle,f'if (!ignore_generation && CMP_NE(_fa, _fb)) goto loc_{target};')
+            branches = list(re.finditer(r'if \(([^\n]+)\) goto loc_'+target+r'; /\* jne:', code))
+            assert len(branches)==1
+            condition = branches[0][1]
+            assert '_fa' in condition and '_fb' in condition and '_flags' not in condition
+            needle = f'if ({condition}) goto loc_{target};'
+            code = code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
         source = (ROOT/'tests/native_actor_voice_clock.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
         parent = pieces[0x1ce2e0]

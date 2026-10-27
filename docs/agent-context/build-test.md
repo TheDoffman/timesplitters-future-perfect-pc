@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own arithmetic/string tests](independent.md).
+[Own flag/string tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "dee150dde97f934ba20cfb2381f83934d19fe34dd1545a2d4c852fad8a9b4301",
+  "loaderSha256": "29a80da1cc91e369630d745e99c33e8226c87c9e22f4e45ba29d686912d8efcd",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1731,6 +1731,24 @@
         "tools/recomp/test_lifter_rep_cmps_cf.py",
         "tools/recomp/test_lifter_rep_compare_flags.py",
         "tools/recomp/test_lifter_string_compare.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-conditions.patch",
+      "sha256": "4ba3beca4e5863fc48f3741b865043bef2869a025936f8f89afb834409887352",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_flag_join.py",
+        "tools/recomp/test_flag_join_backedge.py",
+        "tools/recomp/test_lifter_lock_flags.py",
+        "tools/recomp/test_lifter_loop.py",
+        "tools/recomp/test_lifter_popfd_flags.py",
+        "tools/recomp/test_lifter_rep_cmps_cf.py",
+        "tools/recomp/test_lifter_sar_cond.py",
+        "tools/recomp/test_lifter_sf_overflow.py",
+        "tools/recomp/test_lifter_string_compare.py",
+        "tools/recomp/test_lifter_zf_join.py",
         "tools/recomp/translator.py"
       ]
     }

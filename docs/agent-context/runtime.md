@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-String/compare ownership, captured flags, atomic helpers and native validation are in [own tooling](independent.md).
+Condition/string/compare ownership, captured flags, atomic helpers and native validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

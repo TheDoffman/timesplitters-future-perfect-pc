@@ -1,3 +1,53 @@
+## Independent condition-code generation (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces the condition map, Jcc/SETcc/CMOVcc expressions, LAHF and
+zero-flag expression generation with original project code. Signed arithmetic
+conditions include overflow; ADC/SBB retain inputs after live registers change.
+LAHF includes defined auxiliary carry and requests carry storage. Parity and
+overflow SETcc/CMOVcc now route through the complete alias map. Partial flag
+states still refuse unknown conditions; complete EFLAGS remains separate work.
+
+All **16 CI checks passed** on the prior string-stage revision `851c6206`.
+This stage passed **131 focused checks in 69.93 seconds**, including exhaustive
+byte-pair conditions and LAHF against mathematical and native x86 references,
+wide edges/seeded inputs, float NaNs, decoded branches/SETcc/CMOVcc with operand
+overwrites, and the inherited translator suite. **37 join/private game-routine
+checks passed in 48.55 seconds**. Existing spelling assertions and timing-test
+mutations follow the new expressions; behavioral references and negative
+controls remain enabled. **109 native timing checks passed in 242.29 seconds**;
+**56 historical patch/context/backlog/snapshot checks passed in 878.05 seconds**.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**4,120 functions stayed byte-identical**. The **11,718 changed bodies** are
+bounded to flag capture and condition lines, equivalent register-zero spelling,
+and seven newly resolved JNO predicates after logical AND. Five other generated
+C/header files and function names/order/surrounding text are unchanged. This
+structural check does not prove full semantic equivalence; native oracles and
+private game fixtures provide separate behavioral evidence.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `851c6206`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`090fa72bdbc9faed43129c311a7121ccd1e160ebf532be72c5b87db1baa77e0d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **87.378 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images or crash dump remained. Inputs were
+injected, rendering minimized/background and movies skipped; physical input,
+audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/conditions-focused.log`, `logs/conditions-joins.log`,
+`logs/conditions-generation.log`, `logs/independent-conditions-comparison.json`,
+`logs/conditions-build.log`, `logs/conditions-game.log`,
+`logs/conditions-native-timing.log`, `logs/conditions-patch-checks.log`,
+`logs/independent-conditions-game-check.json`. Native Mac title validation
+is pending (MAC-089); the full independence goal remains active.
+
 ## Independent string-instruction lowering (Windows acceptance passed, 2026-10-27)
 
 PR #375 implementation `c4a56fbe` replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
