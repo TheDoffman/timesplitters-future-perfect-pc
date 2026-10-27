@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e00e04af4574b2177104c11260e17f8b4d9034ddfaf49b468f5edbfaf3911b6e",
+  "loaderSha256": "770703b8ed58c926c1c40e4a4472f780ab084beb6c6fe87f618d9f2de49e8df2",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1570,6 +1570,14 @@
       "sha256": "6719d10e202746e0d5d7f29ed418f63bcc1b0ecb610ffbd9f5691eb2de43675e",
       "targets": [
         "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "independent-translation-moves.patch",
+      "sha256": "aff7178e08b14fe5f1ff3191361b2267442a1086e48f01bd192278ca49b7a572",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_movsx_registers.py"
       ]
     }
   ]

@@ -1,3 +1,51 @@
+## Independent data-transfer and stack lowering (2026-10-26)
+
+Continuing PR #370 from `dc48f8df`, project `translation_moves.py` replaces
+MOV/MOVZX/MOVSX/LEA/PUSH/POP emission. The compatibility patch removes the old
+method bodies after replaying historical title instrumentation. Own emission
+retains load/store/after-store/push policy hooks and frame publication. LEA
+ignores segment bases; word stack operations honor operand-size overrides;
+POP memory addresses resolve after the stack increment. POP ESP overwrites
+that increment with the popped value. Trace names encode UTF-8 bytes safely.
+Other opcode families, flags, runtime macros and services remain separate work.
+
+Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- Focused checks: **119 passed in 8.78 seconds**. The broader suite initially
+  passed 578 tests and failed four fixture checks: three historical snapshots
+  incorrectly included this new patch without its required title hooks, and
+  one asserted the previous last patch. The repaired fixtures still upgrade
+  to the complete stack and check repeat application. Final patch/context rerun:
+  **41 passed in 675.65 seconds**. Context/backlog checks: **21 passed in 3.48
+  seconds**; final context/index and staged whitespace checks passed.
+- Original native fixtures compile emitted instructions against production
+  macros: byte/word sign extension, preserving subregister writes, title hook
+  ordering, frame publication, segment-free LEA, PUSH/POP ESP/SP, post-increment
+  memory destinations, word overrides and quoted/non-ASCII trace bytes.
+  Copied modules run without the toolkit; installed translator consumers pass.
+- Regeneration: **5 of 21 files byte-identical**. Full comparison of the other
+  16 accounts for comments, signed-memory expression spelling, stack temporary
+  forms and **six POP ESP corrections**. No unexplained changes remain. This
+  is not a claim of identical semantics for the corrected instructions.
+  Supported-US executable hash and generation fingerprint verified.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave:
+  forward movement 11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused
+  samples with frozen ticks and 60 resumed samples advancing. Last checkpoint
+  93.601 seconds; exit 0; start/pause/resume captures reviewed. Profiles and
+  signatures/canonical fixture preserved; no crash artifacts or partitions/lock.
+  Personal saves/settings unused.
+- Tested executable SHA-256:
+  `37ff244afbb4532885514245f584da1ce614896a007888b3f0324760007645f9`.
+
+Injected input, minimized/background rendering, original 60 FPS and skipped
+movies do not establish physical input, audio, foreground pacing or full-level
+coverage. All three workflows on preceding `dc48f8df` passed. New-head CI and
+native Mac generation/build/gameplay remain separate; MAC-079 records the gap.
+Evidence: `logs/independent-moves-*`, the ignored generation baseline under
+`private/pipeline/move-acceptance-baseline`, and
+`private/test-saves/independent-moves`. The overall replacement goal remains
+active, with upstream notices retained while remaining source/data is used.
+
 ## Independent C operand emission (2026-10-26)
 
 Continuing PR #370 from `6e51a54b`, the lifter's operand formatter bodies and

@@ -26,9 +26,11 @@ math must preserve callback order and exceptional-input behavior, not only
 ordinary output coordinates. Local-register prototypes alone are not integration.
 
 `tests/test_repo_context.py` checks effective patch order rather than only
-filename sorting. The radial stick deadzone patch is now the final record,
-after zero-base-indices and the keyboard reload patch; update that ordering
-assertion when intentionally adding another final patch.
+filename sorting. The independent translation-moves patch is the final record,
+after radial stick deadzone and all title instrumentation that its removed
+handlers contain. Historical checkpoint fixtures omit this replacement until
+the complete-stack upgrade. Update the ordering assertion when intentionally
+adding another final patch.
 
 ## Working note (not committed)
 

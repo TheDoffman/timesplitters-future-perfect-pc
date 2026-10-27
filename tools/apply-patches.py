@@ -81,6 +81,12 @@ def patch_records(paths):
     if radial:
         paths.remove(radial)
         paths.append(radial)
+    # Own instruction bodies replace the final title-instrumented handlers.
+    # Replay all historical instrumentation first so older stacks still unwind.
+    own_moves = by_name.get('independent-translation-moves.patch')
+    if own_moves:
+        paths.remove(own_moves)
+        paths.append(own_moves)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

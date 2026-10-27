@@ -14,7 +14,7 @@ function discovery, labels, cross-references, analysis orchestration/output/cach
 the library-symbol adapter, generation driver, function classifier, manual-source
 scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
-indirect-branch feedback, unresolved-address diagnostics and C operand emission.
+indirect-branch feedback, unresolved-address diagnostics, C operand emission and basic data-transfer/stack lowering.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -64,6 +64,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Translator layout and HLE symbol bindings | Project-owned `translation_layout.py` and `translation_hooks.py`; production modules alias them | Metadata/bounds/replacement fixtures, lexical markers, unique bindings, return/register ABI checks, native generated-thunk execution, regeneration/build and isolated gameplay; native Mac pending |
 | Branch feedback and unresolved diagnostics | Project-owned `branch_feedback.py` and `unresolved_report.py`; compatibility CLIs use them | Cumulative observations, saturation, overlaps, independent seeds, real section/backing metadata, standalone CLI and production consumers; generation/build/game validation in STATUS.md, native Mac pending |
 | C operand emission | Project-owned `translation_operands.py`; lifter imports replace its formatter bodies and tables | Native subregister/FS/address-width/floating-stack and production memory-macro tests, standalone copy, existing consumers, regeneration/build/game; native Mac pending |
+| Basic data-transfer and stack instructions | Project-owned `translation_moves.py` supplies MOV, MOVZX, MOVSX, LEA, PUSH and POP | Native extension/hook/stack-alias/segment/trace contracts, standalone copies, existing consumers, generation/build/game; native Mac pending |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -519,3 +520,31 @@ The compatibility patch removes the old helper bodies and tables. Opcode/flag
 handlers, naming/export data and remaining translator orchestration are still
 upstream. Tests are in `tests/test_translation_operands.py`, registered on both
 CI hosts; measured generation/build/game acceptance is in STATUS.md.
+
+
+## Data-transfer and stack instruction lowering
+
+`translation_moves.py` owns MOV/MOVZX/MOVSX/LEA/PUSH/POP C emission. Shared
+project load/store/after-store/push policy hooks and frame publication remain
+explicit. Extension validates operand widths; invalid vector-to-integer MOVSX
+fails before emission. The inherited test now requires that error instead of
+an invalid assignment with a warning comment. No compiled valid-case checks
+are disabled.
+
+LEA computes an offset without adding a segment base. PUSH reads its source
+before changing ESP. POP resolves memory destinations after the increment;
+POP ESP then replaces ESP with the popped value, while POP SP preserves the
+high bits after increment. Word-sized stack operations retain prefix/register
+width information. Segment selectors keep the existing unmodeled policy.
+Trace names use UTF-8 byte escapes, including quotes, control bytes and non-BMP
+characters, without assuming JSON escapes are valid C string escapes.
+
+Original native fixtures compile emitted operations with production macros,
+checking title-hook effects/order, frame publication, all byte sign-extension
+values, word memory sign extension, narrow register preservation, LEA with FS,
+stack aliases/addresses, word immediates and trace bytes. Copies of the two own
+modules run without the toolkit. The complete patch loader applies the body
+replacement after older title instrumentation so recorded stacks can unwind
+and replay. Fingerprints and both CI hosts include the source and tests.
+XCHG, arithmetic/flags, control transfers, SIMD/FPU handlers, orchestration and
+runtime ABI macros remain separate parts of the replacement goal.

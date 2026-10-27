@@ -1,6 +1,19 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-translation-moves.patch` replaces MOV/MOVZX/MOVSX/LEA/PUSH/POP
+bodies with `translation_moves.py`. The loader applies it after historical title
+instrumentation; the own implementation retains load/store/after-store/push
+policy hooks and frame publication. LEA ignores segment bases. Stack lowering
+retains operand-size overrides, resolves POP memory after ESP increments and
+handles POP ESP/SP aliasing explicitly. Trace names use UTF-8 byte escapes.
+The inherited impossible MOVSX-vector fixture now requires a generation error.
+Native fixtures compile emitted moves against production ABI macros; standalone
+copies and installed consumers check the boundary. XCHG and other opcode/flag
+families remain separate replacement work.
+Historical checkpoint fixtures exclude the new move replacement until upgrading
+to the complete title instrumentation stack; upgrade and repeated-build checks
+still exercise the replacement. The context index asserts its final loader order.
 `independent-translation-operands.patch` removes the lifter's operand formatter
 bodies/tables and imports `translation_operands.py`. Own expressions handle
 subregister preservation, signed/unsigned/float memory, FS, absolute address

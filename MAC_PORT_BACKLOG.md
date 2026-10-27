@@ -212,6 +212,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-076 | Independent translation layout and hook planning | Awaiting validation |
 | MAC-077 | Independent branch feedback and unresolved diagnostics | Awaiting validation |
 | MAC-078 | Independent C operand emission | Awaiting validation |
+| MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5901,6 +5902,24 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate with `--generate`, build, verify isolated movement/fire/pause/resume.
 - **Mac implementation and evidence:** Windows source/native-C evidence does not
   establish Mac generation/gameplay or full x87 precision; see STATUS.md.
+
+### MAC-079 - Independent data-transfer and stack lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own MOV/MOVZX/MOVSX/LEA/PUSH/POP emission preserves title
+  hooks and implements segment-free LEA and stack width/address/alias ordering.
+- **PC source:** Continuing PR #370; `tools/translation_moves.py`,
+  `independent-translation-moves.patch`, final replacement ordering in the
+  patch loader, generation hashes and original/native/consumer fixtures.
+- **PC validation:** Native sign extension, hook order/frame publication,
+  stack aliases/word widths and trace bytes; generation/game details in STATUS.md.
+- **Existing Mac support:** Shared Python lowering and existing guest ABI;
+  native compiler fixtures and inherited consumers registered on both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run move/operand/fingerprint/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows validation does not establish
+  Mac generation or gameplay. See STATUS.md for measured limits.
 
 ## Entry template
 
