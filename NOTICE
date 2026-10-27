@@ -20,6 +20,8 @@ Its GPL-3.0 license, original xboxrecomp MIT notice, third-party attribution,
 LGPL-2.1 text and contributor credits are preserved in LICENSES/ts3FPrecomp.
 Those components retain their original notices and licenses; this project does
 not replace them or claim their authorship. See LICENSES/README.md for details.
+The complete pristine runtime source at that revision is also preserved under
+vendor/ts3FPrecomp/source and reconstructed locally by tools/prepare-runtime.py.
 
 Launcher/game icon lettering attribution remains in
 tools/launcher/GameMonogram.NOTICE.txt. External dependencies, including SDL,

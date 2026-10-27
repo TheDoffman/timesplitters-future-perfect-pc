@@ -6,6 +6,16 @@
 #include <float.h>
 #include <string.h>
 #include "pc_gpu_ack.h"
+/* Keep references to live integer/vector TLS cells in these profiled routines.
+ * New generator files support this protocol; legacy/manual sources retain
+ * their original aliases. No register values are copied or deferred. */
+#ifndef RECOMP_USE_GPR_REFS
+#define RECOMP_USE_GPR_REFS 1
+#endif
+#ifndef RECOMP_GPR_ANCHORS
+#define RECOMP_GPR_ANCHORS(site) \
+    ((site)==0x18EA90u || (site)==0x21450u || (site)==0x214C0u || (site)==0x22BE0u)
+#endif
 /* Entry callbacks precede this audited US affine-transform fast path. */
 extern int pc_model_transform_entry(void);
 #define RECOMP_FAST_ENTRY(site) ((site)==0x151E80u && pc_model_transform_entry())
@@ -14,6 +24,7 @@ extern int g_tsfp_native_timing_active;
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
+#include "pc_native_wind_clock.h"
 #undef RECOMP_AFTER_STORE32
 #define RECOMP_AFTER_STORE32(site,address) \
     do { PC_GPU_ACK_AFTER_STORE32(site,address); \
@@ -199,7 +210,14 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * derives its pose from that phase. Its gate otherwise discards subticks.
      * EAX is replaced by the entity state before use; event crossings, clamp
      * and retirement still belong to the original routine. */
-    if ((site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Venice/Subway callbacks already subtract fractional seconds. Their entry
+     * gates admit the same intervals as the level dispatcher; EAX is replaced
+     * by each callback's state pointer before the timer uses it. */
+    /* Registered yaw callback224170 also integrates float seconds. Its EAX
+     * gate is replaced by entity flags before angle/clamp/event processing. */
+    /* Deferred actor voice requests and their shared cooldown (164E00) also
+     * consume float seconds; the entry EAX is discarded before queue handling. */
+    if ((site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
@@ -335,12 +353,25 @@ static inline float pc_native_boost_drain(float left,float charge)
     ((site)==0x259060u ? pc_native_boost_drain((float)(left),(float)(right)) : \
     (site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
+/* Only these wind loop reads depend on the exact published clock. Keep
+ * other numeric consumers independent of that clock and its host storage. */
+static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t value)
+{
+    if(address==0x4E7944u && g_tsfp_native_timing_active) {
+        float h=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(h==0.f)return 0;
+        if(pc_native_wind_clock_matches(&g_tsfp_native_step,h,value))return 1;
+    }
+    return value;
+}
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
     ((site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
     (site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
-    pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
+    (((site)==0x1DDF7Bu || (site)==0x1DDF96u) ? \
+     pc_native_wind_global_load((uint32_t)(address),(uint32_t)(value)) : \
+     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value))))
 /* Player+0x1008 is halved by the US update at 0xD5F60. Its hit-response
  * vector (+0xF4/+0xF8/+0xFC) likewise decays by 0.9 after each world step.
  * Once the update runs every fractional frame, retain these decay rates in game time.
@@ -524,6 +555,7 @@ extern void pc_native_character_update(void);
 extern void pc_native_kind35_rng(void);
 extern void pc_native_kind35_target(void);
 extern void pc_native_physics_solver(void),pc_native_physics_random(void);
+extern void pc_native_wind_step(void);
 extern int pc_native_walk_trace_requested(void);
 extern int pc_native_walk_collision_requested(void),pc_native_walk_sweep_requested(void);
 extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
@@ -536,7 +568,8 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0xD2CB7u ? pc_native_player_statistics : \
+    ((site)==0x1DDF91u ? pc_native_wind_step : \
+    (site)==0xD2CB7u ? pc_native_player_statistics : \
     (site)==0x120BBFu ? pc_native_character_scale : \
     ((site)==0x126029u && pc_native_character_trace_requested()) ? pc_native_character_update : \
     (site)==0xF0CA7u ? pc_native_kind35_target : \

@@ -198,6 +198,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-061 | Host save-drive metadata and inline drive selection | Awaiting validation |
 | MAC-062 | Stable and named game release channels | Awaiting validation |
 | MAC-063 | Projected enemy health bars (issue #102) | Awaiting validation |
+| MAC-064 | Self-contained runtime source | Awaiting validation |
+
 | MAC-065 | Independent game-disc import | Awaiting validation |
 | MAC-066 | Independent executable analysis | Awaiting validation |
 | MAC-067 | Independent disassembler input | Awaiting validation |
@@ -3925,6 +3927,99 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Procedural wind simulation (PR #367 follow-up):** Shared
+  `pc_native_wind*` source and `zz-native-wind-history.patch` subdivide the
+  coupled oscillator with per-owner history and exact game-clock admission.
+  Original/whole/unsupported-scope loops remain authored; no host adapter,
+  setting or save format differs. The portable solver/ownership/clock and
+  wrapper-scan tests run on both CI hosts; original-code tests require the
+  supported local XBE. Windows local original graphs cover two-owner data/
+  matrices, pause/resume, fallback and missing-hook/frozen-matrix controls.
+  A normal current-source rebuild and live wind rendering/performance remain
+  pending; physical Mac acceptance remains **Awaiting validation**.
+  [Contract and limits](docs/agent-context/native-wind.md).
+
+- **Sampler allocation recovery (PR #367 follow-up):** Common
+  `zz-sampler-cache-retry.patch` creates before replacing a sampler-cache owner,
+  never retains failed entries, retries allocations while preserving live
+  stages, and bounds repeated failure logging. Both hosts use this RHI policy;
+  no Mac adapter or gameplay clock differs. Six Windows full-module checks pass,
+  including the rejected pre-fix retry/eviction behavior and unchanged normal
+  binding digest. The updated normal Windows build and bundled gates pass;
+  its26 state/context checks include forward application to the original module.
+  Hosted Mac checks and physical driver-failure/gameplay
+  validation remain separate. This resource-recovery fix is not a measured FPS
+  improvement. [Evidence](STATUS.md#sampler-allocation-recovery-and-current-native-cpu-attribution-2026-10-26).
+
+- **Pushed-array address recurrence (PR #367 follow-up):** Common
+  HLE strided copies advance a32-bit guest offset with original wrapping,
+  retaining fresh reads, copy widths/order, destination width and fallbacks.
+  Windows/Mac share `zz-strided-vertex-increment.patch`; no adapter or setting
+  changes. The existing portable full-gather fixture adds large buffers,
+  modular-wrap cases and a compiling widened-source negative control on both
+  native CI hosts. Windows full gather/wrap/guard checks and clean Original60/
+  native240 crowd runs pass; component timing gains and small-case/large-case
+  limits are recorded in [STATUS](STATUS.md#pushed-array-address-recurrence-and-current-crowd-profile-2026-10-26).
+  Physical Mac gameplay/performance remains **Awaiting validation**.
+
+- **Shader constant uploads (PR #367 follow-up):** Common RHI vertex shader
+  state compares fresh constant bytes and skips invalidation for unchanged
+  values; changed poses still upload, new buffers remain dirty, screen zoom
+  retains its policy and failed maps retry. Windows/Mac share the same
+  `d3d8_vsh.c` tail patch; legacy GL retains its direct uniform path. Portable
+  original-reference/alias/FP/dirty/failure fixtures run on both native CI hosts.
+  Windows selected GPU replay preserves hand/weapon coverage and fresh poses;
+  seven alternating timing pairs per frame show modest0.85–1.79% lower median
+  renderer intervals, with variability. See [STATUS](STATUS.md#repeated-shader-constant-uploads-2026-10-26)
+  for source hashes, pixel-rounding controls and scope. Physical Mac GPU/live
+  acceptance remains **Awaiting validation**; Windows does not verify it.
+
+- **Completed local state diagnostics (PR #367 follow-up):** Shared
+  `pc_native_local_trace.h` observes local aim/camera and animation timelines
+  at the completed US gameplay-update boundary in Original/native modes.
+  It is default-off, read-only and row/byte bounded; no Mac adapter or saved
+  setting is added. Collector/writer/guard/mutation tests run on both native CI
+  hosts. CPU observations do not prove rendered poses or physical input latency.
+  Windows live results belong in STATUS; physical Mac gameplay remains
+  **Awaiting validation**.
+
+- **Packed vertex conversion (PR #367 follow-up):** Shared HLE
+  `zz-vertex-expand-strides.patch` dispatches byte widths/formats per attribute;
+  the following `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+  Both retain fresh input, zero padding, arithmetic,
+  allocation/failure policy and per-vertex attribute order. The fixed-function
+  selector retains its generic body. No OS adapter is needed; the portable
+  noinline compiler boundary keeps its existing scope. Full-function reference,
+  alias/overlap, FP, guard-page and negative-control tests join both native CI
+  hosts. Windows CPU-kernel results are in STATUS; live Windows/Mac acceptance
+  and causal game FPS improvement remain **Awaiting validation**.
+
+- **Live register references (PR #367 follow-up):** Shared generator/template
+  policy retains addresses of the same live integer/vector TLS cells in four profiled
+  routines (18EA90/21450/214C0/22BE0). No values are cached, ABI layout changed or
+  guest clock altered. Common generated-code/callback/alias/thread fixtures
+  run on both hosts. Regeneration is required; legacy/manual sources keep
+  existing aliases. No Mac adapter is needed. Windows build/tests and live
+  measurements are recorded in STATUS as available; physical Mac acceptance
+  remains **Awaiting validation**.
+
+- **Native PC locations (PR #367 follow-up):** The existing opt-in Windows
+  CPU sampler can report bounded instruction RVAs, symbol offsets and PDB
+  source basenames/lines for one requested symbol. DbgHelp is Windows-specific;
+  the existing Mac no-op sampler remains unchanged. Portable selection/output
+  controls run on both hosts, but do not provide a Mac native-stack adapter.
+  This is diagnostic capability only; it changes no common game timing or
+  rendering policy. Mac gameplay acceptance remains **Awaiting validation**.
+
+- **Immutable render-state reuse (2026-10-26, commit8d87314c):** Common RHI
+  `zz-render-state-cache.patch` retains up to32 exact descriptors each for
+  blend, depth/stencil and rasterizer state objects across material switches.
+  Dynamic stencil references/scissor rectangles and all guest updates remain
+  fresh. Shared complete-module bind/ownership fixtures join Windows/macOS CI.
+  No OS adapter or legacy-GL change is needed. Windows build/tests pass as
+  recorded in STATUS; physical Mac scene/rendered acceptance remains
+  **Awaiting validation**.
+
 - **Player clear-slide guard (2026-10-25, PR #366):** Shared
   `pc_native_walk_guest.h` scopes fractional C54A0 calls so a completed clear
   slide selects the existing small-motion guard. Blocked/Original/whole paths
@@ -3952,6 +4047,30 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Private-XBE cases skip on hosts lacking that asset. Actual frame scheduling,
   mesh/GPU rendering, collision services and physical Mac remain
   **Awaiting validation**; see STATUS for scope and measurements.
+
+- **Deferred actor voices (PR #367 follow-up):** Shared numeric policy repairs
+  exact164E00 elapsed-time admission. Original normal caller, queue setters,
+  scheduler and RNG fixtures cover timing/cooldown/handles through240 with
+  controlled voice definitions/audio consumers. No host adapter or audio clock
+  change is added. Public scope checks run on both hosts; original routines
+  skip without the private XBE. Live/audible and physical Mac acceptance remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
+
+- **Registered yaw callback (PR #367 follow-up):** Shared numeric policy admits
+  fractional entry at224170. Original registration/entity passes, dirty yaw
+  cache and affine point fixtures verify fresh CPU propagation through240;
+  original sound/clamp/event paths remain. No adapter is added. Asset-dependent
+  originals skip without the supported XBE; public scope checks run on both
+  hosts. Live collision/rendered pixels and physical Mac gameplay remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
+
+- **Venice/Subway callback clocks (PR #367 follow-up):** Shared numeric policy
+  admits positive fractional time at the original timed callbacks' entries.
+  Original dispatch/reset/countdown/event tests run through240; Subway also
+  checks original RNG/nonrepeat choices with controlled sound completion.
+  No Mac adapter is needed; private-XBE checks skip without
+  assets. Audible/live scene and physical Mac acceptance remain
+  **Awaiting validation**. See STATUS and the script-clock guide.
 
 - **Fresh TRAP steps (2026-10-25, PR #364):** Shared `pc_native_trap_guest.h`
   couples fractional force/travel with carried-tick contact lifetime, replacing
@@ -4241,6 +4360,21 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   module. Windows build/tests pass; native Mac execution is awaiting validation.
   Gameplay/performance evidence and limits are recorded in STATUS.
 
+  PR #367 follow-up outlines first-use parsing and inlines the cached TLS guard
+  in the same common module. Per-thread startup settings, concurrent quiet calls
+  and enabled diagnostics have a Windows full-module regression with a rejected
+  process-wide-cache mutation. The POSIX fixture uses pthreads; no new Mac adapter
+  or atomic compiler extension is needed. Physical Mac execution and game pacing
+  remain awaiting validation.
+
+
+- **State-layout slot preparation (2026-10-26, PR #367):** Shared
+  `zz-state-layout-slots.patch` reuses only layout-to-slot integer mappings in
+  common HLE state forwarding. Each draw still reads live guest values; no Mac
+  adapter is needed. Full-module original/current parity and layout/stale-value
+  controls run on both native CI hosts through `test_state_layout_slots.py`.
+  Windows source checks pass; physical Mac execution and live performance are
+  awaiting validation. Component timing does not establish game FPS gains.
 
 - **60-step presets through240 (2026-10-24, PR #325):** At the user's request,
   the shared game menu and launcher now offer Original60 plus120/180/240 Beta.
@@ -5624,6 +5758,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Shared C# fixtures plus Windows host
   results are recorded in [STATUS.md](STATUS.md#release-channel-strategy-2026-10-22).
   Native execution/visual acceptance is pending; Windows is not Mac evidence.
+
+### MAC-064 - Self-contained runtime source
+
+- **Status:** Awaiting validation
+- **PC behavior:** Setup reconstructs the pinned runtime from bundled source,
+  without downloading the original runtime repository. Existing checkouts and
+  patch ledgers are preserved; third-party dependency downloads keep their pins.
+- **PC source:** `f57875a5`, [PR #369](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/369);
+  `vendor/ts3FPrecomp`, `tools/prepare-runtime.py`, `tsfp.ps1`, shared CI and packaging.
+- **PC validation:** See [STATUS](STATUS.md#self-contained-runtime-source-2026-10-26).
+- **Existing Mac support:** `tools/build-native-mac.py --setup` uses the same
+  Python importer, original commit, source bytes and complete shared patch stack.
+  Mac release source ZIPs include the tracked snapshot.
+- **Mac adaptation needed:** No separate implementation; run native host checks.
+- **Mac acceptance checks:** Run snapshot/patch tests and native setup/build on
+  Apple Silicon, verify executable modes and direct SDL/XbSymbolDatabase pins,
+  inspect package source ZIPs and confirm existing local files survive setup.
+- **Mac implementation and evidence:** At `f57875a5`, macOS CI passed snapshot
+  and historical patch upgrades, runtime regressions and asset-free GPU contracts.
+  Native Mac game build/package execution with private data remains unverified.
 
 ### MAC-065 - Independent game-disc import
 

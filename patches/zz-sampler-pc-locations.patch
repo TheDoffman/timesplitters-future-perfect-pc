@@ -1,0 +1,116 @@
+--- a/src/kernel/recomp_sample.c
++++ b/src/kernel/recomp_sample.c
+@@ -22,6 +22,8 @@
+  *   RECOMP_SAMPLE_DUMP=<path>   write the full per-symbol table there, rewritten
+  *                               at every report so a killed run leaves one
+  *   RECOMP_SAMPLE_DEPTH=<n>     native frames per sample (8; 1 is leaf only)
++ *   RECOMP_SAMPLE_PC_SYMBOL=<s> exact executable symbol for bounded native-PC
++ *                               and PDB source-line rows in the dump (off)
+  *
+  * Two views come out. "Leaf" is the function the thread was executing:
+  * exclusive time, which names the hot instruction sequences. "Inclusive" is
+@@ -87,6 +89,7 @@
+ static int   s_thread_count;
+ static DWORD s_self_tid, s_main_tid;
+ static int   s_depth = 8;
++static char  s_pc_symbol[96];
+ static double s_hz = 1000.0;
+ static double s_report_secs = 10.0;
+ static LARGE_INTEGER s_qpf, s_t0;
+@@ -273,6 +276,7 @@
+ typedef struct {
+     uintptr_t addr;          /* the sampled address */
+     uintptr_t base;          /* symbol start, for grouping */
++    unsigned  symbol_complete; /* no truncated/unresolved names in exact PC reports */
+     char      name[96];
+     char      module[32];
+ } ResolvedAddr;
+@@ -326,6 +330,7 @@
+             if (SymFromAddr(GetCurrentProcess(), (DWORD64)addr, &disp, sym)) {
+                 snprintf(r->name, sizeof r->name, "%s", sym->Name);
+                 r->base = (uintptr_t)sym->Address;
++                r->symbol_complete = sym->NameLen < sizeof r->name;
+             } else {
+                 snprintf(r->name, sizeof r->name, "%s+0x%llx", r->module,
+                          (unsigned long long)(addr - (uintptr_t)mod));
+@@ -445,6 +450,55 @@
+ 
+ #define AGG_MAX 40000
+ 
++/* Diagnostic only: report the original instruction addresses before symbol
++ * aggregation loses their offsets. All threads have resumed before this runs.
++ * Limit output to one exact executable symbol and account for omitted rows. */
++#define SAMPLE_PC_MAX 512u
++static int pc_symbol_setting(const char *value)
++{
++    size_t n = value ? strlen(value) : 0;
++    s_pc_symbol[0] = 0;
++    if (!n || n >= sizeof s_pc_symbol || strpbrk(value, "\t\r\n")) return 0;
++    memcpy(s_pc_symbol, value, n + 1);
++    return 1;
++}
++
++static void report_pc_locations(const SampleThread *t, FILE *dump)
++{
++    unsigned i, matched = 0, emitted = 0;
++    unsigned long long samples = 0, omitted = 0;
++    if (!dump || !s_pc_symbol[0]) return;
++    fprintf(dump, "# pc\tsamples\texecutable_rva\tsymbol_offset\tfile\tline\n");
++    for (i = 0; i < SAMPLE_SLOTS; ++i) {
++        const SampleSlot *slot = &t->leaf[i];
++        const ResolvedAddr *resolved;
++        IMAGEHLP_LINE64 line;
++        DWORD displacement = 0;
++        const char *file = "?", *at;
++        unsigned source_line = 0;
++        if (!slot->addr || slot->addr < s_exe_lo || slot->addr >= s_exe_hi) continue;
++        resolved = resolve(slot->addr);
++        if (!resolved || !resolved->symbol_complete || strcmp(resolved->name, s_pc_symbol)) continue;
++        ++matched; samples += slot->count;
++        if (emitted == SAMPLE_PC_MAX) { omitted += slot->count; continue; }
++        memset(&line, 0, sizeof line);
++        line.SizeOfStruct = sizeof line;
++        if (SymGetLineFromAddr64(GetCurrentProcess(), (DWORD64)slot->addr,
++                                &displacement, &line) && line.FileName) {
++            file = line.FileName;
++            for (at = file; *at; ++at)
++                if (*at == '/' || *at == '\\') file = at + 1;
++            source_line = line.LineNumber;
++        }
++        fprintf(dump, "pc\t%u\t0x%llx\t0x%llx\t%.96s\t%u\n", slot->count,
++                (unsigned long long)(slot->addr - s_exe_lo),
++                (unsigned long long)(slot->addr - resolved->base), file, source_line);
++        ++emitted;
++    }
++    fprintf(dump, "# pc coverage: symbol=%s addresses=%u emitted=%u samples=%llu omitted_samples=%llu\n",
++            s_pc_symbol, matched, emitted, samples, omitted);
++}
++
+ /* A chain folded to symbol bases, so two samples at different instructions
+  * of the same captured functions count together. */
+ typedef struct {
+@@ -640,6 +694,8 @@
+                 fprintf(dump, "leaf\t%u\t%s\t%s\n", agg[k].count,
+                         agg[k].r->name, agg[k].r->module);
+         }
++
++        report_pc_locations(t, dump);
+ 
+         if (t->chain_dropped)
+             fprintf(stderr, "      caller chains dropped: %u (table full)\n", t->chain_dropped);
+@@ -791,6 +847,7 @@
+     v = getenv("RECOMP_SAMPLE_DEPTH");
+     if (v && atoi(v) > 0) s_depth = atoi(v);
+     if (s_depth > SAMPLE_MAX_DEPTH) s_depth = SAMPLE_MAX_DEPTH;
++    pc_symbol_setting(getenv("RECOMP_SAMPLE_PC_SYMBOL"));
+ 
+     s_main_tid = GetCurrentThreadId();
+     s_exe = GetModuleHandleW(NULL);
+@@ -802,6 +859,7 @@
+      * doing it again is refused harmlessly. Without it, addresses resolve to
+      * module+offset only. */
+     SymSetOptions(SymGetOptions() | SYMOPT_DEFERRED_LOADS | SYMOPT_UNDNAME);
++    if (s_pc_symbol[0]) SymSetOptions(SymGetOptions() | SYMOPT_LOAD_LINES);
+     SymInitialize(GetCurrentProcess(), NULL, TRUE);
+ 
+     InitializeCriticalSection(&s_lock);

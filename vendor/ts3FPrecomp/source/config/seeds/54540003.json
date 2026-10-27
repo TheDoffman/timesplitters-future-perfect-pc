@@ -1,0 +1,14 @@
+[
+ {
+  "start": "0x003AAEC3",
+  "note": "XPP device-type init: XInitDevices calls [record+4] over the records at 0x3AABE4..0x3AABF4 in the executable XPP section. Observed at runtime."
+ },
+ {
+  "start": "0x003AB4FA",
+  "note": "XPP device-type init: XInitDevices calls [record+4] over the records at 0x3AABE4..0x3AABF4 in the executable XPP section. Observed at runtime."
+ },
+ {
+  "start": "0x0002A940",
+  "note": "Indirect-call target observed at runtime (loading, before the first FileNotFound); an SEH prologue straight after sub_0002A8F0's ret, with no padding, so no pass finds it."
+ }
+]

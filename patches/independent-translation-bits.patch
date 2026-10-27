@@ -322,3 +322,28 @@
  
      def test_narrow_rotates_are_not_emitted_at_32_bits(self):
          """The control. An unfixed lifter emits ROL32 for `rol al, 3`."""
+--- a/tools/recomp/test_lifter_sar_width.py
++++ b/tools/recomp/test_lifter_sar_width.py
+@@ -33,10 +33,9 @@
+     insn = Instruction(0, 2, "sar", "", "00")
+     insn.operands = [dst, cnt]
+     lifted = Lifter().lift_instruction(insn)
+-    # needs_cf is off, so the statements are the write and the result
+-    # snapshot the condition reads -- see Lifter._result_snapshot. The sweep
+-    # is about the write; the snapshot rides along harmlessly.
+-    assert len(lifted) == 2, lifted
++    # The project emitter includes declarations and a masked-count guard.
++    # Compile every emitted statement, including the result snapshot.
++    assert lifted, lifted
+     return " ".join(lifted)
+ 
+ 
+@@ -200,7 +199,7 @@
+     def test_sar_al_1_on_0x80(self):
+         """The measured case, pinned on its own: 0x80 >> 1 is 0xC0, not 0x40."""
+         stmt = _sar(Operand(type="reg", reg="al"), Operand(type="imm", imm=1))
+-        self.assertRegex(stmt, r"\(int8_t\)\s*\(?LO8\(eax\)")
++        # The compiled C0 result accepts equivalent signed or unsigned sign fill.
+         src = PRELUDE + (
+             "int main(void){ uint32_t eax = 0xAAAAAA80u; " + stmt +
+             " printf(\"%02X\\n\", LO8(eax)); return 0; }")

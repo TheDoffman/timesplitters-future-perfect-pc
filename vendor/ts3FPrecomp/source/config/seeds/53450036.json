@@ -1,0 +1,42 @@
+[
+ {
+  "start": "0x000CB940",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x000F3359",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00185EA2",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x001F04F5",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x002120E5",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x0021EBE0",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x0021F860",
+  "note": "Base of section PSGSFD_P, reached only through the pointer table at .rdata 0x281640 (next to PSGSFD_I's 0x0021EBE0); unresolved icall observed at runtime, then a fault at 0x10000FFFF."
+ },
+ {
+  "start": "0x00220104",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00220B0B",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00169350",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ }
+]

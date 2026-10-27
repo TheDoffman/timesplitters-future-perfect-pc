@@ -1,5 +1,10 @@
 # Investigation memory and handoffs
 
+The context ownership map now assigns `vendor/**` to the runtime guide.
+The root AGENTS rule identifies the bundled pristine base and offline importer;
+the ignored patched runtime remains the place to inspect effective behavior.
+Snapshot content is provenance, not a second place to implement fixes.
+
 <!-- packet:start -->
 Before a broad search, read the repository map and relevant subsystem guide,
 then use the bounded patch finder. Keep exact path/symbol findings in ignored

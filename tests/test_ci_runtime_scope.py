@@ -11,6 +11,13 @@ scope = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scope)
 
 
+@pytest.mark.parametrize('path', ['vendor/ts3FPrecomp/snapshot.json',
+                                 'vendor/ts3FPrecomp/source/src/kernel/kernel_bridge.c',
+                                 'tools/prepare-runtime.py', 'tests/test_runtime_snapshot.py'])
+def test_bundled_runtime_changes_select_every_runtime_suite(path):
+    assert all(scope.affected([path]).values())
+
+
 def test_required_workflow_reports_on_every_pull_request():
     filename = 'runtime-patches.yml'
     workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()

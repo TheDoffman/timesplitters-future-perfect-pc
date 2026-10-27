@@ -69,10 +69,7 @@ try {
             Invoke-Checked $Python @('-m', 'venv', (Join-Path $projectRoot '.venv'))
         }
         Invoke-Checked $envPython @('-m', 'pip', 'install', '-r', (Join-Path $projectRoot 'requirements.txt'))
-        if (!(Test-Path -LiteralPath $toolRoot)) {
-            Invoke-Checked 'git' @('clone', 'https://github.com/nemonicicon/ts3FPrecomp.git', $toolRoot)
-            Invoke-Checked 'git' @('-C', $toolRoot, 'checkout', '--detach', $revision)
-        }
+        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\prepare-runtime.py'), '--destination', $toolRoot)
         $actualRevision = & git -C $toolRoot rev-parse HEAD
         if ($LASTEXITCODE -ne 0 -or $actualRevision -ne $revision) { throw 'Tool checkout differs from the pinned revision.' }
         Apply-LocalPatches
@@ -120,6 +117,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
                         (Join-Path $projectRoot 'tests\test_frame_clock.py'),
                         (Join-Path $projectRoot 'tests\test_native_timing.py'),
+                        (Join-Path $projectRoot 'tests\test_native_wind.py'),
                         (Join-Path $projectRoot 'tests\test_frame_interpolation.py'),
                         (Join-Path $projectRoot 'tests\test_prediction_targets.py'),
                         (Join-Path $projectRoot 'tests\test_motion_settings.py'),

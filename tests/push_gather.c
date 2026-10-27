@@ -16,10 +16,12 @@
 #include <unistd.h>
 #endif
 typedef unsigned int UINT;
-#define RAM (1024u*1024u)
+#define RAM (4u*1024u*1024u)
 #define CONTIG_BASE 0x10000u
 static uint8_t *memory;
-#define HLE_PTR(va) (memory+(uint32_t)(va))
+/* Production widens the expression after its guest arithmetic. Do not hide
+ * a widened-source bug here by truncating every pointer argument to32 bits. */
+#define HLE_PTR(va) (memory+(uintptr_t)(va))
 #define HLE_MEM32(va) (*(uint32_t *)HLE_PTR(va))
 static uint32_t g_push_fmt[16],g_push_off[16],g_push_known,object,g_push_failed;
 static int fail_alloc;
@@ -90,6 +92,19 @@ static void ordinary_layout(void) {
     }
 }
 static volatile uint32_t sink;
+static void wrap_checks(void) {
+    const uint32_t firsts[]={0,1,0xfffffffeu,0xffffffffu};
+    const uint32_t strides[]={0,1,7,16,0xffffffffu,0xfffffff8u};
+    uint8_t a[4*96],b[4*96];
+    for(unsigned f=0;f<4;f++)for(unsigned s=0;s<6;s++)for(unsigned n=1;n<=64;n++) {
+        uint32_t va=CONTIG_BASE+1024-firsts[f]*strides[s];
+        memset(a,0x5a,sizeof a);memset(b,0x5a,sizeof b);
+        for(uint32_t v=0;v<4;v++)
+            memcpy(a+(size_t)v*96,HLE_PTR(va+(firsts[f]+v)*strides[s]),n);
+        push_copy_attribute(b,96,va,firsts[f],strides[s],4,n);
+        assert(!memcmp(a,b,sizeof a));
+    }
+}
 static void benchmark(void) {
     ordinary_layout();
     for(unsigned round=0;round<6;round++)for(unsigned order=0;order<2;order++) {
@@ -125,7 +140,9 @@ int main(int argc,char **argv) {
         HLE_PTR(0x20000)[trial%256]^=0xff;compare(0,1+trial%96);
     }
     ordinary_layout();fail_alloc=0;g_push_known=0;compare(0,17);
-    guard_checks();free(memory);
+    ordinary_layout();g_push_known=7;fail_alloc=0;
+    compare(0,16384);compare(0,65536);
+    guard_checks();wrap_checks();free(memory);
     puts("PASS: complete pushed arrays, fresh bytes, formats/offsets/holes, errors, allocation failure and guard-page boundaries");
     return 0;
 }

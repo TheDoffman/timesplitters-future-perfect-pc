@@ -1,163 +1,108 @@
 # Runtime and patch navigation
 
-The active independent-replacement goal is in `docs/independent-runtime.md`.
-`independent-translation-bits.patch` follows integer lowering and removes seven
-shift/rotate handlers in favor of `translation_bits.py`. Counts are masked to
-five bits, operations retain operand width and zero counts preserve emitted
-state. Carry rotates use an explicit width-plus-one ring. Double shifts accept
-the defined word count of 16; larger word counts explicitly leave state alone.
-Known constant no-ops preserve predecessor flag interpretation in block lowering
-and carry discovery. Rotate/double-shift carry consumers request and read `_cf`.
-Carry rotates declare `_cf` even at constant zero: their guarded C still names it.
-Native fixtures compare values/carry with bit-step references and, on Windows
-x64, ML64 hardware instructions. Dynamic zero-count flag interpretation and
-complete overflow/other flag conditions remain separate replacement work.
-`independent-translation-integer.patch` follows moves and replaces scalar
-ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT handlers with `translation_integer.py`.
-Inputs are sampled and masked at operand width before carry/borrow calculation;
-result snapshots use the computed value instead of rereading memory. INC/DEC
-preserve carry, NOT preserves snapshots, and NEG uses unsigned subtraction.
-The byte-decrement title hook remains explicit. Native result/carry and decoded
-sequence fixtures cover existing block consumers; two inherited text fixtures
-track the new expressions, including negative carry-preservation checks.
-Historical snapshots omit this replacement until title hooks are installed.
-Flag-condition lowering, remaining instruction families and runtime ABI remain
-separate work; this module does not provide complete x86 flag semantics.
-`independent-translation-moves.patch` replaces MOV/MOVZX/MOVSX/LEA/PUSH/POP
-bodies with `translation_moves.py`. The loader applies it after historical title
-instrumentation; the own implementation retains load/store/after-store/push
-policy hooks and frame publication. LEA ignores segment bases. Stack lowering
-retains operand-size overrides, resolves POP memory after ESP increments and
-handles POP ESP/SP aliasing explicitly. Trace names use UTF-8 byte escapes.
-The inherited impossible MOVSX-vector fixture now requires a generation error.
-Native fixtures compile emitted moves against production ABI macros; standalone
-copies and installed consumers check the boundary. XCHG and other opcode/flag
-families remain separate replacement work.
-Historical checkpoint fixtures exclude the new move replacement until upgrading
-to the complete title instrumentation stack; upgrade and repeated-build checks
-still exercise the replacement. The context index asserts its final loader order.
-`independent-translation-operands.patch` removes the lifter's operand formatter
-bodies/tables and imports `translation_operands.py`. Own expressions handle
-subregister preservation, signed/unsigned/float memory, FS, absolute address
-normalization and runtime floating-stack access. Decoder operands now retain
-address width: 16-bit offsets wrap before FS is added. Invalid forms fail before
-C emission; system/segment register reads remain documented zero/no-op policy.
-Native fixtures execute expressions and actual runtime pointer/width macros;
-standalone copies and installed translator consumers exercise the boundary.
-This replaces expressions, not opcode handlers, flag lowering or the ABI macros.
-`independent-branch-diagnostics.patch` replaces feedback and unresolved-report
-bodies with `branch_feedback.py` and `unresolved_report.py`. Feedback unions
-observations before separate seed filtering, retains saturation and accepts
-site-only crash dumps. Strict ledgers and path checks precede per-file atomic
-publication; the pair is not a transactional database. Defaults now use project
-private/pipeline; old ledgers require explicit paths, never silent title mixing.
-Function bounds filter seeds only when explicitly selected. The diagnostic
-report requires an XBE and explicit metadata, shows all overlapping recorded
-bodies, real sections/backing and known entries/ends, and invents no function
-extent or library identity. Input hashes identify the files inspected; they do
-not prove a selected function map belongs to that XBE. Compatibility CLIs,
-standalone fixtures, generation hashes and shared CI cover both tools.
-`independent-translation-bindings.patch` aliases translator config/HLE modules
-to `translation_layout.py` and `translation_hooks.py`. Module identity preserves
-mutable legacy configuration for imported helpers. Layout starts empty, reads
-own XBE metadata and validates replacement before publication; missing ranges
-and zero addresses cannot retain an earlier image. Hook markers use the lexical
-scanner, with known disabled branches excluded and unknown branches retained.
-Planning rejects ambiguous names/addresses and invalid register ABI frames;
-the current runtime frame holds at most 24 arguments. Return cleanup is consensus
-over decoded near returns in a supplied span, not a proof of code/data separation
-or tail-call ABI. Own thunk emission uses the existing guest ABI macros; native
-fixtures compile and execute the generated glue with those production macros.
-Both sources enter generation hashes and shared CI. Runtime services/macros,
-core lowering and translator orchestration still require replacement.
-`zzzz-translation-consumer-fixtures.patch` updates isolated C scaffolding for
-current fast-entry/result/dispatch ABI, retains executable SAR assertions, and
-limits the onexit header-collision negative control to Windows. It changes only
-tests; the generator fingerprint deliberately excludes test files.
-`independent-disasm-z-recovery.patch` follows traversal, replacing the remaining
-engine with a bridge to `x86_recovery.CodeRecovery`. It owns table measurement,
-realignment, read-only body/entry probes and block boundaries. Both fingerprints
-include recovery; `test_x86_recovery.py` covers ownership, bounds and shapes.
-`independent-functions.patch` replaces function detection, labels and references
-with `x86_functions.py` and `recomp_symbols.py`. Candidates split ordinary
-bodies; alternate entries preserve shared tails. Interval snapshots bound each
-evidence pass. Function/call-graph and metadata fixtures cover this boundary;
-both source fingerprints include the modules.
-`independent-pipeline.patch` replaces config/cache/output/CLI orchestration with
-`analysis_config`, `analysis_cache`, `analysis_output` and `analysis_runner`.
-The standalone runner accepts XBE, optional verified metadata, section and seed
-options. Receipts hash inputs/options/source and all outputs, including observed
-seed status; failed publication invalidates receipts. Explicit extra sections
-become code for both decoding and probes. JSON retains the generation contract;
-assembly listings are human output. Original runner/cache tests cover this layer.
-`independent-symbol-driver.patch` routes the symbol CLI to `xdk_catalog.py`
-and generation orchestration to `compile_pipeline.py`. The adapter consumes
-separately licensed XbSymbolDatabase protocol output; it owns CLI discovery,
-supplement validation/merging and atomic publication. The driver calls the own
-parser/analyzer directly and preserves title seed and per-title output routing.
-Custom metadata paths reach disassembly. The bridge also exposes the bounded
-identifier-only helper to importlib consumers; real runs validate the full XBE.
-Both enter the generation fingerprint.
-`independent-classification.patch` replaces all eleven function-classifier
-module bodies. `function_catalog.py` now coordinates `function_evidence.py`
-and `function_categories.py` directly from the project generation driver.
-Decoded operands and bounded xref ownership supply evidence; source identifiers,
-actual SDK section calls and unanimous graph neighbors supply diagnostic labels.
-Pointer arrays and measured entry blocks are separate outputs, never guessed
-function records. Numeric instructions do not establish CRT symbol identity.
-The catalog preserves measured function bounds; all three sources and runtime
-bridges enter generation fingerprints. Original catalog/evidence/category tests
-include copied-module execution without the runtime. Translation remains upstream.
+Independent tooling: [ownership and validation](independent.md), including compiled inherited SAR sweeps.
 
-`z-independent-generation-support.patch` follows the flag-join patches so their
-translator context remains replayable. It routes manual-source inspection to
-`c_source_scan.py`, reports/declarations and generated-text publication to
-`generation_output.py`. Standalone importlib consumers bootstrap through the
-own parser bridge. Scanner tokenization masks comments/literals, recognizes
-real body braces and resolves literal preprocessor branches; unknown conditions
-retain possible branches and require preprocessed input for configuration proof.
-Atomic changed-file publication preserves existing output on failure and keeps
-unchanged timestamps/newlines. Original scanner/output and existing title-wrapper
-tests cover these contracts; both own modules enter generation fingerprints.
+The exact pristine runtime base now lives in `vendor/ts3FPrecomp/source`.
+`tools/prepare-runtime.py` verifies blob SHA-256/Git identities, gitlinks, tree
+and original commit before creating the ignored runtime checkout. It retains
+`d90c929...` as shallow HEAD so existing patch ledgers, pristine `git archive`
+fixtures and packaging provenance remain valid. Do not edit snapshot files;
+runtime changes remain in the shared patch stack. The origin URL is attribution,
+not a setup dependency. `tests/test_runtime_snapshot.py` exercises the importer
+with Git transports disabled and applies the entire current stack twice. Importer changes select all runtime CI suites; Mac execution still requires its host.
 
-`independent-translation-decode.patch` replaces the translator's instruction and
-operand model, bounded linear/CFG decoding and basic-block construction with
-`translation_decode.py`. It uses the project Capstone factory, preserves segment
-and width details, and splits linear streams at explicit restart anchors. CFG
-walks terminate at known boundaries; block edges only name decoded leaders.
-Overlapping entries converge on shared suffix blocks, and gaps cannot create
-fall-through. `test_translation_decode.py` includes standalone copied modules
-and the existing translator consumers. Generation hashes include this module;
-core lowering/configuration/HLE/translation orchestration remain upstream.
-The command builder accepts legacy options without `json` and verbatim explicit
-output paths; CLI entry resolves relative output paths before subprocess cwd changes.
+Procedural wind: [coupled simulation, ownership, exact-clock admission and validation](native-wind.md).
 
-`independent-disasm-traversal.patch` follows the input patch and removes the
-engine's scan/realignment/reachability/query methods in favor of inherited
-`x86_flow.InstructionTraversal`. The subsequent recovery patch replaces the table/prologue methods. Both cache fingerprints include the new module. Synthetic
-`test_x86_flow.py` covers edges, holes, limits and overlaps; input tests assert
-the production method origin and run the existing consumer suite.
+`zz-state-layout-slots.patch` prepares the render/texture-stage slot numbers
+for the recognized XDK layout once per layout change. It caches only integer
+mapping results: each draw still loads current guest values in original order
+and retains conversion, comparison, effect overrides, texture-operation replay,
+pixel-shader forwarding and diagnostics. Render states absent from older layouts
+still read as zero. No guest address/pointer, state value, pose or texture is
+retained by this optimization. The full-module `test_state_layout_slots.py`
+compares ordered host-call digests against the reverse-patched original across
+all three layouts, changing memory bases/values and host-call feedback. Layout
+invalidation and stale-value negative controls must differ from the original.
 
-`independent-disasm-input.patch` replaces the disassembler loader with imports
-from project `recomp_image.py`, and its instruction model/classifier/Capstone
-creation with `x86_decode.py`. The project detector now owns function discovery; the base classes own traversal,
-candidate registration and recovery. Probe reads use `read_code_window`;
-exact data reads remain strict. The analysis cache includes all independent
-input source hashes, and the generation fingerprint includes disassembler
-source too. `test_recomp_input.py` exercises the real patched consumer suite.
+`zz-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
+Create a replacement before changing the cache count/cursor, destroying its
+victim or invalidating borrowed stage pointers. A failed allocation leaves no
+entry, so later applies retry while existing bindings remain usable. Successful
+replacement keeps the original bound-stage invalidation/rebind behavior.
+Failure warnings are capped at four per cache lifetime and reset on shutdown.
+Descriptors,32-entry capacity and the successful draw path remain unchanged.
+This is shared Windows/Mac RHI policy, not an FPS gain or a new backend cache.
 
-`independent-xbe-reader.patch` replaces the installed Python XBE parser with a
-bridge to project-owned `tools/xbe_image.py` (source root selected by the build
-drivers' `TSFP_PROJECT_ROOT`, ancestor lookup for ordinary direct commands).
-It also redirects two ordinal audits to the separately credited nxdk CC0 ABI
-table. No original parser body runs; other generation/runtime stages remain
-upstream. Reader/table/bridge changes invalidate the generator fingerprint;
-Windows rebuilds all stages. Parser fixtures and patch transition tests cover
-this boundary; game regeneration and isolated gameplay provide title evidence.
+The full-module `test_render_state_cache.py` tests failures in empty/full caches;
+the pre-fix module must fail both recovery assertions. Nine repeated failures
+retain live owners and emit at most four warnings; successful replacement
+invalidates/rebinds borrowed stages and shutdown releases each owner once.
+Normal binding digests still match the pre-change module and no-reuse, lost-mask
+and cached-failure controls remain rejected. Both native CI hosts run these
+asset-free checks; they do not force a real driver/device allocation error.
+
+Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
+
+`zz-strided-vertex-increment.patch` follows the strided-copy specialization in
+common HLE `hle_d3d8_vertex.c`. Each attribute copy advances a32-bit guest
+source offset and a `size_t` destination offset instead of multiplying per
+vertex. Source arithmetic retains modulo2^32 behavior, including wrapped first
+indices and strides; destination arithmetic retains the original host width.
+`HLE_PTR` still resolves each read, scalar copy order/widths and the fallback
+remain, and each gather allocates/reads fresh data. No retained vertex/pose data.
+The full gather/guard/wrap fixture is described in [build-test](build-test.md).
+Host-call captures occur after gathering: replaying unchanged captured inputs
+does not independently exercise this optimization.
+
+Completed local aim/animation state: [optional shared trace](native-local-trace.md).
+
+`zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
+common `hle_d3d8.c`; `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+Attribute/width dispatch moves outside the vertex loop within each tile;
+fresh stream-zero tails and converted prefixes still use a new zeroed allocation
+per draw. Parsed prefixes precede tails; per-vertex attribute order is preserved
+even when outputs overlap. Raw copies use exact byte widths, SHORT/NORMPACKED3
+arithmetic and generic width/format fallbacks remain, and stream lookups/failure
+checks keep their original order. The fixed-function selector tail-calls the
+unchanged generic body; the packed setup has a portable noinline boundary to
+retain that compiler scope. No guest clocks, vertex cache or retained pose is
+introduced. `test_vertex_expand.py` compares full output/stride/failure/stream/
+allocation/FP behavior against a frozen pre-change body, including guard pages
+and independent broken-copy/order/fallback controls. Live results belong in STATUS.
+
+`zz-stable-gpr-refs.patch` and the title's four-site selector keep references
+to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
+
+`zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
+to the existing Windows sampler. One exact executable symbol gets at most512
+native PC rows per thread/report, with executable RVA, symbol offset, source
+basename and PDB line. A coverage footer counts all matching addresses/samples
+and omitted samples; truncated tables cannot support complete differential
+claims. Resolution happens only after sampled threads resume. No per-sample
+collection or guest behavior changes; source paths are not dumped. Mac's
+existing no-op sampler is unchanged; portable reporter fixtures run on both.
+
+`zz-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
+32-entry descriptor caches for immutable blend, depth/stencil and rasterizer
+objects. Current bindings borrow cache objects; shutdown destroys each owner
+once. Failed creates are retried without inserting a null entry or evicting
+an existing object. Full zero-initialized descriptors replace blend/raster
+dirty hashes, with last-descriptor fast paths. Material transitions still
+translate current state and bind each draw; stencil reference and scissor
+rectangle remain dynamic. Sampler recovery is covered separately above. The complete-module
+`test_render_state_cache.py` compares emitted binds against the pre-cache
+module and checks replacement, failure/retry, shutdown/restart and negative
+controls. This is common RHI policy, independent of native FPS/guest updates.
 
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).
+
+When release PDBs lack line records, entire retained COFF function sections can
+be matched against the current PE while ignoring typed relocation fields.
+Require the primary native entry and complete remaining bytes, retain folded
+aliases and reject a changed instruction-byte control; a short prefix or nearest
+name alone is insufficient to attribute a secondary unwind fragment.
 
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in
@@ -172,6 +117,16 @@ not exist as strings in generated guest code; find a measured caller/address.
 Sol can request exact public source ranges and lexical references from the local
 broker; each result identifies the root/runtime revision and actual file hash.
 Generated guest C remains excluded from hosted retrieval.
+
+Profiler names alone do not prove function identity. DbgHelp may assign an
+unnamed static PC the nearest public name, and export-only inferred sizes may
+span unrelated native unwind entries. Retain raw executable RVAs and actual
+unwind bounds before changing a purported hot helper. Chained unwind fragments
+may also require primary-entry validation; unresolved identity stays explicit.
+The PC reporter's `symbol_complete` flag checks name truncation, not bounds.
+Reject dropped-chain windows as complete profiles and separate sampler pause/
+reporting overhead from clean Present measurements. See STATUS for the focused
+external diagnostic and its limitations.
 
 `tools/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
@@ -192,6 +147,8 @@ captures do not serialize host screen copies.
 A conflict "during unwind" means current runtime/recorded stack diverge; it
 does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
+<!-- packet:end -->
+
 `zzzz-world-health-bars.patch` handles #102 after the other display patches.
 Electro Chimp's enemy bars are screen-space draws with 16-byte transformed
 vertices and depth near 1. Their positions already follow the widened camera;
@@ -200,7 +157,6 @@ The patch spans those draws across the output while leaving ordinary HUD
 sprites and explicitly placed overlays on their existing paths. Validate with
 Monkeying Around → Electro Chimp Discomatic at a widescreen resolution and
 compare each bar with its moving monkey.
-<!-- packet:end -->
 
 `zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
 draws with minimum index zero pass their current index bytes directly to the
@@ -287,6 +243,15 @@ nonpositive trace budget and no watch/dump/filter/profile environment switch,
 follows the existing renderer-idle callback. Per-thread configuration is read
 once, like existing diagnostic caches; explicit diagnostics retain their original
 budget, initialization and output. Crash/throw/unimplemented reports are untouched.
+
+The quiet guard now inlines its cached TLS load and outlines only first-use
+environment parsing. It retains per-thread startup configuration: changing the
+environment does not alter an initialized thread, while a new thread initializes
+independently. `test_trace_filter.py` compiles the complete tracing module and
+checks that distinction, concurrent quiet calls, enabled diagnostics and Windows
+idle cadence; a shared-cache mutation must fail. No process-wide cache or C
+atomic support is introduced. Private alternating native probes measure tracing
+cost only; game pacing requires a separately identified executable and scene.
 
 
 `zz-native-demo-timing.patch` follows the native surface stack and wraps US

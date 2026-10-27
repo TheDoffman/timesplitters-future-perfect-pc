@@ -53,10 +53,45 @@ read-only check on either host. Existing matching files are reused; conflicts
 stop without replacement. See [independent replacement status](independent-runtime.md)
 for import limits and the runtime/recompiler work that is still outstanding.
 
-Setup installs dependencies into `.venv`, clones the pinned toolkit, initializes
+Setup installs dependencies into `.venv`, prepares the bundled toolkit locally, initializes
 SDL and XbSymbolDatabase, builds the symbol matcher, and fetches FFmpeg 8.1 for
 intro movie playback. The FFmpeg download has a pinned SHA-256; if its mutable
 upstream URL changes, setup stops for review. All tool downloads stay local.
+
+### Bundled runtime source
+
+The runtime, recompiler and Future Perfect target are tracked in
+`vendor/ts3FPrecomp/source`, with original credits and licenses. Setup and CI
+use `tools/prepare-runtime.py` to reconstruct the exact pinned runtime under
+`external/ts3FPrecomp`, without downloading or contacting nemonicicon's repository.
+The importer verifies every file, the complete Git tree and the original commit.
+The reconstructed checkout is shallow and has no remote; historical patch tests
+can still read pristine `HEAD` bytes and submodule pins remain unchanged.
+
+Existing checkouts at the correct pin are reused without resetting local edits,
+patch records, generated code or dependencies. Wrong revisions and incomplete
+directories fail without replacement. Keep runtime changes in `patches/`; do not
+edit the pristine snapshot or generated game C. The full patch stack still applies.
+
+To prepare only runtime source (Python standard library and Git, no network):
+
+```sh
+python tools/prepare-runtime.py --verify-only
+python tools/prepare-runtime.py
+```
+
+This removes the original runtime repository as a build dependency. Initial
+installation still downloads pinned Python packages, SDL, XbSymbolDatabase,
+FFmpeg and the selected host's SDK dependencies from their own sources.
+The supported game files are still supplied privately by the user. Runtime
+source is ordinary Git content, not Git LFS or a submodule, and is included in
+the Windows/Mac release source ZIPs. Upstream links remain attribution only.
+
+When intentionally changing the runtime pin, export pristine Git **blob** bytes
+(not a patched working directory or an archive with checkout filters), file modes,
+gitlinks and the raw commit into a new snapshot; update the shared pin and manifest
+together. Verification rejects changed bytes or paths. Re-run snapshot, full patch
+upgrade, both-host build and package checks before accepting the new baseline.
 The launcher copies `config/pc-controls.default.json` to the ignored personal
 `config/pc-controls.json` on first use. Existing personal bindings are preserved.
 
@@ -186,7 +221,8 @@ unmerged work. Preserve other devices' uncommitted changes. See
 
 The Windows runtime and Future Perfect target come from
 [nemonicicon/ts3FPrecomp](https://github.com/nemonicicon/ts3FPrecomp), pinned to
-`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Its checkout includes its GPL-3.0,
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`, now bundled in this repository.
+The snapshot and prepared checkout include its GPL-3.0,
 MIT, third-party license and attribution files; retain them when distributing
 any relevant runtime code. No game data is supplied by this repository.
 

@@ -16,3 +16,6 @@ patches/zzzz-pc-debug-latency-watermark.patch -text
 # Compiled replacements are part of source checkouts; large bytes use Git LFS.
 assets/textures/*.dds filter=lfs diff=lfs merge=lfs -text
 assets/textures/*.json text eol=lf
+
+# Pristine runtime snapshot: preserve upstream bytes for exact Git identity.
+vendor/ts3FPrecomp/source/** -text -filter -whitespace linguist-vendored

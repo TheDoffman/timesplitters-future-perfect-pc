@@ -36,6 +36,11 @@ Use a focused branch based on current main (or an explicitly documented
 unmerged dependency); the native builder does not require a branch named
 `mac-port`. Host, game hash and upstream revision checks still apply.
 
+`--setup` prepares the runtime from tracked `vendor/ts3FPrecomp` source using
+the same offline importer as Windows. It no longer fetches the original runtime
+repository; SDL, the symbol database, Python packages and the selected SDK keep
+their existing direct download pins. See [bundled runtime source](building.md#bundled-runtime-source).
+
 Normal builds use the shared PC Xbox frontend through Vulkan on macOS 26+.
 `--renderer auto` selects this route based on the pinned SDK's host requirement;
 older Macs retain legacy OpenGL. `--renderer gl` explicitly selects the fallback.

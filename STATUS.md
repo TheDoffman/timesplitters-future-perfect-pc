@@ -814,6 +814,119 @@ was unnecessary for this extraction-only change. Public fixtures are registered
 for Windows/macOS CI; Mac native filesystem/full-ISO evidence remains pending
 under MAC-065. Output filesystems need hard-link support (normal NTFS/APFS).
 
+## Self-contained runtime source (2026-10-26)
+
+On `feature/self-contained-runtime`, based on main
+`fba57e948dfda17ad5174121413583c5d29d46da`, setup and CI now prepare the
+runtime from tracked `vendor/ts3FPrecomp` instead of fetching the original
+runtime repository. The 624 pristine files (7.84 MiB of source), eight gitlinks,
+raw commit and manifest reconstruct the unchanged upstream revision
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Credits/licenses are preserved.
+All 624 staged blobs match the original Git identities. A fresh checkout with
+`core.autocrlf=true` also passes snapshot verification.
+
+Windows x64 validation: the supported `tsfp.ps1 Build` completed, including
+native path, controls, settings, texture, display, debug, prompt, network,
+Discord and hang-policy checks. No game behavior was intentionally changed;
+this is build/source-distribution validation, not a new gameplay claim.
+The executable SHA-256 is `ca10ea2adc61757dd4b7375850665c5a58654ce6c70fe270f563cb3ccdef6787`.
+Evidence: ignored `logs/runtime-vendor-build.log`.
+
+Full snapshot, patch-transition, CI-scope, Mac build-tool and Mac-package suite:
+**161 passed, 1 skipped** in 768.90 seconds on Windows (Python 3.12.14).
+Context/backlog/CI/Mac-package checks separately passed 109 tests. Snapshot tests
+disable all Git transports, exercise corruption/failure preservation, reconstruct
+usable pristine Git history, and apply all 177 patches twice. Evidence:
+ignored `logs/runtime-vendor-tests.log`.
+
+At implementation commit `f57875a577accb915e054f86407788731c15a08b`,
+[PR #369](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/369)
+CI passed Mac snapshot/patch upgrades, native runtime regressions and asset-free
+GPU contracts, both launcher builds and the dual-platform launcher gate.
+Windows runtime/patch CI was still running when this record was written; see
+PR checks for its final result. Native Mac game build/package execution with
+private game data remains unverified; see MAC-064. Separate dependency downloads
+(SDL, symbol database, Python/FFmpeg/SDKs) and user-supplied game data remain.
+
+## Current-source Windows build and rocket regression (2026-10-26, PR #367)
+
+Source e9ea817a passes all 16 hosted checks and the supported normal Windows
+Build with bundled gates. Executable SHA256:
+`70a33689d27ad536f12f0d7bcdb958c60d6c3492034887fdd7d197c8eb94be6a`.
+The full local timing/vehicle run passed 126 checks with one 15-second timeout
+in the deliberately broken spawn-motion control; that isolated case then
+passed in 2.61s. All 127 checks are covered without changing production code
+or timeout limits. Receipt: `logs/native-current-e9ea817a-results.json`.
+
+No-capture Temple floor-rocket behavior passes on this executable at Original60
+and native240: one rocket consumed, lethal health change, bounded effect age
+and cleanup, restored respawn, and subsequent walking. Original60 settles
+6.116667 game seconds over 6.111 wall seconds; native240 settles 6.116667 over
+6.104. Profiles/signatures remain unchanged and disposable disks are recycled.
+These are selected lethality/recovery checks, not general damage equivalence,
+exact movement parity, clean crowd pacing or live wind-scene acceptance.
+
+Two native240 attempts and a capture diagnostic initially stayed in the
+frontend. The capture identifies navigation after Back landing one row short;
+the test now waits for that transition before sending setup navigation. Its
+command stream exactly matches the passing native240 run. Production menu and
+game timing are unchanged. An updated-route Original60 run reaches the match
+but fails the foreground requirement after another checkout game launches;
+that run is invalid acceptance evidence. Leave the other game to its owner.
+The earlier Original60 pass remains scoped to the prior route, differing only
+in this menu settle step. A same-route foreground Original60 comparison is
+still pending. Renderer diagnostics output 3440x1440 images while Win32 reports
+a 1920x1060 client; record both scopes rather than inferring render size from
+client size alone. Full current-source crowd and physical Mac acceptance remain
+open. No new live test should launch while the other game remains active.
+
+## Original changing-wind regression coverage (2026-10-26, PR #367)
+
+The repository wind fixture now injects 22 original routines, adding the
+second-pass caller, weather controller, wind-phase updater, mode query and
+model-callback setter. It supplies a 60-Hz console refresh word, asserts finite
+raw/phase state and advancing game-time phase, and rejects a frozen-provider
+control. This fixes an incomplete fixture setup, not product timing logic.
+The original provider computes changing phase/spatial scales instead of the
+previous synthetic phase input. The public wind module passes 3 tests in 14.76s,
+including 840 Original60 comparison schedules over three game seconds. Maximum
+angle outside the existing reference sample window is 0.217468262 degrees,
+within its unchanged 0.25-degree limit. Two-owner independence, pause, fallback
+and point/matrix controls remain. Legitimate stationary/contact poses are not
+misclassified as stale calculations by the expanded corpus.
+
+Production solver and runtime hooks are unchanged from 618ec5bf, whose 16 hosted
+checks pass. Normal source generation also passed in 73.2s: one original body per
+wrapper, 507 registration calls through the wrapper, correct dispatch entries
+and no direct bypass. Other weather-particle/model/world services remain
+controlled. This is CPU regression coverage, not a current full game build,
+live GPU/performance result or complete scene lifetime acceptance.
+
+## Procedural wind integration in progress (2026-10-26, PR #367)
+
+Shared source now subdivides the wind callback's coupled angle/velocity map
+instead of holding its integer oscillator between native frames. Registration,
+per-owner history, exact game-clock admission, pause and authored fallback are
+implemented in `pc_native_wind*` with `zz-native-wind-history.patch`. No pose
+interpolation or save/config change is introduced. The complete patch stack
+applies to the local runtime. This source is not yet a rebuilt/live acceptance.
+
+Original-code CPU graphs against the actual shared headers pass 9,864
+solo/interleaved owner data/matrix comparisons, 371 paused updates with 361
+raw/game phase divergences, 47 byte-equal unmatched-scope fallbacks, and 360
+Original/native whole-fallback owner comparisons. World/model services and host
+timestamps are controlled. These are separate from the earlier nonlinear
+quarter-degree window checks; they do not prove full-game equivalence or FPS.
+The public wind module passes all3 tests, including the original-code graph
+when the verified XBE is available; it injects17 routines without tracking game
+code and rejects frozen-matrix/missing-registration controls. The timing suite
+passed102 cases; six copied-policy include failures were repaired and all6
+reruns pass. Patch tracking/upgrade checks passed33 cases with3 historical
+fixture-filter failures; those exclusions were repaired, and all4 affected/fresh
+reruns pass. No product logic was weakened to satisfy these fixtures. Additional25 generation/context/compiler and70 CI-scope/Mac-backlog checks pass. Live rendering/performance, scene lifetime, physical
+Mac and other timing-scope coverage remain pending. See
+[wind contracts and limits](docs/agent-context/native-wind.md).
+
 ## Electro Chimp health-bar alignment (2026-10-26, issue #102)
 
 At 1280×720 in an isolated, unlocked Windows Test Lab run, the vertical bars
@@ -834,7 +947,1511 @@ challenge coverage at other aspect ratios and a native Mac build/visual check
 remain pending (MAC-063). The related #101 texture report was previously
 resolved by asset re-extraction and this patch does not change textures.
 
-## Fractional clear-slide repair (2026-10-25, current branch)
+## Main integration and foreground combat regression (2026-10-26, PR #367)
+
+The absent6f7e678c CI runs were caused by a conflict with main's merged #368
+health-bar change. Merge5ab7b2de preserves that fix and both validation histories;
+the runtime guide's detailed health-bar note now sits outside the bounded
+advisory excerpt. All16 exact-head5ab7b2de hosted checks pass, including both
+native runtime/patch hosts and launcher/release gates. This establishes the
+asset-free Mac contracts, including state-layout parity, not physical Mac play.
+The supported combined Windows build and bundled gates pass (exit0,
+`logs/build-main-healthbar-merge.log`), producing SHA256
+`8db5c2f4a2804dc2dfc4cb5eedeff2457aa8a9a65487ff6c499df23a87dc6258`.
+
+The old rocket route lacked a focus step. It now focuses before navigating;
+the analyzer rejects absent/background/minimized/invisible checkpoint windows
+and background effect samples. Five new negative cases plus existing contracts
+pass28 tests; combined analyzer/context checks pass48 in3.83s. The bounded
+Windows runner also refuses to launch if any other `futureperfect_recomp.exe`
+exists; a live unrelated checkout process was detected without changing its
+session or the test directory. This is test isolation, not a gameplay change.
+
+On the combined executable, the capture-free120 FPS Temple floor-shot route
+passes: one rocket consumed, health1.75 to0, respawn restored,8.016818 walking
+distance,6.10 game seconds over6.103 wall seconds,127 complete effect samples,
+no missing player reads, explosion age error0.004750 seconds and disappearance
+bounds0.699872..0.750131 seconds. All required windows/effect samples are active
+foreground and effects are empty after settling. This establishes selected
+lethality/lifetime/recovery, not unsaturated damage equivalence, audio or FPS.
+`private/test-saves/regression-merged-rocket120/rocket-impact-results.json`
+and its provenance/report bind the result to this build and route.
+
+Capture-on attempts failed route/clock acceptance at3440x1440 and are excluded
+(`logs/*capture-invalid.json`). The capture-free Original60 comparison lost
+foreground at its final walk while another checkout game was running; it too
+is excluded as a complete comparison (`logs/rocket60-focus-lost-invalid.json`).
+That game remains untouched in accordance with the user's request to let Bugs
+finish first. The Original60 repeat and broader live acceptance remain pending;
+no new game launch is permitted by the test runner while that process exists.
+
+## State-layout mapping preparation (2026-10-26, PR #367)
+
+The retained Disco CPU diagnostic includes54 leaf samples in common shadow-state
+application. Each draw recomputed the same recognized-XDK render-state and
+texture-stage slot mappings. `zz-state-layout-slots.patch` retains those integer
+mapping results until the layout changes. It retains no guest pointer, state
+value or pose. Every draw reads guest state in original order, including reads
+after host callbacks; missing older-XDK render states remain zero. Conversion,
+changed-state comparison, effect overrides, required texture-operation replay,
+pixel-shader forwarding and diagnostics remain on their original paths.
+
+The complete-module fixture reverses the new patch to build its reference, then
+compares ordered host-call digests over3840 draws across all three layouts,
+alternating memory bases, randomized full/partial/unchanged values, effect changes
+and guest writes during host calls. Disabling layout invalidation and retaining
+guest values both break parity. The three new checks plus existing spirit-state
+and combiner-constant checks pass6 tests in5.64s. Repository/context/scope/backlog
+checks pass90 tests in3.54s. The new fixture is registered on both native CI hosts;
+physical Mac execution remains pending.
+
+A private full-module `/O2 /Ob2` component probe performs seven alternating
+two-million-draw runs per variant. Host-call digests match and the median
+candidate/original CPU-time ratio is0.551020 (`logs/state-slots-probe.log` and
+`private/pipeline/state-slots-probe/receipt.json`). Host services are stubs; this
+does not establish game FPS or whole-frame CPU savings. The supported normal
+Windows build and bundled gates pass (exit0, `logs/build-state-layout-slots.log`),
+producing executable SHA256
+`0f005661815cff0487b9da7657d5dbee11698135351c22c0e024a0eaf5a900b4`.
+The same-executable/command45-second ten-bot Disco pair completes with19 active
+foreground checkpoints each. Native240 averages238.376586 guest Presents/s,
+minimum1s218/5s232.4, p994.900ms/worst5.843ms; Original60 averages60.000701,
+minimum1s59/5s59.8, p9917.131ms/worst17.588ms. Both have increasing guest frames,
+zero interpolation, ten bots with observed position changes and18 passing
+read-bounded timing-call/Present comparisons. Independent sampled game/wall is
+1.000295315 and0.999810743 respectively. No captures/native CSV/CPU sampler or
+other game/compiler runs during the measured windows. Request3440x1440/FOV73/
+enhanced/borderless; actual client1920x1060. Canonical and isolated profile bytes
+remain SHA090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695,
+8040 bytes with valid HMACs; disposable virtual disks are recycled.
+`logs/crowd-slots-disco-comparison.json` binds both summaries/clock controls.
+Different AI/death routes and host conditions prevent causal FPS comparisons
+with earlier runs. These are successful host Present intervals, not monitor
+scanout/physical input latency or proof of simultaneous bot visibility.
+Sustained demanding240 and broader game/platform acceptance remain unfinished.
+
+## Current Temple crowd pair (2026-10-26, PR #367)
+
+Executable024c6faa completed capture-free45-second Temple ten-bot windows at
+native240 and Original60, using the same startup-command hash. Native240 averaged
+237.999298 successful guest Presents/s, with minimum1s219/minimum5s225.6,
+p994.938ms and worst5.872ms. Original60 averaged60.000279, minimum1s/5s60,
+p9917.150ms and worst17.541ms. Both have19 active foreground checkpoints in
+scene49/match state7, ten configured bots with changing observed positions,
+strictly increasing guest-frame IDs and zero interpolated Presents. Independent
+read-bounded timing-call/Present comparisons pass18 pairs in each run; sampled
+game seconds/wall second are0.999924545 and0.999729339 respectively.
+
+Request3440x1440/FOV73/enhanced/borderless; actual client1920x1060 at all measured
+checkpoints. CPU sampling, captures and native-update CSV were disabled. No other
+game/compiler ran during these windows. These are successful host Present
+intervals, not scanout/input-latency or simultaneous visibility of all bots.
+Nondeterministic AI/routes and a different scene prevent causal comparisons with
+prior Disco results. Sustained demanding240 and full-game acceptance remain
+unproven. The canonical fixture is unchanged and disposable test disks were
+recycled. Source/build scopes, summaries and independent clock controls are bound
+in `logs/crowd-024c-temple-comparison.json`; each run retains provenance/report.
+
+## Quiet trace initialization and CI index repair (2026-10-26, PR #367)
+
+The common trace guard now inlines its per-thread cached setting and outlines
+only first-use environment parsing. Explicit diagnostics and Windows render-idle
+callback order/cadence remain. Configuration is still per thread, not a shared
+process cache. The full-module tests cover initialized-main versus newly created
+thread settings, four concurrent quiet workers, enabled watch/dump/filter/profile
+paths and idle callbacks; the process-cache and removed-dispatch controls fail.
+The targeted trace suite passed17 checks in11.59s. The combined CI selection,
+launcher compatibility, backlog, repository-context and trace suite passed129
+checks plus26 subtests in14.60s (`logs/trace-guard-ci-contracts.log`).
+
+The supported Release build and bundled gates passed (exit0,
+`logs/build-trace-guard.log`); executable SHA256 is
+`024c6faa1886832f79b45cc33ef3829ede10c0915a4ecef35c76a0a01a50fb56`.
+Actual normal kernel code generation is recorded in
+`logs/trace-guard-normal-codegen.json`; cached dispatch no longer calls the
+environment-parsing helper. The entry body is1914 bytes versus1905 before, so
+this is not a code-size reduction. A private separate-caller/full-module probe
+at `/O2 /Ob2` used seven alternating50-million-call pairs per case. With the
+Windows idle callback enabled, the entry-only candidate/original median CPU-cost
+ratio was0.912723; entry+exit was0.827515. These are component timings, not game
+FPS or evidence that demanding240 is sustained. The fuller cold-dispatch and
+process-wide-cache experiments were not shipped. Physical Mac validation and
+new executable game pacing remain pending.
+
+The pushed244ffaa0 runtime CI failed because the generated patch index described
+CRLF bytes/targets for two newly written patches while Git stored LF bytes.
+Other Windows/Mac transition failures were downstream of this scope-job failure.
+Normalize those local patch files, regenerate the index, and verify every indexed
+hash and target against its staged Git blob, matching fresh-checkout bytes.
+The authoritative patch loader then verified zero changed runtime files; no
+generated code, gameplay clocks, settings or saves changed for this repair.
+
+## Sampler allocation recovery and current native CPU attribution (2026-10-26)
+
+The common sampler cache previously recorded a NULL object after a failed
+allocation, so an identical descriptor hit that failed entry indefinitely. At
+capacity it also destroyed the victim and invalidated bound stages before
+attempting the allocation. The full-module reproduction fails both retry and
+retained-owner assertions before repair (`logs/sampler-retry-before.log`).
+
+`zz-sampler-cache-retry.patch` creates before committing cache ownership. Failed
+creation leaves the cache/count/cursor/bound stages intact and remains retryable;
+success keeps the existing replacement invalidation and rebind rules. Warnings
+are bounded at four per cache lifetime. The final six full-module and20 context
+checks pass together in5.80s,
+including pre-fix negative comparisons, nine repeated failures, full-cache
+replacement, live-owner retention, rebind, idempotent shutdown and unchanged
+normal bind digests. Existing no-reuse/mask/failed-entry controls still fail.
+This is a shared Windows/Mac resource-recovery fix, not a measured FPS gain.
+The final fixture also applies the sampler patch forward to the original module
+without the blend/depth/raster cache patch, then verifies the same recovery and
+normal bind digests. Capacity pressure uses32 distinct valid-range descriptors.
+The supported normal Windows build and bundled gates pass (exit0,
+`logs/build-sampler-retry.log`). New executable SHA256:
+`9457715bcbfa4e7a054952199fa05758a12282b18394c316cb4af7816430f098`.
+Its gameplay/pacing and current-head hosted checks remain separate; the clean
+crowd results below belong to D675, not this later executable.
+
+A separate current-D675 owned-thread diagnostic completes4,262 samples over
+45seconds, with zero read/already-suspended/capacity errors. It suspends only
+the verified owned game main thread, totaling1,088.0643ms (maximum2.8846ms),
+so its FPS is excluded from clean pacing. All nine five-second windows retain
+foreground ten-bot Disco observations. Native unwind bounds prevent assigning
+unmatched fragments to nearby symbol names. Whole retained HLE/D3D/kernel COFF
+sections match current PE bytes outside typed relocations; flipped code bytes
+are rejected. This identifies sampled fragments inside `texel_sample` (65 leaf
+samples), `hle_d3d8_shadow_apply_states` (54), `level0_checksum` (49) and
+`shadow_set_texture` (33). It does not cover every guest body or prove a causal
+optimization. Model/render/draw investigation remains necessary.
+
+Private evidence: `crowd-d675-owned-disco240/owned-sample{,-provenance}.json`,
+`owned-coff-matches.json`, `logs/owned-d675-disco-analysis.json` and
+`logs/sampler-final-tests.log`. The existing sampler-object cache and dynamic
+upload rings are already present; do not duplicate them. Full texture change
+detection must remain intact. Current sustained heavy240 acceptance is still
+unmet, as recorded below.
+
+## Current build: clean crowd pacing and remaining load dips (2026-10-26)
+
+After Bugs completed its separate session, the supported Windows Build finished
+with exit0 and all bundled gates passing (`logs/build-actor-voice.log`). This
+build includes the deferred voice fix and prior render/yaw work; all rejected
+wind experiment source/test changes were removed before building. Source is
+9f8aa7aa (production code unchanged from f55088bf), with only documentation dirty.
+Executable SHA256: `d675d36bfb9dc91d911ba54748f632795178430945f91beb8dd190d1d3efe08a`.
+All16 hosted checks pass on exact9f8aa7aa; physical Mac remains unverified.
+
+Two completed isolated ten-bot Disco runs use this same executable, enhanced
+textures, FOV73, requested3440x1440/borderless, actual client1920x1060. There is
+no other game or active build at launch. Captures, native CSV/pose tracing and
+CPU sampling are disabled. Each complete45-second spawn+5 window has19 active,
+visible foreground checkpoints, scene56/state7/ten configured bots, increasing
+guest frames and zero interpolated Presents. Configured bots do not prove
+simultaneous visibility. Host successful Present intervals are not scanout.
+
+| Setting | Mean FPS | Minimum1s /5s FPS | p99 /worst interval | Game/wall clock ratio |
+| --- | --- | --- | --- | --- |
+| Native240 |214.331758|132 /139.4|7.832 /9.027ms|0.999833883|
+| Original60 |59.999835|60 /60|17.122 /17.380ms|0.999920921|
+
+Read-bounded timing-call counts match accepted Present counts across18 adjacent
+observation pairs per run; held-counter/wrong-rate controls fail. Maximum native
+read span is9.2microseconds. Native240 does **not** sustain its target in this
+crowd window. Different AI/combat/death routes and host conditions prevent a
+causal performance comparison against the prior8b68 run or another implementation.
+The completed pair does not validate all mechanics, GPU poses or physical input.
+
+Private receipts remain in `private/test-saves/crowd-d675-disco{240,60}/`:
+provenance, report, Presents, `crowd-pacing-summary.json` and
+`native-clock-comparison.json`. Native Present/report SHA256:
+`d572377bfbf7f618880ce4b549afff41a15ea8b2d28ea1f8f30b3f976649acf7` /
+`52d525b8f2d7470fec56fb0741c2df535a79522346a102cd81cb3809dd798db7`.
+The canonical profile remains8040bytes, valid HMAC and SHA256
+`090cced761da74290066ca486878449ef7fa43c809740641ae12662ea3514695`.
+A separate CPU diagnostic completes on the same executable, outside clean
+pacing acceptance. Its cumulative snapshots after80/120seconds contain6,834
+additional main-thread samples and34.2seconds additional reported CPU time.
+The spawn/combat-four observations are86.548/121.470seconds, so that cumulative
+delta includes some setup time. Complete chain counts cover6,170 samples;
+664 chains are dropped by the8,192-entry table. Reported paths include model
+rendering, draw submission and texture work. Counts are partial lower bounds,
+not instruction-accurate attribution or a new performance improvement.
+
+The requested22BE0 PC report has no omitted target samples (29 before,41 after),
+but no source-line records. Its12 additional target-leaf samples do not justify
+focusing all optimization there. Raw symbol labels can identify folded/nearby
+compiler fragments; new instruction attribution needs current native bounds.
+Source inspection confirms21450/214C0 are dirty-state list set/flush routines,
+not bone arithmetic. The frontend already has dynamic upload rings; do not add
+a duplicate backend allocation cache from an unverified CreateBuffer hypothesis.
+The profiler's FPS is excluded. Private diagnostic outputs and partial summary
+are under `crowd-d675-disco240-profile/`; combined build/profile/save receipt:
+`logs/crowd-d675-comparison.json`. All three isolated profiles keep valid HMACs,
+their remapped test-slot metadata is byte-preserved, and disposable disks/locks
+are removed. No separate Bugs checkout or personal save is modified.
+
+## Remaining wind-animation CPU input hold (2026-10-26)
+
+Follow-up experiment rejected on9f8aa7aa: fractional powers of the local
+coupled affine angle/velocity map provide fresh motion and pass504 fixed-phase
+Original comparisons. Expanding to5,040 normal/quarter/four-phase schedules
+rejects17 cases after impulses/contact, with a maximum3.18444824 angle-unit
+violation of the original one-tick sample envelope. Naive subframe projection,
+normalized projection, reconstructed free-history and carried-boundary split
+variants do not establish acceptance. An alternative explicit temporal window
+also remains rejected; the envelope was not relaxed to approve the candidate.
+All experimental runtime/test changes are removed, restoring the pushed source.
+Original init/wind/matrix propagation and a complete fractional contact operator
+remain unfinished. Private standalone replay: `logs/reproduce-wind-rejection.py`;
+sources/hash receipt/output: `logs/wind-unaccepted/`. This replay compiles and
+rejects the candidate without modifying runtime source. Actual wind and Euler
+consumers remain controlled; no build/live/Mac acceptance follows from it.
+
+Original1DDF10 and its nonlinear AB050 helper reproduce a separate hold on
+f55088bf. Under controlled constant wind, three seconds at native240 make720
+Euler-matrix consumer calls but only180 changed Euler input pairs: all540
+zero-whole-tick intervals hold both angles. At120/180 the held counts are180/
+360 respectively. Native60 changes on all180 frames, and three-second endpoint
+angles agree closely across rates. Fractional forcing already accumulates each
+frame; the whole-tick helper loop still owns angle advancement. This is selected
+CPU input evidence, not proof of visible gameplay stutter or a completed fix.
+
+No production change is made: the helper also applies damping, velocity clamps,
+piecewise restoring forces, angular wrapping and authored thresholds. Simply
+running it on every fractional frame would alter those mechanics. Next work is
+the coupled operator and original initializer/wind/matrix propagation. Wind and
+the Euler consumer are controlled in this direct-call audit. Original1DE250's
+1DE3A3 branch statically registers1DDF10. Initial private failures came from an
+AB050 range missing its final store/ret and a per-rate reset excluding its data
+block; both were corrected before accepting the observation. Accepted helper
+range ends after retAB372. Logs and provenance remain private under
+`logs/audit-wind-oscillator.py` and `logs/wind-oscillator-audit.{json,log}`.
+
+## Preserve authored damping while updating rotation (2026-10-26)
+
+On source f55088bf, original US2238D0 executes48 schedules across Original60
+and native60/120/144/180/240, normal/quarter time and four carried phases.
+Every advancing native call changes angle+C8. Velocity+E0 remains bit-equal
+to the independent authored tick-by-tick multiplication by0.9997400045394897.
+The maximum ten-game-second difference against the coalesced Original reference
+is0.0704956055 angle units, within one initial authored displacement0.52359879.
+Zero-whole/zero-float pause, stack, preserved registers and unchanged clocks
+pass. A control replacing both integer loop counts with positive-float admission
+fails the exact decay assertion. This is intentional whole-tick damping plus
+fresh fractional rotation, not another fractional entry-gate defect.
+
+Original2256BC registers2238D0 and initializes velocity from frequency times
+0.5235987901687622; its two-stage switch selects model2CF. This registration
+identification is static XBE evidence. The numerical audit invokes the original
+callback directly with inactive audio consumers controlled. It does not establish
+live object activation/rendering, audible sound, physical Mac or clean FPS.
+No production change follows from this passing audit. Keep the remaining1DDF10
+operator/callee audit distinct. Private reproducible harness and receipts:
+`logs/audit-damping-2238.py`, `logs/damping-2238-audit.log` and
+`logs/damping-2238-audit.json`. Game assets/generated translation remain local.
+
+## Deferred actor voice timing and cooldown (2026-10-26)
+
+The164E00 inventory candidate resolves to deferred character-audio requests.
+Original normal-frame caller1CE2E0 invokes it directly at1CE3B3; it is outside
+the physics substep scope. Its own whole-tick gate discards float seconds from
+pending requests and the shared cooldown. An original caller/queue/scheduler
+reproduction at native60 quarter speed consumes0.06249994 seconds during a
+quarter game-second interval, instead of0.25, in both the request and cooldown.
+
+Only exact164E00 admission now follows positive game time. The original one-
+second pending voice,0.2-second secondary delay, five-second cooldown, actor
+generation checks, selection and event ordering remain. The actual caller's
+153C00 helper saves/restores the separate float RNG; it is not a tick-based
+seed reset, and is unchanged. Scheduler choices use the independent main RNG.
+
+Original normal caller, setters/reset, scheduler/default choice and main RNG
+helpers execute in576 rate/slow/phase/voice-path/stale-generation cases through
+240. Valid requests consume one expected64-bit RNG recurrence; stale requests
+consume none. Largest delivery-time error is0.016666667 simulated game seconds.
+Pause freezes request/cooldown/main-RNG observations. Thirty-six whole/catch-up
+cases retain byte-equal queue/timer/RNG/event observations. Old-gate and disabled
+generation controls fail at their intended assertions. The focused original/
+public scope pair passes5.68s. The full timing suite passes108 tests in198.56s;
+20 context tests pass in3.52s. A game rebuild and its bundled GUI checks are
+deferred while the separate Bugs chat owns the live game/build session, per
+the user's instruction. These offline results do not validate a new executable.
+Other frame services, voice definitions and audio consumers remain controlled.
+Private-XBE originals skip without that asset; public scope checks run on both
+CI hosts. Live/audible output, full caller integration and physical Mac gameplay
+remain unverified. Logs: actor-voice-clock-before.log, -after.log and -focused.log.
+
+## Registered yaw callback and fresh CPU pose propagation (2026-10-26)
+
+US224170 gates float-seconds yaw motion on whole game ticks. A reproduction
+using original registrationA5CE0, entity passesA7670/A7870, post-updateA7360,
+matrix cacheA14B0 and affine point transform holds the first positive native120
+subtick even though the registered callback executes. This is a confirmed
+CPU pose hold and lost elapsed time, not just a suspicious source pattern.
+
+Only that exact entry load now follows positive game time. EAX is replaced by
+entity flags before use. The original0/91-degree clamps, direction/state,
+moving flag, sound378/379 start/stop and dirty propagation remain. The verified
+XBE's225430 registration sequence anchors the test to the original callback.
+The pre-pass model-status path and original tail cleanup also execute; physics,
+world/sector/model services and sound consumers remain controlled boundaries.
+
+The96 rate/phase/direction cases through240 require fresh native yaw/matrices/
+transformed points, independent sin/cos coordinates, pause and unchanged clocks.
+They retain coalesced authored-tick Original60 references. Largest measured
+stop-time error is0.016666667 simulated game seconds. Eighteen additional whole/
+catch-up cases compare the entire entity, transformed point and sound-event
+counts byte for byte between Original and native. Both old-gate and missing-
+dirty-store controls fail. All107 timing tests pass186.91s; the final augmented
+fixture/public scope recheck passes2 tests4.69s, and20 context tests pass5.75s.
+The supported normal Windows rebuild and bundled gates pass. Executable SHA256:
+`eb91ae41a0ea8dc46066e1cbd391a1a271245fd6eff94c6837389e2e5c195649`.
+The render preparation helper remains6,844 bytes/93 static TLS-base loads/27
+calls. Its strict old byte signature no longer matches: eleven MOV/CMP SIB
+bytes exchange RSI/RBX in equivalent unsegmented64-bit scale1 addresses.
+Bounded instruction/operand verification accepts only those commutations and
+rejects a flipped-opcode control. This is static equivalence outside typed
+relocations, not a new execution or FPS result. Receipt:
+logs/scripted-yaw-build-receipt.json.
+
+Logs: rotating-callback-before.log, -after.log, scripted-yaw-cases.log,
+-timing-suite.log, -final-focused.log and -context.log. Initial private probe
+setup omissions (the original matrix jump table and two original helpers) are
+corrected before accepting the result. No generated game C is edited.
+This establishes selected actual CPU scheduling/pose propagation, including
+the current point path. Live scene activation, collision geometry, GPU pixels,
+physical Mac gameplay and full-game acceptance remain unverified.
+
+## Subway callback time and random-event cadence (2026-10-26)
+
+Intersecting the private gate inventory with supported-XBE map callback/name
+fields identifies Venice and Subway candidates. This is a conservative source
+filter, not exhaustive callback coverage. The two Subway descriptors route
++110 to21AF90. The original dispatch/reset/callback reproduction consumes only
+0.25005341 seconds per game second at native60 quarter speed: its whole-tick
+entry gate drops elapsed time before the existing fractional countdown.
+
+The shared exact21AF90 load now admits positive fractional game time. EAX is
+replaced by the private state pointer before use. Original60, active-sound
+polling/completion, previous-variant exclusion, randomized next delay, sounds and
+state layout remain original. No new RNG or retained gameplay state is added.
+
+The Subway fixture executes original dispatcher228870, reset21AF50, callback
+21AF90, variant picker12380 and both integer/float LCG consumers153BB0/153BD0.
+Descriptor and sound consumers are controlled; completion is simulated at0.3
+game seconds. It compares three emitted variants and per-event RNG seeds
+exactly with a coalesced authored-tick Original60 reference at native60/120/
+144/180/240 normal/quarter intervals. Event times remain within0.15 game seconds
+after three events, and the final seed must equal seven total original draws.
+Pause with stale whole ticks must change neither seed, sound polling, callback
+count nor timer. Stack/callee-saved/FPU checks and exact public gate boundaries
+remain. Restoring only the old callback gate fails. The two original map cases
+pass5.06s. All106 timing checks pass178.47s and all20 context checks pass3.57s;
+the normal Windows rebuild and bundled gates pass. Executable SHA256 is
+`bf71d161f4d53c1f7b850a26f0c7e1ad9731a4502bd500477badfdad533e86e1`.
+
+The existing original map test is parameterized for both maps; both-host CI
+already selects it. Private-XBE checks skip without assets, while public scope
+checks run on both hosts. Logs: subway-callback-before.log, -after.log and
+-timing-suite.log; descriptor filtering is private. Live sound/audio-clock
+behavior, broader callbacks and physical Mac gameplay remain unverified.
+
+A clean current-build crowd attempt starts after the other game closes, but
+another checkout relaunches a game/build during the route. The owned test game
+is deliberately closed via WM_CLOSE after an exact executable-path check;
+the runner records an expected unexpected-exit error. This interrupted run is
+not accepted as clean pacing or a complete route. Fixture/signatures remain
+valid and disposable partitions are recycled. Receipt:
+logs/crowd-bf71-disco240-interrupted.json. Further clean tests require an
+exclusive window; the separate active Bugs chat's testing is preserved.
+
+## Venice level callback elapsed-time repair (2026-10-26)
+
+A read-only inventory of remaining integer game-time gates identifies US222B60.
+The verified XBE's three Venice descriptors route +110 to that callback. The
+original level dispatcher228870 already admits fractional updates, but the
+callback's own whole-tick gate discards their duration before its float-seconds
+countdown. A lifted original dispatcher/reset/callback reproduction at120FPS
+leaves5.50000763 seconds after one game second from6, instead of about5.
+This establishes lost elapsed time in the selected callback, not a visible or
+audible live-scene observation. The inventory contains127 candidate records;
+the remaining records require individual investigation, not blanket gate edits.
+
+The shared exact222B60 gate now admits positive fractional game time. EAX is
+replaced by the state pointer before the timer uses it. Original mode, the
+six-second reset, event156F,900-second repeat, sound consumers and memory layout
+remain original. Pause with stale whole ticks stays frozen. No host adapter.
+
+The new original-routine test passes native120/144/180/240 normal/quarter
+intervals and a coalesced authored-tick Original60 reference, including original
+event reset, stack/callee-saved state, pause and600
+mixed intervals. Restoring only the old callback gate fails at120. Descriptor
+lookup and sound consumers are controlled. The public timing-hook fixture
+checks site/address boundaries, fractional rates, pause and Original fallback;
+both focused tests pass3.55s. The timing/vehicle run has123 passes and one15s
+timeout in an existing deliberately broken vehicle-steering case; that exact
+test passes in4.38s on an isolated rerun. All20 context checks pass3.44s. The
+supported Windows rebuild and bundled gates pass; executable SHA256 is
+`ab39f8192467f703b39d6bbd1560fedd84867d86f45ecf744ffcbeea9cbaee80`.
+The original test skips without
+the supported private XBE; asset-free scope checks still run on both hosts.
+Live Venice audio/gameplay, other level callbacks and physical Mac acceptance
+remain open. Logs: venice-callback-before.log, -after.log, -focused.log and
+-timing-suites.log; the full read-only inventory remains private.
+
+## State-preparation constant-upload integration (2026-10-26)
+
+The retained preceding/optimized native22BE0 slices also pass with the original
+US3D9520 constant-upload callee, lifted from the checksum-verified supported
+XBE. The upload updates actual packed constants and emits guest command data;
+other out-of-line services remain controlled. Four rounding modes and six
+scenarios each run10,000 calls per variant. The four active-upload scenarios
+require10,000 uploads and10,000 command writes each; every upload emits144 bytes.
+Both variants agree on full8MiB guest memory, register/vector/FPU state,
+callback observations and a digest of every emitted packet. A candidate-only
+packet corruption fails the comparison. No performance measurement is taken
+alongside the other running game.
+
+Initial test setups used routing masks that produced no packets; those runs
+are excluded from command-output acceptance. Matching the authored routing
+index enables real writes and is checked explicitly. The actual original
+callee publishes its local frame through the existing global frame bridge;
+the earlier spy's absolute global-frame-preservation assertion is inappropriate
+for that callee. The integration check retains exact stack-return checks and
+compares the full actual frame/register state between variants instead. No
+generator or runtime frame behavior is changed. Receipt and recipe remain
+private: logs/state-prepare-real-upload.json and
+private/pipeline/check-state-prepare-real-upload.py. This is selected CPU command
+integration, not GPU execution, full service behavior, live FPS or Mac acceptance.
+
+The acceptance audit in docs/native-high-refresh.md now distinguishes current
+source/build checks from preceding live crowd, local animation, selected GPU
+pose, loopback rematch and vehicle-contact evidence. Unresolved mechanics and
+physical-host coverage remain explicit; the full goal is not complete.
+
+## State-preparation live register references (2026-10-26)
+
+The shared title policy additionally selects22BE0 for live integer/vector cell
+references. It retains addresses of the original thread-local register cells,
+not copied values: nested calls, callbacks and partial writes remain immediate.
+The existing three selected sites remain enabled; clocks, generated guest code,
+MMX/x87, gameplay policy and production compiler flags are unchanged.
+
+A current-executable/PDB audit identifies116 static TLS-base loads in the
+8,774-byte production preparation body. Compiling the entire unmodified generated
+translation unit reproduces that baseline outside identical typed relocation
+fields. Enabling22BE0 produces6,844 bytes,93 TLS-base loads and the same27 calls.
+An initial command-line function-macro experiment was invalid (MSVC ignored its
+selector); the corrected forced-include policy asserts its selection and makes
+that warning fatal. Isolated-body compiles do not reproduce production inlining
+and are not the performance baseline.
+
+Private native slices preserve the complete target instructions, typed
+relocations and string sections. Four rounding modes and six scenarios compare
+full8MiB guarded guest memory, GPR/vector/FPU/FP state, nested callback and dispatch
+observations over10,000 calls per variant. All pass. Seven alternating million-call
+timing pairs per scenario give median candidate/reference ratios0.443..0.547.
+These are helper timings with controlled out-of-line service spies, not measured
+game FPS gains or proof of every real service interaction. Private slices omit
+unwind metadata and never enter the game build.
+
+All25 focused register-reference/context tests pass in9.40s. The supported normal
+Windows build and bundled gates pass. Its complete preparation body matches the
+executed candidate outside identical typed relocations; executable SHA-256 is
+`3c5beb5424be89d976b2e7a52e18ce61cc0ff49fbf9cff5e53864e77ddfce830`.
+Receipts: ignored logs/state-prepare-deployed-codegen.json,
+gpr-state-prepare-full-chunk.json and gpr-state-prepare-native-execution.json.
+Clean live crowd comparison for this executable remains pending: a game from
+another checkout is running and is preserved. Prior crowd results below are
+for the preceding executable, not this extension. Physical Mac gameplay and
+performance, broad mechanics and sustained heavy240 remain unverified.
+
+## Pushed-array address recurrence and current crowd profile (2026-10-26)
+
+A bounded45s main-thread diagnostic of03ca7710/d999 retains4,260 samples with
+zero sampler failures/already-suspended/capacity errors. Its total suspension
+cost is1,089.631ms (maximum1.483ms); thread CPU time is27.531s. The first15s of
+combat have123 wait snapshots among1,412 samples; later periods reach the cap
+and wait more. These are diagnostic windows with sampling overhead, not clean
+FPS or a single-bottleneck claim. Scene56/active match/ten bots/foreground
+observations remain valid across the nine five-second windows.
+
+Release PDBs lack source-line records for these PCs. Matching entire existing
+COFF function sections against the sampled PE, ignoring typed relocation
+fields and retaining contained unwind fragments, identifies actual helpers.
+Every match rejects a flipped instruction-byte control; folded aliases stay
+explicit. This confirms56 leaf samples in `push_copy_attribute` and identifies
+the texture/checksum/state helpers without relying on their nearest labels.
+Old-PC matching now refuses a different current executable. Source/object/
+executable hashes remain in the private owned-sample receipts.
+
+The additive `zz-strided-vertex-increment.patch` replaces the per-vertex source
+multiply with an advancing32-bit source offset. Destination offsets retain
+`size_t`; wrapping, copy widths/order, fresh pointer resolution, read guards,
+fallback and per-draw allocations remain. Current MSVC code has no multiply
+inside any of the nine copy-case loops; each case initializes its source once.
+The normal helper shrinks from800 to776 code bytes. No timing, animation,
+geometry cache, input, settings or interpolation policy changes.
+
+Four full-gather tests pass, including24,000 randomized reference comparisons,
+large16,384/65,536-vertex buffers, guard pages for sizes1..64,1,536 direct wrapped
+source cases and compiling over-read/wrong-stride/widened-source controls.
+The pointer stub now widens the already-evaluated expression like production;
+it cannot hide an incorrectly widened accumulator. The supported Windows build
+and bundled gates pass. All21 patch-upgrade cases pass. Two context checks
+initially fail the existing guide-size budgets; details move to the linked
+vertex guide and outside the bounded runtime excerpt. Limits are unchanged,
+and all20 context tests then pass. Original failure logs remain retained.
+The clean live comparison below uses this same rebuilt executable.
+
+Six alternating timing pairs per size compare against the immediately preceding
+production helper/gather. Median ratios by vertex count1/3/16/96/512/16,384/
+65,536 are0.9582/1.0370/0.9483/0.8881/0.8059/0.9957/0.9803. The three-vertex
+case regresses about3.7%; large runs vary. A retained NPC frame has only five
+three-vertex draws among522 indexed draws, but not every indexed draw must use
+gathering. These are component timings, not a measured live FPS improvement.
+Post-conversion GPU replay does not exercise this pre-capture gathering stage.
+
+Capture/trace/sampler-free Disco runs use3440x1440/FOV73/fullscreen (actual
+client1920x1060), Enhanced selected with Classic fallback. Each45s gameplay
+window has19 foreground checkpoints and ten configured bots. Native240:
+232.039FPS, minimum1s201/5s216.8, p995.398ms/worst8.131ms; Original60:
+59.9996FPS, minimum1s/5s60, p9917.221ms/worst17.592ms. Guest Presents increase
+uniquely, interpolation stays zero and bounded independent timing-call/Present
+comparisons pass, rejecting held/wrong-rate counter controls. Game/wall ratios
+are0.999860/0.999877. Profiles/signatures/fixture stay intact and disposable
+partitions are recycled. Different AI/combat paths prevent a causal FPS claim
+against the previous228.466FPS run. Sustained240 and full-game acceptance remain
+open; successful Presents do not measure GPU completion or monitor scanout.
+Private `crowd-8b68-disco{240,-original60}` summaries and
+`logs/crowd-8b68-disco*-{summary,clock}.json` retain the measurements.
+
+New executable SHA256:
+`8b68e72af663ce764f9453f6bf909e1e2e3720cdc19885a9ae8604d76317a514`.
+Receipts: `logs/push-increment-build-receipt.json`,
+`logs/push-increment-codegen.json`, `logs/owned-d999-disco-analysis.json`,
+`logs/push-increment-gather-tests.log` and private
+`push-copy-recurrence-probe/sizes/results.json`. Both hosts share the HLE
+arithmetic; physical Mac performance/gameplay remains unverified.
+
+## Selected NPC pose and GPU replay observations (2026-10-26)
+
+The unchanged03ca7710/d999 Windows build completes an isolated ten-bot Disco
+route with the existing host-call recorder and completed-local-update trace.
+All24 consecutive v9 containers are complete (731–740 draws each); the paired
+completed CPU IDs are consecutive and ten intervals carry zero whole ticks.
+The actual render size is1280x720/FOV73. Camera movement prevents treating
+ordinary screen differences as independent NPC animation evidence.
+
+Reviewed prefix replays identify a visible NPC on the upper-left balcony.
+Fifty indexed-skinning draws within47..168 retain identical geometry in the
+selected28007/28008 pair. The actual shader reads `c[a0+96]`, but vertex input
+v0.x is-32/-28/-24: its effective matrix rows are64..75. An initial control
+incorrectly froze96..191 and had no effect; its source/results are retained.
+The generated shader uses60..63 for projection. Offline derivatives isolate
+the selected NPC parts, hold that camera matrix fixed and retain fresh64..75.
+
+The second interval has game_ticks0/delta0.637014. All50 selected palette
+banks change; actual GPU replay coverage changes by388 pixels. Freezing only
+the effective matrices restores the preceding coverage exactly (zero changed
+mask pixels, maximum channel difference1). The same geometry/resources and
+other second-frame state remain. Palette-relative linear transforms also
+change beyond conservative float32 storage-rounding envelopes in50 of104
+draw/palette-pair comparisons. All104 synthetic common rotation/translation
+controls stay within the envelopes. Repeated material draws mean these are
+not104 distinct anatomical bones. Pivot distances alone are inconclusive at
+articulated joints; the initial distance-only result is retained.
+
+This proves fresh submitted NPC pose data and selected replayed articulation
+on a zero-carried-tick update, independently of common camera/root motion.
+It does not prove every NPC/frame, normal scene occlusion/live framebuffer
+color, exact Original60 NPC speed/events, physical input/Mac or clean pacing.
+Capture/CSV overhead excludes this run from FPS claims. The bounded game exits
+cleanly; profiles/signatures/fixture remain intact and partitions are recycled.
+Receipts: `logs/npc-render-evidence.json`, private `npc-render-d999-disco240`
+correlation and `fixed-camera-npc-actual-rows/{results,relative-pose}.json`.
+No production code/executable changes follow from this passing observation.
+All16 hosted checks now pass for03ca7710, including both native hosts.
+
+## Repeated shader-constant uploads (2026-10-26)
+
+The PR367 follow-up compares incoming constant registers by bytes and keeps
+the existing scalar stores, Hor+ work and copy order. Identical values leave
+an already-clean bank clean; changed values and pending writes still upload.
+New buffers remain dirty, target-dependent zoom still invalidates, and failed
+maps retain pending data/zoom state for retry. This changes common Windows/Mac
+RHI code; legacy GL's direct uniforms remain unchanged. No timing or pose
+sampling policy changes. The tail `vsh-constant-dirty.patch` is authoritative.
+
+The supported Windows build and bundled gates pass. Four production-function
+fixtures pass, including8,192 edge/random configurations across four rounding
+modes, aliases, FP flags, signed zero/NaNs, initial zeros, fresh/unchanged values,
+null/negative/clipped input and upload failure/zoom retry. Three broken variants
+must compile and then fail. All41 patch-upgrade/context checks pass. The new
+fixture is registered for both native CI hosts; all16 hosted checks pass
+at03ca7710, separately from the prior successful checks atcc3f20f7.
+
+Actual D3D11 GPU replays compare three retained adjacent/late firing frames and
+the constants-only frozen-pose control at prefixes232/282/300. Hand/weapon
+coverage matches before/after, adjacent poses remain distinct, and freezing
+constants restores the preceding coverage. Model channel differences are at
+most1 level (weapon pixels match); whole-frame differences are at most2.
+An unchanged pre-change helper also produces2-level background variation.
+Initial zero-/one-level assertions and repeat controls are retained rather
+than described as exact pixel parity. Coverage uses a measured2-level noise
+threshold. These are selected offline replay results, not live color parity.
+
+Seven alternating before/after pairs per saved frame,1,500 replays per run at
+1280x720, exclude the first100 intervals and final GPU readback. Median paired
+interval ratios are0.99148/0.98601/0.98214: about0.85/1.40/1.79% lower, with15
+of21 pairs lower and individual ratios0.94133..1.03684. This is a modest,
+variable renderer-only result, not a measured live-game FPS gain. The separate
+capture survey predicts233 uploads becoming76–77 under its normal no-Hor+/
+zoom assumptions; that count is a simulation, not an instrumented GPU count.
+
+Source/patch/executable/PDB hashes: `logs/vsh-constant-build-receipt.json`.
+New Windows executable SHA256:
+`d999c9c7ef19816757a1a0655c9eaeff5dd5391895c63a087d2c3f35dbb51d2e`.
+Detailed evidence: `logs/vsh-constant-dirty-tests-final.log`,
+`logs/vsh-constant-dirty-stack-tests.log` and private
+`vsh-constant-render-benchmark/{gpu-parity,timing}/results.json`.
+The same new executable completes capture/trace/sampler-free Disco240 and
+Original60 runs at3440x1440/FOV73/fullscreen (actual client1920x1060), Enhanced
+selected with Classic fallback. Each45s gameplay window has19 foreground
+checkpoints and ten configured bots; native bots have14–19 distinct sampled
+positions. Native:228.466FPS, minimum1s180/5s189.4, p995.821ms/worst6.974ms;
+Original:60.000FPS, minimum1s/5s60, p9917.265ms/worst17.788ms. Both have unique
+increasing guest Presents, zero interpolation and independent bounded timing-
+call/Present agreement (held/wrong-rate counter controls rejected). Sampled
+game/wall ratios are1.000336/1.000086. Profiles/signatures/fixture are preserved;
+disposable partitions are recycled. Receipts: `crowd-d999-disco{240,-original60}`
+private run summaries and `logs/crowd-d999-disco*-{summary,clock}.json`.
+
+This native run is lower than the previous C8 run's232.989FPS. Different bot/
+combat paths prevent a causal before/after conclusion; no live FPS improvement
+is claimed. Sustained240 in heavy crowds remains unachieved. Physical Mac,
+full-game acceptance and live framebuffer/physical-input limits remain open.
+An additional82 CI scope/gate tests pass; all16 hosted checks pass at03ca7710.
+
+## Submitted and replayed firing-pose observations
+
+The unchanged c8e1/cc3f20f7 Windows build now has selected renderer-boundary
+evidence beyond CPU timelines. A no-bot Venice/native240/Classic/FOV73 route
+records24 consecutive host-call frames using the existing recorder, with no
+live GPU readbacks. The actual host/replay render size is1280x720; the capture
+header still reports the title's logical640x480. Each complete v9 container has
+335 draws and no recorded missing-bind/target or incomplete-write warnings.
+
+Offline Windows D3D11 GPU replays isolate reviewed draw ranges232..281 (hands)
+and282..299 (gun), using prefixes232/282/300 to cancel each frame's background.
+The same68 draws retain identical mesh bytes, shader programs and textures
+across all24 frames, while their submitted shader-constant state changes every
+frame. Every replay produces a distinct hand and gun coverage mask. Adjacent
+coverage changes range1,634..6,883 hand pixels and2,406..6,934 gun pixels.
+
+The completed CPU observations between each output Present and the following
+Present have consecutive IDs, an advancing firing clip1160 and17 zero-carried-
+tick updates. Their game deltas are0.302808..0.369696 console units. In the first
+adjacent pair both carry zero ticks: the visible hand/gun coverage changes by
+3,286/2,621 pixels. An offline control replaces only the second capture's677
+VS_CONSTANTS payloads with the preceding frame's values (419 payloads change).
+This restores the previous hand/gun coverage exactly, despite retaining all
+other second-frame chunks. It demonstrates that the changed submitted state
+produces the new visible poses, rather than an unrelated checksum changing.
+
+Repeated-capture model pixels match; occasional background1-level rounding
+noise is excluded by the coverage threshold. Initial overly strict whole-frame
+hash controls and their one-/two-background-pixel differences are retained.
+A live-readback probe shows the expected firing geometry, but readback overhead
+pushes most intervals beyond a whole tick; it is not fractional-render evidence.
+Offline replay brightness also differs from the live readback, so exact live
+pixel/color parity remains unverified. The host-call burst's5.069..6.510ms
+intervals include capture overhead and are not clean pacing measurements.
+
+Both bounded games exit cleanly and preserve fixture/profiles/signatures;
+partitions and redundant captures are recycled, retaining selected source/control
+frames, readbacks, hashes and results. Receipt:
+`logs/rendered-local-pose-evidence.json`; detailed renderer/CPU correlation and
+GPU replay/coverage controls remain in the isolated capture directory. This is
+selected submitted-pose/GPU-replay evidence, not all live framebuffer/bone,
+all-game, physical Mac, monitor scanout or input-latency acceptance. No production
+code or executable changes were made; all16 checks remain passed atcc3f20f7.
+
+## Completed local aim and animation observations
+
+The shared, default-off `TSFP_NATIVE_LOCAL_TRACE` diagnostic now records local
+CPU state after the US gameplay update returns, before the next timing interval.
+It does not change game state, input, clocks or animation. It supports one local
+Story/Arcade player, marks optional animation/camera validity and stops at20,000
+rows or8MiB. The existing LAN trace schema is unchanged. Eight collector/writer/
+guard/limit/mutation checks pass; all104 timing tests and the supported Windows
+build/bundled gates pass. Both native CI hosts now include the new trace checks.
+
+Normal Windows executable SHA256
+`c8e1ec1b4c3542472537c02efad286d0a1e24910b9d6dacc58e12227563c82cb`
+is built from7a89c528 plus the local-trace source changes; source/PDB/executable
+hashes are recorded in `logs/local-state-build-receipt.json`. Paired no-bot Venice
+routes use the same executable and synthetic commands:3440x1440 host device,
+1920x1060 client, FOV73,24 mouse steps, held fire and pause/resume.
+
+| Observation | Original60 | Native120 | Native180 | Native240 |
+| --- | ---: | ---: | ---: | ---: |
+| Completed CPU-state rows |1426|2875|4311|5765|
+| Actual yaw steps / total absolute rotation |24 /60 degrees|24 /60 degrees|24 /60 degrees|24 /60 degrees|
+| Yaw steps on zero-carried-tick updates |0|7|8|9|
+| Stable firing hand/weapon pairs, all advancing |155|311|467|623|
+| Those firing pairs with zero carried ticks |0|155|311|467|
+| Interior pause observations, all frozen |120|241|361|481|
+| Rounds consumed (weapon3, reserve unchanged30) |4|4|4|4|
+
+The legacy144 diagnostic also passes on this same build:3449 rows,24 actual
+yaw steps (all24 on zero-carried ticks),373 advancing firing pairs/218 fractional
+pairs,289 frozen pause observations and four rounds. This does not add144 to
+the public60/120/180/240 choices. The menu's60 choice maps to Original0, so the
+Original60 comparison covers that setting rather than the diagnostic native60.
+Every added route preserves fixture/profiles/signatures, exits cleanly and
+recycles its partitions. Receipts: `logs/local-state-all-presets-results.json`
+and `logs/local-state-with-legacy144-results.json`.
+
+Positive stable-identity/same-speed body, hand and weapon timeline increments
+also retain a median normalized advance of approximately1/60 per game-time unit
+at every tested rate, matching Original60. This checks that fresh timeline
+updates do not merely run the animations faster; holds, wraps and discontinuities
+are excluded. It is not complete root/event/render parity. Per-track counts,
+ranges and medians are in `logs/local-state-animation-speed.json`.
+
+All rows have valid body/hand/weapon/camera records and consecutive completed
+frame IDs. Native body animation also advances on all3,790 eligible positive
+zero-carried-tick updates across this route. Idle hand/weapon times legitimately
+hold; the firing window excludes transitions and checks stable clip/cycle/model.
+Equivalent yaw representations differing by360 degrees are excluded from input
+step counts. Pause freezes body/hand/weapon times, reference position, aim and
+camera direction. Both exit cleanly, preserving fixture/profiles/signatures and
+recycling disposable partitions. Receipt: `logs/local-state-pair-results.json`.
+
+These are completed CPU-state observations, not bone/mesh or rendered-frame
+freshness, GPU completion, scanout or physical input latency. The native run
+overlapped offline timing tests; both CSV-writing runs are excluded from clean
+pacing claims. Public presets/menus/mechanics are unchanged. Broader rendering,
+physical Mac gameplay and sustained240 acceptance remain open.
+
+The separate c8e1 trace/capture/sampler-free Disco240 run completes a45s window:
+mean232.98929FPS, minimum1s183/5s198.8, p995.570ms/worst6.556ms. All19 active
+foreground checkpoints retain ten bots (each16..19 distinct sampled positions).
+Game/wall speed1.000334, unique guest frames and independent timing-call/Present
+bounds pass; no local trace file is created. Fixture/profiles/signatures and
+cleanup pass. This is current-build pacing evidence, not a causal improvement
+over510c's231.60/min196 on a different AI route. Source is committed/pushed as
+cc3f20f7; all16 hosted checks now pass, including both native hosts and patch
+upgrades/transitions. Per-run receipts live under
+`private/test-saves/crowd-c8e1-disco240`.
+
+## Current-build Disco cost investigation
+
+Two bounded diagnostic routes use the unchanged510c/7a89c528 Windows build,
+ten Disco bots, FOV73, Enhanced-selected/Classic fallback,3440x1440 host device
+and1920x1060 foreground client. Both exit cleanly with profiles/signatures and
+fixture preserved; they are not clean pacing measurements.
+
+The200Hz internal sampler's spawn-to-combat-four delta has6,884 main-thread
+leaf samples. Only27 are NtQueryVirtualMemory; the much larger cumulative
+menu-time count does not identify the gameplay bottleneck.541 call chains
+are dropped at the16-frame/capacity limit; leaf counts remain available.
+The exact-name program-expansion report has zero matches because that helper
+is inlined; zero matches must not be interpreted as zero conversion cost.
+
+A separate45s owned-main-thread sampler retains4,258 raw native-PC records
+with zero failures/already-suspended/capacity errors. Sampling suspends/unwinds
+the thread for1,122.69ms total (maximum1.479ms per observation), so its frame
+rate cannot establish normal throughput or latency. Native unwind boundaries
+prevent nearest-symbol aliases from being presented as actual function names.
+Source-line resolution identifies texture-survey/checksum/state/texture-bind
+ranges; generated guest model lines remain unresolved. The model-node renderer
+18EA90 appears in1,025 eight-frame chains (100 leaf samples), a useful next
+render-setup target, not proof that all that cost belongs to its own body.
+Texture-survey instructions account for88 samples, about2.1% of all samples.
+Receipts: `logs/owned-510c-disco-analysis.json`, per-run raw `owned-sample.json`,
+`logs/resolve-510c-lines.log` and the internal `diagnostic-summary.json`.
+
+Private8-/16-sample texture-loop unroll prototypes pass the existing exact
+checksum/read-position/order/bounds fixture but are rejected for performance.
+Seven alternating CPU rounds show8-way ratios1.074 at256KiB and1.044 at64MiB;
+16-way is1.231 at32KiB and1.105 at256KiB (candidate/current, lower is faster).
+Mixed small gains do not justify deployment. The production four-lane path,
+checksum/upload cadence, gameplay and generated sources remain unchanged.
+Receipt: `logs/texel-unroll-510c-probe.json`; this is Windows CPU-kernel evidence,
+not a Mac result or a causal game-FPS comparison. The full goal remains open.
+
+## Current-build Hotel crowd coverage
+
+The normal Windows executable510c (source7a89c528) completes paired ten-bot
+Hotel routes at native240 and Original60. Both use FOV73, Enhanced selection
+(Classic fallback), actual3440x1440 host device creation and foreground1920x1060
+clients. Capture, native CSV tracing and CPU sampling are disabled; Present
+recording starts after70s. Each complete50s window has21 active ten-bot
+checkpoints. Recorded dimensions/settings are checked in addition to the request.
+
+| Mode | Mean FPS | Lowest1s /5s FPS | p99 / worst frame interval |
+| --- | ---: | ---: | ---: |
+| Native240 |239.88101|238 /238.6|4.936 /5.823ms|
+| Original60 |60.00068|60 /60|17.209 /17.554ms|
+
+Both retain unique increasing guest frames, zero interpolation and independent
+timing-call/accepted-Present agreement; held-counter and wrong-rate controls
+are rejected. Every sampled bot moves (14..19 distinct positions native,
+13..20 Original). Native sampled game/wall speed is0.999771. Both exit cleanly;
+fixture, personal profiles and signatures remain preserved and disposable
+partitions are recycled. Receipt: `logs/tiled-510c-hotel-full-comparison.json`.
+
+An earlier separate pair has the same3440x1440 device but640x480 visible clients:
+native239.13648/min1s226 and Original60.00061/min60. Its receipt is retained as
+`logs/tiled-510c-hotel-comparison.json`; it is not the full-window comparison.
+Separate AI/death/camera routes prevent causal before/after performance claims.
+These are successful host Present intervals and sampled motion, not simultaneous
+bot visibility, GPU completion/scanout, per-frame aim/animation or physical input
+latency. Hotel staying near240 does not resolve Disco's231.60 average/min196.
+All16 checks remain green at unchanged7a89c528; PR367 remains draft.
+
+The existing completed-update pose trace is specifically filtered to two-human
+LAN play and records body positions only. It cannot establish local per-frame
+aim/hand animation freshness. Broader rendered-pose and physical Mac gameplay
+acceptance remain open; no full-goal completion is claimed.
+
+## Bounded packed-vertex tiles
+
+The additive `zz-vertex-expand-tiles.patch` bounds each tail/attribute pass to
+32 vertices. This addresses the previous whole-buffer kernel's measured large-
+draw slowdown while retaining fresh allocation/input, conversion arithmetic,
+stream lookups and attribute order within every vertex. The final partial tile
+uses subtraction before addition to avoid unsigned wrap.
+
+The expanded fixture passes all seven positive/negative cases in20.22s:
+48,000 configurations over0..1024 vertices and four rounding modes, plus128
+successful full-output large cases around4096/16384/65536 using NORMPACKED3 and
+SHORT4 in both packed layouts. Source/destination guards span4/132/260 vertices;
+an independent repeated-tile-origin mutation fails. Large cases require actual
+successful conversion, so allocation failure cannot silently count as parity.
+
+The fresh three-pair size sweep gives candidate/original CPU ratios0.39364/
+0.39430 at96 vertices,0.85759/0.96067 at16,384 and0.91440/0.89246 at65,536 for
+the32-/50-byte packed layouts. One-vertex results1.01144/0.99201 and fixed-
+function96 result1.00011 are near parity. This removes the measured large-case
+loss in these layouts; it does not prove every layout or causal game FPS gains.
+128-/64-/32-vertex and alternative tail-copy variants were compared before
+selecting32. Receipts: `logs/vertex-tile-variants.json` and
+`logs/vertex-expand-tile32-range-benchmark.json`; earlier128-tile evidence remains.
+
+The supported Windows build and bundled gates pass. Executable SHA256
+`510c25e2b3a6390b26c5f34697e9c43f9e8f8a795180b722d39f07d8e3b19e83`, built
+fromaf448300 plus the tile patch SHA256
+`217d7875a319e0200c1f7c66173eb75f9ed8daa2ea8d21eb6cd7fddfb3c8efdd`.
+The120s native180 opening replay passes movement, hand/weapon14 handoff, firing
+and pause/resume:32 rounds consumed128 to96, four interior samples freeze hand
+clip/time and position, and clips1180/1188/1190 advance. A retained frame shows
+gun/canyon geometry without obvious breakage. This diagnostic overlapped patch
+validation and is not clean pacing or complete visual parity. The local patch-
+transition/context suite passes41 checks in633.11s, and all16 hosted checks
+pass at7a89c528, including native Windows/Mac and upgrades/transitions.
+
+The fresh same510c capture/sampler-free Disco comparison completes45s windows.
+Native240 averages231.59515, minimum one-second196/five-second208.2,
+p995.401ms/worst9.668ms. Original60 averages59.99967, minima60/60,
+p9917.242ms/worst17.838ms. Both retain19 foreground ten-bot observations,
+unique increasing guest frames, zero interpolation and independent timing-call/
+Present agreement with held/wrong-rate controls rejected. Game/wall speed is
+0.999705/1.000023; sampled bots occupy15..19/14..19 distinct positions. Fixture,
+profiles and signatures remain preserved and disposable partitions recycled.
+Receipt: `logs/tiled-510c-crowd-comparison.json`. These separate AI/camera/death
+routes do not prove a causal increase over5988's220.35/min154 or32D1's232.02/
+min177. Sustained240, full-game/visual and physical Mac/input acceptance remain
+unfinished; the PR remains draft.
+
+## Packed vertex conversion follow-up
+
+`zz-vertex-expand-strides.patch` moves packed-format and common byte-width
+dispatch outside the vertex loop in common HLE code. It retains a fresh zeroed
+allocation, input bytes, arithmetic, stream-lookup/failure order and per-vertex
+attribute order. A thin selector retains the original generic fixed-function
+body. No game-clock policy, transformed-pose cache or retained vertex buffer is
+introduced. The prior crowd logs show zero fixed-function-declaration draws;
+an earlier optimization of that unused path was therefore not deployed alone.
+
+The actual applied functions pass48,000 reference comparisons across four FP
+rounding modes, including fresh/aliased streams, overlapping prefix writes,
+padding, allocation/lookup failures and source/destination guard pages. Five
+independent mutations compile and fail, including an extra-byte read that leaves
+output unchanged but faults at a guard page. The shared CI workflow includes
+all six positive/negative cases on both native hosts; physical Mac validation
+remains unavailable. Earlier byte-copy switch and scratch-reuse experiments
+were rejected for slowdown or negligible benefit.
+
+Seven alternating600,000-draw pairs of96 vertices using the deployed full-function
+fixture produce median candidate/reference CPU ratios0.43167 (32-byte packed),
+0.42457 (50-byte packed) and0.99288 (fixed function). These are synthetic CPU-
+kernel results, not live game FPS or full renderer fidelity. Receipt:
+`logs/vertex-expand-production-benchmark.json` with source and patch hashes.
+
+The normal Windows Release build/bundled checks now pass; executable SHA256
+`59887e0e28b21e2e54c5d1d6a14830b54e409cf8413370d86738dde0c632ba2d`, built
+from90f79e93 plus this patch (SHA2561387d8dea41a5127d5a44d0bb0a607481fe181540f142dc15595c234fa9738f2).
+The first build's controls gate failed a wall-clock assumption: Sleep(40)
+advanced GetTickCount64 only31ms, correctly leaving the34ms Reload pulse active
+(Reload255/Fire0). The fixture now waits40ms in that same clock domain; all16
+tested phase shifts0..15 pass. Production input arbitration is unchanged.
+The first selected Python batch had100 passes and one stale-index failure;
+refreshing the intended patch index resolves that check, with20 context checks
+passing afterward. The final six conversion cases pass in14.10s.
+Patch upgrades/transitions and context checks pass41 checks in662.56s. The
+new executable also completes the120s native144 opening replay: movement,
+changing/advancing hand clips, weapon14 handoff,32 rounds consumed (128 to96)
+and pause/resume all pass. Four interior samples freeze hand clip/time and
+player position exactly. Two reviewed retained frames show the gun/hand and
+canyon geometry without obvious breakage. This capture/trace-enabled run
+overlapped patch validation and is not clean pacing or full visual parity.
+The capture-free same-build Disco comparison completes45s windows: Original60
+averages59.99990, minimum one/five-second60/60, p9917.256ms/worst17.652ms;
+native240 averages220.35042, minimum154/174.4, p996.563ms/worst9.457ms. Each
+retains19 foreground ten-bot checkpoints, unique increasing guest frames, zero
+interpolation and independent timing-call/Present bounds with held/wrong-rate
+controls rejected. Game/wall speed1.000343/0.999882; individual bots occupy
+16..19/15..19 sampled positions. Fixture/profiles/signatures remain preserved
+and partitions recycled. Receipt: `logs/packed-5988-crowd-comparison.json`.
+The latest native result is lower than the earlier32D1 232.02/min177 result
+on a different AI/camera/death route. A causal live regression is unproven,
+but the performance concern remains unresolved and PR367 stays draft.
+
+Expanded CPU measurements now expose a real size-dependent kernel regression:
+three alternating pairs per size across1..65,536 vertices retain gains through
+4,096 in the two synthetic packed layouts, but candidate/reference ratios rise
+to1.029..1.111 at16,384 and1.124..1.244 at65,536. Actual live draw-size frequency
+is unmeasured. Receipt: `logs/vertex-expand-range-benchmark.json`. The next
+candidate needed bounded vertex tiles so attribute passes do not span the whole
+large buffer; the measured repair is described above.
+No live-game FPS gain, absence of regression or physical Mac acceptance is claimed.
+
+## Focused crowded-scene diagnostic
+
+All16 hosted checks pass at90f79e93. A new same32D1 Disco diagnostic uses an
+external owned-primary-thread sampler after verified ten-bot spawn. It retains
+all4257 timestamped samples, up to eight native PCs each, over45s with zero
+sampling failures/pre-existing suspensions/capacity overruns. Total suspension
+is1102.101ms (2.45% of the window), maximum1.358ms. Thus its nine five-second
+Present rates230.31..240.02 are diagnostic, not new clean pacing measurements.
+Each window has foreground active ten-bot observations and zero interpolation.
+The helper validates the executable path, resumes before symbol resolution and
+records executable/PDB/helper hashes. An asset-free live-process check rejects
+the wrong executable, records291 busy-function leaf samples and closes normally.
+
+Raw PCs and actual native unwind ranges expose false nearest-public labels:
+some addresses named pc_native_rocking_sub belong to later unnamed functions;
+VCRUNTIME's __NLG_Return2 export has a4976-byte inferred symbol extent covering
+separate unwind entries. An extent alone does not prove function identity.
+The private analyzer retains unnamed ranges rather than blaming that helper or
+non-local jumps. Model-tree/draw work is prominent, but the leaf cost is diffuse;
+no single culprit, causal optimization or repeat of the earlier177FPS dip is
+proved. Private receipt: `logs/owned-crowd-stack-analysis.json`.
+
+The preceding internal-report attempt retained23 complete cumulative snapshots
+through115s, then correctly rejected later caller-table exhaustion. Its four
+complete in-match differences held near239..240 and do not explain slower later
+windows. An initial collector missed Windows CRLF snapshots; its gameplay run
+passed but its collection check failed. Both failures remain in private evidence;
+neither is a game regression or complete-profile claim. Fixtures/profiles remain
+preserved and all diagnostic children/partitions close/recycle normally.
+
+## Controlled below-target gameplay comparison
+
+The same32D1 executable completes an Original60 reference and native144
+Venice replay with artificial30ms guest-main-thread holds separated by100ms
+waits. Other threads remain unrestricted. Native averages117.399 successful
+guest Presents/s over29.58s, while the console interrupt remains60Hz. This is
+artificial timing stress, not normal performance or input-latency evidence.
+
+Observed game/wall speed is1.000287 for Original and0.999696 for delayed native.
+Both consume two rounds, finish at the same sampled aim273/0, keep position
+frozen during the interior pause and resume. Eight moving segment speeds are
+close (Original6.834..7.422, native6.852..7.512 units/s); another segment is
+blocked in both. Final positions differ by0.000511 units. Asynchronous readings
+omit one incomplete native position sample, counted explicitly. These are
+sampled route results, not exact animation/shot/contact equivalence.
+
+Independent bounded timing-call/Present comparisons pass with one in-flight
+call allowance; held and half-rate counter controls fail. Both fixtures and
+profiles are preserved, helpers resume/exit cleanly and partitions are recycled.
+Private receipt: `logs/delayed-walk-comparison.json`. The initial whole-process
+single-core experiment starved interrupt/driver workers at3..5FPS and is rejected
+as a representative moderate slowdown comparison; it is not a timing-bug claim.
+
+## Current vector-reference crowd and opening validation
+
+All16 hosted checks pass for code revision1a61f02e and documentation head6df2974b: native Windows/Mac,
+Windows/macOS patch upgrades/transitions, both launchers and PR validation.
+This establishes the hosted contract scope, not physical Mac gameplay.
+
+The same32D1 executable completes capture/sampler-free Disco runs at public120
+and180, plus legacy diagnostic144 (not a player-menu option). Each has a complete
+45s spawn+5..50 window,19 foreground ten-bot checkpoints, unique increasing guest
+frame IDs, zero interpolation, independently bounded timing-call/Present
+agreement within one in-flight call and rejected held/wrong-rate controls.
+Command hash/settings match the Original60/native240 comparison below.
+
+| Target | Guest Presents | Average FPS | Minimum1s/5s | p99/worst interval (ms) | Game/wall speed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Native120 | 5399 | 119.99904 | 120/120 | 8.841/9.438 | 0.999836 |
+| Diagnostic144 | 6479 | 143.99829 | 144/144 | 7.560/8.104 | 0.999925 |
+| Native180 | 8099 | 179.99848 | 180/180 | 6.191/7.164 | 1.000299 |
+
+Individual bots occupy13..19 distinct sampled positions across these runs;
+human health includes combat/death. Profiles/signatures/fixture stay preserved
+and disposable partitions are recycled. `logs/vector-crowd-rate-matrix.json`
+contains all five same-build modes, exact counters/hashes and limitations.
+These measurements establish these bounded windows, not all maps, simultaneous
+bot visibility, GPU completion/scanout or physical-input latency. Native240
+still averages232.02 with minimum one-second177 below; it is not sustained240.
+
+A fresh depth8 CPU diagnostic (`crowd-vector-profile-disco240`) accounts for all
+6789 main-thread differential samples and chains, zero omitted.2399 are wait
+leaves;110 texture survey,92 model renderer,78 state flush and77 trace-guard
+leaves remain. Different AI routes and depth8 versus the earlier depth16
+diagnostic prevent causal performance attribution. This is not a clean FPS run.
+
+Current32D1 Original60 and native144 opening replays,120s each, both pass
+movement, changing/advancing hand clips, weapon14 handoff, ammunition use and
+pause/resume. Both consume32 rounds (128 to96 total ammunition), and four
+interior pause samples each keep the hand clip/time and player position exactly
+frozen. Observed forward XZ speed over86..89.5s is6.22287 versus6.18952 units/s
+(native0.536% lower); this short, sampled, turning/collision-capable route does
+not prove exact locomotion equivalence. Reload/reset observations align within
+the sampling resolution; exact shot/reload timing and idle phase are unproven.
+`logs/vector-opening-comparison.json` records validation/gameplay hashes and
+the comparison. Both use diagnostic captures/traces; they are not pacing tests.
+
+Reviewed opening-space captures from Original60 and native144 and a native
+cockpit capture show no uniform brown overlay. This is selected visual evidence,
+not all cinematic frames or full rendering parity. The native144180s natural-
+intro run finishes its cinematic and reaches Story, but has only22s of player
+observations and did not prove the later weapon handoff. A subsequent pair of
+300s natural-intro runs on the same32D1 executable now verifies that handoff:
+Original60 retains141.656s of player observations and native144 retains142.140s;
+both explicitly pass `opening_firearm_equipped_at_end`. First observed weapon14
+arrives at182.703/182.187s, about24.5s after each first player observation
+(158.172/157.672s). Both show advancing hand time and clips836/838/1180/1182/1184.
+Native reports guest Presents, zero interpolation and no presentation failures.
+These runs omit capture, walking/fire and pause replay; they do not establish
+exact animation phase, visual parity, input latency or clean pacing. Profiles
+and fixture are preserved and disposable partitions recycled. Private receipt:
+`logs/natural-long-comparison.json`, with runner/executable/evidence hashes.
+An initial Original
+natural-intro attempt incorrectly combined the fixed pause/stress replay:80s
+Escape skipped the cinematic,83s Escape paused gameplay, and the replay correctly
+failed. It is retained as invalid fixture timing, not reported as a game bug.
+See `docs/agent-context/native-opening-checks.md` for separate acceptance routes.
+The full goal remains active: crowded240, broader game/visual coverage and
+physical Mac/input acceptance remain incomplete.
+
+## Vector reference extension implementation and validation
+
+The shared reference protocol now also addresses the same eight live RecompXmm
+cells in the existing three selected routines. No vector values are cached;
+partial lanes, callback visibility and Original/native clocks retain their
+existing behavior. MMX/x87 and EBP/SEH are unchanged. The vector extension is
+committed as1a61f02e; D448 measurements below precede it.
+
+The isolated model compiler comparison now includes this header:3646 assembly
+instruction lines/five static GS:88 TLS-base reads, versus integer-only3920/93
+and direct-global5525/300. It is static compiler evidence, not dynamic cost,
+full-model equivalence or game FPS. Object file size33636 is not function size.
+Synthetic generated SSE/scalar/lane operations, unaligned loads, overlapping
+guest stack/data, nested raw-cell callbacks and four simultaneous threads match
+legacy results in all six enabled/disabled/mixed scopes. Independent copied-EAX
+and copied-XMM0 mutations fail their runtime visibility checks. The four
+reference tests and unchanged walking-contact fixture pass five checks in11.72s.
+The remaining timing/model/generation selection passes114 checks in343.67s;
+the walking fixture was already included in the focused five above.
+
+Full Windows builds fail with MSVC C1002 (optimizer heap exhaustion) in four
+unselected chunks2/6/8/11, including after a terminal failure and a separate
+lower-parallelism `/MP4` retry. The original conditional vector expressions
+therefore remain an unaccepted prototype. The generator now emits a site/type-
+header reinclude before each function; an intentional section outside the type
+guard chooses vector aliases during preprocessing. Unselected bodies regain
+their direct expressions before C optimization, selected bodies retain pointers
+to the same live cells, and the site macro is cleared after each include.
+Five reference tests pass in6.01s, including preprocessed global/selected/global/
+selected transitions and independent copied-cell controls. The supported normal
+Windows build and bundled checks now pass, without `/MP4` or changed compiler
+optimization. Executable SHA256:
+`32d13a20bb654267bc943af5960a4797dcf1f15c60af9de37a93e95ac839e856`.
+The actual scoped-header model comparison has3678 instruction lines/eight static
+TLS-base reads and33288 object-file bytes, versus direct-global5525/300/42139.
+The remaining115-check selection passes114 in344.24s; walking again exceeds the
+unchanged15s runtime limit during compilation, then passes alone in14.23s including
+compilation. Combined with the five reference tests, all120 selected checks have
+passed, with that concurrent-run timeout explicitly retained. Context20 passes
+in16.31s. No assertion or timeout is relaxed.
+
+Clean32D1 Disco runs `crowd-vector-scope-disco240` and
+`crowd-vector-scope-disco-original60` complete normally with profiles/signatures/
+fixture preserved and disposable partitions recycled. Same command hash and
+graphics/settings as D448 below:3440x1440 render/1920x1060 foreground client,
+FOV73, Enhanced selected/Classic fallback, no capture/sampler/trace and45 complete
+seconds from spawn+5. Each retains19 foreground ten-bot observations, individual
+bots16..19 distinct sampled positions and human health0..1.75 (mixed combat/death).
+
+- Native240:10440 guest Presents, average232.02263, minimum one-second177,
+  minimum five-second199.6, p995.761ms, worst7.571ms. Independent clock9730
+  calls/41.97550005s, game/wall0.9997896, maximum read span11.9us.
+- Original (`--native-fps 0`):2699 guest Presents, average59.99985, minimum
+  one/five-second60, p9917.246ms, worst17.970ms. Independent clock2519
+  calls/41.9818764s, game/wall1.0000347, maximum read span23.1us.
+
+Both have zero interpolation, increasing unique guest-frame IDs, timing-call/
+accepted-Present agreement within one in-flight call, and rejected held/wrong-
+rate controls. CSV hashes: native
+`60fbb3d6243485328c0807416cf7b16c4079ee12f0c83deafb5b59d5ba8ac906`,
+Original `56ddf1d85d9680c735f700c1d707238103d6a606a450436da07bc779bb719fb1`.
+Receipt: `logs/vector-scope-crowd-comparison.json`. Different AI/camera/death
+routes prevent attributing the change from D448225.37/min167 to this code;
+older cache-only230.48/min181 also overlaps these outcomes. No causal game FPS
+gain, absence of regression or sustained240 is proved. Present acceptance is not
+GPU completion/scanout or physical-input latency. Broader gameplay/visual and
+physical Mac acceptance remain open; the full high-refresh goal stays active.
+
+All hosted checks pass for1a61f02e, including the vector extension: both native
+runtimes, patch upgrades/transitions, launchers and PR validation. The PR remains
+draft and physical Mac/full-game acceptance remains incomplete.
+
+## Register-reference CI repair and diagnostic follow-up
+
+The a65c6764 hosted Mac runtime selection passes677 checks, skips235 and passes18
+subtests, but the two generated-register fixture tests fail during compilation:
+Clang's `-Werror=unused-label` rejects three generator block labels reached by
+fall-through. No runtime fixture assertion has executed at that point. The
+fixture now exempts only unused labels while retaining `-Wall -Wextra -Werror`;
+both the positive comparisons and copied-cell rejection must still compile and
+run. Windows reference/context selection passes23 checks in7.28s. No production
+code, assertion, timeout or game executable changes for this repair. Fresh hosted
+Mac validation is pending; the local optional Clang compiler is unavailable.
+
+The completed D448 `crowd-gpr-disco-profile240` keeps the isolated profiles,
+signatures and fixture intact and recycles partitions. Its spawn-to-combat-four
+differential contains6866 main-thread leaf samples:1239 wait,155 texture sampling,
+144 driver,130 model renderer,97 disabled-trace guard and84 state-flush samples.
+Caller-chain storage is full:6354 chains plus512 omitted account for all6866
+samples. Do not interpret that partial chain table as complete attribution, or
+compare diagnostic FPS with clean capture/sampler-free measurements. Different
+AI routes also prevent a causal speed comparison with prior profiles.
+
+An ignored isolated MSVC `/O2` code-generation comparison compiles the same
+current model body/header twice, changing only the reference enable flag.
+The direct-global model has5525 assembly instruction lines and300 static GS:88
+TLS-base reads; the reference version has3920 and93. Object file sizes are
+42139/35373 bytes (not function machine-code sizes). This supports fewer static
+address calculations in that compiler output; it is not dynamic instruction
+coverage, cycle timing, full-model equivalence or measured game FPS improvement.
+Receipts remain local in `private/pipeline/model-refs-codegen/comparison.json`
+and `logs/crowd-gpr-disco-profile240-summary.json`. The crowd pacing gap remains
+open and the overall goal remains active.
+
+## Live register reference candidate (PR #367 follow-up)
+
+On `perf/native-crowd-render-cost`, the common generator now supports retaining
+addresses of the same live thread-local register cells through a translated
+function. The title enables it only for model renderer18EA90, state setter21450
+and state flush214C0. Every operation still reads/writes the actual cell; nested
+calls, callbacks and guest-memory aliases see changes immediately. Register
+values are not copied or deferred. Other routines, legacy/manual sources,
+Original/native clocks, EBP/SEH and settings retain their existing behavior.
+See `docs/agent-context/gpr-refs.md` for the protocol and acceptance limits.
+
+The supported Windows build and bundled checks pass. Executable SHA256:
+`c27dcfe9ac78d5f0b3e9ffa2747c5d09258459f582f2231b3355e5752c2b7be4`,
+built on4511b06e plus this uncommitted generator/title policy. Generated-code,
+model-transform and native-timing selection passes117 tests in374.10s. The
+additional register-reference/patch-history selection passes38 in613.54s,
+including the deployed three-site selector. Generated parent/child fixtures
+compare legacy, enabled, disabled and mixed scopes across four concurrent
+threads, nested raw-cell callbacks, partial writes and overlapping stack/data;
+redirecting a register to a copied value is rejected.
+
+All hosted checks pass for the prior4511b06e revision. Hosted Windows/macOS
+checks for this candidate and physical Mac gameplay remain pending.
+
+The initial struct representation completes `crowd-gpr-refs-disco240` with
+unchanged profiles/signatures/fixture and disposable disks recycled. Complete
+45s has10503 unique/increasing guest Presents, average233.4204, minimum one-second
+184/five-second199.2, p995.776ms, worst9.161ms and zero interpolation. Nineteen
+foreground ten-bot checkpoints retain match state7; independently bounded clock
+reads measure9783 calls/41.97229645s, game/wall0.9998659 and maximum read span9.4us.
+Held/wrong-rate controls are rejected; accepted Presents agree within one call.
+CSV SHA256 `7427fb4b6a9a6aeff02b75a00b60e3953d92ebeec91134b06977459c291c228f`.
+These nondeterministic AI/combat/death routes do not establish a causal FPS gain;
+successful Present intervals are not GPU completion/scanout or input latency.
+
+The exact struct macro's isolated21450 helper comparison is slower than direct
+aliases in all six alternating20-million-call pairs (ratios1.045..1.074).
+It is therefore superseded by individual constant pointers, still declared
+after callbacks/fast returns. The actual revised header macro measures ratios
+0.920..0.938 (median0.928), with matching entire6MiB arena and nine-register
+results after100,000 calls. This is helper CPU evidence, not a game FPS gain.
+The revised supported Windows build and bundled checks pass; executable SHA256
+`d4489222fe75ad6f118ebb79ff2b7911876acdaf56912732cd2403801ddfa7b7`.
+The118-check native/model/generator/reference selection passes117 in353.97s;
+one walking fixture times out at its unchanged15s runtime limit during concurrent
+compilation, then passes alone in6.47s (including compilation). No assertion or
+timeout is relaxed. All20 context checks pass in37.31s. C27 above belongs to
+the superseded struct representation.
+
+Clean D448 Disco runs `crowd-gpr-individual-disco240` and
+`crowd-gpr-individual-disco-original60` complete normally, with identical input
+command hashes, fixture/profile/signature preservation and disposable partitions
+recycled. Both use D3D11,3440x1440 render/1920x1060 foreground borderless client,
+FOV73, Enhanced selected with Classic fallback, no capture/sampler/trace, and a
+complete45s spawn+5..50 window after recorder delay70s. Original uses
+`--native-fps 0`, not native60. Each has19 foreground ten-bot observations;
+individual bots occupy16..19 distinct sampled positions, human health0..1.75.
+
+- Original:2699 guest Presents, average60.00029, minimum one/five-second60,
+  p9917.285ms, worst18.213ms. Independent clock2518 calls/41.97967925s,
+  game/wall1.0000870, maximum read span12.9us.
+- Native240:10141 guest Presents, average225.36575, minimum one-second167,
+  minimum five-second169.8, p996.225ms, worst7.588ms. Independent clock9460
+  calls/41.9707112s, game/wall0.9999036, maximum read span13.6us.
+
+Both have zero interpolated frames, increasing unique guest-frame IDs,
+timing-call/Present agreement within one in-flight call and rejected held/
+wrong-rate controls. Present CSV hashes are
+Original `c68ab14882ce98da17e453edde9ee0b728516796b492d8d5f99db02cf5d5b2f4`
+and native `4adc52ff0c23acffd764b0da9f9d921e2e1449af15a2d983674d6c78c84f3b0b`.
+The combined ignored receipt is `logs/gpr-crowd-current-comparison.json`.
+The native result is lower than the earlier cache-only230.48/min181 result;
+different combat/camera/death routes prevent causal attribution. This establishes
+neither a game FPS improvement nor sustained240. Sampled bot movement is not
+simultaneous visibility; these counters do not establish full model equivalence,
+visual fidelity, GPU completion, scanout or physical input latency. The candidate
+remains draft; full-game, crowded high-refresh and physical Mac acceptance remain
+open. The overall goal remains active and incomplete.
+
+## Remaining crowd-cost diagnostics (2026-10-26, PR #367 follow-up)
+
+All hosted checks passed for457b5e20 before this diagnostic follow-up, including
+both native runtimes, Mac MoltenVK pixel/replay checks, patch upgrades and
+transitions, launcher compatibility and PR validation. Physical Mac gameplay
+and broad full-game acceptance remain unverified.
+
+The completed Disco CPU profile (`crowd-state-cache-disco-profile240`) has
+6728 differential main-thread samples,1721 wait leaves, and zero omitted
+caller chains. The model renderer18EA90 has241 leaf samples, versus105 texture
+survey,89 disabled-trace guard and85 affine-transform samples. These are
+diagnostic counts from a different AI route, not a clean FPS comparison.
+
+`zz-sampler-pc-locations.patch` now optionally reports original native PCs for
+one exact executable symbol instead of losing their offsets in aggregation.
+It keeps the existing collection, resolves after threads resume, emits at
+most512 rows per thread/report, accounts for every omitted sample, and rejects
+truncated/unresolved symbol names as exact matches. Source output contains
+basenames only and explicitly uses unknown/line0 when PDB lines are unavailable.
+The normal sampler/report path remains unchanged unless requested; normal
+gameplay has no new collection work. The existing Mac no-op sampler remains.
+
+Production reporter fixtures cover disabled work, executable bounds, exact
+names, incomplete symbols, source fallback/privacy and output limits with
+independent negative controls. Eight reporter/caller checks pass in11.16s;
+the additional real Win32 collector/PDB integration and final reporter controls
+pass six checks without game assets. Selected full-stack/repeated-build and
+native-checkpoint upgrade tests pass. Their combined selection has53 passes
+and one host skip; two context-budget failures are repaired by shortening the
+build guide, with all20 context tests then passing in3.29s.
+
+Both supported Windows builds and bundled checks pass. The live diagnostic
+executable is `fd16901b6d10b58d2ce190183024758d190ec4eda6a5acae5bc4b95b66d25c08`.
+The final build additionally rejects incomplete symbol names and has SHA256
+`d7b97fa59cd00ed4dfdbcbf892c52467a9bd520b3e18c02ec77f9e430478c534`;
+that guard is covered by the final fixtures and real Windows collector test.
+No gameplay policy changes between these builds.
+
+`crowd-disco-model-pc240` completes with isolated profiles/signatures/fixture
+preserved and disks recycled. Zero-omission snapshot differencing accounts for
+all291 model samples at236 distinct native PCs. No one PC has more than five
+samples. None maps to a source line: the generated model's Release project
+has no compiler debug-information format selected. Native RVA/symbol offsets
+remain valid; disassembly at the sampled addresses shows repeated TLS register
+access and guest model-data loads. This supports investigating that broad path,
+not attributing the cost to one instruction or claiming a causal speed gain.
+The240 pacing gaps below remain open; refreshed checks for this follow-up are
+pending. The overall goal remains active.
+
+The2d9472b0 hosted Mac suite passes675 tests, skips235 and passes18 subtests,
+but its deliberate private-path mutation fails compilation under Clang's
+`-Werror=empty-body` rather than reaching the expected runtime assertion.
+The variant now uses an explicit no-op expression instead of an empty body;
+strict compiler flags and the runtime privacy assertion remain enabled.
+Production collector/game code is unchanged by this fixture correction.
+
+## Immutable render-state reuse candidate (2026-10-26)
+
+`perf/native-crowd-render-cost` builds on merged main `e9d9faeb`. The gameplay
+profile below includes repeated driver allocations from `d3d8_states_apply`:
+the previous frontend remembers only its current blend/depth/rasterizer object
+and recreates it after material switches. `zz-render-state-cache.patch` retains
+up to32 complete immutable descriptors/objects per category, using exact
+zero-initialized descriptor comparisons and a last-descriptor fast path.
+Replacement releases one cache owner; shutdown releases all owners once.
+Failed creation leaves the cache intact and retries on the next request.
+Current guest state still translates/binds each draw, including dynamic stencil
+reference and scissor rectangle. No animation, geometry, texture, timing, save
+or input data is retained by this change. Sampler policy is unchanged.
+
+The complete production state module emits identical descriptor/bind digests
+to its pre-cache counterpart through2288 material/pressure draws, failure/retry
+and shutdown/restart. In its2000-draw reuse phase, original blend/depth/raster
+creates2000/1000/2000 objects versus4/4/6 with the cache. Ownership stays within
+32 retained objects per category (33 transiently while creating a replacement);
+all owners are released. Independent no-reuse, lost-mask and failed-hit mutations
+are rejected. Focused4 checks pass. This proves reduced object creation in the
+fixture, not a measured game FPS improvement.
+
+Windows WARP pixel readbacks additionally pass cached alpha blend A/B/A,
+dynamic stencil-reference rejection/acceptance, moving scissor rectangles and
+capacity replacement using real RHI objects and the production module. Those
+checks join the existing common Mac Vulkan target. Five combined GPU/cache
+checks pass in5.05s. The broader renderer/patch migration selection passes
+55 tests with one Mac-only skip in647.56s. Supported Windows build and bundled
+checks pass; candidate executable SHA256 is
+`28041c9960003a17d46d92fe7cec7bae130850ff89b0ede804a92abca9477dc7`.
+Native Mac tool/backlog/CI-scope contracts additionally pass94 tests with one
+host-specific skip in1.12s. Physical Mac validation remains pending under MAC-060.
+
+The first hosted Mac runtime suite atf716ead3 passes671 tests with234 skips
+and18 subtests. Its subsequent Vulkan GPU target fails to compile the new
+fixture because `D3D8DisplayPolicy` is hidden without `TSFP_RHI_RENDERER`.
+The fixture target now explicitly defines that common-frontend switch; the
+GPU check remains enabled; refreshed hosted results follow.
+
+At457b5e20 the refreshed hosted Mac job passes:671 tests/234 skips/18
+subtests, the common MoltenVK GPU pixel contract (including the cached
+blend/stencil/scissor/replacement fixture), swapchain/readback/presentation,
+and production one-frame replay. The release/cleanup selection additionally
+passes147 tests/3 skips/3 subtests. This verifies the test-target definition
+repair and hosted common-RHI acceptance, not physical Mac gameplay.
+
+The follow-up CPU run (`crowd-state-cache-profile-temple240`) exits0 and
+preserves fixtures/profiles/signatures. Subtracting the80s/110s reports gives
+5110 main-thread samples, including1768 wait leaves and zero dropped chains
+at depth16/capacity8192. No state-creation backend appears in these gameplay
+caller chains, versus28 blend/11 depth/1 raster samples before the cache;
+this is sampling evidence, not an exact zero-call assertion. Remaining
+overlapping caller counts include74 pushed gathering,57 format expansion,
+73 guest state setter21450 and145 state flush214C0. The original versions of
+the latter routines manage the guest's dirty-state linked list; skipping them
+would alter authored render-state ordering. The expansion path converts packed
+normals/shorts and preserves other attributes, so it cannot simply be omitted.
+Different nondeterministic routes and profiling overhead still prevent a game
+FPS improvement claim.
+
+The first candidate Temple run exits0 with ten bots and preserved fixture,
+profiles and signatures, but overlaps the regression suite and is excluded
+from clean performance comparison. The subsequent isolated capture/sampler-free
+240 run (`crowd-state-cache-clean-temple240`) completes45s with10744 guest
+Presents:238.7781/s average,218 minimum one-second bin,232 minimum five-second
+rate, p99 4.885ms and worst7.506ms. Zero interpolation; independent19 timing-call
+observations measure10018 calls/41.9718s =238.6842/s and agree with accepted
+Presents within one in-flight call. Level-clock speed is0.999878 game seconds
+per wall second; maximum read span13.6us. All ten bots retain9..19 distinct
+sampled positions, with foreground19 active checkpoints. Human health spans
+0..1.75, so this again includes death. Profiles/fixture/signatures and disk
+cleanup pass, exit0. Present CSV SHA256:
+`2cbc26fa2cc2225baa18d07d83ac3b07f04912010349a456d25a63c291830996`.
+
+The one-second minimum is lower than the earlier225; differing AI/routes and
+mixed combat/death prevent a causal speed comparison. This run does **not**
+establish an FPS improvement or resolve the crowded240 pacing gap. The proven
+benefit is fewer immutable object creations with matching binds/pixels in the
+controlled fixtures. Current-head hosted checks, broader live rendering and
+physical Mac acceptance remain pending. The overall goal remains active.
+
+## Disco crowd pair (2026-10-26, candidate2804)
+
+`crowd-state-cache-disco-original60` and `crowd-state-cache-disco-native240`
+use the same executable28041c99, command payload, FOV73, one human/ten bots,
+Enhanced selected/Classic fallback,3440x1440 rendering and foreground1920x1060
+borderless client on common D3D11. Both run capture/sampler-free, with the
+complete45-second spawn+5..50 window measured after Present recording delay70s.
+
+| Measurement | Original60 | Native240 |
+| --- | ---: | ---: |
+| Successful guest Presents | 2699 | 10370 |
+| Average accepted Presents/s | 60.0002 | 230.4781 |
+| Minimum one-second bin | 60 | 181 |
+| Minimum five-second rate | 60 | 197.4 |
+| p99 interval (ms) | 17.315 | 5.808 |
+| Worst interval (ms) | 17.934 | 7.482 |
+| Sampled game/wall speed | 1.000127 | 1.000249 |
+
+Both windows have zero interpolation and19 active ten-bot checkpoints;
+every bot has18..19 (Original) or17..19 (native) distinct sampled positions.
+Human health spans0..1.75 in both, so these include death and do not represent
+uninterrupted live-player stress or identical AI trajectories. Independent
+timing-call observations match accepted Presents within one in-flight update;
+held and wrong-rate counter controls fail. The helpers now select scene/rate
+from provenance, so an actual60-Hz Original counter is not treated as invalid.
+Maximum observation spans are20.9/30.6us. Neither run changes profiles; fixture,
+signatures, bounded exit and disposable-disk cleanup pass.
+
+Command SHA256: `48d10e9930e1272797a4c15d5ebb712c592d22736bef62a1eae038194097f61c`.
+Present CSV hashes are
+`da01c9fa9373d0df2fbd1f842ad7c97638f4157b1aa8e138e63266ec63a410c0`
+(Original) and `fe9117a59d5df2dc4f855ea5a97c38aac5165bcd8e36bbbb29a95c86b8246ea3`
+(native). Private receipt: `logs/disco-current-crowd-comparison.json`.
+
+Disco exposes a larger240 pacing gap than the current Temple route; this
+extends coverage and does **not** demonstrate sustained240 or a cache-related
+speed gain. API acceptance/counter observations do not prove rendered pixel
+identity, complete subsystem behavior, GPU completion or scanout. The follow-up
+Disco CPU sampler is diagnostic only and excluded from these clean intervals.
+
+## Crowded Temple follow-up (2026-10-26)
+
+PR #366 is merged into main `e9d9faeb`; Windows/macOS runtime, patch
+transitions, launcher compatibility and PR validation passed for its final head.
+The existing DE7 executable below has the same gameplay source as this merge.
+No performance policy changed in this follow-up.
+
+An isolated, capture-free legacy diagnostic144 run (`crowd-merged-temple144`)
+uses Temple49, one human and ten bots, FOV73, Enhanced selected/Classic fallback,
+3440x1440 device rendering and a foreground1920x1060 borderless client. The
+complete45-second spawn+5..50 window contains6479 successful guest Presents:
+144.0009/s average,144 minimum in every one-second bin, p99 7.516ms and
+worst8.124ms, with zero interpolation. Nineteen active checkpoints retain the
+ten-bot roster; each bot has12..18 distinct sampled positions. The human's
+health ranges0..1.75, including death, so this is a mixed combat/death window,
+not uninterrupted live-player stress. The original reported144-to110 drop
+was not reproduced here. Other maps/routes and simultaneously visible crowds
+remain unverified. The public menu still offers60/120/180/240.
+
+Independent timing-call observations measure6043 updates/41.9662s =143.9967/s,
+agreeing with accepted Presents within one in-flight call. Level-clock speed is
+1.00001 game seconds per wall second. Held and60-Hz counter controls fail the
+comparison. Maximum observation span is9us. Profiles/signatures/fixture are
+preserved, the runner exits0, and disposable disks are recycled. The Present
+CSV SHA256 is `00b4348ff61823c374ad6b3165122bf01bd3ef99891b5d25ca4d7cf200c306e0`.
+These are API acceptance and sampled timing measurements, not GPU completion,
+physical scanout, pixel identity or physical-input latency.
+
+A separate opt-in200-Hz CPU profile (`crowd-walk-profile-temple240`) subtracts
+the80-second report from110 seconds, excluding startup. Of5129 main-thread
+samples,1382 have wait leaves;1456 of the remaining3747 (38.9%) contain the
+model-node renderer18EA90 within the16-frame caller window. Only142 are leaves
+in that function: downstream rendering work matters. VM-query leaves account
+for17 samples, versus822 in the startup-inclusive final report. Both snapshots
+report zero dropped chains at8192 capacity. Unresolved DLL offsets must be
+normalized before differencing symbol counts. Sampling perturbs scheduling;
+this profile does not prove GPU saturation or isolate an instruction-level
+optimization. Focus subsequent investigation on the model/draw path. The prior
+clean240 Temple result (238.065 average,225 minimum one-second bin) remains an
+open performance gap. Full-game and physical Mac acceptance remain open.
+
+## Fractional clear-slide repair (2026-10-25, merged PR #366)
 
 `fix/native-player-wall-contact` starts from merged main6aeaa8b1/PR #364.
 The old Venice contact discrepancy is reproduced at180/240 and in two paired

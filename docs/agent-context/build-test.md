@@ -1,25 +1,34 @@
 # Build, run and validation map
 
-Generation hashes cover own translation/diagnostic tools and bridges. Native
-integer/bit fixtures cover widths, carry and snapshots, with ML64 shift/rotate
-references on Windows; moves cover hooks/stack aliases. Title patches precede
-own move/integer/bit bodies. Shared CI runs original and inherited consumers;
-scope and host limits are in `docs/independent-runtime.md`.
+[Own tooling](independent.md).
 
-`tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
-synthetic bounds/decoding and optional private-US metadata. Build drivers pass
-`TSFP_PROJECT_ROOT` to the compatibility bridge, including shared Mac deps.
-The generation fingerprint includes reader, export data and bridge. Windows
-reruns the full pipeline on staleness; Mac requires `--generate`. See
-`docs/independent-runtime.md` for provenance and remaining upstream components.
+Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
-`tools/import-game.py` / `disc_image.py` are the project-owned stdlib disc
-importer. `tsfp.ps1 Extract -Python ...` runs before Setup without entering
-the external checkout; Mac uses the same CLI. Existing files must match before
-any copy. `tests/test_disc_image.py` covers format failures, preservation,
-private supported-XBE input and a toolkit-free PowerShell fixture, on both CI
-hosts where applicable. This replaces import only; generation/runtime are still
-upstream. See `docs/independent-runtime.md` for the remaining replacement work.
+Sampler retry/ownership cases: [shared cache and test contract](runtime.md).
+
+Trace/thread/idle and live state-slot contracts: [common runtime](runtime.md).
+
+Shader constant/upload acceptance: [common RHI fixture](vsh-constants.md).
+
+Opening replay phases and acceptance: [natural intro versus gameplay](native-opening-checks.md).
+
+Local aim/animation CPU observations: [completed-update trace](native-local-trace.md).
+
+Vertex conversion: [tiled full-function parity, guards and CPU timing](vertex-expand.md).
+Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fixture-clock).
+
+Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is
+recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
+controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
+Broken variants must compile before their runtime checks reject them.
+
+Shared state-cache binding/failure and WARP/Vulkan pixel fixtures are described
+in [runtime](runtime.md). The Vulkan fixture defines `TSFP_RHI_RENDERER`.
+
+`test_gpr_refs.py` covers four-site selection, integer/vector live-cell references, callbacks, aliasing,
+mixed scopes and threads; see [contract](gpr-refs.md). The dependent generator
+patch follows model-entry policy; old fixture stacks omit both until upgrade.
+Only generated unused labels are exempted from this fixture's fatal warnings.
 
 `native_walk_trace.c` tests the actual diagnostic bridge; `native_walk_policy.c`
 checks scopes/guards and `native_walk_contact.c` executes original C54A0 with
@@ -60,12 +69,9 @@ Unrequired issue-form and issue-resolution workflows are scoped to their own
 source/templates, saving two jobs on unrelated PRs. `test_ci_pr_gate.py` covers
 missing/failed/skipped results; `test_ci_runtime_scope.py` checks workflow wiring.
 
-`test_push_gather.py` compares complete production gathering against its frozen
-original:24,000 calls, fresh bytes, mixed formats/strides/offsets, holes/overlaps,
-invalid declarations/readability and allocation failure. Guard pages bound source
-and destination for sizes1..64; over-read/wrong-stride mutations must fail.
-Both native CI hosts run it. Its optional six-pair benchmark uses2million96-vertex
-draws per round, alternating methods; that CPU kernel result is not game FPS.
+`test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
+guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
+See [pushed-array checks and timing scope](vertex-expand.md#pushed-array-gathering).
 
 `test_zero_base_indices.py`: old/new HLE parity, fresh indices, failures, stream
 dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
@@ -92,11 +98,12 @@ Both hosts run these and shared UI identity/failure/ZIP tests.
 
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
---watch-actors --watch-effects --seconds 180`: Temple floor rocket, cleanup,
-respawn/walk;0 selects Original60. `sample_wait` observes at most20Hz; effects
-remain non-atomic; missing player reads are counted/excluded. `rocket_impact_stats.py` checks shot/death/lifetime/recovery;
-counterexamples run on both CI hosts. Lethality is not damage-magnitude parity;
-captures are not synchronized to memory. See STATUS for live evidence.
+--watch-actors --watch-effects --no-captures --no-native-trace --seconds 180`: Temple floor rocket, cleanup,
+respawn/walk;0 selects Original60. Other games block launch. Focus precedes input.
+Checkpoints/effect samples require visible foreground windows; missing/background/
+minimized windows fail. Reads are non-atomic, at most20Hz; unreadable players are
+excluded/count-reported. CI runs counterexamples. Lethality is not damage parity;
+captures are asynchronous. Back settles before setup navigation. See STATUS.
 
 The Windows runner's optional `--watch-native-clock` brackets read-only timing-
 call counter7497B8 and level ticks with perf_counter_ns/QPC timestamps plus scene/
@@ -107,6 +114,9 @@ Present clocks, allowing one in-flight call. Exclude resets, transitions, pause
 and wide read spans. Capture-free runs retain lightweight snapshots; full native
 traces and renderer captures belong in separate diagnostic runs.144 remains a
 legacy diagnostic rate; the menu presets are60/120/180/240.
+
+Script clock fixtures cover original dispatch/timers/events/reset, RNG,
+pose/voice queues, pause and old-gate controls through240; see the script-clock guide.
 
 `native_tree_motion.c` (via `test_native_timing.py`) executes the original US
 TREE callback1D88B0, with only its two effect services replaced by spies. It

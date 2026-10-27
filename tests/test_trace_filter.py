@@ -54,8 +54,11 @@ def trace_quiet_binaries(tmp_path_factory):
         assert count == 1, name
     compiler, env = native_compiler(folder)
     binaries = []
-    for mutation in (False, True):
-        production = text.replace('if (trace_quiet()) return;', '(void)trace_quiet();') if mutation else text
+    for mutation in ('none','dispatch','shared-cache'):
+        production = text.replace('if (trace_quiet()) return;', '(void)trace_quiet();') if mutation=='dispatch' else text
+        if mutation=='shared-cache':
+            production,count=re.subn(r'static RECOMP_TLS int (?=(?:s_trace_quiet|quiet)\b)','static int ',production)
+            assert count==1
         source = folder/f'trace-{mutation}.c'
         source.write_text((ROOT/'tests/trace_quiet.c').read_text().replace('/* PRODUCTION_TRACE */', production))
         output = folder/(f'trace-{mutation}.exe' if os.name == 'nt' else f'trace-{mutation}')
@@ -95,3 +98,13 @@ def test_quiet_trace_dispatch_mutation(trace_quiet_binaries):
     env['RECOMP_TRACE_BUDGET'] = '0'
     result = subprocess.run([str(trace_quiet_binaries[1]), 'quiet'], env=env, capture_output=True, text=True, timeout=10)
     assert result.returncode != 0 and 'diagnostic_calls==0' in result.stderr
+
+
+def test_quiet_trace_startup_threads(trace_quiet_binaries):
+    env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_TRACE_', 'RECOMP_DUMP_', 'RECOMP_WATCH_', 'RECOMP_PROFILE_'))}
+    env['RECOMP_TRACE_BUDGET']='0'
+    current=subprocess.run([str(trace_quiet_binaries[0]),'startup-cache'],env=env,capture_output=True,text=True,timeout=10)
+    assert current.returncode==0,current.stdout+current.stderr
+    assert 'PASS: per-thread startup settings' in current.stdout and '[TRACE]' in current.stderr
+    broken=subprocess.run([str(trace_quiet_binaries[2]),'startup-cache'],env=env,capture_output=True,text=True,timeout=10)
+    assert broken.returncode!=0 and 'diagnostic_calls>before' in broken.stderr
