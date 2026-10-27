@@ -1,3 +1,67 @@
+## Independent complete function emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_function.py` replaces the remaining FunctionTranslator
+implementation: function assembly, storage/carry selection, flag joins, block
+prepasses, failed indirect-call stack captures and x87 accessor definitions.
+The installed translator is a six-line bootstrap/module alias, preserving
+consumer identity and private negative-control monkeypatches. Batch output
+injects the runtime root. Trace/fast-entry/register hooks, forced-return behavior,
+local/shared EBP and complete indirect-call statements retain their current ABI.
+Unknown flags remain unknown; three-pass flag propagation, eight-pass decoding
+resynchronization and textual stack-recovery heuristics retain existing bounds.
+
+All **17 CI checks passed on preceding commit `234e984b`**, including both native
+runtime hosts and patch transitions. This stage's new-revision CI is separate.
+Local **389 translator/generation/private-join/timing regressions passed in
+336.94s**. Focused function/control checks: **18 passed in 9.81s**, including
+nine original function tests. Compiled tests execute entry-hook/forced-return
+ordering, successful/failed indirect stack cleanup and circular x87 accessors.
+Synthetic cases check typed joins, register/carry discovery, diagnostic counts,
+escaped metadata and toolkit-free function generation. The existing control
+negative case still removes exactly one snapshot and must fail when executed.
+Inherited/current consumers: **438 passed, 56 skipped, 101 subtests passed in
+20.99s**; original compiled contracts use the project MSVC harness. CI selection:
+**73 passed in 0.25s**. Historical patch/context/backlog/snapshot acceptance: **56 passed in 723.94s**.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**; lifting took **84.48s**. All
+15,838 function bodies match after narrowly accounting for comments and the
+reviewed equivalent x87 accessor definitions (1,966 definitions). Five C/header
+files are byte-identical; all sixteen chunks differ only as described. No
+redundant final null statements occurred in this title; no unexpected code
+differences were accepted. The new push snapshots its input once before changing
+the circular index. Dispatch, prototypes, HLE, unresolved stubs and runtime types
+are unchanged. The types remain a dependency to replace, not new original code.
+
+Standard Release build and native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`. Existing MSB8028
+intermediate-directory warnings remain. Built from the implementation working
+tree based on `234e984b`.
+
+The isolated `independent-function` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.175 units forward / 6.185 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **92.785s**, exit **0**. Start/pause/resume captures were
+reviewed. D3D11 and XAudio2 initialized. All **19 protected files** retained
+SHA-256, size and modification time. No game, run lock, disposable partition,
+BMP or crash dump remained. Executable SHA-256:
+`772f7d6f18418c817dae585799132c372850340f00e87e518a057d7fc663988d`.
+
+Evidence: `logs/function-regressions.log`, `logs/function-focused.log`,
+`logs/function-consumers-final.log`, `logs/function-ci-scope.log`,
+`logs/function-historical.log`, `logs/function-build.log`,
+`logs/independent-function-comparison.json`,
+`logs/independent-function-game-check.json`,
+`logs/function-game-protected-check.json` and
+`private/test-saves/independent-function`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-098). The old CLI still has eight top-level functions plus a nested helper;
+its replacement is next. Runtime/header/title implementations, build helpers,
+shipped fixtures and the final removal/provenance audit remain. No whole-project
+independence or full architectural emulation is claimed; the goal remains active.
+
 ## Independent translator context and entry discovery (Windows acceptance passed, 2026-10-27)
 
 Original `translation_discovery.py` replaces sixteen FunctionTranslator methods:
@@ -30,8 +94,9 @@ polls through missing-file/sharing errors within its unchanged absolute eight-
 second deadline. JSON corruption, other I/O failures and persistent denial still
 fail. Two deterministic portable cases cover those boundaries; all **eight real/
 portable crash-capture tests passed locally in 16.09s**. Helper/launcher/game
-behavior and native report/death assertions are unchanged. New-revision CI is
-pending; this repair does not make the preceding failed revision green.
+behavior and native report/death assertions are unchanged. All **17 CI checks
+passed for the repaired revision `234e984b`**, including both native runtime
+hosts and patch transitions. The preceding failed revision remains failed.
 
 Final supported-US regeneration completed in **84.12s**: **15,838 translated,
 zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.

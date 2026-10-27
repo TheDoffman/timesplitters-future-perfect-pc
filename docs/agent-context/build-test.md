@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Discovery tests](independent.md).
+[Function tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

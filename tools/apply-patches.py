@@ -84,7 +84,7 @@ def patch_records(paths):
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
     for name in ('independent-translation-moves.patch', 'independent-translation-integer.patch',
-                 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch'):
+                 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch', 'independent-translation-exchange.patch', 'independent-translation-compare.patch', 'independent-translation-strings.patch', 'independent-translation-conditions.patch', 'independent-translation-sse.patch', 'independent-translation-mmx.patch', 'independent-translation-x87.patch', 'independent-translation-control.patch', 'independent-translation-lifting.patch', 'independent-translation-context.patch', 'independent-translation-batch.patch', 'independent-translation-discovery.patch', 'independent-translation-function.patch'):
         replacement = by_name.get(name)
         if replacement:
             paths.remove(replacement)

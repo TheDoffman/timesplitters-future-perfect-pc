@@ -232,6 +232,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-095 | Independent lifter context and helper recognition | Awaiting validation |
 | MAC-096 | Independent batch translation and dispatch output | Awaiting validation |
 | MAC-097 | Independent translator context and entry discovery | Awaiting validation |
+| MAC-098 | Independent complete function emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6442,3 +6443,21 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   All 56 patch/context/backlog/snapshot checks passed.
   Native Mac title generation/build/gameplay need its host and private US data.
   See STATUS.md for actual CI failures/repair, measured results and limitations.
+
+### MAC-098 - Independent complete function emission
+
+- **Status:** Awaiting validation
+- PC behavior/source: uncommitted PR #375 follow-up in
+  `tools/translation_function.py`, `tests/test_translation_function.py` and
+  `patches/independent-translation-function.patch`. Original assembly, flag
+  joins, stack captures and accessor output replace the remaining translator.
+- Mac support: portable Python and shared generated C/runtime ABI; both hosts
+  select the original compiled contracts and existing consumer/negative controls.
+  No separate host algorithm is required.
+- Remaining validation: Windows generation, Release/native checks and isolated
+  first-mission movement/fire/pause/resume passed. All 389 regressions and 438
+  consumer checks passed (56 consumer skips, 101 subtests). Generated function
+  bodies match after reviewed comments and x87 accessor changes; personal files
+  remain unchanged. All 56 historical patch/context/backlog/snapshot checks passed.
+  Native Mac title generation/build/gameplay require its host and private US data.
+  See STATUS.md for measured results and explicit validation limits.

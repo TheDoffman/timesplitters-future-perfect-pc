@@ -441,7 +441,8 @@ The final `independent-translation-batch.patch` reduces the installed batch clas
 to a subclass injecting the still-inherited FunctionTranslator and runtime root.
 The runtime types header is still an explicit inherited input. Standalone batch
 imports need only project modules and the standard library; this does not make
-the injected function translator or the entire toolchain independent yet.
+the entire toolchain independent yet; the later function stage replaces its
+injected function translator.
 
 Split output validates names, positive chunk size and required runtime types
 before publication. Each file uses the original atomic content-aware writer;
@@ -487,8 +488,8 @@ alias clobbers, table sentinels/bias/duplicates, reachable/unreachable weak seed
 partial/flag-dependent arms, known call targets and return cleanup. One installed
 consumer test compiles and executes a recovered split function's table arms.
 Standalone import/constructor checks exclude the toolkit. Both CI hosts select
-the suite, and generation fingerprints include the module. The function emitter,
-flag-join merges, runtime storage and old fixtures remain replacement work.
+the suite, and generation fingerprints include the module. The subsequent
+function stage owns emission and joins; runtime storage and old fixtures remain.
 STATUS.md and MAC-097 record acceptance and platform limits.
 
 
@@ -499,3 +500,25 @@ corruption and other I/O errors still fail. Portable deterministic tests prove
 transient recovery, malformed-data rejection and persistent-denial timeout.
 Native helper death, report, dump and heartbeat assertions remain unchanged.
 This test-only repair does not change the helper, launcher or game behavior.
+
+## Complete function emission
+
+`translation_function.py` owns C function assembly, carry-storage selection,
+typed flag joins, bounded block prepasses, x87 accessor output and indirect-call
+failure stack captures. `independent-translation-function.patch` follows discovery;
+the old translator path aliases this module so diagnostic/negative-control
+monkeypatches still reach production. Batch output injects the runtime root.
+Entry traces precede fast-entry checks, which precede register references;
+explicit traces and forced returns retain their bypass rules. Local EBP and
+shared frame inheritance retain the runtime ABI. Flag convergence keeps its
+three-pass bound and decoder resynchronization its eight-pass bound. These are
+migration contracts, not full EFLAGS/ABI proofs. Stack recovery retains the
+first restored-register push as a frame save and recognizes nearby caller cleanup.
+The x87 push captures its argument once before changing the circular index.
+`tests/test_translation_function.py` compiles hook ordering, failure stack
+recovery and x87 accessors; it also checks typed joins, diagnostic counts,
+escaped metadata and toolkit-free function generation. Private pickup/vehicle
+negative controls and inherited consumers remain selected. Compare production
+function bodies after accounting only for reviewed comment, redundant final
+null-statement and accessor-definition changes; do not equate those with an
+unconditional byte-identical result. See STATUS.md and MAC-098 for acceptance.

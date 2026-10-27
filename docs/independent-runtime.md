@@ -20,7 +20,8 @@ multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
 extension, string-instruction lowering, condition expressions, SSE/MMX/x87
 emission, control transfers, instruction/block lifting and lifter context,
-helper recognition, naming, batch/output orchestration and translator entry discovery.
+helper recognition, naming, batch/output orchestration, translator entry discovery
+and complete C function assembly.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -86,7 +87,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Lifter context, helpers and naming | Project-owned class/registry, bounded helper recognition and SDK-derived name data | Standalone/bounds/compiler checks and deterministic generation; native Mac pending MAC-095 |
 | Batch translation and dispatch output | Project-owned database loading, declarations, split publication, stubs and dispatch | Compiled search/allocation/override tests and production output comparison; native Mac pending MAC-096 |
 | Translator context and entry discovery | Project-owned context, callback tables, split CFG ownership and switch-arm recovery | Bounded graph fixtures, compiled recovered function and generation comparison; native Mac pending MAC-097 |
-| x86-to-C function orchestration | C function scheduling/emission and joins still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
+| x86-to-C function orchestration | Project-owned function assembly, typed joins, stack captures and x87 accessors | Compiled hooks/stack/FP tests, private negative controls and production output comparison; native Mac pending MAC-098 |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -879,3 +880,21 @@ function verify behavior, including rejection of mapped holes and incomplete
 arms. Bounds and entry-flag heuristics do not establish complete symbolic
 execution or architectural EFLAGS semantics. See STATUS.md and MAC-097 for
 production generation/build/game evidence and native Mac validation limits.
+
+## Complete function assembly
+
+`tools/translation_function.py` replaces the remaining translator implementation.
+It assembles decoded/lifted blocks, carries known flag descriptions across
+compatible predecessors, emits required condition snapshots and local storage,
+and preserves entry/exit/frame hooks. The old path is a module alias, preserving
+production callers and diagnostic substitution without inherited implementation.
+Original circular x87 accessor output evaluates push inputs before updating the
+index. Failed indirect calls capture stack state above callee-cleaned arguments
+or below caller-cleaned arguments while preserving frame saves.
+
+Bounded three-pass flag propagation and eight-pass decoding resynchronization
+retain the existing coverage; neither proves complete CPU/ABI behavior. The
+existing runtime/header ABI, title integration, historical patches and inherited
+fixtures remain separate work. A standalone test copies only project modules
+and emits a function with the toolkit absent; whole-game independence still
+requires the remaining runtime and final provenance/removal gates.

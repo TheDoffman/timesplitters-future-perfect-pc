@@ -275,7 +275,7 @@ print(json.dumps(result))
     assert run.returncode==0,run.stdout+run.stderr
     code=PRELUDE+'\n#define g_esp esp\n#define RECOMP_FAST_ENTRY(site) 0\n'
     decoded=json.loads(run.stdout)
-    assert 'zero flag for a join that cannot inherit a state' in decoded['mixed_join']
+    assert 'outgoing ZF snapshot' in decoded['mixed_join']
     code+='\n'.join(decoded.values())
     code+=r'''
 int main(void){reset();direct();CHECK(calls==1&&seen_target==0x2000&&seen_ret==0x1005&&esp==516);
@@ -292,7 +292,7 @@ puts("PASS decoded call/manual/guarded/tail transfers and CX/ECX loops");return 
     # The generation comparison exposed a dropped predecessor snapshot. Prove
     # the executable fixture rejects that exact omission, not just its spelling.
     import re
-    broken,count=re.subn(r'^\s*_flags = [^\n]*zero flag for a join[^\n]*\n',
+    broken,count=re.subn(r'^\s*_flags = [^\n]*outgoing ZF snapshot[^\n]*\n',
                          '',code,flags=re.M)
     assert count==1
     source=tmp_path/'missing-join-snapshot.c'
