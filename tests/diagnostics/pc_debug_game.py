@@ -52,7 +52,8 @@ def mouse_confined(window):
     assert user.GetClientRect(window, c.byref(client))
     assert user.ClientToScreen(window, c.byref(origin))
     return (clip.left, clip.top, clip.right, clip.bottom) == (
-        origin.x, origin.y, origin.x + client.right, origin.y + client.bottom)
+        origin.x + client.right // 2, origin.y + client.bottom // 2,
+        origin.x + client.right // 2 + 1, origin.y + client.bottom // 2 + 1)
 
 
 def text(window):
