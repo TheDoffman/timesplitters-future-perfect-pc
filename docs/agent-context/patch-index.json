@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "cbc2f95f46c00f48cfeb1448d1f37db2119fdc360ae8706cab088c0e326f0657",
+  "loaderSha256": "45750b857b550ddfe40c4ca23cb601ff758e31f04f87c52140600434f409e274",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1682,6 +1682,17 @@
         "tools/recomp/lifter.py\r",
         "tools/recomp/test_lifter_sar_width.py\r",
         "tools/recomp/translator.py\r"
+      ]
+    },
+    {
+      "name": "independent-translation-bitops.patch",
+      "sha256": "8bdd8bd79ae7d03af203122fc93087891b9578c6598fc067c8a190663a225971",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_bit_scan.py",
+        "tools/recomp/test_lifter_bit_string.py",
+        "tools/recomp/test_lifter_bt_cf.py",
+        "tools/recomp/translator.py"
       ]
     }
   ]

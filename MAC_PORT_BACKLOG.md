@@ -218,6 +218,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-080 | Independent scalar integer lowering | Awaiting validation |
 | MAC-081 | Independent shift and rotate lowering | Awaiting validation |
 | MAC-082 | Independent multiply and divide lowering | Awaiting validation |
+| MAC-083 | Independent bit tests, scans and byte swaps | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6126,7 +6127,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **PC behavior:** Own width-aware products and quotients, sampled divisors,
   defined multiplication carry/overflow and explicit fatal divide errors before
   quotient/remainder writes. Guest SEH remains separate foundation work.
-- **PC source:** Continuing PR #370 from `88566e9d`; `translation_product.py`,
+- **PC source:** `8763627e` on `feature/independent-bit-operations`; `translation_product.py`,
   `guest_integer_fault.c`, `independent-translation-product.patch` and consumers.
 - **PC validation:** Original compiled references, native x86 oracle, aliases,
   divide fault state and real host adapter; see STATUS.md for current results.
@@ -6138,6 +6139,23 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   with `--generate`, build and verify isolated movement/fire/pause.
 - **Mac implementation and evidence:** Native Mac generation/build/gameplay are
   pending. CI is distinct from title gameplay and guest SEH remains unfinished.
+
+### MAC-083 - Independent bit tests, scans and byte swaps
+
+- **Status:** Awaiting validation
+- **PC behavior:** Width-correct bit tests/modifications, signed memory bit
+  strings, captured carry consumers, scan zero flags and dword byte swapping.
+- **PC source:** Uncommitted on `feature/independent-bit-operations`;
+  `tools/translation_bitops.py`, additive patch and original native fixtures.
+- **PC validation:** See STATUS.md for current native, generation and game results.
+- **Existing Mac support:** Shared Python emission and portable C fixtures run
+  through the same build/CI paths, with sanitizer checks on supported compilers.
+- **Mac adaptation needed:** No separate algorithm; native title acceptance
+  remains pending. Windows ML64 references are supplementary host-only tests.
+- **Mac acceptance checks:** Run translation and patch consumers, regenerate,
+  build and verify isolated movement, firing and pause/resume.
+- **Mac implementation and evidence:** Shared source implemented; native Mac
+  generation/build/gameplay unverified. LOCK and full flag provenance are deferred.
 
 ## Entry template
 

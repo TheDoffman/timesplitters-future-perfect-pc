@@ -1,9 +1,6 @@
 # Build, run and validation map
 
-Product fixtures execute native width/alias/fault and decoded consumer checks; see [own tooling](independent.md).
-
-
-[Own tooling](independent.md).
+[Own translation fixtures and captured-flag contracts](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

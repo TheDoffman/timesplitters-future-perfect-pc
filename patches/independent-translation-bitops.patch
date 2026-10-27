@@ -1,0 +1,343 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -24,6 +24,7 @@
+ import translation_integer as _project_integer
+ import translation_bits as _project_bits
+ import translation_product as _project_product
++import translation_bitops as _project_bitops
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -373,6 +374,10 @@
+         return None
+     cmp_macro, test_macro, desc = cond_info
+ 
++    if flag_setter in ("bt", "bts", "btr", "btc", "bsf", "bsr"):
++        expression = _project_bitops.condition(jcc, flag_setter)
++        return (expression, desc) if expression is not None else None
++
+     # Own multiplication records its only defined flags: CF and OF agree.
+     if flag_setter in ("mul", "imul"):
+         if jcc in ("jb", "jnae", "jc", "jo"):
+@@ -826,54 +831,6 @@
+         # ZF/SF not modified by rotations - can't resolve most conditions
+         return None
+ 
+-    # ── bsf/bsr: bit scan, ZF set if source is zero ──
+-    # ── bt/bts/btr/btc: bit test, sets CF ──
+-    if flag_setter in ("bt", "bts", "btr", "btc"):
+-        # THE THREE THAT WRITE THE BIT CANNOT BE REBUILT BY READING IT.
+-        #
+-        # Every form below answers CF by reading the tested bit a second time,
+-        # at the consumer. That is exact for `bt`, which reports the bit and
+-        # leaves it alone. bts/btr/btc report the bit and then MODIFY it, so by
+-        # the time the consumer looks, the answer is the value they wrote:
+-        # always 1 after bts, always 0 after btr, inverted after btc. The
+-        # test-and-set idiom -- "did I just claim this, or was it already
+-        # taken?" -- therefore always answered "already taken" after bts and
+-        # "free" after btr, with no way for guest code to observe the truth.
+-        #
+-        # The lift already captures the pre-write value into _cf (see the
+-        # bt/bts/btr/btc arm of _lift_misc), and _function_needs_cf now counts
+-        # these three as CF producers so that capture is always emitted when a
+-        # carry condition consumes it. So answer from the snapshot.
+-        if flag_setter in BT_MODIFY:
+-            if jcc in ("jb", "jnae", "jc"):
+-                return "_cf", desc
+-            if jcc in ("jae", "jnb", "jnc"):
+-                return "!_cf", desc
+-            return None
+-        if rhs is None:
+-            return None
+-        # Same bit-string rule as the lifter above: a memory bit base with a
+-        # register offset addresses a string, so the dword is chosen by
+-        # offset/32 and only then is the bit offset%32. This is the half that
+-        # does the testing -- MSVC's strpbrk loop is "bt [esp], eax" fused with
+-        # the jae that follows it.
+-        if (len(flag_ops) >= 2 and flag_ops[0].type == "mem"
+-                and flag_ops[1].type != "imm"):
+-            base = _fmt_mem(flag_ops[0])
+-            off = _fmt_operand_read(flag_ops[1])
+-            bit = (f"((MEM32(({base}) + (((int32_t)({off}) >> 5) * 4))"
+-                   f" >> (({off}) & 31)) & 1)")
+-            if jcc in ("jb", "jnae", "jc"):
+-                return bit, desc
+-            if jcc in ("jae", "jnb", "jnc"):
+-                return f"!{bit}", desc
+-            return None
+-        if jcc in ("jb", "jnae", "jc"):
+-            return f"(({lhs} >> ({rhs} & 31)) & 1)", desc
+-        if jcc in ("jae", "jnb", "jnc"):
+-            return f"!(({lhs} >> ({rhs} & 31)) & 1)", desc
+-        return None
+-
+     # ── cmpxchg: compares accumulator with dest, sets ZF on match ──
+     if flag_setter == "cmpxchg":
+         # ZF comes from the compare the instruction already did, and the lift
+@@ -1463,72 +1420,10 @@
+             return ["eax = SX16(eax); /* cwde */"]
+         if m == "cbw":
+             return ["SET_LO16(eax, SX8(eax)); /* cbw */"]
+-        if m == "bswap" and nops >= 1 and ops[0].type == "reg":
+-            r = _fmt_reg(ops[0].reg)
+-            return [f"{r} = BSWAP32({r}); /* bswap */"]
+-        # ── Bit test and modify ──
+-        # 386 instructions, so real Xbox code has them. The CRT's float-to-int
+-        # helper uses `btr` to clear a rounding-control bit of the x87 control
+-        # word, which is exactly the _control87 shape. Unhandled, they lifted to
+-        # a comment and the bit was silently left alone.
+-        if m in ("bt", "btr", "bts", "btc") and nops >= 2:
+-            dst, bit = ops[0], ops[1]
+-
+-            # A memory bit base with a *register* offset is a bit string, not a
+-            # dword: the operand addresses the byte holding bit 0, and the
+-            # offset then runs over the whole string, so the hardware reads the
+-            # dword at base + (offset/32)*4 and takes bit offset%32. Masking the
+-            # offset to 31 instead -- which is right only for a register bit
+-            # base, where the offset really is taken modulo the operand size --
+-            # folds the entire string onto its first dword.
+-            #
+-            # MSVC builds strpbrk, strspn and strcspn out of exactly this: eight
+-            # zero dwords pushed as a 256-bit character map, "bts [esp], eax"
+-            # per character of the set, "bt [esp], eax" per character of the
+-            # string. Folded onto one dword the map aliases mod 32, so '?'
+-            # (0x3F) sets the same bit '_' (0x5F) tests. Half-Life 2 stats every
+-            # file for wildcards before opening it, and its archives are
+-            # zip0_xbox.xzp and zip0_xbox_english.xzp -- every path with an
+-            # underscore came back "contains a wildcard" and the engine loaded
+-            # no content at all.
+-            #
+-            # An immediate offset is genuinely limited to 0..31 within the
+-            # addressed dword, so it keeps the simple form.
+-            if dst.type == "mem" and bit.type != "imm":
+-                base = _fmt_mem(dst)
+-                off = _fmt_operand_read(bit)
+-                word = f"MEM32(({base}) + (((int32_t)({off}) >> 5) * 4))"
+-                index = f"(({off}) & 31)"
+-                out = []
+-                if self.needs_cf:
+-                    out.append(f"_cf = (int)(({word} >> {index}) & 1u);"
+-                               f" /* {m}: CF = bit */")
+-                update = {"btr": f"{word} & ~(1u << {index})",
+-                          "bts": f"{word} | (1u << {index})",
+-                          "btc": f"{word} ^ (1u << {index})"}.get(m)
+-                if update:
+-                    out.append(f"{word} = ({update}); /* {m} */")
+-                elif not out:
+-                    out.append(f"/* bt {insn.op_str}: no CF consumer */")
+-                return out
+-
+-            index = (f"({_fmt_imm(bit.imm)})" if bit.type == "imm"
+-                     else f"({_fmt_operand_read(bit)} & 31)")
+-            value = _fmt_operand_read(dst)
+-            out = []
+-            if self.needs_cf:
+-                out.append(f"_cf = (int)(({value} >> {index}) & 1u);"
+-                           f" /* {m}: CF = bit */")
+-            update = {"btr": f"{value} & ~(1u << {index})",
+-                      "bts": f"{value} | (1u << {index})",
+-                      "btc": f"{value} ^ (1u << {index})"}.get(m)
+-            if update:
+-                out.append(_fmt_operand_write(dst, f"({update})")
+-                           + f" /* {m} */")
+-            elif not out:
+-                out.append(f"/* bt {insn.op_str}: no CF consumer */")
+-            return out
+-
++        if m == "bswap":
++            return self._lift_swap(insn, ops)
++        if m in ("bt", "bts", "btr", "btc"):
++            return self._lift_bit_test(insn, ops, m)
+         # INT 2D is the Xbox kernel debug trap: eax picks the service, ecx
+         # carries its argument, and service 1 prints the ANSI_STRING ecx points
+         # at. It is always followed by an int3 that the kernel skips over.
+@@ -1560,10 +1455,6 @@
+             return self._lift_shld(insn, ops)
+         if m == "shrd":
+             return self._lift_shrd(insn, ops)
+-        if m == "bt":
+-            if len(ops) >= 2:
+-                return [f"/* bt {_fmt_operand_read(ops[0])}, {_fmt_operand_read(ops[1])} - bit test */"]
+-            return [f"/* bt {insn.op_str} */"]
+         if m == "emms":
+             # A statement rather than a comment: emms genuinely has no
+             # effect here (mm/x87 aliasing is not modelled), and a
+@@ -1670,39 +1561,8 @@
+                 "  /* rdtsc */",
+             ]
+ 
+-        # ── Bit scan ──
+-        # Index of the lowest (bsf) or highest (bsr) set bit. When the source
+-        # is zero the destination is left untouched and ZF is set; that is the
+-        # whole contract, and callers branch on ZF to tell the cases apart.
+-        #
+-        # The CRT heap leans on this: RtlAllocateHeap picks a size bucket by
+-        # bsf-ing its free-list-in-use bitmap, so a bsf that does nothing hands
+-        # back the address of an empty list head and the heap eats itself.
+-        #
+-        # ZF is published through the same _fa/_fb snapshot a `cmp src, 0`
+-        # would leave, which is what _make_condition reads for a following jcc.
+-        # The other flags are architecturally undefined here, so a jcc that
+-        # reads them was already meaningless.
+         if m in ("bsf", "bsr"):
+-            if len(ops) < 2:
+-                return self._unimplemented(insn, m)
+-            dst = _fmt_operand_read(ops[0])
+-            src = _fmt_operand_read(ops[1])
+-            width = (_operand_width(ops[1]) or 4) * 8
+-            if m == "bsr":
+-                init, cond, step = f"{width - 1}", "_bs_i >= 0", "_bs_i--"
+-            else:
+-                init, cond, step = "0", f"_bs_i < {width}", "_bs_i++"
+-            return [
+-                f"{{ uint32_t _bs_v = (uint32_t)({src}); int _bs_i;",
+-                f"  _fa = _bs_v; _fb = 0; _fas = (int32_t)_fa; _fbs = 0;"
+-                f" /* {m}: ZF = src == 0 */",
+-                "  if (_bs_v) {",
+-                f"    for (_bs_i = {init}; {cond}; {step})",
+-                "      if (_bs_v & (1u << _bs_i)) break;",
+-                "    " + _fmt_operand_write(ops[0], "(uint32_t)_bs_i") + ";",
+-                f"  }} else {{ (void)({dst}); }} }}",
+-            ]
++            return self._lift_scan(insn, ops, m)
+ 
+         # ── Atomic read-modify-write ──
+         #
+@@ -1832,6 +1692,9 @@
+ 
+     _lift_shrd = _project_bits.shrd
+ 
++    _lift_bit_test = _project_bitops.bit_test
++    _lift_scan = _project_bitops.scan
++    _lift_swap = _project_bitops.swap
+     _lift_imul = _project_product.imul
+ 
+     _lift_muldiv = _project_product.muldiv
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -892,8 +892,8 @@
+ 
+         last_setter = None
+         for insn in instructions:
+-            if insn.mnemonic in ("rcl", "rcr", "mul", "imul"):
+-                return True  # Own carry rotates and products publish/read carry.
++            if insn.mnemonic in ("rcl", "rcr", "mul", "imul", "bt", "bts", "btr", "btc"):
++                return True  # Own carry producers publish their captured value.
+             if _constant_bit_noop(insn):
+                 continue
+             m = insn.mnemonic
+--- a/tools/recomp/test_lifter_bit_scan.py
++++ b/tools/recomp/test_lifter_bit_scan.py
+@@ -28,24 +28,24 @@
+ 
+ def test_bsf_scans_from_the_low_bit():
+     body = "".join(Lifter().lift_instruction(_scan("bsf")))
+-    assert "_bs_i = 0" in body and "_bs_i++" in body
++    assert "_bitop_index = 0" in body and "++_bitop_index" in body
+ 
+ 
+ def test_bsr_scans_from_the_high_bit():
+     body = "".join(Lifter().lift_instruction(_scan("bsr")))
+-    assert "_bs_i = 31" in body and "_bs_i--" in body
++    assert "while ((_bitop_value >>= 1) != 0u) ++_bitop_index" in body
+ 
+ 
+ def test_zero_source_leaves_the_destination_untouched():
+     # The architecture leaves the destination undefined for a zero source, so
+     # the lift must not invent a value -- the write sits behind the guard.
+     body = "".join(Lifter().lift_instruction(_scan("bsf")))
+-    assert "if (_bs_v) {" in body
++    assert "if (_bitop_value) {" in body
+ 
+ 
+ def test_zero_flag_is_published_through_the_compare_snapshot():
+     body = "".join(Lifter().lift_instruction(_scan("bsf")))
+-    assert "_fa = _bs_v" in body and "_fb = 0" in body
++    assert "_fa = _bitop_value" in body and "_fb = 0" in body
+ 
+ 
+ def test_jnz_after_a_scan_reads_that_snapshot():
+--- a/tools/recomp/test_lifter_bit_string.py
++++ b/tools/recomp/test_lifter_bit_string.py
+@@ -35,12 +35,12 @@
+ class BitStringTest(unittest.TestCase):
+     def test_bts_selects_the_dword_by_offset(self):
+         generated = _lift("bts", Operand(type="reg", reg="eax"))
+-        self.assertIn("(((int32_t)(eax) >> 5) * 4)", generated)
+-        self.assertIn("(eax) & 31", generated)
++        self.assertIn("_bitop_word * 4u", generated)
++        self.assertIn("_bitop_offset & 31u", generated)
+ 
+     def test_bt_selects_the_dword_by_offset(self):
+         generated = _lift("bt", Operand(type="reg", reg="eax"))
+-        self.assertIn("(((int32_t)(eax) >> 5) * 4)", generated)
++        self.assertIn("_bitop_word * 4u", generated)
+ 
+     def test_immediate_offset_stays_within_the_addressed_dword(self):
+         # An immediate bit offset really is limited to 0..31 of the dword the
+@@ -57,7 +57,7 @@
+         lifted, _ = lift_basic_block(
+             lifter, BasicBlock(start=0, instructions=[insn]))
+         generated = chr(10).join(lifted)
+-        self.assertIn("eax & 31", generated)
++        self.assertIn("_bitop_offset & 31u", generated)
+         self.assertNotIn(">> 5", generated)
+ 
+ 
+--- a/tools/recomp/test_lifter_bt_cf.py
++++ b/tools/recomp/test_lifter_bt_cf.py
+@@ -23,8 +23,7 @@
+ shl/shr/sar -- so for a function whose sole carry consumer followed a `bts`,
+ the capture was never even emitted. Both halves are fixed; this pins both.
+ 
+-Plain `bt` keeps the re-read deliberately: it is exact, and it avoids forcing
+-_cf emission across a whole function for the common read-only case.
++Plain `bt` also captures CF, so subsequent operand writes cannot change it.
+ """
+ import unittest
+ 
+@@ -63,7 +62,7 @@
+                 generated = _reg_block(mnemonic, "jb")
+                 self.assertIn("if (_cf)", generated)
+                 capture = generated.index("_cf = ")
+-                write = generated.index("edx = (edx")
++                write = generated.index("edx = (_bitop_value")
+                 self.assertLess(capture, write,
+                                 "CF must be captured before the bit is written")
+ 
+@@ -80,11 +79,11 @@
+             with self.subTest(mnemonic=mnemonic):
+                 self.assertIn("if (!_cf)", _reg_block(mnemonic, "jae"))
+ 
+-    def test_plain_bt_still_reads_the_bit(self):
+-        # bt does not modify, so the re-read is exact and is kept -- otherwise
+-        # every function containing a bt would be forced to publish _cf.
++    def test_plain_bt_uses_the_snapshot(self):
++        # Later instructions may overwrite even a non-modifying BT operand.
+         generated = _reg_block("bt", "jb")
+-        self.assertIn("(edx >> (eax & 31)) & 1", generated.splitlines()[-1])
++        self.assertIn("if (_cf)", generated.splitlines()[-1])
++        self.assertLess(generated.index("_cf = "), generated.index("if (_cf)"))
+ 
+     def test_bit_string_form_also_answers_from_the_snapshot(self):
+         # bts with a memory base and a register offset is the strpbrk shape.
+@@ -100,7 +99,7 @@
+             lifter, BasicBlock(start=0, instructions=[bit, branch]))
+         generated = "\n".join(lifted)
+         self.assertIn("if (_cf)", generated)
+-        self.assertLess(generated.index("_cf = "), generated.index("= (MEM32"))
++        self.assertLess(generated.index("_cf = "), generated.index("MEM32(_bitop_address) ="))
+ 
+     def test_the_snapshot_is_actually_emitted_for_these_functions(self):
+         # The other half of the bug. Without this, the consumer would name a
+@@ -112,8 +111,8 @@
+                         _insns(mnemonic, "jb")),
+                     "a carry branch after %s must publish _cf" % mnemonic)
+ 
+-    def test_plain_bt_does_not_force_cf_publication(self):
+-        self.assertFalse(
++    def test_plain_bt_forces_cf_publication(self):
++        self.assertTrue(
+             FunctionTranslator._function_needs_cf(_insns("bt", "jb")))
+ 
+ 

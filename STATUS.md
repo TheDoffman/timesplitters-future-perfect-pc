@@ -1,3 +1,41 @@
+## Independent bit-operation lowering (game acceptance pending, 2026-10-27)
+
+On `feature/independent-bit-operations`, the next original lowering module
+replaces non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP. Word/dword signed memory
+bit strings, sampled carry, scan zero flags and byte swaps use project code.
+Decoded carry/zero branches, SET and CMOV consume snapshots after operand writes.
+Zero scans preserve the destination as explicit policy for an undefined result.
+LOCK operations and complete flag provenance remain separate replacement work.
+
+Windows validation:
+
+- **125 focused checks passed in 41.01 seconds**, including compiled portable
+  references, native x86 register/memory oracles and inherited consumers.
+- Supported US XBE hash verified. Normal generation translated **15,838
+  functions, zero failures**, with the existing **50 unresolved stubs**.
+- Of 21 generated C/header files, **16 are byte-identical**. Only **21 function
+  bodies changed**; **15,817 stayed identical**, as did function order/names and
+  all text outside bodies. Changed bodies contain the new bit-operation code.
+  This structural comparison is not a complete equivalence proof.
+- Normal Windows Release build and its native checks **passed**, with current
+  generation fingerprint and matching crash symbols.
+- **56 patch-upgrade/context/backlog/snapshot checks passed in 1,119.23
+  seconds**. Repository context and staged whitespace checks also passed.
+- **New game acceptance is pending.** The isolated runner refused to launch
+  because another installed copy was running. The user requested that session
+  remain open while other checks finish. No new game was launched; all 19
+  protected personal/save/fixture files retained their hashes. Earlier gameplay
+  evidence below predates this build and does not validate the new bit stage.
+
+Executable SHA-256:
+`1614ae4ebe061e3aa14ab72fd1c15aa69e16c3d86a0b70d0f94f002c685b30c1`.
+Evidence: `logs/bitops-focused.log`, `logs/bitops-generation.log`,
+`logs/independent-bitops-comparison.json`, `logs/bitops-build.log`,
+`logs/bitops-patch-checks.log`, `logs/bitops-game-deferred.json`.
+Native Mac generation/build/gameplay remain unverified (MAC-083). The earlier
+product stage is included on this branch after PR #370 merged independently.
+The project still uses remaining ts3FPrecomp code and retains its notices.
+
 ## Desktop relocation rebuild and gameplay verification (2026-10-27)
 
 Reconfigured the Windows build after moving out of OneDrive. Preserved the old
@@ -26,7 +64,9 @@ replacement remains in progress; this rebuild did not change production source.
 
 ## Independent multiply and divide lowering (in progress, 2026-10-27)
 
-Continuing PR #370 from `88566e9d`, `translation_product.py` replaces MUL/IMUL/
+Originally prepared from `88566e9d`, then retained in `8763627e` on
+`feature/independent-bit-operations` after PR #370 merged elsewhere,
+`translation_product.py` replaces MUL/IMUL/
 DIV/IDIV lowering and `guest_integer_fault.c` supplies a shared fatal diagnostic
 boundary. All integer widths, explicit IMUL forms, divisor aliasing and quotient
 checks are covered by original native fixtures. Signed division avoids C signed

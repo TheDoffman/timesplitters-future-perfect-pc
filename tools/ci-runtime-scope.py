@@ -35,6 +35,7 @@ RELEASE_INPUTS = {
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
     'tools/translation_product.py', 'tests/test_translation_product.py',
+    'tools/translation_bitops.py', 'tests/test_translation_bitops.py',
     'tools/translation_bits.py', 'tests/test_translation_bits.py',
     'tools/translation_integer.py', 'tests/test_translation_integer.py',
     'tools/translation_moves.py', 'tests/test_translation_moves.py',
