@@ -1,0 +1,30 @@
+# Xbox Input: the host's pads and keyboard, as an Xbox controller
+
+add_library(xbox_input STATIC
+    xinput_device.c
+    # Host device choice and per-control bindings, from the config file the
+    # input UI writes (tools/input_ui). Used by both input paths: the XAPI
+    # replacement in src/hle and the USB gamepad in src/usb.
+    input_bindings.c
+    # The pads themselves: SDL3 everywhere, XInput on Windows behind
+    # RECOMP_PAD_API=xinput or the bindings file's "pad_api".
+    recomp_pad.c
+)
+
+target_include_directories(xbox_input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(xbox_input PUBLIC platform SDL3::SDL3)
+if(WIN32)
+    target_link_libraries(xbox_input PUBLIC xinput)
+endif()
+
+if(MSVC)
+    target_compile_options(xbox_input PRIVATE /W4 $<$<NOT:$<CONFIG:Debug>>:/O2>)
+else()
+    target_compile_options(xbox_input PRIVATE -Wall -Wextra -O2)
+endif()
+
+# What the runtime sees of the pads, live: `recomp_pad_probe [seconds] [xinput]`.
+# Not built by default; `cmake --build <dir> --target recomp_pad_probe`.
+add_executable(recomp_pad_probe EXCLUDE_FROM_ALL recomp_pad_probe.c)
+target_link_libraries(recomp_pad_probe PRIVATE xbox_input)

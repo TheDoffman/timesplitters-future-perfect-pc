@@ -1,0 +1,79 @@
+{
+  "_title": "Otogi: Myth of Demons (0x46530002), XDK 5455",
+  "_why": [
+    "XbSymbolDatabase does not cover XMV, the video library, so these",
+    "addresses had no names and could not be replaced by name.",
+    "",
+    "scripts/section_calls.py finds seven calls crossing into the XMV section",
+    "(0x00145D40..0x0016DB0C). Create, Destroy and GetStreamInfo sit at the",
+    "same offsets into the section as Future Perfect's and Breakdown's (+0x10D,",
+    "+0x651, +0x735); the rest are named from how the movie code at",
+    "0x000C7E60..0x000C83B0 calls them. There is no Start: the first Update",
+    "starts playback. See docs/technical/video-playback.md."
+  ],
+  "symbols": [
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1334861,
+      "name": "XMVPlaybackCreate",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x00145E4D. From 0x000C7F54: (flags, path, &handle at 0x013EC268)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1336209,
+      "name": "XMVPlaybackDestroy",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x00146391. From 0x000C841D, with the handle."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1336437,
+      "name": "XMVPlaybackGetStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x00146475. From 0x000C7E7B and 0x000C7ECA: (handle, &info)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1336465,
+      "name": "XMVPlaybackGetAudioStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x00146491. From 0x000C7E9B: (handle, index, &info); the caller checks the codec for 0x69 and the channels for 2."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1336617,
+      "name": "XMVPlaybackCreateAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 20,
+      "_note": "0x00146529. From 0x000C7ED0's set-up, once per audio stream."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1337000,
+      "name": "XMVPlaybackUpdate",
+      "call": "stdcall",
+      "stack_bytes": 16,
+      "_note": "0x001466A8. From 0x000C8256 in the per-frame loop: (handle, surface, &status, &time), both outputs zeroed first."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 1338661,
+      "name": "XMVPlaybackGetCurrentTime",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x00146D25. From 0x000C82A6, with the handle, straight after each Update, as Breakdown's."
+    }
+  ]
+}

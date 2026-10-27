@@ -12,11 +12,45 @@ and replay builds succeeded on the original fba57e94 task base. Replaying the
 captured frame with the production rule matched the targeted comparison to
 within one 8-bit color step. The production-function fixture passed with the
 UI layout suite (11 tests). The fresh-checkout patch transition also passed.
-In an isolated Test
-Lab run, the user confirmed the shield follows the robot; two fresh frame
-captures show it over the robot. On current main, the complete patch stack,
-11 UI layout tests, fresh-checkout patch transition, and context check pass.
-Native Mac validation remains pending (MAC-064).
+In an isolated Test Lab run, the user confirmed the shield follows the robot;
+two fresh frame captures show it over the robot. With the newer main, the
+complete patch stack, 11 UI layout tests, fresh-checkout patch transition,
+bundled runtime snapshot test, and context check pass.
+Native Mac validation remains pending (MAC-065).
+
+## Self-contained runtime source (2026-10-26)
+
+On `feature/self-contained-runtime`, based on main
+`fba57e948dfda17ad5174121413583c5d29d46da`, setup and CI now prepare the
+runtime from tracked `vendor/ts3FPrecomp` instead of fetching the original
+runtime repository. The 624 pristine files (7.84 MiB of source), eight gitlinks,
+raw commit and manifest reconstruct the unchanged upstream revision
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Credits/licenses are preserved.
+All 624 staged blobs match the original Git identities. A fresh checkout with
+`core.autocrlf=true` also passes snapshot verification.
+
+Windows x64 validation: the supported `tsfp.ps1 Build` completed, including
+native path, controls, settings, texture, display, debug, prompt, network,
+Discord and hang-policy checks. No game behavior was intentionally changed;
+this is build/source-distribution validation, not a new gameplay claim.
+The executable SHA-256 is `ca10ea2adc61757dd4b7375850665c5a58654ce6c70fe270f563cb3ccdef6787`.
+Evidence: ignored `logs/runtime-vendor-build.log`.
+
+Full snapshot, patch-transition, CI-scope, Mac build-tool and Mac-package suite:
+**161 passed, 1 skipped** in 768.90 seconds on Windows (Python 3.12.14).
+Context/backlog/CI/Mac-package checks separately passed 109 tests. Snapshot tests
+disable all Git transports, exercise corruption/failure preservation, reconstruct
+usable pristine Git history, and apply all 177 patches twice. Evidence:
+ignored `logs/runtime-vendor-tests.log`.
+
+At implementation commit `f57875a577accb915e054f86407788731c15a08b`,
+[PR #369](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/369)
+CI passed Mac snapshot/patch upgrades, native runtime regressions and asset-free
+GPU contracts, both launcher builds and the dual-platform launcher gate.
+Windows runtime/patch CI was still running when this record was written; see
+PR checks for its final result. Native Mac game build/package execution with
+private game data remains unverified; see MAC-064. Separate dependency downloads
+(SDL, symbol database, Python/FFmpeg/SDKs) and user-supplied game data remain.
 
 ## Current-source Windows build and rocket regression (2026-10-26, PR #367)
 

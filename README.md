@@ -196,10 +196,11 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 
 ## Credits & license
 
-Built on **[nemonicicon/ts3FPrecomp](https://github.com/nemonicicon/ts3FPrecomp)**,
-with local runtime patches and platform adapters. The project statically
-recompiles the Xbox executable into native code; it does not recover the
-original C/C++ source. See [upstream and licensing](docs/building.md#upstream-and-licensing).
+The project statically recompiles the Xbox executable into native code; it does
+not recover the original C/C++ source. Runtime and recompiler source are included
+in this repository alongside the project's patches and platform adapters. See
+[bundled runtime source](docs/building.md#bundled-runtime-source) for verification
+and the remaining third-party dependencies.
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

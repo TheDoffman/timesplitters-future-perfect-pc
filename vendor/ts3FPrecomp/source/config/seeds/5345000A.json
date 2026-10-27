@@ -1,0 +1,18 @@
+[
+ {
+  "start": "0x00147FB4",
+  "note": "PsCreateSystemThreadEx StartContext1 observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x00154DAA",
+  "note": "Called from 0x00154E1F and never discovered; the runtime skipped it as [STUB]. The skipped call left a failure code on the stack, its caller raised a C++ exception (0xE06D7363), and the unwind this runtime cannot do left the heap with a self-referential free-list node, which hung the allocator at 0x001497DC. Seeding it is the root of that chain."
+ },
+ {
+  "start": "0x001BCAA3",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ },
+ {
+  "start": "0x001BD274",
+  "note": "Indirect-call target observed at runtime; decodes as a function body."
+ }
+]

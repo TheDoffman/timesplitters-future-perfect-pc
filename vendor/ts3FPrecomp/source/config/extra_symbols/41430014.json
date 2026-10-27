@@ -1,0 +1,81 @@
+{
+  "_title": "XGRA: Extreme G Racing Association (0x41430014), XDK 5558",
+  "_why": [
+    "XbSymbolDatabase does not cover XMV, the video library, so these",
+    "addresses had no names and could not be replaced by name.",
+    "",
+    "scripts/section_calls.py finds eight calls crossing into the XMV section",
+    "(0x000D9420..0x00101344). Create, Destroy, GetStreamInfo and",
+    "CreateAudioStream sit at Future Perfect's offsets into the section",
+    "(+0x10D, +0x651, +0x735, +0x7A2); the rest are named from how the movie",
+    "code at 0x00098C60..0x000997C0 calls them. The eighth, 0x000D975A, takes",
+    "two callbacks and creates a playback that is fed packets by the title; it",
+    "is left to the XDK, and the replacements hand a playback they did not",
+    "make back to the XDK's own bodies. See docs/technical/video-playback.md."
+  ],
+  "symbols": [
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 890157,
+      "name": "XMVPlaybackCreate",
+      "call": "stdcall",
+      "stack_bytes": 12,
+      "_note": "0x000D952D, from 0x0009943F: (0, path formatted into 0x00203480, &handle at 0x0019B5C4)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 891505,
+      "name": "XMVPlaybackDestroy",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x000D9A71, from 0x00098C98 and 0x000997F7, with the handle."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 891733,
+      "name": "XMVPlaybackGetStreamInfo",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x000D9B55, from 0x00098D48 and 0x00099460: (handle, &info)."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 891842,
+      "name": "XMVPlaybackCreateAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 20,
+      "_note": "0x000D9BC2, from 0x00099476: (handle, 0, 0, 0, NULL) -- XGRA passes no output slot."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 892225,
+      "name": "XMVPlaybackReleaseAudioStream",
+      "call": "stdcall",
+      "stack_bytes": 8,
+      "_note": "0x000D9D41, from 0x000997EB before Destroy: (handle, index) clears slot index of the stream array at the playback's +0x138 and sets +0x130 to -1."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 892258,
+      "name": "XMVPlaybackStopAudioStreams",
+      "call": "stdcall",
+      "stack_bytes": 4,
+      "_note": "0x000D9D62, from 0x00098C7E, 0x00098DF6, 0x00098E09 and 0x000997D5: walks the playback's audio streams at +0x134 and calls a method on each."
+    },
+    {
+      "library": "XMV",
+      "kind": "function",
+      "address": 892717,
+      "name": "XMVPlaybackUpdate",
+      "call": "stdcall",
+      "stack_bytes": 16,
+      "_note": "0x000D9F2D, from 0x00098D00 and 0x00099530: (handle, surface, &status, user)."
+    }
+  ]
+}

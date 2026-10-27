@@ -1,0 +1,107 @@
+xboxrecomp — third-party attribution
+====================================
+
+This fork of xboxrecomp is distributed under GPL-3.0 (see LICENSE). The
+upstream xboxrecomp code it builds on was released under MIT and keeps that
+notice (LICENSE.upstream-MIT). The components listed below are included under
+their original licences with their original copyright intact. They are other
+people's work and are credited as such.
+
+
+GPL-3.0 — adapted from doaxbv-re
+--------------------------------
+
+  https://github.com/NoRain211/doaxbv-re
+
+  Files, from its recomp-runtime/ directory:
+
+    src/hle/xbox_adpcm.c, xbox_adpcm.h
+                          Xbox ADPCM block decoder. Unchanged.
+    src/hle/dsound_buffer_model.c, dsound_buffer_model.h
+                          The buffer half of dsound_service_model: a
+                          DirectSound buffer's play state on the host clock.
+                          Unchanged apart from the dropped device functions.
+    src/hle/audio_output.h, audio_output_xaudio2.cpp
+                          XAudio2 output. Changed: an unset RECOMP_AUDIO_GAIN
+                          means full gain rather than muted.
+    src/hle/hle_dsound.c  Adapted from dsound_service_adapter.c: keyed by XDK
+                          function name instead of one title's addresses,
+                          voice fields read from the voice settings object,
+                          a clock for every buffer, and a lock.
+
+  Licensed under the GNU General Public License, version 3. The full text is
+  in LICENSE.
+
+
+LGPL-2.1-or-later — extracted from xemu
+---------------------------------------
+
+  https://github.com/xemu-project/xemu
+
+  Files, with the copyright each one carries:
+
+    src/apu/apu_core.c    MCPX APU core
+                          (c) 2012 espes; 2018-2019 Jannik Vogel;
+                          2019-2025 Matt Borgerson
+    src/apu/apu_dsp.c     MCPX APU DSP (GP/EP)
+                          (c) 2012 espes; 2019-2025 Matt Borgerson
+    src/apu/apu_vp.c      MCPX APU voice processor
+                          (c) 2012 espes; 2018-2019 Jannik Vogel;
+                          2019-2025 Matt Borgerson
+    src/apu/apu_regs.h    (c) 2012 espes; 2018-2019 Jannik Vogel;
+                          2019-2021 Matt Borgerson
+    src/apu/apu_state.h   (c) 2012 espes; 2018-2019 Jannik Vogel;
+                          2019-2025 Matt Borgerson
+    src/apu/apu_debug.h   (c) 2020-2021 Matt Borgerson
+    src/apu/fpconv.h      (c) 2020-2025 Matt Borgerson
+    src/nv2a/nv2a_regs.h  NV2A register definitions
+                          (c) 2012 espes; 2015 Jannik Vogel
+
+  src/apu/apu_shim.h is this project's own file but is released under the
+  same licence, because it exists only to host the extracted APU code.
+
+  Licensed under the GNU Lesser General Public License, version 2.1 or (at
+  your option) any later version. The full text is in LICENSES/LGPL-2.1.txt;
+  the canonical copy is
+  https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt
+
+  These files keep their own licence. Linking against them from MIT or
+  proprietary code is expressly permitted by the LGPL — that is what
+  distinguishes it from the GPL. What the LGPL asks in return is that the
+  notices stay, that the source stays available, and that a user can relink
+  against a modified version. Distributing this repository, source included,
+  satisfies that.
+
+
+Derived algorithms — credited, independently implemented
+--------------------------------------------------------
+
+  src/d3d/d3d8_swizzle.h
+    Implements Xbox Z-order (Morton) texture unswizzling. The
+    masked-increment technique is Fabian Giesen's, published on his blog;
+    xemu's hw/xbox/nv2a/pgraph/swizzle.c is cited in the file as the
+    reference that pointed us at it.
+
+  src/d3d/d3d8_combiners.h
+    NV2A register-combiner translation. Cites xemu's pgraph combiner
+    implementation as a reference for the hardware's behaviour.
+
+  Algorithms and hardware behaviour are not themselves copyrightable, and
+  these are our own implementations. They are listed here because the debt is
+  real and should be visible even where no licence obligation attaches. If
+  anyone believes either file crosses from "implements the same algorithm"
+  into "copies the expression", raise an issue and we will rewrite or
+  relicense it — getting the credit right matters more to us than the licence
+  label.
+
+
+Reference material (no code taken)
+-----------------------------------
+
+  xemu, Cxbx-Reloaded and xboxdevwiki were used as references for hardware
+  behaviour: register offsets, kernel export ordinals, structure layouts.
+  Those are functional facts rather than expression, and no code was copied
+  for them.
+
+
+Contributors to xboxrecomp itself are credited in CONTRIBUTORS.md.
