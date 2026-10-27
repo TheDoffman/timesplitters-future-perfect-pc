@@ -4192,6 +4192,18 @@ Windows loopback evidence in `STATUS.md` does not establish native execution.
   Mac build, SDL event delivery and live reload/fresh-click acceptance are pending.
   See STATUS for bounded gameplay evidence; source is not yet published.
 
+- **High-refresh Fire click follow-up #337 (2026-10-27, local branch
+  `337-high-fps-fire-clicks`, not pushed):** Shared `pc_reload_input.h` now
+  carries brief configured primary/secondary Fire presses across original
+  60 Hz input polls, with earlier pulses cleared on Reload and all pending
+  input reset on focus/capture/menu/eligibility changes. Windows and SDL already
+  publish the same mouse/key edges; no new Mac adapter is needed. Windows
+  host schedules and original decoder replay pass at 60–240 FPS; isolated
+  120/180/240 FPS Story replays each consumed seven rounds from seven 1 ms clicks. Native Mac
+  build and physical mouse checks remain pending on the Mac: click singly and
+  repeatedly at 120/180/240, hold Fire, Reload while firing, switch menus and
+  focus, and test secondary fire with a remapped key. See STATUS for evidence.
+
 - **Reload input #337 (2026-10-24, this revision):** Shared numeric policy and
   `zzzz-global-compare-load.patch` let advancing native frames consume reload
   edges even when raw/game whole-tick phases differ after pause. Original60,

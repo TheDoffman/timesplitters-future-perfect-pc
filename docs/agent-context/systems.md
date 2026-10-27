@@ -110,23 +110,26 @@ the UI fixture tests both callers and guards, while Mac scenes remain unverified
 
 Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
 weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
-Input edges follow raw whole ticks; pause can offset those from game whole ticks,
+Input edges follow raw ticks; pause can offset those from game ticks,
 so the old gate dropped a valid press. Eligibility, binding lookup, animation and
 ammo checks remain original; zero-time pause and Original60 remain unchanged.
 The generic CMP hook is documented in runtime.md. No host-specific adapter.
 Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
-`PcInput`, and read-only US state snapshots in `pc_reload_guest.h`. Win32 and
-SDL publish press/release events under their existing input locks, including
-collapsed down/up events and fresh Fire clicks between samples. The shared
-binding sampler applies action roles from configured keys to keyboard magnitudes
-before merging physical-pad contributions. A short Reload request lasts at
+`PcInput`, and US state snapshots in `pc_reload_guest.h`. Win32 and SDL publish
+press/release events under input locks, including collapsed down/up events.
+The shared sampler applies configured key roles before merging pad input.
+A short Reload request lasts at
 least 34 ms and expires after 150 ms if the weapon never enters reload state 7.
 Already-held Fire is suppressed until release, reload completion or rejection;
 a fresh Fire press can interrupt. Monotonic press order preserves Fire after
 Reload within one poll, including events with identical clock timestamps.
 Context expires after 100 ms without an eligible
 local-player camera update; menu/capture/focus/controller transitions clear it.
-This does not queue rejected reloads indefinitely or alter ammo/animation logic.
+Rejected reloads expire without altering ammo/animation logic.
+Fire presses use the shared key-edge path and a
+34 ms pulse to cross 60 Hz polls; held input stays live. Reload clears earlier
+Fire pulses; later presses can interrupt. Context resets discard pulses.
+Pad input stays separate.
 
 
 `pc_model_transform_guest.inc` implements the US151E80 affine point fast path.

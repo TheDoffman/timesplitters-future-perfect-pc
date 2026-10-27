@@ -35,6 +35,68 @@ static void taps(void)
     printf("PASS: %u short-tap phase/rate/width schedules\n",cases);
 }
 
+static void fire_taps(void)
+{
+    const unsigned rates[]={60,120,144,180,240},widths[]={1,5,10,20};
+    unsigned cases=0;
+    for(unsigned rate=0;rate<5;rate++)for(unsigned w=0;w<4;w++)for(unsigned phase=0;phase<34;phase++) {
+        PcInput s={0};pc_input_focus(&s,1);pc_input_capture(&s,1);context(&s,0,0);
+        unsigned down_at=100+phase,up_at=down_at+widths[w],frame=1,edges=0,held=0;
+        for(unsigned t=0;t<300;t++) {
+            if(t==down_at)pc_input_key_at(&s,1,1,t);
+            if(t==up_at)pc_input_key_at(&s,1,0,t);
+            if(t*rates[rate]<frame*1000)continue;
+            context(&s,0,t);
+            int r=0,f=s.keys[1]?255:0,a=0;sample(&s,t,1,&r,&f,&a);
+            if(frame*60/rates[rate]!=(frame-1)*60/rates[rate]) {
+                if(f && !held)edges++;
+                held=!!f;
+            }
+            frame++;
+        }
+        assert(edges==1);cases++;
+    }
+    printf("PASS: %u short Fire taps through original 60 Hz input schedule\n",cases);
+
+    /* Distinct clicks must be distinct edges, and a held button must not
+     * generate another edge just because the synthetic pulse expires. */
+    PcInput s={0};pc_input_focus(&s,1);pc_input_capture(&s,1);context(&s,0,0);
+    unsigned edges=0,held=0;
+    for(unsigned t=0;t<350;t++) {
+        if(t==101 || t==201 || t==260)pc_input_key_at(&s,1,1,t);
+        if(t==102 || t==202 || t==320)pc_input_key_at(&s,1,0,t);
+        if(t%5)continue; /* 200 FPS host, 60 Hz original polls */
+        context(&s,0,t);
+        int r=0,f=s.keys[1]?255:0,a=0;sample(&s,t,1,&r,&f,&a);
+        if(t%50==0 || t%50==15 || t%50==35) {
+            if(f && !held)edges++;
+            held=!!f;
+        }
+    }
+    assert(edges==3);
+}
+
+static void fire_lifecycle(void)
+{
+    for(unsigned guard=0;guard<4;guard++) {
+        PcInput s={0};pc_input_focus(&s,1);pc_input_capture(&s,1);context(&s,0,100);
+        pc_input_key_at(&s,1,1,100);pc_input_key_at(&s,1,0,101);
+        if(guard==0)pc_input_focus(&s,0);
+        if(guard==1)pc_input_capture(&s,0);
+        if(guard==2)pc_reload_context(&s.reload,1,0,0,102);
+        int r=0,f=0,a=0;sample(&s,102,guard!=3,&r,&f,&a);
+        assert(!f);
+    }
+    /* Both mouse buttons and remapped keys use the same role-based buffer. */
+    PcInput s={0};pc_input_focus(&s,1);pc_input_capture(&s,1);context(&s,0,100);
+    pc_input_key_at(&s,2,1,100);pc_input_key_at(&s,2,0,101);
+    pc_input_key_at(&s,3,1,100);pc_input_key_at(&s,3,0,101);
+    roles[3]=2;
+    int r=0,f=0,a=0;sample(&s,102,1,&r,&f,&a);assert(f==255 && a==255);
+    roles[3]=0;
+    r=f=a=0;sample(&s,140,1,&r,&f,&a);assert(!f && !a);
+}
+
 static void priority(void)
 {
     PcInput s={0};int r,f,a;
@@ -113,6 +175,6 @@ static void lifecycle(void)
 int main(void)
 {
     roles['R']=1;roles[1]=2;roles[2]=4;
-    taps();priority();event_order();lifecycle();puts("PASS: reload priority, fresh Fire, expiry, remapping and lifecycle");
+    taps();fire_taps();fire_lifecycle();priority();event_order();lifecycle();puts("PASS: reload priority, fresh Fire, expiry, remapping and lifecycle");
     return 0;
 }

@@ -3,10 +3,11 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Keyboard-only action arbitration, independent of rendering rate. Host
+/* Keyboard/mouse action arbitration, independent of rendering rate. Host
  * adapters serialize events/context/sampling with their existing input lock. */
 typedef struct PcReloadInput {
     uint64_t pressed_at[256], context_at, pulse_until, request_until;
+    uint64_t fire_pulse_until[2];
     uint64_t press_order[256], sequence;
     unsigned char events[256]; /* press=1, release=2 */
     uint32_t player;
@@ -36,8 +37,8 @@ static inline void pc_reload_context(PcReloadInput *r,uint32_t player,int eligib
 static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[256],int active,
                                     uint64_t now,int *reload,int *fire,int *secondary)
 {
-    int pressed=0,released_fire=0;
-    uint64_t reload_order=0;
+    int pressed=0,released_fire=0,pressed_fire=0;
+    uint64_t reload_order=0,fire_order[2]={0,0};
     if(!active || !r->eligible || now-r->context_at>100) {
         pc_reload_reset(r);return;
     }
@@ -45,6 +46,11 @@ static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[2
         if((roles[k]&1) && (r->events[k]&1) && now-r->pressed_at[k]<=100) {
             pressed=1;
             if(r->press_order[k]>reload_order)reload_order=r->press_order[k];
+        }
+        if((r->events[k]&1) && now-r->pressed_at[k]<=100) {
+            pressed_fire|=roles[k]&6;
+            if((roles[k]&2) && r->press_order[k]>fire_order[0])fire_order[0]=r->press_order[k];
+            if((roles[k]&4) && r->press_order[k]>fire_order[1])fire_order[1]=r->press_order[k];
         }
         if(r->events[k]&2)released_fire|=roles[k]&6;
         r->events[k]=0;
@@ -57,10 +63,14 @@ static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[2
         r->pulse_until=now+34; /* at least two original 60 Hz input intervals */
         r->request_until=now+150;r->waiting=1;r->seen_reload=0;
         r->blocked_fire=(*fire?2:0)|(*secondary?4:0);
+        /* A click before Reload must not become a delayed shot afterward. */
+        r->fire_pulse_until[0]=r->fire_pulse_until[1]=0;
         /* Preserve shots pressed after Reload, even within this same poll or
          * millisecond. Host event order is more precise than clock timestamps. */
         for(unsigned k=1;k<256;k++)
             if(r->press_order[k]>reload_order)r->blocked_fire&=~(roles[k]&6);
+        if(fire_order[0]<=reload_order)pressed_fire&=~2;
+        if(fire_order[1]<=reload_order)pressed_fire&=~4;
     }
     if(r->waiting) {
         if(r->reloading)r->seen_reload=1;
@@ -71,7 +81,14 @@ static inline void pc_reload_sample(PcReloadInput *r,const unsigned char roles[2
     /* Keep a short tap available through the polling gap. If the weapon
      * cannot reload (full/empty/busy), expire rather than queue a future action. */
     if(now<r->pulse_until || (r->waiting && !r->seen_reload))*reload=255;
+    /* A mouse down/up may fit entirely between host frames, or between the
+     * original game's 60 Hz input polls. Hold each new press across two of
+     * those intervals; a held button remains governed by its live state. */
+    if(pressed_fire&2)r->fire_pulse_until[0]=now+34;
+    if(pressed_fire&4)r->fire_pulse_until[1]=now+34;
     if(r->blocked_fire&2)*fire=0;
+    else if(now<r->fire_pulse_until[0])*fire=255;
     if(r->blocked_fire&4)*secondary=0;
+    else if(now<r->fire_pulse_until[1])*secondary=255;
 }
 #endif
