@@ -1,10 +1,9 @@
 # Build, run and validation map
 
-Generation hashes cover own translation and branch-diagnostic tools/bridges.
-Feedback/report tests cover cumulative crash observations, independent seed
-export, overlaps, real layout, failure preservation and toolkit-free CLIs.
-Shared CI also runs legacy consumers. See `docs/independent-runtime.md` for
-commands, provenance and host validation limits.
+Generation hashes cover own translation/diagnostic tools and bridges. Operand
+fixtures execute subregister, address-wrap and floating-stack expressions plus
+production memory macros. Shared CI also runs decoder/legacy consumers and
+standalone copies. See `docs/independent-runtime.md` for scope and host limits.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

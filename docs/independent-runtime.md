@@ -14,7 +14,7 @@ function discovery, labels, cross-references, analysis orchestration/output/cach
 the library-symbol adapter, generation driver, function classifier, manual-source
 scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
-indirect-branch feedback and unresolved-address diagnostics.
+indirect-branch feedback, unresolved-address diagnostics and C operand emission.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -63,6 +63,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Translator instruction/operand and block model | Project-owned `translation_decode.py`; production compatibility imports use it | Original operand/segment/bounds/CFG/restart/overlap fixtures, existing translator consumers, full regeneration/build and isolated gameplay; native Mac pending |
 | Translator layout and HLE symbol bindings | Project-owned `translation_layout.py` and `translation_hooks.py`; production modules alias them | Metadata/bounds/replacement fixtures, lexical markers, unique bindings, return/register ABI checks, native generated-thunk execution, regeneration/build and isolated gameplay; native Mac pending |
 | Branch feedback and unresolved diagnostics | Project-owned `branch_feedback.py` and `unresolved_report.py`; compatibility CLIs use them | Cumulative observations, saturation, overlaps, independent seeds, real section/backing metadata, standalone CLI and production consumers; generation/build/game validation in STATUS.md, native Mac pending |
+| C operand emission | Project-owned `translation_operands.py`; lifter imports replace its formatter bodies and tables | Native subregister/FS/address-width/floating-stack and production memory-macro tests, standalone copy, existing consumers, regeneration/build/game; native Mac pending |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -489,3 +490,32 @@ not a verified association between a user-selected map and executable.
 Compatibility entries support module and direct-script invocation; standalone
 copies run without the old toolkit. Runtime recording, indirect dispatch,
 core translation and the final provenance cleanup remain separate work.
+
+
+## Register and memory operand emission
+
+`translation_operands.py` owns C expressions for guest general/subregisters,
+integer immediates, FS-relative addresses, memory access and the existing
+floating-stack storage. It generates subregister relationships from the register
+model and preserves unaffected bits on writes. Native fixtures execute 1,000
+input pairs across all 16 subregister forms, address arithmetic and floating-stack
+wraparound. A separate fixture compiles the actual production XBOX_PTR and
+integer/signed/float memory macros with emitted accesses and an isolated buffer.
+
+The decoder now retains address width. For an address-size override, the offset
+wraps to 16 bits before adding FS; normal guest addresses wrap through the
+runtime's 32-bit pointer macro. Absolute negative displacements emit unsigned
+32-bit literals, including high device addresses. This changes their C spelling,
+not the runtime pointer result. Unsupported registers, sizes and malformed
+address forms fail before C emission instead of producing unknown C tokens or
+silently selecting a narrower memory accessor.
+
+Architectural x87 register width is reported separately from the runtime's
+existing double storage; this stage does not establish 80-bit arithmetic fidelity.
+General 64-bit integer operands and 80-bit memory floating conversion are not
+silently lowered to 32-bit accesses. Segment/system register reads retain the
+existing zero/no-op policy; actual privileged-register emulation is separate.
+The compatibility patch removes the old helper bodies and tables. Opcode/flag
+handlers, naming/export data and remaining translator orchestration are still
+upstream. Tests are in `tests/test_translation_operands.py`, registered on both
+CI hosts; measured generation/build/game acceptance is in STATUS.md.

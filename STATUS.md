@@ -1,3 +1,48 @@
+## Independent C operand emission (2026-10-26)
+
+Continuing PR #370 from `6e51a54b`, the lifter's operand formatter bodies and
+tables are replaced by project `translation_operands.py`. Own emission handles
+register/subregister reads and preserving writes, immediates, FS-relative
+addresses, integer/signed/float memory, and the runtime's floating stack. The
+decoder retains address width, so a 16-bit offset wraps before adding FS.
+Invalid forms fail before C emission. Existing zero/no-op segment/system policy
+remains explicit; this stage does not supply privileged-register emulation,
+80-bit floating arithmetic, opcode/flag handlers, naming data or runtime macros.
+
+Windows / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 validation:
+
+- **577 tests passed in 721.99 seconds**; final context/backlog: **21 passed in 3.60 seconds**. Focused checks: **142 passed in 7.31 seconds**.
+- Native fixtures execute 1,000 input pairs through all 16 subregister forms,
+  32-bit address arithmetic, 16-bit wrapping before FS and floating-stack indexing.
+  A separate native fixture uses the **actual production pointer and memory
+  macros** with emitted integer, signed, float and double reads/writes.
+  High absolute address spellings produce the same pointer as signed literals.
+  Copied modules run without the toolkit; installed lifter consumers pass.
+- Regeneration: **17 of 21 files byte-identical**. Four change only negative
+  absolute addresses to unsigned 32-bit literals, plus **78 added 16-bit offset
+  casts** in decoded address-override expressions. Full-text comparison after
+  accounting for those two changes found no other differences. These casts are
+  a behavior correction, not a claim of bit-identical translation. Source
+  fingerprint and supported-US executable hash verified.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave
+  passed: forward movement 11.175 units, backward 6.185 units, ammo 8 to 6,
+  40 paused samples with frozen ticks and 60 resumed samples advancing. Last
+  checkpoint 100.417 seconds; exit 0; start/pause/resume captures reviewed.
+  Profiles/signatures and canonical fixture preserved; no crash artifacts or
+  remaining partitions/lock. Personal saves/settings unused.
+- Tested executable SHA-256:
+  `5b34c7d17aa844925b17912b46b0e48073253872703d7db1c70883eeee008383`.
+
+The game run used injected input, minimized/background rendering, original
+60 FPS and skipped movies. Physical input, audio, foreground pacing and full
+levels remain unverified. All three workflows for preceding `6e51a54b` passed,
+including Windows/macOS native checks. New-head CI and native Mac generation,
+build and gameplay acceptance remain separate; MAC-078 records the gap.
+Evidence: `logs/independent-operands-*`, the ignored generation baseline under
+`private/pipeline/operand-acceptance-baseline`, and
+`private/test-saves/independent-operands`. The overall replacement goal stays
+active; upstream notices remain while remaining source/data is still used.
+
 ## Independent branch feedback and unresolved diagnostics (2026-10-26)
 
 Continuing PR #370 from `c2dc8494`, production compatibility entries now use

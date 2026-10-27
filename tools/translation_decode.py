@@ -27,6 +27,7 @@ class Operand:
     mem_disp: int = 0
     mem_size: int = 0
     mem_seg: str | None = None
+    mem_addr_size: int = 4
 
 
 @dataclass
@@ -107,7 +108,7 @@ class Disassembler:
                 displacement = memory.disp if memory.disp < 0 else memory.disp & 0xFFFFFFFF
                 result.operands.append(Operand('mem', mem_base=names['base'], mem_index=names['index'],
                     mem_scale=memory.scale, mem_disp=displacement, mem_size=operand.size,
-                    mem_seg=names['segment']))
+                    mem_seg=names['segment'], mem_addr_size=decoded.addr_size))
                 if not memory.base and not memory.index and memory.disp:
                     result.memory_refs.append(memory.disp & 0xFFFFFFFF)
             else:

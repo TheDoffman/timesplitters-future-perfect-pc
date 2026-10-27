@@ -211,6 +211,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-075 | Independent translator decoding | Awaiting validation |
 | MAC-076 | Independent translation layout and hook planning | Awaiting validation |
 | MAC-077 | Independent branch feedback and unresolved diagnostics | Awaiting validation |
+| MAC-078 | Independent C operand emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5882,6 +5883,24 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate with `--generate`, build and verify isolated movement/fire/pause.
 - **Mac implementation and evidence:** Windows evidence does not certify native
   Mac generation or gameplay. See STATUS.md for actual results and limitations.
+
+### MAC-078 - Independent C operand emission
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own register/subregister, address and memory C expressions;
+  decoder preserves address overrides, with offset wrapping before FS addition.
+- **PC source:** Continuing PR #370; `tools/translation_operands.py`, address
+  metadata in `translation_decode.py`, `independent-translation-operands.patch`,
+  generation hashes and original/native/consumer fixtures.
+- **PC validation:** Native subregister/address/floating-stack execution and
+  actual runtime pointer/memory macros; build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python expressions and runtime ABI interfaces;
+  compiler fixtures and existing translator consumers run in both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run operand/decoder/fingerprint and consumer tests,
+  regenerate with `--generate`, build, verify isolated movement/fire/pause/resume.
+- **Mac implementation and evidence:** Windows source/native-C evidence does not
+  establish Mac generation/gameplay or full x87 precision; see STATUS.md.
 
 ## Entry template
 

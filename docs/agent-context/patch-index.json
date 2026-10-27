@@ -133,6 +133,13 @@
       ]
     },
     {
+      "name": "independent-translation-operands.patch",
+      "sha256": "fc17fc0c1359886eeee490f6497df0cb8738a9d67d969c970c10f26706e59edf",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

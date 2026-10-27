@@ -1,6 +1,15 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-translation-operands.patch` removes the lifter's operand formatter
+bodies/tables and imports `translation_operands.py`. Own expressions handle
+subregister preservation, signed/unsigned/float memory, FS, absolute address
+normalization and runtime floating-stack access. Decoder operands now retain
+address width: 16-bit offsets wrap before FS is added. Invalid forms fail before
+C emission; system/segment register reads remain documented zero/no-op policy.
+Native fixtures execute expressions and actual runtime pointer/width macros;
+standalone copies and installed translator consumers exercise the boundary.
+This replaces expressions, not opcode handlers, flag lowering or the ABI macros.
 `independent-branch-diagnostics.patch` replaces feedback and unresolved-report
 bodies with `branch_feedback.py` and `unresolved_report.py`. Feedback unions
 observations before separate seed filtering, retains saturation and accepts
