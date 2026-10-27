@@ -14,7 +14,8 @@ function discovery, labels, cross-references, analysis orchestration/output/cach
 the library-symbol adapter, generation driver, function classifier, manual-source
 scanner, generation output support, translator instruction/block decoding,
 executable layout configuration, HLE symbol planning/thunk emission,
-indirect-branch feedback, unresolved-address diagnostics, C operand emission and basic data-transfer/stack lowering.
+indirect-branch feedback, unresolved-address diagnostics, C operand emission,
+basic data-transfer/stack lowering and scalar integer arithmetic/logic emission.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -65,6 +66,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Branch feedback and unresolved diagnostics | Project-owned `branch_feedback.py` and `unresolved_report.py`; compatibility CLIs use them | Cumulative observations, saturation, overlaps, independent seeds, real section/backing metadata, standalone CLI and production consumers; generation/build/game validation in STATUS.md, native Mac pending |
 | C operand emission | Project-owned `translation_operands.py`; lifter imports replace its formatter bodies and tables | Native subregister/FS/address-width/floating-stack and production memory-macro tests, standalone copy, existing consumers, regeneration/build/game; native Mac pending |
 | Basic data-transfer and stack instructions | Project-owned `translation_moves.py` supplies MOV, MOVZX, MOVSX, LEA, PUSH and POP | Native extension/hook/stack-alias/segment/trace contracts, standalone copies, existing consumers, generation/build/game; native Mac pending |
+| Scalar integer arithmetic and logic | Project-owned `translation_integer.py` supplies ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT | Native result/carry/snapshot and decoded-sequence contracts, standalone copies, consumers, generation/build/game; complete flag lowering remains separate |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -548,3 +550,28 @@ replacement after older title instrumentation so recorded stacks can unwind
 and replay. Fingerprints and both CI hosts include the source and tests.
 XCHG, arithmetic/flags, control transfers, SIMD/FPU handlers, orchestration and
 runtime ABI macros remain separate parts of the replacement goal.
+
+
+## Scalar integer lowering
+
+`translation_integer.py` owns the scalar ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT
+handlers. It validates general registers, operand widths and encodable operand
+kinds, masks sampled inputs before carry/borrow calculations and publishes the
+computed result to the existing snapshot interface. Memory results are not read
+again merely to obtain flags. The existing byte-decrement title hook is retained.
+INC/DEC leave carry alone, NOT leaves snapshots alone, and NEG uses unsigned
+subtraction so INT_MIN does not invoke signed-overflow behavior in generated C.
+
+Original compiled fixtures cover every byte input pair and carry, seeded and
+boundary word/dword inputs, memory access counts and hook order. Decoded
+NEG/ADC/SBB/PUSH/CMP/ADD/SUB sequences execute through production block lowering.
+Two inherited expression assertions are updated for the new temporary variables;
+negative checks for carry preservation remain active. Copied modules run without
+the toolkit. The source participates in generation hashes and Windows/Mac CI.
+
+The compatibility patch removes six old handler bodies after all historical title
+instrumentation and the move replacement. Historical upgrade fixtures defer it
+until the complete stack. This stage retains the existing flag snapshot ABI;
+conditional lowering, complete AF/PF/OF behavior, other instruction families and
+runtime services still require replacement. Generation/build/game evidence and
+native Mac gaps are recorded separately in STATUS.md and MAC-080.

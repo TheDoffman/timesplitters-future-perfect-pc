@@ -1,0 +1,223 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -21,6 +21,7 @@
+ from .disasm import Instruction, Operand, LOOP_JUMPS
+ from .config import is_code_address, is_data_address, va_to_file_offset
+ import translation_moves as _project_moves
++import translation_integer as _project_integer
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -1805,103 +1806,17 @@
+         return (f"_fa = (uint32_t)({dst}) & {mask};"
+                 f" _fas = (int32_t){sx}(_fa); /* {m} result */")
+ 
+-    def _lift_alu_binop(self, insn, ops, m):
+-        if len(ops) < 2:
+-            return [f"/* {m}: bad operands */"]
+-        c_op = {"add": "+", "sub": "-", "and": "&", "or": "|", "xor": "^"}[m]
+-        dst = _fmt_operand_read(ops[0])
+-        src = _fmt_operand_read(ops[1])
+-        # XOR reg, reg → zero
+-        if m == "xor" and ops[0].type == "reg" and ops[1].type == "reg" and ops[0].reg == ops[1].reg:
+-            out = ["_cf = 0; /* xor clears CF */"] if self.needs_cf else []
+-            out.append(_fmt_operand_write(ops[0], "0") + " /* xor self */")
+-            out.append(self._result_snapshot(ops, m))
+-            return out
+-        expr = f"{dst} {c_op} {src}"
+-        out = []
+-        if m in _RESULT_SRC_SETTERS:
+-            out.append(self._result_snapshot(ops, m, src_too=True))
+-        if self.needs_cf:
+-            # CF must be computed from the pre-write operands.
+-            if m == "add":
+-                w = _operand_width(ops[0]) or 4
+-                out.append(f"_cf = (int)((((uint64_t)({dst}) + (uint64_t)({src})) >> {w * 8}) & 1);")
+-            elif m == "sub":
+-                out.append(f"_cf = (int)((uint32_t)({dst}) < (uint32_t)({src}));")
+-            else:
+-                out.append("_cf = 0; /* logical op clears CF */")
+-        out.append(_fmt_operand_write(ops[0], expr))
+-        out.append(self._result_snapshot(ops, m))
+-        return out
+-
+-    def _lift_inc_dec(self, insn, ops, m):
+-        if len(ops) < 1:
+-            return [f"/* {m}: no operand */"]
+-        val = _fmt_operand_read(ops[0])
+-        delta = "1"
+-        op_char = "+" if m == "inc" else "-"
+-        # For sub-registers (al, cl, etc.), use the SET macro instead of ++
+-        if ops[0].type == "reg" and ops[0].reg in (
+-                "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp"):
+-            out = [f"{val}{'++' if m == 'inc' else '--'};"]
+-        else:
+-            source = val
+-            if m == "dec" and ops[0].type == "mem" and ops[0].mem_size == 1:
+-                source = f"RECOMP_LOAD_U8_AT(0x{insn.address:X}, {val})"
+-            out = [_fmt_operand_write(ops[0], f"{source} {op_char} {delta}")]
+-        size = _operand_width(ops[0]) or 4
+-        mask, sx = self._SNAP_MASK[size], self._SNAP_SX[size]
+-        overflow_result = (1 << (size * 8 - 1)) - (m == "dec")
+-        out += [f"_fa = (uint32_t)({val}) & {mask};",
+-                f"_fas = (int32_t){sx}(_fa); _fb = (_fa == 0x{overflow_result:X}u); /* {m} result/SF/OF; CF unchanged */"]
+-        return out
+-
+-    def _lift_neg(self, insn, ops, preserve_carry=False):
+-        if len(ops) < 1:
+-            return ["/* neg: no operand */"]
+-        val = _fmt_operand_read(ops[0])
+-        out = []
+-        if preserve_carry or self.needs_cf:
+-            # neg sets CF iff the operand was non-zero (neg/sbb sign-extract).
+-            out.append(f"_cf = (int)(({val}) != 0);")
+-        out.append(_fmt_operand_write(ops[0], f"(uint32_t)(-(int32_t){val})"))
+-        out.append(self._result_snapshot(ops, "neg"))
+-        return out
+-
+-    def _lift_not(self, insn, ops):
+-        if len(ops) < 1:
+-            return ["/* not: no operand */"]
+-        val = _fmt_operand_read(ops[0])
+-        return [_fmt_operand_write(ops[0], f"~{val}")]
+-
+-    def _lift_sbb(self, insn, ops):
+-        """SBB: subtract with borrow. Common idiom: sbb reg, reg → -CF (0 or -1)."""
+-        if len(ops) < 2:
+-            return ["/* sbb: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        src = _fmt_operand_read(ops[1])
+-        # sbb reg, reg is a common idiom: result is 0 or 0xFFFFFFFF depending on CF
+-        if ops[0].type == "reg" and ops[1].type == "reg" and ops[0].reg == ops[1].reg:
+-            return [_fmt_operand_write(ops[0], "_cf ? 0xFFFFFFFF : 0")
+-                    + " /* sbb self (CF extend) */",
+-                    self._result_snapshot(ops, "sbb")]
+-        w = (_operand_width(ops[0]) or 4) * 8
+-        return ["{ uint64_t _t = (uint64_t)(%s) - (uint64_t)(%s) - (uint64_t)_cf;"
+-                " _cf = (int)((_t >> %d) & 1); %s }  /* sbb */"
+-                % (dst, src, w, _fmt_operand_write(ops[0], "(uint32_t)_t")),
+-                self._result_snapshot(ops, "sbb")]
+-
+-    def _lift_adc(self, insn, ops):
+-        """ADC: add with carry."""
+-        if len(ops) < 2:
+-            return ["/* adc: bad operands */"]
+-        dst = _fmt_operand_read(ops[0])
+-        src = _fmt_operand_read(ops[1])
+-        w = (_operand_width(ops[0]) or 4) * 8
+-        return ["{ uint64_t _t = (uint64_t)(%s) + (uint64_t)(%s) + (uint64_t)_cf;"
+-                " _cf = (int)((_t >> %d) & 1); %s }  /* adc */"
+-                % (dst, src, w, _fmt_operand_write(ops[0], "(uint32_t)_t")),
+-                self._result_snapshot(ops, "adc")]
++    _lift_alu_binop = _project_integer.alu_binop
++
++    _lift_inc_dec = _project_integer.inc_dec
++
++    _lift_neg = _project_integer.neg
++
++    _lift_not = _project_integer.bit_not
++
++    _lift_sbb = _project_integer.sbb
++
++    _lift_adc = _project_integer.adc
+ 
+     def _lift_double_shift(self, insn, ops, m):
+         """SHLD/SHRD, with x86's count rules rather than C's.
+--- a/tools/recomp/test_carry_flag.py
++++ b/tools/recomp/test_carry_flag.py
+@@ -68,9 +68,9 @@
+ 
+ def test_adc_consumes_and_reproduces_carry():
+     out = _lift("adc", [EDX, ECX])
+-    assert "_cf" in out, out
++    assert "uint32_t _alu_carry = (_cf != 0);" in out, out
+     # Carry-out for the next word in the chain.
+-    assert "_cf = (int)((_t >>" in out, out
++    assert "_cf = (int)((_alu_wide >>" in out, out
+ 
+ 
+ def test_logical_ops_clear_carry():
+--- a/tools/recomp/test_lifter_carry.py
++++ b/tools/recomp/test_lifter_carry.py
+@@ -19,9 +19,9 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, sbb]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertIn("_cf = (int)((esi) != 0);", generated)
++        self.assertIn("_cf = (_alu_left != 0);", generated)
+         self.assertIn(
+-            "esi = _cf ? 0xFFFFFFFF : 0; /* sbb self (CF extend) */",
++            "uint64_t _alu_wide = (uint64_t)_alu_left - _alu_right - _alu_carry;",
+             generated,
+         )
+ 
+@@ -59,7 +59,7 @@
+         # and it must land between the cmp and the sbb, not before the cmp
+         cmp_at = generated.index("/* cmp ")
+         cf_at = generated.index("_cf = (int)(_fa < _fb);")
+-        sbb_at = generated.index("sbb self (CF extend)")
++        sbb_at = generated.index("uint32_t _alu_carry = (_cf != 0);")
+         self.assertLess(cmp_at, cf_at)
+         self.assertLess(cf_at, sbb_at)
+ 
+@@ -96,9 +96,9 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, adc]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertIn("_cf = (int)((eax) != 0);", generated)
+-        self.assertIn("+ (uint64_t)_cf;", generated)
+-        self.assertIn("edx = (uint32_t)_t;", generated)
++        self.assertIn("_cf = (_alu_left != 0);", generated)
++        self.assertIn("+ _alu_carry;", generated)
++        self.assertIn("edx = _alu_result;", generated)
+ 
+     def test_neg_carry_feeds_sbb_across_push(self):
+         neg = Instruction(0, 2, "neg", "eax", "f7d8")
+@@ -115,9 +115,9 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, push, sbb]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertIn("_cf = (int)((eax) != 0);", generated)
++        self.assertIn("_cf = (_alu_left != 0);", generated)
+         self.assertIn(
+-            "eax = _cf ? 0xFFFFFFFF : 0; /* sbb self (CF extend) */",
++            "uint64_t _alu_wide = (uint64_t)_alu_left - _alu_right - _alu_carry;",
+             generated,
+         )
+ 
+@@ -139,7 +139,7 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, add, sbb]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertNotIn("_cf = (int)((eax) != 0);", generated)
++        self.assertNotIn("_cf = (_alu_left != 0);", generated)
+ 
+     def test_neg_carry_not_preserved_across_branch(self):
+         neg = Instruction(0, 2, "neg", "eax", "f7d8")
+@@ -156,7 +156,7 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, jmp, sbb]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertNotIn("_cf = (int)((eax) != 0);", generated)
++        self.assertNotIn("_cf = (_alu_left != 0);", generated)
+ 
+     def test_neg_carry_not_preserved_across_popfd(self):
+         neg = Instruction(0, 2, "neg", "eax", "f7d8")
+@@ -172,7 +172,7 @@
+             Lifter(), BasicBlock(start=0, instructions=[neg, popfd, sbb]))
+         generated = "\n".join(lifted)
+ 
+-        self.assertNotIn("_cf = (int)((eax) != 0);", generated)
++        self.assertNotIn("_cf = (_alu_left != 0);", generated)
+ 
+ 
+ if __name__ == "__main__":
+@@ -205,7 +205,7 @@
+ 
+     def test_add_publishes_carry(self):
+         self.assertIn(
+-            "_cf = (int)((((uint64_t)(edx) + (uint64_t)(edx)) >> 32) & 1);",
++            "_cf = (int)((_alu_wide >> 32) & 1u);",
+             self._add_then("jae"),
+         )
+ 

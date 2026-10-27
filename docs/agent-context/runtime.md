@@ -1,6 +1,17 @@
 # Runtime and patch navigation
 
 The active independent-replacement goal is in `docs/independent-runtime.md`.
+`independent-translation-integer.patch` follows moves and replaces scalar
+ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT handlers with `translation_integer.py`.
+Inputs are sampled and masked at operand width before carry/borrow calculation;
+result snapshots use the computed value instead of rereading memory. INC/DEC
+preserve carry, NOT preserves snapshots, and NEG uses unsigned subtraction.
+The byte-decrement title hook remains explicit. Native result/carry and decoded
+sequence fixtures cover existing block consumers; two inherited text fixtures
+track the new expressions, including negative carry-preservation checks.
+Historical snapshots omit this replacement until title hooks are installed.
+Flag-condition lowering, remaining instruction families and runtime ABI remain
+separate work; this module does not provide complete x86 flag semantics.
 `independent-translation-moves.patch` replaces MOV/MOVZX/MOVSX/LEA/PUSH/POP
 bodies with `translation_moves.py`. The loader applies it after historical title
 instrumentation; the own implementation retains load/store/after-store/push

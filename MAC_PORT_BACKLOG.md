@@ -213,6 +213,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-077 | Independent branch feedback and unresolved diagnostics | Awaiting validation |
 | MAC-078 | Independent C operand emission | Awaiting validation |
 | MAC-079 | Independent data-transfer and stack lowering | Awaiting validation |
+| MAC-080 | Independent scalar integer lowering | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5920,6 +5921,27 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate with `--generate`, build and verify isolated movement/fire/pause.
 - **Mac implementation and evidence:** Windows validation does not establish
   Mac generation or gameplay. See STATUS.md for measured limits.
+
+### MAC-080 - Independent scalar integer lowering
+
+- **Status:** Awaiting validation
+- **PC behavior:** Own arithmetic/logic emission samples operands at their width,
+  computes carry/borrow, retains result snapshots and the byte-decrement hook.
+  INC/DEC preserve carry; NOT preserves flags; NEG avoids signed-overflow C.
+- **PC source:** Continuing PR #370 from `830958be`;
+  `tools/translation_integer.py`, `independent-translation-integer.patch`,
+  generation fingerprints, final patch ordering and original native fixtures.
+- **PC validation:** Native exhaustive-byte/seeded-word/dword results and carries,
+  decoded carry chains, memory accesses and title hooks; see STATUS.md for
+  generation, Windows build and isolated gameplay evidence.
+- **Existing Mac support:** Shared Python implementation and runtime ABI;
+  compiler fixtures and consumers are registered on both CI hosts.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run integer/move/operand/consumer fixtures,
+  regenerate with `--generate`, build and verify isolated movement/fire/pause.
+- **Mac implementation and evidence:** Windows results do not establish native
+  Mac generation or gameplay. Flag-condition lowering and other families remain
+  separate replacement work.
 
 ## Entry template
 

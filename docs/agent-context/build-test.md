@@ -1,10 +1,10 @@
 # Build, run and validation map
 
-Generation hashes cover own translation/diagnostic tools and bridges. Move
-fixtures execute title hooks, sign extension, LEA, stack ordering/aliasing and
-trace strings with production macros. The loader replays title patches before
-own move bodies. Shared CI runs original and inherited consumers; scope and
-host limits are in `docs/independent-runtime.md`.
+Generation hashes cover own translation/diagnostic tools and bridges. Native
+integer fixtures cover widths, carry, snapshots, memory reads and decoded chains;
+move fixtures cover hooks and stack aliases. The loader replays title patches
+before own move/integer bodies. Shared CI runs original and inherited consumers;
+scope and host limits are in `docs/independent-runtime.md`.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass

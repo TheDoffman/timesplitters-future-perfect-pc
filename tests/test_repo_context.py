@@ -40,7 +40,8 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     assert position('-model-transform-entry.patch') < position('-zero-base-indices.patch')
     assert position('-zero-base-indices.patch') < position('-radial-stick-deadzone.patch')
     assert position('-radial-stick-deadzone.patch') < position('independent-translation-moves.patch')
-    assert names[-1] == 'independent-translation-moves.patch'
+    assert position('independent-translation-moves.patch') < position('independent-translation-integer.patch')
+    assert names[-1] == 'independent-translation-integer.patch'
 
     assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])

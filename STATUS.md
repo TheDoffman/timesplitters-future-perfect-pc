@@ -1,3 +1,55 @@
+## Independent scalar integer lowering (2026-10-26)
+
+Continuing PR #370 from `830958be`, project `translation_integer.py` replaces
+six handler bodies covering ADD/SUB/AND/OR/XOR/ADC/SBB/INC/DEC/NEG/NOT. Operands
+are sampled and masked at their width before carry/borrow calculation, and
+result snapshots use the computed value rather than rereading memory. INC/DEC
+retain carry, NOT retains snapshots, and NEG uses unsigned subtraction, including
+INT_MIN. The title's byte-decrement hook remains explicit. The replacement
+follows historical title instrumentation and the move replacement in patch order.
+
+Validation on Windows x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022:
+
+- Focused checks: **124 passed in 13.36 seconds**. Broad tooling/patch suite:
+  **587 passed in 815.60 seconds**. Final context/backlog checks: **21 passed
+  in 3.54 seconds**; context/index and staged whitespace checks passed.
+- Original native fixtures execute all byte input pairs/carries for eleven
+  operations, 10,000 seeded word/dword input pairs and boundary combinations.
+  They check result/carry, preserved subregister bits, source/result snapshots,
+  a sign-extended immediate, memory access counts and the byte-decrement hook.
+- Decoded NEG/ADC/SBB/PUSH/CMP/ADD/SUB sequences run through production block
+  lowering and compiled production ABI macros, checking carry propagation and
+  operand aliasing. Copied integer/operand modules run without the toolkit.
+  Installed handler identity and inherited consumers pass; two inherited C-text
+  fixtures now expect the new expressions, including negative carry checks.
+- Supported-US executable hash and generation fingerprint verified. Generation
+  reports **15,838 translated functions and zero failures**. Five of 21 C/header
+  files are byte-identical (headers, HLE, dispatch and unresolved stubs). Across
+  the 16 main C files, all function names/order and text outside function bodies
+  are identical. 13,235 bodies change and 2,603 remain identical. Changed bodies
+  contain the new scalar emission; this structural comparison is not a complete
+  semantic-equivalence proof. Existing unimplemented-instruction counts remain.
+- **Full Windows build and native checks passed.** Isolated Scotland the Brave:
+  forward movement 11.175 units, backward 6.185 units, ammo 8 to 6, 40 paused
+  samples with frozen ticks and 60 resumed samples advancing. Last checkpoint
+  92.742 seconds; exit 0; start/pause/resume captures reviewed. Profiles,
+  signatures and canonical fixture preserved; no crash artifacts or remaining
+  partitions/lock. Personal saves/settings unused.
+- Tested executable SHA-256:
+  `2dc703c1fec4d0f43a33166f112c7fc54042c3a5b070a34ef212e7a2872dbc66`.
+
+This stage retains the existing flag snapshot interface. Conditional lowering,
+complete AF/PF/OF behavior, other opcode families and runtime services remain
+replacement work. The game check uses injected input, minimized/background
+rendering, original 60 FPS and skipped movies; physical input, foreground pacing,
+audio and full levels remain outside its coverage. All three workflows on
+preceding `830958be` passed, including Windows/macOS native checks. New-head
+CI remains separate and pending.
+Native Mac generation/build/gameplay acceptance remains separate (MAC-080).
+Evidence: `logs/independent-integer-*`, generation baseline under
+`private/pipeline/integer-acceptance-baseline`, and
+`private/test-saves/independent-integer`. The overall replacement goal stays active.
+
 ## Independent data-transfer and stack lowering (2026-10-26)
 
 Continuing PR #370 from `dc48f8df`, project `translation_moves.py` replaces
