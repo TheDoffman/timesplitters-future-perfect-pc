@@ -60,9 +60,11 @@ whole-fallback owner comparisons. Prior nonlinear comparisons cover 5,040
 cases within the recorded quarter-degree angle window; these are bounded
 behavioral checks, not exact whole-game equivalence.
 
-Shared source passes these CPU checks; it has not yet been accepted in a
-rebuilt live game. Real scene/ownership transitions, host pacing, live GPU
-output, performance cost and other guest timing overrides remain unverified.
+Shared source passes these CPU checks and normal Windows Build/bundled gates
+on source e9ea817a (executable 70a33689). The selected Temple floor-rocket
+regression passes at native240; it does not exercise wind-scene acceptance.
+Real wind scene/ownership transitions, host pacing, live GPU output, performance
+cost and other guest timing overrides remain unverified.
 Unmatched timing scopes retain authored stepping and therefore do not yet
 prove fresh fractional motion in those scopes. Physical Mac validation is
 also outstanding. Keep these limits explicit in STATUS and the PR.

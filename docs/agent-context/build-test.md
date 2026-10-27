@@ -101,7 +101,7 @@ respawn/walk;0 selects Original60. Other games block launch. Focus precedes inpu
 Checkpoints/effect samples require visible foreground windows; missing/background/
 minimized windows fail. Reads are non-atomic, at most20Hz; unreadable players are
 excluded/count-reported. CI runs counterexamples. Lethality is not damage parity;
-captures are asynchronous. See STATUS.
+captures are asynchronous. Back settles before setup navigation. See STATUS.
 
 The Windows runner's optional `--watch-native-clock` brackets read-only timing-
 call counter7497B8 and level ticks with perf_counter_ns/QPC timestamps plus scene/

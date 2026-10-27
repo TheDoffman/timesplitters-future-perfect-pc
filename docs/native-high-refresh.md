@@ -272,11 +272,12 @@ remains opt-in while that work is incomplete.
 
 ## Acceptance audit (2026-10-26)
 
-This audit distinguishes PR #367 rendering source `946867bd`, level-clock
-source `4ae184d4` and the subsequent yaw callback repair from earlier live builds.
-Source4ae184d4 passes all16 hosted checks. The yaw repair's local original-routine/
-scope checks and normal Windows build pass; its hosted
-checks and clean live crowd acceptance remain separate pending gates.
+PR #367 source `e9ea817a` passes all16 hosted checks and normal Windows
+Build/bundled gates (executable `70a33689`). Current local timing/vehicle
+coverage includes127 checks across a full run and a targeted timeout rerun.
+Selected Temple rocket behavior passes at Original60 and native240 on this
+executable. Earlier crowd pacing remains tied to its older binaries; current
+wind-scene, crowd and broader physical-host acceptance remain pending.
 The rows below retain their
 actual evidence scope: later compiler optimizations do not silently revalidate
 earlier scenes. Passing isolated routines does not establish complete callers
@@ -284,7 +285,7 @@ or rendered results. The goal remains incomplete.
 
 | Requirement | Evidence inspected | Remaining acceptance |
 | --- | --- | --- |
-| Fresh updates, speed and pacing | Clock/network fixtures; clean45s ten-bot Disco pair on0f005661:238.377FPS at240 (minimum1s218),60.0007 at Original60; Temple pair on024c6faa:237.999/60.0003. Increasing guest frames, zero interpolation and independent game/wall checks near1 | Sustained demanding240 remains unproven. These precede the main health-bar merge; the combined8db5c2f4 build needs separate live evidence. Cover more scenes; successful host Presents are not scanout or a causal optimization comparison |
+| Fresh updates, speed and pacing | Clock/network fixtures; clean45s ten-bot Disco pair on0f005661:238.377FPS at240 (minimum1s218),60.0007 at Original60; Temple pair on024c6faa:237.999/60.0003. Increasing guest frames, zero interpolation and independent game/wall checks near1 | Sustained demanding240 remains unproven. These precede the combined main/wind 70a33689 build; current crowd pacing remains pending. Cover more scenes; successful host Presents are not scanout or a causal optimization comparison |
 | Opening handoff and animation | Original timeline/events, script controls, recorded opening comparisons; selected completed local body/hand/weapon observations through240 | Broader180/240 natural cinematic/handoff and scene rendering; selected clips do not establish all animation |
 | Movement, aiming and cameras | Player/NPC dispatch, locomotion, aim, mouse and vehicle fixtures; completed local observations; original registered yaw callback through entity passes, cache and fresh transformed points | Live scripted-object/camera/vehicle/terminal transitions; GPU confirmation and physical-input feel/latency |
 | Fresh rendered actors | Selected submitted local firing geometry and GPU replay; selected ten-bot Disco NPC pair advances on a zero-whole-tick interval, with fixed projection and actual bone-freeze controls | Other actors, rigs, scenes and live framebuffer parity; repeated material draws are not distinct anatomical bones |

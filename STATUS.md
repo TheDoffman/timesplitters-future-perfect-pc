@@ -1,3 +1,35 @@
+## Current-source Windows build and rocket regression (2026-10-26, PR #367)
+
+Source e9ea817a passes all 16 hosted checks and the supported normal Windows
+Build with bundled gates. Executable SHA256:
+`70a33689d27ad536f12f0d7bcdb958c60d6c3492034887fdd7d197c8eb94be6a`.
+The full local timing/vehicle run passed 126 checks with one 15-second timeout
+in the deliberately broken spawn-motion control; that isolated case then
+passed in 2.61s. All 127 checks are covered without changing production code
+or timeout limits. Receipt: `logs/native-current-e9ea817a-results.json`.
+
+No-capture Temple floor-rocket behavior passes on this executable at Original60
+and native240: one rocket consumed, lethal health change, bounded effect age
+and cleanup, restored respawn, and subsequent walking. Original60 settles
+6.116667 game seconds over 6.111 wall seconds; native240 settles 6.116667 over
+6.104. Profiles/signatures remain unchanged and disposable disks are recycled.
+These are selected lethality/recovery checks, not general damage equivalence,
+exact movement parity, clean crowd pacing or live wind-scene acceptance.
+
+Two native240 attempts and a capture diagnostic initially stayed in the
+frontend. The capture identifies navigation after Back landing one row short;
+the test now waits for that transition before sending setup navigation. Its
+command stream exactly matches the passing native240 run. Production menu and
+game timing are unchanged. An updated-route Original60 run reaches the match
+but fails the foreground requirement after another checkout game launches;
+that run is invalid acceptance evidence. Leave the other game to its owner.
+The earlier Original60 pass remains scoped to the prior route, differing only
+in this menu settle step. A same-route foreground Original60 comparison is
+still pending. Renderer diagnostics output 3440x1440 images while Win32 reports
+a 1920x1060 client; record both scopes rather than inferring render size from
+client size alone. Full current-source crowd and physical Mac acceptance remain
+open. No new live test should launch while the other game remains active.
+
 ## Original changing-wind regression coverage (2026-10-26, PR #367)
 
 The repository wind fixture now injects 22 original routines, adding the
