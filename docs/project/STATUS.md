@@ -2,44 +2,53 @@
 
 On `cleanup/repository-folders`, 717 source, tool, test, configuration and
 documentation files are grouped by responsibility. Root status/backlog reports
-now live in `docs/project`; public launch/build commands and toolchain-required
-root files remain stable. Vendor snapshot, asset lookup keys and private data
-retain their layouts. The 207 existing patch payloads match main `7dbd127b`
-byte for byte. Final patch 2090 routes runtime CMake and the compiler bridge to
-the new source folders after the unchanged historical stack.
+now live in `docs/project`; public launch/build commands and required root files
+remain stable. Vendor snapshot, asset lookup keys and private data retain their
+layouts. All 207 existing patch payloads match main `7dbd127b` byte for byte.
+Final patch 2090 routes runtime CMake and the compiler bridge to the grouped
+source folders after the unchanged historical stack. Latest main `b6d4c597`
+was merged; its additional change only refreshes an issue-form release choice.
 
-Fresh generation and the standard Windows Release build passed, including
-built-in checks and crash-symbol validation. Host: Windows x64 10.0.26300,
-MSVC 19.44.35224, RTX 4070 SUPER driver 32.0.16.1742. Executable SHA-256:
-`7230963008c5756db970eb50f4d952d9fc3306084e0f2f2996a79ecde56a8155`.
-The 120-second isolated Original-60 Story replay passed all ten checks:
+Fresh generation, the standard Windows Release build and the launcher regression
+build passed. Windows x64 10.0.26300, MSVC 19.44.35224, RTX 4070 SUPER driver
+32.0.16.1742. The initial organized game build
+`fde29f0e147ec8045d0ef10d6d1a82afb792e42c3b076ca72503739834a31b4e`
+passed all ten checks in a 120-second isolated Original-60 Story replay:
 no crash, gameplay, movement, animation, firing/ammunition and pause/resume.
-Reviewed capture shows first-level world, weapon, HUD and mission objective.
+Reviewed captures show first-level world, weapon, HUD and mission objective.
 Runtime swaps averaged 59.47 FPS; this does not measure monitor scanout.
 Personal controls/display and canonical Test Lab metadata hashes are unchanged.
 
-The Windows launcher regression build passed. CI unittest discovery now uses
-the owning folders, avoiding silent zero-test runs after moving suites; all
-seven discovery groups passed. Shared path-helper changes select all runtime
-and launcher checks. Additional validation includes Node context/evidence
-(23 passed), CI/path/support/analysis contracts (164 passed, 26 subtests),
-explicit texture-tool suites (66 passed), packaging (3 passed, 2 subtests),
-launcher/input/graphics repairs (244 passed, 36 subtests), and context/index
-checks. Complete historical transitions/snapshot suite: 36 passed. Gameplay
-suite: 355 passed, 15 skipped; two remaining monitor-fixture paths were repaired
-and passed in the 19-test monitor/audio rerun. Native groups reached 341 passes before the failure limit; the remaining
-network/media/storage/diagnostic and letterbox partition then passed 140 tests
-with eight skips. Three fixture issues reported by that in-flight run were
-already repaired; both six-test networking reruns pass. A captured-water GPU
-check hit its 90-second limit twice; the same built fixture subsequently passed
-all comparisons in 77.94 seconds without changing its assertions. Evidence is
-in ignored `logs/repository-layout-*.log`.
+After the remaining path repairs, the final standard build and built-in tests
+passed, including crash-symbol validation. Final executable SHA-256:
+`7230963008c5756db970eb50f4d952d9fc3306084e0f2f2996a79ecde56a8155`.
+It launches, but repeated timed menu replays stayed at profile selection and
+failed gameplay acceptance under low presentation rates. Call of Duty was also
+running; GPU contention is a possible cause, not a proven diagnosis. The user
+requested completion with this validation limit rather than interrupting their
+other game. Final-executable Story gameplay therefore remains unverified.
+Do not substitute the earlier passing executable's evidence for this one.
 
-Shared Mac build/package/launcher routes were updated and their available
-source contracts checked on Windows. Native Mac build/GPU/gameplay validation
-and full campaign completion remain untested. This reorganization changes paths,
-not shared feature behavior or platform policy. Live evidence is under ignored
-`private/test-saves/high-refresh/60-repository-folders-* (initial and final)`.
+CI unittest discovery now uses owning folders, avoiding silent zero-test runs;
+all seven discovery groups passed. Shared path-helper changes select all runtime
+and launcher checks. Node context/evidence: 23 passed. CI/path/support/analysis:
+164 passed, 26 subtests. Explicit texture tools: 66 passed. Packaging: 3 passed,
+2 subtests. Launcher/input/graphics repairs: 244 passed, 36 subtests.
+Historical transitions/snapshot: 36 passed. Gameplay: 355 passed, 15 skipped;
+two monitor-fixture paths were repaired and passed in a 19-test monitor/audio
+rerun. Native groups reached 341 passes before their failure limit; the remaining
+network/media/storage/diagnostic/letterbox partition passed 140 tests with eight
+skips. Three fixture failures from that in-flight run were repaired; both
+six-test networking reruns pass. A private captured-water GPU test repeatedly
+hit its 90-second limit; its built fixture separately passed every comparison
+in 77.94 seconds. The timed pytest invocation is not recorded as passing.
+Context/index, local documentation links and whitespace checks pass.
+
+Shared Mac build/package/launcher paths and their available source contracts
+were checked on Windows. Native Mac build/GPU/gameplay and full campaign
+completion remain untested. This change reorganizes paths, not feature policy.
+Evidence: ignored `logs/repository-layout-*.log` and
+`private/test-saves/high-refresh/60-repository-folders-*`.
 
 ## Patch folders and fresh-main launch (2026-10-27)
 

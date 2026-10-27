@@ -20,8 +20,10 @@ are recorded in [STATUS](STATUS.md#repository-organization-2026-10-27).
 The broader responsibility-folder change on `cleanup/repository-folders`
 updates shared source, test, compiler, build and package paths, including the
 native Mac adapters. Final patch 2090 supplies common CMake/compiler routing;
-no new platform feature or duplicate adapter is introduced. Windows build and
-Story gameplay pass. Native Mac build/GPU/gameplay execution remains pending;
+no new platform feature or duplicate adapter is introduced. Windows builds
+pass; initial organized-build Story gameplay passed, while final-build gameplay
+remains unverified under the recorded host conditions. Native Mac execution
+remains pending;
 see [measured scope](STATUS.md#repository-responsibility-folders-2026-10-27).
 No feature-specific backlog ID is added for this path-only maintenance.
 
