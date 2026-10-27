@@ -32,6 +32,19 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+MMX emission is owned by `translation_mmx.py` through the final
+`independent-translation-mmx.patch`. It captures register bits and addresses,
+uses unsigned masks and widened signed arithmetic for packed operations, and
+guards full 64-bit shift counts. Saturation, packing, multiply-add wrap, masks,
+all shuffle selectors and float conversions have independent compiled references
+and Windows native MMX oracles. Low-unpack memory sources read only four bytes;
+other packed sources read eight. Integer flags survive owned MMX instructions.
+The emitter calls no inherited MMX operation helpers, but the register interface,
+x87 alias/tag model, guest FP environment and remaining header helpers are still
+separate replacement work. EMMS retains the explicit separate-storage behavior.
+Standalone, boundary, decoded and hardware fixtures cover the new module.
+Native Mac title acceptance is pending MAC-091.
+
 SSE emission is owned by `translation_sse.py` through the final
 `independent-translation-sse.patch`. It samples vector registers and memory
 addresses before writes, uses integer lanes for bit-preserving moves, and

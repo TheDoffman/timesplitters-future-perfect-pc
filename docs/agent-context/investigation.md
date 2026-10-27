@@ -5,7 +5,7 @@ The root AGENTS rule identifies the bundled pristine base and offline importer;
 the ignored patched runtime remains the place to inspect effective behavior.
 Snapshot content is provenance, not a second place to implement fixes.
 
-The SSE replacement is the final loader stage after conditions. Historical
+The MMX replacement is the final loader stage after SSE. Historical
 checkpoint fixtures defer it until the complete title stack; fresh installs and
 upgrades still exercise it. Check recorded patch hashes against Git LF bytes
 when local context passes but a clean CI checkout reports a stale index.

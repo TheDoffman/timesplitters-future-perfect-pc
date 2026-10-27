@@ -225,6 +225,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-088 | Independent string-instruction lowering | Awaiting validation |
 | MAC-089 | Independent condition-code generation | Awaiting validation |
 | MAC-090 | Independent SSE emission | Awaiting validation |
+| MAC-091 | Independent MMX emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6287,6 +6288,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate/build and verify isolated movement/firing/pause/resume.
 - **Mac implementation and evidence:** Shared implementation; native title
   generation/build/gameplay unverified. Guest FP environment/faults remain work.
+
+### MAC-091 - Independent MMX emission
+
+- **Status:** Awaiting validation
+- **PC behavior:** Packed integer operations use captured lanes, bounded shifts,
+  defined overflow/saturation, correct memory widths and guarded conversions.
+- **PC source:** PR #375, MMX replacement stage; `translation_mmx.py` and
+  `independent-translation-mmx.patch`.
+- **PC validation:** 288 translator/generation/private join/timing checks passed.
+  Supported US regeneration, normal Release/native build checks and isolated
+  Original60 movement/firing/pause/resume passed; 19 protected files unchanged.
+  All 56 historical patch/context/backlog/snapshot checks passed; see STATUS.md.
+- **Existing Mac support:** Shared portable Python/C implementation and host math.
+- **Mac adaptation needed:** None identified; native title acceptance pending.
+- **Mac acceptance checks:** Run own MMX/translator and private fixtures, generate
+  and build, then verify isolated movement/firing/pause/resume.
+- **Mac implementation and evidence:** Shared implementation; native title
+  generation/build/gameplay unverified. MMX/x87 aliasing and guest FP environment
+  remain execution-foundation work.
 
 ## Entry template
 

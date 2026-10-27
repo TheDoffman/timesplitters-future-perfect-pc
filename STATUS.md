@@ -1,3 +1,47 @@
+## Independent MMX emission (Windows acceptance passed, 2026-10-27)
+
+Original MMX emission, portable mathematical/boundary fixtures and Windows
+native x86 oracles are in place. **22 MMX/decoder checks passed in 10.05 seconds**.
+The mathematical/native oracles cover packed integer operations, saturation,
+packing, multiply-add overflow, comparisons, full 64-bit shift counts, lane
+selectors, conversions and rounding. Low-unpack memory reads are bounded to
+four bytes, with an overread-rejecting boundary fixture. Runtime diagnostic
+markers remain preserved for unsupported operations/destinations.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**15,794 functions stayed byte-identical**; all **44 changed bodies** match
+decoded old/new MMX substitutions, ignoring comments and whitespace. Eighteen
+of 21 generated C/header files are identical, including all five non-chunk files.
+Function names/order/surrounding text are unchanged; no unexplained differences.
+This is structural scope evidence, not a full semantic-equivalence proof.
+
+The full combined run passed **288 translator/generation/private join/timing
+checks in 344.37 seconds**. **56 historical patch/context/backlog/snapshot checks
+passed in 799.32 seconds**.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `3b6dda3a`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`a0ed708403ad4cd757aa4dd7dd0600f18dd6e509a62fca530540b5ab9c7e047d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **93.999 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/mmx-focused.log`, `logs/mmx-generation.log`,
+`logs/independent-mmx-comparison.json`, `logs/mmx-build.log`,
+`logs/mmx-game.log`, `logs/independent-mmx-game-check.json` and
+`logs/mmx-patch-checks.log`. SSE-stage Mac native CI test steps passed,
+but GitHub job finalization is still running; its Windows native check passed. Native Mac title acceptance is pending MAC-091.
+The full independence goal remains active.
+
 ## Independent SSE emission (Windows acceptance passed, 2026-10-27)
 
 PR #375 replaces upstream SSE/SSE2 emission with `translation_sse.py`.

@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-SSE/condition fixtures and instruction ownership, captured flags, atomic helpers and native validation are in [own tooling](independent.md).
+MMX/SSE/condition fixtures and instruction ownership, captured flags, atomic helpers and native validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

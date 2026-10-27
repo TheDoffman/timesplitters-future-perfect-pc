@@ -18,7 +18,7 @@ indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
 multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
-extension, string-instruction lowering, condition expressions and SSE emission.
+extension, string-instruction lowering, condition expressions and SSE/MMX emission.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -78,7 +78,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | String instructions | Project-owned `translation_strings.py` replaces string and direction emission | Original native/decoded contracts and Windows generation/build/game acceptance passed; native Mac pending (MAC-088) |
 | Condition expressions | Project-owned `translation_conditions.py` for captured flags and Jcc/SETcc/CMOVcc/LAHF | Native and mathematical oracles, decoded consumers; Windows acceptance below, native Mac pending (MAC-089) |
 | SSE/SSE2 emission | Project-owned `translation_sse.py` emits lane operations and bit-preserving moves; existing XMM ABI remains | Portable/native oracles, decoded consumers, generation/build/game acceptance; native Mac title pending (MAC-090) |
-| x86-to-C translation | Remaining lowering and orchestration still upstream | Complete flags, x87/MMX, guest rounding environment, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| MMX emission | Project-owned `translation_mmx.py` emits packed integer operations without inherited MMX helpers | Mathematical/native/boundary/decoded checks, full generation/build/game; native Mac pending MAC-091 |
+| x86-to-C translation | Remaining lowering and orchestration still upstream | Complete flags, x87, guest rounding environment, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -726,6 +727,25 @@ This stage replaced snapshot/emission bodies. Fused CMP/TEST branches already
 consume captured operands without rereads. Condition expressions are replaced
 in the later stage below; complete EFLAGS and guest faults remain work. See STATUS.md and MAC-087 for validation.
 
+
+## MMX emission
+
+MMX emission is owned by `translation_mmx.py` through the final
+`independent-translation-mmx.patch`. It captures register bits and addresses,
+uses unsigned masks and widened signed arithmetic for packed operations, and
+guards full 64-bit shift counts. Saturation, packing, multiply-add wrap, masks,
+all shuffle selectors and float conversions have independent compiled references
+and Windows native MMX oracles. Low-unpack memory sources read only four bytes;
+other packed sources read eight. Integer flags survive owned MMX instructions.
+The emitter calls no inherited MMX operation helpers, but the register interface,
+x87 alias/tag model, guest FP environment and remaining header helpers are still
+separate replacement work. EMMS retains the explicit separate-storage behavior.
+Standalone, boundary, decoded and hardware fixtures cover the new module.
+Native Mac title acceptance is pending MAC-091.
+
+The architectural reference is Intel SDM volume 2B, MMX packed operations,
+including the m32 low-unpack operand forms. Tests retain their independent
+mathematical and hardware expectations; the old helper is not the oracle.
 
 ## SSE emission
 
