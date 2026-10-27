@@ -17,9 +17,7 @@ Local aim/animation CPU observations: [completed-update trace](native-local-trac
 Vertex conversion: [tiled full-function parity, guards and CPU timing](vertex-expand.md).
 Windows Reload fixture: [clock-domain expiry check](vertex-expand.md#controls-fixture-clock).
 
-Windows diagnostics: `--profile-pc-symbol` requires `--profile-cpu` and is
-recorded in provenance. `test_sample_pc_locations.py` checks bounds, negative
-controls and asset-free Win32/PDB integration; see [runtime](runtime.md).
+Windows diagnostics and `test_sample_pc_locations.py`: see [runtime](runtime.md).
 Broken variants must compile before their runtime checks reject them.
 
 Shared state-cache binding/failure and WARP/Vulkan pixel fixtures are described
@@ -53,6 +51,11 @@ gameplay speed. Use an isolated Story run and compare actual player-position
 displacement for straight and diagonal travel. Mouse capture checks should
 also cover focus loss, stale held buttons, menu return and a clip released by
 another component while the game remains foreground.
+`test_window_theme.py` runs `pc_mouse_capture.c` with Win32 API doubles for
+center bounds, repeated repair, negative origins, resize and foreground/errors.
+`tsfp_pc_prompts_test` checks OS confinement/hit-testing and Fire release across
+repair; it explicitly skips without foreground focus. `pc_debug_game.py` uses
+center bounds too. Launcher-only gameplay and Mac input remain separate checks.
 <!-- packet:end -->
 
 Native SDL input validation checks both active Confirm slots (E and Space) and
@@ -61,13 +64,10 @@ profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual hos
 this self-test correction does not change gameplay bindings or certify physical
 keyboard input.
 
-PR CI's candidate `PR validation` gate in `runtime-patches.yml` selects runtime
-and launcher work for one head and checks Windows/Mac worker results with
-`ci-pr-gate.py`. Native jobs allow 30 minutes: Windows exceeded the old 15-minute
-job budget after passing 1207 tests. Test selection stays intact.
-Existing required names remain until ruleset migration. Issue form/resolution
-jobs select their own sources. `test_ci_pr_gate.py` covers missing/failed/skipped
-results; `test_ci_runtime_scope.py` checks wiring.
+`runtime-patches.yml` selects runtime/launcher work for one head; `ci-pr-gate.py`
+checks both hosts. Native jobs allow 30 minutes. Existing required names remain
+until ruleset migration. `test_ci_pr_gate.py` covers missing/failed/skipped
+results; `test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.

@@ -1,3 +1,37 @@
+## Centered Windows gameplay cursor (2026-10-27, issue #381)
+
+Local uncommitted change on `381-bug-mouse-cursor-window-contraint`, based on
+`b6d4c597`. Windows capture previously confined the hidden absolute pointer to
+the full client area; relative aim could still walk it toward the border. The
+Win32 adapter now shares a tiny center rectangle across capture, move/resize
+and repair, while aiming continues to consume raw relative counts. Foreground
+guards prevent confinement from being acquired for an inactive game. Existing
+menu/settings/Escape/focus release rules and held input during repair remain.
+No launcher source, personal settings or saves change.
+
+Windows x64, MSBuild 17.12.6 and CMake 4.4: the supported `tsfp.ps1 -Action Build`
+validated the supported US XBE and complete patch stack, rebuilt the Release
+game, and passed its native checks. The extended prompts fixture ran with
+foreground focus for both keyboard and controller profiles: actual OS cursor
+confinement stays at the center after attempts to move to either extreme,
+hit-testing remains client input, and Fire is retained/released across an
+external clip reset. DPI virtualization can round the tiny physical rectangle
+onto adjacent logical coordinates; the test allows those center coordinates.
+An earlier standalone invocation explicitly skipped its foreground-only section.
+Deterministic Win32 API-double regression fails with the old full-client bounds
+and passes with the fix, covering repeated repair, negative monitor origins,
+move/resize, foreground and API-failure guards. The debug-game checker now
+recognizes center confinement.
+The combined patch tracking/upgrade, repository-context, Mac backlog,
+mounted/terminal mouse and Win32 adapter suite passed all 72 tests. Context
+freshness/affected-guide checks against the task base and whitespace checks pass.
+
+The user subsequently confirmed that this change fixes the issue when testing
+through the launcher. This is user-reported gameplay acceptance, separate from
+the automated adapter/build checks above. Native Mac was not run; its existing
+SDL relative-mode adapter needs no corresponding source change. See MAC-001 for
+pending physical-device acceptance. No release has been published by this task.
+
 ## Repository organization (2026-10-27)
 
 From main `9f40dc21`, `cleanup/repository-layout` replaces repeated alphabetical

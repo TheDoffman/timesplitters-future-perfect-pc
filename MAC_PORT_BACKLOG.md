@@ -731,6 +731,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **#381 Windows cursor confinement (2026-10-27, uncommitted):**
+  `src/pc_mouse_capture.h` and `src/pc_controls.c` pin the hidden gameplay pointer
+  to the client center, retaining raw relative aiming and existing release rules.
+  Full-client confinement previously allowed pointer travel to the edges.
+  Native Mac already requests SDL relative mode in `src/native/input_sdl.c`;
+  no Mac adaptation is needed for this Win32 cursor-bound calculation. Existing
+  Mac support remains **Awaiting validation**: physical repeated turns, Fire
+  release, launcher start, focus/pause/settings and borderless transitions need
+  a Mac host. Windows deterministic and OS checks are recorded in STATUS.md;
+  they do not establish the reporter's intermittent launcher trigger.
+
 - Mouse-chain bounded queries (PR #328, commit carrying this entry): shared
   camera, mounted and terminal helpers use `pc_guest_memory_in_span` on misses.
   Their original validated extents, mode/ownership checks, input consumption and

@@ -99,10 +99,32 @@ static int virtual_pad_test(void)
         POINT origin={0,0};
         SendMessage(window,WM_SETFOCUS,0,0);
         CHECK(GetClientRect(window,&client) && ClientToScreen(window,&origin));
-        expected=client;OffsetRect(&expected,origin.x,origin.y);
+        expected.left=origin.x+client.right/2;
+        expected.top=origin.y+client.bottom/2;
+        expected.right=expected.left+1;expected.bottom=expected.top+1;
         CHECK(ClipCursor(NULL));
         SendMessage(window,WM_TIMER,0x7e31,0);
         CHECK(GetClipCursor(&actual) && EqualRect(&expected,&actual));
+        /* Sustained turns must not walk the hidden pointer onto a window
+           edge. SetCursorPos exercises actual OS confinement without
+           injecting desktop button events or changing the aim model. */
+        for(int direction=-1;direction<=1;direction+=2) {
+            POINT position;
+            CHECK(SetCursorPos(expected.left+direction*10000,expected.top+direction*10000));
+            CHECK(GetCursorPos(&position));
+            /* DPI virtualization can round the physical point onto the
+               logical right/bottom coordinate. It must stay at the center. */
+            CHECK(position.x>=expected.left && position.x<=expected.right);
+            CHECK(position.y>=expected.top && position.y<=expected.bottom);
+            CHECK(SendMessage(window,WM_NCHITTEST,0,MAKELPARAM(position.x,position.y))==HTCLIENT);
+        }
+        SendMessage(window,WM_LBUTTONDOWN,MK_LBUTTON,0);
+        CHECK(pc_controls_key_down(VK_LBUTTON));
+        CHECK(ClipCursor(NULL));
+        SendMessage(window,WM_TIMER,0x7e31,0);
+        CHECK(pc_controls_key_down(VK_LBUTTON)); /* repair must not drop held Fire */
+        SendMessage(window,WM_LBUTTONUP,0,0);
+        CHECK(!pc_controls_key_down(VK_LBUTTON));
         SendMessage(window,WM_KEYDOWN,'W',0);
         CHECK(pc_controls_key_down('W'));
         SendMessage(window,WM_KILLFOCUS,0,0);

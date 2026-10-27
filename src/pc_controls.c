@@ -16,6 +16,7 @@
 #include "texture_mode.h"
 #include "pc_window_theme.h"
 #include "pc_menu_theme.h"
+#include "pc_mouse_capture.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -125,29 +126,6 @@ static void replay_tick(void)
         else if (!strcmp(r->type, "wheel")) wheel_input(r->a);
         fprintf(stderr, "[PC-INPUT-TEST] %lu %s %d %d\n", r->at, r->type, r->a, r->b);
     }
-}
-
-static void clip_to_window(HWND window)
-{
-    RECT rect;
-    POINT origin = {0, 0};
-    if (!GetClientRect(window, &rect) || !ClientToScreen(window, &origin) ||
-        rect.right <= 0 || rect.bottom <= 0) return;
-    OffsetRect(&rect, origin.x, origin.y);
-    ClipCursor(&rect);
-}
-
-static void restore_window_clip(HWND window)
-{
-    RECT expected, actual;
-    POINT origin = {0, 0};
-    if (!window || GetForegroundWindow() != window ||
-        !GetClientRect(window, &expected) ||
-        !ClientToScreen(window, &origin) ||
-        expected.right <= 0 || expected.bottom <= 0) return;
-    OffsetRect(&expected, origin.x, origin.y);
-    if (GetClipCursor(&actual) && !EqualRect(&expected, &actual))
-        ClipCursor(&expected);
 }
 
 /* Window thread only: it owns cursor confinement and visibility. */

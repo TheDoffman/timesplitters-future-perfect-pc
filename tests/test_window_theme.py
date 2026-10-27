@@ -1,4 +1,4 @@
-"""Exercise optional DWM attributes on a real isolated native window."""
+"""Exercise Win32 UI adapters with isolated windows and cursor API doubles."""
 from pathlib import Path
 import subprocess
 import sys
@@ -8,7 +8,7 @@ from native_compiler import native_compiler
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows DWM adapter')
-@pytest.mark.parametrize('source', ['window_theme.c', 'game_ui_theme.c'])
+@pytest.mark.parametrize('source', ['window_theme.c', 'game_ui_theme.c', 'pc_mouse_capture.c'])
 def test_window_theme(tmp_path, source):
     root = Path(__file__).resolve().parents[1]
     compiler, environment = native_compiler(tmp_path)
