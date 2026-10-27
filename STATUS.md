@@ -1,3 +1,59 @@
+## Independent x87 emission (Windows acceptance passed, 2026-10-27)
+
+All **16 CI checks passed** on preceding MMX revision `3756e175` in PR #375.
+The new x87 stage replaces four upstream emitter/helper methods with original
+`translation_x87.py`. Captured stack values avoid TOP/macro aliasing; guest RC
+controls rounding and integer stores validate bounds before casting. FILD32
+retains the title numeric conversion hook. External 80-bit memory formats use
+the existing binary64 stack, and scale operands are bounded before integer casts.
+
+Six original fixtures cover copied-module imports, stack wrap/aliasing,
+mathematical arithmetic/conversion/status references, memory boundaries, native
+x86 rounding/integer/scaling oracles and decoded production consumers. The
+supplemental native 80-bit-store comparison passed in **2.40 seconds**.
+The combined regression run passed **293 checks in 404.87 seconds**, with one
+stale FILD address-spelling assertion failing. It now checks the captured address,
+single read and hook-before-push ordering; **all three related conversion checks
+passed on rerun in 0.38 seconds**. Other private title-routine and timing checks
+passed in the combined run. All **56 historical patch/context/backlog/snapshot
+checks passed in 893.57 seconds**. All **86 CI selection/gate checks passed**.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+with **50 unresolved stubs**. **13,875 functions stayed identical** and all
+**1,963 changed bodies** match explicit decoded x87 substitutions, ignoring
+comments/whitespace. Five other C/header files and function names/order/surrounding
+text are unchanged. Nine formerly silent unsupported x87 sites now produce the
+standard diagnostic, bringing reported unimplemented sites from **729 to 738**.
+Their addresses/opcodes were independently decoded and replacements checked;
+no new support is claimed for those instructions. FNCLEX at `0x003C8486` was
+reached during boot and now reports its existing no-op behavior; guest FP
+exception state remains unimplemented. No unexplained changes remain.
+This bounds generation changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with Python
+3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`. The build used
+the implementation working tree based on `3756e175`; generation fingerprints
+and crash symbols match. Existing MSBuild intermediate-directory warnings remain.
+Executable SHA-256:
+`8e550f95ebf550fe915ee383a6a090403d6d126c3bbb18af5f0131b1f54dbc91`.
+
+Isolated Original60 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammo **8 to 6**, **40 frozen pause / 60 advancing resume
+samples**, final checkpoint **95.715 seconds**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files unchanged**, including sizes/timestamps;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Input was injected, rendering minimized/background and movies skipped. Physical
+input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/x87-focused.log`, `logs/x87-numeric-consumers.log`,
+`logs/x87-native-extended.log`, `logs/x87-generation.log`,
+`logs/independent-x87-comparison.json`, `logs/x87-build.log`,
+`logs/x87-game.log`, `logs/independent-x87-game-check.json`,
+`logs/x87-patch-checks.log`. Native Mac title acceptance remains pending MAC-092.
+Internal extended precision/control, stack tags, FP exceptions, remainder status,
+remaining translation orchestration and runtime foundation still need work.
+The full independence goal remains active.
+
 ## Independent MMX emission (Windows acceptance passed, 2026-10-27)
 
 Original MMX emission, portable mathematical/boundary fixtures and Windows
@@ -38,8 +94,9 @@ physical input, audio, foreground pacing and a full campaign remain unverified.
 Evidence: `logs/mmx-focused.log`, `logs/mmx-generation.log`,
 `logs/independent-mmx-comparison.json`, `logs/mmx-build.log`,
 `logs/mmx-game.log`, `logs/independent-mmx-game-check.json` and
-`logs/mmx-patch-checks.log`. SSE-stage Mac native CI test steps passed,
-but GitHub job finalization is still running; its Windows native check passed. Native Mac title acceptance is pending MAC-091.
+`logs/mmx-patch-checks.log`. SSE-stage Mac native CI test/cleanup steps passed, but job finalization
+exceeded the 30-minute limit and its dependent gates failed. MMX commit
+All 16 CI checks passed on MMX commit `3756e175` (PR #375). Native Mac title acceptance is pending MAC-091.
 The full independence goal remains active.
 
 ## Independent SSE emission (Windows acceptance passed, 2026-10-27)

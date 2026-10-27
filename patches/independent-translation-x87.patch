@@ -1,0 +1,703 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -31,6 +31,7 @@
+ import translation_conditions as _project_conditions
+ import translation_sse as _project_sse
+ import translation_mmx as _project_mmx
++import translation_x87 as _project_x87
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -1633,363 +1634,8 @@
+ 
+     _lift_sse = _project_sse.emit
+ 
+-    # ── FPU (x87) ──
+-
+-    @staticmethod
+-    def _st_index(reg):
+-        """FPU register index from a capstone name like 'st(2)' or 'st2'."""
+-        mm = re.search(r"st\(?(\d+)\)?", reg or "")
+-        return int(mm.group(1)) if mm else 0
+-
+-    @staticmethod
+-    def _st_expr(i):
+-        """C expression for FPU register st(i) relative to the current top."""
+-        if i == 0:
+-            return "fp_top()"
+-        if i == 1:
+-            return "fp_st1()"
+-        return f"g_fp_stack[(g_fp_top + {i}) & 7]"
+-
+-    def _fcom_rhs(self, ops):
+-        """The value an fcom-family instruction compares st0 against.
+-
+-        `fcom`/`fcomp`/`fcompp` with no operand compare st0 with st1. With a
+-        memory operand they compare st0 with that float/double. With an st(i)
+-        operand, that register. Returning fp_st1() unconditionally (the old
+-        behavior) is only right for the no-operand form.
+-        """
+-        if not ops:
+-            return "fp_st1()"
+-        op = ops[0]
+-        if getattr(op, "type", None) == "mem":
+-            if getattr(op, "mem_size", 4) == 8:
+-                return f"MEMD({_fmt_mem(op)})"
+-            return f"MEMF({_fmt_mem(op)})"
+-        if getattr(op, "type", None) == "reg" and op.reg:
+-            return self._st_expr(self._st_index(op.reg))
+-        return "fp_st1()"
+-
+-    def _lift_fpu(self, insn, m, ops):
+-        """Basic FPU instruction translation using double locals."""
+-        # FPU is complex. We translate common patterns to double operations.
+-        # Full accuracy would require an x87 stack emulator.
+-
+-        if m == "fld":
+-            if len(ops) >= 1:
+-                if ops[0].type == "mem":
+-                    if ops[0].mem_size == 4:
+-                        return [f"fp_push(MEMF({_fmt_mem(ops[0])})); /* fld float */"]
+-                    elif ops[0].mem_size == 8:
+-                        return [f"fp_push(MEMD({_fmt_mem(ops[0])})); /* fld double */"]
+-                    return [f"fp_push(MEMF({_fmt_mem(ops[0])})); /* fld */"]
+-                if ops[0].type == "reg":
+-                    # fld st(i) pushes a COPY of st(i). Was a no-op comment,
+-                    # which silently dropped a stack slot -- sub_00109150 (the
+-                    # world_to_view builder) duplicates values with fld st(0)
+-                    # three times. Capture the value first: fp_push mutates
+-                    # g_fp_top, so passing fp_top() directly would read the
+-                    # slot after the decrement.
+-                    src = self._st_expr(self._st_index(ops[0].reg))
+-                    return [f"{{ double _t = {src}; fp_push(_t); }}"
+-                            f" /* fld {insn.op_str} */"]
+-            return [f"/* fld {insn.op_str} */"]
+-
+-        if m in ("fst", "fstp"):
+-            # Only fstp pops. fst stores st0 and leaves the stack alone. The old
+-            # code emitted fp_pop() for BOTH -- fp_pop() is g_fp_top++, a real
+-            # pop, not a no-op -- so every `fst [mem]` (store WITHOUT pop) shrank
+-            # the FP stack by one. valid_real_matrix4x3 does `fst [tmp]` before
+-            # its fabs/fcompare, so the compare ran on an emptied stack slot and
+-            # rejected orthonormal camera matrices at render_cameras.c:458.
+-            do_pop = " fp_pop();" if m == "fstp" else ""
+-            if len(ops) >= 1 and ops[0].type == "mem":
+-                pop = " fp_pop();" if m == "fstp" else ""
+-                if ops[0].mem_size == 4:
+-                    return [f"MEMF({_fmt_mem(ops[0])}) = (float)fp_top();{do_pop} /* {m} */"]
+-                elif ops[0].mem_size == 8:
+-                    return [f"MEMD({_fmt_mem(ops[0])}) = fp_top();{do_pop} /* {m} */"]
+-            # fst/fstp st(i): copy st0 to st(i); fstp then pops. This used to be
+-            # a bare comment -- a no-op -- which LEAKS the FPU stack. `fstp st(0)`
+-            # is the common idiom for "pop the value fptan/fsincos just pushed";
+-            # dropping it left every later float op one slot off. That is why
+-            # Halo's field-of-view came out 0.
+-            if len(ops) >= 1 and ops[0].type == "reg" and ops[0].reg:
+-                mm = re.search(r"st\(?(\d+)\)?", ops[0].reg)
+-                idx = int(mm.group(1)) if mm else 0
+-                parts = []
+-                if idx != 0:   # i==0 is a self-copy; skip, just (maybe) pop
+-                    dst = "fp_st1()" if idx == 1 else \
+-                          f"g_fp_stack[(g_fp_top + {idx}) & 7]"
+-                    parts.append(f"{dst} = fp_top();")
+-                if m == "fstp":
+-                    parts.append("fp_pop();")
+-                body = " ".join(parts) if parts else "(void)0;"
+-                return [f"{body} /* {m} st({idx}) */"]
+-            return [f"/* {m} {insn.op_str} */"]
+-
+-        if m == "fild":
+-            if len(ops) >= 1 and ops[0].type == "mem":
+-                smem = _smem_accessor(ops[0].mem_size)
+-                address = _fmt_mem(ops[0])
+-                value = f"(double){smem}({address})"
+-                if ops[0].mem_size == 4:
+-                    value = f"RECOMP_I32_TO_F64({address}, {smem}({address}))"
+-                return [f"fp_push({value}); /* fild */"]
+-            return [f"/* fild {insn.op_str} */"]
+-
+-        if m in ("fist", "fistp"):
+-            if len(ops) >= 1 and ops[0].type == "mem":
+-                size = ops[0].mem_size
+-                mem_acc = _smem_accessor(size)
+-                int_type = {2: "int16_t", 4: "int32_t", 8: "int64_t"}.get(
+-                    size, "int32_t")
+-                pop = " fp_pop();" if m == "fistp" else ""
+-                return [f"{mem_acc}({_fmt_mem(ops[0])}) = "
+-                        f"({int_type})recomp_fist(fp_top(), g_fp_control_word, {size * 8});{pop} /* {m} */"]
+-            return [f"/* {m} {insn.op_str} */"]
+-
+-        if m in ("fadd", "faddp", "fsub", "fsubp", "fsubr", "fsubrp",
+-                 "fmul", "fmulp", "fdiv", "fdivp", "fdivr", "fdivrp",
+-                 "fiadd", "fisub", "fisubr", "fimul", "fidiv", "fidivr"):
+-            # x87 binary arithmetic, operand-aware. The old handlers hardcoded
+-            # the no-operand pop form (fp_st1() op= fp_top(); pop) for every
+-            # variant, so `fmul [mem]`, `fadd st(0),st(0)`, and the reversed
+-            # fsubr/fdivr were all wrong -- and fsubr/fdivr fell through to a
+-            # no-op. That corrupted the FPU stack on any float that used a
+-            # memory or register operand; Halo's field-of-view chain multiplied
+-            # by a constant with `fmul [k]` and came out 0.
+-            # The fi* forms are the same operations against a signed integer
+-            # in memory (fiadd -> fadd, fisubr -> fsubr). They are memory-only
+-            # and never pop.
+-            integer_operand = m.startswith("fi")
+-            base = m[:-1] if m.endswith("p") else m       # strip pop suffix
+-            if integer_operand:
+-                base = "f" + base[2:]
+-            reverse = base.endswith("r")                  # fsubr / fdivr
+-            core = base[:-1] if reverse else base         # fsub / fdiv / fadd / fmul
+-            cop = {"fadd": "+", "fsub": "-", "fmul": "*", "fdiv": "/"}[core]
+-            pops = m.endswith("p")
+-
+-            def _combine(dst, src):
+-                if cop in ("+", "*") or not reverse:
+-                    return f"{dst} = {dst} {cop} {src};"
+-                return f"{dst} = {src} {cop} {dst};"   # reversed sub/div
+-
+-            # Memory operand: dst is st0, no pop (memory forms never pop).
+-            if ops and ops[0].type == "mem":
+-                if integer_operand:
+-                    accessor = "SMEM16" if ops[0].mem_size == 2 else "SMEM32"
+-                    rhs = f"(double){accessor}({_fmt_mem(ops[0])})"
+-                else:
+-                    rhs = (f"MEMD({_fmt_mem(ops[0])})" if ops[0].mem_size == 8
+-                           else f"MEMF({_fmt_mem(ops[0])})")
+-                return [f"{_combine('fp_top()', rhs)} /* {m} {insn.op_str} */"]
+-
+-            # Two register operands: fXXX st(i), st(j).
+-            if len(ops) >= 2 and ops[0].type == "reg" and ops[1].type == "reg":
+-                di, si = self._st_index(ops[0].reg), self._st_index(ops[1].reg)
+-                code = _combine(self._st_expr(di), self._st_expr(si))
+-                if pops:
+-                    code += " fp_pop();"
+-                return [f"{code} /* {m} {insn.op_str} */"]
+-
+-            # One register operand. Capstone reports the pop forms this way too
+-            # -- `faddp st(1)` comes through as a single operand st(1), NOT as
+-            # two operands and NOT as the no-operand form. The pop variants put
+-            # the result in st(i) and pop; only the non-pop variants target st0:
+-            #   fadd  st(i)  ->  st0  = st0  op st(i)          (no pop)
+-            #   faddp st(i)  ->  st(i) = st(i) op st0 ; pop
+-            # Treating faddp st(i) as the no-pop st0 form left the FP stack one
+-            # slot deep AND wrote the wrong slot, so a normalize's sum of squares
+-            # double-counted -- a unit vector got length sqrt(2) and Halo's
+-            # world_to_view basis came out scaled by 1/sqrt(2) (0.707), failing
+-            # valid_real_matrix4x3.
+-            if len(ops) >= 1 and ops[0].type == "reg":
+-                si = self._st_index(ops[0].reg)
+-                if pops:
+-                    code = _combine(self._st_expr(si), "fp_top()") + " fp_pop();"
+-                else:
+-                    code = _combine("fp_top()", self._st_expr(si))
+-                return [f"{code} /* {m} {insn.op_str} */"]
+-
+-            # No operand: the stack pop form, st1 op= st0, pop.
+-            code = _combine("fp_st1()", "fp_top()") + " fp_pop();"
+-            return [f"{code} /* {m} */"]
+-        if m == "fchs":
+-            return [f"fp_top() = -fp_top(); /* fchs */"]
+-        if m == "fabs":
+-            return [f"fp_top() = fabs(fp_top()); /* fabs */"]
+-        if m == "fsqrt":
+-            return [f"fp_top() = sqrt(fp_top()); /* fsqrt */"]
+-        # x87 transcendentals. None of these were implemented, so every one fell
+-        # through to the unknown-op path and left the FP stack untouched --
+-        # silently, because an unimplemented FPU op looks exactly like an
+-        # instruction that only had a side effect on the status word.
+-        #
+-        # Halo 2276 alone has 123 fcos, 108 fsin, 31 fpatan, 8 fptan, 5 fyl2x,
+-        # 3 f2xm1 and 1 fprem. Every camera matrix and rotation in the game goes
+-        # through them, which is why render_camera_build_frustum asserted on
+-        # valid_real_matrix4x3: the matrix was built out of tangents that were
+-        # never computed, so it held whatever had been in those globals before.
+-        #
+-        # These are exact-enough mappings onto libm. The 80-bit intermediates of
+-        # real x87 are not reproduced -- fp_stack is double -- which is the same
+-        # approximation every other op here already makes.
+-        if m == "fsin":
+-            return [f"fp_top() = sin(fp_top()); /* fsin */"]
+-        if m == "fcos":
+-            return [f"fp_top() = cos(fp_top()); /* fcos */"]
+-        if m == "fsincos":
+-            # Replaces st0 with sin, then pushes cos. Order matters: the push
+-            # must see the sine already stored.
+-            return [f"{{ double _a = fp_top(); fp_top() = sin(_a);"
+-                    f" fp_push(cos(_a)); }} /* fsincos */"]
+-        if m == "fptan":
+-            # st0 = tan(st0), then push 1.0. The constant push is not decoration:
+-            # callers use it as the denominator of a subsequent fdiv.
+-            return [f"{{ fp_top() = tan(fp_top()); fp_push(1.0); }} /* fptan */"]
+-        if m == "fpatan":
+-            # st1 = atan2(st1, st0), pop. Argument order is st1 over st0.
+-            return [f"{{ fp_st1() = atan2(fp_st1(), fp_top()); fp_pop(); }}"
+-                    f" /* fpatan */"]
+-        if m == "fyl2x":
+-            # st1 = st1 * log2(st0), pop.
+-            return [f"{{ fp_st1() = fp_st1() * log2(fp_top()); fp_pop(); }}"
+-                    f" /* fyl2x */"]
+-        if m == "fyl2xp1":
+-            return [f"{{ fp_st1() = fp_st1() * log2(fp_top() + 1.0); fp_pop(); }}"
+-                    f" /* fyl2xp1 */"]
+-        if m == "f2xm1":
+-            return [f"fp_top() = exp2(fp_top()) - 1.0; /* f2xm1 */"]
+-        if m in ("fprem", "fprem1"):
+-            # Both leave the remainder in st0 and clear C2 to say "complete".
+-            # fprem truncates toward zero, fprem1 rounds to nearest (IEEE), which
+-            # is the difference between fmod and remainder.
+-            fn = "fmod" if m == "fprem" else "remainder"
+-            return [f"fp_top() = {fn}(fp_top(), fp_st1()); /* {m} */"]
+-        if m == "fscale":
+-            return [f"fp_top() = ldexp(fp_top(), (int)fp_st1()); /* fscale */"]
+-        if m == "frndint":
+-            # Rounds under the guest's x87 RC bits, like FIST. rint() used the
+-            # host's rounding mode, which the guest's fldcw never reaches, so
+-            # MSVC's floor() and ceil() -- fldcw RC=down/up around a frndint --
+-            # both rounded to nearest: floor(2.7) returned 3. Code that indexes
+-            # a table with floor() then reads one entry past it (in one title,
+-            # a skeletal animation drew a frame of garbage bones per loop).
+-            return [f"fp_top() = recomp_frndint(fp_top(), g_fp_control_word);"
+-                    f" /* frndint */"]
+-        if m == "fldpi":
+-            return [f"fp_push(3.14159265358979323846); /* fldpi */"]
+-        if m == "fldl2e":
+-            return [f"fp_push(1.44269504088896340736); /* fldl2e */"]
+-        if m == "fldl2t":
+-            return [f"fp_push(3.32192809488736234787); /* fldl2t */"]
+-        if m == "fldlg2":
+-            return [f"fp_push(0.30102999566398119521); /* fldlg2 */"]
+-        if m == "fldln2":
+-            return [f"fp_push(0.69314718055994530942); /* fldln2 */"]
+-        if m == "ftst":
+-            return ["g_fp_cmp = RECOMP_FCMP(fp_top(), 0.0); "
+-                    "g_fp_cc = RECOMP_FCMP_CC(g_fp_cmp); /* ftst */"]
+-        if m == "fxam":
+-            return ["g_fp_cc = recomp_fxam(fp_top()); /* fxam */"]
+-        if m == "fxch":
+-            # fxch st(i) swaps st0 with st(i); the bare form is st(1). Was
+-            # hardcoded to st1, so fxch st(2)/st(3)/st(4) (86/7/1 sites in Halo)
+-            # swapped the wrong slot -- corrupting the FP stack in the camera
+-            # basis builder that feeds world_to_view.
+-            # Capstone reports fxch with BOTH operands -- (st(0), st(i)) -- and
+-            # it is the only x87 form that does; fadd/fcom/fld st(i) all come
+-            # through with the explicit register alone. Reading ops[0] therefore
+-            # picked up the implicit st(0) and emitted a swap of st0 with
+-            # itself, so every `fxch st(i)` was a silent no-op.
+-            i = (self._st_index(ops[-1].reg)
+-                 if (ops and ops[-1].type == "reg" and ops[-1].reg) else 1)
+-            dst = self._st_expr(i)
+-            return [f"{{ double _t = fp_top(); fp_top() = {dst}; {dst} = _t; }}"
+-                    f" /* fxch {insn.op_str} */"]
+-        if m in ("fcom", "fcomp", "fcompp", "fucom", "fucomp", "fucompp"):
+-            # Compare st0 against the operand, not always st1. `fcomp [mem]`
+-            # compares st0 with the memory value; only the no-operand form
+-            # compares st0 with st1. Getting this wrong made every float compare
+-            # against a constant read a garbage st1 -- Halo's camera FOV and
+-            # world_to_view checks both fed on it.
+-            rhs = self._fcom_rhs(ops)
+-            # Pop count is in the mnemonic and was being ignored: fcom/fucom pop
+-            # nothing, fcomp/fucomp pop once, fcompp/fucompp pop twice. Emitting
+-            # zero pops for every form leaked a stack slot on each fcomp -- and
+-            # float compares are everywhere -- so g_fp_top drifted and later fld
+-            # st(i)/faddp read the wrong slots. valid_real_matrix4x3 calls the
+-            # leaking per-vector check three times, then its own dot products ran
+-            # on a drifted stack: an orthonormal matrix failed non-deterministically
+-            # at render_cameras.c:458. Compare first (rhs may be fp_st1()), then pop.
+-            npop = 2 if m.endswith("pp") else (1 if m.endswith("p") else 0)
+-            pops = " fp_pop();" * npop
+-            return [f"g_fp_cmp = RECOMP_FCMP(fp_top(), {rhs});"
+-                    " g_fp_cc = RECOMP_FCMP_CC(g_fp_cmp);"
+-                    f"{pops} /* {m} {insn.op_str} */"]
+-        if m in ("fcompi", "fcomip", "fucomi", "fucompi", "fucomip", "fcomi"):
+-            # These set EFLAGS directly (CF, ZF, PF) from FPU comparison
+-            # fcompi/fucompi pop st(0) after comparing; fcomi/fucomi do not
+-            pops = m.endswith("pi") or m.endswith("ip")
+-            pop_code = " fp_pop();" if pops else ""
+-            rhs = self._fcom_rhs(ops)
+-            return [f"g_fp_cmp = RECOMP_FCMP(fp_top(), {rhs});"
+-                    f"{pop_code} /* {m} */"]
+-        if m == "fnstsw":
+-            # `fnstsw ax` after an FPU compare is half of the pre-SSE float
+-            # branch idiom `fcomp; fnstsw ax; test ah, mask; j(p/np/z/nz)`.
+-            # Put the compare's C3/C2/C0 condition bits into ah so the following
+-            # test reads a real value instead of stale eax. g_fp_cmp is -1/0/1
+-            # for st0 </=/> src; the FPU sets C3 on equal (ah bit 6 = 0x40) and
+-            # C0 on less-than (ah bit 0 = 0x01), C2 only on unordered (NaN),
+-            # which non-NaN game math does not hit.
+-            # The status word also carries TOP in bits 11-13, which lands in
+-            # AH bits 3-5. We model TOP (it is g_fp_top), so emit it: leaving it
+-            # out made `fnstsw ax` disagree with the hardware on every AH read
+-            # taken while the stack was non-empty. The exception-flag byte (AL)
+-            # we do not model and it is zero after masked, clean operations.
+-            # C3/C2/C0 as the hardware sets them: unordered is C3|C2|C0, and
+-            # `test ah, 0x44; jp` -- the standard isnan idiom -- reads exactly
+-            # those two bits. Reporting equal for a NaN compare sends every
+-            # float classification in a title down the wrong branch.
+-            status = "(uint16_t)(((g_fp_top & 7u) << 11) | g_fp_cc)"
+-            if insn.op_str.strip() in ("ax", "eax"):
+-                # `fnstsw ax` writes the whole of AX, not just AH.
+-                return [f"eax = (eax & 0xFFFF0000u) | (uint32_t){status};"
+-                        " /* fnstsw ax <- fpu status */"]
+-            if ops and ops[0].type == "mem":
+-                return [f"MEM16({_fmt_mem(ops[0])}) = {status};"
+-                        f" /* fnstsw {insn.op_str} */"]
+-            if ops and ops[0].type == "reg":
+-                return [_fmt_set_reg(ops[0].reg, status)
+-                        + f" /* fnstsw {insn.op_str} */"]
+-            return [f"/* fnstsw {insn.op_str} - no destination operand */"]
+-        if m == "fnstcw":
+-            # The CRT reads the control word back to decide whether an
+-            # exception is masked, so it must be stored, not dropped.
+-            if ops and ops[0].type == "mem":
+-                return [f"MEM16({_fmt_mem(ops[0])}) = g_fp_control_word;"
+-                        f" /* fnstcw {insn.op_str} */"]
+-            if ops and ops[0].type == "reg":
+-                return [_fmt_set_reg(ops[0].reg, "g_fp_control_word")
+-                        + f" /* fnstcw {insn.op_str} */"]
+-            return [f"/* fnstcw {insn.op_str} - no destination operand */"]
+-        if m == "fldcw":
+-            if ops and ops[0].type == "mem":
+-                return [f"g_fp_control_word = MEM16({_fmt_mem(ops[0])});"
+-                        f" /* fldcw {insn.op_str} */"]
+-            if ops and ops[0].type == "reg":
+-                return [f"g_fp_control_word = (uint16_t)"
+-                        f"{_fmt_operand_read(ops[0])};"
+-                        f" /* fldcw {insn.op_str} */"]
+-            return [f"/* fldcw {insn.op_str} - no source operand */"]
+-        if m == "fldz":
+-            return [f"fp_push(0.0); /* fldz */"]
+-        if m == "fld1":
+-            return [f"fp_push(1.0); /* fld1 */"]
+-
+-        return [f"/* FPU: {m} {insn.op_str} */"]
++    # Original emitter uses the shared binary64 stack interface.
++    _lift_fpu = _project_x87.emit
+ 
+ 
+ def _is_rep_compare(insn):
+@@ -2137,7 +1783,8 @@
+                     # how the inconsistency was visible in the first place.
+                     and (insns[j].mnemonic in _EFLAGS_PRESERVE
+                          or _project_sse.preserves_flags(insns[j])
+-                         or _project_mmx.preserves_flags(insns[j]))
++                         or _project_mmx.preserves_flags(insns[j])
++                         or _project_x87.preserves_flags(insns[j]))
+                     and not insns[j].is_branch
+                     and not insns[j].is_call
+                     and not insns[j].is_ret):
+@@ -2191,7 +1838,7 @@
+             last_flag_setter, last_flag_ops = normalise_zero_test(
+                 flag_mnem, list(curr.operands))
+         elif (curr.mnemonic in _EFLAGS_PRESERVE or _project_sse.preserves_flags(curr)
+-              or _project_mmx.preserves_flags(curr)):
++              or _project_mmx.preserves_flags(curr) or _project_x87.preserves_flags(curr)):
+             pass  # These don't affect EFLAGS
+         elif curr.mnemonic in ("fcompi", "fcomip", "fucomi", "fucompi",
+                                 "fucomip", "fcomi"):
+--- a/tools/recomp/test_lifter_fpu.py
++++ b/tools/recomp/test_lifter_fpu.py
+@@ -13,7 +13,7 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(instruction),
+-            ["{ double _t = fp_top(); fp_push(_t); } /* fld st(0) */"],
++            ['{ /* own fld */', 'double _x87_value = fp_top();', 'fp_push(_x87_value);', '}'],
+         )
+ 
+     def test_fst_does_not_pop_and_fstp_does(self):
+@@ -27,11 +27,11 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(store),
+-            ["MEMF(esp + 0x18) = (float)fp_top(); /* fst */"],
++            ['{ /* own fst */', 'double _x87_value = fp_top();', 'uint32_t _fp_address = (uint32_t)(esp + 0x18);', 'MEMF(_fp_address) = (float)_x87_value;', '}'],
+         )
+         self.assertEqual(
+             Lifter().lift_instruction(store_pop),
+-            ["MEMF(esp + 0x18) = (float)fp_top(); fp_pop(); /* fstp */"],
++            ['{ /* own fstp */', 'double _x87_value = fp_top();', 'uint32_t _fp_address = (uint32_t)(esp + 0x18);', 'MEMF(_fp_address) = (float)_x87_value;', 'fp_pop();', '}'],
+         )
+ 
+     def test_qword_integer_conversion_uses_signed_64_bit_storage(self):
+@@ -45,12 +45,11 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(store),
+-            ["SMEM64(esp + 0x10) = (int64_t)recomp_fist(fp_top(), g_fp_control_word, 64); "
+-             "fp_pop(); /* fistp */"],
++            ['{ /* own fistp */', 'uint32_t _fp_address = (uint32_t)(esp + 0x10);', 'double _x87_value = fp_top();', 'double _x87_value_rounded = _x87_value;', 'if (isfinite(_x87_value)) {', '    double _fp_integral; double _fp_fraction = modf(_x87_value, &_fp_integral);', '    unsigned _fp_mode = ((g_fp_control_word >> 10) & 3u);', '    double _fp_increment = 0.0;', '    if (_fp_mode == 1u && _fp_fraction < 0.0) _fp_increment = -1.0;', '    if (_fp_mode == 2u && _fp_fraction > 0.0) _fp_increment = 1.0;', '    if (_fp_mode == 0u && (fabs(_fp_fraction) > 0.5 ||', '        (fabs(_fp_fraction) == 0.5 && fmod(fabs(_fp_integral), 2.0) == 1.0)))', '        _fp_increment = copysign(1.0, _fp_fraction);', '    _x87_value_rounded = _fp_integral + _fp_increment;', '    if (_x87_value_rounded == 0.0) _x87_value_rounded = copysign(0.0, _x87_value);', '}', 'uint64_t _fp_integer = (_x87_value_rounded >= -0x1p63 && _x87_value_rounded < 0x1p63)', '    ? (uint64_t)(int64_t)_x87_value_rounded : UINT64_C(0x8000000000000000);', 'MEM64(_fp_address) = (uint64_t)_fp_integer;', 'fp_pop();', '}'],
+         )
+         self.assertEqual(
+             Lifter().lift_instruction(load),
+-            ["fp_push((double)SMEM64(esp + 0x10)); /* fild */"],
++            ['{ /* own fild */', 'uint32_t _x87_value_address = (uint32_t)(esp + 0x10);', 'uint64_t _x87_value_bits = MEM64(_x87_value_address);', 'double _x87_value = (_x87_value_bits & UINT64_C(0x8000000000000000))', '    ? -(double)((~_x87_value_bits + 1u) & UINT64_C(0xFFFFFFFFFFFFFFFF)) : (double)_x87_value_bits;', 'fp_push(_x87_value);', '}'],
+         )
+ 
+     def test_memory_arithmetic_updates_st0_without_popping(self):
+@@ -62,8 +61,7 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(instruction),
+-            ["fp_top() = fp_top() / MEMF(0x123456); "
+-             "/* fdiv dword ptr [0x00123456] */"],
++            ['{ /* own fdiv */', 'uint32_t _fp_right_address = (uint32_t)(0x123456);', 'double _fp_right = MEMF(_fp_right_address);', 'double _fp_left = fp_top();', 'fp_top() = _fp_left / _fp_right;', '}'],
+         )
+ 
+     def test_register_arithmetic_updates_st0_without_popping(self):
+@@ -72,7 +70,7 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(instruction),
+-            ["fp_top() = fp_top() * fp_st1(); /* fmul st(1) */"],
++            ['{ /* own fmul */', 'double _fp_right = fp_st1();', 'double _fp_left = fp_top();', 'fp_top() = _fp_left * _fp_right;', '}'],
+         )
+ 
+     def test_translated_functions_share_runtime_fpu_state(self):
+@@ -127,20 +125,18 @@
+ 
+         self.assertEqual(
+             Lifter().lift_instruction(store),
+-            ["MEM16(ebp + 0xFFFFFFFCu) = g_fp_control_word;"
+-             " /* fnstcw word ptr [ebp - 4] */"],
++            ['{ /* own fnstcw */', 'MEM16(ebp + 0xFFFFFFFCu) = g_fp_control_word;', '}'],
+         )
+         self.assertEqual(
+             Lifter().lift_instruction(load),
+-            ["g_fp_control_word = MEM16(ebp + 0xFFFFFFFCu);"
+-             " /* fldcw word ptr [ebp - 4] */"],
++            ['{ /* own fldcw */', 'g_fp_control_word = MEM16(ebp + 0xFFFFFFFCu);', '}'],
+         )
+ 
+     def test_status_word_store_reports_the_compare_result(self):
+         instruction = Instruction(0, 2, "fnstsw", "ax", "dfe0")
+         instruction.operands = [Operand(type="reg", reg="ax")]
+ 
+-        lifted = Lifter().lift_instruction(instruction)
++        lifted = ["\n".join(Lifter().lift_instruction(instruction))]
+ 
+         self.assertEqual(len(lifted), 1)
+         # The compare can live in a different lifted body than the FNSTSW that
+@@ -157,10 +153,12 @@
+             Operand(type="mem", mem_base="ebp", mem_disp=8, mem_size=8)
+         ]
+ 
+-        lifted = Lifter().lift_instruction(instruction)
++        lifted = ["\n".join(Lifter().lift_instruction(instruction))]
+ 
+         self.assertEqual(len(lifted), 1)
+-        self.assertTrue(lifted[0].startswith("g_fp_cmp ="))
++        self.assertIn("g_fp_cmp =", lifted[0])
++        self.assertEqual(lifted[0].count("MEMD("), 1)
++        self.assertLess(lifted[0].index("g_fp_cmp ="), lifted[0].index("fp_pop();"))
+         self.assertNotIn("_fpu_cmp", lifted[0])
+ 
+     def test_fxch_swaps_with_the_explicit_register(self):
+@@ -172,7 +170,7 @@
+         instruction.operands = [Operand(type="reg", reg="st(0)"),
+                                 Operand(type="reg", reg="st(1)")]
+ 
+-        lifted = Lifter().lift_instruction(instruction)[0]
++        lifted = "\n".join(Lifter().lift_instruction(instruction))
+ 
+         self.assertIn("fp_st1()", lifted)
+         self.assertNotIn("fp_top() = fp_top()", lifted)
+--- a/tools/recomp/test_lifter_fpu_reverse.py
++++ b/tools/recomp/test_lifter_fpu_reverse.py
+@@ -20,7 +20,7 @@
+ def _lift(mnemonic, op_str, operands):
+     instruction = Instruction(0, 4, mnemonic, op_str, "")
+     instruction.operands = operands
+-    return Lifter().lift_instruction(instruction)
++    return [" ".join(Lifter().lift_instruction(instruction))]
+ 
+ 
+ class FpuReverseFormTest(unittest.TestCase):
+@@ -29,46 +29,50 @@
+         lifted = _lift("fdivr", "dword ptr [0x281250]", [_mem(disp=0x281250)])
+ 
+         self.assertEqual(len(lifted), 1)
+-        self.assertIn("fp_top() = MEMF(0x281250) / fp_top();", lifted[0])
++        self.assertIn("fp_top() = _fp_right / _fp_left;", lifted[0])
+         self.assertNotIn("/* FPU:", lifted[0])
+ 
+     def test_fsubr_subtracts_the_stack_top_from_the_operand(self):
+         lifted = _lift("fsubr", "dword ptr [eax + 0x10]",
+                        [_mem(base="eax", disp=0x10)])
+ 
+-        self.assertIn("fp_top() = MEMF(eax + 0x10) - fp_top();", lifted[0])
++        self.assertIn("fp_top() = _fp_right - _fp_left;", lifted[0])
+ 
+     def test_reverse_pop_forms_use_the_reversed_operand_order(self):
+-        self.assertIn("fp_st1() = fp_top() / fp_st1(); fp_pop();",
++        self.assertIn("fp_st1() = _fp_right / _fp_left; fp_pop();",
+                       _lift("fdivrp", "st(1)", [])[0])
+-        self.assertIn("fp_st1() = fp_top() - fp_st1(); fp_pop();",
++        self.assertIn("fp_st1() = _fp_right - _fp_left; fp_pop();",
+                       _lift("fsubrp", "st(1)", [])[0])
+ 
+     def test_forward_forms_keep_their_original_operand_order(self):
+         """The reverse cases must not disturb the plain ones."""
+-        self.assertIn("fp_top() = fp_top() / MEMF(eax);",
++        self.assertIn("fp_top() = _fp_left / _fp_right;",
+                       _lift("fdiv", "dword ptr [eax]", [_mem(base="eax")])[0])
+-        self.assertIn("fp_top() = fp_top() - MEMF(eax);",
++        self.assertIn("fp_top() = _fp_left - _fp_right;",
+                       _lift("fsub", "dword ptr [eax]", [_mem(base="eax")])[0])
+ 
+     def test_integer_memory_operands_are_read_as_signed_integers(self):
+         lifted = _lift("fidiv", "dword ptr [esp + 8]",
+                        [_mem(base="esp", disp=8)])
+ 
+-        self.assertIn("fp_top() = fp_top() / (double)SMEM32(esp + 8);", lifted[0])
++        self.assertIn("? -(double)((~_fp_right_bits + 1u) & UINT64_C(0xFFFFFFFF)) : (double)_fp_right_bits;", lifted[0])
++        self.assertIn("MEM32(_fp_right_address)", lifted[0])
++        self.assertIn("fp_top() = _fp_left / _fp_right;", lifted[0])
+ 
+         word = _lift("fisubr", "word ptr [ebx + 0xbc]",
+                      [_mem(base="ebx", disp=0xBC, size=2)])
+-        self.assertIn("fp_top() = (double)SMEM16(ebx + 0xBC) - fp_top();",
++        self.assertIn("? -(double)((~_fp_right_bits + 1u) & UINT64_C(0xFFFF)) : (double)_fp_right_bits;",
+                       word[0])
++        self.assertIn("MEM16(_fp_right_address)", word[0])
++        self.assertIn("fp_top() = _fp_right - _fp_left;", word[0])
+ 
+     def test_transcendentals_emit_statements_rather_than_comments(self):
+         for mnemonic, expected in (
+-            ("fpatan", "atan2(fp_st1(), fp_top())"),
+-            ("fsin", "sin(fp_top())"),
+-            ("fcos", "cos(fp_top())"),
+-            ("frndint", "recomp_frndint(fp_top(), g_fp_control_word)"),
+-            ("fyl2x", "log2(fp_top())"),
++            ("fpatan", "atan2(_fp_next, _fp_top)"),
++            ("fsin", "sin(_x87_value)"),
++            ("fcos", "cos(_x87_value)"),
++            ("frndint", "((g_fp_control_word >> 10) & 3u)"),
++            ("fyl2x", "log2(_fp_top)"),
+         ):
+             with self.subTest(mnemonic=mnemonic):
+                 lifted = _lift(mnemonic, "", [])
+--- a/tools/recomp/test_lifter_frndint.py
++++ b/tools/recomp/test_lifter_frndint.py
+@@ -29,7 +29,9 @@
+         insn = Instruction(0x0017EEDB, 2, "frndint", "", "")
+         insn.operands = []
+         out = "\n".join(Lifter().lift_instruction(insn))
+-        self.assertIn("fp_top() = recomp_frndint(fp_top(), g_fp_control_word);", out)
++        self.assertIn("((g_fp_control_word >> 10) & 3u)", out)
++        self.assertIn("fp_top() = _x87_value_rounded;", out)
++        self.assertIn("modf(_x87_value, &_fp_integral)", out)
+         self.assertNotIn("rint(fp_top())", out.replace("recomp_frndint(fp_top()", ""))
+ 
+ 
+--- a/tools/recomp/test_fpu_branch.py
++++ b/tools/recomp/test_fpu_branch.py
+@@ -63,7 +63,7 @@
+     """
+     @functools.wraps(fn)
+     def wrapper(*args, **kwargs):
+-        import tools.recomp.lifter as lf
++        import translation_x87 as lf
+         original = lf._fmt_mem
+         lf._fmt_mem = lambda op: "0xK"
+         try:
+@@ -75,12 +75,12 @@
+ 
+ 
+ def test_fnstsw_ax_sets_ah_from_fpu_cmp():
+-    out = "\n".join(Lifter().lift_instruction(_Insn("fnstsw", [], "ax")))
++    out = "\n".join(Lifter().lift_instruction(_Insn("fnstsw", [_Op("ax", reg="ax")], "ax")))
+     assert "g_fp_cc" in out, out
+     # `fnstsw ax` writes the whole of AX, and the status word carries TOP in
+     # bits 11-13 as well as the condition codes -- the hardware AH includes it,
+     # so a comparison against the real CPU fails without it.
+-    assert "eax = (eax & 0xFFFF0000u)" in out, out
++    assert "SET_LO16(eax," in out, out
+     assert "(g_fp_top & 7u) << 11" in out, out
+     # Classification and comparison instructions publish shared condition bits.
+ 
+@@ -149,7 +149,7 @@
+     L = Lifter()
+ 
+     def lift(m, ops, s=""):
+-        return L.lift_instruction(_Insn(m, ops, s))[0]
++        return " ".join(L.lift_instruction(_Insn(m, ops, s)))
+ 
+     mem = _Op("m", type="mem", mem_size=4)
+     st0 = _Op("st0", type="reg", reg="st(0)")
+@@ -157,33 +157,33 @@
+ 
+     # fmul [mem]: st0 *= mem, NO pop
+     o = lift("fmul", [mem], "dword ptr [0xK]")
+-    assert "fp_top() = fp_top() * MEMF(0xK)" in o and "fp_pop" not in o, o
++    assert "fp_top() = _fp_left * _fp_right" in o and "fp_pop" not in o, o
+     # fadd st(0), st(0): double st0, no pop
+     o = lift("fadd", [st0, st0], "st(0), st(0)")
+-    assert "fp_top() = fp_top() + fp_top()" in o and "fp_pop" not in o, o
++    assert "fp_top() = _fp_left + _fp_right" in o and "fp_pop" not in o, o
+     # faddp: st1 += st0, pop
+     o = lift("faddp", [], "")
+-    assert "fp_st1() = fp_st1() + fp_top(); fp_pop();" in o, o
++    assert "fp_st1() = _fp_left + _fp_right; fp_pop();" in o, o
+     # faddp st(1): capstone reports the pop form as ONE operand. Must target
+     # st(i) and pop -- NOT st0 without a pop (that broke normalize's sum of
+     # squares and gave Halo a 1/sqrt(2)-scaled camera basis).
+     o = lift("faddp", [st1], "st(1)")
+-    assert "fp_st1() = fp_st1() + fp_top(); fp_pop();" in o, o
++    assert "fp_st1() = _fp_left + _fp_right; fp_pop();" in o, o
+     # faddp st(2): st(2) = st(2) + st0, pop
+     o = lift("faddp", [_Op("st2", type="reg", reg="st(2)")], "st(2)")
+-    assert "g_fp_stack[(g_fp_top + 2) & 7] = g_fp_stack[(g_fp_top + 2) & 7] + fp_top(); fp_pop();" in o, o
++    assert "g_fp_stack[(g_fp_top + 2) & 7] = _fp_left + _fp_right; fp_pop();" in o, o
+     # fmul st(3): non-pop single operand stays st0 *= st(3), no pop
+     o = lift("fmul", [_Op("st3", type="reg", reg="st(3)")], "st(3)")
+-    assert "fp_top() = fp_top() * g_fp_stack[(g_fp_top + 3) & 7]" in o and "fp_pop" not in o, o
++    assert "fp_top() = _fp_left * _fp_right" in o and "fp_pop" not in o, o
+     # fmulp st(1): st1 *= st0, pop
+     o = lift("fmulp", [st1], "st(1)")
+-    assert "fp_st1() = fp_st1() * fp_top(); fp_pop();" in o, o
++    assert "fp_st1() = _fp_left * _fp_right; fp_pop();" in o, o
+     # fsubr [mem]: st0 = mem - st0 (reversed)
+     o = lift("fsubr", [mem], "dword ptr [0xK]")
+-    assert "fp_top() = MEMF(0xK) - fp_top()" in o, o
++    assert "fp_top() = _fp_right - _fp_left" in o, o
+     # fdivrp st(1), st(0): st1 = st0 / st1, pop
+     o = lift("fdivrp", [st1, st0], "st(1), st(0)")
+-    assert "fp_st1() = fp_top() / fp_st1(); fp_pop();" in o, o
++    assert "fp_st1() = _fp_right / _fp_left; fp_pop();" in o, o
+ 
+ 
+ def test_fcom_pop_counts():
+@@ -207,17 +207,17 @@
+     under valid_real_matrix4x3 and failed Halo's camera assert."""
+     L = Lifter()
+     mem = _Op("m", type="mem", mem_size=4)
+-    o = L.lift_instruction(_Insn("fst", [mem], "dword ptr [0xK]"))[0]
++    o = " ".join(L.lift_instruction(_Insn("fst", [mem], "dword ptr [0xK]")))
+     assert "fp_pop" not in o, o
+-    o = L.lift_instruction(_Insn("fstp", [mem], "dword ptr [0xK]"))[0]
++    o = " ".join(L.lift_instruction(_Insn("fstp", [mem], "dword ptr [0xK]")))
+     assert "fp_pop();" in o, o
+ 
+ 
+ def test_fstp_sti_pops():
+     """fstp st(i) must pop the FPU stack (it was a no-op comment, leaking it)."""
+     L = Lifter()
+-    o = L.lift_instruction(_Insn("fstp", [_Op("st0", type="reg", reg="st(0)")],
+-                                 "st(0)"))[0]
++    o = " ".join(L.lift_instruction(_Insn("fstp", [_Op("st0", type="reg", reg="st(0)")],
++                                 "st(0)")))
+     assert "fp_pop();" in o, o
+ 
+ 
+--- a/tools/recomp/test_fist_rounding.py
++++ b/tools/recomp/test_fist_rounding.py
+@@ -10,7 +10,9 @@
+                     instruction = Instruction(0, 3, mnemonic, '[esp]', '')
+                     instruction.operands = [Operand(type='mem', mem_base='esp', mem_size=size)]
+                     result = '\n'.join(Lifter().lift_instruction(instruction))
+-                    self.assertIn(f'recomp_fist(fp_top(), g_fp_control_word, {size*8})', result)
++                    self.assertIn('((g_fp_control_word >> 10) & 3u)', result)
++                    self.assertIn(f'_x87_value_rounded >= -0x1p{size*8-1}', result)
++                    self.assertIn(f'MEM{size*8}(_fp_address)', result)
+                     self.assertEqual('fp_pop()' in result, mnemonic == 'fistp')
+ 
+ if __name__ == '__main__':

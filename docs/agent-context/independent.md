@@ -312,3 +312,25 @@ remain executed against original game routines.
 ## Inherited SAR sweeps
 
 The shift/rotate patch keeps the inherited compiled SAR sweeps and their broken-expression controls. The fixture compiles the complete emitted statement sequence, including declarations and guards. Its pinned 0x80-to-0xC0 case checks the executed result rather than requiring one signed-cast spelling. Width, upper-register preservation and masked-count sweeps remain enabled on both CI hosts.
+
+
+## Original x87 emission
+
+`translation_x87.py`, installed by `independent-translation-x87.patch` after
+MMX, owns stack loads/stores, arithmetic, comparisons, control/status stores
+and libm mappings. Captures precede TOP changes; rounding uses guest RC and
+integer conversions check range before casting. Only FILD32 uses the title's
+`RECOMP_I32_TO_F64` observation hook. External 80-bit loads/stores convert to
+and from the current binary64 stack. Scaling bounds its integer exponent.
+Unknown x87 forms now use the standard unimplemented diagnostic.
+`test_translation_x87.py` covers copied-module imports, stack aliases/wrap,
+mathematical conversion/compare references, memory boundaries and supplemental
+Windows native x87 oracles. Inherited structural fixtures follow new statements;
+their runtime helper checks remain until foundation replacement. Both CI hosts
+select the original tests; fingerprints include the new module.
+This replaces emission, not stack storage, tags, exceptions, full precision
+control or 80-bit intermediates. Libm transcendental approximation and result-only
+remainder behavior preserve the existing model; they are not exact x87 claims.
+The timing FILD fixture checks captured address 0x4E7944, a single memory read,
+and conversion-hook-before-push ordering; its other behavioral cases remain.
+Generation/build/game acceptance is recorded separately in STATUS.md/MAC-092.

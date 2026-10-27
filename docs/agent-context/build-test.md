@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own MMX/SSE tests](independent.md).
+[Own SIMD/x87 tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

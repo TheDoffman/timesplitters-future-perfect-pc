@@ -312,8 +312,10 @@ def test_generated_numeric_conversion(encoding, helper):
         assert helper + ('(0x1000, _simd_address, _simd_integer)' if helper.endswith('_AT')
                          else '(_simd_address, _simd_integer)') in code
     else:
-        assert helper + '(0x4E7944,' in code
-        assert 'MEM32(0x4E7944)' in code
+        assert 'uint32_t _x87_value_address = (uint32_t)(0x4E7944);' in code
+        assert code.count('MEM32(_x87_value_address)') == 1
+        assert helper + '(_x87_value_address, (uint32_t)_x87_value_bits)' in code
+        assert code.index(helper) < code.index('fp_push(_x87_value)')
 
 
 @pytest.mark.parametrize('encoding,observed', [

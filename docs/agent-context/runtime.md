@@ -756,3 +756,7 @@ common resolve function, after the skipped-Swap guard; tests execute both actual
 entry bodies and verify one completion per presented frame, none for a skip.
 
 Standalone translator consumers gate live-register header/declarations on the supported protocol; see [register contracts](gpr-refs.md).
+
+Original x87 emission now joins SIMD in the additive translator stack; see
+[independent emitter contracts](independent.md#original-x87-emission). Storage
+and FP environment remain upstream; game acceptance is tracked separately.

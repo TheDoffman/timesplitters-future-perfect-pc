@@ -196,3 +196,7 @@ String replacement checks distinguish repeated element ordering from bulk copy,
 zero-count flag preservation from new comparisons, and native instruction
 oracles from the full decoded translator. Single compares need snapshot locals
 even when there is no conditional consumer; repeated compares need ZF storage.
+
+The final translator patch is now independent-translation-x87.patch after MMX.
+Historical reconstruction defers it together with prior independent emitters;
+keep staged patch order/index and original golden/behavioral fixtures aligned.

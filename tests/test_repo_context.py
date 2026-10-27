@@ -50,7 +50,8 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     assert position('independent-translation-strings.patch') < position('independent-translation-conditions.patch')
     assert position('independent-translation-conditions.patch') < position('independent-translation-sse.patch')
     assert position('independent-translation-sse.patch') < position('independent-translation-mmx.patch')
-    assert names[-1] == 'independent-translation-mmx.patch'
+    assert position('independent-translation-mmx.patch') < position('independent-translation-x87.patch')
+    assert names[-1] == 'independent-translation-x87.patch'
 
     assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])

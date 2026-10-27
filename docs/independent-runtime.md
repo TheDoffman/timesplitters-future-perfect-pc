@@ -799,3 +799,22 @@ remain execution-foundation work. See STATUS.md and MAC-088 for acceptance.
 
 Source basis: Intel SDM, MOVS/STOS/LODS, CMPS/SCAS and REP instruction
 semantics: https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.
+
+
+## x87 emission
+
+`translation_x87.py` supplies original emission through the additive
+`independent-translation-x87.patch`. Stack loads capture values before changing
+TOP; stores and pop forms preserve operand order. Guest control-word RC selects
+rounding, and integer stores check representable bounds before casting. Only
+FILD32 retains the existing title conversion hook. External 80-bit memory forms
+convert to/from the binary64 stack; FSCALE bounds finite exponents before the
+host integer cast and defines infinite-scale cases. Compiled independent and
+native x86 checks cover rounding, integer indefinite results, stack aliases,
+status/compare bits, memory bounds and decoded production consumers.
+The runtime stack storage, tags, exception state/delivery, precision control and
+80-bit intermediates remain foundation work. Libm transcendental results and
+result-only remainder handling preserve the current approximation, with no
+hardware bit-exact claim. Unknown forms retain the standard diagnostic marker.
+Source reference: [Intel SDM volume 2A, x87 instruction definitions](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf).
+See STATUS.md and MAC-092 for acceptance and host limits.

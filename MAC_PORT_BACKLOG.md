@@ -226,6 +226,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-089 | Independent condition-code generation | Awaiting validation |
 | MAC-090 | Independent SSE emission | Awaiting validation |
 | MAC-091 | Independent MMX emission | Awaiting validation |
+| MAC-092 | Independent x87 emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6324,3 +6325,22 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
+
+
+### MAC-092 - Independent x87 emission
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up; original
+  `tools/translation_x87.py`, `tests/test_translation_x87.py` and additive
+  `patches/independent-translation-x87.patch`. The shared emitter preserves
+  binary64 stack/TOP and numeric-policy interfaces while replacing upstream
+  x87 emission. Guest rounding and guarded integer conversion are explicit;
+  memory80 formats convert to binary64. Foundation/FP environment remain work.
+- Mac support: portable Python/C and libm use existing shared interfaces; no
+  Mac-specific algorithm is required. CI runs portable fixtures; supplemental
+  native x86 instruction oracles are Windows-only.
+- Remaining validation: Windows generation, Release build and isolated first-mission
+  movement/fire/pause/resume passed; see STATUS.md for counts and limits. Native Mac
+  title verification must use the supported private US data; CI unit/GPU checks
+  alone do not prove gameplay. Preserve saves/settings and report rendering,
+  input and audio limits. See STATUS.md for actual PC acceptance evidence.
