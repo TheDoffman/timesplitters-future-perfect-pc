@@ -73,6 +73,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Multiply and divide | Project-owned `translation_product.py` supplies MUL/IMUL/DIV/IDIV; shared `guest_integer_fault.c` stops invalid division before result writes | Width/alias/overflow and native x86 comparisons, decoded flag consumers, host fault adapter, generation/build/game; guest SEH and native Mac acceptance remain separate |
 | Bit tests, scans and byte swaps | Project-owned `translation_bitops.py` supplies non-LOCK BT/BTS/BTR/BTC, BSF/BSR and BSWAP | Native width/offset/alias and x86 references, captured flag consumers, generation/build/game; atomic forms and full flag provenance remain separate |
 | Exchange and compare-exchange | Project-owned `translation_exchange.py` and original template atomics supply XCHG/XADD/CMPXCHG | Compiled values/flags, x86 oracles, aliases, decoded consumers and contention; generation/build/game acceptance in STATUS.md, native Mac pending |
+| Comparison snapshots and implicit sign extension | Project-owned `translation_compare.py` supplies CMP/TEST, self-test normalization and CBW/CWD/CWDE/CDQ | Compiled width/carry/memory-hook/state fixtures and decoded consumers; measured host acceptance in STATUS.md and MAC-087 |
 | x86-to-C translation | Core lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
@@ -696,4 +697,27 @@ remain separate foundation work. The source basis is Intel SDM instruction
 semantics and standard compiler atomics, not copied lowering implementation:
 https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 and https://learn.microsoft.com/en-us/cpp/intrinsics/interlockedexchangeadd-intrinsic-functions.
-See STATUS.md and MAC-085 for measured Windows and pending native Mac acceptance.
+See STATUS.md and MAC-086 for measured Windows and pending native Mac acceptance.
+
+
+## Comparison snapshots and implicit sign extension
+
+`translation_compare.py` replaces CMP/TEST operand capture, self-test
+normalization and CBW/CWDE/CDQ emission, and adds CWD. Operands are sampled
+at their actual width, with signed/unsigned snapshots and carry exposed through
+the existing consumer ABI. Direct dword-global CMP retains the title load hook;
+other widths, indirect and segmented accesses retain normal memory reads.
+Register self-tests normalize to compare against zero for existing flag joins.
+Unsigned masks implement implicit sign extension without signed shifts. The
+previously unhandled CWD form preserves upper EDX; all four forms preserve flags.
+
+Original compiled tests cover all byte comparison pairs, every word input for
+extension, seeded wider values, memory-read counts, hook scope and preserved
+state. Full decoded consumers test operand overwrite, carry into SBB, normalized
+joins and operand-size prefixes; Windows x86 oracles also compare extension
+values and preserved flags. Inherited translator fixtures stay enabled.
+The semantics basis is Intel SDM volumes 2A/2B:
+https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html.
+This replaces snapshot/emission bodies, not general branch conditions or the
+complete flags register. Fused branch rereads, AF and guest faults remain separate
+orchestration/foundation work. See STATUS.md and MAC-087 for validation.

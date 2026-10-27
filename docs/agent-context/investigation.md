@@ -187,3 +187,7 @@ is not proof of the remote PR's merge state. Required checks remain in force.
 The repository-context order test includes the post-handoff surface capture/render
 tail, with render last. Preserve dependency assertions when extending the loader;
 a stale last-patch assertion is not evidence of a loader failure.
+
+Comparison-stage fixtures retain strict Clang warnings. Compare source snapshots
+with decoded consumers separately from full branch/flag ownership. Treat fused
+comparison rereads as a remaining orchestration boundary, not snapshot coverage.

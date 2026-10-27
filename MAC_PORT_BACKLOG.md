@@ -219,7 +219,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-082 | Projected enemy shield effects (issue #358) | Awaiting validation |
 | MAC-083 | Independent bit tests, scans and byte swaps | Awaiting validation |
 | MAC-084 | Independent multiply and divide lowering | Awaiting validation |
-| MAC-085 | Independent exchange lowering and atomic helpers | Awaiting validation |
+| MAC-086 | Independent exchange lowering and atomic helpers | Awaiting validation |
+| MAC-087 | Independent comparison snapshots and sign extension | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6175,7 +6176,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Shared source implemented; native Mac
   generation/build/gameplay unverified. LOCK and full flag provenance are deferred.
 
-### MAC-085 - Independent exchange lowering and atomic helpers
+### MAC-086 - Independent exchange lowering and atomic helpers
 
 - **Status:** Awaiting validation
 - **PC behavior:** XCHG/XADD/CMPXCHG use original lowering, sampled addresses,
@@ -6192,6 +6193,22 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   build and verify isolated movement/fire/pause on the native host.
 - **Mac implementation and evidence:** Shared implementation complete; native
   Mac generation/build/gameplay pending. Windows x86 oracle is supplemental.
+
+### MAC-087 - Independent comparison snapshots and sign extension
+
+- **Status:** Awaiting validation
+- **PC behavior:** Original CMP/TEST snapshots and CBW/CWD/CWDE/CDQ emission.
+- **PC source:** PR #375 comparison stage; `translation_compare.py`
+  and `independent-translation-compare.patch`.
+- **PC validation:** Native width, hook, carry and preservation contracts plus
+  decoded consumers; generation/build/game evidence in STATUS.md.
+- **Existing Mac support:** Shared Python emission and portable C, registered
+  in native CI. No separate platform algorithm is needed.
+- **Mac adaptation needed:** None identified; native title acceptance pending.
+- **Mac acceptance checks:** Run comparison/consumer fixtures, regenerate and
+  build, then verify isolated movement, firing and pause/resume.
+- **Mac implementation and evidence:** Shared implementation; native Mac
+  generation/build/gameplay unverified. Full flags and guest faults remain work.
 
 ## Entry template
 

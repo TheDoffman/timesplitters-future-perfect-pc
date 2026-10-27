@@ -1,3 +1,56 @@
+## Independent comparison snapshots and sign extension (2026-10-27)
+
+After repairing PR #375's Clang condition warning, all **16 CI checks passed**
+on `32ff9af6`. The next module in PR #375 replaces CMP/TEST snapshots and
+self-test normalization, plus CBW/CWDE/CDQ emission, and supplies previously
+unhandled 16-bit CWD. Production aliases route ordinary and fused comparison
+snapshots to the same implementation. Existing direct-global load hooks and
+branch-consumer ABI are retained. General condition lowering, full EFLAGS/AF,
+fused-branch rereads and guest fault delivery remain separate work.
+
+- **156 focused tests passed in 74.30 seconds**, including the full inherited
+  translator consumer suite, original snapshot/hook/carry checks and decoded
+  operand-overwrite, SBB, join and size-prefix cases.
+- Portable compiled fixtures cover all byte comparison pairs, exhaustive word
+  extension and seeded wider operands. Windows x86 instruction oracles cover
+  every word input with positive/negative upper patterns and arithmetic-flag
+  preservation. The independent module-copy fixture passes without the toolkit.
+- Two inherited text fixtures now locate original snapshot comments; their
+  normalization and carry-order assertions remain active.
+- Generation translated **15,838 functions with zero failures**, retaining
+  **50 unresolved stubs**. Against repaired exchange generation, **4,616
+  functions are byte-identical**. Of **11,222 changed bodies**, **10,812** are identical
+  after ignoring comments, whitespace and redundant snapshot parentheses;
+  **410** additionally use the explicitly checked sign-extension replacements.
+  All five other generated C/header files, names/order and text outside bodies
+  remain identical. No unexpected changes were found. This bounded comparison
+  is not a complete semantic or architectural equivalence proof.
+- The first normal Windows build exhausted the compiler heap (C1002) with
+  unrestricted /MP file workers. A retry uses process-local `CL_MPCount=2`,
+  retaining normal Release optimization and the complete standard build tests.
+  The retry **passed**, including native checks, current generation fingerprint
+  and matching crash symbols. Existing MSBuild intermediate-directory warnings
+  remain. Executable SHA-256:
+  `aeedf7b21c3cda5ae6a009f0b43ff4741b64ddc8e9235e530ce3f33ffa650f28`.
+- **Isolated gameplay passed:** Original60 Scotland the Brave, injected
+  background/minimized inputs with startup movies skipped. Forward **11.014
+  units**, backward **5.815 units**, ammo **8 to 6**, **40 frozen pause samples**
+  and **60 advancing resume samples**; last checkpoint **88.506 seconds**,
+  runner exit 0. Reviewed start/pause/resume captures. All **19 protected files
+  unchanged**, with no remaining run lock, disposable partitions or crash dump.
+  Physical input, audio, movies, foreground pacing and full campaign remain
+  outside this bounded check.
+- **56 historical patch/context/backlog/snapshot checks passed in 1,459.29
+  seconds**. This overlapped generation and the memory-limited rebuild.
+- Main reserved MAC-085 for impact sparks (#376); the unmerged exchange and
+  comparison records are now MAC-086 and MAC-087 to preserve distinct IDs.
+
+Evidence: `logs/compare-focused.log`, `logs/compare-generation.log`,
+`logs/independent-compare-comparison.json`, `logs/compare-build-limited.log`,
+`logs/independent-compare-game-check.json`, `logs/compare-game.log`. Native Mac generation/build/gameplay
+remain unverified (MAC-087). Standard libraries and remaining upstream runtime
+source/notices are retained; this stage does not establish full independence.
+
 ## Independent exchange lowering (2026-10-27)
 
 PR #375 implementation `de66eb9a`, based on merged main `fd317882`: original
@@ -12,8 +65,10 @@ Windows validation:
 
 - CI at `703f9fa7` found one Mac Clang warning-as-error in decoded CMOV:
   redundant parentheses around equality. Zero predicates now use logical
-  negation; the compiled consumer test stays enabled with -Werror. CI rerun
-  pending; the other 1,190 Mac tests passed.
+  negation; the compiled consumer test stays enabled with -Werror. All **16 CI
+  checks passed on `32ff9af6`**, including both host runtime and patch jobs.
+  The correction also passed 35 local checks; repaired generation completed
+  with 15,838 translated functions, zero failures and 50 existing stubs.
 - **152 final checks passed in 74.32 seconds**, covering compiled arithmetic,
   x86 instruction oracles, aliases, decoded consumers, four-thread contention,
   legacy numeric-address macros, fresh/repeated patches, generation and context.
@@ -47,7 +102,7 @@ Evidence: `logs/exchange-final-checks.log`, `logs/exchange-patch-checks.log`,
 `logs/exchange-final-generation.log`, `logs/independent-exchange-comparison.json`,
 `logs/exchange-final-build.log`, `logs/independent-exchange-game-check.json`,
 `logs/exchange-game.log`.
-Native Mac generation/build/gameplay remain pending (MAC-085). Host atomic
+Native Mac generation/build/gameplay remain pending (MAC-086). Host atomic
 contracts cover aligned mapped RAM; MMIO, guest alignment/page-crossing faults,
 exception delivery, other LOCK families and complete flags remain separate work.
 

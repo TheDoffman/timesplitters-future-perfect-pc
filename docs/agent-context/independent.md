@@ -4,6 +4,11 @@ The bundled snapshot supplies the remaining pinned runtime while project-owned t
 
 ## Generation and validation
 
+For MSVC compiler heap exhaustion during generated-C compilation, a process-local
+`CL_MPCount=2` limits the existing /MP workers while keeping normal Release
+optimization and the standard build/test driver. CMake's project parallelism
+alone does not cap /MP. Record the failed attempt and successful retry separately.
+
 Generation hashes cover own translation/diagnostic tools and bridges. Native
 integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate
 references on Windows; moves cover hooks/stack aliases. Title patches precede
@@ -27,6 +32,19 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+`independent-translation-compare.patch` follows exchange. `translation_compare.py`
+owns CMP/TEST snapshots and register-self-test normalization shared by fused
+and ordinary consumers, retaining the existing snapshot ABI and direct 32-bit
+global-load hook. Each operand is read once per snapshot. CBW/CWD/CWDE/CDQ use
+unsigned masks and preserve unaffected registers/flags; CWD, previously unhandled, fills only DX.
+Original compiled fixtures cover all byte comparison pairs, exhaustive word
+extension, seeded wider inputs, memory hooks/read counts and decoded consumers.
+Windows x86 oracles also compare implicit-extension values and flag preservation.
+The full inherited translator suite remains enabled. General branch-condition
+lowering, complete EFLAGS/AF, fused-branch rereads and fault delivery remain
+separate work. Generation hashes and both-host CI include this module; see
+MAC-087 and STATUS.md for host acceptance.
+
 `independent-translation-exchange.patch` follows bitops, removing XCHG and
 XADD/CMPXCHG bodies in favor of `translation_exchange.py`. Byte/word/dword
 operands and addresses are sampled before writes; XADD writes its source first
@@ -41,7 +59,7 @@ Clang-clean under -Werror. Full architectural flags and other LOCK families rema
 Fixtures execute decoded consumers, native x86 references and four-thread ADD,
 CAS and exchange-lock contention. Aligned mapped RAM follows host contracts;
 MMIO, alignment/page-crossing faults and guest exception delivery are not
-implemented here. See MAC-085 and STATUS.md for host acceptance.
+implemented here. See MAC-086 and STATUS.md for host acceptance.
 
 `independent-translation-bitops.patch` follows product lowering, replacing
 non-LOCK bit tests/modifications, scans and byte swaps with `translation_bitops.py`.
