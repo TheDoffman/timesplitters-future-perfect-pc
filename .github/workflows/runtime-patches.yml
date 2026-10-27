@@ -200,18 +200,20 @@ jobs:
             tests/texture_nonpak.py tests/texture_variants.py
             tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py tests/test_audio_output_gain.py
-            tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
+            tests/test_frame_clock.py tests/test_native_frame_stats.py tests/test_native_timing.py tests/test_native_wind.py tests/test_native_vehicle_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_native_demo_timing.py tests/test_reload_keys.py
+            tests/test_native_local_trace.py tests/test_state_layout_slots.py
+            tests/test_vsh_constant_dirty.py
             tests/test_native_effect_trace.py tests/test_rocket_impact_stats.py tests/test_surface_shader_feedback.py tests/test_combiner_constants.py tests/test_surface_preservation.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
-            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_model_transform.py tests/test_zero_base_indices.py tests/test_push_gather.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
+            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_model_transform.py tests/test_gpr_refs.py tests/test_zero_base_indices.py tests/test_push_gather.py tests/test_vertex_expand.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py tests/test_native_movie_file.py tests/test_discord_presence.py tests/test_discord_macos.py tests/test_native_crash.py
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_pc_display_modes.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
-            tests/test_fov_settings.py tests/test_storage_menu.py tests/test_text_read_scope.py tests/test_trace_filter.py tests/test_sample_chains.py tests/test_gpu_flush_ack.py
+            tests/test_fov_settings.py tests/test_storage_menu.py tests/test_text_read_scope.py tests/test_trace_filter.py tests/test_sample_chains.py tests/test_sample_pc_locations.py tests/test_gpu_flush_ack.py
             tests/test_menu_sampling.py tests/test_pushbuffer_policy.py tests/test_shader_source_lookup.py tests/test_texel_sample_lanes.py
-            tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
+            tests/test_renderer_host.py tests/test_render_state_cache.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
             tests/test_frame_replay.py
             tests/test_debug_settings_model.py
             tests/test_network_guest_dispatch.py tests/test_network_bot_results.py tests/test_network_movement_stats.py tests/test_network_motion_stats.py tests/test_network_pose_stats.py tests/test_procedural_surface_stats.py

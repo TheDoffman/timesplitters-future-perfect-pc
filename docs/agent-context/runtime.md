@@ -1,8 +1,97 @@
 # Runtime and patch navigation
 
+Procedural wind: [coupled simulation, ownership, exact-clock admission and validation](native-wind.md).
+
+`zz-state-layout-slots.patch` prepares the render/texture-stage slot numbers
+for the recognized XDK layout once per layout change. It caches only integer
+mapping results: each draw still loads current guest values in original order
+and retains conversion, comparison, effect overrides, texture-operation replay,
+pixel-shader forwarding and diagnostics. Render states absent from older layouts
+still read as zero. No guest address/pointer, state value, pose or texture is
+retained by this optimization. The full-module `test_state_layout_slots.py`
+compares ordered host-call digests against the reverse-patched original across
+all three layouts, changing memory bases/values and host-call feedback. Layout
+invalidation and stale-value negative controls must differ from the original.
+
+`zz-sampler-cache-retry.patch` repairs common `d3d8_states.c` sampler ownership.
+Create a replacement before changing the cache count/cursor, destroying its
+victim or invalidating borrowed stage pointers. A failed allocation leaves no
+entry, so later applies retry while existing bindings remain usable. Successful
+replacement keeps the original bound-stage invalidation/rebind behavior.
+Failure warnings are capped at four per cache lifetime and reset on shutdown.
+Descriptors,32-entry capacity and the successful draw path remain unchanged.
+This is shared Windows/Mac RHI policy, not an FPS gain or a new backend cache.
+
+The full-module `test_render_state_cache.py` tests failures in empty/full caches;
+the pre-fix module must fail both recovery assertions. Nine repeated failures
+retain live owners and emit at most four warnings; successful replacement
+invalidates/rebinds borrowed stages and shutdown releases each owner once.
+Normal binding digests still match the pre-change module and no-reuse, lost-mask
+and cached-failure controls remain rejected. Both native CI hosts run these
+asset-free checks; they do not force a real driver/device allocation error.
+
+Shader constants: [bitwise dirty state and upload retry](vsh-constants.md).
+
+`zz-strided-vertex-increment.patch` follows the strided-copy specialization in
+common HLE `hle_d3d8_vertex.c`. Each attribute copy advances a32-bit guest
+source offset and a `size_t` destination offset instead of multiplying per
+vertex. Source arithmetic retains modulo2^32 behavior, including wrapped first
+indices and strides; destination arithmetic retains the original host width.
+`HLE_PTR` still resolves each read, scalar copy order/widths and the fallback
+remain, and each gather allocates/reads fresh data. No retained vertex/pose data.
+The full gather/guard/wrap fixture is described in [build-test](build-test.md).
+Host-call captures occur after gathering: replaying unchanged captured inputs
+does not independently exercise this optimization.
+
+Completed local aim/animation state: [optional shared trace](native-local-trace.md).
+
+`zz-vertex-expand-strides.patch` specializes packed-program vertex expansion in
+common `hle_d3d8.c`; `zz-vertex-expand-tiles.patch` bounds passes to32 vertices.
+Attribute/width dispatch moves outside the vertex loop within each tile;
+fresh stream-zero tails and converted prefixes still use a new zeroed allocation
+per draw. Parsed prefixes precede tails; per-vertex attribute order is preserved
+even when outputs overlap. Raw copies use exact byte widths, SHORT/NORMPACKED3
+arithmetic and generic width/format fallbacks remain, and stream lookups/failure
+checks keep their original order. The fixed-function selector tail-calls the
+unchanged generic body; the packed setup has a portable noinline boundary to
+retain that compiler scope. No guest clocks, vertex cache or retained pose is
+introduced. `test_vertex_expand.py` compares full output/stride/failure/stream/
+allocation/FP behavior against a frozen pre-change body, including guard pages
+and independent broken-copy/order/fallback controls. Live results belong in STATUS.
+
+`zz-stable-gpr-refs.patch` and the title's four-site selector keep references
+to live integer/vector cells in profiled routines; see [contract/tests](gpr-refs.md).
+
+`zz-sampler-pc-locations.patch` adds default-off `RECOMP_SAMPLE_PC_SYMBOL`
+to the existing Windows sampler. One exact executable symbol gets at most512
+native PC rows per thread/report, with executable RVA, symbol offset, source
+basename and PDB line. A coverage footer counts all matching addresses/samples
+and omitted samples; truncated tables cannot support complete differential
+claims. Resolution happens only after sampled threads resume. No per-sample
+collection or guest behavior changes; source paths are not dumped. Mac's
+existing no-op sampler is unchanged; portable reporter fixtures run on both.
+
+`zz-render-state-cache.patch` gives common `src/d3d/d3d8_states.c` bounded
+32-entry descriptor caches for immutable blend, depth/stencil and rasterizer
+objects. Current bindings borrow cache objects; shutdown destroys each owner
+once. Failed creates are retried without inserting a null entry or evicting
+an existing object. Full zero-initialized descriptors replace blend/raster
+dirty hashes, with last-descriptor fast paths. Material transitions still
+translate current state and bind each draw; stencil reference and scissor
+rectangle remain dynamic. Sampler recovery is covered separately above. The complete-module
+`test_render_state_cache.py` compares emitted binds against the pre-cache
+module and checks replacement, failure/retry, shutdown/restart and negative
+controls. This is common RHI policy, independent of native FPS/guest updates.
+
 Native walking's C54A0 scope and C596C clear-slide branch are shared through
 `pc_native_numeric.h`/`pc_native_timing_guest.inc`; the original geometry remains
 in use. See [policy, diagnostic schema and tests](native-player-contact.md).
+
+When release PDBs lack line records, entire retained COFF function sections can
+be matched against the current PE while ignoring typed relocation fields.
+Require the primary native entry and complete remaining bytes, retain folded
+aliases and reject a changed instruction-byte control; a short prefix or nearest
+name alone is insufficient to attribute a secondary unwind fragment.
 
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in
@@ -17,6 +106,16 @@ not exist as strings in generated guest code; find a measured caller/address.
 Sol can request exact public source ranges and lexical references from the local
 broker; each result identifies the root/runtime revision and actual file hash.
 Generated guest C remains excluded from hosted retrieval.
+
+Profiler names alone do not prove function identity. DbgHelp may assign an
+unnamed static PC the nearest public name, and export-only inferred sizes may
+span unrelated native unwind entries. Retain raw executable RVAs and actual
+unwind bounds before changing a purported hot helper. Chained unwind fragments
+may also require primary-entry validation; unresolved identity stays explicit.
+The PC reporter's `symbol_complete` flag checks name truncation, not bounds.
+Reject dropped-chain windows as complete profiles and separate sampler pause/
+reporting overhead from clean Present measurements. See STATUS for the focused
+external diagnostic and its limitations.
 
 `tools/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
@@ -37,6 +136,8 @@ captures do not serialize host screen copies.
 A conflict "during unwind" means current runtime/recorded stack diverge; it
 does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.
+<!-- packet:end -->
+
 `zzzz-world-health-bars.patch` handles #102 after the other display patches.
 Electro Chimp's enemy bars are screen-space draws with 16-byte transformed
 vertices and depth near 1. Their positions already follow the widened camera;
@@ -45,7 +146,6 @@ The patch spans those draws across the output while leaving ordinary HUD
 sprites and explicitly placed overlays on their existing paths. Validate with
 Monkeying Around → Electro Chimp Discomatic at a widescreen resolution and
 compare each bar with its moving monkey.
-<!-- packet:end -->
 
 `zz-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
 draws with minimum index zero pass their current index bytes directly to the
@@ -132,6 +232,15 @@ nonpositive trace budget and no watch/dump/filter/profile environment switch,
 follows the existing renderer-idle callback. Per-thread configuration is read
 once, like existing diagnostic caches; explicit diagnostics retain their original
 budget, initialization and output. Crash/throw/unimplemented reports are untouched.
+
+The quiet guard now inlines its cached TLS load and outlines only first-use
+environment parsing. It retains per-thread startup configuration: changing the
+environment does not alter an initialized thread, while a new thread initializes
+independently. `test_trace_filter.py` compiles the complete tracing module and
+checks that distinction, concurrent quiet calls, enabled diagnostics and Windows
+idle cadence; a shared-cache mutation must fail. No process-wide cache or C
+atomic support is introduced. Private alternating native probes measure tracing
+cost only; game pacing requires a separately identified executable and scene.
 
 
 `zz-native-demo-timing.patch` follows the native surface stack and wraps US

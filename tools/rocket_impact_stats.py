@@ -27,6 +27,8 @@ def analyze(report):
         assert actors['pool']==actors['pool_after'] and actors['bot_slots']==0, name
         assert actors['human_slots']==1 and [a['slot'] for a in actors['actors']]==[0], name
         assert row['effects']['complete'], f'Incomplete effects at {name}'
+        window=row.get('window',{})
+        assert window.get('foreground') and window.get('visible') and not window.get('minimized',True), f'Not foreground gameplay at {name}'
 
     before=checkpoints['aim-floor'];impact=checkpoints['impact'];settled=checkpoints['settled']
     assert before['player']['look'][1]==-75, 'Floor aim was not clamped'
@@ -36,6 +38,8 @@ def analyze(report):
     assert len(ammunition)==1 and ammunition[0]['loaded']==6 and ammunition[0]['reserve']==6
     assert impact['command']['keys']==[1] and len(impact['key_events'])==1, 'Expected one fire press'
     samples=impact.get('hold_samples',[])+impact.get('wait_samples',[])+settled.get('wait_samples',[])
+    assert all(row.get('window',{}).get('foreground') and row['window'].get('visible') and
+               not row['window'].get('minimized',True) for row in samples), 'Not foreground effect observations'
     assert len(settled.get('wait_samples',[]))>=80, 'Insufficient effect-cleanup observations'
     missing_player_samples=sum(row.get('player') is None for row in samples)
     totals=[a['loaded']+a['reserve'] for row in samples if row.get('player') is not None for a in row['player']['ammo']

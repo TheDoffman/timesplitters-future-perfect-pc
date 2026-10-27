@@ -1,0 +1,174 @@
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -4513,7 +4513,7 @@
+  * (Cxbx-Reloaded's vertex buffer conversion). Returns NULL with *failed clear
+  * when the current program packs nothing, and NULL with *failed set when the
+  * copy cannot be made; otherwise the copy, and *stride grows to match. */
+-static uint8_t *shadow_expand_vertices(const void *verts, UINT vertices, UINT *stride,
++static uint8_t *shadow_expand_generic_vertices(const void *verts, UINT vertices, UINT *stride,
+                                        uint32_t first, int *failed)
+ {
+     const struct shadow_program *p;
+@@ -4645,6 +4645,161 @@
+     return out;
+ }
+ 
++/* The parsed declaration places the converted attributes in a prefix before
++ * the unchanged stream-zero tail. Copying one attribute across the vertex range
++ * preserves attribute order within every vertex, including overlapping outputs.
++ * Dispatch byte widths/formats once per attribute. Every draw reads fresh input;
++ * allocation, zero padding, arithmetic and stream lookup/failure policy stay the
++ * same. No vertex data or transformed pose is retained. */
++static void shadow_expand_program_vertices(
++    const struct shadow_program *p, const void *verts, UINT vertices,
++    UINT in_stride, uint8_t *out, UINT out_stride,
++    const uint8_t *const *base, const uint32_t *sstride)
++{
++    UINT v, shift = p->expanded_bytes;
++    int k;
++
++#define SHADOW_EXPAND_COPY_TAIL(N) \
++    for (v = 0; v < vertices; v++) \
++        memcpy(out + (size_t)v * out_stride + shift, \
++               (const uint8_t *)verts + (size_t)v * in_stride, (N))
++    switch (in_stride) {
++    case 16: SHADOW_EXPAND_COPY_TAIL(16); break;
++    case 20: SHADOW_EXPAND_COPY_TAIL(20); break;
++    case 24: SHADOW_EXPAND_COPY_TAIL(24); break;
++    case 28: SHADOW_EXPAND_COPY_TAIL(28); break;
++    case 32: SHADOW_EXPAND_COPY_TAIL(32); break;
++    case 36: SHADOW_EXPAND_COPY_TAIL(36); break;
++    case 40: SHADOW_EXPAND_COPY_TAIL(40); break;
++    case 48: SHADOW_EXPAND_COPY_TAIL(48); break;
++    case 50: SHADOW_EXPAND_COPY_TAIL(50); break;
++    case 64: SHADOW_EXPAND_COPY_TAIL(64); break;
++    default: SHADOW_EXPAND_COPY_TAIL(in_stride); break;
++    }
++#undef SHADOW_EXPAND_COPY_TAIL
++    for (k = 0; k < p->packed_count; k++) {
++        const uint8_t *input = base[k] + p->packed_offset[k];
++        uint8_t *output = out + p->packed_out[k];
++        uint32_t step = sstride[k];
++        if (p->packed_raw[k]) {
++#define SHADOW_EXPAND_COPY_RAW(N) \
++    for (v = 0; v < vertices; v++) \
++        memcpy(output + (size_t)v * out_stride, input + (size_t)v * step, (N))
++            switch (p->packed_size[k]) {
++            case 1: SHADOW_EXPAND_COPY_RAW(1); break;
++            case 2: SHADOW_EXPAND_COPY_RAW(2); break;
++            case 3: SHADOW_EXPAND_COPY_RAW(3); break;
++            case 4: SHADOW_EXPAND_COPY_RAW(4); break;
++            case 6: SHADOW_EXPAND_COPY_RAW(6); break;
++            case 8: SHADOW_EXPAND_COPY_RAW(8); break;
++            case 12: SHADOW_EXPAND_COPY_RAW(12); break;
++            case 16: SHADOW_EXPAND_COPY_RAW(16); break;
++            default: SHADOW_EXPAND_COPY_RAW(p->packed_size[k]); break;
++            }
++#undef SHADOW_EXPAND_COPY_RAW
++        } else if (p->packed_format[k] == 0x16u) {
++            for (v = 0; v < vertices; v++) {
++                uint32_t bits;float n[3];
++                memcpy(&bits,input + (size_t)v * step, sizeof bits);
++                n[0] = (float)((int32_t)(bits << 21) >> 21) / 1023.0f;
++                n[1] = (float)((int32_t)(bits << 10) >> 21) / 1023.0f;
++                n[2] = (float)((int32_t)bits >> 22) / 511.0f;
++                memcpy(output + (size_t)v * out_stride,n,sizeof n);
++            }
++        } else {
++#define SHADOW_EXPAND_COPY_SHORTS(N) \
++    for (v = 0; v < vertices; v++) { \
++        float n[N]; \
++        for (int c = 0; c < (N); c++) { \
++            int16_t s;memcpy(&s,input + (size_t)v * step + 2 * c,sizeof s);n[c]=(float)s; \
++        } \
++        memcpy(output + (size_t)v * out_stride,n,sizeof n); \
++    }
++            switch (p->packed_format[k] >> 4) {
++            case 1: SHADOW_EXPAND_COPY_SHORTS(1); break;
++            case 2: SHADOW_EXPAND_COPY_SHORTS(2); break;
++            case 3: SHADOW_EXPAND_COPY_SHORTS(3); break;
++            case 4: SHADOW_EXPAND_COPY_SHORTS(4); break;
++            default:
++                for (v = 0; v < vertices; v++) {
++                    float n[4];int count=(int)(p->packed_format[k] >> 4);
++                    for (int c=0;c<count;c++) {
++                        int16_t s;memcpy(&s,input+(size_t)v*step+2*c,sizeof s);n[c]=(float)s;
++                    }
++                    memcpy(output+(size_t)v*out_stride,n,(size_t)count*sizeof n[0]);
++                }
++                break;
++            }
++#undef SHADOW_EXPAND_COPY_SHORTS
++        }
++    }
++
++}
++
++/* Keep the fixed-function fallback's original compiler scope and make the
++ * public selector a tail call. The packed branch owns the larger local arrays. */
++#if defined(_MSC_VER)
++#define SHADOW_PACKED_NOINLINE __declspec(noinline)
++#elif defined(__GNUC__)
++#define SHADOW_PACKED_NOINLINE __attribute__((noinline))
++#else
++#define SHADOW_PACKED_NOINLINE
++#endif
++static SHADOW_PACKED_NOINLINE uint8_t *shadow_expand_packed_vertices(const void *verts, UINT vertices, UINT *stride,
++                                       uint32_t first, int *failed)
++{
++    const struct shadow_program *p;
++    const uint8_t *base[SHADOW_MAX_PACKED];
++    uint32_t sstride[SHADOW_MAX_PACKED];
++    UINT in_stride = *stride, out_stride, shift;
++    uint8_t *out;
++    int k;
++
++    *failed = 0;
++    if (!g_shadow_vs_is_program || g_shadow_vs_slot < 0)
++        return NULL;
++    p = &g_programs[g_shadow_vs_slot];
++    if (!p->packed_count)
++        return NULL;
++    /* Where each register's vertices are: stream 0 is what the draw was
++     * handed, any other stream is looked up at the same first vertex. A UP
++     * draw has no other streams to read, so it cannot feed this program. */
++    for (k = 0; k < p->packed_count; k++) {
++        if (!p->packed_stream[k]) {
++            base[k] = (const uint8_t *)verts;
++            sstride[k] = in_stride;
++            continue;
++        }
++        base[k] = first == NO_FIRST_VERTEX ? NULL
++                : (const uint8_t *)hle_d3d8_stream_vertices(p->packed_stream[k], first,
++                                                            vertices, &sstride[k]);
++        if (!base[k] || sstride[k] < p->packed_offset[k] + p->packed_size[k]) {
++            *failed = 1;
++            return NULL;
++        }
++    }
++    shift = p->expanded_bytes;
++    /* Rounded up, so the host stride is a multiple of four even when the
++     * title's is not (Dino Crisis 3's skinned vertex is 50 bytes). */
++    out_stride = shift + ((in_stride + 3u) & ~3u);
++    out = calloc((size_t)vertices, out_stride);
++    if (!out) {
++        *failed = 1;
++        return NULL;
++    }
++    shadow_expand_program_vertices(p, verts, vertices, in_stride, out, out_stride, base, sstride);
++    *stride = out_stride;
++    return out;
++}
++#undef SHADOW_PACKED_NOINLINE
++
++static uint8_t *shadow_expand_vertices(const void *verts, UINT vertices, UINT *stride,
++                           uint32_t first, int *failed)
++{
++    if (g_ff_active)
++        return shadow_expand_generic_vertices(verts, vertices, stride, first, failed);
++    return shadow_expand_packed_vertices(verts, vertices, stride, first, failed);
++}
+ /* The host half of every non-indexed draw: the UP draw below and the vertex
+  * buffer draws in hle_d3d8_vertex.c. `verts` is already a host pointer to the
+  * first vertex; from_buffer only picks the counter the draw lands in. */

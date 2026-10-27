@@ -14,7 +14,7 @@ def test_shared_rhi_menu_warp(tmp_path):
     runtime=ROOT/'external/ts3FPrecomp/src'
     exe=tmp_path/'rhi-menu.exe'
     sources=[ROOT/'tests/rhi_menu_sampling.c',*(runtime/'d3d'/name for name in
-        ('rhi.c','rhi_d3d11.c','rhi_shader_cache.c','d3d8_compile.c','d3d8_resources.c','d3d8_screencopy.c')),
+        ('rhi.c','rhi_d3d11.c','rhi_shader_cache.c','d3d8_compile.c','d3d8_resources.c','d3d8_screencopy.c','d3d8_states.c')),
         runtime/'config/recomp_config.c']
     args=[compiler,'/nologo','/std:c11','/O2','/W3',
           *['/I'+str(path) for path in (ROOT/'src',ROOT/'tests',runtime,runtime/'d3d',runtime/'config')],

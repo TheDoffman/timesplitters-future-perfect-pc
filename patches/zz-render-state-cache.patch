@@ -1,0 +1,174 @@
+--- a/src/d3d/d3d8_states.c
++++ b/src/d3d/d3d8_states.c
+@@ -24,10 +24,54 @@
+ static RhiRasterState *g_raster_state = NULL;
+ static RhiSampler     *g_sampler_states[4] = { NULL, NULL, NULL, NULL };
+ 
+-/* Last known render state identity for dirty detection */
+-static DWORD g_last_blend_hash = 0;
+-static DWORD g_last_raster_hash = 0;
++/* The bound pointers borrow objects from these bounded descriptor caches.
++ * A material returning to a previously used state need not create another
++ * driver object. Descriptors are zero-initialized before comparison; no guest
++ * data, geometry, dynamic stencil reference or scissor rectangle is cached. */
++#define DRAW_STATE_CACHE_SIZE 32
++#define DRAW_STATE_CACHE(name, Desc, State, create, destroy)                 \
++    typedef struct { Desc desc; State *state; } name##CacheEntry;           \
++    static name##CacheEntry name##_cache[DRAW_STATE_CACHE_SIZE];           \
++    static unsigned name##_cache_count, name##_cache_next;                 \
++    static State *name##_cache_get(const Desc *desc)                       \
++    {                                                                    \
++        unsigned i; name##CacheEntry *entry; State *state;                 \
++        for (i = 0; i < name##_cache_count; ++i)                           \
++            if (!memcmp(&name##_cache[i].desc, desc, sizeof(*desc)))       \
++                return name##_cache[i].state;                             \
++        state = create(desc);                                            \
++        if (!state) return NULL; /* Retry failures; keep existing owners. */\
++        if (name##_cache_count < DRAW_STATE_CACHE_SIZE)                    \
++            entry = &name##_cache[name##_cache_count++];                  \
++        else {                                                           \
++            entry = &name##_cache[name##_cache_next];                     \
++            name##_cache_next = (name##_cache_next + 1) % DRAW_STATE_CACHE_SIZE;\
++            destroy(entry->state);                                       \
++        }                                                                \
++        memcpy(&entry->desc, desc, sizeof(*desc));                         \
++        entry->state = state;                                            \
++        return state;                                                    \
++    }                                                                    \
++    static void name##_cache_shutdown(void)                               \
++    {                                                                    \
++        unsigned i;                                                      \
++        for (i = 0; i < name##_cache_count; ++i)                           \
++            destroy(name##_cache[i].state);                               \
++        memset(name##_cache, 0, sizeof(name##_cache));                     \
++        name##_cache_count = name##_cache_next = 0;                        \
++    }
++
++DRAW_STATE_CACHE(blend, RhiBlendDesc, RhiBlendState,
++                 rhi_blend_state_create, rhi_blend_state_destroy)
++DRAW_STATE_CACHE(depth, RhiDepthDesc, RhiDepthState,
++                 rhi_depth_state_create, rhi_depth_state_destroy)
++DRAW_STATE_CACHE(raster, RhiRasterDesc, RhiRasterState,
++                 rhi_raster_state_create, rhi_raster_state_destroy)
++#undef DRAW_STATE_CACHE
++
++static RhiBlendDesc g_last_blend_desc;
+ static RhiDepthDesc g_last_ds_desc;
++static RhiRasterDesc g_last_raster_desc;
+ 
+ /* ================================================================
+  * D3D8 -> host enum translation (rhi.h keeps the D3D11 numbering)
+@@ -105,37 +149,13 @@
+     }
+ }
+ 
+-/* Simple hash of relevant render state values for dirty detection */
+-static DWORD hash_blend_states(const DWORD *rs)
+-{
+-    return rs[D3DRS_ALPHABLENDENABLE] ^
+-           (rs[D3DRS_SRCBLEND] << 4) ^
+-           (rs[D3DRS_DESTBLEND] << 8) ^
+-           (rs[D3DRS_BLENDOP] << 12) ^
+-           (rs[D3DRS_COLORWRITEENABLE] << 16);
+-}
+-
+-static DWORD hash_raster_states(const DWORD *rs, BOOL scissor)
+-{
+-    return rs[D3DRS_CULLMODE] ^
+-           (rs[D3DRS_FILLMODE] << 4) ^
+-           (scissor ? 0x100u : 0u);
+-}
+-
+ /* ================================================================
+  * State object creation
+  * ================================================================ */
+ 
+ static void update_blend_state(const DWORD *rs)
+ {
+-    DWORD hash = hash_blend_states(rs);
+     RhiBlendDesc bd;
+-
+-    if (hash == g_last_blend_hash && g_blend_state) return;
+-    g_last_blend_hash = hash;
+-
+-    rhi_blend_state_destroy(g_blend_state);
+-    g_blend_state = NULL;
+ 
+     memset(&bd, 0, sizeof(bd));
+     bd.enable = rs[D3DRS_ALPHABLENDENABLE] ? 1 : 0;
+@@ -147,9 +167,12 @@
+     bd.op_alpha = bd.op;
+     bd.write_mask = rs[D3DRS_COLORWRITEENABLE] & 0x0F;
+ 
+-    g_blend_state = rhi_blend_state_create(&bd);
++    if (g_blend_state && !memcmp(&bd, &g_last_blend_desc, sizeof(bd))) return;
++    g_blend_state = blend_cache_get(&bd);
+     if (!g_blend_state)
+         fprintf(stderr, "D3D8: CreateBlendState failed\n");
++    else
++        memcpy(&g_last_blend_desc, &bd, sizeof(bd));
+ }
+ 
+ static void update_depth_stencil_state(const DWORD *rs)
+@@ -174,10 +197,7 @@
+     /* Zeroed padding makes the complete descriptor comparable; the reference
+      * is bound separately. */
+     if (g_ds_state && memcmp(&dsd, &g_last_ds_desc, sizeof(dsd)) == 0) return;
+-    rhi_depth_state_destroy(g_ds_state);
+-    g_ds_state = NULL;
+-
+-    g_ds_state = rhi_depth_state_create(&dsd);
++    g_ds_state = depth_cache_get(&dsd);
+     if (!g_ds_state)
+         fprintf(stderr, "D3D8: CreateDepthStencilState failed\n");
+     else
+@@ -186,14 +206,7 @@
+ 
+ static void update_rasterizer_state(const DWORD *rs, BOOL scissor)
+ {
+-    DWORD hash = hash_raster_states(rs, scissor);
+     RhiRasterDesc rd;
+-
+-    if (hash == g_last_raster_hash && g_raster_state) return;
+-    g_last_raster_hash = hash;
+-
+-    rhi_raster_state_destroy(g_raster_state);
+-    g_raster_state = NULL;
+ 
+     memset(&rd, 0, sizeof(rd));
+ 
+@@ -220,9 +233,12 @@
+     rd.multisample = 0;
+     rd.antialiased_lines = 0;
+ 
+-    g_raster_state = rhi_raster_state_create(&rd);
++    if (g_raster_state && !memcmp(&rd, &g_last_raster_desc, sizeof(rd))) return;
++    g_raster_state = raster_cache_get(&rd);
+     if (!g_raster_state)
+         fprintf(stderr, "D3D8: CreateRasterizerState failed\n");
++    else
++        memcpy(&g_last_raster_desc, &rd, sizeof(rd));
+ }
+ 
+ /* ================================================================
+@@ -393,14 +409,15 @@
+ void d3d8_states_shutdown(void)
+ {
+     int i;
+-    rhi_blend_state_destroy(g_blend_state);   g_blend_state = NULL;
+-    rhi_depth_state_destroy(g_ds_state);      g_ds_state = NULL;
+-    rhi_raster_state_destroy(g_raster_state); g_raster_state = NULL;
++    blend_cache_shutdown();  g_blend_state = NULL;
++    depth_cache_shutdown();  g_ds_state = NULL;
++    raster_cache_shutdown(); g_raster_state = NULL;
+     for (i = 0; i < 4; i++)
+         g_sampler_states[i] = NULL;
+     sampler_cache_shutdown();
+-    g_last_blend_hash = 0;
+-    g_last_raster_hash = 0;
++    memset(&g_last_blend_desc, 0, sizeof(g_last_blend_desc));
++    memset(&g_last_ds_desc, 0, sizeof(g_last_ds_desc));
++    memset(&g_last_raster_desc, 0, sizeof(g_last_raster_desc));
+ }
+ 
+ void d3d8_states_apply(void)

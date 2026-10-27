@@ -12,6 +12,7 @@ from rocket_impact_stats import analyze
 def row(name,seconds,health=1.75,loaded=6,effects=()):
     return dict(command=dict(label=name),seconds=seconds,level_ticks=round(seconds*60),
                 scene=49,match_state=7,roster=257,paused=0,
+                window=dict(foreground=True,visible=True,minimized=False),
                 actors=dict(pool=123,pool_after=123,bot_slots=0,human_slots=1,actors=[dict(slot=0)]),
                 player=dict(health=health,look=[335,-75],equipped=[-1,16],position=[0,0,0],
                             ammo=[dict(weapon=16,type=19,loaded=loaded,reserve=6)]),
@@ -41,7 +42,7 @@ def test_complete_route_and_bounded_lifetime():
 @pytest.mark.parametrize('fault', ['missing','duplicate','wrong-scene','bots','pool-race','pause',
     'no-shot','two-shots','survived','no-respawn','no-walk','clock','effects-stuck',
     'incomplete-checkpoint','no-samples','fast-effect','recycled-effect','no-removal',
-    'unreadable-checkpoint','unreadable-players'])
+    'unreadable-checkpoint','unreadable-players','background','minimized','invisible','missing-window','background-sample'])
 def test_counterexamples_fail(fault):
     r=report()
     if fault=='missing':r.pop()
@@ -69,6 +70,11 @@ def test_counterexamples_fail(fault):
     elif fault=='unreadable-checkpoint':r[2]['player']=None
     elif fault=='unreadable-players':
         for s in r[2]['hold_samples']+r[2]['wait_samples']+r[3]['wait_samples']:s['player']=None
+    elif fault=='background':r[1]['window']['foreground']=False
+    elif fault=='minimized':r[1]['window']['minimized']=True
+    elif fault=='invisible':r[1]['window']['visible']=False
+    elif fault=='missing-window':del r[1]['window']
+    elif fault=='background-sample':r[3]['wait_samples'][20]['window']['foreground']=False
     with pytest.raises(AssertionError):analyze(r)
 
 
