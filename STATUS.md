@@ -1,3 +1,73 @@
+## Independent translation command line (Windows acceptance, 2026-10-27)
+
+Original `translation_cli.py` replaces the remaining recompiler CLI. All four
+production pipeline stages now invoke project tools directly. The compatibility
+module contains only bootstrap/alias code. Runtime data, title hook sources and
+the current shared C types remain explicit dependencies; no toolkit Python is
+loaded by the project CLI. Category/mode routing, manual symbol pinning/wrapping,
+HLE replacement/variables/retained bodies, trace/forced-return/SEH options and
+per-output indirect-call feedback are implemented in project code.
+
+Hook refresh defers newly available hooks whose ordinary bodies already exist,
+recognizes manually provided wrappers, and refuses missing dispatch definitions
+or missing type input before publication. Definition observations exclude
+comments, strings, literal-disabled branches and continued preprocessor lines.
+Output writes are individually atomic and preserve unchanged timestamps, not
+a multi-file transaction. Invalid analysis-summary JSON now fails explicitly;
+its legacy basename check is not full image identity. The normal analysis cache
+separately verifies content hashes. Conflicting modes and negative limits fail.
+
+**142 focused CLI/pipeline/batch/hooks/generation/CI-selection/legacy-force-return
+checks passed in 13.54s**, including **11 original CLI tests**. Real synthetic
+executables generate split C that is compiled and executed through dispatch,
+manual wrappers and hooks invoking retained original bodies. Other cases cover
+category/limit/header/single modes, address zero/bounds, failure preservation,
+refresh deferral/missing definitions, diagnostics and per-run option isolation.
+A subprocess copies only project modules and emits split output with the toolkit
+absent. The production compatibility entry is separately checked.
+
+The broader translator/pipeline/generation/private-join/timing run recorded
+**412 passes and one timeout in 389.16s**. The timeout was in the expected-failure
+walk-contact mutation, waiting for its child output within the existing 15-second
+limit. The unchanged test, including its positive and negative cases, then
+**passed in isolation in 8.91s**. No assertions or timeout were weakened; the
+initial timeout's cause is unproven and the initial run is not relabeled green.
+All **56 historical patch/context/backlog/snapshot checks passed in 667.22s**.
+All **17 CI checks passed on preceding commit `46eccfb3`**; CI for the new CLI
+revision is separate and will be recorded after publication.
+
+Supported-US generation completed with **15,838 translated, zero failed**, the
+same **50 unresolved stubs / 738 unimplemented sites**; lifting took **87.81s**.
+All **21 generated C/header files match the accepted function-stage baseline by
+SHA-256 and size**. A production hook-only refresh then reported **70 active,
+zero deferred** hooks and preserved all 21 files' hashes, sizes and modification
+times. The standard Release build/native tests passed with current fingerprints
+and matching crash symbols. Windows x64, Python 3.12.14, Capstone 5.0.9, MSVC 2022
+(14.44), process-local `CL_MPCount=2`; existing MSB8028 warnings remain. Build
+source was the implementation working tree based on `46eccfb3`.
+
+An initial gameplay attempt correctly refused while another checkout's game
+was running. Its PID was subsequently observed absent; it was not interrupted.
+The retry used isolated `independent-cli` Original60 Scotland the Brave and
+passed inside its 150-second bound: **11.175 units forward / 6.288 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **94.975s**, exit **0**. Start/pause/resume captures were reviewed.
+All **19 protected files** retained SHA-256, size and modification time; no game,
+run lock, disposable partitions, BMPs or crash dump remained. Executable SHA-256:
+`25537070a3e1b44254d944d7e8e11b118c2668a836ebaffc574f0e6fd956d5e0`.
+
+Evidence: `logs/cli-focused.log`, `logs/cli-regressions.log`,
+`logs/cli-walk-recheck.log`, `logs/cli-historical.log`, `logs/cli-build.log`,
+`logs/independent-cli-comparison.json`, `logs/cli-refresh-check.json`,
+`logs/independent-cli-game-check.json`, `logs/cli-game-protected-check.json`,
+`logs/cli-game-concurrency-refusal.log` and `private/test-saves/independent-cli`.
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, audio listening, foreground pacing, full campaign and native Mac
+title validation remain unverified (MAC-099). Runtime/header/title/build helpers,
+shipped fixtures and historical source/patch removal remain work. Next: the
+shared runtime types/register/memory interface, followed by execution services.
+The full-independence goal remains active.
+
 ## Independent complete function emission (Windows acceptance passed, 2026-10-27)
 
 Original `translation_function.py` replaces the remaining FunctionTranslator
@@ -11,7 +81,8 @@ Unknown flags remain unknown; three-pass flag propagation, eight-pass decoding
 resynchronization and textual stack-recovery heuristics retain existing bounds.
 
 All **17 CI checks passed on preceding commit `234e984b`**, including both native
-runtime hosts and patch transitions. This stage's new-revision CI is separate.
+runtime hosts and patch transitions. All **17 checks also passed on this
+function stage's published revision `46eccfb3`**.
 Local **389 translator/generation/private-join/timing regressions passed in
 336.94s**. Focused function/control checks: **18 passed in 9.81s**, including
 nine original function tests. Compiled tests execute entry-hook/forced-return

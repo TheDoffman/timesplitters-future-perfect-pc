@@ -217,8 +217,8 @@ the current runtime frame holds at most 24 arguments. Return cleanup is consensu
 over decoded near returns in a supplied span, not a proof of code/data separation
 or tail-call ABI. Own thunk emission uses the existing guest ABI macros; native
 fixtures compile and execute the generated glue with those production macros.
-Both sources enter generation hashes and shared CI. Runtime services/macros,
-core lowering and translator orchestration still require replacement.
+Both sources enter generation hashes and shared CI. Later stages own lowering
+and translator orchestration; runtime services/macros remain replacement work.
 `zzzz-translation-consumer-fixtures.patch` updates isolated C scaffolding for
 current fast-entry/result/dispatch ABI, retains executable SAR assertions, and
 limits the onexit header-collision negative control to Windows. It changes only
@@ -522,3 +522,34 @@ negative controls and inherited consumers remain selected. Compare production
 function bodies after accounting only for reviewed comment, redundant final
 null-statement and accessor-definition changes; do not equate those with an
 unconditional byte-identical result. See STATUS.md and MAC-098 for acceptance.
+
+## Original translation command line
+
+`translation_cli.py` owns option parsing, input resolution, category selection,
+single/header/batch modes, manual pin/wrapper planning, HLE integration and hook
+refresh. `compile_pipeline.py` invokes it directly with an explicit runtime data
+root. The compatibility `tools.recomp` entry only bootstraps and aliases the own
+module; no implementation remains there. Runtime headers, title data and hook
+sources are still dependencies. The historical snapshot and patch text remain
+until final provenance/removal work; standalone tooling is not whole-game independence.
+
+The default category set includes every observed game category plus unknown,
+CRT and data initializers. Trace/force-return/SEH options and indirect-call
+feedback retain per-run routing. Split output keeps manual names, wrapper entry
+versus generated-body names, hook variables and actually emitted original bodies.
+Hook cleanup reads a complete mapped function span. Refresh defers hooks whose
+ordinary bodies already exist, recognizes manually provided wrappers, and refuses
+missing dispatch definitions or a missing types header before writing either
+output. It masks comments/strings, literal-disabled blocks and continued
+preprocessor directives when reading generated definitions. Each output uses
+atomic content-aware publication; the pair is not a filesystem transaction.
+
+The legacy analysis-summary check compares basenames, not executable content;
+the normal analysis cache separately checks content hashes. Invalid supplied
+summary JSON now fails instead of silently bypassing that check. Conflicting
+selection/output modes and negative limits are rejected; explicit mode flags
+are otherwise retained. `--types-header` and `--hle-impl` support independently
+supplied inputs. Original synthetic and compiled fixtures cover selection,
+manual/hook dispatch, kept bodies, safe refresh, per-output feedback and a full
+split-generation subprocess with only copied project modules. See STATUS.md
+and MAC-099 for measured production acceptance and host limits.

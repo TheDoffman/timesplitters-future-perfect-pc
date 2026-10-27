@@ -233,6 +233,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-096 | Independent batch translation and dispatch output | Awaiting validation |
 | MAC-097 | Independent translator context and entry discovery | Awaiting validation |
 | MAC-098 | Independent complete function emission | Awaiting validation |
+| MAC-099 | Independent translation command line | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6461,3 +6462,20 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   remain unchanged. All 56 historical patch/context/backlog/snapshot checks passed.
   Native Mac title generation/build/gameplay require its host and private US data.
   See STATUS.md for measured results and explicit validation limits.
+
+### MAC-099 - Independent translation command line
+
+- **Status:** Awaiting validation
+- PC behavior/source: uncommitted PR #375 follow-up in `translation_cli.py`,
+  `compile_pipeline.py`, original CLI tests and the additive CLI bridge patch.
+  All four generation stages now invoke project tools directly; the runtime
+  remains an explicit data/header/hook input, never a lifting Python provider.
+- Mac support: shared Python selection, generation and emitted C. Both CI hosts
+  select synthetic/compiled contracts. No separate host algorithm is required.
+- Remaining validation: Windows generation, hook refresh, Release/native checks
+  and isolated gameplay passed; all 21 generated files are unchanged. Focused
+  checks passed 142 tests; the broader run had 412 passes and one timeout whose
+  unchanged isolated recheck passed. All 56 historical patch/context/backlog/
+  snapshot checks passed. Native Mac title generation/build/gameplay require
+  its host and private US data.
+  See STATUS.md for measured results and limitations.

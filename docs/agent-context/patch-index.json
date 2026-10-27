@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9edff9a6b11b7ba7fc4d1f582512b5e11604219ef0821ff674e7ca17283b97a9",
+  "loaderSha256": "b64c2c356b46f1669b0113b3f66bfbb297d12acad8231b38df64de6547d5a674",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1836,6 +1836,13 @@
       "targets": [
         "tools/recomp/test_switch_after_switch.py",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-cli.patch",
+      "sha256": "f4f5555773ab0a41554b80d8220fe9beda9e98870204cd8166848a2bec0526b6",
+      "targets": [
+        "tools/recomp/__main__.py"
       ]
     }
   ]

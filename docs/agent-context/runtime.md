@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Function emission, discovery, batch output, lifter context, flags and validation are in [own tooling](independent.md).
+CLI, function emission, discovery, batch output, lifter context, flags and validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

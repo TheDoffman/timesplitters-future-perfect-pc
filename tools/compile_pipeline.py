@@ -1,7 +1,7 @@
 """Project driver for parsing, disassembly, identification and C generation.
 
-The first three stages are standalone project tools. Lifting currently runs
-from the selected runtime tree while its replacement proceeds.
+All four stages use project tools. The selected runtime tree supplies the
+remaining data, title integration and shared C types; it supplies no lifting Python.
 """
 import argparse
 from pathlib import Path
@@ -45,7 +45,8 @@ def build_commands(args, xbe, analysis_json):
         'parse': [sys.executable, str(own / 'xbe_image.py'), str(xbe), '--json', str(analysis_json)],
         'disasm': [sys.executable, str(own / 'analysis_runner.py'), str(xbe)],
         'identify': [sys.executable, str(own / 'function_catalog.py'), str(xbe)],
-        'lift': [sys.executable, '-m', 'tools.recomp', str(xbe), '--all' if args.all else '--game-only'],
+        'lift': [sys.executable, str(own / 'translation_cli.py'), str(xbe), '--runtime', str(REPO),
+                 '--all' if args.all else '--game-only'],
     }
     parse, disasm, identify, lift = (commands[name] for name in STAGES)
     if getattr(args, 'json', None) or analysis_json.exists() or 'parse' in selected:
@@ -100,7 +101,7 @@ def run(name, argv, dry_run=False):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('xbe')
-    parser.add_argument('--runtime', help='Tree providing the remaining lifting stage')
+    parser.add_argument('--runtime', help='Runtime data, title integration and C types root')
     parser.add_argument('--seeds', action='append')
     parser.add_argument('--no-seeds', action='store_true')
     for flag in ('trace-all-entries', 'text-only', 'all', 'dry-run'):

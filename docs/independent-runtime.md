@@ -21,7 +21,7 @@ exchange/compare-exchange lowering, comparison snapshots and implicit sign
 extension, string-instruction lowering, condition expressions, SSE/MMX/x87
 emission, control transfers, instruction/block lifting and lifter context,
 helper recognition, naming, batch/output orchestration, translator entry discovery
-and complete C function assembly.
+and complete C function assembly and command-line orchestration.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -88,6 +88,7 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Batch translation and dispatch output | Project-owned database loading, declarations, split publication, stubs and dispatch | Compiled search/allocation/override tests and production output comparison; native Mac pending MAC-096 |
 | Translator context and entry discovery | Project-owned context, callback tables, split CFG ownership and switch-arm recovery | Bounded graph fixtures, compiled recovered function and generation comparison; native Mac pending MAC-097 |
 | x86-to-C function orchestration | Project-owned function assembly, typed joins, stack captures and x87 accessors | Compiled hooks/stack/FP tests, private negative controls and production output comparison; native Mac pending MAC-098 |
+| Translation command line | Project-owned selection, manual/HLE planning, generation and hook refresh; pipeline invokes it directly | Toolkit-free subprocess, compiled emitted output and failure-preservation tests; native Mac pending MAC-099 |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -144,9 +145,9 @@ project-owned code. The adapter was authored against its CLI emitter protocol
 in `src/cli/main.c`, not by retaining the old wrapper implementation.
 
 `compile_pipeline.py` owns stage selection, per-title seed lookup, output paths,
-manual-source exclusion, diagnostics and subprocess execution. Parsing and
-analysis call project scripts directly; classification/lifting still require the
-selected runtime tree. A custom `--json` path is passed to disassembly rather
+manual-source exclusion, diagnostics and subprocess execution. Parsing, analysis,
+classification and lifting all call project scripts directly. The selected runtime
+tree still supplies title data, hook sources and the shared C types header. A custom `--json` path is passed to disassembly rather
 than relying on a sibling file. Missing requested seed files and invalid images
 fail before execution; dry runs can describe a missing image without writing.
 The driver stops on a failed stage and reports where to resume.
@@ -898,3 +899,34 @@ existing runtime/header ABI, title integration, historical patches and inherited
 fixtures remain separate work. A standalone test copies only project modules
 and emits a function with the toolkit absent; whole-game independence still
 requires the remaining runtime and final provenance/removal gates.
+
+## Original translation command line
+
+`translation_cli.py` owns option parsing, input resolution, category selection,
+single/header/batch modes, manual pin/wrapper planning, HLE integration and hook
+refresh. `compile_pipeline.py` invokes it directly with an explicit runtime data
+root. The compatibility `tools.recomp` entry only bootstraps and aliases the own
+module; no implementation remains there. Runtime headers, title data and hook
+sources are still dependencies. The historical snapshot and patch text remain
+until final provenance/removal work; standalone tooling is not whole-game independence.
+
+The default category set includes every observed game category plus unknown,
+CRT and data initializers. Trace/force-return/SEH options and indirect-call
+feedback retain per-run routing. Split output keeps manual names, wrapper entry
+versus generated-body names, hook variables and actually emitted original bodies.
+Hook cleanup reads a complete mapped function span. Refresh defers hooks whose
+ordinary bodies already exist, recognizes manually provided wrappers, and refuses
+missing dispatch definitions or a missing types header before writing either
+output. It masks comments/strings, literal-disabled blocks and continued
+preprocessor directives when reading generated definitions. Each output uses
+atomic content-aware publication; the pair is not a filesystem transaction.
+
+The legacy analysis-summary check compares basenames, not executable content;
+the normal analysis cache separately checks content hashes. Invalid supplied
+summary JSON now fails instead of silently bypassing that check. Conflicting
+selection/output modes and negative limits are rejected; explicit mode flags
+are otherwise retained. `--types-header` and `--hle-impl` support independently
+supplied inputs. Original synthetic and compiled fixtures cover selection,
+manual/hook dispatch, kept bodies, safe refresh, per-output feedback and a full
+split-generation subprocess with only copied project modules. See STATUS.md
+and MAC-099 for measured production acceptance and host limits.
