@@ -20,7 +20,7 @@ multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
 extension, string-instruction lowering, condition expressions, SSE/MMX/x87
 emission, control transfers, instruction/block lifting and lifter context,
-helper recognition and naming.
+helper recognition, naming and batch/output orchestration.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -84,7 +84,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | x87 emission | Project-owned stack/operation emitter; existing binary64 stack ABI remains | Rounding/bounds/native fixtures and Windows title acceptance; native Mac pending MAC-092 |
 | Control transfers and block lifting | Project-owned call/branch/table handling, dispatch and block condition propagation | Compiled/decoded/negative-control checks and Windows title acceptance; native Mac pending MAC-093/094 |
 | Lifter context, helpers and naming | Project-owned class/registry, bounded helper recognition and SDK-derived name data | Standalone/bounds/compiler checks and deterministic generation; native Mac pending MAC-095 |
-| x86-to-C function orchestration | Function scheduling, joins, declarations and batch emission still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
+| Batch translation and dispatch output | Project-owned database loading, declarations, split publication, stubs and dispatch | Compiled search/allocation/override tests and production output comparison; native Mac pending MAC-096 |
+| x86-to-C function orchestration | Function scheduling and joins still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -850,3 +851,17 @@ hashes, SDK version and output digest. Only factual identifiers are included.
 Helper detection remains bounded heuristic matching; it does not supply guest
 exception unwinding. Function translation/orchestration and runtime/title code
 remain separate replacement work. See STATUS.md and MAC-095 for acceptance.
+
+
+## Batch translation and output publication
+
+The original `tools/translation_batch.py` replaces the complete old batch class
+and certificate-title helper. It assembles metadata, selects categories/manual
+implementations, publishes declarations/chunks/stubs and generates original
+binary/optional-flat address dispatch. Its injected FunctionTranslator and
+runtime types remain inherited dependencies for the next stages. Tests compile
+the emitted C for wrapper/manual selection, stack cleanup, lookup misses/edges,
+allocation failure and an empty table. Publication is atomic per file and
+removes only obsolete outputs owned by the selected prefix. See the owning
+[guide](agent-context/independent.md), STATUS.md and MAC-096 for contracts and
+host evidence. Historical patches and shipped fixtures remain audit work.

@@ -1,0 +1,761 @@
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -27,6 +27,7 @@
+                      detect_setjmp_helpers, _func_ident, _operand_width)
+ from translation_bits import constant_noop as _constant_bit_noop
+ import translation_strings as _project_strings
++import translation_batch as _project_batch
+ 
+ 
+ def _merge_flag_states(states):
+@@ -329,25 +330,7 @@
+ 
+ 
+ 
+-def xbe_title(xbe_data, xbe_path):
+-    """Human-readable title for generated-file banners.
+-
+-    Read from the XBE certificate so the output names the game it came from.
+-    These banners used to be hardcoded to "Burnout 3: Takedown" -- the toolkit
+-    grew out of that title -- so every other game's generated C claimed to be
+-    Burnout 3. Falls back to the file's basename if the certificate cannot be
+-    read; a banner is cosmetic and must never fail a build.
+-    """
+-    try:
+-        base = struct.unpack_from("<I", xbe_data, 0x104)[0]
+-        cert_va = struct.unpack_from("<I", xbe_data, 0x118)[0]
+-        off = cert_va - base + 0x0C
+-        name = xbe_data[off:off + 80].decode("utf-16-le").partition(chr(0))[0].strip()
+-        if name:
+-            return name
+-    except Exception:
+-        pass
+-    return os.path.splitext(os.path.basename(xbe_path))[0]
++xbe_title = _project_batch.xbe_title
+ 
+ 
+ # Instructions that read or define EFLAGS, for checking what a recovered
+@@ -1638,720 +1621,6 @@
+         return regs
+ 
+ 
+-class BatchTranslator:
+-    """Translates multiple functions and writes C source files."""
+-
+-    def __init__(self, xbe_path, func_json_path, labels_json_path=None,
+-                 identified_json_path=None, abi_json_path=None,
+-                 output_dir=None, seh_prolog=None, seh_epilog=None,
+-                 trace_functions=None, trace_all_entries=False,
+-                 icall_sites_json_path=None,
+-                 force_returns=None):
+-        self.xbe_path = xbe_path
+-        # Per-site indirect-call targets. A saturated site reached more
+-        # targets than the runtime records, so it is never guarded.
+-        self.icall_sites = {}
+-        if icall_sites_json_path and os.path.exists(icall_sites_json_path):
+-            with open(icall_sites_json_path, "r") as f:
+-                for key, rec in json.load(f).items():
+-                    if rec.get("saturated"):
+-                        continue
+-                    self.icall_sites[int(key, 16)] = [
+-                        int(t, 16) for t in rec.get("targets", [])]
+-        self.output_dir = output_dir or os.path.join(
+-            os.path.dirname(__file__), "output")
+-
+-        # Load XBE
+-        with open(xbe_path, "rb") as f:
+-            self.xbe_data = f.read()
+-
+-        self.title = xbe_title(self.xbe_data, xbe_path)
+-
+-        # Load function database
+-        with open(func_json_path, "r") as f:
+-            func_list = json.load(f)
+-
+-        self.func_db = {}
+-        for func in func_list:
+-            addr = int(func["start"], 16)
+-            func["_addr"] = addr
+-            if "end" in func:
+-                func["end"] = int(func["end"], 16)
+-            self.func_db[addr] = func
+-
+-        # Load labels
+-        self.label_db = {}
+-        if labels_json_path and os.path.exists(labels_json_path):
+-            with open(labels_json_path, "r") as f:
+-                labels = json.load(f)
+-            for lbl in labels:
+-                addr = int(lbl["address"], 16)
+-                self.label_db[addr] = lbl["name"]
+-
+-        # Load classifications
+-        self.classification_db = {}
+-        if identified_json_path and os.path.exists(identified_json_path):
+-            with open(identified_json_path, "r") as f:
+-                identified = json.load(f)
+-            for entry in identified:
+-                addr = int(entry["start"], 16)
+-                self.classification_db[addr] = entry
+-
+-        # Load ABI data
+-        self.abi_db = {}
+-        if abi_json_path and os.path.exists(abi_json_path):
+-            with open(abi_json_path, "r") as f:
+-                abi_list = json.load(f)
+-            for entry in abi_list:
+-                addr = int(entry["address"], 16)
+-                self.abi_db[addr] = entry
+-
+-        # Detect the SEH helpers once here rather than per-Lifter, so the
+-        # result can be reported and overridden from the command line.
+-        if seh_prolog is None or seh_epilog is None:
+-            found_prolog, found_epilog = detect_seh_helpers(
+-                self.func_db, self.xbe_data, verbose=True)
+-            seh_prolog = seh_prolog if seh_prolog is not None else found_prolog
+-            seh_epilog = seh_epilog if seh_epilog is not None else found_epilog
+-        self.seh_prolog = seh_prolog
+-        self.seh_epilog = seh_epilog
+-
+-        setjmp_fn, longjmp_fn = detect_setjmp_helpers(
+-            self.func_db, self.xbe_data, verbose=True)
+-
+-        # Create translator
+-        self.translator = FunctionTranslator(
+-            self.xbe_data, self.func_db, self.label_db,
+-            self.classification_db, self.abi_db,
+-            seh_prolog=seh_prolog, seh_epilog=seh_epilog,
+-            setjmp_fn=setjmp_fn, longjmp_fn=longjmp_fn,
+-            trace_functions=trace_functions,
+-            trace_all_entries=trace_all_entries,
+-            icall_sites=self.icall_sites,
+-            force_returns=force_returns)
+-        self.translator.discover_static_indirect_targets()
+-        self.translator.discover_cfg_ownership()
+-        self.translator.discover_jump_table_entries()
+-
+-    def get_functions_by_category(self, categories=None, exclude_categories=None):
+-        """
+-        Get function addresses filtered by category.
+-        Returns list of (addr, func_info) tuples.
+-        """
+-        result = []
+-        for addr, func_info in sorted(self.func_db.items()):
+-            if addr in self.translator.owned_function_starts:
+-                continue
+-            cls_info = self.classification_db.get(addr, {})
+-            cat = cls_info.get("category", "unknown")
+-
+-            if categories and cat not in categories:
+-                continue
+-            if exclude_categories and cat in exclude_categories:
+-                continue
+-
+-            result.append((addr, func_info))
+-        return result
+-
+-    def _make_declaration(self, addr, name):
+-        """Generate a function declaration string.
+-        All translated functions are void(void) - args pass via stack,
+-        return values via g_eax."""
+-        return f"void {name}(void)"
+-
+-    def translate_single(self, addr):
+-        """Translate a single function by address. Returns C code string."""
+-        func_info = self.func_db.get(addr)
+-        if not func_info:
+-            return None
+-        return self.translator.translate_function(addr, func_info)
+-
+-    def translate_batch(self, func_list, output_file=None, max_funcs=None,
+-                        verbose=False):
+-        """
+-        Translate a batch of functions.
+-
+-        func_list: list of (addr, func_info) tuples
+-        output_file: path to write combined C output
+-        max_funcs: limit number of functions
+-        verbose: print progress
+-
+-        Returns dict with statistics.
+-        """
+-        os.makedirs(self.output_dir, exist_ok=True)
+-
+-        func_list = [item for item in func_list
+-                     if item[0] not in self.translator.owned_function_starts]
+-
+-        if max_funcs:
+-            func_list = func_list[:max_funcs]
+-
+-        stats = {
+-            "total": len(func_list),
+-            "translated": 0,
+-            "failed": 0,
+-            "total_lines": 0,
+-            "total_insns": 0,
+-        }
+-
+-        c_chunks = []
+-        c_chunks.append("/**")
+-        c_chunks.append(f" * {_config.banner_name(getattr(self, 'title', None))}"
+-                        f" - Mechanically Translated Game Code")
+-        c_chunks.append(f" * Generated by tools/recomp from original Xbox x86 code.")
+-        c_chunks.append(f" * Functions: {len(func_list)}")
+-        c_chunks.append(" */")
+-        c_chunks.append("")
+-        c_chunks.append('#define RECOMP_GENERATED_CODE')
+-        c_chunks.append('#define RECOMP_GPR_REFS_SUPPORTED 1')
+-        c_chunks.append('#include "recomp_types.h"')
+-        c_chunks.append('#include <math.h>')
+-        c_chunks.append("")
+-        c_chunks.append("/* Forward declarations */")
+-
+-        # Forward declarations
+-        for addr, func_info in func_list:
+-            name = _func_ident(addr, func_info.get("name", f"sub_{addr:08X}"))
+-            decl = self._make_declaration(addr, name)
+-            c_chunks.append(f"{decl};")
+-        c_chunks.append("")
+-        c_chunks.append("/* ═══════════════════════════════════════════════════ */")
+-        c_chunks.append("")
+-
+-        # Translate each function
+-        for i, (addr, func_info) in enumerate(func_list):
+-            name = _func_ident(addr, func_info.get("name", f"sub_{addr:08X}"))
+-            if verbose and (i % 100 == 0 or i == len(func_list) - 1):
+-                print(f"  [{i+1}/{len(func_list)}] Translating {name} at 0x{addr:08X}...")
+-
+-            code = self.translator.translate_function(addr, func_info)
+-            if code:
+-                c_chunks.append(code)
+-                stats["translated"] += 1
+-                stats["total_lines"] += code.count("\n")
+-
+-                # Count instructions
+-                num_insns = func_info.get("num_instructions", 0)
+-                stats["total_insns"] += num_insns
+-            else:
+-                c_chunks.append(f"/* FAILED to translate {name} at 0x{addr:08X} */")
+-                c_chunks.append(f"void {name}(void) {{ /* translation failed */ }}")
+-                c_chunks.append("")
+-                stats["failed"] += 1
+-
+-        # Write output
+-        if output_file is None:
+-            output_file = os.path.join(self.output_dir, "recompiled.c")
+-
+-        output_text = "\n".join(c_chunks)
+-        with open(output_file, "w", encoding="utf-8") as f:
+-            f.write(output_text)
+-
+-        stats["output_file"] = output_file
+-        stats["output_size"] = len(output_text)
+-
+-        return stats
+-
+-    def translate_by_category(self, categories, output_prefix=None,
+-                              max_per_file=500, verbose=False):
+-        """
+-        Translate functions grouped by category, one file per category.
+-        Returns dict with per-category stats.
+-        """
+-        os.makedirs(self.output_dir, exist_ok=True)
+-        all_stats = {}
+-
+-        for cat in categories:
+-            funcs = self.get_functions_by_category(categories={cat})
+-            if not funcs:
+-                continue
+-
+-            prefix = output_prefix or cat
+-            out_file = os.path.join(self.output_dir, f"{prefix}.c")
+-
+-            if verbose:
+-                print(f"\nCategory: {cat} ({len(funcs)} functions)")
+-
+-            stats = self.translate_batch(
+-                funcs, output_file=out_file,
+-                max_funcs=max_per_file, verbose=verbose)
+-            all_stats[cat] = stats
+-
+-        return all_stats
+-
+-    def translate_batch_split(self, func_list, output_dir, chunk_size=1000,
+-                              header_name="recomp_funcs.h",
+-                              prefix="recomp", verbose=False, manual=None,
+-                              keep_bodies=None):
+-        """
+-        Translate functions into multiple .c files + a shared header.
+-
+-        Generates:
+-          output_dir/recomp_funcs.h       - forward declarations for all functions
+-          output_dir/recomp_0000.c        - chunk 0
+-          output_dir/recomp_0001.c        - chunk 1
+-          ...
+-          output_dir/recomp_dispatch.c    - address -> function pointer table
+-
+-        manual: addresses the project implements by hand. Their bodies are not
+-        emitted, so the hand-written definition is the one that links, but they
+-        are still declared and still count as defined for stub purposes. This
+-        is how a game replaces a recompiled XDK routine (a D3D8 entry point,
+-        say) with one that drives the host runtime instead of the hardware.
+-
+-        keep_bodies: {address: name} for manual addresses whose original body
+-        is still wanted, under that name -- a replacement that runs the title's
+-        own code first (tools/recomp/hle.py, HLE_ORIGINAL). The body is
+-        compiled and declared, but kept out of the dispatch table, so the
+-        address still resolves to the replacement.
+-
+-        Returns dict with stats and list of generated files.
+-        """
+-        import sys
+-
+-        os.makedirs(output_dir, exist_ok=True)
+-
+-        func_list = [item for item in func_list
+-                     if item[0] not in self.translator.owned_function_starts]
+-        manual = set(manual or ())
+-        keep_bodies = dict(keep_bodies or {})
+-        kept_names = set(keep_bodies.values())
+-        # Hand the set to the lifter so a *direct* call to a replaced
+-        # function routes through recomp_lookup_manual too. Without this
+-        # the override only took effect through a function pointer, and
+-        # every direct caller silently reached the generated body.
+-        self.translator.lifter.manual_functions = manual
+-        manual_decls = {}
+-
+-        # Translate all functions first, collecting results
+-        translations = []
+-        stats = {
+-            "total": len(func_list),
+-            "translated": 0,
+-            "failed": 0,
+-            "total_lines": 0,
+-        }
+-
+-        for i, (addr, func_info) in enumerate(func_list):
+-            name = _func_ident(addr, func_info.get("name", f"sub_{addr:08X}"))
+-            if verbose and (i % 500 == 0 or i == len(func_list) - 1):
+-                print(f"  [{i+1}/{len(func_list)}] Translating {name}...",
+-                      file=sys.stderr)
+-
+-            if addr in manual:
+-                # Hand-written elsewhere: declare it, emit nothing -- unless a
+-                # replacement also runs the original, in which case the body
+-                # is lifted under its own name and the address stays manual.
+-                manual_decls[addr] = name
+-                keep = keep_bodies.get(addr)
+-                if not keep:
+-                    continue
+-                func_info = dict(func_info, name=keep)
+-                name = keep
+-
+-            code = self.translator.translate_function(addr, func_info)
+-            if code:
+-                translations.append((addr, name, code))
+-                stats["translated"] += 1
+-                stats["total_lines"] += code.count("\n")
+-            else:
+-                # Stub for failed translations
+-                stub = f"/* FAILED: {name} at 0x{addr:08X} */\n"
+-                stub += f"void {name}(void) {{ /* translation failed */ }}\n"
+-                translations.append((addr, name, stub))
+-                stats["failed"] += 1
+-
+-        # Any address called but never defined needs a stub, or the link fails.
+-        # These are almost all mid-function entry points the function detector
+-        # did not split out: a call lands a few bytes inside (or just past) a
+-        # function it already found. Emitting an empty stub keeps the build
+-        # linking; hitting one at runtime is a silent no-op, so they are
+-        # reported and written to their own file rather than hidden among the
+-        # translated chunks.
+-        defined = {name for _, name, _ in translations}
+-        defined |= set(manual_decls.values())   # hand-written, but defined
+-        # Wrappers recomp_manual.c defines around a generated sub_X_gen.
+-        defined |= {info["call_name"]
+-                    for info in (getattr(self.translator, "func_db", None) or {}).values()
+-                    if info.get("call_name")}
+-        unresolved = {
+-            addr: name
+-            for addr, name in self.translator.lifter.referenced_calls.items()
+-            if name not in defined
+-        }
+-        stats["unresolved_stubs"] = len(unresolved)
+-        stats["manual_functions"] = len(manual_decls)
+-        # Instructions the lifter has no translation for become a comment, and
+-        # a comment is a silent no-op. Surfacing the tally is the difference
+-        # between "bsf is unimplemented" being a line of build output and being
+-        # a week of heap debugging.
+-        stats["unimplemented"] = {
+-            m: list(addrs)
+-            for m, addrs in self.translator.lifter.unimplemented.items()
+-        }
+-
+-        # Generate header with all forward declarations
+-        header_path = os.path.join(output_dir, header_name)
+-        header_lines = [
+-            "/**",
+-            f" * {_config.banner_name(getattr(self, 'title', None))}"
+-            f" - Recompiled Function Declarations",
+-            f" * {stats['translated']} functions, auto-generated by tools/recomp",
+-            " */",
+-            "",
+-            "#ifndef RECOMP_FUNCS_H",
+-            "#define RECOMP_FUNCS_H",
+-            "",
+-            '#include "recomp_types.h"',
+-            "",
+-        ]
+-        for addr, name, _ in translations:
+-            decl = self._make_declaration(addr, name)
+-            header_lines.append(f"{decl};")
+-
+-        # Wrapped functions: the body above is sub_X_gen, and what the
+-        # generated code calls is the wrapper recomp_manual.c defines.
+-        wrapped_db = getattr(self.translator, "func_db", None) or {}
+-        wrappers = [(addr, info["call_name"])
+-                    for addr, info in sorted(wrapped_db.items())
+-                    if info.get("call_name")
+-                    and info.get("call_name") != info.get("name")]
+-        if wrappers:
+-            header_lines.append("")
+-            header_lines.append("/* Wrappers around generated bodies (defined by the project) */")
+-            for addr, call_name in wrappers:
+-                header_lines.append(f"void {call_name}(void);  /* 0x{addr:08X} */")
+-
+-        if manual_decls:
+-            header_lines.append("")
+-            header_lines.append("/* Hand-written overrides (defined by the project) */")
+-            for addr in sorted(manual_decls):
+-                header_lines.append(
+-                    f"void {manual_decls[addr]}(void);  /* 0x{addr:08X} */")
+-
+-        if unresolved:
+-            header_lines.append("")
+-            header_lines.append("/* Unresolved call targets (stubbed) */")
+-            for addr in sorted(unresolved):
+-                header_lines.append(f"void {unresolved[addr]}(void);")
+-
+-        header_lines.extend(["", "#endif /* RECOMP_FUNCS_H */", ""])
+-
+-        write_if_changed(header_path, "\n".join(header_lines))
+-
+-        # recomp_types.h goes with it.
+-        #
+-        # recomp_funcs.h includes it, and a quoted include searches the
+-        # including file's own directory first, so putting it here is all it
+-        # takes for the generated code to compile. It used to live only in
+-        # templates/runtime/, which every new project discovered the same way:
+-        # `error C1083: Cannot open include file: 'recomp_types.h'`, then a hunt
+-        # through the tree. It is the runtime's register model, not something a
+-        # project writes, so the pipeline should hand it over like everything
+-        # else it generates.
+-        #
+-        # Refreshed every run, not written once.
+-        #
+-        # This first said "never overwritten, so a project's edits survive".
+-        # That was wrong, and the cost is a link error with no obvious cause:
+-        # the lifter and this header are two halves of one contract, so a
+-        # lifter that starts emitting RECOMP_ATOMIC_CAS32 against a header
+-        # from three weeks ago gives
+-        #
+-        #     LNK2019: unresolved external symbol RECOMP_ATOMIC_CAS32
+-        #
+-        # pointing at generated code that is perfectly correct. The Xbox
+-        # Dashboard hit exactly that. It is not hypothetical elsewhere either:
+-        # Bloodwake's and Burnout 3's copies had already drifted from the
+-        # template by 641 and 983 lines.
+-        #
+-        # So it tracks the template, like the .c files do. A project that
+-        # genuinely needs its own can put one earlier on the include path --
+-        # gen/ is only found because recomp_funcs.h sits beside it.
+-        types_dst = os.path.join(output_dir, "recomp_types.h")
+-        types_src = os.path.join(os.path.dirname(__file__), "..", "..",
+-                                 "templates", "runtime", "recomp_types.h")
+-        try:
+-            with open(types_src, "r", encoding="utf-8") as src:
+-                want = src.read()
+-            have = None
+-            if os.path.exists(types_dst):
+-                with open(types_dst, "r", encoding="utf-8") as dst:
+-                    have = dst.read()
+-            if have != want:
+-                with open(types_dst, "w", encoding="utf-8") as dst:
+-                    dst.write(want)
+-                print("  %s recomp_types.h (runtime register model)"
+-                      % ("refreshed" if have is not None else "wrote"),
+-                      file=sys.stderr)
+-        except OSError as e:
+-            print(f"  WARNING: could not write recomp_types.h ({e}); copy "
+-                  f"it from templates/runtime/ by hand or the build will "
+-                  f"not find it", file=sys.stderr)
+-
+-        # Split translations into chunks and write .c files
+-        generated_files = [header_path]
+-        chunks = [translations[i:i+chunk_size]
+-                  for i in range(0, len(translations), chunk_size)]
+-
+-        # Remove chunk files a previous, larger run left behind. Projects glob
+-        # gen/*.c into their build, so a stale chunk keeps compiling: it still
+-        # defines the functions it held last time, and the build fails with a
+-        # wall of "redefinition; different basic types" pointing at generated
+-        # code that looks perfectly correct. Nothing else cleans them, and the
+-        # count only has to shrink once -- which it does the first time a
+-        # detector fix changes how many functions are found.
+-        for stale in sorted(glob.glob(os.path.join(output_dir,
+-                                                   f"{prefix}_[0-9][0-9][0-9][0-9].c"))):
+-            index = int(os.path.basename(stale)[len(prefix) + 1:-2])
+-            if index >= len(chunks):
+-                os.remove(stale)
+-                if verbose:
+-                    print(f"  removed stale chunk {os.path.basename(stale)}")
+-
+-        for ci, chunk in enumerate(chunks):
+-            c_path = os.path.join(output_dir, f"{prefix}_{ci:04d}.c")
+-            c_lines = [
+-                "/**",
+-                f" * {_config.banner_name(getattr(self, 'title', None))}"
+-                f" - Recompiled code chunk {ci}",
+-                f" * Functions: {len(chunk)} "
+-                f"(0x{chunk[0][0]:08X} - 0x{chunk[-1][0]:08X})",
+-                " */",
+-                "",
+-                "#define RECOMP_GENERATED_CODE",
+-                "#define RECOMP_GPR_REFS_SUPPORTED 1",
+-                f'#include "{header_name}"',
+-                '#include <math.h>',
+-                "",
+-            ]
+-            for addr, name, code in chunk:
+-                c_lines.append(code)
+-
+-            write_if_changed(c_path, "\n".join(c_lines))
+-            generated_files.append(c_path)
+-
+-            if verbose:
+-                print(f"  Wrote {c_path} ({len(chunk)} functions)",
+-                      file=sys.stderr)
+-
+-        # Emit the stub bodies for call targets with no definition.
+-        if unresolved:
+-            stub_path = os.path.join(output_dir, f"{prefix}_stubs_unresolved.c")
+-            stub_lines = [
+-                "/**",
+-                " * Unresolved call target stubs",
+-                f" * {len(unresolved)} addresses called by translated code but not",
+-                " * detected as functions - typically mid-function entry points.",
+-                " * Auto-generated by tools/recomp.",
+-                " */",
+-                "",
+-                "#define RECOMP_GENERATED_CODE",
+-                "#define RECOMP_GPR_REFS_SUPPORTED 1",
+-                f'#include "{header_name}"',
+-                "",
+-            ]
+-            stub_lines.append(
+-                "/* Each stub consumes the return address its caller pushed,")
+-            stub_lines.append(
+-                " * exactly as a real 'ret' would. An empty body leaves esp 4 bytes")
+-            stub_lines.append(
+-                " * low, and the caller then reads every subsequent stack slot off by")
+-            stub_lines.append(
+-                " * one - which surfaces far from here, as corrupted callee-saved")
+-            stub_lines.append(
+-                " * registers or a garbage local. Args are not popped: the callee's")
+-            stub_lines.append(
+-                " * stdcall byte count is read from the target's own bytes where")
+-            stub_lines.append(
+-                " * they end in a `ret N` -- guessing cdecl there silently walks")
+-            stub_lines.append(
+-                " * esp off by N on every call. */")
+-            stub_lines.append("")
+-            for addr in sorted(unresolved):
+-                popped = self.translator._stub_ret_bytes(addr)
+-                note = (f"ret {popped}" if popped else "not detected")
+-                # recomp_stub_missing runs first, while [esp] is still the
+-                # return address, so the report names the caller. For a tail
+-                # jump nothing was pushed, so it names the jumper's caller --
+-                # one frame further up.
+-                stub_lines.append(
+-                    f"void {unresolved[addr]}(void) {{ "
+-                    f"recomp_stub_missing(0x{addr:08X}u); "
+-                    f"g_esp += {4 + popped}; /* 0x{addr:08X}: {note} */ }}"
+-                )
+-            stub_lines.append("")
+-
+-            write_if_changed(stub_path, "\n".join(stub_lines))
+-            generated_files.append(stub_path)
+-
+-            if verbose:
+-                print(f"  Wrote {stub_path} ({len(unresolved)} stubs)",
+-                      file=sys.stderr)
+-
+-        # Generate dispatch table.
+-        #
+-        # Hand-written functions belong in it too. They are declare-only here,
+-        # so they never reached `translations` and got no entry -- which means
+-        # a *direct* call to one linked fine by symbol while an *indirect* call
+-        # to the same address found nothing in recomp_lookup and was dropped.
+-        # That is a silent hole, and it grows with every function a project
+-        # implements natively: on Half-Life 2 it covered memcpy, memmove,
+-        # _initterm and atexit. The header already declares them.
+-        # Sorted by address: recomp_lookup binary-searches this array, so an
+-        # appended entry would silently break every lookup past it.
+-        dispatch_entries = sorted(
+-            # A kept original is not the address's entry: the replacement is.
+-            [t for t in translations if t[1] not in kept_names]
+-            + [(addr, name, None)
+-                                  for addr, name in manual_decls.items()],
+-            key=lambda e: e[0])
+-        dispatch_path = os.path.join(output_dir, f"{prefix}_dispatch.c")
+-        self._write_dispatch_table(dispatch_entries, dispatch_path, header_name)
+-        generated_files.append(dispatch_path)
+-
+-        stats["files"] = generated_files
+-        stats["num_chunks"] = len(chunks)
+-        stats["chunk_size"] = chunk_size
+-        return stats
+-
+-    def _write_dispatch_table(self, translations, output_path, header_name):
+-        """
+-        Generate a dispatch table mapping Xbox VA -> function pointer.
+-
+-        Uses a sorted array + binary search for O(log n) lookup.
+-        """
+-        lines = [
+-            "/**",
+-            # getattr: the dispatch writer is exercised directly by tests
+-            # that build no full translator, and a banner is not worth an
+-            # AttributeError.
+-            f" * {_config.banner_name(getattr(self, 'title', None))}"
+-            f" - Recompiled Function Dispatch Table",
+-            f" * Maps {len(translations)} Xbox VAs to translated function pointers.",
+-            " * Auto-generated by tools/recomp",
+-            " */",
+-            "",
+-            "#define RECOMP_DISPATCH_H",
+-            f'#include "{header_name}"',
+-            '#include <stddef.h>',
+-            '#include <stdlib.h>',
+-            "",
+-            "/* Generic function pointer type */",
+-            "typedef void (*recomp_func_t)(void);",
+-            "",
+-            "typedef struct {",
+-            "    uint32_t xbox_va;",
+-            "    recomp_func_t func;",
+-            "} recomp_entry_t;",
+-            "",
+-            f"static const recomp_entry_t g_recomp_table[] = {{",
+-        ]
+-
+-        func_db = getattr(getattr(self, "translator", None), "func_db", None) or {}
+-        for addr, name, _ in translations:
+-            # A wrapped function dispatches to its wrapper, not to the
+-            # generated body it wraps (see call_name in __main__.py).
+-            name = func_db.get(addr, {}).get("call_name") or name
+-            lines.append(f"    {{ 0x{addr:08X}u, (recomp_func_t){name} }},")
+-
+-        addrs = [addr for addr, _, _ in translations]
+-        flat_base = min(addrs) if addrs else 0
+-        flat_span = (max(addrs) - flat_base + 1) if addrs else 0
+-
+-        lines.extend([
+-            "};",
+-            "",
+-            f"static const size_t g_recomp_table_size = "
+-            f"{len(translations)};",
+-            "",
+-            "/* ----------------------------------------------------------------",
+-            " * Flat, directly-indexed dispatch.",
+-            " *",
+-            " * Microsoft's recompiler resolves an indirect branch with a single",
+-            " * `jmp qword ptr [r9 + r8*8]` -- one indexed load off a table keyed",
+-            " * by guest address, no compare and no miss path. This is that, in C.",
+-            " *",
+-            " * The binary search below is still here and still correct. It runs",
+-            " * ~log2(n) iterations per indirect call, which for this title is",
+-            f" * about {max(1, len(translations).bit_length())} branches every time the game calls through a",
+-            " * vtable. The flat table turns that into a bounds check and a load.",
+-            " *",
+-            " * Costs 8 bytes per byte of guest code span. Allocated with calloc so",
+-            " * the untouched middle stays uncommitted rather than resident.",
+-            " *",
+-            " * recomp_dispatch_init() is optional by design: if it is never called,",
+-            " * or the allocation fails, recomp_lookup silently keeps using the",
+-            " * binary search. Nothing else in the program has to know. That is also",
+-            " * why this does not pre-fill manual overrides -- they cannot be",
+-            " * enumerated portably, so RECOMP_ICALL still consults",
+-            " * recomp_lookup_manual first and this only replaces the search it used",
+-            " * to fall through to. Behaviour is identical by construction.",
+-            " * ---------------------------------------------------------------- */",
+-            "",
+-            f"static const uint32_t g_flat_base = 0x{flat_base:08X}u;",
+-            f"static const uint32_t g_flat_span = 0x{flat_span:08X}u;",
+-            "static recomp_func_t *g_flat_table = NULL;",
+-            "",
+-            "int recomp_dispatch_init(void)",
+-            "{",
+-            "    size_t i;",
+-            "    if (g_flat_table) return 1;          /* already built */",
+-            "    if (!g_flat_span) return 0;",
+-            "    g_flat_table = (recomp_func_t *)calloc(g_flat_span,",
+-            "                                           sizeof(recomp_func_t));",
+-            "    if (!g_flat_table) return 0;         /* keep the binary search */",
+-            "    for (i = 0; i < g_recomp_table_size; i++) {",
+-            "        g_flat_table[g_recomp_table[i].xbox_va - g_flat_base] =",
+-            "            g_recomp_table[i].func;",
+-            "    }",
+-            "    return 1;",
+-            "}",
+-            "",
+-            "size_t recomp_dispatch_flat_bytes(void)",
+-            "{",
+-            "    return g_flat_table ? (size_t)g_flat_span * sizeof(recomp_func_t) : 0;",
+-            "}",
+-            "",
+-            "/* Flat index when built, binary search otherwise. */",
+-            "recomp_func_t recomp_lookup(uint32_t xbox_va)",
+-            "{",
+-            "    size_t lo, hi;",
+-            "    if (g_flat_table) {",
+-            "        uint32_t off = xbox_va - g_flat_base;",
+-            "        /* Unsigned: a VA below the base wraps to a huge offset and is",
+-            "         * rejected by the same compare, so no separate lower bound. */",
+-            "        return (off < g_flat_span) ? g_flat_table[off] : NULL;",
+-            "    }",
+-            "    lo = 0; hi = g_recomp_table_size;",
+-            "    while (lo < hi) {",
+-            "        size_t mid = lo + (hi - lo) / 2;",
+-            "        if (g_recomp_table[mid].xbox_va < xbox_va)",
+-            "            lo = mid + 1;",
+-            "        else if (g_recomp_table[mid].xbox_va > xbox_va)",
+-            "            hi = mid;",
+-            "        else",
+-            "            return g_recomp_table[mid].func;",
+-            "    }",
+-            "    return NULL;",
+-            "}",
+-            "",
+-            "/* Get the number of registered functions */",
+-            "size_t recomp_get_count(void)",
+-            "{",
+-            "    return g_recomp_table_size;",
+-            "}",
+-            "",
+-            "/* Call all registered functions (for bulk testing) */",
+-            "size_t recomp_call_all(void)",
+-            "{",
+-            "    size_t i;",
+-            "    for (i = 0; i < g_recomp_table_size; i++) {",
+-            "        g_recomp_table[i].func();",
+-            "    }",
+-            "    return g_recomp_table_size;",
+-            "}",
+-            "",
+-        ])
+-
+-        write_if_changed(output_path, "\n".join(lines))
++class BatchTranslator(_project_batch.BatchTranslator):
++    function_translator_type = FunctionTranslator
++    runtime_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))

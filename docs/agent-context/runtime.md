@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Lifter context/naming/helpers, dispatch, captured flags and native validation are in [own tooling](independent.md).
+Batch output, lifter context/naming/helpers, dispatch, flags and validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Lifter tests](independent.md).
+[Batch tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

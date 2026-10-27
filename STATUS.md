@@ -1,3 +1,63 @@
+## Independent batch translation and dispatch (Windows acceptance passed, 2026-10-27)
+
+The complete old BatchTranslator and certificate-title helper are replaced by
+original `tools/translation_batch.py`; the installed class is a thin adapter
+injecting the remaining FunctionTranslator and runtime header location. The
+module owns database/category/manual selection, declarations/chunks/unresolved
+stubs and generated address dispatch. Binary lookup survives optional flat-table
+allocation failure, and empty/full-range tables have explicit compiled coverage.
+Category exports no longer overwrite each other when given an output prefix.
+Per-file atomic publication retains timestamps for unchanged contents and
+removes only stale chunks/stubs owned by the selected prefix. This is not a
+transaction across all outputs. Historical patches and notices remain required.
+
+**All 17 CI checks passed for preceding commit `d85a00fc`.** New-stage CI is
+pending this commit. Local **363 translator/generation/private-join/timing
+regressions passed in 347.36s**, including **11 original batch tests**. The
+focused batch/dispatch/manual suite passed **23 checks in 6.01s**; a separate
+CI-selection/inherited dispatch/manual run passed **86 checks in 0.41s**.
+The historical/context/backlog/snapshot run passed 55 checks and found a missing
+MAC-096 summary-table row (656.98s). After correcting the documentation, all
+21 final context/backlog checks passed (2.97s); patch and snapshot tests had
+already passed and their source was unchanged.
+The original tests compile the emitted outputs through MSVC, including wrapper
+and manual selection, kept bodies, unresolved stack cleanup, search misses,
+allocation failure and extreme/empty address sets, as well as standalone imports,
+metadata filtering, unchanged-file preservation and stale-file cleanup.
+
+Supported-US generation finished in **82.25s**: **15,838 translated, zero
+failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **15,838 guest function bodies** and **15,863 dispatch address/name bindings**
+match the accepted context baseline. Of 21 C/header files, two match byte-for-byte
+and 18 differ only in comments/whitespace; the remaining file is the original
+replacement dispatch implementation. Its compiled behavior and production game
+run are checked separately. No generated game source was hand-edited.
+
+The standard Release build and native checks passed, with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `d85a00fc`.
+Executable SHA-256:
+`4fb52182bf16d5a3dc78c94be56eaa8efb128f422d78f010e5f481ace9b28058`.
+
+The isolated `independent-batch` Original60 Scotland the Brave run passed within
+its 150-second bound: **11.175 units forward / 6.288 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**92.700s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no running game, run lock,
+disposable partitions, BMPs or crash dump remained.
+
+Evidence: `logs/batch-focused.log`, `logs/batch-regressions.log`,
+`logs/batch-consumers.log`, `logs/batch-historical.log`, `logs/batch-build.log`,
+`logs/independent-batch-comparison.json`, `logs/independent-batch-game-check.json`,
+`logs/batch-game-protected-check.json` and `private/test-saves/independent-batch`.
+Game input was injected, rendering minimized/background and startup movies
+skipped. Physical input, audio listening, foreground pacing, full campaign and
+native Mac title behavior remain unverified (MAC-096). Function translation,
+joins, headers/runtime/title implementations and shipped fixtures still require
+replacement. The full-independence goal remains active.
+
 ## Independent lifter context, helpers and naming (Windows acceptance passed, 2026-10-27)
 
 The effective old lifter module is now a six-line compatibility import with no

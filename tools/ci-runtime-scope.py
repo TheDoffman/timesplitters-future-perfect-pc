@@ -46,6 +46,7 @@ CPU_TOOLS = {
     'tools/translation_context.py', 'tools/translation_helpers.py', 'tools/translation_names.py',
     'tools/translation_host_symbols.txt', 'tools/translation_host_symbols.json',
     'tools/generate_host_symbols.py', 'tests/test_translation_context.py',
+    'tools/translation_batch.py', 'tests/test_translation_batch.py',
     'tools/translation_compare.py', 'tests/test_translation_compare.py',
     'tools/translation_exchange.py', 'tests/test_translation_exchange.py',
     'tools/translation_bits.py', 'tests/test_translation_bits.py',

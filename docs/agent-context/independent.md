@@ -431,3 +431,32 @@ with a failing unmangled-name control. Fingerprints include all new runtime
 modules and inventory files; both CI hosts select the tests. Function-level
 translation, runtime storage and remaining shipped fixtures still need original
 replacements. Acceptance and host limitations are in STATUS.md and MAC-095.
+
+
+## Original batch translation and output publication
+
+`translation_batch.py` owns database loading, helper overrides, category/manual
+selection, generated declarations/chunks/unresolved stubs and address dispatch.
+The final `independent-translation-batch.patch` reduces the installed batch class
+to a subclass injecting the still-inherited FunctionTranslator and runtime root.
+The runtime types header is still an explicit inherited input. Standalone batch
+imports need only project modules and the standard library; this does not make
+the injected function translator or the entire toolchain independent yet.
+
+Split output validates names, positive chunk size and required runtime types
+before publication. Each file uses the original atomic content-aware writer;
+this is not a transaction across all outputs. Only stale numbered chunks under
+the selected prefix and obsolete unresolved stubs are removed. Wrapper dispatch,
+manual replacements, kept-original bodies and unresolved caller-before-stack-pop
+ordering remain explicit. Translation failures remain counted empty stubs; a
+supported-title acceptance must have zero such failures. Category outputs now
+include the category even with an explicit prefix, avoiding overwrite collisions.
+
+Original generated dispatch uses sorted binary lookup with an optional flat
+allocation. Allocation failure preserves binary lookup; a 64-bit span represents
+the full guest address range. Empty dispatch is valid ISO C. Initialization is
+startup-only, not a new concurrency guarantee. `test_translation_batch.py`
+compiles emitted outputs and checks selection, stub stack behavior, both search
+paths, allocation failure, empty/extreme addresses, repeat publication, stale
+cleanup and standalone imports. Both CI hosts select these tests; generation
+fingerprints include the module. STATUS.md and MAC-096 record measured acceptance.
