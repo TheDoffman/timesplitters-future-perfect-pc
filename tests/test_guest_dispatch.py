@@ -61,7 +61,8 @@ void recomp_icall_not_code_log(uint32_t,uint32_t);
     abi = text[abi_start:text.index('\n#endif', abi_start)+len('\n#endif')]
     support = between(text, '/* TSFP indirect dispatch support begin.',
                       '/* TSFP indirect dispatch support end. */')
-    plain = text[text.index('#define RECOMP_ICALL(xbox_va)'):text.index('/**\n * RECOMP_ICALL_SAFE -')]
+    start = text.index('#define RECOMP_ICALL(xbox_va)')
+    plain = text[start:text.index('\n\n', start)]
     wrappers = between(text, '/* TSFP indirect dispatch wrappers begin.',
                        '/* TSFP indirect dispatch wrappers end. */')
     return '\n'.join((prelude, abi, support, plain, wrappers))

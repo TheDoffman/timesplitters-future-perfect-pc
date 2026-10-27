@@ -1,3 +1,42 @@
+## Independent call checks and HLE frames (2026-10-27)
+
+The dispatch stage was accepted before this replacement: all 17 CI checks on
+`00405685` passed, and a clean isolated Original60 replay passed movement,
+firing and pause/resume after confirming playable state. The next additive
+`0196-independent-call-frames.patch` replaces callee-state checks and HLE
+scratch argument frames. Diagnostic logger implementations and other runtime
+services remain dependencies; full runtime independence is not claimed.
+
+The original call-boundary oracle passed against the previous implementation
+with diagnostics enabled and disabled. The replacement candidate passed four
+production/isolated configurations plus five compiled negative controls, with
+448 call-state/expression cases and 24 HLE frame cases per positive fixture.
+The final affected suite passed 184 checks in 58.19 seconds. Snapshot, patch
+tracking, historical upgrades, context and backlog checks passed all 70 tests in
+723.30 seconds. No production patch changes followed those runs.
+
+Supported-US generation passed: 15,838 translated, zero failures, unchanged
+50 unresolved stubs and 738 unimplemented sites (81.42s lift). Of 21 generated
+C/header files, 20 remain byte-identical; only the intended header changed.
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with MSVC 14.44 and CL_MPCount=3. Executable SHA-256:
+`34ce06d1da45790270297dd5ef464d1502d3e3dda5ab7203ef1a49cc3f9308a4`,
+built from the implementation working tree based on `00405685`.
+
+The bounded isolated Original60 replay passed after checking scene 4/mission 1,
+unpaused state and cleared input suppression before gameplay input. Menus ran
+around 58 FPS. Movement measured 11.175 units forward and 6.391 backward;
+firing reduced ammunition from 8 to 6. All 40 pause samples froze game ticks,
+and all 60 resume samples were unpaused with advancing level ticks. The last
+checkpoint was 132.039 seconds; the runner completed successfully. Reviewed
+start/pause/resume captures show the weapon, pause UI and six remaining rounds.
+All 26 protected files retained hashes, sizes and modification times. No owned
+lock, disposable partitions or crash dumps remained. Evidence is in ignored
+`private/test-saves/independent-call-frames` and `logs/call-frames-*`.
+This minimized replay used injected inputs, skipped startup movies and Classic
+textures. Physical input, audio listening, full-campaign behavior and native
+Mac title gameplay remain unverified (MAC-102).
+
 ## Independent indirect guest-call dispatch (2026-10-27)
 
 PR #375 continues from `b19e8634`, whose 17 CI checks all passed. Its local
@@ -32,7 +71,7 @@ MSVC 14.44 with CL_MPCount=3. The executable SHA-256 is
 `971d8bf883228abcff10bb8a0e2ec65da25bd1982b4e7cd9a6d30539d213d0c7`,
 built from this implementation working tree based on `b19e8634`.
 
-**Gameplay acceptance remains pending.** Two bounded, isolated Original60
+**Initial gameplay attempts were inconclusive.** Two bounded, isolated Original60
 sessions booted with XAudio2 initialized and rendered menus; the first also
 rendered Scotland the Brave's opening sequence. Both runners exited cleanly,
 but the scenario assertions did not pass: the first attempted movement while
@@ -42,10 +81,21 @@ about 12-16 FPS versus about 56 FPS in the prior guest-ABI acceptance run.
 A separate game process was consuming substantial CPU; contention is
 a possible cause, not a proven explanation or evidence of performance parity.
 The user requested leaving that game open and finishing other checks, so a
-clean replay is deferred. Confirm playable state before movement in that replay.
+clean replay was deferred until it closed.
 All 26 protected files retained hash, size and modification time; no owned game
 lock or disposable partitions remained. No personal saves/settings were used.
 Native Mac title gameplay and a full campaign remain unverified (MAC-101).
+
+The subsequent clean replay of the same executable passed before the next
+replacement began. Menus ran around 57-58 FPS. After visually checking the
+opening sequence, the runner skipped it and verified scene 4/mission 1,
+unpaused state, cleared input suppression and eight loaded rounds before
+moving. It measured 11.175 units forward and 5.970 backward, ammunition 8 to 6,
+40 frozen pause samples and 60 advancing resume samples; final checkpoint
+141.026 seconds, runner exit 0. Start/pause/resume captures were reviewed.
+All 26 protected files retained hash, size and modification time, and disposable
+partitions/lock were cleaned. Evidence is in ignored
+`private/test-saves/independent-dispatch-clean` and `logs/dispatch-clean-*`.
 
 The first historical run was stopped after the include-order defect made its
 patch obsolete; it is not counted as passing. The corrected historical run

@@ -560,8 +560,9 @@ and MAC-099 for measured production acceptance and host limits.
 layouts, scalar RAM lvalues, partial-register writes and PUSH32/POP32 primitives
 in the effective runtime header. The original implementation is in this additive
 patch; the snapshot and historical patch stack remain intact. Macro names and
-TLS cell symbols preserve the generated-code/callback ABI. GPR-reference policy,
-remaining operation helpers, dispatch and kernel-owned storage are separate work.
+TLS cell symbols preserve the generated-code/callback ABI. Dispatch and call
+frames are described below; GPR-reference policy, remaining operation helpers
+and kernel-owned storage are separate work.
 The x87 stack stays double-backed and MMX storage remains independent of x87.
 
 Supported hosts are little-endian. GCC/Clang scalar aliases explicitly permit
@@ -607,8 +608,9 @@ On success the callee's register/stack results survive. On failure diagnostics
 see the original frame before recovery. SAFE arguments remain unevaluated on
 success; invalid targets evaluate the saved stack for logging and again for
 recovery, preserving diagnostic side effects. Disabled feedback does not evaluate
-the site expression. Trace storage, feedback providers, ABI diagnostics, HLE
-argument-frame helpers and nonlocal-jump services remain separate dependencies.
+the site expression. Call checks and HLE frames are described below. Trace
+storage, feedback providers, diagnostic loggers and nonlocal-jump services
+remain separate dependencies.
 The runtime header as a whole is not yet independent.
 
 `test_guest_dispatch.py` compiles the production header and extracted dispatch
@@ -627,3 +629,29 @@ an independent compatible pointer type and lookup prototypes, so either include
 order works. A regression compiles the actual batch-generated table with the
 production header and executes a lookup; isolated macro fixtures alone did not
 cover this translation-unit boundary.
+
+## Call checks and HLE argument frames
+
+`0196-independent-call-frames.patch` replaces the callee-state check macros and
+LTCG argument-frame helpers after the dispatch patch. Diagnostic builds capture
+EBX/ESI/EDI/ESP before evaluating the callee expression. Ordinary calls retain
+the unsigned lower-bound stack check; known-pop calls retain exact cleanup.
+Target-address expressions are evaluated only for a diagnostic, cleanup keeps
+its short-circuit/double-evaluation behavior, and disabled checks evaluate
+neither expression. Logger side effects remain visible; logger implementations
+and register storage are separate dependencies.
+
+HLE frames capture the return address, original argument base and entry stack
+before cleanup/target expressions run. At most 24 supplied words are copied into
+a scratch guest frame; the return address is written first. Calls preserve HLE
+register results and restore entry ESP plus captured cleanup, including wrapping
+and nested calls. Uninitialized argument slots remain the caller's responsibility.
+The compatibility macros keep the public `a` array and original call order.
+
+`test_guest_call_frames.py` compiles production and extracted project blocks,
+with diagnostics on/off. Each fixture executes 448 call-state/expression cases
+and 24 HLE frame cases, including nested calls, large argument counts and wrapped
+cleanup. Five compile-first mutations must fail. The existing hook fixture
+extracts the full frame block, retaining its generated-thunk assertions; dispatch
+extraction no longer depends on the removed HLE comment. Both CI hosts run these
+checks. Native title acceptance and its limits remain in STATUS and MAC-102.

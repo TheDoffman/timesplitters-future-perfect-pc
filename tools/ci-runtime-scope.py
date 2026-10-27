@@ -34,7 +34,7 @@ RELEASE_INPUTS = {
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
-    'tests/test_guest_abi.py', 'tests/test_guest_dispatch.py',
+    'tests/test_guest_abi.py', 'tests/test_guest_dispatch.py', 'tests/test_guest_call_frames.py',
     'tools/translation_product.py', 'tests/test_translation_product.py',
     'tools/translation_bitops.py', 'tests/test_translation_bitops.py',
     'tools/translation_strings.py', 'tests/test_translation_strings.py',

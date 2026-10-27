@@ -134,7 +134,7 @@ def test_generated_thunks_execute_with_production_register_frame_macros(tmp_path
     if not path.is_file():
         pytest.skip('Pinned runtime macro consumer unavailable')
     runtime = path.read_text()
-    macros = runtime[runtime.index('#define RECOMP_HLE_STACK'):runtime.index('#define RECOMP_ICALL_SAFE')]
+    macros = runtime[runtime.index('/* TSFP HLE frames begin.'):runtime.index('/* TSFP HLE frames end. */')]
     header = '''#include <stdint.h>
 extern uint32_t g_esp,g_eax,g_ecx,memory[256];
 #define MEM32(address) memory[(address)/4]

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a90abe7abb6461531ae993a064600e59eb51bec00759b6b6e1be62ff4d986afe",
+  "loaderSha256": "9fe2839e4e2643b33208c3c61ec47fb70ea7671f2d85d72dbb9d83029e8d1759",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1859,6 +1859,13 @@
       "targets": [
         "templates/runtime/recomp_types.h",
         "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0196-independent-call-frames.patch",
+      "sha256": "872449891e6e27555b4e276e54e9bc4a205df4fff96fa442338fc2dbf3e615dd",
+      "targets": [
+        "templates/runtime/recomp_types.h"
       ]
     }
   ]

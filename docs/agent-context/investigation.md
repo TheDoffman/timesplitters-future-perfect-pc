@@ -1,6 +1,6 @@
 # Investigation memory and handoffs
 
-The final dispatch replacement follows guest ABI in effective patch order.
+Call-frame replacement follows dispatch and guest ABI in effective patch order.
 `test_repo_context.py` checks this dependency; see [own interfaces](independent.md).
 
 [Repository layout](../repository-layout.md) distinguishes tracked source,

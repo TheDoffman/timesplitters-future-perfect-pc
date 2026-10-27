@@ -241,6 +241,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-099 | Independent translation command line | Awaiting validation |
 | MAC-100 | Project guest register and memory primitives | Awaiting validation |
 | MAC-101 | Project indirect guest-call dispatch | Awaiting validation |
+| MAC-102 | Project call checks and HLE argument frames | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6530,10 +6531,26 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   diagnostics, trace admission, lazy expressions and stack recovery.
 - Mac support: shared C implementation; no new platform adapter. Both CI hosts
   select the same full-header/isolated ABI/feedback matrix and negative controls.
-- Remaining validation: 175 focused Windows checks, supported-US generation
-  and the corrected Release build/native checks passed. Windows gameplay
-  acceptance is pending: the bounded runs booted but their scripted navigation
-  and movement checks did not pass under substantial concurrent-game load.
-  The user requested leaving that other game open. See STATUS.md for failures,
-  repairs and remaining checks. Native Mac title build/gameplay require its
-  host and private US data. Passing asset-free CI is a separate claim.
+- Remaining validation: 175 focused Windows checks, supported-US generation,
+  corrected Release/native checks and all 17 CI checks on `00405685` passed.
+  After initial inconclusive runs under substantial concurrent-game load, the
+  clean Windows replay passed movement/fire/pause/resume with protected files
+  unchanged. See STATUS.md for evidence. Native Mac title build/gameplay require
+  its host and private US data. Passing asset-free CI is a separate claim.
+
+### MAC-102 - Project call checks and HLE argument frames
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up based on `00405685` in
+  `patches/0196-independent-call-frames.patch`, `tests/guest_call_frames.c`
+  and `tests/test_guest_call_frames.py`. Original call snapshots/checks and
+  HLE scratch-frame capture/invocation preserve lazy diagnostic arguments,
+  register results, nested frames and wrapping cleanup.
+- Mac support: shared C implementation; no new platform adapter. Both CI hosts
+  select the production/isolated diagnostic modes and negative controls.
+- Windows validation: 184 affected checks and 70 historical checks passed;
+  generation, Release/native checks and isolated movement/fire/pause/resume
+  replay passed. All 26 protected files were unchanged; see STATUS.md.
+- Remaining validation: native Mac title generation/build/gameplay require its
+  host and private US data. Physical input, audio listening and full-campaign
+  behavior are outside the bounded injected-input Windows replay.
