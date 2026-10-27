@@ -6145,7 +6145,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Status:** Awaiting validation
 - **PC behavior:** Width-correct bit tests/modifications, signed memory bit
   strings, captured carry consumers, scan zero flags and dword byte swapping.
-- **PC source:** Uncommitted on `feature/independent-bit-operations`;
+- **PC source:** `52a85efc` on `feature/independent-bit-operations`;
   `tools/translation_bitops.py`, additive patch and original native fixtures.
 - **PC validation:** See STATUS.md for current native, generation and game results.
 - **Existing Mac support:** Shared Python emission and portable C fixtures run
