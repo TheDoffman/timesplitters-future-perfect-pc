@@ -40,6 +40,9 @@ unsigned masks and preserve unaffected registers/flags; CWD, previously unhandle
 Original compiled fixtures cover all byte comparison pairs, exhaustive word
 extension, seeded wider inputs, memory hooks/read counts and decoded consumers.
 Windows x86 oracles also compare implicit-extension values and flag preservation.
+Original-guest fixtures built by `test_recomp_float_joins.compile_and_run` link
+the shared `guest_integer_fault.c` adapter on both hosts; MSVC outputs each
+source object into the fixture directory. This keeps DIV/IDIV callees resolvable.
 The full inherited translator suite remains enabled. General branch-condition
 lowering, complete EFLAGS/AF, fused-branch rereads and fault delivery remain
 separate work. Generation hashes and both-host CI include this module; see

@@ -86,11 +86,12 @@ def compile_and_run(tmp_path, source, expect_success=True):
     path.write_text(source, encoding='utf-8')
     executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
     includes = RUNTIME / 'templates/runtime'
+    fault_adapter = ROOT / 'src/guest_integer_fault.c'
     if Path(compiler).stem.lower() == 'cl':
-        command = [compiler, '/nologo', '/O2', '/I' + str(includes), str(path),
-                   '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'float_join.obj')]
+        command = [compiler, '/nologo', '/O2', '/I' + str(includes), str(path), str(fault_adapter),
+                   '/Fe:' + str(executable), '/Fo:' + str(tmp_path) + os.sep]
     else:
-        command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
+        command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), str(fault_adapter), '-lm', '-o', str(executable)]
     built = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=15)

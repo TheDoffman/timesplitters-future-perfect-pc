@@ -44,12 +44,29 @@ fused-branch rereads and guest fault delivery remain separate work.
   seconds**. This overlapped generation and the memory-limited rebuild.
 - Main reserved MAC-085 for impact sparks (#376); the unmerged exchange and
   comparison records are now MAC-086 and MAC-087 to preserve distinct IDs.
-- Implementation `f941d1d4` passed the checks above. Main `9f40dc21` is now
-  integrated; combined-source build/game validation is in progress.
+- Implementation `f941d1d4` passed the checks above. Main `9f40dc21` was
+  integrated in `4a034de0`; the combined normal Release build and native checks
+  passed with `CL_MPCount=2`. Executable SHA-256:
+  `ec947669ac8a1298f52de7e2d56f42c2291a1d6975f94b121ba56b292812cedf`.
+- Expanded private-guest integration initially found 13 fixture link failures:
+  generated DIV/IDIV callees require the shared integer-fault adapter. The
+  fixture compiler now links `src/guest_integer_fault.c` on both hosts and
+  writes separate MSVC objects. No production change was needed. The complete
+  rerun, including native timing and float-join fixtures, **passed all 152 tests
+  in 219.12 seconds**.
+- Combined-source isolated gameplay also passed: forward **11.216 units**,
+  backward **6.288 units**, ammo **8 to 6**, **40 frozen pause samples**, **60
+  advancing resume samples**, final checkpoint **88.756 seconds**, runner exit
+  0. Reviewed start/pause/resume captures; all **19 protected files unchanged**,
+  no remaining run lock, disposable partitions or crash dump. The same bounded
+  Original60, injected-input and skipped-movie limitations apply.
 
 Evidence: `logs/compare-focused.log`, `logs/compare-generation.log`,
 `logs/independent-compare-comparison.json`, `logs/compare-build-limited.log`,
-`logs/independent-compare-game-check.json`, `logs/compare-game.log`. Native Mac generation/build/gameplay
+`logs/independent-compare-game-check.json`, `logs/compare-game.log`,
+`logs/compare-main-integration-final.log`, `logs/compare-main-build.log`,
+`logs/independent-compare-main-game-check.json`, `logs/compare-main-game.log`.
+Native Mac generation/build/gameplay
 remain unverified (MAC-087). Standard libraries and remaining upstream runtime
 source/notices are retained; this stage does not establish full independence.
 
