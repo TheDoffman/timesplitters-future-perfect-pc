@@ -804,6 +804,8 @@ def test_preview_maintainer_notes_and_display_name_are_reviewable(publisher):
     publisher.preflight();publisher.output.mkdir(parents=True);publisher.write_notes()
     notes=publisher.notes.read_text()
     assert 'Story Co-op Preview' in notes and 'Test peers must use the same game build.' in notes
+    assert '**Update channel** to **Preview**' in notes
+    assert '**Story Co-op Preview** under **Testing track**' in notes
     publisher.notes_file.write_text('<!-- tsfp-release {} -->')
     with pytest.raises(ValueError,match='override channel metadata'):
         publisher.write_notes()

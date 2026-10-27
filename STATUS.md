@@ -1,3 +1,20 @@
+## Story preview packaging contention repair - 2026-10-27
+
+Preparing `v0.4.0-story-coop.1` passed the complete Python suite twice:1343 tests,
+44 skips and107 subtests. Packaging then exposed Windows error1175 in two
+independent single-attempt atomic writes: download metadata and game sessions.
+No release/tag/assets were published. An isolated28-check download rerun passed,
+but the second packaging failure confirmed the shared contention gap.
+`Core.AtomicReplace` now retries only safe Windows contention errors32/33/1175
+for up to one second with both original names present. Metadata, session and
+settings callers share it; atomic replacement, backups and session flushing
+remain intact. Other errors and non-Windows failures keep their original behavior.
+The Windows complete launcher build/tests pass, including real file-lock recovery,
+backup retention, deterministic1175 recovery/permanent failure, and1176 rejection.
+Evidence: `logs/story-coop-preview-1-atomic-launcher-checks.log`.
+Mac runtime acceptance remains unverified; see MAC-046. Preview notes also use
+the actual Preview / Testing track navigation. Publication remains pending.
+
 ## Story branch synchronized with main - 2026-10-26
 
 Merged main `23fe3b1` into Story parent `257f50f`, preserving the Story fixes,

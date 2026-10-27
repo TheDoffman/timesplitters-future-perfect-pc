@@ -296,7 +296,7 @@ namespace TimeSplitters.Launcher
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 using (var f = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None)) { f.Write(data, 0, data.Length); f.Flush(true); }
-                if (File.Exists(path)) File.Replace(temp, path, backup ? path + ".bak" : null);
+                if (File.Exists(path)) Core.AtomicReplace(temp, path, backup ? path + ".bak" : null);
                 else File.Move(temp, path);
             }
             finally { if (File.Exists(temp)) File.Delete(temp); }

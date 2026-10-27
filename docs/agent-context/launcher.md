@@ -315,3 +315,19 @@ Story branch preview preparation: `0.4.0-story-coop.1` uses channel ID
 `story-coop` and display name `Story Co-op Preview`. It follows the existing
 clean/pushed branch publisher, optional-texture policy and immutable preview tags.
 This version preparation is not publication or native Mac Online acceptance.
+
+
+Preview packaging follow-up: `Core.AtomicReplace` is shared by metadata,
+`GameSessions` records and `GameSettings` writes. The original atomic replacement
+runs on every host. Windows retries only IO errors32/33/1175, while both paths
+still exist, for at most20 waits of50ms. Other errors, missing paths and
+non-Windows failures propagate immediately. No destination delete/copy fallback
+is used; existing backup arguments and session WriteThrough flushing remain.
+Microsoft documents1175 as retaining both original names;1176/1177 can move or
+remove names and are deliberately not retried:
+[ReplaceFile](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-replacefilew).
+`launcher_updates.cs` covers real locked-file recovery with backup retention,
+synthetic1175 recovery, bounded permanent failure and immediate1176 rejection.
+Existing download/session/settings suites exercise the shared callers.
+Generated preview notes now direct users to Preview, then the named Testing
+track, matching the shared launcher UI. `test_publish_release.py` checks this.

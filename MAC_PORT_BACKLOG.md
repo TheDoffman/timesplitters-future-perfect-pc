@@ -276,6 +276,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-046 - Update transaction rename contention
 
+Preview publication follow-up (uncommitted, `online-story-coop`): shared
+`Core.AtomicReplace` now covers metadata, session and settings replacement.
+Only Windows errors32/33/1175 receive bounded retry; Mac retains its original
+first operation/error behavior. Existing backup and WriteThrough contracts stay
+intact. Windows real-lock/error-injection and complete launcher checks pass;
+native Mac execution remains unverified. No additional Mac adapter is needed
+for this Windows contention policy; existing entry acceptance remains separate.
+
+
 - **Status:** Queued
 - **PC behavior:** Retry Windows access/sharing/lock failures when promoting a
   completed game, repair or launcher transaction to rollback storage. Retries

@@ -980,3 +980,8 @@ body retirement, host-only successful-shot delivery/relay, invalid/duplicate sho
 32-slot Story hit encoding/death authority, and frontend payload lifetime. The
 original-US stage fixture executes both the rewards106 and ending-movie builders.
 Keep these separate from first-mission completion and visual trophy checks.
+
+Release atomic-write regressions run in the existing Windows launcher update
+fixture: real file-lock recovery preserves the previous backup; injected1175
+checks bounded retry and unchanged pending bytes;1176 must fail immediately.
+Download/session/settings checks cover all shared atomic-replacement callers.

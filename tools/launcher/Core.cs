@@ -89,8 +89,31 @@ namespace TimeSplitters.Launcher
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             string tmp = path + ".new";
             File.WriteAllText(tmp, text, new System.Text.UTF8Encoding(false));
-            if (File.Exists(path)) File.Replace(tmp, path, null);
+            if (File.Exists(path)) AtomicReplace(tmp, path);
             else File.Move(tmp, path);
+        }
+        internal static void AtomicReplace(string temporary, string path)
+        {
+            AtomicReplace(temporary,path,null);
+        }
+        internal static void AtomicReplace(string temporary, string path, string backup)
+        {
+            AtomicReplace(temporary, path, (source, target) => File.Replace(source, target, backup), Thread.Sleep);
+        }
+        internal static void AtomicReplace(string temporary, string path, Action<string,string> replace, Action<int> wait)
+        {
+            // Windows scanners can briefly deny delete sharing. Error1175 keeps
+            // both original names;1176/1177 can change them and must not retry.
+            for (int attempt=0; ; attempt++) {
+                try { replace(temporary,path); return; }
+                catch (IOException error) {
+                    int code=error.HResult & 0xffff;
+                    if(Environment.OSVersion.Platform!=PlatformID.Win32NT || attempt>=20 ||
+                       (code!=32 && code!=33 && code!=1175) ||
+                       !File.Exists(temporary) || !File.Exists(path)) throw;
+                    wait(50);
+                }
+            }
         }
         public static void RemoveOwned(string root, string relative)
         {
