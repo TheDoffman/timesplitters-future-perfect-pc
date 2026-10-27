@@ -334,3 +334,10 @@ remainder behavior preserve the existing model; they are not exact x87 claims.
 The timing FILD fixture checks captured address 0x4E7944, a single memory read,
 and conversion-hook-before-push ordering; its other behavioral cases remain.
 Generation/build/game acceptance is recorded separately in STATUS.md/MAC-092.
+
+The x87 classification fixture exports `classification_source()` and includes
+production `SET_LO16`. The original x87 suite compiles and executes that exact
+fixture through the host compiler adapter, including MSVC, so the inherited
+GCC/Clang-only skip cannot hide missing declarations on Windows. The additive
+`independent-x87-fixture.patch` changes test setup only; expected status patterns,
+TOP/sign coverage and stack preservation checks remain intact.

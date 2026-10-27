@@ -238,3 +238,20 @@ g_fp_top=7;fp_top()=values[i];fp_st1()=values[j];edx=0;status_branch();CHECK(edx
 puts("PASS decoded x87 stack/arithmetic, integer hooks, flags and status branch");return 0;}
 '''
     execute(tmp_path,code)
+
+
+def test_inherited_classification_fixture_with_host_compiler(tmp_path):
+    """Run the Mac regression fixture with MSVC too, without a GCC-only skip."""
+    import json
+    script = ('import json; from tools.recomp.test_x87_classification import '
+              'classification_source; print(json.dumps(classification_source()))')
+    run = subprocess.run([sys.executable, '-c', script],
+                         cwd=ROOT/'external/ts3FPrecomp',
+                         env=dict(os.environ, TSFP_PROJECT_ROOT=str(ROOT)),
+                         capture_output=True, text=True, timeout=30)
+    assert run.returncode == 0, run.stdout + run.stderr
+    source = tmp_path/'classification.c'
+    source.write_text(json.loads(run.stdout), encoding='utf-8')
+    executable = _compile(tmp_path, source, extra=() if os.name == 'nt' else ('-lm',))
+    result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr

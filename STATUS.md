@@ -1,3 +1,22 @@
+## x87 CI fixture repair (2026-10-27)
+
+Mac native CI on `3ad34bc7` failed because the inherited FXAM/FNSTSW
+classification fixture omitted `SET_LO16`, which the new status emitter uses.
+The additive fixture patch includes the production macro and exports its C
+source. The original x87 suite now compiles and executes that exact fixture
+with the selected host compiler, including MSVC; all expected status patterns,
+TOP/sign cases and preservation checks remain. No emitter/runtime code changed.
+
+All **47 focused checks passed in 44.76 seconds**, including fresh/repeated patch
+application, context, generation contracts, all seven original x87 checks and
+decoder consumers. The applied generator fingerprint remains current. The
+accepted x87 game executable and its recorded gameplay evidence below are
+unchanged; no new game build or Mac gameplay claim is made for this test repair.
+Evidence: `logs/x87-ci-fixture-checks.log`, `logs/x87-ci-fixture-apply.log`.
+Replacement control-flow preparation remains separate and is not integrated.
+New CI results are pending publication of this repair; MAC-092 remains awaiting
+native Mac title validation.
+
 ## Independent x87 emission (Windows acceptance passed, 2026-10-27)
 
 All **16 CI checks passed** on preceding MMX revision `3756e175` in PR #375.

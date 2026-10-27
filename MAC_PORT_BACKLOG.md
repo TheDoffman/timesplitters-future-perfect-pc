@@ -6344,3 +6344,9 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   title verification must use the supported private US data; CI unit/GPU checks
   alone do not prove gameplay. Preserve saves/settings and report rendering,
   input and audio limits. See STATUS.md for actual PC acceptance evidence.
+
+- CI fixture follow-up: `3ad34bc7` Mac CI exposed missing SET_LO16 in the
+  inherited classification fixture. The additive fixture repair includes the
+  production definition and runs the same C via MSVC too (47 focused checks
+  passed locally). This changes tests only; repaired CI is pending and native
+  Mac title acceptance remains unverified.

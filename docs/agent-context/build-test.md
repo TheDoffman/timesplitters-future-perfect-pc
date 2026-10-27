@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own SIMD/x87 tests](independent.md).
+[SIMD/x87 tests and CI fixture](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

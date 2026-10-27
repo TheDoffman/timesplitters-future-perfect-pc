@@ -147,6 +147,13 @@
       ]
     },
     {
+      "name": "independent-x87-fixture.patch",
+      "sha256": "2e1bcb8f23a4a35c7fbde74f08659fdb8675a10d7340c95c624e620e1e9e1a14",
+      "targets": [
+        "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
       "name": "independent-xbe-reader.patch",
       "sha256": "75ae00e64561c8a35d191fea917a1a9a301e025c6358f80896c4e1b13c8f18e2",
       "targets": [

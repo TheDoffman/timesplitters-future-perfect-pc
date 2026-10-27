@@ -760,3 +760,6 @@ Standalone translator consumers gate live-register header/declarations on the su
 Original x87 emission now joins SIMD in the additive translator stack; see
 [independent emitter contracts](independent.md#original-x87-emission). Storage
 and FP environment remain upstream; game acceptance is tracked separately.
+
+The additive `independent-x87-fixture.patch` exports the inherited classification
+C fixture and includes production SET_LO16; it does not alter generated code.
