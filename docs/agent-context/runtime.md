@@ -1,5 +1,10 @@
 # Runtime and patch navigation
 
+Vector helper retirement follows call frames in the loader, before layout
+routing. `XMM_SCALAR` remains the model-transform ABI with an original
+bit-preserving body; emitted SIMD operations need no legacy helper layer.
+See [vector support](independent.md#vector-runtime-support) for contracts/tests.
+
 Guest call frames, dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
 The final `platform/2090-repository-source-layout.patch` routes the runtime CMake

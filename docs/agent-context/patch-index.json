@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "55a0e7757fcbb13c7e682ad7be6280840e6a11f6f73a5b6e59eb36b6e200e890",
+  "loaderSha256": "32a0e32ca0e932c6bfda39ea5d62731ac4e206b4b54898b691a12a54cfbd71f1",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2090,6 +2090,14 @@
       "name": "0196-independent-call-frames.patch",
       "path": "patches/compiler/0196-independent-call-frames.patch",
       "sha256": "872449891e6e27555b4e276e54e9bc4a205df4fff96fa442338fc2dbf3e615dd",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0197-independent-vector-support.patch",
+      "path": "patches/compiler/0197-independent-vector-support.patch",
+      "sha256": "dfed17e127624c66441b8e5798f5cb1bec3dd26fa185ec61d9ec46da745791d0",
       "targets": [
         "templates/runtime/recomp_types.h"
       ]

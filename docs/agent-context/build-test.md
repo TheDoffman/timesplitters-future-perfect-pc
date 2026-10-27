@@ -9,7 +9,7 @@ Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](
 Standalone RHI and Mac crash/IPC fixtures supply grouped includes.
 Windows replay imports its grouped input helper; isolated `--help` checks routing.
 
-[Guest call frames, dispatch and ABI/CLI checks](independent.md).
+[Vector support, call frames, dispatch and ABI/CLI checks](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

@@ -1,5 +1,10 @@
 # Investigation memory and handoffs
 
+The final replacement order now includes vector support after call frames and
+before source layout. Historical-stack fixtures omit the new replacement from
+their old inputs; the current-order test checks the three-patch tail. Consumer
+audits must include `.inc` files: the model-transform constructor lives there.
+
 Call-frame replacement follows dispatch and guest ABI in effective patch order.
 `test_repo_context.py` checks this dependency; see [own interfaces](independent.md).
 

@@ -1,5 +1,18 @@
 # Independent tooling contracts
 
+## Vector runtime support
+
+`0197-independent-vector-support.patch` follows call frames and precedes the
+repository-layout patch. It removes the unused inherited MMX/SSE operation layer;
+the independent emitters already generate those operations directly. The only
+remaining consumer API, `XMM_SCALAR`, is project-owned: it copies a float's bits
+to lane zero and clears all upper lanes for the model-transform fast path.
+`test_vector_support.py` checks production, generated-code and isolated headers
+against raw bit patterns, including signed zeros, subnormals and NaN payloads;
+both mutation controls must compile and then fail. Existing SSE/MMX native
+oracles and model-transform comparisons remain enabled. Other header helpers,
+FP environment and runtime services remain separate replacement work (MAC-103).
+
 The bundled snapshot supplies the remaining pinned runtime while project-owned tooling replaces supported stages. Existing third-party credits and the remaining replacement work stay explicit.
 
 ## Generation and validation

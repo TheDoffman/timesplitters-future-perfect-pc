@@ -53,6 +53,11 @@ patches. Git rename history supplies the old-to-new path correspondence.
 
 ## Updating a patch
 
+`compiler/0197-independent-vector-support.patch` retires obsolete MMX/SSE
+operation helpers after call frames, retaining an original `XMM_SCALAR`
+constructor. The source-layout patch still runs last. Historical payloads are
+unchanged; use the effective index rather than numeric sorting alone.
+
 1. Keep runtime changes here; preserve `vendor/ts3FPrecomp/source` exactly.
 2. Update filename references in the loader, tests, fixtures and documentation.
 3. Stage intended patches, run `python tools/repo-context.py refresh`, then

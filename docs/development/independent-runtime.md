@@ -6,6 +6,12 @@ Capstone, the compiler and host graphics SDKs remain allowed. Copying upstream
 files into this repository does not meet that objective. The bundled snapshot from PR #369 supplies interim offline availability;
 it does not count as original replacement code.
 
+The vector-support stage (`0197-independent-vector-support.patch`) removes the
+obsolete inherited MMX/SSE helper bodies now superseded by the project emitters.
+The live model-transform constructor has an original bit-preserving body.
+This does not replace the remaining scalar/FP helpers, diagnostics, storage,
+kernel/device services or title integration. Acceptance is tracked in MAC-103.
+
 **The replacement is not complete.** The current game still executes using the
 pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction

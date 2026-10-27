@@ -1,3 +1,49 @@
+## Independent vector support (2026-10-27)
+
+Based on `46e68827` on `feature/independent-exchange`, including main `31599ff4`
+and PR382's responsibility-folder migration. All 17 CI checks on the prerequisite
+pushed head `20d4bd38` passed. The preceding repository refresh passed 204 tests
+plus two subtests and ten supported command-entry checks; it preserved all 26
+protected files and corrected five maintenance command paths.
+
+`0197-independent-vector-support.patch` removes the obsolete inherited SSE/MMX
+operation helpers. The project emitters already produce those operations
+directly. An audit including `.inc` files found the model-transform constructor
+as the only live helper consumer; its original replacement copies raw float bits
+to the low lane and clears the upper lanes. The effective header shrinks from
+1,511 to 1,169 lines. All previous patch payloads remain byte-identical.
+
+The new fixture exercises 131,084 raw representations per configuration,
+including signed zeros, subnormals, infinities and NaN payloads, with ordinary,
+generated-code and isolated headers. Both corrupted implementations compile
+before the oracle rejects them. All 32 focused tests passed (132.81s), including
+existing native SSE/MMX oracles, guest ABI and model-transform comparisons;
+all 695 compiler tests passed (243.66s).
+
+Supported-US regeneration translated 15,838 functions with zero failures.
+The existing 50 unresolved stubs and 738 unimplemented sites are unchanged.
+Only `recomp_types.h` changed among 21 generated C/header files. The Windows
+x64 Release build, bundled native checks and matching crash-symbol package
+passed with process-local `CL_MPCount=2`. The executable built from this
+working tree based on `46e68827` has SHA-256
+`3f9da6ca5160542de5c27017cd65a64ef4d08f948fd4a4faaa3b0da38e01c954`.
+
+The isolated Original60 Story replay confirmed playable state before inputs.
+Movement measured 11.215618 forward and 6.184893 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint was 129.682 seconds; runner exit 0. Start/pause/resume captures
+were reviewed. All 26 protected files retained hashes, sizes and modification
+times; no owned lock, disposable partitions or dumps remained. This used
+injected input, a minimized window, Classic textures and skipped startup movies;
+it does not establish physical-input behavior, audio listening or full-campaign
+acceptance. All 73 historical-upgrade, patch-tracking, context, backlog and
+snapshot checks passed (944.42s). Final context and whitespace checks passed.
+
+Evidence is under ignored `logs/vector-*`, `logs/independent-vector-game-check.json`
+and `private/test-saves/independent-vector`. Native Mac title acceptance is
+pending MAC-103; the remaining header/services/title/fixture replacement and
+final dependency-removal audit are not complete.
+
 ## Independence branch with current mouse hotfix (2026-10-27)
 
 Main advanced to `c41c92fc` while the reconciliation was being validated. The

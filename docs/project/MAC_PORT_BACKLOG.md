@@ -252,6 +252,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-100 | Project guest register and memory primitives | Awaiting validation |
 | MAC-101 | Project indirect guest-call dispatch | Awaiting validation |
 | MAC-102 | Project call checks and HLE argument frames | Awaiting validation |
+| MAC-103 | Project vector constructor and obsolete SIMD helper retirement | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6578,3 +6579,19 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - Remaining validation: native Mac title generation/build/gameplay require its
   host and private US data. Physical input, audio listening and full-campaign
   behavior are outside the bounded injected-input Windows replay.
+
+### MAC-103 - Project vector constructor and obsolete SIMD helper retirement
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up based on 46e68827, in
+  patches/compiler/0197-independent-vector-support.patch and
+  tests/compiler/test_vector_support.py / vector_support.c. Independent SSE/MMX
+  emitters replace the retired operation helpers; the model-transform scalar
+  constructor preserves raw bits and clears upper lanes.
+- Mac support: shared portable C, no platform adapter required. CI selects the
+  production/isolated headers, mutation controls and existing SIMD oracles.
+- Windows validation: 32 focused and 695 compiler checks passed; supported-US
+  generation, Release/native checks and isolated movement/fire/pause/resume
+  passed, as did all 73 historical/snapshot/context/backlog checks. All 26
+  protected files were unchanged. Native Mac title acceptance remains pending. See STATUS.md for
+  measurements and the injected-input/minimized-window acceptance limits.
