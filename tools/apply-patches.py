@@ -41,9 +41,9 @@ def patch_records(paths):
     # Apply them before native boot inserts platform guards at that location;
     # retain the established order of all other patches and unwind in reverse.
     by_name = {patch.name: patch for patch in paths}
-    native_boot = by_name.get('zz-mac-native-boot.patch')
+    native_boot = by_name.get('0400-mac-native-boot.patch')
     if native_boot:
-        for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+        for name in ('0470-pc-network.patch', '0640-pc-online.patch'):
             if name in by_name:
                 network = by_name[name]
                 paths.remove(network)
@@ -83,8 +83,8 @@ def patch_records(paths):
         paths.append(radial)
     # Own instruction bodies replace the final title-instrumented handlers.
     # Replay all historical instrumentation first so older stacks still unwind.
-    for name in ('independent-translation-moves.patch', 'independent-translation-integer.patch',
-                 'independent-translation-bits.patch', 'independent-translation-product.patch', 'independent-translation-bitops.patch'):
+    for name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch',
+                 '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
         replacement = by_name.get(name)
         if replacement:
             paths.remove(replacement)
@@ -97,8 +97,8 @@ def patch_records(paths):
         # The Windows watermark also borders native boot's overlay guard.
         # Match its adjacent context without requiring the older unguarded
         # comment/function boundary. Removed/added code must still match.
-        reduced_context = native_boot and (patch.name == 'zzzz-pc-debug-latency-watermark.patch'
-                                           or patch == native_boot and 'zz-pc-network.patch' in by_name)
+        reduced_context = native_boot and (patch.name == '0700-pc-debug-latency-watermark.patch'
+                                           or patch == native_boot and '0470-pc-network.patch' in by_name)
         content = patch.read_bytes()
         records.append(dict(name=patch.name, content=content.decode('utf-8'),
                             sha256=hashlib.sha256(content).hexdigest(),

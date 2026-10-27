@@ -22,7 +22,7 @@ Those machine-local records are not committed or required to use this guide.
   confirmation of the effective fixed-60 source and executable, and a warning
   that gate waits were unmeasured hypotheses. Advisories had only selected
   task/command context, without a standing repository architecture guide.
-- Later work became patch/build recovery: repeated `pc-debug.patch` unwind
+- Later work became patch/build recovery: repeated `0240-pc-debug.patch` unwind
   conflicts, ledger searches and patch-byte/line-ending edits. The run also
   changed crash-helper compiler/linker flags without establishing the original
   FPS cause. These are separate blockers, not evidence that #105 was fixed.
