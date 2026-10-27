@@ -25,6 +25,13 @@ as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
 focus changes only when gameplay capture was requested.
+Windows gameplay confinement now uses the tiny center rectangle from
+`pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
+still drive aim; absolute pointer drift cannot reach the border. Initial capture,
+move/resize and repair share the same foreground-only rectangle calculation.
+Menu/settings/Escape/focus release remain owned by `pc_controls.c`; repair never
+resets held input. This is a Win32 adapter fix (#381); SDL already uses relative
+mode. The launcher-only trigger has not been independently established.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 
@@ -65,15 +72,6 @@ pack and small public LFS pointers avoid duplicate hydrated copies. Detailed
 historical batch measurements, held reasons and storage audits remain in docs/project/STATUS.md
 and private hybrid-N validation records; coverage is summarized in docs/textures/textures.md.
 Scene testing remains deferred under the near-completion policy.
-
-Recent batches preserve separate baked-lighting variants and record
-original-scale joint, reflection and region-brightness samples alongside decoded
-repeat review. Measured offsets, uncertain extrema and altered contrast remain
-scene-validation concerns; these samples do not establish full contour parity.
-Detailed batch298-302 acceptances, held reasons, measurements and storage receipts
-remain in docs/project/STATUS.md and private validation records. The latest batch adds three
-1024-square RGBA8 masonry textures from1254-square sources. Runtime, optional
-delivery and host-adapter contracts are unchanged.
 
 Character effects: the shared US1260C0 gate in `pc_native_numeric.h` admits
 positive fractional game time for player/NPC effect updates. Its children already

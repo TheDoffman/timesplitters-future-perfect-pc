@@ -1,3 +1,25 @@
+## Independence branch with current mouse hotfix (2026-10-27)
+
+Main advanced to `c41c92fc` while the reconciliation was being validated. The
+feature branch incorporates that mouse-capture hotfix and v0.3.5 version data;
+conflicts were documentation-only. Replacement patches and all 21 generated
+C/header files are unchanged. The 24 affected Windows cursor/context/backlog
+checks passed (6.49s), followed by Release, bundled native checks and matching
+crash symbols. No patch/loader change invalidates the 73 historical checks below.
+
+The rebuilt executable SHA-256 is
+`de056ad227209e64e03ab4290b2e49de53972535c53b07d4cc87329fca8b0cc3`,
+from the working tree based on `a55ee122` plus main `c41c92fc`. The final isolated
+Original60 replay ran menus around 58 FPS and confirmed playable state before
+input. Movement measured 11.217 forward and 6.185 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint 112.330 seconds, runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files were unchanged and no owned lock, partitions
+or dumps remained. Evidence: ignored `logs/hotfix-*`,
+`logs/independent-hotfix-game-check.json`, `private/test-saves/independent-hotfix`.
+The earlier injected-input/minimized/Classic/startup-movie limits still apply;
+this is not physical mouse playtesting or native Mac title acceptance.
+
 ## Independence branch folder reconciliation (2026-10-27)
 
 After accepting the call-frame stage (`5856d781`), PR #375 conflicted with
@@ -40,6 +62,40 @@ Classic textures and skipped startup movies retain the limitations below.
 Native Mac title gameplay remains unverified (MAC-102); full independence and
 full-campaign behavior are not claimed. The PR has not been merged into main.
 
+
+## Centered Windows gameplay cursor (2026-10-27, issue #381)
+
+Initial validation on `381-bug-mouse-cursor-window-contraint`, based on
+`b6d4c597`. Windows capture previously confined the hidden absolute pointer to
+the full client area; relative aim could still walk it toward the border. The
+Win32 adapter now shares a tiny center rectangle across capture, move/resize
+and repair, while aiming continues to consume raw relative counts. Foreground
+guards prevent confinement from being acquired for an inactive game. Existing
+menu/settings/Escape/focus release rules and held input during repair remain.
+No launcher source, personal settings or saves change.
+
+Windows x64, MSBuild 17.12.6 and CMake 4.4: the supported `tsfp.ps1 -Action Build`
+validated the supported US XBE and complete patch stack, rebuilt the Release
+game, and passed its native checks. The extended prompts fixture ran with
+foreground focus for both keyboard and controller profiles: actual OS cursor
+confinement stays at the center after attempts to move to either extreme,
+hit-testing remains client input, and Fire is retained/released across an
+external clip reset. DPI virtualization can round the tiny physical rectangle
+onto adjacent logical coordinates; the test allows those center coordinates.
+An earlier standalone invocation explicitly skipped its foreground-only section.
+Deterministic Win32 API-double regression fails with the old full-client bounds
+and passes with the fix, covering repeated repair, negative monitor origins,
+move/resize, foreground and API-failure guards. The debug-game checker now
+recognizes center confinement.
+The combined patch tracking/upgrade, repository-context, Mac backlog,
+mounted/terminal mouse and Win32 adapter suite passed all 72 tests. Context
+freshness/affected-guide checks against the task base and whitespace checks pass.
+
+The user subsequently confirmed that this change fixes the issue when testing
+through the launcher. This is user-reported gameplay acceptance, separate from
+the automated adapter/build checks above. Native Mac was not run; its existing
+SDL relative-mode adapter needs no corresponding source change. See MAC-001 for
+pending physical-device acceptance. No release has been published by this task.
 ## PR #382 CI path repairs (2026-10-27)
 
 The texture audit's inline Python still imported from the old flat tools

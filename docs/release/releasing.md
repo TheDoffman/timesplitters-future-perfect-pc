@@ -3,7 +3,7 @@
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
 Game and launcher versions are independent. The next Stable game source version
-is **0.3.3**, including fixes since `0.3.2`. This source change does not
+is **0.3.5**, including the mouse-confinement hotfix since `0.3.4`. This source change does not
 publish a release or establish full campaign/platform validation. Historical
 alpha and `-preview.N` releases remain available in Game versions; do not
 relabel their assets or offer them as Beta updates.
