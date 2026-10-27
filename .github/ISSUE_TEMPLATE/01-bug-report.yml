@@ -18,6 +18,7 @@ body:
 
         <!-- BEGIN AUTO GAME VERSIONS -->
         - `v0.4.0-story-coop.1`
+        - `v0.3.4`
         - `v0.3.3`
         - `v0.3.2`
         - `v0.3.1-alpha.2`
