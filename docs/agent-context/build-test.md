@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own flag tests](independent.md).
+[Own SSE/flag tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

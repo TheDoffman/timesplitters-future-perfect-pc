@@ -18,7 +18,7 @@ indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
 multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
-extension and string-instruction lowering.
+extension, string-instruction lowering, condition expressions and SSE emission.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -77,7 +77,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Comparison snapshots and implicit sign extension | Project-owned `translation_compare.py` supplies CMP/TEST, self-test normalization and CBW/CWD/CWDE/CDQ | Compiled width/carry/memory-hook/state fixtures and decoded consumers; measured host acceptance in STATUS.md and MAC-087 |
 | String instructions | Project-owned `translation_strings.py` replaces string and direction emission | Original native/decoded contracts and Windows generation/build/game acceptance passed; native Mac pending (MAC-088) |
 | Condition expressions | Project-owned `translation_conditions.py` for captured flags and Jcc/SETcc/CMOVcc/LAHF | Native and mathematical oracles, decoded consumers; Windows acceptance below, native Mac pending (MAC-089) |
-| x86-to-C translation | Remaining lowering and orchestration still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| SSE/SSE2 emission | Project-owned `translation_sse.py` emits lane operations and bit-preserving moves; existing XMM ABI remains | Portable/native oracles, decoded consumers, generation/build/game acceptance; native Mac title pending (MAC-090) |
+| x86-to-C translation | Remaining lowering and orchestration still upstream | Complete flags, x87/MMX, guest rounding environment, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -725,6 +726,23 @@ This stage replaced snapshot/emission bodies. Fused CMP/TEST branches already
 consume captured operands without rereads. Condition expressions are replaced
 in the later stage below; complete EFLAGS and guest faults remain work. See STATUS.md and MAC-087 for validation.
 
+
+## SSE emission
+
+SSE emission is owned by `translation_sse.py` through the final
+`independent-translation-sse.patch`. It samples vector registers and memory
+addresses before writes, uses integer lanes for bit-preserving moves, and
+preserves unaffected scalar lanes. Double operations use 64-bit lanes; packed
+roots/reciprocals update every lane. Float-to-integer conversion checks bounds
+before casting and distinguishes rounded from truncating instructions. Shared
+numeric-policy hooks are retained. SSE compares publish captured floating
+inputs; other SSE operations preserve integer flag provenance. Memory width,
+all shuffle controls, conversions/rounding, NaN predicates, masks and decoded
+consumers are covered by compiled references and Windows native SSE oracles.
+The register type, memory foundation, MMX/FPU and remaining header helpers are
+still upstream. Guest MXCSR, floating exception status, alignment faults and
+processor-specific reciprocal estimates are not claimed; exact division keeps
+the existing reciprocal policy. Native Mac title acceptance is pending MAC-090.
 
 ## Condition-code generation
 

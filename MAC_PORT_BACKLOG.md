@@ -224,6 +224,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-087 | Independent comparison snapshots and sign extension | Awaiting validation |
 | MAC-088 | Independent string-instruction lowering | Awaiting validation |
 | MAC-089 | Independent condition-code generation | Awaiting validation |
+| MAC-090 | Independent SSE emission | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6267,6 +6268,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate/build and verify isolated movement, firing and pause/resume.
 - **Mac implementation and evidence:** Shared implementation, native title
   generation/build/gameplay unverified; complete EFLAGS remains work.
+
+### MAC-090 - Independent SSE emission
+
+- **Status:** Awaiting validation
+- **PC behavior:** Scalar/packed floating and bit operations preserve lane bits,
+  use proper double widths, evaluate full packed roots/reciprocals, and guard
+  float-to-integer casts. Numeric hooks and integer-flag provenance are retained.
+- **PC source:** PR #375, SSE replacement stage; `translation_sse.py` and
+  `independent-translation-sse.patch`.
+- **PC validation:** 174 translator/generation/private join checks and 109 timing
+  checks passed. Supported US regeneration, normal Release/native build checks
+  and isolated Original60 movement/firing/pause/resume passed; all 19 protected
+  files unchanged. All 56 patch/context/backlog/snapshot checks passed; see STATUS.md.
+- **Existing Mac support:** Shared portable C/Python emitter and host math library.
+- **Mac adaptation needed:** None identified; native title acceptance pending.
+- **Mac acceptance checks:** Run SSE/translator and private game-routine fixtures,
+  regenerate/build and verify isolated movement/firing/pause/resume.
+- **Mac implementation and evidence:** Shared implementation; native title
+  generation/build/gameplay unverified. Guest FP environment/faults remain work.
 
 ## Entry template
 

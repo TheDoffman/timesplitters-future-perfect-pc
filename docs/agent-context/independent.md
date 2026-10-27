@@ -32,6 +32,21 @@ upstream. See `docs/independent-runtime.md` for the remaining replacement work.
 
 ## Runtime and lowering ownership
 
+SSE emission is owned by `translation_sse.py` through the final
+`independent-translation-sse.patch`. It samples vector registers and memory
+addresses before writes, uses integer lanes for bit-preserving moves, and
+preserves unaffected scalar lanes. Double operations use 64-bit lanes; packed
+roots/reciprocals update every lane. Float-to-integer conversion checks bounds
+before casting and distinguishes rounded from truncating instructions. Shared
+numeric-policy hooks are retained. SSE compares publish captured floating
+inputs; other SSE operations preserve integer flag provenance. Memory width,
+all shuffle controls, conversions/rounding, NaN predicates, masks and decoded
+consumers are covered by compiled references and Windows native SSE oracles.
+The register type, memory foundation, MMX/FPU and remaining header helpers are
+still upstream. Guest MXCSR, floating exception status, alignment faults and
+processor-specific reciprocal estimates are not claimed; exact division keeps
+the existing reciprocal policy. Native Mac title acceptance is pending MAC-090.
+
 Condition evaluation is owned by `translation_conditions.py` through the final
 `independent-translation-conditions.patch`. Jcc, SETcc, CMOVcc aliases and LAHF
 consume captured comparison/result values. Arithmetic signed conditions use
@@ -276,6 +291,10 @@ upstream. Reader/table/bridge changes invalidate the generator fingerprint;
 Windows rebuilds all stages. Parser fixtures and patch transition tests cover
 this boundary; game regeneration and isolated gameplay provide title evidence.
 
+
+SSE numeric-policy timing fixtures now target captured `_simd_a`/`_simd_b`
+values and `_simd_integer`; their missing-conversion and matrix fault controls
+remain executed against original game routines.
 
 ## Inherited SAR sweeps
 

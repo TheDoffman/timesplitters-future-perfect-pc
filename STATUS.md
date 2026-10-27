@@ -1,3 +1,52 @@
+## Independent SSE emission (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces upstream SSE/SSE2 emission with `translation_sse.py`.
+Moves preserve payload bits and scalar lanes; double operations use double
+lanes, packed roots/reciprocals evaluate every lane, and float-to-integer
+conversions guard bounds before casting. Shared numeric-policy hooks and
+integer-flag provenance remain. XMM storage, guest memory, MMX/x87 and remaining
+header helpers still have upstream implementations. Guest MXCSR, FP exception
+status, alignment faults and native reciprocal approximation bits remain work.
+
+All **16 CI checks passed** on the preceding repair revision `d2fd8ecf`.
+**174 translator/generation/private join checks passed** in the combined run.
+Four timing assertions/mutations needed the new operand-capture spelling; their
+address/read-count checks and original fault-injection controls are preserved.
+The complete rerun passed **109 native timing checks in 311.41 seconds**.
+**56 historical patch/context/backlog/snapshot checks passed in 896.64 seconds**.
+Original tests cover standalone imports, memory widths and payloads,
+all shuffle controls, scalar/packed math, NaNs, conversion bounds/rounding,
+Windows hardware intrinsics and decoded production consumers.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**11,515 functions stayed byte-identical**; all **4,323 changed bodies** match
+explicit old/new SSE substitutions from decoded instructions, ignoring comments
+and whitespace. Five other generated C/header files and function names/order/
+surrounding text are unchanged. No unexplained differences remain. This bounds
+the scope of generated changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `d2fd8ecf`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`4381757c0132bc8a12958c05382a8be3138bf12dbbe7ff134fe91122c5ffbb78`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.132 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **94.307 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/sse-focused.log`, `logs/sse-native-timing-final.log`,
+`logs/sse-generation.log`, `logs/independent-sse-comparison.json`,
+`logs/sse-build.log`, `logs/sse-game.log`, `logs/sse-patch-checks.log`,
+`logs/independent-sse-game-check.json`. Native Mac title acceptance is pending
+MAC-090. Full independence remains incomplete.
+
 ## Condition-stage CI fixture repair (2026-10-27)
 
 Mac native CI on `46424293` found a stale inherited expression-text assertion
@@ -9,7 +58,8 @@ Production code and the accepted game executable are unchanged; the generation
 fingerprint remains current. **44 targeted checks passed in 14.79 seconds**,
 including the original 15 logical-condition sweeps and nine rejecting negative
 controls compiled with MSVC. Fresh install/repeated patch application passed
-in **28.35 seconds**. CI rerun is pending; this is not native Mac gameplay acceptance.
+in **28.35 seconds**. All **16 CI checks passed** on repair revision
+`d2fd8ecf`; this is not native Mac gameplay acceptance.
 
 ## Independent condition-code generation (Windows acceptance passed, 2026-10-27)
 
