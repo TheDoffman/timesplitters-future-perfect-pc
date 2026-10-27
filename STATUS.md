@@ -1,3 +1,61 @@
+## Independent instruction and block lifting (Windows acceptance passed, 2026-10-27)
+
+Original `tools/translation_lifting.py` now replaces nine upstream functions:
+instruction dispatch, basic-block lifting, adjacent comparison/branch fusion,
+result snapshots, unsupported diagnostics, XMM/repeated-compare predicates and
+conditional-write fallbacks. The registry routes decoded instructions to the
+existing project-owned emitters; block state propagates captured comparisons.
+Unrelated function ASTs are unchanged. Two unsupported SIMD forms retain their
+previous flag-preservation policy; LOOPZ/LOOPNZ use their proper ZF sense.
+Diagnostic strings/comments are safely escaped. This is another incremental
+stage: function orchestration, helper detection/naming, runtime interfaces and
+other upstream subsystems still require replacement.
+
+**All 16 CI checks passed on preceding commit `43ee2929`.** New-stage CI is
+pending this commit. Local **345 translator/generation/private-join/timing
+checks passed in 301.16s**. After the final preservation-table adjustment,
+**41 original lifting fixtures plus 86 CI selection/gate checks passed in
+3.69s**. These cover installed bindings, toolkit-free imports, decoded routing,
+flag boundaries, compiled comparisons that survive register overwrites, fused
+branch reuse, carry propagation, conditional moves, LAHF and zero-count REP.
+Removing the incoming zero-flag preload makes the executable negative control
+fail. All **56 historical patch/context/backlog/snapshot checks passed in
+549.39s**; final context/backlog documentation checks passed (21 tests).
+
+Final supported-US generation completed in **83.25s**: **15,838 translated,
+zero failed**, the same **50 unresolved stubs and 738 unimplemented sites**.
+All **21 generated C/header files are byte-identical** to the accepted control
+baseline, including all 15,838 function bodies. This comparison bounds the
+supported-title changes; it does not prove universal x86 equivalence.
+
+The standard Windows x64 Release build and native/build checks passed with
+Python 3.12.14, Capstone 5.0.9 and MSVC 2022 (14.44), process-local
+`CL_MPCount=2`, current generation fingerprints and matching crash symbols.
+Existing MSB8028 intermediate-directory warnings remain. Built from the
+implementation working tree based on `43ee2929`, executable SHA-256:
+`f84f21d969020b16c3b1cd22b11248760c0fe325c79d8146ea3f1fddb3f67cd1`.
+
+Isolated `independent-lifting` Original60 Scotland the Brave passed with a
+150-second bound: **11.217 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause samples / 60 advancing resume samples**, final
+checkpoint **93.699s**, exit **0**. Start/pause/resume captures were reviewed;
+D3D11 flip-model/tearing-allowed and XAudio2 initialized. All **19 protected
+files retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dumps remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-094). Shared
+fixtures run on both CI hosts. Existing partial EFLAGS, SAHF and runtime ABI
+policies remain; no complete architectural-flag or full-independence claim.
+
+Evidence: `logs/lifting-ast-audit.json`, `logs/lifting-focused.log`,
+`logs/lifting-regressions.log`, `logs/lifting-fixture-ci-final.log`,
+`logs/lifting-patch-checks.log`, `logs/lifting-final-doc-checks.log`,
+`logs/lifting-generate-final.log`, `logs/independent-lifting-comparison.json`,
+`logs/lifting-build.log`, `logs/independent-lifting-game-check.json`,
+`logs/lifting-game-protected-check.json`, `logs/lifting-previous-ci.json`.
+
 ## Independent control-transfer emission (Windows acceptance passed, 2026-10-27)
 
 Original `translation_control.py` now replaces ten upstream Lifter methods and
@@ -48,8 +106,9 @@ failures; Mac runtime/GPU and both patch-upgrade jobs passed. The string fixture
 now caches six immutable input patterns, still resets/compares both full buffers
 for every case, and retains all cases, assertions and the 90-second limit.
 Local timing fell **3.30s to 1.20s**, and all five string tests passed. The CI
-runner's slowdown is not established by that local measurement; new CI remains
-pending this commit. The earlier x87 missing-macro failure is repaired.
+runner's slowdown is not established by that local measurement. All 16 CI
+checks passed for control commit `43ee2929`, including Windows runtime and
+both patch-upgrade jobs. The earlier x87 missing-macro failure is repaired.
 
 Evidence: `logs/control-focused.log`, `logs/control-regressions-final.log`,
 `logs/control-patch-checks.log`, `logs/control-ci-selection.log`,

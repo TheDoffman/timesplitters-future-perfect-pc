@@ -348,8 +348,8 @@ TOP/sign coverage and stack preservation checks remain intact.
 `independent-translation-control.patch`, owns direct/indirect calls, returns,
 tails, conditional targets, LOOP counter widths, bounded jump-table scanning
 and callee cleanup lookup. Ten Lifter methods and `_emit_cond_goto` delegate to
-this module; remaining dispatch/block orchestration and runtime ABI helpers
-still need replacement. The existing native setjmp/longjmp interface is retained.
+this module; function orchestration and runtime ABI helpers still need
+replacement. Instruction/block orchestration is now project-owned as below. The existing native setjmp/longjmp interface is retained.
 
 Indirect target capture precedes the guest return-address push. Keep each
 indirect call in one complete emitted statement: the existing recovery postpass
@@ -377,3 +377,27 @@ address-size/segment/direction/count/overlap/flag matrix and whole-buffer and
 register assertions. This removes repeated pattern synthesis from a Windows CI
 fixture that exceeded its existing 90-second execution limit; the timeout and
 runtime emitter are unchanged. Local timing is recorded separately in STATUS.md.
+
+
+## Original instruction and block lifting
+
+`translation_lifting.py` owns decoded instruction routing, captured-condition
+propagation within blocks, adjacent CMP/TEST-branch fusion, result snapshots,
+SETcc/CMOVcc fallbacks and unsupported-instruction diagnostics. Nine remaining
+functions delegate through `independent-translation-lifting.patch`, after the
+control patch. It imports only project modules and permitted standard libraries.
+The instruction registry resolves string/SIMD overloads by operand register
+family. The block state describes saved comparison operands/results; it is not
+full EFLAGS. Existing call, SAHF, unknown-instruction and partial-flag policies
+remain explicit. Counter branches do not consume comparison flags. A fused
+branch still publishes the comparison for later consumers. Repeated comparisons
+preload incoming ZF for a zero count; NEG can carry across preserving operations
+to ADC/SBB. Unknown producers and POPFD clear the tracked interpretation.
+
+`test_translation_lifting.py` checks decoded routing, installed bindings,
+toolkit-free imports, state boundaries, compiled guest sequences, snapshot
+widths and escaped diagnostics. Its negative control removes the incoming-ZF
+preload and must fail the same executable. Existing translator join/postpasses
+and title hooks continue to run and remain separate replacement work. Both CI
+hosts select the suite; fingerprints include the module. STATUS.md and MAC-094
+record acceptance and host limits.

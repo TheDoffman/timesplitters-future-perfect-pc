@@ -818,3 +818,16 @@ result-only remainder handling preserve the current approximation, with no
 hardware bit-exact claim. Unknown forms retain the standard diagnostic marker.
 Source reference: [Intel SDM volume 2A, x87 instruction definitions](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf).
 See STATUS.md and MAC-092 for acceptance and host limits.
+
+
+## Instruction and block lifting
+
+The original `tools/translation_lifting.py` replaces instruction dispatch,
+basic-block condition propagation, comparison/branch fusion, result snapshots,
+unsupported diagnostics and conditional-write fallbacks. The additive lifting
+patch delegates nine functions without changing unrelated function bodies.
+This module imports no upstream toolkit. Function-level orchestration, helper
+recognition, runtime flag storage and the remaining C runtime are still separate
+replacement work. Existing partial EFLAGS policies remain; this stage does not
+claim full architectural flag emulation. See the owning context guide, STATUS.md
+and MAC-094 for test contracts and host acceptance.

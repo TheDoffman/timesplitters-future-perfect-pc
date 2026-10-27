@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "8b9a9f9de9b8531e105ea3dd5b452a0c12dad8e90a68d1f68722839ac9d4dfe3",
+  "loaderSha256": "946a12db54030c60261f78ed2ff3f1ae2a9e8fe6dc9c4a67342acc0a35e73c09",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1800,6 +1800,13 @@
       "targets": [
         "tools/recomp/lifter.py",
         "tools/recomp/test_callee_pop.py"
+      ]
+    },
+    {
+      "name": "independent-translation-lifting.patch",
+      "sha256": "2acc7ab507c0aacda62fbfbe3e40cbdd57ac1ca5f87aa59cabd661bb79fa4890",
+      "targets": [
+        "tools/recomp/lifter.py"
       ]
     }
   ]

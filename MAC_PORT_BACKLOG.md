@@ -228,6 +228,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-091 | Independent MMX emission | Awaiting validation |
 | MAC-092 | Independent x87 emission | Awaiting validation |
 | MAC-093 | Independent control-transfer emission | Awaiting validation |
+| MAC-094 | Independent instruction and block lifting | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6366,5 +6367,23 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   context/backlog/snapshot checks passed. Native Mac generation/build/gameplay
   still require supported private US data; CI unit/GPU checks alone do not prove
   title behavior. See STATUS.md for evidence, preserved personal data and
-  rendering/input/audio limits. New-stage CI is pending; the preceding Windows
-  string-fixture timeout is addressed by caching setup with coverage unchanged.
+  rendering/input/audio limits. All 16 checks passed for `43ee2929`; the preceding Windows
+  string-fixture timeout was addressed by caching setup with coverage unchanged.
+
+
+### MAC-094 - Independent instruction and block lifting
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up:
+  `tools/translation_lifting.py`, `tests/test_translation_lifting.py` and
+  `patches/independent-translation-lifting.patch`. Original dispatch and block
+  state propagation preserve the common generated-code/condition interface.
+- Mac support: shared portable Python and emitted C; no host-specific algorithm
+  or adapter required. Both CI hosts select the decoded/compiled contracts.
+- Remaining validation: Windows generation, Release build and isolated first-mission
+  movement/fire/pause/resume passed; 345 regressions and 127 final lifting/CI
+  checks passed. All 56 patch/context/backlog/snapshot checks passed.
+  All 21 generated files match the accepted baseline.
+  Native Mac generation/build/gameplay require private
+  supported data and its host; Windows evidence cannot establish that behavior.
+  See STATUS.md for measured outcomes and limitations.

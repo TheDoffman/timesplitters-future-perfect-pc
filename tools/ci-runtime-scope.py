@@ -42,6 +42,7 @@ CPU_TOOLS = {
     'tools/translation_mmx.py', 'tests/test_translation_mmx.py',
     'tools/translation_x87.py', 'tests/test_translation_x87.py',
     'tools/translation_control.py', 'tests/test_translation_control.py',
+    'tools/translation_lifting.py', 'tests/test_translation_lifting.py',
     'tools/translation_compare.py', 'tests/test_translation_compare.py',
     'tools/translation_exchange.py', 'tests/test_translation_exchange.py',
     'tools/translation_bits.py', 'tests/test_translation_bits.py',
