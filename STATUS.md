@@ -1,3 +1,68 @@
+## Independent lifter context, helpers and naming (Windows acceptance passed, 2026-10-27)
+
+The effective old lifter module is now a six-line compatibility import with no
+function or class definitions. Original `translation_context.py` owns context
+setup, per-instance state, handler bindings and policy exports;
+`translation_helpers.py` owns bounded SEH/EH, throw-record and nonlocal-jump
+recognition; `translation_names.py` owns identifier/call-name selection. The
+remaining eight old lifter functions and their implementation scaffolding are
+replaced. Function-level translation, batch output, runtime storage, title code
+and shipped upstream fixtures still require replacement.
+
+The original SDK inventory generator produced **23,947 factual host API names**
+from **453 Windows SDK 10.0.26100.0 import libraries**, recording each input's
+SHA-256 and the output digest. This replaces the lifter's dependency on bundled
+name data. Both hosts use the same checked-in inventory; its regeneration is a
+Windows maintenance task. LF attributes preserve its exact hash across hosts.
+Helper recognition is heuristic, not guest exception unwinding. Explicit helper
+overrides, mapped physical spans and function/wrapper/label precedence are tested.
+
+**All 16 CI checks passed for preceding commit `bc36e294`.** New-stage CI is
+pending this commit. Local **352 translator/generation/private-join/timing tests
+passed in 296.26s** before the final contiguous-span repair. Review caught that
+mapped endpoints alone could hide an unmapped middle; the corrected traversal
+rejects holes/discontiguous backing and accepts adjacent continuous sections.
+The final **eight original context tests plus nine inherited SEH tests passed
+(17 tests, 2.51s)** after that repair. They also cover standalone imports,
+installed module identity, bounds/metadata/overrides, state isolation, SDK
+provenance and compiled reserved-name declarations with an unmangled-name
+negative control. **115 consumer/CI-selection/gate tests passed**, with four
+inherited compiler-discovery skips; the original naming fixture compiled with
+MSVC. All **56 historical patch/context/backlog/snapshot checks passed in
+555.50s**.
+
+Final supported-US generation completed in **80.81s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 C/header files match the accepted lifting baseline by SHA-256 and size**,
+including every translated function. Detected SEH prologs remain 0x003CA460 and
+0x003CAAB4, epilog 0x003CA49B; no setjmp/longjmp helper was found in this image.
+The standard final Release build/native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `bc36e294`.
+Executable SHA-256:
+`96931a1c4238a818659f01ba894fabdae33661bcbcfce0cd0a7aa2408f44e7a9`.
+
+The isolated `independent-context` Original60 Scotland the Brave run passed with
+a 150-second bound: **11.175 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**94.616s**, exit **0**. Start/pause/resume captures were reviewed; D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files
+retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dump remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-095). The
+shared source and CI fixtures do not establish Mac gameplay. Full independence
+and complete architectural flag/exception support are not claimed.
+
+Evidence: `logs/context-host-symbols.log`, `logs/context-regressions.log`,
+`logs/context-consumers.log`, `logs/context-focused-final.log`,
+`logs/context-patch-checks.log`, `logs/context-generate-final.log`,
+`logs/independent-context-comparison.json`, `logs/context-build-final.log`,
+`logs/independent-context-game-check.json`, `logs/context-game-protected-check.json`.
+
 ## Independent instruction and block lifting (Windows acceptance passed, 2026-10-27)
 
 Original `tools/translation_lifting.py` now replaces nine upstream functions:
@@ -11,8 +76,8 @@ Diagnostic strings/comments are safely escaped. This is another incremental
 stage: function orchestration, helper detection/naming, runtime interfaces and
 other upstream subsystems still require replacement.
 
-**All 16 CI checks passed on preceding commit `43ee2929`.** New-stage CI is
-pending this commit. Local **345 translator/generation/private-join/timing
+**All 16 CI checks passed on commit `bc36e294`**, as they did on preceding
+commit `43ee2929`. Local **345 translator/generation/private-join/timing
 checks passed in 301.16s**. After the final preservation-table adjustment,
 **41 original lifting fixtures plus 86 CI selection/gate checks passed in
 3.69s**. These cover installed bindings, toolkit-free imports, decoded routing,

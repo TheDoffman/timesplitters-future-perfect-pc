@@ -401,3 +401,33 @@ preload and must fail the same executable. Existing translator join/postpasses
 and title hooks continue to run and remain separate replacement work. Both CI
 hosts select the suite; fingerprints include the module. STATUS.md and MAC-094
 record acceptance and host limits.
+
+
+## Original lifter context, helper recognition and naming
+
+`translation_context.py` now owns the complete lifter class, handler registry,
+per-instance state and compatibility export surface. The final additive
+`independent-translation-context.patch` replaces the old lifter module with an
+import bridge. `translation_helpers.py` recognizes bounded guest SEH/EH, C++
+throw-record references and VC nonlocal-jump markers using project image
+mapping. Full spans must be mapped and backed by image bytes. Recognition is
+heuristic, not a proof of helper semantics or host exception support. Explicit
+SEH overrides retain auto-detection of the other helper; zero is a valid address.
+
+`translation_names.py` resolves wrapper/function/label precedence and records
+referenced callees. It guards C identifiers and host name collisions using
+project-owned keyword/library policy and an SDK-derived host-export inventory.
+`generate_host_symbols.py` reads dumpbin /exports from Windows SDK um/x64 import
+libraries. `translation_host_symbols.txt` contains 23,947 factual API identifiers;
+the JSON manifest records SDK 10.0.26100.0, 453 input hashes and the output hash.
+Neither file is copied from the bundled toolkit. LF attributes keep the exact
+inventory hash stable on both hosts. Regeneration explicitly takes --dumpbin,
+--libraries, --output and --manifest; ordinary builds use the checked-in list.
+
+`test_translation_context.py` covers bounded/truncated/unmapped helper evidence,
+metadata forms, multiple helpers/overrides, context isolation, name precedence,
+SDK inventory provenance, standalone imports and compiled reserved identifiers
+with a failing unmangled-name control. Fingerprints include all new runtime
+modules and inventory files; both CI hosts select the tests. Function-level
+translation, runtime storage and remaining shipped fixtures still need original
+replacements. Acceptance and host limitations are in STATUS.md and MAC-095.

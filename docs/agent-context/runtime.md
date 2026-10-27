@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Dispatch/block lifting, MMX/SSE/condition fixtures, captured flags and native validation are in [own tooling](independent.md).
+Lifter context/naming/helpers, dispatch, captured flags and native validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

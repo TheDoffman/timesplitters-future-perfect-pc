@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Own lifting tests](independent.md).
+[Lifter tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

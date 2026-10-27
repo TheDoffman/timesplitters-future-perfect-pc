@@ -18,7 +18,9 @@ indirect-branch feedback, unresolved-address diagnostics, C operand emission,
 basic data-transfer/stack lowering, scalar integer arithmetic/logic, shifts/rotates,
 multiply/divide lowering, non-LOCK bit tests/scans/byte swapping, and
 exchange/compare-exchange lowering, comparison snapshots and implicit sign
-extension, string-instruction lowering, condition expressions and SSE/MMX emission.
+extension, string-instruction lowering, condition expressions, SSE/MMX/x87
+emission, control transfers, instruction/block lifting and lifter context,
+helper recognition and naming.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -79,7 +81,10 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Condition expressions | Project-owned `translation_conditions.py` for captured flags and Jcc/SETcc/CMOVcc/LAHF | Native and mathematical oracles, decoded consumers; Windows acceptance below, native Mac pending (MAC-089) |
 | SSE/SSE2 emission | Project-owned `translation_sse.py` emits lane operations and bit-preserving moves; existing XMM ABI remains | Portable/native oracles, decoded consumers, generation/build/game acceptance; native Mac title pending (MAC-090) |
 | MMX emission | Project-owned `translation_mmx.py` emits packed integer operations without inherited MMX helpers | Mathematical/native/boundary/decoded checks, full generation/build/game; native Mac pending MAC-091 |
-| x86-to-C translation | Remaining lowering and orchestration still upstream | Complete flags, x87, guest rounding environment, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| x87 emission | Project-owned stack/operation emitter; existing binary64 stack ABI remains | Rounding/bounds/native fixtures and Windows title acceptance; native Mac pending MAC-092 |
+| Control transfers and block lifting | Project-owned call/branch/table handling, dispatch and block condition propagation | Compiled/decoded/negative-control checks and Windows title acceptance; native Mac pending MAC-093/094 |
+| Lifter context, helpers and naming | Project-owned class/registry, bounded helper recognition and SDK-derived name data | Standalone/bounds/compiler checks and deterministic generation; native Mac pending MAC-095 |
+| x86-to-C function orchestration | Function scheduling, joins, declarations and batch emission still upstream | Replace orchestration and remaining fixtures; verify full flags/ABI/runtime contracts and deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -831,3 +836,17 @@ recognition, runtime flag storage and the remaining C runtime are still separate
 replacement work. Existing partial EFLAGS policies remain; this stage does not
 claim full architectural flag emulation. See the owning context guide, STATUS.md
 and MAC-094 for test contracts and host acceptance.
+
+
+## Lifter context and host identifiers
+
+The original `translation_context.py`, `translation_helpers.py` and
+`translation_names.py` replace the remaining lifter class/setup, helper
+recognition, naming and policy exports. The old module is now an import bridge.
+The lifter's Windows API inventory is regenerated directly from SDK import
+libraries by `generate_host_symbols.py`; it no longer reads bundled name data.
+The checked-in identifier list and manifest record all 453 source-library
+hashes, SDK version and output digest. Only factual identifiers are included.
+Helper detection remains bounded heuristic matching; it does not supply guest
+exception unwinding. Function translation/orchestration and runtime/title code
+remain separate replacement work. See STATUS.md and MAC-095 for acceptance.

@@ -229,6 +229,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-092 | Independent x87 emission | Awaiting validation |
 | MAC-093 | Independent control-transfer emission | Awaiting validation |
 | MAC-094 | Independent instruction and block lifting | Awaiting validation |
+| MAC-095 | Independent lifter context and helper recognition | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6387,3 +6388,21 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Native Mac generation/build/gameplay require private
   supported data and its host; Windows evidence cannot establish that behavior.
   See STATUS.md for measured outcomes and limitations.
+
+
+### MAC-095 - Independent lifter context and helper recognition
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up in `tools/translation_context.py`,
+  `tools/translation_helpers.py`, `tools/translation_names.py`, SDK-derived
+  `tools/translation_host_symbols.*`, `tools/generate_host_symbols.py`,
+  `tests/test_translation_context.py` and the additive context patch.
+- Mac support: shared portable Python and deterministic checked-in name data;
+  SDK inventory regeneration is a Windows maintenance task, not a Mac build
+  prerequisite. No duplicate host algorithm or adapter is required.
+- Remaining validation: Windows final regeneration, Release build and isolated
+  first-mission movement/fire/pause/resume passed. All 21 generated files match
+  the accepted baseline. 352 regressions passed before the final span repair;
+  17 focused/SEH checks passed after it, plus 56 patch/context/backlog/snapshot
+  checks. Native Mac generation/build/gameplay require its host and supported
+  private data. See STATUS.md for exact evidence, CI revision and limits.

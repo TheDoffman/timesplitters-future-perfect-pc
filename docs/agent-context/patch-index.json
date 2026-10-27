@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "946a12db54030c60261f78ed2ff3f1ae2a9e8fe6dc9c4a67342acc0a35e73c09",
+  "loaderSha256": "4712d1ecb24d72f277b4147adeea6939fcd3c1ae914c54a1579437c361f46a1b",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1805,6 +1805,13 @@
     {
       "name": "independent-translation-lifting.patch",
       "sha256": "2acc7ab507c0aacda62fbfbe3e40cbdd57ac1ca5f87aa59cabd661bb79fa4890",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "independent-translation-context.patch",
+      "sha256": "d883e2b24155e31086f3f421e8f9a6db16d031d28098d4baac888665ab656672",
       "targets": [
         "tools/recomp/lifter.py"
       ]
