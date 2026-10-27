@@ -74,10 +74,10 @@ revision, source/patch hashes, executable hash, compiler, Python packages and
 linked libraries, plus working-tree changes and the shared source/content
 identity. Native identity files stay in `build/macos/generated`; they do not
 enable native multiplayer. Native changes to the upstream runtime are reproduced by
-`patches/0400-mac-native-boot.patch`, `patches/0630-mac-renderer.patch`,
-`patches/0660-mac-input.patch`, `patches/0740-mac-high-refresh.patch`,
-`patches/0750-interpolation-layouts.patch` and
-`patches/0780-shared-input-model.patch`, applied
+`patches/platform/0400-mac-native-boot.patch`, `patches/graphics/rendering/0630-mac-renderer.patch`,
+`patches/input/0660-mac-input.patch`, `patches/gameplay/presentation/0740-mac-high-refresh.patch`,
+`patches/gameplay/presentation/0750-interpolation-layouts.patch` and
+`patches/input/0780-shared-input-model.patch`, applied
 after the shared feature patches. Thin Mac adapters stay in `src/native`; common Xbox rendering uses the same
 patched runtime source as Windows. Legacy GL remains a compatibility exception.
 Never edit generated game C. Regenerate when wrapper declarations change.

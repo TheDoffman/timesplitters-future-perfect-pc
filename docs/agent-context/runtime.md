@@ -1,5 +1,10 @@
 # Runtime and patch navigation
 
+Active patches now live in responsibility folders under `patches/`; consult
+[the folder map](../../patches/README.md). Recursive discovery excludes legacy
+and sorts stable basenames globally before dependency overrides. Folder moves
+preserve exact ledger bytes and runtime output. Duplicate active names fail.
+
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`
 prefixes without changing patch bytes, effective order or context options.
@@ -146,9 +151,9 @@ Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
 The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640×480 screen snapshot before a clear, then a 128×128 map texture
+frame: a 640Ã—480 screen snapshot before a clear, then a 128Ã—128 map texture
 copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)–(312,181) into
+host texture for that frame and copies guest region (176,0)â€“(312,181) into
 the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
 on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
 production RHI fixture in `tests/rhi_screen_copy.h` checks that the saved
@@ -166,7 +171,7 @@ shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
 have depth near 1 and already follow the widened camera, so the automatic 4:3
 HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
 near .001 and explicitly placed overlays retain their placement. Validate
-with Monkeying Around → Electro Chimp Discomatic and Something to Crow
+with Monkeying Around â†’ Electro Chimp Discomatic and Something to Crow
 About's shielded robot at a widescreen resolution.
 
 `0620-zero-base-indices.patch` follows the renderer/native stack. Pushed-array
@@ -737,7 +742,7 @@ unchanged other routes, rejection and override removal.
 
 ## Replacement texture frame completion
 
-`patches/0360-texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
+`patches/graphics/textures/0360-texture-upload-streaming.patch` calls `tsfp_texture_frame_complete` from common
 `present_resolve`, guarded by TSFP_TEXTURE_PACK. This covers the title
 `dev_Swap` path, the older `dev_Present` path and the public frame helper. Legacy GL calls
 the same shared queue pump from its own Present adapter. This completes

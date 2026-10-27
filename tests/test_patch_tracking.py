@@ -48,6 +48,44 @@ def commit(project, message):
     git(project, 'commit', '-qm', message)
 
 
+def test_responsibility_folders_preserve_order_ledger_and_rollback(fixture):
+    _, runtime, patches = fixture
+    first = BASE.replace('alpha=0', 'alpha=1')
+    final = first.replace('beta=0', 'beta=1')
+    patch(patches, 'next.patch', first, final)
+    installer.apply_patches(runtime, patches)
+    ledger = installer.state_path(runtime).read_bytes()
+    # Folder order deliberately opposes patch order; recurse more than once.
+    for name, folder in [('base.patch', 'z/rendering'), ('next.patch', 'a/input')]:
+        target = patches / folder
+        target.mkdir(parents=True)
+        (patches / name).rename(target / name)
+    legacy = patches / 'legacy'
+    legacy.mkdir()
+    patch(legacy, 'unused.patch', BASE, BASE.replace('alpha=0', 'alpha=9'))
+    assert installer.apply_patches(runtime, patches) == []
+    assert installer.state_path(runtime).read_bytes() == ledger
+    assert (runtime / 'src/sample.c').read_text() == final
+    for path in installer.active_patch_paths(patches):
+        path.rename(patches / path.name)
+    assert installer.apply_patches(runtime, patches) == []
+    assert installer.state_path(runtime).read_bytes() == ledger
+
+
+def test_duplicate_basename_across_folders_fails_before_writes(fixture):
+    _, runtime, patches = fixture
+    installer.apply_patches(runtime, patches)
+    ledger = installer.state_path(runtime).read_bytes()
+    before = (runtime / 'src/sample.c').read_bytes()
+    nested = patches / 'input'
+    nested.mkdir()
+    patch(nested, 'base.patch', BASE, BASE.replace('alpha=0', 'alpha=9'))
+    with pytest.raises(ValueError, match='Duplicate active patch basename'):
+        installer.apply_patches(runtime, patches)
+    assert installer.state_path(runtime).read_bytes() == ledger
+    assert (runtime / 'src/sample.c').read_bytes() == before
+
+
 def test_record_keeps_exact_bytes_order_and_stays_out_of_source(fixture):
     project, runtime, patches = fixture
     payload = (patches / 'base.patch').read_bytes().replace(b'\n', b'\r\n')

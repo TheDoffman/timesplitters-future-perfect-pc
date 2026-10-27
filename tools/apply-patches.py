@@ -35,8 +35,20 @@ def state_path(runtime):
     return Path(result.stdout.strip()) / 'tsfp-patches.json'
 
 
+def active_patch_paths(patch_dir):
+    """Discover responsibility folders; legacy is exclusively an unwind input."""
+    patch_dir = Path(patch_dir)
+    return sorted((p for p in patch_dir.rglob('*.patch')
+                   if 'legacy' not in p.relative_to(patch_dir).parts),
+                  key=lambda p: p.name)
+
+
 def patch_records(paths):
     paths = sorted(paths, key=lambda patch: patch.name)
+    # Basenames are stable ledger identities and dependency keys. Folder
+    # traversal order must never decide which of two same-named patches wins.
+    if len({patch.name for patch in paths}) != len(paths):
+        raise ValueError('Duplicate active patch basename; names must be globally unique')
     # These existing network patches target the original title CMake context.
     # Apply them before native boot inserts platform guards at that location;
     # retain the established order of all other patches and unwind in reverse.
@@ -134,12 +146,13 @@ def apply_patches(runtime, patch_dir):
     runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
     record_path = state_path(runtime)
     record_before, previous = read_state(record_path)
-    patches = patch_records(patch_dir.glob('*.patch'))
+    active = active_patch_paths(patch_dir)
+    patches = patch_records(active)
     if previous is None:
         # Bootstrap runtimes built before automatic tracking. Legacy patches
         # remain an unwind-only migration aid; an active copy takes precedence.
         known = {patch.name: patch for patch in sorted((patch_dir / 'legacy').glob('*.patch'))}
-        known.update({patch.name: patch for patch in patch_dir.glob('*.patch')})
+        known.update({patch.name: patch for patch in active})
         unwind_patches = patch_records(known.values())
     else:
         # Preserve the exact old bytes, order and context options, including

@@ -1,5 +1,9 @@
 # Launcher internals
 
+The launcher compatibility selector follows the game-icon patch into
+`patches/platform/`. Its scope and tests are unchanged; nested runtime patches
+continue to select runtime CI jobs through the existing `patches/**` rule.
+
 Compatibility scope matching now uses the numbered patch filenames documented
 in [patch maintenance](../../patches/README.md); selection behavior is unchanged.
 The obsolete generic README download SVG was removed; the Windows and Mac
@@ -148,7 +152,7 @@ newer game is needed before saving. Opening settings never rewrites that file.
 
 ## Retired bundled character icons (#74)
 
-`Core.InstallPending` reads `BUILD.json` → `textures.retired`, emitted by the
+`Core.InstallPending` reads `BUILD.json` â†’ `textures.retired`, emitted by the
 shared pack auditor from `config/texture-originals.json`. Each key records the
 previous bundled DDS and public JSON hashes. `AddRetiredTextures` preserves
 the entire pair if either existing member differs; absent members need no action.

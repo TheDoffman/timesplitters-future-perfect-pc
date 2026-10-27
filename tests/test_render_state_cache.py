@@ -20,11 +20,11 @@ def state_cache_runs(tmp_path_factory):
     baseline.parent.mkdir(parents=True)
     baseline.write_text(source)
     for patch in ('0500-sampler-cache-retry.patch','0490-render-state-cache.patch'):
-        reversed_patch=subprocess.run(['git','apply','--reverse',str(ROOT/'patches'/patch)],
+        reversed_patch=subprocess.run(['git','apply','--reverse',str(ROOT/'patches/graphics/rendering'/patch)],
             cwd=folder/'baseline',capture_output=True,text=True,timeout=10)
         assert reversed_patch.returncode==0,reversed_patch.stdout+reversed_patch.stderr
     original=baseline.read_text()
-    reapplied=subprocess.run(['git','apply',str(ROOT/'patches/0500-sampler-cache-retry.patch')],
+    reapplied=subprocess.run(['git','apply',str(ROOT/'patches/graphics/rendering/0500-sampler-cache-retry.patch')],
         cwd=folder/'baseline',capture_output=True,text=True,timeout=10)
     assert reapplied.returncode==0,reapplied.stdout+reapplied.stderr
     variants={'baseline':original,'sampler-only':baseline.read_text(),'cache':source,

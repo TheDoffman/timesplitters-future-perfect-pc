@@ -12,7 +12,7 @@ before reorganizing files.
 | --- | --- |
 | Root | README, contributor/legal files, version/dependency pins and supported command entry points |
 | `src/` | Project-owned runtime adapters and shared game behavior; graphics adapters are in `src/graphics/` |
-| `patches/` | Numbered runtime patches; see [ordering and migration](../patches/README.md) |
+| `patches/` | Numbered patches grouped by responsibility; see [folder map, ordering and migration](../patches/README.md) |
 | `patches/legacy/` | Required inputs for unwinding older builds |
 | `tools/` | Build, packaging, analysis and maintenance commands and their Python helper modules |
 | `tools/launcher/` | Shared/Windows launcher source; `macos/` holds the native Mac adapter |
@@ -46,8 +46,9 @@ source checkout or rename its folders as a source cleanup.
 
 ## Naming conventions
 
-- Patches: four-digit base-sort slot plus a descriptive hyphenated name.
-  Preserve migration inputs and inspect the effective loader order.
+- Patches: responsibility folder plus a globally unique four-digit base-sort
+  slot and descriptive hyphenated name. Folders do not determine application
+  order. Preserve migration inputs and inspect the effective loader order.
 - Documentation and command scripts: descriptive lowercase hyphenated names.
   Existing root commands remain stable entry points for users and automation.
 - Python importable modules: `snake_case.py`; tests discovered by pytest:

@@ -19,7 +19,7 @@ POLICY_FILES = {
     'tests/test_native_mac_launcher.py', 'AGENTS.md',
     # Tests formerly owned by runtime-patches.yml now run with the launcher.
     'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
-    'patches/1150-game-icon.patch',
+    'patches/platform/1150-game-icon.patch',
     'tests/native_compiler.py',
     'tests/package_launcher.py', 'tools/package-release.py',
     'tools/release/ImportGame.cs', 'requirements.txt',

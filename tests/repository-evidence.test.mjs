@@ -111,3 +111,16 @@ test('evidence byte exhaustion and file changes cannot silently yield a stale fi
  assert.ok(bounded.evidence.bytes<=6500);assert.ok(calls<=3);
  calls=0;await assert.rejects(runEvidenceAdvisory({state:{cwd:root},signal:new AbortController().signal,guard:()=>true,attempt:()=>calls++,success:()=>{},ask:async()=>{if(calls===1)return {answer:need([read])};save(root,'src/counter.c','concurrent change\n');return {answer:'This stale plan must not be used.'};}}),/changed/);
 });
+
+
+test('nested responsibility patches retain effective order and exclude legacy',t=>{
+ const root=fixture(t),hash=s=>createHash('sha256').update(s).digest('hex');
+ const payload='--- a/src/example.c\n+++ b/src/example.c\n@@ -1 +1 @@\n-old_gate();\n+new_gate();\n';
+ save(root,'tools/apply-patches.py','# fixture loader\n');
+ save(root,'patches/graphics/rendering/fix.patch',payload);
+ save(root,'patches/legacy/old.patch',payload);
+ save(root,'docs/agent-context/patch-index.json',JSON.stringify({patches:[{name:'fix.patch',path:'patches/graphics/rendering/fix.patch',sha256:hash(payload)}],loaderSha256:hash('# fixture loader\n')}));commit(root);
+ const result=createRepositoryEvidence(root).retrieve({kind:'patches',query:'new_gate'});
+ assert.equal(result.hits.length,1);assert.equal(result.hits[0].order,1);
+ assert.equal(result.hits[0].target,'src/example.c');
+});

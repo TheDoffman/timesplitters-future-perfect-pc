@@ -135,7 +135,9 @@ def main():
     run('file', BUILD / 'futureperfect_recomp')
     run('dsymutil', BUILD / 'futureperfect_recomp', '-o', BUILD / 'futureperfect_recomp.dSYM')
     # Include shared PC source hashes as well as the native adapters.
-    sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
+    sources = sorted(p for p in (ROOT / 'patches').rglob('*.patch')
+                     if 'legacy' not in p.relative_to(ROOT / 'patches').parts)
+    sources += sorted((ROOT / 'src').rglob('*'))
     manifest = dict(auto_display_resolution=True, source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                     textures=textures,
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),

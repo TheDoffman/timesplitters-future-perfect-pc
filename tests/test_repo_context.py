@@ -23,8 +23,10 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     index = context.patch_index(ROOT)
     tracked = context.tracked(ROOT)
     names = [p['name'] for p in index['patches']]
-    assert {f'patches/{n}' for n in names} == {n for n in tracked if n.startswith('patches/')
-                                              and n.count('/') == 1 and n.endswith('.patch')}
+    assert {p['path'] for p in index['patches']} == {
+        n for n in tracked if n.startswith('patches/') and n.endswith('.patch')
+        and 'legacy' not in Path(n).parts}
+    assert all(Path(p['path']).name == p['name'] for p in index['patches'])
     def position(suffix):
         return next(i for i, name in enumerate(names) if name.endswith(suffix))
     assert position('-native-frame-timing.patch') < position('-native-interp-retirement.patch')
@@ -65,6 +67,8 @@ def test_finder_is_literal_bounded_and_points_to_effective_runtime_target():
     assert 'active order' in text or 'untracked experiment' in text
     assert 'showing 3.' in text
     assert 'showing 0.' in context.find(ROOT, '.*[not-a-regex')
+    assert 'patches/compiler/0140-independent-translation-bitops.patch' in context.find(
+        ROOT, '0140-independent-translation-bitops.patch')
 
 
 def test_stale_index_is_rejected_without_modifying_sources(tmp_path, monkeypatch):

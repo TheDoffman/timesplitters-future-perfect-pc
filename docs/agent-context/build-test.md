@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
+
 Patch renames and fixture cleanup: [layout](../repository-layout.md).
 
 [Own translation and flag tests](independent.md).
@@ -55,11 +57,9 @@ also cover focus loss, stale held buttons, menu return and a clip released by
 another component while the game remains foreground.
 <!-- packet:end -->
 
-Native SDL input validation checks both active Confirm slots (E and Space) and
-rejects the retained third fixture entry (Return), matching the shared keyboard
-profile's two-slot cap. Run `tools/build-native-mac.py --test` on the actual host;
-this self-test correction does not change gameplay bindings or certify physical
-keyboard input.
+SDL tests accept Confirm E/Space and reject the third fixture slot Return
+(shared two-slot cap). Run `tools/build-native-mac.py --test` on Mac; this
+synthetic check neither changes bindings nor certifies physical keyboard input.
 
 PR CI's candidate `PR validation` gate in `runtime-patches.yml` selects runtime
 and launcher work for one head and checks Windows/Mac worker results with
@@ -78,7 +78,7 @@ dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60–240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks

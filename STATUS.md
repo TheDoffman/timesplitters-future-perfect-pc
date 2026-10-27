@@ -1,3 +1,24 @@
+## Patch folders and fresh-main launch (2026-10-27)
+
+Base `7dbd127b`: regenerated the supported US XBE, cleaned Windows Release
+(previous executable absent), then compiled and passed the built-in checks.
+Windows x64 (10.0.26300), MSVC 19.44.35224, RTX 4070 SUPER driver 32.0.16.1742:
+a 120-second isolated Original-60 Story replay passed all ten checks, including
+no crash, gameplay entry, pause/resume, movement, animation and firearm/ammo.
+Reviewed captures show first-level gameplay; runtime swaps averaged 59.61 FPS.
+Full campaign completion and Mac gameplay were not tested.
+
+207 active patches now live in responsibility folders. Committed payloads,
+effective order, hashes and context options are unchanged; five legacy inputs
+remain unwind-only. Loader/index/broker discovery and Mac provenance follow
+nested paths. Migration, rollback, snapshot, context, renderer and CI scope
+suite: 177 passed. Focused tests: 48 passed plus 26 subtests; two context-size
+failures were repaired and passed in the full suite. Node tests: 23 passed.
+The grouped Windows build and its built-in checks passed. One virtual-pad
+routing check skipped when Windows refused foreground activation. Evidence:
+ignored `logs/patch-folders-*` and
+`private/test-saves/high-refresh/60-main-7dbd127b-*`.
+
 ## Repository organization (2026-10-27)
 
 From main `9f40dc21`, `cleanup/repository-layout` replaces repeated alphabetical
@@ -1120,7 +1141,7 @@ rectangles use depth near 0. The camera already projects the bars for the wide
 view, so applying the centered 4:3 HUD placement a second time causes the
 drift.
 
-`patches/0720-world-health-bars.patch` leaves those projected draws across the
+`patches/graphics/interface/0720-world-health-bars.patch` leaves those projected draws across the
 full output while retaining the normal HUD placement for other sprites. A
 repeat challenge run at 1280×720 showed bars alongside moving monkeys. The
 Windows Release game build, `tsfp_pc_display_test`, patch-stack validation,
@@ -19004,7 +19025,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   for additive glow at draws 462–463, after drawing the train and weapon.
   The HLE refreshed this texture only once per swap, so the final effect
   painted the earlier background over otherwise solid geometry.
-- Added `patches/0760-framebuffer-sampling-passes.patch`. Switching away
+- Added `patches/graphics/rendering/0760-framebuffer-sampling-passes.patch`. Switching away
   from a framebuffer texture invalidates its cached copy. Rebinding it captures
   the scene including intervening geometry; consecutive taps retain a stable
   snapshot. Frame-zero initialization, changed texture identity and failed-copy
@@ -19062,7 +19083,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   and polling rather than eliminating all diagnostic computation.
 - Sources are `src/pc_debug_output.h`, `src/pc_debug.c`, `tests/pc_debug.c`,
   `tools/play.py`, `Play-Quiet.cmd` and the separate reproducible
-  `patches/0920-pc-debug-quiet.patch`. The entry-point define is
+  `patches/diagnostics/0920-pc-debug-quiet.patch`. The entry-point define is
   source-specific so generated game C does not need unrelated recompilation.
   MAC-013 records the deferred native startup adaptation.
 - Supported Windows Release build completed all native build-script checks
@@ -19227,7 +19248,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
 - Source base `c17336b` (fetched `origin/main`); this revision adds regression
   coverage/documentation on `24-controller-sensitivity-slider-not-working-correctly`.
   The runtime correction is already present in `837692d`, through the shared
-  `patches/0300-recomp-float-joins.patch`. No additional runtime change is required.
+  `patches/compiler/0300-recomp-float-joins.patch`. No additional runtime change is required.
 - Located the original controller sensitivity callback `0x002EAB30` and its
   shared clamp at `0x002EABEB`. Older generation discarded the comparison when
   decrement and increment paths met, causing the clamp to overwrite intermediate
@@ -19761,7 +19782,7 @@ full gameplay and campaign completion have not been verified.
 - The shared rules now distinguish the retained Windows compatibility build
   from one active native build in `build/macos`. Native build provenance is
   recorded in its ignored `BUILD.json`; runtime changes are reproducible from
-  `patches/0400-mac-native-boot.patch`, applied after the existing feature stack.
+  `patches/platform/0400-mac-native-boot.patch`, applied after the existing feature stack.
 - Native tests recycled their known disposable partition images. The game
   probe's six images had 5,243,406,848 logical bytes but only 135,168 allocated
   bytes; the images are no longer in the project. Metadata/configuration and
@@ -19897,13 +19918,13 @@ in this section describe the state before the renderer connection.
   2022 / MSVC 19.44.35224 for Windows x64.
 - Compiled and loaded FFmpeg 8.1 movie support.
 - Fixed native profile device paths that bypassed `RECOMP_SAVE_DIR`, and
-  preserved the fix in `patches/0330-save-routing.patch`. Ten native path regression
+  preserved the fix in `patches/storage/0330-save-routing.patch`. Ten native path regression
   checks pass, including asset routing and switching between save directories.
 - Added player-1 keyboard/mouse controls: normalized WASD movement, Windows raw
   relative mouse motion, direct camera-angle updates, mouse buttons and wheel,
   editable sensitivity/invert-Y settings, focus-loss clearing and cursor
   capture/release. The launcher loads `config/pc-controls.json`.
-- Preserved the host integration and camera wrapper in `patches/0230-pc-controls.patch`;
+- Preserved the host integration and camera wrapper in `patches/input/0230-pc-controls.patch`;
   the generated original `sub_000D2B80` body remains available as `_gen`.
 
 ## Validation
@@ -20453,7 +20474,7 @@ operand states and emitted `if (_flags)` with `_flags` initialized to zero.
 The horizontal rejection therefore never ran. Eligibility and vertical checks
 still ran, explaining early pickups rather than indiscriminate item grants.
 
-`patches/0300-recomp-float-joins.patch` merges SSE comparison snapshots across those
+`patches/compiler/0300-recomp-float-joins.patch` merges SSE comparison snapshots across those
 paths, retaining their original ordered/unordered conditions. Pickup radii,
 weapon grants and input bindings are unchanged. No generated game C was edited.
 `tools/recomp-generation.py` records generator source hashes; Windows Build
@@ -20607,7 +20628,7 @@ MAC-014 retains pending native Mac validation and other-device synchronization.
 Local, uncommitted work on `fix/issue-8-audio-timing`, based on main
 `4189924038729030d890faa93edacdeccc74a1e1`. The user clarified that delayed
 cutscene audio concerns story cutscenes. The separate XMV video path was not
-changed. `patches/0010-dsound-audio-timing.patch` fixes four reproduced runtime bugs:
+changed. `patches/media/0010-dsound-audio-timing.patch` fixes four reproduced runtime bugs:
 stream completion advancing through unheard audio after queue starvation;
 flush retaining the previous voice's timeline origin; refused buffer submissions
 discarding PCM; and ADPCM resume copying from the wrong offset inside a block.
@@ -21725,13 +21746,13 @@ queued under MAC-021; other-device synchronization is unverified.
   2022 / MSVC 19.44.35224 for Windows x64.
 - Compiled and loaded FFmpeg 8.1 movie support.
 - Fixed native profile device paths that bypassed `RECOMP_SAVE_DIR`, and
-  preserved the fix in `patches/0330-save-routing.patch`. Ten native path regression
+  preserved the fix in `patches/storage/0330-save-routing.patch`. Ten native path regression
   checks pass, including asset routing and switching between save directories.
 - Added player-1 keyboard/mouse controls: normalized WASD movement, Windows raw
   relative mouse motion, direct camera-angle updates, mouse buttons and wheel,
   editable sensitivity/invert-Y settings, focus-loss clearing and cursor
   capture/release. The launcher loads `config/pc-controls.json`.
-- Preserved the host integration and camera wrapper in `patches/0230-pc-controls.patch`;
+- Preserved the host integration and camera wrapper in `patches/input/0230-pc-controls.patch`;
   the generated original `sub_000D2B80` body remains available as `_gen`.
 
 ## Texture overhaul moved to issue #74 - October 16, 2026
@@ -26006,7 +26027,7 @@ through `xbox_input`, while replay deliberately links only the renderer. This
 was a missing target dependency, not stale generated game code.
 
 Focused branch `fix/replay-texture-mode-link` adds the shared source directly
-to standalone Windows replay through `patches/0320-replay-texture-mode-link.patch`.
+to standalone Windows replay through `patches/graphics/textures/0320-replay-texture-mode-link.patch`.
 The full input/kernel/audio dependency chain stays unnecessary. Native Mac's
 renderer already owns the same mode source; its existing build path is preserved.
 MAC-011 records this build fix and the unavailable Mac host validation.

@@ -116,7 +116,7 @@ def test_real_cmake_rc_build_embeds_every_icon_frame_in_a_unicode_path(tmp_path)
     assert ninja, 'Ninja is required to preserve Unicode resource paths'
     output = source/'icon output'
     build(output)  # Use the real private wordmark locally; CI exercises the fallback.
-    patch = (ROOT/'patches/1150-game-icon.patch').read_text()
+    patch = (ROOT/'patches/platform/1150-game-icon.patch').read_text()
     snippet = '\n'.join(line[1:] for line in patch.splitlines() if line.startswith('+') and not line.startswith('+++'))
     (source/'main.c').write_text('int main(void) { return 0; }\n')
     (source/'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(game_icon_probe C)\n'

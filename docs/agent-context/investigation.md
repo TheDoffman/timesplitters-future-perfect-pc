@@ -1,5 +1,10 @@
 # Investigation memory and handoffs
 
+The patch index keeps stable basename identities and a separate repository
+`path` for nested responsibility folders. Both `repo-context.py find` and the
+evidence broker use those paths and effective order; legacy patches are excluded
+from active search. The broker still accepts older flat-layout indexes.
+
 [Repository layout](../repository-layout.md) distinguishes tracked source,
 the pristine vendor snapshot, the patched external runtime and local outputs.
 Patch lookup/index entries now use readable numbered filenames; use the same

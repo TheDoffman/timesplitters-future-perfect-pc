@@ -115,12 +115,12 @@ export function createRepositoryEvidence(cwd){
       let candidates=[...source.files.keys()].filter(name=>sourceAllowed(name,source===runtime?'runtime':'repository')&&(!request.scope||name===request.scope||name.startsWith(request.scope+'/'))).sort();
       let patchIndex;
       if(request.kind==='patches'){
-        candidates=candidates.filter(name=>/^patches\/[^/]+\.patch$/.test(name));
+        candidates=candidates.filter(name=>/^patches\/.+\.patch$/.test(name)&&!name.split('/').includes('legacy'));
         try{
           patchIndex=JSON.parse(read(source,'docs/agent-context/patch-index.json').text);
           const loader=read(source,'tools/apply-patches.py').text.replace(/\r\n/g,'\n');
           if(patchIndex.loaderSha256!==sha(loader))throw Error('stale_index');
-          const order=new Map(patchIndex.patches.map((p,i)=>['patches/'+p.name,i]));candidates.sort((a,b)=>(order.get(b)??-1)-(order.get(a)??-1));
+          const order=new Map(patchIndex.patches.map((p,i)=>[p.path??'patches/'+p.name,i]));candidates.sort((a,b)=>(order.get(b)??-1)-(order.get(a)??-1));
         }catch{patchIndex=null;}
       }
       let scannedFiles=0,scannedBytes=0,skippedFiles=0,truncated=false;const hits=[];
@@ -145,7 +145,7 @@ export function createRepositoryEvidence(cwd){
           observed.set(source.root+'\0'+name,{root:source.root,path:name,sha256:item.meta.sha256});
         }
       }
-      return fit({...base,kind:request.kind,query,hits,scannedFiles,scannedBytes,skippedFiles,truncated,note:request.kind==='references'?'Lexical references, not a verified call graph.':request.kind==='patches'?'Indexed top-level patches only; later hunks can supersede earlier ones.':undefined},maxBytes);
+      return fit({...base,kind:request.kind,query,hits,scannedFiles,scannedBytes,skippedFiles,truncated,note:request.kind==='references'?'Lexical references, not a verified call graph.':request.kind==='patches'?'Indexed active patches only; later hunks can supersede earlier ones.':undefined},maxBytes);
     }catch(error){
       const allowed=['path_not_allowed','invalid_request','invalid_namespace','invalid_range','invalid_hash','invalid_query','redirected_path','runtime_pin_unavailable','runtime_revision_mismatch','file_not_allowlisted','file_too_large','file_changed_during_read','binary_file','repository_revision_changed','runtime_revision_changed','file_hash_changed','range_out_of_bounds'];
       return {status:'unavailable',reason:allowed.includes(error.message)?error.message:'evidence_unavailable',repositoryRevision:rootRevision};

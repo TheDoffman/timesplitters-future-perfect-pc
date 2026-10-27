@@ -20,6 +20,7 @@ RUNTIME = ROOT / 'external/ts3FPrecomp'
 spec = importlib.util.spec_from_file_location('apply_patches', ROOT / 'tools/apply-patches.py')
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
+PATCH_PATHS = {p.name: p for p in installer.active_patch_paths(PATCHES)}
 
 
 @pytest.fixture(scope='session')
@@ -47,7 +48,7 @@ def checkout(tmp_path, upstream_files):
 
 
 def apply(tree, patch):
-    result = installer.git(tree, 'apply', PATCHES / patch)
+    result = installer.git(tree, 'apply', PATCH_PATHS[patch])
     assert result.returncode == 0, result.stderr
 
 
@@ -71,13 +72,32 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert snapshot(checkout) == complete
 
 
+def test_complete_flat_stack_moves_to_folders_without_runtime_or_ledger_changes(checkout, tmp_path):
+    flat = tmp_path / 'flat-patches'
+    flat.mkdir()
+    for path in installer.active_patch_paths(PATCHES):
+        shutil.copyfile(path, flat / path.name)
+    shutil.copytree(PATCHES / 'legacy', flat / 'legacy')
+    assert installer.patch_records(installer.active_patch_paths(flat)) == installer.patch_records(
+        installer.active_patch_paths(PATCHES))
+    installer.apply_patches(checkout, flat)
+    before = snapshot(checkout)
+    ledger = installer.state_path(checkout).read_bytes()
+    assert installer.apply_patches(checkout, PATCHES) == []
+    assert installer.state_path(checkout).read_bytes() == ledger
+    assert snapshot(checkout) == before
+    assert installer.apply_patches(checkout, flat) == []
+    assert installer.state_path(checkout).read_bytes() == ledger
+    assert snapshot(checkout) == before
+
+
 def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     """The native checkpoint predates main's removal of interpolated replay."""
     # Later coefficient patches require the surface-constant baseline, so the
     # historical checkpoint must exclude both until the complete-stack upgrade.
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
-    for patch in PATCHES.glob('*.patch'):
+    for patch in installer.active_patch_paths(PATCHES):
         if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
             continue  # Requires title instrumentation absent from this checkpoint.
         if not patch.name.endswith(('-fixed-60-fps.patch','-native-interp-retirement.patch','-native-frame-rate-settings.patch','-native-live-frame-rate.patch', '-display-rounded-highlight.patch', '-native-surface-trace.patch', '-native-surface-fractional.patch', '-native-surface-precision.patch', '-native-surface-copy.patch', '-native-surface-constants.patch', '-native-surface-coefficients.patch', '-native-surface-preservation.patch', '-native-vehicle-physics.patch', '-native-surface-live.patch', '-native-surface-float32.patch', '-native-flip-handoff.patch', '-native-surface-capture.patch', '-native-surface-render.patch', '-native-demo-timing.patch', '-native-wind-history.patch', '-native-trace-quiet.patch')):
@@ -113,7 +133,7 @@ def test_integrate_independent_presentation_stacks(checkout, tmp_path, history,
     prior = tmp_path / 'prior-patches'
     prior.mkdir()
     for name in histories[history]['patches']:
-        source = PATCHES / name
+        source = PATCH_PATHS[name]
         if name.endswith(('-144-fps.patch', '-presentation-timing.patch',
                           '-interpolation-recovery.patch')):
             source = PATCHES / 'legacy' / name
@@ -140,7 +160,7 @@ def test_integrate_independent_presentation_stacks(checkout, tmp_path, history,
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
-    for patch in sorted(PATCHES.glob('*.patch')):
+    for patch in installer.active_patch_paths(PATCHES):
         if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
             continue  # Replaces handlers only after the complete instrumentation stack.
         if patch.name.endswith(('-texture-bind-scan.patch', '-model-transform-entry.patch', '-stable-gpr-refs.patch', '-zero-base-indices.patch', '-temporal-uplink-map.patch')):
@@ -235,7 +255,7 @@ def test_already_integrated_controls_and_display(checkout):
 def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
-    for patch in PATCHES.glob('*.patch'):
+    for patch in installer.active_patch_paths(PATCHES):
         if patch.name in ('0180-independent-translation-moves.patch', '0170-independent-translation-integer.patch', '0150-independent-translation-bits.patch', '0200-independent-translation-product.patch', '0140-independent-translation-bitops.patch'):
             continue  # Added after the native timing hooks excluded below.
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
@@ -263,7 +283,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
 def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
-    for patch in PATCHES.glob('*.patch'):
+    for patch in installer.active_patch_paths(PATCHES):
         shutil.copyfile(patch, patches / patch.name)
     shutil.copyfile(PATCHES / 'legacy/0350-texture-toggle.patch', patches / '0350-texture-toggle.patch')
     return patches
@@ -273,7 +293,7 @@ def main_branch_patches(tmp_path):
     """Model historical main before the toggle and its streaming dependency."""
     patches = tmp_path / 'main-patches'
     patches.mkdir()
-    for patch in PATCHES.glob('*.patch'):
+    for patch in installer.active_patch_paths(PATCHES):
         if patch.name not in ('0350-texture-toggle.patch', '0360-texture-upload-streaming.patch'):
             shutil.copyfile(patch, patches / patch.name)
     shutil.copytree(PATCHES / 'legacy', patches / 'legacy')

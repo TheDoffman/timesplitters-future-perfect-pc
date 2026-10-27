@@ -15,7 +15,7 @@ agents can implement/build/test directly without Qwen, Ollama or a router.
 
 <!-- packet:start -->
 This repo wraps a pinned Xbox static-recompilation runtime. Authoritative edits
-live in tracked `src/`, `tools/`, `config/` defaults and `patches/*.patch`.
+live in tracked `src/`, `tools/`, `config/` defaults and `patches/**/*.patch`.
 `external/ts3FPrecomp` is the ignored, patched runtime checkout, NOT a second
 authoritative source tree. Its generated guest C is under
 `titles/futureperfect/src/recomp/gen/`, NOT `build/windows/generated`.

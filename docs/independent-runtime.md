@@ -248,7 +248,7 @@ references, address-like immediates and indexed table candidates retain the
 consumer interface. A candidate is not proof of a function or table; recovery,
 analysis orchestration, symbol identification and translation remain upstream.
 
-`patches/0070-independent-disasm-input.patch` removes the old loader/model/classifier
+`patches/compiler/0070-independent-disasm-input.patch` removes the old loader/model/classifier
 bodies and connects the new implementations. It adapts code-probe reads and adds
 the independent dependencies to the disassembly cache key. The build generation
 fingerprint includes both the new source and the remaining disassembler source.
@@ -285,7 +285,7 @@ from [XboxDev/nxdk at 03acd1415f7ccc3127bcfb629224aacdd95d783c](https://github.c
 credited to Stefan Schmidt in its SPDX header. This standard ABI data is retained
 as an allowed third-party dependency; it is not ts3FPrecomp parser code.
 
-`patches/0210-independent-xbe-reader.patch` removes the installed upstream parser body
+`patches/compiler/0210-independent-xbe-reader.patch` removes the installed upstream parser body
 and routes its old module entry point to this reader. The two ordinal audit
 consumers use the new table reader too. Build drivers set `TSFP_PROJECT_ROOT`
 to the source checkout, including Mac builds sharing another checkout's ignored

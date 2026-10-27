@@ -236,21 +236,21 @@ Retain the dependency notices and provide corresponding source and build
 instructions when distributing GPL-covered binaries. The project license does
 not grant rights to the original game or its translated code and assets.
 
-`patches/0330-save-routing.patch` fixes the runtime's device paths for Xbox profile
+`patches/storage/0330-save-routing.patch` fixes the runtime's device paths for Xbox profile
 storage: Partition1's TDATA and UDATA now use the configured save directory.
 Setup and Build apply it idempotently. Build also runs the native
 `tests/save_paths.c` regression test against the actual runtime.
 After all native build tests pass, Build recycles their temporary `build/path-tests`
 data. Failed tests retain that directory for diagnosis; `private/saves` is unaffected.
 
-`patches/0230-pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
+`patches/input/0230-pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
 and `src/pc_input.c`, and adds a manual wrapper around the US build's
 `sub_000D2B80`. Its generated original body is retained as
 `sub_000D2B80_gen`; the generated C is never hand-edited. Build refreshes the
 generated code automatically when newly added wrappers are missing. The native
 `tests/pc_controls.c` suite runs during Build.
 
-`patches/0300-recomp-float-joins.patch` preserves floating-point comparisons when
+`patches/compiler/0300-recomp-float-joins.patch` preserves floating-point comparisons when
 different code branches meet. This restores the original horizontal pickup-range
 rejection in the supported US game. Windows Build also regenerates when the
 generator sources change; native Mac builds request `--generate` when needed.
@@ -258,11 +258,11 @@ generator sources change; native Mac builds request `--generate` when needed.
 The isolated `tests/test_recomp_float_joins.py` regression executes the actual
 pickup routine when the supported XBE and a C compiler are available.
 
-`patches/0010-dsound-audio-timing.patch` fixes stream-clock handling after underruns,
+`patches/media/0010-dsound-audio-timing.patch` fixes stream-clock handling after underruns,
 packet submission, flush and pause; preserves refused buffer audio for retry;
 resumes ADPCM at the exact decoded sample inside a block; and applies the
 Xbox stream headroom setting so stereo audio retains its intended mix volume.
-`patches/0030-dsound-stream-lifecycle.patch` cancels queued host audio on stream
+`patches/media/0030-dsound-stream-lifecycle.patch` cancels queued host audio on stream
 release and immediate/zero-time asynchronous FlushEx, preventing freed packet
 memory from playing during level transitions. The build tracks HLE declarations
 so adding audio hooks automatically regenerates the game wrappers.
@@ -274,7 +274,7 @@ without game files or audio hardware. It discovers installed MSVC x64 tools on
 Windows. The user confirmed the first-mission opening sounds clean after the
 stream-lifecycle fix. Other levels and full A/V synchronization need playtesting.
 
-`patches/0250-pc-display.patch` adds the display menu and camera hooks separately
+`patches/graphics/interface/0250-pc-display.patch` adds the display menu and camera hooks separately
 from the original controls patch, so existing checkouts can upgrade after a merge.
 Setup, Test, Generate, and Build validate the complete patch stack in a temporary
 source-only directory before changing runtime files. Conflicts name the failing
@@ -282,19 +282,19 @@ patch and leave the runtime checkout untouched. Existing patches should remain
 stable; add subsequent changes as separate patches. Run the upgrade regression
 tests with `.venv\Scripts\python.exe -m pytest tests/test_patch_updates.py tests/test_patch_tracking.py -q`.
 
-`patches/0270-pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
+`patches/input/0270-pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
 with the mouse-button and F23/F24 names added to the runtime by the PC controls
 patch. Setup, Test, and Build apply local patches idempotently.
 
-`patches/0240-pc-debug.patch` connects the renderer's frame statistics and F9 shortcut
+`patches/diagnostics/0240-pc-debug.patch` connects the renderer's frame statistics and F9 shortcut
 to `src/pc_debug.c`. Build runs `tests/pc_debug.c` to check persistence, log
 monitoring, live display options, and Debug dialog Save/Cancel behavior.
 `tests/pc_debug_game.py` checks the real game's menu and fullscreen access using
 isolated settings/saves and captures the dialog and overlay for review.
-`patches/0290-pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
+`patches/input/0290-pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
 so plain F11 does not trigger a capture.
 
-`patches/0280-pc-prompts.patch` connects input-device detection and shared player-1
+`patches/input/0280-pc-prompts.patch` connects input-device detection and shared player-1
 controller input to `src/pc_prompts.c`. It wraps the supported US executable's
 text measurement (`0x0003FCF0`) and rendering (`0x00040FA0`) functions using
 `src/pc_prompt_guest.inc`, translating prompt codes before text layout. The
@@ -303,7 +303,7 @@ original strings are preserved for controller input. Build runs
 checks. The virtual-controller check skips when a physical controller is attached.
 Build automatically refreshes an older generated checkout when these wrappers are missing.
 
-`patches/0260-pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
+`patches/graphics/interface/0260-pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
 switch so the game's borderless fullscreen handler owns Alt+Enter and the
 menu command. This prevents failed frame presentation and frozen video when
 entering fullscreen. New Direct3D presentation errors are logged once per change.
