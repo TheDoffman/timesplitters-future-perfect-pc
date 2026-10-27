@@ -132,7 +132,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
