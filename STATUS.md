@@ -1,6 +1,6 @@
 ## Independent exchange lowering (2026-10-27)
 
-On `feature/independent-exchange`, based on merged main `fd317882`, original
+PR #375 implementation `de66eb9a`, based on merged main `fd317882`: original
 code replaces XCHG/XADD/CMPXCHG lowering at byte, word and dword widths,
 including locked memory spellings. Effective addresses and inputs are sampled
 before writes; captured arithmetic results feed branches, SET, CMOV and zero

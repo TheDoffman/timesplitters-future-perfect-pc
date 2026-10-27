@@ -6180,7 +6180,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Status:** Awaiting validation
 - **PC behavior:** XCHG/XADD/CMPXCHG use original lowering, sampled addresses,
   byte/word/dword atomics and captured arithmetic conditions.
-- **PC source:** `feature/independent-exchange`; `translation_exchange.py`
+- **PC source:** PR #375, implementation `de66eb9a`; `translation_exchange.py`
   and `independent-translation-exchange.patch` (including original host helpers).
 - **PC validation:** Native reference, decoded-consumer and concurrency fixtures;
   generation/build/game results are recorded in STATUS.md.
