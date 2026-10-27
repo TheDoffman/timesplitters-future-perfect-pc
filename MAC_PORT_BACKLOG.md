@@ -207,6 +207,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-071 | Independent analysis runner and publication | Awaiting validation |
 | MAC-072 | Independent symbol adapter and pipeline driver | Awaiting validation |
 | MAC-073 | Independent function catalog | Awaiting validation |
+| MAC-074 | Independent generation support | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -5797,6 +5798,26 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   regenerate with `--generate`, compare executable generation, build and verify
   isolated Story movement, firing and pause/resume.
 - **Mac implementation and evidence:** Windows checks do not establish Mac
+  generation or gameplay acceptance; see STATUS.md for measured scope.
+
+### MAC-074 - Independent generation support
+
+- **Status:** Awaiting validation
+- **PC behavior:** Production generation uses own manual-source inspection,
+  translation reports/declaration headers and atomic generated-text publication.
+  Existing definitions/wrappers and unchanged generated-file timestamps persist.
+- **PC source:** Continuing PR #370; `tools/c_source_scan.py`,
+  `tools/generation_output.py`, `patches/z-independent-generation-support.patch`,
+  generation fingerprint, original tests and shared CI registration.
+- **PC validation:** Scanner/output and existing title-wrapper fixtures;
+  generation/build/isolated game evidence recorded in STATUS.md.
+- **Existing Mac support:** Shared standard-library implementation; native text
+  newlines and atomic file replacement use host APIs through Python.
+- **Mac adaptation needed:** None identified; native acceptance pending.
+- **Mac acceptance checks:** Run scanner/output/fingerprint and title-wrapper
+  tests, regenerate with `--generate`, compare generated code, build and verify
+  isolated Story movement, firing and pause/resume.
+- **Mac implementation and evidence:** Windows evidence does not establish native
   generation or gameplay acceptance; see STATUS.md for measured scope.
 
 ## Entry template

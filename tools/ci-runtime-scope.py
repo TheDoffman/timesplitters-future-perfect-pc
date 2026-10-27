@@ -34,6 +34,8 @@ RELEASE_INPUTS = {
 CPU_TOOLS = {
     'tools/xdk_catalog.py', 'tools/compile_pipeline.py',
     'tests/test_xdk_catalog.py', 'tests/test_compile_pipeline.py',
+    'tools/c_source_scan.py', 'tools/generation_output.py',
+    'tests/test_c_source_scan.py', 'tests/test_generation_output.py',
     'tools/function_evidence.py', 'tools/function_categories.py', 'tools/function_catalog.py',
     'tests/test_function_evidence.py', 'tests/test_function_categories.py', 'tests/test_function_catalog.py',
     'tools/analysis_cache.py', 'tools/analysis_config.py', 'tools/analysis_output.py', 'tools/analysis_runner.py',

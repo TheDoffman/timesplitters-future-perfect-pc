@@ -256,6 +256,15 @@
       ]
     },
     {
+      "name": "z-independent-generation-support.patch",
+      "sha256": "52fd9c252e3b17d643c12aede272008f1b2ea054a4760f61d5bdde7d02fefd87",
+      "targets": [
+        "tools/recomp/manual_scan.py",
+        "tools/recomp/output.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
       "name": "zz-pc-network.patch",
       "sha256": "ef7f95291d224cc90533c04ba04edf06d32278479756d9b79a29f9fc5489c821",
       "targets": [

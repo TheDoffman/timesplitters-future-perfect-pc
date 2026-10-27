@@ -1,3 +1,51 @@
+## Independent manual-source and generation-output support (2026-10-26)
+
+Continuing PR #370 from `78466ed1`, production generation now uses project
+`c_source_scan.py` and `generation_output.py`. The compatibility patch replaces
+manual-source scanning, translation reports/header output and the translator's
+text writer. The scanner distinguishes definitions from prototypes and ignores
+comment/string decoys; known preprocessor branches are resolved and unknown
+conditions remain possible. It is not a complete C preprocessor. Atomic text
+publication preserves previous output on failures and unchanged timestamps.
+Core x86-to-C translation, runtime services and final provenance removal remain
+upstream work; the overall goal remains active.
+
+Windows 11 x64 / Python 3.12.14 / Capstone 5.0.9 / MSVC 2022 / D3D11:
+
+- **516 passed, 1 skipped in 774.16 seconds** in the combined patch-transition,
+  independent-tooling, fingerprint, Mac-tool, isolated-profile, CI-scope and
+  title-wrapper consumer suite.
+- **48 focused tests passed in 56.02 seconds**: 18 original scanner/output cases,
+  two generation-fingerprint cases and 28 existing camera/crane/vehicle consumers.
+  Fresh-process tests cover direct translator and standalone importlib scanner
+  imports. Cases exercise literal/unknown conditional branches, spliced lines,
+  comments/literals/macros, definitions versus prototypes, wrapper registration,
+  CRLF/timestamp preservation, failed publication cleanup, report totals and
+  inferred-header input validation/comment escaping.
+- **21 context/backlog checks passed.** Shared CI registers the new modules;
+  both sources participate in generation fingerprints.
+- The supported title preserves all **138 manual definitions** and **137
+  generated-body wrappers**. Four references found only in comments/text are
+  no longer reported. All **21 generated C/header files are byte-identical**.
+- **Full Windows build and native checks passed on retry without source changes.**
+  The initial build's debug-settings Save check failed. Its isolated rerun and
+  the full build rerun passed; the initial failure's cause is not established.
+  Logs retain both results. Generation fingerprint is current.
+- Isolated Scotland the Brave: reviewed start/pause/resume captures; forward
+  movement 11.173 units, ammo 8 to 6, 40 paused samples with frozen ticks,
+  60 resumed samples with advancing simulation, backward movement 6.185 units.
+  Last checkpoint 87.368 seconds, exit 0; no crash artifacts or leftover
+  partitions/lock. Signed profiles unchanged; canonical fixture verified.
+- Tested executable SHA-256:
+  `2b22053307a2851f4b5d0e21b8c5408800ffda2e115b778b769a70dbaa7af06b`.
+
+The run used injected input, minimized/background rendering, original 60 FPS
+and skipped movies. It does not certify physical input, audio, foreground pacing
+or whole levels. Personal saves/settings were unused. Evidence:
+`logs/independent-generation-support-*` and
+`private/test-saves/independent-generation-support`. Native Mac generation/build/
+game acceptance remains pending under MAC-074.
+
 ## Independent function classification (2026-10-26)
 
 Continuing PR #370 from `4121be20`, production generation now calls project

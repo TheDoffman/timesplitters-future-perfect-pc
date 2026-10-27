@@ -11,7 +11,8 @@ pinned runtime and its patches. Disc import and executable analysis now have
 independent implementations, as do the disassembler's image view and instruction
 classification, traversal, direct-edge reachability, table/body recovery,
 function discovery, labels, cross-references, analysis orchestration/output/cache,
-the library-symbol adapter, generation driver and function classifier.
+the library-symbol adapter, generation driver, function classifier, manual-source
+scanner and generation output support.
 Do not present the port as an original implementation of the complete Xbox
 runtime or recompiler.
 
@@ -56,7 +57,8 @@ completion of the whole goal. The table below and STATUS.md record progress.
 | Analysis orchestration, configuration, cache and output | Project-owned `analysis_runner.py`, `analysis_config.py`, `analysis_cache.py`, `analysis_output.py`; compatibility imports serve production | Standalone XBE-to-JSON/assembly CLI, content-verified cache, seed/section/publication fixtures, generation/build and isolated gameplay; native Mac pending |
 | Library-symbol adapter and generation driver | Project-owned `xdk_catalog.py` and `compile_pipeline.py`; production compatibility entries use them | Protocol/seed/routing/failure fixtures, actual symbol and generated-code comparisons, Windows build and isolated gameplay; native Mac pending |
 | Function classification | Project-owned `function_catalog.py`, `function_evidence.py`, `function_categories.py`; production calls the standalone catalog | Bounded operands/xrefs, source/context/graph hypotheses, measured pointer-entry blocks, no guessed CRT names or function extents; generated executable-code comparison, build and isolated gameplay; native Mac pending |
-| x86-to-C translation | Still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
+| Manual-source scanning and generation output | Project-owned `c_source_scan.py` and `generation_output.py`; production uses compatibility entries | Lexical/preprocessor/declaration fixtures, standalone consumer imports, unchanged-output timestamps and failure preservation; regeneration/build/game checks; native Mac pending |
+| x86-to-C translation | Core translation still upstream | Translation flags, x87/SSE, rounding, indirect calls, exceptions, stack/ABI and memory tests; deterministic generation from the supported XBE |
 | Guest memory, executable loader and kernel | Still upstream | Guest address-space ownership, protection, imports, threads/TLS, synchronization, filesystem and saves; boot and isolated save/load on Windows and Mac |
 | Graphics and GPU command handling | Still upstream, with project adapters/patches | Own resource/state/command model, texture formats, shaders, draw/clear/present paths; asset-free GPU tests and representative captured/live scenes on both hosts |
 | Audio and movies | Still upstream, with project integration | Own Xbox-facing buffer/voice/clock services and movie adapter around permitted libraries; decode, mixing, resampling, looping, synchronization and pause/resume |
@@ -347,3 +349,32 @@ compatibility entries participate in generation fingerprints. Labels, scores
 and array membership remain heuristic, not proof of source/library identity or
 complete C++ recovery. STATUS.md records actual host validation; MAC-073 keeps
 native Mac generation and gameplay acceptance separate.
+
+## Manual-source inspection and generated output
+
+`c_source_scan.py` is a project-authored lexical scanner using only the standard
+library. Comments and quoted literals cannot fabricate function bodies or
+references. Token inspection distinguishes declarations from definitions by the
+opening body brace. Literal conditional branches, nested directives, else/elif
+and spliced lines are handled; unknown macro conditions retain possible branches.
+This is not a complete C preprocessor: configuration-specific conclusions need
+preprocessed input. Macro text contributes references without becoming a C body.
+The current title preserves 138 definitions and 137 generated-body wrappers;
+four references present only in comments/text are no longer reported.
+
+`generation_output.py` owns translation summaries, optional inferred-ABI header
+reports and atomic generated-file publication. The signature report does not
+replace the executable translator's register-state ABI. Header inputs validate
+names/counts and sanitize comment text. Unchanged decoded text retains existing
+bytes and timestamps, including existing CRLF; new files use host-native text
+newlines. Temporary writes/replacements preserve previous output on failures.
+
+`z-independent-generation-support.patch` replaces the manual scanner/output
+modules and translator's text-writer body after existing flag-join patch context.
+Standalone importlib and direct translator imports initialize own module paths
+through the parser bridge. Original tests cover lexical decoys, preprocessor
+branches, source wrappers, file failures/timestamps and signatures; existing
+camera/crane/native-vehicle consumers exercise the integration. Both modules
+enter generation fingerprints and shared CI. Historical deleted upstream text
+still awaits final removal. STATUS.md records measured Windows validation;
+MAC-074 tracks native Mac acceptance without inferring it from shared source.

@@ -36,6 +36,17 @@ The catalog preserves measured function bounds; all three sources and runtime
 bridges enter generation fingerprints. Original catalog/evidence/category tests
 include copied-module execution without the runtime. Translation remains upstream.
 
+`z-independent-generation-support.patch` follows the flag-join patches so their
+translator context remains replayable. It routes manual-source inspection to
+`c_source_scan.py`, reports/declarations and generated-text publication to
+`generation_output.py`. Standalone importlib consumers bootstrap through the
+own parser bridge. Scanner tokenization masks comments/literals, recognizes
+real body braces and resolves literal preprocessor branches; unknown conditions
+retain possible branches and require preprocessed input for configuration proof.
+Atomic changed-file publication preserves existing output on failure and keeps
+unchanged timestamps/newlines. Original scanner/output and existing title-wrapper
+tests cover these contracts; both own modules enter generation fingerprints.
+
 `independent-disasm-traversal.patch` follows the input patch and removes the
 engine's scan/realignment/reachability/query methods in favor of inherited
 `x86_flow.InstructionTraversal`. The subsequent recovery patch replaces the table/prologue methods. Both cache fingerprints include the new module. Synthetic

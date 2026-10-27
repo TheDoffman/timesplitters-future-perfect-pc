@@ -1,10 +1,9 @@
 # Build, run and validation map
 
-`compile_pipeline.py` calls own parser, analyzer and `function_catalog.py`.
-Catalog evidence/category tests cover standalone execution and measured bounds;
-labels must preserve generated executable code. `xdk_catalog.py` adapts permitted
-XbSymbolDatabase. Own sources/bridges enter generation hashes; analysis excludes
-unrelated drivers. Remaining work: `docs/independent-runtime.md`.
+`compile_pipeline.py` calls own parser/analyzer/catalog. Generation fingerprints
+cover own sources/bridges. `c_source_scan.py` and `generation_output.py` own manual
+source inspection and atomic output; scanner/output tests include standalone
+imports and title wrappers. See `docs/independent-runtime.md` for scope/evidence.
 
 `tools/xbe_image.py` owns executable analysis; `test_xbe_image.py` validates
 synthetic bounds/decoding and optional private-US metadata. Build drivers pass
