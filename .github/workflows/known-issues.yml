@@ -12,7 +12,7 @@ on:
     paths:
       - .github/known-issues.json
       - .github/workflows/known-issues.yml
-      - tools/known-issues.py
+      - tools/ci/known-issues.py
   schedule:
     - cron: '23 8 * * *'
   workflow_dispatch:
@@ -47,4 +47,4 @@ jobs:
       - name: Refresh the pinned known-issues post
         env:
           KNOWN_ISSUES_TOKEN: ${{ secrets.KNOWN_ISSUES_TOKEN }}
-        run: python tools/known-issues.py
+        run: python tools/ci/known-issues.py

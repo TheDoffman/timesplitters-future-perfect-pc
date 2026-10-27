@@ -37,9 +37,9 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = workflow_dispatch ] || [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = 0000000000000000000000000000000000000000 ]; then
-            python tools/launcher-compatibility.py scope --head "$HEAD_SHA" --all
+            python tools/ci/launcher-compatibility.py scope --head "$HEAD_SHA" --all
           else
-            python tools/launcher-compatibility.py scope --base "$BASE_SHA" --head "$HEAD_SHA"
+            python tools/ci/launcher-compatibility.py scope --base "$BASE_SHA" --head "$HEAD_SHA"
           fi
 
   build:
@@ -64,4 +64,4 @@ jobs:
           SCOPE_RESULT: ${{ needs.scope.result }}
           SHOULD_BUILD: ${{ needs.scope.outputs.run }}
           BUILD_RESULT: ${{ needs.build.result }}
-        run: python3 tools/launcher-compatibility.py gate --scope "$SCOPE_RESULT" --run "$SHOULD_BUILD" --build "$BUILD_RESULT"
+        run: python3 tools/ci/launcher-compatibility.py gate --scope "$SCOPE_RESULT" --run "$SHOULD_BUILD" --build "$BUILD_RESULT"

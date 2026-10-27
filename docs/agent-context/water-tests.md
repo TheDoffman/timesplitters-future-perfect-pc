@@ -2,13 +2,13 @@
 
 Detailed surface checks from the [build and test guide](build-test.md).
 
-`tests/stability_transitions_game.py --scenario surface-feedback --run-name
+`tests/gameplay/stability_transitions_game.py --scenario surface-feedback --run-name
 water-live-feedback --seconds 100 --no-captures` replays the committed Scotland
 route and requests 16 completed GPU feedback triplets, with isolated Test Lab
 saves/settings and executable/XBE provenance. Add `--native-fps 144` for the
 native clock while retaining the original water feedback. `--no-captures` skips
 ordinary screenshots; this scenario still explicitly reads its feedback fields.
-`test_captured_live_feedback` in `tests/test_surface_shader_feedback.py` compares
+`test_captured_live_feedback` in `tests/graphics/test_surface_shader_feedback.py` compares
 that local capture with the original translated shaders and coupled one-tick,
 two-half-tick and three-piece updates on local hardware. Capture Original60 in
 `water-live-feedback-original` with `--native-fps 0` for the second case. Hardware
@@ -108,7 +108,7 @@ coefficient textures keyed by fractional duration. A fifth schedule alternates
 profile includes that jitter, smoothing off/on and pause preservation. Replacing
 the evolve shader's first diagonal entry with 1 must fail the byte comparison.
 
-Windows GPU checks: `tests/test_surface_shader_feedback.py --hardware-check
+Windows GPU checks: `tests/graphics/test_surface_shader_feedback.py --hardware-check
 --profile 0` verifies boundaries; `--benchmark --profile 3` measures GPU spans,
 not game FPS. Default pytest uses WARP. RTX4070 SUPER results are in STATUS;
 other GPUs/Mac remain unverified. Preserve the arithmetic-distance guard and

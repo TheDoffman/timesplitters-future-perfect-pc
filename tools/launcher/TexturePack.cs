@@ -70,7 +70,7 @@ namespace TimeSplitters.Launcher
             Core.RemoveOwned(root, Work);
             return !journal.Committed;
         }
-        // Match the legacy DDS acceptance rules in src/texture_pack_format.h.
+        // Match the legacy DDS acceptance rules in src/textures/texture_pack_format.h.
         internal static void ValidateDds(string path)
         {
             using (var stream = File.OpenRead(path)) using (var read = new BinaryReader(stream)) {

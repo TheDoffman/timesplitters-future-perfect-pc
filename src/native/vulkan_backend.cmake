@@ -2,7 +2,7 @@
 function(tsfp_add_vulkan_backend target runtime sdk)
     get_filename_component(runtime "${runtime}" ABSOLUTE)
     if(NOT sdk OR NOT EXISTS "${sdk}/include/dxc/dxcapi.h")
-        message(FATAL_ERROR "Verify the pinned SDK with tools/test-rhi-mac.py --setup-sdk first")
+        message(FATAL_ERROR "Verify the pinned SDK with tools/testing/test-rhi-mac.py --setup-sdk first")
     endif()
     set(source "${runtime}/src/d3d")
     set(third "${runtime}/third_party")

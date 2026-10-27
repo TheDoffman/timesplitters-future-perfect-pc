@@ -9,7 +9,7 @@ Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
 
-**[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
+**[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
 <sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
 
@@ -61,11 +61,11 @@ build when available. Launcher and game versions are separate.
 - **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
 - **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
   current shared Vulkan game renderer requires macOS 26+. See the
-  [Mac guide](docs/macos.md) for the legacy OpenGL fallback on older systems.
-- Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/building.md#inputs-and-generated-files).
+  [Mac guide](docs/players/macos.md) for the legacy OpenGL fallback on older systems.
+- Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/development/building.md#inputs-and-generated-files).
 - Internet access for the initial runtime download; about **5 GB** for the game,
   plus space for update staging, rollback and any optional textures.
-- **Stable** is the default game channel. Choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
+- **Stable** is the default game channel. Choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/release/releasing.md).
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
@@ -79,34 +79,34 @@ includes .NET and does not need CrossOver or the .NET SDK.
 
 If Windows interrupts launcher startup, use **Retry**, **Open launcher folder**
 or **View logs**. See the
-[Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup)
-and [Windows launcher guide](docs/launcher.md).
+[Windows security prompt guidance](docs/players/launcher.md#windows-security-prompts-at-startup)
+and [Windows launcher guide](docs/players/launcher.md).
 
 ### Mac (Apple Silicon)
 
 The native Mac launcher downloads and installs Mac game builds using the shared
 steps above. Intel Macs are not supported. For development checkouts, follow the
-[Mac source-build guide](docs/macos.md); release installation and self-updates
+[Mac source-build guide](docs/players/macos.md); release installation and self-updates
 are disabled there to preserve source and local builds.
 
 If the release launcher reports a read-only `AppTranslocation` path, follow the
-[Mac launcher folder recovery instructions](docs/mac-launcher.md#shared-behavior-and-distribution).
+[Mac launcher folder recovery instructions](docs/players/mac-launcher.md#shared-behavior-and-distribution).
 Keep the `.app` and `Support` folder together.
 The app currently uses ad-hoc signing; Developer ID
 signing, notarization and clean-machine installation remain pending.
 Mac launcher v1.2.19 has a reported damaged-app rejection and an unsealed app
-bundle; see [the signing correction and one-time migration](docs/launcher-releases.md#mac-application-signing-and-the-v1219-migration)
+bundle; see [the signing correction and one-time migration](docs/release/launcher-releases.md#mac-application-signing-and-the-v1219-migration)
 for the fix status and remaining Gatekeeper limitations.
 
 **Controls:** click inside gameplay to capture the mouse, use **WASD** to move,
 and **Escape** to pause and release it. **F2** opens keyboard, mouse and graphics
 settings; **F11** toggles fullscreen. Use **Fn** with function keys if macOS
-reserves them. See the [full Mac controls](docs/macos.md) and
-[native launcher guide](docs/mac-launcher.md).
+reserves them. See the [full Mac controls](docs/players/macos.md) and
+[native launcher guide](docs/players/mac-launcher.md).
 
 **Current Mac status:** Full campaign completion, save/load and complete rendering/audio fidelity remain
 unverified. Movie playback and native multiplayer remain unfinished.
-[Track remaining Mac work →](MAC_PORT_BACKLOG.md)
+[Track remaining Mac work →](docs/project/MAC_PORT_BACKLOG.md)
 
 ## PC features
 
@@ -114,14 +114,14 @@ unverified. Movie playback and native multiplayer remain unfinished.
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
 | **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
-| **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/native-high-refresh.md). |
+| **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
 | **Launcher** | Game installation, updates, repair, rollback and settings. |
 | **Online Multiplayer** | Player-hosted Online and LAN matches with Bot support. (Windows only) |
-| **Extras** | Optional [Discord Rich Presence](docs/discord-presence.md), FPS overlays and local crash diagnostics. |
+| **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
 Availability depends on your platform and installed game version. Check the
 launcher's **Release notes**, [Mac status](#mac-apple-silicon) and
-[measured progress](STATUS.md) for support and known limits.
+[measured progress](docs/project/STATUS.md) for support and known limits.
 
 Development source also enables continuous water updates with the high-refresh
 beta presets on the common renderer. **60 FPS (Original)** remains the recovery
@@ -145,15 +145,15 @@ Options** for resolution, aspect ratio, FOV and frame rate.
 | Fullscreen | Alt+Enter (Windows), F11 (Mac) |
 
 The original game has no jump action. For all bindings and platform-specific
-settings, see [Windows controls](docs/windows-settings.md) or
-[Mac controls](docs/macos.md). On Mac, use **Fn** with function keys if needed.
+settings, see [Windows controls](docs/players/windows-settings.md) or
+[Mac controls](docs/players/macos.md). On Mac, use **Fn** with function keys if needed.
 
 ## Multiplayer
 
 On Windows, choose **Online / System Link → Online** to host or join a match,
 or **System Link** for LAN play. Everyone needs matching game builds and data.
 Online hosts need port forwarding; guests join using the host's invitation.
-Follow the [multiplayer guide](docs/multiplayer.md) for setup, ports and bots.
+Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
 
 Online is experimental;
 Story co-op and native Mac multiplayer are not supported yet.
@@ -167,24 +167,24 @@ Mac.
 When the optional pack is available, use **Game settings → Graphics & resolution
 → Check texture downloads**, then **Download / update textures**. Enable and save
 **Use enhanced textures (Beta)** to use it on future launches. See the
-[texture guide](docs/textures.md) for availability, coverage and known issues.
+[texture guide](docs/textures/textures.md) for availability, coverage and known issues.
 
 This is an experimental port. Full campaign completion and complete rendering
-and audio fidelity remain unverified. See [measured progress](STATUS.md) and the
-[Mac backlog](MAC_PORT_BACKLOG.md) for validation and remaining work.
+and audio fidelity remain unverified. See [measured progress](docs/project/STATUS.md) and the
+[Mac backlog](docs/project/MAC_PORT_BACKLOG.md) for validation and remaining work.
 
 ## Guides & support
 
-[All documentation](docs/README.md) · [Repository layout and naming](docs/repository-layout.md)
+[All documentation](docs/README.md) · [Repository layout and naming](docs/development/repository-layout.md)
 
 | Playing | Development |
 | --- | --- |
-| [Windows launcher](docs/launcher.md) | [Build from source](docs/building.md) |
-| [Mac launcher](docs/mac-launcher.md) | [Native Mac build](docs/macos.md) |
-| [Controls & display](docs/windows-settings.md) | [Shared Windows/Mac architecture](docs/shared-platform.md) |
-| [Multiplayer](docs/multiplayer.md) | [Release publishing](docs/releasing.md) |
-| [Textures](docs/textures.md) | [Isolated gameplay testing](docs/testing-profile.md) |
-| [Crash reports](docs/windows-crash-logger.md) | [Repository map for agents](docs/agent-context/README.md) |
+| [Windows launcher](docs/players/launcher.md) | [Build from source](docs/development/building.md) |
+| [Mac launcher](docs/players/mac-launcher.md) | [Native Mac build](docs/players/macos.md) |
+| [Controls & display](docs/players/windows-settings.md) | [Shared Windows/Mac architecture](docs/development/shared-platform.md) |
+| [Multiplayer](docs/players/multiplayer.md) | [Release publishing](docs/release/releasing.md) |
+| [Textures](docs/textures/textures.md) | [Isolated gameplay testing](docs/development/testing-profile.md) |
+| [Crash reports](docs/players/windows-crash-logger.md) | [Repository map for agents](docs/agent-context/README.md) |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 with your installed versions, platform and steps to reproduce. The launcher's
@@ -205,7 +205,7 @@ Thank you for being part of the project!
 ## Credits & license
 
 The project statically recompiles the Xbox executable into native code; it does
-not recover the original C/C++ source. The pinned runtime source is bundled with its credits and licenses, and the [independent tooling replacement](docs/independent-runtime.md) is in progress. See [bundled runtime source](docs/building.md#bundled-runtime-source) for setup verification and remaining dependencies.
+not recover the original C/C++ source. The pinned runtime source is bundled with its credits and licenses, and the [independent tooling replacement](docs/development/independent-runtime.md) is in progress. See [bundled runtime source](docs/development/building.md#bundled-runtime-source) for setup verification and remaining dependencies.
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

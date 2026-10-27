@@ -9,10 +9,10 @@ on:
       - .github/workflows/issue-form-versions.yml
       - .github/workflows/known-issues.yml
       - .github/known-issues.json
-      - tools/issue-forms.py
-      - tools/known-issues.py
-      - tests/test_issue_forms.py
-      - tests/test_known_issues.py
+      - tools/ci/issue-forms.py
+      - tools/ci/known-issues.py
+      - tests/repository/test_issue_forms.py
+      - tests/repository/test_known_issues.py
       - VERSION
       - tools/launcher/LauncherVersion.cs
   push:
@@ -24,10 +24,10 @@ on:
       - .github/workflows/issue-form-versions.yml
       - .github/workflows/known-issues.yml
       - .github/known-issues.json
-      - tools/issue-forms.py
-      - tools/known-issues.py
-      - tests/test_issue_forms.py
-      - tests/test_known_issues.py
+      - tools/ci/issue-forms.py
+      - tools/ci/known-issues.py
+      - tests/repository/test_issue_forms.py
+      - tests/repository/test_known_issues.py
       - VERSION
       - tools/launcher/LauncherVersion.cs
 
@@ -46,5 +46,5 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - run: python -m unittest discover -s tests -p test_issue_forms.py -v
-      - run: python -m unittest discover -s tests -p test_known_issues.py -v
+      - run: python -m unittest discover -s tests/repository -p test_issue_forms.py -v
+      - run: python -m unittest discover -s tests/repository -p test_known_issues.py -v

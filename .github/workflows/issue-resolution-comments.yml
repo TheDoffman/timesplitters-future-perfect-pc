@@ -33,4 +33,4 @@ jobs:
       - name: Post the merged explanation on linked issues
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python tools/issue-resolution.py
+        run: python tools/ci/issue-resolution.py

@@ -68,12 +68,12 @@ namespace TimeSplitters.Launcher
         {
             if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
             string python=Path.Combine(root,".venv/bin/python");
-            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
+            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/build/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
             var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,WorkingDirectory=root};
             // The helper needs driver metadata only, not source hashes or build logs.
             var selection=new Dictionary<string,object>();
             if(manifest.TryGetValue("vulkan_driver",out var driver))selection["vulkan_driver"]=driver;
-            info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
+            info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools/build'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
             return Json.Object(ReadGpuHelper(info));
         }
         internal static Dictionary<string,object> PortableGpuEnvironment(string root,Dictionary<string,object> manifest)
