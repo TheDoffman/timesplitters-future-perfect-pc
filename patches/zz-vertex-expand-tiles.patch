@@ -1,0 +1,164 @@
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -4656,82 +4656,90 @@
+     UINT in_stride, uint8_t *out, UINT out_stride,
+     const uint8_t *const *base, const uint32_t *sstride)
+ {
+-    UINT v, shift = p->expanded_bytes;
++    UINT v, shift = p->expanded_bytes, block_begin = 0, block_end;
+     int k;
+ 
++    /* Bound the working set instead of sweeping a large expanded buffer once
++     * per attribute. Each vertex retains its original attribute write order.
++     * Subtract before adding so the final partial tile cannot wrap UINT. */
++    while (block_begin < vertices) {
++        block_end = block_begin + (vertices - block_begin > 32u
++                                  ? 32u : vertices - block_begin);
+ #define SHADOW_EXPAND_COPY_TAIL(N) \
+-    for (v = 0; v < vertices; v++) \
+-        memcpy(out + (size_t)v * out_stride + shift, \
+-               (const uint8_t *)verts + (size_t)v * in_stride, (N))
+-    switch (in_stride) {
+-    case 16: SHADOW_EXPAND_COPY_TAIL(16); break;
+-    case 20: SHADOW_EXPAND_COPY_TAIL(20); break;
+-    case 24: SHADOW_EXPAND_COPY_TAIL(24); break;
+-    case 28: SHADOW_EXPAND_COPY_TAIL(28); break;
+-    case 32: SHADOW_EXPAND_COPY_TAIL(32); break;
+-    case 36: SHADOW_EXPAND_COPY_TAIL(36); break;
+-    case 40: SHADOW_EXPAND_COPY_TAIL(40); break;
+-    case 48: SHADOW_EXPAND_COPY_TAIL(48); break;
+-    case 50: SHADOW_EXPAND_COPY_TAIL(50); break;
+-    case 64: SHADOW_EXPAND_COPY_TAIL(64); break;
+-    default: SHADOW_EXPAND_COPY_TAIL(in_stride); break;
+-    }
++        for (v = block_begin; v < block_end; v++) \
++            memcpy(out + (size_t)v * out_stride + shift, \
++                   (const uint8_t *)verts + (size_t)v * in_stride, (N))
++        switch (in_stride) {
++        case 16: SHADOW_EXPAND_COPY_TAIL(16); break;
++        case 20: SHADOW_EXPAND_COPY_TAIL(20); break;
++        case 24: SHADOW_EXPAND_COPY_TAIL(24); break;
++        case 28: SHADOW_EXPAND_COPY_TAIL(28); break;
++        case 32: SHADOW_EXPAND_COPY_TAIL(32); break;
++        case 36: SHADOW_EXPAND_COPY_TAIL(36); break;
++        case 40: SHADOW_EXPAND_COPY_TAIL(40); break;
++        case 48: SHADOW_EXPAND_COPY_TAIL(48); break;
++        case 50: SHADOW_EXPAND_COPY_TAIL(50); break;
++        case 64: SHADOW_EXPAND_COPY_TAIL(64); break;
++        default: SHADOW_EXPAND_COPY_TAIL(in_stride); break;
++        }
+ #undef SHADOW_EXPAND_COPY_TAIL
+-    for (k = 0; k < p->packed_count; k++) {
+-        const uint8_t *input = base[k] + p->packed_offset[k];
+-        uint8_t *output = out + p->packed_out[k];
+-        uint32_t step = sstride[k];
+-        if (p->packed_raw[k]) {
++        for (k = 0; k < p->packed_count; k++) {
++            const uint8_t *input = base[k] + p->packed_offset[k];
++            uint8_t *output = out + p->packed_out[k];
++            uint32_t step = sstride[k];
++            if (p->packed_raw[k]) {
+ #define SHADOW_EXPAND_COPY_RAW(N) \
+-    for (v = 0; v < vertices; v++) \
+-        memcpy(output + (size_t)v * out_stride, input + (size_t)v * step, (N))
+-            switch (p->packed_size[k]) {
+-            case 1: SHADOW_EXPAND_COPY_RAW(1); break;
+-            case 2: SHADOW_EXPAND_COPY_RAW(2); break;
+-            case 3: SHADOW_EXPAND_COPY_RAW(3); break;
+-            case 4: SHADOW_EXPAND_COPY_RAW(4); break;
+-            case 6: SHADOW_EXPAND_COPY_RAW(6); break;
+-            case 8: SHADOW_EXPAND_COPY_RAW(8); break;
+-            case 12: SHADOW_EXPAND_COPY_RAW(12); break;
+-            case 16: SHADOW_EXPAND_COPY_RAW(16); break;
+-            default: SHADOW_EXPAND_COPY_RAW(p->packed_size[k]); break;
++        for (v = block_begin; v < block_end; v++) \
++            memcpy(output + (size_t)v * out_stride, input + (size_t)v * step, (N))
++                switch (p->packed_size[k]) {
++                case 1: SHADOW_EXPAND_COPY_RAW(1); break;
++                case 2: SHADOW_EXPAND_COPY_RAW(2); break;
++                case 3: SHADOW_EXPAND_COPY_RAW(3); break;
++                case 4: SHADOW_EXPAND_COPY_RAW(4); break;
++                case 6: SHADOW_EXPAND_COPY_RAW(6); break;
++                case 8: SHADOW_EXPAND_COPY_RAW(8); break;
++                case 12: SHADOW_EXPAND_COPY_RAW(12); break;
++                case 16: SHADOW_EXPAND_COPY_RAW(16); break;
++                default: SHADOW_EXPAND_COPY_RAW(p->packed_size[k]); break;
++                }
++#undef SHADOW_EXPAND_COPY_RAW
++            } else if (p->packed_format[k] == 0x16u) {
++                for (v = block_begin; v < block_end; v++) {
++                    uint32_t bits;float n[3];
++                    memcpy(&bits,input + (size_t)v * step, sizeof bits);
++                    n[0] = (float)((int32_t)(bits << 21) >> 21) / 1023.0f;
++                    n[1] = (float)((int32_t)(bits << 10) >> 21) / 1023.0f;
++                    n[2] = (float)((int32_t)bits >> 22) / 511.0f;
++                    memcpy(output + (size_t)v * out_stride,n,sizeof n);
++                }
++            } else {
++#define SHADOW_EXPAND_COPY_SHORTS(N) \
++        for (v = block_begin; v < block_end; v++) { \
++            float n[N]; \
++            for (int c = 0; c < (N); c++) { \
++                int16_t s;memcpy(&s,input + (size_t)v * step + 2 * c,sizeof s);n[c]=(float)s; \
++            } \
++            memcpy(output + (size_t)v * out_stride,n,sizeof n); \
++        }
++                switch (p->packed_format[k] >> 4) {
++                case 1: SHADOW_EXPAND_COPY_SHORTS(1); break;
++                case 2: SHADOW_EXPAND_COPY_SHORTS(2); break;
++                case 3: SHADOW_EXPAND_COPY_SHORTS(3); break;
++                case 4: SHADOW_EXPAND_COPY_SHORTS(4); break;
++                default:
++                    for (v = block_begin; v < block_end; v++) {
++                        float n[4];int count=(int)(p->packed_format[k] >> 4);
++                        for (int c=0;c<count;c++) {
++                            int16_t s;memcpy(&s,input+(size_t)v*step+2*c,sizeof s);n[c]=(float)s;
++                        }
++                        memcpy(output+(size_t)v*out_stride,n,(size_t)count*sizeof n[0]);
++                    }
++                    break;
++                }
++#undef SHADOW_EXPAND_COPY_SHORTS
+             }
+-#undef SHADOW_EXPAND_COPY_RAW
+-        } else if (p->packed_format[k] == 0x16u) {
+-            for (v = 0; v < vertices; v++) {
+-                uint32_t bits;float n[3];
+-                memcpy(&bits,input + (size_t)v * step, sizeof bits);
+-                n[0] = (float)((int32_t)(bits << 21) >> 21) / 1023.0f;
+-                n[1] = (float)((int32_t)(bits << 10) >> 21) / 1023.0f;
+-                n[2] = (float)((int32_t)bits >> 22) / 511.0f;
+-                memcpy(output + (size_t)v * out_stride,n,sizeof n);
+-            }
+-        } else {
+-#define SHADOW_EXPAND_COPY_SHORTS(N) \
+-    for (v = 0; v < vertices; v++) { \
+-        float n[N]; \
+-        for (int c = 0; c < (N); c++) { \
+-            int16_t s;memcpy(&s,input + (size_t)v * step + 2 * c,sizeof s);n[c]=(float)s; \
+-        } \
+-        memcpy(output + (size_t)v * out_stride,n,sizeof n); \
+-    }
+-            switch (p->packed_format[k] >> 4) {
+-            case 1: SHADOW_EXPAND_COPY_SHORTS(1); break;
+-            case 2: SHADOW_EXPAND_COPY_SHORTS(2); break;
+-            case 3: SHADOW_EXPAND_COPY_SHORTS(3); break;
+-            case 4: SHADOW_EXPAND_COPY_SHORTS(4); break;
+-            default:
+-                for (v = 0; v < vertices; v++) {
+-                    float n[4];int count=(int)(p->packed_format[k] >> 4);
+-                    for (int c=0;c<count;c++) {
+-                        int16_t s;memcpy(&s,input+(size_t)v*step+2*c,sizeof s);n[c]=(float)s;
+-                    }
+-                    memcpy(output+(size_t)v*out_stride,n,(size_t)count*sizeof n[0]);
+-                }
+-                break;
+-            }
+-#undef SHADOW_EXPAND_COPY_SHORTS
+-        }
++        }
++        block_begin = block_end;
+     }
+ 
+ }

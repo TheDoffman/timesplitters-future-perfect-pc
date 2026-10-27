@@ -110,6 +110,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
                         (Join-Path $projectRoot 'tests\test_frame_clock.py'),
                         (Join-Path $projectRoot 'tests\test_native_timing.py'),
+                        (Join-Path $projectRoot 'tests\test_native_wind.py'),
                         (Join-Path $projectRoot 'tests\test_frame_interpolation.py'),
                         (Join-Path $projectRoot 'tests\test_prediction_targets.py'),
                         (Join-Path $projectRoot 'tests\test_motion_settings.py'),

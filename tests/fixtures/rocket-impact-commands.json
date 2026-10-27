@@ -1,9 +1,11 @@
 [
   {"wait":22,"label":"main"},
+  {"window":"focus","wait":1},
   {"keys":[40,69,69,69,40,40,40,69],"gap":1.2,"label":"setup","wait":2},
   {"keys":[38,38,69],"gap":0.5,"label":"weapons","wait":1},
   {"keys":[39,39,39,39,39,39],"gap":0.3,"label":"rockets","wait":1},
-  {"keys":[70,40,40],"gap":0.5,"wait":1},
+  {"keys":[70],"gap":0.5,"wait":1.5,"label":"return-setup"},
+  {"keys":[40,40],"gap":0.5,"wait":1},
   {"keys":[38,37,40],"gap":0.6,"label":"no-bots","wait":1},
   {"keys":[69,69,69],"gap":1.2,"label":"ready","wait":6},
   {"keys":[69],"label":"spawn","wait":8},

@@ -316,13 +316,24 @@ int main(int argc, char **argv)
         pc_controls_menu_mode(0);pc_controls_attach(NULL);
         pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         Sleep(150);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        const char *reload_phase=getenv("TSFP_TEST_RELOAD_PHASE_MS");
+        if(reload_phase){unsigned phase=(unsigned)strtoul(reload_phase,NULL,10);CHECK(phase<=20);Sleep(phase);}
         CHECK(recomp_bindings_sample(0,&pad));
         CHECK(pad.bAnalogButtons[XBOX_BUTTON_X]==255);
         CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0);
+        ULONGLONG reload_sampled_at=GetTickCount64();
         *(uint32_t *)(guest+0x105a0)=7;
         pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
-        Sleep(40);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        /* The adapter's pulse uses GetTickCount64. Sleep(40) can span only
+         * 31ms of that coarse clock, leaving the34ms pulse correctly active.
+         * Wait in its clock domain before asserting expiry. */
+        while(GetTickCount64()-reload_sampled_at<40)Sleep(1);
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         CHECK(recomp_bindings_sample(0,&pad));
+        if(reload_phase || pad.bAnalogButtons[XBOX_BUTTON_X]!=0 || pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]!=0)
+            fprintf(stderr,"Reload pulse check: elapsed=%llu ms, Reload=%u Fire=%u\n",
+                    (unsigned long long)(GetTickCount64()-reload_sampled_at),
+                    pad.bAnalogButtons[XBOX_BUTTON_X],pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]);
         CHECK(pad.bAnalogButtons[XBOX_BUTTON_X]==0 && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0);
         Sleep(100);pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         CHECK(recomp_bindings_sample(0,&pad));

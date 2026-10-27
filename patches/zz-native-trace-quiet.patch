@@ -1,30 +1,39 @@
-diff --git a/src/kernel/recomp_trace.c b/src/kernel/recomp_trace.c
 --- a/src/kernel/recomp_trace.c
 +++ b/src/kernel/recomp_trace.c
-@@ -506,6 +506,22 @@
+@@ -506,6 +506,32 @@
      fflush(stderr);
  }
  
 +/* Runtime diagnostic switches are startup settings, like the existing helper
 + * caches. Normal launcher play explicitly sets a zero trace budget. Collapse
 + * its disabled diagnostics into one check, without bypassing render-idle work.
-+ * Presence of any diagnostic switch conservatively retains the original path. */
-+static int trace_quiet(void)
++ * Presence of any diagnostic switch conservatively retains the original path.
++ * Keep settings cached per thread. Outline first-use parsing so the hot guard
++ * can inline alongside the render-idle check without another helper call. */
++static RECOMP_TLS int s_trace_quiet = -1;
++#if defined(_MSC_VER)
++__declspec(noinline)
++#else
++__attribute__((noinline))
++#endif
++static int trace_quiet_init(void)
 +{
-+    static RECOMP_TLS int quiet = -1;
-+    if (quiet < 0) {
-+        const char *budget = getenv("RECOMP_TRACE_BUDGET");
-+        quiet = budget && strtol(budget, NULL, 0) <= 0 &&
-+            !getenv("RECOMP_WATCH_VA") && !getenv("RECOMP_DUMP_VA") &&
-+            !getenv("RECOMP_TRACE_ONLY") && !getenv("RECOMP_TRACE_PROFILE");
-+    }
-+    return quiet;
++    const char *budget = getenv("RECOMP_TRACE_BUDGET");
++    s_trace_quiet = budget && strtol(budget, NULL, 0) <= 0 &&
++        !getenv("RECOMP_WATCH_VA") && !getenv("RECOMP_DUMP_VA") &&
++        !getenv("RECOMP_TRACE_ONLY") && !getenv("RECOMP_TRACE_PROFILE");
++    return s_trace_quiet;
++}
++static inline int trace_quiet(void)
++{
++    int value = s_trace_quiet;
++    return value < 0 ? trace_quiet_init() : value;
 +}
 +
  void recomp_trace_enter(const char *name, uint32_t va)
  {
  #ifdef _WIN32
-@@ -513,6 +529,7 @@
+@@ -513,6 +539,7 @@
       * The callback verifies thread ownership and untouched frame state. */
      if (s_render_idle && !(++s_idle_count & 255u)) s_render_idle();
  #endif
@@ -32,7 +41,7 @@ diff --git a/src/kernel/recomp_trace.c b/src/kernel/recomp_trace.c
      watch_check(name);
      dump_va_once();
      if (trace_only_match(name))
-@@ -579,6 +596,7 @@
+@@ -579,6 +606,7 @@
   * comes back wrong. */
  void recomp_trace_exit(const char *name, uint32_t va)
  {

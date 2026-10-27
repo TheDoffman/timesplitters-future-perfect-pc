@@ -1,0 +1,57 @@
+diff --git a/src/d3d/d3d8_vsh.c b/src/d3d/d3d8_vsh.c
+--- a/src/d3d/d3d8_vsh.c
++++ b/src/d3d/d3d8_vsh.c
+@@ -1591,7 +1591,7 @@
+ 
+ void d3d8_vsh_set_constant(int start_reg, const float *data, int count)
+ {
+-    int end_reg;
++    int end_reg, changed;
+     float hp;
+ 
+     if (!data || start_reg < 0)
+@@ -1601,8 +1601,14 @@
+     if (end_reg > NV2A_VS_MAX_CONSTANTS)
+         end_reg = NV2A_VS_MAX_CONSTANTS;
+ 
++    /* Empty/clipped ranges retain their original invalidation behavior. */
++    changed = start_reg >= end_reg;
+     for (int i = start_reg; i < end_reg; i++) {
+         int src_offset = (i - start_reg) * 4;
++        /* Compare bits: signed zero and NaN payload changes still upload.
++         * Keep scalar stores/order for overlapping source ranges. */
++        if (memcmp(g_vsh_constants.c[i], data + src_offset, 4 * sizeof(float)))
++            changed = 1;
+         g_vsh_constants.c[i][0] = data[src_offset + 0];
+         g_vsh_constants.c[i][1] = data[src_offset + 1];
+         g_vsh_constants.c[i][2] = data[src_offset + 2];
+@@ -1614,6 +1620,7 @@
+         int reg = d3d8_vsh_hor_plus_reg();
+ 
+         if (reg >= start_reg && reg < end_reg) {
++            changed = 1; /* Hor+ modifies the freshly copied register. */
+             g_vsh_constants.c[reg][0] *= hp;
+             g_vsh_constants.c[reg][1] *= hp;
+             g_vsh_constants.c[reg][2] *= hp;
+@@ -1621,7 +1628,7 @@
+         }
+     }
+ 
+-    g_vsh_constants_dirty = TRUE;
++    if (changed) g_vsh_constants_dirty = TRUE;
+ }
+ 
+ HRESULT d3d8_vsh_set_declaration(DWORD handle, const D3D8VshInput *inputs, int count)
+@@ -1806,9 +1813,9 @@
+                         }
+                 }
+                 rhi_buffer_unmap(g_vsh_cb);
+-            }
+-            g_vsh_constants_dirty = FALSE;
+-            zoomed = want;
++                g_vsh_constants_dirty = FALSE;
++                zoomed = want;
++            } /* A failed map leaves the pending data dirty for retry. */
+         }
+     }
+ 

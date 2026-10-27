@@ -58,9 +58,11 @@ def main():
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
     parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
+    parser.add_argument('--trace-local-poses',action='store_true',help='Record bounded completed local aim/camera/animation state; diagnostic overhead, not clean pacing')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-cpu',action='store_true',help='Enable the existing 200 Hz stack sampler; diagnostic only, not clean pacing')
     parser.add_argument('--profile-depth',type=int,choices=range(1,33),default=8,help='Captured caller frames for CPU diagnostics (default 8)')
+    parser.add_argument('--profile-pc-symbol',help='Exact executable symbol for bounded native instruction/PDB-line reporting; requires --profile-cpu')
     parser.add_argument('--texture-mode',choices=('classic','enhanced'),default='classic',help='Texture selection in this isolated session')
     parser.add_argument('--crowd-weapons',choices=('recommended','rockets'),default='recommended',help='Weapon preset selected through the normal crowd-match menu')
     parser.add_argument('--trace-textures',action='store_true',help='Enable bounded texture-stage CPU timing; diagnostic only')
@@ -111,6 +113,16 @@ def main():
     assert not args.trace_network_poses or args.lan_role
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
+    # Bounded foreground tests must not compete with another checkout or play
+    # session. Never close the other process; leave it to its owner instead.
+    import csv
+    inventory=subprocess.run(['tasklist.exe','/FI','IMAGENAME eq futureperfect_recomp.exe',
+                              '/FO','CSV','/NH'],capture_output=True,text=True,check=True,timeout=10)
+    existing=[row[1] for row in csv.reader(inventory.stdout.splitlines())
+              if len(row)>1 and row[0].lower()=='futureperfect_recomp.exe']
+    assert not existing, f'Another game is running (PIDs {", ".join(existing)}); wait for its owner before testing'
+    if args.profile_pc_symbol and (not args.profile_cpu or len(args.profile_pc_symbol)>=96 or any(c in args.profile_pc_symbol for c in '\t\r\n')):
+        parser.error('--profile-pc-symbol requires --profile-cpu and a symbol shorter than 96 characters without tabs/newlines')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
     if args.lan_role:
         subprocess.run([sys.executable,str(ROOT/'tools/network-identity.py'),'--verify',
@@ -211,6 +223,7 @@ def main():
     if args.profile_cpu:
         env.update(RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH=str(args.profile_depth),
                    RECOMP_SAMPLE_DUMP=str(run/'cpu-sample.txt'))
+        if args.profile_pc_symbol:env['RECOMP_SAMPLE_PC_SYMBOL']=args.profile_pc_symbol
     if args.trace_textures:env['TSFP_TEXTURE_UPLOAD_TRACE']=str(run/'texture-stages.csv')
     if args.manual_start: replay.write_text('')
     def profiles():
@@ -384,6 +397,10 @@ def main():
             env['TSFP_FRAME_PROFILE']=str(run/f'run{index}-presents.csv')
         if args.trace_network_poses:
             env['TSFP_NATIVE_POSE_TRACE']=str(run/f'run{index}-network-poses.csv')
+        if args.trace_local_poses:
+            env['TSFP_NATIVE_LOCAL_TRACE']=str(run/f'run{index}-local-poses.csv')
+        else:
+            env.pop('TSFP_NATIVE_LOCAL_TRACE',None)
         process=subprocess.Popen([str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],cwd=ROOT,env=env,
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=subprocess.CREATE_NO_WINDOW)
         handle=kernel.OpenProcess(0x410,False,process.pid);assert handle
@@ -437,10 +454,11 @@ def main():
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         initial_commands_sha256=hashlib.sha256(commands.read_bytes()).hexdigest(),
         input_transport='startup replay plus polled state file',input_poll_ms=16,
-        watch_native_clock=args.watch_native_clock,
+        watch_native_clock=args.watch_native_clock,trace_local_poses=args.trace_local_poses,
         display_size=list(args.display_size),fullscreen=args.fullscreen,fov=args.fov,texture_mode=args.texture_mode,crowd_weapons=args.crowd_weapons,native_trace=not args.no_native_trace,profile_cpu=args.profile_cpu,profile_depth=args.profile_depth if args.profile_cpu else None,watch_actors=args.watch_actors,trace_textures=args.trace_textures,
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
+        profile_pc_symbol=args.profile_pc_symbol,
         native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
