@@ -346,6 +346,13 @@
       ]
     },
     {
+      "name": "zzzz-world-shields.patch",
+      "sha256": "21167da7cff0d98bc5fa06680c00b45f6a4912422c1253e46d8fa9858d8ff5fe",
+      "targets": [
+        "src/d3d/d3d8_device.c"
+      ]
+    },
+    {
       "name": "zzzzz-mac-high-refresh.patch",
       "sha256": "2679504ee0f1ab8fa232e53790302671e9ae77daf38d64994fcdb885fcd19a87",
       "targets": [

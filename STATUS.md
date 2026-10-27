@@ -1,3 +1,23 @@
+## Shielded enemy effect alignment (2026-10-27, issue #358)
+
+A user capture from Something to Crow About showed the robot shield pulled
+toward the old 4:3 center at 3440×1440. D3D draw bisection isolated the
+shield to 24-byte projected, 20-vertex strips at depth .978526. Replaying
+the automatic placement draws unsqueezed moved the shield over the robot
+while explicit HUD placement remained intact. The existing #102 rule only
+recognized 16-byte projected health bars. The shared renderer patch now
+recognizes both formats at depth near 1, preserving the health-bar triangle
+guard and leaving shallow-depth HUD sprites unchanged. Windows Release game
+and replay builds succeeded on the original fba57e94 task base. Replaying the
+captured frame with the production rule matched the targeted comparison to
+within one 8-bit color step. The production-function fixture passed with the
+UI layout suite (11 tests). The fresh-checkout patch transition also passed.
+In an isolated Test
+Lab run, the user confirmed the shield follows the robot; two fresh frame
+captures show it over the robot. On current main, the complete patch stack,
+11 UI layout tests, fresh-checkout patch transition, and context check pass.
+Native Mac validation remains pending (MAC-064).
+
 ## Current-source Windows build and rocket regression (2026-10-26, PR #367)
 
 Source e9ea817a passes all 16 hosted checks and the supported normal Windows
