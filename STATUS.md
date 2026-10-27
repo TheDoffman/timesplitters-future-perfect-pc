@@ -1,6 +1,6 @@
 ## Independent string-instruction lowering (Windows acceptance passed, 2026-10-27)
 
-Project code replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
+PR #375 implementation `c4a56fbe` replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
 widths and CLD/STD. It preserves repeated element ordering for overlapping
 copies, uses guarded bulk copies for disjoint flat spans, samples compare
 operands once, and supports 16-bit count/index wrap and FS source offsets.

@@ -6237,7 +6237,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Status:** Awaiting validation
 - **PC behavior:** Original byte/word/dword MOVS/STOS/LODS/CMPS/SCAS and
   direction emission, including repeats, overlapping copies and address-size wrap.
-- **PC source:** Uncommitted continuation of PR #375; `translation_strings.py`
+- **PC source:** PR #375, implementation `c4a56fbe`; `translation_strings.py`
   and `independent-translation-strings.patch`.
 - **PC validation:** 126 focused and 56 patch/context checks passed; normal
   generation/build/native checks and isolated game acceptance passed. See STATUS.md.
