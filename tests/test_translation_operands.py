@@ -163,11 +163,8 @@ def test_emitted_memory_accesses_use_production_pointer_and_width_macros(tmp_pat
     if not header.is_file():
         pytest.skip('Pinned memory ABI consumer unavailable')
     wanted={'XBOX_PTR','MEM8','MEM16','MEM32','MEM64','SMEM8','SMEM16','SMEM32','SMEM64','MEMF','MEMD'}
-    definitions={}
-    for line in header.read_text(encoding='utf-8').splitlines():
-        match=re.match(r'#define (\w+)\(',line)
-        if match and match[1] in wanted:definitions[match[1]]=line
-    assert definitions.keys()==wanted
+    from test_translation_moves import _production_macros
+    macros=_production_macros(wanted)
     operations=[]
     for width,offset in ((1,0),(2,8),(4,16)):
         op=Operand('mem',mem_disp=-2147483648+offset,mem_size=width)
@@ -188,7 +185,7 @@ if({expressions._smem_accessor(width)}({expressions._fmt_mem(op)})!=signed_value
     code='''#include <stdint.h>
 #include <string.h>
 static uintptr_t g_xbox_mem_offset;
-'''+ '\n'.join(definitions.values())+'''
+'''+ macros+'''
 int main(void) {
 uint64_t aligned[8]={0}; unsigned char *bytes=(unsigned char*)aligned;
 uint32_t value=0xfedcba98u;

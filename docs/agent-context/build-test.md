@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[CLI tests](independent.md).
+[Guest ABI and CLI tests](independent.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

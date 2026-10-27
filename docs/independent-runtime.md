@@ -930,3 +930,23 @@ supplied inputs. Original synthetic and compiled fixtures cover selection,
 manual/hook dispatch, kept bodies, safe refresh, per-output feedback and a full
 split-generation subprocess with only copied project modules. See STATUS.md
 and MAC-099 for measured production acceptance and host limits.
+
+
+## Guest register and scalar-memory primitives
+
+The additive `independent-guest-abi.patch` replaces the register interface,
+scalar RAM lvalues, partial-register writes and stack primitives with project
+implementations. Existing symbol names retain binary/source compatibility with
+runtime callbacks. This does not replace kernel storage, memory mapping, MMIO,
+indirect dispatch or all remaining header arithmetic helpers. The existing
+double-backed x87 stack and separate MMX storage remain explicit limitations.
+
+Address conversion wraps guest arithmetic before applying host relocation.
+Typed volatile lvalues explicitly support unaligned scalar aliasing on the
+supported little-endian GCC/Clang/MSVC hosts. Partial writes sample each supplied
+expression once; PUSH reads its source before adjusting the stack and POP updates
+the stack before applying its destination. Standalone and production compiled
+fixtures test these contracts, with independently broken variants and cross-file
+thread-local callbacks. See `docs/agent-context/independent.md`, STATUS.md and
+MAC-100 for ownership and measured Windows acceptance; native Mac title
+validation and complete upstream removal remain pending.

@@ -234,6 +234,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-097 | Independent translator context and entry discovery | Awaiting validation |
 | MAC-098 | Independent complete function emission | Awaiting validation |
 | MAC-099 | Independent translation command line | Awaiting validation |
+| MAC-100 | Project guest register and memory primitives | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6479,3 +6480,23 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   snapshot checks passed. Native Mac title generation/build/gameplay require
   its host and private US data.
   See STATUS.md for measured results and limitations.
+
+
+### MAC-100 - Project guest register and memory primitives
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 guest-ABI follow-up (based on `eb7b0ba1`) in
+  `patches/independent-guest-abi.patch`, `tests/guest_abi.c` and
+  `tests/test_guest_abi.py`. Project-owned TLS register declarations, lane
+  layouts, scalar memory access, partial writes and stack primitives preserve
+  the generated-code ABI while making unaligned access and alias order explicit.
+- Mac support: shared implementation with GCC/Clang unaligned scalar alias
+  types and compiler TLS; MSVC uses its corresponding unaligned qualifier.
+  Both CI hosts select the same standalone, production and mutation fixtures.
+- Remaining validation: 125 final focused Windows checks, supported-US
+  generation, fresh Release/native checks and isolated movement/fire/pause/resume
+  passed. Only the runtime header changed among 21 generated C/header files.
+  Initial fixture failures and unchanged timing rechecks are recorded in STATUS.
+  Historical runtime upgrades passed; the missing backlog queue row was repaired.
+  Native Mac title build/gameplay require its host and private data. Remaining header helpers, memory mapping and kernel
+  storage are separate work.

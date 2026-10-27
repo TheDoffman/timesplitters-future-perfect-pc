@@ -1,3 +1,67 @@
+## Project guest register and memory interface (Windows acceptance, 2026-10-27)
+
+`independent-guest-abi.patch` supplies project implementations of the register
+interface, XMM/MMX lane layouts, scalar RAM lvalues, partial-register writes and
+32-bit stack primitives. Register names/TLS cells retain the generated-code and
+callback ABI. RAM addresses wrap before host relocation; GCC/Clang aliases and
+MSVC unaligned qualifiers make scalar unaligned access explicit. Partial writes
+evaluate the supplied cell/value once. PUSH samples its source before changing
+the stack; POP updates ESP before applying its destination. Remaining arithmetic
+helpers, dispatch, kernel storage, mapping and device services are not replaced.
+
+The isolated checkout depends on the unmerged CLI stage `eb7b0ba1`. Another task
+owns the primary checkout, so source/runtime/build outputs are separate. SDL and
+symbol-library sources were copied without build caches; the symbol scanner was
+rebuilt. Same-host Python and FFmpeg are reused; game assets link to the single
+existing extract, with separate generated metadata/cache and a disposable profile. No texture-pack hydration was needed for Classic testing.
+
+All **17 CI checks passed on `eb7b0ba1`**. This new stage's CI is separate.
+Local **125 final focused tests passed in 45.96s**, including six new compiled
+standalone/production/mutation variants, cross-file TLS callbacks, operand/x87/
+move/GPR consumers, generation, CI selection and the unchanged trap-transform
+recheck. The initial broader run recorded **504 passes and three failures in
+536.24s**: two macro-extraction fixtures omitted the new helper, and one expected-
+failure trap-transform mutation timed out at its existing 15-second deadline.
+The fixtures now include the actual production dependencies, retaining assertions.
+The timing test passed unchanged in the **27-test recheck (33.65s)** and again in
+the final focused run. Its initial timeout's cause remains unproven. No timeout
+was extended; the initial broader run is not relabeled green.
+
+The initial historical run had **67 passes and three failures (854.70s)**:
+two old-stack simulations incorrectly applied the new dependent patch as part of
+their historical starting state, and one index assertion named the former final
+patch. The simulations now add this patch during the full current-stack upgrade;
+idempotence and preservation assertions remain. The rerun passed **69 tests in
+658.46s**, with only the backlog check failing because the new MAC-100 detail
+entry lacked its queue row. After adding it, all **21 final context/backlog
+checks passed in 4.32s**. No runtime or patch changes followed the passing
+historical runtime checks.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**, lift **105.61s**. Of 21 generated
+C/header files, **20 match the accepted baseline byte-for-byte**; only the intended
+runtime header differs. Its generated/template hashes remain identical after the
+fixture-only repairs and the generation fingerprint is current. The fresh CMake
+Release build and bundled native checks passed with **CL_MPCount=2**, Python
+3.12.14, Capstone 5.0.9, MSVC 2022 (14.44), and matching crash symbols.
+
+Isolated Original60 `independent-guest-abi` reached Scotland the Brave and passed
+movement (**11.175 units forward / 6.209 backward**), firing (**8 to 6 rounds**),
+pause (**39 samples with frozen level ticks**) and resume (**60 advancing samples**).
+Last checkpoint **94.750s**, runner exit **0**; start/pause/resume captures reviewed.
+All **26 protected files** retained SHA-256, size and modification time. The owned
+game exited and left no lock, disposable partitions, BMPs or dump. A separate
+primary-checkout game was subsequently observed and left untouched. Executable:
+`f41e26a5095eaaed10793e8fc59677307c508b531c6d9586259b81876b5b48cb`.
+
+Evidence is in `logs/guest-abi-*.log`, `logs/guest-abi-generation-comparison.json`,
+`logs/independent-guest-abi-game-check.json`, `logs/guest-abi-protected-check.json`
+and `private/test-saves/independent-guest-abi`. Input was injected, rendering
+minimized/background and startup movies skipped. No physical-input, audio-
+listening, foreground-pacing, full-campaign or native Mac title claim (MAC-100).
+The double-backed x87/separate-MMX model, MMIO/protection/fault delivery, remaining
+headers/runtime/title/build/fixtures and final upstream-removal audit remain work.
+
 ## Independent translation command line (Windows acceptance, 2026-10-27)
 
 Original `translation_cli.py` replaces the remaining recompiler CLI. All four
@@ -33,8 +97,8 @@ limit. The unchanged test, including its positive and negative cases, then
 **passed in isolation in 8.91s**. No assertions or timeout were weakened; the
 initial timeout's cause is unproven and the initial run is not relabeled green.
 All **56 historical patch/context/backlog/snapshot checks passed in 667.22s**.
-All **17 CI checks passed on preceding commit `46eccfb3`**; CI for the new CLI
-revision is separate and will be recorded after publication.
+All **17 CI checks passed on preceding commit `46eccfb3`** and on the
+published CLI revision `eb7b0ba1`.
 
 Supported-US generation completed with **15,838 translated, zero failed**, the
 same **50 unresolved stubs / 738 unimplemented sites**; lifting took **87.81s**.

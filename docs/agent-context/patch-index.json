@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b64c2c356b46f1669b0113b3f66bfbb297d12acad8231b38df64de6547d5a674",
+  "loaderSha256": "69595b561938021e358af74b63cc8cb08f5e5cfd75a8292cf80cc7c470b519b7",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1843,6 +1843,14 @@
       "sha256": "f4f5555773ab0a41554b80d8220fe9beda9e98870204cd8166848a2bec0526b6",
       "targets": [
         "tools/recomp/__main__.py"
+      ]
+    },
+    {
+      "name": "independent-guest-abi.patch",
+      "sha256": "97420551e71689c38ff0b898e389f1a1516cdd2ef0876029e27585bf47aa285c",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_x87_classification.py"
       ]
     }
   ]

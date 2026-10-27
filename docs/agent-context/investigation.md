@@ -200,3 +200,10 @@ even when there is no conditional consumer; repeated compares need ZF storage.
 The final translator patch is now independent-translation-control.patch after x87.
 Historical reconstruction defers it together with prior independent emitters;
 keep staged patch order/index and original golden/behavioral fixtures aligned.
+
+
+The independent guest ABI stage appends `independent-guest-abi.patch` after the
+translation CLI bridge. The index-order assertion checks this dependency.
+Historical fixtures omit this new patch only while reconstructing their old
+pre-instrumentation starting state; upgrades still apply the full current stack,
+including the ABI replacement, and retain idempotence/preservation checks.

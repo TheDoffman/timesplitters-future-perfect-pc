@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-CLI, function emission, discovery, batch output, lifter context, flags and validation are in [own tooling](independent.md).
+Guest register/memory primitives and translation tooling are in [own interfaces](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 

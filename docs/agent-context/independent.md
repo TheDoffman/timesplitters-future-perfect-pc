@@ -553,3 +553,32 @@ supplied inputs. Original synthetic and compiled fixtures cover selection,
 manual/hook dispatch, kept bodies, safe refresh, per-output feedback and a full
 split-generation subprocess with only copied project modules. See STATUS.md
 and MAC-099 for measured production acceptance and host limits.
+
+## Guest register and scalar-memory interface
+
+`independent-guest-abi.patch` replaces the shared register declarations, lane
+layouts, scalar RAM lvalues, partial-register writes and PUSH32/POP32 primitives
+in the effective runtime header. The original implementation is in this additive
+patch; the snapshot and historical patch stack remain intact. Macro names and
+TLS cell symbols preserve the generated-code/callback ABI. GPR-reference policy,
+remaining operation helpers, dispatch and kernel-owned storage are separate work.
+The x87 stack stays double-backed and MMX storage remains independent of x87.
+
+Supported hosts are little-endian. GCC/Clang scalar aliases explicitly permit
+unaligned aliasing; MSVC uses unaligned-qualified volatile access. Address
+arithmetic wraps to 32 bits before host relocation. These RAM lvalues preserve
+access ordering, not atomicity, MMIO routing or guest exception delivery.
+Partial writes evaluate cell and source expressions once. PUSH samples its source
+before decrementing ESP. POP loads the old top, increments ESP, then applies its
+destination, including an ESP alias or an ESP-relative memory destination.
+
+`test_guest_abi.py` compiles the actual header and an extracted project-only
+interface in two translation units. It covers widths/unaligned addresses, signed
+and float representations, relocation/wrap, every low-word value, side-effect
+counts, stack aliasing and thread isolation. Four compiled negative variants
+lose wrapping, preserved bits, POP order or TLS and must fail at runtime.
+`test_translation_moves.py` includes the new primitive-support block when
+extracting production macros; the operand fixture shares that extraction. The
+inherited x87 classification fixture includes the partial-write helper. Their
+original generated-code assertions are retained.
+Both runtime CI hosts select these tests; native Mac gameplay remains pending.
