@@ -1,8 +1,8 @@
 # Build, run and validation map
 
-Native Mm/page tests: [contracts](native-memory.md).
+Mm tests: [native](native-memory.md), [guest](guest-memory-services.md).
 
-Launcher UI/JSON recovery use shared UI, native parser and package checks.
+Launcher recovery: shared UI, parser and package checks.
 
 Grouped paths: [layout](../development/repository-layout.md).
 Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.

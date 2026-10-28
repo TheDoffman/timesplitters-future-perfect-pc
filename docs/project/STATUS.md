@@ -1,3 +1,42 @@
+## Project guest memory services (2026-10-28)
+
+Working tree based on e90b9f7e after all 17 prerequisite CI checks passed.
+Patch 0211 replaces all 25 Mm guest bridge bodies and five remaining native
+statistics/physical/hint function bodies. Project services reuse guest ownership,
+validate output spans, preserve native versus guest pointer widths, and replace
+uninitialized Darwin statistics with a real host snapshot. See
+[contracts and compatibility limits](../agent-context/guest-memory-services.md)
+and MAC-114. Main mappings, other kernel/devices and full independence remain.
+
+Windows x64/MSVC candidate: 25 checks passed across statistics policy, host
+snapshots, guest services and actual adapters, including 16 compiled negative
+controls. Real Windows availability and controlled Windows/Darwin APIs passed;
+controlled Darwin behavior is not a native Mac execution result. All 931 installed
+compiler checks passed in 540.82s. Final 21 documentation/context/backlog checks
+passed; the context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1017.34s.
+
+The complete patch stack installed five runtime files matching the proposal
+after normal line-ending normalization. Windows Release build,
+native checks and matching crash symbols passed with normal `/DWIN32 /D_WINDOWS`
+flags. All 22 generated C/header files remained byte-identical and the generation
+fingerprint stayed current. The rebuilt executable reached isolated Original 60
+Story scene 4 / mission 1 with input enabled, moved 11.174537 forward and 6.184889
+backward, and fired from eight to six rounds. All 40 pause samples froze level
+ticks; all 60 resume samples were unpaused with ticks advancing. Final checkpoint:
+101.323s within the 240-second cap. Runner/controller exited zero and the
+start/paused/resumed captures were reviewed. All 26 protected settings/save/fixture
+files retained hashes, sizes and mtimes; no owned locks, disposable partitions,
+BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4888d04e689a8b5b616c020960cea172f49726f5288837f51789f39e8f7f6344`.
+Build provenance: guest-memory-services working tree based on e90b9f7e,
+Windows x64/MSVC; runner provenance matches. The test used injected input,
+minimized windows, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title execution remain unverified.
+New-stage CI is pending; no new game package has been produced.
+
 ## Project native memory ownership (2026-10-28)
 
 Working tree based on 47d687ef after all 17 prerequisite CI checks passed.
@@ -38,8 +77,8 @@ Tested executable SHA-256:
 Build provenance: native-memory working tree based on 47d687ef, Windows x64/MSVC;
 runner provenance matches. The test used injected input, minimized windows,
 Classic textures and skipped startup movies. Physical input, audio listening,
-full campaign and native Mac title execution remain unverified. New-commit CI
-is pending. No new game package has been produced.
+full campaign and native Mac title execution remain unverified. All 17 CI
+checks at committed e90b9f7e passed. No new game package has been produced.
 
 ## Project virtual-memory services (2026-10-28)
 

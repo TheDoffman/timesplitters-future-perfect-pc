@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
 Native Mm: [ownership, page adapters and remaining work](native-memory.md).
 
 Virtual memory: [guest/native paths and remaining host adapters](virtual-memory.md).

@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
 Native Mm ownership and host page operations: [contracts](native-memory.md).
 
 Virtual-memory adapters: [ownership and ABI contracts](virtual-memory.md).

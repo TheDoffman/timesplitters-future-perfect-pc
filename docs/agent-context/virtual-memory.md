@@ -73,8 +73,9 @@ The seven existing native access modes and default READWRITE conversion remain.
 Native host allocation/query still use the existing platform APIs; Darwin's
 native query placeholder and unaligned mprotect behavior remain limitations
 to replace with the host mapping services. Guest buffer checks do not rely on
-that placeholder. Mm APIs, statistics, device mapping and other kernel services
-remain separate replacement work; this stage does not complete independence.
+that placeholder. [Mm/statistics](guest-memory-services.md) now have project
+providers. Main mapping lifetimes, device and other kernel services still need
+replacement; this does not complete independence.
 
 ## Tests and evidence
 

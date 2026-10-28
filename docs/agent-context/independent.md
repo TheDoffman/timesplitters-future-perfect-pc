@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
 Native Mm allocation/query/protection: [ownership and host services](native-memory.md).
 
 Virtual-memory calls: [guest/native ABI and host boundaries](virtual-memory.md).

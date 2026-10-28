@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Native Mm storage: [ownership and access](native-memory.md).
+Mm: [native](native-memory.md), [guest](guest-memory-services.md).
 
 Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
 

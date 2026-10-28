@@ -287,10 +287,12 @@ def test_actual_allocation_adapters_and_kernel_bridge(tmp_path):
         assert obsolete not in layout
     assert 'memset(' not in allocate_ex
     assert 'guest_allocation.c' in (kernel / 'CMakeLists.txt').read_text(encoding='utf-8')
-    for name in ('guest_allocation.h', 'guest_allocation.c'):
+    for name in ('guest_allocation.h', 'guest_allocation.c', 'guest_virtual_memory.h',
+                 'guest_memory_services.c', 'guest_memory_services.h', 'memory_statistics.c', 'memory_statistics.h'):
         (tmp_path / name).write_bytes((PROVIDER / name).read_bytes())
     harness = tmp_path / 'adapters.c'
     harness.write_text('''#include "guest_allocation.h"
+#include "guest_memory_services.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -306,7 +308,13 @@ static size_t g_xbox_total_ram = 64u * 1024u * 1024u;
 static uint32_t arguments[5], g_eax;
 #define STACK_ARG(i) arguments[i]
 #define KERNEL_LOG_ON_HALF() 0
-''' + initialization + adapters + allocate_ex + '''
+''' + initialization + adapters + '''
+static void xbox_GetGuestMemoryServices(tsfp_guest_mm *memory) {
+    memset(memory,0,sizeof(*memory));memory->vm.allocations=&g_guest_allocations;
+    memory->physical_base=XBOX_CONTIG_BASE;memory->physical_size=XBOX_CONTIG_SIZE;
+    memory->gpu_default=XBOX_GPU_INSTANCE_DEFAULT;
+}
+''' + allocate_ex + '''
 static uint32_t request(uint32_t size, uint32_t low, uint32_t high, uint32_t alignment) {
     arguments[0]=size; arguments[1]=low; arguments[2]=high; arguments[3]=alignment;
     bridge_MmAllocateContiguousMemoryEx(); return g_eax;
@@ -358,7 +366,8 @@ int main(void) {
 }
 ''', encoding='utf-8')
     warnings = ['/W4'] if os.name == 'nt' else ['-Wall', '-Wextra']
-    exe = _compile(tmp_path, harness, extra=[tmp_path / 'guest_allocation.c', *warnings])
+    exe = _compile(tmp_path, harness, extra=[tmp_path / 'guest_allocation.c', tmp_path / 'guest_memory_services.c',
+        tmp_path / 'memory_statistics.c', *warnings])
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=45)
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'passed' in result.stdout

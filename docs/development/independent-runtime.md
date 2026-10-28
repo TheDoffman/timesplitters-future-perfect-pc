@@ -1,8 +1,13 @@
 # Independent runtime replacement
 
+All 25 guest Mm bridges and five remaining native statistics/physical/hint
+functions now use project policy through patch 0211. Complete guest output
+validation and initialized host snapshots replace unsafe statistics access.
+See [contracts and retained advisory limits](../agent-context/guest-memory-services.md).
+
 Native Mm allocation/release, stacks, protection and region queries now use
-project ownership and OS page adapters through patch 0209. Guest Mm policy,
-statistics, main host mappings and other services remain separate work. See
+project ownership and OS page adapters through patch 0209. Guest Mm/statistics
+continue in 0211; main host mappings and other services remain separate work. See
 [contracts](../agent-context/native-memory.md); full independence is not complete.
 
 Guest Nt virtual-memory calls and native pointer-width allocate/free/query now

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "5f3a3b7564f664f30ffd343521fea11ddbee14aed1fe8a99e80600b2358aaa1e",
+  "loaderSha256": "76c0d41b31207abdd63cf94501e5a3fadce485f0837e205fa32e557030326e44",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2211,6 +2211,18 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_memory.c"
+      ]
+    },
+    {
+      "name": "0211-independent-guest-memory-services.patch",
+      "path": "patches/compiler/0211-independent-guest-memory-services.patch",
+      "sha256": "7c9f3c587260c1770eac7dd86a3c1f50318eb66e36cd7c383fd22241f7ae4bdd",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_memory.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
       ]
     },
     {

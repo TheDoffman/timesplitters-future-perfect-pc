@@ -79,8 +79,8 @@ MAC-113, and cannot be inferred from these asset-free checks.
 Existing Nt adapter fixtures now emit the protection helper before its callers,
 matching the production source order. Their original ABI/result checks remain.
 
-Remaining replacement includes guest Mm policy, native statistics and other
-memory services, main guest host-map lifetimes, remaining kernel/devices,
+[Guest Mm/statistics and hints](guest-memory-services.md) now have project
+providers. Remaining replacement includes main guest host-map lifetimes, kernel/devices,
 title/delivery integration and inherited fixtures. The old toolkit snapshot is
 still part of production preparation. Full independence requires the final
 generation/build/test/package audit with both snapshot and old checkout absent.

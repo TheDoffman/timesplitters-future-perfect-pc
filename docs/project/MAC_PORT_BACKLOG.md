@@ -263,6 +263,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-111 | Project guest thread storage | Awaiting validation |
 | MAC-112 | Project virtual-memory services | Awaiting validation |
 | MAC-113 | Project native memory ownership | Awaiting validation |
+| MAC-114 | Project guest memory services | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6901,6 +6902,34 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   controlled POSIX/Mach model passed on Windows. All 906 installed compiler and
   73 historical migration/repository checks passed. Release/native checks,
   generation consistency and isolated Story movement/firing/pause/resume passed;
-  26 protected files were unchanged. New-commit Mac CI and native Mac title
-  gameplay remain pending. See
+  26 protected files were unchanged. All 17 CI checks at e90b9f7e passed.
+  Native Mac title gameplay remains unverified. See
   [STATUS](STATUS.md#project-native-memory-ownership-2026-10-28).
+
+### MAC-114 - Project guest memory services
+
+- **Status:** Awaiting validation
+- **PC behavior:** All 25 guest Mm bridge bodies use project ownership/policy,
+  validated guest output spans and explicit advisory semantics. Five remaining
+  native statistics/physical/hint bodies use original adapters. Guest statistics
+  are nine little-endian words; native pointers remain full-width.
+- **Source/PR:** `src/runtime/guest_memory_services.c`, `memory_statistics.c`,
+  headers, `src/native/host_memory_stats.c`, original compiler fixtures and
+  `patches/compiler/0211-independent-guest-memory-services.patch`. PR #375;
+  implementation based on e90b9f7e.
+- **Mac support present:** Shared services reuse the existing allocator and
+  guest VM resolver. The host adapter uses Mach availability counters, handles
+  shorter returned record revisions and releases its host port. This avoids the
+  old Darwin compatibility path's uninitialized memory-statistics fields.
+- **Remaining adaptation:** Main guest mappings, native Nt host callbacks and
+  other kernel/device services remain separate replacement work. Advisory/debug
+  results, IO scratch buffers and GPU tail-address behavior remain explicit
+  compatibility limits; see [contracts](../agent-context/guest-memory-services.md).
+- **Acceptance:** Windows candidate 25 checks passed, including 16 compiled
+  negative controls, real Windows availability and controlled Darwin cases.
+  Windows Release build/native checks/crash symbols and isolated Story movement,
+  firing and pause/resume passed; all 26 protected files were unchanged.
+  All 931 installed compiler and 21 documentation/context/backlog checks passed.
+  All 73 historical migration/repository checks passed. New-commit shared CI and
+  native Mac title gameplay remain pending. See
+  [STATUS](STATUS.md#project-guest-memory-services-2026-10-28).
