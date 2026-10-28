@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f2cbfa108b83cd9a3ee93cc2b8e1603d848b1b65507259086d68a4c0ab19e414",
+  "loaderSha256": "41b6432806585bcde333b50575bb5a42022a28248ef3a883e9e8c2a375af05a7",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2256,6 +2256,19 @@
         "src/kernel/xbox_memory_layout.h",
         "src/platform/win32_compat.c",
         "src/platform/win32_compat.h"
+      ]
+    },
+    {
+      "name": "0215-independent-kernel-objects.patch",
+      "path": "patches/compiler/0215-independent-kernel-objects.patch",
+      "sha256": "a817542c629f87ba7e807912bc3c8790797c893590ba2f9b6671c32798e6ecc3",
+      "targets": [
+        "src/hle/hle_dsound_stream.c",
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_thread.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/usb/ohci.c"
       ]
     },
     {

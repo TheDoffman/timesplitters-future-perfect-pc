@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Kernel object stage: [ownership, entry points and validation](kernel-objects.md).
+
 Retired memory APIs: [caller audit and retained ABI](retired-memory-compatibility.md).
 
 Guest mappings: [owners, host adapters and checks](guest-host-mappings.md).

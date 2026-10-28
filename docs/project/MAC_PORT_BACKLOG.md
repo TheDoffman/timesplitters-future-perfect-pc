@@ -267,6 +267,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-115 | Project native virtual-memory host operations | Awaiting validation |
 | MAC-116 | Project guest host mappings | Awaiting validation |
 | MAC-117 | Retired compatibility memory APIs | Awaiting validation |
+| MAC-118 | Independent kernel object lifetime | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7032,5 +7033,31 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   fatal unused-function warning. Its bypass now references the unused helper
   without invoking it; production behavior and strict warnings are unchanged.
   All six Windows adapter checks passed in 8.62s and 21 repair documentation
-  checks passed in 4.15s; repaired CI remains pending. See
+  checks passed in 4.15s. All 17 CI checks passed at repair commit `dcb2ea69`,
+  subsequently merged in PR #375. Native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#retired-compatibility-memory-apis-2026-10-28).
+
+### MAC-118 - Independent kernel object lifetime
+
+- **Status:** Awaiting validation
+- **PC behavior:** Original guest handle/object ownership, scoped borrowing,
+  reference/type/duplicate ABI, thread publication/exit and audio event signaling.
+- **Source/PR:** Stage0215 on `feature/independent-kernel-objects`, based on
+  `597d5937`; `src/runtime/guest_objects.c`,
+  `guest_object_scope.c`, `guest_object_services.c`, `guest_kernel_objects.inc`,
+  `guest_kernel_threads.inc`, lifetime hooks and matching original fixtures.
+- **Mac support present:** The same owner/service/continuation providers and
+  kernel adapters are selected by shared CMake and patch routing. Native host
+  resources use the existing platform boundary. No separate Mac feature model.
+- **Remaining adaptation:** Native Mac compilation/runtime/title validation;
+  Windows binding fixtures skip on Mac. Active-hook foreign-fiber behavior,
+  native object-manager/device services and complete worker shutdown remain work.
+- **Acceptance:** All 51 candidate contracts passed, including Windows native
+  wait/stress and thread binding with real project memory providers. Full-stack
+  installation and Windows Release/native build checks/crash symbols passed;
+  all 22 generated files are unchanged. Fresh isolated Original 60 Story
+  movement, firing and pause/resume passed; all 26 protected files are unchanged.
+  Documentation checks (21) and path/package/crash-symbol checks (19) passed.
+  All 1,049 compiler tests passed in 813.82s and all 52 snapshot/patch tracking/
+  migration tests passed in 1420.89s. Exact-head CI remains pending; no package produced.
+  See [STATUS](STATUS.md#independent-kernel-object-lifetime-2026-10-28).

@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Object lifetime: [owners, scopes and thread publication](kernel-objects.md).
+
 Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
 
 Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).

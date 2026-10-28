@@ -9,12 +9,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "recomp_types.h"
+#include "guest_lifetime.h"
 
 enum { TSFP_CONTINUATIONS = 32 };
 static RECOMP_TLS jmp_buf continuations[TSFP_CONTINUATIONS];
 static RECOMP_TLS uint32_t guest_keys[TSFP_CONTINUATIONS];
 static RECOMP_TLS uintptr_t stack_tags[TSFP_CONTINUATIONS];
 static RECOMP_TLS unsigned active;
+static RECOMP_TLS uint64_t lifetime_marks[TSFP_CONTINUATIONS];
+static tsfp_guest_lifetime_capture capture_lifetime;
+static tsfp_guest_lifetime_restore restore_lifetime;
+int tsfp_guest_lifetime_hooks(tsfp_guest_lifetime_capture capture,tsfp_guest_lifetime_restore restore)
+{
+    if ((!capture)!=(!restore)) return 0;
+    capture_lifetime=capture;restore_lifetime=restore;return 1;
+}
 /* Configure at startup, or while guest threads are quiescent. */
 static recomp_foreign_longjmp_fn foreign_handler;
 
@@ -38,6 +47,7 @@ jmp_buf *recomp_setjmp_slot(uint32_t guest_buffer)
         guest_keys[index]=guest_buffer;
     }
     stack_tags[index]=(uintptr_t)&stack_anchor;
+    lifetime_marks[index]=capture_lifetime?capture_lifetime():0;
     return &continuations[index];
 }
 
@@ -50,6 +60,11 @@ int recomp_guest_longjmp(uint32_t guest_buffer, uint32_t result)
 {
     const unsigned index=continuation_for(guest_buffer);
     if (index==TSFP_CONTINUATIONS) return 0; /* Let the guest implementation run. */
+
+    if (restore_lifetime && !restore_lifetime(lifetime_marks[index])) {
+        fprintf(stderr,"[tsfp-jump] operation lifetime mark is no longer active\n");
+        abort();
+    }
 
     /* The guest CRT stores these five little-endian architectural cells. The
      * project accessors retain unaligned access and guest-width arithmetic. */

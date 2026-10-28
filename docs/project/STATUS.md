@@ -1,3 +1,33 @@
+## Independent kernel object lifetime (2026-10-28)
+
+Stage0215 adds original handle/object ownership, operation scopes,
+guest reference/type/duplicate services and kernel/audio/thread/USB adapters.
+All 51 candidate contracts passed, including Windows real-thread binding with
+project allocation and thread-memory providers. The full patch stack installed
+six runtime files. Windows Release build, native build checks and matching crash
+symbols passed on the working tree based on `597d5937`. All 22 generated files
+are unchanged and the generation fingerprint and repository context are current.
+All 1,049 compiler tests passed in 813.82s. All 52 snapshot/patch tracking/
+migration tests passed in 1420.89s; exact-head CI remains pending.
+Documentation/context/backlog checks passed (21 tests), as did path/package/
+crash-symbol tests (19). No package or native Mac gameplay claim. See
+[contracts and limits](../agent-context/kernel-objects.md) and MAC-118.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+Forward/backward distances were 11.174549 / 6.184892; ammunition fell from eight
+to six. All 40 pause samples froze level ticks; all 60 resume samples were
+unpaused with advancing ticks. Final checkpoint: 102.626s within the 240s cap.
+Runner/controller exited zero; start, pause and resumed captures were reviewed.
+All 26 protected files retain hashes, sizes and mtimes. Owned partitions, run
+locks, BMPs and crash dumps are absent. The test used injected input, minimized
+windows, Classic textures and skipped startup movies; it does not establish
+physical input, audio listening, full campaign or Mac gameplay acceptance.
+
+Executable SHA-256:
+`f56e26ad5ab7cc515539ceb72edc506884f2085dea527eb90db7d095d658b7e4`.
+The executable matches runner/game provenance, and 23 project-source plus six
+installed-runtime hashes match the recorded build inputs.
+
 ## Retired compatibility memory APIs (2026-10-28)
 
 Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.
@@ -22,8 +52,8 @@ fatal warnings. The mutation now references the helper without calling it, so
 runtime assertions still detect the ownership bypass. All six Windows adapter
 checks passed after repair in 8.62s; 21 repair documentation/context/backlog
 checks passed in 4.15s. Production sources and the tested executable
-are unchanged; repaired exact-commit CI and native Mac title gameplay remain
-pending. Consumer
+are unchanged. All 17 checks passed at repair commit `dcb2ea69`; PR #375 was
+subsequently merged. Native Mac title gameplay remains pending. Consumer
 checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
 been produced for this stage.
 

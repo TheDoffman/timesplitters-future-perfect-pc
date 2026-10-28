@@ -1,11 +1,12 @@
 # Subsystem entry points
 
+Objects: [lifetime](kernel-objects.md).
+
 Memory: [retired APIs](retired-memory-compatibility.md).
 
 Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
 
-Image loading/bootstrap, guest state, ABI reports, continuations and remaining
-services: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
+Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 
 Procedural wind: [ownership/time scopes](native-wind.md).
 
