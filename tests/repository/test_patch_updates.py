@@ -181,7 +181,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.
-        if patch.name in ('1430-white-flash-overlay.patch',
+        if patch.name in ('2070-profile-unlock-content.patch',
+                         '1430-white-flash-overlay.patch',
                          '1420-title-screen-matte.patch',
                           '1400-menu-character-mouse.patch',
                           '1380-menu-team-mouse.patch',
@@ -227,6 +228,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
+    for hook in ('pc_unlock_requirement', 'pc_unlock_event', 'pc_unlock_movie', 'pc_unlock_profile_init'):
+        assert hook.encode() + b'(' in manual.read_bytes()
     bindings=(checkout / 'src/input/input_bindings.c').read_text()
     assert 'pc_settings_capture_pump()' in bindings
     assert 'tmp.bind[i].count > 2' in bindings

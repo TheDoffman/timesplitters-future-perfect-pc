@@ -551,7 +551,8 @@ hook at default/90-degree FOV and three aspect ratios. The separate
 `pc_display_menu.c` stages resolution (including Auto), aspect, vertical FOV,
 texture style, FPS and subtitles behind one dirty-state Apply. Auto uses the
 `1,1` saved sentinel and is labeled Auto, never displayed as a pixel size.
-Controls follows Video Options; conditional frontend Cheats is last. Audio
+Controls follows Video Options; [Unlock Content](unlock-content.md) and Cheats
+are in Extras. Audio
 retains its frontend/pause-specific alignment and common highlights are rounded.
 `pc_frame_rate_settings.h` persists the beta presets; live requests enter
 `pc_frame_rate_live.inc` and commit at the guest clock boundary.

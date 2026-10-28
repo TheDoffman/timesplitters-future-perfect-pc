@@ -841,3 +841,8 @@ Ordinal81 repair/test: [next-packet ABI](kernel-objects.md#guest-next-packet-abi
 
 
 Request allocation/ownership through0218: [contracts](kernel-objects.md#original-request-storage-and-initialization).
+
+## Profile early-access hooks
+
+See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
+original predicate hooks and isolated validation routes.

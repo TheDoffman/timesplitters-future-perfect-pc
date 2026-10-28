@@ -268,6 +268,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-116 | Project guest host mappings | Awaiting validation |
 | MAC-117 | Retired compatibility memory APIs | Awaiting validation |
 | MAC-118 | Independent kernel object lifetime | Awaiting validation |
+| MAC-119 | Profile-scoped Unlock Content | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7205,3 +7206,26 @@ Full current-stage snapshot/tracking/patch migration completed:52 passed in
 1037.38s (17m17s), terminal exit0. All local stage0219 acceptance is complete;
 new committed-head remote CI remains required. Build record keeps its actual
 dirty3b11d5b1 provenance and matching runtime/source/executable/game hashes.
+
+### MAC-119 - Profile-scoped Unlock Content
+
+- **Status:** Awaiting validation
+- **PC behavior:** Extras offers nine independent profile-specific early-unlock
+  categories; Off restores earned access. The original Cheats menu is in Extras.
+- **Source/PR:** Commit `86eccfca`, PR #395, based on `2e678ac1`;
+  `src/interface/pc_unlock_menu.inc`, `src/storage/pc_unlock_content.h`,
+  `pc_display_menu.c/.h`, `patches/storage/2070-profile-unlock-content.patch`.
+- **Mac support present:** Shared frontend and guest predicates use the existing
+  native menu/save adapters. No platform-specific feature implementation needed.
+- **Remaining adaptation:** Native Mac build, visual navigation, profile-switch
+  and signed save/reload acceptance. No Mac host was available for this change.
+- **Acceptance:** Windows Release build and built-in checks pass; seven focused
+  storage/menu checks pass, including original US predicates and profile isolation.
+  The isolated 183.618-second live route passes signed save/reload in both
+  directions, original Cheats navigation and progress-byte preservation.
+  Wider category-panel follow-up passes Windows Off/On visual checks at
+  640x480 and 1280x720; native visual validation remains pending. The subsequent
+  category-only menu removes help text and the Back row while preserving the
+  standard Back input and save callback.
+  See [STATUS](STATUS.md#profile-scoped-unlock-content-2026-10-28) for live evidence
+  and [implementation](../agent-context/unlock-content.md) for contracts.

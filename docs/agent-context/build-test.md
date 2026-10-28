@@ -929,3 +929,5 @@ Stage0219 device/name source and contracts use maintained src/runtime and tests/
 paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
 contract and actual-header probe. The Windows real-host binding fixture skips on Mac;
 that skip does not replace native Mac compilation or title gameplay.
+
+[Unlock migrations](unlock-content.md).
