@@ -7088,3 +7088,13 @@ minimized synthetic-input Classic run with movies skipped; physical input,
 audio listening, full campaign and native Mac gameplay remain unverified.
 Local snapshot/tracking/migration checks passed52 tests in1755.05s.
 Boot source is part of PR #393; CI for the new boot revision remains pending.
+
+
+Boot CI fixture repair: native Mac revision ffd6cb23 had1697 passing tests and
+12 fixture compilation failures. Eleven applied the boot fixture warning policy
+to the inherited shim's unfinished SecureZeroMemory parameters; one probe hit a
+nested comment in the inherited kernel header. The shim now compiles separately
+with host diagnostics, and the probe marks inherited headers as dependencies.
+Strict warnings and undefined-behavior instrumentation remain on original code.
+Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
+No production source, built executable or prior gameplay evidence changed.

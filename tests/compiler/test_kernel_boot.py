@@ -22,15 +22,26 @@ def build(tmp_path,mutation=None):
     if mutation:
         old,new=mutation;p=tmp_path/'guest_kernel_boot.c';s=p.read_text()
         assert s.count(old)==1;p.write_text(s.replace(old,new))
-    extra=[tmp_path/'guest_kernel_boot.c']
+    extra=[tmp_path/'guest_kernel_boot.c'];objects=[]
     if os.name=='nt':
         extra+=['/W4','/D_CRT_SECURE_NO_WARNINGS','/I'+str(RUNTIME/'src')]
     else:
+        # Build the inherited host dependency using its normal diagnostic
+        # policy, separately from strict project-provider/fixture warnings.
+        from native_compiler import native_compiler
+        compiler,env=native_compiler(tmp_path)
+        platform=tmp_path/'platform.o'
+        command=[compiler,'-std=c11','-O2','-Werror','-fsanitize=undefined',
+                 '-fno-sanitize-recover=all','-I',str(RUNTIME/'src'),
+                 '-I',str(ROOT/'src/runtime'),'-c',str(RUNTIME/'src/platform/win32_compat.c'),
+                 '-o',str(platform)]
+        built=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=90)
+        assert built.returncode==0,built.stdout+built.stderr
+        objects.append(str(platform))
         extra+=['-Wall','-Wextra','-I',str(RUNTIME/'src'),'-I',str(ROOT/'src/runtime'),
-                RUNTIME/'src/platform/win32_compat.c',
                 *[ROOT/'src/runtime'/name for name in ('shared_views.c','owned_arena.c','mmio_views.c','guest_arena_service.c')],
                 ROOT/'src/native/shared_host.c','-lm','-lpthread']
-    return _compile(tmp_path,tmp_path/'boot_contract.c',extra=extra)
+    return _compile(tmp_path,tmp_path/'boot_contract.c',extra=extra,objects=objects)
 
 def execute(tmp_path,exe,scenario,**settings):
     env=os.environ.copy();env.pop('XBOX_LOG_LEVEL',None);env.pop('TSFP_DEBUG_QUIET',None);env.update(settings)
@@ -80,7 +91,7 @@ def test_candidate_compiles_with_real_runtime_headers(tmp_path):
               '/I'+str(RUNTIME/'src'),'/I'+str(RUNTIME/'src/kernel'),'/Fo:'+str(obj)]
     else:
         args=[compiler,'-std=c11','-Wall','-Wextra','-Werror','-c',str(source),
-              '-I',str(RUNTIME/'src'),'-I',str(RUNTIME/'src/kernel'),'-o',str(obj)]
+              '-I',str(RUNTIME/'src'),'-isystem',str(RUNTIME/'src/kernel'),'-o',str(obj)]
     run=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert run.returncode==0,run.stdout+run.stderr
     assert obj.is_file()

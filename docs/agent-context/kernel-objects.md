@@ -119,3 +119,15 @@ minimized synthetic-input Classic run with movies skipped; physical input,
 audio listening, full campaign and native Mac gameplay remain unverified.
 Local snapshot/tracking/migration checks passed52 tests in1755.05s.
 Boot source is part of PR #393; CI for the new boot revision remains pending.
+
+
+Mac fixture compilation builds inherited win32_compat.c separately with the
+existing host diagnostic policy and undefined-behavior instrumentation. Strict
+-Wall/-Wextra/-Werror still applies to the original boot source, fixture and
+owned providers. Applying those added warnings to the dependency exposed unused
+parameters in its pre-existing unfinished Darwin SecureZeroMemory branch; this
+fixture repair does not implement that legacy routine or change production code.
+The real-header probe keeps strict warnings on the original source, but marks
+the inherited kernel-header directory as a system dependency: its old nested
+comment otherwise fails Clang -Wcomment. Compiler/type errors remain errors.
+Mac execution still needs current CI.
