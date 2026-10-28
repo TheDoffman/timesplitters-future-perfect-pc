@@ -135,12 +135,13 @@ fixtures now pass after repairing their constant extraction and mutation target;
 their numerical, memory-bound, stack and missing-write assertions remain.
 All existing mutation controls, timeouts and release acceptance gates are kept.
 
-The remaining 24 failures are the same baseline cases in
+At that measured revision, the remaining 24 failures were the same baseline cases in
 `tests/graphics/test_surface_shader_feedback.py`. The translated original upload
 routine emits 27/166/250 while the shared coefficient helper truncates to
 26/165/249. Determining the correct rounding/state contract requires a separate
-correctness investigation. This change does not modify translation or rendering
-to make those checks pass. **These failures still block release packaging.**
+correctness investigation. The performance change did not modify translation or
+rendering to make those checks pass. Those failures blocked release packaging;
+the shader follow-up below records their resolution.
 
 The speed changes are:
 
@@ -194,3 +195,47 @@ For a direct full run after installing the shared requirements:
 
 Omit the three worker options for a serial diagnostic run. The publisher enables
 the parallel policy automatically; a bare manual pytest invocation remains serial.
+
+## Shader correctness follow-up (2026-10-28)
+
+Local branch `fix/shader-coefficient-regressions` depends on the unmerged
+performance work through `d1226d25`. Disassembly of the hash-verified supported US
+XBE confirms four rounded `CVTSS2SI` instructions in the uploader at `3D9520`.
+The current translator correctly uses `nearbyint`; three shared water coefficient
+paths still truncated through C casts. One common helper now matches the clamp,
+binary32 multiplication and host-mode rounding used by that translated uploader.
+Nearest/even produces bytes 27/166/250 instead of 26/165/249. This does not claim
+independent Xbox MXCSR emulation; see [the contract](../agent-context/surface-coefficients.md).
+
+The complete optimized Windows rerun collected 2,460 cases: **2,424 passed,
+36 skipped, zero failed**, plus **109 passing subtests**, in **468.403 s
+(7 min 48 s)** including startup and collection. Comparison by stable test ID
+confirms all 2,457 previous cases were retained, every one of the 24 shader
+failures passed, no formerly passing case regressed, and no skip changed. Three
+new passing cases exercise independent mathematical/native SSE references and
+require truncation and ties-away mutations to fail. Both-host CI includes them.
+All 246 private/runtime input hashes still match the original manifest.
+
+The first full attempt took 799.766 s with 2,423 passing cases, the same 36 skips,
+and one unrelated runtime-snapshot failure: Windows denied the atomic temporary
+directory rename, then denied cleanup of a read-only Git object. The same check
+passed in isolation and in the complete unchanged rerun. The failed evidence is
+retained; no test retries, exclusions or importer changes were used to obtain
+the clean run. Other independent test/game processes were active during the first
+attempt; the cause of the access denial is not established. These variable host
+conditions mean the faster final time is not an additional measured speedup
+attributable to the coefficient fix.
+
+Focused WARP, combiner, rounding and native-surface validation passed 45 cases
+with five existing prerequisite skips in 116.64 s. The strengthened native adapter
+case also passed: it checks the actual GPU configuration, non-finite rejection,
+resource failure and reset behavior. Full patch revalidation passed without
+changing runtime files. Original GPU thresholds, shader mutation controls,
+memory/stack checks, timeouts and release acceptance gates remain in place.
+Workflow YAML, repository context/ownership, backlog and whitespace checks pass.
+
+Evidence remains local in `logs/shader-focused.*`, `logs/shader-adapter.log`,
+`logs/shader-patch-validation.log`, `logs/suite-shader-fixed.*`,
+`logs/suite-shader-final.*` and `logs/shader-suite-comparison.json`. No private
+assets or generated code are committed. Native Mac GPU/gameplay, complete scene
+parity, a fresh game build, packaging and publication remain unverified.

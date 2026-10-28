@@ -1,3 +1,25 @@
+## Shader coefficient release blockers resolved (2026-10-28)
+
+Local branch `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
+24 shader failures exposed by the optimized suite. The supported US uploader uses
+rounded `CVTSS2SI`, while three shared coefficient paths still used truncating C
+casts. One shared conversion now follows the current translator's host rounding
+mode. Original shader thresholds, negative controls and release gates remain.
+
+The final full four-worker Windows run passed **2,424 cases and 109 subtests**,
+with **36 unchanged prerequisite skips**, in **468.403 s (7 min 48 s)**. Every
+previous 2,457-case test ID was retained; all 24 failures now pass, along with
+three new rounding-oracle/mutation cases. All 246 input hashes match the baseline.
+An initial full attempt had one unrelated Windows access-denied error during a
+temporary runtime-directory rename; the isolated check and complete unchanged
+rerun passed. No skip, retry plugin or weaker assertion was added to bypass it.
+Explicit full patch revalidation also passed. See
+[the measured evidence and limits](../development/release-performance.md#shader-correctness-follow-up-2026-10-28)
+and [the shared conversion contract](../agent-context/surface-coefficients.md).
+
+This validates the local suite, not a published release or complete game visual
+parity. Native Mac execution and a fresh game release build remain unverified.
+
 ## Full regression suite performance (2026-10-28)
 
 Local commit `e3a50ed7` on `perf/release-speed` continues the build/release work
@@ -8,8 +30,8 @@ The full release suite uses up to four workers, preserves shared fixtures, and
 reuses successful Windows compiler setup within each worker. Both-host CI uses
 two workers. No existing test case or acceptance gate is removed. The run also
 exposed stale original-image fixtures and pre-existing shader coefficient failures;
-the former are repaired without changing their assertions, while unresolved
-correctness failures remain release blockers. See the exact Windows coverage,
+the former were repaired without changing their assertions, while the shader
+failures required the separate correctness fix recorded above. See the exact Windows coverage,
 timings and limitations in [release performance](../development/release-performance.md).
 No game was compiled for release, packaged, uploaded or published. Native Mac
 execution and end-to-end release duration remain unverified.

@@ -201,7 +201,7 @@ jobs:
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
             tests/graphics/test_vsh_constant_dirty.py
-            tests/gameplay/test_native_effect_trace.py tests/analysis/test_rocket_impact_stats.py tests/graphics/test_surface_shader_feedback.py tests/graphics/test_combiner_constants.py tests/graphics/test_surface_preservation.py
+            tests/gameplay/test_native_effect_trace.py tests/analysis/test_rocket_impact_stats.py tests/graphics/test_surface_shader_feedback.py tests/graphics/test_combiner_constants.py tests/graphics/test_surface_coefficients.py tests/graphics/test_surface_preservation.py
             tests/compiler/test_recomp_float_joins.py tests/compiler/test_recomp_vehicle_joins.py
             tests/compiler/test_recomp_generation.py tests/graphics/test_framebuffer_sampling.py tests/gameplay/test_model_transform.py tests/compiler/test_gpr_refs.py tests/graphics/test_zero_base_indices.py tests/graphics/test_push_gather.py tests/graphics/test_vertex_expand.py tests/graphics/test_terminal_depth.py tests/graphics/test_ghost_rendering.py tests/graphics/test_ghost_targets.py
             tests/media/test_xmv_stop.py tests/media/test_native_movie_file.py tests/network/test_discord_presence.py tests/network/test_discord_macos.py tests/gameplay/test_native_crash.py

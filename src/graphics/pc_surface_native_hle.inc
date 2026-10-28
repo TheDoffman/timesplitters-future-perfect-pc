@@ -2,6 +2,7 @@
  * only the final ripple shader temporarily borrows the continuously evolved
  * field. Never read back, flush, or keep guest-memory pointers in this path. */
 #include "pc_surface_native.h"
+#include "pc_surface_bias.h"
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
 #include "graphics/surface_gpu_cache.h"
 static PcSurfaceGpuCache pc_surface_native_cache;
@@ -61,7 +62,7 @@ static void pc_surface_native_prepare_execute(const void *argument) {
     float authored[4];memcpy(authored,sample->feedback.coefficient_bits,sizeof authored);
     double c[4];for(unsigned i=0;i<4;i++) {
         if(!isfinite(authored[i]))return;
-        c[i]=(int32_t)(fminf(1.f,fmaxf(0.f,authored[i]))*255.f)/255.;
+        c[i]=pc_surface_coefficient_byte(authored[i])/255.;
     }
     PcSurfaceGpuConfig config={128,c[1],c[2],c[3],c[0],128./255.};
     PcSurfaceGpuEntry *entry=NULL;

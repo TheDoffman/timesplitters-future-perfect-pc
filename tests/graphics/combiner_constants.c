@@ -122,7 +122,7 @@ int main(void) {
         hle_d3d8_surface_bias_step(exits[i]);forward_surface_bias(0x4bbf10u);
         assert(!constants.mask[0] && !constants.mask[1]);
     }
-    assert(pc_surface_packed_coefficient(.5f)==127.f/255.f);
+    assert(pc_surface_packed_coefficient(.5f)==128.f/255.f);
     assert(pc_surface_packed_coefficient(-1)==0 && pc_surface_packed_coefficient(2)==1);
     assert(pc_combiner_constant_set(&constants,0,7,untouched));
     pc_combiner_constants_reset(&constants);assert(!constants.mask[0] && !constants.mask[1]);

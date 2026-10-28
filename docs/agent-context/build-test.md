@@ -795,13 +795,13 @@ power of the original packed one-tick damping must retain the 60-step result.
 This needs the local supported XBE; hosted skips are not GPU acceptance. It
 proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
 
-The damping case first executes all of `sub_003D9520` through the current lifter
-and passes its packed bytes to the GPU fixture. Do not substitute hand-rounded
-constants: the current recompiled conversion truncates. `surface_coefficient_upload.c`
-checks the stack/callee-saved-register boundary and supplies sufficient command
-space; no generated game code is checked in. `test_ordered_combiner_constants`
-also covers the production coefficient setter/clear/cache path. The GPU scalar
-case now uses the shared coefficient helper for its corrected values.
+The damping case executes `sub_003D9520` through the current lifter and passes
+its packed bytes to the GPU fixture. Keep actual uploads as the reference;
+[water conversion checks](surface-coefficients.md) cover rounded CVTSS2SI.
+`surface_coefficient_upload.c` checks stack/callee-saved registers and command
+space; generated game code stays local. `test_ordered_combiner_constants` covers
+production coefficient setter/clear/cache behavior. GPU scalar checks use the
+same shared coefficient helper.
 
 The coefficient integration was exercised with the existing bounded Scotland
 route at 60/120/144 and `--trace-surface-images`. Use the image validator for

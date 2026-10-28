@@ -4968,6 +4968,17 @@ See STATUS for exact measurements and the corrected reference scope.
   validation. The shared historical-upgrade fixture now excludes the new
   coefficient patch when constructing old stacks lacking its prerequisite.
 
+- **Water coefficient conversion follow-up (2026-10-28, uncommitted on
+  `fix/shader-coefficient-regressions`):** The current SSE translator rounds
+  `CVTSS2SI`; the shared water helpers still truncated, causing 24 original-shader
+  checks to fail. One shared byte conversion now serves precision overrides,
+  capture and the native GPU adapter. All original numerical thresholds and
+  negative controls remain; host rounding-mode oracles and finite-input guards
+  cover the fix. No new Mac adapter is needed. Windows focused WARP/native checks
+  and the full optimized suite pass (2,424 cases, 36 unchanged skips, 109 subtests,
+  468.403 s); native Mac GPU/scene execution remains unverified. See STATUS and
+  [the conversion contract](../agent-context/surface-coefficients.md).
+
 - **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
   policy and HLE patch extend the existing disabled experiment; no new host
   adapter or capture format. The actual current guest uploader supplies the
