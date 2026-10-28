@@ -71,3 +71,10 @@ Private TIBs persist while guest stacks release. Shared portable contracts remai
 selected on both CI hosts; the actual Windows binding test skips on Mac. Native
 Mac compilation, title gameplay and active-hook foreign-fiber ownership require
 separate acceptance. See MAC-118 and STATUS for measured production evidence.
+
+The standalone `tests/media/audio_stream_timing.c` fixture supplies the scoped
+`xbox_bridge_signal_event` boundary, rather than the retired raw-handle resolver.
+Its completion scenario checks the exact token, status/size publication before
+signaling, no signal before consumption and no repeat on a later tick. This is
+an audio adapter contract; real event ownership remains tested by the kernel
+binding fixture. No production source changes are needed for this fixture repair.

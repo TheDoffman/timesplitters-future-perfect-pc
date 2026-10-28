@@ -13,6 +13,14 @@ Documentation/context/backlog checks passed (21 tests), as did path/package/
 crash-symbol tests (19). No package or native Mac gameplay claim. See
 [contracts and limits](../agent-context/kernel-objects.md) and MAC-118.
 
+At `787f78cf`, Mac CI passed 1,683 tests (272 skips, 18 subtests), but its 14
+stream-audio scenarios could not link the fixture: it still supplied the retired
+raw-handle resolver instead of `xbox_bridge_signal_event`. The fixture now checks
+the exact completion token, status/size publication before signaling, and no
+premature or repeated signal. All 17 Windows audio tests passed in 3.24s after
+repair. Production sources and the tested executable are unchanged; repaired CI
+and native Mac title gameplay remain pending.
+
 Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
 Forward/backward distances were 11.174549 / 6.184892; ammunition fell from eight
 to six. All 40 pause samples froze level ticks; all 60 resume samples were

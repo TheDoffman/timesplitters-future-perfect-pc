@@ -7060,4 +7060,9 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Documentation checks (21) and path/package/crash-symbol checks (19) passed.
   All 1,049 compiler tests passed in 813.82s and all 52 snapshot/patch tracking/
   migration tests passed in 1420.89s. Exact-head CI remains pending; no package produced.
+  Mac CI at `787f78cf` passed 1,683 tests (272 skips, 18 subtests), but 14 stream
+  scenarios failed fixture linking against the new event-signaling boundary.
+  The repaired audio fixture verifies exact token/ordering/once-only completion;
+  all 17 Windows audio checks passed in 3.24s. Production sources are unchanged.
+  Repaired CI and native Mac title gameplay remain pending.
   See [STATUS](STATUS.md#independent-kernel-object-lifetime-2026-10-28).
