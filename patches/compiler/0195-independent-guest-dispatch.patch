@@ -1,0 +1,229 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -1032,42 +1032,68 @@
+ #define RECOMP_ICALL_GUARD_MISS() ((void)0)
+ #endif
+ 
+-/**
+- * RECOMP_ICALL - Indirect call through the dispatch table.
+- *
+- * Looks up the Xbox VA and calls the translated function.
+- * Falls back to kernel bridge for kernel thunk synthetic VAs.
+- * The caller must PUSH32 the guest return address before this macro.
+- * If not found, pops it back off to keep the stack balanced.
+- *
+- * RECOMP_ICALL_IS_CODE skips garbage VAs that come from uninitialized vtable
+- * pointers. Kernel thunks at 0xFE000000+ are never blocked.
+- *
+- * Nothing to customize: the range comes from g_xbox_code_lo/g_xbox_code_hi,
+- * which the memory layout fills in from the sections it actually mapped. This
+- * used to say "change the VA range check to match your game's code range",
+- * left over from a hardcoded 0x00400000 cutoff that was only ever right for
+- * one title. Editing this header per project is no longer a thing.
+- */
+-#define RECOMP_ICALL(xbox_va) do { \
+-    uint32_t _va = (uint32_t)(xbox_va); \
+-    g_icall_trace[g_icall_trace_idx & (ICALL_TRACE_SIZE-1)] = _va; \
+-    g_icall_trace_idx++; \
+-    g_icall_count++; \
+-    /* Skip garbage VAs outside code section + kernel thunk range */ \
+-    if (!RECOMP_ICALL_IS_CODE(_va)) { \
+-        recomp_icall_not_code_log(_va, g_esp + 4); \
+-        g_esp += 4; eax = 0; break; \
++/* TSFP indirect dispatch support begin.
++ * Call sites supply a guest return address before entering this interface.
++ * Keep lookup/notification order in one place; recovery stays at the call
++ * site so saved-stack and feedback expressions retain their lazy evaluation.
++ */
++/* The generated table defines RECOMP_DISPATCH_H before including its types
++ * header, then declares the public pointer type later. These compatible private
++ * declarations keep inline helpers valid in either include order. */
++typedef void (*tsfp_guest_entry_t)(void);
++tsfp_guest_entry_t recomp_lookup_manual(uint32_t target);
++tsfp_guest_entry_t recomp_lookup(uint32_t target);
++tsfp_guest_entry_t recomp_lookup_kernel(uint32_t target);
++
++static inline int tsfp_record_guest_call(uint32_t target) {
++    g_icall_trace[g_icall_trace_idx & (ICALL_TRACE_SIZE - 1u)] = target;
++    ++g_icall_trace_idx;
++    ++g_icall_count;
++    return RECOMP_ICALL_IS_CODE(target);
++}
++
++static inline tsfp_guest_entry_t tsfp_guest_target(uint32_t target) {
++    tsfp_guest_entry_t resolved = recomp_lookup_manual(target);
++    if (resolved) return resolved;
++    resolved = recomp_lookup(target);
++    return resolved ? resolved : recomp_lookup_kernel(target);
++}
++
++/* Diagnostics inspect the original call frame. They may also change guest
++ * state, so failure recovery must run after the diagnostic returns. */
++static inline int tsfp_invoke_guest_target(uint32_t target, uint32_t form) {
++    tsfp_guest_entry_t resolved = tsfp_guest_target(target);
++    if (!resolved) {
++        RECOMP_ICALL_OBSERVE(target, RECOMP_ICALL_SEEN_UNRESOLVED);
++        g_icall_saved_esp = g_esp;
++        g_icall_dispatch_form = form;
++        recomp_icall_fail_log(target);
++        return 0;
++    }
++    RECOMP_ICALL_OBSERVE(target, RECOMP_ICALL_SEEN_RESOLVED);
++    RECOMP_ABI_CALL(target, resolved);
++    return 1;
++}
++
++#define TSFP_GUEST_CALL(target, report_stack, recover, observe_site) do { \
++    const uint32_t tsfp_call_target_ = (uint32_t)(target); \
++    if (tsfp_record_guest_call(tsfp_call_target_)) { \
++        observe_site; \
++        if (!tsfp_invoke_guest_target(tsfp_call_target_, 1u)) { \
++            recover; \
++            eax = 0; \
++        } \
++    } else { \
++        recomp_icall_not_code_log(tsfp_call_target_, (report_stack)); \
++        recover; \
++        eax = 0; \
+     } \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
+-    if (!_fn) _fn = recomp_lookup(_va); \
+-    if (!_fn) _fn = recomp_lookup_kernel(_va); \
+-    if (_fn) { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_RESOLVED); \
+-               RECOMP_ABI_CALL(_va, _fn); } \
+-    else { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_UNRESOLVED); \
+-           g_icall_saved_esp = g_esp; g_icall_dispatch_form = 1; \
+-           recomp_icall_fail_log(_va); g_esp += 4; eax = 0; } \
+-} while(0)
++} while (0)
++/* TSFP indirect dispatch support end. */
++
++#define RECOMP_ICALL(xbox_va) \
++    TSFP_GUEST_CALL(xbox_va, g_esp + 4u, g_esp += 4u, (void)0)
++
+ 
+ /**
+  * RECOMP_ICALL_SAFE - Stack-safe indirect call.
+@@ -1122,74 +1148,25 @@
+         g_esp = _hle_save + _hle_pop; \
+     }
+ 
+-#define RECOMP_ICALL_SAFE(xbox_va, saved_esp) do { \
+-    uint32_t _va = (uint32_t)(xbox_va); \
+-    g_icall_trace[g_icall_trace_idx & (ICALL_TRACE_SIZE-1)] = _va; \
+-    g_icall_trace_idx++; \
+-    g_icall_count++; \
+-    if (!RECOMP_ICALL_IS_CODE(_va)) { \
+-        recomp_icall_not_code_log(_va, (saved_esp)); \
+-        g_esp = (saved_esp); eax = 0; break; \
++/* TSFP indirect dispatch wrappers begin.
++ * A saved stack is consulted only for failure. For an invalid address it is
++ * consulted before the diagnostic and again afterwards, as in the public ABI.
++ * Tail jumps reuse the existing frame and do not enter the call trace ring.
++ */
++#define RECOMP_ICALL_SAFE(xbox_va, saved_esp) \
++    TSFP_GUEST_CALL(xbox_va, saved_esp, g_esp = (saved_esp), (void)0)
++#define RECOMP_ICALL_SAFE_AT(xbox_va, saved_esp, site) \
++    TSFP_GUEST_CALL(xbox_va, saved_esp, g_esp = (saved_esp), \
++        RECOMP_ICALL_OBSERVE_SITE((site), tsfp_call_target_))
++#define RECOMP_ITAIL(xbox_va) do { \
++    const uint32_t tsfp_tail_target_ = (uint32_t)(xbox_va); \
++    if (!tsfp_invoke_guest_target(tsfp_tail_target_, 2u)) { \
++        g_esp += 4u; \
++        g_eax = 0; \
+     } \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
+-    if (!_fn) _fn = recomp_lookup(_va); \
+-    if (!_fn) _fn = recomp_lookup_kernel(_va); \
+-    if (_fn) { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_RESOLVED); \
+-               RECOMP_ABI_CALL(_va, _fn); } \
+-    else { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_UNRESOLVED); \
+-           g_icall_saved_esp = g_esp; g_icall_dispatch_form = 1; \
+-           recomp_icall_fail_log(_va); g_esp = (saved_esp); eax = 0; } \
+-} while(0)
+-
+-/**
+- * RECOMP_ICALL_SAFE_AT - RECOMP_ICALL_SAFE that also names the call SITE.
+- *
+- * `site` is the guest address of the `call` instruction. Under
+- * RECOMP_ICALL_FEEDBACK the runtime records which targets each site reaches
+- * (icall_sites.dump), which is what lets the lifter guard a site with direct
+- * calls on the next generation. Everything else is RECOMP_ICALL_SAFE, line
+- * for line -- including this fork's not-code log with the saved esp and the
+- * g_icall_saved_esp / g_icall_dispatch_form hand-off to the fail log, which
+- * upstream's copy of the macro predates. Keep the two in step.
+- */
+-#define RECOMP_ICALL_SAFE_AT(xbox_va, saved_esp, site) do { \
+-    uint32_t _va = (uint32_t)(xbox_va); \
+-    g_icall_trace[g_icall_trace_idx & (ICALL_TRACE_SIZE-1)] = _va; \
+-    g_icall_trace_idx++; \
+-    g_icall_count++; \
+-    if (!RECOMP_ICALL_IS_CODE(_va)) { \
+-        recomp_icall_not_code_log(_va, (saved_esp)); \
+-        g_esp = (saved_esp); eax = 0; break; \
+-    } \
+-    RECOMP_ICALL_OBSERVE_SITE((site), _va); \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
+-    if (!_fn) _fn = recomp_lookup(_va); \
+-    if (!_fn) _fn = recomp_lookup_kernel(_va); \
+-    if (_fn) { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_RESOLVED); \
+-               RECOMP_ABI_CALL(_va, _fn); } \
+-    else { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_UNRESOLVED); \
+-           g_icall_saved_esp = g_esp; g_icall_dispatch_form = 1; \
+-           recomp_icall_fail_log(_va); g_esp = (saved_esp); eax = 0; } \
+-} while(0)
+-
+-/**
+- * RECOMP_ITAIL - Indirect tail call (jmp through function pointer).
+- *
+- * No return address is pushed - reuses the current frame's return addr.
+- * Used for tail-call optimization where the original code uses
+- * jmp [reg] instead of call [reg].
+- */
+-#define RECOMP_ITAIL(xbox_va) do { \
+-    uint32_t _va = (uint32_t)(xbox_va); \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
+-    if (!_fn) _fn = recomp_lookup(_va); \
+-    if (!_fn) _fn = recomp_lookup_kernel(_va); \
+-    if (_fn) { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_RESOLVED); \
+-               RECOMP_ABI_CALL(_va, _fn); } \
+-    else { RECOMP_ICALL_OBSERVE(_va, RECOMP_ICALL_SEEN_UNRESOLVED); \
+-           g_icall_saved_esp = g_esp; g_icall_dispatch_form = 2; \
+-           recomp_icall_fail_log(_va); g_esp += 4; g_eax = 0; } \
+-} while(0)
++} while (0)
++/* TSFP indirect dispatch wrappers end. */
++
+ 
+ /* ================================================================
+  * Register name aliases for generated code
+--- a/tools/recomp/test_icall_guarded_runtime.py
++++ b/tools/recomp/test_icall_guarded_runtime.py
+@@ -54,6 +54,18 @@
+                 out.append(lines[i])
+             return "\n".join(out)
+     raise AssertionError(f"{name} not defined in {HEADER}")
++
++
++def _dispatch():
++    # The public macro now uses shared project dispatch helpers. Compile the
++    # complete implementation, preserving the existing guarded-call oracle.
++    text = open(HEADER, encoding="utf-8").read()
++    blocks = []
++    for kind in ("support", "wrappers"):
++        start = text.index("/* TSFP indirect dispatch " + kind + " begin.")
++        end = text.index("/* TSFP indirect dispatch " + kind + " end. */", start)
++        blocks.append(text[start:end])
++    return "\n".join(blocks)
+ 
+ 
+ def _lifted_site():
+@@ -143,7 +155,7 @@
+     if not _cc():
+         pytest.skip("no C compiler on PATH")
+     src = (HARNESS.replace("IS_CODE", _macro("RECOMP_ICALL_IS_CODE"))
+-                  .replace("SAFE_AT", _macro("RECOMP_ICALL_SAFE_AT"))
++                  .replace("SAFE_AT", _dispatch())
+                   .replace("LIFTED", _lifted_site()))
+     with tempfile.TemporaryDirectory() as tmp:
+         p = os.path.join(tmp, "h.c")

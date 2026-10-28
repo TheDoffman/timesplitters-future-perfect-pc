@@ -7,6 +7,7 @@ endif()
 get_filename_component(TSFP_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 set(TSFP_RUNTIME_DIR "${TSFP_PROJECT_ROOT}/external/ts3FPrecomp")
 set(TSFP_NATIVE_DIR "${TSFP_PROJECT_ROOT}/src/native")
+set(TSFP_SHARED_SOURCE "${TSFP_PROJECT_ROOT}/src")
 # This standalone project bypasses the title's shared-source include setup.
 foreach(group diagnostics gameplay graphics input interface network runtime storage textures)
     include_directories("${TSFP_PROJECT_ROOT}/src/${group}")

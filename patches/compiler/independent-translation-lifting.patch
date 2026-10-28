@@ -1,0 +1,640 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -33,6 +33,7 @@
+ import translation_mmx as _project_mmx
+ import translation_x87 as _project_x87
+ import translation_control as _project_control
++import translation_lifting as _project_lifting
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -294,17 +295,7 @@
+ })
+ 
+ 
+-def _has_xmm_operand(ops):
+-    """True for the SSE reading of a mnemonic the string operations share.
+-
+-    Only "movsd" is ambiguous in the dispatcher today -- "cmpsd" is the other
+-    mnemonic x86 overloads this way, but it has no SSE lifter here yet. The
+-    test is written over the operands rather than the mnemonic so it stays
+-    correct if one is added.
+-    """
+-    return any(op is not None and getattr(op, "type", None) == "reg"
+-               and (getattr(op, "reg", None) or "").startswith("xmm")
+-               for op in (ops or ()))
++_has_xmm_operand = _project_lifting.has_xmm
+ 
+ 
+ zf_expression = _project_conditions.zf_expression
+@@ -317,33 +308,7 @@
+ _emit_cond_goto = _project_control.conditional
+ 
+ 
+-def try_match_cmp_jcc(insns, idx, lifter=None):
+-    """
+-    Try to match a cmp/test + jcc pattern starting at insns[idx].
+-    Returns (c_statement, num_consumed) or None.
+-    """
+-    if idx + 1 >= len(insns):
+-        return None
+-
+-    first = insns[idx]
+-    second = insns[idx + 1]
+-
+-    if first.mnemonic not in ("cmp", "test") or not second.is_cond_jump:
+-        return None
+-
+-    if len(first.operands) < 2:
+-        return None
+-
+-    # Same normalised form the snapshot and the recorded state use.
+-    result = _make_condition(second.mnemonic,
+-                             *normalise_zero_test(first.mnemonic, first.operands))
+-    if not result:
+-        return None
+-
+-    cond_expr, desc = result
+-    target = second.jump_target
+-    stmt = _emit_cond_goto(cond_expr, second.mnemonic, desc, target, lifter)
+-    return (stmt, 2)
++try_match_cmp_jcc = _project_lifting.adjacent_condition
+ 
+ 
+ # ── Single instruction lifting ───────────────────────────────
+@@ -678,236 +643,7 @@
+         self.referenced_calls[addr] = name
+         return name
+ 
+-    def lift_instruction(self, insn):
+-        """
+-        Translate a single x86 instruction to one or more C statements.
+-        Returns a list of C statement strings.
+-        """
+-        m = insn.mnemonic
+-        ops = insn.operands
+-        nops = len(ops)
+-
+-        # ── NOP ──
+-        if m == "nop" or (m == "lea" and nops == 2 and
+-                          ops[0].type == "reg" and ops[1].type == "mem" and
+-                          ops[1].mem_base == ops[0].reg and
+-                          not ops[1].mem_index and ops[1].mem_disp == 0):
+-            return [f"/* nop */"]
+-
+-        # ── Data movement ──
+-        if m == "mov":
+-            return self._lift_mov(insn, ops)
+-        if m == "movzx":
+-            return self._lift_movzx(insn, ops)
+-        if m == "movsx":
+-            return self._lift_movsx(insn, ops)
+-        if m == "lea":
+-            return self._lift_lea(insn, ops)
+-        if m in ("xchg", "lock xchg"):
+-            return self._lift_xchg(insn, ops)
+-
+-        # ── Stack ──
+-        if m == "push":
+-            return self._lift_push(insn, ops)
+-        if m == "pop":
+-            return self._lift_pop(insn, ops)
+-
+-        # ── Arithmetic ──
+-        if m in ("add", "sub", "and", "or", "xor"):
+-            return self._lift_alu_binop(insn, ops, m)
+-        if m in ("inc", "dec"):
+-            return self._lift_inc_dec(insn, ops, m)
+-        if m == "neg":
+-            return self._lift_neg(insn, ops)
+-        if m == "not":
+-            return self._lift_not(insn, ops)
+-        if m == "imul":
+-            return self._lift_imul(insn, ops)
+-        if m in ("mul", "div", "idiv"):
+-            return self._lift_muldiv(insn, ops, m)
+-        if m == "sbb":
+-            return self._lift_sbb(insn, ops)
+-        if m == "adc":
+-            return self._lift_adc(insn, ops)
+-        if m in ("shl", "sal"):
+-            return self._lift_shift(insn, ops, "<<")
+-        if m == "shr":
+-            return self._lift_shift(insn, ops, ">>")
+-        if m == "sar":
+-            return self._lift_sar(insn, ops)
+-        if m in ("rol", "ror"):
+-            return self._lift_rotate(insn, ops, m)
+-        if m in ("rcl", "rcr"):
+-            return self._lift_rotate_carry(insn, ops, m)
+-
+-        # ── Comparison / test (standalone, not part of cmp+jcc pattern) ──
+-        if m == "cmp":
+-            return self._lift_cmp(insn, ops)
+-        if m == "test":
+-            return self._lift_test(insn, ops)
+-
+-        # ── Control flow ──
+-        if m == "call":
+-            return self._lift_call(insn, ops)
+-        if m in ("ret", "retn", "retf"):
+-            return self._lift_ret(insn, ops)
+-        if m == "jmp":
+-            return self._lift_jmp(insn, ops)
+-        if insn.is_cond_jump:
+-            return self._lift_jcc(insn)
+-
+-        # ── String operations ──
+-        if m.startswith(("rep ", "repe ", "repne ", "repz ", "repnz ")):
+-            return self._lift_rep_string(insn, m)
+-        # "movsd" is TWO instructions. The string MOVSD copies a dword from
+-        # [esi] to es:[edi]; the SSE2 MOVSD moves a scalar double in or out of
+-        # an xmm register. They share a mnemonic and nothing else, and this
+-        # branch runs ahead of the SSE one below, so an SSE movsd was lifted
+-        # as a string copy -- walking esi and edi and touching neither operand
+-        # the instruction actually names. Told apart by the only thing that
+-        # differs.
+-        if m in ("movsb", "movsd", "movsw", "stosb", "stosd", "stosw",
+-                 "lodsb", "lodsd", "lodsw", "cmpsb", "cmpsw", "cmpsd",
+-                 "scasb", "scasw", "scasd") and not _has_xmm_operand(ops):
+-            return self._lift_string_op(insn, m)
+-        if m == "wait":
+-            return ["/* wait - FPU sync */"]
+-
+-        # ── Misc ──
+-        if m in ("cbw", "cwd", "cwde", "cdq"):
+-            return _project_compare.extend(self, insn, ops)
+-        if m == "bswap":
+-            return self._lift_swap(insn, ops)
+-        if m in ("bt", "bts", "btr", "btc"):
+-            return self._lift_bit_test(insn, ops, m)
+-        # INT 2D is the Xbox kernel debug trap: eax picks the service, ecx
+-        # carries its argument, and service 1 prints the ANSI_STRING ecx points
+-        # at. It is always followed by an int3 that the kernel skips over.
+-        #
+-        # Emitting nothing for that int3 is not laziness about breakpoints: a
+-        # __debugbreak() there terminates the process with STATUS_BREAKPOINT,
+-        # which is exit code 3 and no message at all. Wreckless hit it the
+-        # first time it tried to print a debug line, after a full boot.
+-        if m == "int" and ops and ops[0].type == "imm" and ops[0].imm == 0x2D:
+-            return ["recomp_debug_service(eax, ecx); /* int 0x2d */"]
+-        if m == "int3":
+-            # Still stepped over -- a __debugbreak() here kills the process
+-            # with STATUS_BREAKPOINT and no message, which is how Wreckless
+-            # died after a full boot. But say so. The slide byte after
+-            # `int 0x2d` is filtered at run time, so what gets reported is a
+-            # trap the title genuinely reached, which is nearly always a C++
+-            # throw this runtime cannot unwind.
+-            return [f"recomp_int3_reached(0x{insn.address:08X}U);"
+-                    " /* int3, stepped over */"]
+-        if m in ("leave",):
+-            return ["esp = ebp;", "POP32(esp, ebp); /* leave */"]
+-        if m in ("cld", "std"):
+-            return _project_strings.direction(self, insn)
+-        if m == "lahf":
+-            return ["/* lahf - load AH from flags (used in FPU compare idiom) */"]
+-        if m == "sahf":
+-            return ["/* sahf - store AH to flags */"]
+-        if m == "shld":
+-            return self._lift_shld(insn, ops)
+-        if m == "shrd":
+-            return self._lift_shrd(insn, ops)
+-        if m == "emms":
+-            # A statement rather than a comment: emms genuinely has no
+-            # effect here (mm/x87 aliasing is not modelled), and a
+-            # comment-only lift is how the conformance suite reports a
+-            # silently dropped instruction.
+-            return ["(void)0; /* emms - empty MMX state */"]
+-        if m in ("xlat", "xlatb"):
+-            # AL indexes the byte table at EBX. With an address-size override,
+-            # the effective offset is calculated and wrapped at 16 bits.
+-            raw_bytes = bytes.fromhex(insn.bytes_hex)
+-            if 0x67 in raw_bytes[:-1]:
+-                address = "(uint16_t)(LO16(ebx) + LO8(eax))"
+-            else:
+-                address = "ebx + LO8(eax)"
+-            return [f"SET_LO8(eax, MEM8({address})); /* xlatb */"]
+-        if m.startswith("set") and "j" + m[3:] in COND_MAP:
+-            return self._lift_setcc(insn, ops, m)
+-        if m.startswith("cmov") and "j" + m[4:] in COND_MAP:
+-            return self._lift_cmovcc(insn, ops, m)
+-
+-        # ── SSE (scalar float) ──
+-        # Non-temporal SSE stores differ from the ordinary ones only in
+-        # cache behaviour, which nothing here models -- but they are
+-        # stores, and dropping them loses the data. Wreckless writes 50
+-        # of them in its texture upload path.
+-        if m in ("movntps", "movntpd", "movntdq"):
+-            m = "movaps"
+-
+-        # ── MMX ──
+-        # Dispatched on the operands rather than the mnemonic, because the
+-        # integer SIMD names are shared with SSE: `paddw mm0, mm1` and
+-        # `paddw xmm0, xmm1` differ only in register file.
+-        # cvtpi2ps is named here as well: its source may be m64 rather than
+-        # an mm register, and dispatching purely on the operands then sent
+-        # that form past the MMX lifter to a TODO comment -- the same silent
+-        # drop, one addressing mode along.
+-        if any(op.type == "reg" and op.reg and op.reg.startswith("mm")
+-               and not op.reg.startswith("xmm") for op in ops) or m in (
+-                   "emms", "femms", "cvtpi2ps"):
+-            return self._lift_mmx(insn, m, ops)
+-
+-        if m in _project_sse.MNEMONICS:
+-            return self._lift_sse(insn, m, ops)
+-
+-        # ── FPU ──
+-        if m.startswith("f"):
+-            return self._lift_fpu(insn, m, ops)
+-
+-        # ── Explicit carry-flag manipulation ──
+-        # MSVC emits these around the multi-word arithmetic helpers, and around
+-        # the "return a bool in CF" idiom. They were unhandled, so the flag the
+-        # following adc/sbb reads kept whatever the last arithmetic left in it.
+-        # Only worth emitting when something downstream consumes CF -- that is
+-        # also the only time the enclosing function declares _cf.
+-        # Cache hints and store fences: nothing to model on a single-threaded
+-        # interpreter over coherent host memory. Named so they stop showing up
+-        # in the unimplemented report as if they were missing work.
+-        if m.startswith("prefetch") or m in ("sfence", "lfence", "mfence"):
+-            return [f"(void)0; /* {m}: cache/ordering hint, nothing to model */"]
+-
+-        if m in ("stc", "clc", "cmc"):
+-            if not self.needs_cf:
+-                return [f"/* {m}: no adc/sbb in this function consumes CF */"]
+-            expr = {"stc": "1", "clc": "0", "cmc": "!_cf"}[m]
+-            return [f"_cf = {expr}; /* {m} */"]
+-
+-        # ── Time stamp counter ──
+-        #
+-        # The guest reads wall-clock time through it. Xbox's
+-        # QueryPerformanceCounter is literally `rdtsc`, and its
+-        # QueryPerformanceFrequency returns the CPU clock as a constant --
+-        # Half-Life 2's is 0x2BB5C755 (733,333,333 Hz) at 0x0059C6C7. So a
+-        # frame timer computes seconds as counter / 733333333, and an rdtsc
+-        # that does nothing leaves the counter fixed: every "now - last" is
+-        # zero, and a loop waiting for time to pass never finishes. HL2 spins
+-        # 300 million times in sub_0040F4E0 doing exactly that.
+-        #
+-        # The runtime scales the host's counter to the console's clock rate
+-        # rather than returning the host TSC, so the guest's own division by
+-        # its hardcoded frequency yields real seconds.
+-        if m == "rdtsc":
+-            return [
+-                "{ uint64_t _tsc = xbox_ReadTimeStampCounter();",
+-                "  eax = (uint32_t)_tsc; edx = (uint32_t)(_tsc >> 32); }"
+-                "  /* rdtsc */",
+-            ]
+-
+-        if m in ("bsf", "bsr"):
+-            return self._lift_scan(insn, ops, m)
+-
+-        if m in ("xadd", "lock xadd", "cmpxchg", "lock cmpxchg"):
+-            return self._lift_exchange(insn, ops)
+-
+-        # ── Unhandled ──
+-        #
+-        # Recorded, not merely commented -- see self.unimplemented.
+-        return self._unimplemented(insn, m)
++    lift_instruction = _project_lifting.instruction
+ 
+     # ── MOV family ──
+ 
+@@ -930,35 +666,7 @@
+ 
+     # ── ALU binary operations ──
+ 
+-    def _result_snapshot(self, ops, m, src_too=False):
+-        """Publish a result-setter's flags where they are computed.
+-
+-        The consuming jcc can be several instructions -- or several basic
+-        blocks -- after the write, and anything between them may have
+-        replaced the destination: a mov, a pop, a lea, a reloaded loop
+-        pointer. Reading it back at the branch then asks about the wrong
+-        value, silently.
+-
+-        inc/dec already publish _fa for exactly this, and _make_condition
+-        says why: "Result at the flag-setting instruction, before later
+-        MOVs." This is that, for the rest of the family.
+-
+-        src_too captures the SOURCE into _fb instead, for add and sub, whose
+-        carry and ordered conditions recover the original destination from
+-        result and source. The caller emits it BEFORE the write.
+-        """
+-        size = _operand_width(ops[0])
+-        if size not in self._SNAP_MASK:
+-            size = 4
+-        mask, sx = self._SNAP_MASK[size], self._SNAP_SX[size]
+-        if src_too:
+-            src = _fmt_operand_read(ops[1])
+-            return (f"_fb = (uint32_t)({src}) & {mask};"
+-                    f" _fbs = (int32_t){sx}(_fb);"
+-                    f" /* {m} source, before the write */")
+-        dst = _fmt_operand_read(ops[0])
+-        return (f"_fa = (uint32_t)({dst}) & {mask};"
+-                f" _fas = (int32_t){sx}(_fa); /* {m} result */")
++    _result_snapshot = _project_lifting.result_snapshot
+ 
+     _lift_alu_binop = _project_integer.alu_binop
+ 
+@@ -1059,16 +767,9 @@
+ 
+     _lift_loop = _project_control.loop
+ 
+-    def _lift_setcc(self, insn, ops, m):
+-        if len(ops) < 1:
+-            return [f"/* {m}: no operand */"]
+-        return [_fmt_operand_write(ops[0], f"_flags /* {m} */")]
+-
+-    def _lift_cmovcc(self, insn, ops, m):
+-        if len(ops) < 2:
+-            return [f"/* {m}: bad operands */"]
+-        src = _fmt_operand_read(ops[1])
+-        return [f"if (_flags /* {m} */) {_fmt_operand_write(ops[0], src)}"]
++    _lift_setcc = _project_lifting.fallback_set
++
++    _lift_cmovcc = _project_lifting.fallback_move
+ 
+     # ── String operations ──
+ 
+@@ -1082,31 +783,7 @@
+ 
+     _lift_mmx = _project_mmx.emit
+ 
+-    def _unimplemented(self, insn, m, note=""):
+-        """The one way out for an instruction this lifter cannot translate.
+-
+-        Until 19 Sep 2026 that way out was a bare `/* TODO: ... */` comment,
+-        which the C compiler reads as nothing at all: the instruction vanished
+-        and the guest carried on with whatever the registers held. Nothing at
+-        runtime could say the site had even been REACHED, so an untranslated
+-        instruction surfaced as a subsystem failure somewhere else -- the
+-        Wreckless heap (`bsf`), the Half-Life 2 intro (`cvtpi2ps`) -- and cost
+-        an afternoon each time. The translator's end-of-run tally lists these
+-        sites but cannot say which are live: on JSRF 122 sites sit in the
+-        image and the mnemonics (`bound`, `arpl`, `daa`, `hlt`...) are what a
+-        linear sweep reads over data, so most are probably dead. Probably.
+-
+-        So the site now carries RECOMP_UNIMPL(text, va): the runtime logs the
+-        guest address the first times it is reached, and
+-        under RECOMP_UNIMPL_TRAP stops there, at the cause, instead of
+-        somewhere downstream. The comment stays so `grep TODO:` still finds
+-        every site. The tally in self.unimplemented is recorded here and
+-        nowhere else, so every emitted marker is also a counted one.
+-        """
+-        self.unimplemented.setdefault(m, []).append(insn.address)
+-        text = f"{m} {insn.op_str}".strip()
+-        return [f'RECOMP_UNIMPL("{text}", 0x{insn.address:08X}u);'
+-                f" /* TODO: {text}{note} */"]
++    _unimplemented = _project_lifting.unsupported
+ 
+     _lift_sse = _project_sse.emit
+ 
+@@ -1114,243 +791,7 @@
+     _lift_fpu = _project_x87.emit
+ 
+ 
+-def _is_rep_compare(insn):
+-    """REPE/REPNE CMPS or SCAS -- the prefixed forms that write `_flags`."""
+-    if not insn.mnemonic.startswith("rep"):
+-        return False
+-    text = f"{insn.mnemonic} {getattr(insn, 'op_str', '') or ''}"
+-    return any(f in text for f in ("cmpsb", "cmpsw", "cmpsd",
+-                                   "scasb", "scasw", "scasd"))
+-
+-
+-def lift_basic_block(lifter, bb, flag_state=None):
+-    """
+-    Lift a basic block to C statements.
+-    Tracks flags to generate proper conditions for jcc/setcc/cmovcc.
+-
+-    Args:
+-        lifter: Lifter instance
+-        bb: BasicBlock with instructions
+-        flag_state: tuple of (flag_setter_mnemonic, flag_operands) from
+-                    a preceding block, or None
+-
+-    Returns:
+-        (stmts, flag_state) where stmts is a list of C statement strings
+-        and flag_state is a tuple for passing to the next block.
+-    """
+-    stmts = []
+-    insns = bb.instructions
+-    i = 0
+-
+-    # Track the last instruction that set flags
+-    if flag_state:
+-        last_flag_setter, last_flag_ops = flag_state
+-    else:
+-        last_flag_setter = None
+-        last_flag_ops = []
+-
+-    while i < len(insns):
+-        curr = insns[i]
+-
+-        # Try cmp/test + jcc pattern first (2-instruction match)
+-        match = try_match_cmp_jcc(insns, i, lifter=lifter)
+-        if match:
+-            stmt, consumed = match
+-            flag_insn = insns[i]
+-            # The fused form tests the operands inline, but the flags stay live
+-            # for any later jcc, and that one reads the snapshot. Emit the
+-            # snapshot here too or those temps are stale - which silently sends
+-            # every reusing branch the wrong way.
+-            # Snapshot and record the same normalised form, or a later jcc
+-            # reads `cmp X, 0` state out of `test X, X` temps.
+-            last_flag_setter, last_flag_ops = normalise_zero_test(
+-                flag_insn.mnemonic, list(flag_insn.operands))
+-            if flag_insn.mnemonic in ("cmp", "test") and len(flag_insn.operands) >= 2:
+-                stmts.extend(lifter._snapshot_flags(
+-                    flag_insn, last_flag_ops, last_flag_setter))
+-            stmts.append(stmt)
+-            i += consumed
+-            continue
+-
+-        # Handle jecxz/jcxz specially (not flag-based)
+-        if curr.mnemonic in ("jecxz", "jcxz"):
+-            results = lifter._lift_jcc(curr)
+-            stmts.extend(results)
+-            i += 1
+-            continue
+-
+-        # LOOP counts ECX down rather than reading a flag. LOOPE/LOOPNE also
+-        # test ZF, which only has an expression while a tracked instruction
+-        # still owns the flags.
+-        if curr.mnemonic in LOOP_JUMPS:
+-            zf_expr = None
+-            if curr.mnemonic != "loop" and last_flag_setter:
+-                probe = _make_condition(
+-                    "je" if curr.mnemonic == "loope" else "jne",
+-                    last_flag_setter, last_flag_ops)
+-                if probe:
+-                    zf_expr = probe[0]
+-            stmts.extend(lifter._lift_loop(curr, zf_expr))
+-            i += 1
+-            continue
+-
+-        # Check if this instruction uses flags (jcc, setcc, cmovcc)
+-        if curr.is_cond_jump and last_flag_setter:
+-            result = _make_condition(
+-                curr.mnemonic, last_flag_setter, last_flag_ops)
+-            if result:
+-                cond_expr, desc = result
+-                if last_flag_setter in ('comiss', 'ucomiss', 'comisd', 'ucomisd'):
+-                    # Optional title policy for a float-comparison branch.
+-                    # Keep captured operands/flags and evaluate the condition once.
+-                    cond_expr = f"RECOMP_FLOAT_BRANCH_AT(0x{curr.address:X}, ({cond_expr}))"
+-                target = curr.jump_target
+-                stmt = _emit_cond_goto(
+-                    cond_expr, curr.mnemonic, desc, target, lifter)
+-                stmts.append(stmt)
+-                i += 1
+-                continue
+-
+-        if (curr.mnemonic.startswith("set") and "j" + curr.mnemonic[3:] in COND_MAP
+-                and last_flag_setter and len(curr.operands) >= 1):
+-            cond = _make_setcc_value(
+-                curr.mnemonic, last_flag_setter, last_flag_ops)
+-            if cond:
+-                stmts.append(
+-                    _fmt_operand_write(curr.operands[0],
+-                                       f"({cond}) ? 1 : 0")
+-                    + f" /* {curr.mnemonic} */")
+-                i += 1
+-                continue
+-
+-        # lahf copies SF:ZF:0:AF:0:PF:1:CF into AH. MSVC's float compare
+-        # with no fcomi/SSE branch of its own is `ucomiss; lahf; test ah, 44h;
+-        # jnp` (and the 05h/41h variants), so an AH left untouched makes every
+-        # such branch read whatever eax last held. Outrun 2's draw-sort loop
+-        # did exactly that and walked into unfilled entries.
+-        if curr.mnemonic == "lahf" and last_flag_setter:
+-            ah = _make_lahf_value(last_flag_setter, last_flag_ops)
+-            if ah:
+-                stmts.append(f"SET_HI8(eax, {ah}); /* lahf */")
+-                i += 1
+-                continue
+-
+-        if (curr.mnemonic.startswith("cmov") and "j" + curr.mnemonic[4:] in COND_MAP
+-                and last_flag_setter and len(curr.operands) >= 2):
+-            cond = _make_cmovcc_cond(
+-                curr.mnemonic, last_flag_setter, last_flag_ops)
+-            if cond:
+-                src = _fmt_operand_read(curr.operands[1])
+-                stmts.append(
+-                    f"if ({cond}) "
+-                    + _fmt_operand_write(curr.operands[0], src)
+-                    + f" /* {curr.mnemonic} */")
+-                i += 1
+-                continue
+-
+-        # NEG sets CF when its operand is nonzero. Preserve that value when
+-        # a later SBB/ADC consumes it, skipping over EFLAGS-preserving
+-        # instructions (e.g. neg eax; push edi; sbb eax, eax).
+-        if curr.mnemonic == "neg":
+-            j = i + 1
+-            while (j < len(insns)
+-                    # popfd is no longer in _EFLAGS_PRESERVE, so the set
+-                    # carries this now; it used to need naming here, which is
+-                    # how the inconsistency was visible in the first place.
+-                    and (insns[j].mnemonic in _EFLAGS_PRESERVE
+-                         or _project_sse.preserves_flags(insns[j])
+-                         or _project_mmx.preserves_flags(insns[j])
+-                         or _project_x87.preserves_flags(insns[j]))
+-                    and not insns[j].is_branch
+-                    and not insns[j].is_call
+-                    and not insns[j].is_ret):
+-                j += 1
+-            preserve = (j < len(insns)
+-                        and insns[j].mnemonic in ("sbb", "adc"))
+-            results = lifter._lift_neg(
+-                curr, curr.operands, preserve_carry=preserve)
+-        else:
+-            results = lifter.lift_instruction(insns[i])
+-            # A REPE/REPNE compare whose count is zero leaves EFLAGS alone,
+-            # but `_flags` would keep whatever it last held -- 0 on entry --
+-            # so the je after it read "not equal" where the hardware reads
+-            # the ZF of the instruction before. MSVC's basic_string::compare
+-            # is `xor eax, eax; repe cmpsb; je` with the count = the shorter
+-            # length, so comparing against an empty string took the wrong
+-            # arm. Load the incoming ZF first, when a tracked setter has one.
+-            # (_cf needs nothing: only an iteration writes it.)
+-            if _is_rep_compare(curr) and last_flag_setter:
+-                zf = _make_condition("je", last_flag_setter, last_flag_ops)
+-                if zf:
+-                    stmts.append(f"_flags = ({zf[0]}) ? 1 : 0;"
+-                                 " /* ZF in: a zero count keeps it */")
+-        stmts.extend(results)
+-
+-        # Track flag-setting instructions.
+-        #
+-        # LOCK changes atomicity, not arithmetic: a locked instruction leaves
+-        # exactly the flags its unlocked form does. Capstone keeps the prefix
+-        # in the mnemonic, so it is stripped here and everything downstream
+-        # sees the base instruction it already knows how to read. Matching the
+-        # prefixed spelling instead loses the flags twice over -- "lock xadd"
+-        # used to sit in _FLAGS_UNDEFINED and cleared tracking, and
+-        # "lock cmpxchg" matched no list at all and so left the *previous*
+-        # instruction's flags standing as if they were its own.
+-        flag_mnem = (curr.mnemonic[5:] if curr.mnemonic.startswith("lock ")
+-                     else curr.mnemonic)
+-        if _project_bits.constant_noop(curr):
+-            pass  # Retain the previous flag interpretation for a known no-op.
+-        elif _project_strings.is_compare(curr) and not curr.mnemonic.startswith("rep"):
+-            last_flag_setter, last_flag_ops = "cmp", list(curr.operands)
+-        elif flag_mnem in FLAG_SETTERS:
+-            last_flag_setter, last_flag_ops = normalise_zero_test(
+-                flag_mnem, list(curr.operands))
+-        elif flag_mnem in _FLAGS_UNDEFINED:
+-            # Flags are undefined after these - clear tracking
+-            last_flag_setter = None
+-            last_flag_ops = []
+-        elif flag_mnem in _EFLAGS_SETTERS:
+-            # Additional flag-setting instructions
+-            last_flag_setter, last_flag_ops = normalise_zero_test(
+-                flag_mnem, list(curr.operands))
+-        elif (curr.mnemonic in _EFLAGS_PRESERVE or _project_sse.preserves_flags(curr)
+-              or _project_mmx.preserves_flags(curr) or _project_x87.preserves_flags(curr)):
+-            pass  # These don't affect EFLAGS
+-        elif curr.mnemonic in ("fcompi", "fcomip", "fucomi", "fucompi",
+-                                "fucomip", "fcomi"):
+-            # FPU compare-to-EFLAGS: sets CF, ZF, PF directly
+-            last_flag_setter = curr.mnemonic
+-            last_flag_ops = list(curr.operands)
+-        elif curr.mnemonic == "sahf":
+-            # sahf loads AH into flags - typically after fnstsw ax
+-            # in the fcomp/fnstsw/sahf pattern for FPU comparisons
+-            last_flag_setter = "sahf"
+-            last_flag_ops = list(curr.operands)
+-        elif curr.mnemonic.startswith("f") or curr.mnemonic.startswith("cmov"):
+-            pass  # FPU and already-handled CMOVcc
+-        elif curr.mnemonic.startswith("j"):
+-            pass  # Jumps don't set flags
+-        elif curr.mnemonic.startswith("set"):
+-            pass  # SETcc doesn't set flags
+-        elif curr.mnemonic.startswith("rep"):
+-            # rep movsb/movsd = data copy, preserves flags
+-            # repe cmpsb/repne scasb = comparison, sets flags
+-            rest = curr.op_str.strip() if hasattr(curr, 'op_str') else ""
+-            raw_m = curr.mnemonic
+-            if "cmps" in raw_m or "scas" in raw_m:
+-                last_flag_setter = raw_m
+-                last_flag_ops = list(curr.operands)
+-            elif "cmps" in rest or "scas" in rest:
+-                last_flag_setter = raw_m
+-                last_flag_ops = list(curr.operands)
+-            else:
+-                pass  # rep movs/stos = data movement, flags preserved
+-        else:
+-            # Unknown instruction - conservatively clear flag state
+-            last_flag_setter = None
+-            last_flag_ops = []
+-
+-        i += 1
+-
+-    out_flag_state = (last_flag_setter, last_flag_ops) if last_flag_setter else None
+-    return stmts, out_flag_state
++_is_rep_compare = _project_lifting.repeated_compare
++
++
++lift_basic_block = _project_lifting.block

@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 ROOT=Path(__file__).resolve().parents[2]
-sys.path.insert(0,str(ROOT/'tools'))
+sys.path.insert(0,str(ROOT/'tools/compiler'))
 import translation_bits as bits
 from translation_decode import Operand
 from native_compiler import native_compiler

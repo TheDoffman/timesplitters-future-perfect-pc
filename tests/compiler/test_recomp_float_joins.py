@@ -53,7 +53,8 @@ def test_sse_comparison_snapshots_survive_different_operands(opcode, consumer):
              bytes.fromhex('b801000000c3'))
     code = translate(image)
     assert '_flags /*' not in code
-    assert '!(_fca > _fcb)' in code
+    assert '_fca < _fcb' in code and '_fca == _fcb' in code
+    assert '_fca != _fca || _fcb != _fcb' in code
 
 
 def test_integer_and_float_states_do_not_merge():

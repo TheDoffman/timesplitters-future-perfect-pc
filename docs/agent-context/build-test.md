@@ -1,17 +1,18 @@
 # Build, run and validation map
 
-Launcher UI/JSON recovery use shared UI, native parser and package checks.
+Memory: [retired APIs and strict negative controls](retired-memory-compatibility.md).
 
-Source/tool/test paths now use responsibility folders; see
-[layout](../development/repository-layout.md). Commands share
-`tools/project_paths.py` and `tests/conftest.py`. Portable probes avoid both.
+Grouped paths: [layout](../development/repository-layout.md).
+Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.
+Portable probes retain isolated imports.
 
-Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
+Patch discovery/migration: [folder rules](../../patches/README.md).
 
-CI inline Python uses project_paths; standalone RHI and Mac crash/IPC fixtures
-supply grouped includes.
+Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
 
-[Own translation and flag tests](independent.md).
+[Guest services, headers, compiler and execution contracts](independent.md).
+Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
+Storage probes: [threads](thread-memory.md), [virtual-memory ABI/access](virtual-memory.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
@@ -72,10 +73,10 @@ SDL tests accept Confirm E/Space and reject the third fixture slot Return
 (shared two-slot cap). Run `tools/build/build-native-mac.py --test` on Mac; this
 synthetic check neither changes bindings nor certifies physical keyboard input.
 
-`runtime-patches.yml` selects runtime/launcher work for one head; `ci-pr-gate.py`
-checks both hosts. Native jobs allow 30 minutes. Existing required names remain
-until ruleset migration. `test_ci_pr_gate.py` covers missing/failed/skipped
-results; `test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
+Native/patch-upgrade jobs allow 30 minutes. Required check names remain.
+`test_ci_pr_gate.py` rejects missing/failed/skipped results;
+`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.
@@ -101,9 +102,8 @@ with fast entry disabled). Rejected inputs leave all bits/FP flags unchanged.
 Public fixtures/mutations run on both hosts; US-body tests need the private XBE.
 Camera/mothership/spawn/rigid fixtures include the shared helper.
 
-Crash breadcrumb/health tests: `test_crash_capture.py` checks Windows capture,
-helper death and the portable ring; `test_native_crash.py` checks Darwin output.
-Both hosts run these and shared UI identity/failure/ZIP tests.
+Crash capture/heartbeat and bounded Windows sharing retries: `test_crash_capture.py`.
+Darwin: `test_native_crash.py`. Both hosts run shared UI identity/failure/ZIP tests.
 
 
 `stability_transitions_game.py --scenario rocket-impact --native-fps 240
@@ -436,9 +436,9 @@ when a covered system changes without its documentation update.
 | Agent context/index | `python tools/repo-context.py check`; `python -m pytest tests/repository/test_repo_context.py -q` | Changed-path maintenance check against base |
 | Patch loader/order | `tests/repository/test_patch_tracking.py`, `tests/repository/test_patch_updates.py` | Full stack transition fixtures; supported build |
 | Guest generation/wrappers | `tests/compiler/test_recomp_generation.py`, float/vehicle join tests | Regenerate using verified local XBE, build |
-| Settings/input/menu | Affected `tests/test_*` and native C fixtures | Relevant native target, bounded isolated acceptance |
+| Settings/input/menu | Affected `tests/input/` suites and native C fixtures | Relevant native target, bounded isolated acceptance |
 | Renderer/shader/resources | Shared source contracts, `tests/graphics/test_renderer_host.py`, `tests/graphics/test_rhi_menu_sampling.py` | Windows WARP / Mac `tools/testing/test-rhi-mac.py`; scoped scene evidence |
-| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher_*` fixtures |
+| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher/` fixtures |
 | Issue automation | `tests/repository/test_issue_forms.py`, `tests/repository/test_issue_resolution.py` | Read-only fixtures, workflow checks; no posting for tests |
 
 Enhancement routing uses the Ideas contact link in the issue chooser. The existing

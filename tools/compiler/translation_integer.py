@@ -61,6 +61,9 @@ def _binary(context, instruction, operands, operation):
         lines.append(f'uint32_t _alu_result = (uint32_t)_alu_wide & {mask};')
         if operation in ('add','sub'):
             lines += ['_fb = _alu_right;', f'_fbs = (int32_t)(int{bits}_t)_fb;']
+        elif operation in ('adc','sbb'):
+            # Preserve both inputs for condition reconstruction after clobbers.
+            lines += ['_fb = _alu_right;', f'_fbs = (int32_t)(int{bits}_t)_alu_left;']
         if getattr(context, 'needs_cf', False) or operation in ('adc','sbb'):
             if operator == '+':
                 lines.append(f'_cf = (int)((_alu_wide >> {bits}) & 1u);')

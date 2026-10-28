@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e8e0ff34340c7b27863381d99dbc7f15b3afe2f2aa8aea80a49463b0be65a639",
+  "loaderSha256": "f2cbfa108b83cd9a3ee93cc2b8e1603d848b1b65507259086d68a4c0ab19e414",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -1382,6 +1382,22 @@
       ]
     },
     {
+      "name": "independent-condition-fixture.patch",
+      "path": "patches/compiler/independent-condition-fixture.patch",
+      "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",
+      "targets": [
+        "tools/recomp/test_lifter_logic_above_below.py"
+      ]
+    },
+    {
+      "name": "independent-x87-fixture.patch",
+      "path": "patches/compiler/independent-x87-fixture.patch",
+      "sha256": "2e1bcb8f23a4a35c7fbde74f08659fdb8675a10d7340c95c624e620e1e9e1a14",
+      "targets": [
+        "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
       "name": "1460-144-fps.patch",
       "path": "patches/gameplay/presentation/1460-144-fps.patch",
       "sha256": "713619cbaedc4ce9656d1d72c17a2b682e87e9b72a8e62cf8afc8dae39206a00",
@@ -1907,6 +1923,339 @@
         "tools/recomp/test_lifter_bit_string.py",
         "tools/recomp/test_lifter_bt_cf.py",
         "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-exchange.patch",
+      "path": "patches/compiler/independent-translation-exchange.patch",
+      "sha256": "7e76cae50d18e74fc38b69aad3d20cf06f012de0f3e7be1176d2d8679f85f05e",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_atomics.py",
+        "tools/recomp/test_lifter_lock_flags.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-compare.patch",
+      "path": "patches/compiler/independent-translation-compare.patch",
+      "sha256": "cb41599a5cebda7951281447d3cfb81cd8dea8b09d463e0d47f02bfd82623944",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_carry.py",
+        "tools/recomp/test_lifter_zero_test_merge.py"
+      ]
+    },
+    {
+      "name": "independent-translation-strings.patch",
+      "path": "patches/compiler/independent-translation-strings.patch",
+      "sha256": "38a084754b45ef66090eb8f7ed6f6726796513e5904b556405e477e5ff35b957",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_direction_flag.py",
+        "tools/recomp/test_lifter_rep_cmps_cf.py",
+        "tools/recomp/test_lifter_rep_compare_flags.py",
+        "tools/recomp/test_lifter_string_compare.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-conditions.patch",
+      "path": "patches/compiler/independent-translation-conditions.patch",
+      "sha256": "4ba3beca4e5863fc48f3741b865043bef2869a025936f8f89afb834409887352",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_flag_join.py",
+        "tools/recomp/test_flag_join_backedge.py",
+        "tools/recomp/test_lifter_lock_flags.py",
+        "tools/recomp/test_lifter_loop.py",
+        "tools/recomp/test_lifter_popfd_flags.py",
+        "tools/recomp/test_lifter_rep_cmps_cf.py",
+        "tools/recomp/test_lifter_sar_cond.py",
+        "tools/recomp/test_lifter_sf_overflow.py",
+        "tools/recomp/test_lifter_string_compare.py",
+        "tools/recomp/test_lifter_zf_join.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-sse.patch",
+      "path": "patches/compiler/independent-translation-sse.patch",
+      "sha256": "327bb903c547f44e6d1de14ec1ad3a5fbb6f6eb40bb1cacbbffa4d1f05f0629e",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_sse.py"
+      ]
+    },
+    {
+      "name": "independent-translation-mmx.patch",
+      "path": "patches/compiler/independent-translation-mmx.patch",
+      "sha256": "df14d8b6f328eafcb37878eaa93cbf2bf78605079a1aca6a25fd62d64c5e9fd0",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_lifter_sse.py"
+      ]
+    },
+    {
+      "name": "independent-translation-x87.patch",
+      "path": "patches/compiler/independent-translation-x87.patch",
+      "sha256": "fd42a9ed5931566afa99cb01066dde3c57fb2aeac0bd5fd125d3a392fd4adf4b",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_fist_rounding.py",
+        "tools/recomp/test_fpu_branch.py",
+        "tools/recomp/test_lifter_fpu.py",
+        "tools/recomp/test_lifter_fpu_reverse.py",
+        "tools/recomp/test_lifter_frndint.py"
+      ]
+    },
+    {
+      "name": "independent-translation-control.patch",
+      "path": "patches/compiler/independent-translation-control.patch",
+      "sha256": "537e0f523354d04ce3efa0f378bf141366ea2deb99071a9d6b2e71df38131844",
+      "targets": [
+        "tools/recomp/lifter.py",
+        "tools/recomp/test_callee_pop.py"
+      ]
+    },
+    {
+      "name": "independent-translation-lifting.patch",
+      "path": "patches/compiler/independent-translation-lifting.patch",
+      "sha256": "2acc7ab507c0aacda62fbfbe3e40cbdd57ac1ca5f87aa59cabd661bb79fa4890",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "independent-translation-context.patch",
+      "path": "patches/compiler/independent-translation-context.patch",
+      "sha256": "d883e2b24155e31086f3f421e8f9a6db16d031d28098d4baac888665ab656672",
+      "targets": [
+        "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "independent-translation-batch.patch",
+      "path": "patches/compiler/independent-translation-batch.patch",
+      "sha256": "e674d046a0214b0fbaafd83b924ea051adcde3988f7b8fb56875dadbc3181ffc",
+      "targets": [
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-discovery.patch",
+      "path": "patches/compiler/independent-translation-discovery.patch",
+      "sha256": "5346b46263a230c7e30122bf595d67db4f12a56c78d50349ab89bd1971dd4d2f",
+      "targets": [
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-function.patch",
+      "path": "patches/compiler/independent-translation-function.patch",
+      "sha256": "42b13c328794494863a12986f8e668f0281094c6323fa904b740f4c7f94294a2",
+      "targets": [
+        "tools/recomp/test_switch_after_switch.py",
+        "tools/recomp/translator.py"
+      ]
+    },
+    {
+      "name": "independent-translation-cli.patch",
+      "path": "patches/compiler/independent-translation-cli.patch",
+      "sha256": "f4f5555773ab0a41554b80d8220fe9beda9e98870204cd8166848a2bec0526b6",
+      "targets": [
+        "tools/recomp/__main__.py"
+      ]
+    },
+    {
+      "name": "independent-guest-abi.patch",
+      "path": "patches/compiler/independent-guest-abi.patch",
+      "sha256": "97420551e71689c38ff0b898e389f1a1516cdd2ef0876029e27585bf47aa285c",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
+      "name": "0195-independent-guest-dispatch.patch",
+      "path": "patches/compiler/0195-independent-guest-dispatch.patch",
+      "sha256": "78ec0360b7cdeb0e3b8301f08f42fb1b07c97473b2c78694005fb95c047b61a2",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0196-independent-call-frames.patch",
+      "path": "patches/compiler/0196-independent-call-frames.patch",
+      "sha256": "872449891e6e27555b4e276e54e9bc4a205df4fff96fa442338fc2dbf3e615dd",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0197-independent-vector-support.patch",
+      "path": "patches/compiler/0197-independent-vector-support.patch",
+      "sha256": "dfed17e127624c66441b8e5798f5cb1bec3dd26fa185ec61d9ec46da745791d0",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0198-independent-scalar-support.patch",
+      "path": "patches/compiler/0198-independent-scalar-support.patch",
+      "sha256": "d92d1cc63c6ed73bd61fef62df65eac7e2414eb5e57af80bf1b9f856bf3dfaa7",
+      "targets": [
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_lifter_fpu.py",
+        "tools/recomp/test_lifter_frndint.py",
+        "tools/recomp/test_lifter_movsx_registers.py",
+        "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
+      "name": "0199-independent-runtime-header.patch",
+      "path": "patches/compiler/0199-independent-runtime-header.patch",
+      "sha256": "e074e820ca2cbcee35f946014e73e540e29ef43d81e8a023a68ee7322728f3d4",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0201-runtime-header-consumer-fixture.patch",
+      "path": "patches/compiler/0201-runtime-header-consumer-fixture.patch",
+      "sha256": "fc9bfbaef7c976465539fd63ac974e45ee08a6633a5dd99db294e3f9b99dbfee",
+      "targets": [
+        "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0202-independent-branch-feedback.patch",
+      "path": "patches/compiler/0202-independent-branch-feedback.patch",
+      "sha256": "37e1c38d014e1675add0349fbc2ecef87a1467b5c6c29c63553948eeb5b17425",
+      "targets": [
+        "src/kernel/icall_feedback.c",
+        "src/kernel/recomp_icall_feedback.h",
+        "templates/runtime/recomp_types.h",
+        "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0203-independent-nonlocal-jumps.patch",
+      "path": "patches/compiler/0203-independent-nonlocal-jumps.patch",
+      "sha256": "1e6f46b6a7f7759cedda995d665bb201113d6f9f03005405ebd8434bfdfb4177",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0204-independent-guest-state.patch",
+      "path": "patches/compiler/0204-independent-guest-state.patch",
+      "sha256": "6b15b9478485846188bbb04e601b4b4de3f953b19bab4cbedb7fb4cb2f74c1b7",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0205-independent-image-loader.patch",
+      "path": "patches/compiler/0205-independent-image-loader.patch",
+      "sha256": "315fc1e4f3530524842284d26fe2a8dff60cc15a475ced2e1ae971bf6ad83c90",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0206-independent-guest-allocations.patch",
+      "path": "patches/compiler/0206-independent-guest-allocations.patch",
+      "sha256": "2b38d6d43e957636c8897a2b5aee9d5a504470f02ad90a0d6dfb8b511b4cf0f2",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0207-independent-thread-memory.patch",
+      "path": "patches/compiler/0207-independent-thread-memory.patch",
+      "sha256": "10c2bc6d8a9e2ec02b3d9d6195e857c3e428574023f5ba6fd8406ee65da89c6a",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_thread.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0208-independent-virtual-memory.patch",
+      "path": "patches/compiler/0208-independent-virtual-memory.patch",
+      "sha256": "c1b55f18e1273d345b833df9d68571514946b837596346914d716a6ad3a277b7",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_memory.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0209-independent-native-memory.patch",
+      "path": "patches/compiler/0209-independent-native-memory.patch",
+      "sha256": "518c99e17f76f45c529071335c04b6ed950e62435a31aa9778851d6566ab9e29",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_memory.c"
+      ]
+    },
+    {
+      "name": "0211-independent-guest-memory-services.patch",
+      "path": "patches/compiler/0211-independent-guest-memory-services.patch",
+      "sha256": "7c9f3c587260c1770eac7dd86a3c1f50318eb66e36cd7c383fd22241f7ae4bdd",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_memory.c",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0212-independent-native-vm-host.patch",
+      "path": "patches/compiler/0212-independent-native-vm-host.patch",
+      "sha256": "263106bf1de4e650d9f134a5aa2a80f312c7194434dbaa9f2d68f9de37f62a41",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_memory.c"
+      ]
+    },
+    {
+      "name": "0213-independent-guest-host-maps.patch",
+      "path": "patches/compiler/0213-independent-guest-host-maps.patch",
+      "sha256": "6dee11962d5d0a00fcba25cb6b816021124c88d96733e07c78c7379a098d2ec9",
+      "targets": [
+        "src/kernel/README.md",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/platform/CMakeLists.txt",
+        "src/platform/win32_compat.c"
+      ]
+    },
+    {
+      "name": "0214-retire-compatibility-memory.patch",
+      "path": "patches/compiler/0214-retire-compatibility-memory.patch",
+      "sha256": "6133c2c85dec6976ded6044a9b10d4c4b602f49effb25e57f5bf381991430d68",
+      "targets": [
+        "src/kernel/README.md",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h"
       ]
     },
     {

@@ -97,10 +97,12 @@ def test_native_builder_rejects_unverified_sdk_before_build_mutations(tmp_path, 
 def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setenv('RECOMP_LOG_FILE', '/personal/log')
     monkeypatch.setenv('RECOMP_DISPLAY_CONFIG', '/personal/display.conf')
+    monkeypatch.setenv('RECOMP_ICALL_FEEDBACK_PATH', '/personal/feedback.dump')
     monkeypatch.setenv('RECOMP_INPUT_SEQ', 'stale automation')
     monkeypatch.setenv('TSFP_PC_INPUT_REPLAY', '/personal/replay')
     test = tmp_path / 'private/test-saves/native-mac'
     env = probe.isolated_environment(tmp_path, test)
+    assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(test/'icall_targets.dump')
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                 'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
         assert Path(env[key]).is_relative_to(test)
@@ -204,6 +206,7 @@ def test_native_unlocked_copy_isolated_reset_and_locked(tmp_path, monkeypatch, u
     for iteration in range(2):
         with probe.test_session(tmp_path, test, unlocked=True) as env:
             run = test / 'unlocked'
+            assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(run/'icall_targets.dump')
             for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                         'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
                 assert Path(env[key]).is_relative_to(run)

@@ -66,7 +66,11 @@ def _extend(operands, signed):
     width, target = _operand_width(source), _operand_width(destination)
     if source.type not in ('mem','reg') or destination.type != 'reg' or width not in (1,2) or target not in (2,4) or width >= target:
         raise ValueError('Extension requires a narrower byte/word source and a word/dword register')
-    value = f'{"SX" if signed else "ZX"}{width*8}({_fmt_operand_read(source)})'
+    bits = width * 8
+    value = f'((uint32_t)({_fmt_operand_read(source)}) & 0x{(1 << bits) - 1:X}u)'
+    if signed:
+        sign = 1 << (bits - 1)
+        value = f'(({value} ^ 0x{sign:X}u) - 0x{sign:X}u)'
     return [_fmt_operand_write(destination, value)]
 
 

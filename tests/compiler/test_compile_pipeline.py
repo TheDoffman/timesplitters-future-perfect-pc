@@ -63,6 +63,8 @@ def test_title_seeds_custom_metadata_and_output_routing(tmp_path, monkeypatch):
     assert disasm[disasm.index('--seed-functions') + 1] == str(seeds)
     assert disasm[disasm.index('-o') + 1] == str(work / 'disasm')
     identify, lift = commands['identify'], commands['lift']
+    assert lift[1] == str(ROOT / 'tools/compiler/translation_cli.py')
+    assert lift[lift.index('--runtime') + 1] == str(runtime)
     assert identify[identify.index('--functions') + 1] == str(work / 'disasm/functions.json')
     assert lift[lift.index('--gen-dir') + 1] == str(project / 'src/recomp/gen')
     assert lift[lift.index('--exclude-manual') + 1] == str(manual)
@@ -197,4 +199,5 @@ def test_production_driver_routes_to_project_commands():
     assert str(ROOT / 'tools/compiler/xbe_image.py') in result.stdout
     assert str(ROOT / 'tools/compiler/analysis_runner.py') in result.stdout
     assert str(ROOT / 'tools/compiler/function_catalog.py') in result.stdout
-    assert 'tools.recomp' in result.stdout
+    assert str(ROOT / 'tools/compiler/translation_cli.py') in result.stdout
+    assert ' -m tools.recomp ' not in result.stdout

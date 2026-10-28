@@ -1,0 +1,35 @@
+--- a/tools/recomp/test_x87_classification.py
++++ b/tools/recomp/test_x87_classification.py
+@@ -9,14 +9,10 @@
+ from .disasm import Instruction, Operand
+ from .lifter import Lifter
+ 
+-def test_classification_status_compiled():
+-    cc=shutil.which('clang') or shutil.which('gcc')
+-    if not cc and Path(r'C:\Program Files\LLVM\bin\clang.exe').exists():
+-        cc=r'C:\Program Files\LLVM\bin\clang.exe'
+-    if not cc: pytest.skip('C compiler unavailable')
++def classification_source():
+     header=(Path(__file__).resolve().parents[2]/'templates/runtime/recomp_types.h').read_text()
+     helper=re.search(r'static inline uint16_t recomp_fxam\(.*?\n}',header,re.S).group()
+-    macros='\n'.join(line for line in header.splitlines() if line.startswith(('#define RECOMP_FCMP(', '#define RECOMP_FCMP_CC(')))
++    macros='\n'.join(line for line in header.splitlines() if line.startswith(('#define RECOMP_FCMP(', '#define RECOMP_FCMP_CC(', '#define SET_LO16(')))
+     source='#include <stdint.h>\n#include <math.h>\n#include <string.h>\n'+helper+'\n'+macros+'''
+ static double values[8];
+ static unsigned g_fp_top;
+@@ -46,6 +42,15 @@
+   return 0;
+ }
+ '''
++    return source
++
++
++def test_classification_status_compiled():
++    cc=shutil.which('clang') or shutil.which('gcc')
++    if not cc and Path(r'C:\Program Files\LLVM\bin\clang.exe').exists():
++        cc=r'C:\Program Files\LLVM\bin\clang.exe'
++    if not cc: pytest.skip('C compiler unavailable')
++    source=classification_source()
+     with tempfile.TemporaryDirectory() as tmp:
+         path=Path(tmp)/'classify.c'; path.write_text(source)
+         exe=Path(tmp)/'classify.exe'
