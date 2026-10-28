@@ -29,7 +29,8 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
-Full-suite scheduling maintenance (2026-10-28, local `perf/release-speed`) uses the
+Full-suite scheduling maintenance (2026-10-28, local commit `e3a50ed7` on
+`perf/release-speed`) uses the
 same pytest grouping policy on Windows and Mac. CI retains both hosts and every
 existing acceptance gate. Successful MSVC environment discovery is cached only
 on Windows; POSIX compiler selection needs no adapter change. Original-image

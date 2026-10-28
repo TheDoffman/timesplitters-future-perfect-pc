@@ -113,6 +113,8 @@ and network upload remain separate costs. No game was published for this work.
 
 ## Full regression suite (2026-10-28)
 
+Implementation and measured source: local commit `e3a50ed7` on `perf/release-speed`.
+
 The current suite saved **32 min 35 s per complete run
 (77.0% less elapsed time, 4.35x speedup)** on this Windows machine.
 This is the current 2,423-case baseline, larger than the historical 21-minute

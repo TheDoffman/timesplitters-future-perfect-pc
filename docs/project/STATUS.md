@@ -1,6 +1,7 @@
 ## Full regression suite performance (2026-10-28)
 
-Local `perf/release-speed` continues the build/release work from `9a32375f`.
+Local commit `e3a50ed7` on `perf/release-speed` continues the build/release work
+from `9a32375f`.
 Measured validation time fell from 42 min 20 s to 9 min 44 s
 (77.0% reduction), with every original case retained and 34 added cases.
 The full release suite uses up to four workers, preserves shared fixtures, and
