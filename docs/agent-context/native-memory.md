@@ -58,7 +58,8 @@ output unchanged. Query results are snapshots, not lifetime pins. The native Mm
 size call retains OS-region size, which can split after protection changes; it
 does not become the guest allocator's logical-size query. Windows modifiers are
 retained in query output; Darwin R/W/X bits map to NT base protections. Native
-Nt callbacks from 0208 retain their existing platform adapter and limitations.
+[Nt mappings](native-virtual-memory.md) now have their own boundary. Mm protection
+uses it too, preventing protection-only access to uncommitted Nt reservations.
 
 ## Checks and remaining work
 

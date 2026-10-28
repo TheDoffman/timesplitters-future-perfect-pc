@@ -1,3 +1,46 @@
+## Project native virtual-memory host operations (2026-10-28)
+
+Working tree based on b0581495 after all 17 prerequisite CI checks passed.
+Patch 0212 replaces native Nt host callbacks and routes native Mm protection
+through the same boundary. Windows retains real OS virtual-memory operations;
+Darwin now owns reservation lengths/page states, releases exact mappings, clears
+discarded contents on recommit and reports actual regions instead of fabricated
+pages. Native record widths/PartitionId are preserved and padding is explicitly
+zeroed. See [contracts and failure limits](../agent-context/native-virtual-memory.md)
+and MAC-115. Main guest mappings and full independence remain unfinished.
+
+Windows x64/MSVC candidate: 25 checks passed in 52.75s, including 15 compiled
+negative controls, real host allocation/query/recommit/release, 4/16 KiB ownership
+models, concurrent calls, controlled POSIX reclamation/rollback failures and
+actual native Nt/Mm adapters. Existing VM/Mm assertions were retained. Controlled
+Darwin/POSIX behavior is not native Mac execution. All 951 installed compiler
+checks passed in 606.55s. Final 21 documentation/context/backlog checks passed in
+5.58s; context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1095.34s.
+New-stage CI remains pending.
+
+The complete patch stack installed two runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the fingerprint stayed current. No new provider warnings
+appeared in the build log.
+
+The rebuilt executable reached isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.174544 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 104.946s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes. No owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4febc1f682025d9d52c514e1ec5d67a82720454047fb0ebf40398ab8b0cdda40`.
+Build provenance: native-VM-host working tree based on b0581495, Windows x64/MSVC;
+runner provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified. No new game
+package has been produced.
+
 ## Project guest memory services (2026-10-28)
 
 Working tree based on e90b9f7e after all 17 prerequisite CI checks passed.
@@ -35,7 +78,7 @@ Build provenance: guest-memory-services working tree based on e90b9f7e,
 Windows x64/MSVC; runner provenance matches. The test used injected input,
 minimized windows, Classic textures and skipped startup movies. Physical input,
 audio listening, full campaign and native Mac title execution remain unverified.
-New-stage CI is pending; no new game package has been produced.
+All 17 CI checks at committed b0581495 passed; no new game package was produced.
 
 ## Project native memory ownership (2026-10-28)
 

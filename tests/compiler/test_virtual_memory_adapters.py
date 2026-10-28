@@ -36,21 +36,22 @@ def test_actual_vm_adapters(tmp_path, host_model):
     native=(kernel/'kernel_memory.c').read_text(encoding='utf-8')
     guest=layout[layout.index('/* Project guest VM adapter:'):layout.index('/* End project guest VM adapter. */')]
     host=native[native.index('/* Project native VM boundary:'):native.index('/* End project native VM boundary. */')]
-    host=body(native,'xbox_protect_to_win32')+host
     for name in ('NtAllocateVirtualMemory','NtFreeVirtualMemory','NtQueryVirtualMemory'):
         host+=body(native,'xbox_'+name)
     bridges=''.join(body(bridge,'bridge_'+name) for name in (
         'NtAllocateVirtualMemory','NtFreeVirtualMemory','NtQueryVirtualMemory','NtProtectVirtualMemory'))
     for name in ('guest_virtual_memory.c','guest_virtual_memory.h','guest_allocation.c',
-                 'guest_allocation.h','host_virtual_memory.c','host_virtual_memory.h'):
+                 'guest_allocation.h','host_virtual_memory.c','host_virtual_memory.h',
+                 'native_vm_host.h','native_reservations.h','host_pages.h'):
         path=HERE/name
-        if not path.exists(): path=ROOT/'src/runtime'/name
+        if not path.exists(): path=ROOT/'src'/('native' if name in ('native_vm_host.c','host_pages.c') else 'runtime')/name
         (tmp_path/name).write_bytes(path.read_bytes())
     # Native ABI typedefs use fixed-width LONG/ULONG and pointer-width SIZE_T
     # on both fixture hosts. No Win32 headers enter the portable contracts.
     harness=r'''
 #include "guest_virtual_memory.h"
 #include "host_virtual_memory.h"
+#include "native_vm_host.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,6 +64,9 @@ typedef uintptr_t ULONG_PTR;
 typedef int32_t NTSTATUS;
 typedef struct { DWORD dwPageSize; } SYSTEM_INFO;
 typedef struct { void *BaseAddress,*AllocationBase; DWORD AllocationProtect;
+#if defined(_WIN32)
+    uint16_t PartitionId;
+#endif
     size_t RegionSize; DWORD State,Protect,Type; } MEMORY_BASIC_INFORMATION;
 #define XBOX_CONTIG_SIZE 0x10000u
 #define XBOX_NUM_MIRRORS 2
@@ -105,24 +109,25 @@ static int VirtualProtect(void *p,size_t size,DWORD protection,DWORD *old) {
     if(host_failure)return 0;
     *old=4;return 1;
 }
-static void *VirtualAlloc(void *hint,size_t size,DWORD type,DWORD protection) {
+void *tsfp_native_vm_allocate(void *hint,size_t size,uint32_t type,uint32_t protection) {
     assert(!hint); ++host_allocations; last_type=type; last_protection=protection;
     if(host_failure)return NULL;
     assert(!host_base); host_base=malloc(size); host_size=size; return host_base;
 }
-static int VirtualFree(void *address,size_t size,DWORD type) {
+int tsfp_native_vm_release(void *address,size_t size,uint32_t type) {
     ++host_frees; assert(address==host_base); last_type=type;
     if(host_failure)return 0;
     if(type & 0x8000) { assert(size==0); free(host_base); host_base=NULL; }
     return 1;
 }
-static size_t VirtualQuery(const void *address,MEMORY_BASIC_INFORMATION *out,size_t size) {
-    ++host_queries; assert(address==host_base && size==sizeof(*out));
+int tsfp_native_vm_query(const void *address,tsfp_native_vm_region *out) {
+    ++host_queries; assert(address==host_base);
     if(host_failure)return 0;
-    out->BaseAddress=host_base; out->AllocationBase=host_base;
-    out->AllocationProtect=4; out->RegionSize=host_size;
-    out->State=0x1000;out->Protect=4;out->Type=0x20000;
-    return size;
+    memset(out,0,sizeof(*out));
+    out->base=(uintptr_t)host_base;out->allocation_base=(uintptr_t)host_base;
+    out->allocation_protection=4;out->bytes=host_size;
+    out->state=0x1000;out->protection=4;out->type=0x20000;out->partition_id=42;
+    return 1;
 }
 ''' + guest + host + bridges + r'''
 static void put(uint32_t a,uint32_t n) { memcpy(ram+a,&n,4); }
@@ -173,7 +178,7 @@ int main(void) {
     args[0]=0x2001;args[1]=0x2013;args[2]=0x8000;
     bridge_NtFreeVirtualMemory();assert(!g_eax && !get(0x2001) && !g_guest_allocations.heap.count);
     assert(host_frees==0);
-    assert(xbox_protect_to_win32(0x120)==0x20);
+    assert(tsfp_host_vm_protection(0x120)==0x20);
     assert(xbox_NtAllocateVirtualMemory(&native,0,&size,0x3000,0x104)==0);
     assert(native==host_base && size==12345 && last_type==0x3000 && last_protection==4);
     assert(xbox_NtQueryVirtualMemory(native,&record,sizeof(record),&returned)==0);
@@ -205,7 +210,7 @@ def test_windows_guest_mapping_access(tmp_path):
     adapter=layout[layout.index('/* Project guest VM adapter:'):layout.index('/* End project guest VM adapter. */')]
     for name in ('guest_virtual_memory.h','guest_allocation.h'):
         path=HERE/name
-        if not path.exists(): path=ROOT/'src/runtime'/name
+        if not path.exists(): path=ROOT/'src'/('native' if name in ('native_vm_host.c','host_pages.c') else 'runtime')/name
         (tmp_path/name).write_bytes(path.read_bytes())
     (tmp_path/'pc_guest_memory.h').write_bytes((ROOT/'src/runtime/pc_guest_memory.h').read_bytes())
     code=r'''
@@ -258,12 +263,13 @@ def test_windows_native_vm_calls(tmp_path):
     kernel=HERE/'integration/src/kernel'
     if not kernel.exists(): kernel=ROOT/'external/ts3FPrecomp/src/kernel'
     text=(kernel/'kernel_memory.c').read_text(encoding='utf-8')
-    native=body(text,'xbox_protect_to_win32')+text[text.index('/* Project native VM boundary:'):text.index('/* End project native VM boundary. */')]
+    native=text[text.index('/* Project native VM boundary:'):text.index('/* End project native VM boundary. */')]
     for name in ('xbox_NtAllocateVirtualMemory','xbox_NtFreeVirtualMemory','xbox_NtQueryVirtualMemory'):
         native+=body(text,name)
-    for name in ('host_virtual_memory.h','host_virtual_memory.c'):
+    for name in ('host_virtual_memory.h','host_virtual_memory.c','native_vm_host.h',
+                 'native_vm_host.c','native_reservations.h','native_reservations.c','host_pages.h','host_pages.c'):
         path=HERE/name
-        if not path.exists(): path=ROOT/'src/runtime'/name
+        if not path.exists(): path=ROOT/'src'/('native' if name in ('native_vm_host.c','host_pages.c') else 'runtime')/name
         (tmp_path/name).write_bytes(path.read_bytes())
     code=r'''
 #include <windows.h>
@@ -271,6 +277,7 @@ def test_windows_native_vm_calls(tmp_path):
 #include <stdio.h>
 #include <string.h>
 #include "host_virtual_memory.h"
+#include "native_vm_host.h"
 typedef LONG NTSTATUS;
 ''' + native + r'''
 int main(void) {
@@ -279,7 +286,7 @@ int main(void) {
     MEMORY_BASIC_INFORMATION info;
     ULONG length=99;
     unsigned char out[sizeof(info)+8];
-    assert(xbox_protect_to_win32(0x140)==PAGE_EXECUTE_READWRITE);
+    assert(tsfp_host_vm_protection(0x140)==PAGE_EXECUTE_READWRITE);
     assert((uint32_t)xbox_NtAllocateVirtualMemory(&base,0,&bytes,0,4)==0xc0000017u);
     assert(!base && bytes==8192);
     assert(xbox_NtAllocateVirtualMemory(&base,0,&bytes,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE)==0);
@@ -307,7 +314,7 @@ int main(void) {
 }
 '''
     path=tmp_path/'host.c';path.write_text(code,encoding='utf-8')
-    exe=_compile(tmp_path,path,extra=[tmp_path/'host_virtual_memory.c','/W4'])
+    exe=_compile(tmp_path,path,extra=[tmp_path/'host_virtual_memory.c',tmp_path/'native_vm_host.c',tmp_path/'native_reservations.c',tmp_path/'host_pages.c','/W4'])
     run=subprocess.run([str(exe)],capture_output=True,text=True,timeout=30)
     assert run.returncode==0,run.stdout+run.stderr
     assert 'native VM calls passed' in run.stdout

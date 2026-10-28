@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
 Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
 
 Native Mm: [ownership, page adapters and remaining work](native-memory.md).

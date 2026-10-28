@@ -113,5 +113,19 @@ int main(void) {
     assert(contiguous && xbox_MmQueryAddressProtect(contiguous)==2 && !contiguous[17]);
     xbox_MmFreeContiguousMemory(contiguous);
     assert(!native_mm_storage.live);
+    /* Mm protection must not turn an Nt reservation into accessible storage. */
+    {
+        unsigned char *reserved=tsfp_native_vm_allocate(NULL,page,0x2000,4);
+        tsfp_native_vm_region native;
+        assert(reserved);
+        xbox_MmSetAddressProtect(reserved,1,4);
+        assert(tsfp_native_vm_query(reserved,&native) && native.state==0x2000);
+        assert(tsfp_host_pages_query(reserved,&region) && (region.protection==0 || region.protection==1));
+        assert(tsfp_native_vm_allocate(reserved,page,0x1000,2)==reserved);
+        xbox_MmSetAddressProtect(reserved+1,1,4);
+        assert(tsfp_host_pages_query(reserved,&region) && region.protection==4);
+        reserved[1]=73;
+        assert(tsfp_native_vm_release(reserved,0,0x8000));
+    }
     puts("native Mm adapter contracts passed");return 0;
 }

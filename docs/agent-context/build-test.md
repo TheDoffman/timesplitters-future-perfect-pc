@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Mm tests: [native](native-memory.md), [guest](guest-memory-services.md).
+Memory tests: [Mm](native-memory.md), [Nt](native-virtual-memory.md).
 
 Launcher recovery: shared UI, parser and package checks.
 

@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
 Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
 
 Native Mm allocation/query/protection: [ownership and host services](native-memory.md).

@@ -1,5 +1,9 @@
 # Independent runtime replacement
 
+Native Nt host callbacks and native Mm protection now use patch 0212. Original
+Darwin reservations replace leaking size-zero release and fabricated queries;
+Windows retains real OS calls. See [ownership, commitment and failure limits](../agent-context/native-virtual-memory.md).
+
 All 25 guest Mm bridges and five remaining native statistics/physical/hint
 functions now use project policy through patch 0211. Complete guest output
 validation and initialized host snapshots replace unsafe statistics access.
@@ -13,8 +17,8 @@ continue in 0211; main host mappings and other services remain separate work. Se
 Guest Nt virtual-memory calls and native pointer-width allocate/free/query now
 use project services through additive patch 0208. Existing flat guest VM policy
 is explicit, complete output spans are validated before side effects, and exact
-reservations can be released. Host mapping/protection and remaining Mm services
-still require replacement. See [contracts](../agent-context/virtual-memory.md)
+reservations can be released. Native host operations continue in 0212; main
+guest mappings and other kernel services still require replacement. See [contracts](../agent-context/virtual-memory.md)
 and MAC-112; this is not whole-runtime independence.
 
 Main/private thread records and guest stack ownership now use

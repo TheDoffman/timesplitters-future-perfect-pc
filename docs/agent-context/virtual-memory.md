@@ -70,10 +70,9 @@ zero-initialized host-record scratch buffer, require a complete host query,
 copy only the caller's allowed length and publish returned length on success.
 The actual native MEMORY_BASIC_INFORMATION layout remains at the adapter.
 The seven existing native access modes and default READWRITE conversion remain.
-Native host allocation/query still use the existing platform APIs; Darwin's
-native query placeholder and unaligned mprotect behavior remain limitations
-to replace with the host mapping services. Guest buffer checks do not rely on
-that placeholder. [Mm/statistics](guest-memory-services.md) now have project
+Native host allocation/query now use [project NT host mappings](native-virtual-memory.md).
+Darwin owns reservations, releases exact recorded spans and queries actual
+regions. Native Mm protection respects commitment. Guest ownership stays separate. [Mm/statistics](guest-memory-services.md) now have project
 providers. Main mapping lifetimes, device and other kernel services still need
 replacement; this does not complete independence.
 

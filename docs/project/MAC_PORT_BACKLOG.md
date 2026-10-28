@@ -264,6 +264,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-112 | Project virtual-memory services | Awaiting validation |
 | MAC-113 | Project native memory ownership | Awaiting validation |
 | MAC-114 | Project guest memory services | Awaiting validation |
+| MAC-115 | Project native virtual-memory host operations | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6866,10 +6867,9 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Mac support present:** Same providers/adapters and guest ownership. Guest
   buffer validation uses real Mach region queries through `pc_guest_memory.h`.
   Protection-output overlap uses the host page size, including 16 KiB pages.
-- **Remaining adaptation:** Existing host mapping/protection implementation,
-  including compatibility native VirtualQuery's placeholder record and unaligned
-  mprotect limitations, remains separate replacement work. Guest ABI queries
-  and buffer validation do not use that placeholder. No dependency upgrades.
+- **Remaining adaptation:** Main guest host mappings remain separate work;
+  native NT callbacks and their query/protection limitations continue in MAC-115.
+  Guest ABI queries and buffer validation remain separate. No dependency upgrades.
 - **Acceptance:** Windows 889 compiler/73 migration checks passed before the
   final POSIX page-size adapter correction. After it, all 21 installed VM
   checks and 125 repository checks passed, including both adapter host branches
@@ -6893,10 +6893,9 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   mmap/munmap/mprotect and real Mach region query/object-port cleanup. No toolkit
   VirtualQuery placeholder is used by the new Mm queries. Host-page rounding
   includes 16 KiB pages; callbacks preserve failed-release ownership for retry.
-- **Remaining adaptation:** Guest Mm/statistics and main mapping services remain
-  separate replacement work. Native Nt platform callbacks retain their existing
-  limitations. Process-lifetime Mm metadata does not claim safe global worker
-  shutdown. See [contracts](../agent-context/native-memory.md).
+- **Remaining adaptation:** Guest Mm/statistics continue in MAC-114 and native
+  Nt host callbacks in MAC-115. Main guest mappings remain separate replacement
+  work. Process-lifetime Mm metadata does not claim safe global worker shutdown. See [contracts](../agent-context/native-memory.md).
 - **Acceptance:** Windows candidate ownership/page/adapter checks passed (15),
   including eight compiled negative controls and real Windows protection. The
   controlled POSIX/Mach model passed on Windows. All 906 installed compiler and
@@ -6921,8 +6920,8 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   guest VM resolver. The host adapter uses Mach availability counters, handles
   shorter returned record revisions and releases its host port. This avoids the
   old Darwin compatibility path's uninitialized memory-statistics fields.
-- **Remaining adaptation:** Main guest mappings, native Nt host callbacks and
-  other kernel/device services remain separate replacement work. Advisory/debug
+- **Remaining adaptation:** Main guest mappings and other kernel/device services
+  remain separate work; native Nt host callbacks continue in MAC-115. Advisory/debug
   results, IO scratch buffers and GPU tail-address behavior remain explicit
   compatibility limits; see [contracts](../agent-context/guest-memory-services.md).
 - **Acceptance:** Windows candidate 25 checks passed, including 16 compiled
@@ -6930,6 +6929,36 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Windows Release build/native checks/crash symbols and isolated Story movement,
   firing and pause/resume passed; all 26 protected files were unchanged.
   All 931 installed compiler and 21 documentation/context/backlog checks passed.
-  All 73 historical migration/repository checks passed. New-commit shared CI and
-  native Mac title gameplay remain pending. See
+  All 73 historical migration/repository checks and all 17 CI checks at b0581495
+  passed. Native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#project-guest-memory-services-2026-10-28).
+
+### MAC-115 - Project native virtual-memory host operations
+
+- **Status:** Awaiting validation
+- **PC behavior:** Native Nt allocation/release/query use original host adapters
+  with full pointer/size widths and native PartitionId. Query output padding is
+  explicitly zeroed. Native Mm protection respects reserved versus committed pages.
+- **Source/PR:** `src/runtime/native_reservations.c`, headers,
+  `src/native/native_vm_host.c`, original compiler fixtures and
+  `patches/compiler/0212-independent-native-vm-host.patch`. PR #375;
+  implementation based on b0581495.
+- **Mac support present:** Original reservation metadata and mmap/mprotect/munmap
+  adapters, real Mach region snapshots, exact release lengths and recommit
+  zeroing. MADV_FREE is advisory; uncertain OS access failures quarantine ownership
+  until release. No fixed mapping can overwrite foreign storage. Native Mm
+  protection cannot bypass reservation commitment.
+- **Remaining adaptation:** Main guest mapping/alias lifetimes and other kernel/
+  device/title services remain replacement work. Process-lifetime metadata does
+  not claim worker shutdown. Foreign queries leave unknown origin/type zero;
+  advanced allocation/free flag families are unsupported on Darwin. See
+  [contracts](../agent-context/native-virtual-memory.md).
+- **Acceptance:** Windows candidate 25 checks passed, including 15 compiled
+  negative controls, real Windows calls, controlled POSIX failure/rollback and
+  actual native adapters. Windows Release/native checks/crash symbols and isolated
+  Story movement, firing and pause/resume passed; all 26 protected files were
+  unchanged. All 951 installed compiler and 21 documentation/context/backlog
+  checks passed. All 73 historical migration/tracking/snapshot/context/backlog
+  checks passed in 1095.34s. New-commit shared CI and native Mac title gameplay
+  remain pending. See
+  [STATUS](STATUS.md#project-native-virtual-memory-host-operations-2026-10-28).

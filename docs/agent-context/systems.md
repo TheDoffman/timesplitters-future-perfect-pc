@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Mm: [native](native-memory.md), [guest](guest-memory-services.md).
+Memory: [Mm](native-memory.md), [Nt](native-virtual-memory.md).
 
 Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
 

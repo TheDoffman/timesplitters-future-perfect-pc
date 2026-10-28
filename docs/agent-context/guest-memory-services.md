@@ -96,7 +96,8 @@ the Mm context and dependencies required by the extracted bridge. Both hosts run
 the new suites in CI; controlled Darwin cases on Windows are not native Mac
 execution. STATUS and MAC-114 record actual stage acceptance.
 
-Main guest map creation/lifetimes, native Nt platform compatibility, remaining
-kernel/device services, title/delivery integration and inherited fixtures remain
+[Native Nt host operations](native-virtual-memory.md) now have project ownership.
+Main guest map creation/lifetimes, other kernel/device services, title/delivery
+integration and inherited fixtures remain
 replacement work. Final independence still requires generation/build/test/package
 and provenance checks with the old toolkit checkout and snapshot unavailable.
