@@ -22,7 +22,10 @@ def compile_audio(kind, tmp_path_factory):
                    str(source), '/Fe:' + str(exe), '/Fo:' + str(directory / 'audio.obj')]
     else:
         command = [compiler, '-std=c11', '-O2', '-I', str(RUNTIME / 'src'), str(source),
-                   str(RUNTIME / 'src/platform/win32_compat.c'), '-lm', '-lpthread', '-o', str(exe)]
+                   '-I', str(ROOT / 'src/runtime'), str(RUNTIME / 'src/platform/win32_compat.c'),
+                   *[str(ROOT / 'src/runtime' / name) for name in
+                     ('shared_views.c', 'owned_arena.c', 'mmio_views.c', 'guest_arena_service.c')],
+                   str(ROOT / 'src/native/shared_host.c'), '-lm', '-lpthread', '-o', str(exe)]
     built = subprocess.run(command, cwd=directory, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     return exe

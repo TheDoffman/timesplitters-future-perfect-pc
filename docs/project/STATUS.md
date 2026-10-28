@@ -1,3 +1,50 @@
+## Project guest host mappings (2026-10-28)
+
+Implementation based on `8ef1e7cf`, after all 17 prerequisite CI checks
+passed. Patch 0213 replaces main guest mapping construction and Mac arena/MMIO
+helpers with original shared ownership providers and thin OS adapters. It fixes
+tiled extent reporting to match the actual backing and retains failed cleanup
+ownership. Published mappings survive until process exit; whole-runtime worker
+quiescence remains unproven. See [contracts](../agent-context/guest-host-mappings.md)
+and MAC-116. The broader independence goal remains unfinished.
+
+Windows x64/MSVC candidate evidence: 47 tests passed in 66.67s, including 37
+compiled negative controls; three affected existing fixtures passed in 2.77s.
+The proposed platform library and actual runtime binding linked, and all three
+CTest scenarios passed (unpublished cleanup, worker timeout, notifier timeout).
+Real Windows host calls and controlled POSIX models were exercised. This is not
+native Mac execution. The two existing standalone event/audio consumers now link
+the project arena service dependencies on POSIX; their assertions are unchanged.
+Consumer checks passed on Windows: 36 passed, one native-Mac-only check skipped
+in 20.50s. All 998 installed compiler checks passed in 703.35s. Final 21
+documentation/context/backlog checks passed in 5.58s; context/index validation
+passed. All 73 migration/tracking/snapshot/context/backlog checks passed in
+1098.73s. New exact-commit CI remains pending. No new game package was produced.
+
+The complete patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All seven provider C files compiled without
+new warnings. All 22 generated C/header files remained byte-identical and their
+generation fingerprint stayed current.
+
+The rebuilt game confirmed 28 RAM mirrors and the physical/tiled alias, then
+reached isolated Original 60 Story scene 4 / mission 1 with input enabled. It
+moved 11.174544 forward and 6.184892 backward, and fired from eight to six rounds.
+All 40 pause samples froze level ticks; all 60 resume samples were unpaused with
+ticks advancing. Final checkpoint: 102.878s within the 240-second cap. Runner and
+controller exited zero; start/paused/resumed captures were reviewed. The final
+exit trace records the runner's window-close request and ExitProcess(0), not a
+crash. All 26 protected settings/save/fixture files retained hashes, sizes and
+mtimes; owned test locks, disposable partitions and crash dumps are absent.
+
+Tested executable SHA-256:
+`64ff986d3630dc2153fc15de1917a85401f66d55a9487e2a6565cca7aca80a92`.
+Build provenance: guest-host-maps working tree based on `8ef1e7cf`, Windows
+x64/MSVC; runner provenance matches all 12 providers and five runtime files.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title gameplay remain unverified.
+
 ## Project native virtual-memory host operations (2026-10-28)
 
 Working tree based on b0581495 after all 17 prerequisite CI checks passed.
@@ -17,7 +64,8 @@ Darwin/POSIX behavior is not native Mac execution. All 951 installed compiler
 checks passed in 606.55s. Final 21 documentation/context/backlog checks passed in
 5.58s; context/index and whitespace checks passed. All 73 historical patch
 migration/tracking/snapshot/context/backlog checks passed in 1095.34s.
-New-stage CI remains pending.
+All 17 CI checks at committed `8ef1e7cf` passed, including native Windows/Mac
+runtime checks. Native Mac title gameplay remains separate acceptance.
 
 The complete patch stack installed two runtime files matching the proposal.
 Windows Release build, native checks and matching crash symbols passed with

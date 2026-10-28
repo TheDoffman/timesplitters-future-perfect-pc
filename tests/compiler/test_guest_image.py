@@ -224,11 +224,12 @@ def test_private_supported_us_native_image(loader,tmp_path):
 
 
 def test_installed_loader_uses_project_preflight_and_materialization():
-    kernel=ROOT/'external/ts3FPrecomp/src/kernel'
+    kernel=CANDIDATE/'integration/src/kernel'
+    if not kernel.exists(): kernel=ROOT/'external/ts3FPrecomp/src/kernel'
     text=(kernel/'xbox_memory_layout.c').read_text()
     init=text[text.index('BOOL xbox_MemoryLayoutInit('):]
-    assert init.index('tsfp_image_inspect(')<init.index('CreateFileMappingW(')
-    assert init.index('tsfp_image_bootstrap(')<init.index('CreateFileMappingW(')
+    assert init.index('tsfp_image_inspect(')<init.index('xbox_MapHostLayout(')
+    assert init.index('tsfp_image_bootstrap(')<init.index('xbox_MapHostLayout(')
     assert 'tsfp_image_load(xbe_data, xbe_size, g_memory_base, g_memory_size, &image)' in init
     assert 'xbe +' not in init and 'xbe_title_name_store' not in text
     assert 'tsfp_thread_memory_init(&g_guest_threads, &g_guest_allocations, &image)' in init

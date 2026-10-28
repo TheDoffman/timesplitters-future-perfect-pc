@@ -265,6 +265,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-113 | Project native memory ownership | Awaiting validation |
 | MAC-114 | Project guest memory services | Awaiting validation |
 | MAC-115 | Project native virtual-memory host operations | Awaiting validation |
+| MAC-116 | Project guest host mappings | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6959,6 +6960,37 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Story movement, firing and pause/resume passed; all 26 protected files were
   unchanged. All 951 installed compiler and 21 documentation/context/backlog
   checks passed. All 73 historical migration/tracking/snapshot/context/backlog
-  checks passed in 1095.34s. New-commit shared CI and native Mac title gameplay
-  remain pending. See
+  checks passed in 1095.34s. All 17 shared CI checks at `8ef1e7cf` passed;
+  native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#project-native-virtual-memory-host-operations-2026-10-28).
+
+### MAC-116 - Project guest host mappings
+
+- **Status:** Awaiting validation
+- **PC behavior:** Main guest RAM/mirrors, physical storage/aliases and device
+  apertures use project ownership. Actual mapped extent bounds tiled access;
+  failed cleanup retains records and published maps live until process exit.
+- **Source/PR:** `src/runtime/shared_views.c`, `owned_arena.c`, `mmio_views.c`,
+  `guest_arena_service.c`, `guest_map_layout.c` and their headers;
+  `src/native/shared_host.c`, `guest_map_host.c`, original compiler fixtures and
+  `patches/compiler/0213-independent-guest-host-maps.patch`. PR #375;
+  implementation based on `8ef1e7cf`.
+- **Mac support present:** Original reserved-arena placement/restore ledger,
+  shared backing views and immutable MMIO alias lookup. Main layout and existing
+  compatibility callers share the same owner. Fixed replacement is confined to
+  owned arena spans; a separate session prevents foreign layout teardown.
+- **Remaining adaptation:** Native Mac production build and title acceptance
+  are pending. Whole-runtime worker quiescence is not proved; published maps
+  cannot be released early. Generic compatibility, other kernel/devices and
+  title/delivery services remain replacement work. See
+  [contracts](../agent-context/guest-host-mappings.md).
+- **Acceptance:** Windows candidate 47 checks passed, including 37 compiled
+  negative controls, actual Windows maps and controlled POSIX failures. Three
+  affected existing fixtures and three CTest link/binding scenarios passed.
+  Windows Release/native checks/crash symbols and isolated Story movement,
+  firing and pause/resume passed; all 26 protected files were unchanged. Consumer
+  checks passed (36 passed, one native-Mac-only skip). All 998 installed compiler
+  and 21 documentation/context/backlog checks passed. All 73 migration/repository
+  checks passed in 1098.73s. New exact-commit CI is pending. Controlled POSIX tests are not
+  native Mac execution; native Mac title gameplay remains pending. See
+  [STATUS](STATUS.md#project-guest-host-mappings-2026-10-28).

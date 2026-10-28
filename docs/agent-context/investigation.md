@@ -1,5 +1,6 @@
 # Investigation memory and handoffs
 
+Guest mappings: [owners, host adapters and checks](guest-host-mappings.md).
 Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
 
 Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
@@ -16,8 +17,9 @@ Trace old addresses only as historical evidence: lowest-fit placement may differ
 
 The final replacement order includes call frames, vector support, scalar support
 canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
-jumps, guest state/reports, image loading and source layout. Historical fixtures omit new replacements from old
-inputs; the order test checks that ten-patch tail. Audit `.inc` files and scan ignored
+jumps, guest state/reports, image loading, allocation/thread/virtual-memory and
+guest host mappings, then source layout. Historical fixtures omit replacements
+from old inputs; the order test checks the seventeen-patch tail. Audit `.inc` files and scan ignored
 generated C explicitly with `--no-ignore`. Exact-name searches missed the live
 SX/ZX calls assembled dynamically by the move emitter; its direct replacements
 now have exhaustive compiled register/memory/alias checks.

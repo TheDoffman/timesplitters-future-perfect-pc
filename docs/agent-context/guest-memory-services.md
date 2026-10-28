@@ -97,7 +97,8 @@ the new suites in CI; controlled Darwin cases on Windows are not native Mac
 execution. STATUS and MAC-114 record actual stage acceptance.
 
 [Native Nt host operations](native-virtual-memory.md) now have project ownership.
-Main guest map creation/lifetimes, other kernel/device services, title/delivery
+[Main guest map creation](guest-host-mappings.md) now uses project providers.
+Whole-runtime worker quiescence, other kernel/device services, title/delivery
 integration and inherited fixtures remain
 replacement work. Final independence still requires generation/build/test/package
 and provenance checks with the old toolkit checkout and snapshot unavailable.

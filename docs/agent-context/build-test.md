@@ -1,8 +1,6 @@
 # Build, run and validation map
 
-Memory tests: [Mm](native-memory.md), [Nt](native-virtual-memory.md).
-
-Launcher recovery: shared UI, parser and package checks.
+Memory: [guest maps](guest-host-mappings.md), [Nt](native-virtual-memory.md).
 
 Grouped paths: [layout](../development/repository-layout.md).
 Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.

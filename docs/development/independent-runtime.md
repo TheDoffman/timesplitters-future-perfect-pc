@@ -1,5 +1,12 @@
 # Independent runtime replacement
 
+Main guest maps, physical aliases and Mac arena/MMIO ownership now have original
+providers through patch 0213. Failed setup retains cleanup ownership, and
+published mappings live through process exit until whole-runtime worker
+quiescence can be proved. See [contracts and validation scope](../agent-context/guest-host-mappings.md)
+and MAC-116. Windows build, 998 compiler tests and isolated Story checks passed;
+73 migration/repository checks also passed. Exact-commit CI remains pending.
+
 Native Nt host callbacks and native Mm protection now use patch 0212. Original
 Darwin reservations replace leaking size-zero release and fabricated queries;
 Windows retains real OS calls. See [ownership, commitment and failure limits](../agent-context/native-virtual-memory.md).
@@ -11,14 +18,15 @@ See [contracts and retained advisory limits](../agent-context/guest-memory-servi
 
 Native Mm allocation/release, stacks, protection and region queries now use
 project ownership and OS page adapters through patch 0209. Guest Mm/statistics
-continue in 0211; main host mappings and other services remain separate work. See
+continue in 0211, main host mappings in 0213; other services remain work. See
 [contracts](../agent-context/native-memory.md); full independence is not complete.
 
 Guest Nt virtual-memory calls and native pointer-width allocate/free/query now
 use project services through additive patch 0208. Existing flat guest VM policy
 is explicit, complete output spans are validated before side effects, and exact
 reservations can be released. Native host operations continue in 0212; main
-guest mappings and other kernel services still require replacement. See [contracts](../agent-context/virtual-memory.md)
+guest mappings continue in 0213 and other kernel services still require
+replacement. See [contracts](../agent-context/virtual-memory.md)
 and MAC-112; this is not whole-runtime independence.
 
 Main/private thread records and guest stack ownership now use
@@ -29,21 +37,22 @@ and MAC-111 for validation scope.
 
 Guest heap/reservation/physical allocation now has project ownership in
 `src/runtime/guest_allocation.c`, installed by additive patch0206. The bridge
-validates fixed/ranged requests before zeroing. Host mappings, TIB/thread
-construction and other kernel services remain inherited; see
+validates fixed/ranged requests before zeroing. Host mappings and TIB/thread
+construction now have project providers; other kernel services remain inherited. See
 [allocation contracts](../agent-context/independent.md#guest-allocation-ownership)
 and MAC-110 for measured acceptance and limits.
 
 The native XBE loader now has project inspection/materialization and bootstrap
 validation in `src/runtime/guest_image.c`, installed by additive patch 0205.
 It removes inherited image parsing/copying and title decoding while keeping
-host mappings, TIB construction and kernel/device services transitional. See
+host mappings and TIB construction on the subsequent project providers;
+kernel/device services remain transitional. See
 [image contracts](../agent-context/independent.md#native-image-loading) and MAC-109.
 
 Guest architectural storage and optional ABI diagnostics now have project
 providers in `src/runtime/guest_state.c` and `guest_abi_diagnostics.c`, installed
-by `0204-independent-guest-state.patch`. Memory mapping, loading and kernel
-thread/TIB services still use the transitional runtime. See
+by `0204-independent-guest-state.patch`. Memory mapping, loading and thread/TIB
+storage now have subsequent project providers; host scheduling remains transitional. See
 [state and reporting contracts](../agent-context/independent.md#guest-state-and-abi-reports)
 and MAC-108 for behavior, tests and acceptance boundaries.
 

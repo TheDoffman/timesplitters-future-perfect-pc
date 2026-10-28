@@ -1,5 +1,6 @@
 # Runtime and patch navigation
 
+Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).
 Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
 
 Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
@@ -12,15 +13,16 @@ Thread/TIB and stack providers: [construction, lifecycle and callers](thread-mem
 
 Heap/reservation/physical allocation now routes through the project ownership
 provider; see [allocation contracts](independent.md#guest-allocation-ownership).
-Host mappings and thread/TIB services remain transitional.
+Host mappings and thread/TIB storage now have project providers; device services
+and whole-runtime worker quiescence remain transitional.
 
 Image inspection/loading now routes through the project provider before host
 mapping and during materialization; see [image contracts](independent.md#native-image-loading).
-Memory mappings, TIB construction and device services remain transitional.
+Mapping/TIB construction use project providers; device services remain transitional.
 
 Guest architectural storage and bounded ABI reports now use project providers;
 see [state contracts](independent.md#guest-state-and-abi-reports). The loader
-retains memory/TIB allocation; fibers still share their native thread's cells.
+uses project memory/TIB allocation; fibers still share their native thread's cells.
 
 Native continuation storage/restoration is project-owned through additive
 `0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).

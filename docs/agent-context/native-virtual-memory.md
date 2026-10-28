@@ -96,7 +96,8 @@ and Apple's [mmap](https://developer.apple.com/library/archive/documentation/Sys
 and [madvise](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/madvise.2.html)
 manuals. These provide OS contracts, not copied implementations.
 
-Main guest mappings/aliases and lifetimes, other kernel/device services,
+[Main guest mappings/aliases](guest-host-mappings.md) now have project providers.
+Worker quiescence and process-lifetime teardown, other kernel/device services,
 title/delivery integration and inherited fixtures remain. Final independence
 requires generation/build/test/package and provenance checks with both the old
 toolkit checkout and pristine snapshot unavailable.

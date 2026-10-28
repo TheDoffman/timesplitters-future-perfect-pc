@@ -87,7 +87,7 @@ def test_actual_thread_memory_adapters_and_failure_cleanup(tmp_path):
                            bridge.index('    xbox_NameCurrentThread(L"xbox timer/vblank");')]
     assert layout.index('if (!xbox_AllocationInit())') < layout.index(initialization) < layout.index('xbox_Nv2aAckStart();')
     shutdown = layout[layout.index('void xbox_MemoryLayoutShutdown(void)'):]
-    assert shutdown.index('tsfp_thread_memory_stop(') < shutdown.index('tsfp_allocations_stop(') < shutdown.index('VirtualFree(')
+    assert shutdown.index('tsfp_thread_memory_stop(') < shutdown.index('tsfp_allocations_stop(') < shutdown.index('tsfp_guest_map_stop(')
     for obsolete in ('g_next_guest_thread_id', 'g_tls_template_va', 'g_thread_stacks_used', 'g_worker_stack_used'):
         assert obsolete not in layout + threads
     assert 'guest_thread_memory.c' in (kernel / 'CMakeLists.txt').read_text(encoding='utf-8')

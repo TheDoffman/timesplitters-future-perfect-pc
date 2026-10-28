@@ -281,7 +281,7 @@ def test_actual_allocation_adapters_and_kernel_bridge(tmp_path):
     init = layout[layout.index('BOOL xbox_MemoryLayoutInit('):]
     assert init.index('if (!xbox_AllocationInit())') < init.index('xbox_Nv2aAckStart();')
     shutdown = layout[layout.index('void xbox_MemoryLayoutShutdown(void)'):]
-    assert shutdown.index('tsfp_allocations_stop(') < shutdown.index('VirtualFree(')
+    assert shutdown.index('tsfp_allocations_stop(') < shutdown.index('tsfp_guest_map_stop(')
     for obsolete in ('g_heap_blocks', 'g_heap_next', 'g_contig_blocks', 'g_reserve_next',
                      'xbox_ContiguousPin', 'contig_take_free'):
         assert obsolete not in layout

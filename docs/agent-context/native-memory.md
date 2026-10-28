@@ -81,7 +81,8 @@ Existing Nt adapter fixtures now emit the protection helper before its callers,
 matching the production source order. Their original ABI/result checks remain.
 
 [Guest Mm/statistics and hints](guest-memory-services.md) now have project
-providers. Remaining replacement includes main guest host-map lifetimes, kernel/devices,
+providers, as do [main guest maps](guest-host-mappings.md). Remaining replacement
+includes worker quiescence and host-map lifetimes, kernel/devices,
 title/delivery integration and inherited fixtures. The old toolkit snapshot is
 still part of production preparation. Full independence requires the final
 generation/build/test/package audit with both snapshot and old checkout absent.
