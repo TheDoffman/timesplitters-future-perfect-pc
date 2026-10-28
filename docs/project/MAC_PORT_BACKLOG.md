@@ -6791,4 +6791,7 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   pause/resume. Windows passed 64 installed image and 838 full compiler checks, 73 migrations/
   repository checks, normal Release/native build checks and isolated Story
   movement/fire/pause/resume. Candidate baseline and final Python byte oracles
-  passed. Exact-stage native Mac CI/title acceptance remains pending. See STATUS.md.
+  passed. Exact-stage native Mac CI/title acceptance remains pending. The
+  f3fd8a08 native CI jobs timed out formatting an expected byte-mismatch report;
+  the diagnostic repair passed all64 image checks locally with CI=true and
+  awaits remote acceptance. Runtime code is unchanged. See STATUS.md.

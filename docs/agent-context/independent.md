@@ -42,6 +42,11 @@ import capacity/termination and bootstrap limits. The independent Python reader
 checks metadata and full image bytes; three compiled mutations must fail.
 Provider probes use MSVC /W4 /WX and Clang -Wall -Wextra -Werror; the import
 stride is explicitly 64-bit and the integration initializes bootstrap outputs.
+Complete memory buffers are compared directly before raising a bounded
+first-mismatch/length diagnostic. Pytest's CI-enabled full sequence formatting
+stalled on intentionally incorrect repetitive buffers, despite the surrounding
+expected-failure check. The diagnostic repair preserves every byte comparison
+and all three compiled mutation assertions; it changes no runtime code.
 The private supported-US test verifies the executable hash before comparing all
 header/section bytes. Baseline evidence compared all 64 MiB with the inherited
 loader in temporary ignored storage; none of those extracted bodies are shipped.

@@ -11,7 +11,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
 
 [Guest services, headers, compiler and execution contracts](independent.md).
-Image/state/ABI probes and mutations compile under Clang `-Werror`; see linked contracts.
+Image/state/ABI tests use fatal warnings and bounded byte-mismatch reports.
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

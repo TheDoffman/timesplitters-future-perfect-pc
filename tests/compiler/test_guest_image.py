@@ -61,7 +61,15 @@ def accepted(loader,tmp_path,data,limit=0x20000):
         n=min(s.virtual_size,s.raw_size)
         expected[s.virtual_addr:s.virtual_addr+s.virtual_size]=bytes(s.virtual_size)
         expected[s.virtual_addr:s.virtual_addr+n]=data[s.raw_addr:s.raw_addr+n]
-    assert memory==expected
+    # CI enables pytest's full sequence diff. These large, repetitive buffers
+    # can make that formatter quadratic even for an expected mutation failure.
+    # Compare every byte, then raise a bounded diagnostic without assert rewrite.
+    if memory is None or memory != expected:
+        actual = memory or b''
+        first = next((i for i, (a, b) in enumerate(zip(actual, expected)) if a != b),
+                     min(len(actual), len(expected)))
+        raise AssertionError(f'Guest memory differs at 0x{first:x}; '
+                             f'actual length {len(actual)}, expected {len(expected)}')
     wanted=dict(base=h.base_address,header_size=h.header_size,image_end=h.base_address+h.image_size,
         section_count=len(x.sections),image_lo=min(s.virtual_addr for s in live),
         image_hi=max(s.virtual_addr+s.virtual_size for s in live),

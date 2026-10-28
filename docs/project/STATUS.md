@@ -1,3 +1,20 @@
+## Native image CI diagnostic repair (2026-10-28)
+
+Both native jobs for f3fd8a08 reached the workflow's 30-minute timeout. The
+Windows log stopped after 569 completed tests, at the image loader's first
+compiled mutation. A local run with `CI=true` reproduced the stall; an
+eight-second Python stack dump located it in pytest's sequence-difference
+formatter, called by the expected memory mismatch. The reproduction was
+deliberately stopped after capturing that evidence.
+
+The test now compares the same complete buffers and raises a bounded
+first-mismatch/length message instead of asking pytest to format their entire
+contents. With `CI=true`, all **64 image checks passed in 6.33s**, including
+all three compile-first negative controls. No compiler flags, test selection,
+timeouts, runtime code or acceptance criteria changed. Remote CI for this repair
+remains pending; the earlier f3fd8a08 run did not pass. Existing production build
+and gameplay evidence below is unchanged, not a new game test for this repair.
+
 ## Project native image loading (2026-10-28)
 
 Based on c42f3b1e on feature/independent-exchange, after all 17 exact-head CI
