@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Kernel: [objects, threads and boot](kernel-objects.md).
+Kernel: [objects, threads and boot](kernel-objects.md), [devices and names](kernel-devices.md).
 
 Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
 
@@ -209,9 +209,9 @@ Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
 The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640Ã—480 screen snapshot before a clear, then a 128Ã—128 map texture
+frame: a 640Ãƒâ€”480 screen snapshot before a clear, then a 128Ãƒâ€”128 map texture
 copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)â€“(312,181) into
+host texture for that frame and copies guest region (176,0)Ã¢â‚¬â€œ(312,181) into
 the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
 on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
 production RHI fixture in `tests/support/rhi_screen_copy.h` checks that the saved
@@ -229,7 +229,7 @@ shielded enemy in Something to Crow About uses 24-byte 20-vertex strips. Both
 have depth near 1 and already follow the widened camera, so the automatic 4:3
 HUD squeeze shifts them toward screen center. Ordinary HUD sprites at depth
 near .001 and explicitly placed overlays retain their placement. Validate
-with Monkeying Around â†’ Electro Chimp Discomatic and Something to Crow
+with Monkeying Around Ã¢â€ â€™ Electro Chimp Discomatic and Something to Crow
 About's shielded robot at a widescreen resolution.
 
 `0620-zero-base-indices.patch` follows the renderer/native stack. Pushed-array

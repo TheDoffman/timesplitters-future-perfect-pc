@@ -39,7 +39,7 @@ Call-frame replacement follows dispatch and guest ABI in effective patch order.
 
 After remote main contains a completed task, remove its local task branch using
 safe deletion after switching away and checking for unique or uncommitted work.
-Root AGENTS.md owns this repository-wide rule; retain other chats’ unmerged work
+Root AGENTS.md owns this repository-wide rule; retain other chatsâ€™ unmerged work
 and ignored data. Other checkouts must pull and reread it.
 
 Build commands now live under `tools/build/`; the evidence broker allows that
@@ -273,3 +273,8 @@ See kernel-objects.md for caller evidence and compiled ABI fault controls.
 Request0218 extends late provider order; maintained loader, migration models and
 context suffix22 keep it before layout2090. tests/compiler request contracts
 resolve providers from src/runtime; ignored experiments are not shipped tests.
+
+
+Stage0219 extends the mapped compiler-patch suffix before the final repository
+layout patch. [Device contracts](kernel-devices.md) identify maintained providers,
+source/test routes, actual-header probes and the pending build/game boundary.

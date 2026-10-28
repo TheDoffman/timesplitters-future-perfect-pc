@@ -660,7 +660,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1–9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1â€“9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
@@ -953,4 +953,4 @@ cadence; distance stays per-frame. D2079 blocks paused stale ticks.
 Impact sparks: see [native spark timing](native-impact-sparks.md).
 
 
-[Requests](kernel-objects.md).
+[Devices](kernel-devices.md).

@@ -20,14 +20,14 @@ static int acquire(tsfp_guest_object_services *s,uint32_t value,tsfp_guest_objec
     }
     return tsfp_guest_objects_acquire(s->objects,value,lease);
 }
-uint32_t tsfp_guest_object_reference(tsfp_guest_object_services *s,uint32_t handle,
+static uint32_t reference(tsfp_guest_object_services *s,uint32_t handle,uint64_t key,
     uint32_t expected_type,uint32_t output_address) {
     tsfp_guest_object_lease lease={0};
     uint32_t candidate=0,body=0,status=TSFP_OBJECT_NO_MEMORY;
     int retained=0;
     void *target=output(s,output_address);
     if(!target) return TSFP_OBJECT_BAD_ADDRESS;
-    if(!acquire(s,handle,&lease)) return TSFP_OBJECT_BAD_HANDLE;
+    if(!(key?tsfp_guest_objects_acquire_key(s->objects,key,&lease):acquire(s,handle,&lease))) return TSFP_OBJECT_BAD_HANDLE;
     if(expected_type && (lease.kind>=TSFP_KIND_COUNT ||
                          !s->type_id[lease.kind] || expected_type!=s->type_id[lease.kind])) {
         status=TSFP_OBJECT_WRONG_TYPE;goto done;
@@ -52,6 +52,14 @@ done:
     if(retained && status!=TSFP_OBJECT_SUCCESS) tsfp_guest_objects_dereference(s->objects,lease.key);
     tsfp_guest_objects_release(&lease);
     return status;
+}
+uint32_t tsfp_guest_object_reference(tsfp_guest_object_services *s,uint32_t handle,
+    uint32_t expected_type,uint32_t output_address) {
+    return reference(s,handle,0,expected_type,output_address);
+}
+uint32_t tsfp_guest_object_reference_key(tsfp_guest_object_services *s,uint64_t key,
+    uint32_t expected_type,uint32_t output_address) {
+    return reference(s,0,key,expected_type,output_address);
 }
 int tsfp_guest_object_reference_body(tsfp_guest_object_services *s,uint32_t body) {
     uint64_t key;

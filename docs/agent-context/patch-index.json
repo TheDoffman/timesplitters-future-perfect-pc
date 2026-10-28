@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "db0c9bda59986423862b24f51d88d75a26e20a0ec890c150b658d9acb91ba56b",
+  "loaderSha256": "6f65f120b43f04e00818434819f1497bea0453d778e03588a5ff1bb87dfc652d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2292,6 +2292,17 @@
       "name": "0218-independent-kernel-requests.patch",
       "path": "patches/compiler/0218-independent-kernel-requests.patch",
       "sha256": "d7f6afd3932711750d224b80735739379dde0189cd46eb5f581aac254360579a",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_io.c"
+      ]
+    },
+    {
+      "name": "0219-independent-kernel-devices.patch",
+      "path": "patches/compiler/0219-independent-kernel-devices.patch",
+      "sha256": "0f11d7b63bda5bffc877fdff97227efaf464e29ce18f79c5da2c242bdd990c11",
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel.h",

@@ -31613,3 +31613,66 @@ Node repository contracts also passed all 23 tests in 13.61s. Context/link/index
 check passed against origin/main. Installed source/archive/executable/generated/
 game hash verification passed, and all 26 protected files retained hash, size
 and mtime. No game rebuild was required for this documentation-only change.
+
+
+## Device/name replacement preparation (stage0219, uncommitted)
+
+Working from3b11d5b1: predecessor request-stage CI is now green on Windows and
+Mac, including final gates, after retrying hosted Mac runner-capacity cancellations.
+The exact Windows native job passed1804 tests,244 skips,18subtests in1715.21s;
+release checks passed151 tests and3subtests. These results accept the predecessor,
+not the new device source. Launcher checks also succeeded on both hosts.
+
+Original device/name/operation-scope providers and synthetic fixtures are now in
+maintained paths with a shared selection patch. Prototype host wrappers passed13
+checks in42.21s, including real locks/heap/header binding and native multi-wait
+unwind. Earlier combined58 and additional actual-cleanup4 results describe the
+prototype inputs at their recorded revisions; maintained acceptance is pending.
+Build, archive selection, current-stage full migration, fresh isolated gameplay
+and new-head CI have not yet been verified. No main merge was performed.
+See docs/agent-context/kernel-devices.md for contracts and remaining work.
+
+
+## Device/name Windows build and gameplay acceptance (stage0219, uncommitted)
+
+Windows PowerShell5 Release rebuild, built-in host/graphics/settings checks and
+matching crash-symbol generation passed. Patched actual-header/adapter checks
+passed29 in53.44s. Repository/CI routing checks passed112 in5.21s; package/path/
+crash-symbol checks passed19 in0.31s. First maintained native run passed155 with
+three pre-compilation mutation-anchor failures; narrowed those controls to their
+intended paths and both affected families passed12 in19.23s. A clean full native
+rerun against the selected patched runtime is in progress, not yet acceptance.
+
+Generated kernel project selects all ten new providers once and excludes
+kernel_ob.c; rebuilt archive has all expected original provider symbols and none
+of the nine retired native object/device exports. All22 generated guest files
+remain unchanged. Executable SHA256:
+`d78d740af8433c204ba1863236462b07adda2f6bcadf2e1f0b7e41ae0f67c8a3`.
+The build is the dirty3b11d5b1 source base, not a clean committed revision.
+
+Fresh isolated Story passed scene4/mission1, forward11.174544 and backward6.184892,
+firing ammo8to6,40 paused samples with frozen ticks and60 resumed samples with
+advancing ticks. Last checkpoint98.534s within240s cap. Start/pause/resume PNGs
+were reviewed. Exact executable provenance agrees; run lock/partitions/dumps are
+absent. All26 protected files retained hash,size and mtime. This minimized,
+synthetic-input Classic/movie-skipped run is bounded Windows regression evidence,
+not physical input/audio listening/full campaign or native Mac title acceptance.
+Initial automation used the wrong manual-start flag and a retry read a stale
+report. Corrected the local runner invocation/report freshness, kept gameplay
+assertions unchanged, and completed the fresh run against the same binary.
+
+Full current-stage snapshot/tracking/patch migration remains running, and no
+new-stage commit/push/CI result is claimed. Shared portable implementation and
+both-host CI selection are present; MAC-118 remains Awaiting validation for the
+new source and native Mac title behavior. Driver queues/synchronous builders,
+verified CdRom binding and complete runtime/tooling replacement remain unfinished.
+
+Clean maintained native acceptance against the applied runtime:158 passed in
+232.22s, terminal exit0. Repository Node contracts also passed23 in12.79s.
+The full snapshot/tracking/patch migration is the only remaining local job.
+Source/build/game hashes remain matched; new source is still uncommitted.
+
+Full current-stage snapshot/tracking/patch migration completed:52 passed in
+1037.38s (17m17s), terminal exit0. All local stage0219 acceptance is complete;
+new committed-head remote CI remains required. Build record keeps its actual
+dirty3b11d5b1 provenance and matching runtime/source/executable/game hashes.

@@ -16,6 +16,7 @@ static uint64_t bridge_process_key;
 static int bridge_objects_initialized;
 extern uint32_t xbox_CurrentThreadObject(void);
 static int bridge_object_publish_thread(uint64_t,uint32_t);
+static int bridge_device_free_body(uint32_t,uint32_t,uint32_t);
 static int bridge_object_retain_host(HANDLE,uint32_t,uint64_t *);
 
 static void *bridge_object_output(void *context,uint32_t address,uint32_t bytes) {
@@ -36,6 +37,7 @@ static int bridge_object_free_body(void *context,uint32_t body,uint32_t kind,uin
     (void)context;(void)flags;
     /* TIB/object storage is retained for the guest-memory lifetime. */
     if(kind==TSFP_KIND_THREAD) return 1;
+    if(kind==TSFP_KIND_DEVICE) return bridge_device_free_body(body,kind,flags);
     xbox_GetGuestVirtualMemory(&memory);
     return tsfp_heap_release(memory.allocations,body)?1:-1;
 }
@@ -47,7 +49,7 @@ static uint32_t bridge_object_create_body(void *context,const tsfp_guest_object_
     uint32_t body;unsigned char *p;
     (void)context;
     /* Thread bodies must be published from the existing TIB, never fabricated. */
-    if(lease->kind==TSFP_KIND_THREAD) return 0;
+    if(lease->kind==TSFP_KIND_THREAD || lease->kind==TSFP_KIND_DEVICE) return 0;
     body=xbox_HeapAlloc(64,16);
     if(!body) return 0;
     p=(unsigned char *)bridge_object_output(NULL,body,64);

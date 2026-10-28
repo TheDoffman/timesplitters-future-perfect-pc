@@ -89,7 +89,7 @@ dispatch and copy/rebase/leak mutations. Both hosts; mocked draws.
 
 Reload/Fire #337: `test_native_timing.py` covers the US decoder;
 `reload_phase_sweep.h` covers 864 schedules/1,728 presses. `test_reload_keys.py`
-covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“240, priority, remaps and
+covers 1,360 Reload and 680 Fire schedules at 60ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ240, priority, remaps and
 lifecycle. `native_reload_input.c` adds 425 original-decoder Fire schedules
 (X surrogate). Windows `pc_controls.c` checks the event bridge.
 `native_refresh_game.py --native --fps 180 --short-fire --seconds 116` checks
@@ -923,3 +923,9 @@ or conftest.py select all runtime and launcher suites.
 
 
 [Request CI](kernel-objects.md).
+
+
+Stage0219 device/name source and contracts use maintained src/runtime and tests/compiler
+paths; see [device ownership](kernel-devices.md). Shared CI selects every new portable
+contract and actual-header probe. The Windows real-host binding fixture skips on Mac;
+that skip does not replace native Mac compilation or title gameplay.

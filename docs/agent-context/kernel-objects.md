@@ -272,3 +272,10 @@ Node repository contracts also passed all 23 tests in 13.61s. Context/link/index
 check passed against origin/main. Installed source/archive/executable/generated/
 game hash verification passed, and all 26 protected files retained hash, size
 and mtime. No game rebuild was required for this documentation-only change.
+
+
+Request-stage3b11d5b1 completed CI on both hosts after retrying Mac runner-capacity
+cancellations. Stage0219 device/name integration now extends object adoption,
+key references and operation-scope cleanup; see [devices](kernel-devices.md).
+Its source is uncommitted. Windows Release and bounded Story checks passed;
+full migration passed52 tests and new-head CI remains pending.
