@@ -1,3 +1,72 @@
+## Project native image loading (2026-10-28)
+
+Based on c42f3b1e on feature/independent-exchange, after all 17 exact-head CI
+checks passed on the main-integrated guest-services stage. Additive patch
+0205-independent-image-loader.patch replaces inherited XBE header/section/
+thunk/certificate parsing and copying plus title decoding with the original
+src/runtime/guest_image.c and guest_image.h provider. Existing host mapping,
+MMIO, TIB construction, kernel services and scheduling remain transitional.
+
+The provider validates image/table/payload bounds, disjoint section extents,
+retail/debug entry decoding, bounded terminated imports, certificate and TLS
+data before materializing guest memory. Failed inspection/load preserves the
+destination and output metadata. BSS is zeroed, raw padding clipped, holes
+preserved and title text converted within its fixed-width UTF-16 field.
+Preflight also checks low-service/stack space and the existing 0x200-byte TLS
+template reservation before host mapping. Invalid/oversized images now fail
+instead of taking partial-copy/fallback paths. This is not signature validation
+or implementation of arbitrary TLS sizes, callbacks or host-memory lifecycle.
+
+Windows x64/MSVC acceptance:
+
+- **64 installed image checks** passed, including synthetic retail/debug images,
+  unaligned file input, complete byte/metadata comparison with the independent
+  Python reader, 65 sections, import capacity/termination, UTF-16 edge cases,
+  malformed/overlapping/overflowing extents, unchanged-on-error checks, bootstrap
+  limits and three compiled negative controls. Provider probes now use MSVC
+  /W4 /WX and Clang -Wall -Wextra -Werror.
+- Before installation, the candidate matched the inherited loader across all
+  64 MiB of the supported-US guest-memory buffer, bounds/import/title/region
+  metadata and bootstrap placement. Extracted baseline bodies existed only in
+  temporary ignored storage and were removed. The final provider retains the
+  independent private-US byte/metadata oracle in its regression suite.
+- **838 compiler tests passed** in 349.95s (0:05:49). All **73** migration,
+  tracking, snapshot, context and backlog checks passed in 917.22s (0:15:17).
+  Complete patch installation updated two runtime files; final warning cleanup
+  updated one. Earlier patches and the pristine vendor snapshot are unchanged.
+- Normal Release build, bundled native checks and matching crash symbols passed.
+  Initial production /W4 diagnostics prompted an explicit 64-bit import stride
+  and initialized bootstrap outputs. The initial compiler/migration runs were
+  deliberately stopped to apply that repair, then restarted and completed above.
+  The final new source/integration emitted none of those warnings; existing
+  unrelated memory-layout warnings remain. Normal C flags were preserved.
+- All 22 generated C/header files remain byte-identical and the generation
+  fingerprint is current; no fresh production generation was required.
+- Supported-US XBE SHA-256 verified. The production log confirms 23 sections,
+  151 kernel imports at 0x00475780, low shift 0x001A0000, title TimeSplitters FP,
+  region 1 and a 20-byte TLS block at 0x00910000.
+- Isolated Story replay independent-native-image reached scene 4 / mission 1
+  with input enabled, moved 11.174539 forward / 6.184892 backward,
+  and fired from eight to six rounds. All 40 pause samples froze level ticks;
+  60 resume samples stayed unpaused with ticks advancing over the window.
+  Final checkpoint 100.676s within a 240-second cap; runner and
+  controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned run lock, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256: `995be71adca4a20e029bad8deb33812c841b0ee058e2cff4992c0b87b73cab4a`,
+built from the stage working tree based on c42f3b1e. C flags stayed
+`/DWIN32 /D_WINDOWS`; CL_MPCount=2 was process-local. The documentation promotion
+encountered a Windows default-text-encoding mismatch; original UTF-8 content was
+restored and remaining edits completed explicitly as UTF-8 before validation.
+
+Both CI hosts select the new image contracts, but native Mac acceptance of this
+stage is pending its own checks. Replay used injected input, a minimized window,
+Original60 timing, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title gameplay remain unverified.
+No new package was produced. See MAC-109 and the image contracts for remaining
+memory/kernel/device/title/delivery and final toolkit/snapshot-unavailable audit work.
+
 ## Guest service branch integration (2026-10-28)
 
 After d032560d, PR #375 had no Actions runs and GitHub reported it unmergeable.

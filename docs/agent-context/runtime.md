@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Image inspection/loading now routes through the project provider before host
+mapping and during materialization; see [image contracts](independent.md#native-image-loading).
+Memory mappings, TIB construction and device services remain transitional.
+
 Guest architectural storage and bounded ABI reports now use project providers;
 see [state contracts](independent.md#guest-state-and-abi-reports). The loader
 retains memory/TIB allocation; fibers still share their native thread's cells.

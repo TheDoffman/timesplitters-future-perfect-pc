@@ -1,7 +1,7 @@
 # Subsystem entry points
 
-Guest state, ABI reports, continuations, branch recording, division faults and
-remaining services: [execution contracts](independent.md#guest-state-and-abi-reports).
+Image loading/bootstrap, guest state, ABI reports, continuations and remaining
+services: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 
 Procedural wind: [ownership/time scopes](native-wind.md).
 

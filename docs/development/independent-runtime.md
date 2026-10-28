@@ -1,5 +1,11 @@
 # Independent runtime replacement
 
+The native XBE loader now has project inspection/materialization and bootstrap
+validation in `src/runtime/guest_image.c`, installed by additive patch 0205.
+It removes inherited image parsing/copying and title decoding while keeping
+host mappings, TIB construction and kernel/device services transitional. See
+[image contracts](../agent-context/independent.md#native-image-loading) and MAC-109.
+
 Guest architectural storage and optional ABI diagnostics now have project
 providers in `src/runtime/guest_state.c` and `guest_abi_diagnostics.c`, installed
 by `0204-independent-guest-state.patch`. Memory mapping, loading and kernel

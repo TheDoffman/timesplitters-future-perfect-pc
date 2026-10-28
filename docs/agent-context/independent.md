@@ -1,5 +1,53 @@
 # Independent tooling contracts
 
+## Native image loading
+
+`src/runtime/guest_image.c` / `guest_image.h` own XBE byte inspection and
+materialization. They use explicit little-endian reads with no toolkit headers
+or host calls. `tsfp_image_inspect` validates header/image bounds, up to 4096
+section descriptors, disjoint virtual/file payloads, a unique retail/debug
+entry decoding, up to 378 terminated import slots, certificate and TLS data.
+Only initialized section bytes can supply entry/import/TLS initialization data;
+virtual tails are zero-filled, raw alignment padding is clipped, and other
+memory holes are left untouched. Optional names/debug/library metadata and
+cryptographic signatures are not authenticated by this runtime reader.
+
+`tsfp_image_load` revalidates before writing any destination bytes. Failure
+preserves memory and output metadata; overlapping source/destination/metadata
+buffers are rejected. Input bytes must remain immutable throughout the call.
+Successful publication supplies section/code bounds, thunk count, title/region
+and TLS fields. Title conversion handles surrogate pairs, substitutes U+FFFD
+for unmatched surrogates and trims trailing spaces/tabs within 40 UTF-16 units.
+
+`tsfp_image_bootstrap` checks the transitional low-service layout before host
+mapping: shift above 0x700000 rounded to 64 KiB, stack end 0xf80000 plus shift
+below the guest limit, and aligned TLS initialization plus four bytes fitting
+the existing 0x200-byte template reservation. The runtime still owns actual
+host mappings/mirrors/MMIO, TIB construction and thread scheduling. Rejecting
+an oversized template replaces the old unchecked overwrite; it does not add
+support for arbitrary TLS sizes or callbacks.
+
+`0205-independent-image-loader.patch` retires the old header/section/thunk/
+certificate parsing/copy and title conversion, calls preflight before mapping,
+loads via the provider, and uses validated TLS fields for existing TIB setup.
+Load failure after mapping invokes existing shutdown before returning false.
+Metadata and low-shift globals are assigned from the new image, not accumulated.
+This is not a replacement or full lifecycle audit of host-memory services.
+
+`tests/compiler/test_guest_image.py` compiles the real provider with unaligned
+input, guarded destinations and unchanged-on-error checks. Original synthetic
+images cover retail/debug decoding, BSS, raw padding, reordered sections, more
+than 64 sections, title encoding, malformed/overflowing/overlapping extents,
+import capacity/termination and bootstrap limits. The independent Python reader
+checks metadata and full image bytes; three compiled mutations must fail.
+Provider probes use MSVC /W4 /WX and Clang -Wall -Wextra -Werror; the import
+stride is explicitly 64-bit and the integration initializes bootstrap outputs.
+The private supported-US test verifies the executable hash before comparing all
+header/section bytes. Baseline evidence compared all 64 MiB with the inherited
+loader in temporary ignored storage; none of those extracted bodies are shipped.
+Installed-kernel routing, full patch migrations, builds and isolated gameplay
+are separate acceptance gates. See STATUS.md and MAC-109 for measured host scope.
+
 ## Guest state and ABI reports
 
 `src/runtime/guest_state.c` owns architectural GPR, XMM/MMX, x87, direction,

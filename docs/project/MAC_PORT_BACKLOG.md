@@ -258,6 +258,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-106 | Project branch-feedback provider and generated header | Awaiting validation |
 | MAC-107 | Project native continuation service | Awaiting validation |
 | MAC-108 | Project guest state and ABI diagnostics | Awaiting validation |
+| MAC-109 | Project native image loading | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6768,6 +6769,26 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   deduplication/capacity/concurrency, wrapping deltas, actual call macros on/off,
   compiled negative controls, full patch upgrades, native build and isolated
   Story regression. Windows passed 774 compiler and 73 migration/repository
-  checks, Release/native build checks and the isolated replay. Both CI hosts
-  select these contracts; native Mac acceptance remains pending. See STATUS.md
+  checks, Release/native build checks and the isolated replay. Portable contracts and patch upgrades passed on both CI hosts at c42f3b1e;
+  native Mac title gameplay remains pending. See STATUS.md
   for exact measurements and limits.
+
+
+### MAC-109 - Project native image loading
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 working-tree stage tested from c42f3b1e;
+  src/runtime/guest_image.c and guest_image.h, tests/compiler/guest_image_runtime.c
+  and test_guest_image.py, additive patch 0205-independent-image-loader.patch.
+  Original byte inspection/copying replaces inherited XBE parsing, validates
+  before mapping/writes and publishes title/import/TLS/bounds metadata.
+- Mac support: shared C with explicit little-endian reads and no host APIs;
+  both hosts use the same provider. Host mappings, MMIO, TIB initialization and
+  thread scheduling remain separate. No native Mac title execution is inferred.
+- Acceptance: native synthetic malformed/overflow/overlap/atomic-failure and
+  byte/metadata oracles, compiled mutations, supported-US private comparison,
+  complete patch upgrades, production build and isolated Story movement/fire/
+  pause/resume. Windows passed 64 installed image and 838 full compiler checks, 73 migrations/
+  repository checks, normal Release/native build checks and isolated Story
+  movement/fire/pause/resume. Candidate baseline and final Python byte oracles
+  passed. Exact-stage native Mac CI/title acceptance remains pending. See STATUS.md.
