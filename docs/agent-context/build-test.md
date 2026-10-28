@@ -70,10 +70,10 @@ SDL tests accept Confirm E/Space and reject the third fixture slot Return
 (shared two-slot cap). Run `tools/build/build-native-mac.py --test` on Mac; this
 synthetic check neither changes bindings nor certifies physical keyboard input.
 
-`runtime-patches.yml` selects runtime/launcher work for one head; `ci-pr-gate.py`
-checks both hosts. Native jobs allow 30 minutes. Existing required names remain
-until ruleset migration. `test_ci_pr_gate.py` covers missing/failed/skipped
-results; `test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
+CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
+Native/patch-upgrade jobs allow 30 minutes. Required check names remain.
+`test_ci_pr_gate.py` rejects missing/failed/skipped results;
+`test_ci_runtime_scope.py` checks wiring. Issue jobs select their sources.
 
 `test_push_gather.py`: full original-reference gathering, fresh bytes, failures,
 guard pages, large buffers and32-bit wrapping. Both native CI hosts run it.

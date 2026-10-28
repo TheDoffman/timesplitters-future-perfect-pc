@@ -1,3 +1,33 @@
+## Main integration and CI migration allowance (2026-10-27)
+
+Continuation stage 1cb58612 was committed and pushed to PR #375. Main through
+8aec3c8f (split-screen mouse routing) merged cleanly at b057d8c3. This computer
+rebuilt that combined source with normal flags: Release, native build checks
+and crash symbols passed. All 22 generated C/header files remain byte-identical
+with a current fingerprint. The documentation-only aeb83716 repair condensed
+duplicated systems-guide summaries after the merge exceeded its 64 KiB cap;
+the limit remains enforced. Fifty focused service/mouse/repository tests passed;
+the two initial context failures then passed in a 21-test context/backlog run.
+
+Fresh isolated Windows Story replay `independent-nonlocal-merge` verified the
+supported US XBE, reached playable scene 4 / mission 1, moved 11.152513 forward
+and 6.184891 backward, and fired from eight to six rounds. All 40 pause samples
+froze level ticks; the 60 resume samples stayed unpaused with level ticks
+advancing over the window. Final checkpoint 95.993 seconds, runner exit zero;
+start/pause/resume captures reviewed. All 26 protected files retained hashes,
+sizes and mtimes; no owned locks, partitions or crash dumps remained. Executable
+SHA-256: `6ac427e8b921d3fd3cebaafecfa5321a9c2a763a0ee2224652e1e9f4af35af5b`.
+Replay conditions and acceptance limits are the same as the continuation entry.
+This is not live split-screen mouse validation or Mac gameplay evidence.
+
+At aeb83716, the Windows patch-upgrade job reported all 52 tests passed in
+876.29 seconds, then exceeded its 15-minute job limit with setup/cleanup
+(GitHub annotation confirms the timeout). Patch-upgrade jobs now receive
+30 minutes, matching native jobs; all test selection and required failure
+gates remain unchanged. Mac native and patch-upgrade CI passed at aeb83716;
+Windows native CI was still running when this repair was prepared. The next
+runtime stage remains uninstalled pending successful exact-head CI.
+
 ## Project native continuation service (2026-10-27)
 
 Based on `0a991a8e` on `feature/independent-exchange`, after all 17 prerequisite
