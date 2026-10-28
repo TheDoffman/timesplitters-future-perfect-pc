@@ -213,6 +213,12 @@ Issue forms: `.github/ISSUE_TEMPLATE/`; normalization/labels/version options:
 `tools/ci/issue-forms.py` and issue workflows under
 `.github/workflows/`. PR resolution notes: `tools/ci/issue-resolution.py`,
 `.github/pull_request_template.md` and `issue-resolution-comments.yml`.
+New PR descriptions contain only Change and Cause and fix in plain language;
+release-reference PRs follow the same format. Resolution notes already accept
+Cause and fix without Validation; older PRs with Validation remain supported.
+The compatibility worker requests a short explanation for its repair PR, with
+validation in STATUS.md and platform follow-up in MAC_PORT_BACKLOG.md. Existing
+check selection and merge gates are unchanged.
 Use live GitHub issue/release metadata for a request that requires current data.
 Local Git history and stale advisory files do not replace a live issue body.
 Publishing a fix, merging, releasing and creating issues are different actions;

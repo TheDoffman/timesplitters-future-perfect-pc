@@ -49,6 +49,16 @@ patch until full migration, then explicitly requires all four unlock hooks.
 The targeted Windows migration test passes in 45.46 seconds. Production source
 and the interactive executable are unchanged; updated cross-platform CI pending.
 
+## Plain-language PR descriptions (2026-10-28)
+
+Branch `docs/plain-language-pr`, based on `2e678ac1`, updates the opening PR
+template, contributor rules and automatic version-reference/repair descriptions.
+Descriptions use Change and Cause and fix; technical evidence stays in project
+records. No runtime behavior, platform adapters or merge gates change.
+Windows offline unittest runs: issue forms 24 passed, issue resolution 16 passed,
+compatibility worker 25 passed and 3 platform-specific tests skipped. Context
+check against the base and `git diff --check` passed. No game rebuild was needed;
+native Mac execution and remote CI were not run locally.
 
 ## Independent kernel object lifetime (2026-10-28)
 

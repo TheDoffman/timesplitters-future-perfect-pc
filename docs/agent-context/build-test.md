@@ -582,6 +582,8 @@ instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
 
+[PR text](launcher.md#github-issue-automation).
+
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
 repair PR against its original branch, waits for both host workflows/checks and
@@ -996,7 +998,6 @@ because the host copies are not serialized into replay frames.
 See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 [spark timing](native-impact-sparks.md) for the original guest regression route.
 
-CI discovers unittest in each owning test folder. Changes to project_paths.py
-or conftest.py select all runtime and launcher suites.
+CI discovers unittest by folder; project_paths.py/conftest.py edits run all suites.
 
 [Unlock migrations](unlock-content.md).
