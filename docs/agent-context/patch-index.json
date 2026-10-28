@@ -1374,6 +1374,14 @@
       ]
     },
     {
+      "name": "2070-profile-unlock-content.patch",
+      "path": "patches/storage/2070-profile-unlock-content.patch",
+      "sha256": "83e9f572fc9f17c6ba1f3f7963096c2cd7124d9c51893a7a9ce635dad38e1dc1",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2080-vsh-constant-dirty.patch",
       "path": "patches/graphics/rendering/2080-vsh-constant-dirty.patch",
       "sha256": "aa5b1cd394783ce75ff00c12bca4eac794ace785f72ccf692091a849269bdaba",

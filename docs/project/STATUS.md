@@ -1,3 +1,49 @@
+## Profile-scoped Unlock Content (2026-10-28)
+
+Local, uncommitted on `feature/unlock-content` based on `2e678ac1`. Extras now
+provides nine independent early-unlock categories stored in the active profile.
+Turning a category Off restores earned access without rolling back progress.
+Cheats moved from Settings to Extras and retains its original controls.
+
+The full patch stack installs; Windows Release build, built-in checks and crash
+symbol generation pass. Seven focused storage/menu tests pass, including actual
+US predicates across 150 character records and 48 events, independent profiles,
+progress preservation and save routing. Backlog/patch tracking checks pass (17), as do context checks (20).
+The executable SHA-256 is
+`6758f50b7a1c40b16c2a43d2a9664fbb975c705154ef032c52f776d329c8905b`.
+The final isolated Windows menu/save/reload route passes in 183.618 seconds.
+Reviewed captures show all nine readable toggles, original Cheats without an
+unlock switch, all Movies while enabled, and Cheats hidden/Movies locked after
+reset. Cheats-only (128), all (511) and reset (0) flags save with valid signatures;
+On and Off survive separate process restarts. All original profile bytes remain
+unchanged (excluding the existing save nonce); no earned progress is rewritten.
+The canonical fixture is preserved, all three game processes exit cleanly, and
+owned run locks/BMPs are removed. Evidence is retained locally under
+`private/test-saves/unlock-content` (`verification.json`, reports and PNGs).
+The run uses synthetic keyboard input; physical controller/mouse operation and
+native Mac execution remain unverified. Shared implementation awaits native
+validation under MAC-119.
+See [contracts](../agent-context/unlock-content.md).
+
+Layout follow-up: widened Unlock Content from 45% to 65% of the native menu
+width to separate category labels from their selectors. Windows Release rebuild
+and its built-in checks pass, as do the three unlock tests. Reviewed Off and On
+captures at 640x480 (4:3) and 1280x720 (16:9): all nine labels, selectors, Back
+and help text fit without overlap. Both isolated runs exit cleanly with fixture
+and signed profile bytes unchanged. Evidence: `private/test-saves/unlock-layout-640`
+and `unlock-layout-1280`. Updated executable SHA-256:
+`b3c33e977ce28235080e980a4cb3ee6e2ba0e54d7851a33bc7bec982a697106c`.
+Native Mac visual validation remains pending.
+
+The category-only follow-up removes the Back row and explanatory help text at
+the user's request. The standard Back input retains the signed-save/return
+callback. The existing menu fixture now expects exactly nine category rows;
+all three unlock tests pass. Windows Release rebuild, built-in checks and crash
+symbols pass; the interactive build was relaunched on user approval. Executable
+SHA-256: `008e7842548dbb6e0af55e5c165e5b0717b0d3c260195b93069ca0000ea767e8`.
+No new automated visual/gameplay claim is added for this row removal.
+
+
 ## Independent kernel object lifetime (2026-10-28)
 
 Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,
