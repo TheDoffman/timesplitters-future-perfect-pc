@@ -113,6 +113,13 @@ int main(void)
     blocked_low=1;queries=0;MOVE();APPLY();
     CHECK(queries==3 && fabs(F(0x30100)+2)<.001);
     blocked_low=0;split=0;
+    /* A second split-screen camera must neither move nor consume player one's
+     * pending mouse packet, regardless of its guest player ID. */
+    input.dx=input.dy=0;U(0x40000)=2;U(0x40004)=1;U(0x40114)=2;
+    player_address=0x40000;MOVE();APPLY();
+    CHECK(F(0x40100)==0 && F(0x30100)==-2 && input.dx==10 && input.dy==5);
+    U(0x30000)=7;U(0x30004)=0;player_address=0x30000;APPLY();
+    CHECK(fabs(F(0x30100)+3)<.001 && F(0x40100)==0 && !input.dx);
     /* The interval cache never bridges a region boundary or address overflow. */
     PcGuestRegion region={0};uintptr_t end=(uintptr_t)guest+sizeof guest;
     CHECK(pc_guest_memory_in_span(&region,end-4,4,1));

@@ -18,6 +18,16 @@ static inline PcGuestRegion pc_camera_mouse_region(uint32_t player,uint32_t fov_
     }
     return pc_guest_query_span(first,bytes);
 }
+/* Keyboard and mouse belong to local input port 1 (slot zero). The player's
+ * first word is a game/network ID and cannot identify the local input port.
+ * Do not consume motion while another split-screen player's camera updates. */
+static inline int pc_camera_mouse_primary_in_region(uint32_t player,ptrdiff_t offset,
+                                                     PcGuestRegion *region)
+{
+    uintptr_t p=(uintptr_t)player+offset;
+    return player && pc_guest_memory_in_span(region,p,8,0) &&
+           *(const uint32_t*)(p+4)==0;
+}
 /* Verified US Xbox player/FOV fields, shared by host input adapters.
  * The guest wrapper supplies the current player. Its first word is a guest
  * player ID, not a local input port: network clients can have nonzero IDs. */

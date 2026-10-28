@@ -46,8 +46,18 @@ XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
 curves or relative mix. An explicit `RECOMP_AUDIO_GAIN` still overrides it.
 Find the connecting patch by symbol/path using `tools/repo-context.py find`.
+
 Consult `docs/development/shared-platform.md` for shared versus adapter responsibilities.
 <!-- packet:end -->
+
+Split-screen mouse look (#112): `pc_camera_mouse_primary_in_region` reads the
+current player's local input slot at `player+4` from the fresh bounded camera
+mapping. Both the Win32 and SDL `pc_controls_apply_mouse` adapters skip slots
+other than zero before terminal, mounted-gun, or ordinary camera processing,
+leaving the mouse packet for player one. The first player word is a game/network
+ID and is not a local slot. The shared `tests/graphics/mouse_region.c` fixture,
+run by `tests/gameplay/test_mounted_mouse.py`, checks both adapters and verifies
+the deferred packet reaches player one. Mac gameplay remains unverified.
 
 The #74 material continuation and validation limits are recorded in
 [material validation](../textures/material-validation.md).
