@@ -1,3 +1,300 @@
+## Story visibility-boundary repair - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user confirms the
+corpse and weapon-drop/pickup fixes. The latest user-guided boundary recording
+contains126 snapshots per peer over45.9seconds, with reviewed guest images of
+soldiers absent at frame38 and present at40. Living kind75 replicas retain valid
+poses, but guest primary room27 differs from host5 while local bounds overlap
+both rooms[5,27]. Evidence: logs/story-boundary-observation-20261028-current.
+
+Original9FBE0 preserves the previous primary while bounds still overlap it.
+OriginalA1EA0 builds render candidates from that primary only, so the soldier is
+omitted before A2430 runs when room5 is rendered. Shared room adoption now keeps
+the host's numeric primary after local bounds/room refresh, only if the room is
+loaded and in the local bounded overlap list. Original portal/scissor/depth
+occlusion remains. Story SNP4/SPP4 and Online bot snapshots share this correction;
+no new runtime patch, model handle or camera visibility transfer is involved.
+
+Windows11 AMD64/D3D11, supported US executable SHA256 verified,404.1GiB free
+before the build. Supported Windows build and native checks reach all PASS:
+logs/story-boundary-fix-build.log (outer PowerShell returned1 although all
+checked build/test stages and final symbol/seal steps succeeded). Source/build seal and
+compatibility verification pass.65 fixture/context/backlog/identity/patch-tracking
+checks pass in38.80seconds: logs/story-boundary-final-checks.log. The original
+A1EA0/9E430/A79B0 fixture reproduces missing room5 selection despite forced masks/
+full scissor, then restores16 selections; disabling the production helper fails.
+Existing corpse, drop constructor/state and both NPC dispatch fixtures pass.
+
+Executable SHA256:
+`f6c52c8892f229fdf0b8e49b6f4243fe1f96d78b20f001c17680669f5acade33`.
+Compatibility:
+`872d8225a2c0863e198a4bcb1fb148fb20b1a0c0c828ed35b10ba969a9d23e2f`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-boundary-fix-live.log, both child runners0. Both owned pistols14 have
+112 reserve/13 loaded after firing; the guest firing capture was reviewed.
+No active pair run locks or disposable partition images remain. The user then
+confirmed the visibility-boundary issue fixed in the first mission on Windows.
+Together with prior corpse and weapon-drop/pickup acceptance, this records all
+three user-guided scene fixes; it does not establish complete mission acceptance.
+Native Mac Online transport/scenes remain queued under MAC-013. No first-mission
+completion, HANDLE LATER changes, commit, push or release is included.
+
+## Story NPC weapon-drop fix - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user-guided recording
+captured seven new host pickups and zero new guest pickups across matching deaths.
+Original C2090's physical Story throw returns before its ordinary stock send.
+The former decoder-only workaround could not replicate those completed items.
+
+The first mission now publishes bounded numeric states from the original30-slot
+pickup pool. Guests use original C1950 to create the actual host weapon/ammo
+quantities and preserve its runtime ID for pickup requests. Positions follow
+host throws/landings, and host collection/removal retires the guest item. Reliable
+creation/removal/quantity updates and periodic recovery accompany bounded movement
+updates. Serial/match/host checks reject stale, duplicate or foreign states;
+identity checks protect reused local storage. Late stock NPC drops are suppressed
+to prevent duplicates; other modes/human drops retain their existing behavior.
+The user-confirmed corpse fix remains covered by the regression suite.
+
+Windows11 AMD64/D3D11, supported US executable SHA256 verified,404.4GiB free before
+build, Python3.14.2/MSBuild17.12.6. Windows build and native checks pass:
+logs/story-weapon-drop-fix-build.log.57 affected fixture/context/backlog/patch-
+tracking checks pass (34.86seconds): logs/story-weapon-drop-fix-checks.log.
+The expanded production1E-dispatch route passes all8 display/Story fixtures:
+logs/story-drop-dispatch-check.log. Original C1950/358160/355EC0 tests create a
+pickup with the captured weapon25/ammo18qty126, original placement defaults,
+correct host ID and restored temporary ID scope. No new runtime patch was added.
+
+Executable SHA256:
+`f9e65d82f7a88acf40ee4dfccd800410daa91862996af0c3d9cdded033a51e6c`.
+Compatibility:
+`6b53fb71ccdc2930c56514f3cacebac7646f5cdf175897bdc11e8cda819dab9a`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-weapon-drop-fix-live.log. Both runners exit0; each pistol has112 reserve/
+13 loaded after firing. Guest capture reviewed; no active pair locks or disposable
+partition images remain. Source/build identity, context and whitespace checks pass.
+
+The user confirmed dropped-weapon visibility and collection on2026-10-28.
+Native Mac Online
+transport and real pickup scenes remain unverified (MAC-013). Visibility-boundary
+and HANDLE LATER work are outside this fix.
+
+## Story user acceptance and weapon-drop recording - 2026-10-28
+
+The user confirms the corpse disappearance issue is fixed on the local build.
+This is Windows first-mission user acceptance; native Mac remains unverified.
+The next requested recording targets missing guest weapon drops only. Read-only
+host/guest evidence is saved under logs/story-weapon-drop-observation-20261028.
+Host pickups appear after matching NPC deaths; no new guest pickup objects appear
+in the same interval. This narrows the failure beyond portal/mask-only rendering.
+The recording stopped cleanly and the user was told both games can close.
+No runtime changes were made during this observation; drop construction/dispatch
+remains to be traced using the captured item/weapon/source-slot data.
+
+## Story corpse-only fix - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user demonstration
+recorded four deaths on both peers: clips73/74 stayed valid and actor links cleared
+at corresponding frames59/73/84/124. The old guest retirement path directly
+removed its NPC body, bypassing the original dead-state cosmetic corpse copy.
+It now calls original B3630 before releasing a known dead replica, after held
+weapon cleanup. The original bounded corpse ring owns the resulting type1000
+body; no live NPC actor is retained. Duplicate absence packets do not duplicate
+corpses, and local descriptors/script state are restored after the copy.
+
+Windows11 AMD64/D3D11, supported US executable verified,404.5GiB free before build,
+Python3.14.2/MSBuild17.12.6. Windows build/native checks pass:
+logs/story-corpse-fix-build.log.54 affected fixtures and patch-tracking/context/
+backlog checks pass (29.95seconds): logs/story-corpse-fix-checks.log. The expanded
+original-constructor and actual Story-callback regression also passes:
+logs/story-corpse-callback-check.log. It includes ring recycling and authored/
+missing descriptor cases. No runtime patch changes require another migration run.
+
+Executable SHA256:
+`b967d2605cf03df54d33f97fc589c1cb5260e461c640b7e5addc321682d6ba36`.
+Compatibility:
+`c6e95b61ee6978d259140071adade4b97ee4de8d847d1c6ae2bf6f9a98aeba1b`.
+Rendered corpse persistence on this exact build remains a user scene retest;
+constructor/lifecycle fixtures do not certify rendered parity. No level completion
+was attempted. Native Mac transport/scene validation remains unavailable (MAC-013).
+This pass addresses corpse disappearance only; other revised bugs remain separate.
+
+## Story revised four-bug continuation - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. Revised HANDLE FIRST
+scope: human sliding after the intro, guest corpse lifetime, missing guest death
+weapon drops, and the guest NPC visibility boundary. HANDLE LATER is untouched.
+
+The previous mode3 opening-pose extension caused the human sliding regression:
+mode3 persists into normal play. Opening replay/suppression now ends with pistol
+equip. Actual two-peer sampling shows matching human clip changes37/39/43 and
+advancing animation times. Original movementA7360 also dirties entity+2B4 bit31;
+network refresh previously omitted that while updating room membership. Shared
+NPC refresh now invalidates the room-plane cache, benefiting Online bots too.
+The A2430 adapter keeps actual rooms and portal rectangles, replacing the failed
+full-viewport workaround. OriginalA17C0/A1AB0 regression failed before this fix
+and passes afterward; the reported later-room boundary still needs visual retest.
+
+Original incoming35B190 weapon drops reconstruct an inventory-only temporary
+actor with no BF0 Story resource. Original C2090 otherwise selects an empty
+Story NPC difficulty budget and produces no weapon. A separate wrapper scopes
+the original inventory branch to the incoming guest replay, then restores the
+rule. The actual decoder/budget test reaches C1950 with weapon25/ammo18qty112;
+host, authored-actor, wrong-phase and unrelated-caller paths remain original.
+Real ground-pickup creation/visibility still needs the death scene retest.
+
+Supported US executable SHA256 verified before generation;405GiB free before
+build. Windows11 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. Supported Windows
+build and native checks pass: logs/story-room-drop-build.log. Executable SHA256:
+`b2c43dfd3178f830906e72ada56e45fcb4de2df92ea4f6073af65642067a0fa8`.
+Compatibility:
+`394829fde9b33368f3f0df6079758410728caeccd7560b8facac6d90e5f748d8`.
+The affected run had37 passing checks and two documentation-budget failures;
+normalizing line endings corrected both, with the drop/context rerun21 passing.
+Logs: story-room-drop-fixtures.log and story-drop-context-recheck.log.
+All21 patch migration checks pass (744.52seconds), plus14 patch-tracking
+checks: logs/story-drop-patch-checks.log and story-drop-patch-tracking.log.
+
+Exact-build normal-intro two-player opening/movement/fire plus30seconds passive
+observation passes: logs/story-room-drop-live.log. Both child runners exit0;
+both owned pistols14 have112 reserve/13 loaded after fire. Guest capture reviewed.
+No active pair locks or disposable partitions remain. Read-only80frame per-peer
+sampling is in logs/story-room-drop-observation. The observed enemy stayed at
+4.5HP throughout: no death transition was exercised, so corpse disappearance
+remains unresolved. No new corpse lifetime or ragdoll behavior is claimed.
+Native Mac Online transport and runtime acceptance remain unavailable (MAC-013).
+
+The following records describe earlier builds; the mode3 lifetime and room0
+full-viewport workarounds are superseded by the corrections above.
+
+## Story user-guided visibility follow-up - 2026-10-28
+
+Local/uncommitted after8ed77577 on `online-story-coop`. The user demonstrated
+invisible blockers and the ally visibility boundary using the previous2e41/5fe2
+build. Read-only host/guest samples found inactive, unlisted health1/flags78
+bodies on the guest without matching host active bodies; they retained collision
+bits. Guests now disable those bits only for unactivated, unowned placeholders,
+keeping scene objects/resources and restoring host flags on activation. The
+original73380 collision40 gate was verified against the supported executable.
+
+The boundary recording also retained live NPC masks while model regions were
+omitted. The new separate A2430 wrapper uses862C0's original full-viewport branch
+for current posed guest Story replicas, restoring spatial room/count afterward.
+It retains the original camera/frustum/depth checks. The original862C0 fixture
+reproduces a missing portal rectangle and verifies the adapter/restoration;
+the rebuilt later-room scene still requires visual acceptance. Recording:
+logs/story-boundary-observation; prior ghost samples: logs/story-observation.
+
+Player2 now uses a private start beside the primary hanging body instead of the
+forward local-co-op pad. All three remote pad records retain distinct offsets
+and matching tag/index conversion; checkpoints keep original selection. Shared
+Online ammo pickups preserve existing reserves when clips exceed the total cap,
+preventing a positive pickup from draining ammo. Other negative-ammo writers
+remain unproven; the observed play session did not reproduce that pickup.
+
+Supported US XBE verified;406.0GiB free before the build. Windows11 AMD64,
+D3D11, Python3.14.2, MSBuild17.12.6. Windows build/native checks pass:
+logs/story-demonstration-build.log.37 affected fixture/context/backlog checks
+pass, including the original room scissor and pinned collision gate. Final SHA256:
+`fd44cd4c5601abfd415c3b6a4e422807cbb6879b4f33812f2b407dc767ced0d5`.
+Compatibility:
+`796cc3ea79a5319ecf6ffae78a8530beb5d52d6dda7fd90ae64f7e8f97e13ef5`.
+
+All21 complete-stack patch migration checks pass (666.59seconds). The rebuilt
+skip-intro two-player probe confirmed aligned starts on both peers: host
+(0.81,-2.39,-3.35), player2(2.81,-2.34,-3.35). It then failed the60second handoff
+check: host had the pistol while the guest remained unarmed. Both runners exit0;
+receipt logs/story-demonstration-skip-handoff-failure.json. The exact-build
+normal-intro comparison passes loading, movement and owned pistol firing/ammo
+for both peers (112reserve/13loaded after firing). Both runners exit0; no active
+run locks or disposable partitions remain. Receipt:
+private/network-validation/story-load-pair/pair-evidence.json; log:
+logs/story-demonstration-live-natural.log. The guest firing capture was reviewed.
+The skip-intro handoff failure remains unresolved, separate from that success.
+Corpse parity and later Splitter cloak rendering remain visually unverified;
+the room correction may affect those paths but is not proof of their acceptance.
+No mission completion or HANDLE LATER work. Native Mac transport/scene checks
+remain MAC-013; no additional OS policy is introduced by these shared fixes.
+
+## Story six-bug follow-up - 2026-10-28
+
+Local/uncommitted on `online-story-coop`, base `8ed77577`. The revised external
+notes contain six visual/lifetime bugs; HANDLE LATER and the removed ending/menu
+items are outside this pass. The latest manual session used the previous
+dfc719f/d884d534 build, confirming the reports concern the preceding fixes.
+
+Guest NPCs now retain local presentation eligibility before the original world
+visibility pass allocates bones and held models. This covers current posed
+replicas across room boundaries while retaining original depth/frustum clipping.
+Replica removal/reconstruction retires owned held models, including when a body
+was already locally retired; the original body destructor alone skipped that
+inventory cleanup. Hanging-intro suppression continues through animation mode3
+after pistol equip and clears the full temporary culling words. Shared Story
+and Arcade shot replay accepts built-in weapon definitions41/56/61 without a
+held model, matching the original constructor; ordinary weapons retain their
+model/readiness checks. Corpse host-presence and bounds-order fixes below remain.
+
+Supported US XBE verified before generation;404.9GiB free before the build.
+Windows11 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. Final Windows build/native
+checks pass (`logs/story-npc-current-build.log`);36 affected production-fixture,
+pinned-XBE, repository-context and Mac-backlog checks pass. Executable SHA256:
+`2e41ed0ac7b2d467a4fc36a5e234ff6acf65122b8165cc4f42cdd43645247073`.
+Compatibility:
+`5fe2a487fbd3daf22c55569cbce6e573e6e69fbd98d60dbf0f29326d97cea2d0`.
+
+Final-build bounded two-player loading/movement/firing check passes, both runners
+exit0, and no active run locks or disposable partitions remain. Receipt:
+`private/network-validation/story-load-pair/pair-evidence.json`; log:
+`logs/story-npc-current-live.log`. Earlier candidate four-player room-route samples
+retained nonzero NPC presentation masks with matching host/guest body counts and
+no orphaned held models (`logs/story-npc-visibility-candidate.json`). These are
+numeric observations, not visual acceptance of the six reported bugs. Two later
+combat routes stopped against canyon geometry without finding a living enemy;
+combat acceptance failed, not passed (`logs/story-npc-final-live.log`). The
+opening captures do not conclusively identify the reported standing Cortez.
+Later corpses, room-boundary scenes, cloak and electric rendering remain visually
+unverified. No mission was completed. Native Mac Online requires MAC-013 scene
+and transport validation; the shared change adds no new native adapter policy.
+
+## Revised Story HANDLE FIRST continuation - 2026-10-28
+
+Local/uncommitted after `8ed77577` on `online-story-coop`. Corrected three
+contracts: host-present corpses survive active-roster removal until explicit
+host absence/replacement; snapshot bounds precede the original room query;
+opening held weapons validate their hand-record backlink before hiding.
+Original15BCC0,9FBE0 and1BE870 establish these contracts. No wire format or
+patch stack changes. Ordinary Online bots already install bounds before their
+room refresh; this change brings Story into the same order.
+
+Supported US XBE hash verified;405.4GiB free before building. Windows11 AMD64,
+D3D11, Python3.14.2, MSBuild17.12.6. Supported Windows build/native checks pass
+(`logs/story-revised-build.log`);14 adapter fixtures and21 repository/backlog
+checks pass. Executable SHA256:
+`dfc719f87d436384f4797d1722cafedca7c2e1d4e33d0bb59a551d17f50567e0`.
+Compatibility:
+`d884d5344dfc60d8e0e59c68ee7880646f6b7a53e554e10819b397d21f8e9e33`.
+
+Exact-build four-player natural-intro opening/movement/firing probe passes,
+all runners exit0, no remaining locks or disposable partition images. Reviewed
+guest3 opening-auto-300 and fire-own-player captures; the first-person weapon
+appears after handoff. Receipt: private/network-validation/story-four/pair-evidence.json;
+log: logs/story-revised-live-natural.log. A preceding skip-intro probe stalled
+after the host pistol grant without completing handoff; this is an unresolved
+intermittent opening failure, not a crash or a passed run. Its receipt remains
+logs/story-revised-opening-failure.json. No mission was completed. Corpse and
+later-room scene acceptance remains pending; fixture results are separate.
+
+Fresh manual-test reports from 2026-10-28 use the previous453427eceb4 build.
+Host breadcrumbs reach ending scene44; guest reaches rewards106. Captured
+fault bytes match the current binary exactly at RVA2BE5AA (60740+CA, called by
+camera helper C95E0) and2CEABA (63390+EAA, queued asset loader). Both reports
+have guest EAX=FFFFFFFF. These are new crash leads, not resolved failures;
+existing ending/reward guards did not prevent them in the manual test.
+Native stack candidates are scans, not a verified unwind. Remaining NPC
+visibility/invulnerability, cloak, reward navigation, Game Over and ending
+acceptance remain open. HANDLE LATER behavior is unchanged. Mac Online still
+requires MAC-013 transport/scene validation; native fallback fixtures pass.
+
 ## Story preview1 HANDLE FIRST fixes - 2026-10-27
 
 Local/uncommitted on `online-story-coop`, base `bf2bbe18`. Host: Windows11

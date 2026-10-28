@@ -8,6 +8,7 @@ void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose);
 extern void sub_000DAC30(void),sub_000D7550(void),sub_000A9070(void);
 extern void sub_0015BCA0(void),sub_0015BCC0(void),sub_002402B0(void),sub_00353A90(void);
 void pc_network_bots_entity_refresh(uint32_t entity);
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room);
 typedef struct StoryNpcConstructor {
     int valid;int32_t first,second,variant;
 } StoryNpcConstructor;
@@ -21,12 +22,12 @@ typedef struct StoryNpcSpawn {
     float position[3],angles[3],heading,health,armor,max_health;
     float bounds_center[3],bounds_radius[3];
     uint32_t cloak_flags,cloak_phase;float cloak_values[3];
-    uint32_t pose_present;PcCharacterPose pose;
+    uint32_t primary_room,pose_present;PcCharacterPose pose;
 } StoryNpcSpawn;
-_Static_assert(sizeof(StoryNpcSpawn)==392,"Story spawn wire layout");
-#define STORY_NPC_MAGIC 0x33504E53u
-#define STORY_NPC_POSE_MAGIC 0x33505053u
-#define STORY_NPC_BASE_BYTES 176u
+_Static_assert(sizeof(StoryNpcSpawn)==396,"Story spawn wire layout");
+#define STORY_NPC_MAGIC 0x34504E53u
+#define STORY_NPC_POSE_MAGIC 0x34505053u
+#define STORY_NPC_BASE_BYTES 180u
 /* Original353990 copies into a256-byte guest stack buffer. Never enlarge it. */
 typedef struct StoryNpcBaseMessage {uint8_t state[STORY_NPC_BASE_BYTES];uint32_t checksum;} StoryNpcBaseMessage;
 typedef struct StoryNpcPoseMessage {uint32_t magic,match,slot,serial,checksum;PcCharacterPose pose;} StoryNpcPoseMessage;
@@ -91,7 +92,7 @@ static int story_npc_valid(const StoryNpcSpawn *s)
     if(s->magic!=STORY_NPC_MAGIC || !s->serial || ((s->match>>16)&255u)!=10u ||
        ((s->match>>8)&255u)>=100u || !s->slot || s->slot>=32u ||
        s->first<0 || s->first>=256 || s->second<0 || s->second>=256 ||
-       s->variant< -1 || s->variant>=256 || s->pose_present>1u || s->present>1u || s->in_roster>1u || s->team>=32u ||
+       s->variant< -1 || s->variant>=256 || s->primary_room>213u || s->pose_present>1u || s->present>1u || s->in_roster>1u || s->team>=32u ||
        (s->weapon>=70u && s->weapon!=UINT32_MAX)) return 0;
     for(unsigned i=0;i<3u;i++)
         if(!isfinite(s->position[i]) || fabsf(s->position[i])>1000000.f ||
@@ -189,6 +190,7 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
     if(entity && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u)) {
         s.present=1;s.spawn=WORD_AT(entity+0x258u);s.network_id=WORD_AT(entity+0x230u);
         s.script_id=WORD_AT(entity+0x60u);s.body_flags=WORD_AT(entity+0x28u);
+        s.primary_room=WORD_AT(entity+0x34u);
         memcpy(s.position,(const void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),12u);
         memcpy(s.angles,(const void *)((uintptr_t)(entity+0xc0u)+g_xbox_mem_offset),12u);
         memcpy(&s.heading,(const void *)((uintptr_t)(entity+0x70u)+g_xbox_mem_offset),4u);
@@ -255,6 +257,28 @@ void pc_story_network_npc_spawn(void (*original)(void))
 }
 
 #ifdef _WIN32
+static void story_npc_remove_attachments(uint32_t actor,uint32_t entity)
+{
+    /* Original15DDA0 retires the inventory through DAAE0 before A9070.
+       A9070 alone only destroys the body and leaves its held world models.
+       Retire the owned cosmetic attachments without DAAE0's pickup spawning
+       or the host's AI/script/death side effects. */
+    for(unsigned hand=0;hand<2u;hand++) {
+        const uint32_t record=actor+0xa4u+hand*0x130u,attachment=WORD_AT(record+0xe8u);
+        if(attachment!=entity && guest_writable(attachment,0x154u) &&
+           WORD_AT(attachment+0x7cu)==record && WORD_AT(record+0xecu)==actor) {
+            if(!(WORD_AT(attachment+0x28u)&0x80000000u)) guest_call(sub_000A9070,1,attachment);
+            WORD_AT(record+0xe8u)=0u;
+        }
+    }
+}
+#include "pc_story_corpses.inc"
+static void story_npc_remove_replica(uint32_t actor,uint32_t entity)
+{
+    if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
+    story_npc_remove_attachments(actor,entity);
+    guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;
+}
 static int story_npc_apply(const StoryNpcSpawn *s)
 {
     const uint32_t pool=WORD_AT(0x007356D8u),actor=pool+s->slot*0xea0u;
@@ -269,22 +293,26 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         /* The old local body was retired/reused independently. Its storage no
            longer belongs to this actor: never destroy the replacement object. */
         if(story_npc_replicas[s->slot].entity!=entity) {restore_registers(&saved);return 0;}
+        story_npc_remove_attachments(actor,entity);
         WORD_AT(actor)=0;entity=0;
     }
     const StoryNpcReplica *previous=&story_npc_replicas[s->slot];
+    if(!entity && previous->entity) story_npc_remove_attachments(actor,previous->entity);
     if(entity && (!s->present ||
        (previous->entity==entity && previous->match==s->match && previous->spawn!=s->spawn) ||
        *(int16_t *)((uintptr_t)(actor+0x48u)+g_xbox_mem_offset)!=s->first ||
        *(int16_t *)((uintptr_t)(actor+0x4au)+g_xbox_mem_offset)!=s->second)) {
-        if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
-        guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;entity=0;
+        if(previous->entity==entity && previous->match==s->match &&
+           previous->spawn==WORD_AT(entity+0x258u) && previous->pose_present) {
+            story_npc_remove_attachments(actor,entity);
+            story_npc_preserve_corpse(actor,entity);
+        }
+        story_npc_remove_replica(actor,entity);entity=0;
     }
-    const int retired=s->present && !s->in_roster && s->health<=0.f;
-    if(retired && entity) {
-        if(story_npc_listed(actor)) guest_call(sub_0015BCC0,1,entity);
-        guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;entity=0;
-    }
-    if(s->present && !retired && !entity) {
+    /* 15BCC0 only removes an actor from the update roster. A dead body can
+       remain in the world afterward; only the host's present/generation owns
+       its lifetime. Deleting on roster removal loses corpses and attachments. */
+    if(s->present && !entity) {
         if(!story_npc_kinds[s->first] || !story_npc_kinds[s->second]) {
             /* A host-only script can spawn a kind never constructed by a guest.
                DAC30 needs its mesh loaded, not a previous instance of that NPC.
@@ -331,15 +359,18 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         if(s->in_roster && !listed && WORD_AT(0x0074C37Cu)<32u) guest_call(sub_0015BCA0,1,entity);
         if(!s->in_roster && listed) guest_call(sub_0015BCC0,1,entity);
         if(s->pose_present) pc_character_pose_present(entity,&s->pose);
-        pc_network_bots_entity_refresh(entity);
         memcpy((void *)((uintptr_t)(entity+0x1a8u)+g_xbox_mem_offset),s->bounds_center,12u);
         memcpy((void *)((uintptr_t)(entity+0x1c0u)+g_xbox_mem_offset),s->bounds_radius,12u);
+        /* 9FBE0 computes room membership from these bounds. Do not refresh
+           with the constructor's or previous pose's geometry. */
+        pc_network_bots_entity_refresh(entity);
+        pc_network_bots_entity_room(entity,s->primary_room);
     }
 
     restore_registers(&saved);
-    if(s->present && !retired && !entity) return 0;
+    if(s->present && !entity) return 0;
     StoryNpcReplica *replica=&story_npc_replicas[s->slot];
-    replica->entity=s->present && !retired?entity:0u;replica->spawn=s->spawn;
+    replica->entity=s->present?entity:0u;replica->spawn=s->spawn;
     replica->match=s->match;replica->pose_present=s->pose_present;
     memcpy(replica->center,s->bounds_center,12u);memcpy(replica->radius,s->bounds_radius,12u);
     story_npc_seen_match[s->slot]=s->match;story_npc_seen_serial[s->slot]=s->serial;
@@ -372,6 +403,23 @@ static void story_npc_pending_frame(void)
         return;
     }
     if(WORD_AT(0x0076B140u)!=2u) return;
+    /* Scene setup also constructs dormant script bodies. The host may never
+       activate them, but the guest's frozen script path leaves their collision
+       and hit bits set (observed health1, flags78, outside the update roster).
+       Keep the authored object/resources for later host activation, but do not
+       let a guest-only invisible placeholder block or take hits. A received
+       host snapshot restores its authoritative low body flags. */
+    const uint32_t pool=WORD_AT(0x007356d8u);
+    if(pool) for(unsigned slot=story_npc_humans();slot<32u;slot++) {
+        const uint32_t actor=pool+slot*0xea0u;
+        if(!guest_writable(actor,0xea0u)) continue;
+        const uint32_t entity=WORD_AT(actor);
+        if(!guest_writable(entity,0x25cu) || WORD_AT(entity+0x7cu)!=actor ||
+           WORD_AT(entity+0x150u) || WORD_AT(entity+0x20u)!=8u || story_npc_listed(actor)) continue;
+        const StoryNpcReplica *r=&story_npc_replicas[slot];
+        if(r->entity==entity && r->match==story_npc_match() && r->spawn==WORD_AT(entity+0x258u)) continue;
+        if(!(WORD_AT(entity+0x28u)&0x80000001u)) WORD_AT(entity+0x28u)&=~0x70u;
+    }
     for(unsigned slot=0;slot<32u;slot++) if(story_npc_fresh[slot]) {
         if(story_npc_pending[slot].match!=story_npc_match() || slot<story_npc_humans() ||
            story_npc_apply(&story_npc_pending[slot]))
@@ -431,6 +479,7 @@ void pc_story_network_npc_receive(void (*original)(void))
         const uint32_t type=WORD_AT(frame+12u),length=WORD_AT(frame+16u);
         if(story_shots_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_dialogue_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_drop_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_world_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_restart_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_loadout_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
@@ -510,6 +559,24 @@ static int story_npc_replica_valid(uint32_t entity,int need_pose)
     if(slot<story_npc_humans() || slot>=32u || actor!=pool+slot*0xea0u || WORD_AT(actor)!=entity) return 0;
     const StoryNpcReplica *r=&story_npc_replicas[slot];
     return (!need_pose || r->pose_present) && r->entity==entity && r->spawn==WORD_AT(entity+0x258u) && r->match==story_npc_match();
+}
+static void story_npc_visibility_prepare(void)
+{
+    if(!story_npc_session() || WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return;
+    const unsigned views=WORD_AT(0x007b0ce0u);
+    if(!views || views>4u) return;
+    const uint32_t mask=(1u<<views)-1u;
+    /* A0130 keeps remote humans eligible independently of the host-ownership
+       path. Host-controlled NPC replicas need the same presentation eligibility:
+       guest AI never supplies that path after a portal/room transition. Set the
+       local view bits BEFORE A0130 allocates this frame's bones/weapon entries.
+       Original depth/frustum rendering still clips/occludes the resulting mesh. */
+    for(unsigned slot=story_npc_humans();slot<32u;slot++) {
+        const uint32_t entity=story_npc_replicas[slot].entity;
+        if(entity && story_npc_replica_valid(entity,1) && !(WORD_AT(entity+0x28u)&0x80000000u)) {
+            WORD_AT(entity+0xcu)|=mask;WORD_AT(entity+0x10u)|=mask;
+        }
+    }
 }
 #endif
 int pc_story_network_replica(uint32_t entity)
@@ -595,4 +662,19 @@ int pc_story_network_replica_bounds(uint32_t entity)
     (void)entity;
 #endif
     return 0;
+}
+
+/* Re-evaluate room-plane clipping for the current replica geometry. Do not
+   replace primary room membership with a full-viewport sentinel: A1AB0 also
+   consumes that room when it rebuilds the cached transform modes inA17C0. */
+void pc_story_network_replica_clip(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    const uint32_t entity=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
+    if(pc_story_network_replica(entity)) {
+        WORD_AT(entity+0x2b4u)|=0x80000000u;
+    }
+#endif
+    original();
 }

@@ -1,5 +1,12 @@
 # Build, run and validation map
 
+Primary-room, pickup-state and original corpse/room fixtures: see [build-test-details](build-test-details.md).
+
+Story original room-scissor, remote-pad, dormant-body and ammo fixtures are in
+[build-test-details](build-test-details.md). Two/four-peer combat probes retain
+aligned host/guest world observations; failed target searches remain failures.
+See STATUS for measured scene acceptance versus adapter-only checks.
+
 The bounded Story pair now passes its controller PID to each child runner.
 `testing_profile.unrelated_game_pids` permits only game processes with that live
 controller in their ancestry, including Windows venv shims; all other games still

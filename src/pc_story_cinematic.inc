@@ -176,6 +176,8 @@ static void story_cine_frame(void)
         StoryCinematic s;memset(&s,0,sizeof s);
         s.magic=STORY_CINE_MAGIC;s.match=story_npc_match();
         if(!++story_cine_serial) ++story_cine_serial;s.serial=story_cine_serial;
+        /* Mode3 remains selected during ordinary gameplay until another cue.
+           It cannot own the lifetime of the opening's frozen pose replay. */
         s.opening=!story_loadout_host[0].equipped &&
             !(bookmarks && guest_writable(bookmarks,8u) && story_checkpoint_available(WORD_AT(bookmarks+4u)));
         s.active=s.opening || story_cine_cue_active || WORD_AT(context+0x114u)==256u || (WORD_AT(0x007de45cu)&0x02000000u);
@@ -304,15 +306,18 @@ int pc_story_network_cinematic_pose(uint32_t entity)
 
 void pc_story_network_world_visibility(void (*original)(void))
 {
+#ifdef _WIN32
+    story_npc_visibility_prepare();
+#endif
     original();
 #ifdef _WIN32
     if(!story_cine_session() || story_pending_stage!=1u || story_checkpoint_serial || WORD_AT(0x007de30cu)!=7u) return;
     const unsigned role=WORD_AT(0x0076b140u);
     if(role!=1u && role!=2u) return;
     const StoryLoadout *pistol=role==1u?&story_loadout_host[0]:&story_loadout_pending[0];
-    if(pistol->equipped && pistol->match==story_npc_match()) return;
     const uint32_t contexts=WORD_AT(0x007b0c48u);
     if(!contexts || !guest_writable(contexts,story_npc_humans()*0x1584u)) return;
+    if(pistol->equipped && pistol->match==story_npc_match()) return;
     uint32_t hidden[12];unsigned hidden_count=0;
     for(unsigned slot=0;slot<story_npc_humans();slot++) {
         const uint32_t context=contexts+slot*0x1584u,entity=WORD_AT(context+0x14u);
@@ -320,8 +325,10 @@ void pc_story_network_world_visibility(void (*original)(void))
         /* Original A0130 builds each world entity's per-view mask at+10 from
            the entity's culling mask. Hide the standing network body until the
            authored first-person handoff ends. Weapon/arm models stay local. */
-        WORD_AT(entity+0x10u)&=0xffff0000u;
-        WORD_AT(entity+0x0cu)&=0xffff0000u;
+        /* Both words are frame-local culling results, including high clip
+           flags used by later passes. A hidden body has no visible clip region. */
+        WORD_AT(entity+0x10u)=0;
+        WORD_AT(entity+0x0cu)=0;
         hidden[hidden_count++]=entity;
         /* A0130 already copied the human mask into both attached world
            weapons. Clear those masks too; the view/arms model at entity+4
@@ -330,9 +337,13 @@ void pc_story_network_world_visibility(void (*original)(void))
         if(guest_writable(actor,0xea0u) && WORD_AT(actor)==entity) {
             for(unsigned hand=0;hand<2u;hand++) {
                 const uint32_t attachment=WORD_AT(actor+0x18cu+hand*0x130u);
-                if(guest_writable(attachment,0x154u) && WORD_AT(attachment+0x7cu)==actor) {
-                    WORD_AT(attachment+0x10u)&=0xffff0000u;
-                    WORD_AT(attachment+0x0cu)&=0xffff0000u;
+                /* 1BE870 stores the owning hand record at attachment+7c,
+                   not the actor. The hand itself links back to the actor. */
+                const uint32_t hand_record=actor+0xa4u+hand*0x130u;
+                if(guest_writable(attachment,0x154u) && WORD_AT(attachment+0x7cu)==hand_record &&
+                   WORD_AT(hand_record+0xecu)==actor) {
+                    WORD_AT(attachment+0x10u)=0;
+                    WORD_AT(attachment+0x0cu)=0;
                     hidden[hidden_count++]=attachment;
                 }
             }

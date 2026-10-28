@@ -447,6 +447,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             /* 0x10 is the original damage-acceptance bit, separate from hit
                collision. It must also follow death/respawn on the host. */
             state.entity_flags=flags&0x71u;
+            memcpy(&state.primary_room,body+0x34,4);
             memcpy(state.flags,actor+0x24,12);memcpy(state.life,actor+0x10,16);
             memcpy(&state.animation,actor+0x94,4);memcpy(state.position,body+0x64,12);
             state.health=health;memcpy(&state.armor,body+0x1d0,4);
@@ -493,6 +494,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             memcpy(body+0x1c0,state.bounds_radius,12);
             pc_network_bots_present(entity,&state);
             pc_network_bots_entity_refresh(entity);
+            pc_network_bots_entity_room(entity,state.primary_room);
             if(state.shot.serial!=seen_shots[index]) {
                 seen_shots[index]=state.shot.serial;
                 if(state.shot.serial && state.shot.spawn==state.spawn && state.tick-state.shot.tick<=30u &&

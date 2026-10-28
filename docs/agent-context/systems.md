@@ -1,5 +1,9 @@
 # Subsystem entry points
 
+Story primary-room replication, pickups, corpses, clipping, remote pads,
+ammo pickup and visual/lifetime contracts are in [systems-details](systems-details.md).
+See STATUS for scene acceptance and MAC-013 for native Online limits.
+
 Story preview1 HANDLE FIRST adapters now cover interleaved NPC assembly,
 loaded-mesh reconstruction, cloak/speech/lip state, inset cameras, prop identities,
 blood decals, result authority and safe Online ammo pickups. Numeric wire data

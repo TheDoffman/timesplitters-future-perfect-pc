@@ -425,12 +425,41 @@ void pc_network_bots_entity_refresh(uint32_t entity)
            invalidates the cached rotation consumed by sub_000A14B0. */
         WORD_AT(entity+0x28u)|=0x1000u;
         guest_call(sub_0009FBE0,1,entity);
+        /* Original A7360 also invalidates the room-dependent clipping modes
+           after movement. A1AB0 otherwise trusts the old plane/transform cache
+           at+2b4, even after9FBE0 selected a different room. */
+        WORD_AT(entity+0x2b4u)|=0x80000000u;
     }
 #else
     (void)entity;
 #endif
 }
-/* Preserve the existing bot packet layout while sharing its animation policy. */
+/* 9FBE0 retains the previous primary room whenever the new bounds overlap it.
+   Replicas skip the host's movement/AI room selection. A1EA0 indexes render
+   candidates by primary room alone, so a stale overlapping room hides an actor
+   before A2430 can even test its portal rectangle. Keep local overlap data,
+   but select the authoritative primary when it belongs to those bounds. */
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
+{
+#ifdef _WIN32
+    const unsigned scene_rooms=WORD_AT(0x007b975cu);
+    if(!guest_writable(entity,0x2d8u) || !room || room>200u || room>scene_rooms) return;
+    const unsigned count=*(const uint8_t *)((uintptr_t)(entity+0x30u)+g_xbox_mem_offset);
+    if(count>10u) return;
+    for(unsigned i=0;i<count;i++) {
+        if(WORD_AT(entity+0x38u+i*4u)==room) {
+            if(WORD_AT(entity+0x34u)!=room) {
+                WORD_AT(entity+0x34u)=room;
+                WORD_AT(entity+0x2b4u)|=0x80000000u;
+            }
+            return;
+        }
+    }
+#else
+    (void)entity;(void)room;
+#endif
+}
+/* Share the contiguous animation slice across both NPC protocols. */
 _Static_assert(sizeof(PcCharacterPose)==216,"Character pose wire layout");
 _Static_assert(offsetof(PcNetworkBotState,shot)-offsetof(PcNetworkBotState,clip)==sizeof(PcCharacterPose),"Bot pose slice");
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
@@ -554,7 +583,7 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
     weapon=actor+0xa4u+shot->hand*0x130u;
     /* A late shot from the previous weapon must not use the new model. */
     if(WORD_AT(weapon+0x30u)!=(uint32_t)shot->weapon ||
-       !guest_writable(WORD_AT(weapon+0xe8u),0x24u)) return;
+       (pc_network_bot_shot_needs_model(shot->weapon) && !guest_writable(WORD_AT(weapon+0xe8u),0x24u))) return;
     previous_target=WORD_AT(actor+4u);WORD_AT(actor+4u)=target;
     /* Preserve local model/owner handles at weapon + E8/EC. */
     memcpy((void *)((uintptr_t)weapon+g_xbox_mem_offset),shot->transform,48);

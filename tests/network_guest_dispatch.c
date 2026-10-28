@@ -80,6 +80,7 @@ static const char *bot_test_getenv(const char *name)
 #include "../src/pc_network_bots_state.h"
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room);
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state);
 void pc_network_bots_pose_weapons(uint32_t entity);
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
@@ -112,6 +113,8 @@ int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
 uint32_t pc_network_bots_revive(unsigned slot) {memory[(0x1000+slot*0xea0)/4]=0x7000;return 0x7000;}
 void pc_network_bots_entity_refresh(uint32_t entity)
 {memset((uint8_t *)memory+entity+0x1a8,0,36);bot_refreshes++;}
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
+{memory[(entity+0x34)/4]=room;}
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {(void)entity;(void)state;}
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
@@ -458,9 +461,10 @@ int main(void)
         CHECK(!composed_firing(1,0) && g_eax==0);
         CHECK(pc_network_bot_shots[2].serial==2);
         memcpy((uint8_t *)memory+0x71cc,&health,4);memcpy(actor+0x18,&life,4);
+        memory[(0x7000+0x34)/4]=5;
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);
-        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2);
+        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5);
         memory[(0x7000+0x28)/4]=0;life=2;memcpy(actor+0x18,&life,4);
         memory[0x7de318/4]+=3;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(!(memory[(0x7000+0x28)/4]&1));
@@ -474,7 +478,7 @@ int main(void)
         memory[(0x66648c+3*16)/4]=0x0200007fu;
         memory[(0x774184+3*0x30c)/4]=99; /* connection handle is not an IP */
         g_esp=16;pc_network_bots_guest_frame(original);
-        CHECK(bot_host_ip==0x0200007fu);
+        CHECK(bot_host_ip==0x0200007fu && memory[(0x7000+0x34)/4]==last_bot.primary_room);
         CHECK(memory[(0x1000+2*0xea0+0x2c)/4]==(last_bot.flags[2]|0x10));
         /* Received poses evaluate at the normal frame boundary, without
            advancing the host's clock; humans and host retain their path. */

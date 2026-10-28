@@ -1244,6 +1244,20 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-drop-replay.patch",
+      "sha256": "bf752a73a64e0586677e5146f5d2865982b386a1dc4cb0c837e8aa70161640e9",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-replica-room-clip.patch",
+      "sha256": "4a94cdb0784dc485c79e8acede134841fbc9f9691676861a1d7fd29e2fc02e3a",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-result-controls.patch",
       "sha256": "736053bb93ae2a56a41de3c9628b8f9ce3a9d01e70f779833c4e693cfbdae882",
       "targets": [

@@ -1,5 +1,42 @@
 # Runtime and patch navigation
 
+The room-boundary repair changes shared source/protocols only: SNP4/SPP4 and
+Online bot snapshots carry the host primary room used by originalA1EA0 render
+lists. No new wrapper, runtime patch or generated function is required. Existing
+A2430 cache invalidation and original portal scissoring remain; see systems-details.
+
+Corpse replay calls the existing original B3630 constructor from shared Story
+source before dead replica retirement. No new patch, manual wrapper or guest
+regeneration contract is added; model/bone handles stay local. See systems-details
+and the original corpse-constructor/event-dispatch fixture in test_quit_menu.
+
+The separate `*-story-replica-room-clip.patch` wraps A2430. Current posed guest
+Story replicas invalidate the original room-dependent clipping cache (+2B4 bit31)
+before rendering; real room membership and portal scissoring remain intact.
+The earlier full-viewport sentinel workaround is superseded. Shared NPC position
+refresh now dirties that cache too, following originalA7360 movement. A1AB0 calls
+A17C0 to rebuild it against the actual primary room, including Online bots.
+
+The existing `*-story-drop-replay.patch` C2090 wrapper now suppresses late stock
+NPC0x16 copies for first-mission guests; numeric authoritative item states create
+the pickups instead. This handles C2090's physical Story throw return atC2A34,
+which bypasses its stock3581B0 sender. Human/other-mode original behavior stays
+on its existing route. Frame/reset/receive use existing shared Story adapters;
+no additional generated wrapper or runtime patch is needed. The new72byte1E
+pickup message is bounded below the original256byte send buffer. Source identity
+changes prevent mixing this build with older peers. See systems-details.
+
+The six-bug follow-up reuses A0130's existing visibility adapter for replica
+eligibility before its original pass. Original15DDA0/DAAE0 establishes held-model
+cleanup, and1BE870's model omissions establish built-in shot readiness. These
+changes add no wrappers, wire fields or patch-order changes; no regeneration
+of a new guest entry point is needed. See systems-details for exact contracts.
+
+The revised corpse/room/opening-attachment fixes change existing shared Story
+adapters only. No wrappers, generated guest code, patch order or wire layout
+change. Original15BCC0,9FBE0 and1BE870 establish the lifecycle, room-query and
+hand-record contracts documented in systems-details.
+
 The preview1 follow-up adds separate `*-story-dialogue.patch` (164C40) and
 `*-story-result-controls.patch` wrappers: Continue callbacks2EAF60/2EAFC0/2EB030/
 2EC090/2EC650 and65470, restart2EB0C0/2EB290, Game Over builder2F5170, prop cleanup
@@ -7,7 +44,7 @@ A9070, signed16 ammo pickup1BA220 and cosmetic blood decal1128C0. These compose
 through the shared adapter, retain native/non-Story original calls and require
 complete-stack application plus regeneration. Shared Online ammo applies beyond
 Story; actor/model/texture/audio handles never cross the new wire boundaries.
-SNP3 physical/pose packets and cinematic v3 remain individually below the original
+SNP4 physical/pose packets and cinematic v3 remain individually below the original
 353990 sender's256-byte buffer; independent eight-serial NPC assemblies tolerate
 interleaved packet halves. Effects v2 adds numeric blood arguments and asset IDs.
 Old version sizes/magics cannot be assembled into the new snapshots.
@@ -33,7 +70,7 @@ Other modes/native fallback retain the original. The existing ammo/grant adapter
 observe the pistol25 and rifle32 authored pairs; no generated body is edited.
 
 The supported353990 broadcast path copies packets into a256-byte stack buffer.
-Do not send the392-byte internal SNP3 state directly: bounded physical/pose
+Do not send the396-byte internal SNP4 state directly: bounded physical/pose
 messages and checksum-based assembly preserve that original sender limit.
 
 Story poses reuse the existing frozen-animation and bounds wrappers through

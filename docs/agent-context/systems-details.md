@@ -1,5 +1,140 @@
 # Subsystem contracts and diagnostics
 
+The 2026-10-28 visibility-boundary capture showed living posed kind75 actors
+with host primary room5 but guest primary27, despite local overlap list[5,27].
+Original9FBE0 keeps the old primary while bounds still overlap it. OriginalA1EA0
+builds the render-candidate lists from primary34 only, unlike9E4B0's collision
+lists from all overlaps. The invisible actor therefore never reaches A2430 when
+only room5 is rendered; forcing masks or its scissor cannot repair that omission.
+
+Story SNP4/SPP4 adds numeric primary_room (396-byte assembled state,180-byte
+physical prefix); each stock fragment remains below256 bytes. Online bot state
+also carries the numeric room at the end of its existing fields. Receive size,
+state validation and source compatibility reject older layouts. After local pose,
+bounds and9FBE0 refresh, shared pc_network_bots_entity_room selects that room only
+if it is a real loaded scene room and occurs in the local bounded10-room overlap
+list. It invalidates the room-plane cache on change, retains overlap membership
+and leaves portal rectangles/frustum/depth tests to the original engine. This
+also respects interpolated Online bot geometry: a future room outside current
+local overlaps is not adopted. No pointers/camera visibility cross the wire.
+The original render-list fixture reproduces room27 omission, then checks repeated
+room5 selection with the production helper; disabling the helper fails it.
+The user confirmed the corpse, weapon-drop/pickup and visibility-boundary fixes
+on Windows in the first mission. Native Mac Online acceptance remains separate.
+
+The corpse-only demonstration captured four valid death poses (clips73/74),
+then matching actor retirement on host and guest. `story_npc_apply` previously
+removed the guest's type8 body directly when the host cleared its actor link.
+The original dead-state path27F160 also uses B3630 to copy a posed character
+into the independent type1000 cosmetic corpse ring. Guests skip that AI path.
+`pc_story_corpses.inc` now copies a dead, current-generation replica before
+retirement, after removing owned held models. It leaves the original ring's
+capacity, recycling and scene cleanup intact; it retains no live NPC/AI actor.
+Living replacements, stale matches/generations, removed bodies and invalid poses
+are excluded. Duplicate retirement snapshots cannot make another corpse.
+
+B3630's descriptor+58 read needs a local resource even for reconstructed guests.
+When none exists the adapter uses a bounded zeroed guest-stack descriptor above
+the constructor's stack. It temporarily clears the source's life/callback for
+its final3EF event, then restores descriptor/life/callback/ESP. Original15C310,
+27CBD0,27CEF0,27CB10 fixtures verify no second Story AI transition is dispatched.
+Existing authored corpse flags are preserved. All models/bones remain peer-local;
+no new wire message, actor-pointer transfer or generated wrapper is introduced.
+The user confirmed the first-mission corpse fix on Windows on2026-10-28;
+native Mac scene acceptance remains separate.
+
+The user-guided 2026-10-28 observation found guest-only dormant bodies (health1,
+flags78, outside the roster) blocking the route while no corresponding host body
+was active. On guests, unlisted/unactivated nonhuman placeholders outside the
+current replica generation now lose the low collision/hit bits70. Their scene
+objects/resources remain available; a host snapshot restores authoritative flags.
+Host actors, humans, active replicas and removed/reused bodies are excluded.
+Original73380 at733E4 skips a world body's collision contribution without bit40;
+the pinned-US contract checks that gate alongside the live placeholder evidence.
+
+The ally boundary capture retained live replica masks while model regions were
+omitted. The original movement path A7360 invalidates entity+2B4 bit31 as well
+as transform rotation state. Network refresh previously updated room membership
+without dirtying this cache; originalA1AB0 trusted stale room-dependent plane
+modes. The actual A17C0/A1AB0 regression reproduces this before the correction.
+Shared NPC refresh and the scoped Story A2430 adapter now dirty the cache;
+original portal rectangles, real rooms, frustum and depth remain authoritative.
+This replaces the ineffective primary-room0/full-viewport workaround. Later-room
+visual acceptance remains separate from the original-code regression.
+
+The weapon-drop demonstration recorded seven completed host pickups and zero
+new guest pickups across matching deaths. Original C2090's Story physics path
+returns atC2A34 before the stock3581B0 send atC2D22. Its remaining stock decoder
+also rebuilds through a temporary actor with no authored Story descriptor; the
+prior inventory replay workaround alone did not solve these captured drops.
+
+`pc_story_drops.inc` now snapshots the completed, original30-record/D8-stride
+pickup pool at7B0D20, limited to dropped weapon items whose source is an NPC.
+The first mission sends bounded numeric states (magic31504453,72bytes) on the
+existing1E channel. Creation/removal, ID/quantity changes and one-second recovery
+are reliable; changed throw/landing transforms publish at most every6ticks.
+The guest uses original C1950 with the Story placement descriptor4DB9A8, exact
+host quantities and scoped541EA4 host runtime ID. It follows host transforms
+without replaying local throw physics, and uses that ID for original pickup
+requests. No actor, resource, physics or model pointer crosses the wire.
+
+Per-slot serial/match checks reject stale/duplicate/foreign updates; failed
+construction retries. Local entity-ID ownership protects reused storage during
+replacement/removal. First-mission NPC stock0x16 replays are skipped to avoid
+a delayed duplicate; human and other-mode paths retain their existing behavior.
+Original constructor/ID allocator fixtures reproduce weapon25/ammo18qty126 from
+the capture, and state fixtures cover movement, recovery, removal and retries.
+`PC-STORY-DROP` tracing is opt-in/bounded. Actual pickup visibility, collection
+and later boundary acceptance on the new build remain separate user retests.
+
+All remote opening bodies now use private pad tokens7F01..7F03 based on primary
+pad1F40, at X offsets+2/-2/+4. The old player2 pad1F62 was ahead of the hanging
+body despite sharing its camera. Private record storage is96bytes; pad/tag/index
+helpers agree, and checkpoints retain their original selection. Shared Online
+ammo pickups preserve a positive reserve when loaded clips exceed the computed
+cap; accepting a pickup must never drain existing ammo. Negative reserves can
+still recover through positive pickups. Other writers require separate evidence.
+
+The revised six-bug investigation found guest NPCs losing all local presentation
+view bits while the host retained eligibility. `story_npc_visibility_prepare`
+sets current local view bits for validated posed replicas before originalA0130;
+the original pass still allocates bones/weapon entries and the renderer retains
+depth/frustum clipping. This follows the remote-human eligibility policy rather
+than relying on a guest AI/host-ownership path. It can process up to32 actors;
+it preserves host authority, generation checks and unrelated culling flags.
+
+Original15DDA0 callsDAAE0 beforeA9070. DAAE0 destroys held models and can spawn
+pickups; directly calling A9070 for a guest replica skipped the held-model cleanup.
+Replica retirement now removes only hand-owned attachments before the body,
+validating attachment7C -> hand and handEC -> actor, without generating pickups.
+The same cleanup runs before reconstructing a locally retired replica, including
+when its body link is already cleared; reused bodies and unrelated weapons remain
+protected by the recorded replica and attachment ownership checks.
+Opening suppression clears both full temporary culling words while awaiting
+the authored pistol handoff. Mode3 can remain selected during normal gameplay;
+it must not extend opening pose replay or body hiding beyond that handoff. The
+mode-based extension caused remote humans to slide until the next cinematic.
+Model/bone storage remains local; actual later cues retain their own lifetime.
+
+Original1BE870 at1BEED9..1BEF03 omits held models for definitions41/56/61. Shared
+`pc_network_bot_shot_needs_model` admits their numeric fire replay withoutE8,
+while ordinary guns still wait for a model and stale weapon events are rejected.
+Both Story's queue and the shared Story/Arcade presenter use this rule. The new
+production-presenter fixture checks real dispatch, readiness and owner restoration;
+rendered Splitter effects still need a later-scene acceptance check.
+
+Story corpse lifetime follows host `present` and spawn generation, independently
+of `in_roster`. Original15BCC0 only removes the actor from7A3580/count74C37C;
+it does not destroy the world entity. A present dead replica keeps its pose and
+bounds until host absence or replacement. Snapshot bounds must be installed
+before9FBE0: its room query uses entity position+1A8 +/-1C0. Refreshing first
+queries old geometry, especially on construction and death-pose changes.
+
+Opening attachment validation follows original1BE870: attachment+7C points to
+actor+A4+hand*130, and that hand record+EC points to the actor. Requiring an
+actor backlink directly at attachment+7C skipped genuine held weapons. Both
+ownership links are checked before filtering the existing opening draw list.
+
 Opening visibility also removes the validated human bodies/world weapons from
 the linked visible-world list (7B4CC0, count7B54D8) already populated by original
 9FBA0 inside A0130. Clearing masks after that enqueue left the standing model
@@ -20,7 +155,7 @@ before attachment. NPCs, Local Story and Arcade retain original team rules.
 
 Story preview1 follow-up: `pc_story_npc.inc` assembles eight independent serials
 per NPC, retaining the newest complete physical/pose pair during interleaved UDP
-delivery. SNP3 includes numeric cloak phase/fades; handles remain local. A loaded
+delivery. SNP4 includes numeric cloak phase/fades; handles remain local. A loaded
 kind/mesh may construct a guest NPC without a prior local instance, and only a
 previously recorded stale replica is detached before reconstruction.
 `pc_story_dialogue.inc` reliably sends line IDs/flags and body generations; guests
@@ -557,9 +692,9 @@ Story NPC hit identity reuses actor codec4 across32 slots; original reliable dam
 and host-only NPC death remain authoritative, including guest lethal hits.
 
 Continuous Story pose packets are unreliable; spawn/death/roster changes and
-60-tick recovery remain reliable. A dead NPC removed from the host roster destroys
-its guest body through original `A9070`, retaining its death animation until that
-retirement. Checkpoint inventory is reapplied through original `25EC70` only after
+60-tick recovery remain reliable. Roster removal does not retire a host-present
+corpse. Host absence or a changed body generation retires the guest body and its
+validated held attachments. Checkpoint inventory is reapplied through original `25EC70` only after
 all final network contexts reach state2; weapon selection follows inventory copy.
 
 Lobby title/status use measured bounds and preserve thumbnail space; difficulty

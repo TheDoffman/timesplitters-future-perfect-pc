@@ -39,6 +39,9 @@ static int story_loadout_receive(uint32_t peer,uint32_t payload,uint32_t type,ui
 static void story_dialogue_reset(void);
 static void story_dialogue_frame(void);
 static int story_dialogue_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_drop_reset(void);
+static void story_drop_frame(void);
+static int story_drop_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static void story_world_reset(void);
 static void story_world_frame(void);
 static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
@@ -155,6 +158,7 @@ void pc_story_network_activate(void)
     story_cine_reset();
     story_dialogue_reset();
     story_world_reset();
+    story_drop_reset();
     /* Stock spawn/state decoders copy teams directly from the peer cache,
        bypassing D7550. Normalize it before any Story bodies are constructed. */
     const unsigned humans=*(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
@@ -396,7 +400,7 @@ static int story_opening_starts(void)
 }
 #endif
 
-/* The stock spawn packet carries a signed16 pad index. These two positive
+/* The stock spawn packet carries a signed16 pad index. These three positive
    indices are reserved only in the first Online Story scene; no level records
    or ordinary pad tables are modified. Every peer resolves them locally. */
 void pc_story_network_start_record(void (*original)(void))
@@ -404,20 +408,20 @@ void pc_story_network_start_record(void (*original)(void))
 #ifdef _WIN32
     const uint32_t frame=g_esp;
     const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
-    if(story_opening_starts() && (pad==0x7f02u || pad==0x7f03u)) {
+    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
         GuestRegisters saved;save_registers(&saved);
         const uint32_t source=guest_call(sub_0009A420_gen,1,0x1f40u);
-        if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(64u,4u);
-        const uint32_t target=story_extra_pad_storage+(pad-0x7f02u)*32u;
+        if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
+        const uint32_t target=story_extra_pad_storage+(pad-0x7f01u)*32u;
         if(story_extra_pad_storage && guest_writable(source,32u) && guest_writable(target,32u)) {
             memcpy((void *)((uintptr_t)target+g_xbox_mem_offset),
                 (const void *)((uintptr_t)source+g_xbox_mem_offset),32u);
             float x;memcpy(&x,(const void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),4u);
-            x+=pad==0x7f02u?-2.f:2.f;
+            x+=pad==0x7f02u?-2.f:pad==0x7f01u?2.f:4.f;
             memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),&x,4u);
             restore_registers(&saved);g_eax=target;g_esp=frame+4u;return;
         }
-        /* A missing template must never index the stock table with7f02/3. */
+        /* A missing template must never index the stock table with7f01/2/3. */
         restore_registers(&saved);g_eax=source;g_esp=frame+4u;return;
     }
 #endif
@@ -431,7 +435,7 @@ void pc_story_network_start_tag(void (*original)(void))
 #ifdef _WIN32
     const uint32_t frame=g_esp;
     const unsigned pad=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
-    if(story_opening_starts() && (pad==0x7f02u || pad==0x7f03u)) {
+    if(story_opening_starts() && pad>=0x7f01u && pad<=0x7f03u) {
         WORD_AT(frame+4u)=0x1f40u;original();WORD_AT(frame+4u)=pad;return;
     }
 #endif
@@ -443,8 +447,9 @@ void pc_story_network_start_index(void (*original)(void))
     const uint32_t frame=g_esp;
     const uint32_t record=guest_writable(frame,8u)?WORD_AT(frame+4u):0u;
     if(story_opening_starts() && story_extra_pad_storage &&
-       (record==story_extra_pad_storage || record==story_extra_pad_storage+32u)) {
-        g_eax=0x7f02u+(record-story_extra_pad_storage)/32u;g_esp=frame+4u;return;
+       (record==story_extra_pad_storage || record==story_extra_pad_storage+32u ||
+        record==story_extra_pad_storage+64u)) {
+        g_eax=0x7f01u+(record-story_extra_pad_storage)/32u;g_esp=frame+4u;return;
     }
 #endif
     original();
@@ -485,9 +490,12 @@ void pc_story_network_spawn_pad(void (*original)(void))
                    the first checkpoint, every peer must resolve the same authored
                    opening pads even when network setup selects a remote pad later.
                    Clearing a slot token on its first active body was too early. */
-                if(slot<2u) {g_eax=slot?0x1f62u:0x1f40u;return;}
-                if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(64u,4u);
-                if(story_extra_pad_storage && guest_writable(story_extra_pad_storage,64u)) {
+                if(!slot) {g_eax=0x1f40u;return;}
+                /* The authored local co-op second pad is ahead of the hanging
+                   primary body. Online shares its camera, so every remote body
+                   must start alongside that primary pad instead. */
+                if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
+                if(story_extra_pad_storage && guest_writable(story_extra_pad_storage,96u)) {
                     g_eax=0x7f00u+slot;return;
                 }
             }
@@ -558,6 +566,7 @@ void pc_story_network_frame(void (*original)(void))
 #ifdef _WIN32
     story_human_teams_frame();
     story_world_frame();
+    story_drop_frame();
     story_npc_pending_frame();
     story_shots_frame();
     story_loadout_frame();
@@ -758,6 +767,7 @@ void pc_story_network_character_remove(void (*original)(void))
     original();
 }
 #include "pc_story_npc.inc"
+#include "pc_story_drops.inc"
 #include "pc_story_loadout.inc"
 #include "pc_story_shots.inc"
 

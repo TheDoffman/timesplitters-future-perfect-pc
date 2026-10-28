@@ -25,7 +25,7 @@ static PcOnlineMode online_mode=PC_ONLINE_STORY;
 PcOnlineMode pc_online_mode(void){return online_mode;}
 static int allocation_ok=1;
 static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t align)
-{CHECK((n==32 || n==64 || n==144) && align==4);return allocation_ok?(n==32?0x140000:n==64?0x8000:0x8100):0;}
+{CHECK((n==32 || n==64 || n==96 || n==144) && align==4);return allocation_ok?(n==32?0x140000:n<=96?0x8000:0x8100):0;}
 static uint32_t next_parent,next_menu,ticks,selectors;
 static uint32_t header_mission,header_fallback;
 void sub_00197890(void){++header_fallback;g_esp+=4;}
@@ -94,27 +94,38 @@ void sub_00071C50(void){marker=3;} void sub_00079D60_gen(void){marker=4;}
 void sub_000771D0(void){marker=5;} void sub_000770E0(void){marker=6;}
 void sub_00079B70(void){CHECK(0);}
 void sub_000DAC30(void){marker=20;}void sub_000D7550(void){marker=21;}
+void sub_000C1950(void){marker=54;}
+void sub_000B3630(void){marker=53;}
 void sub_000A9070(void){marker=22;}void sub_0015BCA0(void){marker=23;}
 void sub_0015BCC0(void){marker=24;}void sub_002402B0(void){marker=25;}
 void sub_00353A90(void){marker=26;}
 void sub_001BA2B0(void){marker=28;}void sub_001BFCA0(void){marker=29;}
 void sub_001BA130(void){marker=30;}
 static unsigned loadout_ammo,loadout_grants,loadout_selections;
-static unsigned npc_ctor_calls,npc_refreshes,npc_removed,npc_sent_size,npc_send_calls;
+static unsigned npc_ctor_calls,npc_refreshes,npc_removed,npc_sent_size,npc_send_calls,npc_weapons_removed;
 static unsigned char npc_sent[512],npc_sent_base[256],npc_sent_pose[256];
 static unsigned npc_base_size,npc_pose_size;
 static PcCharacterPose npc_last_pose;
-static unsigned npc_pose_calls;
+static unsigned npc_pose_calls,npc_corpse_copies;
 static unsigned story_shot_replays;
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
-{CHECK(entity==0x72000 && shot->serial==1);++story_shot_replays;}
+{CHECK(entity==0x72000 && (shot->serial==1 || (shot->serial==2 && shot->weapon==61)));++story_shot_replays;}
 static uint32_t npc_constructor_position[4];
 static int32_t npc_constructor_variant;
 static unsigned story_hit_requests;
 void pc_network_bots_request_hit(uint32_t context){CHECK(context==0x79000);++story_hit_requests;}
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose)
 {CHECK(entity==0x72000 || entity==0x74400);npc_last_pose=*pose;++npc_pose_calls;}
-void pc_network_bots_entity_refresh(uint32_t entity){CHECK(entity==0x72000);++npc_refreshes;}
+static uint32_t npc_primary_room;
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room)
+{CHECK(entity==0x72000);npc_primary_room=room;WORD_AT(entity+0x34)=room;}
+static float npc_refresh_center,npc_refresh_radius;
+void pc_network_bots_entity_refresh(uint32_t entity)
+{
+    CHECK(entity==0x72000);++npc_refreshes;
+    memcpy(&npc_refresh_center,&WORD_AT(entity+0x1a8),4);
+    memcpy(&npc_refresh_radius,&WORD_AT(entity+0x1c0),4);
+}
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
@@ -188,11 +199,18 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x33504e53u || WORD_AT(args[2]+4)==0x33505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x34504e53u || WORD_AT(args[2]+4)==0x34505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
-        if(WORD_AT(args[2]+4)==0x33504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
-        if(WORD_AT(args[2]+4)==0x33505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x34504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x34505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
+    }
+    if(fn==sub_000B3630) {
+        CHECK(count==1 && args[0]==0x72000 && npc_weapons_removed==2);
+        const uint32_t actor=WORD_AT(0x7207c);
+        CHECK(!WORD_AT(actor+0x74) && !WORD_AT(actor+0x10) && !WORD_AT(actor+0x14));
+        CHECK(guest_writable(WORD_AT(actor+0xbf0),0x60));
+        WORD_AT(0x75020)=0x1000;++npc_corpse_copies;return 0x75000;
     }
     if(fn==sub_000DAC30) {
         CHECK(count==10 && args[0]==12 && args[1]==12 && args[2]==2);
@@ -217,7 +235,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         }
         return 0;
     }
-    if(fn==sub_000A9070){CHECK(count==1);++npc_removed;return 0;}
+    if(fn==sub_000A9070){CHECK(count==1);
+        if(args[0]==0x73000 || args[0]==0x73400) {++npc_weapons_removed;WORD_AT(args[0]+0x28)|=0x80000000u;}
+        else ++npc_removed;
+        return 0;}
     if(fn==sub_0025EE60){CHECK(count==1 && args[0]==0);return story_checkpoint;}
     if(fn==sub_0009A420_gen){CHECK(count==1 && args[0]==0x1f40);return 0x78000;}
     if(fn==sub_000CF060_gen){CHECK(count==1 && WORD_AT(args[0])==0);++pad_fallbacks;return 77;}
@@ -767,8 +788,8 @@ int main(void)
         CHECK(context_spawns==spawns_before+2); /* initial load only */
     }
     {
-        /* Extra initial starts must remain distinct across the16bit spawn wire,
-           without changing the first two players or a later checkpoint pad. */
+        /* Every remote body starts beside the primary hanging pad, with
+           distinct16bit tokens and no change to checkpoint selection. */
         online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
         WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
         ((uint8_t *)memory)[0x7de455]=10;WORD_AT(0x790950)=4;WORD_AT(0x7b0c48)=0x6000;
@@ -782,19 +803,19 @@ int main(void)
         const float position[3]={10.f,20.f,30.f};
         memset((uint8_t *)memory+0x78000,0x5a,32);
         memcpy((uint8_t *)memory+0x7800c,position,12);
-        for(unsigned slot=2;slot<4;slot++) {
+        for(unsigned slot=1;slot<4;slot++) {
             g_esp=0x1800;WORD_AT(g_esp+4)=0x7f00+slot;
             pc_story_network_start_record(frame_original);
-            const uint32_t target=0xa000+(slot-2)*32;
+            const uint32_t target=0xa000+(slot-1)*32;
             float p[3];memcpy(p,(uint8_t *)memory+target+12,12);
-            CHECK(g_eax==target && g_esp==0x1804 && p[0]==(slot==2?8.f:12.f) &&
+            CHECK(g_eax==target && g_esp==0x1804 && p[0]==(slot==2?8.f:slot==1?12.f:14.f) &&
                   p[1]==20.f && p[2]==30.f && WORD_AT(target+4)==0x5a5a5a5a);
         }
         float original_x;memcpy(&original_x,(uint8_t *)memory+0x7800c,4);CHECK(original_x==10.f);
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f03;
         pc_story_network_start_tag(start_tag_original);
         CHECK(g_eax==1001 && g_esp==0x1804 && WORD_AT(0x1804)==0x7f03);
-        g_esp=0x1800;WORD_AT(g_esp+4)=0xa020;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0xa040;
         pc_story_network_start_index(frame_original);
         CHECK(g_eax==0x7f03 && g_esp==0x1804 && (uint16_t)g_eax==0x7f03);
 
@@ -808,7 +829,7 @@ int main(void)
         for(unsigned slot=0;slot<2;slot++) {
             const uint32_t context=0x6000+slot*0x1584;WORD_AT(context)=slot;
             g_esp=0x1800;WORD_AT(g_esp+4)=context;pc_story_network_spawn_pad(pad_original);
-            CHECK(g_eax==(slot?0x1f62u:0x1f40u));
+            CHECK(g_eax==(slot?0x7f01u:0x1f40u));
         }
         story_checkpoint=1;g_esp=0x1800;WORD_AT(g_esp+4)=extra;
         pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88); /* checkpoint owns selection */
@@ -817,7 +838,7 @@ int main(void)
         CHECK(g_eax==77 && pad_fallbacks==checkpoint_fallbacks+1 && WORD_AT(extra)==2);
         pad_original_result=88;story_checkpoint=0;
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f02;pc_story_network_start_record(frame_original);
-        CHECK(g_eax==0xa000);
+        CHECK(g_eax==0xa020);
         WORD_AT(0x79094c)=3;g_esp=0x1800;WORD_AT(g_esp+4)=extra+0x1584;
         pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88);
         WORD_AT(0x79094c)=2;story_checkpoint=0;
@@ -835,11 +856,13 @@ int main(void)
         WORD_AT(g_esp+4)=12;WORD_AT(g_esp+8)=12;WORD_AT(g_esp+12)=2;WORD_AT(g_esp+40)=UINT32_MAX;
         pc_story_network_npc_constructor(npc_constructor_original);
         CHECK(g_esp==0x1804 && g_eax==0x70000 && story_npc_constructors[2].valid && story_npc_kinds[12]);
+        WORD_AT(0x70034)=5;
         const unsigned wire_before=npc_send_calls;
         g_esp=0x1800;WORD_AT(g_esp+4)=0x70000;pc_story_network_npc_spawn(npc_spawn_original);
         CHECK(g_esp==0x1804 && g_eax==0x55 && npc_send_calls==wire_before+2);
         CHECK(npc_base_size==sizeof(StoryNpcBaseMessage)+4 && npc_pose_size==sizeof(StoryNpcPoseMessage)+4);
         StoryNpcSpawn packet=npc_captured_spawn();
+        CHECK(packet.primary_room==5);
         CHECK(story_npc_valid(&packet) && packet.slot==2 && packet.first==12 && packet.serial==1 &&
               packet.present && packet.in_roster && packet.network_id==59 && packet.pose_present &&
               packet.pose.clip==42 && packet.pose.next_clip==43 && packet.pose.clip_channels[0]==.25f);
@@ -871,20 +894,38 @@ int main(void)
         CHECK(WORD_AT(actor)==0x72000 && WORD_AT(0x72230)==59 && WORD_AT(0x72258)==7 &&
               WORD_AT(actor+0x84)==5 && WORD_AT(0x74c37c)==3);
         float health,pos;memcpy(&health,&WORD_AT(0x721cc),4);memcpy(&pos,&WORD_AT(0x72064),4);
-        CHECK(health==20.f && pos==3.f && npc_pose_calls==1 && npc_last_pose.clip==42);
+        CHECK(health==20.f && pos==3.f && npc_primary_room==5 && WORD_AT(0x72034)==5 && npc_pose_calls==1 && npc_last_pose.clip==42);
         CHECK(pc_story_network_replica(0x72000));WORD_AT(0x721a8)=0;
+        /* Frozen replicas follow remote-human presentation eligibility across
+           room boundaries, before the engine allocates current-frame bones. */
+        WORD_AT(0x7b0ce0)=1;WORD_AT(0x7200c)=0x80000000;WORD_AT(0x72010)=0x40000000;
+        story_npc_visibility_prepare();CHECK(WORD_AT(0x7200c)==0x80000001 && WORD_AT(0x72010)==0x40000001);
+        WORD_AT(0x72258)=8;WORD_AT(0x7200c)=0;story_npc_visibility_prepare();CHECK(!WORD_AT(0x7200c));
+        WORD_AT(0x72258)=7;WORD_AT(0x76b140)=1;story_npc_visibility_prepare();CHECK(!WORD_AT(0x7200c));
+        WORD_AT(0x76b140)=2;
+        /* Unactivated guest-only scene placeholders must not collide or take
+           hits. Keep their object/model so later host activation can reuse it. */
+        const uint32_t dormant=0x50000+3*0xea0;
+        WORD_AT(dormant)=0x74800;WORD_AT(0x7487c)=dormant;
+        WORD_AT(0x74820)=8;WORD_AT(0x74828)=0x40100078;
+        story_npc_pending_frame();CHECK(WORD_AT(0x74828)==0x40100008 && WORD_AT(dormant)==0x74800);
+        WORD_AT(0x74828)=0x40100079;story_npc_pending_frame();CHECK(WORD_AT(0x74828)==0x40100079);
+        WORD_AT(dormant)=0;
         CHECK(pc_story_network_replica_bounds(0x72000));float bound;memcpy(&bound,&WORD_AT(0x721a8),4);CHECK(bound==.25f);
         WORD_AT(0x72258)=8;CHECK(!pc_story_network_replica(0x72000));WORD_AT(0x72258)=7;
         WORD_AT(0x72150)=0x6000;CHECK(!pc_story_network_replica(0x72000));WORD_AT(0x72150)=0;
         npc_deliver(&packet,3);CHECK(npc_ctor_calls==1 && npc_refreshes==1 && WORD_AT(0x74c37c)==3);
-        StoryNpcSpawn bad=packet;bad.serial=2;bad.health=NAN;npc_deliver(&bad,3);CHECK(npc_refreshes==1);
+        StoryNpcSpawn bad=packet;bad.serial=2;bad.primary_room=214;npc_deliver(&bad,3);CHECK(npc_refreshes==1);
+        bad=packet;bad.serial=2;bad.health=NAN;npc_deliver(&bad,3);CHECK(npc_refreshes==1);
         bad=packet;bad.serial=2;bad.pose.clip_channels[0]=NAN;npc_deliver(&bad,3);CHECK(npc_refreshes==1);
         bad=packet;bad.serial=2;bad.bounds_radius[0]=-1.f;npc_deliver(&bad,3);CHECK(npc_refreshes==1);
         WORD_AT(0x31000)=1;npc_deliver(&packet,3);CHECK(npc_refreshes==1);WORD_AT(0x31000)=0;
         StoryNpcSpawn queued=packet;queued.serial=2;queued.position[0]=7.f;
+        queued.bounds_center[0]=1.25f;queued.bounds_radius[0]=2.5f;
         WORD_AT(0x76b1a4)=10;npc_deliver(&queued,3);CHECK(story_npc_fresh[2] && npc_refreshes==1);
         WORD_AT(0x76b1a4)=15;story_npc_pending_frame();memcpy(&pos,&WORD_AT(0x72064),4);
         CHECK(!story_npc_fresh[2] && npc_refreshes==2 && pos==7.f);
+        CHECK(npc_refresh_center==1.25f && npc_refresh_radius==2.5f);
         npc_deliver(&packet,3);CHECK(npc_refreshes==2);
         StoryNpcSpawn other=queued;queued.serial=3;other.serial=3;other.position[0]=11.f;
         npc_deliver(&queued,1);npc_deliver(&other,2);CHECK(npc_refreshes==2); /* no mixed snapshots */
@@ -895,37 +936,57 @@ int main(void)
         CHECK(npc_ctor_calls==2 && npc_removed==1 && npc_refreshes==4 && WORD_AT(0x72258)==8);
         npc_deliver(&packet,3);CHECK(npc_ctor_calls==2 && WORD_AT(0x72258)==8);
         queued=other;queued.serial=5;queued.health=0;queued.in_roster=0;
-        npc_deliver(&queued,3);CHECK(WORD_AT(actor)==0 && WORD_AT(0x74c37c)==2 && npc_removed==2);
-        CHECK(!pc_story_network_replica(0x72000));npc_deliver(&queued,3);CHECK(npc_removed==2);
-        queued.serial=6;npc_deliver(&queued,3);CHECK(!WORD_AT(actor) && npc_ctor_calls==2 && npc_removed==2);
+        npc_deliver(&queued,3);CHECK(WORD_AT(actor)==0x72000 && WORD_AT(0x74c37c)==2 && npc_removed==1);
+        CHECK(pc_story_network_replica(0x72000));npc_deliver(&queued,3);CHECK(npc_removed==1);
+        /* Roster removal is not world removal: retain the host's corpse until
+           its explicit absence, even across subsequent dead-body snapshots. */
+        queued.serial=6;npc_deliver(&queued,3);CHECK(WORD_AT(actor)==0x72000 && npc_ctor_calls==2 && npc_removed==1);
+        for(unsigned hand=0;hand<2;hand++) {
+            const uint32_t record=actor+0xa4+hand*0x130,model=0x73000+hand*0x400;
+            WORD_AT(record+0xe8)=model;WORD_AT(record+0xec)=actor;
+            WORD_AT(model+0x7c)=record;WORD_AT(model+0x28)=1;
+        }
+        WORD_AT(0x732a10)=8;WORD_AT(0x732d18)=0;
+        WORD_AT(0x72020)=8;WORD_AT(0x72004)=0x76000;WORD_AT(0x760d4)=74;
+        WORD_AT(actor+0xbf0)=0;WORD_AT(actor+0x74)=0x12345;
+        queued.serial=7;queued.present=0;queued.pose_present=0;memset(&queued.pose,0,sizeof queued.pose);
+        npc_deliver(&queued,3);CHECK(!WORD_AT(actor) && npc_removed==2 && !pc_story_network_replica(0x72000));
+        CHECK(npc_weapons_removed==2 && !WORD_AT(actor+0x18c) && !WORD_AT(actor+0x2bc));
+        CHECK(npc_corpse_copies==1 && WORD_AT(0x75020)==0x1000);
+        CHECK(!WORD_AT(actor+0xbf0) && WORD_AT(actor+0x74)==0x12345);
+        npc_deliver(&queued,3);CHECK(npc_corpse_copies==1); /* reliable replay is idempotent */
+        WORD_AT(0x732a10)=0;
         /* Two UDP ticks interleave: neither half may erase the other tick.
            A still newer incomplete pose must not discard queued complete state. */
-        StoryNpcSpawn interleaved=other;interleaved.serial=7;
-        StoryNpcSpawn newer=interleaved;newer.serial=8;newer.position[0]=19.f;
+        StoryNpcSpawn interleaved=other;interleaved.serial=8;
+        StoryNpcSpawn newer=interleaved;newer.serial=9;newer.position[0]=19.f;
         npc_deliver(&interleaved,1);npc_deliver(&newer,1);
-        npc_deliver(&interleaved,2);CHECK(story_npc_seen_serial[2]==7);
-        npc_deliver(&newer,2);CHECK(story_npc_seen_serial[2]==8);
-        WORD_AT(0x76b1a4)=10;interleaved.serial=9;npc_deliver(&interleaved,3);
-        newer.serial=10;npc_deliver(&newer,2);
-        CHECK(story_npc_fresh[2] && story_npc_pending[2].serial==9);
-        WORD_AT(0x76b1a4)=15;story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==9);
-        npc_deliver(&newer,1);CHECK(story_npc_seen_serial[2]==10);
-        newer.serial=11;newer.cloak_flags=0x200000;newer.cloak_phase=2;
+        npc_deliver(&interleaved,2);CHECK(story_npc_seen_serial[2]==8);
+        npc_deliver(&newer,2);CHECK(story_npc_seen_serial[2]==9);
+        WORD_AT(0x76b1a4)=10;interleaved.serial=10;npc_deliver(&interleaved,3);
+        newer.serial=11;npc_deliver(&newer,2);
+        CHECK(story_npc_fresh[2] && story_npc_pending[2].serial==10);
+        WORD_AT(0x76b1a4)=15;story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==10);
+        npc_deliver(&newer,1);CHECK(story_npc_seen_serial[2]==11);
+        newer.serial=12;newer.cloak_flags=0x200000;newer.cloak_phase=2;
         newer.cloak_values[0]=.25f;newer.cloak_values[1]=.75f;newer.cloak_values[2]=2.f;
         WORD_AT(actor+0xc6c)=0x100;npc_deliver(&newer,3);
         CHECK(WORD_AT(actor+0xc6c)==0x200100 && WORD_AT(actor+0xde4)==2 && WORD_AT(actor+0xde8)==0x3e800000);
-        newer.serial=12;newer.cloak_flags=0;npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
+        newer.serial=13;newer.cloak_flags=0;npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
         /* A mesh loaded by this scene needs no earlier guest NPC instance.
            An unknown/unloaded kind remains queued; a retired recorded body is
            rebuilt without calling a destructor on reused local storage. */
-        newer.serial=13;story_npc_kinds[12]=0;WORD_AT(actor)=0;
+        newer.serial=14;story_npc_kinds[12]=0;WORD_AT(actor)=0;
         WORD_AT(0x53a3d0+12*48)=7;*(int16_t *)((uint8_t *)memory+0x78b860+7*2)=-1;
-        npc_deliver(&newer,3);CHECK(story_npc_seen_serial[2]==12 && story_npc_fresh[2]);
+        npc_deliver(&newer,3);CHECK(story_npc_seen_serial[2]==13 && story_npc_fresh[2]);
         *(int16_t *)((uint8_t *)memory+0x78b860+7*2)=0;WORD_AT(0x791d4c)=0x200000;
-        story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==13);
+        story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==14);
         const unsigned constructors=npc_ctor_calls,removed=npc_removed;
-        WORD_AT(0x72028)|=0x80000000;newer.serial=14;
+        WORD_AT(actor+0x18c)=0x73000;WORD_AT(actor+0x190)=actor;
+        WORD_AT(0x7307c)=actor+0xa4;WORD_AT(0x73028)=1;
+        WORD_AT(0x72028)|=0x80000000;newer.serial=15;
         npc_deliver(&newer,3);CHECK(npc_ctor_calls==constructors+1 && npc_removed==removed);
+        CHECK(npc_weapons_removed==3 && !WORD_AT(actor+0x18c));
         story_npc_kinds[12]=1;
         /* Speech events survive duplicate/reordered delivery, wait for body
            creation and execute cosmetic APIs without a foreign script handle. */
@@ -959,6 +1020,9 @@ int main(void)
         CHECK(story_shots_receive(0x31000,0x32000,0x1e,sizeof shot));story_shots_frame();CHECK(story_shot_replays==1);
         shot.shot.serial=2;shot.shot.aim[0]=NAN;memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);
         story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(story_shots_seen[2]==1);
+        shot.shot.aim[0]=0;shot.shot.weapon=61;WORD_AT(actor+0xd4)=61;WORD_AT(actor+0x18c)=0;
+        memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);
+        story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);story_shots_frame();CHECK(story_shot_replays==2);
         WORD_AT(0x76b140)=1;shot.slot=1;shot.shot.aim[0]=0;WORD_AT(0x3103c)=0;
         memcpy((uint8_t *)memory+0x32000,&shot,sizeof shot);
         story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(!story_shots_seen[1]);
@@ -966,6 +1030,17 @@ int main(void)
         story_shots_receive(0x31000,0x32000,0x1e,sizeof shot);CHECK(story_shots_seen[1]==2);
         const unsigned before_relay=npc_send_calls;story_shots_frame();CHECK(npc_send_calls==before_relay+1);
         story_shots_frame();CHECK(npc_send_calls==before_relay+1);
+        /* New pickup states traverse the same production reliable-message
+           dispatcher as NPC snapshots; they never fall through stock spawn. */
+        StoryDropState drop;memset(&drop,0,sizeof drop);
+        drop.magic=STORY_DROP_MAGIC;drop.match=story_npc_match();drop.slot=28;drop.serial=1;
+        drop.present=1;drop.id=91;drop.source=6;drop.weapon=25;drop.ammo[0]=18;drop.quantity[0]=126;
+        WORD_AT(0x76b140)=2;story_drop_reset();memcpy((uint8_t *)memory+0x90000,&drop,sizeof drop);
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x31000;WORD_AT(g_esp+8)=0x90000;
+        WORD_AT(g_esp+12)=0x1e;WORD_AT(g_esp+16)=sizeof drop+4;
+        pc_story_network_npc_receive(frame_original);
+        CHECK(g_esp==0x1804 && story_drop_fresh[28] && story_drop_pending[28].quantity[0]==126);
+        CHECK(failure_original_calls==originals_before);story_drop_reset();
         online_mode=PC_ONLINE_ARCADE;g_esp=0x1800;pc_story_network_npc_receive(frame_original);
         CHECK(g_esp==0x1804 && failure_original_calls==originals_before+1);
     }
@@ -1416,22 +1491,33 @@ int main(void)
         WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de30c)=7;WORD_AT(0x7de400)=(WORD_AT(0x7de400)&~255u)|2u;
         story_checkpoint_serial=0;story_loadout_reset();WORD_AT(0x7b0c48)=0x6000;
         WORD_AT(0x7407c)=0x50000;WORD_AT(0x50000)=0x74000;
-        WORD_AT(0x5018c)=0x1d0000;WORD_AT(0x1d007c)=0x50000;
+        WORD_AT(0x5018c)=0x1d0000;WORD_AT(0x1d007c)=0x500a4;WORD_AT(0x50190)=0x50000;
         for(unsigned i=0;i<2;i++) {
             const uint32_t context=0x6000+i*0x1584,entity=0x74000+i*0x400;
             WORD_AT(context+0x14)=entity;WORD_AT(entity+0x150)=context;WORD_AT(entity+4)=0x1c0000+i*0x100;
         }
         g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
-        CHECK(g_esp==0x1804 && WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x56780000);
-        CHECK(WORD_AT(0x1d0010)==0x12340000 && !WORD_AT(0x1d000c));
+        CHECK(g_esp==0x1804 && !WORD_AT(0x74010) && WORD_AT(0x1c0010)==0x170000 && !WORD_AT(0x74410));
+        CHECK(!WORD_AT(0x1d0010) && !WORD_AT(0x1d000c));
         CHECK(WORD_AT(0x7b4cc0)==0x1e0000 && WORD_AT(0x7b54d8)==1);
         story_loadout_host[0].equipped=1;story_loadout_host[0].match=story_npc_match();g_esp=0x1800;
+        WORD_AT(0x6000+0x14f8)=3;pc_story_network_world_visibility(visibility_original);
+        CHECK(WORD_AT(0x74410)==0x5678ffff && WORD_AT(0x7b54d8)==4);
+        /* Mode3 can persist after the handoff. It must not replay a frozen
+           opening pose over live remote player animations until the next cue. */
+        WORD_AT(0x6008)=0x1b0000;WORD_AT(0x6114)=2;WORD_AT(0x7de45c)=0;
+        WORD_AT(0x774028)=0x30000;story_cine_published=0;story_cine_cue_active=0;
+        g_esp=0x1800;story_cine_frame();
+        CHECK(!story_cine_state.opening && !story_cine_state.active);
+        CHECK(!pc_story_network_cinematic_pose(0x74400));
+        WORD_AT(0x6008)=0;
+        WORD_AT(0x6000+0x14f8)=0;g_esp=0x1800;
         pc_story_network_world_visibility(visibility_original);
         CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x5678ffff);
         CHECK(WORD_AT(0x1d0010)==0x1234ffff);
         CHECK(WORD_AT(0x7b4cc0)==0x74000 && WORD_AT(0x7b54d8)==4);
         WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
-        CHECK(WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000);story_checkpoint_serial=1;
+        CHECK(!WORD_AT(0x74010) && WORD_AT(0x1c0010)==0x170000);story_checkpoint_serial=1;
         g_esp=0x1800;pc_story_network_world_visibility(visibility_original);CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000);
         WORD_AT(0x76b140)=1;
         WORD_AT(0x7de458)=0x880008;WORD_AT(0x7de45c)=0x8000;
@@ -1526,7 +1612,10 @@ int main(void)
         pc_network_ammo_pickup(frame_original);
         CHECK(g_esp==0x1804 && g_eax==7 && *(int16_t *)((uint8_t *)memory+reserve)==32767);
         WORD_AT(entry)=16;ammo_loaded=32;g_esp=0x1800;pc_network_ammo_pickup(frame_original);
-        CHECK(!g_eax && !*(int16_t *)((uint8_t *)memory+reserve));
+        CHECK(!g_eax && *(int16_t *)((uint8_t *)memory+reserve)==32767);
+        *(int16_t *)((uint8_t *)memory+reserve)=112;
+        g_esp=0x1800;pc_network_ammo_pickup(frame_original);
+        CHECK(!g_eax && *(int16_t *)((uint8_t *)memory+reserve)==112);
         *(int16_t *)((uint8_t *)memory+reserve)=-16;WORD_AT(entry)=100;ammo_loaded=10;
         g_esp=0x1800;pc_network_ammo_pickup(frame_original);CHECK(g_eax==90 && *(int16_t *)((uint8_t *)memory+reserve)==90);
         WORD_AT(0x76b108)=0;g_esp=0x1800;const unsigned originals=failure_original_calls;

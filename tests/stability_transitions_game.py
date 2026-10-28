@@ -450,7 +450,8 @@ def main():
         # Original359390 resolves type2 references by the FIRST matching ID in
         # the entity pool. Pointer-free replica creation must retain that identity.
         entity_pool=word(0x72F5E8);entity_count=word(0x7B4FAC)
-        identities={};objects=[]
+        identities={};objects=[];bodies=[];attachments=[];entity_types={}
+        actor_pool=word(0x7356d8)
         if entity_pool and 0x10000<=entity_pool<0x84000000 and entity_count is not None and 0<=entity_count<=8192:
             raw=(c.c_ubyte*(entity_count*0x2e8))()
             if kernel.ReadProcessMemory(handle,entity_pool+0x10000,raw,len(raw),None):
@@ -459,6 +460,32 @@ def main():
                     if key:identities.setdefault(key,[]).append(entity_pool+index*0x2e8)
                     offset=index*0x2e8
                     kind,flags=struct.unpack_from('<I4xI',raw,offset+0x20)
+                    if not flags&0x80000000:
+                        entity_types[str(kind)]=entity_types.get(str(kind),0)+1
+                    if kind==32 and not flags&0x80000000 and len(attachments)<128:
+                        owner=struct.unpack_from('<I',raw,offset+0x7c)[0]
+                        relative=owner-actor_pool if actor_pool else -1
+                        hand_owned=0<=relative<32*0xea0 and relative%0xea0 in (0xa4,0x1d4)
+                        attachments.append(dict(entity=entity_pool+offset,owner=owner,
+                            actor_slot=relative//0xea0 if hand_owned else None,
+                            still_owned=word(owner+0xe8)==entity_pool+offset if hand_owned else None,
+                            flags=flags,model=struct.unpack_from('<I',raw,offset+4)[0],
+                            masks=list(struct.unpack_from('<2I',raw,offset+0xc))))
+                    if kind==8 and not flags&0x80000000 and len(bodies)<128:
+                        address=entity_pool+offset
+                        actor=struct.unpack_from('<I',raw,offset+0x7c)[0]
+                        model=struct.unpack_from('<I',raw,offset+4)[0]
+                        bodies.append(dict(entity=address,actor=actor,owner=word(actor) if actor else None,
+                            slot=word(actor+8) if actor else None,model=model,
+                            position=list(struct.unpack_from('<3f',raw,offset+0x64)),
+                            health=struct.unpack_from('<f',raw,offset+0x1cc)[0],flags=flags,
+                            masks=list(struct.unpack_from('<2I',raw,offset+0xc)),
+                            room_count=raw[offset+0x30],rooms=list(struct.unpack_from('<11I',raw,offset+0x34)),
+                            model_flags=word(model+0x128) if model else None,
+                            bones=word(model+0x10) if model else None,
+                            effect_flags=word(actor+0xc6c) if actor else None,
+                            effect_phase=word(actor+0xde4) if actor else None,
+                            weapons=[word(actor+0x18c),word(actor+0x2bc)] if actor else []))
                     health=struct.unpack_from('<f',raw,offset+0x1cc)[0]
                     maximum=struct.unpack_from('<f',raw,offset+0x1d8)[0]
                     if kind!=8 and flags&0x10 and math.isfinite(health) and math.isfinite(maximum) and 0<maximum<100000 and len(objects)<128:
@@ -478,7 +505,8 @@ def main():
                 model_header=[word(model+i*4) for i in range(32)] if model else [],
                 bounds_center=floats(entity+0x1a8,3),bounds_radius=floats(entity+0x1c0,3),
                 lookup_entities=identities.get(entry['network_id'],[]))
-        return dict(count=count,sample_limit=64,characters=characters,entity_pool_count=entity_count,objects=objects)
+        return dict(count=count,sample_limit=64,characters=characters,entity_pool_count=entity_count,
+                    objects=objects,bodies=bodies,attachments=attachments,entity_types=entity_types)
     def checkpoint_pad(index,table):
         record=table+index*32;pad=word(record+12)
         # Setup rows hold a pad reference at +12, not XYZ. Resolve the

@@ -26,7 +26,10 @@ void pc_network_ammo_pickup(void (*original)(void))
                 int16_t before;memcpy(&before,(const void *)((uintptr_t)(actor+0x61eu+kind*2u)+g_xbox_mem_offset),2u);
                 const int32_t reserve=before>0?before:0;
                 const int64_t sum=(int64_t)reserve+amount;
-                const int16_t after=(int16_t)(sum>cap?cap:sum);
+                /* A pickup must never drain an existing valid reserve, even
+                   if the current clips already exceed this kind's total cap. */
+                const int32_t ceiling=cap>reserve?cap:reserve;
+                const int16_t after=(int16_t)(sum>ceiling?ceiling:sum);
                 memcpy((void *)((uintptr_t)(actor+0x61eu+kind*2u)+g_xbox_mem_offset),&after,2u);
                 g_eax=after>reserve?(uint32_t)(after-reserve):0u;g_esp=frame+4u;return;
             }

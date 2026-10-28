@@ -54,6 +54,7 @@ def main():
     parser.add_argument('--presentation-probe',action='store_true',help='Retain five early-opening frames per peer for cinematic/black-screen review')
     parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
     parser.add_argument('--script-observe-seconds',type=int,default=0,choices=range(31),metavar='0..30',help='Passive diagnostic wait if a peer is script-suspended; does not replace failed startup evidence')
+    parser.add_argument('--npc-observe-seconds',type=int,default=0,choices=range(31),help='Bounded passive wait after opening inputs for a simultaneous read-only NPC observer')
     parser.add_argument('--receipt-id',help='Caller nonce for interpreter-independent receipt identity')
     args=parser.parse_args()
     assert not args.lobby_controls or args.load_probe
@@ -61,7 +62,8 @@ def main():
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and args.mission==0 and not args.lobby_only)
-    assert not args.combat_probe or (args.fire_probe and args.mission==0 and args.players==4)
+    assert not args.combat_probe or (args.fire_probe and args.mission==0)
+    assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
     assert not args.skip_intro or (args.load_probe and args.mission==0 and not args.lobby_only)
     assert args.players==2 or args.load_probe
@@ -324,6 +326,11 @@ def main():
                             remaining=ammo_total(s.get('local_player'))
                             assert remaining is not None and remaining<ammo_total(after[role].get('local_player')),(role,'No firing ammunition consumed',s.get('local_player'))
                         assert s['scene']==before[role]['scene'] and s['network_phase']==15 and not s['paused'],(role,'Lost live Story during firing input',s)
+                if args.npc_observe_seconds:
+                    time.sleep(args.npc_observe_seconds)
+                    for role in runs:append(role,label='npc-observe-after',world_probe=True,wait=.2)
+                    result['npc_observe_after']=wait_for(lambda:{role:captured(role,'npc-observe-after') for role in runs}
+                        if all(captured(role,'npc-observe-after') for role in runs) else None,'Passive NPC observation capture missing')
                 if args.restart_probe:
                     def restart_capture(role,label,**step):
                         append(role,label=label,world_probe=True,**step)
@@ -359,17 +366,16 @@ def main():
                     def extra_slot(s):
                         pointer=(s.get('local_player') or {}).get('player')
                         return next((a['slot'] for a in s['actors'] if a.get('context')==pointer),-1)
-                    shooter=next(role for role in roles if role!='host' and extra_slot(fired[role])>=2)
+                    shooter=next(role for role in roles if role!='host' and extra_slot(fired[role])>=min(2,args.players-1))
                     shooter_slot=extra_slot(fired[shooter]);result['combat_shooter']=dict(role=shooter,slot=shooter_slot)
                     def command_capture(role,label,**step):
                         append(role,label=label,world_probe=True,**step)
                         return wait_for(lambda:captured(role,label),'Missing combat capture '+label)
                     current=command_capture(shooter,'combat-before',wait=.3)
-                    target=None;walk=[]
-                    # The old straight-forward route stopped against the north
-                    # canyon wall. Turn through the opening occupied by the
-                    # authored soldiers before approaching the far NPC. These
-                    # are ordinary input waypoints, never position writes.
+                    target=None;walk=[];host_walk=[]
+                    # The bounded route can stop against canyon geometry;
+                    # report a missing target instead of claiming combat passed.
+                    # These are ordinary input waypoints, never position writes.
                     waypoints=[(0,44),(18,50),(18,32),(30,21),(45,12),(63,0)]
                     waypoint=0
                     controls=read_json(runs[shooter]/'controls.json')['mouse'];sensitivity=controls['sensitivity']
@@ -391,7 +397,12 @@ def main():
                         dy=round(local['look'][1]/sensitivity)*(-1 if controls.get('invert_y') else 1)
                         current=command_capture(shooter,'combat-walk-'+str(index),mouse=[dx,dy],keys=[87],hold_seconds=1.5,sample_hold=True,wait=.3)
                         walk.append(current)
+                        # A rotating host capture keeps corpse/attachment ownership
+                        # evidence alongside the guest route without extra PNGs
+                        # per step or any guest-state writes.
+                        host_walk.append(command_capture('host','combat-host-world',wait=.1))
                     result['combat_walk']=walk
+                    result['combat_host_world']=host_walk
                     assert target,('No living enemy found on bounded opening route; combat remains unverified',current)
                     result['combat_target_before']=target
                     controls=read_json(runs[shooter]/'controls.json')['mouse'];sensitivity=controls['sensitivity']

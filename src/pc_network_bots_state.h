@@ -9,6 +9,10 @@ typedef struct PcNetworkBotShot {
     int32_t weapon;
     float transform[12],aim[3],muzzle[3];
 } PcNetworkBotShot;
+/* Original1BE870 deliberately omits held models for these built-in weapon
+   definitions. Their firing/effects still use the character's hand transform. */
+static inline int pc_network_bot_shot_needs_model(int32_t weapon)
+{ return weapon!=41 && weapon!=56 && weapon!=61; }
 static int pc_network_bot_shot_valid(const PcNetworkBotShot *shot,unsigned actors)
 {
     unsigned i;
@@ -40,6 +44,7 @@ typedef struct PcNetworkBotState {
     /* One authoritative victim column, including human kills of this bot.
        Human-vs-human score columns remain owned by the stock protocol. */
     int16_t killed_by[16];
+    uint32_t primary_room; /* numeric scene room, not a peer-local portal handle */
 } PcNetworkBotState;
 static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned humans,unsigned bots)
 {
@@ -47,7 +52,7 @@ static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned hu
     if(!humans || !bots || bots>10 || humans+bots>16 ||
        state->slot<humans || state->slot>=humans+bots) return 0;
     if(state->animation>=70u) return 0; /* equipped weapon enum */
-    if(state->body_present>1u) return 0;
+    if(state->body_present>1u || state->primary_room>213u) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->position[i]) || fabsf(state->position[i])>1000000.f) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->bounds_center[i]) || fabsf(state->bounds_center[i])>10000.f ||
         !isfinite(state->bounds_radius[i]) || state->bounds_radius[i]<0.f || state->bounds_radius[i]>10000.f) return 0;

@@ -65,7 +65,8 @@ static void story_shots_frame(void)
         if(!guest_writable(entity,0x25cu) || WORD_AT(entity+0x258u)!=s->shot.spawn) continue;
         if((uint32_t)(WORD_AT(0x007de318u)-s->shot.tick)>120u) {s->shot.serial=0;continue;}
         const uint32_t weapon=pool+slot*0xea0u+0xa4u+s->shot.hand*0x130u;
-        if(WORD_AT(weapon+0x30u)!=(uint32_t)s->shot.weapon || !guest_writable(WORD_AT(weapon+0xe8u),0x24u)) continue;
+        if(WORD_AT(weapon+0x30u)!=(uint32_t)s->shot.weapon ||
+           (pc_network_bot_shot_needs_model(s->shot.weapon) && !guest_writable(WORD_AT(weapon+0xe8u),0x24u))) continue;
         GuestRegisters saved;save_registers(&saved);story_shots_replaying=1;
         pc_network_bots_present_shot(entity,&s->shot);
         story_shots_replaying=0;restore_registers(&saved);s->shot.serial=0;

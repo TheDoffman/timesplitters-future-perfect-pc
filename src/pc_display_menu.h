@@ -30,12 +30,15 @@ void pc_story_network_npc_receive(void (*original)(void));
 void pc_profile_accept(void (*original)(void));
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
+void pc_network_bots_entity_room(uint32_t entity,uint32_t room);
 #include "pc_network_bots_state.h"
 void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state);
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose);
 int pc_story_network_replica(uint32_t entity);
 int pc_story_network_damage(void);
 int pc_story_network_replica_bounds(uint32_t entity);
+void pc_story_network_replica_clip(void (*original)(void));
+void pc_story_network_drop_replay(void (*original)(void));
 void pc_network_bots_pose_weapons(uint32_t entity);
 void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
 int pc_story_network_shot(void (*original)(void));

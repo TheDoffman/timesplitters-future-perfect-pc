@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby'])
+@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state'])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = ROOT / 'tests' / (fixture+'.c')
@@ -64,6 +64,17 @@ def test_story_original_us_entry_contract():
     # Original353990 copies into a256-byte stack buffer before353820 sends.
     assert read(0x353996,6)==bytes.fromhex('81ec04010000')
     assert read(0x353a0c,4)==bytes.fromhex('8d7c2410')
+    # Original held-model creation skips the built-in definitions41/56/61.
+    # Their cosmetic fire replay cannot require a world-weapon entity.
+    model_gate=read(0x1beed9,40)
+    for comparison in ('83f829','83f838','83f83d'):
+        assert bytes.fromhex(comparison) in model_gate
+    # The original capsule/world overlap path skips bodies without collision40.
+    assert read(0x733e4,4)==bytes.fromhex('f6462840')
+    # Story's physical throw returns before the ordinary network-drop send.
+    assert read(0xc2a34,1)==b'\xc3'
+    drop_send=read(0xc2d22,5)
+    assert drop_send[0]==0xe8 and 0xc2d27+struct.unpack_from('<i',drop_send,1)[0]==0x3581b0
     # Actual first-level handoff ammo/grant return sites used by the adapter.
     for address, target in ((0x218962,0x1ba2b0),(0x21896a,0x1bfca0),
                             (0x21b58d,0x1ba2b0),(0x21b595,0x1bfca0),
@@ -71,6 +82,179 @@ def test_story_original_us_entry_contract():
         call=read(address,5)
         assert call[0]==0xe8 and address+5+struct.unpack_from('<i',call,1)[0]==target
 
+
+
+def test_story_original_drop_constructor(tmp_path):
+    import re
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0xc1950,0xc2087),(0x358160,0x3581a4),(0x355ec0,0x355f02))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(start,info) for start,info in functions.items())
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/story_drop_constructor.c').read_text().replace('/* ORIGINAL_CONSTRUCTOR */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    source=source.replace('/* PRODUCTION_DROP_STATE */',(ROOT/'src/pc_story_drops.inc').read_text())
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_corpse_copy(tmp_path):
+    import re
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0xb3630,0xb3909),(0x15c310,0x15c386),(0x27cbd0,0x27cc1c),
+            (0x27cef0,0x27d48b),(0x27cb10,0x27cbc3))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(start,info) for start,info in functions.items())
+    finally:
+        vars(config).update(previous)
+    code=code.replace('void sub_0015C310(void)\n{','void sub_0015C310_gen(void)\n{')
+    source=(ROOT/'tests/story_corpse_copy.c').read_text().replace('/* ORIGINAL_CORPSE_COPY */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+(?:_gen)?)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    source=source.replace('/* CHARACTER_POSE_HEADER */',(ROOT/'src/pc_character_pose.h').read_text())
+    source=source.replace('/* PRODUCTION_CORPSE_COPY */',(ROOT/'src/pc_story_corpses.inc').read_text())
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_network_original_room_cache(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0xa17c0:dict(name='sub_000A17C0',end=0xa1aa5),
+                   0xa1ab0:dict(name='sub_000A1AB0',end=0xa1b79)}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+    finally:
+        vars(config).update(previous)
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+)\b',code))-{v['name'] for v in functions.values()}
+    stubs='\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing))
+    production=(ROOT/'src/pc_display_menu.c').read_text()
+    start=production.index('void pc_network_bots_entity_refresh(')
+    refresh=production[start:production.index('/* Share the contiguous animation slice',start)]
+    source=(ROOT/'tests/network_room_cache.c').read_text().replace('/* ORIGINAL_ROOM_CACHE */',code)
+    source=source.replace('/* UNREACHED */',stubs).replace('/* PRODUCTION_REFRESH */',refresh)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+@pytest.mark.parametrize('without_fix', [False, True])
+def test_network_original_primary_room(tmp_path,without_fix):
+    """Reproduce the recorded room5/27 omission in the actual render lists."""
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0xa1ea0,0xa1f96),(0x9e430,0x9e4aa),(0xa79b0,0xa79f9))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/pc_display_menu.c').read_text()
+    start=production.index('void pc_network_bots_entity_room(')
+    helper=production[start:production.index('/* Share the contiguous animation slice',start)]
+    if without_fix:
+        helper='void pc_network_bots_entity_room(uint32_t entity,uint32_t room){(void)entity;(void)room;}'
+    source=(ROOT/'tests/network_primary_room.c').read_text().replace('/* ORIGINAL_RENDER_ROOMS */',code)
+    source=source.replace('/* PRODUCTION_PRIMARY_ROOM */',helper)
+    if without_fix:
+        with pytest.raises(AssertionError,match=r'MEM32\(0x20034\)==5'):
+            compile_and_run(tmp_path,source)
+    else:
+        assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_drop_wire(tmp_path):
+    import re
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0x3c9d90:dict(name='sub_003C9D90',end=0x3c9dd1),
+                   0x35b190:dict(name='sub_0035B190',end=0x35b53a),
+                   0xc2090:dict(name='sub_000C2090',end=0xc2d35)}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+    finally:
+        vars(config).update(previous)
+    code=code.replace('void sub_000C2090(void)\n{','void sub_000C2090_gen(void)\n{')
+    source=(ROOT/'tests/story_drop_wire.c').read_text().replace('/* ORIGINAL_DROP_RECEIVER */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+(?:_gen)?)\b',code))-defined
+    stubs='\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing))
+    source=source.replace('/* UNREACHED */',stubs)
+    source=source.replace('/* PRODUCTION_REPLAY */',(ROOT/'src/pc_story_drops.inc').read_text().split('\n#ifdef _WIN32\n/* Completed')[0])
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_room_scissor(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        info=dict(name='sub_000862C0',end=0x86479)
+        code=FunctionTranslator(image,{0x862c0:info}).translate_function(0x862c0,info)
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/pc_story_npc.inc').read_text()
+    adapter=production[production.index('void pc_story_network_replica_clip('):]
+    source=(ROOT/'tests/story_room_clip.c').read_text().replace('/* ORIGINAL_ROOM_SCISSOR */',code)
+    source=source.replace('/* PRODUCTION_REPLICA_CLIP */',adapter)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
 
 
 def test_story_original_config_stages(tmp_path):

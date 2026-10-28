@@ -5944,7 +5944,22 @@ lifetime also improve the existing Online modes. Mac Online transport/adapter
 work and native runtime validation remain required under MAC-013; portable fixture
 fallback checks do not establish native Mac multiplayer support.
 
-MAC-013 preview1 HANDLE FIRST follow-up (uncommitted): shared guest adapters now
+MAC-013 revised HANDLE FIRST continuation (after8ed77577, uncommitted): present
+corpses remain after roster removal, current bounds precede room queries, and
+opening weapons validate their original hand-record ownership. Windows/native
+fallback fixtures pass. No new host API or separate Mac logic is needed; Online
+runtime acceptance still depends on MAC-013 transport and native scene testing.
+The subsequent six-bug pass adds pre-A0130 replica visibility eligibility,
+owned held-model cleanup. The mode3 lifetime extension was superseded: it
+persisted into play and is now released when the opening pistol is equipped.
+Built-in model-free shot replay is shared with Arcade; it needs no separate Mac
+policy. Source/fallback fixtures are distinct from native Online/scene acceptance.
+The user-guided follow-up adds the shared A2430 replica portal-scissor adapter,
+dormant guest body collision suppression, aligned remote opening pads and
+non-draining ammo pickups (uncommitted). No additional OS adapter policy; native
+Online still needs transport and these scene acceptance checks under MAC-013.
+
+MAC-013 preview1 HANDLE FIRST follow-up (8ed77577): shared guest adapters now
 cover NPC interleaved packet assembly/loaded-mesh reconstruction, numeric cloak
 state, dialogue/lip clocks, attached opening visibility, inset camera cues,
 stable prop hit/removal identity and local blood-decal creation. Host result
@@ -5954,3 +5969,27 @@ retains original calls and fixtures; no second gameplay implementation is needed
 Mac still requires the transport adapter and isolated native multiplayer validation
 of these behaviors, including WAN speech and completion/restarts. Windows evidence
 and remaining limits are recorded in STATUS.md; native support is not verified.
+
+MAC-013 revised four-bug continuation (after8ed77577, uncommitted): shared NPC
+refresh follows original movement cache invalidation, benefiting Online bots.
+The Story clip adapter preserves real room/portal state; the full-viewport
+workaround is superseded. Incoming Story weapon drops use their wire inventory
+through the scoped C2090 adapter, with native/non-Story fallbacks preserved.
+Opening mode3 no longer extends pose suppression after pistol handoff. Windows
+original-engine fixtures cover these contracts; native transport and gameplay
+acceptance remain queued under MAC-013. No duplicated Mac policy is introduced.
+
+MAC-013 corpse-only fix (after8ed77577, uncommitted): the shared Story replica
+retirement path now copies a final dead pose into the stock cosmetic corpse ring
+before freeing the NPC actor. It retains local model/bone ownership and original
+ring limits, and suppresses duplicate Story callbacks. No new OS adapter or wire
+contract is added. Windows native/original-engine lifecycle fixtures pass; native
+Mac Online transport and rendered corpse acceptance remain queued under MAC-013.
+
+MAC-013 NPC weapon-drop continuation (after8ed77577, uncommitted): shared Story
+source snapshots original completed NPC pickups and replicates numeric creation,
+throw/landing positions, exact ammo and removal in the first mission. Guests use
+the original item constructor and host runtime ID for pickup requests. No new OS
+adapter is introduced; current native transport remains queued. Windows state/
+original-constructor/corpse fixtures pass; Mac transport and real pickup scene
+acceptance remain unverified. Stock non-Story/human drop routes are preserved.

@@ -1,5 +1,62 @@
 # Validation fixtures and Story probes
 
+`test_network_original_primary_room` translates originalA1EA0/9E430/A79B0
+from the checksum-verified US executable. Captured primary27/overlaps[5,27]
+omits the actor from visible room5 even with full scissor/forced masks; the
+production shared room helper restores it for16 views. Its disabled-helper
+mutation fails. Invalid/out-of-scene/nonoverlapping IDs and corrupt room counts
+leave membership unchanged. Story and Online dispatch fixtures check published/
+applied primary IDs, packet limits and invalid-state rejection. Existing runtime
+CI already runs both owning Python suites. These checks establish render-list
+selection, not a newly rendered boundary scene or native Online transport.
+
+The authoritative pickup-state fixture compiles production Story drop code for
+both test display configurations. Captured slot28/ID91/weapon25/ammo18qty126
+reaches original construction without using the NPC inventory budget. The
+original C1950/358160/355EC0 fixture verifies an actual item record, original
+Story placement defaults, exact quantities and scoped/restored runtime ID;
+asset allocation services remain controlled. States cover moving/landed drops,
+reliable recovery/removal, duplicates/reordering, foreign sender/wrong match,
+invalid quantities/NaNs, allocation retry and stale local-storage ownership.
+The Story fixture also exercises the actual1E dispatcher. Original-US byte
+contracts identify the early physical-throw return before the stock send call.
+These are constructor/protocol checks; real collection/rendering remains a scene
+acceptance test. The existing corpse tests must continue to pass.
+
+The corpse regression translates original B3630 plus15C310/27CBD0/27CEF0/
+27CB10 and compiles the production helper. Allocation/pose-copy services are
+controlled fixtures: it checks a separate type1000 body, recorded clip74/time1.8,
+kind metadata, bounded ring recycling, authored/missing descriptor preservation,
+restored source/stack, positive-health/retired-body rejection and inert original
+Story callbacks. `story_lobby.c` exercises dead->absent after held-model cleanup,
+actor release and exactly one cosmetic copy despite duplicate packets. This is
+lifecycle/constructor evidence; it does not establish a rendered corpse scene.
+
+The original-US862C0 fixture executes the actual portal-scissor routine with the
+production A2430 adapter: replicas invalidate their room cache while original
+portal rejection and valid portal rectangles remain intact. The A17C0/A1AB0
+fixture reproduces stale room-plane modes and verifies shared NPC refresh
+recomputes them. The original35B190/C2090 fixture verifies temporary wire actors
+lack Story descriptors and, through the production adapter, reaches C1950 with
+numeric weapon/ammo arguments. Controlled allocation failure then verifies rule
+and original receiver-global restoration without loading assets. Real corpse,
+pickup and later-room scene acceptance remains separate.
+
+The six-bug follow-up covers owned weapon destruction before replica body removal,
+view eligibility only for current posed replicas, and full opening world-body hiding. A retained mode3 after pistol equip must
+release opening pose replay/visibility; it is not an active cinematic lifetime.
+`network_shot_present.c` compiles the production presenter extracted by the existing
+dispatch fixture: definitions41/56/61, missing ordinary-gun models, stale weapons,
+restored targets and both Story/Arcade modes. The pinned-US contract verifies the
+three original model-creation exclusions. This tests dispatch, not the rendered
+later Splitter scene. No new runtime wrapper or wire layout is introduced.
+
+World probes record bounded live bodies outside the active roster, masks/rooms/
+bones and type32 held ownership. Two/four-peer combat probes rotate aligned host
+captures alongside guest movement without extra screenshots per step. Corpse
+fixtures retain host-present unlisted bodies through later snapshots, remove
+them on host absence, and observe new bounds inside the original room refresh.
+
 Opening visibility fixtures now seed the original world draw list and require
 only hidden humans/attachments to be removed, the count to match, model data to
 remain local, and the normal list to reappear after the opening. Team fixtures
@@ -552,3 +609,7 @@ In PowerShell each tool call has fresh process state: set `workdir`, use
 `$LASTEXITCODE` for native tools. A later `Write-Output` or pipeline can hide a
 failed native exit code. A profile warning alone does not prove filesystem
 operations are forbidden.
+
+The optional `--npc-observe-seconds 0..30` paired-probe flag passively holds
+the scene after opening inputs for a simultaneous read-only sampler, then
+captures both worlds. It never certifies a death or invents a combat trigger.
