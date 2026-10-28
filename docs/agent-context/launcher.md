@@ -102,6 +102,13 @@ preserving those records, and lets texture status retain malformed receipts.
 It never accepts damaged archives. Native parser and shared backup/receipt
 regressions cover these cases; packaged repair exercises the same path.
 
+README's single `docs/assets/launcher-preview.png` now depicts v1.4.0, rendered
+with `--render-preview` from a local build of the published `launcher-v1.4.0`
+source (2a2ffe36) and pinned artwork. `docs/assets/README.md` records source,
+application/PNG hashes, dimensions and synthetic-channel provenance. Keep the
+caption's Stable-default/sample-data distinction; this render is UI evidence,
+not a real installation or gameplay test.
+
 ## Shared page presentation
 
 `PageTheme.Header` owns the category, 28px title, description and silver-blue
