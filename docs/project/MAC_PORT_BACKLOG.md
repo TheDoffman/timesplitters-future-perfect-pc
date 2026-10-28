@@ -260,6 +260,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-108 | Project guest state and ABI diagnostics | Awaiting validation |
 | MAC-109 | Project native image loading | Awaiting validation |
 | MAC-110 | Project guest allocation ownership | Awaiting validation |
+| MAC-111 | Project guest thread storage | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6810,7 +6811,7 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Source/PR:** `src/runtime/guest_allocation.c`, `guest_allocation.h`,
   `patches/compiler/0206-independent-guest-allocations.patch`,
   `tests/compiler/test_guest_allocation.py` and its original native harnesses;
-  PR #375, uncommitted working tree based on 1976a07d.
+  PR #375, commit 3b722823, validated from a working tree based on 1976a07d.
 - **Mac support present:** Same portable provider and shared kernel routes;
   Clang atomics implement serialization, with no new platform adapter or SDK.
 - **Remaining adaptation:** None identified for this bounded ownership layer.
@@ -6819,6 +6820,31 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   allocation checks with 2,100 randomized operations, 8,000 concurrent cycles and
   five negative controls. Release/native checks and isolated Story movement,
   firing and pause/resume passed; protected files stayed unchanged. All 73
-  migration/tracking/snapshot/context/backlog checks passed. New-stage
-  portable Mac CI and native Mac title gameplay remain unverified. See
+  migration/tracking/snapshot/context/backlog checks passed. All 17 checks at
+  3b722823 passed, including portable Mac contracts and patch upgrades. Native
+  Mac title gameplay remains unverified. See
   [STATUS](STATUS.md#project-guest-allocation-ownership-2026-10-28) for updates.
+
+### MAC-111 - Project guest thread storage
+
+- **Status:** Awaiting validation
+- **PC behavior:** Main/private TIB/TLS/object construction and heap/fixed stack
+  ownership use the project provider. Failed host creation and failed timer TIB
+  creation release their owned stacks. Published identity storage remains live
+  for the guest-memory lifetime; host lifecycle and scheduling remain separate.
+- **Source/PR:** `src/runtime/guest_thread_memory.c`, its header,
+  `tests/compiler/test_guest_thread_memory.py` and original native harness,
+  `patches/compiler/0207-independent-thread-memory.patch`; PR #375, validated
+  from a working tree based on 3b722823.
+- **Mac support present:** Same C provider and shared kernel routes, with Clang
+  atomics; no new SDK or host adapter. Timer and USB use the same fixed slots.
+- **Remaining adaptation:** None identified for storage construction/ownership.
+  Existing template-copy and identity-lifetime limits are shared and explicit.
+- **Acceptance:** Windows 870 installed compiler checks passed, including 12
+  thread-storage checks with 400 concurrent
+  identity/stack cycles, five negative controls, supported-US bootstrap bytes and
+  actual installed adapter/failure paths. Release/native checks and isolated
+  Story movement/firing/pause/resume passed; protected files stayed unchanged.
+  All 73 migration/tracking/snapshot/context/backlog checks passed. New-stage
+  portable Mac CI and native Mac title gameplay are pending. See
+  [STATUS](STATUS.md#project-guest-thread-storage-2026-10-28).

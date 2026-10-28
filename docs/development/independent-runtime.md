@@ -1,5 +1,11 @@
 # Independent runtime replacement
 
+Main/private thread records and guest stack ownership now use
+`src/runtime/guest_thread_memory.c` through additive patch 0207. Published
+identity storage retains the guest-memory lifetime; host scheduling and object
+reference counting remain separate work. See [thread contracts](../agent-context/thread-memory.md)
+and MAC-111 for validation scope.
+
 Guest heap/reservation/physical allocation now has project ownership in
 `src/runtime/guest_allocation.c`, installed by additive patch0206. The bridge
 validates fixed/ranged requests before zeroing. Host mappings, TIB/thread

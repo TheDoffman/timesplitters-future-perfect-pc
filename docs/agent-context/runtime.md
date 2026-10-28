@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Thread/TIB and stack providers: [construction, lifecycle and callers](thread-memory.md).
+
 Heap/reservation/physical allocation now routes through the project ownership
 provider; see [allocation contracts](independent.md#guest-allocation-ownership).
 Host mappings and thread/TIB services remain transitional.

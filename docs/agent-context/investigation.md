@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Thread storage investigations: [memory ownership and caller limits](thread-memory.md).
+
 Allocation ownership and bridge entry points now use the project provider;
 see [contracts and consumer constraints](independent.md#guest-allocation-ownership).
 Trace old addresses only as historical evidence: lowest-fit placement may differ.

@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Thread/TIB construction and stack ownership: [thread memory](thread-memory.md).
+
 ## Guest allocation ownership
 
 `src/runtime/guest_allocation.c` / `guest_allocation.h` own heap, virtual

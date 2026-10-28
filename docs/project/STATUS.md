@@ -1,3 +1,46 @@
+## Project guest thread storage (2026-10-28)
+
+Working tree based on 3b722823 after all 17 prerequisite checks passed at that
+revision, including Windows/macOS native contracts and patch upgrades.
+Additive patch 0207 replaces main/private TIB/TLS/object construction and
+heap/fixed stack ownership with project providers. Failed host creation returns
+its stack; timer TIB failure returns its fixed slot. Published identity records
+retain the guest-memory lifetime. Scheduling, host-worker stop/join, identity
+reference counting and broader kernel services remain separate replacement work.
+See [contracts](../agent-context/thread-memory.md) and MAC-111.
+
+Windows x64/MSVC candidate: 12 tests passed in 16.21s with CI=true, including
+five compiled negative controls, 400 concurrent identity/stack cycles, complete
+synthetic bootstrap-memory comparisons, failure/ownership/boundary cases and
+actual proposed adapters and host-create/timer cleanup. The supported-US private
+test verified the required hash and a 20-byte TLS bootstrap against an independent
+byte-layout oracle in 40 MiB fixture RAM. This is not production gameplay.
+The five-file integration patch passed its dry run with the maintained CRLF policy.
+
+All 870 installed compiler tests passed in 393.82s. The complete patch stack
+updated five runtime files; normal Windows Release/native checks and matching
+crash symbols passed with unchanged `/DWIN32 /D_WINDOWS` C flags. All 22 generated
+C/header files remained byte-identical with a current fingerprint. All 73
+historical patch migration/tracking/snapshot/context/backlog checks passed in
+946.62s.
+
+Production startup reported main TIB 0x1000, TLS 20 bytes and ESP 0x0111fff0.
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input
+enabled, moved 11.174544 forward and 6.184892 backward, and fired from eight to
+six rounds. All 40 pause samples froze level ticks; all 60 resume samples stayed
+unpaused with ticks advancing over the window. Final checkpoint: 101.719s within
+the 240-second cap; runner/controller exited zero. Start/pause/resume captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`0103fa532b2fab14895c177b205e90f28d5a286c892fa439babc473eabda9404`.
+Build provenance: thread-memory working tree based on 3b722823, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening and full campaign remain
+unverified. No new package or native Mac title execution was verified for this
+stage; remote CI at its eventual commit remains pending.
+
 ## Project guest allocation ownership (2026-10-28)
 
 Working tree based on 1976a07d on feature/independent-exchange, after all 17
@@ -40,7 +83,8 @@ Build provenance: uncommitted allocation stage based on 1976a07d, Windows x64/MS
 The replay uses injected input, minimized windows, Classic textures and skipped
 startup movies; physical input, audio listening and full campaign are unverified.
 Build/test/package entry points resolve at their reorganized paths. No new package
-or native Mac title verification; allocator-head remote CI remains pending.
+or native Mac title verification. All 17 checks at 3b722823 passed, including
+Windows/macOS native contracts and patch upgrades.
 
 ## Native image CI diagnostic repair (2026-10-28)
 

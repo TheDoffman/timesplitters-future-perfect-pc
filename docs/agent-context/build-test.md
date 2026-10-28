@@ -12,6 +12,7 @@ RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks impo
 
 [Guest services, headers, compiler and execution contracts](independent.md).
 Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.
+Thread storage and failure-path probes: [contracts](thread-memory.md).
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

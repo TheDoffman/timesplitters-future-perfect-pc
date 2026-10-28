@@ -231,5 +231,6 @@ def test_installed_loader_uses_project_preflight_and_materialization():
     assert init.index('tsfp_image_bootstrap(')<init.index('CreateFileMappingW(')
     assert 'tsfp_image_load(xbe_data, xbe_size, g_memory_base, g_memory_size, &image)' in init
     assert 'xbe +' not in init and 'xbe_title_name_store' not in text
-    assert 'uint32_t total = image_tls_total;' in init
+    assert 'tsfp_thread_memory_init(&g_guest_threads, &g_guest_allocations, &image)' in init
+    assert 'g_guest_threads.tls_total != image_tls_total' in init
     assert '"${TSFP_SHARED_SOURCE}/runtime/guest_image.c"' in (kernel/'CMakeLists.txt').read_text()
