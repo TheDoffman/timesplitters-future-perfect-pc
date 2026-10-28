@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Native Mm storage: [ownership and access](native-memory.md).
+
 Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
 
 Image loading/bootstrap, guest state, ABI reports, continuations and remaining

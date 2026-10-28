@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Native Mm allocation/query/protection: [ownership and host services](native-memory.md).
+
 Virtual-memory calls: [guest/native ABI and host boundaries](virtual-memory.md).
 
 Thread/TIB construction and stack ownership: [thread memory](thread-memory.md).

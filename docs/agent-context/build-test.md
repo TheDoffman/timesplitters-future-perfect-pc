@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Native Mm/page tests: [contracts](native-memory.md).
+
 Launcher UI/JSON recovery use shared UI, native parser and package checks.
 
 Grouped paths: [layout](../development/repository-layout.md).

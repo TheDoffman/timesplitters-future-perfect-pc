@@ -1,5 +1,8 @@
 # Virtual-memory call boundaries
 
+Native Mm now uses [project ownership and real host pages](native-memory.md).
+The Nt adapter limitations below remain distinct from that newer Mm route.
+
 `src/runtime/guest_virtual_memory.c` owns the four guest Nt virtual-memory
 operations. `host_virtual_memory.c` owns native allocate/free/query policy.
 Their headers require no toolkit headers. Additive

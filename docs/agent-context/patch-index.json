@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "6e0b4f20e0f5209f4587c14676013df4dd13b7a9dd494273c01a9ef505713b54",
+  "loaderSha256": "5f3a3b7564f664f30ffd343521fea11ddbee14aed1fe8a99e80600b2358aaa1e",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2202,6 +2202,15 @@
         "src/kernel/kernel_memory.c",
         "src/kernel/xbox_memory_layout.c",
         "src/kernel/xbox_memory_layout.h"
+      ]
+    },
+    {
+      "name": "0209-independent-native-memory.patch",
+      "path": "patches/compiler/0209-independent-native-memory.patch",
+      "sha256": "518c99e17f76f45c529071335c04b6ed950e62435a31aa9778851d6566ab9e29",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_memory.c"
       ]
     },
     {

@@ -1,0 +1,330 @@
+--- a/src/kernel/kernel_memory.c
++++ b/src/kernel/kernel_memory.c
+@@ -29,86 +29,101 @@
+  * Contiguous Memory (GPU-accessible on Xbox)
+  * ============================================================================ */
+ 
+-PVOID __stdcall xbox_MmAllocateContiguousMemory(ULONG NumberOfBytes)
+-{
+-    PVOID p = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmAllocateContiguousMemory(%u) = %p", NumberOfBytes, p);
+-    return p;
+-}
+-
+-PVOID __stdcall xbox_MmAllocateContiguousMemoryEx(
+-    ULONG NumberOfBytes,
+-    ULONG_PTR LowestAcceptableAddress,
+-    ULONG_PTR HighestAcceptableAddress,
+-    ULONG Alignment,
+-    ULONG Protect)
+-{
+-    /*
+-     * Xbox requests physically contiguous, aligned memory for GPU use.
+-     * We can't guarantee physical contiguity on Windows, but the game's
+-     * CPU-side code just needs a valid pointer. GPU resources are handled
+-     * separately by our D3D11 layer.
+-     *
+-     * Use _aligned_malloc for alignment, then VirtualAlloc for a fallback.
+-     */
+-    PVOID p = NULL;
+-
+-    if (Alignment > 0 && (Alignment & (Alignment - 1)) == 0) {
+-        /* Power-of-2 alignment: use _aligned_malloc */
+-        p = _aligned_malloc(NumberOfBytes, Alignment);
+-        if (p)
+-            memset(p, 0, NumberOfBytes);
+-    }
+-
+-    if (!p) {
+-        /* Fallback: page-aligned VirtualAlloc */
+-        p = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE,
+-                         xbox_protect_to_win32(Protect));
+-    }
+-
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmAllocateContiguousMemoryEx(%u, align=%u) = %p",
+-        NumberOfBytes, Alignment, p);
+-    return p;
+-}
+-
+-VOID __stdcall xbox_MmFreeContiguousMemory(PVOID BaseAddress)
+-{
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmFreeContiguousMemory(%p)", BaseAddress);
+-    if (!BaseAddress)
+-        return;
+-
+-    /*
+-     * Determine if this was allocated with _aligned_malloc or VirtualAlloc.
+-     * We use VirtualQuery to check: if it's a VirtualAlloc'd region,
+-     * AllocationBase will equal the pointer (page-aligned).
+-     */
+-    MEMORY_BASIC_INFORMATION mbi;
+-    if (VirtualQuery(BaseAddress, &mbi, sizeof(mbi)) &&
+-        mbi.AllocationBase == BaseAddress &&
+-        mbi.State == MEM_COMMIT) {
+-        VirtualFree(BaseAddress, 0, MEM_RELEASE);
+-    } else {
+-        _aligned_free(BaseAddress);
+-    }
++/* Project native Mm ownership. Guest allocations use a different provider. */
++#include "host_blocks.h"
++#include "host_pages.h"
++#if !defined(_WIN32)
++#include <pthread.h>
++#endif
++
++enum { NATIVE_MM_CONTIGUOUS=1, NATIVE_MM_SYSTEM, NATIVE_MM_IO, NATIVE_MM_STACK };
++static tsfp_host_blocks native_mm_storage;
++static tsfp_host_block native_mm_records[4096];
++static int native_mm_ready;
++static void *native_mm_map(void *context,size_t bytes,uint32_t protection)
++{
++    (void)context;
++    return tsfp_host_pages_map(bytes,protection);
++}
++static int native_mm_unmap(void *context,void *address,size_t bytes)
++{
++    (void)context;
++    return tsfp_host_pages_unmap(address,bytes);
++}
++static void native_mm_initialize(void)
++{
++    const tsfp_host_block_backend backend={NULL,native_mm_map,native_mm_unmap};
++    native_mm_ready=tsfp_host_blocks_init(&native_mm_storage,&backend,
++        tsfp_host_page_size(),native_mm_records,
++        sizeof(native_mm_records)/sizeof(native_mm_records[0]));
++}
++#if defined(_WIN32)
++static INIT_ONCE native_mm_once=INIT_ONCE_STATIC_INIT;
++static BOOL CALLBACK native_mm_initialize_once(PINIT_ONCE once,PVOID parameter,PVOID *context)
++{
++    (void)once;(void)parameter;(void)context;
++    native_mm_initialize();return TRUE;
++}
++#else
++static pthread_once_t native_mm_once=PTHREAD_ONCE_INIT;
++#endif
++static tsfp_host_blocks *native_mm_owner(void)
++{
++#if defined(_WIN32)
++    if(!InitOnceExecuteOnce(&native_mm_once,native_mm_initialize_once,NULL,NULL))return NULL;
++#else
++    if(pthread_once(&native_mm_once,native_mm_initialize))return NULL;
++#endif
++    return native_mm_ready?&native_mm_storage:NULL;
++}
++static void *native_mm_allocate(size_t bytes,size_t alignment,uint32_t protection,uint32_t kind)
++{
++    if(!bytes)return NULL;
++    return tsfp_host_block_allocate(native_mm_owner(),bytes,alignment,
++        tsfp_host_vm_protection(protection),kind);
++}
++static void native_mm_release(void *address,uint32_t kind)
++{
++    if(address)(void)tsfp_host_block_release(native_mm_owner(),address,kind);
++}
++/* The process owns metadata for its lifetime. Kernel shutdown does not join
++ * guest/device workers, so it must not tear down allocations still in use.
++ * Matching Mm releases reclaim blocks; OS process exit reclaims the rest. */
++/* End project native Mm ownership. */
++
++PVOID __stdcall xbox_MmAllocateContiguousMemory(ULONG bytes)
++{
++    return native_mm_allocate(bytes,0,4,NATIVE_MM_CONTIGUOUS);
++}
++
++PVOID __stdcall xbox_MmAllocateContiguousMemoryEx(ULONG bytes,
++    ULONG_PTR lowest,ULONG_PTR highest,ULONG alignment,ULONG protection)
++{
++    /* Native CPU storage has no Xbox physical range. Guest callers enforce
++     * physical placement through their own allocator. Invalid alignment keeps
++     * the existing page-aligned fallback; valid alignment is always honored. */
++    (void)lowest;(void)highest;
++    if(alignment && (alignment&(alignment-1)))alignment=0;
++    return native_mm_allocate(bytes,alignment,protection,NATIVE_MM_CONTIGUOUS);
++}
++
++VOID __stdcall xbox_MmFreeContiguousMemory(PVOID address)
++{
++    native_mm_release(address,NATIVE_MM_CONTIGUOUS);
+ }
+ 
+ /* ============================================================================
+  * System Memory
+  * ============================================================================ */
+ 
+-PVOID __stdcall xbox_MmAllocateSystemMemory(ULONG NumberOfBytes, ULONG Protect)
+-{
+-    PVOID p = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE,
+-                           xbox_protect_to_win32(Protect));
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmAllocateSystemMemory(%u) = %p", NumberOfBytes, p);
+-    return p;
+-}
+-
+-VOID __stdcall xbox_MmFreeSystemMemory(PVOID BaseAddress, ULONG NumberOfBytes)
+-{
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmFreeSystemMemory(%p, %u)", BaseAddress, NumberOfBytes);
+-    if (BaseAddress)
+-        VirtualFree(BaseAddress, 0, MEM_RELEASE);
++PVOID __stdcall xbox_MmAllocateSystemMemory(ULONG bytes,ULONG protection)
++{
++    return native_mm_allocate(bytes,0,protection,NATIVE_MM_SYSTEM);
++}
++
++VOID __stdcall xbox_MmFreeSystemMemory(PVOID address,ULONG bytes)
++{
++    (void)bytes;native_mm_release(address,NATIVE_MM_SYSTEM);
+ }
+ 
+ /* ============================================================================
+@@ -139,19 +154,17 @@
+     return STATUS_SUCCESS;
+ }
+ 
+-PVOID __stdcall xbox_MmMapIoSpace(ULONG_PTR PhysicalAddress, ULONG NumberOfBytes, ULONG Protect)
+-{
+-    /* GPU register access - handled by our D3D11 layer. Return a dummy buffer. */
+-    PVOID p = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmMapIoSpace(0x%08X, %u) = %p (stub)", (ULONG)PhysicalAddress, NumberOfBytes, p);
+-    return p;
+-}
+-
+-VOID __stdcall xbox_MmUnmapIoSpace(PVOID BaseAddress, ULONG NumberOfBytes)
+-{
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmUnmapIoSpace(%p, %u)", BaseAddress, NumberOfBytes);
+-    if (BaseAddress)
+-        VirtualFree(BaseAddress, 0, MEM_RELEASE);
++PVOID __stdcall xbox_MmMapIoSpace(ULONG_PTR physical,ULONG bytes,ULONG protection)
++{
++    /* Preserve the native scratch-buffer route. Device MMIO belongs to the
++     * guest mapping/device frontend, not a host physical mapping. */
++    (void)physical;(void)protection;
++    return native_mm_allocate(bytes,0,4,NATIVE_MM_IO);
++}
++
++VOID __stdcall xbox_MmUnmapIoSpace(PVOID address,ULONG bytes)
++{
++    (void)bytes;native_mm_release(address,NATIVE_MM_IO);
+ }
+ 
+ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
+@@ -166,40 +179,29 @@
+     XBOX_TRACE(XBOX_LOG_MEM, "MmPersistContiguousMemory(%p, %u, %d) - stub", BaseAddress, NumberOfBytes, Persist);
+ }
+ 
+-ULONG __stdcall xbox_MmQueryAddressProtect(PVOID VirtualAddress)
+-{
+-    MEMORY_BASIC_INFORMATION mbi;
+-    if (VirtualQuery(VirtualAddress, &mbi, sizeof(mbi))) {
+-        /* Return the Xbox-equivalent protection */
+-        return mbi.Protect;
+-    }
+-    return PAGE_NOACCESS;
+-}
+-
+-VOID __stdcall xbox_MmSetAddressProtect(PVOID BaseAddress, ULONG NumberOfBytes, ULONG NewProtect)
+-{
+-    DWORD old_protect;
+-    VirtualProtect(BaseAddress, NumberOfBytes, xbox_protect_to_win32(NewProtect), &old_protect);
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmSetAddressProtect(%p, %u, 0x%X)", BaseAddress, NumberOfBytes, NewProtect);
+-}
+-
+-ULONG __stdcall xbox_MmQueryAllocationSize(PVOID BaseAddress)
+-{
+-    MEMORY_BASIC_INFORMATION mbi;
+-    if (VirtualQuery(BaseAddress, &mbi, sizeof(mbi))) {
+-        return (ULONG)mbi.RegionSize;
+-    }
+-    return 0;
+-}
+-
+-PVOID __stdcall xbox_MmClaimGpuInstanceMemory(ULONG NumberOfBytes, PULONG NumberOfPaddingBytes)
+-{
+-    /* GPU instance memory - handled by D3D11 layer */
+-    if (NumberOfPaddingBytes)
+-        *NumberOfPaddingBytes = 0;
+-    PVOID p = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmClaimGpuInstanceMemory(%u) = %p (stub)", NumberOfBytes, p);
+-    return p;
++ULONG __stdcall xbox_MmQueryAddressProtect(PVOID address)
++{
++    tsfp_host_page_region region;
++    return tsfp_host_pages_query(address,&region)?(ULONG)region.protection:1;
++}
++
++VOID __stdcall xbox_MmSetAddressProtect(PVOID address,ULONG bytes,ULONG protection)
++{
++    (void)tsfp_host_pages_protect(address,bytes,tsfp_host_vm_protection(protection));
++}
++
++ULONG __stdcall xbox_MmQueryAllocationSize(PVOID address)
++{
++    /* Retain the native OS-region query, distinct from guest allocation size.
++     * Region boundaries may change after protection splits a mapping. */
++    tsfp_host_page_region region;
++    return tsfp_host_pages_query(address,&region)?(ULONG)region.bytes:0;
++}
++
++PVOID __stdcall xbox_MmClaimGpuInstanceMemory(ULONG bytes,PULONG padding)
++{
++    if(padding)*padding=0;
++    return native_mm_allocate(bytes,0,4,NATIVE_MM_CONTIGUOUS);
+ }
+ 
+ VOID __stdcall xbox_MmLockUnlockBufferPages(PVOID BaseAddress, ULONG NumberOfBytes, BOOLEAN UnlockPages)
+@@ -217,25 +219,17 @@
+  * Kernel Stack
+  * ============================================================================ */
+ 
+-PVOID __stdcall xbox_MmCreateKernelStack(ULONG NumberOfBytes, BOOLEAN DebuggerThread)
+-{
+-    /* Allocate a stack-like region. Return the TOP of the stack (high address). */
+-    PVOID base = VirtualAlloc(NULL, NumberOfBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+-    if (!base)
+-        return NULL;
+-
+-    /* Xbox convention: return pointer to top of stack */
+-    PVOID stack_top = (PUCHAR)base + NumberOfBytes;
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmCreateKernelStack(%u) = %p (base=%p)", NumberOfBytes, stack_top, base);
+-    return stack_top;
+-}
+-
+-VOID __stdcall xbox_MmDeleteKernelStack(PVOID StackBase, PVOID StackLimit)
+-{
+-    /* StackLimit is the low address (base of VirtualAlloc), StackBase is the high address */
+-    XBOX_TRACE(XBOX_LOG_MEM, "MmDeleteKernelStack(base=%p, limit=%p)", StackBase, StackLimit);
+-    if (StackLimit)
+-        VirtualFree(StackLimit, 0, MEM_RELEASE);
++PVOID __stdcall xbox_MmCreateKernelStack(ULONG bytes,BOOLEAN debugger)
++{
++    unsigned char *base;
++    (void)debugger;
++    base=(unsigned char *)native_mm_allocate(bytes,0,4,NATIVE_MM_STACK);
++    return base?base+bytes:NULL;
++}
++
++VOID __stdcall xbox_MmDeleteKernelStack(PVOID top,PVOID limit)
++{
++    (void)top;native_mm_release(limit,NATIVE_MM_STACK);
+ }
+ 
+ /* ============================================================================
+@@ -247,7 +241,7 @@
+                                 uint32_t type, uint32_t protection)
+ {
+     (void)host;
+-    return VirtualAlloc(hint, size, (DWORD)type, (DWORD)protection);
++    return VirtualAlloc(hint, size, (DWORD)type, xbox_protect_to_win32((ULONG)protection));
+ }
+ static int native_vm_release(void *host, void *address, size_t size, uint32_t type)
+ {
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -86,3 +86,8 @@
+ endif()
+ 
+ target_compile_definitions(xbox_kernel PRIVATE $<$<CONFIG:Debug>:_DEBUG>)
++
++# Original native Mm ownership and thin OS page operations, shared by both hosts.
++target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/host_blocks.c"
++    "${TSFP_SHARED_SOURCE}/native/host_pages.c")

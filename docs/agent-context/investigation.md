@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Native Mm: [ownership, page adapters and remaining work](native-memory.md).
+
 Virtual memory: [guest/native paths and remaining host adapters](virtual-memory.md).
 
 Thread storage investigations: [memory ownership and caller limits](thread-memory.md).

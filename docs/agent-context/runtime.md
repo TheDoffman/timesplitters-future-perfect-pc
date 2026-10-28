@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Native Mm ownership and host page operations: [contracts](native-memory.md).
+
 Virtual-memory adapters: [ownership and ABI contracts](virtual-memory.md).
 
 Thread/TIB and stack providers: [construction, lifecycle and callers](thread-memory.md).

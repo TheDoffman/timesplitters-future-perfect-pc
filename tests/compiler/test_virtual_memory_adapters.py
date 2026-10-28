@@ -36,7 +36,7 @@ def test_actual_vm_adapters(tmp_path, host_model):
     native=(kernel/'kernel_memory.c').read_text(encoding='utf-8')
     guest=layout[layout.index('/* Project guest VM adapter:'):layout.index('/* End project guest VM adapter. */')]
     host=native[native.index('/* Project native VM boundary:'):native.index('/* End project native VM boundary. */')]
-    host+=body(native,'xbox_protect_to_win32')
+    host=body(native,'xbox_protect_to_win32')+host
     for name in ('NtAllocateVirtualMemory','NtFreeVirtualMemory','NtQueryVirtualMemory'):
         host+=body(native,'xbox_'+name)
     bridges=''.join(body(bridge,'bridge_'+name) for name in (
@@ -258,8 +258,8 @@ def test_windows_native_vm_calls(tmp_path):
     kernel=HERE/'integration/src/kernel'
     if not kernel.exists(): kernel=ROOT/'external/ts3FPrecomp/src/kernel'
     text=(kernel/'kernel_memory.c').read_text(encoding='utf-8')
-    native=text[text.index('/* Project native VM boundary:'):text.index('/* End project native VM boundary. */')]
-    for name in ('xbox_protect_to_win32','xbox_NtAllocateVirtualMemory','xbox_NtFreeVirtualMemory','xbox_NtQueryVirtualMemory'):
+    native=body(text,'xbox_protect_to_win32')+text[text.index('/* Project native VM boundary:'):text.index('/* End project native VM boundary. */')]
+    for name in ('xbox_NtAllocateVirtualMemory','xbox_NtFreeVirtualMemory','xbox_NtQueryVirtualMemory'):
         native+=body(text,name)
     for name in ('host_virtual_memory.h','host_virtual_memory.c'):
         path=HERE/name

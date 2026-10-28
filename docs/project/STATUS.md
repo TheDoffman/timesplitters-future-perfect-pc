@@ -1,3 +1,46 @@
+## Project native memory ownership (2026-10-28)
+
+Working tree based on 47d687ef after all 17 prerequisite CI checks passed.
+Patch 0209 replaces thirteen native Mm bodies with original allocation ownership
+and host page services. It removes allocator guessing, preserves native pointer
+widths, rejects foreign/interior/wrong-kind releases, and provides real Mach
+queries and host-page-rounded protection. See
+[contracts and deliberate compatibility fixes](../agent-context/native-memory.md)
+and MAC-113. Guest Mm policy and the broader independence goal remain unfinished.
+
+Windows x64/MSVC candidate checks passed: eight ownership checks, six page checks
+and one real native Mm adapter check, including eight compiled negative controls.
+The page suite executes controlled POSIX/Mach paths on this Windows computer;
+that is not native Mac validation. All 906 installed compiler checks passed in
+465.42s, and all 73 historical patch migration/tracking/snapshot/context/backlog
+checks passed in 990.63s. Initial installed checks exposed an older fixture's
+function-emission order; the fixture now emits the protection helper before its
+callers, matching production, with its original assertions preserved. The final
+full compiler suite includes that correction.
+
+The complete patch stack installed two runtime files matching the final proposal
+after normal line-ending normalization. Release build, native checks and matching
+crash symbols passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated
+C/header files remained byte-identical and the fingerprint stayed current.
+The new providers emitted no warnings; existing inherited no-op Mm parameter
+warnings remain outside this stage.
+
+The rebuilt executable booted into isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.176244 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 102.382s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`865c3afc47c8407c73e57061b9270a3b7496eb07c83aec22a6cc1765f93ec8fc`.
+Build provenance: native-memory working tree based on 47d687ef, Windows x64/MSVC;
+runner provenance matches. The test used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title execution remain unverified. New-commit CI
+is pending. No new game package has been produced.
+
 ## Project virtual-memory services (2026-10-28)
 
 Working tree based on 7fef998e after all 17 prerequisite CI checks passed at that
@@ -16,8 +59,8 @@ VM checks passed in 31.84s, including nine compiled negative controls, both
 adapter host branches, physical-owner rejection and real Windows protection,
 native query, decommit and release probes. All 125 final repository checks
 passed in 12.93s. The complete patch stack installed the correction, and all
-five resulting runtime files matched the final candidate. CI at the eventual
-new commit remains pending; preceding-head success is not acceptance of it.
+five resulting runtime files matched the final candidate. All 17 CI checks
+at committed 47d687ef passed, including Windows/Mac contracts and migrations.
 
 The final Windows Release build, native checks and matching crash symbols
 passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files

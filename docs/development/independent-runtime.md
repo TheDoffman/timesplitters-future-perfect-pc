@@ -1,5 +1,10 @@
 # Independent runtime replacement
 
+Native Mm allocation/release, stacks, protection and region queries now use
+project ownership and OS page adapters through patch 0209. Guest Mm policy,
+statistics, main host mappings and other services remain separate work. See
+[contracts](../agent-context/native-memory.md); full independence is not complete.
+
 Guest Nt virtual-memory calls and native pointer-width allocate/free/query now
 use project services through additive patch 0208. Existing flat guest VM policy
 is explicit, complete output spans are validated before side effects, and exact

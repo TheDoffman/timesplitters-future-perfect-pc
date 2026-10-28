@@ -262,6 +262,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-110 | Project guest allocation ownership | Awaiting validation |
 | MAC-111 | Project guest thread storage | Awaiting validation |
 | MAC-112 | Project virtual-memory services | Awaiting validation |
+| MAC-113 | Project native memory ownership | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6859,8 +6860,8 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   pointer-width VM policy stays separate from the seven-word guest record.
 - **Source/PR:** `src/runtime/guest_virtual_memory.c`, `host_virtual_memory.c`,
   allocator virtual release and headers; original compiler fixtures and
-  `patches/compiler/0208-independent-virtual-memory.patch`. PR #375, uncommitted
-  working tree based on 7fef998e.
+  `patches/compiler/0208-independent-virtual-memory.patch`. PR #375, commit
+  47d687ef, based on 7fef998e.
 - **Mac support present:** Same providers/adapters and guest ownership. Guest
   buffer validation uses real Mach region queries through `pc_guest_memory.h`.
   Protection-output overlap uses the host page size, including 16 KiB pages.
@@ -6873,5 +6874,33 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   checks and 125 repository checks passed, including both adapter host branches
   and real Windows VM probes. Final Release/native checks and isolated Story
   movement/firing/pause/resume passed; 26 protected files were unchanged.
-  New-commit shared CI and native Mac title gameplay remain pending. See
+  All 17 CI checks at 47d687ef passed. Native Mac title gameplay remains
+  unverified. See
   [STATUS](STATUS.md#project-virtual-memory-services-2026-10-28).
+
+### MAC-113 - Project native memory ownership
+
+- **Status:** Awaiting validation
+- **PC behavior:** Thirteen native Mm bodies use explicit native block ownership,
+  matching release kinds, host page protection and region queries. Actual host
+  pointers remain pointer-width; guest allocations retain their own provider.
+- **Source/PR:** `src/runtime/host_blocks.c`, `host_blocks.h`, `host_pages.h`,
+  `src/native/host_pages.c`, original compiler fixtures and additive
+  `patches/compiler/0209-independent-native-memory.patch`. PR #375; implementation
+  based on 47d687ef.
+- **Mac support present:** Same ownership policy with pthread_once initialization,
+  mmap/munmap/mprotect and real Mach region query/object-port cleanup. No toolkit
+  VirtualQuery placeholder is used by the new Mm queries. Host-page rounding
+  includes 16 KiB pages; callbacks preserve failed-release ownership for retry.
+- **Remaining adaptation:** Guest Mm/statistics and main mapping services remain
+  separate replacement work. Native Nt platform callbacks retain their existing
+  limitations. Process-lifetime Mm metadata does not claim safe global worker
+  shutdown. See [contracts](../agent-context/native-memory.md).
+- **Acceptance:** Windows candidate ownership/page/adapter checks passed (15),
+  including eight compiled negative controls and real Windows protection. The
+  controlled POSIX/Mach model passed on Windows. All 906 installed compiler and
+  73 historical migration/repository checks passed. Release/native checks,
+  generation consistency and isolated Story movement/firing/pause/resume passed;
+  26 protected files were unchanged. New-commit Mac CI and native Mac title
+  gameplay remain pending. See
+  [STATUS](STATUS.md#project-native-memory-ownership-2026-10-28).
