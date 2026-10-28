@@ -4968,7 +4968,7 @@ See STATUS for exact measurements and the corrected reference scope.
   validation. The shared historical-upgrade fixture now excludes the new
   coefficient patch when constructing old stacks lacking its prerequisite.
 
-- **Water coefficient conversion follow-up (2026-10-28, uncommitted on
+- **Water coefficient conversion follow-up (2026-10-28, local commit `08ccb2ed` on
   `fix/shader-coefficient-regressions`):** The current SSE translator rounds
   `CVTSS2SI`; the shared water helpers still truncated, causing 24 original-shader
   checks to fail. One shared byte conversion now serves precision overrides,

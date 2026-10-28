@@ -1,6 +1,6 @@
 ## Shader coefficient release blockers resolved (2026-10-28)
 
-Local branch `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
+Local commit `08ccb2ed` on `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
 24 shader failures exposed by the optimized suite. The supported US uploader uses
 rounded `CVTSS2SI`, while three shared coefficient paths still used truncating C
 casts. One shared conversion now follows the current translator's host rounding

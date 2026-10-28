@@ -198,7 +198,7 @@ the parallel policy automatically; a bare manual pytest invocation remains seria
 
 ## Shader correctness follow-up (2026-10-28)
 
-Local branch `fix/shader-coefficient-regressions` depends on the unmerged
+Local commit `08ccb2ed` on `fix/shader-coefficient-regressions` depends on the unmerged
 performance work through `d1226d25`. Disassembly of the hash-verified supported US
 XBE confirms four rounded `CVTSS2SI` instructions in the uploader at `3D9520`.
 The current translator correctly uses `nearbyint`; three shared water coefficient
