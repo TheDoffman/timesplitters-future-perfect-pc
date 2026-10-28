@@ -6,7 +6,7 @@
 #define KB_OPEN 0x1200fu
 static uint32_t kb_caption(void);
 static uint32_t pause_settings_caption(void);
-static void extras_build(void);
+static void extras_append(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
@@ -609,17 +609,14 @@ static uint32_t pause_settings_caption(void)
     }
     return PAUSE_SETTINGS_ROW;
 }
-static void extras_build(void)
+static void extras_append(void)
 {
-    extern void sub_0003D7B0(void),sub_002D6810(void);
-    GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
-    /* Keep the title's movies, credits, profile selector and back action.
-       Extend the built page before its final layout, including fresh profiles. */
-    guest_call(sub_002D6810,1,menu);
+    extern void sub_0003D7B0(void);
+    GuestRegisters r;save_registers(&r);
+    /* Called before the actual Extras builder's layout pass. */
     guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),
                UINT32_MAX,0u,0u,0x002CBE30u,0u);
-    guest_call(sub_000771D0,1,menu);
-    restore_registers(&r);g_esp+=4;
+    restore_registers(&r);
 }
 static void pause_settings_open(void)
 {
@@ -1056,7 +1053,6 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002D9390u)return display_highlight_draw;
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;
-    if(address==0x002D6810u)return extras_build;
     switch(address) {
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;

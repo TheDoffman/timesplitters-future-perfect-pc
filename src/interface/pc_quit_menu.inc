@@ -84,6 +84,7 @@ void pc_display_menu_finish(void (*original)(void))
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_QUIT_MENU_TEST)
     const uint32_t caller=WORD_AT(g_esp), menu=WORD_AT(g_esp+4);
     const int frontend=caller==0x002D0EDFu;
+    if(caller==0x002D095Bu)extras_append(); /* Extras, before layout. */
     if(caller==0x002CC579u)unlock_all_append(menu); /* Cheats page. */
     if(frontend && guest_writable(menu,0x3c) &&
        WORD_AT(menu+0x38)==0 && quit_prepare()) {

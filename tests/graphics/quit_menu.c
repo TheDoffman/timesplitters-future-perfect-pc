@@ -50,6 +50,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     return 0;
 }
 static void unlock_all_append(uint32_t menu) {(void)menu;CHECK(0);}
+static unsigned extras_added;
+static void extras_append(void) {++extras_added;}
 #include "pc_quit_menu.inc"
 static void original(void) {++finalized;g_esp+=4;}
 static void setup(uint32_t caller)
@@ -67,6 +69,7 @@ int main(void)
         else CHECK(row_count==0);
     }
     setup(0x12008);pc_display_menu_finish(original);CHECK(!row_count && finalized==1);
+    setup(0x2d095b);pc_display_menu_finish(original);CHECK(extras_added==1 && finalized==1);
     setup(sites[0]);WORD_AT(0x2038)=1;pc_display_menu_finish(original);CHECK(!row_count);
     WORD_AT(0x2038)=0;
     setup(sites[0]);callback(quit_open);

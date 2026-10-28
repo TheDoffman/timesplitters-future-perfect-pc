@@ -78,7 +78,6 @@ BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
 STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_001BA130) STUB(sub_00142820)
 STUB(sub_00071B60) STUB(sub_00041DC0)
-STUB(sub_002D6810)
 int xbox_save_root_utf8(char *out,unsigned n) {(void)out;(void)n;return 0;}
 static int storage_continued,storage_chosen,storage_choose_ok,storage_scanned;
 void sub_00024EC0(void) {

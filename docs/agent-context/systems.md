@@ -60,7 +60,7 @@ ID and is not a local slot. The shared `tests/graphics/mouse_region.c` fixture,
 run by `tests/gameplay/test_mounted_mouse.py`, checks both adapters and verifies
 the deferred packet reaches player one. Mac gameplay remains unverified.
 
-Unlock All (#262) lives in Extras → Cheats. `pc_unlock_all.inc` stores a
+Extras layout hook 0x002D095B adds Cheats. `pc_unlock_all.inc` stores a
 per-profile sidecar and refreshes Cheats; `2085-profile-unlock-option.patch`
 wraps unlock descriptors. Stage access needs separate verification.
 
