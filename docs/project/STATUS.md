@@ -29293,3 +29293,30 @@ passes its existing lifetime lock into save operations rather than reacquiring i
 the shared round-trip test covers an already-held lock (native execution pending).
 No push, merge into main or release was performed.
 Logs/previews remain under ignored build and logs directories.
+
+## Launcher shared page polish (2026-10-27)
+
+Implemented the accepted header, settings-layout and status-badge improvements
+on `feature/launcher-unified-pages-1027`, based on local integration `21778c2c`
+(save-manager commit `b4cf598a` plus latest main `8aec3c8f`). Prior local work is
+preserved. `PageTheme.Header` unifies page typography, category labels, spacing
+and divider across Settings, Saves, Maintenance, What's New and Game versions.
+`Badge`/`SetBadge` share text-labeled neutral, information, success and warning
+colors for installation, preview/Beta, updates, verification and incomplete
+checks. Different channels and newer local builds do not claim an update.
+Paired settings fields reserve consistent caption height, and display/camera/
+performance now precede texture management. Existing controls and fixed Save/
+Cancel actions remain, with no settings, save or download-policy changes.
+
+Windows x64 bootstrap, application and tests compiled with pinned artwork.
+Full isolated launcher checks passed: 113 updater, 27 shared UI groups,
+19 texture, 28 download/recovery, 13 version, 10 startup, 30 release-news,
+38 settings, 14 session and 20 maintenance checks plus crash reporting.
+Portable shared-UI/compatibility/native-host-source/backlog/context checks
+passed 52 tests plus 26 subtests. Normal 1152×772 launcher renders were inspected
+for graphics, controls, repair, news and game versions. Separate 900×720 Saves
+and scrolled texture views used a synthetic preview root only. Text, actions,
+field alignment, badges, sidebar and fixed footer remain readable.
+No personal saves/settings or game data were used. Native Mac compilation,
+rendering/scaling and keyboard acceptance were not run on this Windows computer.
+No release version was changed and nothing was pushed or published.

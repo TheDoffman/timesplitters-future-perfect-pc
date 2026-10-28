@@ -36,6 +36,7 @@ namespace TimeSplitters.Launcher
         public event Action<bool> TextureBusyChanged;
         readonly bool texturePreview;
         TextBlock textureStatus, textureDetails;
+        Border textureBadge;
         Button textureCheck, textureInstall, textureVerify;
         CheckBox textureUpdates;
         TextureRelease textureAvailable;
@@ -69,7 +70,7 @@ namespace TimeSplitters.Launcher
         }
         static void Field(Panel parent, string label, UIElement input)
         {
-            var stack=new StackPanel { Margin=new Thickness(0,0,0,10) };var caption=Text(label,13);caption.Foreground=Muted;
+            var stack=new StackPanel { Margin=new Thickness(0,6,0,14) };var caption=Text(label,12);caption.Foreground=Muted;caption.MinHeight=32;caption.Margin=new Thickness(0,0,0,5);
             stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
             AutomationProperties.SetLabeledBy(input,caption);
         }
@@ -92,10 +93,8 @@ namespace TimeSplitters.Launcher
             layout=new DockPanel(); View.Children.Add(layout);
             overlay=new Border { Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             Ui.Show(overlay,false);View.Children.Add(overlay);
-            var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            var eyebrow=PageTheme.Text("GAME PREFERENCES",11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
-            var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
-            var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
+            var heading=PageTheme.Header("GAME PREFERENCES","Game settings","Adjust controls, display and performance before your next launch.");
+            DockPanel.SetDock(heading,Dock.Top);layout.Children.Add(heading);
             var footer=new DockPanel { LastChildFill=true };
             footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
@@ -133,7 +132,11 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            var textures=PageTheme.Section(graphics,"Enhanced textures · Beta","Optional download for Windows and Mac. Classic textures need no extra download.");
+            var texturePanel=new StackPanel();
+            var textures=PageTheme.Section(texturePanel,"Enhanced textures","Optional download for Windows and Mac. Classic textures need no extra download.");
+            var textureBadges=new WrapPanel {Margin=new Thickness(0,0,0,10)};textures.Children.Add(textureBadges);
+            var betaBadge=PageTheme.Badge("Beta",StatusTone.Warning);betaBadge.Margin=new Thickness(0,0,8,0);textureBadges.Children.Add(betaBadge);
+            textureBadge=PageTheme.Badge("Not checked",StatusTone.Neutral);textureBadge.Name="TextureHealthBadge";textureBadges.Children.Add(textureBadge);
             enhancedTextures=Check("Use enhanced textures (Beta)",model.EnhancedTextures);enhancedTextures.Name="EnhancedTextures";
             textures.Children.Add(enhancedTextures);
             var textureHint=Text("On uses installed replacements; off uses the original textures. Missing replacements always use originals. This Beta is incomplete and may contain visual issues.",12);
@@ -234,6 +237,7 @@ namespace TimeSplitters.Launcher
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
+            graphics.Children.Add(texturePanel);
             var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
             var startupHint=Text("Skips opening logo videos and the idle attract video. Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
@@ -268,6 +272,7 @@ namespace TimeSplitters.Launcher
                     if(textureAvailable==null)textureAvailable=await TextureDownload.Check(client,token);
                     var result=await Task.Run(()=>TextureDownload.Verify(root,textureAvailable,token),token);
                     textureDownloadBytes=result.DownloadBytes;textureInstall.IsEnabled=result.DownloadBytes>0;textureStatus.Text=result.Summary;
+                    PageTheme.SetBadge(textureBadge,result.Missing+result.Changed==0?"Verified":"Needs attention",result.Missing+result.Changed==0?StatusTone.Success:StatusTone.Warning);
                 }
             },"Verifying installed textures…");
         }
@@ -285,7 +290,7 @@ namespace TimeSplitters.Launcher
                     textureAvailable=pack;textureDownloadBytes=bytes;
                     textureStatus.Text=bytes==0?"Installed textures match pack "+pack.Version+". No download needed.":
                         "Pack "+pack.Version+": "+(bytes/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MiB to download. Existing matching files are reused.";
-                    textureInstall.IsEnabled=bytes>0;
+                    textureInstall.IsEnabled=bytes>0;PageTheme.SetBadge(textureBadge,bytes==0?"Up to date":"Download available",bytes==0?StatusTone.Success:StatusTone.Info);
                 }
             },"Checking textures…");
         }
@@ -297,7 +302,7 @@ namespace TimeSplitters.Launcher
                 using(var client=new ReleaseClient())await TextureDownload.Install(root,client,textureAvailable,
                     new Progress<string>(message=>textureProgress.Text=message),token);
                 textureStatus.Text="Pack "+textureAvailable.Version+" installed. "+TexturePack.Summary(root);
-                textureInstall.IsEnabled=false;
+                textureInstall.IsEnabled=false;PageTheme.SetBadge(textureBadge,"Installed",StatusTone.Success);
             },"Downloading enhanced textures…");
         }
         TextBlock textureProgress;
@@ -311,7 +316,7 @@ namespace TimeSplitters.Launcher
                 button.Click+=(s,e)=>{cancel.Cancel();button.IsEnabled=false;};
                 try { await operation(cancel.Token); }
                 catch(OperationCanceledException){textureStatus.Text="Cancelled. Completed parts are kept; retry to resume. Your installed pack remains available.";}
-                catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";}
+                catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";PageTheme.SetBadge(textureBadge,"Check incomplete",StatusTone.Warning);}
                 finally {textureBusy=false;DismissPrompt();UpdateTextureDetails();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
             }
         }

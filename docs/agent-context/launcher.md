@@ -62,6 +62,26 @@ The ordinary Diagnostics report and Windows live-hang view include this summary.
 Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
 `breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
 
+## Shared page presentation
+
+`PageTheme.Header` owns the category, 28px title, description and silver-blue
+separator used by Settings, Saves, Maintenance, What's New and Game versions.
+`PageTheme.Badge`/`SetBadge` share neutral/info/success/warning treatments; every
+state includes a text label, so color alone is never the status indicator.
+Repair badges use verification results; texture health uses completed checks or
+installs and reports an incomplete check on errors. Release badges distinguish
+updates from different channels and newer installed builds. Preview/Beta labels
+remain separate from installation state.
+
+`SettingsPage.Field` reserves the same caption height across paired columns and
+retains labeled-by accessibility. Graphics lists display, camera, frame rate and
+quality before texture management, with the existing fixed Save/Cancel footer.
+Both hosts consume these page helpers; no duplicate native layout is required.
+Visual-only validation uses the existing Windows `--render-settings-graphics`,
+`--render-settings-preview`, `--render-repair-preview`, `--render-news-preview`
+and `--render-versions-preview` modes plus shared UI checks. Native Mac layout,
+DPI and keyboard acceptance still require a native host.
+
 ## Flow and ownership
 
 ### Save manager and archive safety

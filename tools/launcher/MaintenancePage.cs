@@ -31,10 +31,7 @@ namespace TimeSplitters.Launcher
             View.Margin=new Thickness(30,24,30,20);
             Ui.Theme(View);Ui.Tabs(View);
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
-            var heading=new StackPanel {Margin=new Thickness(0,0,0,12)};
-            var eyebrow=PageTheme.Text("INSTALLATION CARE",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
-            var title=PageTheme.Text("Repair / Verify",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
-            heading.Children.Add(PageTheme.Text("Check your installation, restore release files and collect diagnostics for support.",12,"#9EB4C8"));View.Children.Add(heading);
+            var heading=PageTheme.Header("INSTALLATION CARE","Repair / Verify","Check your installation, restore release files and collect diagnostics for support.");View.Children.Add(heading);
             Tabs.Name="MaintenanceTabs";
             AutomationProperties.SetName(Tabs,"Repair and diagnostics");
             Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Repair / Verify"},Name="RepairTab",Content=repair.View});
@@ -63,7 +60,8 @@ namespace TimeSplitters.Launcher
         public Func<System.Threading.Tasks.Task> RetryOperation;
         readonly WrapPanel recoveryActions;
         public readonly TextBox Report;
-        readonly TextBlock status, gameStatus, launcherStatus, gameBadge, launcherBadge;
+        readonly TextBlock status, gameStatus, launcherStatus;
+        readonly Border gameBadge, launcherBadge;
         readonly Expander details;
         readonly ProgressBar progress;
         bool gameRepairable, launcherRepairable;
@@ -77,10 +75,8 @@ namespace TimeSplitters.Launcher
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
             View.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
-            var heading=new StackPanel { Margin=new Thickness(0,0,0,24) };
-            var eyebrow=PageTheme.Text(diagnostics?"SUPPORT CENTER":"INSTALLATION CARE",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
-            var title=Text(diagnostics?"Diagnostics":"Repair / Verify",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
-            heading.Children.Add(PageTheme.Text(diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.",12,"#9EB4C8"));if(!embedded)View.Children.Add(heading);
+            var heading=PageTheme.Header(diagnostics?"SUPPORT CENTER":"INSTALLATION CARE",diagnostics?"Diagnostics":"Repair / Verify",
+                diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.");if(!embedded)View.Children.Add(heading);
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,
                 Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };
             Ui.ScrollBars(Report);
@@ -105,9 +101,8 @@ namespace TimeSplitters.Launcher
                 for(int i=0;i<2;i++) {
                     var content=new StackPanel();
                     var top=new DockPanel { Margin=new Thickness(0,0,0,20) };
-                    var badge=PageTheme.Text("NOT CHECKED",10,"#A9BDD0");badge.FontWeight=FontWeights.SemiBold;
-                    var pill=new Border { Child=badge,Background=Brush("#20374B"),CornerRadius=new CornerRadius(3),Padding=new Thickness(8,5,8,5),VerticalAlignment=VerticalAlignment.Center };
-                    DockPanel.SetDock(pill,Dock.Right);top.Children.Add(pill);
+                    var badge=PageTheme.Badge("Not checked",StatusTone.Neutral);
+                    DockPanel.SetDock(badge,Dock.Right);top.Children.Add(badge);
                     var icon=new Border { Width=36,Height=36,Background=Brush("#1D3A54"),CornerRadius=new CornerRadius(6),HorizontalAlignment=HorizontalAlignment.Left,
                         Child=new TextBlock { Text=i==0?"◇":"◈",FontSize=21,Foreground=Brush("#A7D9FA"),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center } };
                     top.Children.Add(icon);content.Children.Add(top);
@@ -141,12 +136,12 @@ namespace TimeSplitters.Launcher
             progress=new ProgressBar { Minimum=0,Maximum=100,Height=3,Margin=new Thickness(0,12,0,0),Foreground=Brush("#86CDFF"),Background=Brush("#253D54"),BorderThickness=new Thickness(0) };
             footer.Children.Add(progress);Ui.Show(progress,false);
         }
-        static void Result(TextBlock summary,TextBlock badge,VerificationResult result)
+        static void Result(TextBlock summary,Border badge,VerificationResult result)
         {
             if(summary==null)return;
             summary.Text=result==null?"Ready for a file check":(result.Version.Length==0?"Version unavailable":result.Version)+" · "+result.Checked+" files checked";
-            badge.Text=result==null?"NOT CHECKED":result.Healthy?"VERIFIED":"NEEDS ATTENTION";
-            badge.Foreground=Brush(result==null?"#A9BDD0":result.Healthy?"#96DECF":"#FFD49A");
+            PageTheme.SetBadge(badge,result==null?"Not checked":result.Healthy?"Verified":"Needs attention",
+                result==null?StatusTone.Neutral:result.Healthy?StatusTone.Success:StatusTone.Warning);
         }
         public void SetVerification(VerificationResult game,VerificationResult launcher)
         {

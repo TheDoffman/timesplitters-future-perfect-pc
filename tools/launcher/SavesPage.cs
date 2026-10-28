@@ -33,8 +33,7 @@ namespace TimeSplitters.Launcher
             Cancel=Button("Cancel operation","CancelSaveOperation");DockPanel.SetDock(Cancel,Dock.Right);footer.Children.Add(Cancel);Ui.Show(Cancel,false);
             status=PageTheme.Text("Automatic backups are created before game updates and restores.",12);status.Name="SaveManagerStatus";footer.Children.Add(status);
             var scroll=new ScrollViewer {VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,Content=body};dock.Children.Add(scroll);
-            body.Children.Add(PageTheme.Text("SAVE MANAGEMENT",11,"#86CDFF"));body.Children.Add(PageTheme.Text("Saves & backups",28));
-            var intro=PageTheme.Text("Protect your progress before updates or testing a different game version.",13,"#B4C7D8");intro.Margin=new Thickness(0,8,0,20);body.Children.Add(intro);
+            body.Children.Add(PageTheme.Header("SAVE MANAGEMENT","Saves & backups","Protect your progress before updates or testing a different game version."));
             var overview=PageTheme.Section(body,"Your saves","Backups stay on this computer and include the game version and date.");
             summary=PageTheme.Text("",14);overview.Children.Add(summary);
             var actions=new WrapPanel {Margin=new Thickness(0,12,0,0)};overview.Children.Add(actions);

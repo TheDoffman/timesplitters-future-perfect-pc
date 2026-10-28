@@ -2433,6 +2433,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Shared visual polish (2026-10-27, local `feature/launcher-unified-pages-1027`):**
+  `PageTheme` now supplies consistent headers and text-labeled status badges to
+  Settings, Saves, Maintenance, What's New and Game versions. Settings field
+  captions align across paired columns; display/performance precede textures.
+  Windows compilation, full launcher regressions, 27 shared UI groups and
+  rendered-page review pass. Avalonia consumes the same helpers; no separate
+  Mac implementation is needed. Native compilation/rendering, scaling and
+  keyboard acceptance remain awaiting validation on a Mac.
+  [Evidence](STATUS.md#launcher-shared-page-polish-2026-10-27).
+
 - **Save manager (2026-10-27, `feature/launcher-save-manager`):** Shared
   `SavesPage.cs`/`SaveBackups.cs` provide dated/versioned manual and pre-update
   backups, confirmed restore, undo backup and journal recovery. Both hosts route
