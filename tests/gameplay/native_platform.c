@@ -1,5 +1,7 @@
 /* Native host primitives required by the Xbox runtime; no game or save files. */
 #include "platform/win32_compat.h"
+#include "shared_views.h"
+#include "guest_arena_service.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -24,49 +26,50 @@ static DWORD WINAPI delayed_signal_event(void *event)
 
 int main(void)
 {
-    const DWORD size = 64u * 1024u * 1024u;
+    const size_t size = 64u * 1024u * 1024u;
     int input_was_open = fcntl(STDIN_FILENO, F_GETFD) >= 0;
-    HANDLE mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL,
-                                       PAGE_READWRITE, 0, size, NULL);
-    CHECK(mapping != NULL);
+    tsfp_shared_backend backend;
+    tsfp_shared_views mapping = {0};
+    tsfp_shared_view records[3];
+    size_t page, granularity;
+    CHECK(tsfp_shared_host_backend(&backend, &page, &granularity));
+    CHECK(tsfp_shared_views_init(&mapping, &backend, size, page, granularity, records, 3));
     CHECK(!input_was_open || fcntl(STDIN_FILENO, F_GETFD) >= 0);
 
-    /* Use normal native addresses. This checks the mapping primitive, not
-     * the game's complete relocated Xbox address-space initialization. */
-    uint32_t *low = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
+    /* Original ownership providers supply the live mapping contract. */
+    uint32_t *low = tsfp_shared_views_map(&mapping, NULL, 0, size, TSFP_VIEW_WRITE);
     CHECK(low != NULL);
-    uint32_t *mirror = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size);
+    uint32_t *mirror = tsfp_shared_views_map(&mapping, NULL, 0, size, TSFP_VIEW_WRITE);
     CHECK(mirror != NULL && mirror != low);
     low[0] = 0x58424f58u;
     CHECK(mirror[0] == 0x58424f58u);
     mirror[size / sizeof(uint32_t) - 1] = 0x12345678u;
     CHECK(low[size / sizeof(uint32_t) - 1] == 0x12345678u);
-
-    /* An occupied-address request must fail without destroying either view. */
-    CHECK(MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, low) == NULL);
+    CHECK(tsfp_shared_views_map(&mapping, low, 0, size, TSFP_VIEW_WRITE) == NULL);
     CHECK(low[0] == 0x58424f58u && mirror[0] == 0x58424f58u);
-    CHECK(UnmapViewOfFile(mirror));
-    CHECK(UnmapViewOfFile(low));
-    CHECK(CloseHandle(mapping));
+    CHECK(tsfp_shared_views_release(&mapping, mirror));
+    CHECK(tsfp_shared_views_release(&mapping, low));
+    CHECK(tsfp_shared_views_stop(&mapping));
 
 #ifdef __APPLE__
     void *arena = w32_guest_arena_reserve(0x100000000ull);
     CHECK(arena != NULL);
-    mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, size, NULL);
-    CHECK(mapping != NULL);
-    low = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena);
-    mirror = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, (uint8_t *)arena + 0x80000000ull);
+    CHECK(tsfp_guest_arena_backend(&backend, &page, &granularity));
+    CHECK(tsfp_shared_views_init(&mapping, &backend, size, page, granularity, records, 3));
+    low = tsfp_shared_views_map(&mapping, arena, 0, size, TSFP_VIEW_WRITE);
+    mirror = tsfp_shared_views_map(&mapping, (uint8_t *)arena + 0x80000000ull,
+                                   0, size, TSFP_VIEW_WRITE);
     CHECK(low == arena && mirror != NULL);
     low[0] = 0xaabbccdd;
     CHECK(mirror[0] == 0xaabbccdd);
-    CHECK(MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena) == NULL);
+    CHECK(tsfp_shared_views_map(&mapping, arena, 0, size, TSFP_VIEW_WRITE) == NULL);
     CHECK(VirtualAlloc(arena, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE) == NULL);
     CHECK(low[0] == 0xaabbccdd);
-    CHECK(UnmapViewOfFile(low));
-    low = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena);
+    CHECK(tsfp_shared_views_release(&mapping, low));
+    low = tsfp_shared_views_map(&mapping, arena, 0, size, TSFP_VIEW_WRITE);
     CHECK(low == arena && low[0] == 0xaabbccdd);
-    CHECK(UnmapViewOfFile(low) && UnmapViewOfFile(mirror));
-    CHECK(CloseHandle(mapping));
+    CHECK(tsfp_shared_views_release(&mapping, low) && tsfp_shared_views_release(&mapping, mirror));
+    CHECK(tsfp_shared_views_stop(&mapping));
     CHECK(w32_guest_arena_release());
 #endif
 

@@ -266,6 +266,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-114 | Project guest memory services | Awaiting validation |
 | MAC-115 | Project native virtual-memory host operations | Awaiting validation |
 | MAC-116 | Project guest host mappings | Awaiting validation |
+| MAC-117 | Retired compatibility memory APIs | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6996,7 +6997,35 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   shared-source variable was unset. RHI and Windows replay entry points now
   supply that source root; Windows replay checks passed (7 in 4.48s), including
   real configure/build/usage launch, after reproducing the original failure.
-  Native Mac RHI repair acceptance and new exact-commit CI remain pending.
+  All 17 CI checks at `f0633f99` passed, including native Mac RHI and one-frame
+  production replay; native Mac title gameplay remains pending.
   Controlled POSIX tests are not
   native Mac execution; native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#project-guest-host-mappings-2026-10-28).
+
+### MAC-117 - Retired compatibility memory APIs
+
+- **Status:** Awaiting validation
+- **PC behavior:** Unused POSIX mapping/query/statistics compatibility bodies
+  are retired; real Windows OS calls and the verified project mapping providers
+  remain. Regression fixtures use current ownership interfaces.
+- **Source/PR:** `patches/compiler/0214-retire-compatibility-memory.patch`,
+  `tests/gameplay/native_platform.c`, arena adapter fixtures and the comment in
+  `src/runtime/pc_guest_memory.h`. PR #375; retirement stage based on `f0633f99`.
+- **Mac support present:** Production consumers already use original shared
+  mapping and host query/statistics providers. Native alias/remap/collision and
+  stdin-preservation assertions now exercise these interfaces directly. The
+  MEMORY_BASIC_INFORMATION record remains for native Nt ABI serialization.
+- **Remaining adaptation:** No replacement implementation is needed for APIs
+  without live callers. Native Mac compile/runtime/title acceptance is pending;
+  other compatibility/kernel/device services and worker quiescence remain.
+  See [retirement scope](../agent-context/retired-memory-compatibility.md).
+- **Acceptance:** Candidate six adapter checks passed (five compiled negative
+  controls), plus a real Windows execution of the revised native fixture's
+  ordinary mapping prefix. That prefix excludes the Mac arena and event branches.
+  Windows Release/native checks/crash symbols and isolated Story movement,
+  firing and pause/resume passed; all 26 protected files were unchanged.
+  Consumer checks passed (43 passed, one native-Mac-only skip). All 998 compiler
+  checks passed in 707.98s, all 73 migration/repository checks in 1121.24s and
+  all 21 final documentation checks in 5.19s. Exact-commit CI remains pending. See
+  [STATUS](STATUS.md#retired-compatibility-memory-apis-2026-10-28).

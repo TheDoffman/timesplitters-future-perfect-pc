@@ -25,7 +25,7 @@ def build(tmp_path,mutation=None):
     text=source.read_text(encoding='utf-8')
     block=text[text.index('/* Project arena forwarding.'):text.index('/* End project arena forwarding. */')]
     block+='\n'+text[text.index('/* Project MMIO forwarding.'):text.index('/* End project MMIO forwarding. */')]
-    block+='\n'.join(body(text,name) for name in ('VirtualAlloc','VirtualFree','MapViewOfFileEx','UnmapViewOfFile'))
+    block+='\n'.join(body(text,name) for name in ('VirtualAlloc','VirtualFree'))
     if mutation:
         old,new=mutation
         assert block.count(old)==1
@@ -46,8 +46,8 @@ def test_actual_guest_arena_adapters(tmp_path):
 
 @pytest.mark.parametrize('mutation',[
     ('return tsfp_guest_arena_unmap((void *)address);','(void)address;return TRUE;'),
-    ('if (arena_contains(baseAddr, 0)) return arena_unmap(baseAddr);',
-     'if (arena_contains(baseAddr, 0)) { (void)view_take(baseAddr); return arena_unmap(baseAddr); }'),
+    ('if (arena_contains(address, size)) return arena_unmap(address);',
+     'if (arena_contains(address, size)) return TRUE;'),
     ('(prot&PROT_EXEC)?TSFP_ARENA_EXECUTE:0','(prot&PROT_EXEC)?0:0'),
     ('return tsfp_guest_mmio_alias(address,size);','(void)size;return tsfp_guest_mmio_alias(address,1);'),
     ('return tsfp_guest_arena_reserve(size);','return tsfp_guest_arena_reserve((uint32_t)size);'),

@@ -37,10 +37,8 @@ int tsfp_shared_host_in_arena(tsfp_shared_backend *b,tsfp_owned_arena *s,size_t 
  * the arena/MMIO adapters below are extracted from the real proposed runtime. */
 typedef void *LPVOID;typedef const void *LPCVOID;typedef void *HANDLE;
 typedef size_t SIZE_T;typedef uint32_t DWORD;typedef int BOOL;
-typedef struct w32_object { int kind,fd;size_t map_size; } w32_object;
 #define FALSE 0
 #define TRUE 1
-#define K_FILEMAP 7
 #define ERROR_INVALID_PARAMETER 87
 #define ERROR_INVALID_ADDRESS 487
 #define ERROR_INVALID_HANDLE 6
@@ -59,19 +57,14 @@ typedef struct w32_object { int kind,fd;size_t map_size; } w32_object;
 #define MAP_PRIVATE 2
 #define MAP_ANONYMOUS 4096
 #define MAP_FAILED ((void *)-1)
-#define FILE_MAP_ALL_ACCESS 0xf001f
-#define FILE_MAP_READ 4
 #define off_t int64_t
 #define __APPLE__ 1
-static unsigned registry_takes,registry_adds;
 static volatile unsigned unexpected_fallbacks;
 static void SetLastError(DWORD error) { (void)error; }
 static int prot_from_page(DWORD p) { return p==64?7:(p==4?3:(p==2?1:0)); }
 static void *model_mmap(void *a,size_t n,int p,int f,int fd,int64_t o) { (void)a;(void)n;(void)p;(void)f;(void)fd;(void)o;++unexpected_fallbacks;return MAP_FAILED; }
 static int model_munmap(void *a,size_t n) { (void)a;(void)n;++unexpected_fallbacks;return -1; }
 static int model_mprotect(void *a,size_t n,int p) { (void)a;(void)n;(void)p;++unexpected_fallbacks;return -1; }
-static void view_register(void *p,size_t n) { (void)p;(void)n;++registry_adds; }
-static size_t view_take(const void *p) { (void)p;++registry_takes;return 0; }
 #define mmap model_mmap
 #define munmap model_munmap
 #define mprotect model_mprotect
@@ -85,21 +78,19 @@ int main(void) {
     unsigned before;
     unsigned char *base=w32_guest_arena_reserve((size_t)UINT64_C(0x100000000));
     void *private_page,*shared,*nv,*mc,*alias;
-    w32_object mapping={K_FILEMAP,0,65536};
     CHECK(base==(void *)(uintptr_t)UINT64_C(0x200000000) && tsfp_guest_arena_ready());
     CHECK(!w32_guest_arena_reserve((size_t)UINT64_C(0x100000000)));
     private_page=VirtualAlloc(base+0x10000,4096,MEM_RESERVE|MEM_COMMIT,PAGE_EXECUTE_READWRITE);
     CHECK(private_page==base+0x10000 && last_bytes==16384 && last_access==7 && !last_token);
     CHECK(!VirtualAlloc(private_page,4096,MEM_RESERVE|MEM_COMMIT,PAGE_READWRITE));
-    shared=MapViewOfFileEx(&mapping,FILE_MAP_ALL_ACCESS,0,0,65536,base+0x20000);
+    shared=tsfp_guest_arena_place(base+0x20000,65536,0,0,TSFP_ARENA_READ|TSFP_ARENA_WRITE);
     CHECK(shared==base+0x20000 && last_token==1 && last_access==3);
-    CHECK(!MapViewOfFileEx(&mapping,FILE_MAP_ALL_ACCESS,0,0,65536,base+0x20000));
-    CHECK(!registry_adds);
-    restore_status=-1;CHECK(!UnmapViewOfFile(shared));CHECK(!tsfp_guest_arena_ready());
-    CHECK(!registry_takes);restore_status=1;CHECK(UnmapViewOfFile(shared));
+    CHECK(!tsfp_guest_arena_place(base+0x20000,65536,0,0,TSFP_ARENA_READ|TSFP_ARENA_WRITE));
+    restore_status=-1;CHECK(!tsfp_guest_arena_unmap(shared));CHECK(!tsfp_guest_arena_ready());
+    restore_status=1;CHECK(tsfp_guest_arena_unmap(shared));
     before=whole_releases;CHECK(!w32_guest_arena_release());CHECK(whole_releases==before);
     CHECK(!tsfp_guest_arena_ready());CHECK(VirtualFree(private_page,0,MEM_RELEASE));
-    CHECK(w32_guest_arena_release());CHECK(!registry_takes && !registry_adds);
+    CHECK(w32_guest_arena_release());
     CHECK(w32_guest_arena_release());CHECK(whole_releases==before+1);
 
     base=w32_guest_arena_reserve((size_t)UINT64_C(0x100000000));CHECK(base);
@@ -120,5 +111,5 @@ int main(void) {
     CHECK(w32_guest_mmio_map(base+0xfd000000u,0x1000000));
     CHECK(w32_guest_arena_release());CHECK(opens==closes);
     CHECK(!unexpected_fallbacks);
-    puts("PASS: actual arena/VirtualAlloc/MapView/MMIO adapters share ownership and retain failed cleanup");return 0;
+    puts("PASS: actual arena/VirtualAlloc/MMIO adapters share ownership and retain failed cleanup");return 0;
 }

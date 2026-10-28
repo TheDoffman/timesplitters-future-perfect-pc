@@ -31,8 +31,9 @@ no locking, allocation or host operation in a signal handler. Setup/reset and
 direct memory users must be quiescent. Failed setup/reset retains all remaining
 resources for retry. `guest_arena_service.c/.h` provides the shared Mac service:
 one arena, 512 placement records and two MMIO entries. Compatibility unmap checks
-this owner before consuming the old generic view registry. Non-arena generic
-compatibility objects and mapping code remain replacement work.
+this owner in the initial integration. The unused generic file-map registry/API
+and query/statistics stubs are now [retired](retired-memory-compatibility.md).
+Other compatibility services remain replacement work.
 
 ## Main guest layout
 
@@ -73,7 +74,8 @@ The replay regression compiles the real renderer/replay and provider dependencie
 
 `test_shared_views.py` covers real host mappings plus ownership, arena and MMIO
 failure models. `test_guest_arena_adapters.py` executes actual compatibility
-bindings; `test_guest_map_layout.py` covers construction, partial rollback,
+allocation/MMIO bindings; retired file-map calls now use project owners directly.
+`test_guest_map_layout.py` covers construction, partial rollback,
 publication and session isolation; `test_guest_layout_binding.py` extracts the
 actual runtime binding and exercises aliases and both worker timeout paths.
 Negative controls must compile before their runtime assertions reject them.

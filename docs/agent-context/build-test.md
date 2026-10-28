@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Memory: [guest maps](guest-host-mappings.md), [Nt](native-virtual-memory.md).
+Memory: [retired APIs](retired-memory-compatibility.md).
 
 Grouped paths: [layout](../development/repository-layout.md).
 Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.

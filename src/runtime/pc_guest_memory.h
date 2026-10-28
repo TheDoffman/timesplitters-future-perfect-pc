@@ -9,7 +9,7 @@
 #include <windows.h>
 #endif
 /* Span that can be accessed without crossing an OS mapping/protection boundary.
- * Darwin's compatibility VirtualQuery is a stub, so use its real VM query. */
+ * Query the actual host mapping: Mach regions on Darwin, NT regions on Windows. */
 typedef struct PcGuestRegion {
     uintptr_t base;
     size_t size;

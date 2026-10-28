@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "9b5909cbb044b3adf9640fe3499880e89b100a5938acfa9e9df6523d4441e49a",
+  "loaderSha256": "f2cbfa108b83cd9a3ee93cc2b8e1603d848b1b65507259086d68a4c0ab19e414",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2244,6 +2244,18 @@
         "src/kernel/xbox_memory_layout.h",
         "src/platform/CMakeLists.txt",
         "src/platform/win32_compat.c"
+      ]
+    },
+    {
+      "name": "0214-retire-compatibility-memory.patch",
+      "path": "patches/compiler/0214-retire-compatibility-memory.patch",
+      "sha256": "6133c2c85dec6976ded6044a9b10d4c4b602f49effb25e57f5bf381991430d68",
+      "targets": [
+        "src/kernel/README.md",
+        "src/kernel/xbox_memory_layout.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h"
       ]
     },
     {

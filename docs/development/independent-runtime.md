@@ -1,11 +1,19 @@
 # Independent runtime replacement
 
+Unused POSIX file-map/query/statistics APIs and their registry are retired in
+patch 0214 after production callers moved to project providers. Native alias
+fixtures retain their assertions through those providers; real Windows APIs
+remain in host adapters. See [audit and limits](../agent-context/retired-memory-compatibility.md)
+and MAC-117. Windows build, isolated Story and all 998 compiler checks passed;
+all 73 migration/repository and 21 final documentation checks passed.
+Exact-commit CI remains pending.
+
 Main guest maps, physical aliases and Mac arena/MMIO ownership now have original
 providers through patch 0213. Failed setup retains cleanup ownership, and
 published mappings live through process exit until whole-runtime worker
 quiescence can be proved. See [contracts and validation scope](../agent-context/guest-host-mappings.md)
 and MAC-116. Windows build, 998 compiler tests and isolated Story checks passed;
-73 migration/repository checks also passed. Exact-commit CI remains pending.
+73 migration/repository checks also passed. All 17 CI checks at `f0633f99` passed.
 
 Native Nt host callbacks and native Mm protection now use patch 0212. Original
 Darwin reservations replace leaking size-zero release and fabricated queries;

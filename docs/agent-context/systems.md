@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Memory: [guest maps](guest-host-mappings.md), [Nt](native-virtual-memory.md).
+Memory: [retired APIs](retired-memory-compatibility.md).
 
 Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
 

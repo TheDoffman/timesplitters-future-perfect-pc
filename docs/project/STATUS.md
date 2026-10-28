@@ -1,3 +1,46 @@
+## Retired compatibility memory APIs (2026-10-28)
+
+Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.
+Patch 0214 removes unused POSIX file-mapping, query and statistics routines after
+their production callers moved to project providers. Native alias/collision/
+remap fixtures now use those providers; their ownership assertions remain.
+The native Nt query record ABI and real Windows OS calls remain intact. See
+[caller audit and validation boundaries](../agent-context/retired-memory-compatibility.md)
+and MAC-117. The broader independence goal is unfinished.
+
+Windows candidate: six adapter tests passed in 8.18s, including five compiled
+negative controls. The revised native fixture's normal mapping prefix compiled
+and ran against real Windows providers. That check excludes the Mac arena and
+event branches; it is not native Mac execution. The additive patch passed a
+read-only applicability check using the maintained installer's CRLF handling.
+All 998 compiler checks passed in 707.98s, all 73 migration/repository checks
+in 1121.24s, and all 21 final documentation/context/backlog checks in 5.19s.
+Context/index and whitespace checks passed. Exact-commit CI remains pending. Consumer
+checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
+been produced for this stage.
+
+The full patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the generation fingerprint stayed current.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+The player moved 11.176244 forward and 6.184892 backward, and fired from eight
+to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 103.913s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned test locks, disposable partitions, BMP or crash dumps
+remain.
+
+Tested executable SHA-256:
+`cc677d68c26d0de23ac1b7ac66ea97c77f3c2689850c04df9262dd59509a372f`.
+Build provenance is the retirement working tree based on `f0633f99`, Windows
+x64/MSVC; 13 project-source and five runtime hashes match the build, and runner
+executable provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified.
+
 ## Project guest host mappings (2026-10-28)
 
 Implementation based on `8ef1e7cf`, after all 17 prerequisite CI checks
@@ -27,8 +70,9 @@ Both entry points now supply the project source root explicitly; this changes
 test builds only, not production providers or the previously tested executable.
 All seven Windows replay checks passed in 4.48s after the repair, including the
 real renderer/replay configure/build and usage launch. The same suite failed
-at configuration before the fix. Native Mac RHI repair acceptance and new
-exact-commit CI remain pending. No new game package was produced.
+at configuration before the fix. All 17 CI checks at `f0633f99` passed, including
+native Mac RHI and one-frame production replay. Native Mac title gameplay
+remains unverified. No new game package was produced.
 
 The complete patch stack installed five runtime files matching the proposal.
 Windows Release build, native checks and matching crash symbols passed with

@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Unused POSIX memory APIs retired: [caller and fixture audit](retired-memory-compatibility.md).
+
 Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).
 Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
 
