@@ -29412,3 +29412,13 @@ checkouts and applies when their chats read the updated instructions.
 Main requires a pull request and passing Windows/Mac patch-transition and launcher
 compatibility checks; publication will use those gates, with no bypass or version
 bump. Local validation and hosted results are recorded with the PR.
+
+## Launcher v1.4.0 release preparation (2026-10-27)
+
+The user requested launcher 1.4 after integrating all outstanding changes into
+main. Shared launcher version and assembly/file attributes now use 1.4.0 and
+1.4.0.0. PR #390 includes the version bump so the subsequently merged main
+revision can be tagged `launcher-v1.4.0` and built/published by the maintained
+Windows+Mac release workflow. Game VERSION is unchanged. No existing release,
+tag, asset name or updater manifest format is replaced. Publication remains
+pending the required main-branch checks and both platform package validations.

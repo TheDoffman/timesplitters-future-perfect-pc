@@ -54,7 +54,7 @@ See the [Windows settings guide](windows-settings.md) for the full controls.
 After a successful **Save settings**, the button greys out. Changing a setting
 or key binding enables it again; reverting to the saved values greys it out.
 If saving fails, correct the error and retry with the same button.
-## Saves & backups (upcoming launcher update)
+## Saves & backups (launcher v1.4.0)
 
 The **Saves** sidebar entry opens the save manager in the main window. Close the
 game and choose **Back up now** to create a local restore point with its date,

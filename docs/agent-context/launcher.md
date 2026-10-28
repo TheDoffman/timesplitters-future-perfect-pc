@@ -80,6 +80,15 @@ The ordinary Diagnostics report and Windows live-hang view include this summary.
 Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
 `breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
 
+## Launcher v1.4.0 preparation
+
+The shared `LauncherVersion.Value` and numeric assembly/file attributes advance
+together to 1.4.0 / 1.4.0.0. This release includes save management, texture health,
+Save-button state and the shared visual/density changes. The existing tag-triggered
+`launcher-release.yml` builds both hosts from the merged main commit and owns
+publication; platform manifests and versioned ZIP naming stay unchanged.
+A version commit alone is not a published release.
+
 ## Shared page presentation
 
 `PageTheme.Header` owns the category, 28px title, description and silver-blue
