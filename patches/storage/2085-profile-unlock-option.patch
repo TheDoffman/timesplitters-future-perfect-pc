@@ -1,0 +1,18 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -655,5 +655,15 @@ void sub_00077140(void)
+ }
+ 
++extern void sub_001CD3E0_gen(void);
++void sub_001CD3E0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_unlock_all_check(sub_001CD3E0_gen);
++#else
++    sub_001CD3E0_gen();
++#endif
++}
++
+ extern void sub_000C77C0_gen(void);
+ void sub_000C77C0(void)
+ {

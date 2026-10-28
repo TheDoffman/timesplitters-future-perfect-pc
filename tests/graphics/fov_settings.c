@@ -78,6 +78,8 @@ BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
 STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_001BA130) STUB(sub_00142820)
 STUB(sub_00071B60) STUB(sub_00041DC0)
+STUB(sub_002D6810)
+int xbox_save_root_utf8(char *out,unsigned n) {(void)out;(void)n;return 0;}
 static int storage_continued,storage_chosen,storage_choose_ok,storage_scanned;
 void sub_00024EC0(void) {
     CHECK(WORD_AT(g_esp+4)==0xffffffffu&&WORD_AT(g_esp+8)==0x190f70u&&WORD_AT(g_esp+12)==0);
@@ -351,29 +353,32 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp+20)=0x2cbe10;WORD_AT(g_esp+4)=0x510000;
     pc_display_menu_button(button_probe);
     CHECK(observed_builder_flags==0x26200 && WORD_AT(0x500028)==0x32200 && g_esp==0x700004);
-    /* Both native insertion sites put Video immediately before Controls,
-     * preserving the Controls call frame and its result. */
+    /* Frontend inserts individual settings; Pause groups them in one row. */
     for(unsigned i=0;i<2;i++) {
         uint32_t callback=i?0x2ec1a0u:0x2cbe50u;
         g_esp=0x700000;WORD_AT(g_esp)=i?0x2f561cu:0x2cc116u;
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==3 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==KB_OPEN && observed_callbacks[2]==callback && WORD_AT(0x700014)==callback);
+        if(i)CHECK(observed_callback_count==1 && observed_callbacks[0]==PAUSE_SETTINGS_OPEN);
+        else {
+            CHECK(observed_callback_count==3 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
+            CHECK(observed_callbacks[1]==KB_OPEN && observed_callbacks[2]==callback);
+        }
+        CHECK(WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
-    /* Pause Options supplies its own centered (or split-screen) style.
-     * The Audio rename must retain it, including caller-provided disable bits. */
+    /* The moved Audio row must allocate no hidden row or vertical gap. */
     for(unsigned i=0;i<2;i++) {
         uint32_t style=i?0x32000u:0x32200u;
         WORD_AT(0x500028)=style;
         g_esp=0x700000;WORD_AT(g_esp)=0x2f5666;
         WORD_AT(g_esp+20)=0x2ec1f0;WORD_AT(g_esp+4)=0x510000;
         WORD_AT(g_esp+12)=1u;
+        observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
-        CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
+        CHECK(observed_callback_count==0 && WORD_AT(0x500028)==style);
+        CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
     }
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;
     pc_display_menu_button(button_probe);

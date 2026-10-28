@@ -4,7 +4,7 @@ Memory: [retired APIs and strict negative controls](retired-memory-compatibility
 
 Grouped paths: [layout](../development/repository-layout.md).
 Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.
-Portable probes retain isolated imports.
+Menu probes cover grouped Pause settings, spacer removal and main-only Quit.
 
 Patch discovery/migration: [folder rules](../../patches/README.md).
 

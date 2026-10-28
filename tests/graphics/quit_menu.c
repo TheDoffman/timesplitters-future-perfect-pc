@@ -49,6 +49,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     return 0;
 }
+static void unlock_all_append(uint32_t menu) {(void)menu;CHECK(0);}
 #include "pc_quit_menu.inc"
 static void original(void) {++finalized;g_esp+=4;}
 static void setup(uint32_t caller)
@@ -61,7 +62,9 @@ int main(void)
     const uint32_t sites[]={0x2d0edf,0x2f582f,0x2f5879};
     for(unsigned i=0;i<3;i++) {
         setup(sites[i]);pc_display_menu_finish(original);
-        CHECK(row_count==1 && finalized==1 && row_ids[0]==8 && row_callbacks[0]==QUIT_OPEN_CB && g_esp==0x1004);
+        CHECK(finalized==1 && g_esp==0x1004);
+        if(i==0)CHECK(row_count==1 && row_ids[0]==8 && row_callbacks[0]==QUIT_OPEN_CB);
+        else CHECK(row_count==0);
     }
     setup(0x12008);pc_display_menu_finish(original);CHECK(!row_count && finalized==1);
     setup(sites[0]);WORD_AT(0x2038)=1;pc_display_menu_finish(original);CHECK(!row_count);

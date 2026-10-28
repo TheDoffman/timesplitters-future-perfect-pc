@@ -5,6 +5,8 @@
 #include "pc_settings.h"
 #define KB_OPEN 0x1200fu
 static uint32_t kb_caption(void);
+static uint32_t pause_settings_caption(void);
+static void extras_build(void);
 #include "pc_display_memory.h"
 #include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
@@ -252,6 +254,18 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+    if(paused && pause_settings_caption()) {
+        const uint32_t frame=g_esp,old_caption=WORD_AT(frame+4);
+        WORD_AT(frame+4)=pause_settings_caption();
+        WORD_AT(frame+20)=0x1237cu;
+        original();WORD_AT(frame+4)=old_caption;WORD_AT(frame+20)=callback;
+        return;
+    }
+    if(callsite==0x002F5666u && callback==0x002EC1F0u) {
+        /* Hidden guest rows still reserve vertical space. This caller does
+           not consume the row result, so omit the moved Audio row entirely. */
+        g_eax=0;g_esp+=4;return;
+    }
     if(callsite==0x0019440bu)sd_width();
     if(callsite==0x001944c3u && callback==0x00192e60u){sd_buttons(original);return;}
     if(callsite==0x0019450au){sd_capacity(original);return;}
@@ -294,7 +308,7 @@ void pc_display_menu_button(void (*original)(void))
         return;
     }
 #endif
-    if(!frontend && !paused) { original();return; }
+    if(!frontend) { original();return; }
     save_registers(&r);
     if(!caption) {
         const char text[]="Video Options";
@@ -308,9 +322,9 @@ void pc_display_menu_button(void (*original)(void))
         push(0); push(PC_DISPLAY_MENU_CALLBACK); push(0); push(0); push(UINT32_MAX); push(caption);
         push(callsite);
         original();
-        if(!(reported & (paused?2u:1u))) {
-            reported|=paused?2u:1u;
-            fprintf(stderr,"[PC-DISPLAY-MENU] Video Options added to %s\n",paused?"paused Options":"main Settings");
+        if(!(reported & 1u)) {
+            reported|=1u;
+            fprintf(stderr,"[PC-DISPLAY-MENU] Video Options added to main Settings\n");
         }
     }
     restore_registers(&r);
@@ -570,7 +584,77 @@ void pc_network_bots_menu(void (*original)(void))
     original();
 #endif
 }
+#include "pc_unlock_all.inc"
 #include "pc_quit_menu.inc"
+/* Three unused INT3 bytes in the supported US XBE, following the storage
+   and Unlock All callbacks. The pause page owns only navigation; the four
+   existing settings pages retain their guest callbacks and save behavior. */
+#define PAUSE_SETTINGS_OPEN 0x1237cu
+#define PAUSE_SETTINGS_BUILD 0x1237du
+#define PAUSE_SETTINGS_BACK 0x1237eu
+static uint32_t pause_settings_storage,pause_settings_parent,pause_settings_previous;
+#define PAUSE_SETTINGS_ROW (pause_settings_storage+16u)
+#define PAUSE_SETTINGS_TITLE (pause_settings_storage+32u)
+#define PAUSE_SETTINGS_VIDEO (pause_settings_storage+48u)
+static uint32_t pause_settings_caption(void)
+{
+    if(!pause_settings_storage) {
+        pause_settings_storage=xbox_HeapAlloc(80,4);
+        if(!pause_settings_storage)return 0;
+        memset((void *)((uintptr_t)pause_settings_storage+g_xbox_mem_offset),0,80);
+        WORD_AT(pause_settings_storage)=PAUSE_SETTINGS_BUILD;
+        memcpy((void *)((uintptr_t)PAUSE_SETTINGS_ROW+g_xbox_mem_offset),"Settings",9);
+        memcpy((void *)((uintptr_t)PAUSE_SETTINGS_TITLE+g_xbox_mem_offset),"Settings",9);
+        memcpy((void *)((uintptr_t)PAUSE_SETTINGS_VIDEO+g_xbox_mem_offset),"Video Options",14);
+    }
+    return PAUSE_SETTINGS_ROW;
+}
+static void extras_build(void)
+{
+    extern void sub_0003D7B0(void),sub_002D6810(void);
+    GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
+    /* Keep the title's movies, credits, profile selector and back action.
+       Extend the built page before its final layout, including fresh profiles. */
+    guest_call(sub_002D6810,1,menu);
+    guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),
+               UINT32_MAX,0u,0u,0x002CBE30u,0u);
+    guest_call(sub_000771D0,1,menu);
+    restore_registers(&r);g_esp+=4;
+}
+static void pause_settings_open(void)
+{
+    GuestRegisters r;uint32_t source=WORD_AT(g_esp+4);save_registers(&r);
+    if(guest_writable(source,0x3c) && WORD_AT(source+0x38)==0 && pause_settings_caption()) {
+        pause_settings_parent=WORD_AT(source+0x2c);
+        pause_settings_previous=WORD_AT(source+4);
+        guest_call(sub_00079B70,2,pause_settings_parent,pause_settings_storage);
+    }
+    restore_registers(&r);g_esp+=4;
+}
+static void pause_settings_build(void)
+{
+    extern void sub_0003D7B0(void);
+    GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
+    guest_call(sub_00075B70,5,0xa000u,PAUSE_SETTINGS_TITLE,0x425c0000u,0u,PAUSE_SETTINGS_BACK);
+    guest_call(sub_00071B10,4,1u,0x40000000u,1u,1u);
+    guest_call(sub_00071C50,1,0x26200u);
+    guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x17A4u),
+               UINT32_MAX,0u,0u,0x002EC1A0u,0u);
+    guest_call(sub_00079D60_gen,6,audio_options_caption(),
+               UINT32_MAX,0u,0u,0x002EC1F0u,0u);
+    guest_call(sub_00079D60_gen,6,PAUSE_SETTINGS_VIDEO,
+               UINT32_MAX,0u,0u,PC_DISPLAY_MENU_CALLBACK,0u);
+    if(kb_caption())guest_call(sub_00079D60_gen,6,kb_caption(),
+               UINT32_MAX,0u,0u,KB_OPEN,0u);
+    guest_call(sub_000771D0,1,menu);
+    restore_registers(&r);g_esp+=4;
+}
+static void pause_settings_back(void)
+{
+    GuestRegisters r;save_registers(&r);
+    guest_call(sub_00079B70,2,pause_settings_parent,pause_settings_previous);
+    restore_registers(&r);g_esp+=4;
+}
 #include "pc_menu_mouse_guest.inc"
 #include "pc_display_ui.inc"
 #include "pc_tutorial_ui.inc"
@@ -651,8 +735,6 @@ static void settings_build(void)
         guest_call(sub_00075430,2,selector,WORD_AT(0x0078AD34u));
     }
     guest_call(sub_00079D60_gen,6,0x0047602Cu,1u,0u,0u,0x002CBEC0u,0u);
-    if(guest_call(sub_001CD120,0))
-        guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),UINT32_MAX,0u,0u,0x002CBE30u,0u);
     guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
 }
@@ -974,6 +1056,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002D9390u)return display_highlight_draw;
     if(address==0x002C3E20u)return audio_options_build;
     if(address==0x002CBFC0u)return settings_build;
+    if(address==0x002D6810u)return extras_build;
     switch(address) {
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;
@@ -995,7 +1078,11 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case QUIT_BUILD_CB: return quit_build;
     case QUIT_SELECT_CB: return quit_select;
     case QUIT_BACK_CB: return quit_back;
+    case PAUSE_SETTINGS_OPEN: return pause_settings_open;
+    case PAUSE_SETTINGS_BUILD: return pause_settings_build;
+    case PAUSE_SETTINGS_BACK: return pause_settings_back;
 #endif
+    case UNLOCK_ALL_TOGGLE_CB: return unlock_all_toggle;
 #ifdef _WIN32
     case 0x1200du: return online_activate;
     case 0x002C2C20u: return network_bots_build;

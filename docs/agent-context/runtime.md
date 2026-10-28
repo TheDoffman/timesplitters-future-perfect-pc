@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+`2085-profile-unlock-option.patch` wraps `sub_001CD3E0` through the shared
+display adapter. The optional per-profile sidecar grants unlock descriptors
+without rewriting medals or completion data; see [systems](systems.md).
+
 Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
 
 Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).

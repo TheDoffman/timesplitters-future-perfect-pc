@@ -3,6 +3,7 @@
 #include <stdint.h>
 #define PC_DISPLAY_MENU_CALLBACK 0x00012008u
 void pc_display_menu_finish(void (*original)(void));
+void pc_display_unlock_all_check(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));
 void pc_network_bots_menu(void (*original)(void));
 void pc_profile_accept(void (*original)(void));

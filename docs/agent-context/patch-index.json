@@ -1382,6 +1382,14 @@
       ]
     },
     {
+      "name": "2085-profile-unlock-option.patch",
+      "path": "patches/storage/2085-profile-unlock-option.patch",
+      "sha256": "6a2e15201065d1c018fb66dd765f5ea458e85ff173c935ba8ea880e9a5945b68",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

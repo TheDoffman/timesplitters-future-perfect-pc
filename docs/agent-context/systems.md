@@ -29,13 +29,10 @@ as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
 focus changes only when gameplay capture was requested.
-Windows gameplay confinement now uses the tiny center rectangle from
-`pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
-still drive aim; absolute pointer drift cannot reach the border. Initial capture,
-move/resize and repair share the same foreground-only rectangle calculation.
-Menu/settings/Escape/focus release remain owned by `pc_controls.c`; repair never
-resets held input. This is a Win32 adapter fix (#381); SDL already uses relative
-mode. The launcher-only trigger has not been independently established.
+Windows gameplay confines the pointer to a foreground-only center rectangle
+via `pc_mouse_capture.h`; WM_INPUT drives aim. `pc_controls.c` handles capture,
+resize, repair and release without resetting held input (#381). SDL uses
+relative mode. A launcher-only trigger remains unverified.
 Patches connect these files to upstream; the generated guest files are not the
 authoritative place to implement portable behavior.
 
@@ -62,6 +59,10 @@ leaving the mouse packet for player one. The first player word is a game/network
 ID and is not a local slot. The shared `tests/graphics/mouse_region.c` fixture,
 run by `tests/gameplay/test_mounted_mouse.py`, checks both adapters and verifies
 the deferred packet reaches player one. Mac gameplay remains unverified.
+
+Unlock All (#262) lives in Extras → Cheats. `pc_unlock_all.inc` stores a
+per-profile sidecar and refreshes Cheats; `2085-profile-unlock-option.patch`
+wraps unlock descriptors. Stage access needs separate verification.
 
 The #74 material continuation and validation limits are recorded in
 [material validation](../textures/material-validation.md).
@@ -550,8 +551,9 @@ hook at default/90-degree FOV and three aspect ratios. The separate
 `pc_display_menu.c` stages resolution (including Auto), aspect, vertical FOV,
 texture style, FPS and subtitles behind one dirty-state Apply. Auto uses the
 `1,1` saved sentinel and is labeled Auto, never displayed as a pixel size.
-Controls follows Video Options; conditional frontend Cheats is last. Audio
-retains its frontend/pause-specific alignment and common highlights are rounded.
+Front-end Settings has Video and Controls; Extras has Cheats. Pause Options
+groups Controls, Audio, Video and Keyboard/Mouse under Settings with no spacer
+rows. Quit to Desktop is main-menu only.
 `pc_frame_rate_settings.h` persists the beta presets; live requests enter
 `pc_frame_rate_live.inc` and commit at the guest clock boundary.
 
