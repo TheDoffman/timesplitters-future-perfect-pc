@@ -1,5 +1,8 @@
 # Runtime and patch navigation
 
+Native continuation storage/restoration is project-owned through additive
+`0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).
+
 Optional branch-feedback recording is project-owned; compatibility includes
 route to `src/runtime/` through `0202-independent-branch-feedback.patch`.
 See [provider, generation and test contracts](independent.md#guest-branch-feedback-recorder).

@@ -256,6 +256,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-104 | Direct scalar extension and numeric helper retirement | Awaiting validation |
 | MAC-105 | Canonical project guest execution header | Awaiting validation |
 | MAC-106 | Project branch-feedback provider and generated header | Awaiting validation |
+| MAC-107 | Project native continuation service | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6663,5 +6664,30 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   remains pending; shared-source and Windows results do not establish it.
   The first Mac CI run at 3965c6df exposed a warning in the deliberately broken
   double-address fixture; it now explicitly discards the first value while
-  retaining both evaluations. The fixture repair awaits Mac CI acceptance and
-  changes no runtime source or Windows gameplay evidence.
+  retaining both evaluations. The repair passed both native CI hosts at
+  0a991a8e; it changes no runtime source or Windows gameplay evidence. Mac title
+  acceptance remains separate.
+
+### MAC-107 - Project native continuation service
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 native-continuation stage based on 0a991a8e (all 17
+  prerequisite CI checks passed); src/runtime/guest_nonlocal_jump.c,
+  tests/compiler/nonlocal_jump_runtime.c and test_nonlocal_jump_runtime.py,
+  patches/compiler/0203-independent-nonlocal-jumps.patch. Own TLS continuation
+  storage/restoration replaces the inherited implementation. Windows checks
+  stack membership and requires a foreign adapter to transfer control; absent
+  or returning adapters stop before an invalid native unwind.
+- Mac support: common C and canonical guest-cell interface, with pthread test
+  coordination. POSIX retains the existing same-stack assumption. No Mac fiber
+  ownership adapter is provided or claimed. Register foreign handlers at startup
+  or while guest threads are quiescent.
+- Acceptance: direct real-provider cases, compiled negative controls, emitted
+  calls using the canonical header, patch upgrades, native build and isolated
+  title regression. Windows fiber handoff/error paths are host-specific checks.
+  The supported-US translator detects neither CRT helper, so game boot alone
+  does not exercise this service. Windows passed 759 compiler checks, 73
+  migration/repository checks, Release/native build checks and an isolated
+  Story regression replay. See STATUS.md for source/binary provenance and scope.
+  Native Mac acceptance remains pending; the shared POSIX path is not proof
+  of Mac title or fiber behavior.

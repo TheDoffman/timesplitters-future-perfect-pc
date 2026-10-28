@@ -1,5 +1,9 @@
 # Runtime patches
 
+`compiler/0203-independent-nonlocal-jumps.patch` removes inherited continuation
+storage/restoration and links the project provider into the kernel target. It
+follows branch feedback and precedes final layout routing.
+
 `compiler/0202-independent-branch-feedback.patch` routes optional observations
 to the own provider/header in `src/runtime`, after the header consumer repair
 and before final layout routing. Existing patch payloads remain unchanged.

@@ -1,5 +1,12 @@
 # Independent runtime replacement
 
+Native nonlocal jumps now have a project continuation provider, installed by
+`0203-independent-nonlocal-jumps.patch`. Direct native and emitted-call contracts
+are separate from title regression checks because the supported-US translation
+currently detects neither CRT helper. See [service boundaries](../agent-context/independent.md#native-nonlocal-jumps)
+and MAC-107 for acceptance, including the Windows foreign-stack adapter and
+pending native Mac validation.
+
 The project now owns `src/runtime/recomp_types.h`, used directly by default
 generation. Previously replaced execution primitives remain; the remaining
 header service interfaces and target-admission support have original code and

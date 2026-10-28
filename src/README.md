@@ -10,7 +10,7 @@
 | `network/` | Multiplayer, bots, online services and Discord presence. |
 | `diagnostics/` | Debug settings, breadcrumbs, crash capture and hang handling. |
 | `storage/` | Save routing, host storage and profile persistence. |
-| `runtime/` | Guest execution interface, memory boundaries, integer faults and branch observations. |
+| `runtime/` | Guest execution interface, memory boundaries, native continuations, integer faults and branch observations. |
 | `native/` | Operating-system adapters and native renderer integration. |
 
 Keep shared behavior in these folders and host calls in `native/`. The final

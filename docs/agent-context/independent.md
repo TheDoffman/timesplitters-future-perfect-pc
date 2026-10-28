@@ -1,5 +1,34 @@
 # Independent tooling contracts
 
+## Native nonlocal jumps
+
+`src/runtime/guest_nonlocal_jump.c` owns the continuation registry behind
+`recomp_setjmp_slot`, `recomp_guest_longjmp` and the foreign-stack callback.
+Generated `setjmp` stays in its caller's live native frame. Per-thread arrays
+keep 32 stable native buffers; repeated guest keys rearm in place, overflow
+replaces only the newest slot, and jumping to an older slot retires later ones.
+An unknown key returns zero before reading guest memory. Project guest-cell
+accessors restore EBP/SEH-EBP, EBX, EDI, ESI and saved ESP plus four. Zero results
+become one; all other result bits are preserved on the supported 32-bit-int hosts.
+
+Windows compares an integer stack tag with the current stack limits. A foreign
+handler must transfer control to the owning stack; a missing or returning handler
+now stops with a diagnostic rather than attempting an invalid native unwind.
+Configure that process-wide handler before guest threads start or while they
+are quiescent. The POSIX path retains the existing same-stack-only assumption;
+native Mac fiber switching is not claimed. Tags are not dereferenced, and are
+captured in the binding frame without returning a local address from a helper.
+
+`0203-independent-nonlocal-jumps.patch` removes the inherited implementation and
+adds the own source to `xbox_kernel`. It uses `TSFP_SHARED_SOURCE` supplied by the
+final layout patch. Earlier patch payloads stay immutable. The canonical header
+and generated function bodies do not change. `test_nonlocal_jump_runtime.py`
+executes the real provider, six compiled negative controls, actual emitted calls
+with the canonical header, concurrent same-key use and Windows fiber/error paths.
+The supported-US generation currently detects neither CRT helper: a title replay
+is a regression check, not evidence that these service calls were exercised.
+Production integration and host acceptance are tracked in MAC-107.
+
 ## Guest branch-feedback recorder
 
 `src/runtime/tsfp_branch_feedback.h` and `guest_branch_feedback.c` own optional
@@ -47,7 +76,8 @@ direction primitives and adds original service declarations, diagnostic aliases
 and guest-width executable-target admission. The argument to admission is read
 once; zero upper bounds and synthetic kernel addresses retain their acceptance.
 Services declared here still include transitional implementations; this is not
-ownership of the loader, clock, diagnostics or nonlocal-jump service bodies.
+ownership of the loader, clock or diagnostic service bodies. Native nonlocal
+jumps use the own provider described above.
 Optional feedback uses the project provider described above. The header-service
 fixture supplies a test provider for routing/counters; the recorder suite
 separately exercises the real implementation and its compatibility bridge.

@@ -1,5 +1,9 @@
 # Subsystem entry points
 
+Native nonlocal jumps use the shared project provider and Windows stack adapter;
+see [continuation contracts](independent.md#native-nonlocal-jumps), including the
+fatal boundary when a foreign-stack callback fails to transfer control.
+
 Branch observations and guard counts use the own recorder in `src/runtime/`;
 see [feedback integration](independent.md#guest-branch-feedback-recorder).
 

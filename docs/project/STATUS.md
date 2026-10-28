@@ -1,3 +1,68 @@
+## Project native continuation service (2026-10-27)
+
+Based on `0a991a8e` on `feature/independent-exchange`, after all 17 prerequisite
+CI checks passed. This also confirms the previous Clang mutation-fixture repair.
+`src/runtime/guest_nonlocal_jump.c` replaces the inherited continuation service
+through additive patch `0203-independent-nonlocal-jumps.patch`. The patch removes
+the old implementation from memory layout and links the project source into the
+kernel target using the final layout patch's shared source root.
+
+The provider owns 32 stable native buffers per thread, guest-key lookup/rearming,
+newest-slot overflow and retirement of newer slots when resuming an older frame.
+Unknown keys return to the guest fallback before memory access. Project guest
+accessors restore the five saved register cells and pop the guest return address;
+zero jump results become one and other 32-bit results retain their bits. Native
+setjmp executes in the generated caller. Windows verifies stack membership and
+routes foreign jumps through the registered adapter; a missing or returning
+adapter now aborts with a diagnostic before attempting an invalid native unwind.
+Register the process-wide callback at startup or with guest threads quiescent.
+POSIX retains the existing same-stack assumption, without a Mac fiber adapter.
+
+Windows x64 / MSVC 19.44.35224.0 evidence:
+
+- Ten isolated probes established the prior service's behavior, including real
+  Windows fiber handoff, high-bit results, unaligned guest fields, ESP wrap,
+  nested retirement, rearming, capacity and four threads sharing a guest key.
+  The old stack-marker helper needed a baseline-only C4172 suppression; the
+  new implementation captures its marker in the binding frame and needs none.
+- The project tests run the real provider and canonical header, including
+  generated calls for zero, positive and high-bit results, native frame unwind,
+  local EBP restoration and guest fallback. Six deliberately broken providers
+  compile under warnings-as-errors before the behavioral checks reject them.
+  Missing/returning foreign adapters are tested in bounded subprocesses with
+  crash dialogs disabled only for those test processes.
+- All 29 installed-provider/translation-control checks passed (19.01s), then all
+  759 compiler checks passed (309.32s). All 73 migration, snapshot, tracking,
+  context and backlog checks passed (873.07s). Initial fixture-only errors
+  (an ambiguous mutation string and omitted generated-code header flag) were
+  corrected before these passes. New contracts are selected on both CI hosts.
+- The full stack applied with two runtime files changed. All 22 generated C/
+  header files remain byte-identical and the generation fingerprint is current.
+  The canonical header, previous patch payloads and vendor snapshot are unchanged.
+  Release build, bundled native checks and matching crash symbols passed with
+  normal C flags and process-local `CL_MPCount=2`.
+
+The supported-US executable was verified by the bounded runner. The isolated
+`independent-nonlocal` Story replay confirmed scene 4 / mission 1 with input
+enabled before testing. Movement measured 11.174544 forward /
+5.970043 backward; ammunition fell eight to six. All 40
+pause samples froze level ticks. The 60 resume samples remained
+unpaused and level ticks advanced over that window. Final checkpoint:
+107.913s within a 240-second cap; runner exit zero. Start, pause and
+resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes; no owned locks, partitions or crash dumps remained.
+The working-tree executable based on `0a991a8e` has SHA-256
+`64edc144fd84ccbf047697b0de78312784238f4e6142d5a6d90f91c1e2876014`.
+
+The current title translation detects neither CRT setjmp nor longjmp helper.
+The replay therefore checks game regressions; the direct/provider/generated-call
+tests establish continuation behavior. It used injected input, a minimized
+window, Original60 timing, Classic textures and skipped startup movies. Native
+Mac title/fiber behavior, physical input, audio listening and full campaign are
+not established (MAC-107). Memory/loader/kernel/device services, title integration
+and the final toolkit-unavailable production generation/build/package audit
+remain incomplete.
+
 ## Project branch-feedback provider (2026-10-27)
 
 CI follow-up to `3965c6df`: the Mac native job passed 1,406 checks but failed the

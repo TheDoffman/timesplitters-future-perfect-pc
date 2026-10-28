@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "4cb94510c6c177316bdb1916cc3d0b334b9e5ac61dc0cb69020a2a93378193ac",
+  "loaderSha256": "3afc7798ef03e0342c6c657dd5d16be2e89f65cdbe1b55ab90c80d90246cc437",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2139,6 +2139,15 @@
         "src/kernel/recomp_icall_feedback.h",
         "templates/runtime/recomp_types.h",
         "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0203-independent-nonlocal-jumps.patch",
+      "path": "patches/compiler/0203-independent-nonlocal-jumps.patch",
+      "sha256": "1e6f46b6a7f7759cedda995d665bb201113d6f9f03005405ebd8434bfdfb4177",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/xbox_memory_layout.c"
       ]
     },
     {
