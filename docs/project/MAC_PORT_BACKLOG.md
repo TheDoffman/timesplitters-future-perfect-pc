@@ -7135,3 +7135,10 @@ per-test timeout, assertion, dependency pin and final gate remains selected.
 No runtime source/build/game input changed; the tested d2608527 executable and
 its existing Windows gameplay evidence remain the current product evidence.
 New-head complete Windows CI remains required; this is not a passing result.
+
+
+Merged-main CI repair verification (Windows): the exact lightweight Python plan
+passed 121 tests and 26 subtests in 5.48s. The build/test guide is below the
+unchanged 65536-byte cap with its detailed CI contracts linked separately.
+Runtime source, generated files and executable remain unchanged; fresh remote
+CI is required. This documentation repair does not establish Mac gameplay.

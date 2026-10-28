@@ -252,3 +252,23 @@ per-test timeout, assertion, dependency pin and final gate remains selected.
 No runtime source/build/game input changed; the tested d2608527 executable and
 its existing Windows gameplay evidence remain the current product evidence.
 New-head complete Windows CI remains required; this is not a passing result.
+
+
+CI merge follow-up: main6780f3bd added49 bytes to build-test.md; merged PR
+2fbd6807 had65569 bytes and failed the unchanged65536-byte context cap before
+native jobs. Integrated main into this feature branch and moved the intact CI/
+host-validation subsection to runtime-ci.md, retaining its overview anchor and
+commands. Local plan-equivalent and merged-tree checks must pass before push.
+No runtime/build/game source changed.
+
+
+Merged-main CI repair verification (Windows): the exact lightweight Python plan
+passed 121 tests and 26 subtests in 5.48s. The build/test guide is below the
+unchanged 65536-byte cap with its detailed CI contracts linked separately.
+Runtime source, generated files and executable remain unchanged; fresh remote
+CI is required. This documentation repair does not establish Mac gameplay.
+
+Node repository contracts also passed all 23 tests in 13.61s. Context/link/index
+check passed against origin/main. Installed source/archive/executable/generated/
+game hash verification passed, and all 26 protected files retained hash, size
+and mtime. No game rebuild was required for this documentation-only change.
