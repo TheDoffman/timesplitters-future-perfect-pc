@@ -7123,3 +7123,15 @@ backlog,7 package/path checks plus2subtests and fresh Release/Story checks passe
 (STATUS); full new-stage migration and new-head Mac CI remain pending. Device queues/driver integration/full shutdown remain unfinished.
 Predecessor37f9042d all16CI checks succeeded, including native Mac contracts;
 this is not new-stage Mac or title gameplay evidence. Status remains Awaiting validation.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.

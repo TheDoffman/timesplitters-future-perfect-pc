@@ -31570,3 +31570,15 @@ pause40/resume60 samples, scene4/mission1, captures reviewed at100.457s within
 movies skipped; not physical input, audio listening, campaign or Mac title proof.
 Kernel allocation59/free72/initialize73 are not direct supported imports; native
 contracts cover their behavior separately. Full migration and new-head CI pending.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.

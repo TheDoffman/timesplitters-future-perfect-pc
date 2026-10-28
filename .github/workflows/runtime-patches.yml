@@ -133,7 +133,8 @@ jobs:
     needs: plan
     if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # Windows native fixtures exceeded30m while still making test progress.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 45 || 30 }}
     strategy:
       fail-fast: false
       matrix:

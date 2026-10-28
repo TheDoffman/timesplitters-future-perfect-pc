@@ -1000,4 +1000,4 @@ CI discovers unittest in each owning test folder. Changes to project_paths.py
 or conftest.py select all runtime and launcher suites.
 
 
-[Request checks](kernel-objects.md).
+[Request CI](kernel-objects.md).

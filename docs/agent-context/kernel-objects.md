@@ -240,3 +240,15 @@ run; no physical input/audio/campaign/Mac title claim. Direct supported imports
 do not exercise59/72/73, so native contracts establish their new behavior while
 this game test establishes bounded regression coverage. Full new-stage local
 snapshot/migration and new-head CI remain pending. No full independence claim.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.
