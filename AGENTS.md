@@ -47,6 +47,13 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Workspace and coordination
 
+- After a task branch is confirmed merged into remote `main`, remove that task's
+  local branch from the computer. First verify that all task commits are present
+  in `main` (or accounted for by a squash merge) and that no uncommitted or unique
+  work would be lost. Switch out of the branch before using safe local deletion
+  (`git branch -d`); preserve unmerged branches and other chats' work. This rule
+  does not authorize deleting remote branches, saves, settings or ignored files.
+
 - Use a focused branch for each task, such as `release-cleanup` or
   `mac-debug`. Do not route all work through a permanent platform
   branch or choose a branch merely because the work continues an earlier chat.

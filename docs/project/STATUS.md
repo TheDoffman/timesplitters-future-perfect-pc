@@ -29248,3 +29248,200 @@ clicks and consumed exactly seven rounds (128 to 121), with no crash or native
 presentation error. Saved validations are in ignored
 `private/test-saves/high-refresh/native-{120,180,240}-short-fire-issue337-validation.json`.
 Changes are on a local branch and are not yet pushed.
+
+## Launcher save manager and texture health (2026-10-27)
+
+Implemented the accepted save-manager and texture-status recommendations on
+`feature/launcher-save-manager`, based on main `f74247df`. Earlier local Save-button
+state work remains preserved separately on `fix/launcher-save-button-state`.
+
+Saves now opens shared `SavesPage` in the main window with manual backups,
+dated/versioned restore points, confirmed restore, cancellation and folder links.
+`SaveBackups` stores metadata-hashed, per-block-hashed local archives in
+`Backups/Saves`, omitting empty 64 KiB regions of virtual disks. Archives are
+verified before publication and ignored by Git. Restore validates all staged
+files, makes an undo backup, then swaps folders through a bounded owner journal.
+Interrupted swaps recover; committed cleanup errors defer without rolling back
+partially deleted originals. Unknown recovery files and invalid archives stay
+retained. Automatic backups run before game update/repair/version change/rollback;
+a failed backup blocks runtime replacement. Launcher-only updates are excluded.
+
+The graphics page shows recorded installed/available texture versions, the saved
+Classic/Enhanced choice and unsaved-selection state. Verify compares indexed file
+hashes, reports missing/changed files and offers the existing confirmed download
+for affected parts. Verification leaves unrelated custom files unchanged.
+
+Windows x64 .NET Framework bootstrap/application/test builds passed with pinned
+artwork. The complete isolated launcher suite passed: 113 updater checks, 27
+shared UI groups, 28 download/recovery checks, 13 version checks, 10 startup checks,
+30 news checks, 38 settings checks plus crash/session/texture/maintenance suites.
+New shared checks cover sparse round-trip/undo, cancelled/failed/damaged restores,
+metadata/path/range rejection, interrupted swaps, post-commit cleanup, corrupt undo
+backup preservation, unowned recovery files, automatic update/rollback protection,
+restore confirmation, preview isolation and texture verification/status. A final
+attempt correctly blocked while another game process ran; it passed after the
+process exited, without bypassing the guard or terminating that game.
+
+Portable launcher/package/path/context checks passed 93 tests plus 38 subtests.
+Inspected 1000×760 Saves and 900×720 graphics-page WPF renders using synthetic
+fixtures only; dates, restore controls, verification actions and saved/draft mode
+remain readable. Actual personal saves were never used. Native Mac compilation,
+APFS sparse allocation, live UI/download and real-save/gameplay acceptance remain
+unrun on this Windows host. Both hosts compile the shared sources/tests and only
+filesystem preparation and installation-lock ownership vary. The Mac window
+passes its existing lifetime lock into save operations rather than reacquiring it;
+the shared round-trip test covers an already-held lock (native execution pending).
+No push, merge into main or release was performed.
+Logs/previews remain under ignored build and logs directories.
+
+## Launcher shared page polish (2026-10-27)
+
+Implemented the accepted header, settings-layout and status-badge improvements
+on `feature/launcher-unified-pages-1027`, based on local integration `21778c2c`
+(save-manager commit `b4cf598a` plus latest main `8aec3c8f`). Prior local work is
+preserved. `PageTheme.Header` unifies page typography, category labels, spacing
+and divider across Settings, Saves, Maintenance, What's New and Game versions.
+`Badge`/`SetBadge` share text-labeled neutral, information, success and warning
+colors for installation, preview/Beta, updates, verification and incomplete
+checks. Different channels and newer local builds do not claim an update.
+Paired settings fields reserve consistent caption height, and display/camera/
+performance now precede texture management. Existing controls and fixed Save/
+Cancel actions remain, with no settings, save or download-policy changes.
+
+Windows x64 bootstrap, application and tests compiled with pinned artwork.
+Full isolated launcher checks passed: 113 updater, 27 shared UI groups,
+19 texture, 28 download/recovery, 13 version, 10 startup, 30 release-news,
+38 settings, 14 session and 20 maintenance checks plus crash reporting.
+Portable shared-UI/compatibility/native-host-source/backlog/context checks
+passed 52 tests plus 26 subtests. Normal 1152×772 launcher renders were inspected
+for graphics, controls, repair, news and game versions. Separate 900×720 Saves
+and scrolled texture views used a synthetic preview root only. Text, actions,
+field alignment, badges, sidebar and fixed footer remain readable.
+No personal saves/settings or game data were used. Native Mac compilation,
+rendering/scaling and keyboard acceptance were not run on this Windows computer.
+No release version was changed and nothing was pushed or published.
+
+## Launcher information density (2026-10-27)
+
+Local `feature/launcher-density-1027`, based on visual-polish revision `01c66f42`,
+reduces repeated instructions in Settings, Saves, Maintenance and Game versions.
+Shared `PageTheme.Details` exposes optional explanations through collapsed
+expanders: resolution/FOV/high-refresh/performance help, texture behavior/update
+preferences, Discord setup and backup-storage details. Texture check/download/
+verify actions, installed/available versions, saved/draft mode, Beta warnings,
+compatibility warnings and pre-restore protection remain visible. Captions are
+shorter and reserve 20px; paired inputs retain labeled-by accessibility. No
+settings defaults, persistence, download or backup policies changed.
+
+Windows .NET Framework builds with pinned artwork and the complete existing
+launcher suite pass: 113 updater checks, 27 shared UI groups, 19 texture checks,
+28 download/recovery, 13 version, 10 startup, 30 news, 38 settings, 14 session and
+20 maintenance checks plus crash reporting. Portable launcher/native-source/
+context/backlog checks pass 52 tests plus 26 subtests. Inspected 1152×772 controls,
+graphics, Discord and repair renders, and 900×720 Saves and collapsed/expanded
+texture views using synthetic preview data. Main actions and the Save/Cancel
+footer remain visible; extra help expands inside the scrollable page.
+Native Mac compilation, UI expansion/focus and display scaling remain untested
+on this Windows host. Personal saves/settings and the ISO were not used. Nothing
+was pushed or published and no release version changed.
+## Launcher Save button state (2026-10-25)
+
+Based on main `063789df` on `fix/launcher-save-button-state`, the shared
+SettingsPage now disables Save after successful persistence using the existing
+disabled-button theme. It snapshots the deferred UI draft, re-enables Save for
+controls/graphics/Discord/key-binding edits and disables it again when edits are
+reverted. Tab navigation, display filters and immediate texture-check preferences
+are excluded. Initial Save remains available for defaults/migration. Duplicate
+save activation is ignored; validation and concurrent-file failures leave retry
+available without overwriting external changes. Persistence format is unchanged.
+
+Windows x64 .NET Framework launcher/bootstrap/test compilation passed with pinned
+artwork. All 20 shared UI groups and 38 isolated settings checks passed. The new
+shared UI group exercises every deferred control type, key bindings, defaults,
+reversion, navigation, duplicate saves, validation failure and conflicting file
+edits. Three portable shared UI tests, nine compatibility-policy tests and backlog
+consistency passed. Inspected a 900×720 WPF render: Save appears greyed out after
+saving and the saved status remains readable. No personal files were used.
+Native Mac compilation/UI execution remain unavailable on this Windows host;
+shared behavior/tests use the existing dual-host workflow with no new OS adapter.
+No push, merge or launcher release is performed by this change.
+
+## Launcher task refresh after PR #382 (2026-10-27)
+
+This chat's active worktree moved out of the incomplete OneDrive staging tree to
+`C:/Users/thedo/Desktop/TS Decompile/build/launcher-versions-source`. It began clean
+on `fix/launcher-save-button-state` at `c65d6d19`. Integrated fetched main
+`31599ff4d1547bbd45471497a55bcccab0440f12` locally, preserving the Save-button code
+unchanged. The sole content conflict was the append-only status history; both
+sides are retained here. No personal configuration, saves, primary game build or
+other worktree was edited. No push or merge into main is authorized by this refresh.
+
+Read updated AGENTS, context overview, layout, launcher and build/test maps plus
+`tools/project_paths.py`. Commands now use `tools/build/`, `tools/release/` and
+`tools/ci/`; launcher tests are under `tests/launcher/`, artwork/SDK pins under
+`config/build/`, and project evidence/backlog under `docs/project/`. This task's
+ignored build wrapper now calls the maintained builder instead of a copied script;
+its preview helper accepts an output directory and no longer assumes the old root.
+Older ignored one-off release/texture scripts are retained as historical records
+and must not be reused as entry points without resolving current paths.
+
+On this Windows x64 computer, the moved `tools/build/build-launcher.ps1 -Test
+-RequireArtwork` compiled bootstrap/application/tests with checksum-pinned art and
+passed the complete isolated suite, including 113 updater regressions, 20 shared
+UI groups and 38 settings checks. Grouped Python launcher/package/path-helper/
+context tests passed 93 tests and 38 subtests. Initial context checks exposed an
+oversized merged guide; consolidated the Save/Preview test notes and preserved
+its required LF endings. Native Mac builds/UI and game gameplay were not run.
+The supplied main1392ae8f 120-second Story/10-check evidence remains evidence from
+its original revision/computer, not validation of this branch or later gameplay.
+Package and final repository-context verification are recorded in ignored task logs.
+
+## Combined launcher integration and local-branch cleanup rule (2026-10-27)
+
+The user authorized pushing all outstanding launcher work to main. Integrated
+`fix/launcher-save-button-state` into the save-manager/texture-health/visual-polish/
+information-density branch, preserving both Save's saved-draft behavior and the
+texture saved-mode refresh after successful persistence. Reconciled documentation
+at the reorganized paths and retained the complete shared tests from both branches.
+Root `AGENTS.md` now requires safe removal of a completed task's local branch after
+its merge into remote main is verified. The rule preserves uncommitted/unique
+work, other chats' unmerged branches and ignored data; remote branch deletion is
+not authorized by it. This repository-level rule travels through Git to other
+checkouts and applies when their chats read the updated instructions.
+
+Main requires a pull request and passing Windows/Mac patch-transition and launcher
+compatibility checks; publication will use those gates, with no bypass or version
+bump. Local validation and hosted results are recorded with the PR.
+
+## Launcher v1.4.0 release preparation (2026-10-27)
+
+The user requested launcher 1.4 after integrating all outstanding changes into
+main. Shared launcher version and assembly/file attributes now use 1.4.0 and
+1.4.0.0. PR #390 includes the version bump so the subsequently merged main
+revision can be tagged `launcher-v1.4.0` and built/published by the maintained
+Windows+Mac release workflow. Game VERSION is unchanged. No existing release,
+tag, asset name or updater manifest format is replaced. Publication remains
+pending the required main-branch checks and both platform package validations.
+
+### Native Save-button notification repair during PR #390 validation
+
+The first Mac CI build compiled and signed the app, passed native regressions,
+sparse save round-trip/recovery/automatic-backup and texture-health UI checks,
+then failed the shared Save-state test on an immediate sensitivity edit. Avalonia
+routes TextChanged later on its dispatcher, unlike WPF's immediate notification.
+The thin `Ui.TextChanged` adapter now observes TextBox.TextProperty directly so
+shared draft state tracks the actual value synchronously. WPF is unchanged.
+The existing edit/revert regression remains unchanged and will validate the fix
+on the native runner; no tests were skipped or relaxed.
+
+### Native malformed-metadata recovery during PR #390 validation
+
+After the notification repair, Mac CI passed all 28 shared UI groups and packaged
+install/repair/restart/render checks, then rejected the package fixture's plain
+text BUILD record during the new pre-update backup. System.Text.Json.JsonException
+escaped the shared expected data-error handlers. The native serializer adapter
+now normalizes malformed JSON to InvalidDataException. Backup game labels can
+fall back to Unknown without changing malformed metadata, while invalid archives
+remain rejected and damaged texture receipts are retained. Native parser tests
+and shared backup/receipt tests now include malformed JSON; the existing package
+recovery scenario is unchanged. Hosted validation reruns on the repaired source.

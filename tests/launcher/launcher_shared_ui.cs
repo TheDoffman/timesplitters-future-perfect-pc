@@ -68,6 +68,38 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            SaveBackupChecks.Run(root,Test);
+            Test("save manager lists dated restore points and requires restore confirmation",()=>{
+                string folder=Path.Combine(root,"saves-page");Directory.CreateDirectory(folder);
+                string saves=Core.PathIn(folder,LauncherPlatform.Saves(folder));Directory.CreateDirectory(saves);File.WriteAllText(Path.Combine(saves,"profile"),"original");
+                var backup=SaveBackups.Create(folder,"Manual",null,System.Threading.CancellationToken.None);File.WriteAllText(Path.Combine(saves,"profile"),"current");
+                var page=new SavesPage(folder,false);
+                Need(page.Choices.Items.Count==1 && ((SaveBackup)page.Choices.SelectedItem).Id==backup.Id && page.Restore.IsEnabled,"Backup list or restore selection missing");
+                Click(page.Restore);Need(Find<Button>(page.View,"ConfirmSaveRestore")!=null,"Restore did not ask for confirmation");
+                Click(Find<Button>(page.View,"CancelSaveRestore"));Need(File.ReadAllText(Path.Combine(saves,"profile"))=="current","Cancelled restore changed saves");
+                var preview=new SavesPage(folder,true);Click(preview.Backup);Need(SaveBackups.List(folder).Length==1,"Preview created a real backup");
+            });
+            Test("texture verification reports missing and changed parts without modifying custom files",()=>{
+                string folder=Path.Combine(root,"texture-health");Directory.CreateDirectory(Path.Combine(folder,"Textures"));
+                string texture=Core.PathIn(folder,"Textures/0123456789abcdef.dds"),meta=Path.ChangeExtension(texture,".json");
+                File.WriteAllText(texture,"texture fixture");File.WriteAllText(meta,"metadata fixture");File.WriteAllText(Core.PathIn(folder,"Textures/custom.dds"),"custom");
+                var pack=new TextureRelease {Version="0.1.0-beta.1",Count=2};pack.Parts.Add(new Release{AssetName="textures-001.zip",Size=111});pack.Parts.Add(new Release{AssetName="textures-002.zip",Size=222});
+                pack.Files.Add("textures-001.zip",new Dictionary<string,string>{{Path.GetFileName(texture),Core.Hash(texture)},{Path.GetFileName(meta),Core.Hash(meta)}});
+                pack.Files.Add("textures-002.zip",new Dictionary<string,string>{{"fedcba9876543210.dds",Core.Hash(texture)},{"fedcba9876543210.json",Core.Hash(meta)}});
+                var report=TextureDownload.Verify(folder,pack,System.Threading.CancellationToken.None);
+                Need(report.Matched==2 && report.Missing==2 && report.Changed==0 && report.DownloadBytes==222,"Missing-file verification or remaining size differs");
+                File.WriteAllText(texture,"edited");report=TextureDownload.Verify(folder,pack,System.Threading.CancellationToken.None);
+                Need(report.Changed==1 && report.DownloadBytes==333 && File.ReadAllText(texture)=="edited" && File.ReadAllText(Core.PathIn(folder,"Textures/custom.dds"))=="custom","Verification changed files or missed modified content");
+                Core.Write(Core.PathIn(folder,".launcher/texture-pack.json"),"{\"version\":\"0.1.0-beta.1\"}");
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                var details=Find<TextBlock>(page.View,"TexturePackDetails");Need(details.Text.Contains("Installed pack: 0.1.0-beta.1") && details.Text.Contains("Original textures"),"Installed version or saved mode missing");
+                Find<CheckBox>(page.View,"EnhancedTextures").IsChecked=true;Need(details.Text.Contains("unsaved changes"),"Unsaved texture selection not identified");
+                Click(Find<Button>(page.View,"SettingsSaveButton"));Need(details.Text.Contains("Next launch (saved): Enhanced textures (Beta)") && !details.Text.Contains("unsaved changes"),"Saved texture mode not refreshed");
+                Click(Find<Button>(page.View,"VerifyTexturePack"));Need(Find<TextBlock>(page.View,"TexturePackStatus").Text.Contains("Preview only"),"Preview verification performed live work");
+                Core.Write(Core.PathIn(folder,".launcher/texture-pack.json"),"broken receipt");
+                Need(TextureDownload.InstalledVersion(folder).Contains("attention") && File.ReadAllText(Core.PathIn(folder,".launcher/texture-pack.json"))=="broken receipt","Malformed receipt blocked settings or was overwritten");
+                Core.Write(Core.PathIn(folder,".launcher/texture-pack.json"),new string('x',5000));Need(TextureDownload.InstalledVersion(folder).Contains("attention"),"Damaged receipt blocked settings or hid the error");
+            });
             Test("Preview groups named feature tracks and remembers the selected test across Stable",()=>{
                 var picker=new GameChannelPickerPage();int changes=0;picker.Changed+=()=>changes++;
                 var releases=new[]{new Release {Tag="v0.4.0-beta.1",Channel="beta",ChannelName="Beta"},
@@ -161,6 +193,52 @@ public static class LauncherSharedUiChecks
                 string invalid=Json.Encode(doc);File.WriteAllText(controls,invalid);bool rejected=false;
                 try {GameSettings.Load(folder,null);}catch{rejected=true;}
                 Need(rejected && File.ReadAllText(controls)==invalid,"Malformed preference was accepted or rewritten");
+            });
+            Test("saved settings disable Save until a persisted draft changes",()=>{
+                string folder=Path.Combine(root,"save-button");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var save=Find<Button>(page.View,"SettingsSaveButton");int saves=0;page.Saved+=()=>saves++;
+                Click(save);Need(!save.IsEnabled && saves==1,"Successful save did not disable Save");
+                Click(save);Need(saves==1,"Disabled Save rewrote settings");
+                for(int tab=0;tab<3;tab++){page.SelectTab(tab);Need(!save.IsEnabled,"Tab navigation enabled Save");}
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                Func<string,object> field=name=>page.GetType().GetField(name,flags).GetValue(page);
+                foreach(string name in new[]{"sensitivity","width","height","discordId"}) {
+                    var input=(TextBox)field(name);string before=input.Text;
+                    input.Text=before+"0";Need(save.IsEnabled,name+" did not enable Save");
+                    input.Text=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                foreach(string name in new[]{"enabled","invert","fullscreen","vrr","fps","skipSplashes","discordEnabled","enhancedTextures"}) {
+                    var check=(CheckBox)field(name);bool? before=check.IsChecked;
+                    check.IsChecked=before!=true;Need(save.IsEnabled,name+" did not enable Save");
+                    check.IsChecked=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                foreach(string name in new[]{"device","scale","filtering","frameRate"}) {
+                    var choice=(ComboBox)field(name);int before=choice.SelectedIndex;
+                    choice.SelectedIndex=(before+1)%choice.Items.Count;Need(save.IsEnabled,name+" did not enable Save");
+                    choice.SelectedIndex=before;Need(!save.IsEnabled,name+" reverted draft remained dirty");
+                }
+                var fov=(Slider)field("fov");double original=fov.Value;
+                fov.Value=original+1;Need(save.IsEnabled,"FOV did not enable Save");
+                fov.Value=original;Need(!save.IsEnabled,"Reverted FOV remained dirty");
+                var automatic=(CheckBox)field("textureUpdates");automatic.IsChecked=automatic.IsChecked!=true;
+                Need(!save.IsEnabled,"Immediate texture-check preference enabled deferred Save");
+                var inputSensitivity=(TextBox)field("sensitivity");string valid=inputSensitivity.Text;
+                inputSensitivity.Text="invalid";Click(save);
+                Need(save.IsEnabled && saves==1,"Failed validation disabled Save or reported success");
+                inputSensitivity.Text=valid;Need(!save.IsEnabled,"Restored saved input remained dirty");
+                page.SelectTab(0);var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                Click(binding);Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Clear binding"));
+                Need(save.IsEnabled,"Binding change did not enable Save");Click(save);
+                Need(!save.IsEnabled && saves==2 && GameSettings.Load(folder,null).Binding(0)[0]=="none","Binding save did not disable Save or persist");
+                Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Restore default controls"));
+                Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Restore defaults"));
+                Need(save.IsEnabled,"Restoring default controls did not enable Save");Click(save);
+                Need(!save.IsEnabled && saves==3,"Saving defaults did not disable Save");
+                string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                string external=File.ReadAllText(controls)+" ";File.WriteAllText(controls,external);
+                fov.Value=original+2;Click(save);
+                Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);

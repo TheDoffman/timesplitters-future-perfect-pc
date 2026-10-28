@@ -10,8 +10,18 @@ namespace TimeSplitters.Launcher
     {
         // Cloud Files markers describe storage, not a redirected pathname.
         // Keep every other reparse tag (including unknown tags) rejected.
+        // The native Mac window owns mac.lock for its entire lifetime. Its busy
+        // state serializes save work; standalone callers still acquire that lock.
+        public static IDisposable AcquireSaveLock(string root,bool installationLockHeld)
+        {
+#if MACOS
+            if(installationLockHeld)return null;
+#endif
+            return AcquireUpdateLock(root);
+        }
         public static bool IsCloudTag(uint tag) { return (tag & 0xFFFF0FFFu) == 0x9000001Au; }
 #if MACOS
+        public static void PrepareSparse(FileStream file) { /* Native SetLength leaves unwritten regions as holes. */ }
         public static IDisposable AcquireUpdateLock(string root)
         {
             return new FileStream(Core.PathIn(root, ".launcher/mac.lock"),
@@ -49,6 +59,15 @@ namespace TimeSplitters.Launcher
         }
         public static void Executable(string path) { if(OperatingSystem.IsMacOS() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command"))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
 #else
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError=true)]
+        static extern bool DeviceIoControl(Microsoft.Win32.SafeHandles.SafeFileHandle file,uint code,
+            IntPtr input,uint inputSize,IntPtr output,uint outputSize,out uint returned,IntPtr overlapped);
+        public static void PrepareSparse(FileStream file)
+        {
+            uint returned;
+            if(!DeviceIoControl(file.SafeFileHandle,0x000900c4,IntPtr.Zero,0,IntPtr.Zero,0,out returned,IntPtr.Zero))
+                throw new IOException("This volume cannot create sparse save files. Restore was stopped before changing your current saves.");
+        }
         sealed class UpdateLock : IDisposable
         {
             readonly Mutex mutex;

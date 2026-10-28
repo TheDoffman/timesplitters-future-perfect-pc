@@ -44,6 +44,24 @@ when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
 
+## Saved settings button
+
+`SettingsPage` snapshots its deferred draft after a successful save and disables
+Save using the existing theme. Shared input events and binding refreshes compare
+against that snapshot: edits re-enable Save, reverting edits disables it, and
+failed saves leave it available. Tab/filter navigation and immediate texture
+update checks do not dirty the deferred draft. The first save remains available
+for defaults/migration. Behavioral coverage runs in `tests/launcher/launcher_shared_ui.cs` on
+both hosts; no new platform adapter or persistence format is introduced.
+
+After the PR #382 layout migration, validate this work with
+`tools/build/build-launcher.ps1 -Test`; its fixtures now live in `tests/launcher/`.
+The publisher is `tools/release/launcher-release.py`, automation selection is
+`tools/ci/launcher-compatibility.py`, and artwork pins are under `config/build/`.
+Use `tools/project_paths.py` for dynamic helper lookup and the maintained folder
+maps for literal command paths. Old copied compiler/publication scripts in
+ignored build staging are historical artifacts, not supported entry points.
+
 ## Capture health diagnostics
 
 Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS
@@ -62,7 +80,89 @@ The ordinary Diagnostics report and Windows live-hang view include this summary.
 Only fixed status text enters copied diagnostics; raw heartbeat fields stay local.
 `breadcrumbs.txt` joins the bounded report export/retention allowlist (8 KiB).
 
+## Launcher v1.4.0 preparation
+
+The shared `LauncherVersion.Value` and numeric assembly/file attributes advance
+together to 1.4.0 / 1.4.0.0. This release includes save management, texture health,
+Save-button state and the shared visual/density changes. The existing tag-triggered
+`launcher-release.yml` builds both hosts from the merged main commit and owns
+publication; platform manifests and versioned ZIP naming stay unchanged.
+A version commit alone is not a published release.
+
+`Ui.TextChanged` uses Avalonia's synchronous `TextProperty` notification; the
+routed TextChanged event is deferred and left Save's draft snapshot stale until
+the dispatcher ran. WPF retains its immediate event. The existing shared Save
+state regression exercises immediate edit/revert for every text field on both
+hosts; do not weaken it with sleeps or omit the Mac path.
+
+The native `JsonAdapter.Deserialize` normalizes malformed System.Text.Json input
+to InvalidDataException, the shared corruption/recovery contract. This lets
+backup version labels fall back to Unknown for damaged BUILD records while
+preserving those records, and lets texture status retain malformed receipts.
+It never accepts damaged archives. Native parser and shared backup/receipt
+regressions cover these cases; packaged repair exercises the same path.
+
+## Shared page presentation
+
+`PageTheme.Header` owns the category, 28px title, description and silver-blue
+separator used by Settings, Saves, Maintenance, What's New and Game versions.
+`PageTheme.Badge`/`SetBadge` share neutral/info/success/warning treatments; every
+state includes a text label, so color alone is never the status indicator.
+Repair badges use verification results; texture health uses completed checks or
+installs and reports an incomplete check on errors. Release badges distinguish
+updates from different channels and newer installed builds. Preview/Beta labels
+remain separate from installation state.
+
+`SettingsPage.Field` reserves the same caption height across paired columns and
+retains labeled-by accessibility. Graphics lists display, camera, frame rate and
+quality before texture management, with the existing fixed Save/Cancel footer.
+Both hosts consume these page helpers; no duplicate native layout is required.
+`PageTheme.Details` supplies initially collapsed, keyboard-operable explanations.
+Resolution/FOV/high-refresh/performance help, texture help/update preferences,
+Discord setup and backup-storage notes use it. Texture actions, installed/available
+versions, saved mode, Beta/compatibility warnings and restore protection stay
+visible. Settings captions reserve 20px, with shorter labels; paired inputs retain
+labeled-by accessibility. Layout changes do not alter defaults or persistence.
+Visual-only validation uses the existing Windows `--render-settings-graphics`,
+`--render-settings-preview`, `--render-repair-preview`, `--render-news-preview`
+and `--render-versions-preview` modes plus shared UI checks. Native Mac layout,
+DPI and keyboard acceptance still require a native host.
+
 ## Flow and ownership
+
+### Save manager and archive safety
+
+`SavesPage.cs` is shared WPF/Avalonia UI under `SavesHost`; both navigation adapters
+route Saves there and lock other operations while its cancellable work runs.
+`SavesPage` receives the native Mac window’s lifetime installation-lock ownership;
+its busy state serializes save work without reacquiring `mac.lock`. Standalone
+backup/restore callers still acquire the installation lock, as do Windows calls.
+`SaveBackups.cs` archives only `LauncherPlatform.Saves(root)` into `Backups/Saves`.
+It records UTC/date, game version and reason, hashes metadata and nonzero 64 KiB
+blocks, omits empty regions and verifies the completed archive before publishing
+its GUID-named `.tsfpsave` file. Limits are 1,024 files, 64 GiB logical, 512 MiB
+nonempty data, 8,192 blocks and 4 MiB manifest. List shows the latest 200 valid
+archives; invalid files are retained. No import/export or automatic pruning.
+
+`Core.ApplyScope` calls `BeforeGameChange` only for game updates/repairs/rollback;
+backup failure blocks installation. Launcher self-update is excluded. Restore
+stages and checks all files, creates a pre-restore backup, then swaps save folders.
+The bounded owner journal under `.launcher/save-restore` supports interruption
+recovery. Cleanup failure after commit must never roll back partially deleted
+old files. Recovery keeps the installed save folder and validates its undo
+archive before discarding the old one. The Windows adapter marks staged files
+sparse with FSCTL_SET_SPARSE; native SetLength leaves unwritten holes on Mac.
+See [Microsoft's sparse-file contract](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_sparse).
+Tests live in `tests/launcher/launcher_saves.cs` and run through shared UI checks
+on both hosts. They use synthetic data only; Mac execution remains host-specific.
+
+### Texture status and verification
+
+`TextureDownload.InstalledVersion` reads the bounded local receipt;
+`Verify` compares the schema-3 file index and computes required part bytes without
+changing textures. `SettingsPage` shows installed/available versions and saved
+Classic/Enhanced mode, labels drafts, and offers Verify plus confirmed repair.
+Unknown custom files are outside verification and remain untouched.
 
 The launcher publication job requires a full-history checkout (`fetch-depth: 0`)
 for `launcher_pr_notes` to inspect the previous launcher tag and merged commit

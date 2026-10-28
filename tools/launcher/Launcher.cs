@@ -107,6 +107,7 @@ namespace TimeSplitters.Launcher
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Release available;
         SettingsPage settings;
+        SavesPage savesPage;
         MaintenancePage repairPage, diagnosticsPage;
         MaintenanceArea maintenanceArea;
         WhatsNewPage newsPage;
@@ -253,7 +254,7 @@ namespace TimeSplitters.Launcher
                 if (MessageBox.Show(Window, "Restore the previous installed release? Your game data, saves and settings will be kept.", "Restore previous release", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 try { HandOff(true); } catch (Exception ex) { Fail(ex); }
             };
-            Button("SavesNav").Click += (s, e) => OpenFolder("Saves");
+            Button("SavesNav").Click += (s, e) => ShowSaves();
             Button("SupportNav").Click += (s, e) => Open("https://github.com/" + ReleaseClient.Repository + "/issues");
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
             Window.Loaded += async (s, e) =>
@@ -294,7 +295,7 @@ namespace TimeSplitters.Launcher
                     Find<ContentControl>("SettingsHost").Content=settings.View;
                 }
                 if(tab>=0)settings.SelectTab(tab);
-                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("SavesHost").Visibility=Visibility.Collapsed;Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Visible;
                 Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
@@ -305,6 +306,7 @@ namespace TimeSplitters.Launcher
         }
         void ShowHome()
         {
+            Find<ContentControl>("SavesHost").Visibility=Visibility.Collapsed;
             if(settings!=null)settings.DismissPrompt();
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
             Find<Grid>("CommandCenter").Visibility=Visibility.Visible;
@@ -325,7 +327,7 @@ namespace TimeSplitters.Launcher
                     versionsPage.Install.Click+=async(s,e)=>await InstallSelectedVersion();
                     versionsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && versionsPage.Selected!=null)Open(versionsPage.Selected.Url);};
                 }
-                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("SavesHost").Visibility=Visibility.Collapsed;Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 foreach(string host in new[]{"SettingsHost","MaintenanceHost","NewsHost"})Find<ContentControl>(host).Visibility=Visibility.Collapsed;
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Visible;SelectNavigation("HomeNav");
                 versionsPage.SetInstalled(previewMode?"v0.2.0-alpha.5":NewsGameVersion);
@@ -362,9 +364,23 @@ namespace TimeSplitters.Launcher
             if(MessageBox.Show(Window,"Install "+release.Tag+"?\n\nCurrently: "+current+".\nThis replaces the installed game runtime. Your launcher, saves, settings, ISO and imported game data will be kept.\n\nOlder versions may read saves or settings differently. Back up saves before comparing builds.","Change game version",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
             ShowHome();await DownloadGame(release,true);
         }
+        void ShowSaves()
+        {
+            if(busy || (!previewMode && Core.GameRunning())) { SetStatus("Close the game before managing saves.");return; }
+            if(settings!=null)settings.DismissPrompt();
+            if(savesPage==null) {
+                savesPage=new SavesPage(root,previewMode);
+                savesPage.OpenFolder+=relative=>OpenFolder(relative);
+                savesPage.BusyChanged+=value=>{busy=value;Refresh();};
+                Find<ContentControl>("SavesHost").Content=savesPage.View;
+            }
+            savesPage.Reload();Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+            foreach(string host in new[]{"SettingsHost","MaintenanceHost","NewsHost","VersionsHost"})Find<ContentControl>(host).Visibility=Visibility.Collapsed;
+            Find<ContentControl>("SavesHost").Visibility=Visibility.Visible;SelectNavigation("SavesNav");
+        }
         void SelectNavigation(string active)
         {
-            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav"}) {
+            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","SavesNav"}) {
                 bool selected=name==active;
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
@@ -385,7 +401,7 @@ namespace TimeSplitters.Launcher
                     issuesTimer.Start();
                 }
             }
-            Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("SavesHost").Visibility=Visibility.Collapsed;Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
             Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
             Find<ContentControl>("NewsHost").Visibility=Visibility.Visible;
@@ -491,7 +507,7 @@ namespace TimeSplitters.Launcher
                     maintenanceArea.Selected+=async selected=> {try{if(selected)await EnsureDiagnostics();}catch(Exception ex){Fail(ex);}};
                     Find<ContentControl>("MaintenanceHost").Content=maintenanceArea.View;
                 }
-                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("SavesHost").Visibility=Visibility.Collapsed;Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
@@ -695,7 +711,7 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());

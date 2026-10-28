@@ -51,6 +51,33 @@ Use **F2 inside the game** to edit keyboard/mouse controls. Resolution is under
 **Settings → Display settings**, or **Options → Display settings** while paused.
 See the [Windows settings guide](windows-settings.md) for the full controls.
 
+After a successful **Save settings**, the button greys out. Changing a setting
+or key binding enables it again; reverting to the saved values greys it out.
+If saving fails, correct the error and retry with the same button.
+## Saves & backups (launcher v1.4.0)
+
+The **Saves** sidebar entry opens the save manager in the main window. Close the
+game and choose **Back up now** to create a local restore point with its date,
+game version and reason. **Open saves folder** and **Open backups folder** remain
+available. Archives are stored in `Backups/Saves`; they are not uploaded.
+
+Before a game update, repair, version switch or runtime rollback, the launcher
+automatically backs up existing saves. If that backup fails, the runtime change
+stops. Launcher-only updates do not create a game-save backup.
+
+Select a dated restore point and choose **Restore selected backup**, then review
+the confirmation. This replaces the entire save folder. Current saves are backed
+up first as **Before restore**, so that restore point can undo the replacement.
+Game files, ISO, settings and textures are outside this operation. Backups are
+validated before replacement; cancelled or invalid backups leave current saves
+unchanged. Save compatibility can differ between game versions.
+
+Empty virtual-disk blocks are omitted to keep archives small. Backups support up
+to 512 MiB of nonempty data and 64 GiB of logical save files. Windows restores
+need a filesystem that supports sparse files. The latest 200 valid restore points
+are listed; older archive files stay in the backups folder. Backups are retained
+until you remove them; use **Open backups folder** to manage their storage.
+
 ## Everyday play and updates
 
 Open **TimeSplitters Launcher.exe** and select **Play Game**. An installed game
@@ -87,6 +114,13 @@ Save **Use enhanced textures (Beta)** to use installed replacements next launch.
 Classic is the default. The toggle does not download or delete files. F10 and
 in-game Texture style changes affect only the current session. Missing replacements
 always use originals; this incomplete Beta may contain visual issues.
+
+The texture card shows the recorded installed pack, the available pack after a
+check, and the saved mode for the next launch. Unsaved mode changes are labeled.
+**Verify textures** compares local files with the published pack hashes and reports
+verified, missing and changed files. Verification does not replace anything;
+**Download / update textures** offers the required parts for repair after confirmation.
+Unrelated custom texture files are kept.
 
 Existing packs from bundled game releases are recognized by file hashes. Matching
 files require no download; only parts containing new or changed files are fetched.

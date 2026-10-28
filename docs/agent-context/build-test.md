@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+Launcher UI/JSON recovery use shared UI, native parser and package checks.
+
 Source/tool/test paths now use responsibility folders; see
 [layout](../development/repository-layout.md). Commands share
 `tools/project_paths.py` and `tests/conftest.py`. Portable probes avoid both.
@@ -954,12 +956,10 @@ behavior or generated guest code changed, and no game build/publication is
 established by these asset-free checks.
 
 
-Grouped Preview UI: GameChannelPickerPage.cs is compiled automatically by both
-hosts' existing *Page.cs includes. launcher_shared_ui.cs tests the actual shared
-selector, including remembering a feature while returning through Stable, general
-preview selection and unavailable-track refresh. Rebuild with build-launcher.ps1
--Test, then run build/launcher/TimeSplitters Launcher.exe. --render-preview produces
-a synthetic named-track example without modifying preferences or calling GitHub.
+Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
+tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
+(sparse backups, update protection, restore failures). Run
+tools/build/build-launcher.ps1 -Test. --render-preview uses synthetic tracks.
 No game build or publisher/tag-format change is required for this grouping.
 
 
