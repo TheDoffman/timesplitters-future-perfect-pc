@@ -31520,3 +31520,27 @@ with host diagnostics, and the probe marks inherited headers as dependencies.
 Strict warnings and undefined-behavior instrumentation remain on original code.
 Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
 No production source, built executable or prior gameplay evidence changed.
+
+
+Next-packet ABI prerequisite (feature/guest-io-manager): ordinal81 now
+consumes one guest pointer/four cleanup bytes, consistent with six independently
+validated supported-title callers and the public Xbox declaration. The bridge
+supplies false for the inherited host stub's extra argument. New compiled actual
+bridge/cleanup contracts and strict fault controls are registered on both CI
+hosts. Windows Release/built-in checks and isolated Story acceptance passed as below;
+new-head CI acceptance remains pending.
+This does not replace device queues or install the ignored request/disc prototype.
+Boot predecessor fd63094f has all16CI checks successful, including native Mac
+contracts; this is not Mac title gameplay evidence.
+
+
+Next-packet Windows acceptance: new executable SHA-256
+`21c2ba6bbfbc05eb78594d3b79d75099dcd7bf05025c0dc7d1d2099b8b5f55da`.
+Story scene4/mission1, movement11.175 forward/6.185 backward, ammo8to6,
+pause40/resume60 samples and reviewed captures passed at99.207s within240s.
+All26 protected files unchanged; all22 generated files unchanged. Minimized,
+synthetic-input Classic/movie-skipped run; not an ordinal81 hit-frequency,
+physical-input, audio-listening or native Mac title claim. Compiled ABI/context/
+backlog24 and patch tracking16 checks passed; full snapshot/migration and CI pending.
+PR #393 was found merged into2e678ac1; new branch feature/guest-io-manager was
+fast-forwarded to that main revision without source-tree changes or lost work.

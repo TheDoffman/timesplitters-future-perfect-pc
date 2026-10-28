@@ -998,3 +998,6 @@ See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 
 CI discovers unittest in each owning test folder. Changes to project_paths.py
 or conftest.py select all runtime and launcher suites.
+
+
+[Packet ABI](kernel-objects.md).

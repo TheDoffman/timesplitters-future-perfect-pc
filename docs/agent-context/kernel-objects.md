@@ -131,3 +131,33 @@ The real-header probe keeps strict warnings on the original source, but marks
 the inherited kernel-header directory as a system dependency: its old nested
 comment otherwise fails Clang -Wcomment. Compiler/type errors remain errors.
 Mac execution still needs current CI.
+
+
+## Guest next-packet ABI prerequisite
+
+`patches/compiler/0217-guest-next-packet-abi.patch` corrects ordinal81 to one
+32-bit guest argument and four cleanup bytes. The transitional native stub
+still has a second desktop-style argument; the bridge passes a constant false
+instead of reading a nonexistent guest argument. Six call sites in the
+SHA-256-verified supported US executable, decoded from mapped function entries,
+push only DeviceObject and immediately restore caller registers after return.
+The prior eight-byte cleanup consumed that saved caller state. Public interface:
+[Xbox nxdk declaration](https://github.com/XboxDev/nxdk/blob/master/lib/xboxkrnl/xboxkrnl.h).
+No executable bytes/instructions are included in the synthetic fixture.
+
+`tests/compiler/test_io_packet_abi.py` compiles the installed bridge adapter and
+actual ordinal-cleanup function with a synthetic caller stack, checking register
+restoration and that only one guest argument is read. Both compiled fault
+controls must fail behavior. CI selects this test on Windows and native Mac.
+This is a prerequisite repair for original device/request dispatch, not a full
+queue implementation: IoStartNextPacket still invokes the transitional host
+stub, while request owner/registry/verified-disc candidates remain uninstalled.
+Windows Release and built-in checks passed. Isolated Story acceptance reached
+scene4/mission1, moved11.175 forward and6.185 backward, fired ammo8to6,
+paused40 samples and resumed60, with captures reviewed. Last checkpoint99.207s
+within240s cap; all26 protected files unchanged. Executable SHA-256
+`21c2ba6bbfbc05eb78594d3b79d75099dcd7bf05025c0dc7d1d2099b8b5f55da`.
+All22 generated files unchanged. Minimized synthetic-input Classic/movie-skipped
+run; ordinal81 execution frequency, physical input, audio and Mac title gameplay
+are not established. Compiled ABI/context/backlog24 checks and tracking16 checks
+passed; full snapshot/migration and new-head Mac CI remain pending.

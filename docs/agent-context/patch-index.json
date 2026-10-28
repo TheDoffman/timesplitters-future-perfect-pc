@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e81df9fec66ba2aa1fd9bda5bbf0a514223611f0a69352047973abae1aabfbcd",
+  "loaderSha256": "98e513fc0b88d336a421f0c855b47938e5ffa2efaf625471e39ab4af4740740b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2278,6 +2278,14 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel.h"
+      ]
+    },
+    {
+      "name": "0217-guest-next-packet-abi.patch",
+      "path": "patches/compiler/0217-guest-next-packet-abi.patch",
+      "sha256": "28eda8319cf88a404fe23b6e90ff4712febec05e0d7ebe5d99eda2834605b410",
+      "targets": [
+        "src/kernel/kernel_bridge.c"
       ]
     },
     {

@@ -259,3 +259,8 @@ translation CLI bridge. The index-order assertion checks this dependency.
 Historical fixtures omit this new patch only while reconstructing their old
 pre-instrumentation starting state; upgrades still apply the full current stack,
 including the ABI replacement, and retain idempotence/preservation checks.
+
+
+Ordinal81 prerequisite extends late patch order through0217; migration fixtures
+and the maintained context suffix now include it before final layout routing.
+See kernel-objects.md for caller evidence and compiled ABI fault controls.

@@ -835,3 +835,6 @@ C fixture and includes production SET_LO16; it does not alter generated code.
 
 The control-transfer emitter now follows x87 in the additive stack; call ABI,
 local dispatch and table-boundary contracts are in [independent.md](independent.md).
+
+
+Ordinal81 repair/test: [next-packet ABI](kernel-objects.md#guest-next-packet-abi-prerequisite).

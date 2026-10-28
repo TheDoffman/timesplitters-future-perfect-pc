@@ -7098,3 +7098,15 @@ with host diagnostics, and the probe marks inherited headers as dependencies.
 Strict warnings and undefined-behavior instrumentation remain on original code.
 Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
 No production source, built executable or prior gameplay evidence changed.
+
+
+MAC-118 next-packet prerequisite (feature/guest-io-manager): shared
+0217-guest-next-packet-abi.patch corrects Xbox ordinal81's single DeviceObject
+argument and four-byte cleanup; transitional host stub's second parameter is a
+constant false. Same bridge on both hosts, no new OS adapter. Original synthetic
+actual-bridge/cleanup test_io_packet_abi.py is selected for Windows/native Mac CI.
+Windows Release/built-in checks and isolated Story acceptance passed (STATUS);
+compiled ABI/context/backlog24 and tracking16 passed. New-head Mac contracts
+remain pending. Full request/queue
+replacement is still outstanding. Boot predecessor fd63094f all16CI checks
+succeeded, including native Mac contracts, without proving native Mac gameplay.
