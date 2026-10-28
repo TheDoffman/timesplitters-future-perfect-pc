@@ -20,12 +20,13 @@ typedef struct StoryNpcSpawn {
     uint32_t flags[3],life[4],team,weapon;
     float position[3],angles[3],heading,health,armor,max_health;
     float bounds_center[3],bounds_radius[3];
+    uint32_t cloak_flags,cloak_phase;float cloak_values[3];
     uint32_t pose_present;PcCharacterPose pose;
 } StoryNpcSpawn;
-_Static_assert(sizeof(StoryNpcSpawn)==372,"Story spawn wire layout");
-#define STORY_NPC_MAGIC 0x32504E53u
-#define STORY_NPC_POSE_MAGIC 0x32505053u
-#define STORY_NPC_BASE_BYTES 156u
+_Static_assert(sizeof(StoryNpcSpawn)==392,"Story spawn wire layout");
+#define STORY_NPC_MAGIC 0x33504E53u
+#define STORY_NPC_POSE_MAGIC 0x33505053u
+#define STORY_NPC_BASE_BYTES 176u
 /* Original353990 copies into a256-byte guest stack buffer. Never enlarge it. */
 typedef struct StoryNpcBaseMessage {uint8_t state[STORY_NPC_BASE_BYTES];uint32_t checksum;} StoryNpcBaseMessage;
 typedef struct StoryNpcPoseMessage {uint32_t magic,match,slot,serial,checksum;PcCharacterPose pose;} StoryNpcPoseMessage;
@@ -39,8 +40,13 @@ static uint32_t story_npc_checksum(const StoryNpcSpawn *s)
     return hash;
 }
 static StoryNpcSpawn story_npc_pending[32];
-static unsigned char story_npc_fresh[32],story_npc_parts[32];
-static uint32_t story_npc_checksums[32];
+static unsigned char story_npc_fresh[32];
+/* Datagram fragments can arrive interleaved across adjacent simulation ticks.
+   Keep a bounded assembly window separately from the newest complete state. */
+typedef struct StoryNpcAssembly {
+    StoryNpcSpawn state;uint32_t checksum;unsigned parts;
+} StoryNpcAssembly;
+static StoryNpcAssembly story_npc_assembly[32][8];
 static uint32_t story_npc_serial[32],story_npc_seen_match[32],story_npc_seen_serial[32];
 typedef struct StoryNpcReplica {
     uint32_t entity,spawn,match,pose_present;
@@ -59,9 +65,9 @@ static void story_npc_reset(void)
     memset(story_npc_kinds,0,sizeof story_npc_kinds);
     memset(story_npc_seen_match,0,sizeof story_npc_seen_match);
     memset(story_npc_seen_serial,0,sizeof story_npc_seen_serial);
+    memset(story_npc_assembly,0,sizeof story_npc_assembly);
     if(story_pending_stage==0u) {
         memset(story_npc_fresh,0,sizeof story_npc_fresh);
-        memset(story_npc_parts,0,sizeof story_npc_parts);
     }
 }
 
@@ -94,6 +100,8 @@ static int story_npc_valid(const StoryNpcSpawn *s)
     for(unsigned i=0;i<3u;i++)
         if(!isfinite(s->bounds_center[i]) || fabsf(s->bounds_center[i])>10000.f ||
            !isfinite(s->bounds_radius[i]) || s->bounds_radius[i]<0.f || s->bounds_radius[i]>10000.f) return 0;
+    if((s->cloak_flags&~0x200004u) || s->cloak_phase>2u) return 0;
+    for(unsigned i=0;i<3u;i++) if(!isfinite(s->cloak_values[i]) || fabsf(s->cloak_values[i])>1000000.f) return 0;
     return isfinite(s->heading) && fabsf(s->heading)<=100000.f &&
         isfinite(s->health) && s->health>=-1000.f && s->health<=1000.f &&
         isfinite(s->armor) && s->armor>=0.f && s->armor<=1000.f &&
@@ -173,8 +181,12 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
     s.in_roster=(uint32_t)story_npc_listed(actor);
     memcpy(s.flags,(const void *)((uintptr_t)(actor+0x24u)+g_xbox_mem_offset),sizeof s.flags);
     memcpy(s.life,(const void *)((uintptr_t)(actor+0x10u)+g_xbox_mem_offset),sizeof s.life);
+    /* Original124C70 reads the Splitter cloak bit;124D90 advances only this
+       numeric phase/fade slice. Effect objects and sound handles stay local. */
+    s.cloak_flags=WORD_AT(actor+0xc6cu)&0x200004u;s.cloak_phase=WORD_AT(actor+0xde4u);
+    memcpy(s.cloak_values,(const void *)((uintptr_t)(actor+0xde8u)+g_xbox_mem_offset),sizeof s.cloak_values);
     const uint32_t entity=WORD_AT(actor);
-    if(entity && guest_writable(entity,0x25cu)) {
+    if(entity && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u)) {
         s.present=1;s.spawn=WORD_AT(entity+0x258u);s.network_id=WORD_AT(entity+0x230u);
         s.script_id=WORD_AT(entity+0x60u);s.body_flags=WORD_AT(entity+0x28u);
         memcpy(s.position,(const void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),12u);
@@ -251,11 +263,13 @@ static int story_npc_apply(const StoryNpcSpawn *s)
        !pool || actor<pool || !guest_writable(actor,0xea0u)) return 0;
     if(story_npc_seen_match[s->slot]==s->match &&
        (int32_t)(s->serial-story_npc_seen_serial[s->slot])<=0) return 1;
-    if(!story_npc_kinds[s->first] || !story_npc_kinds[s->second]) return 0;
     GuestRegisters saved;save_registers(&saved);
     uint32_t entity=WORD_AT(actor);
-    if(entity && (!guest_writable(entity,0x25cu) || WORD_AT(entity+0x7cu)!=actor)) {
-        restore_registers(&saved);return 0;
+    if(entity && (!guest_writable(entity,0x25cu) || WORD_AT(entity+0x7cu)!=actor || (WORD_AT(entity+0x28u)&0x80000000u))) {
+        /* The old local body was retired/reused independently. Its storage no
+           longer belongs to this actor: never destroy the replacement object. */
+        if(story_npc_replicas[s->slot].entity!=entity) {restore_registers(&saved);return 0;}
+        WORD_AT(actor)=0;entity=0;
     }
     const StoryNpcReplica *previous=&story_npc_replicas[s->slot];
     if(entity && (!s->present ||
@@ -271,6 +285,18 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         guest_call(sub_000A9070,1,entity);WORD_AT(actor)=0;entity=0;
     }
     if(s->present && !retired && !entity) {
+        if(!story_npc_kinds[s->first] || !story_npc_kinds[s->second]) {
+            /* A host-only script can spawn a kind never constructed by a guest.
+               DAC30 needs its mesh loaded, not a previous instance of that NPC.
+               Validate the original kind->mesh->loaded resource map before using
+               its normal constructor/cache path. */
+            const uint32_t mesh=WORD_AT(0x0053a3d0u+(uint32_t)s->first*48u);
+            if(mesh>=8192u) {restore_registers(&saved);return 0;}
+            int16_t index;memcpy(&index,(const void *)((uintptr_t)(0x0078b860u+mesh*2u)+g_xbox_mem_offset),2u);
+            const uint32_t resources=WORD_AT(0x00791d4cu);
+            if(index<0 || !resources || resources>UINT32_MAX-((uint32_t)index+1u)*48u ||
+               !guest_writable(resources+(uint32_t)index*48u,48u)) {restore_registers(&saved);return 0;}
+        }
         uint32_t position[3],heading;
         memcpy(position,s->position,sizeof position);memcpy(&heading,&s->heading,sizeof heading);
         /* Give original construction the authored transform so its initial
@@ -290,6 +316,9 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         WORD_AT(actor+0x2cu)=(WORD_AT(actor+0x2cu)&~0x10u)|local_visible;
         memcpy((void *)((uintptr_t)(actor+0x10u)+g_xbox_mem_offset),s->life,sizeof s->life);
         WORD_AT(actor+0x94u)=s->weapon;
+        WORD_AT(actor+0xc6cu)=(WORD_AT(actor+0xc6cu)&~0x200004u)|s->cloak_flags;
+        WORD_AT(actor+0xde4u)=s->cloak_phase;
+        memcpy((void *)((uintptr_t)(actor+0xde8u)+g_xbox_mem_offset),s->cloak_values,sizeof s->cloak_values);
         guest_call(sub_000D7550,2,actor,s->team);
         memcpy((void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),s->position,12u);
         memcpy((void *)((uintptr_t)(actor+0x30u)+g_xbox_mem_offset),s->position,12u);
@@ -374,19 +403,23 @@ static void story_npc_receive_part(uint32_t payload,uint32_t length)
         match=pose.match;slot=pose.slot;serial=pose.serial;checksum=pose.checksum;part=2u;
     } else return;
     if(story_npc_seen_match[slot]==match && (int32_t)(serial-story_npc_seen_serial[slot])<=0) return;
-    StoryNpcSpawn *s=&story_npc_pending[slot];
-    if(story_npc_parts[slot] && s->match==match && (int32_t)(serial-s->serial)<0) return;
-    if(!story_npc_parts[slot] || s->match!=match || s->serial!=serial || story_npc_checksums[slot]!=checksum) {
+    StoryNpcAssembly *assembly=&story_npc_assembly[slot][serial%8u];
+    StoryNpcSpawn *s=&assembly->state;
+    if(assembly->parts && s->match==match && (int32_t)(serial-s->serial)<0) return;
+    if(!assembly->parts || s->match!=match || s->serial!=serial || assembly->checksum!=checksum) {
         memset(s,0,sizeof *s);s->magic=STORY_NPC_MAGIC;s->match=match;s->slot=slot;s->serial=serial;
-        story_npc_parts[slot]=0;story_npc_fresh[slot]=0;story_npc_checksums[slot]=checksum;
+        assembly->parts=0;assembly->checksum=checksum;
     }
     if(part==1u) memcpy(s,&physical,STORY_NPC_BASE_BYTES);
     else s->pose=pose.pose;
-    story_npc_parts[slot]|=(unsigned char)part;
-    if((story_npc_parts[slot]&1u) && (!s->pose_present || (story_npc_parts[slot]&2u)) &&
+    assembly->parts|=part;
+    if((assembly->parts&1u) && (!s->pose_present || (assembly->parts&2u)) &&
        story_npc_checksum(s)==checksum && story_npc_valid(s)) {
-        if(story_npc_apply(s)) {story_npc_fresh[slot]=0;story_npc_parts[slot]=0;}
-        else story_npc_fresh[slot]=1;
+        if(story_npc_fresh[slot] && story_npc_pending[slot].match==match &&
+           (int32_t)(serial-story_npc_pending[slot].serial)<=0) return;
+        story_npc_pending[slot]=*s;
+        story_npc_fresh[slot]=(unsigned char)!story_npc_apply(s);
+        assembly->parts=0;
     }
 }
 #endif
@@ -397,6 +430,8 @@ void pc_story_network_npc_receive(void (*original)(void))
         const uint32_t frame=g_esp,peer=WORD_AT(frame+4u),payload=WORD_AT(frame+8u);
         const uint32_t type=WORD_AT(frame+12u),length=WORD_AT(frame+16u);
         if(story_shots_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_dialogue_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
+        if(story_world_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_restart_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_loadout_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
         if(story_objectives_receive(peer,payload,type,length)) {g_eax=0;g_esp=frame+4u;return;}
@@ -511,6 +546,19 @@ int pc_story_network_damage(void)
     if(story_shots_damage()) return 1;
     if(!guest_writable(g_esp,8u)) return 0;
     const uint32_t context=WORD_AT(g_esp+4u);
+    if(guest_writable(context,0x58u) && WORD_AT(0x0076b140u)==2u && pc_story_network_world_key(WORD_AT(context))) {
+        if(!WORD_AT(0x0076b170u)) {
+            for(unsigned offset=4u;offset<=8u;offset+=4u) {
+                const uint32_t source=WORD_AT(context+offset);
+                if(!guest_writable(source,0x154u)) continue;
+                const uint32_t player=WORD_AT(source+0x150u),pool=WORD_AT(0x007b0c48u);
+                if(!guest_writable(player,0x1584u) || !pool || WORD_AT(player)>=story_npc_humans() ||
+                   player!=pool+WORD_AT(player)*0x1584u || WORD_AT(player+0x14u)!=source || WORD_AT(player+4u)>=4u) continue;
+                GuestRegisters saved;save_registers(&saved);pc_network_bots_request_hit(context);restore_registers(&saved);break;
+            }
+        }
+        return 1; /* Host destruction and collision cleanup are authoritative. */
+    }
     if(!guest_writable(context,0x58u) || !story_npc_replica_valid(WORD_AT(context),0)) return 0;
     if(!WORD_AT(0x0076B170u)) {
         const uint32_t pool=WORD_AT(0x007B0C48u);

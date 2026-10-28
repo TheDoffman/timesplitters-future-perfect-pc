@@ -3,12 +3,13 @@
 #ifdef _WIN32
 extern void sub_000FFDA0(void),sub_000FFE40(void),sub_000EFBD0(void);
 extern void sub_00101660(void),sub_000FF420(void),sub_000FF490(void),sub_000FF200(void);
+extern void sub_001128C0(void),sub_00080F20(void);
 typedef struct StoryEffect {
     uint32_t magic,match,serial,kind,a,b;
     float position[3],direction[3],value;
-    uint32_t options,color;
+    uint32_t options,color,room,decal_flags;
 } StoryEffect;
-#define STORY_EFFECT_MAGIC 0x31574653u
+#define STORY_EFFECT_MAGIC 0x32574653u
 _Static_assert(sizeof(StoryEffect)+4u<=256u,"Story effect sender limit");
 static StoryEffect story_effect_pending[256],story_effect_ground[256],story_effect_flight;
 static uint32_t story_effect_ground_entities[256];
@@ -17,6 +18,10 @@ static uint32_t story_effect_serial,story_effect_seen,story_effect_flight_tick,s
 static uint32_t story_effect_events_seen[256],story_effect_flight_seen;
 static uint32_t story_effect_storage,story_effect_trail;
 static int story_effect_flight_sent,story_effect_flight_fresh;
+static int story_effect_decal_replay;
+typedef struct StoryLocalBlood {float position[3];uint32_t tick,mode;} StoryLocalBlood;
+static StoryLocalBlood story_local_blood[32];
+static unsigned story_local_blood_next,story_local_blood_count;
 static int story_effect_session(void)
 { return story_npc_session() && WORD_AT(0x0079094cu)==2u && WORD_AT(0x0076b1a4u)==15u; }
 static void story_effect_reset(void)
@@ -25,16 +30,31 @@ static void story_effect_reset(void)
     story_effect_serial=story_effect_seen=0;story_effect_trail=0;
     memset(story_effect_events_seen,0,sizeof story_effect_events_seen);story_effect_flight_seen=0;
     story_effect_flight_sent=story_effect_flight_fresh=0;
+    story_effect_decal_replay=0;
+    story_local_blood_next=story_local_blood_count=0;
+}
+static int story_effect_blood_seen_locally(const StoryEffect *s)
+{
+    for(unsigned i=0;i<story_local_blood_count;i++) {
+        const StoryLocalBlood *local=&story_local_blood[i];float distance=0.f;
+        if(local->mode!=s->options || (uint32_t)(WORD_AT(0x007de318u)-local->tick)>30u) continue;
+        for(unsigned axis=0;axis<3u;axis++) {const float d=local->position[axis]-s->position[axis];distance+=d*d;}
+        if(distance<=.04f) return 1;
+    }
+    return 0;
 }
 static int story_effect_valid(const StoryEffect *s)
 {
-    if(s->magic!=STORY_EFFECT_MAGIC || !s->serial || s->kind>2u ||
+    if(s->magic!=STORY_EFFECT_MAGIC || !s->serial || s->kind>3u ||
        !isfinite(s->value) || fabsf(s->value)>1000000.f) return 0;
     for(unsigned i=0;i<3u;i++) if(!isfinite(s->position[i]) || fabsf(s->position[i])>1000000.f ||
         !isfinite(s->direction[i]) || fabsf(s->direction[i])>1000000.f) return 0;
     if(s->kind==0u) return s->a<=32u && s->b<=32u && s->options<=65535u;
     if(s->kind==1u) return s->a==39u && s->b==UINT32_MAX && s->value==0.f && s->options==1u;
-    return s->a<=3u && !s->b && !s->options;
+    if(s->kind==2u) return s->a<=3u && !s->b && !s->options;
+    return s->a>=957u && s->a<=963u && s->b<=2u && s->options<=4u &&
+        s->value>0.f && s->value<=1000.f && s->decal_flags<=1u &&
+        (s->room==UINT32_MAX || s->room<=65535u);
 }
 static void story_effect_send(StoryEffect *s)
 {
@@ -94,7 +114,17 @@ static void story_effect_frame(void)
         if(s.kind==0u) {
             const uint32_t emitter=guest_call(sub_000FFDA0,6,s.a,s.b,position,direction,value,s.options);
             if(emitter && guest_writable(emitter,0x9cu)) guest_call(sub_000FFE40,2,emitter,s.color);
-        } else guest_call(sub_000EFBD0,8,s.a,s.b,position,direction,0u,value,0u,s.options);
+        } else if(s.kind==1u) guest_call(sub_000EFBD0,8,s.a,s.b,position,direction,0u,value,0u,s.options);
+        else if(s.kind==3u) {
+            if(story_effect_blood_seen_locally(&s)) continue;
+            /* Resolve the asset locally; host texture handles are not portable. */
+            const uint32_t texture=guest_call(sub_00080F20,1,s.a);
+            if(texture) {
+                story_effect_decal_replay=1;
+                guest_call(sub_001128C0,9,texture,s.b,s.color,s.options,value,s.decal_flags,s.room,position,direction);
+                story_effect_decal_replay=0;
+            }
+        }
         if(getenv("TSFP_STORY_TRACE")) {
             static unsigned observations;
             if(observations++<192u) fprintf(stderr,"[PC-STORY-EFFECT] guest serial=%u kind=%u at=%g/%g/%g color=%08X\n",
@@ -118,6 +148,44 @@ static void story_effect_frame(void)
     restore_registers(&saved);
 }
 #endif
+
+/*1128C0 performs the original scene raycast/decal creation, without damage or
+  death side effects. Capture only the known blood textures957..963. */
+void pc_story_network_blood_decal(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    StoryEffect s;memset(&s,0,sizeof s);
+    if(!story_effect_decal_replay && story_effect_session() && guest_writable(frame,40u)) {
+        const uint32_t texture=WORD_AT(frame+4u);
+        for(uint32_t i=957u;i<=963u;i++) if(WORD_AT(0x004d2d64u+i*24u)==texture && texture) {s.a=i;break;}
+        const uint32_t position=WORD_AT(frame+32u),direction=WORD_AT(frame+36u);
+        if(s.a && (WORD_AT(0x0076b140u)==1u || WORD_AT(0x0076b140u)==2u) &&
+           guest_writable(position,12u) && guest_writable(direction,12u)) {
+            s.kind=3u;s.b=WORD_AT(frame+8u);s.color=WORD_AT(frame+12u);s.options=WORD_AT(frame+16u);
+            memcpy(&s.value,(const void *)((uintptr_t)(frame+20u)+g_xbox_mem_offset),4u);
+            s.decal_flags=WORD_AT(frame+24u);s.room=WORD_AT(frame+28u);
+            memcpy(s.position,(const void *)((uintptr_t)position+g_xbox_mem_offset),12u);
+            memcpy(s.direction,(const void *)((uintptr_t)direction+g_xbox_mem_offset),12u);
+        } else s.a=0;
+    }
+#endif
+    original();
+#ifdef _WIN32
+    if(s.a && g_eax) {
+        if(WORD_AT(0x0076b140u)==1u) story_effect_send(&s);
+        else {
+            /* Guest-owned impacts still need immediate local feedback, even
+               when the host does not create offscreen cosmetic blood. Avoid
+               adding its matching nearby broadcast decal a second time. */
+            StoryLocalBlood *local=&story_local_blood[story_local_blood_next++%32u];
+            memcpy(local->position,s.position,sizeof local->position);
+            local->tick=WORD_AT(0x007de318u);local->mode=s.options;
+            if(story_local_blood_count<32u) ++story_local_blood_count;
+        }
+    }
+#endif
+}
 
 void pc_story_network_effect_decision(void (*original)(void),unsigned kind)
 {

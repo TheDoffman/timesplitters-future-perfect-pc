@@ -1,5 +1,17 @@
 # Runtime and patch navigation
 
+The preview1 follow-up adds separate `*-story-dialogue.patch` (164C40) and
+`*-story-result-controls.patch` wrappers: Continue callbacks2EAF60/2EAFC0/2EB030/
+2EC090/2EC650 and65470, restart2EB0C0/2EB290, Game Over builder2F5170, prop cleanup
+A9070, signed16 ammo pickup1BA220 and cosmetic blood decal1128C0. These compose
+through the shared adapter, retain native/non-Story original calls and require
+complete-stack application plus regeneration. Shared Online ammo applies beyond
+Story; actor/model/texture/audio handles never cross the new wire boundaries.
+SNP3 physical/pose packets and cinematic v3 remain individually below the original
+353990 sender's256-byte buffer; independent eight-serial NPC assemblies tolerate
+interleaved packet halves. Effects v2 adds numeric blood arguments and asset IDs.
+Old version sizes/magics cannot be assembled into the new snapshots.
+
 The separate `*-story-checkpoints.patch` wraps original25EF80 and25F010 through
 the shared display adapter. Capture remains local and host-triggered; extra
 players use25EAD0 (EBX bookmark, ECX index, EDX mask, stack context). Restore
@@ -7,10 +19,12 @@ uses25EC70 (EBX bookmark, EAX context) after primary0 restores world state.
 No checkpoint/VM pointer crosses the network. Regenerate after adding wrappers;
 native and non-Story entry paths continue calling the original body.
 
-`*-story-human-teams.patch` wraps D7550. Only the33ACDB network-team call for a
-validated human actor in live Story replaces the requested Arcade team with1,
+`*-story-human-teams.patch` wraps D7550. Every setter for a validated human actor in live Story replaces the requested
+Arcade team with1,
 matching original Story25A420. Arguments are restored after the original setter;
-other callers, NPCs and native/non-Story fallback retain original behavior.
+NPCs and native/non-Story fallback retain original behavior. D7570 completion
+corrects the validated actor immediately, before its caller attaches the body,
+using D7550 actor team data (+84/+A58); it needs no entity/context pointer.
 
 `*-story-handoff-authority.patch` wraps original218910/21B540. Connected first-
 level Story guests skip their inventory side effects when rendering replicated
@@ -19,7 +33,7 @@ Other modes/native fallback retain the original. The existing ammo/grant adapter
 observe the pistol25 and rifle32 authored pairs; no generated body is edited.
 
 The supported353990 broadcast path copies packets into a256-byte stack buffer.
-Do not send the372-byte internal SNP2 state directly: bounded physical/pose
+Do not send the392-byte internal SNP3 state directly: bounded physical/pose
 messages and checksum-based assembly preserve that original sender limit.
 
 Story poses reuse the existing frozen-animation and bounds wrappers through

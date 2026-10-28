@@ -1237,6 +1237,20 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-dialogue.patch",
+      "sha256": "949260d9f4cff40e174e24a6b2196b81ce412d1d45f6984992193e50320475a3",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-result-controls.patch",
+      "sha256": "736053bb93ae2a56a41de3c9628b8f9ce3a9d01e70f779833c4e693cfbdae882",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-144-fps.patch",
       "sha256": "713619cbaedc4ce9656d1d72c17a2b682e87e9b72a8e62cf8afc8dae39206a00",
       "targets": [

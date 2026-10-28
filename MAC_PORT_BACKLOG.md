@@ -5943,3 +5943,14 @@ in the shared Windows guest adapter. Targetless bot shots and gameplay payload
 lifetime also improve the existing Online modes. Mac Online transport/adapter
 work and native runtime validation remain required under MAC-013; portable fixture
 fallback checks do not establish native Mac multiplayer support.
+
+MAC-013 preview1 HANDLE FIRST follow-up (uncommitted): shared guest adapters now
+cover NPC interleaved packet assembly/loaded-mesh reconstruction, numeric cloak
+state, dialogue/lip clocks, attached opening visibility, inset camera cues,
+stable prop hit/removal identity and local blood-decal creation. Host result
+reloads preserve transport; guests cannot independently continue/restart. The
+signed16 pickup clamp also applies to existing PC Online modes. Native fallback
+retains original calls and fixtures; no second gameplay implementation is needed.
+Mac still requires the transport adapter and isolated native multiplayer validation
+of these behaviors, including WAN speech and completion/restarts. Windows evidence
+and remaining limits are recorded in STATUS.md; native support is not verified.

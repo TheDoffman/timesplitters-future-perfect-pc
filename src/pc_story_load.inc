@@ -36,6 +36,14 @@ static void story_cine_frame(void);
 static int story_cine_script(void (*original)(void),uint32_t address);
 static int story_cine_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static int story_loadout_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_dialogue_reset(void);
+static void story_dialogue_frame(void);
+static int story_dialogue_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+static void story_world_reset(void);
+static void story_world_frame(void);
+static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
+uint32_t pc_story_network_world_key(uint32_t entity);
+uint32_t pc_story_network_world_entity(uint32_t key);
 static int story_network_session(void)
 {
     return pc_online_mode()==PC_ONLINE_STORY;
@@ -145,6 +153,15 @@ void pc_story_network_activate(void)
     story_checkpoint_reset();
     story_effect_reset();
     story_cine_reset();
+    story_dialogue_reset();
+    story_world_reset();
+    /* Stock spawn/state decoders copy teams directly from the peer cache,
+       bypassing D7550. Normalize it before any Story bodies are constructed. */
+    const unsigned humans=*(const uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    if(humans && humans<=4u) for(unsigned slot=0;slot<humans;slot++) {
+        WORD_AT(0x00777288u+slot*0x124u)=1u;
+        ((uint8_t *)((uintptr_t)0x007de424u+g_xbox_mem_offset))[slot]=1u;
+    }
     /* One full local view per network instance; keep the frontend network mode. */
     WORD_AT(0x0078AD20u)=4u;story_context_start_pending=1;
     WORD_AT(0x0078AD48u)=story_lobby_mission;WORD_AT(0x0078AD50u)=story_pending_stage==3u?2u:story_pending_stage;
@@ -186,11 +203,12 @@ void pc_network_player_payload(void (*original)(void))
         const uint32_t contexts=WORD_AT(0x007b0c48u);
         int ready=count && count<=16u && WORD_AT(0x0079094cu)<100u &&
             contexts && guest_writable(contexts,count*0x1584u);
-        if(story_network_session() && (WORD_AT(0x007de458u)&0x20000000u)) ready=0;
+        if(story_network_session() && (story_pending_stage!=1u || (WORD_AT(0x007de458u)&0x20000000u))) ready=0;
         for(unsigned i=0;ready && i<count;i++) {
             const uint32_t context=contexts+i*0x1584u,entity=WORD_AT(context+0x14u);
-            ready=WORD_AT(context)==i && guest_writable(entity,0x25cu) &&
-                WORD_AT(entity+0x150u)==context && guest_writable(WORD_AT(entity+0x7cu),0xea0u);
+            const uint32_t actor=guest_writable(entity,0x25cu)?WORD_AT(entity+0x7cu):0u;
+            ready=WORD_AT(context)==i && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u) &&
+                WORD_AT(entity+0x150u)==context && guest_writable(actor,0xea0u) && WORD_AT(actor)==entity;
         }
         if(!ready) {g_eax=0;g_esp+=4u;return;}
     }
@@ -539,12 +557,14 @@ void pc_story_network_frame(void (*original)(void))
 #endif
 #ifdef _WIN32
     story_human_teams_frame();
+    story_world_frame();
     story_npc_pending_frame();
     story_shots_frame();
     story_loadout_frame();
     story_objectives_frame();
     story_checkpoint_frame();
     story_effect_frame();
+    story_dialogue_frame();
 #endif
     pc_story_failure_trace(original,0x000681C0u);
 #ifdef _WIN32
@@ -668,11 +688,13 @@ static void story_human_teams_frame(void)
         const uint32_t entity=WORD_AT(actor);
         if(!entity || !guest_writable(entity,0x154u) || WORD_AT(context)!=slot ||
            WORD_AT(context+0x14u)!=entity || WORD_AT(entity+0x7cu)!=actor ||
-           WORD_AT(entity+0x150u)!=context || WORD_AT(actor+0x84u)==1u) continue;
+           WORD_AT(entity+0x150u)!=context) continue;
+        WORD_AT(0x00777288u+slot*0x124u)=1u;
+        ((uint8_t *)((uintptr_t)0x007de424u+g_xbox_mem_offset))[slot]=1u;
         /* Remote construction can precede eligible Story initialization. Once
            its real body/context exists, apply the original shared-human team
            before NPC simulation; leave already-correct teams untouched. */
-        guest_call(sub_000D7550,2,actor,1u);
+        if(WORD_AT(actor+0x84u)!=1u) guest_call(sub_000D7550,2,actor,1u);
     }
     restore_registers(&saved);
 }
@@ -688,7 +710,13 @@ void pc_story_network_team_init(void (*original)(void))
 #endif
     original();
 #ifdef _WIN32
-    if(story_human_team_scope(actor)) story_human_teams_frame();
+    if(story_human_team_scope(actor)) {
+        /* D7570 can finish before the caller attaches the body/context.
+           Its actor slot is already valid; D7550 writes only actor team data. Waiting
+           for complete backlinks leaves a visible Arcade team until next tick. */
+        GuestRegisters saved;save_registers(&saved);
+        guest_call(sub_000D7550,2,actor,1u);restore_registers(&saved);
+    }
 #endif
 }
 
@@ -698,8 +726,7 @@ void pc_story_network_team(void (*original)(void))
     const uint32_t frame=g_esp;
     const int valid=guest_writable(frame,12u);
     const uint32_t actor=valid?WORD_AT(frame+4u):0u;
-    const int scope=valid && WORD_AT(frame)==0x0033ACDBu && story_network_session() &&
-        story_human_team_scope(actor);
+    const int scope=valid && story_human_team_scope(actor);
     const uint32_t saved=scope?WORD_AT(frame+8u):0u;
     if(scope) WORD_AT(frame+8u)=1u;
 #endif
@@ -739,3 +766,6 @@ void pc_story_network_character_remove(void (*original)(void))
 #include "pc_story_objectives.inc"
 #include "pc_story_effects.inc"
 #include "pc_story_cinematic.inc"
+#include "pc_story_dialogue.inc"
+#include "pc_story_world.inc"
+#include "pc_network_ammo.inc"

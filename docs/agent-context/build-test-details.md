@@ -1,5 +1,33 @@
 # Validation fixtures and Story probes
 
+Opening visibility fixtures now seed the original world draw list and require
+only hidden humans/attachments to be removed, the count to match, model data to
+remain local, and the normal list to reappear after the opening. Team fixtures
+also require the peer-cache/config to be initialized before human construction.
+
+The human-team regression fixture also requires every scoped human setter to
+retain team1 and D7570 to correct the actor before body backlinks are attached.
+The live trigger was a team3 human observed on guest3; see STATUS and the retained
+failure receipt. These source changes do not add another runtime wrapper.
+
+Preview1 HANDLE FIRST follow-up extends the existing production Story fixture
+with interleaved NPC serials, complete-pair retention, loaded mesh gating, recorded
+stale-body reconstruction, numeric cloak state, local speech/lip playback, inset
+camera start/stop, attached opening visibility, host Game Over context, coordinated
+restart/guest Continue authority, stable prop lookup/removal and ambiguous-key
+rejection, cosmetic blood replay/dedup, preserved local impact feedback and history expiry,
+and signed16 ammo edge cases. The existing
+network guest fixture tests the exact five-byte prop codec and missing resolution.
+Run `pytest tests/test_quit_menu.py tests/test_network_guest_dispatch.py` and the
+complete `tests/test_patch_updates.py` migration suite. Original-call spies prove
+adapter contracts; they do not establish WAN audio/visual fidelity or completion.
+Bounded live acceptance uses `tests/story_pair_game.py --load-probe --players 4
+--fire-probe --combat-probe --skip-intro`; checkpoint/restart probes use isolated
+Test Lab copies and never require completing the first mission. See STATUS for
+the exact build and measured scope; Mac Online acceptance remains pending MAC-013.
+
+See [build-test-details](build-test-details.md) for detailed adapter contracts and validation routes.
+
 The team fixture verifies the scoped33ACDB setter receives1 for Story humans,
 with original arguments/result/stack restored and NPC/other-caller/Arcade
 fallback. Supported-US checks confirm original Story selects that shared team.

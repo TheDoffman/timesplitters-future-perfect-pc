@@ -1,6 +1,10 @@
 # Subsystem entry points
 
-See [systems-details](systems-details.md) for detailed adapter contracts and validation routes.
+Story preview1 HANDLE FIRST adapters now cover interleaved NPC assembly,
+loaded-mesh reconstruction, cloak/speech/lip state, inset cameras, prop identities,
+blood decals, result authority and safe Online ammo pickups. Numeric wire data
+resolves peer-local assets; see the follow-up contract in
+[systems-details](systems-details.md). MAC-013 transport acceptance remains pending.
 
 Story NPC replicas now construct at the host coordinates/heading, using the
 host-resolved appearance variant rather than a second random choice. Reused

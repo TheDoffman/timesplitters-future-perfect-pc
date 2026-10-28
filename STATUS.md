@@ -1,3 +1,65 @@
+## Story preview1 HANDLE FIRST fixes - 2026-10-27
+
+Local/uncommitted on `online-story-coop`, base `bf2bbe18`. Host: Windows11
+26300 AMD64, D3D11, Python3.14.2, MSBuild17.12.6. The supported US XBE hash was
+verified before generation;401 GiB free disk space was available. Final Windows
+build and built-in native checks pass. Executable SHA-256:
+`453427eceb4daef0c4940721b04189e417a21448b593e83ed0d6297e77738cce`.
+Compatibility:
+`d8104b62fb9e83357eb5ea787bdb953d4307f563b02652f13f24ba7053489591`.
+Evidence: `logs/story-handle-first-build-current.log`, matching
+`build/windows/crash-symbols.zip`, and
+`private/network-validation/story-four/pair-evidence.json`.
+The published preview1 tag remains unchanged.
+
+NPC snapshots keep independent interleaved UDP assemblies and numeric cloak
+phase/fades. Guests construct scene-loaded kinds without a prior local instance,
+repair recorded retired bodies and process absence without requiring assets.
+Reliable speech creates local audio/lip tracks and advances the cosmetic mouth
+clock. Opening visibility removes human bodies/world weapons from the draw list
+already built by9FBA0, preserving local models and unrelated entries. Inset camera
+cues use authored local descriptors. Prop hits use stable authored keys and host
+removals remove guest collision. Blood impacts/pools use local textures and the
+original cosmetic decal routine; immediate guest feedback remains, with bounded
+nearby host-duplicate suppression.
+
+Game Over selects the host primary menu context, hides guest restart rows and
+preserves transport during reload. Guests cannot independently close/advance
+reward menus. Live testing exposed team3 humans because stock decoders bypass
+D7550 and copy a peer cache. Story now initializes that cache/config before body
+construction, maintains it even when actors already have team1, and corrects
+all scoped setters/initializers. Player payloads require current, unremoved bodies
+and stop at ending transitions. Ammo clamps before narrowing signed16 reserves.
+Ammo and body-lifetime fixes also cover existing PC Online modes. HANDLE LATER
+disconnect/leave behavior remains outside this change.
+
+Final production adapter/codec fixtures14 pass. Broader source/profile/context
+runs60/49/19 passed during development; all21 complete patch migration fixtures
+pass, including historical Mac upgrade and repeated application. Context/index
+and whitespace checks pass. The initial sandbox migration attempt could not
+create staging directories; all migration checks ran and passed on the normal-access rerun.
+
+The exact final build passed a four-player isolated opening probe: coordinated
+load, original first-person hanging sequence/handoff, all humans on team1,
+independent movement, firing and ammo consumption. The long intro movie was
+observed then skipped by normal host input for this final bounded run; the
+first-person opening ran automatically. Reviewed final guest hanging and firing
+captures. All four runners exited0; locks and disposable partitions were recycled,
+with fixture signatures and personal saves/settings preserved. A preceding
+candidate's24 read-only samples also found all four humans outside the opening
+world draw queue and team/cache entries on1. Its queue count matched its53 nodes.
+
+An attempted NPC combat probe reached its route after allied AI killed the
+hostile target; host-accepted guest NPC damage remains unverified, not a passed
+combat test (`logs/story-combat-no-target-receipt.json`). Earlier harness failures
+came from rejecting the probe's own host and obsolete captures filling its48-image
+cap. Controller ancestry now permits only owned sibling games; obsolete images
+were recycled only after shutdown. Runtime crashes were not observed in these
+opening probes. Mission completion, the rare ending crash, WAN speech, Splitter
+cloak appearance, bunker barrels and the later barricade still need user scene
+acceptance. Native Mac Online/gameplay remains unverified under MAC-013; portable
+fallback fixture compilation is separate evidence. No first mission was completed.
+
 ## Story preview packaging contention repair - 2026-10-27
 
 Preparing `v0.4.0-story-coop.1` passed the complete Python suite twice:1343 tests,

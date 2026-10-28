@@ -2,14 +2,17 @@
    numeric fades and the primary hero's pose; never send camera/model pointers. */
 #ifdef _WIN32
 extern void sub_000C6100(void),sub_000D4B00(void),sub_000D4BE0(void);
+extern void sub_000CC170(void),sub_000C9C90(void);
 typedef struct StoryCinematic {
     uint32_t magic,match,serial,active,pose_present,opening,view_visible;
     uint32_t cue_serial,cue_active,cue_tag,cue_flags,cue_mode;
     uint32_t fade_present,fade[7];
+    uint32_t feed_serial,feed_active,feed_tag,feed_target;
+    float feed_remaining;
     PcCharacterPose pose;
 } StoryCinematic;
-#define STORY_CINE_MAGIC 0x32594353u
-#define STORY_CINE_POSE_MAGIC 0x32505953u
+#define STORY_CINE_MAGIC 0x33594353u
+#define STORY_CINE_POSE_MAGIC 0x33505953u
 #define STORY_CINE_BASE_BYTES offsetof(StoryCinematic,pose)
 typedef struct StoryCinematicBase {uint8_t state[STORY_CINE_BASE_BYTES];uint32_t checksum;} StoryCinematicBase;
 typedef struct StoryCinematicPose {uint32_t magic,match,serial,checksum;PcCharacterPose pose;} StoryCinematicPose;
@@ -19,6 +22,7 @@ static StoryCinematic story_cine_state,story_cine_pending;
 static uint32_t story_cine_serial,story_cine_seen,story_cine_checksum_pending,story_cine_tick;
 static uint32_t story_cine_cue_serial,story_cine_cue_active,story_cine_cue_tag,story_cine_cue_flags,story_cine_cue_mode;
 static uint32_t story_cine_cue_applied;
+static uint32_t story_cine_feed_applied;
 static unsigned story_cine_parts;
 static int story_cine_published,story_cine_replay,story_cine_was_active;
 static int story_cine_session(void)
@@ -29,6 +33,7 @@ static void story_cine_reset(void)
     story_cine_serial=story_cine_seen=story_cine_parts=0;
     story_cine_cue_serial=story_cine_cue_active=story_cine_cue_tag=story_cine_cue_flags=story_cine_cue_mode=0;
     story_cine_cue_applied=0;story_cine_published=story_cine_replay=story_cine_was_active=0;
+    story_cine_feed_applied=0;
 }
 static uint32_t story_cine_checksum(const StoryCinematic *s)
 {
@@ -42,6 +47,8 @@ static int story_cine_valid(const StoryCinematic *s,int complete)
        s->view_visible>1u || s->cue_active>1u || s->cue_flags>65535u || s->cue_mode>64u || s->fade_present>1u ||
        (s->cue_active && (!s->cue_serial || !s->cue_tag))) return 0;
     if(complete && s->pose_present && !pc_character_pose_valid(&s->pose)) return 0;
+    if(s->feed_active>1u || (s->feed_active && (!s->feed_serial || !s->feed_tag)) ||
+       !isfinite(s->feed_remaining) || s->feed_remaining<0.f || s->feed_remaining>3600.f) return 0;
     if(s->fade_present) {
         for(unsigned i=0;i<=4u;i+=2u) {
             float value;memcpy(&value,s->fade+i,4u);
@@ -186,6 +193,24 @@ static void story_cine_frame(void)
             s.pose_present=(uint32_t)pc_character_pose_valid(&s.pose);
         }
         if(!s.pose_present) memset(&s.pose,0,sizeof s.pose);
+        /* The inset uses its own camera733108, independently of the player's
+           cinematic camera. Publish its authored descriptor and lifetime. */
+        const uint32_t feed=WORD_AT(0x00733108u);
+        if(feed && guest_writable(feed,0x2b0u)) {
+            s.feed_tag=story_cine_camera_tag(WORD_AT(feed+0x26cu));
+            s.feed_active=(WORD_AT(feed+0x21cu)&1u) && s.feed_tag;
+            const uint32_t target=WORD_AT(feed+0x2a8u);
+            if(guest_writable(target,0x64u)) s.feed_target=WORD_AT(target+0x60u);
+            memcpy(&s.feed_remaining,(const void *)((uintptr_t)0x007330bcu+g_xbox_mem_offset),4u);
+            if(!isfinite(s.feed_remaining) || s.feed_remaining<0.f || s.feed_remaining>3600.f) {
+                s.feed_remaining=0.f;s.feed_active=0u;
+            }
+        }
+        s.feed_serial=story_cine_state.feed_serial;
+        if(s.feed_active!=story_cine_state.feed_active || s.feed_tag!=story_cine_state.feed_tag ||
+           s.feed_target!=story_cine_state.feed_target || s.feed_remaining>story_cine_state.feed_remaining+.25f) {
+            if(!++s.feed_serial) ++s.feed_serial;
+        }
         if(getenv("TSFP_STORY_TRACE")) {
             static unsigned observations;
             if(observations++<16u) fprintf(stderr,"[PC-STORY-CINE] host snapshot tick=%u active=%u pose=%u opening=%u clip=%d/%d fade=%08X valid=%d\n",
@@ -208,6 +233,32 @@ static void story_cine_frame(void)
     if(role!=2u || !story_cine_state.serial || story_cine_state.match!=story_npc_match()) return;
     const uint32_t context=story_cine_local_context();if(!context) return;
     const StoryCinematic *s=&story_cine_state;
+    if(s->feed_serial && s->feed_serial!=story_cine_feed_applied &&
+       guest_writable(WORD_AT(0x00733108u),0x1000u)) {
+        GuestRegisters saved;save_registers(&saved);
+        int applied=!s->feed_active;
+        if(!s->feed_active) guest_call(sub_000C9C90,0);
+        else {
+            const uint32_t descriptor=guest_call(sub_000C6100,1,s->feed_tag);
+            uint32_t target=WORD_AT(context+0x14u);
+            if(s->feed_target) {
+                target=0;const uint32_t pool=WORD_AT(0x0072f5e8u),count=WORD_AT(0x007b4facu);
+                if(count<=16384u && guest_writable(pool,count*0x2e8u))
+                    for(unsigned i=0;i<count;i++) {
+                        const uint32_t candidate=pool+i*0x2e8u;
+                        if(WORD_AT(candidate+0x60u)==s->feed_target && !(WORD_AT(candidate+0x28u)&0x80000000u)) {
+                            target=candidate;break;
+                        }
+                    }
+            }
+            if(descriptor && story_cine_camera_tag(descriptor)==s->feed_tag && guest_writable(target,0x154u)) {
+                uint32_t seconds;memcpy(&seconds,&s->feed_remaining,4u);
+                guest_call(sub_000CC170,3,descriptor,seconds,target);applied=1;
+            }
+        }
+        restore_registers(&saved);
+        if(applied) story_cine_feed_applied=s->feed_serial;
+    }
     if(s->cue_serial && (int32_t)(s->cue_serial-story_cine_cue_applied)>0) {
         if(!story_cine_camera(context,(int)s->cue_active,s->cue_tag,s->cue_flags,s->cue_mode)) return;
         story_cine_cue_applied=s->cue_serial;
@@ -262,6 +313,7 @@ void pc_story_network_world_visibility(void (*original)(void))
     if(pistol->equipped && pistol->match==story_npc_match()) return;
     const uint32_t contexts=WORD_AT(0x007b0c48u);
     if(!contexts || !guest_writable(contexts,story_npc_humans()*0x1584u)) return;
+    uint32_t hidden[12];unsigned hidden_count=0;
     for(unsigned slot=0;slot<story_npc_humans();slot++) {
         const uint32_t context=contexts+slot*0x1584u,entity=WORD_AT(context+0x14u);
         if(!guest_writable(entity,0x154u) || WORD_AT(entity+0x150u)!=context) continue;
@@ -269,6 +321,40 @@ void pc_story_network_world_visibility(void (*original)(void))
            the entity's culling mask. Hide the standing network body until the
            authored first-person handoff ends. Weapon/arm models stay local. */
         WORD_AT(entity+0x10u)&=0xffff0000u;
+        WORD_AT(entity+0x0cu)&=0xffff0000u;
+        hidden[hidden_count++]=entity;
+        /* A0130 already copied the human mask into both attached world
+           weapons. Clear those masks too; the view/arms model at entity+4
+           remains local and must not be hidden. */
+        const uint32_t actor=WORD_AT(entity+0x7cu);
+        if(guest_writable(actor,0xea0u) && WORD_AT(actor)==entity) {
+            for(unsigned hand=0;hand<2u;hand++) {
+                const uint32_t attachment=WORD_AT(actor+0x18cu+hand*0x130u);
+                if(guest_writable(attachment,0x154u) && WORD_AT(attachment+0x7cu)==actor) {
+                    WORD_AT(attachment+0x10u)&=0xffff0000u;
+                    WORD_AT(attachment+0x0cu)&=0xffff0000u;
+                    hidden[hidden_count++]=attachment;
+                }
+            }
+        }
+    }
+    /* A0130 has already queued visible bodies through9FBA0. Clearing their
+       masks alone leaves that linked draw list intact. Remove only these
+       world entries; the separate first-person draw still owns its models. */
+    uint32_t cursor=WORD_AT(0x007b4cc0u);unsigned length=0;
+    while(cursor && length<16384u) {
+        if(!guest_writable(cursor,4u)) return;
+        cursor=WORD_AT(cursor);++length;
+    }
+    if(cursor) return; /* Invalid/cyclic lists are never rewritten. */
+    uint32_t link=0x007b4cc0u;
+    for(unsigned i=0;i<length;i++) {
+        const uint32_t entity=WORD_AT(link),next=WORD_AT(entity);
+        int hide=0;for(unsigned j=0;j<hidden_count;j++) if(hidden[j]==entity) {hide=1;break;}
+        if(hide) {
+            WORD_AT(link)=next;
+            if(WORD_AT(0x007b54d8u)) --WORD_AT(0x007b54d8u);
+        } else link=entity;
     }
 #endif
 }

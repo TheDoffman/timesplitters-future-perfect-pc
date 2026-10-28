@@ -61,6 +61,11 @@ def test_fresh_checkout_and_repeated_build(checkout):
     # Multiple features may wrap the same guest routine. They must compose
     # under one C definition; generation alone does not reject duplicates.
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'pc_story_network_dialogue(sub_00164C40_gen)' in manual
+    assert 'pc_story_network_result_action(sub_002EB0C0_gen,1u)' in manual
+    assert 'pc_story_network_world_remove(sub_000A9070_gen)' in manual
+    assert 'pc_network_ammo_pickup(sub_001BA220_gen)' in manual
+    assert 'pc_story_network_blood_decal(sub_001128C0_gen)' in manual
     wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
     assert all(count == 1 for count in wrappers.values()), wrappers
     # Both common RHI and legacy GL link the same live mode policy.
@@ -245,7 +250,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch','-story-character-roster.patch','-story-intro-transition.patch','-story-cinematic-ready.patch','-story-authored-records.patch','-story-npc-lifecycle-trace.patch','-story-npc-creation.patch','-story-extra-starts.patch','-story-extra-loadout.patch','-story-handoff-authority.patch','-story-human-teams.patch','-story-level-restart.patch','-story-team-initialization.patch','-story-checkpoints.patch','-story-world-effects.patch','-network-player-payload-lifetime.patch','-story-opening-world-body.patch')):
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch','-story-character-roster.patch','-story-intro-transition.patch','-story-cinematic-ready.patch','-story-authored-records.patch','-story-npc-lifecycle-trace.patch','-story-npc-creation.patch','-story-extra-starts.patch','-story-extra-loadout.patch','-story-handoff-authority.patch','-story-human-teams.patch','-story-level-restart.patch','-story-team-initialization.patch','-story-checkpoints.patch','-story-world-effects.patch','-network-player-payload-lifetime.patch','-story-opening-world-body.patch','-story-dialogue.patch','-story-result-controls.patch')):
             shutil.copyfile(patch, old_patches / patch.name)
     # The trace depends on network wrapper context; like the network patches,
     # it belongs to the full migration, not the historical Mac-only fixture.

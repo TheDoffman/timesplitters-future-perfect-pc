@@ -29,6 +29,8 @@ int pc_story_network_replica_bounds(uint32_t entity);
 int pc_story_network_cinematic_pose(uint32_t entity);
 int pc_story_network_shot(void (*original)(void));
 uint32_t pc_story_network_wire_entity(unsigned slot);
+uint32_t pc_story_network_world_key(uint32_t entity);
+uint32_t pc_story_network_world_entity(uint32_t key);
 #endif
 static void pc_network_bots_guest_config(void (*original)(void))
 {
@@ -275,6 +277,7 @@ static void pc_network_bots_guest_serializable(void (*original)(void))
 #ifdef _WIN32
     const uint32_t entity=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
     unsigned index;
+    if(pc_story_network_world_key(entity)) {g_eax=1u;g_esp+=4u;return;}
     if(entity) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==entity) {
         g_eax=1u;g_esp+=4u;return;
     }
@@ -290,6 +293,12 @@ static void pc_network_bots_guest_encode(void (*original)(void))
 {
 #ifdef _WIN32
     unsigned index;
+    const uint32_t world_key=pc_story_network_world_key(g_ecx);
+    if(world_key) {
+        uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
+        uint8_t *bytes=(uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+        bytes[0]=5u;memcpy(bytes+1u,&world_key,4u);*cursor+=5u;g_esp+=4u;return;
+    }
     if(g_ecx) for(index=0;index<32u;index++) if(pc_story_network_wire_entity(index)==g_ecx) {
         uint32_t *cursor=(uint32_t *)((uintptr_t)g_eax+g_xbox_mem_offset);
         uint8_t *bytes=(uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
@@ -311,6 +320,10 @@ static void pc_network_bots_guest_decode(void (*original)(void))
 #ifdef _WIN32
     uint32_t *cursor=(uint32_t *)((uintptr_t)g_ecx+g_xbox_mem_offset);
     const uint8_t *bytes=(const uint8_t *)((uintptr_t)*cursor+g_xbox_mem_offset);
+    if(bytes[0]==5u) {
+        uint32_t key;memcpy(&key,bytes+1u,4u);g_eax=pc_story_network_world_entity(key);
+        *cursor+=5u;g_esp+=4u;return;
+    }
     if (bytes[0]==4u) {
         g_eax=pc_story_network_wire_entity(bytes[1]);
         if(!g_eax) g_eax=pc_network_bots_guest_entity(bytes[1]);

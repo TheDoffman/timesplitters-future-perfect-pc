@@ -24,6 +24,7 @@ import pc_settings_game as ui
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE,publish_input_state
+from testing_profile import unrelated_game_pids
 from native_effect_trace import snapshot_effects
 
 def weapon_set_metrics(run):
@@ -51,6 +52,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
     parser.add_argument('--pair-role',choices=['host','guest'])
+    parser.add_argument('--pair-owner-pid',type=int,help='Controller ancestor allowed to own other games in this paired probe')
     parser.add_argument('--directory')
     parser.add_argument('--lobby-code')
     parser.add_argument('--pair-load-probe',action='store_true')
@@ -136,7 +138,10 @@ def main():
                               '/FO','CSV','/NH'],capture_output=True,text=True,check=True,timeout=10)
     existing=[row[1] for row in csv.reader(inventory.stdout.splitlines())
               if len(row)>1 and row[0].lower()=='futureperfect_recomp.exe']
-    assert not existing, f'Another game is running (PIDs {", ".join(existing)}); wait for its owner before testing'
+    if args.pair_owner_pid and (args.scenario!='story-pair' or not args.pair_role):
+        parser.error('--pair-owner-pid requires the Story paired probe')
+    unrelated=unrelated_game_pids(existing,args.pair_owner_pid)
+    assert not unrelated, f'Another game is running (PIDs {", ".join(unrelated)}); wait for its owner before testing'
     if args.profile_pc_symbol and (not args.profile_cpu or len(args.profile_pc_symbol)>=96 or any(c in args.profile_pc_symbol for c in '\t\r\n')):
         parser.error('--profile-pc-symbol requires --profile-cpu and a symbol shorter than 96 characters without tabs/newlines')
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256

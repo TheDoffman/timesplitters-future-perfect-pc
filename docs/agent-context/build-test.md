@@ -1,6 +1,15 @@
 # Build, run and validation map
 
-See [build-test-details](build-test-details.md) for detailed adapter contracts and validation routes.
+The bounded Story pair now passes its controller PID to each child runner.
+`testing_profile.unrelated_game_pids` permits only game processes with that live
+controller in their ancestry, including Windows venv shims; all other games still
+block launch. Pure fixtures cover sibling ownership, unrelated controllers,
+missing parents and cycles. This repairs the single-instance guard's rejection
+of the probe's own host, without closing or adopting an unrelated play session.
+
+Preview1 follow-up fixtures cover NPC fragment/lifetime recovery, cloak/audio,
+inset cameras, prop/blood replication, result authority and ammo edges; see
+[build-test-details](build-test-details.md). Live scope is recorded in STATUS.
 
 Story NPC constructor/cadence fixtures in `tests/story_lobby.c` now require
 host coordinates, heading and resolved variant at construction, body replacement

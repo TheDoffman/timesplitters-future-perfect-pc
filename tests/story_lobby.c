@@ -64,6 +64,14 @@ void sub_000FF420(void){marker=39;}void sub_000FF490(void){marker=40;}
 void sub_000FF200(void){marker=41;}
 void sub_000C6100(void){marker=42;}void sub_000D4B00(void){marker=43;}
 void sub_000D4BE0(void){marker=44;}
+void sub_00164C40(void){marker=46;}void sub_001CB260(void){marker=47;}
+void sub_000CC170(void){marker=48;}void sub_000C9C90(void){marker=49;}
+static unsigned feed_starts,feed_stops;
+void sub_001B67E0(void){marker=50;}
+void sub_001128C0(void){marker=51;}void sub_00080F20(void){marker=52;}
+static unsigned blood_decals;
+static unsigned ammo_loaded,world_removed;
+static unsigned dialogue_plays,dialogue_lips;
 static unsigned cine_begins,cine_ends;
 static unsigned effect_emitters,effect_blasts,effect_trails,effect_moves,effect_deletes;
 static void checkpoint_restore_original(void)
@@ -112,6 +120,19 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     uint32_t args[10];va_list ap;va_start(ap,count);CHECK(count<=10);
     for(unsigned i=0;i<count;i++)args[i]=va_arg(ap,uint32_t);
     va_end(ap);
+    if(fn==sub_00080F20) {CHECK(count==1 && args[0]==957);return 777;}
+    if(fn==sub_001128C0) {
+        CHECK(count==9 && args[0]==777 && args[1]==1 && args[2]==0x7f1e1e32 && args[3]==4 &&
+              args[4]==0x3f800000 && args[5]==1 && args[6]==3);
+        CHECK(WORD_AT(args[7])==0x3f800000 && WORD_AT(args[8]+4)==0xbf800000);
+        ++blood_decals;return 1;
+    }
+    if(fn==sub_001B67E0) {CHECK(count==2 && args[0]==0x50000 && args[1]==3);return ammo_loaded;}
+    if(fn==sub_000A9070 && args[0]>=0x210000) {CHECK(count==1);WORD_AT(args[0]+0x28)|=0x80000000u;++world_removed;return 0;}
+    if(fn==sub_000CC170) {CHECK(count==3 && args[0]==0x180000 && args[1]==0x40a00000 && args[2]==0x74400);++feed_starts;return 0;}
+    if(fn==sub_000C9C90) {CHECK(count==0);++feed_stops;return 0;}
+    if(fn==sub_00164C40) {CHECK(count==4 && args[1]==0x1234 && args[2]==0x4000 && !args[3]);++dialogue_plays;return 0;}
+    if(fn==sub_001CB260) {CHECK(count==1);++dialogue_lips;return 0;}
     if(fn==sub_000C6100) {CHECK(count==1);return args[0]==0x4352434d?0x180000:0;}
     if(fn==sub_000D4B00 || fn==sub_000D4BE0) {
         const uint32_t context=0x6000+0x1584;
@@ -167,10 +188,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x32504e53u || WORD_AT(args[2]+4)==0x32505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x33504e53u || WORD_AT(args[2]+4)==0x33505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
-        if(WORD_AT(args[2]+4)==0x32504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
-        if(WORD_AT(args[2]+4)==0x32505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x33504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x33505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
     }
     if(fn==sub_000DAC30) {
@@ -373,7 +394,15 @@ static void stage_original(void)
     g_eax=77;g_esp+=4;
 }
 static void visibility_original(void)
-{WORD_AT(0x74010)=0x1234ffffu;WORD_AT(0x74410)=0x5678ffffu;WORD_AT(0x1c0010)=0x170000u;g_esp+=4;}
+{WORD_AT(0x74010)=0x1234ffffu;WORD_AT(0x74410)=0x5678ffffu;WORD_AT(0x1c0010)=0x170000u;
+ WORD_AT(0x7b4cc0)=0x74000;WORD_AT(0x7b54d8)=4;
+ WORD_AT(0x74000)=0x74400;WORD_AT(0x74400)=0x1d0000;WORD_AT(0x1d0000)=0x1e0000;WORD_AT(0x1e0000)=0;
+ WORD_AT(0x1d0010)=0x1234ffffu;WORD_AT(0x1d000c)=0xffffu;g_esp+=4;}
+static void result_menu_original(void)
+{CHECK(WORD_AT(0x7ba9e0)==0 && WORD_AT(0x7b0c7c)==WORD_AT(0x7b0c48));g_eax=77;g_esp+=4;}
+static void world_remove_original(void)
+{WORD_AT(WORD_AT(g_esp+4)+0x28)|=0x80000000u;g_eax=37;g_esp+=4;}
+static void blood_original(void){g_eax=1;g_esp+=4;}
 static unsigned network_starts;
 static void ready_original(void){
     CHECK(WORD_AT(0x790950)==0 && !(WORD_AT(0x7de458)&0x20000000));
@@ -728,6 +757,9 @@ int main(void)
         WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x7de45c)=0;
         WORD_AT(0x7de30c)=7;story_pending_stage=1;pc_story_network_activate();
         WORD_AT(0x6114)=4;WORD_AT(0x7698)=16;
+        for(unsigned slot=0;slot<2;slot++) {
+            CHECK(WORD_AT(0x777288+slot*0x124)==1 && ((uint8_t *)memory)[0x7de424+slot]==1);
+        }
         const unsigned spawns_before=context_spawns;
         g_esp=0x1800;pc_story_network_frame(frame_original);
         CHECK(context_spawns==spawns_before+2 && WORD_AT(0x6114)==2 && WORD_AT(0x7698)==2);
@@ -866,6 +898,52 @@ int main(void)
         npc_deliver(&queued,3);CHECK(WORD_AT(actor)==0 && WORD_AT(0x74c37c)==2 && npc_removed==2);
         CHECK(!pc_story_network_replica(0x72000));npc_deliver(&queued,3);CHECK(npc_removed==2);
         queued.serial=6;npc_deliver(&queued,3);CHECK(!WORD_AT(actor) && npc_ctor_calls==2 && npc_removed==2);
+        /* Two UDP ticks interleave: neither half may erase the other tick.
+           A still newer incomplete pose must not discard queued complete state. */
+        StoryNpcSpawn interleaved=other;interleaved.serial=7;
+        StoryNpcSpawn newer=interleaved;newer.serial=8;newer.position[0]=19.f;
+        npc_deliver(&interleaved,1);npc_deliver(&newer,1);
+        npc_deliver(&interleaved,2);CHECK(story_npc_seen_serial[2]==7);
+        npc_deliver(&newer,2);CHECK(story_npc_seen_serial[2]==8);
+        WORD_AT(0x76b1a4)=10;interleaved.serial=9;npc_deliver(&interleaved,3);
+        newer.serial=10;npc_deliver(&newer,2);
+        CHECK(story_npc_fresh[2] && story_npc_pending[2].serial==9);
+        WORD_AT(0x76b1a4)=15;story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==9);
+        npc_deliver(&newer,1);CHECK(story_npc_seen_serial[2]==10);
+        newer.serial=11;newer.cloak_flags=0x200000;newer.cloak_phase=2;
+        newer.cloak_values[0]=.25f;newer.cloak_values[1]=.75f;newer.cloak_values[2]=2.f;
+        WORD_AT(actor+0xc6c)=0x100;npc_deliver(&newer,3);
+        CHECK(WORD_AT(actor+0xc6c)==0x200100 && WORD_AT(actor+0xde4)==2 && WORD_AT(actor+0xde8)==0x3e800000);
+        newer.serial=12;newer.cloak_flags=0;npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
+        /* A mesh loaded by this scene needs no earlier guest NPC instance.
+           An unknown/unloaded kind remains queued; a retired recorded body is
+           rebuilt without calling a destructor on reused local storage. */
+        newer.serial=13;story_npc_kinds[12]=0;WORD_AT(actor)=0;
+        WORD_AT(0x53a3d0+12*48)=7;*(int16_t *)((uint8_t *)memory+0x78b860+7*2)=-1;
+        npc_deliver(&newer,3);CHECK(story_npc_seen_serial[2]==12 && story_npc_fresh[2]);
+        *(int16_t *)((uint8_t *)memory+0x78b860+7*2)=0;WORD_AT(0x791d4c)=0x200000;
+        story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==13);
+        const unsigned constructors=npc_ctor_calls,removed=npc_removed;
+        WORD_AT(0x72028)|=0x80000000;newer.serial=14;
+        npc_deliver(&newer,3);CHECK(npc_ctor_calls==constructors+1 && npc_removed==removed);
+        story_npc_kinds[12]=1;
+        /* Speech events survive duplicate/reordered delivery, wait for body
+           creation and execute cosmetic APIs without a foreign script handle. */
+        story_dialogue_reset();WORD_AT(0x7de30c)=7;
+        StoryDialogue speech={STORY_DIALOGUE_MAGIC,story_npc_match(),1,2,8,0x1234,0x4000};
+        memcpy((uint8_t *)memory+0x32000,&speech,sizeof speech);
+        WORD_AT(0x31000)=1;story_dialogue_receive(0x31000,0x32000,0x1e,sizeof speech);
+        CHECK(!story_dialogue_count);WORD_AT(0x31000)=0;
+        story_dialogue_receive(0x31000,0x32000,0x1e,sizeof speech);
+        story_dialogue_receive(0x31000,0x32000,0x1e,sizeof speech);CHECK(story_dialogue_count==1);
+        WORD_AT(actor+0xe90)=0x180000;story_dialogue_frame();CHECK(dialogue_plays==1 && dialogue_lips==1 && !story_dialogue_count);
+        speech.serial=3;speech.spawn=9;memcpy((uint8_t *)memory+0x32000,&speech,sizeof speech);
+        story_dialogue_receive(0x31000,0x32000,0x1e,sizeof speech);story_dialogue_frame();CHECK(story_dialogue_count==1 && dialogue_plays==1);
+        WORD_AT(0x72258)=9;story_dialogue_frame();CHECK(!story_dialogue_count && dialogue_plays==2);
+        speech.serial=2;speech.spawn=8;memcpy((uint8_t *)memory+0x32000,&speech,sizeof speech);
+        story_dialogue_receive(0x31000,0x32000,0x1e,sizeof speech);WORD_AT(0x7de318)+=300;
+        story_dialogue_frame();CHECK(!story_dialogue_count && dialogue_plays==2);
+        story_dialogue_reset();WORD_AT(actor+0xe90)=0;
         /* Host NPC shots accept targetless fire; only the host may send NPC
            events, and each event is replayed once for its current body. */
         story_shots_reset();WORD_AT(actor)=0x72000;WORD_AT(0x72258)=8;
@@ -1003,7 +1081,7 @@ int main(void)
         pc_story_network_team(team_original);
         CHECK(WORD_AT(actor+0x84)==1 && WORD_AT(0x1808)==3 && g_eax==77 && g_esp==0x1804);
         g_esp=0x1800;WORD_AT(g_esp)=0x25a44e;pc_story_network_team(team_original);
-        CHECK(WORD_AT(actor+0x84)==3); /* other callers keep their arguments */
+        CHECK(WORD_AT(actor+0x84)==1 && WORD_AT(0x1808)==3); /* every human setter preserves Story's team */
         WORD_AT(0x790950)=4;WORD_AT(0x7b0c48)=0x6000;
         for(unsigned slot=0;slot<4;slot++) {
             const uint32_t human=0x50000+slot*0xea0,context=0x6000+slot*0x1584,body=0x74000+slot*0x400;
@@ -1022,7 +1100,7 @@ int main(void)
         pc_story_network_team_init(team_init_original);
         CHECK(WORD_AT(actor+0x84)==1 && g_eax==91 && g_esp==0x1804);
         WORD_AT(0x74800+0x150)=0;g_esp=0x1800;
-        pc_story_network_team_init(team_init_original);CHECK(WORD_AT(actor+0x84)==3 && g_esp==0x1804);
+        pc_story_network_team_init(team_init_original);CHECK(WORD_AT(actor+0x84)==1 && g_esp==0x1804);
         WORD_AT(0x74800+0x150)=0x6000+2*0x1584;
         WORD_AT(actor+0x84)=3;((uint8_t *)memory)[0x7de455]=1;
         story_human_teams_frame();CHECK(WORD_AT(actor+0x84)==3);
@@ -1068,10 +1146,10 @@ int main(void)
         g_esp=0x1800;pc_story_network_pause_rows();CHECK(restart_rows==1 && g_esp==0x1800);
         WORD_AT(0x76b140)=2;pc_story_network_pause_rows();CHECK(restart_rows==1);WORD_AT(0x76b140)=1;
         const uint32_t old_match=story_npc_match();g_esp=0x1800;WORD_AT(g_esp+4)=0;
-        story_npc_parts[5]=3;story_npc_fresh[5]=1;
+        story_npc_assembly[5][0].parts=3;story_npc_fresh[5]=1;
         pc_story_network_restart(restart_original);
         CHECK(restart_calls==1 && g_esp==0x1804 && g_eax==73 && story_reload_epoch==1 &&
-              story_context_start_pending && !story_npc_parts[5] && !story_npc_fresh[5]);
+              story_context_start_pending && !story_npc_assembly[5][0].parts && !story_npc_fresh[5]);
         StoryRestart message;memcpy(&message,npc_sent+4,sizeof message);
         CHECK(message.magic==STORY_RESTART_MAGIC && message.match==old_match && message.epoch==1 && !message.checkpoint);
         CHECK(story_npc_match()!=old_match);
@@ -1325,6 +1403,11 @@ int main(void)
         memcpy((uint8_t *)memory+0x32000,&base,sizeof base);
         CHECK(story_cine_receive(0x31000,0x32000,0x1e,sizeof base) && story_cine_seen==2);
         s.match^=1;s.fade[0]=0x7fc00000;CHECK(!story_cine_valid(&s,1));
+        s.fade[0]=0;s.serial=4;s.feed_serial=1;s.feed_active=1;s.feed_tag=0x4352434d;s.feed_remaining=5.f;
+        WORD_AT(0x733108)=0x200000;story_cine_state=s;
+        story_cine_frame();story_cine_frame();CHECK(feed_starts==1 && !feed_stops);
+        story_cine_state.feed_serial=2;story_cine_state.feed_active=0;
+        story_cine_frame();CHECK(feed_stops==1);
         story_cine_reset();
     }
     {
@@ -1332,15 +1415,21 @@ int main(void)
         story_lobby_mission=0;story_pending_stage=1;WORD_AT(0x79094c)=2;
         WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de30c)=7;WORD_AT(0x7de400)=(WORD_AT(0x7de400)&~255u)|2u;
         story_checkpoint_serial=0;story_loadout_reset();WORD_AT(0x7b0c48)=0x6000;
+        WORD_AT(0x7407c)=0x50000;WORD_AT(0x50000)=0x74000;
+        WORD_AT(0x5018c)=0x1d0000;WORD_AT(0x1d007c)=0x50000;
         for(unsigned i=0;i<2;i++) {
             const uint32_t context=0x6000+i*0x1584,entity=0x74000+i*0x400;
             WORD_AT(context+0x14)=entity;WORD_AT(entity+0x150)=context;WORD_AT(entity+4)=0x1c0000+i*0x100;
         }
         g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
         CHECK(g_esp==0x1804 && WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x56780000);
+        CHECK(WORD_AT(0x1d0010)==0x12340000 && !WORD_AT(0x1d000c));
+        CHECK(WORD_AT(0x7b4cc0)==0x1e0000 && WORD_AT(0x7b54d8)==1);
         story_loadout_host[0].equipped=1;story_loadout_host[0].match=story_npc_match();g_esp=0x1800;
         pc_story_network_world_visibility(visibility_original);
         CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000 && WORD_AT(0x74410)==0x5678ffff);
+        CHECK(WORD_AT(0x1d0010)==0x1234ffff);
+        CHECK(WORD_AT(0x7b4cc0)==0x74000 && WORD_AT(0x7b54d8)==4);
         WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_world_visibility(visibility_original);
         CHECK(WORD_AT(0x74010)==0x12340000 && WORD_AT(0x1c0010)==0x170000);story_checkpoint_serial=1;
         g_esp=0x1800;pc_story_network_world_visibility(visibility_original);CHECK(WORD_AT(0x74010)==0x1234ffff && WORD_AT(0x1c0010)==0x170000);
@@ -1355,6 +1444,42 @@ int main(void)
         WORD_AT(0x76b140)=2;story_pending_stage=3;g_esp=0x1800;
         const unsigned calls=failure_original_calls;pc_story_network_advance(frame_original);
         CHECK(g_esp==0x1804 && failure_original_calls==calls);
+        g_esp=0x1800;pc_story_network_result_action(frame_original,0u);
+        CHECK(g_esp==0x1804 && failure_original_calls==calls); /* guest menu stays open */
+        story_pending_stage=1;WORD_AT(0x76b140)=1;WORD_AT(0x79094c)=2;
+        WORD_AT(0x7de458)=0x80008;WORD_AT(0x6000)=0;WORD_AT(0x6004)=0;
+        WORD_AT(0x7b0c7c)=0x7584;WORD_AT(0x7ba9e0)=1;
+        g_esp=0x1800;pc_story_network_result_menu(result_menu_original);
+        CHECK(g_eax==77 && g_esp==0x1804 && WORD_AT(0x7b0c7c)==0x7584 && WORD_AT(0x7ba9e0)==1);
+        const unsigned restarts=restart_calls;
+        g_esp=0x1800;pc_story_network_result_action(frame_original,1u);
+        CHECK(g_esp==0x1804 && restart_calls==restarts+1 && failure_original_calls==calls);
+        WORD_AT(0x76b140)=2;g_esp=0x1800;pc_story_network_result_action(frame_original,1u);
+        CHECK(g_esp==0x1804 && restart_calls==restarts+1 && failure_original_calls==calls);
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb0c0;CHECK(story_result_button() && g_esp==0x1804);
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eb290;CHECK(story_result_button());
+        g_esp=0x1800;WORD_AT(g_esp+20)=0x2eaf60;CHECK(!story_result_button() && g_esp==0x1800);
+        /* Blood uses local texture resolution and the original decal API,
+           including mode4 ground pools; no health routine is replayed. */
+        story_effect_reset();WORD_AT(0x7de30c)=7;WORD_AT(0x774040)=0;WORD_AT(0x31000)=0;
+        StoryEffect blood={0};blood.magic=STORY_EFFECT_MAGIC;blood.match=story_npc_match();blood.serial=1;
+        blood.kind=3;blood.a=957;blood.b=1;blood.color=0x7f1e1e32;blood.options=4;
+        blood.value=1.f;blood.decal_flags=1;blood.room=3;blood.position[0]=1.f;blood.direction[1]=-1.f;
+        memcpy((uint8_t *)memory+0x32000,&blood,sizeof blood);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof blood));
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof blood));
+        g_esp=0x1800;story_effect_frame();CHECK(blood_decals==1 && g_esp==0x1800);
+        WORD_AT(0x4d2d64+957*24)=777;g_esp=0x1800;
+        WORD_AT(g_esp+4)=777;WORD_AT(g_esp+8)=1;WORD_AT(g_esp+12)=blood.color;WORD_AT(g_esp+16)=4;
+        WORD_AT(g_esp+20)=0x3f800000;WORD_AT(g_esp+24)=1;WORD_AT(g_esp+28)=3;
+        WORD_AT(g_esp+32)=0x33000;WORD_AT(g_esp+36)=0x33010;
+        memcpy((uint8_t *)memory+0x33000,blood.position,12);memcpy((uint8_t *)memory+0x33010,blood.direction,12);
+        pc_story_network_blood_decal(blood_original);CHECK(g_eax==1 && g_esp==0x1804 && story_local_blood_count==1);
+        blood.serial=2;memcpy((uint8_t *)memory+0x32000,&blood,sizeof blood);
+        story_effect_receive(0x31000,0x32000,0x1e,sizeof blood);story_effect_frame();CHECK(blood_decals==1);
+        WORD_AT(0x7de318)+=31;CHECK(!story_effect_blood_seen_locally(&blood));
+        blood.value=-1.f;CHECK(!story_effect_valid(&blood));
+        blood.value=1.f;blood.a=964;CHECK(!story_effect_valid(&blood));
         /* Frontend and movie payloads never dereference retired human bodies;
            the shared guard also protects ordinary Online transitions. */
         online_mode=PC_ONLINE_ARCADE;WORD_AT(0x79094c)=101;g_esp=0x1800;
@@ -1363,6 +1488,67 @@ int main(void)
         g_esp=0x1800;pc_network_player_payload(frame_original);CHECK(failure_original_calls==calls);
         WORD_AT(0x76b108)=0;g_esp=0x1800;pc_network_player_payload(frame_original);
         CHECK(failure_original_calls==calls+1 && g_esp==0x1804);
+    }
+#endif
+#ifdef _WIN32
+    {
+        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de30c)=7;
+        WORD_AT(0x7de400)=2;((uint8_t *)memory)[0x7de455]=10;
+        WORD_AT(0x72f5e8)=0x210000;WORD_AT(0x7b4fac)=2;story_world_reset();
+        const uint32_t a=0x210000,b=a+0x2e8;
+        memset((uint8_t *)memory+a,0,2*0x2e8);WORD_AT(a+0x20)=1;WORD_AT(a+0x2c)=11;
+        WORD_AT(a+0x60)=0x42415252;WORD_AT(a+0x94)=20;WORD_AT(a+0x230)=101;
+        const uint32_t key=pc_story_network_world_key(a);CHECK(key && pc_story_network_world_entity(key)==a);
+        g_esp=0x1800;WORD_AT(g_esp+4)=a;pc_story_network_world_remove(world_remove_original);
+        StoryWorldRemove removal;memcpy(&removal,npc_sent+4,sizeof removal);
+        CHECK(g_eax==37 && g_esp==0x1804 && removal.key==key && removal.magic==STORY_WORLD_REMOVE_MAGIC);
+        /* The other peer constructs this prop in another pool slot and has
+           another original network ID. Authored identity still resolves it. */
+        memcpy((uint8_t *)memory+b,(uint8_t *)memory+a,0x2e8);
+        WORD_AT(a+0x28)=0x80000000;WORD_AT(b+0x28)=0;WORD_AT(b+0x2c)=44;WORD_AT(b+0x230)=555;
+        CHECK(pc_story_network_world_entity(key)==b);
+        WORD_AT(0x76b140)=2;WORD_AT(0x774040)=0;WORD_AT(0x31000)=1;
+        memcpy((uint8_t *)memory+0x32000,&removal,sizeof removal);
+        story_world_receive(0x31000,0x32000,0x1e,sizeof removal);CHECK(!story_world_count);
+        WORD_AT(0x31000)=0;story_world_receive(0x31000,0x32000,0x1e,sizeof removal);
+        story_world_receive(0x31000,0x32000,0x1e,sizeof removal);CHECK(story_world_count==1);
+        story_world_frame();CHECK(world_removed==1 && !pc_story_network_world_entity(key));
+        /* Never choose between duplicate authored keys by local pool order. */
+        WORD_AT(a+0x28)=WORD_AT(b+0x28)=0;CHECK(!pc_story_network_world_entity(key));
+        online_mode=PC_ONLINE_ARCADE;CHECK(!pc_story_network_world_key(a));
+        /* The shared Online pickup must clamp in32bits before writing signed16,
+           including overfull dual clips and recovery from negative reserves. */
+        const uint32_t reserve=0x50000+0x61e+3*2,entry=0x4ea3f8+3*0xe0;
+        WORD_AT(entry)=32767;WORD_AT(entry+8)=0;ammo_loaded=0;
+        *(int16_t *)((uint8_t *)memory+reserve)=32760;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x50000;WORD_AT(g_esp+8)=3;WORD_AT(g_esp+12)=100;
+        pc_network_ammo_pickup(frame_original);
+        CHECK(g_esp==0x1804 && g_eax==7 && *(int16_t *)((uint8_t *)memory+reserve)==32767);
+        WORD_AT(entry)=16;ammo_loaded=32;g_esp=0x1800;pc_network_ammo_pickup(frame_original);
+        CHECK(!g_eax && !*(int16_t *)((uint8_t *)memory+reserve));
+        *(int16_t *)((uint8_t *)memory+reserve)=-16;WORD_AT(entry)=100;ammo_loaded=10;
+        g_esp=0x1800;pc_network_ammo_pickup(frame_original);CHECK(g_eax==90 && *(int16_t *)((uint8_t *)memory+reserve)==90);
+        WORD_AT(0x76b108)=0;g_esp=0x1800;const unsigned originals=failure_original_calls;
+        pc_network_ammo_pickup(frame_original);CHECK(failure_original_calls==originals+1);
+    }
+#endif
+#ifdef _WIN32
+    {
+        /* Payload readiness includes live ownership in both directions and
+           stops at the accepted ending stage before scene teardown. */
+        WORD_AT(0x76b108)=1;WORD_AT(0x79094c)=2;WORD_AT(0x790950)=1;
+        WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x6000)=0;WORD_AT(0x6014)=0x74000;
+        WORD_AT(0x74150)=0x6000;WORD_AT(0x7407c)=0x50000;WORD_AT(0x50000)=0x74000;
+        WORD_AT(0x74028)=0;online_mode=PC_ONLINE_ARCADE;
+        unsigned calls=failure_original_calls;g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==calls+1);
+        WORD_AT(0x74028)=0x80000000;g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==calls+1 && g_esp==0x1804);
+        WORD_AT(0x74028)=0;WORD_AT(0x50000)=0;g_esp=0x1800;pc_network_player_payload(frame_original);
+        CHECK(failure_original_calls==calls+1);
+        WORD_AT(0x50000)=0x74000;online_mode=PC_ONLINE_STORY;story_pending_stage=2;
+        g_esp=0x1800;pc_network_player_payload(frame_original);CHECK(failure_original_calls==calls+1);
     }
 #endif
     puts("PASS: Story host controls, network-mode preservation and difficulty return");

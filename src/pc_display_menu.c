@@ -42,6 +42,7 @@ extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
 static int pc_story_menu_button(void (*original)(void));
 #ifdef _WIN32
 static int pc_story_lobby_button(void (*original)(void));
+static int story_result_button(void);
 #endif
 
 typedef struct GuestRegisters {
@@ -284,6 +285,7 @@ void pc_display_menu_button(void (*original)(void))
         WORD_AT(frame+12)=flags|0x21u;original();WORD_AT(frame+12)=flags;return;
     }
 #ifdef _WIN32
+    if(story_result_button()) return;
     if(pc_story_lobby_button(original)) return;
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;

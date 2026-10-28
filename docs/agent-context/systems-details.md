@@ -1,5 +1,52 @@
 # Subsystem contracts and diagnostics
 
+Opening visibility also removes the validated human bodies/world weapons from
+the linked visible-world list (7B4CC0, count7B54D8) already populated by original
+9FBA0 inside A0130. Clearing masks after that enqueue left the standing model
+queued. The bounded filter validates the list before rewriting it, preserves
+unrelated entries and local model storage, and lets the next original visibility
+pass restore entries after the opening. The fixture checks list/count restoration.
+
+Stock35D150/35AD90 and68830 copy human teams directly from the peer cache at
+777288+slot*124 and the active config team bytes. Normalize those before body
+construction and keep them on team1 even when the actor already has team1;
+fixing D7550 alone does not correct the source of subsequent network snapshots.
+
+A four-player follow-up caught a completed human body on team3 at the opening.
+The D7570 adapter had waited for entity/context backlinks that its caller had not
+yet attached; the setter also covered only one caller. All validated Story human
+D7550 calls now use team1, and D7570 immediately corrects the actor's team data
+before attachment. NPCs, Local Story and Arcade retain original team rules.
+
+Story preview1 follow-up: `pc_story_npc.inc` assembles eight independent serials
+per NPC, retaining the newest complete physical/pose pair during interleaved UDP
+delivery. SNP3 includes numeric cloak phase/fades; handles remain local. A loaded
+kind/mesh may construct a guest NPC without a prior local instance, and only a
+previously recorded stale replica is detached before reconstruction.
+`pc_story_dialogue.inc` reliably sends line IDs/flags and body generations; guests
+create positional audio and lip tracks through164C40 and advance the cosmetic
+1CB260 audio clock without running host AI. Opening visibility also clears the
+attached world-weapon masks. Cinematic v3 shares the separate inset camera's
+authored tag, target tag and lifetime through peer-local CC170/C9C90.
+
+`pc_story_world.inc` uses authored type/kind/tag (or initial quantized position)
+for persistent prop identities; codec5 carries only that key. Duplicate local
+identities resolve to nothing. Reliable host A9070 removal invokes local cleanup,
+including collision; guest damage requests retain the original host hit protocol.
+Effects v2 additionally sends only known blood texture indices957..963 and numeric
+decal arguments;1128C0 raycasts/creates the decal locally without health changes.
+Guest-owned local blood remains immediate even when host cosmetics are offscreen.
+A32-entry local history skips matching nearby host decals of the same projection
+mode for30 ticks, preventing doubled feedback while leaving other impacts/pools.
+Game Over selects the host's primary menu context, hides guest restart buttons,
+and bypasses stock network teardown for coordinated host reloads. Guest reward
+Continue callbacks cannot independently advance/close the menu. Shared Online
+ammo pickups clamp before narrowing signed16 reserves, including overfull clips.
+Disconnect/leave behavior remains separate. Native fallback calls the originals;
+Online transport support still depends on MAC-013.
+
+See [systems-details](systems-details.md) for detailed adapter contracts and validation routes.
+
 Original Story25A420 puts human actors on team1, but the ordinary33ACB0 network
 pump overwrites them from per-controller Arcade team data. The shared Story
 team adapter normalizes that D7550 call for validated human pool slots.

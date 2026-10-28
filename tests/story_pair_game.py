@@ -111,7 +111,8 @@ def main():
 
     def launch(role,code=None):
         command=[sys.executable,str(ROOT/'tests/stability_transitions_game.py'),
-            '--run-name',runs[role].name,'--scenario','story-pair','--pair-role',('host' if role=='host' else 'guest'),'--directory',address]
+            '--run-name',runs[role].name,'--scenario','story-pair','--pair-role',('host' if role=='host' else 'guest'),
+            '--pair-owner-pid',str(os.getpid()),'--directory',address]
         if code:command+=['--lobby-code',code]
         if args.load_probe:command+=['--pair-load-probe']
         if args.presentation_probe:command+=['--story-presentation-probe']

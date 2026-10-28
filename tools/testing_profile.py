@@ -23,6 +23,52 @@ FIXTURE='private/test-fixtures/unlocked'
 TEST_SLOT='1AD19156651F'
 
 
+def process_descends_from(pid,owner,parents):
+    """Accept only a bounded, live ancestry chain, including venv shims."""
+    seen=set()
+    for _ in range(128):
+        if not pid or pid in seen:return False
+        if pid==owner:return owner>0
+        seen.add(pid);pid=parents.get(pid,0)
+    return False
+
+
+def windows_process_parents():
+    """Read process IDs/parents only; no command lines or personal settings."""
+    import ctypes as c
+    from ctypes import wintypes as w
+    class Entry(c.Structure):
+        _fields_=[('size',w.DWORD),('usage',w.DWORD),('pid',w.DWORD),
+                  ('heap',c.c_size_t),('module',w.DWORD),('threads',w.DWORD),
+                  ('parent',w.DWORD),('priority',w.LONG),('flags',w.DWORD),('name',w.WCHAR*260)]
+    kernel=c.WinDLL('kernel32',use_last_error=True)
+    kernel.CreateToolhelp32Snapshot.argtypes=[w.DWORD,w.DWORD]
+    kernel.CreateToolhelp32Snapshot.restype=w.HANDLE
+    kernel.Process32FirstW.argtypes=[w.HANDLE,c.POINTER(Entry)]
+    kernel.Process32NextW.argtypes=[w.HANDLE,c.POINTER(Entry)]
+    kernel.CloseHandle.argtypes=[w.HANDLE]
+    handle=kernel.CreateToolhelp32Snapshot(2,0)
+    if handle==w.HANDLE(-1).value:raise c.WinError(c.get_last_error())
+    try:
+        entry=Entry();entry.size=c.sizeof(entry);parents={}
+        if not kernel.Process32FirstW(handle,c.byref(entry)):raise c.WinError(c.get_last_error())
+        while True:
+            parents[entry.pid]=entry.parent
+            if not kernel.Process32NextW(handle,c.byref(entry)):break
+        return parents
+    finally:kernel.CloseHandle(handle)
+
+
+def unrelated_game_pids(existing,owner=None,*,parents=None,current=None):
+    """Paired probes may share only games descended from their own controller."""
+    if not existing:return []
+    if not owner:return list(existing)
+    if parents is None:parents=windows_process_parents()
+    if not process_descends_from(os.getpid() if current is None else current,owner,parents):
+        return list(existing)
+    return [pid for pid in existing if not process_descends_from(int(pid),owner,parents)]
+
+
 def contained(root,path,area):
     root=Path(root).resolve();path=Path(path).absolute();allowed=root/area
     if not path.is_relative_to(allowed) or path==allowed:

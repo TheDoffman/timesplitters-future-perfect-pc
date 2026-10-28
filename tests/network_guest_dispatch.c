@@ -51,6 +51,9 @@ static unsigned story_trace_calls;
 int pc_story_network_damage(void){return story_damage_handled;}
 int pc_story_network_shot(void (*original)(void)){(void)original;return 0;}
 static uint32_t story_wire_entity;
+static uint32_t story_world_wire;
+uint32_t pc_story_network_world_key(uint32_t entity){return story_world_wire && entity==story_world_wire?0x78563412u:0;}
+uint32_t pc_story_network_world_entity(uint32_t key){return key==0x78563412u?story_world_wire:0;}
 uint32_t pc_story_network_wire_entity(unsigned slot){return slot==23u?story_wire_entity:0u;}
 int pc_story_network_hit_trace(void (*original)(void)){(void)original;++story_trace_calls;return 0;}
 static uint32_t cinematic_replica;
@@ -417,6 +420,16 @@ int main(void)
         pc_network_bots_guest_death_gate(original);CHECK(g_eax==1 && g_esp==20);
         memory[0x76b140/4]=2;g_esp=16;pc_network_bots_guest_death_gate(original);CHECK(g_eax==0 && g_esp==20);
         story_wire_entity=0;
+        story_world_wire=0x7800;g_esp=16;memory[5]=story_world_wire;
+        pc_network_bots_guest_serializable(original);CHECK(g_eax==1 && g_esp==20);
+        g_esp=16;g_eax=0x200;g_ecx=story_world_wire;memory[0x200/4]=0x300;
+        pc_network_bots_guest_encode(original);
+        const uint8_t expected[5]={5,0x12,0x34,0x56,0x78};
+        CHECK(!memcmp((uint8_t *)memory+0x300,expected,5) && memory[0x200/4]==0x305 && g_esp==20);
+        g_esp=16;g_ecx=0x200;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(g_eax==story_world_wire && memory[0x200/4]==0x305 && g_esp==20);
+        story_world_wire=0;g_esp=16;memory[0x200/4]=0x300;pc_network_bots_guest_decode(original);
+        CHECK(!g_eax && memory[0x200/4]==0x305 && g_esp==20);
     }
 #else
     g_esp=16;pc_network_bots_guest_serializable(original);CHECK(g_eax==0x11223344u && g_esp==20);
