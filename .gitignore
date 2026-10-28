@@ -40,3 +40,8 @@ xbox_kernel.log
 
 # Native launcher state in a development checkout.
 /.launcher/
+
+# Save archives contain personal progress and stay local.
+/Backups/
+*.tsfpsave
+*.tsfpsave.partial

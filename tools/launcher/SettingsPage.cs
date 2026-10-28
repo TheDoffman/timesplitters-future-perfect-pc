@@ -35,8 +35,9 @@ namespace TimeSplitters.Launcher
         public event Action Saved, Cancelled;
         public event Action<bool> TextureBusyChanged;
         readonly bool texturePreview;
-        TextBlock textureStatus;
-        Button textureCheck, textureInstall;
+        TextBlock textureStatus, textureDetails;
+        Border textureBadge;
+        Button textureCheck, textureInstall, textureVerify;
         CheckBox textureUpdates;
         TextureRelease textureAvailable;
         long textureDownloadBytes;
@@ -44,6 +45,8 @@ namespace TimeSplitters.Launcher
         readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
+        readonly Button save;
+        string savedDraft;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
@@ -69,7 +72,7 @@ namespace TimeSplitters.Launcher
         }
         static void Field(Panel parent, string label, UIElement input)
         {
-            var stack=new StackPanel { Margin=new Thickness(0,0,0,10) };var caption=Text(label,13);caption.Foreground=Muted;
+            var stack=new StackPanel { Margin=new Thickness(0,4,0,10) };var caption=Text(label,12);caption.Foreground=Muted;caption.MinHeight=20;caption.Margin=new Thickness(0,0,0,5);
             stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
             AutomationProperties.SetLabeledBy(input,caption);
         }
@@ -92,17 +95,15 @@ namespace TimeSplitters.Launcher
             layout=new DockPanel(); View.Children.Add(layout);
             overlay=new Border { Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             Ui.Show(overlay,false);View.Children.Add(overlay);
-            var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            var eyebrow=PageTheme.Text("GAME PREFERENCES",11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
-            var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
-            var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
+            var heading=PageTheme.Header("GAME PREFERENCES","Game settings","Adjust controls, display and performance before your next launch.");
+            DockPanel.SetDock(heading,Dock.Top);layout.Children.Add(heading);
             var footer=new DockPanel { LastChildFill=true };
             footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
-            var save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
+            save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
             status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
             tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
             var controls=new StackPanel();
@@ -133,25 +134,35 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            var textures=PageTheme.Section(graphics,"Enhanced textures · Beta","Optional download for Windows and Mac. Classic textures need no extra download.");
+            var texturePanel=new StackPanel();
+            var textures=PageTheme.Section(texturePanel,"Enhanced textures","Optional pack. Original textures are always available.");
+            var textureBadges=new WrapPanel {Margin=new Thickness(0,0,0,10)};textures.Children.Add(textureBadges);
+            var betaBadge=PageTheme.Badge("Beta",StatusTone.Warning);betaBadge.Margin=new Thickness(0,0,8,0);textureBadges.Children.Add(betaBadge);
+            textureBadge=PageTheme.Badge("Not checked",StatusTone.Neutral);textureBadge.Name="TextureHealthBadge";textureBadges.Children.Add(textureBadge);
             enhancedTextures=Check("Use enhanced textures (Beta)",model.EnhancedTextures);enhancedTextures.Name="EnhancedTextures";
             textures.Children.Add(enhancedTextures);
-            var textureHint=Text("On uses installed replacements; off uses the original textures. Missing replacements always use originals. This Beta is incomplete and may contain visual issues.",12);
+            var textureHint=Text("Beta: incomplete and may contain visual issues.",12);
             textureHint.Name="EnhancedTexturesHint";textures.Children.Add(textureHint);
             textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
+            textureDetails=Text("",12);textureDetails.Name="TexturePackDetails";textures.Children.Add(textureDetails);UpdateTextureDetails();
+            Ui.CheckedChanged(enhancedTextures,UpdateTextureDetails);
             textureUpdates=Check("Check for texture updates when opening settings",TextureDownload.OptedIn(root));textureUpdates.Name="TextureUpdateChecks";
             textureUpdates.Click+=(s,e)=> {if(texturePreview)return;try{TextureDownload.SetOptedIn(root,textureUpdates.IsChecked==true);}catch(Exception ex){textureStatus.Text=ex.Message;}};
-            textures.Children.Add(textureUpdates);
+
             var textureActions=new WrapPanel();textures.Children.Add(textureActions);
             textureCheck=Button("Check texture downloads");textureCheck.Name="CheckTexturePack";textureActions.Children.Add(textureCheck);
             textureInstall=Button("Download / update textures");textureInstall.Name="DownloadTexturePack";textureInstall.IsEnabled=false;textureActions.Children.Add(textureInstall);
+            textureVerify=Button("Verify textures");textureVerify.Name="VerifyTexturePack";textureActions.Children.Add(textureVerify);
             textureCheck.Click+=async(s,e)=>await CheckTextureUpdates();
+            textureVerify.Click+=async(s,e)=>await VerifyTextures();
             textureInstall.Click+=(s,e)=> {
                 if(textureAvailable==null || textureBusy)return;
                 Confirm("Install enhanced textures?",TextureDownload.Description(textureAvailable,textureDownloadBytes)+" Automatic update checks will be enabled; downloads always require your confirmation.","Download / update",async()=>await InstallTextures());
             };
-            textures.Children.Add(Text("Downloads and the update-check preference apply immediately. Save the Enhanced toggle for your next launch. F10 switches Classic/Enhanced for the current game session.",12));
-            var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
+            PageTheme.Details(textures,"Texture help & update options",textureUpdates,
+                Text("Save the Enhanced toggle for your next launch. Downloads and update checks apply immediately.",12),
+                Text("Missing replacements use original textures. F10 switches Classic/Enhanced for the current session.",12)).Name="TextureHelpDetails";
+            var display=PageTheme.Section(graphics,"Display","Output size for the game. Your desktop stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
@@ -176,9 +187,10 @@ namespace TimeSplitters.Launcher
             var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
             Ui.Show(customSize,model.Width!=1 || model.Height!=1);
             if(!model.CanAutoResolution && model.Width==1 && model.Height==1)display.Children.Add(Text("Auto is saved for a newer game build. This older game uses its original resolution; choose a manual size here to change it.",12));
-            display.Children.Add(Text("Auto follows the current display in fullscreen and the window size in windowed mode. Manual sizes remain available.",12));
+
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); Ui.Show(customSize,!selected.Automatic); } };
             var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
+            PageTheme.Details(display,"How resolution works",Text("Auto follows the display in fullscreen or the window size in windowed mode. Choose a manual size to keep a fixed output resolution.",12)).Name="ResolutionHelpDetails";
             Action updateRatio=()=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
             };
@@ -202,7 +214,7 @@ namespace TimeSplitters.Launcher
             Ui.ValueChanged(fov,()=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°");
             fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov);
-            var camera=PageTheme.Section(graphics,"Camera & window","Adjust your view and choose how the game fills your display.");
+            var camera=PageTheme.Section(graphics,"Camera & window","");
             var cameraColumns=Columns(camera);var cameraLeft=Column(cameraColumns,0);var cameraRight=Column(cameraColumns,1);
             Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
             fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(cameraRight,"Window mode",fullscreen);
@@ -211,16 +223,16 @@ namespace TimeSplitters.Launcher
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
             cameraLeft.Children.Add(resetFov);
             if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
-            var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
-            var timing=PageTheme.Section(graphics,"Frame rate","Choose a target for your next game launch. Your desktop refresh rate stays unchanged.");
+            var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);PageTheme.Details(camera,"About field of view",fovHint);
+            var timing=PageTheme.Section(graphics,"Frame rate","Applies after saving and restarting the game.");
             frameRate=Choices(GameSettings.NativeFrameRateLabels,GameSettings.NativeFrameRateLabels[Array.IndexOf(GameSettings.NativeFrameRates,model.NativeFps)]);
             frameRate.Name="NativeFrameRate";Field(timing,"Frame-rate target",frameRate);
-            var betaNote=Text("120 / 180 / 240 FPS use native high-refresh mode (beta), without interpolation. Gameplay issues may occur, including movement or firing problems in Arcade. Choose 60 FPS (Original) if you encounter problems.",12);
+            var betaNote=Text("Beta: high refresh may affect Arcade movement or firing. Use 60 FPS if affected.",12);
             betaNote.Name="NativeFrameRateBetaNote";timing.Children.Add(betaNote);
-            timing.Children.Add(Text("Requires a game build with native high-refresh support; older releases will not gain high FPS from this setting. Save and restart the game to apply changes.",12));
-            var quality=PageTheme.Section(graphics,"Quality & performance","Lower output resolution reduces GPU work. Console render scale applies only at Original console resolution.");
+            PageTheme.Details(timing,"High-refresh requirements",Text("120 / 180 / 240 FPS require a compatible game build and use native high refresh without interpolation. Older releases cannot enable it. Your desktop refresh rate stays unchanged.",12));
+            var quality=PageTheme.Section(graphics,"Quality & performance","");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
-            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale / supersampling",scale);
+            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale",scale);
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
             vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
@@ -230,25 +242,68 @@ namespace TimeSplitters.Launcher
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
-            var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
+            PageTheme.Details(quality,"Performance tips",Text("Lower output resolution reduces GPU work. Console render scale / supersampling applies only at Original console resolution.",12),
+                Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
+            graphics.Children.Add(texturePanel);
+            var startup=PageTheme.Section(graphics,"Startup","");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
-            var startupHint=Text("Skips opening logo videos and the idle attract video. Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
+            var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) }); RefreshBindings();
             var discord=new StackPanel();
-            var presence=PageTheme.Section(discord,"Discord Rich Presence","Share your current game mode and elapsed session time on your Discord profile.");
+            var presence=PageTheme.Section(discord,"Discord Rich Presence","Show your game activity on Discord.");
             discordEnabled=Check("Enable Discord Rich Presence",model.DiscordEnabled);discordEnabled.Name="DiscordPresenceEnabled";presence.Children.Add(discordEnabled);
             discordId=Entry(model.DiscordApplicationId);discordId.Name="DiscordApplicationId";discordId.MaxLength=20;
             Field(presence,"Application ID",discordId);
-            presence.Children.Add(Text("Create an application in the Discord Developer Portal, then copy General Information → Application ID here. This ID is public; no bot token or client secret is needed.",12));
+            var discordHelp=new StackPanel();
+            discordHelp.Children.Add(Text("Create an app in the Discord Developer Portal. Copy General Information → Application ID here; no bot token or secret is needed.",12));
             var portal=Button("Open Discord Developer Portal");portal.HorizontalAlignment=HorizontalAlignment.Left;
             portal.Click+=(s,e)=> { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://discord.com/developers/applications") { UseShellExecute=true }); } catch(Exception ex) { status.Text=ex.Message; } };
-            presence.Children.Add(portal);
-            presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
+            discordHelp.Children.Add(portal);
+            presence.Children.Add(Text("Keep Discord open with activity sharing enabled. Applies on your next launch with a compatible game build.",12));
+            PageTheme.Details(presence,"Set up Discord activity",discordHelp).Name="DiscordSetupDetails";
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
+            foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var choice in new[]{device,scale,filtering,frameRate})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            Ui.ValueChanged(fov,RefreshSaveState);
+        }
+        string Draft()
+        {
+            return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
+                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,
+                device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,
+                (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
+        }
+        void RefreshSaveState()
+        {
+            if(savedDraft==null)return;
+            save.IsEnabled=Draft()!=savedDraft;
+            status.Foreground=save.IsEnabled?Muted:Accent;
+            status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } RefreshSaveState(); }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
+        void UpdateTextureDetails()
+        {
+            textureDetails.Text="Installed pack: "+TextureDownload.InstalledVersion(root)+" · Available: "+
+                (textureAvailable==null?"Not checked":textureAvailable.Version)+
+                "\nNext launch (saved): "+(model.EnhancedTextures?"Enhanced textures (Beta)":"Original textures")+
+                (enhancedTextures.IsChecked==model.EnhancedTextures?"":" · selection has unsaved changes");
+        }
+        async Task VerifyTextures()
+        {
+            if(textureBusy)return;if(texturePreview){textureStatus.Text="Preview only. No textures were checked or changed.";return;}
+            await TextureOperation(async token=> {
+                using(var client=new ReleaseClient()) {
+                    if(textureAvailable==null)textureAvailable=await TextureDownload.Check(client,token);
+                    var result=await Task.Run(()=>TextureDownload.Verify(root,textureAvailable,token),token);
+                    textureDownloadBytes=result.DownloadBytes;textureInstall.IsEnabled=result.DownloadBytes>0;textureStatus.Text=result.Summary;
+                    PageTheme.SetBadge(textureBadge,result.Missing+result.Changed==0?"Verified":"Needs attention",result.Missing+result.Changed==0?StatusTone.Success:StatusTone.Warning);
+                }
+            },"Verifying installed textures…");
+        }
         public async void CheckTexturesIfOptedIn()
         { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }
         public async Task CheckTextureUpdates()
@@ -263,7 +318,7 @@ namespace TimeSplitters.Launcher
                     textureAvailable=pack;textureDownloadBytes=bytes;
                     textureStatus.Text=bytes==0?"Installed textures match pack "+pack.Version+". No download needed.":
                         "Pack "+pack.Version+": "+(bytes/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MiB to download. Existing matching files are reused.";
-                    textureInstall.IsEnabled=bytes>0;
+                    textureInstall.IsEnabled=bytes>0;PageTheme.SetBadge(textureBadge,bytes==0?"Up to date":"Download available",bytes==0?StatusTone.Success:StatusTone.Info);
                 }
             },"Checking textures…");
         }
@@ -275,7 +330,7 @@ namespace TimeSplitters.Launcher
                 using(var client=new ReleaseClient())await TextureDownload.Install(root,client,textureAvailable,
                     new Progress<string>(message=>textureProgress.Text=message),token);
                 textureStatus.Text="Pack "+textureAvailable.Version+" installed. "+TexturePack.Summary(root);
-                textureInstall.IsEnabled=false;
+                textureInstall.IsEnabled=false;PageTheme.SetBadge(textureBadge,"Installed",StatusTone.Success);
             },"Downloading enhanced textures…");
         }
         TextBlock textureProgress;
@@ -289,8 +344,8 @@ namespace TimeSplitters.Launcher
                 button.Click+=(s,e)=>{cancel.Cancel();button.IsEnabled=false;};
                 try { await operation(cancel.Token); }
                 catch(OperationCanceledException){textureStatus.Text="Cancelled. Completed parts are kept; retry to resume. Your installed pack remains available.";}
-                catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";}
-                finally {textureBusy=false;DismissPrompt();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
+                catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";PageTheme.SetBadge(textureBadge,"Check incomplete",StatusTone.Warning);}
+                finally {textureBusy=false;DismissPrompt();UpdateTextureDetails();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
             }
         }
         public void DismissPrompt()
@@ -350,6 +405,7 @@ namespace TimeSplitters.Launcher
         }
         void Save()
         {
+            if(!save.IsEnabled)return;
             try
             {
                 double number; int w=0,h=0;
@@ -364,7 +420,7 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
-                model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
+                model.Save();UpdateTextureDetails();savedDraft=Draft();RefreshSaveState();
                 if(Saved!=null)Saved();
             }
             catch(Exception ex) { status.Foreground=Accent; status.Text=ex.Message; }
