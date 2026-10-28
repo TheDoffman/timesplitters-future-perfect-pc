@@ -1,6 +1,6 @@
 # Subsystem entry points
 
-Objects: [lifetime](kernel-objects.md).
+Kernel: [objects and boot](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
 

@@ -7039,6 +7039,15 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 
 ### MAC-118 - Independent kernel object lifetime
 
+Boot follow-up (PR #393): original src/runtime/guest_kernel_boot.c and
+0216-independent-kernel-boot.patch are prepared in maintained paths. Shared host
+primitive fixture and actual-header compile passed12 maintained-path checks on
+Windows; migration checks passed52 tests in1755.05s. Windows Release rebuild and built-in
+checks passed, with the original boot selected and old resolver/table absent from
+the kernel archive. Isolated Windows gameplay passed as recorded below; Mac
+execution remains pending. Quiescent lifecycle only; no whole-runtime worker shutdown claim.
+
+
 - **Status:** Awaiting validation
 - **PC behavior:** Original guest handle/object ownership, scoped borrowing,
   reference/type/duplicate ABI, thread publication/exit and audio event signaling.
@@ -7066,3 +7075,16 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   all 17 Windows audio checks passed in 3.24s. Production sources are unchanged.
   Repaired CI and native Mac title gameplay remain pending.
   See [STATUS](STATUS.md#independent-kernel-object-lifetime-2026-10-28).
+
+
+Windows boot replacement gameplay acceptance: the fresh isolated Story run
+reached scene4/mission1, moved11.046 forward and5.884 backward, fired ammo8to6,
+froze ticks through40 pause samples and advanced through60 resume samples.
+The final checkpoint was102.869s within a240s cap. Gameplay, pause menu and
+resumed captures were reviewed. The rebuilt executable SHA-256 is
+`da6ad5f39521a8b2040630354e3e7bd3e95ec8795d951541db83036dabdcd33a`.
+All26 protected files retained hash, size and modification time. This was a
+minimized synthetic-input Classic run with movies skipped; physical input,
+audio listening, full campaign and native Mac gameplay remain unverified.
+Local snapshot/tracking/migration checks passed52 tests in1755.05s.
+Boot source is part of PR #393; CI for the new boot revision remains pending.

@@ -31483,3 +31483,30 @@ Windows build of the exact release source and pinned artwork. The direct
 game/channel values. Updated alt text, caption and assets provenance make that
 scope explicit. Reviewed the complete render; no personal files or gameplay were
 used. This documentation refresh changes no launcher code or published assets.
+
+
+### Kernel boot replacement integration in progress
+
+Original lifecycle/logging source and0216 patch are now in maintained paths.
+Maintained-path Windows12contract checks and21context/backlog checks passed.
+Migration checks passed52 tests in1755.05s; production build/game passed as recorded below. Installed
+runtime has the0216 patch applied; Release rebuild and built-in checks passed.
+The kernel archive has no native resolver/table, and the original boot source is
+selected. All22 generated C/header files are unchanged. The isolated Story run
+passed with measured acceptance recorded below.
+The new source removes obsolete native resolver from the build when applied;
+actual guest dispatch stays in the bridge. Mac execution is unverified.
+See MAC-118 and docs/agent-context/kernel-objects.md.
+
+
+Windows boot replacement gameplay acceptance: the fresh isolated Story run
+reached scene4/mission1, moved11.046 forward and5.884 backward, fired ammo8to6,
+froze ticks through40 pause samples and advanced through60 resume samples.
+The final checkpoint was102.869s within a240s cap. Gameplay, pause menu and
+resumed captures were reviewed. The rebuilt executable SHA-256 is
+`da6ad5f39521a8b2040630354e3e7bd3e95ec8795d951541db83036dabdcd33a`.
+All26 protected files retained hash, size and modification time. This was a
+minimized synthetic-input Classic run with movies skipped; physical input,
+audio listening, full campaign and native Mac gameplay remain unverified.
+Local snapshot/tracking/migration checks passed52 tests in1755.05s.
+Boot source is part of PR #393; CI for the new boot revision remains pending.

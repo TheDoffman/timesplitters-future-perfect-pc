@@ -1,6 +1,6 @@
 # Investigation memory and handoffs
 
-Kernel object stage: [ownership, entry points and validation](kernel-objects.md).
+Kernel stages: [object ownership, boot and validation](kernel-objects.md).
 
 Retired memory APIs: [caller audit and retained ABI](retired-memory-compatibility.md).
 

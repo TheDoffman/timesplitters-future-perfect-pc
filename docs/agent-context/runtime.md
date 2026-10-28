@@ -1,6 +1,6 @@
 # Runtime and patch navigation
 
-Object lifetime: [owners, scopes and thread publication](kernel-objects.md).
+Kernel: [objects, threads and boot](kernel-objects.md).
 
 Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
 
