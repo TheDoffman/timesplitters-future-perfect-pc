@@ -277,5 +277,5 @@ and mtime. No game rebuild was required for this documentation-only change.
 Request-stage3b11d5b1 completed CI on both hosts after retrying Mac runner-capacity
 cancellations. Stage0219 device/name integration now extends object adoption,
 key references and operation-scope cleanup; see [devices](kernel-devices.md).
-Its source is uncommitted. Windows Release and bounded Story checks passed;
+Its source is committed in f17859d7. Windows Release and bounded Story checks passed;
 full migration passed52 tests and new-head CI remains pending.

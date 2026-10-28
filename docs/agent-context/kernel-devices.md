@@ -89,3 +89,11 @@ Full current-stage snapshot/tracking/migration passed52 in1037.38s; new-head rem
 No physical CdRom name is published until the verified original backend/request
 pipeline is installed. Native synchronous builders, packet queues and broader
 kernel/file/driver/scheduling replacement remain unfinished.
+
+
+Merged-main verification at96eb84a1: regenerated Windows Release/built-in checks
+and fresh isolated Story movement/firing/pause/resume passed. Three generated
+files changed for main Unlock hooks; current generator fingerprint and exact
+source/archive/executable/game hash audit passed. All26 protected files unchanged.
+The old unchanged22-file result applies only before that main integration.
+Fresh merged migration and new-head CI remain pending; see STATUS and MAC-118.

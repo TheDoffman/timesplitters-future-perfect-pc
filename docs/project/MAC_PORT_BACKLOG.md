@@ -7207,6 +7207,30 @@ Full current-stage snapshot/tracking/patch migration completed:52 passed in
 new committed-head remote CI remains required. Build record keeps its actual
 dirty3b11d5b1 provenance and matching runtime/source/executable/game hashes.
 
+
+
+MAC-118 merged-main Windows verification (2026-10-28):
+
+Device/name source is committed in f17859d7; main6e657518 (Unlock Content)
+was integrated into the feature branch in2406e457, with context-size repair
+96eb84a1. No merge into main or independent-toolkit completion is claimed.
+Windows Release regeneration/build and built-in checks passed at96eb84a1.
+The generator fingerprint is current; three of the22 generated files changed
+for the merged Unlock hooks. All ten original providers are selected once,
+kernel_ob.c is excluded and the nine retired native exports are absent.
+Executable SHA256:
+`86a960df397bdf7cd0d2b177b98a74848e9908918cbfa843c6f44fcb34c6e0a4`.
+
+Fresh isolated Story passed at this executable: scene4/mission1, forward11.174544,
+backward6.287973, firing ammo8to6,40 frozen pause samples and60 advancing resume
+samples. Last checkpoint98.396s within240s cap. Start/pause/resume captures were
+reviewed. Installed source/archive/generation/game hashes agree; all26 protected
+files retained hash,size and mtime. This is minimized synthetic-input Windows
+Classic/movie-skipped coverage, not physical input/audio/full campaign or Mac
+title acceptance. Main-integration storage/repository/context checks passed115
+in8.21s. The fresh merged snapshot/migration suite is still running; new-head CI
+has not started. Prior3b11d5b1 CI passed both hosts after runner-capacity retry.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation
