@@ -82,5 +82,49 @@ constants were found by matching obsolete emitted C. `guest_constants.py` now
 reads absolute data operands from the verified original instructions, including
 SIMD widths; projection mutation targets the current final-store lowering.
 Numerical output, bounds, stack and missing-write checks are preserved. This does
-not change the translator or game. Remaining baseline correctness failures are
-reported separately in the performance measurements and still block releases.
+not change the translator or game. Historical baseline failures and the separate
+shader correction are recorded in the performance measurements.
+
+## Advisory performance history
+
+`tools/testing/suite_timing.py` is loaded by the shared test conftest but records
+only explicitly profiled runs. The publisher passes `--suite-profile=release-full`;
+patch/native/release CI use distinct `ci-*` profiles. Platform, architecture,
+processor, CPU count, host/runner identity, Python/pytest/xdist versions, worker
+count and scheduler partition history. CI hosted runners use the image family
+instead of disposable hostnames. No fixture or result reuse is added.
+
+Each profile/environment retains a fixed median of its first three successful,
+complete runs with matching test IDs and outcomes. Failed, interrupted, filtered,
+collection-only and incomplete runs cannot train it. Existing skips are visible;
+missing tests and newly skipped/non-passing tests warn immediately and cannot
+improve the timing comparison. Successful added cases extend the coverage guard
+without raising the time budget. Three consecutive eligible runs over 125% of
+the fixed median warn; a good/ineligible run resets that streak. Review legitimate
+growth before explicitly choosing a new versioned profile to recalibrate.
+
+`build/test-performance/<profile>/<environment-key>/state.json` retains 60 run
+summaries, calibration samples until established, and the coverage guard.
+`last-run.json` retains complete case outcomes, per-run counts, subtest counts,
+revision/dirty provenance, the 20 slowest tests and coverage differences. Durations
+measure the pytest session, including setup/collection/fixture teardown, but exclude
+interpreter startup and history writing. An exclusive write lock and atomic JSON
+replacement protect concurrent writers. Corrupt state or an occupied/stale lock
+produces an advisory warning without overwriting it or altering pytest's result.
+Inspect the recorded directory before repairing a stale lock; never remove one
+while another process is writing.
+
+CI restores/saves timing-only history with unique immutable cache keys scoped by
+OS, architecture and job; GitHub branch cache isolation still applies. JSON reports
+are uploaded for 30 days, including failed runs, and warnings appear in the log
+and as annotations. Cache/artifact outages are advisory. Cold/evicted cache history
+needs calibration again; concurrent CI runs can restore the same earlier snapshot,
+so persistent local release history is the primary per-machine comparison.
+Native Mac CI and local release measurements never borrow Windows timing targets.
+
+`test_suite_timing.py` covers calibration, fixed budgets, coverage guards, additions,
+failed/partial sessions, host/worker separation, corrupt history, locks, teardown
+failure, subtests, and real serial/two-worker pytest invocations. Existing grouping,
+compiler-cache and release-failure tests remain. Monitoring changes select every
+runtime CI suite. No performance warning bypasses a failing acceptance gate or
+aborts an otherwise passing release.

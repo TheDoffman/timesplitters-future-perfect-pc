@@ -969,6 +969,7 @@ def test_suite_runs_every_test_and_failure_stops_packaging(publisher, monkeypatc
     command = commands[-1]
     assert command[:5] == [publisher.python, '-m', 'pytest', 'tests', '-q']
     assert '-k' not in command and '--lf' not in command
+    assert '--suite-profile=release-full' in command
     if workers > 1:
         assert command[-4:] == ['-n', '4', '--dist=loadgroup', '--max-worker-restart=0']
     else:

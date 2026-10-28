@@ -519,7 +519,7 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                    if self.test_workers > 1 else [])
         try:
             self.timed_run('Release regression suite', [self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider',
-                      '--durations=20', '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests, *workers])
+                      '--durations=20', '--suite-profile=release-full', '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests, *workers])
         except Exception:
             if tests.exists():
                 try:

@@ -29,6 +29,16 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
+Suite timing monitor (2026-10-28, uncommitted on `perf/suite-regression-monitor`):
+`tools/testing/suite_timing.py` provides the same advisory history and coverage
+guards on Windows and Mac. No platform adapter or gameplay policy changes are
+needed. Publisher and both-host CI entry points enable distinct timing profiles;
+Mac learns its own baseline and never adopts a Windows target. Windows focused
+tests pass; physical Mac execution and hosted CI persistence remain unverified.
+See [the policy](../agent-context/release-speed.md#advisory-performance-history)
+and STATUS for measured validation. No feature-specific ID is added for this
+build/test maintenance.
+
 Full-suite scheduling maintenance (2026-10-28, local commit `e3a50ed7` on
 `perf/release-speed`) uses the
 same pytest grouping policy on Windows and Mac. CI retains both hosts and every

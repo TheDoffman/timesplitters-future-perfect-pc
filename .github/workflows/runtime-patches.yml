@@ -107,6 +107,13 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Restore suite timing history
+        continue-on-error: true
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
       - name: Read shared runtime and test dependency pins
         id: pins
         run: |
@@ -126,7 +133,23 @@ jobs:
       - name: Prepare bundled runtime without a network clone
         run: python tools/build/prepare-runtime.py
       - name: Test patch tracking, branch switches and historical upgrades
-        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0
+        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0 --durations=20 --suite-profile=ci-patches
+
+      - name: Save suite timing history
+        if: always() && hashFiles('build/test-performance/**/state.json') != ''
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload suite timing reports
+        if: always() && hashFiles('build/test-performance/**/last-run.json') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: suite-timing-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          path: build/test-performance
+          retention-days: 30
 
   native:
     name: Native runtime (${{ matrix.os }})
@@ -148,6 +171,13 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Restore suite timing history
+        continue-on-error: true
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-
       - name: Read shared runtime and test dependency pins
         id: pins
         run: |
@@ -196,7 +226,7 @@ jobs:
             tests/compiler/test_translation_layout.py tests/compiler/test_translation_hooks.py
             tests/compiler/test_c_source_scan.py tests/compiler/test_generation_output.py
             tests/compiler/test_function_evidence.py tests/compiler/test_function_categories.py tests/compiler/test_function_catalog.py
-            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
+            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/support/test_suite_timing.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
             tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
@@ -219,7 +249,7 @@ jobs:
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py)
           fi
-          python -m pytest "${tests[@]}" -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0
+          python -m pytest "${tests[@]}" -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0 --durations=20 --suite-profile=ci-native
       - name: Validate common RHI on the native Mac GPU without game assets
         if: needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'
         run: |
@@ -233,7 +263,23 @@ jobs:
           python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
         if: needs.plan.outputs.release == 'true'
-        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short
+        run: python -m pytest tests/launcher/test_publish_release.py tests/diagnostics/test_crash_symbols.py tests/launcher/test_native_mac_package.py tests/textures/test_build_textures.py tests/textures/test_texture_release.py -q --tb=short --durations=20 --suite-profile=ci-release
+
+      - name: Save suite timing history
+        if: always() && hashFiles('build/test-performance/**/state.json') != ''
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/test-performance
+          key: suite-timing-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload suite timing reports
+        if: always() && hashFiles('build/test-performance/**/last-run.json') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: suite-timing-${{ github.job }}-${{ runner.os }}-${{ runner.arch }}
+          path: build/test-performance
+          retention-days: 30
 
   launcher:
     needs: plan

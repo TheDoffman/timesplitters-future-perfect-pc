@@ -15,6 +15,7 @@ spec.loader.exec_module(scope)
 
 @pytest.mark.parametrize('path', ['vendor/ts3FPrecomp/snapshot.json',
                                  'tools/project_paths.py', 'tests/conftest.py',
+                                 'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
                                  'vendor/ts3FPrecomp/source/src/kernel/kernel_bridge.c',
                                  'tools/build/prepare-runtime.py', 'tests/repository/test_runtime_snapshot.py'])
 def test_bundled_runtime_changes_select_every_runtime_suite(path):

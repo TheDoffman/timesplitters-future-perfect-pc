@@ -3,6 +3,44 @@
 The normal build and release commands now avoid repeated work while retaining
 release acceptance checks. No extra speed flag is needed.
 
+## Keep future runs measurable
+
+The release publisher automatically records its full pytest run under
+`build/test-performance/release-full/`. A profile is separated by host/platform,
+hardware, Python/test-tool versions, worker count and scheduling mode. Windows
+and Mac do not share a time target. Patch/native/release CI each use their own
+profile and persist timing history through GitHub's branch-scoped cache; reports
+are retained as artifacts for 30 days. CI caches contain measurements, not test
+results that can substitute for execution.
+
+The first three successful complete runs with identical test IDs and outcomes
+establish a fixed median. Three consecutive comparable successful runs more than
+25% slower produce a warning with the baseline and the slowest tests. The monitor
+never silently raises that baseline. A single slow run remains visible in history
+without triggering a sustained-regression warning. This is advisory; existing
+test failures still block release, and a timing warning alone does not.
+
+Missing tests and new skips/non-passing outcomes warn immediately. Failed,
+filtered, interrupted or incomplete runs cannot train the baseline or earn a
+better speed comparison. Added passing tests join the coverage guard while the
+time budget remains fixed. Review intentional test growth before adopting a new
+versioned profile; retain the old history as evidence. Monitoring cannot detect
+every weakened assertion, so existing mutation controls and code review remain.
+
+For a measured manual full run, use the same four-worker policy:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests -q -n 4 --dist=loadgroup --max-worker-restart=0 --suite-profile=release-full --durations=20 -p no:cacheprovider -o tmp_path_retention_policy=failed
+```
+
+Each environment folder contains `state.json` (baseline and latest 60 summaries)
+and `last-run.json` (full outcomes, coverage differences, revision, counts and 20
+slowest tests). Times cover the pytest session; interpreter startup and report
+writing are outside that measurement. Missing/corrupt history, occupied locks or
+CI cache eviction are reported and may require calibration again. Inspect history
+before any deliberate reset; changing the profile name preserves older evidence.
+No wall-time guarantee is made under changing machine load or expanding coverage.
+
 ## What is reused
 
 - Patch validation: identical patch records, runtime source bytes, ledger,

@@ -31,6 +31,7 @@ SUITES = ('transitions', 'native', 'gpu', 'release')
 FULL_INPUTS = {
     'tools/project_paths.py', 'tests/conftest.py',
     'tests/support/parallel_groups.py', 'tests/support/test_parallel_groups.py',
+    'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
     '.gitattributes',
     '.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
     'tools/ci/ci-runtime-scope.py', 'tests/repository/test_ci_runtime_scope.py',
