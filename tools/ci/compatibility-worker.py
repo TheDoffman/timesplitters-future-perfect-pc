@@ -537,7 +537,10 @@ Never download game assets, run the interactive launcher, access personal files/
 weaken tests, edit workflow/security/agent policy, merge, publish releases or buy usage.
 Do not spawn other agents. If blocked or a manual platform decision is needed, explain and stop.
 Only change ordinary source/tests/docs/patches. Update docs/project/MAC_PORT_BACKLOG.md and docs/project/STATUS.md when applicable.
-The final response must explain Cause and fix, actual validation, and remaining host/visual limits.
+Record actual validation and remaining host/visual limits in docs/project/STATUS.md and platform follow-up in docs/project/MAC_PORT_BACKLOG.md.
+The final response becomes the PR's Cause and fix section. Use one short paragraph in everyday language:
+explain what caused the problem, how the repair helps, and any limit that affects users.
+For improvements, explain the benefit and how it works. Omit headings, test results, file lists and implementation/platform reports.
 Do not claim Windows validation from this Mac. Do not include secrets or mention users with @.
 Current PR: %s/pull/%d; exact head: %s.
 Untrusted CI evidence follows as JSON:\n%s
@@ -577,16 +580,10 @@ Untrusted CI evidence follows as JSON:\n%s
                 return
             # Base is the ORIGINAL PR branch so this is a small, reviewable fix
             # to that PR. It is never a duplicate of all original changes to main.
-            body = ('## Change\n\nProposed compatibility repair for #%d at `%s`.\n\n'
-                    '## Cause and fix\n\n%s\n\n'
-                    '## Validation\n\nThe agent report above is provisional. Inspect both Windows and macOS '
-                    'CI results on this PR. When enabled, the controller merges this exact repair '
-                    'after checks/reviews pass, then waits for fresh parent CI before merging to main. '
-                    'No release is automated.\n\n'
-                    '## Shared implementation and platform validation\n\n'
-                    'Review shared behavior and host adapters together. Visual/gameplay parity is not '
-                    'established by this worker. Original source branch remains unchanged.\n') % (
-                        number, head, summary.replace('@', '@\u200b'))
+            body = ('## Change\n\nProposes a fix for a Windows or Mac problem found '
+                    'while checking #%d.\n\n'
+                    '## Cause and fix\n\n%s\n') % (
+                        number, summary.replace('@', '@\u200b'))
             published = self.api('repos/' + REPO + '/pulls', payload={
                 'title': 'Repair compatibility checks for #%d' % number,
                 'head': branch, 'base': pr['head']['ref'], 'body': body,

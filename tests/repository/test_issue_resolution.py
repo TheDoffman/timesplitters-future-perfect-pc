@@ -77,6 +77,16 @@ class ResolutionTests(unittest.TestCase):
         self.assertEqual(self.run_publish(api), [])
         self.assertEqual(api.writes(), [])
 
+    def test_plain_language_pr_needs_no_validation_section(self):
+        api = FakeGitHub()
+        explanation = ('The game forgot the selected volume after restarting. '
+                       'It now saves that choice and restores it on startup.')
+        api.pull['body'] = '## Change\nYour volume choice is remembered.\n\n## Cause and fix\n' + explanation
+        self.assertEqual(self.run_publish(api), [111])
+        body = api.comments[111][0]['body']
+        self.assertIn(explanation, body)
+        self.assertNotIn('Validation', body)
+
     def test_nondefault_branch_does_not_comment(self):
         api = FakeGitHub(); api.pull['baseRefName'] = 'development'
         self.assertEqual(self.run_publish(api), [])

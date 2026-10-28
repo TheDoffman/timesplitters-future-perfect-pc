@@ -582,6 +582,8 @@ instrumentation preserves libc copy macros; a redefinition mutation must fail.
 
 ## Compatibility repair controller
 
+[PR text](launcher.md#github-issue-automation).
+
 `tools/ci/compatibility-worker.py` runs on the designated Mac outside CI. Install
 with `--auto-merge` only for authorized repair follow-through. It publishes a
 repair PR against its original branch, waits for both host workflows/checks and
