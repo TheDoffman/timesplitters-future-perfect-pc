@@ -47,7 +47,15 @@ PR #395 CI follow-up: the historical pre-display upgrade fixture attempted
 patch 2070 before its frontend wrapper context existed. It now defers that
 patch until full migration, then explicitly requires all four unlock hooks.
 The targeted Windows migration test passes in 45.46 seconds. Production source
-and the interactive executable are unchanged; updated cross-platform CI pending.
+and the interactive executable are unchanged. At `c2acc615`, Mac CI passed
+1,710 runtime checks (274 skips, 18 subtests), GPU checks, 148 release checks,
+and 50 patch-upgrade checks (2 skips); Windows patch upgrades passed all 52.
+The Windows runtime job found four missing unlock dependencies in the separate
+FOV harness. Fail-if-called stubs now retain that harness's display-only scope;
+seven affected display/unlock/input checks pass locally (two Mac-only skips).
+Main's PR-description changes were merged with both STATUS entries preserved;
+85 documentation/tooling checks passed (3 skips, 47 subtests). Updated combined
+CI remains pending; these fixture/documentation fixes do not change the game.
 
 ## Plain-language PR descriptions (2026-10-28)
 

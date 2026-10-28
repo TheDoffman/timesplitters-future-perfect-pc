@@ -74,6 +74,12 @@ BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 #undef BOT_STUB
+/* Unlock Content has its own profile/menu fixture. This settings-only test
+ * must link those dependencies without accidentally entering their paths. */
+#define UNLOCK_STUB(name) void name(void) { CHECK(0); }
+UNLOCK_STUB(sub_00356870) UNLOCK_STUB(sub_000696F0)
+UNLOCK_STUB(sub_001CD040) UNLOCK_STUB(sub_00075E70)
+#undef UNLOCK_STUB
 /* Other shared translation-unit hooks must not run in this display fixture. */
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
 STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_001BA130) STUB(sub_00142820)

@@ -63,3 +63,7 @@ Final Windows acceptance and native limits: [STATUS](../project/STATUS.md#profil
 The historical pre-display controls fixture defers patch 2070 until the complete
 upgrade installs its frontend wrapper context. The upgrade test then requires
 all four Unlock Content hooks and verifies repeat application is unchanged.
+
+The Windows FOV fixture links the full menu translation unit. Its four unlock
+dependencies fail if called, keeping display tests isolated; unlock behavior
+is exercised by the dedicated profile/menu fixture.
