@@ -998,5 +998,6 @@ because the host copies are not serialized into replay frames.
 See [water tests](water-tests.md) for CPU/GPU validation and live limits; see
 [spark timing](native-impact-sparks.md) for the original guest regression route.
 
-CI discovers unittest in each owning test folder. Changes to project_paths.py
-or conftest.py select all runtime and launcher suites.
+CI discovers unittest by folder; project_paths.py/conftest.py edits run all suites.
+
+[Unlock migrations](unlock-content.md).
