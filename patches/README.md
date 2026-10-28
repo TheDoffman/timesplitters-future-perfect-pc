@@ -1,5 +1,8 @@
 # Runtime patches
 
+`compiler/0204-independent-guest-state.patch` replaces architectural storage and
+ABI report bodies after native continuations; final layout routing remains last.
+
 `compiler/0203-independent-nonlocal-jumps.patch` removes inherited continuation
 storage/restoration and links the project provider into the kernel target. It
 follows branch feedback and precedes final layout routing.

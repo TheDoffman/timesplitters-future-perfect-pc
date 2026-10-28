@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Guest architectural storage and bounded ABI reports now use project providers;
+see [state contracts](independent.md#guest-state-and-abi-reports). The loader
+retains memory/TIB allocation; fibers still share their native thread's cells.
+
 Native continuation storage/restoration is project-owned through additive
 `0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).
 

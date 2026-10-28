@@ -1,3 +1,60 @@
+## Project guest state and ABI diagnostics (2026-10-28)
+
+Based on f85490ad on feature/independent-exchange, after all 17 exact-head CI
+checks passed. The preceding Windows migration timeout was resolved by the
+30-minute job allowance; both native and patch-upgrade hosts passed that head.
+The current stage replaces inherited architectural storage and ABI report
+bodies with src/runtime/guest_state.c and guest_abi_diagnostics.c, linked by
+0204-independent-guest-state.patch. Mapping, loading, guest thread objects and
+TIB allocation remain in the transitional kernel; this is not their replacement.
+
+Register/vector/x87/direction/SEH/refusal cells retain native-thread ownership
+and bootstrap values. Fibers on a native thread share its cells. The force-return
+flag and volatile call history retain process scope. Optional ABI reports keep
+separate first-32/64 target limits, now serialize registration/output, and use
+defined modular signed stack deltas. Reporting does not mutate guest state;
+it is not signal-safe, reentrant, or a coherent snapshot of the volatile ring.
+
+Windows x64 / MSVC acceptance:
+
+- Isolated probes established inherited defaults, cross-unit/thread ownership,
+  reporting limits/deduplication and real call-macro routing. Baseline bodies
+  remained in ignored temporary files and are not shipped as project source.
+- Fourteen candidate checks passed, including seven compiled negative controls,
+  direct call macros enabled/disabled, concurrent reports and the real
+  continuation service linked to the new register provider. The duplicate-report
+  oracle was strengthened to repeat keys before saturation, after an initial
+  deliberately broken provider escaped a weaker after-saturation check.
+- The installed-routing contract and full compiler suite passed: **774 tests**
+  in 364.12s (0:06:04). All **73** migration/tracking/snapshot/context/backlog
+  checks passed in 1063.11s (0:17:43). Both CI hosts select the new contracts;
+  native Mac acceptance of this stage remains pending until its own checks run.
+- The complete patch stack updated two runtime files. Normal Release build,
+  bundled native checks and matching crash symbols passed; both project providers
+  compiled into the kernel. C flags remain /DWIN32 /D_WINDOWS; CL_MPCount=2 was
+  process-local. All 22 generated C/header files are byte-identical and the
+  generation fingerprint is current; no fresh production generation was needed.
+- Supported-US XBE hash verified. Isolated Story run independent-guest-services
+  reached scene 4 / mission 1 with input enabled, moved 11.195015
+  forward and 6.073125 backward, and fired from eight to six rounds.
+  All 40 pause samples froze level ticks. The 60
+  resume samples stayed unpaused, with level ticks advancing over the window.
+  Final checkpoint 95.414s within a 240-second cap; runner
+  and controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned locks, disposable partitions or crash dumps remained. Packaging
+  entry-point --help checks resolve under tools/release; no package was produced.
+
+Executable SHA-256 from the tested working tree based on f85490ad:
+`b43c0deb7739fd7ff24d61a88dc9de5cf2afeb0a86ceaef351c159e38e5dfec3`.
+The game exercises the new storage; optional ABI logging is disabled in the
+normal build and verified separately by direct-provider and production-macro
+contracts. Replay uses injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay are not established. See MAC-108.
+Remaining work includes memory/loader/kernel/device services, title/delivery
+integration and the final toolkit/snapshot-unavailable production and source audit.
+
 ## Main integration and CI migration allowance (2026-10-27)
 
 Continuation stage 1cb58612 was committed and pushed to PR #375. Main through

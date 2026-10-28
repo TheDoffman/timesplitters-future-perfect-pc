@@ -9,7 +9,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
 
 [Guest services, headers, compiler and execution contracts](independent.md).
-Recorder mutations must compile under Clang `-Werror`; see linked contracts.
+Recorder/state/ABI mutations must compile under Clang `-Werror`; see linked contracts.
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

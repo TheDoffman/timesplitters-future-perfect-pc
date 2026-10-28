@@ -1,5 +1,40 @@
 # Independent tooling contracts
 
+## Guest state and ABI reports
+
+`src/runtime/guest_state.c` owns architectural GPR, XMM/MMX, x87, direction,
+SEH/frame and refusal-context cells declared by the canonical header. They are
+per native thread; callbacks and fibers on that thread share them. This does
+not implement a guest-thread scheduler or fiber save/restore. New native
+threads receive zero cells except FS bootstrap 0x1000, x87 control 0x037f and
+comparison status 0x4000. The loader still supplies actual spawned-thread TIBs.
+The force-return flag and volatile call history/counters retain process scope;
+history remains best effort, not a coherent atomic crash snapshot. Memory
+mapping, code/image bounds and kernel thread objects remain separate services.
+
+`guest_abi_diagnostics.c` supplies the optional RECOMP_ABI_CHECK hooks. Ordinary
+and known-cleanup calls independently report the first 32/64 distinct target
+addresses, including zero. A shared host-atomic lock serializes registration
+and report output across these hooks. Diagnostics include register changes,
+the modular signed stack delta and four recent ring entries, and never change
+guest cells. Signed deltas are computed without signed-overflow arithmetic.
+The ordinary unsigned lower-bound and exact cleanup comparisons retain the
+canonical call macros' policy. Messages retain the ABI tag and target identity;
+register, delta and history lines are now consistent between both forms.
+This is ordinary diagnostic logging, not reentrant or signal-safe reporting.
+
+`0204-independent-guest-state.patch` removes inherited storage/report bodies
+from memory layout and links both project providers after continuations. It
+leaves memory/loader services, canonical header and generated C unchanged.
+`test_guest_services.py` compiles cross-unit/thread/default/storage contracts,
+both diagnostic modes, capacity/duplicate/concurrent calls, wraparound and
+actual production macros with checks on/off. Seven compiled negative controls
+cover default cells, TLS, report limits, duplicate suppression and ring indexing.
+The installed-routing test also checks the current loader's bootstrap constant.
+Both CI hosts select these tests. STATUS.md and MAC-108 distinguish acceptance
+from implementation; title gameplay exercises the storage even when ABI
+diagnostics are disabled.
+
 ## Native nonlocal jumps
 
 `src/runtime/guest_nonlocal_jump.c` owns the continuation registry behind

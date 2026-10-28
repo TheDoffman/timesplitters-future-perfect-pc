@@ -1,5 +1,12 @@
 # Independent runtime replacement
 
+Guest architectural storage and optional ABI diagnostics now have project
+providers in `src/runtime/guest_state.c` and `guest_abi_diagnostics.c`, installed
+by `0204-independent-guest-state.patch`. Memory mapping, loading and kernel
+thread/TIB services still use the transitional runtime. See
+[state and reporting contracts](../agent-context/independent.md#guest-state-and-abi-reports)
+and MAC-108 for behavior, tests and acceptance boundaries.
+
 Native nonlocal jumps now have a project continuation provider, installed by
 `0203-independent-nonlocal-jumps.patch`. Direct native and emitted-call contracts
 are separate from title regression checks because the supported-US translation

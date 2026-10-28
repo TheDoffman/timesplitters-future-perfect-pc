@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "3afc7798ef03e0342c6c657dd5d16be2e89f65cdbe1b55ab90c80d90246cc437",
+  "loaderSha256": "808616e91e38f20ebce215a1fefe597d8b0ceeb29eea0a593cf9bdfb43348f5c",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2145,6 +2145,15 @@
       "name": "0203-independent-nonlocal-jumps.patch",
       "path": "patches/compiler/0203-independent-nonlocal-jumps.patch",
       "sha256": "1e6f46b6a7f7759cedda995d665bb201113d6f9f03005405ebd8434bfdfb4177",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0204-independent-guest-state.patch",
+      "path": "patches/compiler/0204-independent-guest-state.patch",
+      "sha256": "6b15b9478485846188bbb04e601b4b4de3f953b19bab4cbedb7fb4cb2f74c1b7",
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/xbox_memory_layout.c"

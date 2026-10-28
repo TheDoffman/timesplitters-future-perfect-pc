@@ -2,8 +2,8 @@
 
 The final replacement order includes call frames, vector support, scalar support
 canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
-jumps and source layout. Historical fixtures omit new replacements from old
-inputs; the order test checks that eight-patch tail. Audit `.inc` files and scan ignored
+jumps, guest state/reports and source layout. Historical fixtures omit new replacements from old
+inputs; the order test checks that nine-patch tail. Audit `.inc` files and scan ignored
 generated C explicitly with `--no-ignore`. Exact-name searches missed the live
 SX/ZX calls assembled dynamically by the move emitter; its direct replacements
 now have exhaustive compiled register/memory/alias checks.

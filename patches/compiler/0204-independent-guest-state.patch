@@ -1,0 +1,205 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -1611,11 +1611,6 @@
+ uint32_t g_xbox_code_lo = 0;
+ uint32_t g_xbox_code_hi = 0;
+ 
+-/* Global registers for recompiled code (via recomp_types.h) */
+-/* Each guest thread's TIB. The first thread uses the one the loader built;
+- * a spawned thread gets its own from xbox_AllocThreadTib(). */
+-RECOMP_TLS uint32_t g_fs_base = XBOX_TIB_MAIN;
+-
+ /* How far the runtime's low memory moved to clear the image; see XBOX_LOW_VA. */
+ uint32_t g_xbox_low_shift = 0;
+ 
+@@ -1654,141 +1649,11 @@
+  * at is. Zero total means the image had no TLS directory. */
+ static uint32_t g_tls_template_va, g_tls_total, g_tls_thread_size = 64;
+ 
+-RECOMP_TLS uint32_t g_eax = 0, g_ecx = 0, g_edx = 0, g_esp = 0;
+-
+-/* The guest esp an indirect-call dispatch captured, for the diagnostics that
+- * need the call site. g_esp is not it: a lifted caller pushes its return
+- * address onto a *local* esp and only syncs g_esp at certain points, so by
+- * the time a refused call is reported g_esp is stale and reads as 0. The
+- * dispatch macros set this to the esp they were handed; a title whose
+- * generated header predates them leaves it 0, and the log says so rather
+- * than inventing a caller. */
+-RECOMP_TLS uint32_t g_icall_saved_esp = 0;
+-
+-/* Which dispatch form was refused: 0 unknown, 1 call, 2 jump. */
+-RECOMP_TLS uint32_t g_icall_dispatch_form = 0;
+-RECOMP_TLS uint32_t g_ebx = 0, g_esi = 0, g_edi = 0;
+-
+-#ifdef RECOMP_ABI_CHECK
+-/* Report a lifted function that returned without restoring ebx/esi/edi.
+- *
+- * Those are callee-saved on x86, and the recompiler keeps them in globals, so
+- * a function whose epilogue was never lifted corrupts its caller rather than
+- * itself -- an error with no crash and no message, just less work silently
+- * done. Ranked by hit count so the routine breaking a hot loop stands out from
+- * the one-offs; -DRECOMP_ABI_CHECK only, since it costs three compares on
+- * every indirect call.
+- */
+-extern volatile uint32_t g_icall_trace[16];
+-extern volatile uint32_t g_icall_trace_idx;
+-
+-void recomp_abi_violation_log(uint32_t va, uint32_t ebx0, uint32_t esi0,
+-                              uint32_t edi0, uint32_t esp0)
+-{
+-    enum { SLOTS = 32 };
+-    static uint32_t seen[SLOTS];
+-    static uint64_t hits[SLOTS];
+-    static int count;
+-    int i;
+-
+-    for (i = 0; i < count; i++)
+-        if (seen[i] == va)
+-            break;
+-    if (i == count) {
+-        if (count == SLOTS)
+-            return;
+-        seen[count] = va;
+-        hits[count] = 0;
+-        count++;
+-        fprintf(stderr, "[ABI] sub_%08X:%s%s%s%s\n"
+-                        "      ebx %08X->%08X esi %08X->%08X"
+-                        " edi %08X->%08X esp %08X->%08X\n",
+-                va,
+-                g_ebx != ebx0 ? " ebx" : "",
+-                g_esi != esi0 ? " esi" : "",
+-                g_edi != edi0 ? " edi" : "",
+-                g_esp < esp0 + 4 ? " esp(epilogue never ran)" : "",
+-                ebx0, g_ebx, esi0, g_esi, edi0, g_edi, esp0, g_esp);
+-        /* esp coming back too HIGH means some callee popped arguments that
+-         * were never pushed -- a convention mismatch the one-sided invariant
+-         * above cannot see. The most recent indirect targets are the usual
+-         * suspects, so name them. */
+-        {
+-            int t;
+-            fprintf(stderr, "      esp delta %+d, recent icall targets:",
+-                    (int)(g_esp - esp0));
+-            for (t = 4; t >= 1; t--)
+-                fprintf(stderr, " %08X",
+-                        g_icall_trace[(g_icall_trace_idx - t) & 15]);
+-            fputc('\n', stderr);
+-        }
+-        fflush(stderr);
+-    }
+-    hits[i]++;
+-}
+-
+-/* The exact form, for a direct call whose callee's `ret N` is known: esp must
+- * come back exactly 4 + N higher. Reports once per callee, and says which way
+- * esp is off, since "too high" is the case the one-sided check above misses. */
+-void recomp_abi_pop_violation_log(uint32_t va, uint32_t ebx0, uint32_t esi0,
+-                                  uint32_t edi0, uint32_t esp0, uint32_t pop)
+-{
+-    enum { SLOTS = 64 };
+-    static uint32_t seen[SLOTS];
+-    static int count;
+-    int i;
+-    int want = 4 + (int)pop, got = (int)(g_esp - esp0);
+-
+-    for (i = 0; i < count; i++)
+-        if (seen[i] == va)
+-            return;
+-    if (count == SLOTS)
+-        return;
+-    seen[count++] = va;
+-    fprintf(stderr, "[ABI] sub_%08X:%s%s%s%s\n"
+-                    "      esp %+d, expected %+d (ret %u); ebx %08X->%08X"
+-                    " esi %08X->%08X edi %08X->%08X esp %08X->%08X\n",
+-            va,
+-            g_ebx != ebx0 ? " ebx" : "",
+-            g_esi != esi0 ? " esi" : "",
+-            g_edi != edi0 ? " edi" : "",
+-            got > want ? " esp-too-high" : got < want ? " esp-too-low" : "",
+-            got, want, pop, ebx0, g_ebx, esi0, g_esi, edi0, g_edi,
+-            esp0, g_esp);
+-    /* The callee's own epilogue is usually right; what moved esp is an
+-     * indirect call it made, whose target popped too much. Name the recent
+-     * ones, as the one-sided form above does. */
+-    {
+-        int t;
+-        fprintf(stderr, "      recent icall targets:");
+-        for (t = 4; t >= 1; t--)
+-            fprintf(stderr, " %08X",
+-                    g_icall_trace[(g_icall_trace_idx - t) & 15]);
+-        fputc('\n', stderr);
+-    }
+-    fflush(stderr);
+-}
+-#endif
+-
+-/* SEH frame pointer bridge (see recomp_types.h for explanation) */
+-RECOMP_TLS uint32_t g_seh_ebp = 0;
+-RECOMP_TLS double g_fp_stack[8];
+-RECOMP_TLS int g_fp_top = 0;
+-
+-/* Set once at startup. The generated code reads it at the ret of every
+- * --force-return function, so it has to be cheap and it has to default to
+- * off: a build carrying forced functions behaves normally until the
+- * variable is set. */
+-int g_force_return = 0;
+-/* x87 control and status. The reset default masks every exception and
+- * rounds to nearest, which is what the CRT expects before _control87. */
+-RECOMP_TLS uint16_t g_fp_control_word = 0x037Fu;
+-RECOMP_TLS int g_fp_cmp = 0;
+-RECOMP_TLS uint16_t g_fp_cc = 0x4000;
+-
+-/* Defined below, with the other guest registers. */
+-extern RECOMP_TLS uint32_t g_ebp;
+-extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi;
++/* Architectural storage and ABI reports live in project runtime providers.
++ * Only the loader/watchdog's required public cells are declared here. */
++extern RECOMP_TLS uint32_t g_eax, g_ebx, g_ecx, g_edx;
++extern RECOMP_TLS uint32_t g_esi, g_edi, g_esp, g_ebp;
++extern int g_force_return;
+ 
+ /* Native continuations are provided by project guest_nonlocal_jump.c. */
+ 
+@@ -1915,29 +1780,6 @@
+     if (h)
+         CloseHandle(h);
+ }
+-
+-/* SSE. 128 bits of architectural state, per-thread like the rest. */
+-RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
+-RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
+-RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
+-RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
+-/* Last frame established by `mov ebp, esp`. Read by frameless functions
+- * that address their caller's frame through ebp. */
+-RECOMP_TLS uint32_t g_ebp = 0;
+-
+-/* EFLAGS.DF. Zero means the string instructions walk forwards, which is the
+- * ABI's resting state and what almost every one of them does -- so this is
+- * almost always 0 and costs a predictable branch. The exceptions are the ones
+- * that matter: MSVC's strrchr/wcsrchr scan backwards from the terminator with
+- * `std; repne scasb`, and memmove goes backwards when its regions overlap the
+- * wrong way. Thread-local, because `std` and the `cld` that undoes it can land
+- * in different lifted bodies of the same guest routine. */
+-RECOMP_TLS int g_df = 0;
+-
+-/* ICALL trace ring buffer */
+-volatile uint32_t g_icall_trace[16] = {0};
+-volatile uint32_t g_icall_trace_idx = 0;
+-volatile uint64_t g_icall_count = 0;
+ 
+ BOOL xbox_MemoryLayoutInit(const void *xbe_data, size_t xbe_size)
+ {
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -39,6 +39,11 @@
+ endif()
+ target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_nonlocal_jump.c")
+ 
++# Project architectural cells and optional ABI report hooks share the public ABI.
++target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_state.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_abi_diagnostics.c")
++
+ # See src/platform/CMakeLists.txt: resolve src/ relative to this file, not via
+ # CMAKE_SOURCE_DIR, which is the consuming project's root under add_subdirectory().
+ get_filename_component(XBOXRECOMP_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)

@@ -1,10 +1,7 @@
 # Subsystem entry points
 
-Guest runtime: [continuations and stack adapters](independent.md#native-nonlocal-jumps),
-[branch recorder](independent.md#guest-branch-feedback-recorder), and
-[canonical header / remaining services](independent.md#canonical-guest-header).
-Division faults: [adapter and limits](independent.md).
-
+Guest state, ABI reports, continuations, branch recording, division faults and
+remaining services: [execution contracts](independent.md#guest-state-and-abi-reports).
 
 Procedural wind: [ownership/time scopes](native-wind.md).
 

@@ -257,6 +257,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-105 | Canonical project guest execution header | Awaiting validation |
 | MAC-106 | Project branch-feedback provider and generated header | Awaiting validation |
 | MAC-107 | Project native continuation service | Awaiting validation |
+| MAC-108 | Project guest state and ABI diagnostics | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6689,5 +6690,27 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   does not exercise this service. Windows passed 759 compiler checks, 73
   migration/repository checks, Release/native build checks and an isolated
   Story regression replay. See STATUS.md for source/binary provenance and scope.
-  Native Mac acceptance remains pending; the shared POSIX path is not proof
-  of Mac title or fiber behavior.
+  Portable native CI passed on both hosts at f85490ad; native Mac title
+  and fiber acceptance remain separate and unverified.
+
+
+### MAC-108 - Project guest state and ABI diagnostics
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 working-tree stage tested from f85490ad;
+  src/runtime/guest_state.c, guest_abi_diagnostics.c, tests/compiler/guest_state_runtime.c,
+  guest_abi_runtime.c and test_guest_services.py; patch 0204-independent-guest-state.
+  Project storage preserves native-thread register ownership and process-wide
+  history. Optional diagnostic reports retain bounded target sets and add
+  serialized reporting plus defined modular stack-delta arithmetic.
+- Mac support: shared C, compiler atomics and pthread contract fixtures; no new
+  OS adapter is needed. Fibers still share native-thread cells; this stage does
+  not replace thread scheduling, context switching, TIB allocation or memory.
+  Diagnostic serialization does not make the volatile call ring coherent.
+- Acceptance: cross-unit and thread initial-state/ownership checks, report
+  deduplication/capacity/concurrency, wrapping deltas, actual call macros on/off,
+  compiled negative controls, full patch upgrades, native build and isolated
+  Story regression. Windows passed 774 compiler and 73 migration/repository
+  checks, Release/native build checks and the isolated replay. Both CI hosts
+  select these contracts; native Mac acceptance remains pending. See STATUS.md
+  for exact measurements and limits.
