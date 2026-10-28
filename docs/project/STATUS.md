@@ -1,6 +1,6 @@
 ## Independent kernel object lifetime (2026-10-28)
 
-Stage0215 adds original handle/object ownership, operation scopes,
+Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,
 guest reference/type/duplicate services and kernel/audio/thread/USB adapters.
 All 51 candidate contracts passed, including Windows real-thread binding with
 project allocation and thread-memory providers. The full patch stack installed

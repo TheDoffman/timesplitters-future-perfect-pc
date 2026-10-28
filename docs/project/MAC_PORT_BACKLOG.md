@@ -7042,8 +7042,8 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 - **Status:** Awaiting validation
 - **PC behavior:** Original guest handle/object ownership, scoped borrowing,
   reference/type/duplicate ABI, thread publication/exit and audio event signaling.
-- **Source/PR:** Stage0215 on `feature/independent-kernel-objects`, based on
-  `597d5937`; `src/runtime/guest_objects.c`,
+- **Source/PR:** Stage0215, commit `1692ed4f`, PR #393;
+  `src/runtime/guest_objects.c`,
   `guest_object_scope.c`, `guest_object_services.c`, `guest_kernel_objects.inc`,
   `guest_kernel_threads.inc`, lifetime hooks and matching original fixtures.
 - **Mac support present:** The same owner/service/continuation providers and
