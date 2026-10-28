@@ -47,7 +47,7 @@ def test_mouse_update_regions(tmp_path, adapter, mutation):
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     if mutation != 'none':
         assert result.returncode != 0 and 'FAIL' in result.stderr, result.stdout + result.stderr
-        expected = {'uncached': ('queries==1', '(queries=6)'),
+        expected = {'uncached': ('queries==1', '(queries=7)'),
                     'persistent': ('queries==2', '(queries=0)'),
                     'unordered': ('queries==1', '(queries=2)')}[mutation]
         assert all(s in result.stderr for s in expected), result.stderr

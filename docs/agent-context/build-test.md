@@ -62,7 +62,8 @@ another component while the game remains foreground.
 center bounds, repeated repair, negative origins, resize and foreground/errors.
 `tsfp_pc_prompts_test` checks OS confinement/hit-testing and Fire release across
 repair; it explicitly skips without foreground focus. `pc_debug_game.py` uses
-center bounds too. Launcher-only gameplay and Mac input remain separate checks.
+center bounds too. `test_mounted_mouse.py` covers split-screen mouse
+adapters; live gameplay remains unverified.
 <!-- packet:end -->
 
 SDL tests accept Confirm E/Space and reject the third fixture slot Return
