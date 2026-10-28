@@ -28,9 +28,9 @@ Keyboard & Mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 <p align="center"><sub>In-game screenshots as of v0.3.2</sub></p>
 
-![TimeSplitters launcher v1.2.18 with the updated banner, aligned sidebar, Play Game, game versions and update controls](docs/assets/launcher-preview.png)
+![TimeSplitters launcher v1.4.0 with the blue and silver interface, game updates, settings, Repair / Verify and Saves](docs/assets/launcher-preview.png)
 
-<p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; Stable is the default game channel; named previews are opt-in with launcher 1.3.0+.</sub></p>
+<p align="center"><sub>Launcher v1.4.0 interface preview from the published release source. Game versions and channels shown are sample data; Stable is the default, and previews are opt-in.</sub></p>
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it through the launcher.

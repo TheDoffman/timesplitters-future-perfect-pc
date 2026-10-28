@@ -29445,3 +29445,22 @@ fall back to Unknown without changing malformed metadata, while invalid archives
 remain rejected and damaged texture receipts are retained. Native parser tests
 and shared backup/receipt tests now include malformed JSON; the existing package
 recovery scenario is unchanged. Hosted validation reruns on the repaired source.
+
+## Launcher v1.4.0 published and README preview refresh (2026-10-28)
+
+PR #390 merged as `2a2ffe369a28ba2541d54437af63002020487ef6`. Release workflow
+40629720432 passed both Windows/Mac builds, shared UI/regression/package tests,
+dual-platform package verification and publication. Stable `launcher-v1.4.0`
+became Latest on 2026-10-28 with exactly eight assets: one ZIP per platform,
+checksum sidecars, source receipts and platform-specific update manifests.
+Both public manifests advertise 1.4.0; receipts identify the same merged source.
+The downloaded Windows ZIP SHA-256 matches its manifest, sidecar and GitHub digest.
+No game version changed. Primary local main was fast-forwarded cleanly and four
+merged task branches were removed safely; ignored evidence and user data remain.
+
+After publication, the README launcher preview was regenerated from a local
+Windows build of the exact release source and pinned artwork. The direct
+1152×772 `--render-preview` output shows v1.4.0 branding/navigation and illustrative
+game/channel values. Updated alt text, caption and assets provenance make that
+scope explicit. Reviewed the complete render; no personal files or gameplay were
+used. This documentation refresh changes no launcher code or published assets.
