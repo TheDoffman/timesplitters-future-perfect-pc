@@ -844,3 +844,8 @@ C fixture and includes production SET_LO16; it does not alter generated code.
 
 The control-transfer emitter now follows x87 in the additive stack; call ABI,
 local dispatch and table-boundary contracts are in [independent.md](independent.md).
+
+## Profile early-access hooks
+
+See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
+original predicate hooks and isolated validation routes.

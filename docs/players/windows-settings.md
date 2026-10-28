@@ -1,5 +1,17 @@
 # Windows controls and display settings
 
+## Unlock Content
+
+Open **Extras > Unlock Content** to toggle Story levels, Characters, Arcade maps,
+Arcade game modes, Weapons, Arcade League, Challenges, Cheats and Movies. Each
+choice applies only to the currently selected profile and saves when you go back.
+Turning a category Off restores its earned unlocks without erasing progress.
+
+Cheats now appears in **Extras** when cheats are available. Turning Cheats On in
+Unlock Content makes every supported cheat available in that original menu.
+The Cheats menu retains its normal controls and has no separate unlock toggle.
+
+
 [Back to the README](../../README.md)
 
 ## Enhanced Audio (Beta)

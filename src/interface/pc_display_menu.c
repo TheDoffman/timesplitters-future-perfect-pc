@@ -661,8 +661,8 @@ static void audio_options_build(void)
     uint32_t caption=audio_options_caption();
     if(caption && guest_writable(menu,0x208))WORD_AT(menu+0x204)=caption;
 }
-/* Reuse the title's Settings actions and profile selector, with a single
- * left-aligned list and Cheats last. The native back/save flow is unchanged. */
+/* Reuse the title's Settings actions and profile selector. Cheats lives in
+ * Extras alongside Unlock Content. The native back/save flow is unchanged. */
 static void settings_build(void)
 {
     extern void sub_0003D7B0(void),sub_001CD120(void),sub_00069720(void);
@@ -691,8 +691,6 @@ static void settings_build(void)
         guest_call(sub_00075430,2,selector,WORD_AT(0x0078AD34u));
     }
     guest_call(sub_00079D60_gen,6,0x0047602Cu,1u,0u,0u,0x002CBEC0u,0u);
-    if(guest_call(sub_001CD120,0))
-        guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),UINT32_MAX,0u,0u,0x002CBE30u,0u);
     guest_call(sub_000771D0,1,menu);
     restore_registers(&r);g_esp+=4;
 }
@@ -1008,6 +1006,7 @@ static void online_activate(void)
 #endif
 #include "pc_keyboard_menu.inc"
 #include "pc_storage_menu.inc"
+#include "pc_unlock_menu.inc"
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
@@ -1016,6 +1015,11 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     if(address==0x002CBFC0u)return settings_build;
     switch(address) {
     case AUDIO_BETA_CHANGE:return audio_beta_change;
+    case 0x002D08C0u:return uc_extras_build;
+    case UC_OPEN:return uc_open;
+    case UC_BUILD:return uc_build;
+    case UC_TICK:return uc_tick;
+    case UC_BACK:return uc_back;
     case 0x00192770u:return sd_profile_tick;
     case SD_SELECT:return sd_select;
     case SD_DRAW:return sd_draw;

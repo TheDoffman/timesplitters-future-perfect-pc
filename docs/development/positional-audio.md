@@ -68,7 +68,7 @@ default matrix. SDL converts mono submissions to stereo in serialized host
 scratch storage and applies the same gains to incoming samples. Its queued
 samples retain their previous direction until played; buffer lead defaults to
 40 ms, streams may hold longer. No stream is recreated when direction changes.
-Native Mac listening and queue-latency acceptance remain pending (MAC-119).
+Native Mac listening and queue-latency acceptance remain pending (MAC-120).
 
 Validation: `tests/media/test_audio_output_gain.py` executes the production
 Windows routing functions against a silent source voice and the full SDL
