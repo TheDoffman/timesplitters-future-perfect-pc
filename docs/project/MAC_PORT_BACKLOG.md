@@ -7231,6 +7231,15 @@ title acceptance. Main-integration storage/repository/context checks passed115
 in8.21s. The fresh merged snapshot/migration suite is still running; new-head CI
 has not started. Prior3b11d5b1 CI passed both hosts after runner-capacity retry.
 
+
+
+Merged device-stage migration completed on Windows:52 passed in1683.86s
+(28m03s), terminal exit0. This rerun includes main Unlock patch2070 and current
+snapshot/tracking/patch-upgrade models. Combined local build/game/migration
+acceptance is complete. The newest pushed-head CI result remains required;
+previous3b11d5b1 workflows both concluded success. No full independence or native
+Mac title acceptance is implied.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation

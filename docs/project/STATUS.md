@@ -31761,3 +31761,11 @@ has not started. Prior3b11d5b1 CI passed both hosts after runner-capacity retry.
 
 Merged-tree repository Node contracts passed23 in12.31s; context/link/index
 and whitespace checks passed. Fresh merged migration remains running.
+
+
+Merged device-stage migration completed on Windows:52 passed in1683.86s
+(28m03s), terminal exit0. This rerun includes main Unlock patch2070 and current
+snapshot/tracking/patch-upgrade models. Combined local build/game/migration
+acceptance is complete. The newest pushed-head CI result remains required;
+previous3b11d5b1 workflows both concluded success. No full independence or native
+Mac title acceptance is implied.

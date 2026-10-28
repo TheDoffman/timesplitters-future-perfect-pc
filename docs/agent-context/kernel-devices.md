@@ -97,3 +97,11 @@ files changed for main Unlock hooks; current generator fingerprint and exact
 source/archive/executable/game hash audit passed. All26 protected files unchanged.
 The old unchanged22-file result applies only before that main integration.
 Fresh merged migration and new-head CI remain pending; see STATUS and MAC-118.
+
+
+Merged device-stage migration completed on Windows:52 passed in1683.86s
+(28m03s), terminal exit0. This rerun includes main Unlock patch2070 and current
+snapshot/tracking/patch-upgrade models. Combined local build/game/migration
+acceptance is complete. The newest pushed-head CI result remains required;
+previous3b11d5b1 workflows both concluded success. No full independence or native
+Mac title acceptance is implied.
