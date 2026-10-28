@@ -50,6 +50,11 @@ registry-consumption mutation becomes an ownership-bypass mutation in the live
 VirtualFree branch. All five negative controls must compile before failing;
 the successful baseline must retain every ownership assertion.
 
+The ownership-bypass mutation still references `arena_unmap` without calling it.
+Otherwise Clang rejects the now-unused static helper under fatal warnings before
+the ownership assertion runs. This keeps negative-control failure behavioral;
+the production adapter and strict compiler flags are unchanged.
+
 The native fixture's normal mapping prefix compiled and ran on Windows against
 real host providers during candidate validation. That check translates its stdin
 probe to the Windows CRT and excludes the Mac arena branch. It does not prove

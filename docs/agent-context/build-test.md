@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Memory: [retired APIs](retired-memory-compatibility.md).
+Memory: [retired APIs and strict negative controls](retired-memory-compatibility.md).
 
 Grouped paths: [layout](../development/repository-layout.md).
 Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.

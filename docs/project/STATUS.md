@@ -15,7 +15,15 @@ event branches; it is not native Mac execution. The additive patch passed a
 read-only applicability check using the maintained installer's CRLF handling.
 All 998 compiler checks passed in 707.98s, all 73 migration/repository checks
 in 1121.24s, and all 21 final documentation/context/backlog checks in 5.19s.
-Context/index and whitespace checks passed. Exact-commit CI remains pending. Consumer
+Context/index and whitespace checks passed. CI at `b5482235` passed 1656 Mac
+shared tests (261 skips, 18 subtests), but one ownership-bypass negative control
+failed to compile: Clang diagnosed its now-unused `arena_unmap` helper under
+fatal warnings. The mutation now references the helper without calling it, so
+runtime assertions still detect the ownership bypass. All six Windows adapter
+checks passed after repair in 8.62s; 21 repair documentation/context/backlog
+checks passed in 4.15s. Production sources and the tested executable
+are unchanged; repaired exact-commit CI and native Mac title gameplay remain
+pending. Consumer
 checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
 been produced for this stage.
 

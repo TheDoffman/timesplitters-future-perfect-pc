@@ -7027,5 +7027,10 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   firing and pause/resume passed; all 26 protected files were unchanged.
   Consumer checks passed (43 passed, one native-Mac-only skip). All 998 compiler
   checks passed in 707.98s, all 73 migration/repository checks in 1121.24s and
-  all 21 final documentation checks in 5.19s. Exact-commit CI remains pending. See
+  all 21 final documentation checks in 5.19s. At `b5482235`, Mac CI passed 1656
+  shared tests (261 skips, 18 subtests), but one negative control failed Clang's
+  fatal unused-function warning. Its bypass now references the unused helper
+  without invoking it; production behavior and strict warnings are unchanged.
+  All six Windows adapter checks passed in 8.62s and 21 repair documentation
+  checks passed in 4.15s; repaired CI remains pending. See
   [STATUS](STATUS.md#retired-compatibility-memory-apis-2026-10-28).
