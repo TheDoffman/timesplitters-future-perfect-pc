@@ -1,5 +1,10 @@
 # Runtime patches
 
+`compiler/0199-independent-runtime-header.patch` supplies the canonical project
+header to transitional runtime consumers. It follows scalar support and precedes
+layout routing. Generation reads `src/runtime/recomp_types.h` directly; the
+compatibility template must remain identical after newline normalization.
+
 Active patches are grouped by primary responsibility. Cross-cutting patches
 stay together in the closest owning folder; do not split hunks to match the map.
 

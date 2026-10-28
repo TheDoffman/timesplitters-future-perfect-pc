@@ -1,3 +1,59 @@
+## Canonical project guest execution header (2026-10-27)
+
+Based on `60c47380` on `feature/independent-exchange`. All 17 prerequisite CI
+checks passed before installing this stage. `src/runtime/recomp_types.h` now
+owns the 676-line header, retaining nine previously replaced primitive blocks
+unchanged. Original service declarations, diagnostic aliases and executable
+target admission replace the remaining inherited header support. Admission
+evaluates its guest-width argument once and preserves zero-bound and synthetic
+kernel acceptance. Declared service implementations remain separate work.
+Optional feedback still imports the transitional `recomp_icall_feedback.h`
+observation provider; its macros and backing service are not replaced here.
+
+Batch/CLI generation reads the project header by default and fingerprints that
+source. An explicit custom header remains supported. The additive
+`0199-independent-runtime-header.patch` installs the same compatibility template
+after scalar support and before layout routing. Existing patch payloads and
+vendor bytes are unchanged. Earlier guide sections now reflect current header
+ownership, and the moved development guide's relative context link is corrected.
+
+Windows x64 validation (MSVC 19.44.35224.0): all 66 focused checks passed (68.07s), followed by all
+716 compiler checks (286.77s). New fixtures cover 201,733 executable-address
+cases, service argument evaluation and trace routing, feedback interface on/off
+with a test provider, and counter wrap. Five corrupted implementations compile
+before failing their
+behavioral checks. A subprocess copies only project compiler modules and the
+canonical header, generates synthetic functions with no toolkit tree, compiles
+and executes their direct/flat dispatch, and verifies that a missing canonical
+header leaves earlier output intact. This is not toolkit-free production-title
+acceptance; title data and runtime service implementations are still required.
+
+The supported-US XBE hash was rechecked. Production regeneration translated
+15,838 functions with zero failures; all 20 other generated C/header files are
+byte-identical to the previous stage. The generated types header and patched
+compatibility template equal the canonical source after newline normalization.
+Release, bundled native checks and matching crash symbols passed with
+process-local `CL_MPCount=2`. The executable built from this working tree based
+on `60c47380` has SHA-256
+`39ecafb304c39c8c919a007b19f35e35bfcfcf5bd9d14789bb18dbc033f699dc`.
+
+The isolated `independent-header-final` Story replay confirmed scene 4 / mission 1,
+unpaused input-enabled state and eight loaded rounds before exercising input.
+Movement measured 11.174549 forward / 6.184892 backward; ammunition fell 8 to 6.
+All 40 pause samples froze ticks and all 60 resume samples advanced. The last
+checkpoint was 95.602 seconds, within a 240-second cap; runner exit 0. Start,
+pause and resumed captures were reviewed. All 26 protected files retained their
+hashes, sizes and modification times; no owned locks, disposable partitions or
+dumps remained. This used injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full-campaign behavior and native Mac title acceptance remain unverified
+(MAC-105). All 73 historical-upgrade, tracking, context, backlog and snapshot
+checks passed (896.28s). A final EOF/help-text cleanup was followed by 22 focused
+checks (18.78s), fresh generation/build and the final replay reported above.
+The patch stack was reapplied and verified unchanged on the subsequent build.
+Final context/index and whitespace checks passed. Labeled PNG captures and
+reports were retained; neither header-stage run left raw BMP dumps.
+
 ## Independent scalar numeric support (2026-10-27)
 
 Based on `e56623d1` on `feature/independent-exchange`. All 17 CI checks on that

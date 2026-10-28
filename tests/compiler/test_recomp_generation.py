@@ -53,8 +53,11 @@ def test_parser_sources_and_bridge_invalidate_generation(tmp_path, monkeypatch):
         path = project / 'tools/compiler' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('original')
+    header = project / 'src/runtime/recomp_types.h'
+    header.parent.mkdir(parents=True)
+    header.write_text('original')
     monkeypatch.setattr(generation, '__file__', str(project / 'tools/build/recomp-generation.py'))
-    for path in (project / 'tools/compiler/xbe_image.py', project / 'tools/compiler/xbe_kernel_exports.def',
+    for path in (header, project / 'tools/compiler/xbe_image.py', project / 'tools/compiler/xbe_kernel_exports.def',
                  project / 'tools/compiler/recomp_image.py', project / 'tools/compiler/x86_decode.py', project / 'tools/compiler/x86_flow.py', project / 'tools/compiler/x86_recovery.py', project / 'tools/compiler/x86_functions.py', project / 'tools/compiler/recomp_symbols.py',
                  project / 'tools/compiler/analysis_cache.py', project / 'tools/compiler/analysis_config.py', project / 'tools/compiler/analysis_output.py', project / 'tools/compiler/analysis_runner.py',
                  project / 'tools/compiler/xdk_catalog.py', project / 'tools/compiler/compile_pipeline.py',

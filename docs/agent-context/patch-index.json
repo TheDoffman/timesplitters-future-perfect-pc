@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "7e65c6ced0afe759e2a085fd705af4439966e07f77b0088e58f87c68325038c9",
+  "loaderSha256": "f52677d88e290da11efbb1fa688159f7b7297a1a54a46337320b6ec4c2f0469a",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2112,6 +2112,14 @@
         "tools/recomp/test_lifter_frndint.py",
         "tools/recomp/test_lifter_movsx_registers.py",
         "tools/recomp/test_x87_classification.py"
+      ]
+    },
+    {
+      "name": "0199-independent-runtime-header.patch",
+      "path": "patches/compiler/0199-independent-runtime-header.patch",
+      "sha256": "e074e820ca2cbcee35f946014e73e540e29ef43d81e8a023a68ee7322728f3d4",
+      "targets": [
+        "templates/runtime/recomp_types.h"
       ]
     },
     {

@@ -254,6 +254,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-102 | Project call checks and HLE argument frames | Awaiting validation |
 | MAC-103 | Project vector constructor and obsolete SIMD helper retirement | Awaiting validation |
 | MAC-104 | Direct scalar extension and numeric helper retirement | Awaiting validation |
+| MAC-105 | Canonical project guest execution header | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6614,3 +6615,19 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   movement/fire/pause/resume passed, with all 26 protected files unchanged.
   All 73 historical/snapshot/context/backlog checks passed. Native Mac title
   acceptance remains pending; see STATUS.md for measurements and bounded replay limitations.
+
+### MAC-105 - Canonical project guest execution header
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 follow-up based on 60c47380;
+  src/runtime/recomp_types.h, compiler batch/CLI routing and
+  patches/compiler/0199-independent-runtime-header.patch. Generation owns its
+  default header input; service implementations remain separate replacement work.
+- Mac support: common C/Python with existing host compiler adapters. Shared CI
+  selects service/admission contracts and toolkit-free synthetic generation;
+  no new platform-specific implementation is required.
+- Windows validation: 66 focused and 716 compiler checks passed. Supported-US
+  generation changes only the types header; Release/native checks and isolated
+  movement/fire/pause/resume passed, with all 26 protected files unchanged.
+  All 73 historical-upgrade/snapshot/repository checks passed. Native Mac title
+  acceptance remains pending; see STATUS.md for measurements and replay limits.

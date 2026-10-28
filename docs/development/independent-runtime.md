@@ -1,5 +1,14 @@
 # Independent runtime replacement
 
+The project now owns `src/runtime/recomp_types.h`, used directly by default
+generation. Previously replaced execution primitives remain; the remaining
+header service interfaces and target-admission support have original code and
+contract checks. An additive patch supplies the same compatibility header to the
+transitional runtime. Declared service bodies, title integration and final
+toolkit-unavailable production acceptance are still incomplete (MAC-105).
+The optional feedback provider header and observation macros also remain
+transitional; owning the types header does not remove that enabled-mode dependency.
+
 The objective is to replace the code taken from `ts3FPrecomp` with this
 project's implementations. Standard dependencies such as SDL, FFmpeg,
 Capstone, the compiler and host graphics SDKs remain allowed. Copying upstream
@@ -12,8 +21,7 @@ The live model-transform constructor has an original bit-preserving body.
 The scalar-support stage (`0198-independent-scalar-support.patch`) also retires
 obsolete numeric helpers and emits MOVSX/MOVZX directly from project code.
 Existing rounding/classification assertions test real instruction emission;
-direction and extension contracts have independent compiled oracles. Header
-service interfaces, FP environment, diagnostics, storage, kernel/device services
+direction and extension contracts have independent compiled oracles. FP environment, diagnostics, storage, kernel/device services
 and title integration remain. Acceptance is tracked in MAC-103 and MAC-104.
 
 **The replacement is not complete.** The current game still executes using the
@@ -157,7 +165,8 @@ in `src/cli/main.c`, not by retaining the old wrapper implementation.
 `compile_pipeline.py` owns stage selection, per-title seed lookup, output paths,
 manual-source exclusion, diagnostics and subprocess execution. Parsing, analysis,
 classification and lifting all call project scripts directly. The selected runtime
-tree still supplies title data, hook sources and the shared C types header. A custom `--json` path is passed to disassembly rather
+tree still supplies title data and hook sources; the shared C types header is
+owned in `src/runtime/recomp_types.h`. A custom `--json` path is passed to disassembly rather
 than relying on a sibling file. Missing requested seed files and invalid images
 fail before execution; dry runs can describe a missing image without writing.
 The driver stops on a failed stage and reports where to resume.
@@ -756,9 +765,9 @@ guards full 64-bit shift counts. Saturation, packing, multiply-add wrap, masks,
 all shuffle selectors and float conversions have independent compiled references
 and Windows native MMX oracles. Low-unpack memory sources read only four bytes;
 other packed sources read eight. Integer flags survive owned MMX instructions.
-The emitter calls no inherited MMX operation helpers, but the register interface,
-x87 alias/tag model, guest FP environment and remaining header helpers are still
-separate replacement work. EMMS retains the explicit separate-storage behavior.
+The emitter calls no inherited MMX operation helpers. Register declarations and
+execution primitives are now in the project header; guest FP environment and
+x87 alias/tag service ownership remain separate work. EMMS retains the explicit separate-storage behavior.
 Standalone, boundary, decoded and hardware fixtures cover the new module.
 Native Mac title acceptance is pending MAC-091.
 
@@ -778,8 +787,9 @@ numeric-policy hooks are retained. SSE compares publish captured floating
 inputs; other SSE operations preserve integer flag provenance. Memory width,
 all shuffle controls, conversions/rounding, NaN predicates, masks and decoded
 consumers are covered by compiled references and Windows native SSE oracles.
-The register type, memory foundation, MMX/FPU and remaining header helpers are
-still upstream. Guest MXCSR, floating exception status, alignment faults and
+Register declarations and memory-access primitives now use the project header;
+guest address-space mapping and FP services remain transitional. Guest MXCSR,
+floating exception status, alignment faults and
 processor-specific reciprocal estimates are not claimed; exact division keeps
 the existing reciprocal policy. Native Mac title acceptance is pending MAC-090.
 
@@ -871,12 +881,12 @@ remain separate replacement work. See STATUS.md and MAC-095 for acceptance.
 The original `tools/compiler/translation_batch.py` replaces the complete old batch class
 and certificate-title helper. It assembles metadata, selects categories/manual
 implementations, publishes declarations/chunks/stubs and generates original
-binary/optional-flat address dispatch. Its injected FunctionTranslator and
-runtime types remain inherited dependencies for the next stages. Tests compile
+binary/optional-flat address dispatch. The later function and canonical-header
+stages replace its injected translator and default header. Tests compile
 the emitted C for wrapper/manual selection, stack cleanup, lookup misses/edges,
 allocation failure and an empty table. Publication is atomic per file and
 removes only obsolete outputs owned by the selected prefix. See the owning
-[guide](agent-context/independent.md), STATUS.md and MAC-096 for contracts and
+[guide](../agent-context/independent.md), STATUS.md and MAC-096 for contracts and
 host evidence. Historical patches and shipped fixtures remain audit work.
 
 
@@ -905,7 +915,7 @@ or below caller-cleaned arguments while preserving frame saves.
 
 Bounded three-pass flag propagation and eight-pass decoding resynchronization
 retain the existing coverage; neither proves complete CPU/ABI behavior. The
-existing runtime/header ABI, title integration, historical patches and inherited
+remaining runtime services, title integration, historical patches and inherited
 fixtures remain separate work. A standalone test copies only project modules
 and emits a function with the toolkit absent; whole-game independence still
 requires the remaining runtime and final provenance/removal gates.

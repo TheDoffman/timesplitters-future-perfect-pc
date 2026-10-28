@@ -65,7 +65,7 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     assert position('independent-translation-cli.patch') < position('independent-guest-abi.patch')
     assert position('independent-guest-abi.patch') < position('0195-independent-guest-dispatch.patch')
     assert position('0195-independent-guest-dispatch.patch') < position('0196-independent-call-frames.patch')
-    assert names[-4:] == ['0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '2090-repository-source-layout.patch']
+    assert names[-5:] == ['0196-independent-call-frames.patch', '0197-independent-vector-support.patch', '0198-independent-scalar-support.patch', '0199-independent-runtime-header.patch', '2090-repository-source-layout.patch']
 
     assert position('-native-surface-live.patch') < position('-native-surface-float32.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])

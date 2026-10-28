@@ -1,5 +1,9 @@
 # Subsystem entry points
 
+The guest interface is owned in `src/runtime/recomp_types.h`. Its declarations
+still call transitional runtime services; header ownership does not replace
+those service implementations. See [contracts](independent.md#canonical-guest-header).
+
 Product division faults: [shared adapter and limits](independent.md).
 
 

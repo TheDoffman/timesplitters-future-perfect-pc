@@ -1,5 +1,10 @@
 # Runtime and patch navigation
 
+The canonical guest header now lives in `src/runtime/recomp_types.h`; generation
+reads it directly. The final `0199-independent-runtime-header.patch` keeps the
+transitional template identical, before layout routing. See
+[header ownership and service boundaries](independent.md#canonical-guest-header).
+
 Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
 sign handling; old numeric helpers are removed, while regression oracles execute
 real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).

@@ -1,7 +1,7 @@
 """Project command line for function selection, translation and hook publication.
 
-The runtime directory supplies data, implementations to scan and the current
-types header. No Python module is imported from that directory.
+The runtime directory supplies title data and implementations to scan. The
+project supplies the default types header; no toolkit Python is imported.
 """
 import argparse
 from collections import Counter
@@ -108,7 +108,7 @@ def _report_unimplemented(stats):
 def _parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('xbe_path')
-    parser.add_argument('--runtime', help='Runtime data/header root; no toolkit Python is loaded')
+    parser.add_argument('--runtime', help='Runtime title-data root; the default types header is project-owned')
     parser.add_argument('--types-header', help='Explicit shared C runtime types header')
     for option in ('game-name', 'gen-dir', 'disasm-dir', 'func-id-dir', 'abi-dir',
                    'functions', 'labels', 'identified', 'abi', 'icall-sites',
@@ -253,7 +253,7 @@ def _run(args):
         seh_prolog=_address(args.seh_prolog) if args.seh_prolog else None,
         seh_epilog=_address(args.seh_epilog) if args.seh_epilog else None,
         icall_sites_json_path=args.icall_sites or str(output / 'icall_sites.json'),
-        types_header=args.types_header or runtime / 'templates/runtime/recomp_types.h')
+        types_header=args.types_header)
     if args.list_categories:
         list_categories(translator)
         return 0

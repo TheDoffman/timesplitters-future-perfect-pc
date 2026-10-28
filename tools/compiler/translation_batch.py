@@ -1,7 +1,7 @@
 """Original translation batches, output publication and generated dispatch.
 
-Function translation is an injected dependency during migration. Runtime types
-are an explicit input, not copied implementation in this module. Each file is
+Function translation is an injected dependency. Runtime types default to the
+project header and can be explicitly overridden by the caller. Each file is
 published atomically; the pipeline records its generation fingerprint only after
 all outputs succeed. This is not a multi-file filesystem transaction.
 """
@@ -153,8 +153,7 @@ class BatchTranslator:
 
     def _types(self):
         source=getattr(self,'types_header',None)
-        if source is None and self.runtime_root:source=Path(self.runtime_root)/'templates/runtime/recomp_types.h'
-        if source is None:raise ValueError('Runtime types header is required for split output')
+        if source is None:source=Path(__file__).resolve().parents[2]/'src/runtime/recomp_types.h'
         return Path(source).read_text(encoding='utf-8')
 
     def translate_batch_split(self,func_list,output_dir,chunk_size=1000,header_name='recomp_funcs.h',
