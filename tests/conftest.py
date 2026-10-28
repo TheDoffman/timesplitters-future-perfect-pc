@@ -11,3 +11,6 @@ configure()
 for folder in sorted(Path(__file__).parent.iterdir()):
     if folder.is_dir() and not folder.name.startswith('_'):
         sys.path.append(str(folder))
+
+# Keep compiled fixtures together when the caller enables parallel testing.
+from parallel_groups import pytest_collection_modifyitems

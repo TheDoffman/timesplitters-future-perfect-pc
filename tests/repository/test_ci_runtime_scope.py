@@ -121,6 +121,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/build/build-native-mac.py', 'tools/build/native_mac_common.py'], {'native', 'gpu'}),
     (['tools/testing/testing_profile.py'], {'native'}),
     (['tests/support/native_compiler.py'], {'native'}),
+    (['tests/support/parallel_groups.py'], set(scope.SUITES)),
+    (['tests/support/test_parallel_groups.py'], set(scope.SUITES)),
     (['tools/network/online_theme.py', 'tools/network/bundle_online.py', 'tools/build/network-identity.py'], {'native'}),
     (['tools/build/crash_helper.c', 'src/diagnostics/pc_crash.c', 'tests/diagnostics/test_crash_capture.py'], {'native', 'gpu'}),
     (['tools/release/publish-release.py', 'tests/launcher/test_publish_release.py', 'docs/release/releasing.md'], {'release'}),
@@ -193,6 +195,8 @@ def test_parallel_workers_preserve_required_check_contract():
     for worker in (patches, native):
         assert '    needs: plan\n' in worker
         assert 'os: [windows-latest, macos-latest]' in worker
+        assert '-n 2 --dist=loadgroup --max-worker-restart=0' in worker
+        assert "('pytest==', 'pytest-xdist==', 'execnet==')" in worker
     assert 'needs: patches' not in native
     assert 'python tools/build/apply-patches.py external/ts3FPrecomp patches' in native
     assert "needs.plan.outputs.native == 'true' && runner.os == 'Windows'" in native

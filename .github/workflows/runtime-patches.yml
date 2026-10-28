@@ -119,14 +119,14 @@ jobs:
           revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'revision={revision}\n')
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('pytest=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          dependencies = [line for line in Path('requirements.txt').read_text().splitlines()
+                          if line.startswith(('pytest==', 'pytest-xdist==', 'execnet=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *dependencies], check=True)
           PY
       - name: Prepare bundled runtime without a network clone
         run: python tools/build/prepare-runtime.py
       - name: Test patch tracking, branch switches and historical upgrades
-        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short
+        run: python -m pytest tests/repository/test_runtime_snapshot.py tests/repository/test_patch_tracking.py tests/repository/test_patch_updates.py -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0
 
   native:
     name: Native runtime (${{ matrix.os }})
@@ -160,9 +160,9 @@ jobs:
           revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f'revision={revision}\n')
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('pytest=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          dependencies = [line for line in Path('requirements.txt').read_text().splitlines()
+                          if line.startswith(('pytest==', 'pytest-xdist==', 'execnet=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *dependencies], check=True)
           PY
       - name: Prepare bundled runtime without a network clone
         if: needs.plan.outputs.native == 'true'
@@ -196,7 +196,7 @@ jobs:
             tests/compiler/test_translation_layout.py tests/compiler/test_translation_hooks.py
             tests/compiler/test_c_source_scan.py tests/compiler/test_generation_output.py
             tests/compiler/test_function_evidence.py tests/compiler/test_function_categories.py tests/compiler/test_function_catalog.py
-            tests/support/test_native_compiler.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
+            tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
             tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
@@ -219,7 +219,7 @@ jobs:
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/gameplay/test_frame_interpolation.py tests/gameplay/test_prediction_targets.py tests/repository/test_config_initialization.py tests/gameplay/test_pc_refresh.py tests/graphics/test_window_theme.py tests/network/test_online_theme.py tests/network/test_online.py tests/network/test_online_host.py tests/network/test_network_identity.py)
           fi
-          python -m pytest "${tests[@]}" -q --tb=short
+          python -m pytest "${tests[@]}" -q --tb=short -n 2 --dist=loadgroup --max-worker-restart=0
       - name: Validate common RHI on the native Mac GPU without game assets
         if: needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'
         run: |

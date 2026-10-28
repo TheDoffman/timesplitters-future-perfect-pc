@@ -900,3 +900,101 @@ def test_beta_baseline_excludes_legacy_preview_and_alpha_builds(publisher):
                         for tag in ['v0.4.0-beta.1','v0.4.0-preview.99','v0.4.0-alpha.99']]
     publisher.preflight()
     assert publisher.previous['tag_name']=='v0.4.0-beta.1'
+
+
+def test_worker_alias_cleanup_keeps_targets(tmp_path):
+    tests = tmp_path/'build/release-tests'
+    links = []
+    for name in ('popen-gw0', 'popen-gw12'):
+        target = tests/name/'compiler0'
+        target.mkdir(parents=True)
+        (target/'keep.txt').write_text('keep')
+        link = target.with_name('compilercurrent')
+        link_fixture(link, target)
+        links.append(link)
+    module.clean_pytest_current_links(tmp_path, tests)
+    assert all(not link.is_symlink() for link in links)
+    assert len(list(tests.rglob('keep.txt'))) == 2
+    module.check_directory(tmp_path, tests)
+
+
+@pytest.mark.parametrize('kind', ['cross-worker', 'nested', 'redirected-worker', 'unrecognized-worker'])
+def test_worker_cleanup_rejects_redirects_without_mutation(tmp_path, kind):
+    tests = tmp_path/'build/release-tests'
+    target = tests/'popen-gw0/compiler0'
+    target.mkdir(parents=True)
+    good = target.with_name('compilercurrent')
+    link_fixture(good, target)
+    if kind == 'cross-worker':
+        other = tests/'popen-gw1'; other.mkdir()
+        bad = other/'compilercurrent'
+    elif kind == 'nested':
+        bad = target/'compilercurrent'
+    elif kind == 'redirected-worker':
+        bad = tests/'popen-gw1'
+    else:
+        other = tests/'unexpected-worker'; other.mkdir()
+        bad = other/'compilercurrent'
+    link_fixture(bad, target)
+    with pytest.raises(ValueError, match='Unexpected link|Redirected release work path'):
+        module.clean_pytest_current_links(tmp_path, tests)
+    assert good.is_symlink() and bad.is_symlink() and target.is_dir()
+
+
+@pytest.mark.parametrize('cpus,expected', [(None, 1), (1, 1), (2, 2), (24, 4)])
+def test_default_suite_workers_are_bounded(tmp_path, monkeypatch, cpus, expected):
+    monkeypatch.setattr(module.os, 'cpu_count', lambda: cpus)
+    assert module.Publisher(tmp_path).test_workers == expected
+
+
+@pytest.mark.parametrize('workers', [0, -1, 65, '4'])
+def test_invalid_suite_worker_count_is_rejected(tmp_path, workers):
+    with pytest.raises(ValueError, match='Test workers'):
+        module.Publisher(tmp_path, test_workers=workers)
+
+
+@pytest.mark.parametrize('workers', [1, 4])
+def test_suite_runs_every_test_and_failure_stops_packaging(publisher, monkeypatch, workers):
+    publisher.preflight()
+    publisher.test_workers = workers
+    commands = []
+    def run(arguments, **kwargs):
+        commands.append(arguments)
+        if 'pytest' in arguments:
+            raise RuntimeError('regression rejected candidate')
+        return ''
+    monkeypatch.setattr(publisher, 'run', run)
+    with pytest.raises(RuntimeError, match='regression rejected candidate'):
+        module.Publisher.build_package(publisher)
+    command = commands[-1]
+    assert command[:5] == [publisher.python, '-m', 'pytest', 'tests', '-q']
+    assert '-k' not in command and '--lf' not in command
+    if workers > 1:
+        assert command[-4:] == ['-n', '4', '--dist=loadgroup', '--max-worker-restart=0']
+    else:
+        assert '-n' not in command
+    assert not any('package-release.py' in str(arg) for args in commands for arg in args)
+
+
+def test_parallel_pytest_session_fixtures_cleanup(tmp_path):
+    tests = tmp_path/'build/release-tests'
+    tests.parent.mkdir()
+    fixture = tmp_path/'test_workers.py'
+    fixture.write_text('''import pytest
+@pytest.fixture(scope="session")
+def compiled(tmp_path_factory):
+    path = tmp_path_factory.mktemp("compiler")
+    (path/"keep.txt").write_text("keep")
+    return path
+@pytest.mark.parametrize("case", range(4))
+def test_compiled(compiled, case):
+    assert (compiled/"keep.txt").read_text() == "keep"
+''')
+    result = subprocess.run([sys.executable, '-m', 'pytest', str(fixture), '-q',
+                             '-n', '2', '--max-worker-restart=0',
+                             '-o', 'tmp_path_retention_policy=failed', '--basetemp', str(tests)],
+                            cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout+result.stderr
+    module.clean_pytest_current_links(tmp_path, tests)
+    module.check_directory(tmp_path, tests)
+    assert len(list(tests.glob('popen-gw*/compiler0/keep.txt'))) == 2

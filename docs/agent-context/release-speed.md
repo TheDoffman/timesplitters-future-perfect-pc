@@ -46,3 +46,41 @@ same-size/mtime tampering, failed validation, metadata changes, CRC corruption,
 receipt corruption, added inputs, forced revalidation and branch migrations.
 Launcher CI runs the receipt tests on Windows; shared patch tests run on both
 hosts. Windows results do not establish physical Mac execution.
+
+## Full-suite scheduling
+
+`Publisher(test_workers=None)` uses up to four CPU workers for the complete
+`pytest tests` collection. `--test-workers 1` / `Publish-Release.ps1 -TestWorkers 1`
+runs serially; no test-selection or last-failed filter is used. Pinned pytest-xdist
+and execnet are installed from shared requirements. Native and patch CI use two
+workers on both hosts; their existing required gates remain unchanged.
+
+`tests/support/parallel_groups.py`, imported by `tests/conftest.py`, assigns
+`loadgroup` markers before xdist adds scheduling suffixes. Most files stay on one
+worker to reuse compiled fixtures. Patch migration, native timing and vehicle
+timing cases use isolated temporary directories and can run separately. Explicit
+groups are honored. Changes to this policy select all runtime CI suites.
+Worker crashes are failures (`--max-worker-restart=0`); release packaging follows
+only a successful entire test command. Runtime compilation and test results are
+not cached. All original cases, mutation controls, timeouts and assertions remain.
+
+`native_compiler.py` reuses successful Windows environment discovery inside one
+process, keyed by incoming environment and working directory. It ignores only
+pytest's diagnostic current-test label, which is refreshed on each returned copy.
+The bounded eight-entry cache rejects missing compilers, does not retain failures
+and never shares mutable dictionaries with callers. POSIX compiler discovery is
+unchanged. This removes repeated vswhere/vcvars setup, not native compilation.
+
+`clean_pytest_current_links` accepts pytest sibling aliases directly under the
+release test root or a real `popen-gw[0-9]+` worker directory. It validates every
+link before unlinking any and rejects redirected worker roots, cross-worker,
+external and nested links. Targets remain untouched. Regression tests exercise
+actual two-worker session-fixture cleanup and release failure propagation.
+
+Full-suite measurement exposed older XBE fixture assumptions: cutscene/projection
+constants were found by matching obsolete emitted C. `guest_constants.py` now
+reads absolute data operands from the verified original instructions, including
+SIMD widths; projection mutation targets the current final-store lowering.
+Numerical output, bounds, stack and missing-write checks are preserved. This does
+not change the translator or game. Remaining baseline correctness failures are
+reported separately in the performance measurements and still block releases.

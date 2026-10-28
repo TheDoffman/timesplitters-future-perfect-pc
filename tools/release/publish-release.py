@@ -149,14 +149,20 @@ def clean_pytest_current_links(root, path):
     check_directory(root, path, descendants=False)
     if not path.is_dir():
         return
+    allowed_parents = {path}
+    for worker in path.iterdir():
+        if re.fullmatch(r'popen-gw[0-9]+', worker.name):
+            check_directory(root, worker, descendants=False)
+            if worker.is_dir():
+                allowed_parents.add(worker)
     links = []
     for item in path.rglob('*'):
         redirected = item.is_symlink() or (os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
         if not redirected:
             continue
         target = item.resolve()
-        if (not item.is_symlink() or item.parent != path or not item.name.endswith('current') or
-                target.parent != path.resolve() or
+        if (not item.is_symlink() or item.parent not in allowed_parents or not item.name.endswith('current') or
+                target.parent != item.parent.resolve() or
                 not re.fullmatch(re.escape(item.name[:-7])+r'[0-9]+', target.name) or
                 (target.exists() and not target.is_dir())):
             raise ValueError(f'Unexpected link in release test files: {item}')
@@ -192,7 +198,10 @@ def release_lock(path):
 
 
 class Publisher:
-    def __init__(self, root=ROOT, *, branch="main", channel_name=None, notes_file=None):
+    def __init__(self, root=ROOT, *, branch="main", channel_name=None, notes_file=None, test_workers=None):
+        self.test_workers = min(4, os.cpu_count() or 1) if test_workers is None else test_workers
+        if not isinstance(self.test_workers, int) or not 1 <= self.test_workers <= 64:
+            raise ValueError('Test workers must be between 1 and 64')
         self.source_branch = branch
         self.channel_name = channel_name
         self.notes_file = Path(notes_file).resolve() if notes_file else None
@@ -506,9 +515,11 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         check_directory(self.root, tests)
         # Build already validates/applies the complete patch stack.
         self.timed_run('Game build and native tests', ['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'])
+        workers = (['-n', str(self.test_workers), '--dist=loadgroup', '--max-worker-restart=0']
+                   if self.test_workers > 1 else [])
         try:
             self.timed_run('Release regression suite', [self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider',
-                      '--durations=20', '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests])
+                      '--durations=20', '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests, *workers])
         except Exception:
             if tests.exists():
                 try:
@@ -674,8 +685,10 @@ def main():
     parser.add_argument('--branch', default='main', help='Exact pushed source branch; Stable also allows release/ and hotfix/ branches')
     parser.add_argument('--channel-name', help='Human-readable preview name, for example Story Co-op Preview')
     parser.add_argument('--notes-file', type=Path, help='Reviewed Markdown with feature notes, known issues and test instructions')
+    parser.add_argument('--test-workers', type=int, choices=range(1, 65), metavar='1..64',
+                        help='Regression workers (default: up to four CPUs); 1 runs serially')
     args = parser.parse_args()
-    publisher = Publisher(branch=args.branch, channel_name=args.channel_name, notes_file=args.notes_file)
+    publisher = Publisher(branch=args.branch, channel_name=args.channel_name, notes_file=args.notes_file, test_workers=args.test_workers)
     check_directory(publisher.root, publisher.output)
     publisher.output.mkdir(parents=True, exist_ok=True)
     with release_lock(publisher.output/'.publish.lock'):

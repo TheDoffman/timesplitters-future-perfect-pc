@@ -1,3 +1,18 @@
+## Full regression suite performance (2026-10-28)
+
+Local `perf/release-speed` continues the build/release work from `9a32375f`.
+Measured validation time fell from 42 min 20 s to 9 min 44 s
+(77.0% reduction), with every original case retained and 34 added cases.
+The full release suite uses up to four workers, preserves shared fixtures, and
+reuses successful Windows compiler setup within each worker. Both-host CI uses
+two workers. No existing test case or acceptance gate is removed. The run also
+exposed stale original-image fixtures and pre-existing shader coefficient failures;
+the former are repaired without changing their assertions, while unresolved
+correctness failures remain release blockers. See the exact Windows coverage,
+timings and limitations in [release performance](../development/release-performance.md).
+No game was compiled for release, packaged, uploaded or published. Native Mac
+execution and end-to-end release duration remain unverified.
+
 ## Build and release validation reuse (2026-10-28)
 
 Local branch `perf/release-speed`, based on `2e678ac1`, removes duplicate release

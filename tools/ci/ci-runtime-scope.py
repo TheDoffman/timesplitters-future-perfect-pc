@@ -30,6 +30,7 @@ spec.loader.exec_module(launcher)
 SUITES = ('transitions', 'native', 'gpu', 'release')
 FULL_INPUTS = {
     'tools/project_paths.py', 'tests/conftest.py',
+    'tests/support/parallel_groups.py', 'tests/support/test_parallel_groups.py',
     '.gitattributes',
     '.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
     'tools/ci/ci-runtime-scope.py', 'tests/repository/test_ci_runtime_scope.py',

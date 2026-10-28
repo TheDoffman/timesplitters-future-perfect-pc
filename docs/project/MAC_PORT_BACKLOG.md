@@ -29,6 +29,15 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
+Full-suite scheduling maintenance (2026-10-28, local `perf/release-speed`) uses the
+same pytest grouping policy on Windows and Mac. CI retains both hosts and every
+existing acceptance gate. Successful MSVC environment discovery is cached only
+on Windows; POSIX compiler selection needs no adapter change. Original-image
+fixture constant extraction is shared. Windows measurements and baseline failures
+are recorded in [release performance](../development/release-performance.md);
+native Mac execution of these changes remains unverified. No gameplay feature or
+platform policy is changed, so no new feature-specific backlog ID is introduced.
+
 Build/release maintenance (2026-10-28, local `perf/release-speed`): patch-validation
 receipts use the shared Python installer on both hosts; no Mac gameplay or
 launcher-policy adapter is needed. Launcher build receipts cover the Windows

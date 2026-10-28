@@ -81,8 +81,8 @@ Windows validation passed:
 - Actual Windows launcher compilation and all native launcher regression groups.
 - Repository context/ownership, generated patch index and whitespace checks.
 
-No full game compilation, new game package, network upload, broad game-release
-suite or native Mac execution was performed. The benchmark uses an existing
+The first optimization pass did not run a full game compilation, new game
+package, network upload, broad game-release suite or native Mac execution. The benchmark uses an existing
 release and source-only snapshots; it does not establish fresh release acceptance.
 Raw local evidence is under `logs/patch-benchmark-paired.json`,
 `logs/verification-benchmark.json`, `logs/launcher-cold-final.log` and
@@ -106,6 +106,89 @@ source directory. Both tools accept `--output` for a JSON measurement report.
 reports its 20 slowest checks. Total includes the individual stages; do not add
 it again. The launcher prints fresh/reused status and its own elapsed time.
 
-These measurements do not establish an end-to-end release speedup or reduce the
-roughly 21-minute historical full-suite result. Compilation, new-candidate tests
+Those stage measurements do not establish an end-to-end release speedup. The
+full-suite follow-up below measures regression time separately; game compilation
 and network upload remain separate costs. No game was published for this work.
+
+
+## Full regression suite (2026-10-28)
+
+The current suite saved **32 min 35 s per complete run
+(77.0% less elapsed time, 4.35x speedup)** on this Windows machine.
+This is the current 2,423-case baseline, larger than the historical 21-minute
+suite; it is not a measurement of a complete successful game release.
+
+| Measurement | Serial baseline | Optimized, four workers |
+| --- | ---: | ---: |
+| Wall time | 42 min 20 s (2539.763 s) | 9 min 44 s (584.488 s) |
+| Collected cases, all executed | 2423 | 2457 |
+| Passed | 2360 | 2397 |
+| Skipped (same cases) | 36 | 36 |
+| Failures | 27 | 24 |
+
+Every original test ID was executed again. No original case was deleted, no
+passed case became a failure, and no skip outcome changed. The optimized run
+adds 34 passing regression cases. Three previously failing original-image
+fixtures now pass after repairing their constant extraction and mutation target;
+their numerical, memory-bound, stack and missing-write assertions remain.
+All existing mutation controls, timeouts and release acceptance gates are kept.
+
+The remaining 24 failures are the same baseline cases in
+`tests/graphics/test_surface_shader_feedback.py`. The translated original upload
+routine emits 27/166/250 while the shared coefficient helper truncates to
+26/165/249. Determining the correct rounding/state contract requires a separate
+correctness investigation. This change does not modify translation or rendering
+to make those checks pass. **These failures still block release packaging.**
+
+The speed changes are:
+
+- Reuse successful MSVC environment discovery within each worker, with environment
+  and working-directory invalidation, fresh returned dictionaries and no reuse of
+  failures. Native fixtures are still compiled and executed.
+- Run independent work concurrently. Keep most files together to share compiled
+  fixtures; split only audited patch-migration, native-timing and vehicle-timing
+  cases that own independent temporary directories.
+- Use up to four workers in the release publisher and two in Windows/Mac CI.
+  Worker crashes fail the command, and safe cleanup recognizes worker directories.
+  Use `Publish-Release.ps1 -TestWorkers 1` for serial diagnostics.
+
+### Method and limits
+
+Baseline source: `9a32375f58848b9d1f04f6acbd662b471e9a6f34`, containing the earlier
+patch/launcher/archive optimizations. Host: Intel Core i7-13700K, 24 logical CPUs,
+32 GB RAM, Windows, Python 3.12.14 and pytest 9.1.1. The optimized runner uses
+pytest-xdist 3.8.0 and execnet 2.1.2. Both runs used the same pinned patched runtime,
+supported US XBE, two intro movies, SDL/FFmpeg headers and decoder DLLs. No personal
+saves or settings were used. The original checkout and its environment were not
+modified; added test tools were installed only in this worktree's ignored build
+directory.
+
+This is one local before/after observation without flushing filesystem caches,
+not a multi-run confidence interval. The serial baseline initially stopped after five
+existing failures at 1,378.115 s; the remaining 771 cases then ran serially in
+1,161.648 s. The table sums both measured invocations, including their collection
+overhead. Finished cases were not rerun in that continuation. The optimized
+measurement is one complete invocation, including startup and collection, with
+all 2,423 original IDs plus the added checks. No timing is inferred from the
+historical 21-minute result. The baseline failures mean this is a validation-cost
+comparison, not successful release acceptance. Native Mac execution, CI duration,
+fresh game compilation, packaging and upload time are unmeasured.
+All 246 input-file hashes still match the baseline manifest; both runs also
+passed the same 109 subtests.
+
+Focused validation passed 262 cases in 12.86 s, including real two-worker temporary
+fixture cleanup, failure propagation, cache invalidation, scheduling policy and
+the repaired graphics fixtures. The changed workflows parse, PowerShell syntax
+checks pass, and repository context/ownership and whitespace checks pass.
+Local evidence is retained in `logs/suite-before.*`, `logs/suite-before-tail.*`,
+`logs/suite-after.*`, `logs/suite-comparison.json`, `logs/suite-focused.*` and
+`logs/suite-inputs.json`. Private inputs, generated C, binaries and logs stay ignored.
+
+For a direct full run after installing the shared requirements:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests -q -n 4 --dist=loadgroup --max-worker-restart=0 -p no:cacheprovider -o tmp_path_retention_policy=failed --durations=20
+```
+
+Omit the three worker options for a serial diagnostic run. The publisher enables
+the parallel policy automatically; a bare manual pytest invocation remains serial.

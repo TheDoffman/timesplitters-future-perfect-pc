@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-[Build cache](release-speed.md).
+[Build/test speed](release-speed.md).
 
 Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
 
