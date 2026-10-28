@@ -31,6 +31,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 from urllib.parse import urlsplit
 import zipfile
 
@@ -198,6 +199,33 @@ class Publisher:
         self.root = Path(root).resolve()
         self.output = self.root/'build/releases'
         self.python = self.root/'.venv/Scripts/python.exe'
+        self.timings = []
+        self._verified_archive = None
+
+    @contextmanager
+    def timed(self, stage):
+        start = time.perf_counter()
+        outcome = 'failed'
+        try:
+            yield
+            outcome = 'passed'
+        finally:
+            seconds = time.perf_counter() - start
+            self.timings.append(dict(stage=stage, seconds=round(seconds, 3), outcome=outcome))
+            print(f'[release timing] {stage}: {seconds:.2f}s ({outcome})', flush=True)
+
+    def timed_run(self, stage, arguments):
+        with self.timed(stage):
+            return self.run(arguments, live=True)
+
+    def save_timings(self):
+        path = self.output/'last-run-timings.json'
+        check_directory(self.root, path)
+        temporary = path.with_suffix('.json.tmp')
+        check_directory(self.root, temporary)
+        temporary.write_text(json.dumps(dict(source_commit=getattr(self, 'commit', None),
+                                             stages=self.timings), indent=2)+'\n', encoding='utf-8')
+        temporary.replace(path)
 
     def run(self, arguments, *, live=False, payload=None):
         environment = dict(os.environ, GH_PROMPT_DISABLED='1', GIT_TERMINAL_PROMPT='0',
@@ -471,16 +499,16 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                 raise ValueError(f'Existing release output: {path.name}. Preserve/recycle the old output or use a new VERSION; nothing was overwritten.')
         # An existing setup environment can predate newly pinned dependencies.
         # Prepare the same interpreter that runs the release tests and tools.
-        self.run([self.python, '-m', 'pip', 'install', '-r',
-                  self.root/'requirements.txt'], live=True)
+        self.timed_run('Dependencies', [self.python, '-m', 'pip', 'install', '-r',
+                  self.root/'requirements.txt'])
         tests = self.root/'build/release-tests'
         clean_pytest_current_links(self.root, tests)
         check_directory(self.root, tests)
-        self.run([self.python, self.root/'tools/build/apply-patches.py', self.root/'external/ts3FPrecomp', self.root/'patches'], live=True)
-        self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'], live=True)
+        # Build already validates/applies the complete patch stack.
+        self.timed_run('Game build and native tests', ['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'])
         try:
-            self.run([self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider',
-                      '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests], live=True)
+            self.timed_run('Release regression suite', [self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider',
+                      '--durations=20', '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests])
         except Exception:
             if tests.exists():
                 try:
@@ -491,18 +519,22 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         else:
             if tests.exists():
                 self.recycle(tests)
-        self.run([self.python, self.root/'tools/release/package-release.py'], live=True)
+        self.timed_run('Package and launcher checks', [self.python, self.root/'tools/release/package-release.py'])
         self.verify_package()
         # Hashes alone do not prove the installed launcher accepts the layout.
         # Exercise its production unpack/install path on this exact ZIP.
-        self.run([self.root/'build/launcher/launcher-tests.exe', '--verify-package',
-                  self.archive, self.tag], live=True)
-        self.run([self.python, self.root/'tests/network/portable_online.py', '--stage', self.stage,
-                  '--game', self.root/'private/game'], live=True)
+        self.timed_run('Install exact package', [self.root/'build/launcher/launcher-tests.exe', '--verify-package',
+                  self.archive, self.tag])
+        self.timed_run('Portable online checks', [self.python, self.root/'tests/network/portable_online.py', '--stage', self.stage,
+                  '--game', self.root/'private/game'])
         self.verify_package()  # A check must not modify files being distributed.
         shutil.copyfile(self.stage/'BUILD.json', self.metadata)
 
     def verify_package(self):
+        with self.timed('Package integrity'):
+            self._verify_package()
+
+    def _verify_package(self):
         staged = self.stage.exists()
         build = json.loads(((self.stage/'BUILD.json') if staged else self.metadata).read_text())
         if build['source_commit'] != self.commit or build['version'] != self.tag or build['source_changes']:
@@ -511,13 +543,29 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         if build.get('release_channel') != CHANNELS.identity(self.tag):
             raise ValueError('Package channel does not match the release version.')
         expected = self.checksum.read_text(encoding='ascii').split()
-        if expected != [digest(self.archive), self.archive.name]:
+        archive_digest = digest(self.archive)
+        if expected != [archive_digest, self.archive.name]:
             raise ValueError('Package checksum mismatch')
         if self.archive.stat().st_size >= 2*1024**3:
             raise ValueError('ZIP exceeds the GitHub per-asset limit; do not publish an incomplete download')
+        # Always rehash bytes, including staged files: installer/probe checks may
+        # have modified them. Only decompression is memoized, never file hashes.
+        identity = (archive_digest, json.dumps(build, sort_keys=True), self.name)
+        for name, expected_hash in build['files'].items():
+            if name.startswith('/') or '\\' in name or ':' in name or '..' in name.split('/'):
+                raise ValueError(f'Unsafe package path: {name}')
+            if name.startswith(('Data/', 'Saves/', 'Logs/')) or name.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')):
+                raise ValueError(f'Unexpected private game/test file in package: {name}')
+            texture = re.fullmatch(r'Textures/[0-9a-f]{16}\.(dds|json)', name)
+            if name.startswith('Textures/') and (not texture or not build.get('textures')):
+                raise ValueError(f'Unexpected texture package member: {name}')
+            if staged and not texture and digest(self.stage/name) != expected_hash:
+                raise ValueError(f'Staged file changed: {name}')
+        if self._verified_archive == identity:
+            return
         with zipfile.ZipFile(self.archive) as archive:
-            if archive.testzip() is not None:
-                raise ValueError('Package ZIP is corrupt')
+            # Reading each member to EOF below checks ZIP CRC as well as SHA-256.
+            # testzip() would decompress the entire archive a second time.
             names = archive.namelist()
             if len(names) != len(set(names)):
                 raise ValueError('Duplicate ZIP members')
@@ -525,21 +573,12 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             if set(names) != {prefix+name for name in build['files']} | {prefix+'BUILD.json'}:
                 raise ValueError('ZIP members do not match BUILD.json')
             for name, expected_hash in build['files'].items():
-                if name.startswith('/') or '\\' in name or ':' in name or '..' in name.split('/'):
-                    raise ValueError(f'Unsafe package path: {name}')
-                if name.startswith(('Data/', 'Saves/', 'Logs/')) or name.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')):
-                    raise ValueError(f'Unexpected private game/test file in package: {name}')
-                # Texture files stream into the ZIP without a staging copy.
-                texture = re.fullmatch(r'Textures/[0-9a-f]{16}\.(dds|json)', name)
-                if name.startswith('Textures/') and (not texture or not build.get('textures')):
-                    raise ValueError(f'Unexpected texture package member: {name}')
-                if staged and not texture and digest(self.stage/name) != expected_hash:
-                    raise ValueError(f'Staged file changed: {name}')
                 with archive.open(prefix+name) as stream:
                     if hashlib.file_digest(stream, 'sha256').hexdigest() != expected_hash:
                         raise ValueError(f'Archived file changed: {name}')
             if json.loads(archive.read(prefix+'BUILD.json')) != build:
                 raise ValueError('Archived build metadata differs from the validated stage')
+        self._verified_archive = identity
 
     def prepare(self):
         self.output.mkdir(parents=True, exist_ok=True)
@@ -640,12 +679,22 @@ def main():
     check_directory(publisher.root, publisher.output)
     publisher.output.mkdir(parents=True, exist_ok=True)
     with release_lock(publisher.output/'.publish.lock'):
-        publisher.preflight()
-        publisher.prepare()
-        if not args.prepare_only:
-            publisher.publish(args.draft)
-        else:
-            print('Prepared locally. Run Publish-Release.ps1 again to publish this validated package.')
+        try:
+            with publisher.timed('Total'):
+                with publisher.timed('Preflight'):
+                    publisher.preflight()
+                publisher.prepare()
+                if not args.prepare_only:
+                    with publisher.timed('Upload and publication'):
+                        publisher.publish(args.draft)
+                else:
+                    print('Prepared locally. Run Publish-Release.ps1 again to publish this validated package.')
+        finally:
+            # Timing output must not obscure the original release failure.
+            try:
+                publisher.save_timings()
+            except (OSError, ValueError) as error:
+                print(f'Could not save release timings: {error}', file=sys.stderr)
 
 
 if __name__ == '__main__':

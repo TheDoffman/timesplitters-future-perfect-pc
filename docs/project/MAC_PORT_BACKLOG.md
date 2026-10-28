@@ -29,6 +29,15 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
+Build/release maintenance (2026-10-28, local `perf/release-speed`): patch-validation
+receipts use the shared Python installer on both hosts; no Mac gameplay or
+launcher-policy adapter is needed. Launcher build receipts cover the Windows
+PowerShell builder only; the native Mac builder keeps its existing behavior.
+Windows patch/cache and release regression results are recorded in
+[release performance](../development/release-performance.md). Native Mac execution
+of the shared patch receipt remains unverified; both-host patch CI is retained.
+
+
 The integration branch `codex/shared-platform-baseline` combines main `5131d29`
 with the unmerged native stack ending at `f562e14`. Historical checks below
 apply to their stated revisions. The merged native build, regression suite and

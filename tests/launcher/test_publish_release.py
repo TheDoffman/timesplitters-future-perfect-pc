@@ -327,6 +327,68 @@ def test_package_manifest_rejects_changed_stage(publisher):
         publisher.verify_package()
 
 
+def test_package_reuses_only_successful_decompression(publisher, monkeypatch):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    def unexpected_read(*args, **kwargs):
+        raise AssertionError('Unchanged archive must not be decompressed again')
+    monkeypatch.setattr(module.zipfile, 'ZipFile', unexpected_read)
+    publisher.verify_package()
+    # Same size and timestamp do not authorize reuse of different archive bytes.
+    previous = publisher.archive.stat()
+    data = bytearray(publisher.archive.read_bytes()); data[-1] ^= 1
+    publisher.archive.write_bytes(data)
+    import os
+    os.utime(publisher.archive, ns=(previous.st_atime_ns, previous.st_mtime_ns))
+    with pytest.raises(ValueError, match='checksum mismatch'):
+        publisher.verify_package()
+
+
+def test_changed_metadata_does_not_reuse_decompression(publisher):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    path = publisher.stage/'BUILD.json'
+    build = json.loads(path.read_text()); build['extra'] = 'changed'
+    path.write_text(json.dumps(build))
+    with pytest.raises(ValueError, match='Archived build metadata differs'):
+        publisher.verify_package()
+
+
+def test_crc_corruption_with_updated_outer_hash_still_fails(publisher):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    # FakePublisher writes ZIP_STORED. Change actual payload, retaining the
+    # original CRC and updating the outer checksum to force member validation.
+    with zipfile.ZipFile(publisher.archive) as archive:
+        info = archive.getinfo(publisher.name+'/Bin/game.exe')
+    data = bytearray(publisher.archive.read_bytes())
+    filename_length, extra_length = struct.unpack_from('<HH', data, info.header_offset+26)
+    data[info.header_offset+30+filename_length+extra_length] ^= 1
+    publisher.archive.write_bytes(data)
+    publisher.checksum.write_text(module.digest(publisher.archive)+'  '+publisher.archive.name+'\n')
+    for _ in range(2):
+        with pytest.raises(zipfile.BadZipFile, match='CRC'):
+            publisher.verify_package()
+
+
+def test_fresh_publisher_deep_checks_instead_of_trusting_memory(publisher, monkeypatch):
+    publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
+    publisher._verified_archive = None  # A new process has no successful inspection.
+    with monkeypatch.context() as patch:
+        patch.setattr(module.zipfile.ZipFile, 'testzip', lambda *_: pytest.fail('Duplicate CRC scan'))
+        publisher.verify_package()
+
+
+def test_timing_records_failed_checks_without_swallowing_errors(publisher):
+    with pytest.raises(RuntimeError, match='failed check'):
+        with publisher.timed('fixture'):
+            raise RuntimeError('failed check')
+    assert publisher.timings[-1]['outcome'] == 'failed'
+    assert publisher.timings[-1]['seconds'] >= 0
+    publisher.output.mkdir(parents=True)
+    publisher.save_timings()
+    saved = json.loads((publisher.output/'last-run-timings.json').read_text())
+    assert saved['stages'] == publisher.timings
+    assert not (publisher.output/'last-run-timings.json.tmp').exists()
+
+
 @pytest.mark.parametrize('corrupt', [False, True])
 def test_streamed_textures_validate_from_zip_without_stage_copy(publisher, corrupt):
     publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
@@ -445,7 +507,8 @@ def test_failed_build_prevents_packaging_and_publication(publisher, monkeypatch)
         module.Publisher.build_package(publisher)
     assert commands[0] == [publisher.python, '-m', 'pip', 'install', '-r',
                            publisher.root/'requirements.txt']
-    assert len(commands) == 3 and not publication_calls(publisher)
+    assert len(commands) == 2 and not publication_calls(publisher)
+    assert not any('apply-patches.py' in str(command) for command in commands)
 
 
 def test_launcher_install_rejection_stops_before_portable_checks_or_publication(publisher, monkeypatch):

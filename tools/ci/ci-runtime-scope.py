@@ -39,6 +39,7 @@ FULL_INPUTS = {
     'tests/fixtures/renderer-patch-stacks.json',
 }
 RELEASE_INPUTS = {
+    'tools/build/benchmark-patches.py', 'tools/release/benchmark-verification.py',
     'tools/release/publish-release.py', 'tests/launcher/test_publish_release.py',
     'tools/release/release_channels.py', 'tools/release/release-version.py',
     'tools/release/crash-symbols.py', 'tests/diagnostics/test_crash_symbols.py',

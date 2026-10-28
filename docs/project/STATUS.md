@@ -1,3 +1,14 @@
+## Build and release validation reuse (2026-10-28)
+
+Local branch `perf/release-speed`, based on `2e678ac1`, removes duplicate release
+patch validation, caches successfully validated patch/launcher inputs by content,
+and avoids repeated ZIP decompression while retaining checksum and stage checks.
+Windows regressions and measured stage timings are recorded in
+[release performance](../development/release-performance.md). No gameplay source,
+personal saves/settings, release versions or published assets changed. Native
+Mac execution and a full end-to-end game release are unverified; shared patch
+validation retains both-host CI coverage.
+
 ## Independent kernel object lifetime (2026-10-28)
 
 Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,

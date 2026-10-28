@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e81df9fec66ba2aa1fd9bda5bbf0a514223611f0a69352047973abae1aabfbcd",
+  "loaderSha256": "792559ca1262bb1cd7cc463e2b87e4dbb66e0c0ea93ad2661e4997ff1f8fba70",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",

@@ -1,5 +1,7 @@
 # Build, run and validation map
 
+[Build cache](release-speed.md).
+
 Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).

@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Unchanged patch stacks reuse content validation: [cache contract](release-speed.md).
+
 Kernel: [objects, threads and boot](kernel-objects.md).
 
 Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).

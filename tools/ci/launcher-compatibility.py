@@ -22,6 +22,7 @@ import re
 import subprocess
 
 POLICY_FILES = {
+    'tools/build/launcher-cache.ps1',
     'tools/project_paths.py', 'tests/conftest.py',
     '.github/workflows/launcher-compatibility.yml',
     '.github/workflows/launcher-build.yml', '.github/workflows/launcher-release.yml',

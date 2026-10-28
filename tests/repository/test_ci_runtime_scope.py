@@ -126,6 +126,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/release/publish-release.py', 'tests/launcher/test_publish_release.py', 'docs/release/releasing.md'], {'release'}),
     (['tools/release/crash-symbols.py', 'tests/diagnostics/test_crash_symbols.py'], {'release'}),
     (['tools/release/package-release.py'], {'release'}),
+    (['tools/build/benchmark-patches.py'], {'release'}),
+    (['tools/release/benchmark-verification.py'], {'release'}),
     (['tools/textures/texture-release.py'], {'release'}),
     (['tests/textures/test_texture_release.py'], {'release'}),
     (['tools/build/apply-patches.py'], set(scope.SUITES)),

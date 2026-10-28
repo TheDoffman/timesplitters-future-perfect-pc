@@ -30,6 +30,7 @@ class Compatibility(unittest.TestCase):
 
     def test_moved_packaging_and_icon_checks_still_select_their_owner(self):
         for path in ('tools/build/build-game-icon.ps1', 'tests/repository/test_game_icon.py',
+                     'tools/build/launcher-cache.ps1', 'tests/launcher/test_launcher_cache.py',
                      'tests/launcher/package_launcher.py', 'tools/release/package-release.py',
                      'tools/release/ImportGame.cs', 'requirements.txt',
                      'patches/platform/1150-game-icon.patch',
