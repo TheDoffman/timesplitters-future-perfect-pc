@@ -59,3 +59,7 @@ It shares the existing command runner, isolates every save/settings path and
 never edits the canonical Test Lab fixture or personal files.
 
 Final Windows acceptance and native limits: [STATUS](../project/STATUS.md#profile-scoped-unlock-content-2026-10-28).
+
+The historical pre-display controls fixture defers patch 2070 until the complete
+upgrade installs its frontend wrapper context. The upgrade test then requires
+all four Unlock Content hooks and verifies repeat application is unchanged.

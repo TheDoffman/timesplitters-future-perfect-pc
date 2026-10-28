@@ -43,6 +43,12 @@ symbols pass; the interactive build was relaunched on user approval. Executable
 SHA-256: `008e7842548dbb6e0af55e5c165e5b0717b0d3c260195b93069ca0000ea767e8`.
 No new automated visual/gameplay claim is added for this row removal.
 
+PR #395 CI follow-up: the historical pre-display upgrade fixture attempted
+patch 2070 before its frontend wrapper context existed. It now defers that
+patch until full migration, then explicitly requires all four unlock hooks.
+The targeted Windows migration test passes in 45.46 seconds. Production source
+and the interactive executable are unchanged; updated cross-platform CI pending.
+
 
 ## Independent kernel object lifetime (2026-10-28)
 
