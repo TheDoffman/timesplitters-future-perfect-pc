@@ -156,14 +156,21 @@ class BatchTranslator:
         if source is None:source=Path(__file__).resolve().parents[2]/'src/runtime/recomp_types.h'
         return Path(source).read_text(encoding='utf-8')
 
+    def _runtime_headers(self):
+        headers={'recomp_types.h':self._types()}
+        if getattr(self,'types_header',None) is None:
+            source=Path(__file__).resolve().parents[2]/'src/runtime/tsfp_branch_feedback.h'
+            headers[source.name]=source.read_text(encoding='utf-8')
+        return headers
+
     def translate_batch_split(self,func_list,output_dir,chunk_size=1000,header_name='recomp_funcs.h',
                               prefix='recomp',verbose=False,manual=None,keep_bodies=None):
         if isinstance(chunk_size,bool) or not isinstance(chunk_size,int) or chunk_size<=0:
             raise ValueError('Chunk size must be a positive integer')
         prefix=_filename(prefix);header_name=_filename(header_name)
-        if header_name in ('recomp_types.h',f'{prefix}_dispatch.c',f'{prefix}_stubs_unresolved.c') or re.fullmatch(re.escape(prefix)+r'_\d{4,}\.c',header_name):
+        if header_name.casefold() in ('recomp_types.h','tsfp_branch_feedback.h',f'{prefix}_dispatch.c'.casefold(),f'{prefix}_stubs_unresolved.c'.casefold()) or re.fullmatch(re.escape(prefix.casefold())+r'_\d{4,}\.c',header_name.casefold()):
             raise ValueError('Declaration header conflicts with another generated output')
-        types=self._types()  # Missing runtime ABI must fail before publishing any files.
+        runtime_headers=self._runtime_headers()  # Validate every ABI input before publication.
         destination=Path(output_dir).resolve();functions=self._selected(func_list)
         records,overrides,stats=self._translate(functions,manual or (),keep_bodies,verbose)
         stats.pop('_total_insns')
@@ -182,7 +189,7 @@ class BatchTranslator:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
         chunks=[records[start:start+chunk_size] for start in range(0,len(records),chunk_size)]
-        outputs={header_name:'\n'.join(header),'recomp_types.h':types}
+        outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):
             filename=f'{prefix}_{index:04d}.c'

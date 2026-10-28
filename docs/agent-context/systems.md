@@ -1,5 +1,8 @@
 # Subsystem entry points
 
+Branch observations and guard counts use the own recorder in `src/runtime/`;
+see [feedback integration](independent.md#guest-branch-feedback-recorder).
+
 The guest interface is owned in `src/runtime/recomp_types.h`. Its declarations
 still call transitional runtime services; header ownership does not replace
 those service implementations. See [contracts](independent.md#canonical-guest-header).

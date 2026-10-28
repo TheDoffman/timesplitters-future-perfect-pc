@@ -76,7 +76,9 @@ def test_fixture_and_disposable_copy_lifecycle(tmp_path,monkeypatch):
     monkeypatch.setenv('TSFP_TEXTURE_MODE','4k')
     monkeypatch.setenv('TSFP_TEXTURE_DUMP_DIR',str(tmp_path/'personal-dumps'))
     monkeypatch.setenv('TSFP_SAVE_LOCATION_LOCK','0')
+    monkeypatch.setenv('RECOMP_ICALL_FEEDBACK_PATH',str(tmp_path/'personal-feedback.dump'))
     env=profile.prepare_run(tmp_path,run)
+    assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(run/'icall_targets.dump')
     relative=Path('UserData/45410066')/profile.TEST_SLOT/'tsftrpft'
     saved=(canonical/relative).read_bytes()
     assert not (run/'saves/UserData/45410066/16D15BD8D404').exists()
@@ -118,6 +120,19 @@ def test_fixture_and_disposable_copy_lifecycle(tmp_path,monkeypatch):
     assert (legacy_run/'legacy-fixture-backup'/legacy/'tsftrpft').read_bytes()==saved
     (run/'run.lock').write_text('in use')
     with pytest.raises(ValueError,match='in use'):profile.prepare_run(tmp_path,run)
+
+
+@pytest.mark.parametrize('name',['icall_targets.dump','icall_sites.dump'])
+def test_feedback_dump_rejects_linked_outputs(tmp_path,name):
+    run=tmp_path/'private/test-saves/feedback';run.mkdir(parents=True)
+    personal=tmp_path/'personal-dump';personal.write_text('preserve')
+    try:
+        (run/name).symlink_to(personal)
+    except OSError:
+        pytest.skip('Account lacks symlink creation privileges')
+    with pytest.raises(ValueError,match='linked'):
+        profile.feedback_dump_path(tmp_path,run)
+    assert personal.read_text()=='preserve'
 
 
 @pytest.mark.skipif(profile.os.name!='nt',reason='Windows bounded play runner')

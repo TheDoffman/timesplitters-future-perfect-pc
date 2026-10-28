@@ -54,12 +54,12 @@ def test_services(tmp_path,variant):
         'inclusive_high':('return address < g_xbox_code_hi;', 'return address <= g_xbox_code_hi;'),
         'lost_kernel':('if (address >= UINT32_C(0xfe000000)) return 1;', 'if (address >= UINT32_C(0xfe000000)) return 0;'),
         'duplicate_address':('tsfp_guest_target_is_code((uint32_t)(address))', '((void)(address), tsfp_guest_target_is_code((uint32_t)(address)))'),
-        'lost_counter':('++g_icall_guard_hits;', '(void)g_icall_guard_hits;'),
+        'lost_counter':('tsfp_feedback_guard(1);', '(void)g_icall_guard_hits;'),
         'lost_trace':('#define RECOMP_TRACE_EXIT recomp_trace_exit', '#define RECOMP_TRACE_EXIT(name, address) ((void)0)')}
     if variant in changes:
         old,new=changes[variant];assert old in text;text=text.replace(old,new)
     (tmp_path/'recomp_types.h').write_text(text)
-    (tmp_path/'recomp_icall_feedback.h').write_text('#define RECOMP_ICALL_SEEN_UNRESOLVED 1\n#define RECOMP_ICALL_SEEN_RESOLVED 2\n#define RECOMP_ICALL_OBSERVE(a,b) ((void)0)\n#define RECOMP_ICALL_OBSERVE_SITE(a,b) ((void)0)\n')
+    (tmp_path/'tsfp_branch_feedback.h').write_text('void tsfp_feedback_guard(unsigned);\n#define RECOMP_ICALL_SEEN_UNRESOLVED 1\n#define RECOMP_ICALL_SEEN_RESOLVED 2\n#define RECOMP_ICALL_OBSERVE(a,b) ((void)0)\n#define RECOMP_ICALL_OBSERVE_SITE(a,b) ((void)0)\n')
     source=tmp_path/'services.c';source.write_bytes((ROOT/'tests/compiler/runtime_header.c').read_bytes())
     flags=[]
     if variant in ('feedback','lost_counter'):flags=['/DRECOMP_ICALL_FEEDBACK'] if os.name=='nt' else ['-DRECOMP_ICALL_FEEDBACK']
@@ -70,7 +70,8 @@ def test_services(tmp_path,variant):
     if not expected:assert '201733 address cases and service contracts passed' in run.stdout
 
 
-def test_default_header_and_compiled_guest_without_toolkit(tmp_path):
+@pytest.mark.parametrize('feedback', [False, True])
+def test_default_header_and_compiled_guest_without_toolkit(tmp_path, feedback):
     args,records=fixture(tmp_path)
     i=args.index('--types-header');del args[i:i+2]
     project=tmp_path/'own-project'
@@ -80,11 +81,14 @@ def test_default_header_and_compiled_guest_without_toolkit(tmp_path):
     cli=compiler/'translation_cli.py'
     header=project/'src/runtime/recomp_types.h';header.parent.mkdir(parents=True)
     header.write_bytes((HEADER).read_bytes())
+    for name in ('tsfp_branch_feedback.h', 'guest_branch_feedback.c'):
+        (header.parent/name).write_bytes((ROOT/'src/runtime'/name).read_bytes())
     run=subprocess.run([sys.executable,str(cli),*args,'--all','--split','2'],cwd=project,capture_output=True,text=True,timeout=30)
     assert run.returncode==0,run.stdout+run.stderr
     assert not (tmp_path/'no-toolkit').exists()
     gen=tmp_path/'gen'
     assert (gen/'recomp_types.h').read_text()==header.read_text()
+    assert (gen/'tsfp_branch_feedback.h').read_text()==(header.parent/'tsfp_branch_feedback.h').read_text()
     source=gen/'execute.c'
     paths=[*sorted(gen.glob('recomp_0*.c')),gen/'recomp_dispatch.c',gen/'recomp_hle.c']
     source.write_text('\n'.join('#include "'+p.name+'"' for p in paths)+'''
@@ -95,7 +99,10 @@ recomp_lookup(0x11000)();if(g_eax!=1||g_esp!=104)return 2;
 recomp_lookup(0x11040)();if(g_eax!=5||g_esp!=108)return 3;
 if(!recomp_dispatch_init())return 4;recomp_lookup(0x11050)();return g_eax!=6||g_esp!=112;}
 ''')
-    executable=_compile(gen,source)
+    flags=[]
+    if feedback:
+        flags=[('/D' if os.name=='nt' else '-D')+'RECOMP_ICALL_FEEDBACK', header.parent/'guest_branch_feedback.c']
+    executable=_compile(gen,source,extra=flags)
     assert subprocess.run([str(executable)],timeout=30).returncode==0
     before={p.name:p.read_bytes() for p in gen.iterdir() if p.name.startswith('recomp_')}
     header.unlink()

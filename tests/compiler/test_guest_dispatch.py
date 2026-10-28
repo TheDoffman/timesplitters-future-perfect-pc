@@ -55,7 +55,7 @@ recomp_func_t recomp_lookup(uint32_t);
 recomp_func_t recomp_lookup_kernel(uint32_t);
 void recomp_icall_fail_log(uint32_t);
 void recomp_icall_not_code_log(uint32_t,uint32_t);
-#include "recomp_icall_feedback.h"
+#include "tsfp_branch_feedback.h"
 '''
     abi_start = text.index('#ifdef RECOMP_ABI_CHECK', text.index('recomp_func_t recomp_lookup_manual'))
     abi = text[abi_start:text.index('\n#endif', abi_start)+len('\n#endif')]
@@ -100,7 +100,8 @@ def run_contract(tmp_path, variant, abi, feedback):
     (tmp_path/'under_test.h').write_text(definitions + text, encoding='utf-8')
     # Instrument only the existing feedback boundary; the dispatcher and ABI
     # check are compiled verbatim. Real recorder coverage remains in its suite.
-    (tmp_path/'recomp_icall_feedback.h').write_text('''#include <stdint.h>
+    (tmp_path/'tsfp_branch_feedback.h').write_text('''#include <stdint.h>
+void tsfp_feedback_guard(unsigned);
 void observe(uint32_t,unsigned);
 void observe_site(uint32_t,uint32_t);
 #define RECOMP_ICALL_SEEN_RESOLVED 1u

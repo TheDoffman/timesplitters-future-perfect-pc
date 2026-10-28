@@ -1,5 +1,9 @@
 # Runtime patches
 
+`compiler/0202-independent-branch-feedback.patch` routes optional observations
+to the own provider/header in `src/runtime`, after the header consumer repair
+and before final layout routing. Existing patch payloads remain unchanged.
+
 `compiler/0199-independent-runtime-header.patch` supplies the canonical project
 header to transitional runtime consumers. It follows scalar support and precedes
 layout routing. Generation reads `src/runtime/recomp_types.h` directly; the

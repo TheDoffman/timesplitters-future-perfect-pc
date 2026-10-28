@@ -41,8 +41,9 @@ def fingerprint(runtime):
     for name in ('xbe_image.py', 'xbe_kernel_exports.def', 'recomp_image.py', 'x86_decode.py', 'x86_flow.py', 'x86_recovery.py', 'x86_functions.py', 'recomp_symbols.py', 'analysis_cache.py', 'analysis_config.py', 'analysis_output.py', 'analysis_runner.py', 'xdk_catalog.py', 'compile_pipeline.py', 'function_evidence.py', 'function_categories.py', 'function_catalog.py', 'c_source_scan.py', 'generation_output.py', 'translation_decode.py', 'translation_layout.py', 'translation_hooks.py', 'branch_feedback.py', 'unresolved_report.py', 'translation_operands.py', 'translation_moves.py', 'translation_integer.py', 'translation_bits.py', 'translation_product.py', 'translation_bitops.py', 'translation_exchange.py', 'translation_compare.py', 'translation_strings.py', 'translation_conditions.py', 'translation_sse.py', 'translation_mmx.py', 'translation_x87.py', 'translation_control.py', 'translation_lifting.py', 'translation_context.py', 'translation_helpers.py', 'translation_names.py', 'translation_host_symbols.txt', 'translation_host_symbols.json', 'translation_batch.py', 'translation_discovery.py', 'translation_function.py', 'translation_cli.py'):
         result['project/tools/' + name] = hashlib.sha256(
             (repo_file(project, 'tools', name)).read_bytes()).hexdigest()
-    result['project/src/runtime/recomp_types.h'] = hashlib.sha256(
-        (project / 'src/runtime/recomp_types.h').read_bytes()).hexdigest()
+    for name in ('recomp_types.h', 'tsfp_branch_feedback.h'):
+        result['project/src/runtime/' + name] = hashlib.sha256(
+            (project / 'src/runtime' / name).read_bytes()).hexdigest()
     helper = project / 'tools/project_paths.py'
     if helper.is_file():
         result['project/tools/project_paths.py'] = hashlib.sha256(helper.read_bytes()).hexdigest()

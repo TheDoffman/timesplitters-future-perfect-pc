@@ -1,5 +1,40 @@
 # Independent tooling contracts
 
+## Guest branch-feedback recorder
+
+`src/runtime/tsfp_branch_feedback.h` and `guest_branch_feedback.c` own optional
+target/site observation and guard counters. The 8 MiB guest window uses atomic
+flag union; a bounded chained table retains six distinct targets per site,
+marks saturation and counts dropped observations when full. Thread-local
+last-pair caching avoids a shared racy cache. Disabled macros discard arguments;
+enabled macros evaluate addresses once and leave out-of-window flags lazy.
+
+Target/site v1 dumps remain compatible with the own Python merge parser.
+`RECOMP_ICALL_FEEDBACK_PATH` in the environment overrides the compiled default.
+Explicit initialization registers one exit callback. No title initialization or
+normal-exit dump is inferred from this API; forced test termination does not
+prove dumping. File output is best effort, not transactional or signal-safe.
+A busy snapshot lock or allocation failure preserves the previous site dump;
+recording releases the lock before file I/O. Prior write and close errors are
+reported. Concurrent dumps are not a globally consistent snapshot.
+
+`0202-independent-branch-feedback.patch` follows the consumer-fixture repair,
+replaces the old C/header bodies with compatibility bridges and mirrors the
+canonical types header. Layout routing remains last. Default split generation
+and hook refresh publish both own headers and validate inputs before writing;
+both headers are fingerprinted. Explicit custom types headers remain the
+caller's contract. Reserved output names also reject case-insensitive aliases.
+
+`test_branch_feedback_runtime.py` compiles the real provider for boundaries,
+evaluation, eight recording threads, capacity/saturation, idempotent exit,
+disabled mode, failure/recovery and negative controls. It also executes the
+inherited recorder round-trip with the project native compiler adapter.
+Toolkit-free synthetic generation compiles/executes with feedback on and off;
+installed runtime and title acceptance remain separate checks (MAC-106).
+Both bounded host runners use `testing_profile.feedback_dump_path` to validate
+the target and companion paths and override inherited output settings with paths
+inside the disposable test directory, including native unlocked-profile runs.
+
 ## Canonical guest header
 
 `src/runtime/recomp_types.h` is the project-owned interface. It retains the
@@ -9,10 +44,9 @@ and guest-width executable-target admission. The argument to admission is read
 once; zero upper bounds and synthetic kernel addresses retain their acceptance.
 Services declared here still include transitional implementations; this is not
 ownership of the loader, clock, diagnostics or nonlocal-jump service bodies.
-Optional feedback still imports the transitional `recomp_icall_feedback.h`
-provider, including its observation macros; that header and service are separate
-replacement work. The new feedback-mode fixture supplies a test provider and
-checks this header's interface/counters, not the provider's recording behavior.
+Optional feedback uses the project provider described above. The header-service
+fixture supplies a test provider for routing/counters; the recorder suite
+separately exercises the real implementation and its compatibility bridge.
 
 The batch generator and CLI read this header by default, even with no toolkit
 header present. Explicit `--types-header` remains supported. The generation

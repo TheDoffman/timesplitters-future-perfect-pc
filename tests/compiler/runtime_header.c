@@ -21,6 +21,9 @@ void recomp_unimpl(const char *name, uint32_t address) {
 }
 #ifdef RECOMP_ICALL_FEEDBACK
 volatile uint64_t g_icall_guard_hits, g_icall_guard_misses;
+void tsfp_feedback_guard(unsigned matched) {
+    if (matched) ++g_icall_guard_hits; else ++g_icall_guard_misses;
+}
 #endif
 
 /* An independent interval oracle uses widened comparisons; no inclusive upper

@@ -1,3 +1,68 @@
+## Project branch-feedback provider (2026-10-27)
+
+Based on `676545eb` on `feature/independent-exchange`, with all 17 prerequisite
+CI checks passed. The additive `0202-independent-branch-feedback.patch` replaces
+the inherited recorder C/header with compatibility bridges to original project
+source in `src/runtime/guest_branch_feedback.c` and `tsfp_branch_feedback.h`.
+Target flags and guard counters use atomics; bounded synchronized site sets
+retain six targets and report saturation/dropped observations. Thread-local
+duplicate suppression replaces a shared racy cache. Disabled macros discard
+arguments; enabled address arguments evaluate once. Explicit initialization is
+idempotent, and the v1 target/site dumps retain the project parser contract.
+
+Default generation and hook refresh publish both project headers and validate
+inputs before publication. Their fingerprints include both headers; output
+names reject case-insensitive collisions. Explicit custom types headers retain
+their caller-owned contract. Both bounded host runners validate target and site
+dump paths inside their disposable directories. Earlier patch payloads and the
+pristine vendor snapshot remain unchanged; layout routing stays last.
+
+Windows x64 / MSVC 19.44.35224.0 validation:
+
+- All 739 compiler tests passed (293.91s), including recorder concurrency,
+  saturation/capacity, evaluation, disabled hooks, exit registration, write and
+  allocation failures/recovery, and compiled negative controls. An initial
+  isolated dispatch fixture used the old feedback header; its prelude was
+  corrected, with all 13 dispatch checks then passing before the full suite.
+- All 73 migration, snapshot, tracking, context and backlog checks passed
+  (904.60s). The subsequent case-insensitive output-name fix passed all 34
+  batch/CLI/header checks (27.03s). Runner isolation passed 38 checks with one
+  Windows-inapplicable Mac allocation skip; both linked-output rejection checks
+  also passed.
+- Synthetic project-only generation compiled and executed with feedback both
+  enabled and disabled and no toolkit tree. This is not toolkit-free production
+  acceptance. The supported-US XBE hash was verified; production generation
+  translated 15,838 functions with zero failures. All 20 previous outputs other
+  than the types header are byte-identical; the feedback header is added.
+- Enabled and normal Release builds, bundled native checks and matching crash
+  symbols passed. The original C flags were restored exactly after the enabled
+  build. Generation remains current.
+
+Both isolated Story replays confirmed scene 4 / mission 1, unpaused state and
+eight rounds before input. Enabled: final checkpoint 100.366s,
+movement 11.174544 forward / 6.184891 backward.
+Normal: final checkpoint 99.382s, movement
+11.176244 forward / 6.192486 backward. Each fired from eight to
+six rounds, froze all 40 pause samples and advanced all 60 resume samples.
+Both runners exited successfully within their 240-second limits; start, paused
+and resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes. No owned run locks, disposable partition images
+or crash dumps remained.
+
+Executable SHA-256 values from the working tree based on `676545eb`:
+
+- Feedback enabled: `b2c3ca86408b9bcf836887c7c9cce05ef11a4ba0fb46f2a636b772e1c0859f5a`.
+- Normal: `825f24e1591e6e583507f27553c52643e9233d1e78c3b8b3f5ad216a81f29c07`.
+
+These checks used injected input, minimized windows, Original60 timing, Classic
+textures and skipped startup movies. Physical input, audio listening, full
+campaign and native Mac title acceptance remain unverified (MAC-106).
+Explicit recorder initialization/dumping is exercised by native fixtures;
+forced game shutdown does not prove an exit dump. Output is best effort, not
+transactional, signal-safe or a globally consistent concurrent snapshot.
+Memory/loader/kernel/device services, title integration and the final production
+build/package with both toolkit and snapshot unavailable remain incomplete.
+
 ## Canonical-header consumer fixture repair (2026-10-27)
 
 CI for `519b9d34` exposed a missing dependency in the inherited guarded-call

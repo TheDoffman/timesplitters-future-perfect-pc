@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a58cbb6c76d9b68c900277e5ac8e6c09d3611c24c826125d7d3c29b624d9e019",
+  "loaderSha256": "4cb94510c6c177316bdb1916cc3d0b334b9e5ac61dc0cb69020a2a93378193ac",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2127,6 +2127,17 @@
       "path": "patches/compiler/0201-runtime-header-consumer-fixture.patch",
       "sha256": "fc9bfbaef7c976465539fd63ac974e45ee08a6633a5dd99db294e3f9b99dbfee",
       "targets": [
+        "tools/recomp/test_icall_guarded_runtime.py"
+      ]
+    },
+    {
+      "name": "0202-independent-branch-feedback.patch",
+      "path": "patches/compiler/0202-independent-branch-feedback.patch",
+      "sha256": "37e1c38d014e1675add0349fbc2ecef87a1467b5c6c29c63553948eeb5b17425",
+      "targets": [
+        "src/kernel/icall_feedback.c",
+        "src/kernel/recomp_icall_feedback.h",
+        "templates/runtime/recomp_types.h",
         "tools/recomp/test_icall_guarded_runtime.py"
       ]
     },

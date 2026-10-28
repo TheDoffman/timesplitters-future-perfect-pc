@@ -222,12 +222,13 @@ def _refresh(translator, directory, replacements, variables, wanted, manual_name
     for address, (name, *_rest) in active.items():
         if name in wanted and f'sub_{address:08X}_hle_original' in definitions:
             originals[name] = address
-    # Validate both inputs before the first publication; each write is atomic,
-    # but these two files do not form a filesystem transaction.
-    types = translator._types()
+    # Validate every input before publication; individual writes are atomic,
+    # but the complete output set is not a filesystem transaction.
+    runtime_headers = translator._runtime_headers()
     output = hooks.render_thunks(active, variables, originals)
     write_if_changed(directory / 'recomp_hle.c', output)
-    write_if_changed(directory / 'recomp_types.h', types)
+    for name, text in runtime_headers.items():
+        write_if_changed(directory / name, text)
     print(f'Refreshed hooks: {len(active)} active, {len(replacements)-len(active)} deferred until translation', file=sys.stderr)
 
 

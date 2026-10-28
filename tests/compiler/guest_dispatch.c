@@ -12,6 +12,9 @@ uint32_t g_xbox_code_lo, g_xbox_code_hi;
 volatile uint32_t g_icall_trace[16], g_icall_trace_idx;
 volatile uint64_t g_icall_count;
 volatile uint64_t g_icall_guard_hits, g_icall_guard_misses;
+void tsfp_feedback_guard(unsigned matched) {
+    if (matched) ++g_icall_guard_hits; else ++g_icall_guard_misses;
+}
 static char events[64];
 static unsigned used, mask, calls, stack_reads, site_reads, target_reads;
 static unsigned damage, diagnostic_damage, bad;

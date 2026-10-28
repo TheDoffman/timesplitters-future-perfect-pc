@@ -255,6 +255,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-103 | Project vector constructor and obsolete SIMD helper retirement | Awaiting validation |
 | MAC-104 | Direct scalar extension and numeric helper retirement | Awaiting validation |
 | MAC-105 | Canonical project guest execution header | Awaiting validation |
+| MAC-106 | Project branch-feedback provider and generated header | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6638,3 +6639,25 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   movement/fire/pause/resume passed, with all 26 protected files unchanged.
   All 73 historical-upgrade/snapshot/repository checks passed. Native Mac title
   acceptance remains pending; see STATUS.md for measurements and replay limits.
+
+### MAC-106 - Project branch-feedback provider and generated header
+
+- **Status:** Awaiting validation
+- PC behavior/source: PR #375 branch-feedback stage based on 676545eb;
+  src/runtime/guest_branch_feedback.c, tsfp_branch_feedback.h, canonical header
+  callbacks, compiler batch/hook publication and
+  patches/compiler/0202-independent-branch-feedback.patch. Optional observations
+  use atomic target flags/counters and bounded synchronized site records.
+- Mac support: shared C/Python with MSVC intrinsics or compiler atomics. Existing
+  source-layout routing supplies the own include directory on both hosts; no
+  separate gameplay policy or new OS adapter. Both CI hosts select recorder,
+  generated-header and inherited consumer contracts.
+- Acceptance: run native recording/concurrency/failure fixtures, enabled and
+  disabled synthetic generated code, patch transitions and complete generation/
+  build, then isolated title boot/movement/fire/pause/resume. Explicit recorder
+  initialization/dump is tested separately; forced process termination is not
+  an exit-dump check. Windows passed 739 compiler and 73 migration/repository
+  checks, followed by the publication/isolation checks, enabled and normal
+  Release builds and isolated Story movement/fire/pause/resume replays.
+  See STATUS.md for hashes, measurements and limits. Native Mac title acceptance
+  remains pending; shared-source and Windows results do not establish it.

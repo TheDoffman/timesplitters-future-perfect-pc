@@ -6,8 +6,12 @@ header service interfaces and target-admission support have original code and
 contract checks. An additive patch supplies the same compatibility header to the
 transitional runtime. Declared service bodies, title integration and final
 toolkit-unavailable production acceptance are still incomplete (MAC-105).
-The optional feedback provider header and observation macros also remain
-transitional; owning the types header does not remove that enabled-mode dependency.
+The optional feedback header, recording service and guard-counter updates now
+use project-owned implementations in `src/runtime/tsfp_branch_feedback.h` and
+`guest_branch_feedback.c`, through additive patch `0202-independent-branch-feedback.patch`.
+Generation publishes the supplemental header too. See [recorder contracts and
+validation boundaries](../agent-context/independent.md#guest-branch-feedback-recorder)
+and MAC-106; the larger runtime-service replacement remains incomplete.
 
 The objective is to replace the code taken from `ts3FPrecomp` with this
 project's implementations. Standard dependencies such as SDL, FFmpeg,

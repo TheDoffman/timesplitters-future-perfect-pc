@@ -8,8 +8,8 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 
 RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
 
-[Canonical header, scalar/vector, call frames, dispatch and ABI/CLI checks](independent.md).
-The inherited guarded-call oracle also runs through MSVC via the native adapter.
+[Header/feedback isolation, scalar/vector, call frames, dispatch and ABI/CLI checks](independent.md).
+Guarded-call and feedback-recorder oracles use the native adapter, including MSVC.
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

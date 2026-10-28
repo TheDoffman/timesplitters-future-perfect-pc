@@ -140,7 +140,10 @@ def test_simple_batches_categories_and_invalid_output_preservation(tmp_path):
     assert (tmp_path/'out/bundle_alpha.c').exists() and (tmp_path/'out/bundle_beta.c').exists()
     before={p.name:p.read_bytes() for p in (tmp_path/'out').iterdir()}
     for kwargs in ({'chunk_size':0},{'chunk_size':-1},{'chunk_size':True},{'header_name':'../oops.h'},
-                   {'header_name':'recomp_types.h'},{'prefix':'../outside'},{'header_name':'recomp_0000.c'}):
+                   {'header_name':'recomp_types.h'},{'header_name':'tsfp_branch_feedback.h'},
+                   {'header_name':'TSFP_BRANCH_FEEDBACK.H'},{'header_name':'RECOMP_TYPES.H'},
+                   {'prefix':'RECOMP','header_name':'recomp_dispatch.c'},
+                   {'prefix':'../outside'},{'header_name':'recomp_0000.c'},{'header_name':'Recomp_0000.C'}):
         with pytest.raises(ValueError):batch.translate_batch_split([],tmp_path/'out',**kwargs)
     batch.types_header=tmp_path/'missing.h'
     with pytest.raises(FileNotFoundError):batch.translate_batch_split([],tmp_path/'out')
@@ -205,3 +208,26 @@ assert xbe_title is own.xbe_title
         'assert not any(n.startswith("tools.recomp") for n in sys.modules)',str(tmp_path)],
         capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stderr
+
+
+def test_default_support_header_publication_and_missing_input_preservation(tmp_path, monkeypatch):
+    from translation_cli import _refresh
+    batch,_=fixture(tmp_path)
+    batch.types_header=None
+    project=tmp_path/'own-project'
+    runtime=project/'src/runtime';runtime.mkdir(parents=True)
+    (runtime/'recomp_types.h').write_text(TYPES)
+    support=runtime/'tsfp_branch_feedback.h';support.write_text('original support')
+    monkeypatch.setattr(own,'__file__',str(project/'tools/compiler/translation_batch.py'))
+    output=tmp_path/'generated'
+    batch.translate_batch_split([],output)
+    assert (output/support.name).read_text()=='original support'
+    before={p.name:p.read_bytes() for p in output.iterdir()}
+    support.unlink()
+    with pytest.raises(FileNotFoundError):batch.translate_batch_split([],output)
+    assert before=={p.name:p.read_bytes() for p in output.iterdir()}
+    with pytest.raises(FileNotFoundError):_refresh(batch,output,{}, {},set(),set())
+    assert before=={p.name:p.read_bytes() for p in output.iterdir()}
+    support.write_text('updated support')
+    _refresh(batch,output,{}, {},set(),set())
+    assert (output/support.name).read_text()=='updated support'

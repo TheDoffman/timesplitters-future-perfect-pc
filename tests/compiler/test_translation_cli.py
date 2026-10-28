@@ -165,11 +165,11 @@ def test_refresh_declines_lost_dispatch_and_missing_types_before_writes(tmp_path
     gen=tmp_path/'gen';gen.mkdir();thunks=gen/'recomp_hle.c';thunks.write_text('preserve')
     types=gen/'recomp_types.h';types.write_text('preserve types')
     dispatch=gen/'recomp_dispatch.c';dispatch.write_text('(recomp_func_t)sub_00001000')
-    batch=S(_types=lambda:'new types')
+    batch=S(_runtime_headers=lambda:{'recomp_types.h':'new types'})
     with pytest.raises(ValueError,match='undefined'):cli._refresh(batch,gen,{}, {},set(),set())
     assert thunks.read_text()=='preserve' and types.read_text()=='preserve types'
     def missing(): raise FileNotFoundError('types')
-    with pytest.raises(FileNotFoundError):cli._refresh(S(_types=missing),gen,{0x1000:('Test',0,{})},{},set(),set())
+    with pytest.raises(FileNotFoundError):cli._refresh(S(_runtime_headers=missing),gen,{0x1000:('Test',0,{})},{},set(),set())
     assert thunks.read_text()=='preserve' and types.read_text()=='preserve types'
 
 
@@ -186,7 +186,8 @@ void sub_00002000_hle_original(void) {}
 #define FAKE \\
 void sub_00002000_hle_original(void) {}
 ''')
-    cli._refresh(S(_types=lambda:TYPES),gen,{0x1000:('New',0,{}),0x2000:('Kept',0,{})},{}, {'Kept'},set())
+    cli._refresh(S(_runtime_headers=lambda:{'recomp_types.h':TYPES,'tsfp_branch_feedback.h':'support'}),gen,{0x1000:('New',0,{}),0x2000:('Kept',0,{})},{}, {'Kept'},set())
+    assert (gen/'tsfp_branch_feedback.h').read_text()=='support'
     text=(gen/'recomp_hle.c').read_text()
     assert 'void sub_00001000(void)' not in text and 'void sub_00002000(void)' in text
     assert 'hle_original_Kept)(void) = 0;' in text

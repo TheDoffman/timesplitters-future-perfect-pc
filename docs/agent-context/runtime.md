@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Optional branch-feedback recording is project-owned; compatibility includes
+route to `src/runtime/` through `0202-independent-branch-feedback.patch`.
+See [provider, generation and test contracts](independent.md#guest-branch-feedback-recorder).
+
 The canonical guest header now lives in `src/runtime/recomp_types.h`; generation
 reads it directly. The final `0199-independent-runtime-header.patch` keeps the
 transitional template identical, before layout routing. See

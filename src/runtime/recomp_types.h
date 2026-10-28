@@ -271,10 +271,10 @@ void recomp_icall_not_code_log(uint32_t address, uint32_t stack);
 
 /* Disabled feedback must not expand or evaluate the supplied tokens. */
 #ifdef RECOMP_ICALL_FEEDBACK
-#include "recomp_icall_feedback.h"
+#include "tsfp_branch_feedback.h"
 extern volatile uint64_t g_icall_guard_hits, g_icall_guard_misses;
-static inline void tsfp_guest_guard_hit(void) { ++g_icall_guard_hits; }
-static inline void tsfp_guest_guard_miss(void) { ++g_icall_guard_misses; }
+static inline void tsfp_guest_guard_hit(void) { tsfp_feedback_guard(1); }
+static inline void tsfp_guest_guard_miss(void) { tsfp_feedback_guard(0); }
 #define RECOMP_ICALL_GUARD_HIT() tsfp_guest_guard_hit()
 #define RECOMP_ICALL_GUARD_MISS() tsfp_guest_guard_miss()
 #else
