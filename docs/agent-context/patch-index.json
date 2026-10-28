@@ -31,12 +31,12 @@
     {
       "name": "0040-dsound-positional-stereo.patch",
       "path": "patches/media/0040-dsound-positional-stereo.patch",
-      "sha256": "1f2ff629a9faaac820e2ad4bd8f10fe8be003bedb15c8adda6fc787d9c506059",
+      "sha256": "77326608831b5672bdd6dc2f16a29c9781b1daa9d38d5fa10397748c0eca63f7",
       "targets": [
-        "src/hle/audio_output.h\r",
-        "src/hle/audio_output_xaudio2.cpp\r",
-        "src/hle/hle_dsound.c\r",
-        "src/hle/hle_dsound_stream.c\r"
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
       ]
     },
     {

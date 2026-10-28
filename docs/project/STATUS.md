@@ -134,7 +134,9 @@ Audio, using the game sidecar with default OFF and conflict/rollback handling.
 Windows launcher build/tests passed, including all three new UI cases; portable
 launcher/Mac-adapter checks passed 31 tests and 26 subtests. Native Mac launcher
 execution remains pending.
-Audio is committed on `positional-stereo-audio` (`32a5774`); PR/merge pending.
+Audio is committed on `positional-stereo-audio` (`32a5774`), PR #397.
+CI caught a CRLF working-copy hash in the generated audio patch index;
+normalizing the patch to LF and refreshing the index corrects clean-checkout validation.
 
 ## Retired compatibility memory APIs (2026-10-28)
 

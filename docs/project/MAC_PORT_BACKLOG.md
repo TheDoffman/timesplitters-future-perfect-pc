@@ -7127,7 +7127,7 @@ No production source, built executable or prior gameplay evidence changed.
 ### MAC-120 - Enhanced Audio beta
 
 - **Status:** Awaiting validation
-- **Source/PR:** `32a5774`, shared audio branch; PR pending.
+- **Source/PR:** `32a5774`, PR #397.
 - **Mac support present:** Shared code is implemented; native Mac execution/listening is pending.
 - Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
   provide directional buffers/streams, near-field centering, longer gunfire
