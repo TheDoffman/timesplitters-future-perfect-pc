@@ -2274,10 +2274,10 @@
     {
       "name": "0216-independent-kernel-boot.patch",
       "path": "patches/compiler/0216-independent-kernel-boot.patch",
-      "sha256": "cc42996a6d2e563e5797ea2dfef012f0bc2df3b04777ff42b663fa578631c821",
+      "sha256": "65e6bd9ae44ba7899ef96e551e945b76f2968acb0767c3d2686b9203d419e802",
       "targets": [
-        "src/kernel/CMakeLists.txt\r",
-        "src/kernel/kernel.h\r"
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h"
       ]
     },
     {
