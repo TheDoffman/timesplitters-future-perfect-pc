@@ -1,0 +1,602 @@
+diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -26,6 +26,7 @@
+  */
+ 
+ #include "kernel.h"
++#include "guest_virtual_memory.h"
+ #include "xbox_memory_layout.h"
+ #include "recomp_icall_feedback.h"
+ #ifdef _WIN32
+@@ -759,286 +760,32 @@
+  */
+ static void bridge_NtAllocateVirtualMemory(void)
+ {
+-    uint32_t base_ptr = STACK_ARG(0);  /* PVOID* in Xbox VA */
+-    uint32_t zero_bits = STACK_ARG(1);
+-    uint32_t size_ptr = STACK_ARG(2);  /* PULONG in Xbox VA */
+-    uint32_t alloc_type = STACK_ARG(3);
+-    uint32_t protect = STACK_ARG(4);
+-
+-    /* Read the requested size from Xbox memory */
+-    uint32_t size = size_ptr ? BRIDGE_MEM32(size_ptr) : 0;
+-    /* Read the base address hint (0 = let kernel choose) */
+-    uint32_t base_hint = base_ptr ? BRIDGE_MEM32(base_ptr) : 0;
+-
+-    if (KERNEL_LOG_ON()) {
+-        fprintf(stderr, "  [KERNEL] NtAllocateVirtualMemory: base=0x%08X size=%u type=0x%X prot=0x%X\n",
+-                base_hint, size, alloc_type, protect);
+-        fflush(stderr);
+-    }
+-
+-    if (size == 0) {
+-        g_eax = 0xC0000045u; /* STATUS_INVALID_PAGE_PROTECTION */
+-        return;
+-    }
+-
+-    /*
+-     * Xbox NtAllocateVirtualMemory supports two modes:
+-     * - MEM_RESERVE (0x2000): Reserve virtual address space
+-     * - MEM_COMMIT  (0x1000): Commit pages within a reserved region
+-     * - MEM_RESERVE|MEM_COMMIT (0x3000): Both in one call
+-     *
+-     * Our Xbox heap (bump allocator) always commits memory immediately,
+-     * so MEM_COMMIT on an already-reserved region is a no-op.
+-     * Only allocate new memory when MEM_RESERVE is requested.
+-     */
+-    /* An address above physical RAM is not free memory -- it aliases.
+-     *
+-     * The runtime maps 64 MB and then mirrors it at 64 MB intervals,
+-     * because real Xbox RAM wraps on a 26-bit address bus. So a guest that
+-     * sub-allocates past the top of RAM does not get fresh pages, it gets
+-     * low memory that something else already owns, and the two quietly
+-     * share storage. Half-Life 2 put a CUtlRBTree element array at
+-     * 0x0CB80000, which aliases 0x00B80000; other regions it took land
+-     * inside the live heap (0x05B80000 -> 0x01B80000).
+-     *
+-     * Real hardware wraps *physical* addresses while translating virtual
+-     * ones, so this never happens there. Modelling every guest address as
+-     * physical is the gap, and that is a bigger change than a bridge fix.
+-     * Until then, say so: silent aliasing surfaces as corrupted data
+-     * structures far from here, which is the worst way to find it.
+-     */
+-    if (base_hint >= (g_xbox_map_size ? g_xbox_map_size : g_xbox_total_ram)) {
+-        static unsigned warned;
+-        if (warned++ < 8)
+-            fprintf(stderr,
+-                    "  [KERNEL] WARNING: allocation at 0x%08X is above "
+-                    "%u MB mapped; it aliases 0x%08X\n",
+-                    base_hint,
+-                    (unsigned)((g_xbox_map_size ? g_xbox_map_size
+-                                                : g_xbox_total_ram)
+-                               / (1024 * 1024)),
+-                    (uint32_t)(base_hint % (g_xbox_map_size
+-                                            ? g_xbox_map_size
+-                                            : g_xbox_total_ram)));
+-        fflush(stderr);
+-    }
+-
+-    if (base_hint != 0 && (alloc_type & 0x2000) == 0) {
+-        /* MEM_COMMIT only, on an already-reserved region.
+-         * The memory is already committed by our bump allocator.
+-         * Don't change the base address - just return success. */
+-        if (KERNEL_LOG_ON()) {
+-            fprintf(stderr, "  [KERNEL] → MEM_COMMIT on existing region 0x%08X, no-op\n", base_hint);
+-            fflush(stderr);
+-        }
+-        g_eax = 0; /* STATUS_SUCCESS */
+-        return;
+-    }
+-
+-    /* Allocate from Xbox heap (MEM_RESERVE or MEM_RESERVE|MEM_COMMIT).
+-     *
+-     * A pure MEM_RESERVE costs no RAM on real hardware -- it takes address
+-     * space out of a 4 GB range, not pages out of the 64 MB of memory -- so
+-     * titles reserve far more than the console physically has and commit a
+-     * fraction of it. Our heap is a bump allocator that commits everything it
+-     * hands out, so a large reserve asks for RAM that does not exist.
+-     *
+-     * Half-Life 2's XBE header sets PeHeapReserve to 128 MB, and its CRT
+-     * reserves exactly that during RtlCreateHeap. Failing it returned
+-     * STATUS_NO_MEMORY, RtlCreateHeap returned 0, and CRT init aborted before
+-     * main -- on a console with 64 MB, asking for 128 MB is normal, not an
+-     * error.
+-     *
+-     * So a reserve that does not fit is clamped to what the heap can actually
+-     * back, and the caller is told the real size through the IN/OUT RegionSize
+-     * parameter, which is where the API already reports the rounded figure.
+-     *
+-     * ponytail: the honest fix is a reserve that costs nothing and a commit
+-     * that backs pages on demand, which needs the allocator to separate the
+-     * two. This clamp is enough for a title that reserves generously and
+-     * commits little, and it fails loudly and later rather than silently and
+-     * at startup if one does not. */
+-    uint32_t xbox_va = xbox_HeapAlloc(size, 4096);
+-    if (!xbox_va && (alloc_type & 0x2000) && !(alloc_type & 0x1000)) {
+-        /* A pure reservation too big for the heap. Take it from the mapped
+-         * space above RAM, where it costs no heap and the pages are distinct.
+-         *
+-         * Clamping instead -- handing back a fraction of what was asked for --
+-         * is what broke Half-Life 2. It reserves 128 MB and then 200 MB, got
+-         * 32 MB and 12.5 MB, and then sub-allocated across the range it
+-         * believed it owned. That walks past the top of RAM, where the mirrors
+-         * alias low memory, so its containers quietly shared storage with the
+-         * live heap. Granting the full range is both more honest and less
+-         * damaging. Returns 0 unless the title asked for a mapping larger than
+-         * RAM, so nothing changes for titles that did not. */
+-        xbox_va = xbox_ReserveAlloc(size, 4096);
+-        if (xbox_va) {
+-            fprintf(stderr, "  [KERNEL] NtAllocateVirtualMemory: reserve of %u"
+-                            " granted at 0x%08X above RAM\n", size, xbox_va);
+-            fflush(stderr);
+-        }
+-    }
+-    if (!xbox_va && (alloc_type & 0x2000) && !(alloc_type & 0x1000)) {
+-        uint32_t want = size;
+-        while (want > 0x10000 && !xbox_va) {
+-            want /= 2;
+-            xbox_va = xbox_HeapAlloc(want, 4096);
+-        }
+-        if (xbox_va) {
+-            fprintf(stderr, "  [KERNEL] NtAllocateVirtualMemory: reserve of %u "
+-                            "clamped to %u (heap cannot back the full range)\n",
+-                    size, want);
+-            fflush(stderr);
+-            size = want;
+-        }
+-    }
+-    if (!xbox_va) {
+-        g_eax = 0xC0000017u; /* STATUS_NO_MEMORY */
+-        return;
+-    }
+-
+-    /* Write back the allocated address and actual size */
+-    if (base_ptr) BRIDGE_MEM32(base_ptr) = xbox_va;
+-    if (size_ptr) BRIDGE_MEM32(size_ptr) = size;
+-
+-    g_eax = 0; /* STATUS_SUCCESS */
++    tsfp_guest_vm vm;
++    xbox_GetGuestVirtualMemory(&vm);
++    g_eax = tsfp_guest_vm_allocate(&vm, STACK_ARG(0), STACK_ARG(1),
++        STACK_ARG(2), STACK_ARG(3), STACK_ARG(4));
+ }
+ 
+ /* ── NtFreeVirtualMemory (ordinal 199) ────────────────────
+  * NTSTATUS NtFreeVirtualMemory(PVOID *BaseAddress, PULONG FreeSize,
+  *     ULONG FreeType)
+  */
+-/* -- NtQueryVirtualMemory (ordinal 217, 2 args = 8 bytes) --------------
+- *
+- * Xbox takes two arguments, not NT's four:
+- *
+- *     NTSTATUS NtQueryVirtualMemory(PVOID BaseAddress,
+- *                                   PMEMORY_BASIC_INFORMATION Info);
+- *
+- * This has to be a guest-side answer. The existing xbox_NtQueryVirtualMemory
+- * in kernel_memory.c calls the host VirtualQuery and memcpy's a host
+- * MEMORY_BASIC_INFORMATION into guest memory, whose pointer fields are 64-bit
+- * on an x64 build -- so every field after BaseAddress lands in the wrong place.
+- *
+- * It also has to exist at all. Without a bridge entry the thunk is left
+- * unbridged, and a title's CRT heap creation calls this to probe its heap
+- * region: RtlCreateHeap does
+- *
+- *     call NtQueryVirtualMemory ; test eax,eax ; jl fail
+- *     cmp  mbi.BaseAddress, requested ; jne fail
+- *     cmp  mbi.State, MEM_FREE        ; je  fail
+- *
+- * and returns 0 on any of those. On Half-Life 2 that null heap propagated
+- * silently through the rest of CRT init.
+- *
+- * Guest MEMORY_BASIC_INFORMATION, 32-bit, 28 bytes:
+- *     +0x00 BaseAddress   +0x04 AllocationBase  +0x08 AllocationProtect
+- *     +0x0C RegionSize    +0x10 State           +0x14 Protect
+- *     +0x18 Type
+- *
+- * The guest is one flat committed mapping, so that is what we report: any
+- * address inside it is MEM_COMMIT / PAGE_READWRITE / MEM_PRIVATE, and anything
+- * outside is MEM_FREE rather than an error, which is the honest answer and the
+- * one that lets a caller distinguish the two.
+- */
++/* Project query publishes the two-argument, 28-byte guest ABI. */
+ static void bridge_NtQueryVirtualMemory(void)
+ {
+-    uint32_t base_va = STACK_ARG(0);
+-    uint32_t info_va = STACK_ARG(1);
+-    uint32_t page_base = base_va & ~0xFFFu;
+-
+-    if (!info_va) {
+-        g_eax = 0xC000000Du;               /* STATUS_INVALID_PARAMETER */
+-        return;
+-    }
+-
+-    BRIDGE_MEM32(info_va + 0x00) = page_base;          /* BaseAddress */
+-    BRIDGE_MEM32(info_va + 0x04) = page_base;          /* AllocationBase */
+-    BRIDGE_MEM32(info_va + 0x08) = 0x04;               /* PAGE_READWRITE */
+-    BRIDGE_MEM32(info_va + 0x14) = 0x04;               /* Protect */
+-    BRIDGE_MEM32(info_va + 0x18) = 0x20000;            /* MEM_PRIVATE */
+-
+-    if (page_base >= g_xbox_code_lo && page_base < XBOX_TOTAL_RAM) {
+-        BRIDGE_MEM32(info_va + 0x0C) = XBOX_TOTAL_RAM - page_base; /* RegionSize */
+-        BRIDGE_MEM32(info_va + 0x10) = 0x1000;         /* MEM_COMMIT */
+-    } else {
+-        BRIDGE_MEM32(info_va + 0x0C) = 0x1000;
+-        BRIDGE_MEM32(info_va + 0x10) = 0x10000;        /* MEM_FREE */
+-        BRIDGE_MEM32(info_va + 0x08) = 0;
+-        BRIDGE_MEM32(info_va + 0x18) = 0;
+-    }
+-
+-    if (KERNEL_LOG_ON()) {
+-        fprintf(stderr, "  [KERNEL] NtQueryVirtualMemory: base=0x%08X -> "
+-                        "state=0x%X size=%u\n", base_va,
+-                        BRIDGE_MEM32(info_va + 0x10),
+-                        BRIDGE_MEM32(info_va + 0x0C));
+-        fflush(stderr);
+-    }
+-    g_eax = 0;                                          /* STATUS_SUCCESS */
+-}
+-
+-/*
+- * The allocating side of this pair hands out guest VAs from xbox_HeapAlloc.
+- * This used to free them through the host path in kernel_memory.c, which
+- * calls VirtualFree on the address -- and guest RAM is a file mapping, so
+- * VirtualFree always fails there. The allocation was therefore never
+- * reclaimed and the call reported STATUS_UNSUCCESSFUL.
+- *
+- * That is not a slow leak, it is a hard stop. The XDK's RtlFreeHeap frees a
+- * large block by calling NtFreeVirtualMemory and returns FALSE when it fails,
+- * so the CRT's free() silently does nothing. Mortal Kombat: Deadly Alliance
+- * sizes its heaps by allocating 29 MB, freeing it, and allocating it again:
+- * the second allocation returned NULL, every heap it then built was empty,
+- * and the title spun forever waiting on a load that could never be queued.
+- *
+- * MmFreeContiguousMemory next door always did the right thing. Match it.
+- */
++    tsfp_guest_vm vm;
++    xbox_GetGuestVirtualMemory(&vm);
++    g_eax = tsfp_guest_vm_query(&vm, STACK_ARG(0), STACK_ARG(1));
++}
++
++/* Project release shares heap/reservation ownership. */
+ static void bridge_NtFreeVirtualMemory(void)
+ {
+-    uint32_t base_ptr = STACK_ARG(0);
+-    uint32_t size_ptr = STACK_ARG(1);
+-    uint32_t free_type = STACK_ARG(2);
+-    uint32_t base_va = base_ptr ? BRIDGE_MEM32(base_ptr) : 0;
+-
+-    if (KERNEL_LOG_ON()) {
+-        fprintf(stderr, "  [KERNEL] NtFreeVirtualMemory: base=0x%08X type=0x%X\n",
+-                base_va, free_type);
+-        fflush(stderr);
+-    }
+-
+-    if (!base_va) {
+-        g_eax = 0xC000000Du; /* STATUS_INVALID_PARAMETER */
+-        return;
+-    }
+-
+-    /* MEM_RELEASE (0x8000) returns the block. MEM_DECOMMIT (0x4000) asks for
+-     * the pages to stay reserved but unbacked, which a bump allocator that
+-     * commits everything cannot express -- so it succeeds and keeps the
+-     * block, which is the conservative answer. */
+-    /* RECOMP_NTFREE_LEGACY=1 keeps the block instead of returning it, which is
+-     * what this did before it called xbox_HeapFree at all. Reclaiming memory
+-     * is correct, but it makes the guest heap reuse addresses it never reused
+-     * before, so a title that was quietly surviving a use-after-free stops
+-     * surviving it. When a title regresses right after this landed, this
+-     * switch says whether this is why in one run. */
+-    {
+-        static int legacy = -1;
+-        if (legacy < 0) {
+-            const char *v = getenv("RECOMP_NTFREE_LEGACY");
+-            legacy = v && *v && *v != '0';
+-            if (legacy)
+-                fprintf(stderr, "  [KERNEL] RECOMP_NTFREE_LEGACY: "
+-                                "NtFreeVirtualMemory keeps the block\n");
+-        }
+-        if (!legacy && (free_type & 0x8000u)) {
+-            xbox_HeapFree(base_va);
+-            if (base_ptr) BRIDGE_MEM32(base_ptr) = 0;
+-            if (size_ptr) BRIDGE_MEM32(size_ptr) = 0;
+-        }
+-    }
+-
+-    g_eax = 0; /* STATUS_SUCCESS */
++    tsfp_guest_vm vm;
++    xbox_GetGuestVirtualMemory(&vm);
++    const char *setting = getenv("RECOMP_NTFREE_LEGACY");
++    int legacy = setting && setting[0] && setting[0] != '0';
++    g_eax = tsfp_guest_vm_free(&vm, STACK_ARG(0), STACK_ARG(1), STACK_ARG(2), legacy);
+ }
+ 
+ /* ── ExAllocatePool / ExAllocatePoolWithTag (ordinals 15, 16) ─
+@@ -8263,21 +8010,10 @@
+  * work. (No xbox_NtProtectVirtualMemory() exists in kernel.h; done inline.) */
+ static void bridge_NtProtectVirtualMemory(void)
+ {
+-    uint32_t base_ptr = STACK_ARG(0);
+-    uint32_t size_ptr = STACK_ARG(1);
+-    uint32_t new_prot = STACK_ARG(2);
+-    uint32_t old_ptr  = STACK_ARG(3);
+-    uint32_t base_va = base_ptr ? BRIDGE_MEM32(base_ptr) : 0;
+-    uint32_t size    = size_ptr ? BRIDGE_MEM32(size_ptr) : 0;
+-    DWORD old = 0;
+-
+-    if (VirtualProtect(XBOX_TO_NATIVE(base_va), size, (DWORD)new_prot, &old)) {
+-        if (old_ptr)
+-            BRIDGE_MEM32(old_ptr) = (uint32_t)old;
+-        g_eax = 0;  /* STATUS_SUCCESS */
+-    } else {
+-        g_eax = 0xC0000005u;  /* STATUS_ACCESS_VIOLATION */
+-    }
++    tsfp_guest_vm vm;
++    xbox_GetGuestVirtualMemory(&vm);
++    g_eax = tsfp_guest_vm_protect(&vm, STACK_ARG(0), STACK_ARG(1),
++        STACK_ARG(2), STACK_ARG(3));
+ }
+ 
+ /* --- NtQueueApcThread (ordinal 206, 5 args = 20 bytes) --- */
+diff --git a/src/kernel/kernel_memory.c b/src/kernel/kernel_memory.c
+--- a/src/kernel/kernel_memory.c
++++ b/src/kernel/kernel_memory.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include "kernel.h"
++#include "host_virtual_memory.h"
+ #if defined(_WIN32)
+ /* _aligned_malloc/_aligned_free; POSIX gets them from win32_compat.h */
+ #include <malloc.h>
+@@ -19,19 +20,9 @@
+  * Helper: Xbox protect flags → Win32 protect flags
+  * ============================================================================ */
+ 
+-static DWORD xbox_protect_to_win32(ULONG xbox_protect)
+-{
+-    /* Xbox uses the same PAGE_* constants as Windows NT */
+-    switch (xbox_protect & 0xFF) {
+-        case 0x01: return PAGE_NOACCESS;
+-        case 0x02: return PAGE_READONLY;
+-        case 0x04: return PAGE_READWRITE;
+-        case 0x08: return PAGE_WRITECOPY;
+-        case 0x10: return PAGE_EXECUTE;
+-        case 0x20: return PAGE_EXECUTE_READ;
+-        case 0x40: return PAGE_EXECUTE_READWRITE;
+-        default:   return PAGE_READWRITE;
+-    }
++static DWORD xbox_protect_to_win32(ULONG protection)
++{
++    return (DWORD)tsfp_host_vm_protection((uint32_t)protection);
+ }
+ 
+ /* ============================================================================
+@@ -251,76 +242,44 @@
+  * Virtual Memory (Nt API)
+  * ============================================================================ */
+ 
+-NTSTATUS __stdcall xbox_NtAllocateVirtualMemory(
+-    PVOID* BaseAddress,
+-    ULONG_PTR ZeroBits,
+-    PSIZE_T RegionSize,
+-    ULONG AllocationType,
+-    ULONG Protect)
+-{
+-    if (!BaseAddress || !RegionSize)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    PVOID result = VirtualAlloc(*BaseAddress, *RegionSize,
+-                                AllocationType, xbox_protect_to_win32(Protect));
+-    if (!result) {
+-        xbox_log(XBOX_LOG_WARN, XBOX_LOG_MEM,
+-            "NtAllocateVirtualMemory failed: base=%p size=%u type=0x%X err=%u",
+-            *BaseAddress, (ULONG)*RegionSize, AllocationType, GetLastError());
+-        return STATUS_NO_MEMORY;
+-    }
+-
+-    *BaseAddress = result;
+-    XBOX_TRACE(XBOX_LOG_MEM, "NtAllocateVirtualMemory(%p, %u) = %p",
+-        *BaseAddress, (ULONG)*RegionSize, result);
+-    return STATUS_SUCCESS;
+-}
+-
+-NTSTATUS __stdcall xbox_NtFreeVirtualMemory(
+-    PVOID* BaseAddress,
+-    PSIZE_T RegionSize,
+-    ULONG FreeType)
+-{
+-    if (!BaseAddress || !*BaseAddress)
+-        return STATUS_INVALID_PARAMETER;
+-
+-    SIZE_T size = (FreeType & MEM_RELEASE) ? 0 : (RegionSize ? *RegionSize : 0);
+-
+-    if (!VirtualFree(*BaseAddress, size, FreeType)) {
+-        xbox_log(XBOX_LOG_WARN, XBOX_LOG_MEM,
+-            "NtFreeVirtualMemory failed: base=%p type=0x%X err=%u",
+-            *BaseAddress, FreeType, GetLastError());
+-        return STATUS_UNSUCCESSFUL;
+-    }
+-
+-    XBOX_TRACE(XBOX_LOG_MEM, "NtFreeVirtualMemory(%p, 0x%X)", *BaseAddress, FreeType);
+-
+-    if (FreeType & MEM_RELEASE)
+-        *BaseAddress = NULL;
+-
+-    return STATUS_SUCCESS;
+-}
+-
+-NTSTATUS __stdcall xbox_NtQueryVirtualMemory(
+-    PVOID BaseAddress,
+-    PVOID MemoryInformation,
+-    ULONG MemoryInformationLength,
+-    PULONG ReturnLength)
+-{
+-    MEMORY_BASIC_INFORMATION mbi;
+-
+-    if (!VirtualQuery(BaseAddress, &mbi, sizeof(mbi)))
+-        return STATUS_INVALID_PARAMETER;
+-
+-    /*
+-     * Xbox NtQueryVirtualMemory returns a MEMORY_BASIC_INFORMATION-like struct.
+-     * Copy what fits into the caller's buffer.
+-     */
+-    ULONG copy_size = (MemoryInformationLength < sizeof(mbi)) ? MemoryInformationLength : (ULONG)sizeof(mbi);
+-    memcpy(MemoryInformation, &mbi, copy_size);
+-
+-    if (ReturnLength)
+-        *ReturnLength = copy_size;
+-
+-    return STATUS_SUCCESS;
+-}
++/* Project native VM boundary: pointer and size_t widths stay native. */
++static void *native_vm_allocate(void *host, void *hint, size_t size,
++                                uint32_t type, uint32_t protection)
++{
++    (void)host;
++    return VirtualAlloc(hint, size, (DWORD)type, (DWORD)protection);
++}
++static int native_vm_release(void *host, void *address, size_t size, uint32_t type)
++{
++    (void)host;
++    return VirtualFree(address, size, (DWORD)type) != 0;
++}
++static size_t native_vm_query(void *host, const void *address, void *record, size_t size)
++{
++    (void)host;
++    return VirtualQuery(address, (MEMORY_BASIC_INFORMATION *)record, size);
++}
++static const tsfp_host_vm native_vm = { NULL, native_vm_allocate, native_vm_release, native_vm_query };
++/* End project native VM boundary. */
++
++NTSTATUS __stdcall xbox_NtAllocateVirtualMemory(PVOID *base, ULONG_PTR zero_bits,
++    PSIZE_T size, ULONG type, ULONG protection)
++{
++    return (NTSTATUS)tsfp_host_vm_allocate(&native_vm, base, zero_bits, size, type, protection);
++}
++
++NTSTATUS __stdcall xbox_NtFreeVirtualMemory(PVOID *base, PSIZE_T size, ULONG type)
++{
++    return (NTSTATUS)tsfp_host_vm_free(&native_vm, base, size, type);
++}
++
++NTSTATUS __stdcall xbox_NtQueryVirtualMemory(PVOID address, PVOID information,
++    ULONG length, PULONG returned)
++{
++    MEMORY_BASIC_INFORMATION scratch;
++    uint32_t copied = 0;
++    uint32_t status = tsfp_host_vm_query(&native_vm, address, information, length,
++        &copied, &scratch, sizeof(scratch));
++    if (!status && returned) *returned = (ULONG)copied;
++    return (NTSTATUS)status;
++}
+diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -16,6 +16,8 @@
+ #include "guest_image.h"
+ #include "guest_allocation.h"
+ #include "guest_thread_memory.h"
++#include "guest_virtual_memory.h"
++#include "pc_guest_memory.h"
+ #include "kernel.h"
+ #include "recomp_config.h"
+ #include "xbox_watchpoint.h"
+@@ -2524,6 +2526,71 @@
+     fprintf(stderr, "xbox_MemoryLayoutShutdown: released\n");
+ }
+ 
++/* Project guest VM adapter: only known guest RAM views are admitted. */
++static int guest_vm_window(uintptr_t address, uint32_t bytes, const void *base, size_t size)
++{
++    uintptr_t begin = (uintptr_t)base;
++    return base && address >= begin && address - begin <= size &&
++        bytes <= size - (address - begin);
++}
++static void *guest_vm_resolve(void *host, uint32_t address, uint32_t bytes, int access)
++{
++    uintptr_t native, cursor, end;
++    int mapped = 0;
++    (void)host;
++    if (!address || !bytes || (uint64_t)address + bytes > UINT64_C(0x100000000) ||
++        (uintptr_t)g_memory_offset > UINTPTR_MAX - address) return NULL;
++    native = (uintptr_t)g_memory_offset + address;
++    if (native > UINTPTR_MAX - bytes) return NULL;
++    mapped = guest_vm_window(native, bytes, g_memory_base, g_memory_size) ||
++        guest_vm_window(native, bytes, g_contig_memory, XBOX_CONTIG_SIZE) ||
++        guest_vm_window(native, bytes, g_tiled_view, xbox_TiledApertureSize()) ||
++        guest_vm_window(native, bytes, g_kernel_memory, 4096);
++    for (int i = 0; !mapped && i < XBOX_NUM_MIRRORS; ++i)
++        mapped = guest_vm_window(native, bytes, g_mirror_views[i], g_memory_size);
++    if (!mapped) return NULL;
++    /* Mapped-only admission permits restoring access. The host mapping owner
++     * keeps these windows alive; no guest reads occur in that case. */
++    if (access < 0) return (void *)native;
++    cursor = native; end = native + bytes;
++    while (cursor < end) {
++        size_t available = pc_guest_region(cursor, access != 0);
++        size_t required = (size_t)(end - cursor);
++        if (!available) return NULL;
++        cursor += available < required ? available : required;
++    }
++    return (void *)native;
++}
++static int guest_vm_protect(void *host, uint32_t address, uint32_t bytes,
++                            uint32_t protection, uint32_t *previous)
++{
++    DWORD old = 0;
++    void *p = guest_vm_resolve(host, address, bytes, -1);
++    if (!p || !VirtualProtect(p, bytes, (DWORD)protection, &old)) return 0;
++    *previous = (uint32_t)old;
++    return 1;
++}
++void xbox_GetGuestVirtualMemory(tsfp_guest_vm *context)
++{
++#ifdef _WIN32
++    SYSTEM_INFO info;
++    GetSystemInfo(&info);
++    uint32_t page_size = (uint32_t)info.dwPageSize;
++#else
++    long native_page = sysconf(_SC_PAGESIZE);
++    uint32_t page_size = native_page > 0 && (uint64_t)native_page <= UINT32_MAX
++        ? (uint32_t)native_page : 0;
++#endif
++    context->allocations = &g_guest_allocations;
++    context->host = NULL;
++    context->resolve = guest_vm_resolve;
++    context->protect = guest_vm_protect;
++    context->code_begin = g_xbox_code_lo;
++    context->ram_size = XBOX_TOTAL_RAM;
++    context->host_page_size = page_size;
++}
++/* End project guest VM adapter. */
++
+ BOOL xbox_IsXboxAddress(uintptr_t address)
+ {
+     return (address >= XBOX_BASE_ADDRESS &&
+diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -24,6 +24,8 @@
+ 
+ #include "platform/xbox_winnt.h"
+ #include <stdint.h>
++struct tsfp_guest_vm;
++void xbox_GetGuestVirtualMemory(struct tsfp_guest_vm *context);
+ 
+ #ifdef __cplusplus
+ extern "C" {
+diff --git a/src/kernel/CMakeLists.txt b/src/kernel/CMakeLists.txt
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -47,7 +47,9 @@
+ # Independent image inspection and materialization, shared by both hosts.
+ target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_image.c")
+ target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_allocation.c")
+-target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_thread_memory.c")
++target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_thread_memory.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_virtual_memory.c"
++    "${TSFP_SHARED_SOURCE}/runtime/host_virtual_memory.c")
+ target_include_directories(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime")
+ 
+ # See src/platform/CMakeLists.txt: resolve src/ relative to this file, not via

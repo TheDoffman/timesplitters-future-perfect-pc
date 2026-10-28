@@ -1,0 +1,610 @@
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -32,6 +32,7 @@
+ import translation_sse as _project_sse
+ import translation_mmx as _project_mmx
+ import translation_x87 as _project_x87
++import translation_control as _project_control
+ 
+ # Function export names of the Windows libraries the host exe links
+ # (kernel32/user32/gdi32/advapi32/winmm/ws2_32/ole32/dbghelp/...). A guest
+@@ -313,21 +314,7 @@
+ _make_cmovcc_cond = _project_conditions.cmovcc
+ 
+ 
+-def _emit_cond_goto(cond_expr, jcc, desc, target, lifter):
+-    """Emit a conditional goto or call for a jump target."""
+-    if target is None:
+-        return f"if ({cond_expr}) {{ /* {jcc}: {desc} - indirect */ }}"
+-    if lifter and lifter._is_external_target(target):
+-        # Conditional tail call: same frame bridge as the unconditional tail
+-        # jmp in _lift_jmp, applied only on the taken path.
+-        if target in lifter.manual_functions:
+-            return (f"if ({cond_expr}) {{ g_seh_ebp = ebp; "
+-                    f"RECOMP_ITAIL(0x{target:08X}u); return; }}"
+-                    f" /* {jcc}: {desc}, manual tail */")
+-        name = lifter._call_target_name(target)
+-        return (f"if ({cond_expr}) {{ g_seh_ebp = ebp; {name}(); return; }}"
+-                f" /* {jcc}: {desc} */")
+-    return f"if ({cond_expr}) goto loc_{target:08X}; /* {jcc}: {desc} */"
++_emit_cond_goto = _project_control.conditional
+ 
+ 
+ def try_match_cmp_jcc(insns, idx, lifter=None):
+@@ -1050,538 +1037,27 @@
+     SETJMP_FN = None
+     LONGJMP_FN = None
+ 
+-    def callee_pop(self, target):
+-        """Argument bytes `target` pops with its own `ret N`, or None.
+-
+-        Read from the callee's bytes, and only when every ret in its body
+-        agrees (hle.stack_cleanup) -- the binary cannot be wrong about what it
+-        pops. Feeds RECOMP_ABI_CALL_POP, a diagnostic: an unknown or wrong
+-        value only changes what -DRECOMP_ABI_CHECK reports, never what runs.
+-        """
+-        if target in self._pop_cache:
+-            return self._pop_cache[target]
+-        pop = None
+-        info = self.func_db.get(target)
+-        if info is not None and self.xbe_data:
+-            end = info.get("end")
+-            if isinstance(end, str):
+-                try:
+-                    end = int(end, 16)
+-                except ValueError:
+-                    end = None
+-            offset = va_to_file_offset(target)
+-            if isinstance(end, int) and end > target and offset is not None:
+-                from .hle import stack_cleanup
+-                pop = stack_cleanup(
+-                    self.xbe_data[offset:offset + (end - target)], target)
+-        self._pop_cache[target] = pop
+-        return pop
+-
+-    def _lift_call(self, insn, ops):
+-        # x86 'call' pushes the address of the following instruction, then jumps.
+-        # Push that real guest address, not a placeholder: the value is visible
+-        # to the callee, and plenty of x86 code reads it. __SEH_prolog locates
+-        # its scope table through [esp], _alloca probes walk back to it, and the
+-        # `mov eax, [esp]` / `pop eax` idiom for "where was I called from" shows
+-        # up in any CRT. A zero there is silently wrong until something reads it.
+-        #
+-        # 'ret' still only does esp += 4 and returns -- it never consumes the
+-        # value -- so writing the true address costs nothing at the return side.
+-        ret_va = insn.end_address
+-        if insn.call_target:
+-            name = self._call_target_name(insn.call_target)
+-            lines = []
+-            # Re-publish this function's frame before every call, not just once
+-            # at `mov ebp, esp`. g_ebp is "the last frame established anywhere",
+-            # so a callee that sets up its own frame overwrites it and leaves it
+-            # stale on return. A frameless helper called afterwards then
+-            # inherits the wrong frame -- in Halo, sub_001E1BA0 called one
+-            # function, returned, then called the frameless sub_001DEC07, which
+-            # inherited a long-dead frame of ~0xA6 and wrote [ebp-0xa2] and
+-            # [ebp-0xa0] onto Xbox VA 4 and 6: exactly the fs:[4] corruption.
+-            if self.publishes_ebp:
+-                lines.append("g_ebp = ebp; /* frame stays current across calls */")
+-                lines.append("g_seh_ebp = ebp;")
+-            # Non-local jumps have to move the native stack, not just the
+-            # guest one. Every recompiled function is a real C function, so a
+-            # guest longjmp that only rewrites esp leaves the abandoned frames
+-            # sitting on the native stack: the resume point runs, returns, and
+-            # C unwinds straight back into frames the guest has already left,
+-            # which then keep executing against a stack pointer that moved. In
+-            # Wreckless that turned a correctly caught image-loader exception
+-            # into the decoder being re-entered with a garbage context, and
+-            # then an endless drain loop.
+-            #
+-            # So each guest jmp_buf gets a native one taken here, in the frame
+-            # that calls setjmp -- the only place a native setjmp is valid --
+-            # and the guest longjmp becomes a native longjmp back to it. The
+-            # frames unwind for real and execution resumes exactly where the
+-            # guest buffer says.
+-            #
+-            # Both keep the guest call as a fallback: a buffer armed by a
+-            # setjmp that was reached some other way has no native counterpart,
+-            # and the old behaviour is still better than ignoring the jump.
+-            if insn.call_target == self.SETJMP_FN:
+-                lines.append(
+-                    "{ int _sjv = setjmp(*recomp_setjmp_slot(MEM32(esp)));"
+-                    " if (_sjv) { ebp = g_seh_ebp; eax = (uint32_t)_sjv; }"
+-                    f" else {{ PUSH32(esp, 0x{ret_va:08X}u); {name}(); }} }}"
+-                    f" /* setjmp 0x{insn.call_target:08X} */")
+-            elif insn.call_target == self.LONGJMP_FN:
+-                lines.append(
+-                    "if (!recomp_guest_longjmp(MEM32(esp), MEM32(esp + 4)))"
+-                    f" {{ PUSH32(esp, 0x{ret_va:08X}u); {name}(); }}"
+-                    f" /* longjmp 0x{insn.call_target:08X} */")
+-            elif insn.call_target in self.manual_functions:
+-                # A function the project replaces by hand. recomp_lookup_manual
+-                # is consulted on indirect calls, and without this a direct
+-                # caller went straight to the generated body and bypassed the
+-                # replacement silently. Contributed in #15.
+-                lines.append(
+-                    f"PUSH32(esp, 0x{ret_va:08X}u); "
+-                    f"RECOMP_ICALL_SAFE(0x{insn.call_target:08X}u, "
+-                    "_icall_esp); "
+-                    f"/* manual call 0x{insn.call_target:08X} */")
+-            else:
+-                # Routed through RECOMP_ABI_CALL so -DRECOMP_ABI_CHECK covers
+-                # direct calls too. Without it the check sees only indirect
+-                # ones, and CRT and static-init paths -- where callee-saved
+-                # clobbers actually bite -- are almost entirely direct. Expands
+-                # to a plain call when the flag is off. When the callee's own
+-                # `ret N` is known, the exact form checks esp both ways.
+-                pop = self.callee_pop(insn.call_target)
+-                name = f"RECOMP_DIRECT_CALLEE_AT(0x{insn.address:X}, {name})"
+-                if pop is None:
+-                    lines.append(
+-                        f"PUSH32(esp, 0x{ret_va:08X}u); "
+-                        f"RECOMP_ABI_CALL(0x{insn.call_target:08X}u, {name}); "
+-                        f"/* call 0x{insn.call_target:08X} */")
+-                else:
+-                    lines.append(
+-                        f"PUSH32(esp, 0x{ret_va:08X}u); "
+-                        f"RECOMP_ABI_CALL_POP(0x{insn.call_target:08X}u, "
+-                        f"{name}, {pop}u); "
+-                        f"/* call 0x{insn.call_target:08X} */")
+-            # esp immediately after the callee returns. A per-call delta is the
+-            # only way to attribute a leak to one callee rather than to the
+-            # function containing them all.
+-            if self.trace_exit_name:
+-                lines.append(
+-                    f'RECOMP_TRACE_ESP("{self.trace_exit_name}", '
+-                    f'"after call 0x{insn.call_target:08X}");')
+-            # The SEH helpers exchange the frame pointer with their caller
+-            # through g_seh_ebp, because ebp is a C local rather than a global.
+-            #
+-            # Publishing before the call is as necessary as reading back after.
+-            # __SEH_prolog stores the caller's ebp into the new frame, and
+-            # __SEH_epilog restores esp from it before popping ebx/esi/edi. With
+-            # only the read-back, g_seh_ebp still held whatever the last *nested*
+-            # SEH function left there, so the epilog unwound to the wrong frame
+-            # and restored the callee-saved registers from the wrong stack slots.
+-            #
+-            # That corrupts ebx/esi/edi across any SEH function that calls
+-            # another - which is most of them. In Halo it left esi holding a
+-            # stack address where the caller had just zeroed it, so an
+-            # "if (status < 0)" test against esi failed and XapiInitProcess
+-            # bailed to the dashboard.
+-            if (insn.call_target in self.SEH_PROLOGS
+-                    or insn.call_target in self.SEH_EPILOGS):
+-                lines.insert(0, "g_seh_ebp = ebp; /* publish frame to SEH helper */")
+-                lines.append("ebp = g_seh_ebp; /* read back frame from SEH helper */")
+-            return lines
+-        elif len(ops) >= 1:
+-            target = _fmt_operand_read(ops[0])
+-            # Mark indirect calls for post-processing by _fixup_icall_esp_save
+-            #
+-            # The target is read into a local BEFORE the return-address push.
+-            # On real x86 the memory operand is computed before the push, so
+-            # emitting the push first shifts esp by four and every esp-relative
+-            # target -- `call dword ptr [esp+8]`, the shape MSVC gives a
+-            # callback invoked through a stack argument -- is read four bytes
+-            # low and dispatches through the wrong slot.
+-            site = insn.address
+-            head = (f"{{ uint32_t _icall_target = {target}; "
+-                    f"PUSH32(esp, 0x{ret_va:08X}u); ")
+-            fallback = (f"RECOMP_ICALL_SAFE_AT(_icall_target, _icall_esp, "
+-                        f"0x{site:08X}u); }}")
+-            recorded = self.icall_site_targets.get(site)
+-            guards = [t for t in (recorded or [])
+-                      if t in self.func_db and t not in self.manual_functions]
+-            if recorded and 0 < len(recorded) <= 4 and len(guards) == len(recorded):
+-                arms = " else ".join(
+-                    f"if (_icall_target == 0x{t:08X}u) {{ RECOMP_ICALL_GUARD_HIT(); "
+-                    f"RECOMP_ABI_CALL(0x{t:08X}u, {self._call_target_name(t)}); }}"
+-                    for t in sorted(set(guards)))
+-                return [head + arms + " else { RECOMP_ICALL_GUARD_MISS(); "
+-                        + fallback + " }"
+-                        + f" /* indirect call, guarded {len(set(guards))} */"]
+-            return [head + fallback + " /* indirect call */"]
+-        return ["/* call: no target */"]
+-
+-    def _lift_ret(self, insn, ops):
+-        # x86 'ret' pops return address from stack.
+-        # 'ret N' also pops N extra bytes (stdcall cleanup).
+-        # If this function IS __SEH_prolog or __SEH_epilog, bridge ebp
+-        # so the caller can read back the frame pointer.
+-        prefix = ""
+-        if (self.func_start in self.SEH_PROLOGS
+-                or self.func_start in self.SEH_EPILOGS):
+-            prefix = "g_seh_ebp = ebp; "
+-        # Exit trace, for functions that return with a register the caller
+-        # relied on holding something else. Entry tracing alone cannot show
+-        # that: it tells you what went in, never what came back. Emitted at the
+-        # ret, after the epilogue's pops, so the values are what the caller
+-        # actually receives.
+-        if self.trace_exit_name:
+-            prefix = (f'RECOMP_TRACE_EXIT("{self.trace_exit_name}", '
+-                      f'0x{self.func_start:08X}); ') + prefix
+-        # --force-return: hand the caller a constant instead of what the
+-        # body computed.
+-        #
+-        # Set at the ret rather than skipped at the entry, which matters:
+-        # the epilogue still runs, so esp is adjusted by the function's own
+-        # ret -- 4 for a cdecl, 4+n for a stdcall -- and nothing has to guess
+-        # the calling convention. The body's side effects still happen; only
+-        # the answer changes. Off at run time unless RECOMP_FORCE_RETURN is
+-        # set, so a build carrying it behaves normally by default.
+-        if self.force_return_value is not None:
+-            prefix = (f'if (g_force_return) eax = '
+-                      f'0x{self.force_return_value:X}U; ') + prefix
+-
+-        if len(ops) >= 1 and ops[0].type == "imm":
+-            n = ops[0].imm
+-            return [f"{prefix}esp += {4 + n}; return; /* ret {n} */"]
+-        return [f"{prefix}esp += 4; return; /* ret */"]
+-
+-    def _forced_tail(self, tail):
+-        """Apply --force-return to a tail jump.
+-
+-        A tail call leaves through the target, not through a ret, so the
+-        assignment has to land after the call and before the return -- the
+-        target still runs, and the caller still gets the constant. Shin
+-        Megami Tensei: Nine's XMV "is the movie finished" query ends in
+-        exactly this shape, so without it the option would miss the function
+-        that motivated it.
+-        """
+-        if self.force_return_value is None:
+-            return tail
+-        return tail.replace(
+-            "; return;",
+-            f"; if (g_force_return) eax = 0x{self.force_return_value:X}U;"
+-            f" return;", 1)
+-
+-    def _is_external_target(self, addr):
+-        """Check if a jump target is outside the current function."""
+-        return not (self.func_start <= addr < self.func_end)
+-
+-    def _read_jump_table(self, table_va, max_entries=256):
+-        """Read 32-bit jump table entries from the XBE at a given VA.
+-        Returns list of target addresses. Stops when an entry is not a
+-        valid code address or max_entries is reached."""
+-        if not self.xbe_data:
+-            return []
+-        offset = va_to_file_offset(table_va)
+-        if offset is None:
+-            return []
+-        targets = []
+-        for i in range(max_entries):
+-            o = offset + i * 4
+-            if o + 4 > len(self.xbe_data):
+-                break
+-            val = struct.unpack_from('<I', self.xbe_data, o)[0]
+-            if not is_code_address(val):
+-                break
+-            targets.append(val)
+-
+-        # The displacement names index 0, which is not always the first entry.
+-        #
+-        # MSVC's memcpy tail dispatch counts remaining bytes *down*, so its
+-        # index is negative and the displacement points at the last entry:
+-        #
+-        #     0011F176  jmp dword ptr [ecx*4 + 0x11F248]
+-        #
+-        # over a table running 0x0011F22C-0x0011F24C. Reading forward from
+-        # 0x0011F248 finds one entry and then the unrolled copy blocks, which
+-        # do not read as code addresses -- so the scan stopped at one,
+-        # _analyze_switch_table rejected it as too short, and the dispatch
+-        # lifted to RECOMP_ITAIL. Its arms are inside memcpy rather than
+-        # function starts, so every one of them failed to resolve at runtime
+-        # and the path through them skipped the epilogue.
+-        #
+-        # Only look backwards when the forward scan came up short. A healthy
+-        # forward table is followed by whatever the compiler put next, and
+-        # extending such a table backwards would swallow the code before it on
+-        # the strength of a few words that happen to read as addresses.
+-        if len(targets) < 2:
+-            # ...and never over the dispatch instruction's own displacement.
+-            #
+-            # MSVC usually puts the table immediately after the jump, and
+-            # `jmp dword ptr [reg*4 + disp32]` is FF 24 8D <disp32> (or
+-            # FF 24 85 for a base-less scale-4 form) -- so the four bytes just
+-            # below the table are the displacement, and its value is the table
+-            # address itself, which reads as a perfectly good code address.
+-            # Accepting it prepends a bogus leading entry, and
+-            # _analyze_switch_table below stops at the first entry outside the
+-            # function, so one bogus word discards the whole switch.
+-            #
+-            # The engine has instruction bounds and uses those; here there is
+-            # only the image, so test for the opcode directly and keep the
+-            # value check as a backstop for encodings this does not name.
+-            # FF 24 <SIB> with scale 4 and no base: SIB 10 iii 101, one per
+-            # index register. Only eax and ecx were listed, so an edx-indexed
+-            # dispatch (FF 24 95) was left to the value backstop below.
+-            floor = 0
+-            if (offset >= 7 and self.xbe_data[offset - 7] == 0xFF
+-                    and self.xbe_data[offset - 6] == 0x24
+-                    and (self.xbe_data[offset - 5] & 0xC7) == 0x85):
+-                floor = offset - 4       # the disp belongs to the jump
+-
+-            back = []
+-            for i in range(1, max_entries + 1):
+-                o = offset - i * 4
+-                if o < 0 or o >= floor > 0:
+-                    break
+-                val = struct.unpack_from('<I', self.xbe_data, o)[0]
+-                if not is_code_address(val):
+-                    break
+-                # The value backstop is for the jump's own displacement, so it
+-                # only fires when the word IS one: preceded by FF 24 <SIB>.
+-                # Otherwise an entry equal to table_va is a real arm -- the
+-                # code straight after a backwards table. Max Payne's memcpy
+-                # dispatches through `jmp [ecx*4 + 0x2C67E8]` with ecx -4..-1
+-                # over a table at 0x2C67D8 whose first entry is 0x2C67E8, the
+-                # "copy 0 more bytes" arm. Stopping there dropped it: every
+-                # copy that reached that arm left memcpy through an unresolved
+-                # jump without its epilogue, and the title went on to ask for
+-                # 512 MB and die in an allocation exception.
+-                if val == table_va and o >= 3 and (
+-                        self.xbe_data[o - 3] == 0xFF
+-                        and self.xbe_data[o - 2] == 0x24
+-                        and (self.xbe_data[o - 1] & 0xC7) == 0x85):
+-                    break
+-                back.append(val)
+-            if back:
+-                back.reverse()
+-                targets = back + targets
+-
+-        # An index that never takes the low values. MSVC's memcpy trail
+-        # dispatch `jmp [eax*4 + tbl]` runs after `and eax, 3` on a count
+-        # already known to be non-zero, so eax is 1..3, and slot 0 is the tail
+-        # of the instruction before the table. On Burnout 2:
+-        #
+-        #     0011EFFD  jmp dword ptr [eax*4 + 0x11F010]   table 0x11F014
+-        #     0011F191  jmp dword ptr [eax*4 + 0x11F19C]   table 0x11F1A0
+-        #
+-        # Neither scan above finds them: forward stops at the non-address in
+-        # slot 0, and the word below the displacement is the previous jump's
+-        # opcode. Both lifted to RECOMP_ITAIL, whose arms (0x11F04C, 0x11F1AC,
+-        # 0x11F1F8) are not function starts, so they failed to resolve and the
+-        # title stalled loading its first race. translator._read_local_jump_table
+-        # and DisasmEngine.resync_jump_tables already had this rule; this
+-        # reader, used for every ordinary function, did not. The switch matches
+-        # by value, so the skipped slots cost nothing, and
+-        # _analyze_switch_table still keeps only arms inside the function.
+-        if len(targets) < 2:
+-            for skip in (1, 2, 3):
+-                later = []
+-                for i in range(skip, max_entries):
+-                    o = offset + i * 4
+-                    if o + 4 > len(self.xbe_data):
+-                        break
+-                    val = struct.unpack_from('<I', self.xbe_data, o)[0]
+-                    if not is_code_address(val):
+-                        break
+-                    later.append(val)
+-                if len(later) >= 2:
+-                    targets = later
+-                    break
+-        return targets
+-
+-    def _analyze_switch_table(self, ops):
+-        """Detect if an indirect jmp operand is an intra-function switch table.
+-        Pattern: jmp [reg*scale + table_base] or jmp [reg + table_base]
+-        Returns (targets: list[int]) if ALL table entries are within the current
+-        function, else empty list."""
+-        if not ops or ops[0].type != "mem":
+-            return []
+-        op = ops[0]
+-        # Need a table base (displacement) and an index register
+-        if not op.mem_disp or not (op.mem_index or op.mem_base):
+-            return []
+-        table_va = op.mem_disp
+-        targets = self.jump_table_targets.get(table_va)
+-        if targets is None:
+-            targets = self._read_jump_table(table_va)
+-        if not targets:
+-            return []
+-        # Truncate at the first entry outside the function rather than
+-        # demanding that every entry be inside it.
+-        #
+-        # _read_jump_table stops at the first value that is not a plausible
+-        # code address, but a switch table is followed by ordinary code, and
+-        # the next function's bytes routinely read as a valid .text address --
+-        # so the read overruns the real table and picks up garbage. Requiring
+-        # ALL entries to be in range then threw the whole switch away because
+-        # of entries that were never part of it.
+-        #
+-        # A switch table's arms all land inside their own function, so the
+-        # first entry that does not is exactly where the table ends. On
+-        # Half-Life 2's CRT format parser (sub_005B9EB0) the table at
+-        # 0x005BA617 has 8 real arms followed by code; the old rule resolved
+-        # none of them, the indexed jump became an unresolvable indirect call,
+-        # and sprintf silently produced the wrong string.
+-        inside = []
+-        for target in targets:
+-            if not (self.func_start <= target < self.func_end):
+-                break
+-            inside.append(target)
+-        # Two arms is the smallest thing worth calling a switch; one is more
+-        # likely a coincidence than a jump table.
+-        if len(inside) >= 2:
+-            return inside
+-        return []
+-
+-    def _lift_jmp(self, insn, ops):
+-        if insn.jump_target:
+-            if self._is_external_target(insn.jump_target):
+-                # Tail call - no return address push (reuses current frame's)
+-                # Bridge ebp so the target function can inherit our frame pointer.
+-                if insn.jump_target in self.manual_functions:
+-                    tail = (
+-                        f"g_seh_ebp = ebp; "
+-                        f"RECOMP_ITAIL(0x{insn.jump_target:08X}u); return; "
+-                        f"/* manual tail jmp 0x{insn.jump_target:08X} */"
+-                    )
+-                    if self.trace_exit_name:
+-                        return [
+-                            f'RECOMP_TRACE_ESP("{self.trace_exit_name}", '
+-                            f'"tail 0x{insn.jump_target:08X}");',
+-                            tail,
+-                        ]
+-                    return [self._forced_tail(tail)]
+-                name = self._call_target_name(insn.jump_target)
+-                tail = (f"g_seh_ebp = ebp; {name}(); return; "
+-                        f"/* tail jmp 0x{insn.jump_target:08X} */")
+-                if self.trace_exit_name:
+-                    # Tag the exit so a trace says which one was taken. A
+-                    # function whose paths all look individually balanced can
+-                    # still leak, and knowing the path is the difference
+-                    # between measuring and guessing.
+-                    return [f'RECOMP_TRACE_ESP("{self.trace_exit_name}", '
+-                            f'"tail 0x{insn.jump_target:08X}");', tail]
+-                return [self._forced_tail(tail)]
+-            return [f"goto loc_{insn.jump_target:08X};"]
+-        elif len(ops) >= 1:
+-            # Detect intra-function switch tables (computed gotos)
+-            switch_targets = self._analyze_switch_table(ops)
+-            if switch_targets:
+-                target_expr = _fmt_operand_read(ops[0])
+-                unique_targets = sorted(set(switch_targets))
+-                lines = [f"{{ uint32_t _jt = {target_expr}; /* switch: {len(switch_targets)} entries, {len(unique_targets)} targets */"]
+-                for t in unique_targets:
+-                    lines.append(f"if (_jt == 0x{t:08X}u) goto loc_{t:08X};")
+-                lines.append(f"g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }}")
+-                return lines
+-            # `jmp <reg>` where the register was loaded with an address
+-            # inside this same function: a hand-written continuation chain,
+-            # not a call. The XMV YUV-to-RGB converter in Half-Life 2's
+-            # loader is built this way -- four blocks that each do
+-            # `mov ebx, <next>; jmp <shared tail>`, and the shared tail ends
+-            # `jmp ebx`. Treated as an indirect tail call it resolved to
+-            # nothing, so the shared tail never came back and the function's
+-            # epilogue never ran: every call leaked 0x2C bytes of guest stack
+-            # and the converter wrote past its surface until it walked out of
+-            # the tiled aperture, 144 MB later.
+-            #
+-            # The targets are labels in this function, so this is a goto, and
+-            # the same shape the memory-operand switch above emits.
+-            if ops[0].type == "reg" and self.imm_code_refs:
+-                inside = sorted(t for t in self.imm_code_refs
+-                                if self.func_start <= t < self.func_end)
+-                if inside:
+-                    target_expr = _fmt_operand_read(ops[0])
+-                    lines = [f"{{ uint32_t _jt = {target_expr};"
+-                             f" /* intra-function indirect jmp:"
+-                             f" {len(inside)} targets */"]
+-                    for t in inside:
+-                        lines.append(f"if (_jt == 0x{t:08X}u) goto loc_{t:08X};")
+-                    lines.append("g_seh_ebp = ebp; RECOMP_ITAIL(_jt); return; }")
+-                    return lines
+-            target = _fmt_operand_read(ops[0])
+-            return [self._forced_tail(
+-                f"g_seh_ebp = ebp; RECOMP_ITAIL({target}); return;"
+-                f" /* indirect tail jmp */")]
+-        return ["/* jmp: no target */"]
+-
+-    def _lift_jcc(self, insn):
+-        """Standalone conditional jump (no flag-setter tracked)."""
+-        target = insn.jump_target
+-        jcc = insn.mnemonic
+-
+-        # jecxz/jcxz: jump if ecx/cx is zero (not flag-based)
+-        if jcc in ("jecxz", "jcxz"):
+-            cond = "ecx == 0" if jcc == "jecxz" else "LO16(ecx) == 0"
+-            if target:
+-                if self._is_external_target(target):
+-                    name = self._call_target_name(target)
+-                    return [f"if ({cond}) {{ g_seh_ebp = ebp; {name}(); return; }} /* {jcc} */"]
+-                return [f"if ({cond}) goto loc_{target:08X}; /* {jcc} */"]
+-            return [f"/* {jcc} - no target */"]
+-
+-        if jcc in LOOP_JUMPS:
+-            return self._lift_loop(insn)
+-
+-        cond_info = COND_MAP.get(jcc)
+-        desc = cond_info[2] if cond_info else jcc
+-
+-        # Flag tracking resets at a block boundary, because which predecessor
+-        # arrives is not known here. _cf survives it: it is a real variable
+-        # holding the carry, so a jb/jae landing on a label still reads the
+-        # right bit while the generic _flags fallback -- which nothing ever
+-        # assigns -- is silently always false. The XCompress bit reader jumps
+-        # into the middle of its refill exactly this way.
+-        cond = "_flags"
+-        if self.needs_cf:
+-            if jcc in ("jb", "jnae", "jc"):
+-                cond = "_cf"
+-            elif jcc in ("jae", "jnb", "jnc"):
+-                cond = "!_cf"
+-
+-        if target:
+-            if self._is_external_target(target):
+-                name = self._call_target_name(target)
+-                return [f"if ({cond} /* {jcc}: {desc} */) {{ g_seh_ebp = ebp; {name}(); return; }}"]
+-            return [f"if ({cond} /* {jcc}: {desc} */) goto loc_{target:08X};"]
+-        return [f"/* {jcc}: {desc} - no target */"]
++    callee_pop = _project_control.callee_cleanup
++
++    _lift_call = _project_control.call
++
++    _lift_ret = _project_control.return_from
++
++    _forced_tail = _project_control.forced_tail
++
++    _is_external_target = _project_control.external
++
++    _read_jump_table = _project_control.read_table
++
++    _analyze_switch_table = _project_control.switch_targets
++
++    _lift_jmp = _project_control.jump
++
++    _lift_jcc = _project_control.branch
+ 
+     # ── SETcc / CMOVcc ──
+ 
+-    def _lift_loop(self, insn, zf_expr=None):
+-        """LOOP/LOOPE/LOOPNE: count ECX down, branch while it is non-zero.
+-
+-        These reached the generic jcc path, which has no idea ECX is the
+-        counter. It dropped the decrement entirely and emitted the `_flags`
+-        fallback -- a variable nothing assigns -- so the back edge compiled
+-        as never taken and the loop body ran exactly once.
+-
+-        LOOPE/LOOPNE also test ZF. ``zf_expr`` carries that condition when a
+-        tracked instruction set the flags; without one, keep the existing
+-        never-taken fallback rather than inventing a termination condition.
+-        """
+-        jcc = insn.mnemonic
+-        stmts = [f"ecx -= 1; /* {jcc}: count down */"]
+-        if jcc == "loop":
+-            cond, desc = "ecx != 0", "ecx is non-zero"
+-        else:
+-            cond = f"(ecx != 0) && ({zf_expr or '_flags'})"
+-            desc = ("ecx is non-zero and zero flag set" if jcc == "loope"
+-                    else "ecx is non-zero and zero flag clear")
+-        target = insn.jump_target
+-        if target is None:
+-            stmts.append(f"/* {jcc}: {desc} - no target */")
+-            return stmts
+-        stmts.append(_emit_cond_goto(cond, jcc, desc, target, self))
+-        return stmts
++    _lift_loop = _project_control.loop
+ 
+     def _lift_setcc(self, insn, ops, m):
+         if len(ops) < 1:
+--- a/tools/recomp/test_callee_pop.py
++++ b/tools/recomp/test_callee_pop.py
+@@ -16,7 +16,7 @@
+ 
+ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+ 
+-import tools.recomp.lifter as lifter_mod  # noqa: E402
++import translation_layout as layout_mod  # noqa: E402
+ from tools.recomp.lifter import Lifter  # noqa: E402
+ from tools.recomp.test_call_retaddr import _Insn, _Op  # noqa: E402
+ 
+@@ -34,7 +34,7 @@
+                     seh_prolog=0, seh_epilog=0)
+     insn = _Insn("call", [_Op(hex(TARGET), type="imm", imm=TARGET)],
+                  address=BASE, size=5, call_target=TARGET)
+-    with mock.patch.object(lifter_mod, "va_to_file_offset",
++    with mock.patch.object(layout_mod, "va_to_file_offset",
+                            lambda va: va - BASE if BASE <= va < BASE + 0x100
+                            else None):
+         return "\n".join(lifter.lift_instruction(insn))

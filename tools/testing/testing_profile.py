@@ -134,6 +134,13 @@ def check_fixture(root):
     return fixture,manifest
 
 
+def feedback_dump_path(root,run):
+    """Keep both optional recorder outputs inside the disposable test tree."""
+    for name in ('icall_targets.dump','icall_sites.dump'):
+        contained(root,Path(run)/name,'private/test-saves')
+    return str(Path(run)/'icall_targets.dump')
+
+
 def prepare_run(root,run):
     root=Path(root).resolve();run=contained(root,run,'private/test-saves')
     fixture,manifest=check_fixture(root)
@@ -176,6 +183,7 @@ def prepare_run(root,run):
     marker.write_text(json.dumps(dict(schema=1,fixture=str(fixture.relative_to(root))))+'\n')
     environment={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     environment.update(RECOMP_GAME_DIR=str(root/'private/game'),RECOMP_SAVE_DIR=str(run/'saves'),
+        RECOMP_ICALL_FEEDBACK_PATH=feedback_dump_path(root,run),
         TSFP_SAVE_LOCATION_LOCK='1',
         TSFP_CRASH_DIR=str(run/'crashes'),
         TSFP_TEXTURE_PACK_DIR=str(root/'assets/textures'),TSFP_TEXTURE_MODE='classic',

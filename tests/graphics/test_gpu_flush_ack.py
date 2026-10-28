@@ -96,8 +96,12 @@ def test_native_event_wait(tmp_path):
     compiler,env=native_compiler(tmp_path)
     output=tmp_path/'platform'
     command=[compiler,'-std=c11','-O2','-I'+str(runtime/'src'),
+             '-I'+str(ROOT/'src/runtime'),
              str(ROOT/'tests/gameplay/native_platform.c'),
-             str(runtime/'src/platform/win32_compat.c'),'-lm','-lpthread','-o',str(output)]
+             str(runtime/'src/platform/win32_compat.c'),
+             *[str(ROOT/'src/runtime'/name) for name in
+               ('shared_views.c','owned_arena.c','mmio_views.c','guest_arena_service.c')],
+             str(ROOT/'src/native/shared_host.c'),'-lm','-lpthread','-o',str(output)]
     built=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert built.returncode==0,built.stdout+built.stderr
     run=subprocess.run([str(output)],capture_output=True,text=True,timeout=15)

@@ -1,0 +1,2275 @@
+{
+  "format": 1,
+  "source": "Windows SDK um/x64 import-library exports",
+  "sdk_version": "10.0.26100.0",
+  "tool": "Microsoft dumpbin /nologo /exports",
+  "symbol_count": 23947,
+  "output_sha256": "1f45cda1eb5a3b3a8561342d462839f05eb1a967fa59a3b84bdfe7b125454842",
+  "libraries": [
+    {
+      "name": "AclUI.Lib",
+      "sha256": "cbb6c0d406e67ec4f967b288b4999ade56c86304e3160301e84748d03d30d0ba",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ActiveDS.Lib",
+      "sha256": "89f3bfd07a53ebd7fe59165e89858ccab3eecd7793d6448c3ae9534cf7485415",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ADSIid.Lib",
+      "sha256": "ebdac2e27aa14cb9a54ab94d8a434764048cc0f4e93e43583e95bf1ed5265173",
+      "export_identifiers": 0
+    },
+    {
+      "name": "AdvAPI32.Lib",
+      "sha256": "a0ea53377e6de11c5fdc07e72af11d22d8fa613cecc6ccb1b6de43490392eadc",
+      "export_identifiers": 775
+    },
+    {
+      "name": "advpack.Lib",
+      "sha256": "861801b6b97024328a2876e1037a4a00ed082ef94ac7eb7b85482d8537c67671",
+      "export_identifiers": 72
+    },
+    {
+      "name": "ahadmin.lib",
+      "sha256": "5b7879a7f2cfe298a5d208be38c500d014dce61ee31d18e3630a462ca454b8b2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "amsi.lib",
+      "sha256": "973d4a269a1d73b26c8d99bf0234ec1819544ea0c15b4fdc1902356f01d16524",
+      "export_identifiers": 10
+    },
+    {
+      "name": "amstrmid.lib",
+      "sha256": "3c66daa855c4d47d77eb18023d4780a108e4c5fd0451a6aafb0b69602d35ec15",
+      "export_identifiers": 0
+    },
+    {
+      "name": "appmgmts.lib",
+      "sha256": "16049a959dffbdc496cb9055d17c19dd9e9e25877478a931eaa8dc1dd59a58de",
+      "export_identifiers": 16
+    },
+    {
+      "name": "appmgr.lib",
+      "sha256": "8621524922f9ba72eef4824f868697a260372f890ded7360dfedc413b4b6ecbd",
+      "export_identifiers": 0
+    },
+    {
+      "name": "appnotify.lib",
+      "sha256": "c569a239721a51f92e9c6ee0e1de60588bee024762fb5a0a92e3bd11a5f267f2",
+      "export_identifiers": 4
+    },
+    {
+      "name": "audiobaseprocessingobject.lib",
+      "sha256": "d5e85a52fe457d52050bdf8a2b0ad23a5c5b4ed278bc32cba06ab68fcf7d8054",
+      "export_identifiers": 0
+    },
+    {
+      "name": "AudioBaseProcessingObjectV140.lib",
+      "sha256": "052f8debcdd9b9aa1772b086c8074635c46d7754ba34a6f7ddd618bdd48dd1ee",
+      "export_identifiers": 0
+    },
+    {
+      "name": "audioeng.lib",
+      "sha256": "f44c2b5e416c40ccc053b2ad6e42f030fb32918dac7039620e79564b7a4e7982",
+      "export_identifiers": 2
+    },
+    {
+      "name": "audiomediatypecrt.lib",
+      "sha256": "7bb82aedf9ed6297da86fa453ec04c48081f08a90a9333a7db88bcd2c2b22955",
+      "export_identifiers": 0
+    },
+    {
+      "name": "AuthZ.Lib",
+      "sha256": "99bcf0102c457bceae40557d7be15c07eecb712dd7bf257b7e05ccbfc080aa42",
+      "export_identifiers": 36
+    },
+    {
+      "name": "aux_ulib.lib",
+      "sha256": "57587cce7432a7df4620f7c1d1facc965e72aa23fe29fe2db29335039ade43fb",
+      "export_identifiers": 0
+    },
+    {
+      "name": "avifil32.Lib",
+      "sha256": "06cb9d07de1e43151233d3a77d0cd367e462dfc80c815f971817398ae6cc053b",
+      "export_identifiers": 74
+    },
+    {
+      "name": "avrt.lib",
+      "sha256": "78d136ec119f1772bee2288a4f1a0caac67b4f7ab1f002acbc60807524f65aeb",
+      "export_identifiers": 20
+    },
+    {
+      "name": "basesrv.lib",
+      "sha256": "4b921bf44fb8a71fa37400479ccc773e8d688e03367dd2c335c47730c5baf9fe",
+      "export_identifiers": 6
+    },
+    {
+      "name": "bcp47mrm.Lib",
+      "sha256": "d59e890fc3d5048078fb2c45ceb9bce75ca33dc070074a622b80cd2bb6362860",
+      "export_identifiers": 17
+    },
+    {
+      "name": "bcrypt.lib",
+      "sha256": "9fe31df255d17b0339391ff80a71bf2c5d442cc301bd2fe6eeea00b626f10785",
+      "export_identifiers": 56
+    },
+    {
+      "name": "bindlink.lib",
+      "sha256": "e993363d4cb89691c2cf4f9f1980077a816eabc194dcfb30bd2e350eff931869",
+      "export_identifiers": 13
+    },
+    {
+      "name": "Bits.Lib",
+      "sha256": "10411588f5df02b1a45190db7604fcd6c69ed9390d1f746af569821033331e50",
+      "export_identifiers": 0
+    },
+    {
+      "name": "BluetoothApis.lib",
+      "sha256": "a03d8d0dc94777be40d0d16a97b5d269c9e3224933713bf3685d102fa198f8fa",
+      "export_identifiers": 94
+    },
+    {
+      "name": "bthprops.lib",
+      "sha256": "345187abd7a57bedf4630abd13dee392f4702e0a52dedb17c95298ce5b90229d",
+      "export_identifiers": 36
+    },
+    {
+      "name": "BufferOverflow.lib",
+      "sha256": "3a7a7a9d1230dcfab9c35131c79fa6138c3b22c03d3a4cc0f8d3f33addf030dd",
+      "export_identifiers": 0
+    },
+    {
+      "name": "BufferOverflowU.lib",
+      "sha256": "38b7e4d7e149938954cfcddcae6ac380a1b3ce20d19f373acdcef1112e374463",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Cabinet.Lib",
+      "sha256": "1c8e9d609af94ade90cb1e7375c0c3e57a7c49843d7ab96b270781e8ee5632ef",
+      "export_identifiers": 0
+    },
+    {
+      "name": "certadm.lib",
+      "sha256": "4353c50a1474ce865b79bd555f453495fe8a1d6d5a9a8d5b1304837b6ed802af",
+      "export_identifiers": 3
+    },
+    {
+      "name": "certca.lib",
+      "sha256": "20cb6825e40cdb9f1d30bcebcc1df8850c5a37459bd77a185910f46c956dcb9f",
+      "export_identifiers": 0
+    },
+    {
+      "name": "certcli.lib",
+      "sha256": "94ad4fda7a3a09ced24486a694f84af7d9cf5cdbccbd289d9dea6af3375392eb",
+      "export_identifiers": 0
+    },
+    {
+      "name": "CertIdl.Lib",
+      "sha256": "72555daf5f8376932f1d0cdf487333cc3e02fbe71787e2f317114681ee715c01",
+      "export_identifiers": 0
+    },
+    {
+      "name": "CertPolEng.Lib",
+      "sha256": "21898857340863623250e2188c31f63708d0e514143b343f22aebe4f9cc6cdbc",
+      "export_identifiers": 14
+    },
+    {
+      "name": "cfgmgr32.lib",
+      "sha256": "c09d8bbd1512d9b03d0648a82f335b983cd301277fe3551afcedb047f0a0f9ba",
+      "export_identifiers": 231
+    },
+    {
+      "name": "Chakrart.lib",
+      "sha256": "67cf5990674cd5170a3457202a0b354ee12b25bea1047de803e2853438314cda",
+      "export_identifiers": 118
+    },
+    {
+      "name": "cimfs.lib",
+      "sha256": "a42fc517e46cd38874d664ec9f867a5f5c19c0cbbf40b15614eb8cef0170733e",
+      "export_identifiers": 21
+    },
+    {
+      "name": "cldapi.lib",
+      "sha256": "d04c000e707cd70b48e8ea0997b18c9b3dfb84c6d216b2050fdf43d151591994",
+      "export_identifiers": 50
+    },
+    {
+      "name": "clfsw32.lib",
+      "sha256": "6594ef95ee3f68bb98f08ae51d6481ce17e28e23e32c9c8bd3608998c3302b19",
+      "export_identifiers": 62
+    },
+    {
+      "name": "ClusApi.Lib",
+      "sha256": "f781886e250e45431766c20c0d5925a76f513dd1c271768c916fc89096d75143",
+      "export_identifiers": 388
+    },
+    {
+      "name": "ComCtl32.Lib",
+      "sha256": "bbb8735881aaee922b8472b7cd7da6dfddd5756ce81b6273b3dbde5fd4d9ba4d",
+      "export_identifiers": 71
+    },
+    {
+      "name": "ComDlg32.Lib",
+      "sha256": "cf352af0a3563907cefd36121963651fe4cc57260ebf6cf1b1e4cfc7758ef922",
+      "export_identifiers": 21
+    },
+    {
+      "name": "CompPkgSup.lib",
+      "sha256": "0cf33ff15551ef1660e65e2c14ed8b5118b8fbd9d62699c09c4f69bb20e71b69",
+      "export_identifiers": 12
+    },
+    {
+      "name": "compstui.lib",
+      "sha256": "ca9588277b86a676a009c858b5af4ee3499e33bf09dd80ed55e12cfef96c217d",
+      "export_identifiers": 4
+    },
+    {
+      "name": "computecore.lib",
+      "sha256": "c5884eb213411c63fc77063ff5619e964d466b5825a2a0806be65e469f2cc615",
+      "export_identifiers": 63
+    },
+    {
+      "name": "computenetwork.lib",
+      "sha256": "b9a2d9c5a7d1af220d65e9a6a31ad3f7eda01c60b506b5aa934cbf57eed9fdbe",
+      "export_identifiers": 44
+    },
+    {
+      "name": "computestorage.lib",
+      "sha256": "285cf59e689423dbd8e2692401db4150abe5a91f20597e2088e0257848d0f8cb",
+      "export_identifiers": 14
+    },
+    {
+      "name": "ComSvcs.Lib",
+      "sha256": "baf830145052db06c54e26b16275d9f3726a037e099e92f5440540253f5d4e2d",
+      "export_identifiers": 15
+    },
+    {
+      "name": "CoreMessaging.lib",
+      "sha256": "9722ddaa66839d3dff78e525731401da3ce4d0b78e84a9822157c1fafda9bf83",
+      "export_identifiers": 28
+    },
+    {
+      "name": "corrEngine.lib",
+      "sha256": "3fbf75e62f54c6feb1e79d5283a4ec8efa1d23f7424221904886a1b73b7117fe",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Credui.lib",
+      "sha256": "8a5a69a92cdf8c89fe5247bb7adf099079ea7918a3a84d85dd938d51772486bb",
+      "export_identifiers": 22
+    },
+    {
+      "name": "Crypt32.Lib",
+      "sha256": "eccee5cb58221f1d9eabecd38f7eb66f323b7e63e756593d403475ac71fd4a04",
+      "export_identifiers": 238
+    },
+    {
+      "name": "cryptdll.lib",
+      "sha256": "30abebf240ca5266f275877f4ff7d2fe2f21294703973e3d41b923c4a1cabc15",
+      "export_identifiers": 20
+    },
+    {
+      "name": "CryptNet.Lib",
+      "sha256": "1990bd59593ed04d83d4f5ca9421e22492577bce0daf6ecc191771858b5c7e38",
+      "export_identifiers": 5
+    },
+    {
+      "name": "cryptui.lib",
+      "sha256": "5ad5122c307e9af101a5ea3966ecf4c214150369f3718374e93afee75e3ab548",
+      "export_identifiers": 42
+    },
+    {
+      "name": "cryptxml.lib",
+      "sha256": "2631a1307a7e7e09d83e6f7028fdb989e932fa630afb6a1a009bcc0a894dd65c",
+      "export_identifiers": 19
+    },
+    {
+      "name": "cscapi.lib",
+      "sha256": "0ecb3e4c39711c85832bc6f2e31c06d3456eaca208f01a2c8f527ef451275458",
+      "export_identifiers": 6
+    },
+    {
+      "name": "cscdll.lib",
+      "sha256": "0562c176996d86402d0b32767872273aa67266837e782e0c405eb2a69e13f81c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "d2d1.lib",
+      "sha256": "f85ef040051beaf65cdf71d20d1991721f6f2be1f7d4857851000c752795d3b2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "d3d10.lib",
+      "sha256": "85bfd250792a3a433100f981af9abf706be4d50bf34a838ed83ff5838be3217b",
+      "export_identifiers": 29
+    },
+    {
+      "name": "d3d10_1.lib",
+      "sha256": "fb8d73f2f8d7d12a2b2b448616f3f3bcef644113e7bbe7c997139712d2551425",
+      "export_identifiers": 29
+    },
+    {
+      "name": "d3d11.lib",
+      "sha256": "043f509f20d5dc6269ddd81e8741b4ff075e2fc7983f5477b6cc618577b1cd8d",
+      "export_identifiers": 9
+    },
+    {
+      "name": "d3d12.lib",
+      "sha256": "3f48f63768e65fc0be7eb2bb9c06f96965bf2b692a3e96a5ffb2679ba8aeac1b",
+      "export_identifiers": 13
+    },
+    {
+      "name": "d3d9.lib",
+      "sha256": "99061c94f9592f7661f2675bfeda2f9b0bffa82a943a2603dccd8da6b80869ec",
+      "export_identifiers": 11
+    },
+    {
+      "name": "d3dcompiler.lib",
+      "sha256": "2529bc6d166df699df5fd0f77d9101a2bd24f3231b4040ef72feac5851801674",
+      "export_identifiers": 27
+    },
+    {
+      "name": "d3dcsx.lib",
+      "sha256": "1b8a2a6fccf4f9a2442ae1e8e5184921b2819691cda72eb64108266786359266",
+      "export_identifiers": 9
+    },
+    {
+      "name": "d3dcsxd.lib",
+      "sha256": "a19314e9a2783cbf47a7f3bce2b8ca4edbfbf861647da43bf81a0095fe06f5c2",
+      "export_identifiers": 9
+    },
+    {
+      "name": "davclnt.lib",
+      "sha256": "a1597724a0cc788967a4ef2c129a1eef44f4bb11664d6ee1f86845946842c342",
+      "export_identifiers": 22
+    },
+    {
+      "name": "DbgEng.Lib",
+      "sha256": "18b9955822bdbdd32a5fe8d27069442a09ff9d21bf173f864cfabc1c9cf67999",
+      "export_identifiers": 4
+    },
+    {
+      "name": "DbgHelp.Lib",
+      "sha256": "1d29fc9e1c4d22e7d399d13c3295330704be210ae0e087798903859eeff31bba",
+      "export_identifiers": 238
+    },
+    {
+      "name": "DbgModel.Lib",
+      "sha256": "545ed4ebaf4ba6d43d09c270bcd40775c365e772f7e3c79ec5a52c76858b1e21",
+      "export_identifiers": 1
+    },
+    {
+      "name": "dciman32.lib",
+      "sha256": "4754b795d56c36c8bc75b913882062b6d793b847f9bb7bedbd86dbdcbb4632a9",
+      "export_identifiers": 20
+    },
+    {
+      "name": "dcomp.lib",
+      "sha256": "b32010293b5e8b9dcd681b8cf6bfe7f81f2be51ef93a75cf6bb3e6604bc3b6e9",
+      "export_identifiers": 6
+    },
+    {
+      "name": "ddraw.lib",
+      "sha256": "172390c7e2a5f2549c0c0030060c2143fe43cf26e12adb4bcfd819dc91190d16",
+      "export_identifiers": 13
+    },
+    {
+      "name": "devenum.lib",
+      "sha256": "050c10d8f1ab26526e5e95d402124777fc819936cc31d2d36b1513419e651b78",
+      "export_identifiers": 0
+    },
+    {
+      "name": "deviceaccess.lib",
+      "sha256": "7a958695b71e48a90b86b26503f1792c2049be957ae1a65d3ace1be7826fda24",
+      "export_identifiers": 3
+    },
+    {
+      "name": "devmgr.lib",
+      "sha256": "1baec98b2eecf0b7abe96fcff09bf5b6acd5cc411c667c24ab361e2ca32ce331",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dflayout.lib",
+      "sha256": "c6a241bc41d42aa521a03a946c38c346fcd5c025372e7f1167ab3bfe42b1e624",
+      "export_identifiers": 1
+    },
+    {
+      "name": "DhcpCSvc.Lib",
+      "sha256": "7acf19a080cbaf304b8d4da11cd3f7c7f4fa47f453a015836e356b497c5430a9",
+      "export_identifiers": 71
+    },
+    {
+      "name": "DhcpCSvc6.Lib",
+      "sha256": "40e8545591d2d1be0573c472a240513b92278d80817b595cc2243387aa28d2db",
+      "export_identifiers": 26
+    },
+    {
+      "name": "dhcpsapi.lib",
+      "sha256": "22ac20688bd44886085c772509798b921b57e2c6afa71a305a65d3573ffac88a",
+      "export_identifiers": 209
+    },
+    {
+      "name": "DiagnosticDataQuery.Lib",
+      "sha256": "a1f84abc4715f4afda330ea373ddf9d21efb550617ed410b814c0c99dab65bcb",
+      "export_identifiers": 37
+    },
+    {
+      "name": "dinput8.lib",
+      "sha256": "c740eb233494218a44d2398fc0c360b99a9e2b238c43f2f798cc35c97ebfc9f9",
+      "export_identifiers": 1
+    },
+    {
+      "name": "directml.lib",
+      "sha256": "874e30d93426413d7748a82326aa08352d3904169df89fc0225a7e010ece11c1",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dloadhelper.lib",
+      "sha256": "30701f0ba180d3156f327d78206c9102f5b22186c06e55adf780153da5c85de6",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dmoguids.lib",
+      "sha256": "1b728b2ab22a3631ead09832d5cda25c60cbbe3002c135adfe739e091a6f7264",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dmprocessxmlfiltered.lib",
+      "sha256": "a5c3c30bae851efd14547eabe16f88c74f87f8b70164af57ab9db9366e89f949",
+      "export_identifiers": 3
+    },
+    {
+      "name": "DnsAPI.Lib",
+      "sha256": "d87c742af0ce8ca568ba7a9de2da62cc095b489ff57c37246dafe82f8ec2488f",
+      "export_identifiers": 350
+    },
+    {
+      "name": "dnscrcli.lib",
+      "sha256": "fb558a0b1f02f1a26f95af5f23f2bc3de9dbfade32e196022e3c7bd8ea594a1f",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dnslib.lib",
+      "sha256": "fb558a0b1f02f1a26f95af5f23f2bc3de9dbfade32e196022e3c7bd8ea594a1f",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dnsperf.lib",
+      "sha256": "8b8c7f55a2c63028228566fa74add26613e7c82a333f856ca6aa53295a44dd17",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dnsrpc.lib",
+      "sha256": "70735abae20ecd640d5a512084df69165be338dfa50a70e6d3fbae4ad7ddadff",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dnsrslvr.lib",
+      "sha256": "c41b3ec093a293a89e96ee6079b3552f996f57730e8de3fd5c08587f06dbda70",
+      "export_identifiers": 4
+    },
+    {
+      "name": "dpx.lib",
+      "sha256": "163249e790b451d82cf2db9a4da91e07ca6be6ab19af07d892daef94417b8664",
+      "export_identifiers": 19
+    },
+    {
+      "name": "dsound.lib",
+      "sha256": "43ff0cd0bf8e421d2e950f1729be39d3ee9e8738885b8515acec949fa728d5af",
+      "export_identifiers": 0
+    },
+    {
+      "name": "DSProp.Lib",
+      "sha256": "8c95e1e31031c60bebde5efb9331d9dcc34b6d0a30d7544349c7e0723c94ebd0",
+      "export_identifiers": 10
+    },
+    {
+      "name": "dssec.lib",
+      "sha256": "dc2dc32c565156457ca15989a94ef6fd57c35b56468c51911cbb5272d8a1f7dc",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dststlog.lib",
+      "sha256": "0e91867df77c8f127c15fdafb893c98d31bed2f066a9bc951f86f77d3866d8bb",
+      "export_identifiers": 1
+    },
+    {
+      "name": "DSUIExt.Lib",
+      "sha256": "aec23322018481cda852ac8fc5e6776fbdf98182aad7e9e75f8671361fad12bf",
+      "export_identifiers": 0
+    },
+    {
+      "name": "DtcHelp.Lib",
+      "sha256": "080e8599b419bd475930a73790a8f797524977c0145747f5162674622788cf79",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dwmapi.lib",
+      "sha256": "a51990637560d22b3b28ea748064cf88d56381ef5f4e65d8014d31a6660ff3a8",
+      "export_identifiers": 30
+    },
+    {
+      "name": "dwrite.lib",
+      "sha256": "168a644673176f873ff228e4050e48057838d685dd9a60ec24c7238b2be4161b",
+      "export_identifiers": 1
+    },
+    {
+      "name": "dxcompiler.lib",
+      "sha256": "b40e1d5069fdd07c0e7675b2a48860588b89732760a5ff348c5a4de61aa084cd",
+      "export_identifiers": 2
+    },
+    {
+      "name": "dxcore.lib",
+      "sha256": "b2835f86864feb9f32f55137f027f0247816094af778f1a5b95af7ad4ec20fe9",
+      "export_identifiers": 1
+    },
+    {
+      "name": "dxgi.lib",
+      "sha256": "181cf09753c8db1ec62aaacc91574f1c6b54ae13526d1e77e83fd051c756af7f",
+      "export_identifiers": 11
+    },
+    {
+      "name": "dxguid.lib",
+      "sha256": "3086f597dccccb8f0e86da54f1bc7cfb9e77251e5f4be5f9525550d33ede6528",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dxtmsft.lib",
+      "sha256": "598760f4305da4783ec00636eb23313ab863cb406c2ce07287f5367e8007ecfa",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dxtrans.lib",
+      "sha256": "5321a1c61c4d45003e850f1088520dbdff18e24e4ba352c8dbe320892180819c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "dxva2.lib",
+      "sha256": "ea3aa740c9388d915bb8508b9aba78bc73d2a3cf01172c6fd9939ae107f2e67a",
+      "export_identifiers": 38
+    },
+    {
+      "name": "eappcfg.lib",
+      "sha256": "6f11da6a4cc9b3123985cfc9e1ed56ea10472c5aec59c082902726444ba7b4ac",
+      "export_identifiers": 15
+    },
+    {
+      "name": "eappprxy.lib",
+      "sha256": "cb360073c11d418ff505e698e89c1f6234cc528a3bee9ccf0f2dab21a3594878",
+      "export_identifiers": 18
+    },
+    {
+      "name": "easregprov.lib",
+      "sha256": "756313759f08b9db26e2fc72219f9d3734a5e2a2a6f98a08386677ece3e48708",
+      "export_identifiers": 2
+    },
+    {
+      "name": "efswrt.lib",
+      "sha256": "46d1f34d84459fc20fdf169b3de22475556844b24356cfe9b129bbacbf22ac31",
+      "export_identifiers": 31
+    },
+    {
+      "name": "ehstorguids.lib",
+      "sha256": "9eb0f8ce4df019b8753a469377bf2278c33f667a927a08534f1305fcd52584e3",
+      "export_identifiers": 0
+    },
+    {
+      "name": "els.lib",
+      "sha256": "549b218dd6d174d698d0642e396dd6b68e72a079c6e73f11c7750938d0e0d4eb",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ElsCore.lib",
+      "sha256": "d8fd0e6bda2535240f9a515851c4cc3236ba91f271f95474d3670c0a5cbfbbca",
+      "export_identifiers": 5
+    },
+    {
+      "name": "esent.lib",
+      "sha256": "91aed77fe5d91b9fecaa312c20a04fe1ff133ef9e10b92297866f49838f88fb5",
+      "export_identifiers": 385
+    },
+    {
+      "name": "evr.lib",
+      "sha256": "0cb69825691a9e184b3e01d38d894e9224f62b69f1806d28433e08ea95be4539",
+      "export_identifiers": 9
+    },
+    {
+      "name": "FaultRep.Lib",
+      "sha256": "8b1243e0f02f0b4e41984277e8255d1eca29ea8b17e7f73e9bff244c8f5e460d",
+      "export_identifiers": 10
+    },
+    {
+      "name": "feclient.lib",
+      "sha256": "89ede80923e5b07bf22ae6be1376de928f9207755c0e0ea371134613a11550c1",
+      "export_identifiers": 60
+    },
+    {
+      "name": "FhSvcCtl.lib",
+      "sha256": "5de31facf37c7fe5088c47884acfee592454b1ec9e250ed9f7bb3005cded5f39",
+      "export_identifiers": 14
+    },
+    {
+      "name": "fileextd.lib",
+      "sha256": "9da3816ee3136d57be1f5e37e3ed50ce27ca7dcaa062182c31cb9b9f3cf7a300",
+      "export_identifiers": 0
+    },
+    {
+      "name": "fltLib.lib",
+      "sha256": "19ab7068e92203d64cdba7146989c722ab7fe1c00807dc9b39c5ff8cf6304b77",
+      "export_identifiers": 29
+    },
+    {
+      "name": "fontsub.lib",
+      "sha256": "3fcf247f0d71771fd84ff9acb64f4f4d6762f864cc32bb29ee253d4551f9a851",
+      "export_identifiers": 2
+    },
+    {
+      "name": "FrameDyd.Lib",
+      "sha256": "53817d6d019902e6849970f9f71150a6036d038f16fa0906108b6f928d6becb3",
+      "export_identifiers": 1
+    },
+    {
+      "name": "FrameDyn.Lib",
+      "sha256": "9c1003f0e01e640e95036c5dce561525086645014ad72d3aa5523e7981a98c80",
+      "export_identifiers": 1
+    },
+    {
+      "name": "fwpuclnt.lib",
+      "sha256": "0c63ddced98b5138b4c1b2a5f9811b21aa43df04c6bf6f90d277ac5a826460ed",
+      "export_identifiers": 280
+    },
+    {
+      "name": "fxsutility.lib",
+      "sha256": "9e2534746aad51f00fa6033bf50defea9ce22e5151d464fa207ba3e75f188a14",
+      "export_identifiers": 2
+    },
+    {
+      "name": "gameinput.lib",
+      "sha256": "9e1f3d72e3f241cd833246ab330b479e4b60f27525bca5f06b96d2968cf6ffc1",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Gdi32.Lib",
+      "sha256": "f530829c5e91cacd906c9e7363ca873bb8eaeb50114cc6a74a8a04c49bb4ec40",
+      "export_identifiers": 628
+    },
+    {
+      "name": "gdiplus.lib",
+      "sha256": "7009f3cf5e9c8ae437783a6d4cb4aab950f398833fe7608ca5717754be3fa8ca",
+      "export_identifiers": 630
+    },
+    {
+      "name": "glmf32.lib",
+      "sha256": "fc0b72b81c5fe1365a9d2144eef5fffca7ba8b51297c2954033e4d2dbe84e48e",
+      "export_identifiers": 134
+    },
+    {
+      "name": "GlU32.Lib",
+      "sha256": "088b605b8bdbd5c9413790f727ac39901d8784bf3b34c5fc1f244d57b58a673b",
+      "export_identifiers": 52
+    },
+    {
+      "name": "GPEdit.lib",
+      "sha256": "700cff6b582e3d935c58393edf9147fa42658867ebca114125cdc585cbe52e12",
+      "export_identifiers": 6
+    },
+    {
+      "name": "gpmuuid.lib",
+      "sha256": "2baf4c650a59545d3b455dd6e453fab13d62e0b26b3d29c39178d250c13df432",
+      "export_identifiers": 0
+    },
+    {
+      "name": "hbaapi.lib",
+      "sha256": "2f55aa3cdecb14d50abf95253a5ae3e6da6f6b7bf037f555f04d94c59969e1d3",
+      "export_identifiers": 93
+    },
+    {
+      "name": "hhsetup.lib",
+      "sha256": "a372d2e11ab01f127612426e327e4aabaff511367d6594ac9f59981d559b7423",
+      "export_identifiers": 0
+    },
+    {
+      "name": "hid.lib",
+      "sha256": "0d9ac044dc41dfc8fc7f12ce0139669e6bd83b502c3a806b7f69f161ed9ce260",
+      "export_identifiers": 47
+    },
+    {
+      "name": "HLink.Lib",
+      "sha256": "ab5c7daee709a1ab47a04d1e44dbf1a1b053f19d08ef7391e24c6fe4a87ed693",
+      "export_identifiers": 0
+    },
+    {
+      "name": "hrtfapo.lib",
+      "sha256": "87283926d3008883b688a453cbd3ce5cdcf7e7ca3a5833c1c195ccf5a1fea0e0",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Htmlhelp.Lib",
+      "sha256": "77e4c7056a56b294259dad8343865cfc2f18e32e3c88307406e121645f43abb6",
+      "export_identifiers": 0
+    },
+    {
+      "name": "httpapi.lib",
+      "sha256": "16c4fea329f2b975d73b9a5323215d3623c97ac9c738f1b36e652ba9015c0616",
+      "export_identifiers": 49
+    },
+    {
+      "name": "HwReqChk.lib",
+      "sha256": "7964501e8b516524e1c878a46df3c7e8481aa04ed958351d2743f468e9c11843",
+      "export_identifiers": 4
+    },
+    {
+      "name": "iashlpr.lib",
+      "sha256": "12675ca48a1ddbcaa7345d42227c2f0d36231059d2d18716785490a9473ebc71",
+      "export_identifiers": 12
+    },
+    {
+      "name": "Icm32.Lib",
+      "sha256": "2e5f03872e1a9c32324945f74218c6ca22cc052ad80303c1814611bd8a7d4e5d",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Icmui.Lib",
+      "sha256": "82d120bd88be9ae856833cbe1e519b5f5c54c272820970bde035cca35dd8cf6d",
+      "export_identifiers": 2
+    },
+    {
+      "name": "icu.lib",
+      "sha256": "7e5d73740c4c6e50385583c24573a237e5b74136862379aa5d38c859eea73285",
+      "export_identifiers": 1059
+    },
+    {
+      "name": "icuin.Lib",
+      "sha256": "090ee24228a0c70885ba597f914fb96d5b7c83adce28571e9b0137dcd0abf499",
+      "export_identifiers": 416
+    },
+    {
+      "name": "icuuc.lib",
+      "sha256": "514294d75836734d2615a5be3224f8ed636a2f1c2dd9741bf1f1c1c9dca06d6f",
+      "export_identifiers": 542
+    },
+    {
+      "name": "IEPMAPI.Lib",
+      "sha256": "ca172e421f2f42d4c5fccaa53bc6af78f11a764e23d0cdf7ec080884bf4a5f22",
+      "export_identifiers": 0
+    },
+    {
+      "name": "iesetup.lib",
+      "sha256": "e33f006c41c2391c9f077625223e34c4b9e9fc185c27f764f81edd1c91b73d1c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ImageHlp.Lib",
+      "sha256": "60c7bed426be3eba30ead5ad14a540d6b65e610661683428195f073897250364",
+      "export_identifiers": 151
+    },
+    {
+      "name": "imgutil.Lib",
+      "sha256": "2d4d405eb240729b73b4c85f8e2fc6ab6cc1cf29ec18a0e76df7e4a01302fbfe",
+      "export_identifiers": 9
+    },
+    {
+      "name": "Imm32.Lib",
+      "sha256": "10bd87c59fe883021907eeabb151082377eeecea2b069546036307a5ea863214",
+      "export_identifiers": 82
+    },
+    {
+      "name": "infocardapi.Lib",
+      "sha256": "8b0c046903b9bd3e07a868ef2f0a5b038fccd99a6e94e4d72e93388ea3252f02",
+      "export_identifiers": 17
+    },
+    {
+      "name": "inkobjcore.lib",
+      "sha256": "0eb1df6cb590450f46d7d36073644e934e7412ff2a2066338f0492a172087131",
+      "export_identifiers": 30
+    },
+    {
+      "name": "inseng.lib",
+      "sha256": "342daea517d7f27ca01b9ba358256677b82fb76357bce0b2088fbc463945188c",
+      "export_identifiers": 7
+    },
+    {
+      "name": "iphlpapi.lib",
+      "sha256": "99dd1b9d3c44a20c9b62277f4140fc9fc11c6dd779c34be7d514020be1d13e41",
+      "export_identifiers": 310
+    },
+    {
+      "name": "Iprop.Lib",
+      "sha256": "6f1ea926afc7a82bb9ebf0897f0de531acf769db92503991478c68b703e4df6d",
+      "export_identifiers": 8
+    },
+    {
+      "name": "iscsidsc.lib",
+      "sha256": "a57aec4b304403d50024d5f78e85cc94158a2c183a825afdabf34cc305d7fd59",
+      "export_identifiers": 80
+    },
+    {
+      "name": "IsolatedWindowsEnvironmentUtils.lib",
+      "sha256": "e238ba42186bc69bf8e8dea22c6d77f3e7b10eb9f7d4db6ce87f2dbaaddfe8f9",
+      "export_identifiers": 2
+    },
+    {
+      "name": "jsrt.lib",
+      "sha256": "20d345ded2eefa1fd0b0b610b20b9073a51ceaa8712f2370571ac82c4c161c67",
+      "export_identifiers": 92
+    },
+    {
+      "name": "kerbcli.lib",
+      "sha256": "59cb034d8a2c094455d4db189718b8970326d250ddbd7c0a74781aee504963f6",
+      "export_identifiers": 0
+    },
+    {
+      "name": "kernel32.Lib",
+      "sha256": "341c7d56125a03b458e4d5093e4c79b33123ccfdfd610fe236937b8e6f3134bb",
+      "export_identifiers": 1396
+    },
+    {
+      "name": "keycredmgr.lib",
+      "sha256": "3387c0a3b3067e147bc0d106d6569c1991162218863a2625de43053fec920935",
+      "export_identifiers": 4
+    },
+    {
+      "name": "KSProxy.Lib",
+      "sha256": "47b0084b6b9939f95ab4e64b1f11736b8965dee43798c1b21df9b83fb4f83d09",
+      "export_identifiers": 6
+    },
+    {
+      "name": "ksuser.lib",
+      "sha256": "7e988220bc7148b03878c8d9829240af97991d5d6e898c5e0a84fc560384a786",
+      "export_identifiers": 8
+    },
+    {
+      "name": "ktmw32.lib",
+      "sha256": "b91a4a8040b376e16f1cc7fbd04df3e8baeb2db29cbc3aed9699e86344db5a38",
+      "export_identifiers": 44
+    },
+    {
+      "name": "lamparray.lib",
+      "sha256": "69798bbbbe54971a7a7ea1e08cc5073cbe3d73173eaf9f3b7c80f05e358cf5e2",
+      "export_identifiers": 4
+    },
+    {
+      "name": "LicenseProtection.Lib",
+      "sha256": "d368c2910ef01fb8347732d274ab06263dbeadeb2e24f7e9bc004af64afce776",
+      "export_identifiers": 2
+    },
+    {
+      "name": "LoadPerf.Lib",
+      "sha256": "5d7e2e6a0c1216ceccda1e6df327b18872e011a8c36ddae8c80b7c95c50ce09a",
+      "export_identifiers": 14
+    },
+    {
+      "name": "locationapi.lib",
+      "sha256": "f7205e27f945cda70b125ade55314ff10e11ad11bc3f155afb2fd0d55929a81c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Lz32.Lib",
+      "sha256": "1fb6a4287cb5e7ff84b05e781a9b6bceb645a31330f0a0db3bec4de0c6582dd0",
+      "export_identifiers": 14
+    },
+    {
+      "name": "magnification.lib",
+      "sha256": "2876b7563cedacc8d8db9097a2e0c54f7fc0db7d4b55310df4db55dda14fb4b8",
+      "export_identifiers": 19
+    },
+    {
+      "name": "MAPI32.Lib",
+      "sha256": "57ba42d7ad2fd8e1e2790cfcabb35c51fbb07363edd7df87410d71d1d1cfc139",
+      "export_identifiers": 0
+    },
+    {
+      "name": "mbnapi_uuid.lib",
+      "sha256": "60f12f7065e43eb2ad9934913c8a90389419040e951ae86fa7d3b0e4972615ba",
+      "export_identifiers": 0
+    },
+    {
+      "name": "mciole32.lib",
+      "sha256": "5f5efa575251d4672975e65a306c52cd651427c6ddff7be5303c348775bff26d",
+      "export_identifiers": 3
+    },
+    {
+      "name": "mdmlocalmanagement.lib",
+      "sha256": "b91508d3d05786056743507a060a692d10bbe36f41de7083f288cf4ed3c1c542",
+      "export_identifiers": 3
+    },
+    {
+      "name": "MDMRegistration.lib",
+      "sha256": "ceebe30f762a2d55af90e59770439e3bf6796031613a672023aadc21e77f894a",
+      "export_identifiers": 15
+    },
+    {
+      "name": "Mf.lib",
+      "sha256": "7ba3b3d5d83284eb26bdb0ebcdae4844aad78a30a25ff739060156fff7c57004",
+      "export_identifiers": 76
+    },
+    {
+      "name": "Mfcore.lib",
+      "sha256": "647624bd1f528e6a9b641ea36b289a213edefc3af54036cd68a22e1e06f0a3b5",
+      "export_identifiers": 39
+    },
+    {
+      "name": "Mfplat.lib",
+      "sha256": "5f8e7416f1567dd089ba1e326a2a2f0cee7f5513253b32f822b5e1a942a0dfd7",
+      "export_identifiers": 155
+    },
+    {
+      "name": "mfplay.lib",
+      "sha256": "c9009faa2505e45d93a02b670785a671ed04fc2a38c1f46fa9182ad4acf40f01",
+      "export_identifiers": 1
+    },
+    {
+      "name": "mfreadwrite.lib",
+      "sha256": "1883fb7b509e5ab1d25e4c082e2ef52e295956c677b351778de63fa8aef68cf6",
+      "export_identifiers": 5
+    },
+    {
+      "name": "mfsensorgroup.lib",
+      "sha256": "0ad60344ae72ff900418b4eb7ca28da41bd9d4299e6d8db4db81de324dfe3715",
+      "export_identifiers": 10
+    },
+    {
+      "name": "Mfsrcsnk.lib",
+      "sha256": "5bd393e169edc7f873f7be7940935cd24a657e51c3d5d09555c74a204998eb25",
+      "export_identifiers": 2
+    },
+    {
+      "name": "mfuuid.lib",
+      "sha256": "f1a5a912d6e370ac9cf9058ec41fde56af3ad3c178e28f8ea05e41af8d2c1dae",
+      "export_identifiers": 0
+    },
+    {
+      "name": "MgmtAPI.Lib",
+      "sha256": "68ae35b0a937fb15f0ddae976eeac50c5f282cdeaaa0921fd5230dbbb7d21315",
+      "export_identifiers": 9
+    },
+    {
+      "name": "mi.lib",
+      "sha256": "653c61437d60937d62f15a9319340ad26f7fe233f27e6335c719411de5f5c347",
+      "export_identifiers": 2
+    },
+    {
+      "name": "mincore.lib",
+      "sha256": "a5a7c6fc0f0f326474cd7e284135602eed47315504f52dd105b60ce1a742f731",
+      "export_identifiers": 3878
+    },
+    {
+      "name": "mincore_downlevel.lib",
+      "sha256": "1c4978e7eb8dd43480a20323eed1f02b7e97b8f1d6f9298fb7c3c4b93882e47d",
+      "export_identifiers": 595
+    },
+    {
+      "name": "MMC.Lib",
+      "sha256": "f6c55219f6705b7c30912db7c5a6c0728f15fddaf4345c4140ab65f449339eb5",
+      "export_identifiers": 0
+    },
+    {
+      "name": "mmdevapi.lib",
+      "sha256": "7ce9aa3a2664fd4cc3eb8655e7af633464f7910b3ea702f0ce209aa47485ab09",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Mpr.Lib",
+      "sha256": "97624e606519354b0bc9eea1d17f3082ded236b2b2518c39944cd7664d99d336",
+      "export_identifiers": 47
+    },
+    {
+      "name": "Mprapi.Lib",
+      "sha256": "77ff8b55a0d0426549c272da0328c9d0e787d3fc4d330d7db044a13638aa9df1",
+      "export_identifiers": 161
+    },
+    {
+      "name": "mprsnap.lib",
+      "sha256": "80a5f679d2df0725dc7baee739cfb6d78437f5e8d35524f4fc9b1bd4657d1744",
+      "export_identifiers": 47
+    },
+    {
+      "name": "MqOA.Lib",
+      "sha256": "b5caf79c6c1a74d03ab9f5c6623698227ed0b037d237f08037c6ea2aea544317",
+      "export_identifiers": 0
+    },
+    {
+      "name": "MqRt.Lib",
+      "sha256": "177b0ccb3961beb3559bb908b95a21263fa5ccfba223fd92aa41cdb63da0f863",
+      "export_identifiers": 46
+    },
+    {
+      "name": "MrmSupport.lib",
+      "sha256": "1bdd2b36ef15c2c4e9b68f2d46a993ec91fa4b12762e98853bc2940185047c7f",
+      "export_identifiers": 27
+    },
+    {
+      "name": "msaatext.lib",
+      "sha256": "efe2af1a9b5d938a63874cfb8232369d692f9c8155ab8b0ba1d2467f071219b5",
+      "export_identifiers": 0
+    },
+    {
+      "name": "MSAcm32.Lib",
+      "sha256": "0c66559a9bca8cf4a0cb77f911f0ab09cd4f4e59fc4af4f13ca745037e330a45",
+      "export_identifiers": 42
+    },
+    {
+      "name": "Mscms.Lib",
+      "sha256": "c7ab5abef7821db45ab3073d295afb6954d1fabb75b7f9d5c358b741c950bec7",
+      "export_identifiers": 102
+    },
+    {
+      "name": "MsCtfMonitor.lib",
+      "sha256": "73fabb042a2ae5280fe557984261acc0312fe876a3197b344cfe9a73766e754f",
+      "export_identifiers": 3
+    },
+    {
+      "name": "msdasc.lib",
+      "sha256": "ccc2194385e92f46d342dc8a4471517797477c8b265331a56ad52e4efb33fd6a",
+      "export_identifiers": 0
+    },
+    {
+      "name": "msdelta.lib",
+      "sha256": "533120f26c11a4b1d15c9c06280bce9a8138eeaca70d51a195a5aa1b35e5eba1",
+      "export_identifiers": 16
+    },
+    {
+      "name": "msdmo.lib",
+      "sha256": "812d432f90bd10dd787abb6cfa5bb783f3c20a78478874458cce99c464eb74c5",
+      "export_identifiers": 15
+    },
+    {
+      "name": "msdrm.lib",
+      "sha256": "9c4d50d8a737975e9d43d3a0bb7b1473f838e4d567f10e42e9a3f89eefe99e26",
+      "export_identifiers": 85
+    },
+    {
+      "name": "Msi.Lib",
+      "sha256": "95ce33c8f30d683562dd07e5e9b82f1468ff11778dd7626f7bf2499585c83e16",
+      "export_identifiers": 0
+    },
+    {
+      "name": "MSImg32.Lib",
+      "sha256": "3c1e411156def636efb0068e9ffd15ddc8ef73083a00691fd11d9549ea25e5fe",
+      "export_identifiers": 3
+    },
+    {
+      "name": "mspatcha.lib",
+      "sha256": "9929b6ae2f98a851b3af967d62d1c1eda32a1abcd01a5280d4defc45c7e9efa2",
+      "export_identifiers": 16
+    },
+    {
+      "name": "mspatchc.lib",
+      "sha256": "4f5ec2d290ed03ec1b5284b8bb23b2f312d7523edfccb418677aed25c3c67719",
+      "export_identifiers": 14
+    },
+    {
+      "name": "mspbase.lib",
+      "sha256": "8e67f20801c25c062bfbbe095a4b28e584e4cfa9acad54da2958138ca53fde52",
+      "export_identifiers": 0
+    },
+    {
+      "name": "msports.lib",
+      "sha256": "f62837aa0ba99b15fdfb01ccc3701deb6952444a417ab5e68a5a91da5ef95331",
+      "export_identifiers": 11
+    },
+    {
+      "name": "MSRating.Lib",
+      "sha256": "b2f05e8d6f0fed8ba49fad69ef26d58252ac2e822d5de11c9f30b30411f6bce8",
+      "export_identifiers": 32
+    },
+    {
+      "name": "MSTask.Lib",
+      "sha256": "88a4beef72a7b00829bfdf9a2b3fff512516e076496684d39e609b161ad16c64",
+      "export_identifiers": 11
+    },
+    {
+      "name": "msv1_0.lib",
+      "sha256": "d9f8242d513013d6912848f16024fe3f839d989d4a2ca3c2bee2489b9607020c",
+      "export_identifiers": 15
+    },
+    {
+      "name": "msvfw32.Lib",
+      "sha256": "ff42900e0a0609d98e4671c2772b24ae54235f0e6399ef6b85aa28b848fde1be",
+      "export_identifiers": 46
+    },
+    {
+      "name": "MsWSock.Lib",
+      "sha256": "095162f5fe5a75ab3a88d47802e2311781aba944aea30971fcd53e76fa868577",
+      "export_identifiers": 29
+    },
+    {
+      "name": "MsXml2.Lib",
+      "sha256": "587179ae444574edf80f89e3e4aed8e895929c345f6c83eec6885ff47b4f8786",
+      "export_identifiers": 0
+    },
+    {
+      "name": "msxml6.lib",
+      "sha256": "ddaf05e99c8de3f955a234a42e2cdb22474b43f90b80bdd53ea0e516e8e62dcd",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Mtx.Lib",
+      "sha256": "bb9b34446b4fd9b08514d34c29867e73e1dd3f3e7975b07cd0b44ad42bc8129e",
+      "export_identifiers": 3
+    },
+    {
+      "name": "mtxdm.lib",
+      "sha256": "a674bf255a9ff94e3d0cace671e7fdc01dce8bc4693e529ea90f7ce5e0e7f546",
+      "export_identifiers": 1
+    },
+    {
+      "name": "muiload.lib",
+      "sha256": "1b04df9f4930cc0f1958f40a0bd85ef4ae6f0acaa52bd8296cc818cb28d9beb1",
+      "export_identifiers": 0
+    },
+    {
+      "name": "nanosrv.lib",
+      "sha256": "4494f92c14b39fd8d5af885a3765c94918d7f08e27d52c5e1517edf09c86545f",
+      "export_identifiers": 3001
+    },
+    {
+      "name": "ncrypt.lib",
+      "sha256": "60bd05c6f0f02862520f64c4343fd9890ba027443d77c0e271573808e3c48b7b",
+      "export_identifiers": 151
+    },
+    {
+      "name": "nddeapi.lib",
+      "sha256": "c1b7be8d587c92c661901b8ab417464956b2345ddd64969fff95ec8bf5aa32b2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ndfapi.lib",
+      "sha256": "8b290af31bf8e0e037b0b2a6f170cc8e069d85e03450596675c5846cbdd9bcf0",
+      "export_identifiers": 18
+    },
+    {
+      "name": "ndproxystub.lib",
+      "sha256": "1a4412d847bd0a0aecdfb308c320e3e5ea9eceabda82398c70b2378521a5f6c2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "NetAPI32.Lib",
+      "sha256": "cf64f26aa853fb4426692c6454c634bbd47d73f38d1e1abf128d505ccdead540",
+      "export_identifiers": 213
+    },
+    {
+      "name": "netlib.lib",
+      "sha256": "fdc4b60238220f11a191b39b4eac32cbee7921b657c79eb3ec69b57c93475146",
+      "export_identifiers": 0
+    },
+    {
+      "name": "NetSh.Lib",
+      "sha256": "d0a0c84451635c4fd81bc948ce2a8c0bd69412f1c783aa4c64a85fac5c85d4be",
+      "export_identifiers": 23
+    },
+    {
+      "name": "newdev.lib",
+      "sha256": "38e01d394fff453dcaa1dee9a6df9661267ef9b9dba9217a5dd2ee5de979eae6",
+      "export_identifiers": 22
+    },
+    {
+      "name": "ninput.lib",
+      "sha256": "47567af03d4f6f3b021dd4085fd91b990f4a43fb78c9321fe9a7adee8121e285",
+      "export_identifiers": 30
+    },
+    {
+      "name": "normaliz.lib",
+      "sha256": "636a951a40ce862d64db035e02bf383b762b8389164b548ca755fbefa35ce892",
+      "export_identifiers": 5
+    },
+    {
+      "name": "nt.lib",
+      "sha256": "b01587c1d8a668afbc97eeed7c790ff27aeca1fc40d20562c9e2a6519ca6b00a",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ntdll.lib",
+      "sha256": "a373f724ef6d8ea11a8b03de653ac1b4f111522f59a1f4b787ec9d93f31fe7c1",
+      "export_identifiers": 2213
+    },
+    {
+      "name": "ntdsa.lib",
+      "sha256": "fd3ac9cb476a88cc56beccd9510fc6ed9e6cc60562441809c8c72dce650a1f64",
+      "export_identifiers": 146
+    },
+    {
+      "name": "NtDsAPI.Lib",
+      "sha256": "f5390cb9e9ff2bbd1e1070ebedff9d6123d2ec2f694d5c0f23499731b9da78d6",
+      "export_identifiers": 120
+    },
+    {
+      "name": "ntdsatq.lib",
+      "sha256": "d710aae0cc80a81fb03ceb7e1e859a378ea311e2273380aad881c1e8d418d937",
+      "export_identifiers": 46
+    },
+    {
+      "name": "ntdsetup.lib",
+      "sha256": "df2ae93901b9ac742133fd2b80321b635b2c1d833c8e6e10cfb97093ffaebbf1",
+      "export_identifiers": 24
+    },
+    {
+      "name": "ntfrsapi.lib",
+      "sha256": "018dd4eb57555ca19d14c9d86a052b0665004ee712e467193e5970c662931e60",
+      "export_identifiers": 33
+    },
+    {
+      "name": "ntlanman.lib",
+      "sha256": "2952b9e9e34c2d1cf60e14f28838d19d6618487ea184a76e3af7a98e1eac7430",
+      "export_identifiers": 7
+    },
+    {
+      "name": "ntmarta.lib",
+      "sha256": "2d9dfe67cdf6e7a1f901dae76106ef9df46e35e92309738242ea8cbd8b029e60",
+      "export_identifiers": 42
+    },
+    {
+      "name": "NtQuery.Lib",
+      "sha256": "efe9f72008cdaa218d1f5a3673b4eb88501ed190d2a46d9505825240297d1008",
+      "export_identifiers": 4
+    },
+    {
+      "name": "ntstc_libcmt.lib",
+      "sha256": "00c1629fdc4c96283c6f41e87852912353a14208a78199df98b9b9ecf2f328ba",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ntstc_msvcrt.lib",
+      "sha256": "04ddd4fcf8138fb081560f18bd2b31f053020296eaf87b037698915ef9e3dafe",
+      "export_identifiers": 0
+    },
+    {
+      "name": "objsel.lib",
+      "sha256": "06584558e2cf9b3bfa2402c448bc532160c8e956be40c67f0f697cf20fc4d380",
+      "export_identifiers": 0
+    },
+    {
+      "name": "odbc32.lib",
+      "sha256": "1a64ea5c1bae72af88ee1123979402d46bf5b0623444a68c44046d28e821fec9",
+      "export_identifiers": 21
+    },
+    {
+      "name": "odbcbcp.lib",
+      "sha256": "137c125bddfbf72b4e3b4d6762fb97432f1451e78aa1f98ff0309216cccc42c2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "odbccp32.lib",
+      "sha256": "6817d74af059a79534d2d12b45aadadfeee762cc2da7c32364877871a7183691",
+      "export_identifiers": 0
+    },
+    {
+      "name": "OemLicense.lib",
+      "sha256": "0286c45f9ec0d9060e29a06024424ca281edc5abbb52c9e8476f479611e341b8",
+      "export_identifiers": 2
+    },
+    {
+      "name": "Ole32.Lib",
+      "sha256": "f7b6d1e4a2f2a16c6a78ed821c8aa7f0b488112bb4da778285086e4588ca197a",
+      "export_identifiers": 480
+    },
+    {
+      "name": "OleAcc.Lib",
+      "sha256": "eee64499e7cc83169282139f26e6c98959b90c0704bb4faeffada30aa85510e8",
+      "export_identifiers": 20
+    },
+    {
+      "name": "OleAut32.Lib",
+      "sha256": "ccb86049288e4816e34b572f0d63a6b2c40d91777b092bb77ae639aa8e887ae5",
+      "export_identifiers": 18
+    },
+    {
+      "name": "olecli32.lib",
+      "sha256": "ca378d6009cf3bd0a3c3bf4a11e5966452c07016a8b6a7541d82b83831dcd1a8",
+      "export_identifiers": 0
+    },
+    {
+      "name": "oledb.lib",
+      "sha256": "f6ec86e615b8417366f356fe4be612c16570724bca88fed66313a1cccb7d48b2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "OleDlg.Lib",
+      "sha256": "dd25720a8ab4df08bf63ec3a549159d458f4548ffa92f580f768278fa2f1d319",
+      "export_identifiers": 11
+    },
+    {
+      "name": "olesvr32.lib",
+      "sha256": "96598bfa4ececfb7f0aae6106f4357f1eafb5a1445c3bd179ef1d981e5c2bee1",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ondemandconnroutehelper.lib",
+      "sha256": "ebf494d0ae53dc30eb1260cc3379de1a327b219ec8c4e75c13d99a93a95b4f6a",
+      "export_identifiers": 8
+    },
+    {
+      "name": "OneCore.Lib",
+      "sha256": "9780d1a6abdd6d47166b1e660f10f86f9e3e4393a15012e49b2b2186061d5629",
+      "export_identifiers": 8103
+    },
+    {
+      "name": "OneCore_apiset.Lib",
+      "sha256": "2c94cf300c764adfd205a981a5b046e7e27a96ebc680a4db659c88f62b27411c",
+      "export_identifiers": 6121
+    },
+    {
+      "name": "OneCore_downlevel.Lib",
+      "sha256": "0b6d423b44c1b86caec8efc3e48cfc99df56028541052415df7052f50bff7ad9",
+      "export_identifiers": 4170
+    },
+    {
+      "name": "OneCoreUAP.Lib",
+      "sha256": "b5d6d19db5ccb476254142888e78eaa49cd8890d3a5484c981737e62b4863216",
+      "export_identifiers": 10255
+    },
+    {
+      "name": "OneCoreUAP_apiset.Lib",
+      "sha256": "d1e4dcffc61ff05a9fad041944d6df6593e9a3c4b87ea588c339c1f4214e2c8c",
+      "export_identifiers": 8512
+    },
+    {
+      "name": "OneCoreUAP_downlevel.Lib",
+      "sha256": "2b471307a6a3fa46ce6b3905f503a687da60d0cdd8162b468ee274f3587c2195",
+      "export_identifiers": 4170
+    },
+    {
+      "name": "OpenGL32.Lib",
+      "sha256": "4a59b4f30c5e36f4258bea5004a22f276b27fa28b297e7d899d89dc63c10e762",
+      "export_identifiers": 368
+    },
+    {
+      "name": "opmxbox.Lib",
+      "sha256": "7cd1a172426f37a51914229d5959f2b47476f3a25e5f51ba00101adcec16f496",
+      "export_identifiers": 3
+    },
+    {
+      "name": "osptk.lib",
+      "sha256": "d87d966588f7beaa96fe72987f0184f1a8c081b9496c027d7df8b0dcb5f6ed97",
+      "export_identifiers": 0
+    },
+    {
+      "name": "pathcch.lib",
+      "sha256": "15b195e9774e69d63571135b8392ffc6f379835addf7c6bd7eac8738cd75168e",
+      "export_identifiers": 22
+    },
+    {
+      "name": "Pdh.Lib",
+      "sha256": "7503a6dd088f40c313fd206aa4878ba4407ac97e5fe97d90512e537191e7d02b",
+      "export_identifiers": 110
+    },
+    {
+      "name": "PeerDist.lib",
+      "sha256": "1cfee001b916539c917b4b6a39a07a8a56840f9cc88012faeebe7ff94fb3545e",
+      "export_identifiers": 28
+    },
+    {
+      "name": "PhotoAcquireUID.lib",
+      "sha256": "afefed2774cf687e2d2a06be75e0d376de06e3c3662d97c48f0b1f584e27c64e",
+      "export_identifiers": 0
+    },
+    {
+      "name": "PortableDeviceGuids.lib",
+      "sha256": "285c0588c848d4bad7e8832d05c4edf269c1b2f63426ac305c46f5c676b92e9e",
+      "export_identifiers": 0
+    },
+    {
+      "name": "powrprof.lib",
+      "sha256": "9c05216b4cf2e80a3763d56b49d4a12bed0078c417b3633a03faa7405676378d",
+      "export_identifiers": 113
+    },
+    {
+      "name": "prntvpt.lib",
+      "sha256": "aadc17d4336ea3bd2269e1999b69a334f95357b3155d88e273333155e3e70342",
+      "export_identifiers": 18
+    },
+    {
+      "name": "ProjectedFSLib.lib",
+      "sha256": "748ad278a6c14363fcd581bfe801d3f66199da642b7269c30c90a03fbd3b0e94",
+      "export_identifiers": 35
+    },
+    {
+      "name": "propsys.lib",
+      "sha256": "3f90c76e55501f7957d883d7f81fbdf23afcc5d4700c08937d62d54c72f85646",
+      "export_identifiers": 216
+    },
+    {
+      "name": "psapi.lib",
+      "sha256": "45ef99080ea8b49ec3ab396442d7b9ec39c1289445bf0197135f8922b1b4d973",
+      "export_identifiers": 27
+    },
+    {
+      "name": "quartz.lib",
+      "sha256": "4e55d66b4440354d6543ad9ad5d13d31d20b904210c6e56e966585471f2d3178",
+      "export_identifiers": 4
+    },
+    {
+      "name": "query.lib",
+      "sha256": "efe9f72008cdaa218d1f5a3673b4eb88501ed190d2a46d9505825240297d1008",
+      "export_identifiers": 4
+    },
+    {
+      "name": "qwave.lib",
+      "sha256": "89563f303853859ada77976cd16edde633e2b69fe02cf6b6d687a6070d6fa05b",
+      "export_identifiers": 14
+    },
+    {
+      "name": "RASAPI32.Lib",
+      "sha256": "df176f67b48a0971d3722754b1872f024752b0688e94492b5f19f0a6542da201",
+      "export_identifiers": 198
+    },
+    {
+      "name": "RASDlg.Lib",
+      "sha256": "db2b7e7b04b6c1355ee4051a7a6984c683741e4025a55aec15f3c4a7f8f93cf3",
+      "export_identifiers": 24
+    },
+    {
+      "name": "rasuser.lib",
+      "sha256": "b0f61693d3d764e417846624db108f62256d0dec83c4d5c7b687ee48a2d7aabe",
+      "export_identifiers": 0
+    },
+    {
+      "name": "resutils.lib",
+      "sha256": "970d03db6846b8191ffca704b9127977cf8fe0c2a9972eecf9bb6593bf2b3f75",
+      "export_identifiers": 127
+    },
+    {
+      "name": "rometadata.lib",
+      "sha256": "e08c73c624c8b2e966d4cdd5f1788b8fb7ae44cf5e2bcce95d04ecd55a17a05e",
+      "export_identifiers": 1
+    },
+    {
+      "name": "rpcexts.lib",
+      "sha256": "96dafba6181eaf7f4fd18f1a6fee999b65f49bc4d64bdde61e8c3f60d84242bb",
+      "export_identifiers": 58
+    },
+    {
+      "name": "Rpcns4.Lib",
+      "sha256": "830faf5582ad16dd6d29b2948152ffb99165dc8a2b9ad4ef75558343a1272593",
+      "export_identifiers": 62
+    },
+    {
+      "name": "rpcproxy.lib",
+      "sha256": "185fc6a91f40e89cf71b27c3f36937bf63cfb001d3eabf3e054ff725b0bcdb71",
+      "export_identifiers": 4
+    },
+    {
+      "name": "RpcRT4.Lib",
+      "sha256": "bfe69184c180bf6ade840ac5279b53aa67b0eda43c82bcd86596db0309faeef3",
+      "export_identifiers": 529
+    },
+    {
+      "name": "rpcutil.lib",
+      "sha256": "2e1cd47101ef3b73dd96c20dd61443ecb542bd6412394845cf1b4b73dd4a2f78",
+      "export_identifiers": 0
+    },
+    {
+      "name": "rstrtmgr.lib",
+      "sha256": "e690e16a3b72e4ff306e635ebfbd76b770099bb78c0e4a48b23e5cac4f0db6c5",
+      "export_identifiers": 12
+    },
+    {
+      "name": "Rtm.Lib",
+      "sha256": "e5b34cd16b8e55aa79522a56c98e628aff6bccf28e0c5eff98a13a0fa5618b28",
+      "export_identifiers": 116
+    },
+    {
+      "name": "rtutils.lib",
+      "sha256": "f3a87d71f5abd3e8b7e1a5ac747ae9ae2e780804e7d7a8b8f259d4dca78362fd",
+      "export_identifiers": 41
+    },
+    {
+      "name": "RTWorkQ.lib",
+      "sha256": "d1e66f8af6c9b41ef2e4df4fa7ce154db4ab6703b61fedbfabf6cb54f653ba3b",
+      "export_identifiers": 34
+    },
+    {
+      "name": "runtimeobject.lib",
+      "sha256": "b53777f7426c9118e3c2b7b87d8bfe9117e448886bd3b8b835b48a8d277a7864",
+      "export_identifiers": 64
+    },
+    {
+      "name": "samlib.lib",
+      "sha256": "a17db204cac3b0b4ff79a0d8bd14af5c5852ef9367dcff98298090156fbf964c",
+      "export_identifiers": 77
+    },
+    {
+      "name": "samsrv.lib",
+      "sha256": "4a673adafb6b0eff289deabb37d98aa65cdfa0b180f05188183af7523e084185",
+      "export_identifiers": 338
+    },
+    {
+      "name": "SAPI.Lib",
+      "sha256": "bfb53a7ff33cd73c8fa61b59133e866883cb5023c00a2ed22777ff3ded4082a2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "sas.lib",
+      "sha256": "9c458820a1125cd10b2211fdeced62f297089e43f2bb057b92573e917245d89c",
+      "export_identifiers": 1
+    },
+    {
+      "name": "sbtsv.lib",
+      "sha256": "45cfc828bafc47ab206733816e949b8f1d7b3d0ad35b2c979f4317ff4d7f5eaf",
+      "export_identifiers": 0
+    },
+    {
+      "name": "SCardDlg.Lib",
+      "sha256": "a10e4a2d7dd77b624305e5b123e5c1ba637e804609a5dc9b0c1ebdbeab162c18",
+      "export_identifiers": 0
+    },
+    {
+      "name": "scecli.lib",
+      "sha256": "1952b5cd4dae43e4cab603ae0b04c9144115c4818dc46eb251a212863efc84fe",
+      "export_identifiers": 62
+    },
+    {
+      "name": "scesrv.lib",
+      "sha256": "1b3bca90951f6552acde8354d6145ab71ce2e359b935d3370c66ea25d6297222",
+      "export_identifiers": 2
+    },
+    {
+      "name": "schannel.lib",
+      "sha256": "5badcdc41ac95f5b63ca3a3cd459ea9dc390b075f7dd9e7a8f778ef4fe592cc5",
+      "export_identifiers": 37
+    },
+    {
+      "name": "ScrnSave.Lib",
+      "sha256": "fed7f750a893cea07cefa8f6be31014fdd3c96f52474064cec10315e0d653fb4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "ScrnSavW.Lib",
+      "sha256": "1644cf69b090080de672a2ff3996d58af9c9af9d42de11010e556e17d73146b4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "SearchSDK.lib",
+      "sha256": "08df8d7438da41c57440ff2d4aeaa4cb8a1f748fb54fc7daa65f2656f4601d92",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Secur32.Lib",
+      "sha256": "60462b96a42cc89f407c246427dccc0a3dba26f16392454f1e104aa3f297d1a2",
+      "export_identifiers": 93
+    },
+    {
+      "name": "security.lib",
+      "sha256": "c71a54ef195c59278c1110dce4bcc0c2008719e5e0f7f22adcb7ce53c5aa3d54",
+      "export_identifiers": 36
+    },
+    {
+      "name": "sens.lib",
+      "sha256": "6a55d7be75d3ccf9162a8c6cf7c350f1afc4d6d87064bfc7372709c7c4c2bb03",
+      "export_identifiers": 3
+    },
+    {
+      "name": "SensAPI.Lib",
+      "sha256": "f8069c4d2a43db626f61c22540ef5846f04da85a0972577dcebac6afbdf2319a",
+      "export_identifiers": 3
+    },
+    {
+      "name": "sensorsapi.lib",
+      "sha256": "ee9fd77fdbd81dcf4748ab9d32617fa4581ffaf9554b625d95547acd723275d6",
+      "export_identifiers": 0
+    },
+    {
+      "name": "SensorsUtils.lib",
+      "sha256": "3508e810e5887b6703243452f5fa3129e4cc2dac3e81384657388c2f1af0e7c9",
+      "export_identifiers": 71
+    },
+    {
+      "name": "SetupAPI.Lib",
+      "sha256": "2ca195cf81e21253fdb47cdfcc900aa0398769f3d916e66e02d31668957feb99",
+      "export_identifiers": 558
+    },
+    {
+      "name": "Sfc.Lib",
+      "sha256": "9bb3ccd02b464b06c8701071116b71dfb31350fd0eb1e404e8cd4fb89a60e2b2",
+      "export_identifiers": 7
+    },
+    {
+      "name": "shcore.lib",
+      "sha256": "ac184006754749e3c709c1d8d42d61877d7192a5cf492d0a09ded201f62bfaca",
+      "export_identifiers": 19
+    },
+    {
+      "name": "shdocvw.lib",
+      "sha256": "bb9e4b6b2497ad0f1ad6294f6eb7086e8285df270a6b473d94d368a42f019b9b",
+      "export_identifiers": 19
+    },
+    {
+      "name": "shell32.lib",
+      "sha256": "2a22142874964268432783a85cef5e3f5c18ed050ab77e637bb6bab30bb73ab6",
+      "export_identifiers": 281
+    },
+    {
+      "name": "ShFolder.Lib",
+      "sha256": "5bf7a57284cfc63805dde2c09a26180c882aca6763c1dc504f6b7dd15dabdef1",
+      "export_identifiers": 2
+    },
+    {
+      "name": "ShLwApi.Lib",
+      "sha256": "d2c39baa1c2658e022a82410f283e89b8ef94b8ac0bf64f3532a954b0d8598d3",
+      "export_identifiers": 299
+    },
+    {
+      "name": "slc.lib",
+      "sha256": "301f598457c954a7abb9a54c17ea42e53c00cd126c90efc6eddecb1df146ce3e",
+      "export_identifiers": 37
+    },
+    {
+      "name": "slcext.lib",
+      "sha256": "6f23cb43f4ab9e9f22ab5b027aff24d8e032deb8d41431d8f84199da9aecc0dc",
+      "export_identifiers": 9
+    },
+    {
+      "name": "slwga.lib",
+      "sha256": "ba43ffb482c8f45ae4b0d6b30d64f6ba00c474dd5d05b10ad98545e9539fcef3",
+      "export_identifiers": 1
+    },
+    {
+      "name": "SnmpAPI.Lib",
+      "sha256": "b7302315e295968220beada96c44be2c19ff05ab6ab243611b3d582ebe35cdb5",
+      "export_identifiers": 38
+    },
+    {
+      "name": "softintrin.lib",
+      "sha256": "d00c2e908a817f7619d726b1b2aa070bd3120d50758cdef28717ed34afd64ee7",
+      "export_identifiers": 0
+    },
+    {
+      "name": "spoolss.lib",
+      "sha256": "9d8297aff0376261ebb3b27286ca7ba15fdd52e45803b75f1aa95643beac3b7c",
+      "export_identifiers": 198
+    },
+    {
+      "name": "SpOrder.Lib",
+      "sha256": "bd990d26ba584ba75e18e99cf06cba0bd30b1b5cdf5db3c6538bb28facfc701f",
+      "export_identifiers": 2
+    },
+    {
+      "name": "SrClient.lib",
+      "sha256": "8d3561a64892597fef8a41843698d45b5b5a3084c7b8f8fdc761f34b1b53bb39",
+      "export_identifiers": 0
+    },
+    {
+      "name": "srpapi.lib",
+      "sha256": "d867846f26db08bde8c66284ce6fdd13ff19cf549d0659c44129d7b46893d7e4",
+      "export_identifiers": 23
+    },
+    {
+      "name": "ssdpapi.lib",
+      "sha256": "43d29dd62e39c812c5bc6647ffbc67f202089de1f328483efd99442783708b33",
+      "export_identifiers": 29
+    },
+    {
+      "name": "Sti.Lib",
+      "sha256": "2cf95889374618db93d6e6fd7fffaf46743891d632eff74dcfd4783ae2436fa4",
+      "export_identifiers": 4
+    },
+    {
+      "name": "strmbase.lib",
+      "sha256": "f3c8d70163b8b200c41fa390e901e9324b148cda5c54faeb54f90e449a742521",
+      "export_identifiers": 0
+    },
+    {
+      "name": "strmiids.lib",
+      "sha256": "3c66daa855c4d47d77eb18023d4780a108e4c5fd0451a6aafb0b69602d35ec15",
+      "export_identifiers": 0
+    },
+    {
+      "name": "strsafe.lib",
+      "sha256": "2b1b0de4e1397dc7b7fd9eccfa70f95edb5ce9411d708b254b0ca1ca01acd3d8",
+      "export_identifiers": 0
+    },
+    {
+      "name": "structuredquery.lib",
+      "sha256": "acc097dc72d41968a9dfa9ec7403e30af31ba69c2cf90c912c0cd706d7c78183",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Svcguid.Lib",
+      "sha256": "20294c8e002f09ce908389a799bfc6b5a2ec595c82ab0b6c4b77abe362cc7b29",
+      "export_identifiers": 0
+    },
+    {
+      "name": "swdevice.lib",
+      "sha256": "f724665dc332b2cbed00a21ae08c77a64899ab48d799294b17f8d926e03d7cab",
+      "export_identifiers": 9
+    },
+    {
+      "name": "synchronization.lib",
+      "sha256": "31d7ad2d661e6c1017a5607ee692800f1e729836ac79339f7151f444d228f50a",
+      "export_identifiers": 3
+    },
+    {
+      "name": "t2embed.lib",
+      "sha256": "119bfd4aaf559a9e58507588585a07d9579d61f45f80c0622c2e3484d341f838",
+      "export_identifiers": 14
+    },
+    {
+      "name": "Tapi32.Lib",
+      "sha256": "72faa00d762d9cd5a787387e6391a8d98052e3afd1c22e6ef4000426ce075469",
+      "export_identifiers": 278
+    },
+    {
+      "name": "tapi32l.lib",
+      "sha256": "ca6644699f543e124afe1537340c6ccd5017ddd911ec8e3dfbd52dc2fb9a49e0",
+      "export_identifiers": 0
+    },
+    {
+      "name": "taskschd.lib",
+      "sha256": "bb4ae30436c2d48e3bdd7eb547772c66ee3d3793abd185545bfec87ecf82d6cc",
+      "export_identifiers": 0
+    },
+    {
+      "name": "tbs.lib",
+      "sha256": "f54aeba0d88d66b6454f6c38fd49016266f3af3e81ef2500befe878c8d01e8cf",
+      "export_identifiers": 21
+    },
+    {
+      "name": "tdh.lib",
+      "sha256": "8eff523b5eb02b828e8de5a375de5045fbde410bff44a4ddcdec5f4d10d9f708",
+      "export_identifiers": 27
+    },
+    {
+      "name": "tokenbinding.lib",
+      "sha256": "080384129847e31aafaeda2f5021c06d0a6a229a321d568c9e3e686c56643928",
+      "export_identifiers": 10
+    },
+    {
+      "name": "Traffic.Lib",
+      "sha256": "b9f50f241f4daecc1245116450f7550d1c60caf023e6312e67afdf2f7ac0b594",
+      "export_identifiers": 22
+    },
+    {
+      "name": "TranscodeImageUID.lib",
+      "sha256": "0dda17fa48b92ec6ce755f9f08943e4a52733d53fba2d60e3996c2a48a6683bf",
+      "export_identifiers": 0
+    },
+    {
+      "name": "tsec.lib",
+      "sha256": "c20556c7f9f7b7d079903060a8760633ee27dae45170b9323d970ab253904de8",
+      "export_identifiers": 27
+    },
+    {
+      "name": "tspubplugincom.lib",
+      "sha256": "b4f85d6e33d923f92e85a87560884f88edf3682b830ef892902c5d8ca35031ff",
+      "export_identifiers": 0
+    },
+    {
+      "name": "twinapi.lib",
+      "sha256": "854b6c1182b265abafea703f7588703197d38ac094ee5591656e6c3d9ed6cad4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "txfw32.lib",
+      "sha256": "44a2f5d7eb52092eb2bc6c7bd61179dc039f25e78b4bad8484ef60763680cb57",
+      "export_identifiers": 9
+    },
+    {
+      "name": "ualapi.lib",
+      "sha256": "237c1f4056350d2befe8c023b1581b38f402c75a3c656dd9123f9a02a5e1b6da",
+      "export_identifiers": 4
+    },
+    {
+      "name": "UIAutomationCore.lib",
+      "sha256": "6697b6a35c42959636e58b49127d3c983039b1f48ca677a0eda836e11208ee30",
+      "export_identifiers": 99
+    },
+    {
+      "name": "umpdddi.lib",
+      "sha256": "39e9b5e37f545be2ab54e6bc9b08f0b8d8aab8a757ac12885018f2e5d9329940",
+      "export_identifiers": 91
+    },
+    {
+      "name": "Urlmon.Lib",
+      "sha256": "41791796f09ee1d9a56433761f87494345339f674412cfeb656464512cdb39e8",
+      "export_identifiers": 89
+    },
+    {
+      "name": "User32.Lib",
+      "sha256": "f45759349ad08b848bdd4eee39cd9b428b2a7ae63a09889c09a197fe7b01421d",
+      "export_identifiers": 790
+    },
+    {
+      "name": "UserEnv.Lib",
+      "sha256": "2ae9d85e10d7536662b2657462ea6e4394c0143a187a75229e4e14599f6e4f2d",
+      "export_identifiers": 52
+    },
+    {
+      "name": "USP10.Lib",
+      "sha256": "044b98b751f471b341632654b34f462f86a76896f03655b5479d05d31e5f9d7d",
+      "export_identifiers": 40
+    },
+    {
+      "name": "Uuid.Lib",
+      "sha256": "d077ffb106503e057428dc7bb4c5daac019c269ffc714edb18ca028723cc840a",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Uxtheme.lib",
+      "sha256": "614cf6d77e03f60ebf59452259571fefb5c4cfe0a78fec9a214ec417441eb250",
+      "export_identifiers": 76
+    },
+    {
+      "name": "vccomsup.lib",
+      "sha256": "dde6bffc5a703a1c423a012053c4cd1c128c5a92ab6a21a604c0bf6a43d92c8c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "vds_uuid.lib",
+      "sha256": "a0b0e6959451e168e23e87565f84ccb3a7b7c77853e9b1469d1e057d32e171aa",
+      "export_identifiers": 0
+    },
+    {
+      "name": "veinterop.lib",
+      "sha256": "cc9670bfa86c7f214913514013919e70591488ec3f8daa57d2c3e0fd1ae0003e",
+      "export_identifiers": 9
+    },
+    {
+      "name": "Version.Lib",
+      "sha256": "391b955d560dd6b07b8fb16a536550ac6156fa5ffd537584a2d24ea6723a6c93",
+      "export_identifiers": 12
+    },
+    {
+      "name": "vertdll.lib",
+      "sha256": "97e3ecb313628ca86ffc43cafff4e607e85bb198c3d283bc009bacc194c33592",
+      "export_identifiers": 105
+    },
+    {
+      "name": "Vfw32.Lib",
+      "sha256": "d76152055c2843a26c0fb34747ed79f005034f3350651a675691a4c748cada0f",
+      "export_identifiers": 126
+    },
+    {
+      "name": "Virtdisk.Lib",
+      "sha256": "4286fdefc3bb8db4783e656e57697cc0fbcc68f5f444d63ba5fbd4755fccd9c8",
+      "export_identifiers": 29
+    },
+    {
+      "name": "vmdevicehost.lib",
+      "sha256": "930a5ed95e43d063e665b63a6730cb3e0e093f705a69afb7ea32f2358075204c",
+      "export_identifiers": 18
+    },
+    {
+      "name": "vmsavedstatedumpprovider.lib",
+      "sha256": "0ce6dec85b70f2744f59e4ae96457a793a8b26927479348654358c9fe7e09e62",
+      "export_identifiers": 47
+    },
+    {
+      "name": "volatileaccessu.lib",
+      "sha256": "4abed42971b12b1309fcf51b422e60d3a01c9a830faaf54cc963026d97fb3c09",
+      "export_identifiers": 0
+    },
+    {
+      "name": "vscmgr.lib",
+      "sha256": "4c718232c3685d303ba2c6c49e7d77deda9cb2673fcce57fc6fe212cdede60e2",
+      "export_identifiers": 0
+    },
+    {
+      "name": "vss_uuid.lib",
+      "sha256": "14d6cfe224e5c02e1d5f10f1d9cfb76a6056fa6d724c2fe1d6fb38eaa07492a4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "vssapi.lib",
+      "sha256": "6075d59831c1f9b747841dcb00ec8c691e9fe2ba62da99056a5432face6dfc8e",
+      "export_identifiers": 11
+    },
+    {
+      "name": "vstorinterface.lib",
+      "sha256": "d79342a999cd822b724e9071b94f7fe1c8875100b1a6ab6b3a9152840483be38",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wbemuuid.lib",
+      "sha256": "206398daa8fc6c9c9a7bf4de4cebec7a36016bf63456f875a92fd6efc9763880",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wcmapi.lib",
+      "sha256": "e57b536fa80828b6973af963204fa2095a0daf3f7523411ae755ad51bf46aa80",
+      "export_identifiers": 30
+    },
+    {
+      "name": "wcmguid.lib",
+      "sha256": "df1771f853cd24a621df94cf30b84e3d5b4af8c70e89cb013e025ea63959e8b4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wdsbp.lib",
+      "sha256": "640ac78d957df759f6226031d791e0f97a05a37430cb9503bf54dc0fbac4f642",
+      "export_identifiers": 7
+    },
+    {
+      "name": "wdsClientAPI.LIB",
+      "sha256": "3a3eefc635030aa425aa8a51c25e35b952c26b9ad75f83ecdd1b16d4a3914934",
+      "export_identifiers": 58
+    },
+    {
+      "name": "wdsmc.lib",
+      "sha256": "e47c8d44d918794cb5cb19264a564ceac41463184759cf361cd02918d99c65b8",
+      "export_identifiers": 6
+    },
+    {
+      "name": "wdspxe.lib",
+      "sha256": "0770422aa87af3cd5ff2cddecb363f88977183bd544b21867773423229727b18",
+      "export_identifiers": 31
+    },
+    {
+      "name": "wdstptc.lib",
+      "sha256": "787293c9b7bd05897bad6740564d1a680bbb649c2cabcfac6b607a5d33f1b16e",
+      "export_identifiers": 13
+    },
+    {
+      "name": "webauthn.lib",
+      "sha256": "7c1adbc3b7e4d53aea8762090d13c30b01efdaaca89b6c978c2cd1dd8f531fce",
+      "export_identifiers": 26
+    },
+    {
+      "name": "WebServices.lib",
+      "sha256": "962a06ef82c19ea61fead1a79c8c64eeb68c74b09cf5df5d976e13efcfecdda1",
+      "export_identifiers": 193
+    },
+    {
+      "name": "websocket.lib",
+      "sha256": "26d11ac97d7f36c025aad04b8a301e02b1c9b0400a94e6629f5a0f454a3c5e5d",
+      "export_identifiers": 13
+    },
+    {
+      "name": "wecapi.lib",
+      "sha256": "609422b572daf93611f3f7b8cdfb43d54936c3d92a8231232006598932d3c729",
+      "export_identifiers": 15
+    },
+    {
+      "name": "Wer.lib",
+      "sha256": "d05fa4fbaa1702cb0e909b4fce36da42a328a99d1d700f214d142a142157dff2",
+      "export_identifiers": 137
+    },
+    {
+      "name": "wevtapi.lib",
+      "sha256": "909f2a070b71705a981cae3c16f2afd527484f6e5f2c11ce45e98c1e3dc6b853",
+      "export_identifiers": 44
+    },
+    {
+      "name": "WiaGuid.Lib",
+      "sha256": "fc4fdcbeca7b79896729e8151e23d172b8e9eb9f89129d716361acd0fbceec83",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wiaservc.lib",
+      "sha256": "13502993ca3de9dba2035344cda094d7ccccd4f5fab26f712557634364aa2860",
+      "export_identifiers": 54
+    },
+    {
+      "name": "wiautil.lib",
+      "sha256": "b712deb761eb3250daa827424546f0b0a7665d0a92538a4b9f933cff281656b0",
+      "export_identifiers": 0
+    },
+    {
+      "name": "WinBio.lib",
+      "sha256": "6de127c88025ca501ac0a346260364d97158bad9e0fb25c6fbd5ca698d44bfeb",
+      "export_identifiers": 63
+    },
+    {
+      "name": "windows.ai.machinelearning.lib",
+      "sha256": "ff81445ffe2cb96523a69cb3a8af064a9016e2c0e9737373eaab49c92fa26484",
+      "export_identifiers": 1
+    },
+    {
+      "name": "windows.data.pdf.lib",
+      "sha256": "a8266f66753225b7166b240eb9578503cc10d9364f0f34482b4f232e7c4f35d9",
+      "export_identifiers": 1
+    },
+    {
+      "name": "windows.media.mediacontrol.lib",
+      "sha256": "59fbb78113ffe456a3e395334a67ef6fbf190de6046757ba69000f9204aef235",
+      "export_identifiers": 8
+    },
+    {
+      "name": "windows.networking.lib",
+      "sha256": "217b7614f97e33dbe6b8fa4b947f94d5b356a4099ad16f323113f05a43129d8a",
+      "export_identifiers": 1
+    },
+    {
+      "name": "windows.ui.lib",
+      "sha256": "7127978b979b57596856dbacf46c9b9224f0a03c32892eafb19c6b5f827a3ac4",
+      "export_identifiers": 0
+    },
+    {
+      "name": "WindowsApp.lib",
+      "sha256": "00443855b2c9c731326fe58882ddb2cd42454496f64a5b622df29a966bea740f",
+      "export_identifiers": 3990
+    },
+    {
+      "name": "WindowsApp_downlevel.lib",
+      "sha256": "af02d46b58f4ddea3f6f874e3cb77675fed0c3077f0c973a418e371a3f098d5c",
+      "export_identifiers": 3982
+    },
+    {
+      "name": "windowscodecs.lib",
+      "sha256": "c294218e968fdc2f2fd4e990b85d5ab40d0f35e9be6f4c06086db96bd4dcfd00",
+      "export_identifiers": 114
+    },
+    {
+      "name": "windowscoreheadless.Lib",
+      "sha256": "17e92307428e59bb732ea038f0226cc3640784d23d651afe5f577d5467e53502",
+      "export_identifiers": 7994
+    },
+    {
+      "name": "windowscoreheadless_apiset.Lib",
+      "sha256": "952b43fe6937af4e58488b9123b2574eb131d8e2d2e27c69b2e64df33c38b840",
+      "export_identifiers": 6098
+    },
+    {
+      "name": "windowssideshowguids.lib",
+      "sha256": "5277cf6e5f0f6a8f4e4ce6961729e67476d830b3918d211534e1ea1af8a68053",
+      "export_identifiers": 0
+    },
+    {
+      "name": "winfax.lib",
+      "sha256": "4e12332377292dc8453c36a3421c071bf2b5e1bc03e31605f29d50dfe6c1dd49",
+      "export_identifiers": 56
+    },
+    {
+      "name": "winhttp.lib",
+      "sha256": "6873f0b8893e8e7bd86cb7a8310631b3fcde99a85486196fe61ce9f1a352906a",
+      "export_identifiers": 80
+    },
+    {
+      "name": "WinHvEmulation.lib",
+      "sha256": "a345d8612b195a6a3421a0f261119578faf203cea43f9eea256740f55e76cca8",
+      "export_identifiers": 4
+    },
+    {
+      "name": "WinHvPlatform.lib",
+      "sha256": "d6d69ae9d6ee72104b2173e91f19d877f7ea20b1c16818c9753545e0bd5cdb5d",
+      "export_identifiers": 66
+    },
+    {
+      "name": "wininet.Lib",
+      "sha256": "aec9124091d5ce42e5cc07c9dca96e5fd8ee8ba496aa78e6d120c43f62e3a7ec",
+      "export_identifiers": 292
+    },
+    {
+      "name": "winml.lib",
+      "sha256": "04cdd212144b5f09188ff4b20c0e7f0f503c87fde4ba0fb0faedb7aa372d5378",
+      "export_identifiers": 1
+    },
+    {
+      "name": "WinMM.Lib",
+      "sha256": "991aabf345de86b0b59ae55a268acbcf9357256cf7177db05606ff83e90e725a",
+      "export_identifiers": 178
+    },
+    {
+      "name": "winsatapi.lib",
+      "sha256": "992fe3dc8304243f0787d7eb4568c3d7eebd55e7a764031651e8861a216077f9",
+      "export_identifiers": 0
+    },
+    {
+      "name": "winscard.lib",
+      "sha256": "91b98543bc1b133bbae2271e680407d7a6ac4b4d809303c1d962eca5ef2e0c96",
+      "export_identifiers": 73
+    },
+    {
+      "name": "WinSpool.Lib",
+      "sha256": "e39fccaf3a598e83a03695e2eee768d79ac8228a1bb67ad472ca6c10cc7a3a69",
+      "export_identifiers": 178
+    },
+    {
+      "name": "winsqlite3.lib",
+      "sha256": "e725f37a9a2199e974b46f4cf71d87248e59073b931f8e72ba02ac144bf72400",
+      "export_identifiers": 297
+    },
+    {
+      "name": "winsta.lib",
+      "sha256": "cd19f98e92de68f18eebbf53f8815d83870ec301c9987e271caa73c742e0a6f4",
+      "export_identifiers": 181
+    },
+    {
+      "name": "WinStrm.Lib",
+      "sha256": "696a50b6cac123a54a0f518671fae99f58fb097cf2a03e00110e09b498a84dd8",
+      "export_identifiers": 0
+    },
+    {
+      "name": "WinTrust.Lib",
+      "sha256": "67e69839a65e61776b2c9493c1c733b855b3dcf5ee2d3aa39585b62a4cd05a3d",
+      "export_identifiers": 135
+    },
+    {
+      "name": "winusb.lib",
+      "sha256": "e6d022c0fd35a146dc62f149d6548d95dcb4e93c740b1faec688a2fc7c16b8f3",
+      "export_identifiers": 37
+    },
+    {
+      "name": "wlanapi.lib",
+      "sha256": "967fca3b06313bc81dd62969170dc16db2a814df8d97e11de9e0c1b6bb5910b3",
+      "export_identifiers": 70
+    },
+    {
+      "name": "wlanui.lib",
+      "sha256": "7018e17890a0df0ba3a1c1a1dda8535820ef19d3d324293be526adbc2ee36b42",
+      "export_identifiers": 5
+    },
+    {
+      "name": "Wldap32.Lib",
+      "sha256": "489cd25d11fbca1b523471bd84dd78fd079283a30c2a91ac7a4c22d8f4dab5c5",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Wldp.Lib",
+      "sha256": "27648ee17d670a689db74936de75df04e934a72399ed58d03bfec27e4e5cd68a",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wmcodecdspuuid.lib",
+      "sha256": "17f8fe4784e4342d4849c1b410f44d2de989f7bc06ab2860ea0811a65dc91564",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wmip.lib",
+      "sha256": "492abe7b2aa933ea5d708975b40f9487d8949fcb42b196cb61e6c1ac1c9e1327",
+      "export_identifiers": 45
+    },
+    {
+      "name": "wmiutils.lib",
+      "sha256": "83bc99545b5709dcabd56d0e76b4aa4de043439aac0c10ce1ba5b9b1d359a83c",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wmvcore.lib",
+      "sha256": "b3f5679c31997d08729715b1b4411110f0752724d750e1e2af688322c20bad01",
+      "export_identifiers": 13
+    },
+    {
+      "name": "wnvapi.lib",
+      "sha256": "cec12a1330b1c2c21265937acaa405efe1bbffaf8e1aaa9fc7acbf847882812e",
+      "export_identifiers": 2
+    },
+    {
+      "name": "wofutil.lib",
+      "sha256": "71d28a4ee8027a2b52752ec35becd7ca1ebcd0a113999891652d33d836cc841a",
+      "export_identifiers": 11
+    },
+    {
+      "name": "workspaceax.lib",
+      "sha256": "99c44768e889910ced0c352d4876e7a11828528755a93a80e5f41142ef21328d",
+      "export_identifiers": 0
+    },
+    {
+      "name": "WS2_32.Lib",
+      "sha256": "a8a552a37d8935e272ff470e2620f55e05433b989707bd05e9911d2482f44134",
+      "export_identifiers": 148
+    },
+    {
+      "name": "wsbapp_uuid.Lib",
+      "sha256": "6c2bfe1ca61a95fbf58cbe1e40b4195752eec1087ab57c34a6d16de7faafa8fa",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wsbonline.lib",
+      "sha256": "b5a1f5e81e07688cd190ec9c00706877286e34ebb8e6961e79d2380416c97876",
+      "export_identifiers": 0
+    },
+    {
+      "name": "wscapi.lib",
+      "sha256": "fb51aa178bb782a506d6321e45c265cea8bd64383172606b885631c280ba681d",
+      "export_identifiers": 37
+    },
+    {
+      "name": "wsclient.lib",
+      "sha256": "2cf084b92589ad6408defea4db133adb3a17b769c581aa3cd3b9de06b16aaaf7",
+      "export_identifiers": 29
+    },
+    {
+      "name": "wsdapi.lib",
+      "sha256": "811af18a985f74a9544d95065363d8b80ac3be3470793b800943c3f1d7b3387d",
+      "export_identifiers": 39
+    },
+    {
+      "name": "wsmsvc.lib",
+      "sha256": "fa6133539a5194c0ec31d347618a4393fc08cec5985dd32100534da7e93ae909",
+      "export_identifiers": 146
+    },
+    {
+      "name": "WSnmp32.Lib",
+      "sha256": "56cff04024418c3fbb4b7e7e9359d688ac30990dd7cf9320409290a3bbb8c9fa",
+      "export_identifiers": 2
+    },
+    {
+      "name": "WSock32.Lib",
+      "sha256": "66815f2997b8a8f2ad3badf562132c54488c3c508f527cd552ec9bc60dcc03f6",
+      "export_identifiers": 1
+    },
+    {
+      "name": "WtsApi32.Lib",
+      "sha256": "9b8aa71649cb098e5289acc468bde886695111411ac47e02da89c73872e9187f",
+      "export_identifiers": 72
+    },
+    {
+      "name": "wuguid.lib",
+      "sha256": "a184af2d2b867c69ea4534b5185fb62e39633f7bd0edefdcd4e3fbfa37e00974",
+      "export_identifiers": 0
+    },
+    {
+      "name": "xapobase.lib",
+      "sha256": "d16c851a409591622c1ef6d4b26d663d63a8b7c14d01b23b9a0c9d266805bba7",
+      "export_identifiers": 290
+    },
+    {
+      "name": "xapobase2_8.lib",
+      "sha256": "57f1529bb02e895b8dc3db5c0676f3894cc00c3039a0abcf02c043cfac59a7c8",
+      "export_identifiers": 290
+    },
+    {
+      "name": "xaswitch.lib",
+      "sha256": "17a6dfa7fd81efa4fe8216c5ccb5005a0de744cd7fd6d217202f6231b3a135d9",
+      "export_identifiers": 0
+    },
+    {
+      "name": "xaudio2.lib",
+      "sha256": "18478f6fb189c4f07098442a904546e2ac1e1bc04f2281b41db8997fb641d426",
+      "export_identifiers": 0
+    },
+    {
+      "name": "xaudio2_8.lib",
+      "sha256": "08e9037f24665f424c420ff799c28a5336ac63e3f186c217a2295aca38daef7a",
+      "export_identifiers": 0
+    },
+    {
+      "name": "xinput.lib",
+      "sha256": "00a5f497f7bd46e1515d796a3f66d24a94fb70edf14a506e18c5b6f6285ecb88",
+      "export_identifiers": 0
+    },
+    {
+      "name": "Xinput9_1_0.lib",
+      "sha256": "683287b89ec9a2a4b04c6939e16121ffc09dcd8a99063ffa97f2402ccf00bd5f",
+      "export_identifiers": 5
+    },
+    {
+      "name": "xinputuap.lib",
+      "sha256": "632982610bc8a4547bd393391c2b1328408038ab973963d957db6a9c4f5c2e85",
+      "export_identifiers": 8
+    },
+    {
+      "name": "xmllite.lib",
+      "sha256": "fec130b5ca9d9ff851591fd185d156d4f1900a63185554d517c114671f7fb926",
+      "export_identifiers": 6
+    },
+    {
+      "name": "xolehlp.lib",
+      "sha256": "e046450cc63375a6e6799f78b3976ad31fc5270858ff5a053363596ee315c146",
+      "export_identifiers": 3
+    },
+    {
+      "name": "xpsdocumenttargetprint.lib",
+      "sha256": "b2d9337fc09c273690c626004ca7f094cae623c7a7aecccdfba71d8815ce7185",
+      "export_identifiers": 1
+    },
+    {
+      "name": "xpsprint.lib",
+      "sha256": "7b339a99d1414c9ecd6b36bbc15ba571af969453ff5a791c1a5a174659d8e6ab",
+      "export_identifiers": 2
+    }
+  ]
+}

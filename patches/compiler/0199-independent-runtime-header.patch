@@ -1,0 +1,557 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -1,61 +1,52 @@
+-/**
+- * Xbox Static Recompilation - Runtime Type Definitions
+- *
+- * Type definitions and helper macros used by mechanically translated
+- * x86 -> C code. Each original x86 function is translated to a C
+- * function that uses these types and macros.
+- *
+- * This is a reusable template for ANY Xbox game. Game-specific
+- * customization should go in separate headers.
+- *
+- * Memory model:
+- *   Xbox data sections are mapped to their original VAs via
+- *   CreateFileMapping + MapViewOfFileEx (see xbox_memory.h).
+- *   Recompiled code accesses globals via pointer casts, e.g.:
+- *     *(uint32_t*)0x003B2360
+- *
+- * Register model:
+- *   Volatile registers (eax, ecx, edx, esp) are global variables,
+- *   matching real x86 behavior where these registers are shared
+- *   across all code. This enables correct argument passing via the
+- *   simulated stack and return value communication via eax.
+- *
+- *   Callee-saved registers (ebx, esi, edi) are also global because
+- *   callers pass implicit parameters through them (e.g. 'this' via
+- *   esi in thiscall). The callee-save contract is enforced by
+- *   PUSH32/POP32 instructions in the generated code, not by C local
+- *   variable scoping.
+- *
+- *   ebp is NOT global - it stays local in each function because many
+- *   FPO (Frame Pointer Omission) functions use it as scratch without
+- *   save/restore. For SEH functions, g_seh_ebp bridges the gap.
+- *
+- * Calling convention:
+- *   All translated functions are void(void). Arguments are passed
+- *   on the simulated Xbox stack (via push instructions before call).
+- *   Return values are communicated through g_eax.
+- *   The call instruction pushes the real guest return address (the VA of
+- *   the instruction after the call); ret discards it with esp += 4.
+- *   The value is never used to transfer control -- control flow is C
+- *   call/return -- but it must be correct because guest code reads it
+- *   (__SEH_prolog's scope table, _alloca probes, "mov eax, [esp]").
++/* TimeSplitters guest execution interface.
++ * Project-owned primitives shared by emitted C and host adapters. Guest values
++ * use 32-bit addresses and thread-local architectural cells; C call frames carry
++ * native control flow. Services declared here are implemented separately and
++ * several still use the transitional runtime. This header does not own them.
+  */
+-
+ #ifndef RECOMP_TYPES_H
+ #define RECOMP_TYPES_H
+ 
+ #include <stdint.h>
+ #include <stddef.h>
+ #include <string.h>
+-
+-/* Project fatal divide-error boundary; result registers have not been written.
+- * Guest exception dispatch is not implemented by this diagnostic adapter. */
++#include <math.h>
++#include <setjmp.h>
++#if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
++#include <xmmintrin.h>
++#endif
++#if !defined(_MSC_VER)
++#ifndef __forceinline
++#define __forceinline inline __attribute__((always_inline))
++#endif
++#ifndef __debugbreak
++#define __debugbreak() __builtin_trap()
++#endif
++#endif
++
++/* A divide fault stops before writing result registers. */
+ #if defined(_MSC_VER)
+ __declspec(noreturn)
+ #else
+ __attribute__((noreturn))
+ #endif
+ void tsfp_guest_divide_error(uint32_t site, unsigned reason);
++
++/* Relocation is applied after guest-width arithmetic. Executable bounds are
++ * supplied by the loader; a zero upper bound admits calls during initialization.
++ * Synthetic kernel entries occupy the high address window. */
++extern ptrdiff_t g_xbox_mem_offset;
++extern uint32_t g_xbox_code_lo, g_xbox_code_hi;
++extern int g_force_return;
++static inline int tsfp_guest_target_is_code(uint32_t address)
++{
++    if (address >= UINT32_C(0xfe000000)) return 1;
++    if (g_xbox_code_hi == 0) return 1;
++    if (address < g_xbox_code_lo) return 0;
++    return address < g_xbox_code_hi;
++}
++#define RECOMP_ICALL_IS_CODE(address) tsfp_guest_target_is_code((uint32_t)(address))
++
+ 
+ /* Optional title numeric policy. The generic runtime retains x86 conversion
+  * semantics; a title can supply a separate header without baking its addresses
+@@ -105,92 +96,9 @@
+ #define RECOMP_F32_DIV_AT(site, left, right) ((left) / (right))
+ #endif
+ 
+-/* math.h is load-bearing, and its absence was invisible.
+- *
+- * The lifter emits sqrt() and fabs() for fsqrt/fabs -- 146 of them in one of
+- * Halo's nine chunks alone -- and now sin/cos/tan/atan2/log2/exp2/fmod for the
+- * x87 transcendentals. With no declaration in scope, C89 implicit declaration
+- * makes every one of them return `int`: the caller reads EAX instead of XMM0 and
+- * gets garbage, then converts that garbage to double. Vector normalisation is
+- * 1/sqrt(x), so this corrupts every matrix the title builds.
+- *
+- * Nothing reported it because generated code is compiled with /w (see the game
+- * CMakeLists) -- MSVC's C4013 was emitted and discarded. Same failure as the
+- * missing stdlib.h in kernel_bridge.c, in a hotter path. */
+-#include <math.h>
+ #ifndef RECOMP_AFTER_STORE32
+ #define RECOMP_AFTER_STORE32(site, address) ((void)0)
+ #endif
+-#if defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
+-#include <xmmintrin.h>
+-#endif
+-
+-/* MSVC's __forceinline -> gcc/clang equivalent on POSIX. */
+-#if !defined(_MSC_VER) && !defined(__forceinline)
+-#define __forceinline inline __attribute__((always_inline))
+-#endif
+-
+-/* Guest debug output: INT 2D, the Xbox kernel debug trap.
+- *
+- * eax selects the service, ecx carries its argument. Service 1 prints the
+- * ANSI_STRING ecx points at -- what OutputDebugStringA compiles to. The int3
+- * that always follows is the slide byte the kernel steps over, so the lifter
+- * emits nothing for it; lifting it to __debugbreak() terminated the process
+- * with STATUS_BREAKPOINT the first time a title tried to print. */
+-void recomp_debug_service(uint32_t service, uint32_t arg_va);
+-
+-/* An int3 that lifted code actually executed: almost always an un-unwound
+- * C++ throw. Silent before; see docs/technical/cpp-exceptions.md. */
+-void recomp_int3_reached(uint32_t va);
+-
+-/* A C++ throw, reported at the throw with the type that was thrown. This
+- * runtime cannot unwind, so it returns; see docs/technical/cpp-exceptions.md. */
+-void recomp_cxx_throw(uint32_t object_va, uint32_t throwinfo_va);
+-
+-/* MSVC's __debugbreak() intrinsic -> gcc/clang equivalent.
+- * The auto-generated code emits __debugbreak for x86 INT 3 instructions. */
+-#if !defined(_MSC_VER) && !defined(__debugbreak)
+-#define __debugbreak() __builtin_trap()
+-#endif
+-
+-/* ================================================================
+- * Memory offset
+- * ================================================================ */
+-
+-/**
+- * Memory offset from Xbox VA to actual mapped address.
+- * When Xbox memory is mapped at the original address (0x00010000),
+- * this is 0 and the MEM macros are simple identity casts.
+- * When mapped elsewhere, this adjusts all memory accesses.
+- *
+- * Set once during memory initialization, then read-only.
+- */
+-extern ptrdiff_t g_xbox_mem_offset;
+-
+-/* Bounds of the title's executable sections, filled in by
+- * xbox_MemoryLayoutInit from the XBE's own section table. Zero means "not
+- * loaded yet", which RECOMP_ICALL_IS_CODE treats as allow.
+- *
+- * These replace a hardcoded 0x00400000 cutoff that was only ever right for one
+- * title -- see the comment where they are defined in xbox_memory_layout.c. */
+-/* --force-return: read once at startup, so the check at each forced ret is a
+- * load rather than a getenv. Zero unless RECOMP_FORCE_RETURN is set, which is
+- * what lets a build carrying forced functions behave normally by default. */
+-extern int g_force_return;
+-
+-extern uint32_t g_xbox_code_lo;
+-extern uint32_t g_xbox_code_hi;
+-
+-/* Is this indirect-call target plausibly code?
+- *
+- * Synthetic kernel thunks live at 0xFE0000xx and are dispatched by
+- * recomp_lookup_kernel, so they are always allowed. Everything else has to lie
+- * inside an executable section of the loaded title. A target that fails this is
+- * a garbage pointer that reached a call site, and calling it would be worse
+- * than dropping it. */
+-#define RECOMP_ICALL_IS_CODE(_va) \
+-    ((_va) >= 0xFE000000u || g_xbox_code_hi == 0u || \
+-     ((_va) >= g_xbox_code_lo && (_va) < g_xbox_code_hi))
+ 
+ /* TSFP guest register interface begin.
+  * Architectural values belong to the current host thread. Generated routines
+@@ -246,21 +154,6 @@
+ #define XBOX_FS_BASE g_fs_base
+ /* TSFP guest register interface end. */
+ 
+-/* ---- non-local jumps (setjmp / longjmp) --------------------------------
+- *
+- * A recompiled function is a real C function, so restoring the guest esp is
+- * only half of a longjmp: the abandoned frames are still on the native stack,
+- * and control returns into them once the resume point finishes. Pairing each
+- * guest jmp_buf with a native one -- taken at the setjmp call site, the only
+- * place a native setjmp is valid -- makes the guest jump a native jump, so the
+- * frames actually unwind.
+- *
+- * recomp_setjmp_slot() returns the native buffer for a guest jmp_buf address,
+- * allocating one on first use. recomp_guest_longjmp() restores the guest
+- * registers the CRT's longjmp would and jumps; it returns 0, without jumping,
+- * for a buffer that has no native counterpart, leaving the caller to fall back
+- * to the guest's own longjmp.
+- */
+ /* TSFP own atomics begin: sequentially consistent operations on mapped RAM.
+  * Naturally aligned operands follow the host intrinsic contract. Guest MMIO,
+  * alignment/page-crossing faults and guest exception delivery are separate.
+@@ -338,119 +231,71 @@
+ #endif /* TSFP_GUEST_ATOMIC_PRIMITIVES */
+ /* TSFP own atomics end */
+ 
+-#include <setjmp.h>
+-jmp_buf *recomp_setjmp_slot(uint32_t buf_va);
+-int recomp_guest_longjmp(uint32_t buf_va, uint32_t value);
+-/* A guest longjmp to a buffer armed on another native stack (host fibers):
+- * the handler switches to that stack and jumps there; it does not return. */
+-typedef void (*recomp_foreign_longjmp_fn)(jmp_buf *target, int value,
+-                                          uintptr_t armed_stack);
+-void recomp_set_foreign_longjmp(recomp_foreign_longjmp_fn fn);
++/* Host service boundary. These names are the existing generated-code ABI.
++ * Declaring a service here does not replace its implementation or claim guest
++ * exception unwinding, loader ownership, or a new clock implementation. */
++void recomp_debug_service(uint32_t service, uint32_t argument);
++void recomp_int3_reached(uint32_t address);
++void recomp_cxx_throw(uint32_t object, uint32_t information);
++void recomp_unimpl(const char *instruction, uint32_t address);
++void recomp_stub_missing(uint32_t address);
++uint64_t xbox_ReadTimeStampCounter(void);
++
++/* Native setjmp must execute in the caller's live frame. A foreign-stack jump
++ * is handed to the fiber adapter; the guest address identifies the saved slot. */
++jmp_buf *recomp_setjmp_slot(uint32_t guest_buffer);
++int recomp_guest_longjmp(uint32_t guest_buffer, uint32_t result);
++typedef void (*recomp_foreign_longjmp_fn)(jmp_buf *, int, uintptr_t);
++void recomp_set_foreign_longjmp(recomp_foreign_longjmp_fn handler);
++
++/* The dispatch source can declare this public type after including us. The
++ * private entry type in the call primitives remains usable in either order. */
++#ifndef RECOMP_DISPATCH_H
++typedef void (*recomp_func_t)(void);
++recomp_func_t recomp_lookup(uint32_t address);
++recomp_func_t recomp_lookup_manual(uint32_t address);
++recomp_func_t recomp_lookup_kernel(uint32_t address);
++int recomp_dispatch_init(void);
++size_t recomp_dispatch_flat_bytes(void);
++#endif
++
++/* Crash history is a 16-entry ring. Refusal context belongs to the thread;
++ * the counters/ring retain the existing volatile, non-atomic service ABI. */
++#define ICALL_TRACE_SIZE 16
++extern volatile uint32_t g_icall_trace[ICALL_TRACE_SIZE];
++extern volatile uint32_t g_icall_trace_idx;
++extern volatile uint64_t g_icall_count;
++extern RECOMP_TLS uint32_t g_icall_saved_esp, g_icall_dispatch_form;
++void recomp_icall_fail_log(uint32_t address);
++void recomp_icall_not_code_log(uint32_t address, uint32_t stack);
++
++/* Disabled feedback must not expand or evaluate the supplied tokens. */
++#ifdef RECOMP_ICALL_FEEDBACK
++#include "recomp_icall_feedback.h"
++extern volatile uint64_t g_icall_guard_hits, g_icall_guard_misses;
++static inline void tsfp_guest_guard_hit(void) { ++g_icall_guard_hits; }
++static inline void tsfp_guest_guard_miss(void) { ++g_icall_guard_misses; }
++#define RECOMP_ICALL_GUARD_HIT() tsfp_guest_guard_hit()
++#define RECOMP_ICALL_GUARD_MISS() tsfp_guest_guard_miss()
++#else
++#define RECOMP_ICALL_OBSERVE(address, flags) ((void)0)
++#define RECOMP_ICALL_OBSERVE_SITE(site, address) ((void)0)
++#define RECOMP_ICALL_GUARD_HIT() ((void)0)
++#define RECOMP_ICALL_GUARD_MISS() ((void)0)
++#endif
++
++void recomp_trace_enter(const char *name, uint32_t address);
++void recomp_trace_exit(const char *name, uint32_t address);
++void recomp_trace_esp(const char *name, const char *tag);
++#define RECOMP_TRACE_ENTER recomp_trace_enter
++#define RECOMP_TRACE_EXIT recomp_trace_exit
++#define RECOMP_TRACE_ESP recomp_trace_esp
++#define RECOMP_UNIMPL recomp_unimpl
++
++
+ /* TSFP string direction: sample DF before evaluating the byte count once.
+  * Generated string instructions consume the displacement modulo 2^32. */
+ #define RECOMP_DF_STEP(bytes) ((g_df != 0) ? (0u - (uint32_t)(bytes)) : (uint32_t)(bytes))
+-
+-/* ================================================================
+- * ICALL trace ring buffer (for debugging indirect calls)
+- * ================================================================ */
+-
+-/** Size of the ring buffer (must be power of 2). */
+-#define ICALL_TRACE_SIZE 16
+-
+-/** Ring buffer of recent indirect call target VAs. */
+-extern volatile uint32_t g_icall_trace[ICALL_TRACE_SIZE];
+-
+-/** Current write index into the ring buffer. */
+-extern volatile uint32_t g_icall_trace_idx;
+-
+-/** Total count of indirect calls executed. */
+-extern volatile uint64_t g_icall_count;
+-
+-/**
+- * Called when an indirect call target cannot be resolved.
+- * Implement this in your game-specific code to log diagnostics.
+- * The va parameter is the Xbox VA that failed to resolve.
+- */
+-/* The guest esp at the moment an indirect call was refused, so the log can
+- * name the call site. The top of the guest stack is a return address in
+- * every form: the one the call site just pushed for RECOMP_ICALL and
+- * RECOMP_ICALL_SAFE, and the current frame's own for RECOMP_ITAIL, which
+- * pushes nothing. Set here rather than passed, so a title whose generated
+- * header predates this still compiles and simply reports no callers. */
+-extern RECOMP_TLS uint32_t g_icall_saved_esp;
+-/* Which dispatch form was refused: 0 unknown, 1 call, 2 jump.
+- *
+- * The two mean different things and want different next steps. A call to
+- * an address nothing identified is a discovery gap, answered by seeding;
+- * a jump to one is usually the guest doing its own control flow, which no
+- * amount of seeding fixes. Saying "Failed to resolve" for both sent a
+- * Mortal Kombat coroutine three rounds through the seeding tool.
+- *
+- * Zero rather than a boolean because a title whose generated header
+- * predates this never assigns it, and a two-valued flag would then read
+- * as "call" for every refusal including the jumps -- the exact wrong
+- * answer this exists to stop giving. Unknown is reported as unknown. */
+-extern RECOMP_TLS uint32_t g_icall_dispatch_form;
+-
+-void recomp_icall_fail_log(uint32_t va);
+-
+-/* Report an indirect call whose target is not code (a null or wild
+- * function pointer). Rate-limited per address by the implementation,
+- * because these usually arrive inside a loop -- which is exactly why
+- * they must be reported: silently skipping one turns a diagnosable null
+- * vtable call into an unexplained hang. */
+-void recomp_icall_not_code_log(uint32_t va, uint32_t saved_esp);
+-
+-/* Report a direct call or jump into an address that was never recompiled --
+- * the generated stub in recomp_stubs_unresolved.c. The stub keeps esp
+- * balanced and does nothing else, so whatever the guest code there would have
+- * done is skipped. Once per address, from the runtime, so every title gets it
+- * without touching its recomp_manual.c.
+- *
+- * Burnout 2's sound manager constructor was one of these: reached only by a
+- * static initialiser's tail jump, never discovered, and so never run. A field
+- * it should have set stayed null, and the game crashed a minute later in an
+- * unrelated-looking Pause. */
+-void recomp_stub_missing(uint32_t va);
+-
+-/* Indirect-branch target feedback. The ring buffer above is crash forensics --
+- * 16 entries, overwritten constantly. This is a durable, deduplicated record of
+- * every target the title ever reached, for feeding back into the next codegen
+- * run (tools/recomp/icall_feedback.py).
+- *
+- * The header is pulled in only when the feature is on, so a default build needs
+- * neither the file nor src/kernel on its include path. Disabled,
+- * RECOMP_ICALL_OBSERVE discards its arguments without expanding them, so the
+- * RECOMP_ICALL_SEEN_* constants need not exist either. */
+-#ifdef RECOMP_ICALL_FEEDBACK
+-#include "recomp_icall_feedback.h"
+-#else
+-#define RECOMP_ICALL_OBSERVE(va, flags) ((void)0)
+-#define RECOMP_ICALL_OBSERVE_SITE(site, va) ((void)0)
+-#endif
+-
+-/**
+- * Function entry trace, emitted only for addresses passed to
+- * tools.recomp --trace-functions. Bring-up is largely "which of these
+- * init calls does it not come back from", and answering that by
+- * overriding a function loses the body you were trying to observe.
+- */
+-/* The guest's time source.
+- *
+- * Xbox's QueryPerformanceCounter is a bare rdtsc and its
+- * QueryPerformanceFrequency returns the CPU clock as a constant, so the guest
+- * divides this by 733,333,333 to get seconds. Returning the host TSC would
+- * make that division wrong by the ratio of the two clocks; the runtime scales
+- * to the console's rate instead. */
+-uint64_t xbox_ReadTimeStampCounter(void);
+-
+-void recomp_trace_enter(const char *name, uint32_t va);
+-#define RECOMP_TRACE_ENTER(name, va) recomp_trace_enter((name), (va))
+-void recomp_trace_exit(const char *name, uint32_t va);
+-#define RECOMP_TRACE_EXIT(name, va) recomp_trace_exit((name), (va))
+-void recomp_trace_esp(const char *name, const char *tag);
+-#define RECOMP_TRACE_ESP(name, tag) recomp_trace_esp((name), (tag))
+-
+ 
+ /* TSFP guest primitive support begin.
+  * The supported hosts are little-endian. Guest RAM accesses may be unaligned
+@@ -550,67 +395,6 @@
+     return lanes;
+ }
+ /* TSFP scalar vector construction end. */
+-
+-/* ================================================================
+- * Indirect call dispatch
+- *
+- * The dispatch system resolves Xbox virtual addresses to native
+- * function pointers at runtime. Three lookup sources are checked:
+- *   1. Manual overrides (hand-written reimplementations)
+- *   2. Generated dispatch table (auto-recompiled functions)
+- *   3. Kernel thunk bridge (Xbox kernel function replacements)
+- * ================================================================ */
+-
+-/**
+- * Generic function pointer type for all recompiled functions.
+- * All translated functions are void(void) - arguments and return
+- * values are passed through global registers and the simulated stack.
+- */
+-#ifndef RECOMP_DISPATCH_H  /* avoid conflict with recomp_dispatch.h */
+-typedef void (*recomp_func_t)(void);
+-
+-/**
+- * Look up a recompiled function by its Xbox VA.
+- * Returns NULL if the VA is not in the generated dispatch table.
+- */
+-recomp_func_t recomp_lookup(uint32_t xbox_va);
+-
+-/**
+- * Build the flat, directly-indexed dispatch table.
+- *
+- * Turns recomp_lookup from a binary search over every translated function into
+- * a bounds check and one indexed load -- the C form of Microsoft's
+- * `jmp [table + guest_eip*8]`. Call it once at startup, before any recompiled
+- * code runs.
+- *
+- * Entirely optional: if it is never called, or returns 0 because the allocation
+- * failed, recomp_lookup keeps using the binary search and everything still
+- * works. Costs 8 bytes per byte of guest code span (see
+- * recomp_dispatch_flat_bytes), allocated with calloc so the untouched middle
+- * stays uncommitted.
+- *
+- * Returns 1 if the flat table is in use, 0 if the search is.
+- */
+-int recomp_dispatch_init(void);
+-
+-/** Bytes held by the flat table, or 0 if it was never built. */
+-size_t recomp_dispatch_flat_bytes(void);
+-
+-/**
+- * Look up a kernel thunk function by its synthetic VA.
+- * Kernel thunks live at 0xFE000000+ (synthetic addresses assigned
+- * during kernel bridge initialization).
+- * Returns NULL if the VA is not a kernel thunk.
+- */
+-recomp_func_t recomp_lookup_kernel(uint32_t xbox_va);
+-
+-/**
+- * Look up a manually overridden function by its Xbox VA.
+- * Manual overrides take priority over generated code.
+- * Returns NULL if no manual override exists for this VA.
+- */
+-recomp_func_t recomp_lookup_manual(uint32_t xbox_va);
+-#endif
+ 
+ /* TSFP call checks begin.
+  * Diagnostic builds inspect the preserved registers and guest return stack.
+@@ -661,23 +445,6 @@
+ #endif
+ /* TSFP call checks end. */
+ 
+-
+-/* A guarded arm of an indirect call. When a recorded run saw a call site
+- * reach only a few translated functions, the lifter compares the target
+- * against each and calls the match directly (RECOMP_ABI_CALL), falling back
+- * to RECOMP_ICALL_SAFE_AT for anything else -- so an unseen target is slow,
+- * never wrong. Under RECOMP_ICALL_FEEDBACK the arms are counted, so a run
+- * can say how often the guards held; otherwise they cost nothing. */
+-#ifdef RECOMP_ICALL_FEEDBACK
+-extern volatile uint64_t g_icall_guard_hits;
+-extern volatile uint64_t g_icall_guard_misses;
+-#define RECOMP_ICALL_GUARD_HIT()  ((void)g_icall_guard_hits++)
+-#define RECOMP_ICALL_GUARD_MISS() ((void)g_icall_guard_misses++)
+-#else
+-#define RECOMP_ICALL_GUARD_HIT()  ((void)0)
+-#define RECOMP_ICALL_GUARD_MISS() ((void)0)
+-#endif
+-
+ /* TSFP indirect dispatch support begin.
+  * Call sites supply a guest return address before entering this interface.
+  * Keep lookup/notification order in one place; recovery stays at the call
+@@ -805,19 +572,6 @@
+     } \
+ } while (0)
+ /* TSFP indirect dispatch wrappers end. */
+-
+-
+-/* ================================================================
+- * Register name aliases for generated code
+- *
+- * Map x86 volatile register names to global variables.
+- * These #defines allow the generated code to use natural register
+- * names (eax, ecx, edx, esp) which the preprocessor maps to the
+- * corresponding globals (g_eax, g_ecx, g_edx, g_esp).
+- *
+- * Only active when RECOMP_GENERATED_CODE is defined (in generated
+- * .c files) to avoid polluting hand-written code.
+- * ================================================================ */
+ 
+ /* New generator files declare this protocol before including the header.
+  * Legacy/manual sources keep direct global aliases. References point at the
+@@ -865,8 +619,8 @@
+ #endif
+ #endif
+ 
++/* Emitted functions use architectural names; EBP stays function-local. */
+ #ifdef RECOMP_GENERATED_CODE
+-
+ #define xmm0 g_xmm0
+ #define xmm1 g_xmm1
+ #define xmm2 g_xmm2
+@@ -883,36 +637,7 @@
+ #define mm5 g_mm5
+ #define mm6 g_mm6
+ #define mm7 g_mm7
+-/* ebp is NOT global - it's local in each function.
+- * For __SEH_prolog/epilog, use g_seh_ebp to bridge. */
+-#endif
+-
+-/* ================================================================
+- * Forward declarations for translated functions
+- *
+- * These are generated by the recompiler and included per-file.
+- * The recomp_funcs.h header (generated) declares all translated
+- * function prototypes.
+- * ================================================================ */
+-
+-/* An instruction the lifter has no translation for.
+- *
+- * The lifter used to emit a bare "TODO: mnemonic" C comment at such a site,
+- * and a comment is a no-op: the instruction vanished, the guest carried
+- * on, and nothing at runtime could say the site had been reached. Wreckless
+- * died inside RtlAllocateHeap because `bsf` was a comment; Half-Life 2 painted
+- * its intro red because `cvtpi2ps` was. Each was found by working backwards
+- * from a subsystem failure that had nothing to do with the cause.
+- *
+- * Now the site calls this, with the instruction text and its guest address.
+- * The instruction is STILL a no-op -- this changes no behaviour -- but the run
+- * names the untranslated sites it reached (the first fifty hits, in
+- * src/kernel/recomp_trace.c), and with RECOMP_UNIMPL_TRAP=1 it stops at the
+- * first one. The lifter
+- * keeps the comment beside the call so `grep TODO:` over a gen tree still
+- * enumerates every site whether or not it is ever reached. */
+-void recomp_unimpl(const char *text, uint32_t va);
+-#define RECOMP_UNIMPL(_text, _va) recomp_unimpl((_text), (_va))
++#endif
+ 
+ #endif /* RECOMP_TYPES_H */
+ 

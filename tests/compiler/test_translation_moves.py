@@ -13,7 +13,7 @@ from types import SimpleNamespace
 import pytest
 
 ROOT=Path(__file__).resolve().parents[2]
-sys.path.insert(0,str(ROOT/'tools'))
+sys.path.insert(0,str(ROOT/'tools/compiler'))
 import translation_moves as moves
 from translation_decode import Disassembler, Operand
 from native_compiler import native_compiler
@@ -42,7 +42,8 @@ def test_trace_strings_are_escaped():
 def _production_macros(names):
     header=ROOT/'external/ts3FPrecomp/templates/runtime/recomp_types.h'
     if not header.is_file():pytest.skip('Native runtime ABI unavailable')
-    lines=iter(header.read_text(encoding='utf-8').splitlines())
+    text=header.read_text(encoding='utf-8')
+    lines=iter(text.splitlines())
     result={}
     for line in lines:
         match=re.match(r'#define (\w+)\(',line)
@@ -52,12 +53,16 @@ def _production_macros(names):
                 line=next(lines);value+='\n'+line
             result[match[1]]=value
     assert result.keys()==names
-    return '\n'.join(result.values())
+    support=''
+    if '/* TSFP guest primitive support begin.' in text:
+        support=text.split('/* TSFP guest primitive support begin.',1)[1]
+        support='/* TSFP guest primitive support begin.'+support.split('/* TSFP guest primitive support end. */',1)[0]
+    return support+'\n'+'\n'.join(result.values())
 
 
 def test_data_moves_execute_with_runtime_macros(tmp_path):
     macros=_production_macros({'XBOX_PTR','MEM8','MEM16','MEM32','LO8','HI8','LO16',
-        'SET_LO8','SET_HI8','SET_LO16','SX8','SX16','ZX8','ZX16','PUSH32','POP32'})
+        'SET_LO8','SET_HI8','SET_LO16','PUSH32','POP32'})
     trace='caller "quoted"\\\n\U0001f642'
     source='''#include <stdint.h>
 #include <string.h>

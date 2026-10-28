@@ -86,9 +86,12 @@ def test_original_actor_voice_clock(tmp_path):
         code = '\n'.join(f'void {f["name"]}(void);' for f in functions.values())+'\n'+'\n'.join(pieces.values())
         # Mutations disable only the original generation checks, never production.
         for target in ('00164EC6','00164F52'):
-            needle = f'if (CMP_NE(_fa, _fb)) goto loc_{target};'
-            assert code.count(needle)==1
-            code = code.replace(needle,f'if (!ignore_generation && CMP_NE(_fa, _fb)) goto loc_{target};')
+            branches = list(re.finditer(r'if \(([^\n]+)\) goto loc_'+target+r'; /\* jne:', code))
+            assert len(branches)==1
+            condition = branches[0][1]
+            assert '_fa' in condition and '_fb' in condition and '_flags' not in condition
+            needle = f'if ({condition}) goto loc_{target};'
+            code = code.replace(needle,f'if (!ignore_generation && ({condition})) goto loc_{target};')
         source = (ROOT/'tests/gameplay/native_actor_voice_clock.c').read_text()
         defined = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
         parent = pieces[0x1ce2e0]
@@ -305,8 +308,17 @@ def test_generated_numeric_conversion(encoding, helper):
     raw = bytes.fromhex(encoding)
     instructions = Disassembler().disassemble_function(raw, 0x1000, 0x1000 + len(raw))
     code = '\n'.join(Lifter().lift_instruction(instructions[0]))
-    assert helper + ('(0x1000, 0x4E7944,' if helper.endswith('_AT') else '(0x4E7944,') in code
-    assert 'MEM32(0x4E7944)' in code
+    if encoding.startswith(('f3', 'f2')):
+        assert 'uint32_t _simd_address = (uint32_t)(0x4E7944);' in code
+        assert code.count('MEM32(_simd_address)') == 1
+        assert 'uint32_t _simd_integer = (uint32_t)(MEM32(_simd_address));' in code
+        assert helper + ('(0x1000, _simd_address, _simd_integer)' if helper.endswith('_AT')
+                         else '(_simd_address, _simd_integer)') in code
+    else:
+        assert 'uint32_t _x87_value_address = (uint32_t)(0x4E7944);' in code
+        assert code.count('MEM32(_x87_value_address)') == 1
+        assert helper + '(_x87_value_address, (uint32_t)_x87_value_bits)' in code
+        assert code.index(helper) < code.index('fp_push(_x87_value)')
 
 
 @pytest.mark.parametrize('encoding,observed', [
@@ -925,7 +937,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         for needle,replacement in (
             ('MEM32(esi + 0x28) = eax;\n    RECOMP_AFTER_STORE32(0xA74F4,',
              '(void)eax;\n    RECOMP_AFTER_STORE32(0xA74F4,'),
-            ('RECOMP_F32_MUL_AT(0xA15C6, xmm1.f[0], xmm0.f[0])','0.f'),
+            ('RECOMP_F32_MUL_AT(0xA15C6, _simd_a.f[0], _simd_b.f[0])','0.f'),
             ('RECOMP_DIRECT_CALLEE_AT(0xA1645, sub_001531D0)','missing_matrix_copy'),
             ('sub_00151E80();','g_esp+=4;'),
         ):
@@ -947,8 +959,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             ('RECOMP_F32_ADD_AT(0x1D8B46,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
             ('RECOMP_F32_ADD_AT(0x1D8B7A,','RECOMP_F32_ADD_AT(0xFFFFFFFF,'),
             ('RECOMP_AFTER_STORE32(0x1D8BFD,','RECOMP_AFTER_STORE32(0xFFFFFFFF,'),
-            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
-            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, 0x4E7944, MEM32(0x4E7944))','(float)(int32_t)MEM32(0x4E7944)'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8AF5, _simd_address, _simd_integer)','(float)(int32_t)_simd_integer'),
+            ('RECOMP_I32_TO_F32_AT(0x1D8B6A, _simd_address, _simd_integer)','(float)(int32_t)_simd_integer'),
         ):
             assert source.count(needle)==1
             with pytest.raises(AssertionError,match='trap fractional'):

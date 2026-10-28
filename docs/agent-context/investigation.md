@@ -1,5 +1,34 @@
 # Investigation memory and handoffs
 
+Retired memory APIs: [caller audit and retained ABI](retired-memory-compatibility.md).
+
+Guest mappings: [owners, host adapters and checks](guest-host-mappings.md).
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
+Native Mm: [ownership, page adapters and remaining work](native-memory.md).
+
+Virtual memory: [guest/native paths and remaining host adapters](virtual-memory.md).
+
+Thread storage investigations: [memory ownership and caller limits](thread-memory.md).
+
+Allocation ownership and bridge entry points now use the project provider;
+see [contracts and consumer constraints](independent.md#guest-allocation-ownership).
+Trace old addresses only as historical evidence: lowest-fit placement may differ.
+
+The final replacement order includes call frames, vector support, scalar support
+canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
+jumps, guest state/reports, image loading, allocation/thread/virtual-memory and
+guest host mappings and unused memory API retirement, then source layout. Historical fixtures omit replacements
+from old inputs; the order test checks the eighteen-patch tail. Audit `.inc` files and scan ignored
+generated C explicitly with `--no-ignore`. Exact-name searches missed the live
+SX/ZX calls assembled dynamically by the move emitter; its direct replacements
+now have exhaustive compiled register/memory/alias checks.
+
+Call-frame replacement follows dispatch and guest ABI in effective patch order.
+`test_repo_context.py` checks this dependency; see [own interfaces](independent.md).
+
 After remote main contains a completed task, remove its local task branch using
 safe deletion after switching away and checking for unique or uncommitted work.
 Root AGENTS.md owns this repository-wide rule; retain other chats’ unmerged work
@@ -23,6 +52,11 @@ The context ownership map now assigns `vendor/**` to the runtime guide.
 The root AGENTS rule identifies the bundled pristine base and offline importer;
 the ignored patched runtime remains the place to inspect effective behavior.
 Snapshot content is provenance, not a second place to implement fixes.
+
+The CLI replacement follows function emission. Historical
+checkpoint fixtures defer it until the complete title stack; fresh installs and
+upgrades still exercise it. Check recorded patch hashes against Git LF bytes
+when local context passes but a clean CI checkout reports a stale index.
 
 <!-- packet:start -->
 Before a broad search, read the repository map and relevant subsystem guide,
@@ -201,3 +235,23 @@ is not proof of the remote PR's merge state. Required checks remain in force.
 The repository-context order test includes the post-handoff surface capture/render
 tail, with render last. Preserve dependency assertions when extending the loader;
 a stale last-patch assertion is not evidence of a loader failure.
+
+Comparison-stage fixtures retain strict Clang warnings. Compare source snapshots
+with decoded consumers separately from full branch/flag ownership. Treat fused
+comparison rereads as a remaining orchestration boundary, not snapshot coverage.
+
+String replacement checks distinguish repeated element ordering from bulk copy,
+zero-count flag preservation from new comparisons, and native instruction
+oracles from the full decoded translator. Single compares need snapshot locals
+even when there is no conditional consumer; repeated compares need ZF storage.
+
+The control-emission patch follows x87 before later orchestration replacements.
+Historical reconstruction defers it together with prior independent emitters;
+keep staged patch order/index and original golden/behavioral fixtures aligned.
+
+
+The independent guest ABI stage appends `independent-guest-abi.patch` after the
+translation CLI bridge. The index-order assertion checks this dependency.
+Historical fixtures omit this new patch only while reconstructing their old
+pre-instrumentation starting state; upgrades still apply the full current stack,
+including the ABI replacement, and retain idempotence/preservation checks.

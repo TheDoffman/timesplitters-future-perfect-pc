@@ -1,0 +1,225 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -947,74 +947,55 @@
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va);
+ #endif
+ 
+-/**
+- * RECOMP_ABI_CALL - call a resolved target, optionally checking the ABI.
+- *
+- * ebx, esi and edi are callee-saved on x86, and the recompiler keeps them in
+- * globals rather than on the host's stack. So a lifted function that never
+- * reaches its own epilogue -- the usual cause is a decode that lost sync on
+- * embedded data -- does not merely lose its own state, it silently corrupts
+- * every caller's.
+- *
+- * That failure is invisible at the crash site: the caller carries on with a
+- * wrong loop cursor and simply does less work. Half-Life 2's C++ static
+- * initialiser walks 5,305 constructors with esi as the cursor and edi as the
+- * limit; a single callee returning with those changed ended the walk early and
+- * left Source with no registered interfaces, with no error anywhere.
+- *
+- * Build with -DRECOMP_ABI_CHECK to have every indirect call verify them and
+- * name the first offenders. esp is deliberately not checked: the convention
+- * decides whether the callee pops arguments, so there is no single correct
+- * value -- but there is one invariant that holds under every convention:
+- * the callee at least pops its own return address, so esp must come back
+- * at least 4 higher than it went in. Coming back lower means the epilogue
+- * never ran, which is the failure this exists to catch.
+- *
+- * Covers direct calls as well as indirect: tools/recomp emits every direct
+- * call through this macro, which expands to a plain call when the flag is
+- * off. That matters because CRT and static-initialiser paths -- where these
+- * clobbers actually bite -- are almost entirely direct calls.
+- * (An earlier note here said direct calls were a plain C call with no macro to
+- * hook, and concluded this was the wrong tool for early boot. That stopped
+- * being true when tools/recomp started routing every direct call through
+- * RECOMP_ABI_CALL. Early boot is now exactly where it earns its keep.)
+- *
+- * Build note: define RECOMP_ABI_CHECK for the runtime libraries too, not only
+- * for the generated game code. The check is emitted into generated code but
+- * recomp_abi_violation_log() is compiled into xbox_kernel, so setting it on the
+- * game target alone produces the calls without the callee and fails to link.
+- * The game template does this with a directory-scope add_compile_definitions()
+- * placed before add_subdirectory().
++/* TSFP call checks begin.
++ * Diagnostic builds inspect the preserved registers and guest return stack.
++ * The address and cleanup expressions stay lazy, including the historical
++ * short-circuit behavior of a known-pop call. Production builds call directly.
+  */
+ #ifdef RECOMP_ABI_CHECK
+-void recomp_abi_violation_log(uint32_t va, uint32_t ebx0, uint32_t esi0,
+-                              uint32_t edi0, uint32_t esp0);
+-void recomp_abi_pop_violation_log(uint32_t va, uint32_t ebx0, uint32_t esi0,
+-                                  uint32_t edi0, uint32_t esp0, uint32_t pop);
+-#define RECOMP_ABI_CALL(va, fn) do { \
+-    uint32_t _ab = g_ebx, _as = g_esi, _ad = g_edi, _ap = g_esp; \
+-    (fn)(); \
+-    if (g_ebx != _ab || g_esi != _as || g_edi != _ad || g_esp < _ap + 4) \
+-        recomp_abi_violation_log((va), _ab, _as, _ad, _ap); \
+-} while(0)
+-/* A direct call whose callee's own `ret N` is known (tools/recomp reads it
+- * from the callee's bytes). Then esp has exactly one right value afterwards,
+- * so a stack that comes back too HIGH -- invisible to the one-sided check
+- * above -- is caught at the call that did it rather than frames later.
+- * Burnout 2's CDirectSoundBuffer_GetStatus came back 8 high once in 4.5
+- * million calls, rotated its caller's saved registers, and the title crashed
+- * three frames up with a code address used as an object. */
+-#define RECOMP_ABI_CALL_POP(va, fn, pop) do { \
+-    uint32_t _ab = g_ebx, _as = g_esi, _ad = g_edi, _ap = g_esp; \
+-    (fn)(); \
+-    if (g_ebx != _ab || g_esi != _as || g_edi != _ad || \
+-        g_esp != _ap + 4 + (pop)) \
+-        recomp_abi_pop_violation_log((va), _ab, _as, _ad, _ap, (pop)); \
+-} while(0)
++typedef struct {
++    uint32_t base, source, destination, stack;
++} tsfp_call_snapshot;
++
++static inline tsfp_call_snapshot tsfp_capture_call(void) {
++    tsfp_call_snapshot state;
++    state.base = g_ebx;
++    state.source = g_esi;
++    state.destination = g_edi;
++    state.stack = g_esp;
++    return state;
++}
++
++static inline int tsfp_call_registers_match(const tsfp_call_snapshot *state) {
++    return g_ebx == state->base && g_esi == state->source &&
++           g_edi == state->destination;
++}
++
++void recomp_abi_violation_log(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
++void recomp_abi_pop_violation_log(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
++#define RECOMP_ABI_CALL(address, target) do { \
++    const tsfp_call_snapshot tsfp_before_call_ = tsfp_capture_call(); \
++    (target)(); \
++    if (!tsfp_call_registers_match(&tsfp_before_call_) || \
++        g_esp < tsfp_before_call_.stack + 4u) \
++        recomp_abi_violation_log((address), tsfp_before_call_.base, \
++            tsfp_before_call_.source, tsfp_before_call_.destination, tsfp_before_call_.stack); \
++} while (0)
++#define RECOMP_ABI_CALL_POP(address, target, cleanup) do { \
++    const tsfp_call_snapshot tsfp_before_call_ = tsfp_capture_call(); \
++    (target)(); \
++    if (!tsfp_call_registers_match(&tsfp_before_call_) || \
++        g_esp != tsfp_before_call_.stack + 4u + (cleanup)) \
++        recomp_abi_pop_violation_log((address), tsfp_before_call_.base, \
++            tsfp_before_call_.source, tsfp_before_call_.destination, \
++            tsfp_before_call_.stack, (cleanup)); \
++} while (0)
+ #else
+-#define RECOMP_ABI_CALL(va, fn) (fn)()
+-#define RECOMP_ABI_CALL_POP(va, fn, pop) (fn)()
+-#endif
++#define RECOMP_ABI_CALL(address, target) (target)()
++#define RECOMP_ABI_CALL_POP(address, target, cleanup) (target)()
++#endif
++/* TSFP call checks end. */
++
+ 
+ /* A guarded arm of an indirect call. When a recorded run saw a call site
+  * reach only a few translated functions, the lifter compares the target
+@@ -1095,58 +1076,51 @@
+     TSFP_GUEST_CALL(xbox_va, g_esp + 4u, g_esp += 4u, (void)0)
+ 
+ 
+-/**
+- * RECOMP_ICALL_SAFE - Stack-safe indirect call.
+- *
+- * Restores g_esp to saved_esp (pre-argument value) on lookup failure,
+- * preventing stdcall argument leaks on failed vtable calls.
+- * Use this when the caller pushes arguments that the callee would
+- * normally clean up (stdcall convention).
+- */
+-/* Calling an XDK replacement whose arguments the linker put in registers.
+- *
+- * A title built with link-time code generation gets rewritten calling
+- * conventions, and the signature database records what happened in the name:
+- * D3DDevice_SelectVertexShader_0__LTCG_eax1_ebx2 takes both arguments in
+- * registers and none on the stack. The replacements in src/hle are written
+- * against the ordinary convention and read everything with HLE_ARG, which
+- * reads the guest stack.
+- *
+- * Rather than write every implementation twice, the generated thunk lays out
+- * an ordinary argument frame just below the stack, fills it from the
+- * registers the name specifies and from the caller's own stack arguments for
+- * the rest, and points g_esp at it for the duration of the call. The
+- * implementation cannot tell the difference. The frame sits in stack space
+- * the callee would have used anyway, and g_esp is restored afterwards to
+- * exactly what an ordinary thunk would leave.
+- *
+- * tools/recomp/hle.py emits these; nothing else should use them.
+- */
+-#define RECOMP_HLE_STACK(i) MEM32(_hle_stack + 4u * (uint32_t)(i))
+-
++/* TSFP HLE frames begin.
++ * Register-argument thunks stage at most 24 words in ordinary guest stack
++ * memory. Keep the caller's return address and entry stack separate from any
++ * register changes made while evaluating cleanup, selecting or calling HLE.
++ */
+ #define RECOMP_HLE_MAX_ARGS 24u
+-
+-#define RECOMP_HLE_LTCG_CALL(n, fn, total_pop) \
+-    { \
+-        uint32_t _hle_n     = (uint32_t)(n); \
+-        uint32_t _hle_ret   = MEM32(g_esp); \
+-        uint32_t _hle_stack = g_esp + 4u; \
+-        uint32_t _hle_save  = g_esp; \
+-        uint32_t _hle_frame = g_esp - 4u * (_hle_n + 4u); \
+-        uint32_t _hle_pop   = (uint32_t)(total_pop); \
+-        uint32_t a[RECOMP_HLE_MAX_ARGS]; \
+-        uint32_t _hle_i; \
+-        void (*_hle_fn)(void) = (fn); \
+-        (void)_hle_stack;
+-
++typedef struct {
++    uint32_t count, return_address, arguments, entry, work, cleanup;
++} tsfp_hle_frame;
++
++static inline tsfp_hle_frame tsfp_begin_hle_frame(uint32_t count) {
++    tsfp_hle_frame frame;
++    frame.count = count;
++    frame.return_address = MEM32(g_esp);
++    frame.arguments = g_esp + 4u;
++    frame.entry = g_esp;
++    frame.work = g_esp - 4u * (count + 4u);
++    frame.cleanup = 0;
++    return frame;
++}
++
++static inline void tsfp_run_hle_frame(const tsfp_hle_frame *frame,
++                                      const uint32_t *arguments, void (*target)(void)) {
++    uint32_t index = 0;
++    MEM32(frame->work) = frame->return_address;
++    while (index < frame->count && index < RECOMP_HLE_MAX_ARGS) {
++        MEM32(frame->work + 4u * (index + 1u)) = arguments[index];
++        ++index;
++    }
++    g_esp = frame->work;
++    target();
++    g_esp = frame->entry + frame->cleanup;
++}
++
++#define RECOMP_HLE_STACK(index) MEM32(tsfp_hle_frame_.arguments + 4u * (uint32_t)(index))
++#define RECOMP_HLE_LTCG_CALL(n, fn, total_pop) { \
++    tsfp_hle_frame tsfp_hle_frame_ = tsfp_begin_hle_frame((uint32_t)(n)); \
++    tsfp_hle_frame_.cleanup = (uint32_t)(total_pop); \
++    uint32_t a[RECOMP_HLE_MAX_ARGS]; \
++    void (*tsfp_hle_target_)(void) = (fn);
+ #define RECOMP_HLE_LTCG_END \
+-        MEM32(_hle_frame) = _hle_ret; \
+-        for (_hle_i = 0; _hle_i < _hle_n && _hle_i < RECOMP_HLE_MAX_ARGS; _hle_i++) \
+-            MEM32(_hle_frame + 4u + 4u * _hle_i) = a[_hle_i]; \
+-        g_esp = _hle_frame; \
+-        _hle_fn(); \
+-        g_esp = _hle_save + _hle_pop; \
+-    }
++    tsfp_run_hle_frame(&tsfp_hle_frame_, a, tsfp_hle_target_); \
++}
++/* TSFP HLE frames end. */
++
+ 
+ /* TSFP indirect dispatch wrappers begin.
+  * A saved stack is consulted only for failure. For an invalid address it is

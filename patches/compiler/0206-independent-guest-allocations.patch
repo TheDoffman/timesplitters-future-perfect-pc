@@ -1,0 +1,833 @@
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -14,6 +14,7 @@
+ 
+ #include "xbox_memory_layout.h"
+ #include "guest_image.h"
++#include "guest_allocation.h"
+ #include "kernel.h"
+ #include "recomp_config.h"
+ #include "xbox_watchpoint.h"
+@@ -1720,6 +1721,37 @@
+     if (h)
+         CloseHandle(h);
+ }
++
++/* Project allocation provider storage. Initialization precedes device workers. */
++static tsfp_allocations g_guest_allocations;
++static tsfp_allocation_record g_guest_heap_records[65536];
++/* One additional record protects the synthetic kernel page. */
++static tsfp_allocation_record g_guest_physical_records[4097];
++
++static int xbox_AllocationInit(void)
++{
++    tsfp_allocation_config config = {0};
++    if (g_memory_size > UINT32_MAX || g_xbox_total_ram > UINT32_MAX)
++        return 0;
++    config.ram = g_memory_base;
++    config.ram_size = (uint32_t)g_memory_size;
++    config.heap_begin = XBOX_HEAP_BASE;
++    config.reserve_begin = (uint32_t)(g_xbox_total_ram < g_memory_size
++        ? g_xbox_total_ram : g_memory_size);
++    if (g_contig_memory) {
++        config.physical = g_contig_memory;
++        config.physical_base = XBOX_CONTIG_BASE;
++        config.physical_size = XBOX_CONTIG_SIZE;
++        config.physical_begin = XBOX_CONTIG_BASE + XBOX_CONTIG_RESERVED_LOW;
++        config.physical_end = XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE - XBOX_GPU_INSTANCE_DEFAULT;
++        config.protected_begin = 0x80010000u;
++        config.protected_end = 0x80011000u;
++    }
++    return tsfp_allocations_init(&g_guest_allocations, &config,
++        g_guest_heap_records, sizeof(g_guest_heap_records) / sizeof(g_guest_heap_records[0]),
++        g_guest_physical_records, sizeof(g_guest_physical_records) / sizeof(g_guest_physical_records[0]));
++}
++/* End project allocation initialization. */
+ 
+ BOOL xbox_MemoryLayoutInit(const void *xbe_data, size_t xbe_size)
+ {
+@@ -2364,6 +2396,14 @@
+         }
+     }
+ 
++    if (!xbox_AllocationInit()) {
++        fprintf(stderr, "Project guest allocator rejected the mapped memory layout\n");
++        xbox_MemoryLayoutShutdown();
++        return FALSE;
++    }
++    fprintf(stderr, "  Project allocations: heap 0x%08X..0x%08X, physical %s\n",
++            (unsigned)XBOX_HEAP_BASE, (unsigned)g_memory_size,
++            g_contig_memory ? "available" : "unavailable");
+     if (g_nv2a_memory) {
+         xbox_Nv2aAckStart();
+     }
+@@ -2609,6 +2649,8 @@
+ 
+ void xbox_MemoryLayoutShutdown(void)
+ {
++    /* Reject subsequent ownership requests before their mappings disappear. */
++    tsfp_allocations_stop(&g_guest_allocations);
+     if (g_kernel_memory) {
+         VirtualFree(g_kernel_memory, 0, MEM_RELEASE);
+         g_kernel_memory = NULL;
+@@ -2655,47 +2697,6 @@
+     fprintf(stderr, "xbox_MemoryLayoutShutdown: released\n");
+ }
+ 
+-/* Bump allocator for pure address-space reservations, above RAM.
+- *
+- * A MEM_RESERVE costs no memory on real hardware -- it takes address space out
+- * of a 4 GB range, not pages out of the 64 MB the console has -- so titles
+- * reserve far more than exists and commit a fraction. Satisfying that out of
+- * the RAM heap does not work: Half-Life 2 asks for 128 MB and then 200 MB, and
+- * clamping those to what the heap can back left it sub-allocating across a
+- * range it believed it owned, walking past the top of RAM and aliasing low
+- * memory through the mirrors.
+- *
+- * So reservations come from the mapped space *above* RAM instead. Those pages
+- * are already backed and distinct, nothing else hands them out, and a commit
+- * inside one is a no-op because it is real memory already.
+- *
+- * Returns 0 when the mapping is no larger than RAM -- the default for titles
+- * that never call xbox_SetMapSize -- which leaves the old behaviour untouched.
+- *
+- * ponytail: a bump allocator with no free. A reservation is address space, the
+- * range is large, and a title that reserves and releases repeatedly would need
+- * a real allocator; none has yet.
+- */
+-static uint32_t g_reserve_next;
+-
+-uint32_t xbox_ReserveAlloc(uint32_t size, uint32_t align)
+-{
+-    uint32_t base;
+-
+-    if (g_memory_size <= g_xbox_total_ram || size == 0)
+-        return 0;
+-    if (!align)
+-        align = 4096;
+-    if (!g_reserve_next)
+-        g_reserve_next = (uint32_t)g_xbox_total_ram;
+-
+-    base = (g_reserve_next + align - 1) & ~(align - 1);
+-    if ((size_t)base + size > g_memory_size)
+-        return 0;
+-    g_reserve_next = base + size;
+-    return base;
+-}
+-
+ BOOL xbox_IsXboxAddress(uintptr_t address)
+ {
+     return (address >= XBOX_BASE_ADDRESS &&
+@@ -2711,28 +2712,6 @@
+ {
+     return g_memory_offset;
+ }
+-
+-/* ── Dynamic heap allocator ────────────────────────────────
+- *
+- * Simple bump allocator for MmAllocateContiguousMemory and similar.
+- * Returns Xbox VAs within the mapped region so MEM32() works correctly.
+- * No free support (bump-only for now).
+- */
+-/* Set by xbox_MemoryLayoutInit: XBOX_HEAP_BASE moves with the image
+- * (see XBOX_LOW_VA), so it is not a constant any more. */
+-static uint32_t g_heap_next;
+-
+-static int g_heap_alloc_count = 0;
+-
+-/* Block table backing xbox_HeapFree. A bump pointer alone never reclaims,
+- * which is fine for a title that allocates once and fatal for a debug build
+- * that churns. Flat array rather than an intrusive list: allocations come back
+- * in bump order, so index order is address order and coalescing is a
+- * neighbour check. */
+-#define XBOX_HEAP_MAX_BLOCKS 65536
+-static struct { uint32_t addr; uint32_t size; uint8_t free; }
+-    g_heap_blocks[XBOX_HEAP_MAX_BLOCKS];
+-static int g_heap_block_count = 0;
+ 
+ /*
+  * Simulated stacks for spawned threads.
+@@ -2869,522 +2848,48 @@
+         g_thread_stacks_used--;
+ }
+ 
+-/* Bump allocator over the contiguous window mapped at XBOX_CONTIG_BASE.
+- *
+- * MmAllocateContiguousMemory hands back physical memory, and on Xbox physical
+- * page P is visible at 0x80000000 + P. Drivers rely on that being an exact
+- * round trip: Xbox D3D writes its pushbuffer position to the NV2A as
+- * `VA & 0x0FFFFFFF` and reads the GPU's position back as `GET | 0x80000000`,
+- * then compares the two. That holds for any address in this window and for
+- * nothing in the general heap, whose position depends on what the title
+- * reserved first -- Half-Life 2 reserves 128 MB and then 200 MB before D3D
+- * allocates its pushbuffer, which put the buffer at 0x15782000 and left the
+- * engine comparing 0x857844C0 against it forever.
+- *
+- * Grows up from the base; XBOX_GPU_INSTANCE_DEFAULT is carved off the top by
+- * the GPU-instance bridge, so the two do not meet until the window is full.
+- *
+- * Freed blocks are reused. The arena was bump-only on the assumption that
+- * contiguous blocks are framebuffers and pushbuffers, allocated once. Dino
+- * Crisis 3 also takes each stage's data from here, megabytes at a time, and
+- * frees it again -- and MmFreeContiguousMemory handed the address to the
+- * general heap, which does not own it, so nothing ever came back. Its front
+- * end left 62 MB of the 64 MB window "in use"; the first stage's 5 MB request
+- * then returned NULL, the title read the stage file into NULL + offset, over
+- * its own code and data, and called through what the file put there (the
+- * 0x04XX04XX "function pointers" of its long-standing crash). */
+-static uint32_t g_contig_next =
+-    XBOX_CONTIG_BASE + XBOX_CONTIG_RESERVED_LOW;
+-
+-/* Every contiguous block, live or free, in address order.
+- *
+- * MmQueryAllocationSize has to be able to answer for these addresses, and
+- * without a record the only honest answer is zero. DirectSound allocates its
+- * DSP buffers here and then asks how big they are; a zero told it the block
+- * was not real, and it retried, which is why a run spent 103 of its last 400
+- * kernel calls back in MmAllocateContiguousMemoryEx.
+- *
+- * `size` is what the caller asked for, `span` the page-rounded extent the
+- * block owns. Free blocks are reused first-fit, split when the remainder is a
+- * page or more, and merged with free neighbours; a free block at the top of
+- * the arena is given back to the bump pointer.
+- */
+-#define XBOX_CONTIG_MAX_BLOCKS 4096
+-#define XBOX_CONTIG_PAGE       4096u
+-static struct {
+-    uint32_t addr, size, span;
+-    int      free;
+-} g_contig_blocks[XBOX_CONTIG_MAX_BLOCKS];
+-static int g_contig_block_count;
+-static uint32_t g_contig_frees, g_contig_reuses;
+-
+-static uint32_t contig_round(uint32_t n)
+-{
+-    return (n + XBOX_CONTIG_PAGE - 1u) & ~(XBOX_CONTIG_PAGE - 1u);
+-}
+-
+-/* Insert a block record at index i, shifting the rest up. 0 if full. */
+-static int contig_insert(int i, uint32_t addr, uint32_t size, uint32_t span,
+-                         int free)
+-{
+-    if (g_contig_block_count >= XBOX_CONTIG_MAX_BLOCKS)
+-        return 0;
+-    memmove(&g_contig_blocks[i + 1], &g_contig_blocks[i],
+-            (size_t)(g_contig_block_count - i) * sizeof g_contig_blocks[0]);
+-    g_contig_blocks[i].addr = addr;
+-    g_contig_blocks[i].size = size;
+-    g_contig_blocks[i].span = span;
+-    g_contig_blocks[i].free = free;
+-    g_contig_block_count++;
+-    return 1;
+-}
+-
+-static void contig_remove(int i)
+-{
+-    memmove(&g_contig_blocks[i], &g_contig_blocks[i + 1],
+-            (size_t)(g_contig_block_count - i - 1) * sizeof g_contig_blocks[0]);
+-    g_contig_block_count--;
+-}
+-
++/* Project allocation ABI adapters; ownership and zeroing live in one provider. */
++uint32_t xbox_ReserveAlloc(uint32_t size, uint32_t alignment)
++{
++    return tsfp_reserve_allocate(&g_guest_allocations, size, alignment);
++}
++uint32_t xbox_HeapAlloc(uint32_t size, uint32_t alignment)
++{
++    return tsfp_heap_allocate(&g_guest_allocations, size, alignment);
++}
++void xbox_HeapFree(uint32_t address)
++{
++    (void)tsfp_heap_release(&g_guest_allocations, address);
++}
++uint32_t xbox_HeapBlockSize(uint32_t address)
++{
++    return tsfp_allocation_remaining(&g_guest_allocations, address);
++}
+ uint32_t xbox_ContiguousAlloc(uint32_t size, uint32_t alignment)
+ {
+-    uint32_t result, span;
+-    int i;
+-
+-    if (alignment < XBOX_CONTIG_PAGE) alignment = XBOX_CONTIG_PAGE;
+-    span = contig_round(size ? size : 1u);
+-
+-    /* First fit among freed blocks. Only a block that already starts on the
+-     * alignment is taken: every block starts on a page, and asking for more
+-     * than a page is rare enough that the bump pointer can serve it. */
+-    for (i = 0; i < g_contig_block_count; i++) {
+-        uint32_t spare;
+-        if (!g_contig_blocks[i].free || g_contig_blocks[i].span < span ||
+-            (g_contig_blocks[i].addr & (alignment - 1u)))
+-            continue;
+-        spare = g_contig_blocks[i].span - span;
+-        if (spare >= XBOX_CONTIG_PAGE &&
+-            contig_insert(i + 1, g_contig_blocks[i].addr + span, 0u, spare, 1))
+-            g_contig_blocks[i].span = span;
+-        g_contig_blocks[i].free = 0;
+-        g_contig_blocks[i].size = size;
+-        g_contig_reuses++;
+-        result = g_contig_blocks[i].addr;
+-        memset((void *)((uintptr_t)result + g_memory_offset), 0, size);
+-        return result;
+-    }
+-
+-    result = (g_contig_next + alignment - 1) & ~(alignment - 1);
+-
+-    /* Leave the top of the window for GPU instance memory. */
+-    if ((uint64_t)result + span >
+-            (uint64_t)XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE
+-                - XBOX_GPU_INSTANCE_DEFAULT) {
+-        uint32_t live = 0;
+-        for (i = 0; i < g_contig_block_count; i++)
+-            if (!g_contig_blocks[i].free)
+-                live += g_contig_blocks[i].span;
+-        fprintf(stderr, "  [CONTIG] arena exhausted (%u requested, %u of %u "
+-                        "used; %u live in blocks, %u frees, %u reuses)\n",
+-                size, g_contig_next - XBOX_CONTIG_BASE,
+-                (unsigned)XBOX_CONTIG_SIZE, live, g_contig_frees,
+-                g_contig_reuses);
+-        fflush(stderr);
+-        return 0;
+-    }
+-
+-    /* The gap an alignment above a page leaves is a free block too. */
+-    if (result > g_contig_next)
+-        contig_insert(g_contig_block_count, g_contig_next, 0u,
+-                      result - g_contig_next, 1);
+-    g_contig_next = result + span;
+-
+-    if (!contig_insert(g_contig_block_count, result, size, span, 0)) {
+-        static int said;
+-        if (!said++) {
+-            fprintf(stderr, "  [CONTIG] more than %d blocks: later ones cannot "
+-                            "be freed\n", XBOX_CONTIG_MAX_BLOCKS);
+-            fflush(stderr);
+-        }
+-    }
+-
+-    memset((void *)((uintptr_t)result + g_memory_offset), 0, size);
+-    return result;
+-}
+-
+-/* MmFreeContiguousMemory. Returns 0 when `xbox_va` is not the start of a live
+- * block this arena handed out (a pinned MmAllocateContiguousMemoryEx address,
+- * say), which the caller may then treat as not contiguous at all. */
+-int xbox_ContiguousFree(uint32_t xbox_va)
+-{
+-    int i;
+-
+-    for (i = 0; i < g_contig_block_count; i++)
+-        if (g_contig_blocks[i].addr == xbox_va && !g_contig_blocks[i].free)
+-            break;
+-    if (i == g_contig_block_count)
+-        return 0;
+-
+-    g_contig_blocks[i].free = 1;
+-    g_contig_blocks[i].size = 0u;
+-    if (++g_contig_frees <= 4) {
+-        fprintf(stderr, "  [CONTIG] free #%u va=0x%08X (%u bytes)\n",
+-                g_contig_frees, xbox_va, g_contig_blocks[i].span);
+-        fflush(stderr);
+-    }
+-
+-    /* Merge with a free neighbour on either side. */
+-    if (i + 1 < g_contig_block_count && g_contig_blocks[i + 1].free &&
+-        g_contig_blocks[i].addr + g_contig_blocks[i].span == g_contig_blocks[i + 1].addr) {
+-        g_contig_blocks[i].span += g_contig_blocks[i + 1].span;
+-        contig_remove(i + 1);
+-    }
+-    if (i > 0 && g_contig_blocks[i - 1].free &&
+-        g_contig_blocks[i - 1].addr + g_contig_blocks[i - 1].span == g_contig_blocks[i].addr) {
+-        g_contig_blocks[i - 1].span += g_contig_blocks[i].span;
+-        contig_remove(i);
+-        i--;
+-    }
+-
+-    /* A free block at the top goes back to the bump pointer. */
+-    if (i == g_contig_block_count - 1 &&
+-        g_contig_blocks[i].addr + g_contig_blocks[i].span == g_contig_next) {
+-        g_contig_next = g_contig_blocks[i].addr;
+-        contig_remove(i);
+-    }
+-    return 1;
+-}
+-
+-/* Pinned physical ranges.
+- *
+- * MmAllocateContiguousMemoryEx with a range that brackets exactly one
+- * allocation names a physical address -- XPhysicalAlloc(size, phys, ...) sends
+- * low = phys, high = phys + size - 1 -- and the bridge answers it with that
+- * address without asking this arena. The arena still has to know: its free
+- * blocks and its bump pointer can cover the pinned pages, and the next
+- * ordinary request is then carved across them. Halo pins its game state at
+- * physical 0x61000 and its tag cache at 0x3A6000 after its first D3D device
+- * has freed the blocks there; its 22 MB texture cache, asked for anywhere,
+- * landed on both, and texture uploads overwrote the game state.
+- *
+- * So a pin takes the pages it covers out of the arena. Free blocks are split
+- * around it, and a pin above the bump pointer moves the pointer past it (the
+- * gap below becomes a free block). Pages a live block already holds stay with
+- * it and are reported: the title asked for that address, and moving either
+- * would be wrong. The pinned part becomes a live block of its own, so
+- * MmFreeContiguousMemory on the pinned address gives it back. */
+-static int contig_take_free(int i, uint32_t lo, uint32_t hi)
+-{
+-    uint32_t a = g_contig_blocks[i].addr;
+-    uint32_t e = a + g_contig_blocks[i].span;
+-
+-    if (lo < a) lo = a;
+-    if (hi > e) hi = e;
+-    if (hi < e)                                   /* the free tail */
+-        contig_insert(i + 1, hi, 0u, e - hi, 1);
+-    if (lo > a) {                                 /* the free head */
+-        g_contig_blocks[i].span = lo - a;
+-        contig_insert(i + 1, lo, hi - lo, hi - lo, 0);
+-        return i + 2;
+-    }
+-    g_contig_blocks[i].span = hi - lo;
+-    g_contig_blocks[i].size = hi - lo;
+-    g_contig_blocks[i].free = 0;
+-    return i + 1;
+-}
+-
+-void xbox_ContiguousPin(uint32_t xbox_va, uint32_t size)
+-{
+-    uint32_t lo = xbox_va & ~(XBOX_CONTIG_PAGE - 1u);
+-    uint32_t hi = contig_round(xbox_va + (size ? size : 1u));
+-    uint32_t floor = XBOX_CONTIG_BASE + XBOX_CONTIG_RESERVED_LOW;
+-    uint32_t top = XBOX_CONTIG_BASE + XBOX_CONTIG_SIZE - XBOX_GPU_INSTANCE_DEFAULT;
+-    uint32_t bump_was = g_contig_next, live_lo = 0, live_hi = 0;
+-    int i;
+-
+-    if (lo < floor)
+-        lo = floor;             /* below the arena: never handed out anyway */
+-    if (hi > top)
+-        hi = top;
+-    if (hi <= lo)
+-        return;
+-    for (i = 0; i < g_contig_block_count; ) {
+-        uint32_t a = g_contig_blocks[i].addr;
+-        uint32_t e = a + g_contig_blocks[i].span;
+-
+-        if (e <= lo) { i++; continue; }
+-        if (a >= hi) break;
+-        if (!g_contig_blocks[i].free) {
+-            if (!live_lo) live_lo = a;
+-            live_hi = e;
+-            i++;
+-            continue;
+-        }
+-        i = contig_take_free(i, lo, hi);
+-    }
+-    if (hi > g_contig_next) {
+-        uint32_t start = lo > g_contig_next ? lo : g_contig_next;
+-
+-        if (start > g_contig_next)
+-            contig_insert(g_contig_block_count, g_contig_next, 0u,
+-                          start - g_contig_next, 1);
+-        contig_insert(g_contig_block_count, start, hi - start, hi - start, 0);
+-        g_contig_next = hi;
+-    }
+-    fprintf(stderr, "  [CONTIG] pinned 0x%08X..0x%08X taken out of the arena "
+-                    "(bump pointer 0x%08X -> 0x%08X)\n",
+-            lo, hi, bump_was, g_contig_next);
+-    if (live_lo)
+-        fprintf(stderr, "  [CONTIG] pinned 0x%08X..0x%08X overlaps live blocks "
+-                        "0x%08X..0x%08X; both now use those pages\n",
+-                lo, hi, live_lo, live_hi);
+-    fflush(stderr);
+-}
+-
+-/* Walk the contiguous blocks this runtime handed out.
+- *
+- * Exposed because the DirectSound DSP doorbell lives inside one of them and
+- * its address is not derivable from any APU register: GPSADDR and friends
+- * point at the DSP's own scratch, while the command block is an ordinary
+- * contiguous allocation. Rather than have each title name the address, the
+- * APU can look for it.
+- *
+- * Returns 0 when `index` is past the end, so a caller can just count up. A
+- * freed block reads as size 0.
+- */
+-int xbox_ContiguousBlock(int index, uint32_t *addr, uint32_t *size)
+-{
+-    if (index < 0 || index >= g_contig_block_count)
+-        return 0;
+-    if (addr) *addr = g_contig_blocks[index].addr;
+-    if (size) *size = g_contig_blocks[index].free ? 0u : g_contig_blocks[index].size;
+-    return 1;
+-}
+-
+-/* How much of the window has been handed out.
+- *
+- * Lets a caller holding a physical address decide whether it names contiguous
+- * memory this runtime allocated. The pushbuffer executor needs exactly that:
+- * a surface offset is physical, and only the window makes it addressable. */
++    return tsfp_physical_allocate(&g_guest_allocations, size, alignment);
++}
++uint32_t xbox_ContiguousAllocAt(uint32_t address, uint32_t size)
++{
++    return tsfp_physical_allocate_at(&g_guest_allocations, address, size);
++}
++uint32_t xbox_ContiguousAllocRange(uint32_t size, uint32_t alignment, uint32_t low, uint32_t high)
++{
++    return tsfp_physical_allocate_range(&g_guest_allocations, size, alignment, low, high);
++}
++int xbox_ContiguousFree(uint32_t address)
++{
++    return tsfp_physical_release(&g_guest_allocations, address);
++}
++int xbox_ContiguousBlock(int index, uint32_t *address, uint32_t *size)
++{
++    return index >= 0 && tsfp_physical_block(&g_guest_allocations, (size_t)index, address, size);
++}
+ uint32_t xbox_ContiguousAllocatedBytes(void)
+ {
+-    return g_contig_next - XBOX_CONTIG_BASE;
+-}
+-
+-
+-uint32_t xbox_HeapAlloc(uint32_t size, uint32_t alignment)
+-{
+-    uint32_t result;
+-
+-    if (alignment < 4) alignment = 4;
+-    if (!g_heap_next)
+-        g_heap_next = XBOX_HEAP_BASE;
+-
+-    /* Enforce minimum allocation size.
+-     * The Xbox D3D8 code sometimes computes resource sizes from GPU
+-     * capabilities that return 0 (since we don't have real NV2A hardware),
+-     * resulting in zero-size allocations. With a bump allocator, these all
+-     * return the same address, causing overlapping structures. Enforce a
+-     * minimum of 4096 bytes so each allocation gets its own memory. */
+-    if (size < 16) size = 16;
+-
+-    /* Reuse a freed block first. Without this the heap only ever grows: Halo's
+-     * debug build allocates and releases heavily through init, exhausted all
+-     * 48 MB in 4,726 allocations, and its second D3D CreateDevice then failed
+-     * with E_OUTOFMEMORY -- which the title reports by clearing
+-     * global_d3d_device, so the rasterizer asserts and startup stops. */
+-    for (int i = 0; i < g_heap_block_count; i++) {
+-        if (!g_heap_blocks[i].free || g_heap_blocks[i].size < size) {
+-            continue;
+-        }
+-        if (g_heap_blocks[i].addr & (alignment - 1)) {
+-            continue;   /* wrong alignment for this request */
+-        }
+-        /* Hand back only what was asked for, and keep the rest available.
+-         *
+-         * Taking the whole block is what first-fit does if you let it, and
+-         * the waste is not marginal: free a 29 MB heap, ask for 16 bytes,
+-         * and the 29 MB goes with it until that 16-byte pointer is freed.
+-         * Mortal Kombat: Deadly Alliance allocates and frees exactly that
+-         * sized block while sizing its heaps.
+-         *
+-         * The remainder becomes its own free block immediately after this
+-         * one. Index order is address order -- xbox_HeapFree's coalescing
+-         * depends on that -- so it is inserted at i + 1 rather than appended,
+-         * and the two merge back together when this block is freed.
+-         *
+-         * doaxbv-re (GPL-3.0) fixed the same exhaustion the same way; this is
+-         * the same idea written against our block table.
+-         */
+-        {
+-            uint32_t spare = g_heap_blocks[i].size - size;
+-            /* Not worth a table entry, and a split that leaves a few bytes
+-             * fragments the heap faster than it saves it. */
+-            if (spare >= 64u && g_heap_block_count < XBOX_HEAP_MAX_BLOCKS) {
+-                memmove(&g_heap_blocks[i + 2], &g_heap_blocks[i + 1],
+-                        (size_t)(g_heap_block_count - i - 1)
+-                            * sizeof g_heap_blocks[0]);
+-                g_heap_block_count++;
+-                g_heap_blocks[i + 1].addr = g_heap_blocks[i].addr + size;
+-                g_heap_blocks[i + 1].size = spare;
+-                g_heap_blocks[i + 1].free = 1;
+-                g_heap_blocks[i].size = size;
+-            }
+-        }
+-        g_heap_blocks[i].free = 0;
+-        result = g_heap_blocks[i].addr;
+-        memset((void *)((uintptr_t)result + g_memory_offset), 0,
+-               g_heap_blocks[i].size);
+-        return result;
+-    }
+-
+-    /* Align the next pointer */
+-    result = (g_heap_next + alignment - 1) & ~(alignment - 1);
+-
+-    if (result + size > XBOX_HEAP_TOP) {
+-        fprintf(stderr, "xbox_HeapAlloc: out of memory (requested %u, used %u/%u)\n",
+-                size, g_heap_next - XBOX_HEAP_BASE,
+-                (unsigned)(XBOX_HEAP_TOP - XBOX_HEAP_BASE));
+-        /* Who ate the heap? Group live blocks by size -- an exhausted heap is
+-         * nearly always one request size repeated, and the count names it. */
+-        {
+-            static int dumped = 0;
+-            static struct { uint32_t size; int n; } hist[256];
+-            if (!dumped) {
+-                int used = 0;
+-                dumped = 1;
+-                for (int i = 0; i < g_heap_block_count; i++) {
+-                    int j = 0;
+-                    if (g_heap_blocks[i].free || !g_heap_blocks[i].size) continue;
+-                    while (j < used && hist[j].size != g_heap_blocks[i].size) j++;
+-                    if (j == used) {
+-                        if (used == 256) continue;   /* ponytail: 256 distinct sizes is plenty */
+-                        hist[used].size = g_heap_blocks[i].size;
+-                        hist[used++].n = 0;
+-                    }
+-                    hist[j].n++;
+-                }
+-                for (int j = 0; j < used; j++) {
+-                    if ((uint64_t)hist[j].n * hist[j].size < 1024 * 1024) continue;
+-                    fprintf(stderr, "  [HEAP] %d live blocks of %u bytes (%u KB)\n",
+-                            hist[j].n, hist[j].size,
+-                            (unsigned)((uint64_t)hist[j].n * hist[j].size / 1024));
+-                }
+-                fflush(stderr);
+-            }
+-        }
+-        return 0;
+-    }
+-
+-    g_heap_next = result + size;
+-
+-    /* Zero-fill the allocated block (Xbox memory is always zeroed) */
+-    memset((void *)((uintptr_t)result + g_memory_offset), 0, size);
+-
+-    if (g_heap_block_count < XBOX_HEAP_MAX_BLOCKS) {
+-        g_heap_blocks[g_heap_block_count].addr = result;
+-        g_heap_blocks[g_heap_block_count].size = size;
+-        g_heap_blocks[g_heap_block_count].free = 0;
+-        g_heap_block_count++;
+-    }
+-
+-    g_heap_alloc_count++;
+-    /* Rate-limited: a debug title makes thousands of these and the log is a
+-     * diagnostic, not a transaction record. */
+-    if (g_heap_alloc_count <= 32 || (g_heap_alloc_count % 512) == 0) {
+-        fprintf(stderr, "  [HEAP] #%d: size=%u align=%u → 0x%08X..0x%08X (used %u/%u)\n",
+-                g_heap_alloc_count, size, alignment, result, result + size,
+-                g_heap_next - XBOX_HEAP_BASE,
+-                (unsigned)(XBOX_HEAP_TOP - XBOX_HEAP_BASE));
+-        fflush(stderr);
+-    }
+-
+-    return result;
+-}
+-
+-/* How big is the block at this guest address?
+- *
+- * MmQueryAllocationSize and ExQueryPoolBlockSize both ask this, and both used
+- * to answer 0 -- ExQueryPoolBlockSize by returning a literal, and
+- * MmQueryAllocationSize by having no bridge at all. The host cannot answer it:
+- * VirtualQuery on the translated address reports the size of the whole 64 MB
+- * guest mapping, which is a worse answer than none. The block table already
+- * has the real one, and it is the same table xbox_HeapFree matches against.
+- *
+- * Interior addresses count: a title that asks about a pointer it has walked
+- * forward is asking about the block that contains it. Returns 0 for an address
+- * this heap never handed out, which is what "not one of mine" has to look like.
+- */
+-uint32_t xbox_HeapBlockSize(uint32_t xbox_va)
+-{
+-    int i;
+-
+-    if (!xbox_va)
+-        return 0;
+-    for (i = 0; i < g_heap_block_count; i++) {
+-        if (g_heap_blocks[i].free)
+-            continue;
+-        if (xbox_va >= g_heap_blocks[i].addr &&
+-            xbox_va <  g_heap_blocks[i].addr + g_heap_blocks[i].size)
+-            return g_heap_blocks[i].size - (xbox_va - g_heap_blocks[i].addr);
+-    }
+-
+-    /* Contiguous memory is a separate arena, and a caller asking about a
+-     * block from MmAllocateContiguousMemory is asking the same question. */
+-    for (i = 0; i < g_contig_block_count; i++) {
+-        if (g_contig_blocks[i].free)
+-            continue;
+-        if (xbox_va >= g_contig_blocks[i].addr &&
+-            xbox_va <  g_contig_blocks[i].addr + g_contig_blocks[i].size)
+-            return g_contig_blocks[i].size - (xbox_va - g_contig_blocks[i].addr);
+-    }
+-
+-    return 0;
+-}
+-
+-void xbox_HeapFree(uint32_t xbox_va)
+-{
+-    static int frees = 0, matched = 0;
+-
+-    if (!xbox_va) {
+-        return;
+-    }
+-    frees++;
+-    if (frees <= 8) {
+-        fprintf(stderr, "  [HEAP] free #%d va=0x%08X blocks=%d\n",
+-                frees, xbox_va, g_heap_block_count);
+-        fflush(stderr);
+-    }
+-    for (int i = 0; i < g_heap_block_count; i++) {
+-        if (g_heap_blocks[i].addr != xbox_va || g_heap_blocks[i].free) {
+-            continue;
+-        }
+-        g_heap_blocks[i].free = 1;
+-        if (++matched % 512 == 0) {
+-            fprintf(stderr, "  [HEAP] frees=%d matched=%d blocks=%d\n",
+-                    frees, matched, g_heap_block_count);
+-            fflush(stderr);
+-        }
+-
+-        /* Coalesce with neighbours. Blocks are recorded in bump order, so
+-         * index order is address order and adjacency is a simple end==start
+-         * test. Keeps large contiguous requests satisfiable after a lot of
+-         * small churn. */
+-        if (i + 1 < g_heap_block_count && g_heap_blocks[i + 1].free &&
+-            g_heap_blocks[i].addr + g_heap_blocks[i].size == g_heap_blocks[i + 1].addr) {
+-            g_heap_blocks[i].size += g_heap_blocks[i + 1].size;
+-            g_heap_blocks[i + 1].size = 0;
+-            g_heap_blocks[i + 1].addr = 0;
+-        }
+-        if (i > 0 && g_heap_blocks[i - 1].free &&
+-            g_heap_blocks[i - 1].addr + g_heap_blocks[i - 1].size == g_heap_blocks[i].addr) {
+-            g_heap_blocks[i - 1].size += g_heap_blocks[i].size;
+-            g_heap_blocks[i].size = 0;
+-            g_heap_blocks[i].addr = 0;
+-        }
+-        return;
+-    }
+-}
++    return tsfp_physical_extent(&g_guest_allocations);
++}
++/* End project allocation ABI adapters. */
+ 
+ HANDLE xbox_GetMappingHandle(void)
+ {
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -711,55 +711,26 @@
+ 
+ static void bridge_MmAllocateContiguousMemoryEx(void)
+ {
+-    uint32_t size = STACK_ARG(0);
+-    uint32_t low = STACK_ARG(1);
+-    uint32_t high = STACK_ARG(2);
+-    uint32_t align = STACK_ARG(3);
+-    uint32_t prot = STACK_ARG(4);
+-    uint32_t xbox_va;
+-
+-    (void)prot;
+-
+-    /*
+-     * A caller that constrains the range to exactly one allocation's worth is
+-     * demanding a specific physical address, not expressing a preference.
+-     * Halo does this for its two big pools and asserts on the result
+-     * (physical_memory_map.c:46) - XPhysicalAlloc passes lowest = the address
+-     * it wants and highest = lowest + size - 1, then requires
+-     * 0x80000000 | lowest back. Satisfying that from the heap fails the assert
+-     * and leaves its whole memory map wrong.
+-     */
+-    if (low && high >= low && (high - low + 1) <= size + 0x1000) {
+-        xbox_va = XBOX_PHYSICAL_MIRROR_BASE + low;
+-
+-        /* The console hands out zeroed pages here, and titles rely on it:
+-         * pool headers and free-list roots are assumed clear, so whatever the
+-         * backing view happened to contain shows up later as structures that
+-         * are "allocated" but full of garbage. */
+-        memset((void *)((uintptr_t)xbox_va + g_xbox_mem_offset), 0, size);
+-        /* And the arena must not hand these pages out again. */
+-        xbox_ContiguousPin(xbox_va, size);
+-
+-        if (KERNEL_LOG_ON_HALF()) {
+-            fprintf(stderr, "  [KERNEL] MmAllocateContiguousMemoryEx: size=%u "
+-                    "pinned phys 0x%08X -> Xbox VA 0x%08X (zeroed)\n",
+-                    size, low, xbox_va);
+-            fflush(stderr);
+-        }
+-        g_eax = xbox_va;
+-        return;
+-    }
+-
+-    if (align < 4096) align = 4096;
+-    xbox_va = xbox_ContiguousAlloc(size, align);
+-
+-    if (KERNEL_LOG_ON_HALF()) {
+-        fprintf(stderr, "  [KERNEL] MmAllocateContiguousMemoryEx: size=%u align=%u → Xbox VA 0x%08X\n",
+-                size, align, xbox_va);
+-        fflush(stderr);
+-    }
+-
+-    g_eax = xbox_va;
++    uint32_t size = STACK_ARG(0), low = STACK_ARG(1), high = STACK_ARG(2);
++    uint32_t alignment = STACK_ARG(3), result = 0;
++    uint64_t width = high >= low ? (uint64_t)high - low + 1u : 0;
++    /* Preserve the narrow-range fixed-address convention, with bounds and
++     * ownership checked before any memory write. The protection word does
++     * not change the host mapping's existing writable policy. */
++    if (!width || low >= XBOX_CONTIG_SIZE) {
++        result = 0;
++    } else if (low && width <= (uint64_t)size + 4096u) {
++        if (low < XBOX_CONTIG_SIZE && size <= width)
++            result = xbox_ContiguousAllocAt(XBOX_CONTIG_BASE + low, size);
++    } else {
++        uint32_t ceiling = high < XBOX_CONTIG_SIZE ? high : XBOX_CONTIG_SIZE - 1u;
++        result = xbox_ContiguousAllocRange(size, alignment,
++            XBOX_CONTIG_BASE + low, XBOX_CONTIG_BASE + ceiling);
++    }
++    g_eax = result;
++    if (KERNEL_LOG_ON_HALF())
++        fprintf(stderr, "  [KERNEL] physical allocation size=%u low=0x%08X high=0x%08X align=%u -> 0x%08X\n",
++                size, low, high, alignment, result);
+ }
+ 
+ /* ── MmFreeContiguousMemory (ordinal 171) ─────────────────
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -188,14 +188,16 @@
+ /* Read it back: 0 until the title sets a mode. Pitch is optional. */
+ uint32_t xbox_GetDisplayFramebuffer(uint32_t *pitch);
+ 
+-/* Allocate from the contiguous (physical-mirror) arena. Returns a guest VA
+- * below 256 MB, or 0 when the arena is exhausted. */
++/* Allocate in the mapped physical window above its reserved low prefix.
++ * Returns a guest VA in that window, or 0 on invalid input/exhaustion. */
+ uint32_t xbox_ContiguousAlloc(uint32_t size, uint32_t alignment);
+ /* Give a block back; 0 when xbox_va is not a live block this arena made. */
+ int      xbox_ContiguousFree(uint32_t xbox_va);
+-/* A caller was handed this exact range by physical address (a pinned
+- * MmAllocateContiguousMemoryEx): keep the arena from handing it out again. */
+-void     xbox_ContiguousPin(uint32_t xbox_va, uint32_t size);
++/* Claim and zero an exact physical range after checking bounds/ownership.
++ * Returns xbox_va on success, otherwise 0 without changing guest memory. */
++uint32_t xbox_ContiguousAllocAt(uint32_t xbox_va, uint32_t size);
++/* Inclusive guest-VA bounds; requested bytes must fit, including the low limit. */
++uint32_t xbox_ContiguousAllocRange(uint32_t size, uint32_t alignment, uint32_t low, uint32_t high);
+ uint32_t xbox_ContiguousAllocatedBytes(void);
+ 
+ int xbox_Nv2aMirrorFence(uint32_t device_ptr_va,
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -1080,7 +1080,7 @@
+  * if there was no mapped XBE to read it from. */
+ uint32_t xbox_kernel_get_xbe_game_region(void);
+ 
+-/* Walk the contiguous allocations, oldest first. Returns 0 past the end. */
++/* Walk live physical allocations in ascending address order; 0 past the end. */
+ int xbox_ContiguousBlock(int index, uint32_t *addr, uint32_t *size);
+ void     xbox_kernel_set_xbe_game_region(uint32_t region);
+ 
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -46,6 +46,7 @@
+ 
+ # Independent image inspection and materialization, shared by both hosts.
+ target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_image.c")
++target_sources(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime/guest_allocation.c")
+ target_include_directories(xbox_kernel PRIVATE "${TSFP_SHARED_SOURCE}/runtime")
+ 
+ # See src/platform/CMakeLists.txt: resolve src/ relative to this file, not via

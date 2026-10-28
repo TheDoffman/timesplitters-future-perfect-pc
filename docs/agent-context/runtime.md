@@ -1,5 +1,57 @@
 # Runtime and patch navigation
 
+Unused POSIX memory APIs retired: [caller audit and strict fixture controls](retired-memory-compatibility.md).
+
+Main guest mappings: [providers, aliases and lifetime](guest-host-mappings.md).
+Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
+
+Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).
+
+Native Mm ownership and host page operations: [contracts](native-memory.md).
+
+Virtual-memory adapters: [ownership and ABI contracts](virtual-memory.md).
+
+Thread/TIB and stack providers: [construction, lifecycle and callers](thread-memory.md).
+
+Heap/reservation/physical allocation now routes through the project ownership
+provider; see [allocation contracts](independent.md#guest-allocation-ownership).
+Host mappings and thread/TIB storage now have project providers; device services
+and whole-runtime worker quiescence remain transitional.
+
+Image inspection/loading now routes through the project provider before host
+mapping and during materialization; see [image contracts](independent.md#native-image-loading).
+Mapping/TIB construction use project providers; device services remain transitional.
+
+Guest architectural storage and bounded ABI reports now use project providers;
+see [state contracts](independent.md#guest-state-and-abi-reports). The loader
+uses project memory/TIB allocation; fibers still share their native thread's cells.
+
+Native continuation storage/restoration is project-owned through additive
+`0203-independent-nonlocal-jumps.patch`; see [contracts and host limits](independent.md#native-nonlocal-jumps).
+
+Optional branch-feedback recording is project-owned; compatibility includes
+route to `src/runtime/` through `0202-independent-branch-feedback.patch`.
+See [provider, generation and test contracts](independent.md#guest-branch-feedback-recorder).
+
+The canonical guest header now lives in `src/runtime/recomp_types.h`; generation
+reads it directly. The final `0199-independent-runtime-header.patch` keeps the
+transitional template identical, before layout routing. See
+[header ownership and service boundaries](independent.md#canonical-guest-header).
+
+The subsequent `0201-runtime-header-consumer-fixture.patch` repairs the inherited
+guarded-call test's function-backed macro extraction; it changes no game source.
+
+Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
+sign handling; old numeric helpers are removed, while regression oracles execute
+real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).
+
+Vector helper retirement follows call frames in the loader, before layout
+routing. `XMM_SCALAR` remains the model-transform ABI with an original
+bit-preserving body; emitted SIMD operations need no legacy helper layer.
+See [vector support](independent.md#vector-runtime-support) for contracts/tests.
+
+Guest call frames, dispatch, register/memory primitives and translation tooling are in [own interfaces](independent.md).
+
 The final `platform/2090-repository-source-layout.patch` routes the runtime CMake
 source/test paths and Python compiler bridge into the responsibility folders.
 It runs after all historical patches; prior ledgers still unwind before applying it.
@@ -12,10 +64,10 @@ preserve exact ledger bytes and runtime output. Duplicate active names fail.
 Patch filenames use four-digit base-sort slots and descriptive names; see
 [patch maintenance](../../patches/README.md). This replaces the repeated `z`
 prefixes without changing patch bytes, effective order or context options.
+Maintenance commands use `tools/build/` and `tests/repository/`.
 The loader retains its dependency overrides, and recorded old names unwind
 using their stored contents. Keep the five legacy migration patches.
 
-Bit-operation ownership, captured flags and native validation are in [own tooling](independent.md).
 
 Product lowering and its fatal divide boundary are documented in [own tooling](independent.md).
 
@@ -129,7 +181,7 @@ Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
 `external/ts3FPrecomp/src/hle/`, kernel/NV2A services in `src/kernel/`, then Xbox
 graphics frontend in `src/d3d/d3d8_*.c` and RHI backends. Those short `src/...`
-paths are RUNTIME-relative, distinct from tracked root `src/pc_*.c`.
+paths are RUNTIME-relative, distinct from the tracked [source groups](../../src/README.md).
 `hle_d3d8.c` owns Swap/Present integration; `kernel_bridge.c` and
 `xbox_memory_layout.c` contain vblank/flip-gate plumbing. Start FPS investigation
 there only when timing/trace evidence implicates it. Visible menu names may
@@ -150,7 +202,7 @@ external diagnostic and its limitations.
 
 `tools/build/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
-then applies the entire current top-level stack before updating runtime files.
+then applies the entire current recursive stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
@@ -489,7 +541,7 @@ fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
-| Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |
+| Host policy, settings, input, shared helpers | [Source groups](../../src/README.md) under root `src/` | Tracked source; patched upstream CMake includes it |
 | Runtime integration and title hooks | `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, title `CMakeLists.txt` | A separate tracked patch |
 | HLE graphics, audio, input, movies | Runtime `src/hle/hle_d3d8*.c`, `hle_dsound*.c`, `hle_input.c`, `hle_xmv*.c` | Tracked patch |
 | Xbox kernel/thread/memory/NV2A | Runtime `src/kernel/`, `src/nv2a/` | Tracked patch; distinguish Win32 and native adapter paths |
@@ -513,10 +565,10 @@ vehicle physics before live surface support, then full-float preservation and
 flip handoff. Numeric addition dispatch retains both physics secondary-step
 rounding and Escort recovery; neither replaces the other during integration.
 
-Top-level `patches/*.patch` is the active stack. The legacy subdirectory contains
-migration inputs only. The loader moves networking ahead of native boot, build
+Active patches are discovered recursively under `patches/`, excluding every
+`legacy/` directory; those contain migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
-consult the generated ordered index instead of guessing from the number of z's.
+consult the generated ordered index and folder map for current names and paths.
 The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
 within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
@@ -771,3 +823,13 @@ common resolve function, after the skipped-Swap guard; tests execute both actual
 entry bodies and verify one completion per presented frame, none for a skip.
 
 Standalone translator consumers gate live-register header/declarations on the supported protocol; see [register contracts](gpr-refs.md).
+
+Original x87 emission now joins SIMD in the additive translator stack; see
+[independent emitter contracts](independent.md#original-x87-emission). Storage
+and FP environment remain upstream; game acceptance is tracked separately.
+
+The additive `independent-x87-fixture.patch` exports the inherited classification
+C fixture and includes production SET_LO16; it does not alter generated code.
+
+The control-transfer emitter now follows x87 in the additive stack; call ABI,
+local dispatch and table-boundary contracts are in [independent.md](independent.md).

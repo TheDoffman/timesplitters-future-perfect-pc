@@ -1,0 +1,410 @@
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -192,71 +192,59 @@
+     ((_va) >= 0xFE000000u || g_xbox_code_hi == 0u || \
+      ((_va) >= g_xbox_code_lo && (_va) < g_xbox_code_hi))
+ 
+-/* ================================================================
+- * Global registers
+- * ================================================================ */
+-
+-/**
+- * Volatile x86 registers (caller-saved):
+- *   eax - return values, general accumulator
+- *   ecx - 'this' pointer for thiscall, loop counter
+- *   edx - high dword of multiply/divide, general
+- *   esp - stack pointer (initialized to top of Xbox stack)
+- *
+- * Callee-saved x86 registers (also global):
+- *   ebx, esi, edi - global because callers pass implicit parameters
+- *   through them. The callee-save contract is enforced by generated
+- *   PUSH32/POP32 instructions.
+- *
+- * NOT global: ebp - stays local in each function because FPO
+- * functions use it as scratch. For SEH, g_seh_ebp bridges the gap.
+- */
+-/* Per-thread register state.
+- *
+- * These started as plain globals, which works exactly as long as one thread
+- * runs recompiled code. Halo is the first title to create real workers (its
+- * cache/file loader), and the runtime papered over that by running every worker
+- * synchronously inside PsCreateSystemThreadEx -- so a worker that blocks
+- * waiting for work never returns and startup deadlocks.
+- *
+- * On hardware each thread has its own register set, so model it that way.
+- * Thread-local costs an indirection per access; a deadlock costs the title. */
++/* TSFP guest register interface begin.
++ * Architectural values belong to the current host thread. Generated routines
++ * share these cells with callbacks; EBP remains function-local, with separate
++ * frame/SEH bridges. The double-backed x87 stack and independent MMX storage
++ * retain the current execution model, not the physical x87/MMX alias model.
++ */
++#ifndef RECOMP_TLS
+ #if defined(_MSC_VER)
+-#  define RECOMP_TLS __declspec(thread)
++#define RECOMP_TLS __declspec(thread)
+ #elif defined(__GNUC__) || defined(__clang__)
+-#  define RECOMP_TLS __thread
++#define RECOMP_TLS __thread
+ #else
+-#  define RECOMP_TLS _Thread_local
+-#endif
+-
+-extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+-extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
+-
+-/* x87 stack. Per-thread for the same reason the integer registers are:
+- * arguments are passed in st(0)/st(1) across call boundaries. */
++#define RECOMP_TLS _Thread_local
++#endif
++#endif
++
++#ifndef RECOMP_XMM_DEFINED
++#define RECOMP_XMM_DEFINED
++typedef union RecompXmm {
++    uint64_t q[2];
++    uint32_t u[4];
++    int32_t i[4];
++    float f[4];
++    double d[2];
++} RecompXmm;
++#endif
++#ifndef RECOMP_MMX_DEFINED
++#define RECOMP_MMX_DEFINED
++typedef union RecompMmx {
++    uint64_t q;
++    uint32_t ud[2];
++    int32_t d[2];
++    uint16_t uw[4];
++    int16_t w[4];
++    uint8_t ub[8];
++    int8_t b[8];
++} RecompMmx;
++#endif
++
++extern RECOMP_TLS uint32_t g_eax, g_ebx, g_ecx, g_edx;
++extern RECOMP_TLS uint32_t g_esi, g_edi, g_esp;
++extern RECOMP_TLS uint32_t g_ebp, g_seh_ebp, g_fs_base;
++extern RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
++extern RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
++extern RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
++extern RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
+ extern RECOMP_TLS double g_fp_stack[8];
+ extern RECOMP_TLS int g_fp_top;
+-
+-/**
+- * SEH frame pointer bridge.
+- *
+- * __SEH_prolog sets up ebp for the caller, but since ebp is a local
+- * variable in each function, the caller can't see the prolog's change.
+- * The prolog writes g_seh_ebp, and the caller reads it after the call.
+- * Similarly, __SEH_epilog reads g_seh_ebp at entry and writes it at exit.
+- */
+-/* Linear base of the fs segment: where the fake TIB lives. Generated code
+- * adds this to every fs-relative address, so page zero stays unmapped and a
+- * null dereference faults instead of hitting the TIB. Must match
+- * XBOX_FS_BASE in src/kernel/xbox_memory_layout.h.
+- *
+- * Per-thread, because a TIB is. fs:[0] is the SEH chain head and fs:[4]
+- * reaches the CRT's per-thread data, so a single shared base makes every
+- * guest thread the same thread as far as the CRT is concerned. */
+-extern RECOMP_TLS uint32_t g_fs_base;
++extern RECOMP_TLS int g_fp_cmp, g_df;
++extern RECOMP_TLS uint16_t g_fp_control_word;
++extern RECOMP_TLS uint16_t g_fp_cc;
+ #define XBOX_FS_BASE g_fs_base
+-
+-extern RECOMP_TLS uint32_t g_seh_ebp;
++/* TSFP guest register interface end. */
+ 
+ /* ---- non-local jumps (setjmp / longjmp) --------------------------------
+  *
+@@ -358,30 +346,8 @@
+ typedef void (*recomp_foreign_longjmp_fn)(jmp_buf *target, int value,
+                                           uintptr_t armed_stack);
+ void recomp_set_foreign_longjmp(recomp_foreign_longjmp_fn fn);
+-extern RECOMP_TLS uint32_t g_ebp;
+-
+-/* EFLAGS.DF, and the signed step the string instructions take because of it.
+- *
+- * `cld`/`std` used to lift to a comment and every string instruction stepped
+- * forwards regardless. That is right almost everywhere -- DF is 0 by ABI and
+- * the compiler restores it -- but MSVC's strrchr is `std; repne scasb` from
+- * the terminator backwards, so it scanned forwards off the end of the string
+- * and returned a pointer into whatever followed. The Xbox Dashboard uses it to
+- * split "y:\default.xip" into a mount path; with strrchr wrong the archive
+- * registered itself under its own full filename, no resource in it could ever
+- * be found by name, and the dashboard rebooted rather than showing a UI.
+- * memmove's overlapping case is the same instruction and the same bug.
+- */
+-extern RECOMP_TLS int g_df;
+ #define RECOMP_DF_STEP(n) (g_df ? -(int32_t)(n) : (int32_t)(n))
+ 
+-/* x87 control and status. Thread-local for the same reason the x87 stack
+-   above is: one guest routine can lift to several C functions, so a compare
+-   and the FNSTSW that reads it can land in different bodies, and the control
+-   word has to survive a call. (g_fp_stack/g_fp_top are declared above.) */
+-extern RECOMP_TLS uint16_t g_fp_control_word;
+-extern RECOMP_TLS int g_fp_cmp;
+-extern RECOMP_TLS uint16_t g_fp_cc;
+ #define RECOMP_FCMP_CC(c) ((uint16_t)((c)==2 ? 0x4500u : (c)<0 ? 0x0100u : (c)>0 ? 0u : 0x4000u))
+ /* Values in the existing double-backed stack are all representable as normal
+  * x87 extended values, including binary64 subnormals. Empty stack tags and
+@@ -534,67 +500,89 @@
+ #define RECOMP_TRACE_ESP(name, tag) recomp_trace_esp((name), (tag))
+ 
+ 
+-/* ================================================================
+- * Memory access helpers
+- * ================================================================ */
+-
+-/**
+- * Translate an Xbox VA to an actual pointer.
+- * Mask to 32-bit first: Xbox addresses are 32-bit and arithmetic
+- * in the recompiled code can overflow. Without the mask, a 64-bit
+- * uintptr_t cast preserves the overflow bits, landing us 4GB+ past
+- * our mapping and causing access violations.
+- */
+-#define XBOX_PTR(addr) ((uintptr_t)(uint32_t)(addr) + g_xbox_mem_offset)
+-
+-/** Read/write N bytes at a flat Xbox memory address. */
+-#define MEM8(addr)   (*(volatile uint8_t  *)XBOX_PTR(addr))
+-#define MEM16(addr)  (*(volatile uint16_t *)XBOX_PTR(addr))
+-#define MEM32(addr)  (*(volatile uint32_t *)XBOX_PTR(addr))
+-#define MEM64(addr)  (*(volatile uint64_t *)XBOX_PTR(addr))
+-
+-/** Signed memory reads. */
+-#define SMEM8(addr)  (*(volatile int8_t   *)XBOX_PTR(addr))
+-#define SMEM16(addr) (*(volatile int16_t  *)XBOX_PTR(addr))
+-#define SMEM32(addr) (*(volatile int32_t  *)XBOX_PTR(addr))
+-#define SMEM64(addr) (*(volatile int64_t  *)XBOX_PTR(addr))
+-
+-/** Float/double memory access. */
+-#define MEMF(addr)   (*(volatile float    *)XBOX_PTR(addr))
+-#define MEMD(addr)   (*(volatile double   *)XBOX_PTR(addr))
+-
+-/* ================================================================
+- * SSE / XMM register state
+- *
+- * XMM is 128 bits of architectural state, not a scalar float. Modelling
+- * it as a `float` made movaps/movups transfer 4 of 16 bytes and silently
+- * drop the upper three lanes, and left the packed arithmetic with no
+- * representation at all.
+- *
+- * The registers are global for the same reason the volatile GPRs are:
+- * one guest routine can lift to several C functions, so a value produced
+- * in one body and read in the next has to outlive the body that wrote it.
+- * A function-local declaration would also shadow these, and the local
+- * starts zeroed -- a returned float would silently read as 0.0.
+- *
+- * The helpers are lane-wise C rather than host intrinsics: the guest
+- * semantics stay explicit (MINPS returning src on unordered, CMPNEQPS
+- * being the unordered form) and the header stays portable.
+- * ================================================================ */
+-
+-#ifndef RECOMP_XMM_DEFINED
+-#define RECOMP_XMM_DEFINED
+-typedef union RecompXmm {
+-    float    f[4];
+-    double   d[2];
+-    uint32_t u[4];
+-    int32_t  i[4];
+-    uint64_t q[2];
+-} RecompXmm;
+-#endif
+-
+-extern RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
+-extern RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
++/* TSFP guest primitive support begin.
++ * The supported hosts are little-endian. Guest RAM accesses may be unaligned
++ * and may alias any scalar representation. Volatile preserves the requested
++ * access order; it is not a substitute for atomic operations or MMIO routing.
++ */
++#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
++#error "Guest scalar lvalues require a little-endian host"
++#endif
++#if defined(__GNUC__) || defined(__clang__)
++#define TSFP_GUEST_SCALAR(name, type) typedef type name __attribute__((aligned(1), may_alias))
++#define TSFP_GUEST_UNALIGNED
++#elif defined(_MSC_VER)
++#define TSFP_GUEST_SCALAR(name, type) typedef type name
++#define TSFP_GUEST_UNALIGNED __unaligned
++#else
++#error "Define guest unaligned scalar access for this compiler"
++#endif
++TSFP_GUEST_SCALAR(TsfpGuestU8, uint8_t);
++TSFP_GUEST_SCALAR(TsfpGuestU16, uint16_t);
++TSFP_GUEST_SCALAR(TsfpGuestU32, uint32_t);
++TSFP_GUEST_SCALAR(TsfpGuestU64, uint64_t);
++TSFP_GUEST_SCALAR(TsfpGuestI8, int8_t);
++TSFP_GUEST_SCALAR(TsfpGuestI16, int16_t);
++TSFP_GUEST_SCALAR(TsfpGuestI32, int32_t);
++TSFP_GUEST_SCALAR(TsfpGuestI64, int64_t);
++TSFP_GUEST_SCALAR(TsfpGuestF32, float);
++TSFP_GUEST_SCALAR(TsfpGuestF64, double);
++#undef TSFP_GUEST_SCALAR
++#define TSFP_GUEST_CELL(type, address) (*(volatile type TSFP_GUEST_UNALIGNED *)XBOX_PTR(address))
++
++/* Return the complete updated register, as an assignment expression does.
++ * Both the cell expression and incoming value are sampled once. */
++static inline uint32_t tsfp_guest_insert_bits(volatile uint32_t *cell,
++                                             uint32_t value, unsigned bits,
++                                             unsigned shift)
++{
++    const uint32_t low = (1u << bits) - 1u;
++    const uint32_t prior = *cell;
++    const uint32_t result = (prior & ~(low << shift)) | ((value & low) << shift);
++    *cell = result;
++    return result;
++}
++/* TSFP guest primitive support end. */
++
++/* Wrap the guest address before adding the host relocation. Cast the offset
++ * to uintptr_t to retain modular pointer arithmetic for negative relocation. */
++#define XBOX_PTR(address) ((uintptr_t)(uint32_t)(address) + (uintptr_t)g_xbox_mem_offset)
++#define MEM8(address) TSFP_GUEST_CELL(TsfpGuestU8, address)
++#define MEM16(address) TSFP_GUEST_CELL(TsfpGuestU16, address)
++#define MEM32(address) TSFP_GUEST_CELL(TsfpGuestU32, address)
++#define MEM64(address) TSFP_GUEST_CELL(TsfpGuestU64, address)
++#define SMEM8(address) TSFP_GUEST_CELL(TsfpGuestI8, address)
++#define SMEM16(address) TSFP_GUEST_CELL(TsfpGuestI16, address)
++#define SMEM32(address) TSFP_GUEST_CELL(TsfpGuestI32, address)
++#define SMEM64(addr) TSFP_GUEST_CELL(TsfpGuestI64, addr)
++#define MEMF(address) TSFP_GUEST_CELL(TsfpGuestF32, address)
++#define MEMD(address) TSFP_GUEST_CELL(TsfpGuestF64, address)
++
++/* TSFP partial-register and stack primitives begin. */
++#define LO8(value) ((uint8_t)(value))
++#define HI8(value) ((uint8_t)((uint32_t)(value) >> 8u))
++#define LO16(value) ((uint16_t)(value))
++#define SET_LO8(cell, value) tsfp_guest_insert_bits(&(cell), (uint32_t)(value), 8u, 0u)
++#define SET_HI8(cell, value) tsfp_guest_insert_bits(&(cell), (uint32_t)(value), 8u, 8u)
++#define SET_LO16(cell, value) tsfp_guest_insert_bits(&(cell), (uint32_t)(value), 16u, 0u)
++
++/* Read a PUSH source against the old stack. POP increments before evaluating
++ * its destination, including ESP itself and memory addressed through ESP. */
++#define PUSH32(stack, source) do { \
++    const uint32_t tsfp_pushed_ = (uint32_t)(source); \
++    uint32_t *const tsfp_stack_cell_ = &(stack); \
++    const uint32_t tsfp_next_stack_ = *tsfp_stack_cell_ - 4u; \
++    *tsfp_stack_cell_ = tsfp_next_stack_; \
++    MEM32(tsfp_next_stack_) = tsfp_pushed_; \
++} while (0)
++#define POP32(stack, destination) do { \
++    uint32_t *const tsfp_stack_cell_ = &(stack); \
++    const uint32_t tsfp_old_stack_ = *tsfp_stack_cell_; \
++    const uint32_t tsfp_popped_ = MEM32(tsfp_old_stack_); \
++    *tsfp_stack_cell_ = tsfp_old_stack_ + 4u; \
++    (destination) = tsfp_popped_; \
++} while (0)
++/* TSFP partial-register and stack primitives end. */
+ 
+ /* -- construction -- */
+ 
+@@ -869,44 +857,6 @@
+ #define SX8(v)   ((uint32_t)(int32_t)(int8_t)(v))
+ #define SX16(v)  ((uint32_t)(int32_t)(int16_t)(v))
+ 
+-/* ================================================================
+- * Byte/word register access
+- *
+- * These macros extract or set partial registers, matching x86
+- * behavior where writing AL doesn't affect bits 8-31 of EAX.
+- * ================================================================ */
+-
+-/** Extract low byte (al, bl, cl, dl). */
+-#define LO8(r)  ((uint8_t)((r) & 0xFF))
+-/** Extract high byte of low word (ah, bh, ch, dh). */
+-#define HI8(r)  ((uint8_t)(((r) >> 8) & 0xFF))
+-/** Extract low word (ax, bx, cx, dx). */
+-#define LO16(r) ((uint16_t)((r) & 0xFFFF))
+-
+-/** Set low byte, preserving upper 24 bits. */
+-#define SET_LO8(r, v)  ((r) = ((r) & 0xFFFFFF00u) | ((uint32_t)(uint8_t)(v)))
+-/** Set high byte of low word, preserving other bits. */
+-#define SET_HI8(r, v)  ((r) = ((r) & 0xFFFF00FFu) | (((uint32_t)(uint8_t)(v)) << 8))
+-/** Set low word, preserving upper 16 bits. */
+-#define SET_LO16(r, v) ((r) = ((r) & 0xFFFF0000u) | ((uint32_t)(uint16_t)(v)))
+-
+-/* ================================================================
+- * Stack simulation
+- *
+- * For push/pop heavy prologues in the generated code.
+- * ================================================================ */
+-
+-/**
+- * Push a 32-bit value onto the simulated stack.
+- * Evaluates val BEFORE decrementing sp, matching x86 semantics
+- * where push [esp+N] reads the operand before adjusting ESP.
+- */
+-#define PUSH32(sp, val) do { \
+-    uint32_t _pv = (uint32_t)(val); \
+-    (sp) -= 4; \
+-    MEM32(sp) = _pv; \
+-} while(0)
+-
+ /**
+  * x86 parity flag: 1 when the low byte of the result has an EVEN number of set
+  * bits (that is what PF means). Used by the x87 float-compare idiom
+@@ -919,12 +869,6 @@
+     return (int)(~x & 1u);   /* 1 = even parity (PF set) */
+ }
+ #define RECOMP_PARITY8(x) recomp_parity8((uint32_t)(x))
+-
+-/** Pop a 32-bit value from the simulated stack. */
+-#define POP32(sp, dst) do { \
+-    (dst) = MEM32(sp); \
+-    (sp) += 4; \
+-} while(0)
+ 
+ /* ================================================================
+  * Byte swap (for endian conversion if needed)
+@@ -1307,38 +1251,6 @@
+ 
+ #ifdef RECOMP_GENERATED_CODE
+ 
+-/* ================================================================
+- * MMX register file
+- *
+- * The Xbox is a Pentium III and every XDK codec leans on MMX: the WMV
+- * decoder's IDCT and motion compensation are almost nothing else. Modelled the
+- * same way as RecompXmm -- a union of lane views over one 64-bit register --
+- * because that is what the instructions are: the same bits read as bytes,
+- * words or dwords.
+- *
+- * mm0..mm7 alias the x87 stack on real hardware. Nothing here does, and
+- * nothing needs to: a title that interleaves the two calls emms between, and
+- * emms is a no-op for us. Modelling the aliasing would mean giving up the
+- * separate x87 model that the FPU work depends on, to reproduce a hazard the
+- * hardware exists to let software avoid.
+- * ================================================================ */
+-
+-#ifndef RECOMP_MMX_DEFINED
+-#define RECOMP_MMX_DEFINED
+-typedef union RecompMmx {
+-    int8_t   b[8];
+-    uint8_t  ub[8];
+-    int16_t  w[4];
+-    uint16_t uw[4];
+-    int32_t  d[2];
+-    uint32_t ud[2];
+-    uint64_t q;
+-} RecompMmx;
+-#endif
+-
+-extern RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
+-extern RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
+-
+ static inline RecompMmx MMX_ZERO(void) { RecompMmx r; r.q = 0; return r; }
+ 
+ /* CVTPS2PI follows MXCSR; CVTTPS2PI truncates regardless of its rounding mode.
+--- a/tools/recomp/test_x87_classification.py
++++ b/tools/recomp/test_x87_classification.py
+@@ -12,6 +12,7 @@
+ def classification_source():
+     header=(Path(__file__).resolve().parents[2]/'templates/runtime/recomp_types.h').read_text()
+     helper=re.search(r'static inline uint16_t recomp_fxam\(.*?\n}',header,re.S).group()
++    helper+='\n'+re.search(r'static inline uint32_t tsfp_guest_insert_bits\(.*?\n}',header,re.S).group()
+     macros='\n'.join(line for line in header.splitlines() if line.startswith(('#define RECOMP_FCMP(', '#define RECOMP_FCMP_CC(', '#define SET_LO16(')))
+     source='#include <stdint.h>\n#include <math.h>\n#include <string.h>\n'+helper+'\n'+macros+'''
+ static double values[8];

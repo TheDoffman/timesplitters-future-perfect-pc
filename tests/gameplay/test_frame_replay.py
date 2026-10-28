@@ -87,6 +87,7 @@ add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)
     commands = [
         [cmake, '-S', str(tmp_path), '-B', str(build), '-G', 'Ninja',
          '-DCMAKE_BUILD_TYPE=Release', '-DTSFP_RUNTIME_DIR=' + runtime.as_posix(),
+         '-DTSFP_SHARED_SOURCE=' + (root / 'src').as_posix(),
          '-DTSFP_PC_CONTROLS_DIR=' + (root / 'src').as_posix()],
         [cmake, '--build', str(build), '--target', 'd3d8_replay', '--parallel', '4'],
     ]

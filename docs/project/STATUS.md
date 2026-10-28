@@ -1,3 +1,946 @@
+## Retired compatibility memory APIs (2026-10-28)
+
+Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.
+Patch 0214 removes unused POSIX file-mapping, query and statistics routines after
+their production callers moved to project providers. Native alias/collision/
+remap fixtures now use those providers; their ownership assertions remain.
+The native Nt query record ABI and real Windows OS calls remain intact. See
+[caller audit and validation boundaries](../agent-context/retired-memory-compatibility.md)
+and MAC-117. The broader independence goal is unfinished.
+
+Windows candidate: six adapter tests passed in 8.18s, including five compiled
+negative controls. The revised native fixture's normal mapping prefix compiled
+and ran against real Windows providers. That check excludes the Mac arena and
+event branches; it is not native Mac execution. The additive patch passed a
+read-only applicability check using the maintained installer's CRLF handling.
+All 998 compiler checks passed in 707.98s, all 73 migration/repository checks
+in 1121.24s, and all 21 final documentation/context/backlog checks in 5.19s.
+Context/index and whitespace checks passed. CI at `b5482235` passed 1656 Mac
+shared tests (261 skips, 18 subtests), but one ownership-bypass negative control
+failed to compile: Clang diagnosed its now-unused `arena_unmap` helper under
+fatal warnings. The mutation now references the helper without calling it, so
+runtime assertions still detect the ownership bypass. All six Windows adapter
+checks passed after repair in 8.62s; 21 repair documentation/context/backlog
+checks passed in 4.15s. Production sources and the tested executable
+are unchanged; repaired exact-commit CI and native Mac title gameplay remain
+pending. Consumer
+checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
+been produced for this stage.
+
+The full patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the generation fingerprint stayed current.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+The player moved 11.176244 forward and 6.184892 backward, and fired from eight
+to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 103.913s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned test locks, disposable partitions, BMP or crash dumps
+remain.
+
+Tested executable SHA-256:
+`cc677d68c26d0de23ac1b7ac66ea97c77f3c2689850c04df9262dd59509a372f`.
+Build provenance is the retirement working tree based on `f0633f99`, Windows
+x64/MSVC; 13 project-source and five runtime hashes match the build, and runner
+executable provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified.
+
+## Project guest host mappings (2026-10-28)
+
+Implementation based on `8ef1e7cf`, after all 17 prerequisite CI checks
+passed. Patch 0213 replaces main guest mapping construction and Mac arena/MMIO
+helpers with original shared ownership providers and thin OS adapters. It fixes
+tiled extent reporting to match the actual backing and retains failed cleanup
+ownership. Published mappings survive until process exit; whole-runtime worker
+quiescence remains unproven. See [contracts](../agent-context/guest-host-mappings.md)
+and MAC-116. The broader independence goal remains unfinished.
+
+Windows x64/MSVC candidate evidence: 47 tests passed in 66.67s, including 37
+compiled negative controls; three affected existing fixtures passed in 2.77s.
+The proposed platform library and actual runtime binding linked, and all three
+CTest scenarios passed (unpublished cleanup, worker timeout, notifier timeout).
+Real Windows host calls and controlled POSIX models were exercised. This is not
+native Mac execution. The two existing standalone event/audio consumers now link
+the project arena service dependencies on POSIX; their assertions are unchanged.
+Consumer checks passed on Windows: 36 passed, one native-Mac-only check skipped
+in 20.50s. All 998 installed compiler checks passed in 703.35s. Final 21
+documentation/context/backlog checks passed in 5.58s; context/index validation
+passed. All 73 migration/tracking/snapshot/context/backlog checks passed in
+1098.73s. CI at `8a870b42` exposed a missing source-root variable in standalone
+renderer test builds. Mac shared tests passed (1657 passed, 261 skipped and 18
+subtests), then RHI CMake configuration failed because `TSFP_SHARED_SOURCE` was
+unset. The Windows standalone replay reproduced the same configure failure.
+Both entry points now supply the project source root explicitly; this changes
+test builds only, not production providers or the previously tested executable.
+All seven Windows replay checks passed in 4.48s after the repair, including the
+real renderer/replay configure/build and usage launch. The same suite failed
+at configuration before the fix. All 17 CI checks at `f0633f99` passed, including
+native Mac RHI and one-frame production replay. Native Mac title gameplay
+remains unverified. No new game package was produced.
+
+The complete patch stack installed five runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All seven provider C files compiled without
+new warnings. All 22 generated C/header files remained byte-identical and their
+generation fingerprint stayed current.
+
+The rebuilt game confirmed 28 RAM mirrors and the physical/tiled alias, then
+reached isolated Original 60 Story scene 4 / mission 1 with input enabled. It
+moved 11.174544 forward and 6.184892 backward, and fired from eight to six rounds.
+All 40 pause samples froze level ticks; all 60 resume samples were unpaused with
+ticks advancing. Final checkpoint: 102.878s within the 240-second cap. Runner and
+controller exited zero; start/paused/resumed captures were reviewed. The final
+exit trace records the runner's window-close request and ExitProcess(0), not a
+crash. All 26 protected settings/save/fixture files retained hashes, sizes and
+mtimes; owned test locks, disposable partitions and crash dumps are absent.
+
+Tested executable SHA-256:
+`64ff986d3630dc2153fc15de1917a85401f66d55a9487e2a6565cca7aca80a92`.
+Build provenance: guest-host-maps working tree based on `8ef1e7cf`, Windows
+x64/MSVC; runner provenance matches all 12 providers and five runtime files.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title gameplay remain unverified.
+
+## Project native virtual-memory host operations (2026-10-28)
+
+Working tree based on b0581495 after all 17 prerequisite CI checks passed.
+Patch 0212 replaces native Nt host callbacks and routes native Mm protection
+through the same boundary. Windows retains real OS virtual-memory operations;
+Darwin now owns reservation lengths/page states, releases exact mappings, clears
+discarded contents on recommit and reports actual regions instead of fabricated
+pages. Native record widths/PartitionId are preserved and padding is explicitly
+zeroed. See [contracts and failure limits](../agent-context/native-virtual-memory.md)
+and MAC-115. Main guest mappings and full independence remain unfinished.
+
+Windows x64/MSVC candidate: 25 checks passed in 52.75s, including 15 compiled
+negative controls, real host allocation/query/recommit/release, 4/16 KiB ownership
+models, concurrent calls, controlled POSIX reclamation/rollback failures and
+actual native Nt/Mm adapters. Existing VM/Mm assertions were retained. Controlled
+Darwin/POSIX behavior is not native Mac execution. All 951 installed compiler
+checks passed in 606.55s. Final 21 documentation/context/backlog checks passed in
+5.58s; context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1095.34s.
+All 17 CI checks at committed `8ef1e7cf` passed, including native Windows/Mac
+runtime checks. Native Mac title gameplay remains separate acceptance.
+
+The complete patch stack installed two runtime files matching the proposal.
+Windows Release build, native checks and matching crash symbols passed with
+normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files remained
+byte-identical and the fingerprint stayed current. No new provider warnings
+appeared in the build log.
+
+The rebuilt executable reached isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.174544 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 104.946s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes. No owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4febc1f682025d9d52c514e1ec5d67a82720454047fb0ebf40398ab8b0cdda40`.
+Build provenance: native-VM-host working tree based on b0581495, Windows x64/MSVC;
+runner provenance matches. The replay used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay remain unverified. No new game
+package has been produced.
+
+## Project guest memory services (2026-10-28)
+
+Working tree based on e90b9f7e after all 17 prerequisite CI checks passed.
+Patch 0211 replaces all 25 Mm guest bridge bodies and five remaining native
+statistics/physical/hint function bodies. Project services reuse guest ownership,
+validate output spans, preserve native versus guest pointer widths, and replace
+uninitialized Darwin statistics with a real host snapshot. See
+[contracts and compatibility limits](../agent-context/guest-memory-services.md)
+and MAC-114. Main mappings, other kernel/devices and full independence remain.
+
+Windows x64/MSVC candidate: 25 checks passed across statistics policy, host
+snapshots, guest services and actual adapters, including 16 compiled negative
+controls. Real Windows availability and controlled Windows/Darwin APIs passed;
+controlled Darwin behavior is not a native Mac execution result. All 931 installed
+compiler checks passed in 540.82s. Final 21 documentation/context/backlog checks
+passed; the context/index and whitespace checks passed. All 73 historical patch
+migration/tracking/snapshot/context/backlog checks passed in 1017.34s.
+
+The complete patch stack installed five runtime files matching the proposal
+after normal line-ending normalization. Windows Release build,
+native checks and matching crash symbols passed with normal `/DWIN32 /D_WINDOWS`
+flags. All 22 generated C/header files remained byte-identical and the generation
+fingerprint stayed current. The rebuilt executable reached isolated Original 60
+Story scene 4 / mission 1 with input enabled, moved 11.174537 forward and 6.184889
+backward, and fired from eight to six rounds. All 40 pause samples froze level
+ticks; all 60 resume samples were unpaused with ticks advancing. Final checkpoint:
+101.323s within the 240-second cap. Runner/controller exited zero and the
+start/paused/resumed captures were reviewed. All 26 protected settings/save/fixture
+files retained hashes, sizes and mtimes; no owned locks, disposable partitions,
+BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`4888d04e689a8b5b616c020960cea172f49726f5288837f51789f39e8f7f6344`.
+Build provenance: guest-memory-services working tree based on e90b9f7e,
+Windows x64/MSVC; runner provenance matches. The test used injected input,
+minimized windows, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title execution remain unverified.
+All 17 CI checks at committed b0581495 passed; no new game package was produced.
+
+## Project native memory ownership (2026-10-28)
+
+Working tree based on 47d687ef after all 17 prerequisite CI checks passed.
+Patch 0209 replaces thirteen native Mm bodies with original allocation ownership
+and host page services. It removes allocator guessing, preserves native pointer
+widths, rejects foreign/interior/wrong-kind releases, and provides real Mach
+queries and host-page-rounded protection. See
+[contracts and deliberate compatibility fixes](../agent-context/native-memory.md)
+and MAC-113. Guest Mm policy and the broader independence goal remain unfinished.
+
+Windows x64/MSVC candidate checks passed: eight ownership checks, six page checks
+and one real native Mm adapter check, including eight compiled negative controls.
+The page suite executes controlled POSIX/Mach paths on this Windows computer;
+that is not native Mac validation. All 906 installed compiler checks passed in
+465.42s, and all 73 historical patch migration/tracking/snapshot/context/backlog
+checks passed in 990.63s. Initial installed checks exposed an older fixture's
+function-emission order; the fixture now emits the protection helper before its
+callers, matching production, with its original assertions preserved. The final
+full compiler suite includes that correction.
+
+The complete patch stack installed two runtime files matching the final proposal
+after normal line-ending normalization. Release build, native checks and matching
+crash symbols passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated
+C/header files remained byte-identical and the fingerprint stayed current.
+The new providers emitted no warnings; existing inherited no-op Mm parameter
+warnings remain outside this stage.
+
+The rebuilt executable booted into isolated Original 60 Story scene 4 / mission 1
+with input enabled, moved 11.176244 forward and 6.184892 backward, and fired from
+eight to six rounds. All 40 pause samples froze level ticks; all 60 resume samples
+were unpaused with ticks advancing. Final checkpoint: 102.382s within the
+240-second cap. Runner/controller exited zero; start/paused/resumed captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions, BMP or crash dumps remain.
+
+Tested executable SHA-256:
+`865c3afc47c8407c73e57061b9270a3b7496eb07c83aec22a6cc1765f93ec8fc`.
+Build provenance: native-memory working tree based on 47d687ef, Windows x64/MSVC;
+runner provenance matches. The test used injected input, minimized windows,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title execution remain unverified. All 17 CI
+checks at committed e90b9f7e passed. No new game package has been produced.
+
+## Project virtual-memory services (2026-10-28)
+
+Working tree based on 7fef998e after all 17 prerequisite CI checks passed at that
+revision. Additive patch 0208 replaces four guest Nt VM implementations and
+native allocate/free/query policy with original project providers. Complete
+output-span validation precedes ownership changes; exact reservation RELEASE
+uses the existing allocation table. Native pointer widths and the guest's
+28-byte query record remain separate. See [contracts](../agent-context/virtual-memory.md)
+and MAC-112 for supported behavior and remaining host/mapping limitations.
+
+Windows x64/MSVC: all 889 installed compiler checks passed in 434.67s and all
+73 historical patch migration/tracking/snapshot/context/backlog checks passed
+in 976.02s. These broad runs preceded the final adapter correction from Win32
+GetSystemInfo to POSIX sysconf on Mac. After that correction, all 21 installed
+VM checks passed in 31.84s, including nine compiled negative controls, both
+adapter host branches, physical-owner rejection and real Windows protection,
+native query, decommit and release probes. All 125 final repository checks
+passed in 12.93s. The complete patch stack installed the correction, and all
+five resulting runtime files matched the final candidate. All 17 CI checks
+at committed 47d687ef passed, including Windows/Mac contracts and migrations.
+
+The final Windows Release build, native checks and matching crash symbols
+passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files
+remained byte-identical and the generation fingerprint stayed current. An
+initial PowerShell 7 invocation failed in the icon helper before compilation;
+the documented Windows PowerShell command built successfully.
+
+The final executable booted into isolated Original 60 Story gameplay, scene 4 /
+mission 1 with input enabled. It moved 11.195015 forward and 6.391049 backward,
+and fired from eight to six rounds. All 40 pause samples froze level ticks;
+all 60 resume samples stayed unpaused with ticks advancing. Final checkpoint:
+100.445s within the 240-second cap. Runner/controller exited zero; start,
+paused and resumed screenshots were reviewed. All 26 protected settings/save/
+fixture files retained hashes, sizes and mtimes. No owned run locks, disposable
+partition images, BMP dumps or crash dumps remained.
+
+Tested executable SHA-256:
+`752c88cbff2f87a4c80c208be51dba0cc360f99116932530a45d3c5f0c45aebc`.
+Build provenance: virtual-memory working tree based on 7fef998e, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title execution remain unverified. No new game package was produced.
+
+## Project guest thread storage (2026-10-28)
+
+Working tree based on 3b722823 after all 17 prerequisite checks passed at that
+revision, including Windows/macOS native contracts and patch upgrades.
+Additive patch 0207 replaces main/private TIB/TLS/object construction and
+heap/fixed stack ownership with project providers. Failed host creation returns
+its stack; timer TIB failure returns its fixed slot. Published identity records
+retain the guest-memory lifetime. Scheduling, host-worker stop/join, identity
+reference counting and broader kernel services remain separate replacement work.
+See [contracts](../agent-context/thread-memory.md) and MAC-111.
+
+Windows x64/MSVC candidate: 12 tests passed in 16.21s with CI=true, including
+five compiled negative controls, 400 concurrent identity/stack cycles, complete
+synthetic bootstrap-memory comparisons, failure/ownership/boundary cases and
+actual proposed adapters and host-create/timer cleanup. The supported-US private
+test verified the required hash and a 20-byte TLS bootstrap against an independent
+byte-layout oracle in 40 MiB fixture RAM. This is not production gameplay.
+The five-file integration patch passed its dry run with the maintained CRLF policy.
+
+All 870 installed compiler tests passed in 393.82s. The complete patch stack
+updated five runtime files; normal Windows Release/native checks and matching
+crash symbols passed with unchanged `/DWIN32 /D_WINDOWS` C flags. All 22 generated
+C/header files remained byte-identical with a current fingerprint. All 73
+historical patch migration/tracking/snapshot/context/backlog checks passed in
+946.62s.
+
+Production startup reported main TIB 0x1000, TLS 20 bytes and ESP 0x0111fff0.
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input
+enabled, moved 11.174544 forward and 6.184892 backward, and fired from eight to
+six rounds. All 40 pause samples froze level ticks; all 60 resume samples stayed
+unpaused with ticks advancing over the window. Final checkpoint: 101.719s within
+the 240-second cap; runner/controller exited zero. Start/pause/resume captures
+were reviewed. All 26 protected settings/save/fixture files retained hashes,
+sizes and mtimes; no owned locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`0103fa532b2fab14895c177b205e90f28d5a286c892fa439babc473eabda9404`.
+Build provenance: thread-memory working tree based on 3b722823, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening and full campaign remain
+unverified. No new package or native Mac title execution was verified for this
+stage. All 17 checks at committed 7fef998e passed. The Mac GPU job first
+failed downloading the SDK; its completed retry passed without a source change.
+
+## Project guest allocation ownership (2026-10-28)
+
+Working tree based on 1976a07d on feature/independent-exchange, after all 17
+image-loader CI checks passed at that revision. Additive patch 0206 replaces inherited
+heap/reservation/physical allocation bodies with original project ownership.
+The kernel bridge validates pins before zeroing and respects bounded physical
+requests. Host maps, TIB/thread construction, MMIO and other services remain
+transitional. See [contracts](../agent-context/independent.md#guest-allocation-ownership)
+and MAC-110 for scope and deliberate placement/failure-policy differences.
+
+Windows x64/MSVC candidate acceptance with CI=true: 20 checks passed in 15.67s, including 2,100
+randomized byte-occupancy comparisons, exact memory snapshots, guarded boundary
+and invalid-configuration probes, 8,000 concurrent allocation cycles, five compiled
+negative controls, actual proposed init/adapters/kernel bridge and existing APU/
+GPU consumers. The latter use temporary extracted consumer bodies; the APU
+fixture relocates its physical window within one native array, while separate
+bridge/high-address checks cover actual guest address ranges. The candidate
+patch passed a dry run with the maintained CRLF context policy. These results
+precede installation and do not prove production gameplay or native Mac behavior.
+
+The complete stack installed successfully, updating five runtime files. All 22
+generated C/header files remain byte-identical and the generation fingerprint
+is current. All 858 installed compiler checks passed in 370.38s. Normal Windows
+Release build, bundled native checks and matching crash symbols passed with
+unchanged `/DWIN32 /D_WINDOWS` C flags. The allocator compiled without warnings;
+unrelated existing runtime warnings remain. All 73 historical patch migration,
+tracking, snapshot, context and backlog checks passed in 933.49s.
+
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input enabled,
+moved 11.174537 forward and 6.193569 backward, and fired from eight to six rounds. All 40
+pause samples froze level ticks; all 60 resume samples stayed unpaused with ticks
+advancing over the window. Final checkpoint: 101.633s within the 240-second cap;
+runner/controller exited zero. Start/pause/resume captures were reviewed.
+All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+no owned run locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`8bfdbe644eb188c2a990317114c499c28bc013221fe13bcf0d78e9c14c1ba392`.
+Build provenance: uncommitted allocation stage based on 1976a07d, Windows x64/MSVC.
+The replay uses injected input, minimized windows, Classic textures and skipped
+startup movies; physical input, audio listening and full campaign are unverified.
+Build/test/package entry points resolve at their reorganized paths. No new package
+or native Mac title verification. All 17 checks at 3b722823 passed, including
+Windows/macOS native contracts and patch upgrades.
+
+## Native image CI diagnostic repair (2026-10-28)
+
+Both native jobs for f3fd8a08 reached the workflow's 30-minute timeout. The
+Windows log stopped after 569 completed tests, at the image loader's first
+compiled mutation. A local run with `CI=true` reproduced the stall; an
+eight-second Python stack dump located it in pytest's sequence-difference
+formatter, called by the expected memory mismatch. The reproduction was
+deliberately stopped after capturing that evidence.
+
+The test now compares the same complete buffers and raises a bounded
+first-mismatch/length message instead of asking pytest to format their entire
+contents. With `CI=true`, all **64 image checks passed in 6.33s**, including
+all three compile-first negative controls. No compiler flags, test selection,
+timeouts, runtime code or acceptance criteria changed. All 17 checks at 1976a07d
+passed, including Windows/macOS native and patch upgrades; the earlier f3fd8a08
+run did not pass. Existing production build
+and gameplay evidence below is unchanged, not a new game test for this repair.
+
+## Project native image loading (2026-10-28)
+
+Based on c42f3b1e on feature/independent-exchange, after all 17 exact-head CI
+checks passed on the main-integrated guest-services stage. Additive patch
+0205-independent-image-loader.patch replaces inherited XBE header/section/
+thunk/certificate parsing and copying plus title decoding with the original
+src/runtime/guest_image.c and guest_image.h provider. Existing host mapping,
+MMIO, TIB construction, kernel services and scheduling remain transitional.
+
+The provider validates image/table/payload bounds, disjoint section extents,
+retail/debug entry decoding, bounded terminated imports, certificate and TLS
+data before materializing guest memory. Failed inspection/load preserves the
+destination and output metadata. BSS is zeroed, raw padding clipped, holes
+preserved and title text converted within its fixed-width UTF-16 field.
+Preflight also checks low-service/stack space and the existing 0x200-byte TLS
+template reservation before host mapping. Invalid/oversized images now fail
+instead of taking partial-copy/fallback paths. This is not signature validation
+or implementation of arbitrary TLS sizes, callbacks or host-memory lifecycle.
+
+Windows x64/MSVC acceptance:
+
+- **64 installed image checks** passed, including synthetic retail/debug images,
+  unaligned file input, complete byte/metadata comparison with the independent
+  Python reader, 65 sections, import capacity/termination, UTF-16 edge cases,
+  malformed/overlapping/overflowing extents, unchanged-on-error checks, bootstrap
+  limits and three compiled negative controls. Provider probes now use MSVC
+  /W4 /WX and Clang -Wall -Wextra -Werror.
+- Before installation, the candidate matched the inherited loader across all
+  64 MiB of the supported-US guest-memory buffer, bounds/import/title/region
+  metadata and bootstrap placement. Extracted baseline bodies existed only in
+  temporary ignored storage and were removed. The final provider retains the
+  independent private-US byte/metadata oracle in its regression suite.
+- **838 compiler tests passed** in 349.95s (0:05:49). All **73** migration,
+  tracking, snapshot, context and backlog checks passed in 917.22s (0:15:17).
+  Complete patch installation updated two runtime files; final warning cleanup
+  updated one. Earlier patches and the pristine vendor snapshot are unchanged.
+- Normal Release build, bundled native checks and matching crash symbols passed.
+  Initial production /W4 diagnostics prompted an explicit 64-bit import stride
+  and initialized bootstrap outputs. The initial compiler/migration runs were
+  deliberately stopped to apply that repair, then restarted and completed above.
+  The final new source/integration emitted none of those warnings; existing
+  unrelated memory-layout warnings remain. Normal C flags were preserved.
+- All 22 generated C/header files remain byte-identical and the generation
+  fingerprint is current; no fresh production generation was required.
+- Supported-US XBE SHA-256 verified. The production log confirms 23 sections,
+  151 kernel imports at 0x00475780, low shift 0x001A0000, title TimeSplitters FP,
+  region 1 and a 20-byte TLS block at 0x00910000.
+- Isolated Story replay independent-native-image reached scene 4 / mission 1
+  with input enabled, moved 11.174539 forward / 6.184892 backward,
+  and fired from eight to six rounds. All 40 pause samples froze level ticks;
+  60 resume samples stayed unpaused with ticks advancing over the window.
+  Final checkpoint 100.676s within a 240-second cap; runner and
+  controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned run lock, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256: `995be71adca4a20e029bad8deb33812c841b0ee058e2cff4992c0b87b73cab4a`,
+built from the stage working tree based on c42f3b1e. C flags stayed
+`/DWIN32 /D_WINDOWS`; CL_MPCount=2 was process-local. The documentation promotion
+encountered a Windows default-text-encoding mismatch; original UTF-8 content was
+restored and remaining edits completed explicitly as UTF-8 before validation.
+
+Both CI hosts select the new image contracts, but native Mac acceptance of this
+stage is pending its own checks. Replay used injected input, a minimized window,
+Original60 timing, Classic textures and skipped startup movies. Physical input,
+audio listening, full campaign and native Mac title gameplay remain unverified.
+No new package was produced. See MAC-109 and the image contracts for remaining
+memory/kernel/device/title/delivery and final toolkit/snapshot-unavailable audit work.
+
+## Guest service branch integration (2026-10-28)
+
+After d032560d, PR #375 had no Actions runs and GitHub reported it unmergeable.
+Fetched main 759f7a0e and resolved its two context-guide conflicts by retaining
+the independent-runtime contracts and incoming launcher/branch-cleanup guidance.
+The incoming changes affect launcher/docs; runtime sources, patches and generated
+guest code are unchanged from the guest-services gameplay acceptance below.
+
+On this Windows computer, 57 context/shared-launcher/native-launcher/package
+checks and one backlog check passed. The Windows launcher built in isolated
+`build/guest-services-launcher-check` and its bundled `-Test` checks passed.
+Context/index and whitespace checks passed. All 26 protected files retained
+hashes, sizes and modification times. No new game replay or native Mac execution
+is claimed for this integration. Exact merged-head CI must pass before the next
+runtime replacement is installed; PR #375 remains unmerged.
+
+## Project guest state and ABI diagnostics (2026-10-28)
+
+Based on f85490ad on feature/independent-exchange, after all 17 exact-head CI
+checks passed. The preceding Windows migration timeout was resolved by the
+30-minute job allowance; both native and patch-upgrade hosts passed that head.
+The current stage replaces inherited architectural storage and ABI report
+bodies with src/runtime/guest_state.c and guest_abi_diagnostics.c, linked by
+0204-independent-guest-state.patch. Mapping, loading, guest thread objects and
+TIB allocation remain in the transitional kernel; this is not their replacement.
+
+Register/vector/x87/direction/SEH/refusal cells retain native-thread ownership
+and bootstrap values. Fibers on a native thread share its cells. The force-return
+flag and volatile call history retain process scope. Optional ABI reports keep
+separate first-32/64 target limits, now serialize registration/output, and use
+defined modular signed stack deltas. Reporting does not mutate guest state;
+it is not signal-safe, reentrant, or a coherent snapshot of the volatile ring.
+
+Windows x64 / MSVC acceptance:
+
+- Isolated probes established inherited defaults, cross-unit/thread ownership,
+  reporting limits/deduplication and real call-macro routing. Baseline bodies
+  remained in ignored temporary files and are not shipped as project source.
+- Fourteen candidate checks passed, including seven compiled negative controls,
+  direct call macros enabled/disabled, concurrent reports and the real
+  continuation service linked to the new register provider. The duplicate-report
+  oracle was strengthened to repeat keys before saturation, after an initial
+  deliberately broken provider escaped a weaker after-saturation check.
+- The installed-routing contract and full compiler suite passed: **774 tests**
+  in 364.12s (0:06:04). All **73** migration/tracking/snapshot/context/backlog
+  checks passed in 1063.11s (0:17:43). Both CI hosts select the new contracts;
+  native Mac acceptance of this stage remains pending until its own checks run.
+- The complete patch stack updated two runtime files. Normal Release build,
+  bundled native checks and matching crash symbols passed; both project providers
+  compiled into the kernel. C flags remain /DWIN32 /D_WINDOWS; CL_MPCount=2 was
+  process-local. All 22 generated C/header files are byte-identical and the
+  generation fingerprint is current; no fresh production generation was needed.
+- Supported-US XBE hash verified. Isolated Story run independent-guest-services
+  reached scene 4 / mission 1 with input enabled, moved 11.195015
+  forward and 6.073125 backward, and fired from eight to six rounds.
+  All 40 pause samples froze level ticks. The 60
+  resume samples stayed unpaused, with level ticks advancing over the window.
+  Final checkpoint 95.414s within a 240-second cap; runner
+  and controller exited zero. Start, pause and resume captures were reviewed.
+- All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+  no owned locks, disposable partitions or crash dumps remained. Packaging
+  entry-point --help checks resolve under tools/release; no package was produced.
+
+Executable SHA-256 from the tested working tree based on f85490ad:
+`b43c0deb7739fd7ff24d61a88dc9de5cf2afeb0a86ceaef351c159e38e5dfec3`.
+The game exercises the new storage; optional ABI logging is disabled in the
+normal build and verified separately by direct-provider and production-macro
+contracts. Replay uses injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full campaign and native Mac title gameplay are not established. See MAC-108.
+Remaining work includes memory/loader/kernel/device services, title/delivery
+integration and the final toolkit/snapshot-unavailable production and source audit.
+
+## Main integration and CI migration allowance (2026-10-27)
+
+Continuation stage 1cb58612 was committed and pushed to PR #375. Main through
+8aec3c8f (split-screen mouse routing) merged cleanly at b057d8c3. This computer
+rebuilt that combined source with normal flags: Release, native build checks
+and crash symbols passed. All 22 generated C/header files remain byte-identical
+with a current fingerprint. The documentation-only aeb83716 repair condensed
+duplicated systems-guide summaries after the merge exceeded its 64 KiB cap;
+the limit remains enforced. Fifty focused service/mouse/repository tests passed;
+the two initial context failures then passed in a 21-test context/backlog run.
+
+Fresh isolated Windows Story replay `independent-nonlocal-merge` verified the
+supported US XBE, reached playable scene 4 / mission 1, moved 11.152513 forward
+and 6.184891 backward, and fired from eight to six rounds. All 40 pause samples
+froze level ticks; the 60 resume samples stayed unpaused with level ticks
+advancing over the window. Final checkpoint 95.993 seconds, runner exit zero;
+start/pause/resume captures reviewed. All 26 protected files retained hashes,
+sizes and mtimes; no owned locks, partitions or crash dumps remained. Executable
+SHA-256: `6ac427e8b921d3fd3cebaafecfa5321a9c2a763a0ee2224652e1e9f4af35af5b`.
+Replay conditions and acceptance limits are the same as the continuation entry.
+This is not live split-screen mouse validation or Mac gameplay evidence.
+
+At aeb83716, the Windows patch-upgrade job reported all 52 tests passed in
+876.29 seconds, then exceeded its 15-minute job limit with setup/cleanup
+(GitHub annotation confirms the timeout). Patch-upgrade jobs now receive
+30 minutes, matching native jobs; all test selection and required failure
+gates remain unchanged. Mac native and patch-upgrade CI passed at aeb83716;
+Windows native CI was still running when this repair was prepared. The next
+runtime stage remains uninstalled pending successful exact-head CI.
+
+## Project native continuation service (2026-10-27)
+
+Based on `0a991a8e` on `feature/independent-exchange`, after all 17 prerequisite
+CI checks passed. This also confirms the previous Clang mutation-fixture repair.
+`src/runtime/guest_nonlocal_jump.c` replaces the inherited continuation service
+through additive patch `0203-independent-nonlocal-jumps.patch`. The patch removes
+the old implementation from memory layout and links the project source into the
+kernel target using the final layout patch's shared source root.
+
+The provider owns 32 stable native buffers per thread, guest-key lookup/rearming,
+newest-slot overflow and retirement of newer slots when resuming an older frame.
+Unknown keys return to the guest fallback before memory access. Project guest
+accessors restore the five saved register cells and pop the guest return address;
+zero jump results become one and other 32-bit results retain their bits. Native
+setjmp executes in the generated caller. Windows verifies stack membership and
+routes foreign jumps through the registered adapter; a missing or returning
+adapter now aborts with a diagnostic before attempting an invalid native unwind.
+Register the process-wide callback at startup or with guest threads quiescent.
+POSIX retains the existing same-stack assumption, without a Mac fiber adapter.
+
+Windows x64 / MSVC 19.44.35224.0 evidence:
+
+- Ten isolated probes established the prior service's behavior, including real
+  Windows fiber handoff, high-bit results, unaligned guest fields, ESP wrap,
+  nested retirement, rearming, capacity and four threads sharing a guest key.
+  The old stack-marker helper needed a baseline-only C4172 suppression; the
+  new implementation captures its marker in the binding frame and needs none.
+- The project tests run the real provider and canonical header, including
+  generated calls for zero, positive and high-bit results, native frame unwind,
+  local EBP restoration and guest fallback. Six deliberately broken providers
+  compile under warnings-as-errors before the behavioral checks reject them.
+  Missing/returning foreign adapters are tested in bounded subprocesses with
+  crash dialogs disabled only for those test processes.
+- All 29 installed-provider/translation-control checks passed (19.01s), then all
+  759 compiler checks passed (309.32s). All 73 migration, snapshot, tracking,
+  context and backlog checks passed (873.07s). Initial fixture-only errors
+  (an ambiguous mutation string and omitted generated-code header flag) were
+  corrected before these passes. New contracts are selected on both CI hosts.
+- The full stack applied with two runtime files changed. All 22 generated C/
+  header files remain byte-identical and the generation fingerprint is current.
+  The canonical header, previous patch payloads and vendor snapshot are unchanged.
+  Release build, bundled native checks and matching crash symbols passed with
+  normal C flags and process-local `CL_MPCount=2`.
+
+The supported-US executable was verified by the bounded runner. The isolated
+`independent-nonlocal` Story replay confirmed scene 4 / mission 1 with input
+enabled before testing. Movement measured 11.174544 forward /
+5.970043 backward; ammunition fell eight to six. All 40
+pause samples froze level ticks. The 60 resume samples remained
+unpaused and level ticks advanced over that window. Final checkpoint:
+107.913s within a 240-second cap; runner exit zero. Start, pause and
+resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes; no owned locks, partitions or crash dumps remained.
+The working-tree executable based on `0a991a8e` has SHA-256
+`64edc144fd84ccbf047697b0de78312784238f4e6142d5a6d90f91c1e2876014`.
+
+The current title translation detects neither CRT setjmp nor longjmp helper.
+The replay therefore checks game regressions; the direct/provider/generated-call
+tests establish continuation behavior. It used injected input, a minimized
+window, Original60 timing, Classic textures and skipped startup movies. Native
+Mac title/fiber behavior, physical input, audio listening and full campaign are
+not established (MAC-107). Memory/loader/kernel/device services, title integration
+and the final toolkit-unavailable production generation/build/package audit
+remain incomplete.
+
+## Project branch-feedback provider (2026-10-27)
+
+CI follow-up to `3965c6df`: the Mac native job passed 1,406 checks but failed the
+double-address negative control at compilation. Its deliberately duplicated
+expression discarded a value without an explicit cast, which Clang rejects
+under `-Werror`. The fixture now casts only that first value to void, preserving
+the second evaluation and the expected behavioral rejection. Warnings remain
+errors. All 39 recorder/context checks passed locally on Windows (28.67s).
+Production sources, patches, generation and the tested normal executable hash
+are unchanged; no new build or gameplay run is claimed for this fixture repair.
+Mac acceptance of the repair remains a separate CI check.
+
+Based on `676545eb` on `feature/independent-exchange`, with all 17 prerequisite
+CI checks passed. The additive `0202-independent-branch-feedback.patch` replaces
+the inherited recorder C/header with compatibility bridges to original project
+source in `src/runtime/guest_branch_feedback.c` and `tsfp_branch_feedback.h`.
+Target flags and guard counters use atomics; bounded synchronized site sets
+retain six targets and report saturation/dropped observations. Thread-local
+duplicate suppression replaces a shared racy cache. Disabled macros discard
+arguments; enabled address arguments evaluate once. Explicit initialization is
+idempotent, and the v1 target/site dumps retain the project parser contract.
+
+Default generation and hook refresh publish both project headers and validate
+inputs before publication. Their fingerprints include both headers; output
+names reject case-insensitive collisions. Explicit custom types headers retain
+their caller-owned contract. Both bounded host runners validate target and site
+dump paths inside their disposable directories. Earlier patch payloads and the
+pristine vendor snapshot remain unchanged; layout routing stays last.
+
+Windows x64 / MSVC 19.44.35224.0 validation:
+
+- All 739 compiler tests passed (293.91s), including recorder concurrency,
+  saturation/capacity, evaluation, disabled hooks, exit registration, write and
+  allocation failures/recovery, and compiled negative controls. An initial
+  isolated dispatch fixture used the old feedback header; its prelude was
+  corrected, with all 13 dispatch checks then passing before the full suite.
+- All 73 migration, snapshot, tracking, context and backlog checks passed
+  (904.60s). The subsequent case-insensitive output-name fix passed all 34
+  batch/CLI/header checks (27.03s). Runner isolation passed 38 checks with one
+  Windows-inapplicable Mac allocation skip; both linked-output rejection checks
+  also passed.
+- Synthetic project-only generation compiled and executed with feedback both
+  enabled and disabled and no toolkit tree. This is not toolkit-free production
+  acceptance. The supported-US XBE hash was verified; production generation
+  translated 15,838 functions with zero failures. All 20 previous outputs other
+  than the types header are byte-identical; the feedback header is added.
+- Enabled and normal Release builds, bundled native checks and matching crash
+  symbols passed. The original C flags were restored exactly after the enabled
+  build. Generation remains current.
+
+Both isolated Story replays confirmed scene 4 / mission 1, unpaused state and
+eight rounds before input. Enabled: final checkpoint 100.366s,
+movement 11.174544 forward / 6.184891 backward.
+Normal: final checkpoint 99.382s, movement
+11.176244 forward / 6.192486 backward. Each fired from eight to
+six rounds, froze all 40 pause samples and advanced all 60 resume samples.
+Both runners exited successfully within their 240-second limits; start, paused
+and resumed captures were reviewed. All 26 protected settings/save/fixture files
+retain hashes, sizes and mtimes. No owned run locks, disposable partition images
+or crash dumps remained.
+
+Executable SHA-256 values from the working tree based on `676545eb`:
+
+- Feedback enabled: `b2c3ca86408b9bcf836887c7c9cce05ef11a4ba0fb46f2a636b772e1c0859f5a`.
+- Normal: `825f24e1591e6e583507f27553c52643e9233d1e78c3b8b3f5ad216a81f29c07`.
+
+These checks used injected input, minimized windows, Original60 timing, Classic
+textures and skipped startup movies. Physical input, audio listening, full
+campaign and native Mac title acceptance remain unverified (MAC-106).
+Explicit recorder initialization/dumping is exercised by native fixtures;
+forced game shutdown does not prove an exit dump. Output is best effort, not
+transactional, signal-safe or a globally consistent concurrent snapshot.
+Memory/loader/kernel/device services, title integration and the final production
+build/package with both toolkit and snapshot unavailable remain incomplete.
+
+## Canonical-header consumer fixture repair (2026-10-27)
+
+CI for `519b9d34` exposed a missing dependency in the inherited guarded-call
+test: it extracted `RECOMP_ICALL_IS_CODE` without the new
+`tsfp_guest_target_is_code` body. Both native CI hosts failed the seven parent
+suites that invoke this same consumer. The local MSVC-only environment had
+silently skipped the inherited fixture's Clang/GCC route. This was a test
+extraction defect, not evidence of a title runtime failure.
+
+The additive `0201-runtime-header-consumer-fixture.patch` extracts the actual
+helper with its public macro. The original guarded-call assertions still check
+recorded/unseen/unresolved/invalid targets and guest-stack restoration. A new
+project regression executes that oracle through the native compiler adapter,
+including MSVC, and confirms that macro-only extraction still fails to build.
+It reproduced the missing-helper linker failure before the repair. All 11
+focused checks passed afterward (12.16s), followed by all 718 compiler checks
+(255.19s) on Windows x64. All 73 historical migration, snapshot, tracking,
+context and backlog checks passed (826.62s); final context/index checks passed.
+
+Applying the complete stack changed only the inherited Python test. Production
+C, the generation fingerprint and the previously tested executable remain
+unchanged; no new game build or gameplay run is claimed for this fixture repair.
+All 26 protected settings/save/fixture files retain hashes, sizes and mtimes.
+Mac CI acceptance of the repair remains pending; MAC-105 title acceptance is
+still Awaiting validation. The isolated feedback replacement draft is not installed.
+
+## Canonical project guest execution header (2026-10-27)
+
+Based on `60c47380` on `feature/independent-exchange`. All 17 prerequisite CI
+checks passed before installing this stage. `src/runtime/recomp_types.h` now
+owns the 676-line header, retaining nine previously replaced primitive blocks
+unchanged. Original service declarations, diagnostic aliases and executable
+target admission replace the remaining inherited header support. Admission
+evaluates its guest-width argument once and preserves zero-bound and synthetic
+kernel acceptance. Declared service implementations remain separate work.
+Optional feedback still imports the transitional `recomp_icall_feedback.h`
+observation provider; its macros and backing service are not replaced here.
+
+Batch/CLI generation reads the project header by default and fingerprints that
+source. An explicit custom header remains supported. The additive
+`0199-independent-runtime-header.patch` installs the same compatibility template
+after scalar support and before layout routing. Existing patch payloads and
+vendor bytes are unchanged. Earlier guide sections now reflect current header
+ownership, and the moved development guide's relative context link is corrected.
+
+Windows x64 validation (MSVC 19.44.35224.0): all 66 focused checks passed (68.07s), followed by all
+716 compiler checks (286.77s). New fixtures cover 201,733 executable-address
+cases, service argument evaluation and trace routing, feedback interface on/off
+with a test provider, and counter wrap. Five corrupted implementations compile
+before failing their
+behavioral checks. A subprocess copies only project compiler modules and the
+canonical header, generates synthetic functions with no toolkit tree, compiles
+and executes their direct/flat dispatch, and verifies that a missing canonical
+header leaves earlier output intact. This is not toolkit-free production-title
+acceptance; title data and runtime service implementations are still required.
+
+The supported-US XBE hash was rechecked. Production regeneration translated
+15,838 functions with zero failures; all 20 other generated C/header files are
+byte-identical to the previous stage. The generated types header and patched
+compatibility template equal the canonical source after newline normalization.
+Release, bundled native checks and matching crash symbols passed with
+process-local `CL_MPCount=2`. The executable built from this working tree based
+on `60c47380` has SHA-256
+`39ecafb304c39c8c919a007b19f35e35bfcfcf5bd9d14789bb18dbc033f699dc`.
+
+The isolated `independent-header-final` Story replay confirmed scene 4 / mission 1,
+unpaused input-enabled state and eight loaded rounds before exercising input.
+Movement measured 11.174549 forward / 6.184892 backward; ammunition fell 8 to 6.
+All 40 pause samples froze ticks and all 60 resume samples advanced. The last
+checkpoint was 95.602 seconds, within a 240-second cap; runner exit 0. Start,
+pause and resumed captures were reviewed. All 26 protected files retained their
+hashes, sizes and modification times; no owned locks, disposable partitions or
+dumps remained. This used injected input, a minimized window, Original60 timing,
+Classic textures and skipped startup movies. Physical input, audio listening,
+full-campaign behavior and native Mac title acceptance remain unverified
+(MAC-105). All 73 historical-upgrade, tracking, context, backlog and snapshot
+checks passed (896.28s). A final EOF/help-text cleanup was followed by 22 focused
+checks (18.78s), fresh generation/build and the final replay reported above.
+The patch stack was reapplied and verified unchanged on the subsequent build.
+Final context/index and whitespace checks passed. Labeled PNG captures and
+reports were retained; neither header-stage run left raw BMP dumps.
+
+## Independent scalar numeric support (2026-10-27)
+
+Based on `e56623d1` on `feature/independent-exchange`. All 17 CI checks on that
+prerequisite revision passed before installing this stage. The complete stack
+adds `0198-independent-scalar-support.patch` and direct MOVSX/MOVZX emission in
+`translation_moves.py`. The runtime header shrinks from 1,169 to 951 lines;
+all previous patch payloads remain byte-identical.
+
+MOVSX/MOVZX previously built SX/ZX helper names dynamically. An explicit scan
+of ignored generated C found 7,894 live calls: 2,032 SX16, 869 SX8, 2,103 ZX16
+and 2,890 ZX8. The new expressions mask the source once and perform signed
+extension with unsigned sign-bit flipping/subtraction. Partial destinations
+preserve their remaining bits. Direction displacement samples DF before one
+argument evaluation and uses defined unsigned wrapping. Unused scalar/x87,
+condition, carry, rotation, parity and byte-swap helpers are removed.
+
+The inherited rounding assertions now execute actual emitted FRNDINT/FIST;
+classification stops extracting unused helpers. The old numeric assertions and
+compiled extension regression sweeps remain enabled. New checks cover 8,718,336
+extension cases across complete byte/word values, source/destination registers,
+partial aliases, memory read counts and FS addressing; 262,172 direction cases;
+production/isolated headers; and seven compiling negative controls. All 24
+focused checks passed (27.08s), followed by all 707 compiler checks (242.52s).
+
+Production regeneration translated 15,838 functions with zero failures and
+unchanged 50 unresolved stubs / 738 unimplemented sites. All 16 C chunks match
+the independently predicted replacement of those 7,894 expressions byte-for-byte;
+the four other generated files are unchanged. The initial raw header prediction
+comparison failed only because the Windows patch tool wrote CRLF: all 951 lines
+match the candidate after newline normalization, and the generated header is
+byte-identical to the patched template. No production change was needed for that
+verification adjustment. The supported-US XBE hash was rechecked.
+
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with process-local `CL_MPCount=2`. The executable built from the working tree
+based on `e56623d1` has SHA-256
+`19393d537de1715f144340dde1a3c549fa65dfa4f431723458139b5030e415d7`.
+The isolated Original60 Story replay confirmed playable state before input.
+Movement measured 11.174544 forward / 6.184892 backward, ammunition fell 8 to 6,
+all 40 pause samples froze ticks, and all 60 resume samples advanced. The last
+checkpoint was 135.201 seconds; runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files retained hashes, sizes and modification times;
+no owned locks, disposable partitions or dumps remained. This used injected
+input, a minimized window, Classic textures and skipped startup movies; it does
+not establish physical input, audio listening or full-campaign behavior.
+All 73 historical-upgrade, patch-tracking, context, backlog and snapshot checks
+passed (875.08s). Final context/index and whitespace checks passed.
+
+Evidence is under ignored `logs/scalar-*`, `logs/independent-scalar-game-check.json`
+and `private/test-saves/independent-scalar`. Native Mac title
+acceptance remains pending MAC-104. Header service interfaces, FP environment,
+runtime services, title integration, inherited fixtures and final removal remain
+unfinished; passing emitted-instruction tests does not establish full independence.
+
+## Independent vector support (2026-10-27)
+
+Based on `46e68827` on `feature/independent-exchange`, including main `31599ff4`
+and PR382's responsibility-folder migration. All 17 CI checks on the prerequisite
+pushed head `20d4bd38` passed. The preceding repository refresh passed 204 tests
+plus two subtests and ten supported command-entry checks; it preserved all 26
+protected files and corrected five maintenance command paths.
+
+`0197-independent-vector-support.patch` removes the obsolete inherited SSE/MMX
+operation helpers. The project emitters already produce those operations
+directly. An audit including `.inc` files found the model-transform constructor
+as the only live helper consumer; its original replacement copies raw float bits
+to the low lane and clears the upper lanes. The effective header shrinks from
+1,511 to 1,169 lines. All previous patch payloads remain byte-identical.
+
+The new fixture exercises 131,084 raw representations per configuration,
+including signed zeros, subnormals, infinities and NaN payloads, with ordinary,
+generated-code and isolated headers. Both corrupted implementations compile
+before the oracle rejects them. All 32 focused tests passed (132.81s), including
+existing native SSE/MMX oracles, guest ABI and model-transform comparisons;
+all 695 compiler tests passed (243.66s).
+
+Supported-US regeneration translated 15,838 functions with zero failures.
+The existing 50 unresolved stubs and 738 unimplemented sites are unchanged.
+Only `recomp_types.h` changed among 21 generated C/header files. The Windows
+x64 Release build, bundled native checks and matching crash-symbol package
+passed with process-local `CL_MPCount=2`. The executable built from this
+working tree based on `46e68827` has SHA-256
+`3f9da6ca5160542de5c27017cd65a64ef4d08f948fd4a4faaa3b0da38e01c954`.
+
+The isolated Original60 Story replay confirmed playable state before inputs.
+Movement measured 11.215618 forward and 6.184893 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint was 129.682 seconds; runner exit 0. Start/pause/resume captures
+were reviewed. All 26 protected files retained hashes, sizes and modification
+times; no owned lock, disposable partitions or dumps remained. This used
+injected input, a minimized window, Classic textures and skipped startup movies;
+it does not establish physical-input behavior, audio listening or full-campaign
+acceptance. All 73 historical-upgrade, patch-tracking, context, backlog and
+snapshot checks passed (944.42s). Final context and whitespace checks passed.
+
+Evidence is under ignored `logs/vector-*`, `logs/independent-vector-game-check.json`
+and `private/test-saves/independent-vector`. Native Mac title acceptance is
+pending MAC-103; the remaining header/services/title/fixture replacement and
+final dependency-removal audit are not complete.
+
+## Independence branch with current mouse hotfix (2026-10-27)
+
+Main advanced to `c41c92fc` while the reconciliation was being validated. The
+feature branch incorporates that mouse-capture hotfix and v0.3.5 version data;
+conflicts were documentation-only. Replacement patches and all 21 generated
+C/header files are unchanged. The 24 affected Windows cursor/context/backlog
+checks passed (6.49s), followed by Release, bundled native checks and matching
+crash symbols. No patch/loader change invalidates the 73 historical checks below.
+
+The rebuilt executable SHA-256 is
+`de056ad227209e64e03ab4290b2e49de53972535c53b07d4cc87329fca8b0cc3`,
+from the working tree based on `a55ee122` plus main `c41c92fc`. The final isolated
+Original60 replay ran menus around 58 FPS and confirmed playable state before
+input. Movement measured 11.217 forward and 6.185 backward; ammunition fell
+8 to 6; all 40 pause samples froze ticks and all 60 resume samples advanced.
+Last checkpoint 112.330 seconds, runner exit 0. Start/pause/resume captures were
+reviewed. All 26 protected files were unchanged and no owned lock, partitions
+or dumps remained. Evidence: ignored `logs/hotfix-*`,
+`logs/independent-hotfix-game-check.json`, `private/test-saves/independent-hotfix`.
+The earlier injected-input/minimized/Classic/startup-movie limits still apply;
+this is not physical mouse playtesting or native Mac title acceptance.
+
+## Independence branch folder reconciliation (2026-10-27)
+
+After accepting the call-frame stage (`5856d781`), PR #375 conflicted with
+main's responsibility-folder migration (`1392ae8f`). The feature branch now
+incorporates that layout and retains every replacement stage. Branch-only tools,
+tests and patches follow the compiler group. All 231 existing patch payloads
+remain byte-identical; only main's six expected runtime build/import files
+changed when applying the combined stack. Main's layout routing remains last.
+
+The full compiler/context/scope/backlog suite passed 785 checks (196.98s).
+Additional native-consumer tests initially passed 104 and failed 13 because
+an automatically combined fixture both appended and separately linked the
+same divide-error function. Restoring main's single inclusion path fixes the
+linker failure; all 13 failed cases passed on rerun (33.57s), alongside 20
+focused compiler/callback checks. Assertions and production behavior were not
+weakened. The moved standalone replay also needed its grouped input-helper
+path; a direct isolated `--help` regression now covers it. All 17 profile/path
+checks passed. All 73 snapshot, tracking, historical upgrade, context and
+backlog checks passed in 787.44 seconds. Final context/backlog checks passed
+all 21 cases (5.14s); repository context/index validation is current.
+
+Generation passed with 15,838 translations, zero failures and unchanged
+50 unresolved/738 unimplemented sites (83.36s lift). All 21 generated C/header
+files are byte-identical to the accepted call-frame build. Windows x64 Release,
+bundled native checks and matching crash symbols passed with MSVC 14.44 and
+CL_MPCount=3. The executable SHA-256 is
+`5412633fdf591ef2d81fe4d42910b9052eb44104c93a23b91a06e25c0dc7e6f5`,
+built from the reconciled working tree based on `5856d781` plus `1392ae8f`.
+
+The isolated Original60 replay reached menus around 57-58 FPS and the opening
+sequence. It verified playable scene 4/mission 1 and cleared input suppression
+before gameplay commands: 11.175 units forward, 6.185 backward, ammunition 8 to
+6, 40 frozen pause samples and 60 advancing resume samples. Last checkpoint:
+114.186 seconds; runner exit 0. Intro/start/pause/resume captures were reviewed.
+All 26 protected files retained hashes, sizes and modification times; no owned
+lock, disposable partitions or dumps remained. Evidence: ignored
+`logs/layout-*`, `logs/independent-layout-game-check.json` and
+`private/test-saves/independent-layout`. Minimized injected-input replay,
+Classic textures and skipped startup movies retain the limitations below.
+Native Mac title gameplay remains unverified (MAC-102); full independence and
+full-campaign behavior are not claimed. The PR has not been merged into main.
+
+
 ## Portable release probe isolation (2026-10-27, v0.3.5 preparation)
 
 The packaged Online check loaded the repository-layout bootstrap before its
@@ -134,6 +1077,1043 @@ routing check skipped when Windows refused foreground activation. Evidence:
 ignored `logs/patch-folders-*` and
 `private/test-saves/high-refresh/60-main-7dbd127b-*`.
 
+
+## Independent call checks and HLE frames (2026-10-27)
+
+The dispatch stage was accepted before this replacement: all 17 CI checks on
+`00405685` passed, and a clean isolated Original60 replay passed movement,
+firing and pause/resume after confirming playable state. The next additive
+`0196-independent-call-frames.patch` replaces callee-state checks and HLE
+scratch argument frames. Diagnostic logger implementations and other runtime
+services remain dependencies; full runtime independence is not claimed.
+
+The original call-boundary oracle passed against the previous implementation
+with diagnostics enabled and disabled. The replacement candidate passed four
+production/isolated configurations plus five compiled negative controls, with
+448 call-state/expression cases and 24 HLE frame cases per positive fixture.
+The final affected suite passed 184 checks in 58.19 seconds. Snapshot, patch
+tracking, historical upgrades, context and backlog checks passed all 70 tests in
+723.30 seconds. No production patch changes followed those runs.
+
+Supported-US generation passed: 15,838 translated, zero failures, unchanged
+50 unresolved stubs and 738 unimplemented sites (81.42s lift). Of 21 generated
+C/header files, 20 remain byte-identical; only the intended header changed.
+Windows x64 Release, bundled native checks and matching crash symbols passed
+with MSVC 14.44 and CL_MPCount=3. Executable SHA-256:
+`34ce06d1da45790270297dd5ef464d1502d3e3dda5ab7203ef1a49cc3f9308a4`,
+built from the implementation working tree based on `00405685`.
+
+The bounded isolated Original60 replay passed after checking scene 4/mission 1,
+unpaused state and cleared input suppression before gameplay input. Menus ran
+around 58 FPS. Movement measured 11.175 units forward and 6.391 backward;
+firing reduced ammunition from 8 to 6. All 40 pause samples froze game ticks,
+and all 60 resume samples were unpaused with advancing level ticks. The last
+checkpoint was 132.039 seconds; the runner completed successfully. Reviewed
+start/pause/resume captures show the weapon, pause UI and six remaining rounds.
+All 26 protected files retained hashes, sizes and modification times. No owned
+lock, disposable partitions or crash dumps remained. Evidence is in ignored
+`private/test-saves/independent-call-frames` and `logs/call-frames-*`.
+This minimized replay used injected inputs, skipped startup movies and Classic
+textures. Physical input, audio listening, full-campaign behavior and native
+Mac title gameplay remain unverified (MAC-102).
+
+## Independent indirect guest-call dispatch (2026-10-27)
+
+PR #375 continues from `b19e8634`, whose 17 CI checks all passed. Its local
+reconciliation/historical suite passed all 70 tests in 888.42 seconds. The
+next additive patch replaces ICALL/SAFE/SAFE_AT/ITAIL with project-owned
+target resolution, invocation and failure-recovery code. Manual/generated/
+kernel precedence, trace admission, observer/diagnostic order, lazy argument
+evaluation and existing stack outcomes remain intact. ABI-check machinery,
+HLE argument frames and other runtime helpers are still separate replacement
+work; this is not a claim that the whole header/runtime is independent.
+
+Original compiled dispatch contracts passed against the pre-change header
+(four ABI/feedback configurations) and the replacement candidate (eight full/
+isolated configurations plus four compile-first rejected mutations). Every
+positive configuration exercises 4,096 state/event cases. The final focused
+suite passed all 175 checks in 86.27 seconds, including the actual generated
+dispatch table, inherited translator consumers, guest ABI, hooks and GPR paths.
+
+The first Release build exposed the generated dispatch-table include order:
+`RECOMP_DISPATCH_H` suppresses the public pointer type until after the header,
+so eager inline helpers could not use it. A new real batch/table consumer test
+failed before the fix. Compatible private pointer/lookup declarations repair
+that boundary; all 13 candidate dispatch checks then passed. Behavioral
+assertions and build requirements were retained.
+
+Supported-US generation passed: 15,838 translated, zero failures, the same
+50 unresolved stubs and 738 unimplemented instruction sites (164.75s lift).
+Of 21 generated C/header files, 20 remain byte-identical to the pre-stage
+baseline; only the intended header changed. The corrected Windows x64 Release
+build, bundled native checks and matching crash-symbol packaging passed using
+MSVC 14.44 with CL_MPCount=3. The executable SHA-256 is
+`971d8bf883228abcff10bb8a0e2ec65da25bd1982b4e7cd9a6d30539d213d0c7`,
+built from this implementation working tree based on `b19e8634`.
+
+**Initial gameplay attempts were inconclusive.** Two bounded, isolated Original60
+sessions booted with XAudio2 initialized and rendered menus; the first also
+rendered Scotland the Brave's opening sequence. Both runners exited cleanly,
+but the scenario assertions did not pass: the first attempted movement while
+cutscene input was suppressed, and the second's fixed menu sequence reached
+the new-profile editor. Reviewed captures confirm those states. The runs were
+about 12-16 FPS versus about 56 FPS in the prior guest-ABI acceptance run.
+A separate game process was consuming substantial CPU; contention is
+a possible cause, not a proven explanation or evidence of performance parity.
+The user requested leaving that game open and finishing other checks, so a
+clean replay was deferred until it closed.
+All 26 protected files retained hash, size and modification time; no owned game
+lock or disposable partitions remained. No personal saves/settings were used.
+Native Mac title gameplay and a full campaign remain unverified (MAC-101).
+
+The subsequent clean replay of the same executable passed before the next
+replacement began. Menus ran around 57-58 FPS. After visually checking the
+opening sequence, the runner skipped it and verified scene 4/mission 1,
+unpaused state, cleared input suppression and eight loaded rounds before
+moving. It measured 11.175 units forward and 5.970 backward, ammunition 8 to 6,
+40 frozen pause samples and 60 advancing resume samples; final checkpoint
+141.026 seconds, runner exit 0. Start/pause/resume captures were reviewed.
+All 26 protected files retained hash, size and modification time, and disposable
+partitions/lock were cleaned. Evidence is in ignored
+`private/test-saves/independent-dispatch-clean` and `logs/dispatch-clean-*`.
+
+The first historical run was stopped after the include-order defect made its
+patch obsolete; it is not counted as passing. The corrected historical run
+passed all 70 snapshot, tracking, upgrade, context and backlog checks in
+1276.42 seconds. No production patch changes followed that passing run.
+
+## Independence branch CI reconciliation (2026-10-27)
+
+Commit `96caf309` received no workflow runs because PR #375 conflicted with
+new main changes. The feature branch incorporates main `7dbd127b`, preserving
+its mouse Fire fix, numbered patch filenames/documentation and support link.
+All branch-only replacement stages and their final application order remain.
+No patch folders were reorganized and the PR was not merged into main.
+
+The renamed ledger applied successfully with **zero runtime source changes**;
+all **149 patched runtime files** match their pre-reconciliation SHA-256 values.
+**41 focused tests and 26 subtests passed in 22.24s**, covering context/backlog,
+reload/Fire input, launcher selection and the independent guest ABI. Full
+historical migration checks and new-head CI are tracked separately. This is a
+CI prerequisite, not completion of the next runtime replacement stage.
+
+## Project guest register and memory interface (Windows acceptance, 2026-10-27)
+
+`independent-guest-abi.patch` supplies project implementations of the register
+interface, XMM/MMX lane layouts, scalar RAM lvalues, partial-register writes and
+32-bit stack primitives. Register names/TLS cells retain the generated-code and
+callback ABI. RAM addresses wrap before host relocation; GCC/Clang aliases and
+MSVC unaligned qualifiers make scalar unaligned access explicit. Partial writes
+evaluate the supplied cell/value once. PUSH samples its source before changing
+the stack; POP updates ESP before applying its destination. Remaining arithmetic
+helpers, dispatch, kernel storage, mapping and device services are not replaced.
+
+The isolated checkout depends on the unmerged CLI stage `eb7b0ba1`. Another task
+owns the primary checkout, so source/runtime/build outputs are separate. SDL and
+symbol-library sources were copied without build caches; the symbol scanner was
+rebuilt. Same-host Python and FFmpeg are reused; game assets link to the single
+existing extract, with separate generated metadata/cache and a disposable profile. No texture-pack hydration was needed for Classic testing.
+
+All **17 CI checks passed on `eb7b0ba1`**. This new stage's CI is separate.
+Local **125 final focused tests passed in 45.96s**, including six new compiled
+standalone/production/mutation variants, cross-file TLS callbacks, operand/x87/
+move/GPR consumers, generation, CI selection and the unchanged trap-transform
+recheck. The initial broader run recorded **504 passes and three failures in
+536.24s**: two macro-extraction fixtures omitted the new helper, and one expected-
+failure trap-transform mutation timed out at its existing 15-second deadline.
+The fixtures now include the actual production dependencies, retaining assertions.
+The timing test passed unchanged in the **27-test recheck (33.65s)** and again in
+the final focused run. Its initial timeout's cause remains unproven. No timeout
+was extended; the initial broader run is not relabeled green.
+
+The initial historical run had **67 passes and three failures (854.70s)**:
+two old-stack simulations incorrectly applied the new dependent patch as part of
+their historical starting state, and one index assertion named the former final
+patch. The simulations now add this patch during the full current-stack upgrade;
+idempotence and preservation assertions remain. The rerun passed **69 tests in
+658.46s**, with only the backlog check failing because the new MAC-100 detail
+entry lacked its queue row. After adding it, all **21 final context/backlog
+checks passed in 4.32s**. No runtime or patch changes followed the passing
+historical runtime checks.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**, lift **105.61s**. Of 21 generated
+C/header files, **20 match the accepted baseline byte-for-byte**; only the intended
+runtime header differs. Its generated/template hashes remain identical after the
+fixture-only repairs and the generation fingerprint is current. The fresh CMake
+Release build and bundled native checks passed with **CL_MPCount=2**, Python
+3.12.14, Capstone 5.0.9, MSVC 2022 (14.44), and matching crash symbols.
+
+Isolated Original60 `independent-guest-abi` reached Scotland the Brave and passed
+movement (**11.175 units forward / 6.209 backward**), firing (**8 to 6 rounds**),
+pause (**39 samples with frozen level ticks**) and resume (**60 advancing samples**).
+Last checkpoint **94.750s**, runner exit **0**; start/pause/resume captures reviewed.
+All **26 protected files** retained SHA-256, size and modification time. The owned
+game exited and left no lock, disposable partitions, BMPs or dump. A separate
+primary-checkout game was subsequently observed and left untouched. Executable:
+`f41e26a5095eaaed10793e8fc59677307c508b531c6d9586259b81876b5b48cb`.
+
+Evidence is in `logs/guest-abi-*.log`, `logs/guest-abi-generation-comparison.json`,
+`logs/independent-guest-abi-game-check.json`, `logs/guest-abi-protected-check.json`
+and `private/test-saves/independent-guest-abi`. Input was injected, rendering
+minimized/background and startup movies skipped. No physical-input, audio-
+listening, foreground-pacing, full-campaign or native Mac title claim (MAC-100).
+The double-backed x87/separate-MMX model, MMIO/protection/fault delivery, remaining
+headers/runtime/title/build/fixtures and final upstream-removal audit remain work.
+
+## Independent translation command line (Windows acceptance, 2026-10-27)
+
+Original `translation_cli.py` replaces the remaining recompiler CLI. All four
+production pipeline stages now invoke project tools directly. The compatibility
+module contains only bootstrap/alias code. Runtime data, title hook sources and
+the current shared C types remain explicit dependencies; no toolkit Python is
+loaded by the project CLI. Category/mode routing, manual symbol pinning/wrapping,
+HLE replacement/variables/retained bodies, trace/forced-return/SEH options and
+per-output indirect-call feedback are implemented in project code.
+
+Hook refresh defers newly available hooks whose ordinary bodies already exist,
+recognizes manually provided wrappers, and refuses missing dispatch definitions
+or missing type input before publication. Definition observations exclude
+comments, strings, literal-disabled branches and continued preprocessor lines.
+Output writes are individually atomic and preserve unchanged timestamps, not
+a multi-file transaction. Invalid analysis-summary JSON now fails explicitly;
+its legacy basename check is not full image identity. The normal analysis cache
+separately verifies content hashes. Conflicting modes and negative limits fail.
+
+**142 focused CLI/pipeline/batch/hooks/generation/CI-selection/legacy-force-return
+checks passed in 13.54s**, including **11 original CLI tests**. Real synthetic
+executables generate split C that is compiled and executed through dispatch,
+manual wrappers and hooks invoking retained original bodies. Other cases cover
+category/limit/header/single modes, address zero/bounds, failure preservation,
+refresh deferral/missing definitions, diagnostics and per-run option isolation.
+A subprocess copies only project modules and emits split output with the toolkit
+absent. The production compatibility entry is separately checked.
+
+The broader translator/pipeline/generation/private-join/timing run recorded
+**412 passes and one timeout in 389.16s**. The timeout was in the expected-failure
+walk-contact mutation, waiting for its child output within the existing 15-second
+limit. The unchanged test, including its positive and negative cases, then
+**passed in isolation in 8.91s**. No assertions or timeout were weakened; the
+initial timeout's cause is unproven and the initial run is not relabeled green.
+All **56 historical patch/context/backlog/snapshot checks passed in 667.22s**.
+All **17 CI checks passed on preceding commit `46eccfb3`** and on the
+published CLI revision `eb7b0ba1`.
+
+Supported-US generation completed with **15,838 translated, zero failed**, the
+same **50 unresolved stubs / 738 unimplemented sites**; lifting took **87.81s**.
+All **21 generated C/header files match the accepted function-stage baseline by
+SHA-256 and size**. A production hook-only refresh then reported **70 active,
+zero deferred** hooks and preserved all 21 files' hashes, sizes and modification
+times. The standard Release build/native tests passed with current fingerprints
+and matching crash symbols. Windows x64, Python 3.12.14, Capstone 5.0.9, MSVC 2022
+(14.44), process-local `CL_MPCount=2`; existing MSB8028 warnings remain. Build
+source was the implementation working tree based on `46eccfb3`.
+
+An initial gameplay attempt correctly refused while another checkout's game
+was running. Its PID was subsequently observed absent; it was not interrupted.
+The retry used isolated `independent-cli` Original60 Scotland the Brave and
+passed inside its 150-second bound: **11.175 units forward / 6.288 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **94.975s**, exit **0**. Start/pause/resume captures were reviewed.
+All **19 protected files** retained SHA-256, size and modification time; no game,
+run lock, disposable partitions, BMPs or crash dump remained. Executable SHA-256:
+`25537070a3e1b44254d944d7e8e11b118c2668a836ebaffc574f0e6fd956d5e0`.
+
+Evidence: `logs/cli-focused.log`, `logs/cli-regressions.log`,
+`logs/cli-walk-recheck.log`, `logs/cli-historical.log`, `logs/cli-build.log`,
+`logs/independent-cli-comparison.json`, `logs/cli-refresh-check.json`,
+`logs/independent-cli-game-check.json`, `logs/cli-game-protected-check.json`,
+`logs/cli-game-concurrency-refusal.log` and `private/test-saves/independent-cli`.
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, audio listening, foreground pacing, full campaign and native Mac
+title validation remain unverified (MAC-099). Runtime/header/title/build helpers,
+shipped fixtures and historical source/patch removal remain work. Next: the
+shared runtime types/register/memory interface, followed by execution services.
+The full-independence goal remains active.
+
+## Independent complete function emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_function.py` replaces the remaining FunctionTranslator
+implementation: function assembly, storage/carry selection, flag joins, block
+prepasses, failed indirect-call stack captures and x87 accessor definitions.
+The installed translator is a six-line bootstrap/module alias, preserving
+consumer identity and private negative-control monkeypatches. Batch output
+injects the runtime root. Trace/fast-entry/register hooks, forced-return behavior,
+local/shared EBP and complete indirect-call statements retain their current ABI.
+Unknown flags remain unknown; three-pass flag propagation, eight-pass decoding
+resynchronization and textual stack-recovery heuristics retain existing bounds.
+
+All **17 CI checks passed on preceding commit `234e984b`**, including both native
+runtime hosts and patch transitions. All **17 checks also passed on this
+function stage's published revision `46eccfb3`**.
+Local **389 translator/generation/private-join/timing regressions passed in
+336.94s**. Focused function/control checks: **18 passed in 9.81s**, including
+nine original function tests. Compiled tests execute entry-hook/forced-return
+ordering, successful/failed indirect stack cleanup and circular x87 accessors.
+Synthetic cases check typed joins, register/carry discovery, diagnostic counts,
+escaped metadata and toolkit-free function generation. The existing control
+negative case still removes exactly one snapshot and must fail when executed.
+Inherited/current consumers: **438 passed, 56 skipped, 101 subtests passed in
+20.99s**; original compiled contracts use the project MSVC harness. CI selection:
+**73 passed in 0.25s**. Historical patch/context/backlog/snapshot acceptance: **56 passed in 723.94s**.
+
+Supported-US generation: **15,838 translated, zero failed**, unchanged **50
+unresolved stubs / 738 unimplemented sites**; lifting took **84.48s**. All
+15,838 function bodies match after narrowly accounting for comments and the
+reviewed equivalent x87 accessor definitions (1,966 definitions). Five C/header
+files are byte-identical; all sixteen chunks differ only as described. No
+redundant final null statements occurred in this title; no unexpected code
+differences were accepted. The new push snapshots its input once before changing
+the circular index. Dispatch, prototypes, HLE, unresolved stubs and runtime types
+are unchanged. The types remain a dependency to replace, not new original code.
+
+Standard Release build and native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`. Existing MSB8028
+intermediate-directory warnings remain. Built from the implementation working
+tree based on `234e984b`.
+
+The isolated `independent-function` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.175 units forward / 6.185 backward**,
+ammunition **8 to 6**, **40 frozen pause / 60 advancing resume samples**, final
+checkpoint **92.785s**, exit **0**. Start/pause/resume captures were
+reviewed. D3D11 and XAudio2 initialized. All **19 protected files** retained
+SHA-256, size and modification time. No game, run lock, disposable partition,
+BMP or crash dump remained. Executable SHA-256:
+`772f7d6f18418c817dae585799132c372850340f00e87e518a057d7fc663988d`.
+
+Evidence: `logs/function-regressions.log`, `logs/function-focused.log`,
+`logs/function-consumers-final.log`, `logs/function-ci-scope.log`,
+`logs/function-historical.log`, `logs/function-build.log`,
+`logs/independent-function-comparison.json`,
+`logs/independent-function-game-check.json`,
+`logs/function-game-protected-check.json` and
+`private/test-saves/independent-function`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-098). The old CLI still has eight top-level functions plus a nested helper;
+its replacement is next. Runtime/header/title implementations, build helpers,
+shipped fixtures and the final removal/provenance audit remain. No whole-project
+independence or full architectural emulation is claimed; the goal remains active.
+
+## Independent translator context and entry discovery (Windows acceptance passed, 2026-10-27)
+
+Original `translation_discovery.py` replaces sixteen FunctionTranslator methods:
+context setup, bounded function/table reads, static callbacks, split CFG ownership,
+switch-arm recovery, frame/convention metadata and unresolved return cleanup.
+The effective translator binds these methods plus two project read/decode helpers.
+Whole physical spans are checked, explicit destination/subregister writes invalidate
+callback-bound constants, and volatile registers are invalidated across calls.
+Metadata/table recognition remains heuristic. Closed-path and entry-prefix checks
+for recovered arms do not establish whole-graph EFLAGS liveness. The C function
+emitter, flag joins and indirect-call stack recovery remain inherited work.
+
+Local **379 translator/generation/private-join/timing regressions passed in
+319.17s** before the final return-read-window correction. Review found that
+remaining file bytes must subtract the mapped offset; that is now fixed and
+covered by a truncated-image test. Final **100 discovery/batch/CI-selection checks
+passed in 7.84s**, including **17 original discovery tests** and 10 batch tests.
+Synthetic cases exercise holes, alias clobbers, sentinels/biased table slots,
+reachable and unreachable weak seeds, incomplete/flag-dependent arms, frame
+metadata and bounded cleanup. An installed-consumer fixture compiles and executes
+both recovered switch arms and a direct branch. Standalone imports/initialization
+exclude the toolkit. Earlier focused checks passed 26 tests (7.40s).
+All **56 historical patch/context/backlog/snapshot checks passed in 584.35s**.
+
+CI for preceding commit **dbdb1b29 failed** in Windows
+`test_helper_heartbeat_and_death`: reading an atomically replaced heartbeat JSON
+raised PermissionError. Its other **1,323 runtime tests passed**, with 242 skips
+and 18 subtests; three downstream gates propagated that failure. The fixture now
+polls through missing-file/sharing errors within its unchanged absolute eight-
+second deadline. JSON corruption, other I/O failures and persistent denial still
+fail. Two deterministic portable cases cover those boundaries; all **eight real/
+portable crash-capture tests passed locally in 16.09s**. Helper/launcher/game
+behavior and native report/death assertions are unchanged. All **17 CI checks
+passed for the repaired revision `234e984b`**, including both native runtime
+hosts and patch transitions. The preceding failed revision remains failed.
+
+Final supported-US regeneration completed in **84.12s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 generated C/header files match the accepted batch baseline by SHA-256
+and size**. The standard final Release build/native checks passed, with current
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `dbdb1b29`.
+Executable SHA-256:
+`9dca1fa7fe548540c785b3d4db15bb70c90b1ec1c1e2f7b0e763bdee4dba404b`.
+
+The isolated `independent-discovery` Original60 Scotland the Brave run passed
+within its 150-second bound: **11.197 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**91.940s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no game, lock, disposable partition,
+BMP or crash dump remained.
+
+Evidence: `logs/discovery-regressions.log`, `logs/discovery-final-focused.log`,
+`logs/discovery-crash-capture.log`, `logs/discovery-historical.log`,
+`logs/discovery-build.log`, `logs/independent-discovery-comparison.json`,
+`logs/independent-discovery-game-check.json`, `logs/discovery-game-protected-check.json`
+and `private/test-saves/independent-discovery`. Input was injected, rendering
+minimized/background and startup movies skipped. Physical input, audio listening,
+foreground pacing, full campaign and native Mac title behavior remain unverified
+(MAC-097). Runtime/header/title implementations and shipped fixtures still need
+replacement. The full-independence goal remains active.
+
+## Independent batch translation and dispatch (Windows acceptance passed, 2026-10-27)
+
+The complete old BatchTranslator and certificate-title helper are replaced by
+original `tools/compiler/translation_batch.py`; the installed class is a thin adapter
+injecting the remaining FunctionTranslator and runtime header location. The
+module owns database/category/manual selection, declarations/chunks/unresolved
+stubs and generated address dispatch. Binary lookup survives optional flat-table
+allocation failure, and empty/full-range tables have explicit compiled coverage.
+Category exports no longer overwrite each other when given an output prefix.
+Per-file atomic publication retains timestamps for unchanged contents and
+removes only stale chunks/stubs owned by the selected prefix. This is not a
+transaction across all outputs. Historical patches and notices remain required.
+
+**All 17 CI checks passed for preceding commit `d85a00fc`.** New-stage CI is
+pending this commit. Local **363 translator/generation/private-join/timing
+regressions passed in 347.36s**, including **10 original batch tests**. The
+focused batch/dispatch/manual suite passed **23 checks in 6.01s**; a separate
+CI-selection/inherited dispatch/manual run passed **86 checks in 0.41s**.
+The historical/context/backlog/snapshot run passed 55 checks and found a missing
+MAC-096 summary-table row (656.98s). After correcting the documentation, all
+21 final context/backlog checks passed (2.97s); patch and snapshot tests had
+already passed and their source was unchanged.
+The original tests compile the emitted outputs through MSVC, including wrapper
+and manual selection, kept bodies, unresolved stack cleanup, search misses,
+allocation failure and extreme/empty address sets, as well as standalone imports,
+metadata filtering, unchanged-file preservation and stale-file cleanup.
+
+Supported-US generation finished in **82.25s**: **15,838 translated, zero
+failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **15,838 guest function bodies** and **15,863 dispatch address/name bindings**
+match the accepted context baseline. Of 21 C/header files, two match byte-for-byte
+and 18 differ only in comments/whitespace; the remaining file is the original
+replacement dispatch implementation. Its compiled behavior and production game
+run are checked separately. No generated game source was hand-edited.
+
+The standard Release build and native checks passed, with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `d85a00fc`.
+Executable SHA-256:
+`4fb52182bf16d5a3dc78c94be56eaa8efb128f422d78f010e5f481ace9b28058`.
+
+The isolated `independent-batch` Original60 Scotland the Brave run passed within
+its 150-second bound: **11.175 units forward / 6.288 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**92.700s**, exit **0**. Start/pause/resume captures were reviewed. D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files**
+retained SHA-256, size and modification time; no running game, run lock,
+disposable partitions, BMPs or crash dump remained.
+
+Evidence: `logs/batch-focused.log`, `logs/batch-regressions.log`,
+`logs/batch-consumers.log`, `logs/batch-historical.log`, `logs/batch-build.log`,
+`logs/independent-batch-comparison.json`, `logs/independent-batch-game-check.json`,
+`logs/batch-game-protected-check.json` and `private/test-saves/independent-batch`.
+Game input was injected, rendering minimized/background and startup movies
+skipped. Physical input, audio listening, foreground pacing, full campaign and
+native Mac title behavior remain unverified (MAC-096). Function translation,
+joins, headers/runtime/title implementations and shipped fixtures still require
+replacement. The full-independence goal remains active.
+
+## Independent lifter context, helpers and naming (Windows acceptance passed, 2026-10-27)
+
+The effective old lifter module is now a six-line compatibility import with no
+function or class definitions. Original `translation_context.py` owns context
+setup, per-instance state, handler bindings and policy exports;
+`translation_helpers.py` owns bounded SEH/EH, throw-record and nonlocal-jump
+recognition; `translation_names.py` owns identifier/call-name selection. The
+remaining eight old lifter functions and their implementation scaffolding are
+replaced. Function-level translation, batch output, runtime storage, title code
+and shipped upstream fixtures still require replacement.
+
+The original SDK inventory generator produced **23,947 factual host API names**
+from **453 Windows SDK 10.0.26100.0 import libraries**, recording each input's
+SHA-256 and the output digest. This replaces the lifter's dependency on bundled
+name data. Both hosts use the same checked-in inventory; its regeneration is a
+Windows maintenance task. LF attributes preserve its exact hash across hosts.
+Helper recognition is heuristic, not guest exception unwinding. Explicit helper
+overrides, mapped physical spans and function/wrapper/label precedence are tested.
+
+**All 16 CI checks passed for preceding commit `bc36e294`.** New-stage CI is
+pending this commit. Local **352 translator/generation/private-join/timing tests
+passed in 296.26s** before the final contiguous-span repair. Review caught that
+mapped endpoints alone could hide an unmapped middle; the corrected traversal
+rejects holes/discontiguous backing and accepts adjacent continuous sections.
+The final **eight original context tests plus nine inherited SEH tests passed
+(17 tests, 2.51s)** after that repair. They also cover standalone imports,
+installed module identity, bounds/metadata/overrides, state isolation, SDK
+provenance and compiled reserved-name declarations with an unmangled-name
+negative control. **115 consumer/CI-selection/gate tests passed**, with four
+inherited compiler-discovery skips; the original naming fixture compiled with
+MSVC. All **56 historical patch/context/backlog/snapshot checks passed in
+555.50s**.
+
+Final supported-US generation completed in **80.81s**: **15,838 translated,
+zero failed**, unchanged **50 unresolved stubs / 738 unimplemented sites**.
+All **21 C/header files match the accepted lifting baseline by SHA-256 and size**,
+including every translated function. Detected SEH prologs remain 0x003CA460 and
+0x003CAAB4, epilog 0x003CA49B; no setjmp/longjmp helper was found in this image.
+The standard final Release build/native checks passed with current generation
+fingerprints and matching crash symbols. Host: Windows x64, Python 3.12.14,
+Capstone 5.0.9, MSVC 2022 (14.44), process-local `CL_MPCount=2`; existing MSB8028
+warnings remain. Built from the implementation working tree based on `bc36e294`.
+Executable SHA-256:
+`96931a1c4238a818659f01ba894fabdae33661bcbcfce0cd0a7aa2408f44e7a9`.
+
+The isolated `independent-context` Original60 Scotland the Brave run passed with
+a 150-second bound: **11.175 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause / 60 advancing resume samples**, final checkpoint
+**94.616s**, exit **0**. Start/pause/resume captures were reviewed; D3D11
+flip-model/tearing-allowed and XAudio2 initialized. All **19 protected files
+retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dump remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-095). The
+shared source and CI fixtures do not establish Mac gameplay. Full independence
+and complete architectural flag/exception support are not claimed.
+
+Evidence: `logs/context-host-symbols.log`, `logs/context-regressions.log`,
+`logs/context-consumers.log`, `logs/context-focused-final.log`,
+`logs/context-patch-checks.log`, `logs/context-generate-final.log`,
+`logs/independent-context-comparison.json`, `logs/context-build-final.log`,
+`logs/independent-context-game-check.json`, `logs/context-game-protected-check.json`.
+
+## Independent instruction and block lifting (Windows acceptance passed, 2026-10-27)
+
+Original `tools/compiler/translation_lifting.py` now replaces nine upstream functions:
+instruction dispatch, basic-block lifting, adjacent comparison/branch fusion,
+result snapshots, unsupported diagnostics, XMM/repeated-compare predicates and
+conditional-write fallbacks. The registry routes decoded instructions to the
+existing project-owned emitters; block state propagates captured comparisons.
+Unrelated function ASTs are unchanged. Two unsupported SIMD forms retain their
+previous flag-preservation policy; LOOPZ/LOOPNZ use their proper ZF sense.
+Diagnostic strings/comments are safely escaped. This is another incremental
+stage: function orchestration, helper detection/naming, runtime interfaces and
+other upstream subsystems still require replacement.
+
+**All 16 CI checks passed on commit `bc36e294`**, as they did on preceding
+commit `43ee2929`. Local **345 translator/generation/private-join/timing
+checks passed in 301.16s**. After the final preservation-table adjustment,
+**41 original lifting fixtures plus 86 CI selection/gate checks passed in
+3.69s**. These cover installed bindings, toolkit-free imports, decoded routing,
+flag boundaries, compiled comparisons that survive register overwrites, fused
+branch reuse, carry propagation, conditional moves, LAHF and zero-count REP.
+Removing the incoming zero-flag preload makes the executable negative control
+fail. All **56 historical patch/context/backlog/snapshot checks passed in
+549.39s**; final context/backlog documentation checks passed (21 tests).
+
+Final supported-US generation completed in **83.25s**: **15,838 translated,
+zero failed**, the same **50 unresolved stubs and 738 unimplemented sites**.
+All **21 generated C/header files are byte-identical** to the accepted control
+baseline, including all 15,838 function bodies. This comparison bounds the
+supported-title changes; it does not prove universal x86 equivalence.
+
+The standard Windows x64 Release build and native/build checks passed with
+Python 3.12.14, Capstone 5.0.9 and MSVC 2022 (14.44), process-local
+`CL_MPCount=2`, current generation fingerprints and matching crash symbols.
+Existing MSB8028 intermediate-directory warnings remain. Built from the
+implementation working tree based on `43ee2929`, executable SHA-256:
+`f84f21d969020b16c3b1cd22b11248760c0fe325c79d8146ea3f1fddb3f67cd1`.
+
+Isolated `independent-lifting` Original60 Scotland the Brave passed with a
+150-second bound: **11.217 units forward / 6.185 backward**, ammunition
+**8 to 6**, **40 frozen pause samples / 60 advancing resume samples**, final
+checkpoint **93.699s**, exit **0**. Start/pause/resume captures were reviewed;
+D3D11 flip-model/tearing-allowed and XAudio2 initialized. All **19 protected
+files retained hashes, sizes and modification times**. No active game/run lock,
+disposable disk images, redundant BMPs or crash dumps remained.
+
+Input was injected, rendering minimized/background and startup movies skipped.
+Physical input, listening/audio quality, foreground pacing, a full campaign and
+native Mac title generation/build/gameplay remain unverified (MAC-094). Shared
+fixtures run on both CI hosts. Existing partial EFLAGS, SAHF and runtime ABI
+policies remain; no complete architectural-flag or full-independence claim.
+
+Evidence: `logs/lifting-ast-audit.json`, `logs/lifting-focused.log`,
+`logs/lifting-regressions.log`, `logs/lifting-fixture-ci-final.log`,
+`logs/lifting-patch-checks.log`, `logs/lifting-final-doc-checks.log`,
+`logs/lifting-generate-final.log`, `logs/independent-lifting-comparison.json`,
+`logs/lifting-build.log`, `logs/independent-lifting-game-check.json`,
+`logs/lifting-game-protected-check.json`, `logs/lifting-previous-ci.json`.
+
+## Independent control-transfer emission (Windows acceptance passed, 2026-10-27)
+
+Original `translation_control.py` now replaces ten upstream Lifter methods and
+its conditional-target helper through an additive patch. It owns call/return/
+tail emission, counter-width handling, bounded jump tables and callee cleanup
+lookup. Indirect targets are captured before the return-address push; manual
+and guarded calls retain their dispatch/stack contracts. Forced return values
+also apply to conditional/traced tail exits. Existing native nonlocal-jump and
+runtime ABI helpers remain; full translation orchestration is still upstream.
+
+All **304 translator/generation/private-join/timing checks passed in 359.29s**
+on the final source. **Nine focused control fixtures passed**, including copied
+module imports, compiled calls/returns/frames/guards, stack recovery on failed
+lookups, CX/ECX loops, native nonlocal jumps, bounded tables and decoded programs.
+All **56 historical patch/context/backlog/snapshot checks passed in 533.24s**;
+**86 CI selection/gate checks passed**. A Windows Update restart interrupted
+an earlier local run; the completed reruns replace that interrupted evidence.
+
+Generation comparison caught a missing predecessor zero-flag snapshot in nine
+functions before build acceptance: the old join probe recognizes `_flags /*`.
+The new fallback branch retains that marker. A decoded mixed-predecessor fixture
+executes the known path, and a negative control fails if its snapshot is removed.
+Final supported US regeneration translated **15,838 functions, zero failures**,
+with the existing **50 unresolved stubs / 738 unimplemented sites** unchanged.
+**15,209 function bodies are byte-identical; all 629 changed bodies differ only
+in comments/whitespace.** Names/order and surrounding file text are unchanged;
+five other generated C/header files are identical. This verifies the generated
+change scope for this title, not universal x86 equivalence.
+
+Windows x64 Release built with Python 3.12.14, Capstone 5.0.9, MSVC 2022 and
+process-local `CL_MPCount=2`, using the working tree based on `d0de4605`.
+Native/build checks passed; generator fingerprints and crash symbols match.
+Existing MSBuild shared-intermediate-directory warnings remain. Executable SHA:
+`ec2aa681fa73cda4be9bdd74c45464de29419c40dd897838a9b36e2d4705b305`.
+
+Isolated Original60/D3D11 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammunition **8 to 6**, **40 frozen pause / 60 advancing
+resume samples**, last checkpoint **96.470s**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files retained their hashes, sizes and
+modification times**. No run lock, disposable partition images, redundant BMPs
+or crash dump remained. Input was injected, rendering minimized/background and
+startup movies skipped. Physical input, listening/audio quality, foreground
+pacing, the full campaign and native Mac title behavior remain unverified.
+
+CI on preceding `d0de4605` finished **12 successful / 4 failed checks**: Windows
+runtime had one 90-second string-fixture execution timeout, causing three gate
+failures; Mac runtime/GPU and both patch-upgrade jobs passed. The string fixture
+now caches six immutable input patterns, still resets/compares both full buffers
+for every case, and retains all cases, assertions and the 90-second limit.
+Local timing fell **3.30s to 1.20s**, and all five string tests passed. The CI
+runner's slowdown is not established by that local measurement. All 16 CI
+checks passed for control commit `43ee2929`, including Windows runtime and
+both patch-upgrade jobs. The earlier x87 missing-macro failure is repaired.
+
+Evidence: `logs/control-focused.log`, `logs/control-regressions-final.log`,
+`logs/control-patch-checks.log`, `logs/control-ci-selection.log`,
+`logs/control-generation.log`, `logs/independent-control-comparison.json`,
+`logs/control-installed-ast-audit.json`, `logs/control-build.log`,
+`logs/control-game.log`, `logs/independent-control-game-check.json`,
+`logs/string-fixture-before.log`, `logs/string-fixture-after.log`.
+MAC-093 tracks native Mac acceptance. The full replacement goal remains active;
+remaining orchestration, runtime/header/storage/device/title code and final
+provenance/dependency removal are not complete.
+
+## x87 CI fixture repair (2026-10-27)
+
+Mac native CI on `3ad34bc7` failed because the inherited FXAM/FNSTSW
+classification fixture omitted `SET_LO16`, which the new status emitter uses.
+The additive fixture patch includes the production macro and exports its C
+source. The original x87 suite now compiles and executes that exact fixture
+with the selected host compiler, including MSVC; all expected status patterns,
+TOP/sign cases and preservation checks remain. No emitter/runtime code changed.
+
+All **47 focused checks passed in 44.76 seconds**, including fresh/repeated patch
+application, context, generation contracts, all seven original x87 checks and
+decoder consumers. The applied generator fingerprint remains current. The
+accepted x87 game executable and its recorded gameplay evidence below are
+unchanged; no new game build or Mac gameplay claim is made for this test repair.
+Evidence: `logs/x87-ci-fixture-checks.log`, `logs/x87-ci-fixture-apply.log`.
+Replacement control-flow preparation remains separate and is not integrated.
+Repair `d0de4605` passed Mac runtime/GPU CI and both patch-upgrade jobs.
+Windows runtime CI later timed out in the string fixture; see the control-stage
+entry above for its setup optimization. Native Mac title validation remains
+pending under MAC-092.
+
+## Independent x87 emission (Windows acceptance passed, 2026-10-27)
+
+All **16 CI checks passed** on preceding MMX revision `3756e175` in PR #375.
+The new x87 stage replaces four upstream emitter/helper methods with original
+`translation_x87.py`. Captured stack values avoid TOP/macro aliasing; guest RC
+controls rounding and integer stores validate bounds before casting. FILD32
+retains the title numeric conversion hook. External 80-bit memory formats use
+the existing binary64 stack, and scale operands are bounded before integer casts.
+
+Six original fixtures cover copied-module imports, stack wrap/aliasing,
+mathematical arithmetic/conversion/status references, memory boundaries, native
+x86 rounding/integer/scaling oracles and decoded production consumers. The
+supplemental native 80-bit-store comparison passed in **2.40 seconds**.
+The combined regression run passed **293 checks in 404.87 seconds**, with one
+stale FILD address-spelling assertion failing. It now checks the captured address,
+single read and hook-before-push ordering; **all three related conversion checks
+passed on rerun in 0.38 seconds**. Other private title-routine and timing checks
+passed in the combined run. All **56 historical patch/context/backlog/snapshot
+checks passed in 893.57 seconds**. All **86 CI selection/gate checks passed**.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+with **50 unresolved stubs**. **13,875 functions stayed identical** and all
+**1,963 changed bodies** match explicit decoded x87 substitutions, ignoring
+comments/whitespace. Five other C/header files and function names/order/surrounding
+text are unchanged. Nine formerly silent unsupported x87 sites now produce the
+standard diagnostic, bringing reported unimplemented sites from **729 to 738**.
+Their addresses/opcodes were independently decoded and replacements checked;
+no new support is claimed for those instructions. FNCLEX at `0x003C8486` was
+reached during boot and now reports its existing no-op behavior; guest FP
+exception state remains unimplemented. No unexplained changes remain.
+This bounds generation changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with Python
+3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`. The build used
+the implementation working tree based on `3756e175`; generation fingerprints
+and crash symbols match. Existing MSBuild intermediate-directory warnings remain.
+Executable SHA-256:
+`8e550f95ebf550fe915ee383a6a090403d6d126c3bbb18af5f0131b1f54dbc91`.
+
+Isolated Original60 Scotland the Brave passed: **11.176 units forward**,
+**6.185 backward**, ammo **8 to 6**, **40 frozen pause / 60 advancing resume
+samples**, final checkpoint **95.715 seconds**, exit 0. Start/pause/resume captures
+were reviewed. All **19 protected files unchanged**, including sizes/timestamps;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Input was injected, rendering minimized/background and movies skipped. Physical
+input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/x87-focused.log`, `logs/x87-numeric-consumers.log`,
+`logs/x87-native-extended.log`, `logs/x87-generation.log`,
+`logs/independent-x87-comparison.json`, `logs/x87-build.log`,
+`logs/x87-game.log`, `logs/independent-x87-game-check.json`,
+`logs/x87-patch-checks.log`. Native Mac title acceptance remains pending MAC-092.
+Internal extended precision/control, stack tags, FP exceptions, remainder status,
+remaining translation orchestration and runtime foundation still need work.
+The full independence goal remains active.
+
+## Independent MMX emission (Windows acceptance passed, 2026-10-27)
+
+Original MMX emission, portable mathematical/boundary fixtures and Windows
+native x86 oracles are in place. **22 MMX/decoder checks passed in 10.05 seconds**.
+The mathematical/native oracles cover packed integer operations, saturation,
+packing, multiply-add overflow, comparisons, full 64-bit shift counts, lane
+selectors, conversions and rounding. Low-unpack memory reads are bounded to
+four bytes, with an overread-rejecting boundary fixture. Runtime diagnostic
+markers remain preserved for unsupported operations/destinations.
+
+Supported US regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**15,794 functions stayed byte-identical**; all **44 changed bodies** match
+decoded old/new MMX substitutions, ignoring comments and whitespace. Eighteen
+of 21 generated C/header files are identical, including all five non-chunk files.
+Function names/order/surrounding text are unchanged; no unexplained differences.
+This is structural scope evidence, not a full semantic-equivalence proof.
+
+The full combined run passed **288 translator/generation/private join/timing
+checks in 344.37 seconds**. **56 historical patch/context/backlog/snapshot checks
+passed in 799.32 seconds**.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `3b6dda3a`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`a0ed708403ad4cd757aa4dd7dd0600f18dd6e509a62fca530540b5ab9c7e047d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **93.999 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/mmx-focused.log`, `logs/mmx-generation.log`,
+`logs/independent-mmx-comparison.json`, `logs/mmx-build.log`,
+`logs/mmx-game.log`, `logs/independent-mmx-game-check.json` and
+`logs/mmx-patch-checks.log`. SSE-stage Mac native CI test/cleanup steps passed, but job finalization
+exceeded the 30-minute limit and its dependent gates failed. MMX commit
+All 16 CI checks passed on MMX commit `3756e175` (PR #375). Native Mac title acceptance is pending MAC-091.
+The full independence goal remains active.
+
+## Independent SSE emission (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces upstream SSE/SSE2 emission with `translation_sse.py`.
+Moves preserve payload bits and scalar lanes; double operations use double
+lanes, packed roots/reciprocals evaluate every lane, and float-to-integer
+conversions guard bounds before casting. Shared numeric-policy hooks and
+integer-flag provenance remain. XMM storage, guest memory, MMX/x87 and remaining
+header helpers still have upstream implementations. Guest MXCSR, FP exception
+status, alignment faults and native reciprocal approximation bits remain work.
+
+All **16 CI checks passed** on the preceding repair revision `d2fd8ecf`.
+**174 translator/generation/private join checks passed** in the combined run.
+Four timing assertions/mutations needed the new operand-capture spelling; their
+address/read-count checks and original fault-injection controls are preserved.
+The complete rerun passed **109 native timing checks in 311.41 seconds**.
+**56 historical patch/context/backlog/snapshot checks passed in 896.64 seconds**.
+Original tests cover standalone imports, memory widths and payloads,
+all shuffle controls, scalar/packed math, NaNs, conversion bounds/rounding,
+Windows hardware intrinsics and decoded production consumers.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**11,515 functions stayed byte-identical**; all **4,323 changed bodies** match
+explicit old/new SSE substitutions from decoded instructions, ignoring comments
+and whitespace. Five other generated C/header files and function names/order/
+surrounding text are unchanged. No unexplained differences remain. This bounds
+the scope of generated changes; it is not a full semantic-equivalence proof.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `d2fd8ecf`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`4381757c0132bc8a12958c05382a8be3138bf12dbbe7ff134fe91122c5ffbb78`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.132 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **94.307 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images, redundant BMPs or crash dump remained.
+Inputs were injected, rendering minimized/background and movies skipped;
+physical input, audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/sse-focused.log`, `logs/sse-native-timing-final.log`,
+`logs/sse-generation.log`, `logs/independent-sse-comparison.json`,
+`logs/sse-build.log`, `logs/sse-game.log`, `logs/sse-patch-checks.log`,
+`logs/independent-sse-game-check.json`. Native Mac title acceptance is pending
+MAC-090. Full independence remains incomplete.
+
+## Condition-stage CI fixture repair (2026-10-27)
+
+Mac native CI on `46424293` found a stale inherited expression-text assertion
+for logical conditions; its entire class had been skipped locally when Clang
+was absent from PATH. The repair changes the expected spelling, keeps the
+behavioral sweeps/negative controls, and limits the compiler skip to those
+sweeps. The project harness also executes them with the selected host compiler.
+Production code and the accepted game executable are unchanged; the generation
+fingerprint remains current. **44 targeted checks passed in 14.79 seconds**,
+including the original 15 logical-condition sweeps and nine rejecting negative
+controls compiled with MSVC. Fresh install/repeated patch application passed
+in **28.35 seconds**. All **16 CI checks passed** on repair revision
+`d2fd8ecf`; this is not native Mac gameplay acceptance.
+
+## Independent condition-code generation (Windows acceptance passed, 2026-10-27)
+
+PR #375 replaces the condition map, Jcc/SETcc/CMOVcc expressions, LAHF and
+zero-flag expression generation with original project code. Signed arithmetic
+conditions include overflow; ADC/SBB retain inputs after live registers change.
+LAHF includes defined auxiliary carry and requests carry storage. Parity and
+overflow SETcc/CMOVcc now route through the complete alias map. Partial flag
+states still refuse unknown conditions; complete EFLAGS remains separate work.
+
+All **16 CI checks passed** on the prior string-stage revision `851c6206`.
+This stage passed **131 focused checks in 69.93 seconds**, including exhaustive
+byte-pair conditions and LAHF against mathematical and native x86 references,
+wide edges/seeded inputs, float NaNs, decoded branches/SETcc/CMOVcc with operand
+overwrites, and the inherited translator suite. **37 join/private game-routine
+checks passed in 48.55 seconds**. Existing spelling assertions and timing-test
+mutations follow the new expressions; behavioral references and negative
+controls remain enabled. **109 native timing checks passed in 242.29 seconds**;
+**56 historical patch/context/backlog/snapshot checks passed in 878.05 seconds**.
+
+Supported US XBE regeneration translated **15,838 functions with zero failures**,
+retaining **50 unresolved stubs** and **729 unimplemented instruction sites**.
+**4,120 functions stayed byte-identical**. The **11,718 changed bodies** are
+bounded to flag capture and condition lines, equivalent register-zero spelling,
+and seven newly resolved JNO predicates after logical AND. Five other generated
+C/header files and function names/order/surrounding text are unchanged. This
+structural check does not prove full semantic equivalence; native oracles and
+private game fixtures provide separate behavioral evidence.
+
+The standard Windows x64 Release build and native checks passed with
+Python 3.12.14, Capstone 5.0.9, MSVC 2022 and process-local `CL_MPCount=2`.
+Build used the implementation working tree based on `851c6206`, with current
+generation sources and matching crash symbols. Existing MSBuild intermediate
+directory warnings remain. Executable SHA-256:
+`090fa72bdbc9faed43129c311a7121ccd1e160ebf532be72c5b87db1baa77e0d`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **87.378 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no run lock, disposable partition images or crash dump remained. Inputs were
+injected, rendering minimized/background and movies skipped; physical input,
+audio, foreground pacing and a full campaign remain unverified.
+
+Evidence: `logs/conditions-focused.log`, `logs/conditions-joins.log`,
+`logs/conditions-generation.log`, `logs/independent-conditions-comparison.json`,
+`logs/conditions-build.log`, `logs/conditions-game.log`,
+`logs/conditions-native-timing.log`, `logs/conditions-patch-checks.log`,
+`logs/independent-conditions-game-check.json`. Native Mac title validation
+is pending (MAC-089); the full independence goal remains active.
+
+## Independent string-instruction lowering (Windows acceptance passed, 2026-10-27)
+
+PR #375 implementation `c4a56fbe` replaces MOVS/STOS/LODS/CMPS/SCAS emission at byte/word/dword
+widths and CLD/STD. It preserves repeated element ordering for overlapping
+copies, uses guarded bulk copies for disjoint flat spans, samples compare
+operands once, and supports 16-bit count/index wrap and FS source offsets.
+Single CMPS/SCAS now publish ordinary comparison snapshots; repeated compares
+retain the existing ZF/CF and incoming zero-count contract. Full EFLAGS, MMIO
+and guest fault recovery remain separate work.
+
+All **16 CI checks passed** on comparison-stage revision `2b8c3f48`.
+The next string stage passed **126 focused checks in 68.31 seconds**, including
+original compiled contracts, Windows x86 oracles, decoded consumers and
+inherited comparison negative controls executed with MSVC. Decoded single
+compares exposed missing snapshot declarations in translator orchestration;
+the patch now declares both snapshot and comparison storage as needed.
+Generation translated **15,838 functions with zero failures**, retaining
+**50 unresolved stubs**. **14,517 functions stayed byte-identical**; **1,320**
+changed bodies match exact old/new string emission substitutions (ignoring
+comments/whitespace). One additional body now implements a previously omitted
+single CMPSD at `0x007F2B90`, whose opcode was verified in the supported XBE.
+All five other generated C/header files, function names/order and surrounding
+text are unchanged. No unexplained changes remain. This is bounded structural
+evidence, not a full equivalence proof. Unimplemented instruction sites fell
+from 730 to 729.
+
+The normal Windows Release build and native checks passed with process-local
+`CL_MPCount=2`, a current generation fingerprint and matching crash symbols.
+Executable SHA-256:
+`7770ffc0bfd1688ad7531e397d6c11346318cee8a14d226f87b2e3fb36c921e5`.
+
+Isolated Original60 Scotland the Brave passed: forward **11.175 units**,
+backward **6.185 units**, ammo **8 to 6**, **40 frozen pause samples** and
+**60 advancing resume samples**, final checkpoint **89.597 seconds**, exit 0.
+Reviewed start/pause/resume captures. All **19 protected files unchanged**;
+no remaining run lock, disposable partitions or crash dump. This used injected
+inputs, minimized/background rendering and skipped movies; physical input,
+audio, foreground pacing and full campaign coverage remain unverified.
+
+**56 historical patch/context/backlog/snapshot checks passed in 892.45 seconds.**
+Evidence: `logs/strings-focused.log`, `logs/strings-generation.log`,
+`logs/independent-strings-comparison.json`, `logs/strings-build.log`,
+`logs/strings-game.log`, `logs/independent-strings-game-check.json`,
+`logs/strings-patch-checks.log`.
+Native Mac title validation is pending (MAC-088); no full-independence claim.
+
+## Independent comparison snapshots and sign extension (2026-10-27)
+
+After repairing PR #375's Clang condition warning, all **16 CI checks passed**
+on `32ff9af6`. The next module in PR #375 replaces CMP/TEST snapshots and
+self-test normalization, plus CBW/CWDE/CDQ emission, and supplies previously
+unhandled 16-bit CWD. Production aliases route ordinary and fused comparison
+snapshots to the same implementation. Existing direct-global load hooks and
+branch-consumer ABI are retained. General condition lowering, full EFLAGS/AF,
+fused-branch rereads and guest fault delivery remain separate work.
+
+- **156 focused tests passed in 74.30 seconds**, including the full inherited
+  translator consumer suite, original snapshot/hook/carry checks and decoded
+  operand-overwrite, SBB, join and size-prefix cases.
+- Portable compiled fixtures cover all byte comparison pairs, exhaustive word
+  extension and seeded wider operands. Windows x86 instruction oracles cover
+  every word input with positive/negative upper patterns and arithmetic-flag
+  preservation. The independent module-copy fixture passes without the toolkit.
+- Two inherited text fixtures now locate original snapshot comments; their
+  normalization and carry-order assertions remain active.
+- Generation translated **15,838 functions with zero failures**, retaining
+  **50 unresolved stubs**. Against repaired exchange generation, **4,616
+  functions are byte-identical**. Of **11,222 changed bodies**, **10,812** are identical
+  after ignoring comments, whitespace and redundant snapshot parentheses;
+  **410** additionally use the explicitly checked sign-extension replacements.
+  All five other generated C/header files, names/order and text outside bodies
+  remain identical. No unexpected changes were found. This bounded comparison
+  is not a complete semantic or architectural equivalence proof.
+- The first normal Windows build exhausted the compiler heap (C1002) with
+  unrestricted /MP file workers. A retry uses process-local `CL_MPCount=2`,
+  retaining normal Release optimization and the complete standard build tests.
+  The retry **passed**, including native checks, current generation fingerprint
+  and matching crash symbols. Existing MSBuild intermediate-directory warnings
+  remain. Executable SHA-256:
+  `aeedf7b21c3cda5ae6a009f0b43ff4741b64ddc8e9235e530ce3f33ffa650f28`.
+- **Isolated gameplay passed:** Original60 Scotland the Brave, injected
+  background/minimized inputs with startup movies skipped. Forward **11.014
+  units**, backward **5.815 units**, ammo **8 to 6**, **40 frozen pause samples**
+  and **60 advancing resume samples**; last checkpoint **88.506 seconds**,
+  runner exit 0. Reviewed start/pause/resume captures. All **19 protected files
+  unchanged**, with no remaining run lock, disposable partitions or crash dump.
+  Physical input, audio, movies, foreground pacing and full campaign remain
+  outside this bounded check.
+- **56 historical patch/context/backlog/snapshot checks passed in 1,459.29
+  seconds**. This overlapped generation and the memory-limited rebuild.
+- Main reserved MAC-085 for impact sparks (#376); the unmerged exchange and
+  comparison records are now MAC-086 and MAC-087 to preserve distinct IDs.
+- Implementation `f941d1d4` passed the checks above. Main `9f40dc21` was
+  integrated in `4a034de0`; the combined normal Release build and native checks
+  passed with `CL_MPCount=2`. Executable SHA-256:
+  `ec947669ac8a1298f52de7e2d56f42c2291a1d6975f94b121ba56b292812cedf`.
+- Expanded private-guest integration initially found 13 fixture link failures:
+  generated DIV/IDIV callees require the shared integer-fault adapter. The
+  fixture compiler now links `src/runtime/guest_integer_fault.c` on both hosts and
+  writes separate MSVC objects. No production change was needed. The complete
+  rerun, including native timing and float-join fixtures, **passed all 152 tests
+  in 219.12 seconds**.
+- Combined-source isolated gameplay also passed: forward **11.216 units**,
+  backward **6.288 units**, ammo **8 to 6**, **40 frozen pause samples**, **60
+  advancing resume samples**, final checkpoint **88.756 seconds**, runner exit
+  0. Reviewed start/pause/resume captures; all **19 protected files unchanged**,
+  no remaining run lock, disposable partitions or crash dump. The same bounded
+  Original60, injected-input and skipped-movie limitations apply.
+
+Evidence: `logs/compare-focused.log`, `logs/compare-generation.log`,
+`logs/independent-compare-comparison.json`, `logs/compare-build-limited.log`,
+`logs/independent-compare-game-check.json`, `logs/compare-game.log`,
+`logs/compare-main-integration-final.log`, `logs/compare-main-build.log`,
+`logs/independent-compare-main-game-check.json`, `logs/compare-main-game.log`.
+Native Mac generation/build/gameplay
+remain unverified (MAC-087). Standard libraries and remaining upstream runtime
+source/notices are retained; this stage does not establish full independence.
+
+## Independent exchange lowering (2026-10-27)
+
+PR #375 implementation `de66eb9a`, based on merged main `fd317882`: original
+code replaces XCHG/XADD/CMPXCHG lowering at byte, word and dword widths,
+including locked memory spellings. Effective addresses and inputs are sampled
+before writes; captured arithmetic results feed branches, SET, CMOV and zero
+joins. Original sequentially consistent helpers replace the previous atomic
+helper bodies, with MSVC and Clang/GCC adapters. Other runtime code remains
+upstream and its notices remain required.
+
+Windows validation:
+
+- CI at `703f9fa7` found one Mac Clang warning-as-error in decoded CMOV:
+  redundant parentheses around equality. Zero predicates now use logical
+  negation; the compiled consumer test stays enabled with -Werror. All **16 CI
+  checks passed on `32ff9af6`**, including both host runtime and patch jobs.
+  The correction also passed 35 local checks; repaired generation completed
+  with 15,838 translated functions, zero failures and 50 existing stubs.
+- **152 final checks passed in 74.32 seconds**, covering compiled arithmetic,
+  x86 instruction oracles, aliases, decoded consumers, four-thread contention,
+  legacy numeric-address macros, fresh/repeated patches, generation and context.
+- **56 historical patch/context/backlog/snapshot checks passed in 980.20 seconds**.
+  These preceded the final two compatibility-macro pointer casts; the final
+  152 checks include fresh/repeated installation and execution of those casts.
+- Supported US XBE SHA-256 verified. Final generation translated **15,838
+  functions with zero failures**, retaining **50 existing unresolved stubs**.
+  **37 function bodies changed; 15,801 stayed identical**. Function order/names
+  and text outside C function bodies stayed identical. Ten complete generated
+  C/header files stayed identical; the types header changed only in the atomic
+  helper section. This is structural evidence, not full semantic equivalence.
+- Normal Windows Release build and native checks passed; generation fingerprint
+  is current and matching crash symbols were produced. The corrected build has
+  no C4022 pointer warnings; existing MSBuild intermediate-directory warnings
+  remain. An earlier, superseded build exposed the integer-to-pointer boundary;
+  both emission and compatibility aliases now cast the actual XBOX_PTR address
+  type, and the native fixtures exercise that interface.
+- **Isolated gameplay acceptance passed:** Original60 Scotland the Brave,
+  injected background/minimized input with startup movies skipped. Forward
+  **11.175 units**, backward **6.185 units**, ammo **8 to 6**, **40 frozen pause
+  samples** and **60 advancing resume samples**; final checkpoint **88.124
+  seconds**, runner exit 0. Reviewed start, pause and resume captures. All
+  **19 protected settings/save/fixture files remained unchanged**; no run lock,
+  disposable partitions or crash dump remained. This bounded test does not
+  certify physical input, audio, movies, foreground pacing or a full campaign.
+
+Executable SHA-256:
+`88e6cf84258d04261c1ba75a896e60288ef6a38fda1f81491af401d7df730b49`.
+Evidence: `logs/exchange-final-checks.log`, `logs/exchange-patch-checks.log`,
+`logs/exchange-final-generation.log`, `logs/independent-exchange-comparison.json`,
+`logs/exchange-final-build.log`, `logs/independent-exchange-game-check.json`,
+`logs/exchange-game.log`.
+Native Mac generation/build/gameplay remain pending (MAC-086). Host atomic
+contracts cover aligned mapped RAM; MMIO, guest alignment/page-crossing faults,
+exception delivery, other LOCK families and complete flags remain separate work.
 ## Repository organization (2026-10-27)
 
 From main `9f40dc21`, `cleanup/repository-layout` replaces repeated alphabetical
@@ -211,7 +2191,8 @@ Windows validation:
 - CI's scope job found a stale patch index: the local product patch still had
   CRLF bytes although Git stored LF. Normalized that local file to its existing
   Git bytes and refreshed the index (no production change). The same scope
-  suite now passes locally: **116 tests and 26 subtests**. CI rerun pending.
+  suite passed locally: **116 tests and 26 subtests**. All 16 CI checks passed
+  on `5b931e4b`; PR #374 was subsequently merged.
 
 
 Executable SHA-256:
