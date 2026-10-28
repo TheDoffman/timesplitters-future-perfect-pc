@@ -7,11 +7,45 @@ import sys
 import pytest
 from test_translation_product import _compile
 from test_translation_cli import fixture
+from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
 HEADER=ROOT/'src/runtime/recomp_types.h'
 
 def test_transitional_template_matches_canonical_header():
     assert HEADER.read_text() == (ROOT/'external/ts3FPrecomp/templates/runtime/recomp_types.h').read_text()
+
+
+@pytest.mark.parametrize('admission', ['complete', 'macro-only'])
+def test_inherited_guarded_call_fixture_with_native_compiler(tmp_path, admission):
+    # Exercise the inherited oracle even when only MSVC is installed. Its own
+    # compiler discovery otherwise skips this case on many Windows developers.
+    compiler, environment = native_compiler(tmp_path)
+    environment.update(TSFP_PROJECT_ROOT=str(ROOT), TSFP_TEST_CC=compiler)
+    code = '''import os, subprocess, sys
+from pathlib import Path
+from tools.recomp import test_icall_guarded_runtime as test
+test._cc = lambda: os.environ['TSFP_TEST_CC']
+if sys.argv[1] == 'macro-only':
+    test._admission = lambda: test._macro('RECOMP_ICALL_IS_CODE')
+def run(directory, sources, extra=()):
+    assert not extra
+    exe = Path(directory) / 'guarded.exe'
+    flags = (['/nologo', '/std:c11', '/O2', '/WX', *sources, '/Fe:' + str(exe)]
+             if os.name == 'nt' else ['-std=c11', '-Werror', *sources, '-o', str(exe)])
+    built = subprocess.run([test._cc(), *flags], cwd=directory, capture_output=True, text=True)
+    assert built.returncode == 0, built.stdout + built.stderr
+    return subprocess.run([str(exe)], cwd=directory, capture_output=True, text=True)
+test._run = run
+test.test_guarded_site_matches_generic_dispatch_for_every_target()
+'''
+    result = subprocess.run([sys.executable, '-c', code, admission],
+                            cwd=ROOT/'external/ts3FPrecomp', env=environment,
+                            capture_output=True, text=True, timeout=60)
+    if admission == 'complete':
+        assert result.returncode == 0, result.stdout + result.stderr
+    else:
+        assert result.returncode != 0
+        assert 'tsfp_guest_target_is_code' in result.stdout + result.stderr
 
 @pytest.mark.parametrize('variant',['production','feedback','inclusive_high','lost_kernel','duplicate_address','lost_counter','lost_trace'])
 def test_services(tmp_path,variant):

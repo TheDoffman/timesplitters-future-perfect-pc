@@ -24,6 +24,13 @@ absent, checks missing-header output preservation, service calls and interval
 boundaries, and rejects five compiling mutations. Mac title acceptance is pending
 MAC-105. Existing ABI/call-frame/dispatch/vector regressions remain enabled.
 
+`0201-runtime-header-consumer-fixture.patch` follows the header replacement and
+precedes layout routing. The inherited guarded-call oracle must extract the
+target-admission function with its public macro. Macro-only extraction failed
+on both CI hosts. `test_runtime_header.py` runs that same oracle through the
+project's native compiler adapter, including MSVC-only machines, and verifies
+that removing the helper still fails compilation/linking. Game code is unchanged.
+
 ## Scalar numeric support
 
 `0198-independent-scalar-support.patch` follows vector support and precedes

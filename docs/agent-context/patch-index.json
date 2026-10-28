@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f52677d88e290da11efbb1fa688159f7b7297a1a54a46337320b6ec4c2f0469a",
+  "loaderSha256": "a58cbb6c76d9b68c900277e5ac8e6c09d3611c24c826125d7d3c29b624d9e019",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2120,6 +2120,14 @@
       "sha256": "e074e820ca2cbcee35f946014e73e540e29ef43d81e8a023a68ee7322728f3d4",
       "targets": [
         "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
+      "name": "0201-runtime-header-consumer-fixture.patch",
+      "path": "patches/compiler/0201-runtime-header-consumer-fixture.patch",
+      "sha256": "fc9bfbaef7c976465539fd63ac974e45ee08a6633a5dd99db294e3f9b99dbfee",
+      "targets": [
+        "tools/recomp/test_icall_guarded_runtime.py"
       ]
     },
     {

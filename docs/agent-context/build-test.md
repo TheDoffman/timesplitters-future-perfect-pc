@@ -1,15 +1,15 @@
 # Build, run and validation map
 
 Grouped paths: [layout](../development/repository-layout.md).
-Direct Python/CI imports use `tools/project_paths.py`; test fixtures use `tests/conftest.py`.
+Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.
 Portable probes retain isolated imports.
 
-Nested patch discovery, Mac manifest hashes and migration tests: [folder rules](../../patches/README.md).
+Patch discovery/migration: [folder rules](../../patches/README.md).
 
-Standalone RHI and Mac crash/IPC fixtures supply grouped includes.
-Windows replay imports its grouped input helper; isolated `--help` checks routing.
+RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
 
 [Canonical header, scalar/vector, call frames, dispatch and ABI/CLI checks](independent.md).
+The inherited guarded-call oracle also runs through MSVC via the native adapter.
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
@@ -432,9 +432,9 @@ when a covered system changes without its documentation update.
 | Agent context/index | `python tools/repo-context.py check`; `python -m pytest tests/repository/test_repo_context.py -q` | Changed-path maintenance check against base |
 | Patch loader/order | `tests/repository/test_patch_tracking.py`, `tests/repository/test_patch_updates.py` | Full stack transition fixtures; supported build |
 | Guest generation/wrappers | `tests/compiler/test_recomp_generation.py`, float/vehicle join tests | Regenerate using verified local XBE, build |
-| Settings/input/menu | Affected `tests/test_*` and native C fixtures | Relevant native target, bounded isolated acceptance |
+| Settings/input/menu | Affected `tests/input/` suites and native C fixtures | Relevant native target, bounded isolated acceptance |
 | Renderer/shader/resources | Shared source contracts, `tests/graphics/test_renderer_host.py`, `tests/graphics/test_rhi_menu_sampling.py` | Windows WARP / Mac `tools/testing/test-rhi-mac.py`; scoped scene evidence |
-| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher_*` fixtures |
+| Launcher | `python tools/ci/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher/` fixtures |
 | Issue automation | `tests/repository/test_issue_forms.py`, `tests/repository/test_issue_resolution.py` | Read-only fixtures, workflow checks; no posting for tests |
 
 Enhancement routing uses the Ideas contact link in the issue chooser. The existing

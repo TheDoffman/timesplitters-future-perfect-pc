@@ -5,6 +5,10 @@ header to transitional runtime consumers. It follows scalar support and precedes
 layout routing. Generation reads `src/runtime/recomp_types.h` directly; the
 compatibility template must remain identical after newline normalization.
 
+`compiler/0201-runtime-header-consumer-fixture.patch` follows that header and
+repairs the inherited guarded-call oracle's extraction of admission support.
+It retains the oracle and changes no production C; layout routing remains last.
+
 Active patches are grouped by primary responsibility. Cross-cutting patches
 stay together in the closest owning folder; do not split hunks to match the map.
 

@@ -6619,6 +6619,13 @@ Copy this template for each new entry and add its queue row. Replace all placeho
 ### MAC-105 - Canonical project guest execution header
 
 - **Status:** Awaiting validation
+- CI follow-up: `0201-runtime-header-consumer-fixture.patch` repairs extraction
+  of the admission helper in an inherited guarded-call test. Both native CI
+  hosts exposed the missing helper at 519b9d34. The new project regression also
+  executes the oracle with MSVC alone; this fixture repair changes no game code.
+- Repair validation on Windows: 11 focused, 718 compiler and 73 migration/
+  repository checks passed. The prior verified executable is unchanged; no new
+  game build or replay is claimed. Native Mac CI for the repair remains pending.
 - PC behavior/source: PR #375 follow-up based on 60c47380;
   src/runtime/recomp_types.h, compiler batch/CLI routing and
   patches/compiler/0199-independent-runtime-header.patch. Generation owns its

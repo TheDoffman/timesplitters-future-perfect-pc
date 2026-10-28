@@ -1,3 +1,29 @@
+## Canonical-header consumer fixture repair (2026-10-27)
+
+CI for `519b9d34` exposed a missing dependency in the inherited guarded-call
+test: it extracted `RECOMP_ICALL_IS_CODE` without the new
+`tsfp_guest_target_is_code` body. Both native CI hosts failed the seven parent
+suites that invoke this same consumer. The local MSVC-only environment had
+silently skipped the inherited fixture's Clang/GCC route. This was a test
+extraction defect, not evidence of a title runtime failure.
+
+The additive `0201-runtime-header-consumer-fixture.patch` extracts the actual
+helper with its public macro. The original guarded-call assertions still check
+recorded/unseen/unresolved/invalid targets and guest-stack restoration. A new
+project regression executes that oracle through the native compiler adapter,
+including MSVC, and confirms that macro-only extraction still fails to build.
+It reproduced the missing-helper linker failure before the repair. All 11
+focused checks passed afterward (12.16s), followed by all 718 compiler checks
+(255.19s) on Windows x64. All 73 historical migration, snapshot, tracking,
+context and backlog checks passed (826.62s); final context/index checks passed.
+
+Applying the complete stack changed only the inherited Python test. Production
+C, the generation fingerprint and the previously tested executable remain
+unchanged; no new game build or gameplay run is claimed for this fixture repair.
+All 26 protected settings/save/fixture files retain hashes, sizes and mtimes.
+Mac CI acceptance of the repair remains pending; MAC-105 title acceptance is
+still Awaiting validation. The isolated feedback replacement draft is not installed.
+
 ## Canonical project guest execution header (2026-10-27)
 
 Based on `60c47380` on `feature/independent-exchange`. All 17 prerequisite CI

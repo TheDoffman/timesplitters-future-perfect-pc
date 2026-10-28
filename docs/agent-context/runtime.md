@@ -5,6 +5,9 @@ reads it directly. The final `0199-independent-runtime-header.patch` keeps the
 transitional template identical, before layout routing. See
 [header ownership and service boundaries](independent.md#canonical-guest-header).
 
+The subsequent `0201-runtime-header-consumer-fixture.patch` repairs the inherited
+guarded-call test's function-backed macro extraction; it changes no game source.
+
 Scalar support follows vector retirement: MOVSX/MOVZX emit their own masks and
 sign handling; old numeric helpers are removed, while regression oracles execute
 real emitted instructions. See [scalar contracts](independent.md#scalar-numeric-support).
@@ -145,7 +148,7 @@ Runtime layers: generated Xbox guest calls title hooks in
 `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, HLE in
 `external/ts3FPrecomp/src/hle/`, kernel/NV2A services in `src/kernel/`, then Xbox
 graphics frontend in `src/d3d/d3d8_*.c` and RHI backends. Those short `src/...`
-paths are RUNTIME-relative, distinct from tracked root `src/pc_*.c`.
+paths are RUNTIME-relative, distinct from the tracked [source groups](../../src/README.md).
 `hle_d3d8.c` owns Swap/Present integration; `kernel_bridge.c` and
 `xbox_memory_layout.c` contain vblank/flip-gate plumbing. Start FPS investigation
 there only when timing/trace evidence implicates it. Visible menu names may
@@ -166,7 +169,7 @@ external diagnostic and its limitations.
 
 `tools/build/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
-then applies the entire current top-level stack before updating runtime files.
+then applies the entire current recursive stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
@@ -505,7 +508,7 @@ fresh live acceptance, not just offline checks.
 
 | Layer | Actual location | Change/reproduce through |
 | --- | --- | --- |
-| Host policy, settings, input, shared helpers | Root `src/pc_*`, `src/graphics/`, `src/native/` | Tracked source; patched upstream CMake includes it |
+| Host policy, settings, input, shared helpers | [Source groups](../../src/README.md) under root `src/` | Tracked source; patched upstream CMake includes it |
 | Runtime integration and title hooks | `external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c`, title `CMakeLists.txt` | A separate tracked patch |
 | HLE graphics, audio, input, movies | Runtime `src/hle/hle_d3d8*.c`, `hle_dsound*.c`, `hle_input.c`, `hle_xmv*.c` | Tracked patch |
 | Xbox kernel/thread/memory/NV2A | Runtime `src/kernel/`, `src/nv2a/` | Tracked patch; distinguish Win32 and native adapter paths |
