@@ -1,3 +1,46 @@
+## Project virtual-memory services (2026-10-28)
+
+Working tree based on 7fef998e after all 17 prerequisite CI checks passed at that
+revision. Additive patch 0208 replaces four guest Nt VM implementations and
+native allocate/free/query policy with original project providers. Complete
+output-span validation precedes ownership changes; exact reservation RELEASE
+uses the existing allocation table. Native pointer widths and the guest's
+28-byte query record remain separate. See [contracts](../agent-context/virtual-memory.md)
+and MAC-112 for supported behavior and remaining host/mapping limitations.
+
+Windows x64/MSVC: all 889 installed compiler checks passed in 434.67s and all
+73 historical patch migration/tracking/snapshot/context/backlog checks passed
+in 976.02s. These broad runs preceded the final adapter correction from Win32
+GetSystemInfo to POSIX sysconf on Mac. After that correction, all 21 installed
+VM checks passed in 31.84s, including nine compiled negative controls, both
+adapter host branches, physical-owner rejection and real Windows protection,
+native query, decommit and release probes. All 125 final repository checks
+passed in 12.93s. The complete patch stack installed the correction, and all
+five resulting runtime files matched the final candidate. CI at the eventual
+new commit remains pending; preceding-head success is not acceptance of it.
+
+The final Windows Release build, native checks and matching crash symbols
+passed with normal `/DWIN32 /D_WINDOWS` flags. All 22 generated C/header files
+remained byte-identical and the generation fingerprint stayed current. An
+initial PowerShell 7 invocation failed in the icon helper before compilation;
+the documented Windows PowerShell command built successfully.
+
+The final executable booted into isolated Original 60 Story gameplay, scene 4 /
+mission 1 with input enabled. It moved 11.195015 forward and 6.391049 backward,
+and fired from eight to six rounds. All 40 pause samples froze level ticks;
+all 60 resume samples stayed unpaused with ticks advancing. Final checkpoint:
+100.445s within the 240-second cap. Runner/controller exited zero; start,
+paused and resumed screenshots were reviewed. All 26 protected settings/save/
+fixture files retained hashes, sizes and mtimes. No owned run locks, disposable
+partition images, BMP dumps or crash dumps remained.
+
+Tested executable SHA-256:
+`752c88cbff2f87a4c80c208be51dba0cc360f99116932530a45d3c5f0c45aebc`.
+Build provenance: virtual-memory working tree based on 7fef998e, Windows x64/MSVC.
+The replay used injected input, minimized windows, Classic textures and skipped
+startup movies. Physical input, audio listening, full campaign and native Mac
+title execution remain unverified. No new game package was produced.
+
 ## Project guest thread storage (2026-10-28)
 
 Working tree based on 3b722823 after all 17 prerequisite checks passed at that
@@ -39,7 +82,8 @@ Build provenance: thread-memory working tree based on 3b722823, Windows x64/MSVC
 The replay used injected input, minimized windows, Classic textures and skipped
 startup movies. Physical input, audio listening and full campaign remain
 unverified. No new package or native Mac title execution was verified for this
-stage; remote CI at its eventual commit remains pending.
+stage. All 17 checks at committed 7fef998e passed. The Mac GPU job first
+failed downloading the SDK; its completed retry passed without a source change.
 
 ## Project guest allocation ownership (2026-10-28)
 

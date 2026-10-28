@@ -50,7 +50,7 @@ void tsfp_allocations_stop(tsfp_allocations *state);
 
 /* Aligned lowest-fit allocations; every live ownership span is disjoint.
  * Heap uses minimum size 16/alignment 4 and zeros the complete returned size.
- * Reservations use default alignment 4096, no zeroing, no release/query API,
+ * Reservations use default alignment 4096, no zeroing or size-query API,
  * and share heap ownership above reserve_begin. Zero-size reservations fail.
  * Physical blocks own page-rounded spans and zero only requested bytes; a
  * zero-size request still owns one page. Non-power-of-two alignments above
@@ -70,6 +70,9 @@ uint32_t tsfp_physical_allocate_range(tsfp_allocations *, uint32_t size,
  * Exact requested base is retained even for a non-page-aligned address. */
 uint32_t tsfp_physical_allocate_at(tsfp_allocations *, uint32_t address, uint32_t size);
 int tsfp_heap_release(tsfp_allocations *, uint32_t address);
+/* Virtual-memory RELEASE accepts an exact heap or reservation base. It never
+ * frees physical/protected ownership and does not change backing-page access. */
+int tsfp_virtual_release(tsfp_allocations *, uint32_t address);
 int tsfp_physical_release(tsfp_allocations *, uint32_t address);
 /* Remaining requested bytes at an interior address, with heap minimum applied.
  * Physical padding, reservations and protected ranges return zero. */

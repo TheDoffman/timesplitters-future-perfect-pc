@@ -1,5 +1,12 @@
 # Independent runtime replacement
 
+Guest Nt virtual-memory calls and native pointer-width allocate/free/query now
+use project services through additive patch 0208. Existing flat guest VM policy
+is explicit, complete output spans are validated before side effects, and exact
+reservations can be released. Host mapping/protection and remaining Mm services
+still require replacement. See [contracts](../agent-context/virtual-memory.md)
+and MAC-112; this is not whole-runtime independence.
+
 Main/private thread records and guest stack ownership now use
 `src/runtime/guest_thread_memory.c` through additive patch 0207. Published
 identity storage retains the guest-memory lifetime; host scheduling and object

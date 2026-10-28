@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Virtual-memory calls: [guest/native ABI and host boundaries](virtual-memory.md).
+
 Thread/TIB construction and stack ownership: [thread memory](thread-memory.md).
 
 ## Guest allocation ownership
@@ -12,8 +14,8 @@ their overlap when mappings extend above physical RAM. Freed records compact
 immediately; no tombstones, untracked overflow allocations or split entries.
 
 Heap requests have minimum size 16/alignment 4 and zero their returned size.
-Reservations begin above physical RAM, default to 4096 alignment and neither
-zero nor expose free/query support. Physical requests own page-rounded spans
+Reservations begin above physical RAM and default to 4096 alignment. They do
+not zero memory or expose size queries; virtual-memory RELEASE can reclaim them. Physical requests own page-rounded spans
 but zero/query requested bytes; zero-size requests still own a page. Explicit
 pins retain their requested base and reject live overlap before zeroing.
 The synthetic kernel page is protected, the ordinary arena skips the low 1 MiB,

@@ -197,6 +197,16 @@ int tsfp_physical_release(tsfp_allocations *s, uint32_t address) {
     enter(s); if (s->active) result = release(&s->physical, address, OWN_PHYSICAL);
     leave(s); return result;
 }
+int tsfp_virtual_release(tsfp_allocations *s, uint32_t address) {
+    int result = 0;
+    if (!s || !address) return 0;
+    enter(s);
+    if (s->active) {
+        result = release(&s->heap, address, OWN_HEAP);
+        if (!result) result = release(&s->heap, address, OWN_RESERVATION);
+    }
+    leave(s); return result;
+}
 static uint32_t remaining(tsfp_allocation_arena *a, uint32_t address) {
     for (size_t i = 0; i < a->count; ++i) {
         const tsfp_allocation_record *r = a->records + i;

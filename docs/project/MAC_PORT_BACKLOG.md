@@ -261,6 +261,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-109 | Project native image loading | Awaiting validation |
 | MAC-110 | Project guest allocation ownership | Awaiting validation |
 | MAC-111 | Project guest thread storage | Awaiting validation |
+| MAC-112 | Project virtual-memory services | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6845,6 +6846,32 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   identity/stack cycles, five negative controls, supported-US bootstrap bytes and
   actual installed adapter/failure paths. Release/native checks and isolated
   Story movement/firing/pause/resume passed; protected files stayed unchanged.
-  All 73 migration/tracking/snapshot/context/backlog checks passed. New-stage
-  portable Mac CI and native Mac title gameplay are pending. See
+  All 73 migration/tracking/snapshot/context/backlog checks passed. All 17 CI
+  checks at 7fef998e passed, including Mac contracts and patch upgrades. Native
+  Mac title gameplay remains unverified. See
   [STATUS](STATUS.md#project-guest-thread-storage-2026-10-28).
+
+### MAC-112 - Project virtual-memory services
+
+- **Status:** Awaiting validation
+- **PC behavior:** Guest Nt allocation/release/query/protection policy is project
+  owned, with complete output-span checks and exact reservation release. Native
+  pointer-width VM policy stays separate from the seven-word guest record.
+- **Source/PR:** `src/runtime/guest_virtual_memory.c`, `host_virtual_memory.c`,
+  allocator virtual release and headers; original compiler fixtures and
+  `patches/compiler/0208-independent-virtual-memory.patch`. PR #375, uncommitted
+  working tree based on 7fef998e.
+- **Mac support present:** Same providers/adapters and guest ownership. Guest
+  buffer validation uses real Mach region queries through `pc_guest_memory.h`.
+  Protection-output overlap uses the host page size, including 16 KiB pages.
+- **Remaining adaptation:** Existing host mapping/protection implementation,
+  including compatibility native VirtualQuery's placeholder record and unaligned
+  mprotect limitations, remains separate replacement work. Guest ABI queries
+  and buffer validation do not use that placeholder. No dependency upgrades.
+- **Acceptance:** Windows 889 compiler/73 migration checks passed before the
+  final POSIX page-size adapter correction. After it, all 21 installed VM
+  checks and 125 repository checks passed, including both adapter host branches
+  and real Windows VM probes. Final Release/native checks and isolated Story
+  movement/firing/pause/resume passed; 26 protected files were unchanged.
+  New-commit shared CI and native Mac title gameplay remain pending. See
+  [STATUS](STATUS.md#project-virtual-memory-services-2026-10-28).

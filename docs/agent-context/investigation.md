@@ -1,5 +1,7 @@
 # Investigation memory and handoffs
 
+Virtual memory: [guest/native paths and remaining host adapters](virtual-memory.md).
+
 Thread storage investigations: [memory ownership and caller limits](thread-memory.md).
 
 Allocation ownership and bridge entry points now use the project provider;
