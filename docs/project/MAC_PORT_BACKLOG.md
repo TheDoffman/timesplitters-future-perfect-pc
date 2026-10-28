@@ -7105,7 +7105,7 @@ No production source, built executable or prior gameplay evidence changed.
 - **Status:** Awaiting validation
 - **PC behavior:** Extras offers nine independent profile-specific early-unlock
   categories; Off restores earned access. The original Cheats menu is in Extras.
-- **Source/PR:** Uncommitted on `feature/unlock-content`, based on `2e678ac1`;
+- **Source/PR:** Commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`;
   `src/interface/pc_unlock_menu.inc`, `src/storage/pc_unlock_content.h`,
   `pc_display_menu.c/.h`, `patches/storage/2070-profile-unlock-content.patch`.
 - **Mac support present:** Shared frontend and guest predicates use the existing

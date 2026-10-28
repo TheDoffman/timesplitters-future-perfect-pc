@@ -1,6 +1,6 @@
 ## Profile-scoped Unlock Content (2026-10-28)
 
-Local, uncommitted on `feature/unlock-content` based on `2e678ac1`. Extras now
+Implementation commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`. Extras now
 provides nine independent early-unlock categories stored in the active profile.
 Turning a category Off restores earned access without rolling back progress.
 Cheats moved from Settings to Extras and retains its original controls.
