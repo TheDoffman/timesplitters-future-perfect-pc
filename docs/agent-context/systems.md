@@ -1,17 +1,9 @@
 # Subsystem entry points
 
-Native nonlocal jumps use the shared project provider and Windows stack adapter;
-see [continuation contracts](independent.md#native-nonlocal-jumps), including the
-fatal boundary when a foreign-stack callback fails to transfer control.
-
-Branch observations and guard counts use the own recorder in `src/runtime/`;
-see [feedback integration](independent.md#guest-branch-feedback-recorder).
-
-The guest interface is owned in `src/runtime/recomp_types.h`. Its declarations
-still call transitional runtime services; header ownership does not replace
-those service implementations. See [contracts](independent.md#canonical-guest-header).
-
-Product division faults: [shared adapter and limits](independent.md).
+Guest runtime: [continuations and stack adapters](independent.md#native-nonlocal-jumps),
+[branch recorder](independent.md#guest-branch-feedback-recorder), and
+[canonical header / remaining services](independent.md#canonical-guest-header).
+Division faults: [adapter and limits](independent.md).
 
 
 Procedural wind: [ownership/time scopes](native-wind.md).
