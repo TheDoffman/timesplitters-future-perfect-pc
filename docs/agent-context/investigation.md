@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+Kernel stages: [object ownership, boot and validation](kernel-objects.md).
+Generate the patch index from LF patch bytes matching Git; CRLF working copies
+can produce different hashes and target names despite local checks passing.
+
 Retired memory APIs: [caller audit and retained ABI](retired-memory-compatibility.md).
 
 Guest mappings: [owners, host adapters and checks](guest-host-mappings.md).

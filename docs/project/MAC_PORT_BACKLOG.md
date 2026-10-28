@@ -267,6 +267,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-115 | Project native virtual-memory host operations | Awaiting validation |
 | MAC-116 | Project guest host mappings | Awaiting validation |
 | MAC-117 | Retired compatibility memory APIs | Awaiting validation |
+| MAC-118 | Independent kernel object lifetime | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7032,5 +7033,68 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   fatal unused-function warning. Its bypass now references the unused helper
   without invoking it; production behavior and strict warnings are unchanged.
   All six Windows adapter checks passed in 8.62s and 21 repair documentation
-  checks passed in 4.15s; repaired CI remains pending. See
+  checks passed in 4.15s. All 17 CI checks passed at repair commit `dcb2ea69`,
+  subsequently merged in PR #375. Native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#retired-compatibility-memory-apis-2026-10-28).
+
+### MAC-118 - Independent kernel object lifetime
+
+Boot follow-up (PR #393): original src/runtime/guest_kernel_boot.c and
+0216-independent-kernel-boot.patch are prepared in maintained paths. Shared host
+primitive fixture and actual-header compile passed12 maintained-path checks on
+Windows; migration checks passed52 tests in1755.05s. Windows Release rebuild and built-in
+checks passed, with the original boot selected and old resolver/table absent from
+the kernel archive. Isolated Windows gameplay passed as recorded below; Mac
+execution remains pending. Quiescent lifecycle only; no whole-runtime worker shutdown claim.
+
+
+- **Status:** Awaiting validation
+- **PC behavior:** Original guest handle/object ownership, scoped borrowing,
+  reference/type/duplicate ABI, thread publication/exit and audio event signaling.
+- **Source/PR:** Stage0215, commit `1692ed4f`, PR #393;
+  `src/runtime/guest_objects.c`,
+  `guest_object_scope.c`, `guest_object_services.c`, `guest_kernel_objects.inc`,
+  `guest_kernel_threads.inc`, lifetime hooks and matching original fixtures.
+- **Mac support present:** The same owner/service/continuation providers and
+  kernel adapters are selected by shared CMake and patch routing. Native host
+  resources use the existing platform boundary. No separate Mac feature model.
+- **Remaining adaptation:** Native Mac compilation/runtime/title validation;
+  Windows binding fixtures skip on Mac. Active-hook foreign-fiber behavior,
+  native object-manager/device services and complete worker shutdown remain work.
+- **Acceptance:** All 51 candidate contracts passed, including Windows native
+  wait/stress and thread binding with real project memory providers. Full-stack
+  installation and Windows Release/native build checks/crash symbols passed;
+  all 22 generated files are unchanged. Fresh isolated Original 60 Story
+  movement, firing and pause/resume passed; all 26 protected files are unchanged.
+  Documentation checks (21) and path/package/crash-symbol checks (19) passed.
+  All 1,049 compiler tests passed in 813.82s and all 52 snapshot/patch tracking/
+  migration tests passed in 1420.89s. Exact-head CI remains pending; no package produced.
+  Mac CI at `787f78cf` passed 1,683 tests (272 skips, 18 subtests), but 14 stream
+  scenarios failed fixture linking against the new event-signaling boundary.
+  The repaired audio fixture verifies exact token/ordering/once-only completion;
+  all 17 Windows audio checks passed in 3.24s. Production sources are unchanged.
+  Repaired CI and native Mac title gameplay remain pending.
+  See [STATUS](STATUS.md#independent-kernel-object-lifetime-2026-10-28).
+
+
+Windows boot replacement gameplay acceptance: the fresh isolated Story run
+reached scene4/mission1, moved11.046 forward and5.884 backward, fired ammo8to6,
+froze ticks through40 pause samples and advanced through60 resume samples.
+The final checkpoint was102.869s within a240s cap. Gameplay, pause menu and
+resumed captures were reviewed. The rebuilt executable SHA-256 is
+`da6ad5f39521a8b2040630354e3e7bd3e95ec8795d951541db83036dabdcd33a`.
+All26 protected files retained hash, size and modification time. This was a
+minimized synthetic-input Classic run with movies skipped; physical input,
+audio listening, full campaign and native Mac gameplay remain unverified.
+Local snapshot/tracking/migration checks passed52 tests in1755.05s.
+Boot source is part of PR #393; CI for the new boot revision remains pending.
+
+
+Boot CI fixture repair: native Mac revision ffd6cb23 had1697 passing tests and
+12 fixture compilation failures. Eleven applied the boot fixture warning policy
+to the inherited shim's unfinished SecureZeroMemory parameters; one probe hit a
+nested comment in the inherited kernel header. The shim now compiles separately
+with host diagnostics, and the probe marks inherited headers as dependencies.
+Strict warnings and undefined-behavior instrumentation remain on original code.
+Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
+No production source, built executable or prior gameplay evidence changed.

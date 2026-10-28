@@ -1,3 +1,41 @@
+## Independent kernel object lifetime (2026-10-28)
+
+Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,
+guest reference/type/duplicate services and kernel/audio/thread/USB adapters.
+All 51 candidate contracts passed, including Windows real-thread binding with
+project allocation and thread-memory providers. The full patch stack installed
+six runtime files. Windows Release build, native build checks and matching crash
+symbols passed on the working tree based on `597d5937`. All 22 generated files
+are unchanged and the generation fingerprint and repository context are current.
+All 1,049 compiler tests passed in 813.82s. All 52 snapshot/patch tracking/
+migration tests passed in 1420.89s; exact-head CI remains pending.
+Documentation/context/backlog checks passed (21 tests), as did path/package/
+crash-symbol tests (19). No package or native Mac gameplay claim. See
+[contracts and limits](../agent-context/kernel-objects.md) and MAC-118.
+
+At `787f78cf`, Mac CI passed 1,683 tests (272 skips, 18 subtests), but its 14
+stream-audio scenarios could not link the fixture: it still supplied the retired
+raw-handle resolver instead of `xbox_bridge_signal_event`. The fixture now checks
+the exact completion token, status/size publication before signaling, and no
+premature or repeated signal. All 17 Windows audio tests passed in 3.24s after
+repair. Production sources and the tested executable are unchanged; repaired CI
+and native Mac title gameplay remain pending.
+
+Fresh isolated Original 60 Story reached scene 4 / mission 1 with input enabled.
+Forward/backward distances were 11.174549 / 6.184892; ammunition fell from eight
+to six. All 40 pause samples froze level ticks; all 60 resume samples were
+unpaused with advancing ticks. Final checkpoint: 102.626s within the 240s cap.
+Runner/controller exited zero; start, pause and resumed captures were reviewed.
+All 26 protected files retain hashes, sizes and mtimes. Owned partitions, run
+locks, BMPs and crash dumps are absent. The test used injected input, minimized
+windows, Classic textures and skipped startup movies; it does not establish
+physical input, audio listening, full campaign or Mac gameplay acceptance.
+
+Executable SHA-256:
+`f56e26ad5ab7cc515539ceb72edc506884f2085dea527eb90db7d095d658b7e4`.
+The executable matches runner/game provenance, and 23 project-source plus six
+installed-runtime hashes match the recorded build inputs.
+
 ## Retired compatibility memory APIs (2026-10-28)
 
 Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.
@@ -22,8 +60,8 @@ fatal warnings. The mutation now references the helper without calling it, so
 runtime assertions still detect the ownership bypass. All six Windows adapter
 checks passed after repair in 8.62s; 21 repair documentation/context/backlog
 checks passed in 4.15s. Production sources and the tested executable
-are unchanged; repaired exact-commit CI and native Mac title gameplay remain
-pending. Consumer
+are unchanged. All 17 checks passed at repair commit `dcb2ea69`; PR #375 was
+subsequently merged. Native Mac title gameplay remains pending. Consumer
 checks passed: 43 passed, one native-Mac-only skip in 29.29s. No game package has
 been produced for this stage.
 
@@ -31445,3 +31483,40 @@ Windows build of the exact release source and pinned artwork. The direct
 game/channel values. Updated alt text, caption and assets provenance make that
 scope explicit. Reviewed the complete render; no personal files or gameplay were
 used. This documentation refresh changes no launcher code or published assets.
+
+
+### Kernel boot replacement integration in progress
+
+Original lifecycle/logging source and0216 patch are now in maintained paths.
+Maintained-path Windows12contract checks and21context/backlog checks passed.
+Migration checks passed52 tests in1755.05s; production build/game passed as recorded below. Installed
+runtime has the0216 patch applied; Release rebuild and built-in checks passed.
+The kernel archive has no native resolver/table, and the original boot source is
+selected. All22 generated C/header files are unchanged. The isolated Story run
+passed with measured acceptance recorded below.
+The new source removes obsolete native resolver from the build when applied;
+actual guest dispatch stays in the bridge. Mac execution is unverified.
+See MAC-118 and docs/agent-context/kernel-objects.md.
+
+
+Windows boot replacement gameplay acceptance: the fresh isolated Story run
+reached scene4/mission1, moved11.046 forward and5.884 backward, fired ammo8to6,
+froze ticks through40 pause samples and advanced through60 resume samples.
+The final checkpoint was102.869s within a240s cap. Gameplay, pause menu and
+resumed captures were reviewed. The rebuilt executable SHA-256 is
+`da6ad5f39521a8b2040630354e3e7bd3e95ec8795d951541db83036dabdcd33a`.
+All26 protected files retained hash, size and modification time. This was a
+minimized synthetic-input Classic run with movies skipped; physical input,
+audio listening, full campaign and native Mac gameplay remain unverified.
+Local snapshot/tracking/migration checks passed52 tests in1755.05s.
+Boot source is part of PR #393; CI for the new boot revision remains pending.
+
+
+Boot CI fixture repair: native Mac revision ffd6cb23 had1697 passing tests and
+12 fixture compilation failures. Eleven applied the boot fixture warning policy
+to the inherited shim's unfinished SecureZeroMemory parameters; one probe hit a
+nested comment in the inherited kernel header. The shim now compiles separately
+with host diagnostics, and the probe marks inherited headers as dependencies.
+Strict warnings and undefined-behavior instrumentation remain on original code.
+Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
+No production source, built executable or prior gameplay evidence changed.

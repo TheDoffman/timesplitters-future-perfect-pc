@@ -44,9 +44,9 @@ template; callers retain their existing guest-execution synchronization policy.
 
 Published TIB/TLS/object allocations remain live for the guest-memory lifetime.
 The guest can retain identity pointers, and this layer has no object reference
-counting that would prove them dead on host-thread exit. Host handles use a
-separate dispatcher allocation. Full thread/object lifecycle, failure status
-propagation, scheduling and host-worker stop/join remain replacement work.
+counting that would prove them dead on host-thread exit. Handle/pseudo identity now shares the full thread object through the
+[object owner](kernel-objects.md). Publication, failure cleanup and ordinary/explicit
+exit are owned there; scheduling and host-worker stop/join remain replacement work.
 
 ## Stack ownership and callers
 
@@ -62,12 +62,11 @@ free slot. Acquisition preserves its bytes; only its owner may release it.
 This index ABI likewise cannot distinguish a stale release after reuse.
 
 `xbox_memory_layout.c` supplies thin ABI adapters. `kernel_thread.c` retains
-host thread services and watchdog handle tracking, but no longer owns slots.
-Both guest thread-creation bridges use `bridge_spawn_thread`: failed descriptor
-allocation or `CreateThread` now releases the supplied heap stack. The timer's
-TIB failure path releases its fixed slot. Normal return and explicit guest
-termination retain their existing stack-release calls. Remaining inherited
-creation/status and TIB-failure fallback behavior is not rewritten by this patch.
+host thread services, but no longer owns slots or an unread watchdog handle.
+Both guest thread-creation bridges now use the original publication adapter
+in `guest_kernel_threads.inc`; descriptor/TIB/native creation failure releases
+unpublished ownership. The timer TIB failure still releases its fixed slot.
+The object-owner guide covers startup, ordinary return and explicit termination.
 
 USB `ohci.c` also uses these APIs: its controller thread gets a private TIB;
 each interrupt acquires a fixed slice and releases it after the callback.
@@ -82,8 +81,9 @@ boundary cases, private field copying/rebinding, ID exhaustion, failure
 atomicity, exact stack ownership, slot exhaustion/reuse and stopped/reinitialized
 states. Four native threads create 400 distinct identities while cycling heap
 and fixed stacks. Five broken variants must compile and then fail their runtime
-contracts. Actual proposed/installed initialization and ABI adapters compile
-with host-create and timer-failure probes.
+contracts. Actual initialization and storage ABI adapters retain stack/timer probes.
+`test_guest_objects.py` executes the current host-create/exit adapters with these
+real providers on Windows; native Mac binding acceptance remains separate.
 
 The optional private-US test verifies the required XBE hash, loads its bytes
 through the project loader and checks bootstrap changes against an independent

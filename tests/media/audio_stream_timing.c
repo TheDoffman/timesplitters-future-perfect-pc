@@ -25,11 +25,16 @@ void (*const hle_original_CDirectSoundStream_Release)(void) = original_release;
 void (*const hle_original_CDirectSoundStream_FlushEx)(void) = NULL;
 
 static int capture;
+static uint32_t event_signals,last_event,event_status,event_size;
 
 recomp_func_t recomp_lookup(uint32_t address) { (void)address; return NULL; }
 recomp_func_t recomp_lookup_manual(uint32_t address) { (void)address; return NULL; }
-long __stdcall xbox_NtSetEvent(void *handle, long *previous) { return 0; }
-void *xbox_bridge_resolve_handle(uint32_t token) { return NULL; }
+int xbox_bridge_signal_event(uint32_t token)
+{
+    ++event_signals;last_event=token;
+    event_status=HLE_MEM32(0x13000);event_size=HLE_MEM32(0x13004);
+    return 1;
+}
 int xbox_EnvSwitch(const char *name, int default_on) { return default_on; }
 int32_t hle_dsound_stream_adjust(uint32_t object, int *is3d) { return 0; }
 void recomp_audio_output_reset_voice(uint32_t slot) { memset(&host, 0, sizeof host); }
@@ -68,6 +73,7 @@ static Stream *setup(void)
     memset(memory, 0, sizeof memory);
     memset(&host, 0, sizeof host);
     captured_bytes = 0; capture = 0;
+    event_signals=last_event=event_status=event_size=0;
     g_xbox_mem_offset = (ptrdiff_t)memory;
     g_esp = 0x10000;
     test_now = 1000;
@@ -180,13 +186,21 @@ static int pause_resume(void)
 static int completion(void)
 {
     Stream *s = setup();
+    HLE_MEM32(0x12008)=0x13004;
+    HLE_MEM32(0x12010)=0x48010021;
     packet(s, 0x12000, 0x13000);
+    CHECK(event_signals==0);
     host.played = 95998; host.queued = 1;
     tick(s, 3000);
     CHECK(s->count == 1);
+    CHECK(event_signals==0);
     host.played = 96000; host.queued = 0;
     tick(s, 3010);
     CHECK(s->count == 0 && HLE_MEM32(0x13000) == XMP_STATUS_SUCCESS);
+    CHECK(event_signals==1 && last_event==0x48010021);
+    CHECK(event_status==XMP_STATUS_SUCCESS && event_size==96000);
+    tick(s,3020);
+    CHECK(event_signals==1);
     return 0;
 }
 

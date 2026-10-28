@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "f2cbfa108b83cd9a3ee93cc2b8e1603d848b1b65507259086d68a4c0ab19e414",
+  "loaderSha256": "e81df9fec66ba2aa1fd9bda5bbf0a514223611f0a69352047973abae1aabfbcd",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2256,6 +2256,28 @@
         "src/kernel/xbox_memory_layout.h",
         "src/platform/win32_compat.c",
         "src/platform/win32_compat.h"
+      ]
+    },
+    {
+      "name": "0215-independent-kernel-objects.patch",
+      "path": "patches/compiler/0215-independent-kernel-objects.patch",
+      "sha256": "a817542c629f87ba7e807912bc3c8790797c893590ba2f9b6671c32798e6ecc3",
+      "targets": [
+        "src/hle/hle_dsound_stream.c",
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_thread.c",
+        "src/kernel/xbox_memory_layout.h",
+        "src/usb/ohci.c"
+      ]
+    },
+    {
+      "name": "0216-independent-kernel-boot.patch",
+      "path": "patches/compiler/0216-independent-kernel-boot.patch",
+      "sha256": "65e6bd9ae44ba7899ef96e551e945b76f2968acb0767c3d2686b9203d419e802",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h"
       ]
     },
     {

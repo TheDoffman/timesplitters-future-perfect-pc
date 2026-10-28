@@ -1,5 +1,7 @@
 # Independent tooling contracts
 
+Handle/object lifetime and kernel binding now use [original providers](kernel-objects.md). Native object-manager exports and other kernel/device services remain replacement work.
+
 Native Nt host mappings: [reservation ownership and protection](native-virtual-memory.md).
 
 Guest Mm/statistics: [ownership, host snapshots and ABI](guest-memory-services.md).

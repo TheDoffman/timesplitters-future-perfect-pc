@@ -1,0 +1,37 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -17,7 +17,6 @@
+     kernel_ob.c
+     kernel_io.c
+     kernel_crypto.c
+-    kernel_thunks.c
+     kernel_bridge.c
+     xbox_memory_layout.c
+     xbox_watchpoint.c
+@@ -34,6 +33,7 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_kernel_boot.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_objects.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_object_scope.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_object_services.c")
+--- a/src/kernel/kernel.h
++++ b/src/kernel/kernel.h
+@@ -506,14 +506,10 @@
+  */
+ void xbox_kernel_get_thunk_address(uint32_t *xbox_va, uint32_t *count);
+ 
+-extern ULONG_PTR xbox_kernel_thunk_table[XBOX_KERNEL_THUNK_TABLE_SIZE];
+-
+-/* Initialize the thunk table - must be called before game code runs */
++/* Start project kernel services before entering guest code. Import resolution
++ * is owned by xbox_kernel_bridge_init, not a native function-pointer table. */
+ void xbox_kernel_init(void);
+ void xbox_kernel_shutdown(void);
+-
+-/* Resolve a kernel ordinal to a function/data pointer */
+-ULONG_PTR xbox_resolve_ordinal(ULONG ordinal);
+ 
+ /* Kernel bridge (kernel_bridge.c) - resolve kernel thunks in Xbox memory */
+ void xbox_kernel_bridge_init(void);
