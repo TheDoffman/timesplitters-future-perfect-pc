@@ -1,5 +1,61 @@
 # Independent tooling contracts
 
+## Guest allocation ownership
+
+`src/runtime/guest_allocation.c` / `guest_allocation.h` own heap, virtual
+reservation and physical allocation metadata, with no toolkit headers or
+host mapping calls. Live intervals are sorted by address; unowned gaps supply
+lowest aligned fit. Heap and virtual reservations share ownership, preventing
+their overlap when mappings extend above physical RAM. Freed records compact
+immediately; no tombstones, untracked overflow allocations or split entries.
+
+Heap requests have minimum size 16/alignment 4 and zero their returned size.
+Reservations begin above physical RAM, default to 4096 alignment and neither
+zero nor expose free/query support. Physical requests own page-rounded spans
+but zero/query requested bytes; zero-size requests still own a page. Explicit
+pins retain their requested base and reject live overlap before zeroing.
+The synthetic kernel page is protected, the ordinary arena skips the low 1 MiB,
+and the GPU instance tail stays reserved. Inclusive range bounds constrain
+requested bytes; page padding may exceed the high bound within the usable
+window. Invalid alignment, overflow, exhaustion and metadata-capacity failure
+leave ownership and memory unchanged.
+
+Physical iteration returns live allocations in address order; the APU consumer
+keys its doorbell cache by address. Physical extent returns the highest owned
+end minus origin, at least the ordinary arena floor. It must not become a sum
+of live bytes: the GPU uses that extent to resolve physical surfaces. Queries
+return remaining requested bytes from an interior address, excluding padding,
+protected ranges and reservations. Exact-base releases do not alter contents.
+
+Host atomics serialize metadata and allocation zeroing. Initialization requires
+quiescent callers and rejects invalid/overlapping host storage without changing
+the prior context. Stop disables requests before teardown; this does not own
+or audit all guest-thread and host-map lifetimes. The provider changes allocation
+placement/slack policy and rejects formerly overlapping or untracked claims;
+it does not promise inherited address sequences or complete Xbox VM semantics.
+
+Additive `0206-independent-guest-allocations.patch` removes inherited allocator
+bodies, retains ABI adapters, starts ownership before device workers, and stops
+it before mapping teardown. The kernel bridge replaces unchecked pin zeroing
+with `xbox_ContiguousAllocAt`, rejects reversed/impossible physical ranges and
+uses the bounded allocator for ordinary range requests. Shared kernel CMake
+builds the same provider on both hosts. TIB/threads, host maps/MMIO, other kernel
+services and the larger runtime remain transitional.
+
+`tests/compiler/test_guest_allocation.py` compiles the provider, proposed/current
+ABI adapters and bridge with MSVC /W4 /WX or Clang -Wall -Wextra -Werror.
+Independent byte occupancy and exact snapshots cover 2,100 randomized operations;
+guarded high-address/lifecycle probes test invalid configuration preservation,
+range limits, protected pages, exhaustion, padding and restart. Four native
+threads execute 8,000 allocation/write/query/release cycles; five compiled
+negative controls must fail. Existing APU discovery and GPU address resolution
+functions also execute against the provider: address-keyed audio history survives
+reindexing, and GPU physical coverage includes gaps below the highest owner.
+Those inherited consumer bodies are extracted into temporary test storage,
+not shipped as new fixtures. These probes are separate from full patch
+migrations, builds and isolated gameplay; measured acceptance is in STATUS
+and MAC-110. Native Mac title execution remains unverified here.
+
 ## Native image loading
 
 `src/runtime/guest_image.c` / `guest_image.h` own XBE byte inspection and

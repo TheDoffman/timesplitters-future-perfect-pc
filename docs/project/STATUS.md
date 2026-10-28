@@ -1,3 +1,47 @@
+## Project guest allocation ownership (2026-10-28)
+
+Working tree based on 1976a07d on feature/independent-exchange, after all 17
+image-loader CI checks passed at that revision. Additive patch 0206 replaces inherited
+heap/reservation/physical allocation bodies with original project ownership.
+The kernel bridge validates pins before zeroing and respects bounded physical
+requests. Host maps, TIB/thread construction, MMIO and other services remain
+transitional. See [contracts](../agent-context/independent.md#guest-allocation-ownership)
+and MAC-110 for scope and deliberate placement/failure-policy differences.
+
+Windows x64/MSVC candidate acceptance with CI=true: 20 checks passed in 15.67s, including 2,100
+randomized byte-occupancy comparisons, exact memory snapshots, guarded boundary
+and invalid-configuration probes, 8,000 concurrent allocation cycles, five compiled
+negative controls, actual proposed init/adapters/kernel bridge and existing APU/
+GPU consumers. The latter use temporary extracted consumer bodies; the APU
+fixture relocates its physical window within one native array, while separate
+bridge/high-address checks cover actual guest address ranges. The candidate
+patch passed a dry run with the maintained CRLF context policy. These results
+precede installation and do not prove production gameplay or native Mac behavior.
+
+The complete stack installed successfully, updating five runtime files. All 22
+generated C/header files remain byte-identical and the generation fingerprint
+is current. All 858 installed compiler checks passed in 370.38s. Normal Windows
+Release build, bundled native checks and matching crash symbols passed with
+unchanged `/DWIN32 /D_WINDOWS` C flags. The allocator compiled without warnings;
+unrelated existing runtime warnings remain. All 73 historical patch migration,
+tracking, snapshot, context and backlog checks passed in 933.49s.
+
+The isolated Original 60 Story replay reached scene 4 / mission 1 with input enabled,
+moved 11.174537 forward and 6.193569 backward, and fired from eight to six rounds. All 40
+pause samples froze level ticks; all 60 resume samples stayed unpaused with ticks
+advancing over the window. Final checkpoint: 101.633s within the 240-second cap;
+runner/controller exited zero. Start/pause/resume captures were reviewed.
+All 26 protected settings/save/fixture files retained hashes, sizes and mtimes;
+no owned run locks, disposable partitions or crash dumps remained.
+
+Tested executable SHA-256:
+`8bfdbe644eb188c2a990317114c499c28bc013221fe13bcf0d78e9c14c1ba392`.
+Build provenance: uncommitted allocation stage based on 1976a07d, Windows x64/MSVC.
+The replay uses injected input, minimized windows, Classic textures and skipped
+startup movies; physical input, audio listening and full campaign are unverified.
+Build/test/package entry points resolve at their reorganized paths. No new package
+or native Mac title verification; allocator-head remote CI remains pending.
+
 ## Native image CI diagnostic repair (2026-10-28)
 
 Both native jobs for f3fd8a08 reached the workflow's 30-minute timeout. The
@@ -11,8 +55,9 @@ The test now compares the same complete buffers and raises a bounded
 first-mismatch/length message instead of asking pytest to format their entire
 contents. With `CI=true`, all **64 image checks passed in 6.33s**, including
 all three compile-first negative controls. No compiler flags, test selection,
-timeouts, runtime code or acceptance criteria changed. Remote CI for this repair
-remains pending; the earlier f3fd8a08 run did not pass. Existing production build
+timeouts, runtime code or acceptance criteria changed. All 17 checks at 1976a07d
+passed, including Windows/macOS native and patch upgrades; the earlier f3fd8a08
+run did not pass. Existing production build
 and gameplay evidence below is unchanged, not a new game test for this repair.
 
 ## Project native image loading (2026-10-28)

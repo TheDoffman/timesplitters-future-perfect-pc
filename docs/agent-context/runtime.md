@@ -1,5 +1,9 @@
 # Runtime and patch navigation
 
+Heap/reservation/physical allocation now routes through the project ownership
+provider; see [allocation contracts](independent.md#guest-allocation-ownership).
+Host mappings and thread/TIB services remain transitional.
+
 Image inspection/loading now routes through the project provider before host
 mapping and during materialization; see [image contracts](independent.md#native-image-loading).
 Memory mappings, TIB construction and device services remain transitional.
@@ -547,10 +551,10 @@ vehicle physics before live surface support, then full-float preservation and
 flip handoff. Numeric addition dispatch retains both physics secondary-step
 rounding and Escort recovery; neither replaces the other during integration.
 
-Top-level `patches/*.patch` is the active stack. The legacy subdirectory contains
-migration inputs only. The loader moves networking ahead of native boot, build
+Active patches are discovered recursively under `patches/`, excluding every
+`legacy/` directory; those contain migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
-consult the generated ordered index instead of guessing from the number of z's.
+consult the generated ordered index and folder map for current names and paths.
 The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
 within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches

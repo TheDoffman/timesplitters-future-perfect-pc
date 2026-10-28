@@ -259,6 +259,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-107 | Project native continuation service | Awaiting validation |
 | MAC-108 | Project guest state and ABI diagnostics | Awaiting validation |
 | MAC-109 | Project native image loading | Awaiting validation |
+| MAC-110 | Project guest allocation ownership | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -6791,7 +6792,33 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   pause/resume. Windows passed 64 installed image and 838 full compiler checks, 73 migrations/
   repository checks, normal Release/native build checks and isolated Story
   movement/fire/pause/resume. Candidate baseline and final Python byte oracles
-  passed. Exact-stage native Mac CI/title acceptance remains pending. The
+  passed. Native Mac title acceptance remains pending. The
   f3fd8a08 native CI jobs timed out formatting an expected byte-mismatch report;
   the diagnostic repair passed all64 image checks locally with CI=true and
-  awaits remote acceptance. Runtime code is unchanged. See STATUS.md.
+  passed all 17 remote checks at 1976a07d, including Windows/macOS native and
+  patch upgrades. Runtime code is unchanged. See STATUS.md.
+
+
+### MAC-110 - Project guest allocation ownership
+
+- **Status:** Awaiting validation
+- **PC behavior:** Project heap, virtual-reservation and physical ownership
+  replace inherited allocator bodies through additive patch 0206. Exact/ranged physical
+  requests validate before zeroing, metadata exhaustion fails atomically, and
+  graphics/audio retain extent/enumeration contracts. Placement/slack policy
+  changes are explicit; see [allocation contracts](../agent-context/independent.md#guest-allocation-ownership).
+- **Source/PR:** `src/runtime/guest_allocation.c`, `guest_allocation.h`,
+  `patches/compiler/0206-independent-guest-allocations.patch`,
+  `tests/compiler/test_guest_allocation.py` and its original native harnesses;
+  PR #375, uncommitted working tree based on 1976a07d.
+- **Mac support present:** Same portable provider and shared kernel routes;
+  Clang atomics implement serialization, with no new platform adapter or SDK.
+- **Remaining adaptation:** None identified for this bounded ownership layer.
+  Host maps, MMIO, threads and broader kernel/device replacement remain separate.
+- **Acceptance:** Windows: 858 installed compiler tests passed, including 20
+  allocation checks with 2,100 randomized operations, 8,000 concurrent cycles and
+  five negative controls. Release/native checks and isolated Story movement,
+  firing and pause/resume passed; protected files stayed unchanged. All 73
+  migration/tracking/snapshot/context/backlog checks passed. New-stage
+  portable Mac CI and native Mac title gameplay remain unverified. See
+  [STATUS](STATUS.md#project-guest-allocation-ownership-2026-10-28) for updates.

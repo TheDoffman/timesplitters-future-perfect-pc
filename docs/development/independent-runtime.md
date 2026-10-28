@@ -1,5 +1,12 @@
 # Independent runtime replacement
 
+Guest heap/reservation/physical allocation now has project ownership in
+`src/runtime/guest_allocation.c`, installed by additive patch0206. The bridge
+validates fixed/ranged requests before zeroing. Host mappings, TIB/thread
+construction and other kernel services remain inherited; see
+[allocation contracts](../agent-context/independent.md#guest-allocation-ownership)
+and MAC-110 for measured acceptance and limits.
+
 The native XBE loader now has project inspection/materialization and bootstrap
 validation in `src/runtime/guest_image.c`, installed by additive patch 0205.
 It removes inherited image parsing/copying and title decoding while keeping

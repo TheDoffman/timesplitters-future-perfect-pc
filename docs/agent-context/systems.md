@@ -1,5 +1,7 @@
 # Subsystem entry points
 
+Guest allocation: [provider and APU/GPU consumer contracts](independent.md#guest-allocation-ownership).
+
 Image loading/bootstrap, guest state, ABI reports, continuations and remaining
 services: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
 

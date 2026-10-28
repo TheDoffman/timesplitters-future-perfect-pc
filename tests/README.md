@@ -2,7 +2,7 @@
 
 | Folder | Responsibility |
 | --- | --- |
-| `compiler/` | Translation, disassembly, input reading and generation contracts. |
+| `compiler/` | Translation, disassembly, input reading, generation and guest execution contracts. |
 | `repository/` | Patch migration, context, SDK pins, CI gates and repository maintenance. |
 | `gameplay/` | Timing, animation, physics and bounded real-game acceptance. |
 | `graphics/` | Renderer, shader, surface, overlay and UI contracts. |

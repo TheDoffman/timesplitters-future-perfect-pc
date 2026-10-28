@@ -1,5 +1,9 @@
 # Investigation memory and handoffs
 
+Allocation ownership and bridge entry points now use the project provider;
+see [contracts and consumer constraints](independent.md#guest-allocation-ownership).
+Trace old addresses only as historical evidence: lowest-fit placement may differ.
+
 The final replacement order includes call frames, vector support, scalar support
 canonical runtime header, its consumer-fixture repair, branch feedback, nonlocal
 jumps, guest state/reports, image loading and source layout. Historical fixtures omit new replacements from old
