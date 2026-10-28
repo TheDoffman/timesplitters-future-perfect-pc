@@ -77,6 +77,12 @@ remain separate from installation state.
 retains labeled-by accessibility. Graphics lists display, camera, frame rate and
 quality before texture management, with the existing fixed Save/Cancel footer.
 Both hosts consume these page helpers; no duplicate native layout is required.
+`PageTheme.Details` supplies initially collapsed, keyboard-operable explanations.
+Resolution/FOV/high-refresh/performance help, texture help/update preferences,
+Discord setup and backup-storage notes use it. Texture actions, installed/available
+versions, saved mode, Beta/compatibility warnings and restore protection stay
+visible. Settings captions reserve 20px, with shorter labels; paired inputs retain
+labeled-by accessibility. Layout changes do not alter defaults or persistence.
 Visual-only validation uses the existing Windows `--render-settings-graphics`,
 `--render-settings-preview`, `--render-repair-preview`, `--render-news-preview`
 and `--render-versions-preview` modes plus shared UI checks. Native Mac layout,

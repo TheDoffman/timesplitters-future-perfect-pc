@@ -33,6 +33,13 @@ namespace TimeSplitters.Launcher
             if(description.Length>0){var hint=Text(description,13,"#B4C7D8");hint.Margin=new Thickness(0,4,0,10);body.Children.Add(hint);}
             var card=Card(body);card.Margin=new Thickness(0,0,0,14);parent.Children.Add(card);return body;
         }
+        public static Expander Details(Panel parent,string title,params UIElement[] items)
+        {
+            var body=new StackPanel {Margin=new Thickness(0,8,0,4)};
+            foreach(var item in items)body.Children.Add(item);
+            var details=new Expander {Header=title,Content=body,IsExpanded=false,Foreground=Brush("#B4C7D8"),FontSize=12,Margin=new Thickness(0,10,0,0)};
+            parent.Children.Add(details);return details;
+        }
         public static StackPanel Header(string category,string title,string description)
         {
             var header=new StackPanel {Margin=new Thickness(0,0,0,10)};

@@ -2433,6 +2433,15 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Information density (2026-10-27, local `feature/launcher-density-1027`):**
+  Shared `PageTheme.Details` collapses optional explanation/setup content in
+  Settings and Saves; shorter copy and captions reduce reading and scrolling.
+  Texture actions/state, Beta/compatibility warnings and restore protection stay
+  visible. Windows builds, existing shared UI/settings/updater checks and page
+  renders pass. Avalonia uses the same controls with no extra adapter needed;
+  native Mac compilation, expansion/focus and scaling remain awaiting validation.
+  [Evidence](STATUS.md#launcher-information-density-2026-10-27).
+
 - **Shared visual polish (2026-10-27, local `feature/launcher-unified-pages-1027`):**
   `PageTheme` now supplies consistent headers and text-labeled status badges to
   Settings, Saves, Maintenance, What's New and Game versions. Settings field

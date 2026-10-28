@@ -29320,3 +29320,27 @@ field alignment, badges, sidebar and fixed footer remain readable.
 No personal saves/settings or game data were used. Native Mac compilation,
 rendering/scaling and keyboard acceptance were not run on this Windows computer.
 No release version was changed and nothing was pushed or published.
+
+## Launcher information density (2026-10-27)
+
+Local `feature/launcher-density-1027`, based on visual-polish revision `01c66f42`,
+reduces repeated instructions in Settings, Saves, Maintenance and Game versions.
+Shared `PageTheme.Details` exposes optional explanations through collapsed
+expanders: resolution/FOV/high-refresh/performance help, texture behavior/update
+preferences, Discord setup and backup-storage details. Texture check/download/
+verify actions, installed/available versions, saved/draft mode, Beta warnings,
+compatibility warnings and pre-restore protection remain visible. Captions are
+shorter and reserve 20px; paired inputs retain labeled-by accessibility. No
+settings defaults, persistence, download or backup policies changed.
+
+Windows .NET Framework builds with pinned artwork and the complete existing
+launcher suite pass: 113 updater checks, 27 shared UI groups, 19 texture checks,
+28 download/recovery, 13 version, 10 startup, 30 news, 38 settings, 14 session and
+20 maintenance checks plus crash reporting. Portable launcher/native-source/
+context/backlog checks pass 52 tests plus 26 subtests. Inspected 1152×772 controls,
+graphics, Discord and repair renders, and 900×720 Saves and collapsed/expanded
+texture views using synthetic preview data. Main actions and the Save/Cancel
+footer remain visible; extra help expands inside the scrollable page.
+Native Mac compilation, UI expansion/focus and display scaling remain untested
+on this Windows host. Personal saves/settings and the ISO were not used. Nothing
+was pushed or published and no release version changed.

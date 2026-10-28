@@ -57,7 +57,7 @@ namespace TimeSplitters.Launcher
             AutomationProperties.SetName(notes,"Selected game release notes");Grid.SetRow(notes,1);body.Children.Add(notes);
             var card=PageTheme.Card(body);Grid.SetRow(card,1);View.Children.Add(card);
             var footer=new StackPanel {Margin=new Thickness(0,14,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
-            footer.Children.Add(PageTheme.Text("Switches the installed game only. Saves, settings, imported data and the launcher are kept. Back up saves before testing older builds: save compatibility can vary.",12,"#B4C9DA"));
+            footer.Children.Add(PageTheme.Text("Saves, settings and game data are kept. Back up before switching: save compatibility varies.",12,"#B4C9DA"));
             var actions=new WrapPanel {Margin=new Thickness(0,13,0,0)};footer.Children.Add(actions);
             Install=Action("Install selected version");PageTheme.Primary(Install);OnGitHub=Action("View release ↗");Refresh=Action("Refresh list");
             actions.Children.Add(Install);actions.Children.Add(OnGitHub);actions.Children.Add(Refresh);

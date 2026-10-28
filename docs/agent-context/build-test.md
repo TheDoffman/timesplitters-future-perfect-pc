@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Launcher Header/Badge polish uses existing render modes and shared UI checks.
+Launcher density and collapsed help use existing renders and shared UI checks.
 
 Source/tool/test paths now use responsibility folders; see
 [layout](../development/repository-layout.md). Commands share

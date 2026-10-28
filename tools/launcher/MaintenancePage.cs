@@ -108,7 +108,7 @@ namespace TimeSplitters.Launcher
                     top.Children.Add(icon);content.Children.Add(top);
                     var cardTitle=Text(i==0?"Game installation":"Launcher",19);cardTitle.FontWeight=FontWeights.SemiBold;content.Children.Add(cardTitle);
                     var summary=PageTheme.Text("Ready for a file check",12,"#A9BDD0");summary.Margin=new Thickness(0,8,0,0);summary.MinHeight=36;content.Children.Add(summary);
-                    var help=PageTheme.Text(i==0?"Checks the installed game runtime. Repair restores its exact release.":"Checks the launcher and its artwork. Repair reinstalls this version.",12,"#9EB4C8");help.Margin=new Thickness(0,8,0,20);help.MinHeight=34;content.Children.Add(help);
+                    var help=PageTheme.Text(i==0?"Verify the game or restore its exact release.":"Verify the launcher and artwork, or reinstall this version.",12,"#9EB4C8");help.Margin=new Thickness(0,8,0,20);help.MinHeight=34;content.Children.Add(help);
                     var buttons=new WrapPanel();var verify=Button("Verify files",i==0?"VerifyGameFiles":"VerifyLauncherFiles");PageTheme.Primary(verify);
                     var repair=Button("Repair files",i==0?"RepairGameFiles":"RepairLauncherFiles");repair.IsEnabled=false;Ui.Tip(repair,"Verify first. Repair requires a published copy of this version and a closed game.");
                     buttons.Children.Add(verify);buttons.Children.Add(repair);content.Children.Add(buttons);
@@ -118,12 +118,12 @@ namespace TimeSplitters.Launcher
                 var safety=new DockPanel();OpenFiles=Button("Open game folder ↗","OpenGameFiles");OpenFiles.Margin=new Thickness(18,0,0,0);OpenFiles.VerticalAlignment=VerticalAlignment.Center;
                 Ui.Tip(OpenFiles,"Open the installation folder to inspect game files.");DockPanel.SetDock(OpenFiles,Dock.Right);safety.Children.Add(OpenFiles);
                 var note=new StackPanel();var noteTitle=Text("Saves, settings and game data stay safe",13);noteTitle.FontWeight=FontWeights.SemiBold;note.Children.Add(noteTitle);
-                var noteText=PageTheme.Text("Repair replaces release-owned files. Your ISO, texture packs and personal files are kept.",12,"#9EB4C8");noteText.Margin=new Thickness(0,5,0,0);note.Children.Add(noteText);safety.Children.Add(note);
+                var noteText=PageTheme.Text("Only release files are replaced. ISO, textures and personal files are kept.",12,"#9EB4C8");noteText.Margin=new Thickness(0,5,0,0);note.Children.Add(noteText);safety.Children.Add(note);
                 var safetyCard=PageTheme.Card(safety);safetyCard.Margin=new Thickness(0,0,0,16);body.Children.Add(safetyCard);
                 Report.MaxHeight=200;Report.MinHeight=100;
                 details=new Expander { Name="VerificationDetails",Header="Verification details",Foreground=Brush("#C7D9E8"),FontSize=13,Content=Report,IsExpanded=false };
                 Report.Margin=new Thickness(0,14,0,0);var detailCard=PageTheme.Card(details);detailCard.Padding=new Thickness(18,14,18,14);body.Children.Add(detailCard);
-                var hint=PageTheme.Text("Start with Verify files. If a check finds a problem, review the details before choosing Repair files.",12,"#8FA8BD");hint.Margin=new Thickness(2,16,2,16);body.Children.Add(hint);
+
             }
             var footer=new StackPanel { Margin=new Thickness(0,16,0,0) };Grid.SetRow(footer,2);View.Children.Add(footer);
             recoveryActions=new WrapPanel { Margin=new Thickness(0,0,0,12) };

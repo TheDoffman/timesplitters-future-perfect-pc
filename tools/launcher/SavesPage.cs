@@ -34,19 +34,20 @@ namespace TimeSplitters.Launcher
             status=PageTheme.Text("Automatic backups are created before game updates and restores.",12);status.Name="SaveManagerStatus";footer.Children.Add(status);
             var scroll=new ScrollViewer {VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,Content=body};dock.Children.Add(scroll);
             body.Children.Add(PageTheme.Header("SAVE MANAGEMENT","Saves & backups","Protect your progress before updates or testing a different game version."));
-            var overview=PageTheme.Section(body,"Your saves","Backups stay on this computer and include the game version and date.");
+            var overview=PageTheme.Section(body,"Your saves","Local backups, labeled by date and game version.");
             summary=PageTheme.Text("",14);overview.Children.Add(summary);
             var actions=new WrapPanel {Margin=new Thickness(0,12,0,0)};overview.Children.Add(actions);
             Backup=Button("Back up now","CreateSaveBackup");PageTheme.Primary(Backup);actions.Children.Add(Backup);
             OpenSaves=Button("Open saves folder","OpenSaveFolder");actions.Children.Add(OpenSaves);
             OpenBackups=Button("Open backups folder","OpenSaveBackups");actions.Children.Add(OpenBackups);
-            var restore=PageTheme.Section(body,"Restore a backup","Close the game first. Your current saves are backed up before replacement.");
+            var restore=PageTheme.Section(body,"Restore a backup","Close the game first. Current saves are backed up before replacement. Compatibility varies by game version.");
             restore.Children.Add(Choices);details=PageTheme.Text("Select a restore point.",12,"#B4C7D8");details.Margin=new Thickness(0,10,0,12);restore.Children.Add(details);
             var restoreActions=new WrapPanel();restore.Children.Add(restoreActions);
             Restore=Button("Restore selected backup","RestoreSaveBackup");restoreActions.Children.Add(Restore);
             Refresh=Button("Refresh list","RefreshSaveBackups");restoreActions.Children.Add(Refresh);
-            var storage=PageTheme.Section(body,"Backup storage","Empty regions of the game's virtual disks are omitted from the archive.");
-            storage.Children.Add(PageTheme.Text("Backups are kept until you remove them. Their logical size may be much larger than the space used. Save compatibility can vary between game versions.",12));
+            PageTheme.Details(body,"About backups & storage",
+                PageTheme.Text("Backups remain on this computer until you remove them. Empty virtual-disk regions are omitted, so logical size may exceed storage used.",12),
+                PageTheme.Text("Automatic backups run before game updates and restores. Game files, settings and your ISO are kept.",12)).Name="SaveStorageDetails";
             confirmation=new Border {Background=PageTheme.Brush("#122233"),BorderBrush=PageTheme.Brush("#86CDFF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(28)};
             View.Children.Add(confirmation);Ui.Show(confirmation,false);
             Choices.SelectionChanged+=(s,e)=>Select();Refresh.Click+=(s,e)=>Reload();
@@ -68,7 +69,7 @@ namespace TimeSplitters.Launcher
                 string id=(Choices.SelectedItem as SaveBackup)==null?null:((SaveBackup)Choices.SelectedItem).Id;
                 var items=preview?new SaveBackup[0]:SaveBackups.List(root,Report);Choices.Items.Clear();foreach(var item in items)Choices.Items.Add(item);
                 Choices.SelectedItem=items.FirstOrDefault(i=>i.Id==id)??items.FirstOrDefault();
-                summary.Text=items.Length==0?"No backups yet. Create your first backup before changing game versions.":items.Length+" restore point(s) · "+(items.Sum(i=>i.StoredBytes)/1048576.0).ToString("0.0")+" MiB stored";
+                summary.Text=items.Length==0?"No backups yet. Select Back up now to protect your progress.":items.Length+" restore point(s) · "+(items.Sum(i=>i.StoredBytes)/1048576.0).ToString("0.0")+" MiB stored";
                 Select();
             }catch(Exception ex){Report("Backup list: "+ex.Message);Restore.IsEnabled=false;}
         }
