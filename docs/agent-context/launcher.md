@@ -89,6 +89,12 @@ Save-button state and the shared visual/density changes. The existing tag-trigge
 publication; platform manifests and versioned ZIP naming stay unchanged.
 A version commit alone is not a published release.
 
+`Ui.TextChanged` uses Avalonia's synchronous `TextProperty` notification; the
+routed TextChanged event is deferred and left Save's draft snapshot stale until
+the dispatcher ran. WPF retains its immediate event. The existing shared Save
+state regression exercises immediate edit/revert for every text field on both
+hosts; do not weaken it with sleeps or omit the Mac path.
+
 ## Shared page presentation
 
 `PageTheme.Header` owns the category, 28px title, description and silver-blue

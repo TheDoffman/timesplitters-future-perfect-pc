@@ -2433,6 +2433,12 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **PR #390 native notification repair:** First hosted Mac build compiled/signed
+  and passed save/texture regressions, but deferred TextChanged left the Save
+  button stale during immediate text edits. Ui.TextChanged now observes native
+  TextProperty notifications; the unchanged shared edit/revert contract will
+  rerun on Mac. Full native acceptance remains awaiting validation.
+
 - **Information density (2026-10-27, local `feature/launcher-density-1027`):**
   Shared `PageTheme.Details` collapses optional explanation/setup content in
   Settings and Saves; shorter copy and captions reduce reading and scrolling.

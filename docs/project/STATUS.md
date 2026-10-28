@@ -29422,3 +29422,14 @@ revision can be tagged `launcher-v1.4.0` and built/published by the maintained
 Windows+Mac release workflow. Game VERSION is unchanged. No existing release,
 tag, asset name or updater manifest format is replaced. Publication remains
 pending the required main-branch checks and both platform package validations.
+
+### Native Save-button notification repair during PR #390 validation
+
+The first Mac CI build compiled and signed the app, passed native regressions,
+sparse save round-trip/recovery/automatic-backup and texture-health UI checks,
+then failed the shared Save-state test on an immediate sensitivity edit. Avalonia
+routes TextChanged later on its dispatcher, unlike WPF's immediate notification.
+The thin `Ui.TextChanged` adapter now observes TextBox.TextProperty directly so
+shared draft state tracks the actual value synchronously. WPF is unchanged.
+The existing edit/revert regression remains unchanged and will validate the fix
+on the native runner; no tests were skipped or relaxed.
