@@ -35,6 +35,10 @@ Both bounded host runners use `testing_profile.feedback_dump_path` to validate
 the target and companion paths and override inherited output settings with paths
 inside the disposable test directory, including native unlocked-profile runs.
 
+The double-address negative control explicitly discards its first value with
+`(void)`, retaining both evaluations. It must compile with Clang `-Werror` before
+the behavioral oracle rejects it; a warning failure is not a passing control.
+
 ## Canonical guest header
 
 `src/runtime/recomp_types.h` is the project-owned interface. It retains the

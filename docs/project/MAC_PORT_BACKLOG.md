@@ -6661,3 +6661,7 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   Release builds and isolated Story movement/fire/pause/resume replays.
   See STATUS.md for hashes, measurements and limits. Native Mac title acceptance
   remains pending; shared-source and Windows results do not establish it.
+  The first Mac CI run at 3965c6df exposed a warning in the deliberately broken
+  double-address fixture; it now explicitly discards the first value while
+  retaining both evaluations. The fixture repair awaits Mac CI acceptance and
+  changes no runtime source or Windows gameplay evidence.

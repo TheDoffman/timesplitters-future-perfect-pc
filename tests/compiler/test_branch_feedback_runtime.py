@@ -26,7 +26,10 @@ def build(tmp_path,variant='production',enabled=True):
     elif variant=='lost_endpoint':
         header=header.replace('address < RECOMP_ICALL_FB_BASE + RECOMP_ICALL_FB_SIZE;','address < RECOMP_ICALL_FB_BASE + RECOMP_ICALL_FB_SIZE - 1u;')
     elif variant=='double_address':
-        header=header.replace('(uint32_t)(address);','(uint32_t)((address),(address));')
+        # Intentionally discard the first value, but retain its side effects.
+        # The mutation must compile under Clang -Werror before the oracle
+        # rejects evaluating the address twice.
+        header=header.replace('(uint32_t)(address);','(uint32_t)((void)(address),(address));')
     (tmp_path/'tsfp_branch_feedback.h').write_text(header)
     implementation=tmp_path/'guest_branch_feedback.c';implementation.write_text(source)
     harness=tmp_path/'recorder.c';harness.write_bytes((ROOT/'tests/compiler/branch_feedback_runtime.c').read_bytes())

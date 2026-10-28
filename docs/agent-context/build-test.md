@@ -9,7 +9,7 @@ Patch discovery/migration: [folder rules](../../patches/README.md).
 RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
 
 [Header/feedback isolation, scalar/vector, call frames, dispatch and ABI/CLI checks](independent.md).
-Guarded-call and feedback-recorder oracles use the native adapter, including MSVC.
+Recorder mutations must compile under Clang `-Werror`; see linked contracts.
 
 Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 

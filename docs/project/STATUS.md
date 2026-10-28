@@ -1,5 +1,15 @@
 ## Project branch-feedback provider (2026-10-27)
 
+CI follow-up to `3965c6df`: the Mac native job passed 1,406 checks but failed the
+double-address negative control at compilation. Its deliberately duplicated
+expression discarded a value without an explicit cast, which Clang rejects
+under `-Werror`. The fixture now casts only that first value to void, preserving
+the second evaluation and the expected behavioral rejection. Warnings remain
+errors. All 39 recorder/context checks passed locally on Windows (28.67s).
+Production sources, patches, generation and the tested normal executable hash
+are unchanged; no new build or gameplay run is claimed for this fixture repair.
+Mac acceptance of the repair remains a separate CI check.
+
 Based on `676545eb` on `feature/independent-exchange`, with all 17 prerequisite
 CI checks passed. The additive `0202-independent-branch-feedback.patch` replaces
 the inherited recorder C/header with compatibility bridges to original project
