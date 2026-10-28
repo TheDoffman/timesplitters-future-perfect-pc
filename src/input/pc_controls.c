@@ -586,6 +586,10 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
     }
     /* No guest callbacks run before this local mapping snapshot expires. */
     PcGuestRegion region=pc_camera_mouse_region(player,fov_object,memory_offset);
+    if (player && !pc_camera_mouse_primary_in_region(player,memory_offset,&region)) {
+        ReleaseSRWLockExclusive(&lock);
+        return;
+    }
     pc_reload_guest_context(&input.reload,player,memory_offset,GetTickCount64(),&region);
     terminal = pc_terminal_mouse_in_region(&input, GetTickCount64(), sensitivity, player, memory_offset, pc_native_rate()!=0,&region);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
