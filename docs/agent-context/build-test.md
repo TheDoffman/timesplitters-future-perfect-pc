@@ -8,7 +8,7 @@ Portable probes retain isolated imports.
 
 Patch discovery/migration: [folder rules](../../patches/README.md).
 
-RHI and Mac crash/IPC fixtures use grouped includes; replay `--help` checks imports.
+Standalone RHI/replay set `TSFP_SHARED_SOURCE`; see [maps](guest-host-mappings.md).
 
 [Guest services, headers, compiler and execution contracts](independent.md).
 Allocation/image/state/ABI tests use fatal warnings and bounded mismatch reports.

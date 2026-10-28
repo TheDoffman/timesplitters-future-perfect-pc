@@ -19,7 +19,16 @@ Consumer checks passed on Windows: 36 passed, one native-Mac-only check skipped
 in 20.50s. All 998 installed compiler checks passed in 703.35s. Final 21
 documentation/context/backlog checks passed in 5.58s; context/index validation
 passed. All 73 migration/tracking/snapshot/context/backlog checks passed in
-1098.73s. New exact-commit CI remains pending. No new game package was produced.
+1098.73s. CI at `8a870b42` exposed a missing source-root variable in standalone
+renderer test builds. Mac shared tests passed (1657 passed, 261 skipped and 18
+subtests), then RHI CMake configuration failed because `TSFP_SHARED_SOURCE` was
+unset. The Windows standalone replay reproduced the same configure failure.
+Both entry points now supply the project source root explicitly; this changes
+test builds only, not production providers or the previously tested executable.
+All seven Windows replay checks passed in 4.48s after the repair, including the
+real renderer/replay configure/build and usage launch. The same suite failed
+at configuration before the fix. Native Mac RHI repair acceptance and new
+exact-commit CI remain pending. No new game package was produced.
 
 The complete patch stack installed five runtime files matching the proposal.
 Windows Release build, native checks and matching crash symbols passed with

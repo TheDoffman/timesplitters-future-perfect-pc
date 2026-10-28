@@ -65,6 +65,12 @@ to it. This avoids duplicate providers and a platform/kernel dependency cycle.
 The library includes seven C providers and exports the runtime include path.
 The main binding verifies physical/tiled aliasing and restores probe bytes.
 
+Standalone renderer projects must supply `TSFP_SHARED_SOURCE` before adding the
+platform directory: the native Mac RHI CMake project resolves it from its project
+root, and the Windows replay fixture passes its absolute `src` path at configure
+time. They bypass the title's setup and cannot rely on that title's variables.
+The replay regression compiles the real renderer/replay and provider dependencies.
+
 `test_shared_views.py` covers real host mappings plus ownership, arena and MMIO
 failure models. `test_guest_arena_adapters.py` executes actual compatibility
 bindings; `test_guest_map_layout.py` covers construction, partial rollback,

@@ -6991,6 +6991,12 @@ Copy this template for each new entry and add its queue row. Replace all placeho
   firing and pause/resume passed; all 26 protected files were unchanged. Consumer
   checks passed (36 passed, one native-Mac-only skip). All 998 installed compiler
   and 21 documentation/context/backlog checks passed. All 73 migration/repository
-  checks passed in 1098.73s. New exact-commit CI is pending. Controlled POSIX tests are not
+  checks passed in 1098.73s. CI at `8a870b42` passed Mac shared tests (1657 passed,
+  261 skipped, 18 subtests) but failed standalone RHI configuration because its
+  shared-source variable was unset. RHI and Windows replay entry points now
+  supply that source root; Windows replay checks passed (7 in 4.48s), including
+  real configure/build/usage launch, after reproducing the original failure.
+  Native Mac RHI repair acceptance and new exact-commit CI remain pending.
+  Controlled POSIX tests are not
   native Mac execution; native Mac title gameplay remains pending. See
   [STATUS](STATUS.md#project-guest-host-mappings-2026-10-28).
