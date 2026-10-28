@@ -2433,6 +2433,12 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **PR #390 malformed-metadata recovery:** All 28 hosted shared UI groups passed
+  after notification repair. Packaged repair then exposed a native JSON exception
+  type escaping backup-label fallback. JsonAdapter now normalizes malformed JSON
+  to InvalidDataException; native parser/shared backup/texture-receipt regressions
+  cover preservation and fallback. Full hosted acceptance reruns before release.
+
 - **PR #390 native notification repair:** First hosted Mac build compiled/signed
   and passed save/texture regressions, but deferred TextChanged left the Save
   button stale during immediate text edits. Ui.TextChanged now observes native

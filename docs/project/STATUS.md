@@ -29433,3 +29433,15 @@ The thin `Ui.TextChanged` adapter now observes TextBox.TextProperty directly so
 shared draft state tracks the actual value synchronously. WPF is unchanged.
 The existing edit/revert regression remains unchanged and will validate the fix
 on the native runner; no tests were skipped or relaxed.
+
+### Native malformed-metadata recovery during PR #390 validation
+
+After the notification repair, Mac CI passed all 28 shared UI groups and packaged
+install/repair/restart/render checks, then rejected the package fixture's plain
+text BUILD record during the new pre-update backup. System.Text.Json.JsonException
+escaped the shared expected data-error handlers. The native serializer adapter
+now normalizes malformed JSON to InvalidDataException. Backup game labels can
+fall back to Unknown without changing malformed metadata, while invalid archives
+remain rejected and damaged texture receipts are retained. Native parser tests
+and shared backup/receipt tests now include malformed JSON; the existing package
+recovery scenario is unchanged. Hosted validation reruns on the repaired source.

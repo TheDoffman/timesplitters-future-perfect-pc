@@ -112,6 +112,9 @@ public static class SaveBackupChecks
                 Reject(()=>Core.Apply(root,new List<Change>{new Change{Name="BUILD.json",Source=source}},null));
             Need(Core.InstalledVersion(root)=="v1.0.0","Failed automatic backup still replaced the runtime");
 #endif
+            Put(root,"BUILD.json","previous game metadata");
+            var unknown=SaveBackups.Create(root,"Manual",null,CancellationToken.None);
+            Need(unknown.Game=="Unknown game version" && File.ReadAllText(Core.PathIn(root,"BUILD.json"))=="previous game metadata" && File.ReadAllText(Core.PathIn(saves,"profile"))=="player progress","Malformed version metadata blocked backup or changed local data");
             string empty=Path.Combine(parent,"no-saves");Directory.CreateDirectory(empty);Need(SaveBackups.Create(empty,"Manual",null,CancellationToken.None)==null,"Empty save folder produced a backup");
         });
     }

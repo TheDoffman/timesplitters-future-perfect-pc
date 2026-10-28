@@ -95,6 +95,13 @@ the dispatcher ran. WPF retains its immediate event. The existing shared Save
 state regression exercises immediate edit/revert for every text field on both
 hosts; do not weaken it with sleeps or omit the Mac path.
 
+The native `JsonAdapter.Deserialize` normalizes malformed System.Text.Json input
+to InvalidDataException, the shared corruption/recovery contract. This lets
+backup version labels fall back to Unknown for damaged BUILD records while
+preserving those records, and lets texture status retain malformed receipts.
+It never accepts damaged archives. Native parser and shared backup/receipt
+regressions cover these cases; packaged repair exercises the same path.
+
 ## Shared page presentation
 
 `PageTheme.Header` owns the category, 28px title, description and silver-blue

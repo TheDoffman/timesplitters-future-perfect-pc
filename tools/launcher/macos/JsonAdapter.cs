@@ -12,7 +12,12 @@ namespace System.Web.Script.Serialization
         public int MaxJsonLength {get;set;} = 8*1024*1024;
         static readonly JsonSerializerOptions Options = new JsonSerializerOptions { IncludeFields=true, Converters={new Objects()} };
         public string Serialize(object value) { return JsonSerializer.Serialize(value,Options); }
-        public T Deserialize<T>(string text) { if(text.Length>MaxJsonLength)throw new System.IO.InvalidDataException("Oversized JSON.");return JsonSerializer.Deserialize<T>(text,Options); }
+        public T Deserialize<T>(string text)
+        {
+            if(text.Length>MaxJsonLength)throw new System.IO.InvalidDataException("Oversized JSON.");
+            try { return JsonSerializer.Deserialize<T>(text,Options); }
+            catch(JsonException ex) { throw new System.IO.InvalidDataException("Invalid JSON.",ex); }
+        }
         public object DeserializeObject(string text) { return Deserialize<object>(text); }
         sealed class Objects : JsonConverter<object>
         {

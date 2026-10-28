@@ -1,6 +1,6 @@
 # Build, run and validation map
 
-Launcher density and collapsed help use existing renders and shared UI checks.
+Launcher UI/JSON recovery use shared UI, native parser and package checks.
 
 Source/tool/test paths now use responsibility folders; see
 [layout](../development/repository-layout.md). Commands share

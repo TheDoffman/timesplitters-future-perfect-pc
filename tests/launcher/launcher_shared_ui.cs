@@ -96,6 +96,8 @@ public static class LauncherSharedUiChecks
                 Find<CheckBox>(page.View,"EnhancedTextures").IsChecked=true;Need(details.Text.Contains("unsaved changes"),"Unsaved texture selection not identified");
                 Click(Find<Button>(page.View,"SettingsSaveButton"));Need(details.Text.Contains("Next launch (saved): Enhanced textures (Beta)") && !details.Text.Contains("unsaved changes"),"Saved texture mode not refreshed");
                 Click(Find<Button>(page.View,"VerifyTexturePack"));Need(Find<TextBlock>(page.View,"TexturePackStatus").Text.Contains("Preview only"),"Preview verification performed live work");
+                Core.Write(Core.PathIn(folder,".launcher/texture-pack.json"),"broken receipt");
+                Need(TextureDownload.InstalledVersion(folder).Contains("attention") && File.ReadAllText(Core.PathIn(folder,".launcher/texture-pack.json"))=="broken receipt","Malformed receipt blocked settings or was overwritten");
                 Core.Write(Core.PathIn(folder,".launcher/texture-pack.json"),new string('x',5000));Need(TextureDownload.InstalledVersion(folder).Contains("attention"),"Damaged receipt blocked settings or hid the error");
             });
             Test("Preview groups named feature tracks and remembers the selected test across Stable",()=>{
