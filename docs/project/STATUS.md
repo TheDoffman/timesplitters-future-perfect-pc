@@ -31544,3 +31544,29 @@ physical-input, audio-listening or native Mac title claim. Compiled ABI/context/
 backlog24 and patch tracking16 checks passed; full snapshot/migration and CI pending.
 PR #393 was found merged into2e678ac1; new branch feature/guest-io-manager was
 fast-forwarded to that main revision without source-tree changes or lost work.
+
+
+Request allocation stage0218 (feature/guest-io-manager, PR #394): original stack/request
+codecs, owner/registry/pool and kernel allocation/free/initialization adapters
+are in maintained source/tests; native initializer removed. IoAllocateIrp59
+cleanup is4bytes and verified IoStartPacket83 cleanup12bytes. Actual guest
+heap/Windows ownership fixtures and header probes passed as ignored candidates;
+maintained-path36 request/ABI tests and fresh Windows build/game passed below;
+new-head CI and full migration remain pending. Full device
+queues, driver callbacks, nonlocal request scopes, builders and disc binding
+remain unfinished. No prior executable/game evidence is relabeled for this stage.
+Predecessor37f9042d all16CI checks passed; local migration36 plus tracking16 passed.
+
+
+Stage0218 Windows result:36 request/packet ABI tests passed64.56s;21 context/
+backlog checks passed7.14s; package/path/crash-symbol checks7passed with2subtests.
+Release build/built-in checks and archive selection audit passed; native
+xbox_IoInitializeIrp absent, five original providers selected,22 generated files
+unchanged. Executable SHA-256
+`d260852719f82abe650bc26a4f8df7e53af7790a46e6364163548776417bf0a9`.
+Fresh isolated Story: movement11.175 forward/6.185 backward, ammo8to6,
+pause40/resume60 samples, scene4/mission1, captures reviewed at100.457s within
+240s cap.26 protected files unchanged. Minimized synthetic-input Classic with
+movies skipped; not physical input, audio listening, campaign or Mac title proof.
+Kernel allocation59/free72/initialize73 are not direct supported imports; native
+contracts cover their behavior separately. Full migration and new-head CI pending.

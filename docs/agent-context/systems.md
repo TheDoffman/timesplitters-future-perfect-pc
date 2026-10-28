@@ -951,3 +951,6 @@ for the map, hook composition, rejected candidates and live/Mac acceptance limit
 Statistics: D2CB7 scopes D1FD0 to carried ticks. Time totals keep Original
 cadence; distance stays per-frame. D2079 blocks paused stale ticks.
 Impact sparks: see [native spark timing](native-impact-sparks.md).
+
+
+[Requests](kernel-objects.md).

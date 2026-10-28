@@ -7110,3 +7110,16 @@ compiled ABI/context/backlog24 and tracking16 passed. New-head Mac contracts
 remain pending. Full request/queue
 replacement is still outstanding. Boot predecessor fd63094f all16CI checks
 succeeded, including native Mac contracts, without proving native Mac gameplay.
+
+
+MAC-118 request allocation follow-up (feature/guest-io-manager,
+PR #394): original src/runtime/guest_io_* providers and guest_kernel_requests.inc
+through0218 replace request allocation/free/initialization; inherited native
+initializer removed, packet83 ABI corrected. Shared policy uses existing thin
+heap/mapping/metadata/critical-section adapters on both hosts. New portable
+contracts and actual-header probe are selected in CI; Windows-only native lock/
+heap fixtures skip on Mac. Windows maintained36 request/ABI tests,21 context/
+backlog,7 package/path checks plus2subtests and fresh Release/Story checks passed
+(STATUS); full new-stage migration and new-head Mac CI remain pending. Device queues/driver integration/full shutdown remain unfinished.
+Predecessor37f9042d all16CI checks succeeded, including native Mac contracts;
+this is not new-stage Mac or title gameplay evidence. Status remains Awaiting validation.

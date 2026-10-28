@@ -264,3 +264,8 @@ including the ABI replacement, and retain idempotence/preservation checks.
 Ordinal81 prerequisite extends late patch order through0217; migration fixtures
 and the maintained context suffix now include it before final layout routing.
 See kernel-objects.md for caller evidence and compiled ABI fault controls.
+
+
+Request0218 extends late provider order; maintained loader, migration models and
+context suffix22 keep it before layout2090. tests/compiler request contracts
+resolve providers from src/runtime; ignored experiments are not shipped tests.

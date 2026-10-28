@@ -838,3 +838,6 @@ local dispatch and table-boundary contracts are in [independent.md](independent.
 
 
 Ordinal81 repair/test: [next-packet ABI](kernel-objects.md#guest-next-packet-abi-prerequisite).
+
+
+Request allocation/ownership through0218: [contracts](kernel-objects.md#original-request-storage-and-initialization).
