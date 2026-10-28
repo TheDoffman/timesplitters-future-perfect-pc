@@ -2461,6 +2461,14 @@ validation. This version bump alone is not publication evidence.
   sparse allocation, UI and actual-save acceptance remain awaiting validation.
   Tests run on both hosts through `launcher_saves.cs` in shared UI checks.
   [Evidence](STATUS.md#launcher-save-manager-and-texture-health-2026-10-27).
+- **Saved settings button state (2026-10-25, `fix/launcher-save-button-state`):**
+  Shared `SettingsPage.cs` disables Save after successful persistence, tracks
+  edits/reversions across controls, graphics, Discord and key bindings, and keeps
+  failed saves retryable. Immediate texture actions and tab navigation are
+  excluded. Both hosts use their existing disabled-button style; no new OS
+  adapter is needed. Windows build and 20 shared UI groups pass. Native Mac
+  compilation and live UI remain pending; the same new behavioral group runs in
+  both host workflows. [Evidence](STATUS.md#launcher-save-button-state-2026-10-25).
 
 - **v1.3.1 publication recovery (2026-10-24):** Hosted Windows and native Mac
   builds, regressions and dual-platform package verification passed in run

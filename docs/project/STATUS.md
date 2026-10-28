@@ -29344,3 +29344,71 @@ footer remain visible; extra help expands inside the scrollable page.
 Native Mac compilation, UI expansion/focus and display scaling remain untested
 on this Windows host. Personal saves/settings and the ISO were not used. Nothing
 was pushed or published and no release version changed.
+## Launcher Save button state (2026-10-25)
+
+Based on main `063789df` on `fix/launcher-save-button-state`, the shared
+SettingsPage now disables Save after successful persistence using the existing
+disabled-button theme. It snapshots the deferred UI draft, re-enables Save for
+controls/graphics/Discord/key-binding edits and disables it again when edits are
+reverted. Tab navigation, display filters and immediate texture-check preferences
+are excluded. Initial Save remains available for defaults/migration. Duplicate
+save activation is ignored; validation and concurrent-file failures leave retry
+available without overwriting external changes. Persistence format is unchanged.
+
+Windows x64 .NET Framework launcher/bootstrap/test compilation passed with pinned
+artwork. All 20 shared UI groups and 38 isolated settings checks passed. The new
+shared UI group exercises every deferred control type, key bindings, defaults,
+reversion, navigation, duplicate saves, validation failure and conflicting file
+edits. Three portable shared UI tests, nine compatibility-policy tests and backlog
+consistency passed. Inspected a 900×720 WPF render: Save appears greyed out after
+saving and the saved status remains readable. No personal files were used.
+Native Mac compilation/UI execution remain unavailable on this Windows host;
+shared behavior/tests use the existing dual-host workflow with no new OS adapter.
+No push, merge or launcher release is performed by this change.
+
+## Launcher task refresh after PR #382 (2026-10-27)
+
+This chat's active worktree moved out of the incomplete OneDrive staging tree to
+`C:/Users/thedo/Desktop/TS Decompile/build/launcher-versions-source`. It began clean
+on `fix/launcher-save-button-state` at `c65d6d19`. Integrated fetched main
+`31599ff4d1547bbd45471497a55bcccab0440f12` locally, preserving the Save-button code
+unchanged. The sole content conflict was the append-only status history; both
+sides are retained here. No personal configuration, saves, primary game build or
+other worktree was edited. No push or merge into main is authorized by this refresh.
+
+Read updated AGENTS, context overview, layout, launcher and build/test maps plus
+`tools/project_paths.py`. Commands now use `tools/build/`, `tools/release/` and
+`tools/ci/`; launcher tests are under `tests/launcher/`, artwork/SDK pins under
+`config/build/`, and project evidence/backlog under `docs/project/`. This task's
+ignored build wrapper now calls the maintained builder instead of a copied script;
+its preview helper accepts an output directory and no longer assumes the old root.
+Older ignored one-off release/texture scripts are retained as historical records
+and must not be reused as entry points without resolving current paths.
+
+On this Windows x64 computer, the moved `tools/build/build-launcher.ps1 -Test
+-RequireArtwork` compiled bootstrap/application/tests with checksum-pinned art and
+passed the complete isolated suite, including 113 updater regressions, 20 shared
+UI groups and 38 settings checks. Grouped Python launcher/package/path-helper/
+context tests passed 93 tests and 38 subtests. Initial context checks exposed an
+oversized merged guide; consolidated the Save/Preview test notes and preserved
+its required LF endings. Native Mac builds/UI and game gameplay were not run.
+The supplied main1392ae8f 120-second Story/10-check evidence remains evidence from
+its original revision/computer, not validation of this branch or later gameplay.
+Package and final repository-context verification are recorded in ignored task logs.
+
+## Combined launcher integration and local-branch cleanup rule (2026-10-27)
+
+The user authorized pushing all outstanding launcher work to main. Integrated
+`fix/launcher-save-button-state` into the save-manager/texture-health/visual-polish/
+information-density branch, preserving both Save's saved-draft behavior and the
+texture saved-mode refresh after successful persistence. Reconciled documentation
+at the reorganized paths and retained the complete shared tests from both branches.
+Root `AGENTS.md` now requires safe removal of a completed task's local branch after
+its merge into remote main is verified. The rule preserves uncommitted/unique
+work, other chats' unmerged branches and ignored data; remote branch deletion is
+not authorized by it. This repository-level rule travels through Git to other
+checkouts and applies when their chats read the updated instructions.
+
+Main requires a pull request and passing Windows/Mac patch-transition and launcher
+compatibility checks; publication will use those gates, with no bypass or version
+bump. Local validation and hosted results are recorded with the PR.

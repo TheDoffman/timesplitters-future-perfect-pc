@@ -44,6 +44,24 @@ when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
 
+## Saved settings button
+
+`SettingsPage` snapshots its deferred draft after a successful save and disables
+Save using the existing theme. Shared input events and binding refreshes compare
+against that snapshot: edits re-enable Save, reverting edits disables it, and
+failed saves leave it available. Tab/filter navigation and immediate texture
+update checks do not dirty the deferred draft. The first save remains available
+for defaults/migration. Behavioral coverage runs in `tests/launcher/launcher_shared_ui.cs` on
+both hosts; no new platform adapter or persistence format is introduced.
+
+After the PR #382 layout migration, validate this work with
+`tools/build/build-launcher.ps1 -Test`; its fixtures now live in `tests/launcher/`.
+The publisher is `tools/release/launcher-release.py`, automation selection is
+`tools/ci/launcher-compatibility.py`, and artwork pins are under `config/build/`.
+Use `tools/project_paths.py` for dynamic helper lookup and the maintained folder
+maps for literal command paths. Old copied compiler/publication scripts in
+ignored build staging are historical artifacts, not supported entry points.
+
 ## Capture health diagnostics
 
 Launcher v1.3.1 packages capture-health reporting and the 60/120/180/240 FPS

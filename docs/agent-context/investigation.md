@@ -1,5 +1,10 @@
 # Investigation memory and handoffs
 
+After remote main contains a completed task, remove its local task branch using
+safe deletion after switching away and checking for unique or uncommitted work.
+Root AGENTS.md owns this repository-wide rule; retain other chats’ unmerged work
+and ignored data. Other checkouts must pull and reread it.
+
 Build commands now live under `tools/build/`; the evidence broker allows that
 tracked source directory while keeping generated build outputs excluded.
 Root status/backlog reports moved to `docs/project/`.
