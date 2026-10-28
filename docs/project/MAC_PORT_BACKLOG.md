@@ -2433,6 +2433,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Save manager (2026-10-27, `feature/launcher-save-manager`):** Shared
+  `SavesPage.cs`/`SaveBackups.cs` provide dated/versioned manual and pre-update
+  backups, confirmed restore, undo backup and journal recovery. Both hosts route
+  Saves into the main window. Common archives skip empty virtual-disk blocks;
+  `LauncherPlatform.PrepareSparse` is a thin filesystem adapter. Windows build
+  and synthetic backup/restore/failure checks pass; native Mac compilation,
+  sparse allocation, UI and actual-save acceptance remain awaiting validation.
+  Tests run on both hosts through `launcher_saves.cs` in shared UI checks.
+  [Evidence](STATUS.md#launcher-save-manager-and-texture-health-2026-10-27).
+
 - **v1.3.1 publication recovery (2026-10-24):** Hosted Windows and native Mac
   builds, regressions and dual-platform package verification passed in run
   `40157152003`. Its publication job lacked Git history for changelog filtering.
@@ -3875,6 +3885,14 @@ Windows loopback evidence in `docs/project/STATUS.md` does not establish native 
 - **PC evidence:** See the issue #49 section in docs/project/STATUS.md.
 
 ### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Texture health (2026-10-27, `feature/launcher-save-manager`):** Shared settings
+  show recorded installed/available pack versions, saved Enhanced mode and an
+  unsaved-selection indicator. Verify compares indexed local hashes and enables
+  the existing confirmed repair download for missing/changed parts. Custom keys
+  are preserved; verification performs no writes. Shared Windows tests pass;
+  native Mac UI/download execution remains awaiting validation. No new native
+  texture algorithm is needed. See the save-manager evidence linked under MAC-021.
 
 - **First downloadable pack (2026-10-25, `fix/texture-download-publication`):**
   Main's `published: false` index prevented discovery despite committed DDS

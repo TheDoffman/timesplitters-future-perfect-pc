@@ -265,6 +265,7 @@
     <ContentControl x:Name="VersionsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="MaintenanceHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    <ContentControl x:Name="SavesHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
       <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>

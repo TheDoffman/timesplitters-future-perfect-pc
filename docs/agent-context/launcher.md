@@ -64,6 +64,40 @@ Only fixed status text enters copied diagnostics; raw heartbeat fields stay loca
 
 ## Flow and ownership
 
+### Save manager and archive safety
+
+`SavesPage.cs` is shared WPF/Avalonia UI under `SavesHost`; both navigation adapters
+route Saves there and lock other operations while its cancellable work runs.
+`SavesPage` receives the native Mac window’s lifetime installation-lock ownership;
+its busy state serializes save work without reacquiring `mac.lock`. Standalone
+backup/restore callers still acquire the installation lock, as do Windows calls.
+`SaveBackups.cs` archives only `LauncherPlatform.Saves(root)` into `Backups/Saves`.
+It records UTC/date, game version and reason, hashes metadata and nonzero 64 KiB
+blocks, omits empty regions and verifies the completed archive before publishing
+its GUID-named `.tsfpsave` file. Limits are 1,024 files, 64 GiB logical, 512 MiB
+nonempty data, 8,192 blocks and 4 MiB manifest. List shows the latest 200 valid
+archives; invalid files are retained. No import/export or automatic pruning.
+
+`Core.ApplyScope` calls `BeforeGameChange` only for game updates/repairs/rollback;
+backup failure blocks installation. Launcher self-update is excluded. Restore
+stages and checks all files, creates a pre-restore backup, then swaps save folders.
+The bounded owner journal under `.launcher/save-restore` supports interruption
+recovery. Cleanup failure after commit must never roll back partially deleted
+old files. Recovery keeps the installed save folder and validates its undo
+archive before discarding the old one. The Windows adapter marks staged files
+sparse with FSCTL_SET_SPARSE; native SetLength leaves unwritten holes on Mac.
+See [Microsoft's sparse-file contract](https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-fsctl_set_sparse).
+Tests live in `tests/launcher/launcher_saves.cs` and run through shared UI checks
+on both hosts. They use synthetic data only; Mac execution remains host-specific.
+
+### Texture status and verification
+
+`TextureDownload.InstalledVersion` reads the bounded local receipt;
+`Verify` compares the schema-3 file index and computes required part bytes without
+changing textures. `SettingsPage` shows installed/available versions and saved
+Classic/Enhanced mode, labels drafts, and offers Verify plus confirmed repair.
+Unknown custom files are outside verification and remain untouched.
+
 The launcher publication job requires a full-history checkout (`fetch-depth: 0`)
 for `launcher_pr_notes` to inspect the previous launcher tag and merged commit
 range. Build-job history does not carry into the separate publication job.

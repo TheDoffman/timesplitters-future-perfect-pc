@@ -20,6 +20,34 @@ namespace TimeSplitters.Launcher
     }
     public static class TextureDownload
     {
+        public sealed class Verification
+        {
+            public int Matched, Missing, Changed;public long DownloadBytes;
+            public string Summary {get{return Matched+" verified · "+Missing+" missing · "+Changed+" changed pack files. "+(Missing+Changed==0?"No repair download needed.":"Download / update textures to repair the pack. Custom files are kept.");}}
+        }
+        public static string InstalledVersion(string root)
+        {
+            try {string path=Core.PathIn(root,".launcher/texture-pack.json");if(!File.Exists(path))return "No published pack recorded";
+                Core.Require(new FileInfo(path).Length<=4096,"Oversized texture receipt.");string version=Json.String(Json.Object(File.ReadAllText(path)),"version");
+                return Regex.IsMatch(version,@"\A[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?\z")?version:"Unknown (local pack)";}
+            catch(Exception ex){if(!(ex is IOException || ex is InvalidDataException || ex is ArgumentException || ex is InvalidOperationException))throw;return "Unknown (record needs attention)";}
+        }
+        public static Verification Verify(string root,TextureRelease pack,CancellationToken token)
+        {
+            Core.Require(pack.Files.Count==pack.Parts.Count,"This older pack has no per-file index. Use Download / update textures to validate its parts.");
+            var result=new Verification();string folder=TexturePack.Destination(root);
+            foreach(var part in pack.Parts) {
+                bool repair=false;
+                foreach(var file in pack.Files[part.AssetName]) {
+                    token.ThrowIfCancellationRequested();string path=Core.PathIn(folder,file.Key);
+                    if(!File.Exists(path)){result.Missing++;repair=true;}
+                    else if(new FileInfo(path).Length>24L*1024*1024 || Core.Hash(path)!=file.Value){result.Changed++;repair=true;}
+                    else result.Matched++;
+                }
+                if(repair)result.DownloadBytes+=part.Size;
+            }
+            return result;
+        }
         public const string ManifestUrl = "https://raw.githubusercontent.com/" + ReleaseClient.Repository + "/main/config/texture-download.json";
         public static TextureRelease Parse(string text)
         {

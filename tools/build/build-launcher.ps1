@@ -89,7 +89,7 @@ foreach ($reference in $references) { $commonArguments += '/reference:' + (Join-
 foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','WindowsBase.dll')) {
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
-$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
+$commonSources = @((Join-Path $source 'SaveBackups.cs'), (Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
     (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'UpdateRestart.cs'), (Join-Path $source 'TexturePack.cs'), (Join-Path $source 'TextureDownload.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
@@ -145,7 +145,7 @@ if ($Test) {
         (Join-Path $source 'Launcher.cs'), (Join-Path (Split-Path -Parent $PSScriptRoot) 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher\launcher_updates.cs'))
     $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher\launcher_crashes.cs'), (Join-Path $project 'tests\launcher\launcher_settings.cs'), (Join-Path $project 'tests\launcher\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher\launcher_downloads.cs'), (Join-Path $project 'tests\launcher\launcher_news.cs'), (Join-Path $project 'tests\launcher\launcher_versions.cs'), (Join-Path $project 'tests\launcher\launcher_startup.cs'))
-    $testArgs += @((Join-Path $project 'tests\launcher\launcher_sessions.cs'), (Join-Path $project 'tests\launcher\launcher_shared_ui.cs'), (Join-Path $project 'tests\launcher\launcher_restart.cs'), (Join-Path $project 'tests\launcher\launcher_textures.cs'))
+    $testArgs += @((Join-Path $project 'tests\launcher\launcher_sessions.cs'), (Join-Path $project 'tests\launcher\launcher_shared_ui.cs'), (Join-Path $project 'tests\launcher\launcher_saves.cs'), (Join-Path $project 'tests\launcher\launcher_restart.cs'), (Join-Path $project 'tests\launcher\launcher_textures.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs

@@ -35,8 +35,8 @@ namespace TimeSplitters.Launcher
         public event Action Saved, Cancelled;
         public event Action<bool> TextureBusyChanged;
         readonly bool texturePreview;
-        TextBlock textureStatus;
-        Button textureCheck, textureInstall;
+        TextBlock textureStatus, textureDetails;
+        Button textureCheck, textureInstall, textureVerify;
         CheckBox textureUpdates;
         TextureRelease textureAvailable;
         long textureDownloadBytes;
@@ -139,13 +139,17 @@ namespace TimeSplitters.Launcher
             var textureHint=Text("On uses installed replacements; off uses the original textures. Missing replacements always use originals. This Beta is incomplete and may contain visual issues.",12);
             textureHint.Name="EnhancedTexturesHint";textures.Children.Add(textureHint);
             textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
+            textureDetails=Text("",12);textureDetails.Name="TexturePackDetails";textures.Children.Add(textureDetails);UpdateTextureDetails();
+            Ui.CheckedChanged(enhancedTextures,UpdateTextureDetails);
             textureUpdates=Check("Check for texture updates when opening settings",TextureDownload.OptedIn(root));textureUpdates.Name="TextureUpdateChecks";
             textureUpdates.Click+=(s,e)=> {if(texturePreview)return;try{TextureDownload.SetOptedIn(root,textureUpdates.IsChecked==true);}catch(Exception ex){textureStatus.Text=ex.Message;}};
             textures.Children.Add(textureUpdates);
             var textureActions=new WrapPanel();textures.Children.Add(textureActions);
             textureCheck=Button("Check texture downloads");textureCheck.Name="CheckTexturePack";textureActions.Children.Add(textureCheck);
             textureInstall=Button("Download / update textures");textureInstall.Name="DownloadTexturePack";textureInstall.IsEnabled=false;textureActions.Children.Add(textureInstall);
+            textureVerify=Button("Verify textures");textureVerify.Name="VerifyTexturePack";textureActions.Children.Add(textureVerify);
             textureCheck.Click+=async(s,e)=>await CheckTextureUpdates();
+            textureVerify.Click+=async(s,e)=>await VerifyTextures();
             textureInstall.Click+=(s,e)=> {
                 if(textureAvailable==null || textureBusy)return;
                 Confirm("Install enhanced textures?",TextureDownload.Description(textureAvailable,textureDownloadBytes)+" Automatic update checks will be enabled; downloads always require your confirmation.","Download / update",async()=>await InstallTextures());
@@ -249,6 +253,24 @@ namespace TimeSplitters.Launcher
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
+        void UpdateTextureDetails()
+        {
+            textureDetails.Text="Installed pack: "+TextureDownload.InstalledVersion(root)+"\nAvailable pack: "+
+                (textureAvailable==null?"Check texture downloads to find out":textureAvailable.Version)+
+                "\nNext launch (saved): "+(model.EnhancedTextures?"Enhanced textures (Beta)":"Original textures")+
+                (enhancedTextures.IsChecked==model.EnhancedTextures?"":" · selection has unsaved changes");
+        }
+        async Task VerifyTextures()
+        {
+            if(textureBusy)return;if(texturePreview){textureStatus.Text="Preview only. No textures were checked or changed.";return;}
+            await TextureOperation(async token=> {
+                using(var client=new ReleaseClient()) {
+                    if(textureAvailable==null)textureAvailable=await TextureDownload.Check(client,token);
+                    var result=await Task.Run(()=>TextureDownload.Verify(root,textureAvailable,token),token);
+                    textureDownloadBytes=result.DownloadBytes;textureInstall.IsEnabled=result.DownloadBytes>0;textureStatus.Text=result.Summary;
+                }
+            },"Verifying installed textures…");
+        }
         public async void CheckTexturesIfOptedIn()
         { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }
         public async Task CheckTextureUpdates()
@@ -290,7 +312,7 @@ namespace TimeSplitters.Launcher
                 try { await operation(cancel.Token); }
                 catch(OperationCanceledException){textureStatus.Text="Cancelled. Completed parts are kept; retry to resume. Your installed pack remains available.";}
                 catch(Exception ex){textureStatus.Text="Texture update: "+ex.Message+" Your installed pack remains available.";}
-                finally {textureBusy=false;DismissPrompt();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
+                finally {textureBusy=false;DismissPrompt();UpdateTextureDetails();if(TextureBusyChanged!=null)TextureBusyChanged(false);}
             }
         }
         public void DismissPrompt()
@@ -364,7 +386,7 @@ namespace TimeSplitters.Launcher
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
-                model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
+                model.Save();UpdateTextureDetails(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
                 if(Saved!=null)Saved();
             }
             catch(Exception ex) { status.Foreground=Accent; status.Text=ex.Message; }

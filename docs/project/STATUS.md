@@ -29248,3 +29248,48 @@ clicks and consumed exactly seven rounds (128 to 121), with no crash or native
 presentation error. Saved validations are in ignored
 `private/test-saves/high-refresh/native-{120,180,240}-short-fire-issue337-validation.json`.
 Changes are on a local branch and are not yet pushed.
+
+## Launcher save manager and texture health (2026-10-27)
+
+Implemented the accepted save-manager and texture-status recommendations on
+`feature/launcher-save-manager`, based on main `f74247df`. Earlier local Save-button
+state work remains preserved separately on `fix/launcher-save-button-state`.
+
+Saves now opens shared `SavesPage` in the main window with manual backups,
+dated/versioned restore points, confirmed restore, cancellation and folder links.
+`SaveBackups` stores metadata-hashed, per-block-hashed local archives in
+`Backups/Saves`, omitting empty 64 KiB regions of virtual disks. Archives are
+verified before publication and ignored by Git. Restore validates all staged
+files, makes an undo backup, then swaps folders through a bounded owner journal.
+Interrupted swaps recover; committed cleanup errors defer without rolling back
+partially deleted originals. Unknown recovery files and invalid archives stay
+retained. Automatic backups run before game update/repair/version change/rollback;
+a failed backup blocks runtime replacement. Launcher-only updates are excluded.
+
+The graphics page shows recorded installed/available texture versions, the saved
+Classic/Enhanced choice and unsaved-selection state. Verify compares indexed file
+hashes, reports missing/changed files and offers the existing confirmed download
+for affected parts. Verification leaves unrelated custom files unchanged.
+
+Windows x64 .NET Framework bootstrap/application/test builds passed with pinned
+artwork. The complete isolated launcher suite passed: 113 updater checks, 27
+shared UI groups, 28 download/recovery checks, 13 version checks, 10 startup checks,
+30 news checks, 38 settings checks plus crash/session/texture/maintenance suites.
+New shared checks cover sparse round-trip/undo, cancelled/failed/damaged restores,
+metadata/path/range rejection, interrupted swaps, post-commit cleanup, corrupt undo
+backup preservation, unowned recovery files, automatic update/rollback protection,
+restore confirmation, preview isolation and texture verification/status. A final
+attempt correctly blocked while another game process ran; it passed after the
+process exited, without bypassing the guard or terminating that game.
+
+Portable launcher/package/path/context checks passed 93 tests plus 38 subtests.
+Inspected 1000×760 Saves and 900×720 graphics-page WPF renders using synthetic
+fixtures only; dates, restore controls, verification actions and saved/draft mode
+remain readable. Actual personal saves were never used. Native Mac compilation,
+APFS sparse allocation, live UI/download and real-save/gameplay acceptance remain
+unrun on this Windows host. Both hosts compile the shared sources/tests and only
+filesystem preparation and installation-lock ownership vary. The Mac window
+passes its existing lifetime lock into save operations rather than reacquiring it;
+the shared round-trip test covers an already-held lock (native execution pending).
+No push, merge into main or release was performed.
+Logs/previews remain under ignored build and logs directories.

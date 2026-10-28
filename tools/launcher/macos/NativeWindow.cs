@@ -19,7 +19,7 @@ namespace TimeSplitters.Launcher
     {
         readonly string root;readonly bool render;readonly string[] args;
         readonly ReleaseClient client=new ReleaseClient();
-        CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;SettingsPage settings;
+        CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;SettingsPage settings;SavesPage savesPage;
         FileStream installationLock;DispatcherTimer issuesTimer;NativeNews newsPage;
         public NativeWindow():this(Program.Root??AppContext.BaseDirectory,Program.Arguments??Array.Empty<string>()) { }
         public NativeWindow(string root,string[] args)
@@ -31,7 +31,7 @@ namespace TimeSplitters.Launcher
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  macOS ARM64");
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
-            Click("SavesNav",()=>OpenFolder(LauncherPlatform.Saves(root)));Click("LogsButton",()=>OpenFolder("logs"));
+            Click("SavesNav",ShowSaves);Click("LogsButton",()=>OpenFolder("logs"));
             Click("OpenDataButton",()=>OpenFolder(LauncherPlatform.Data(root)));
             Click("CheckButton",()=>Run(Check));Click("UpdateButton",()=>Run(()=>Install(latest)));Click("PlayButton",()=>Run(Play));
             Click("ImportButton",()=>Run(()=>Import(false)));Click("FolderButton",()=>Run(()=>Import(true)));
@@ -65,8 +65,8 @@ namespace TimeSplitters.Launcher
         {channelPicker.SetReleases(releases,selected);}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
-            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
-            foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost"})Find<Control>(p).IsVisible=p==name;}
+            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
+            foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;}
         void OpenFolder(string name){var path=Core.PathIn(root,name);if(!Directory.Exists(path)){Status("This folder has not been created yet.");return;}NativeHost.Open(path);}
         void Artwork()
         {
@@ -78,7 +78,7 @@ namespace TimeSplitters.Launcher
         }
         void Refresh()
         {
-            foreach(var name in new[]{"HomeNav","NewsNav","RepairNav","SettingsNav"})Find<Button>(name).IsEnabled=!busy;
+            foreach(var name in new[]{"HomeNav","NewsNav","RepairNav","SettingsNav","SavesNav"})Find<Button>(name).IsEnabled=!busy;
             bool installed=File.Exists(Core.PathIn(root,LauncherPlatform.GamePath(root)));
             bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));
@@ -158,6 +158,7 @@ namespace TimeSplitters.Launcher
             }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
+        void ShowSaves(){if(busy||gameRunning||(!render&&Core.GameRunning())){Status("Close the game before managing saves.");return;}if(savesPage==null){savesPage=new SavesPage(root,render,installationLock!=null);savesPage.OpenFolder+=OpenFolder;savesPage.BusyChanged+=value=>{busy=value;Refresh();};Find<ContentControl>("SavesHost").Content=savesPage.View;}savesPage.Reload();Page("SavesHost");}
         void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");settings.CheckTexturesIfOptedIn();}
         async Task News()
         {

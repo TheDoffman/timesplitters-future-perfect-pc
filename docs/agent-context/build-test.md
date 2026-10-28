@@ -953,12 +953,11 @@ behavior or generated guest code changed, and no game build/publication is
 established by these asset-free checks.
 
 
-Grouped Preview UI: GameChannelPickerPage.cs is compiled automatically by both
-hosts' existing *Page.cs includes. launcher_shared_ui.cs tests the actual shared
-selector, including remembering a feature while returning through Stable, general
-preview selection and unavailable-track refresh. Rebuild with build-launcher.ps1
--Test, then run build/launcher/TimeSplitters Launcher.exe. --render-preview produces
-a synthetic named-track example without modifying preferences or calling GitHub.
+Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
+tests/launcher/launcher_shared_ui.cs covers remembered/unavailable tracks and
+includes launcher_saves.cs (sparse backups, update protection, restore failures).
+Run tools/build/build-launcher.ps1 -Test. The launcher --render-preview route
+shows synthetic tracks without changing preferences or contacting GitHub.
 No game build or publisher/tag-format change is required for this grouping.
 
 
