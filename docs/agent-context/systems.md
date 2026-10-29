@@ -958,3 +958,5 @@ Stage0223: [private request construction and completion delivery](transfer-compl
 Stages0224-0227: [FIFO ownership, StartIo, mirrors and persistent device queues](transfer-completion.md).
 
 Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
+
+Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-completion.md#original-guest-events).

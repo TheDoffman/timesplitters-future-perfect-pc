@@ -24,7 +24,7 @@ def test_original_device_factory_lifetime_transactions(tmp_path,mutation,real=Fa
                  'guest_object_services.h','guest_device_contract.c','guest_device_body.c','guest_device_body.h','guest_kernel_devices.inc',
                  'guest_device_callback.c','guest_device_callback.h','guest_object_scope.c','guest_object_scope.h',
                  'guest_device_dispatch.c','guest_device_dispatch.h','guest_callback_call.c','guest_callback_call.h',
-                 'guest_device_event.c','guest_device_event.h','guest_device_event_scope.c','guest_device_event_scope.h'):
+                 'guest_device_event.c','guest_device_event.h','guest_event.c','guest_event.h','guest_device_event_scope.c','guest_device_event_scope.h'):
         (tmp_path/name).write_bytes(source_file(name).read_bytes())
     for name in ('guest_object_names.c','guest_object_names.h'):
         (tmp_path/name).write_bytes(source_file(name).read_bytes())
@@ -61,10 +61,10 @@ def test_original_device_factory_lifetime_transactions(tmp_path,mutation,real=Fa
             mode=dispatch if isinstance(dispatch,int) else dispatch[3] if len(dispatch)==4 else 1
             flags+=[('/D' if os.name=='nt' else '-D')+f'TSFP_DEVICE_DISPATCH={mode}']
             (tmp_path/'guest_state.c').write_bytes((ROOT/'src/runtime/guest_state.c').read_bytes())
-            flags+=[tmp_path/'guest_state.c',tmp_path/'guest_device_dispatch.c',tmp_path/'guest_callback_call.c',tmp_path/'guest_device_event.c',tmp_path/'guest_device_event_scope.c']
+            flags+=[tmp_path/'guest_state.c',tmp_path/'guest_device_dispatch.c',tmp_path/'guest_callback_call.c',tmp_path/'guest_device_event.c',tmp_path/'guest_event.c',tmp_path/'guest_device_event_scope.c']
     if event is not None or final_event is not None:
         (tmp_path/'recomp_types.h').write_bytes((ROOT/'src/runtime/recomp_types.h').read_bytes())
-        flags+=[tmp_path/'guest_device_event.c']
+        flags+=[tmp_path/'guest_device_event.c',tmp_path/'guest_event.c']
         define='TSFP_DEVICE_EVENT' if final_event is None else 'TSFP_DEVICE_FINAL_EVENT'
         flags+=[('/D' if os.name=='nt' else '-D')+define]
     if finalization is not None:flags+=['/DTSFP_DEVICE_FINALIZATION'] if os.name=='nt' else ['-DTSFP_DEVICE_FINALIZATION']
@@ -122,7 +122,7 @@ def test_device_driver_dispatch(tmp_path,dispatch):
 @pytest.mark.parametrize('event',[(),
     ('guest_device_event.c','address-0x34','address-0x30'),
     ('guest_device_factory.c','if(lease.kind==TSFP_KIND_DEVICE)','if(lease.kind!=0)'),
-    ('guest_device_event.c','tsfp_atomic_cas32(p,1,0)','tsfp_atomic_cas32(p,1,1)'),
+    ('guest_event.c','tsfp_atomic_cas32(view->signal,1,0)','tsfp_atomic_cas32(view->signal,1,1)'),
     ('guest_device_event.c','if(event[0]!=1 || event[1] || event[2]!=4 || ((uintptr_t)(event+4)&3)) {\n        (void)tsfp_guest_objects_release(&lease);','if(event[0]!=1 || event[1] || event[2]!=16 || ((uintptr_t)(event+4)&3)) {\n        (void)tsfp_guest_objects_release(&lease);'),
     ('guest_device_event.c','out->lease=lease;','out->lease=lease;(void)tsfp_guest_objects_release(&out->lease);'),
 ])

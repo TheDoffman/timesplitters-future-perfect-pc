@@ -7,6 +7,7 @@
 #include "guest_io_pool.h"
 #include "guest_io_build.h"
 #include "guest_io_complete.h"
+#include "guest_event.h"
 ptrdiff_t g_xbox_mem_offset;
 static tsfp_io_pool request_pool;static tsfp_io_registry_entry registry_entries[1];
 static tsfp_io_owner *active_owner;static tsfp_io_devices *active_binding;
@@ -16,18 +17,21 @@ static tsfp_guest_object_scopes scopes;
 static HANDLE completion_event,event_pin;
 static unsigned prepared,notified,released;
 static unsigned char caller_final[152];
+static tsfp_event_view guest_event;
 static int prepare_delivery(void *context,const tsfp_io_result *result,tsfp_io_delivery *delivery) {
     CHECK(context==&request_pool && !request_depth && !registry_depth && !depth && !prepared);
     CHECK(result->address==request_address && result->status==0 && result->information==17);
     CHECK(result->flags==0x14 && result->user_iosb==0x8011 && result->user_event==0x7000 && !result->thread && !result->original_file);
     CHECK(MEM32(0x8011)==0xa7a7a7a7 && MEM32(0x8015)==0xa7a7a7a7);
+    CHECK(guest_event.address==result->user_event && tsfp_event_state(&guest_event)==0);
     CHECK(DuplicateHandle(GetCurrentProcess(),completion_event,GetCurrentProcess(),&event_pin,0,FALSE,DUPLICATE_SAME_ACCESS));
     ++prepared;delivery->cookie=event_pin;delivery->iosb=ram+0x8011;delivery->iosb_bytes=8;return 1;
 }
 static int notify_delivery(void *context,void *cookie,const tsfp_io_result *result) {
     CHECK(context==&request_pool && cookie==event_pin && !request_depth && !registry_depth && !depth && !notified);
     CHECK(result->information==17 && MEM32(0x8011)==0 && MEM32(0x8015)==17 && active_owner->phase==TSFP_IO_COMPLETING);
-    ++notified;CHECK(SetEvent(event_pin));CHECK(WaitForSingleObject(completion_event,0)==WAIT_OBJECT_0);return 1;
+    ++notified;CHECK(tsfp_event_set(&guest_event)==0);CHECK(SetEvent(event_pin));
+    CHECK(WaitForSingleObject(completion_event,0)==WAIT_OBJECT_0);return 1;
 }
 static int release_delivery(void *context,void *cookie,int disposition) {
     CHECK(context==&request_pool && cookie==event_pin && disposition==TSFP_IO_DELIVERY_DONE && !released && !request_depth && !registry_depth && !depth);
@@ -106,6 +110,7 @@ int main(void) {
     tsfp_io_build_plan plan={0};unsigned char initial[152];
     init();g_xbox_mem_offset=(ptrdiff_t)ram;g_esp=0x9007;g_eax=0x1111;
     memset(ram+0x8011,0xa7,8);completion_event=CreateEventW(NULL,TRUE,FALSE,NULL);CHECK(completion_event);
+    CHECK(tsfp_event_initialize(ram+0x7000,16,0x7000,0,0));CHECK(tsfp_event_bind(&guest_event,ram+0x7000,16,0x7000));
     CHECK(create(0,0)==TSFP_DEVICE_OK);device_body=value(ram+0x801);memset(ram+0x201,0,68);put(ram+0x201+12+4*2,0x4444);
     memset(&ops,0,sizeof(ops));ops.context=&request_pool;ops.lock=pool_enter;ops.unlock=pool_leave;ops.registry_lock=registry_enter;ops.registry_unlock=registry_leave;
     ops.metadata_allocate=pool_metadata;ops.metadata_free=pool_metadata_free;ops.allocate=pool_allocate;ops.deallocate=pool_deallocate;ops.resolve=pool_resolve;
@@ -131,7 +136,7 @@ int main(void) {
     CHECK(!memcmp(caller_final,ram+request_address,152));
     CHECK(tsfp_heap_release(&memory,request_address) && !memory.heap.count);
     CHECK(prepared==1 && notified==1 && released==1 && !event_pin);
-    CHECK(MEM32(0x8011)==0 && MEM32(0x8015)==17 && WaitForSingleObject(completion_event,0)==WAIT_OBJECT_0);
+    CHECK(MEM32(0x8011)==0 && MEM32(0x8015)==17 && tsfp_event_state(&guest_event)==1 && WaitForSingleObject(completion_event,0)==WAIT_OBJECT_0);
     CHECK(CloseHandle(completion_event));tsfp_io_pool_stop(&request_pool);
     puts("PASS: caller-owned packet adoption, nested dispatch, real IOSB/event delivery, metadata unmap and retained caller storage");return 0;
 }

@@ -11,7 +11,7 @@ from test_translation_product import _compile
 @pytest.mark.parametrize('mutation',[None,
  ('guest_io_request','if(value.current!=expected)return 0;','if(value.current==0 && expected==0)return 0;'),
  ('guest_io_owner','value.phase=TSFP_IO_READY;','value.phase=TSFP_IO_PENDING;'),
- ('guest_io_owner','layout.bytes!=bytes','layout.bytes==0 && bytes==0'),
+ ('guest_io_owner','layout.bytes!=bytes','(layout.bytes==0 && bytes==0)'),
  ('guest_io_pool','if(!n->owns_storage) {drop_metadata(n);return 1;}','if(n->owns_storage<0) {drop_metadata(n);return 1;}'),
  ('guest_io_pool','if(!claim_range(n)) {drop_metadata(n);return 0;}','if(!claim_range(n) && n->address==0) {drop_metadata(n);return 0;}'),
  ('guest_io_pool','n->owns_storage=1;n->bytes=bytes;','n->owns_storage=0;n->bytes=bytes;'),
@@ -34,7 +34,7 @@ def test_original_caller_owned_packet_adoption(tmp_path,mutation):
 
 @pytest.mark.skipif(os.name!='nt',reason='Real Windows event and metadata unmapping; portable providers tested separately')
 def test_adopt_dispatch_complete_with_real_windows_event(tmp_path):
-    providers=('guest_io_build','guest_io_transfer','guest_io_complete','guest_io_call','guest_io_owner','guest_io_request','guest_io_scope','guest_io_devices','guest_io_target','guest_io_pool','guest_io_registry','guest_callback_call','guest_objects','guest_object_names','guest_device_factory','guest_device_body','guest_device_callback','guest_object_scope','guest_allocation','guest_state','guest_nonlocal_jump')
+    providers=('guest_event','guest_io_build','guest_io_transfer','guest_io_complete','guest_io_call','guest_io_owner','guest_io_request','guest_io_scope','guest_io_devices','guest_io_target','guest_io_pool','guest_io_registry','guest_callback_call','guest_objects','guest_object_names','guest_device_factory','guest_device_body','guest_device_callback','guest_object_scope','guest_allocation','guest_state','guest_nonlocal_jump')
     headers=['guest_io_stack.h','guest_object_services.h','recomp_types.h','guest_lifetime.h']+[f'{p}.h' for p in providers if p not in ('guest_state','guest_nonlocal_jump')]
     for name in [*[f'{p}.c' for p in providers],*headers]:
         choices=[HERE/name,ROOT/'src/runtime'/name]

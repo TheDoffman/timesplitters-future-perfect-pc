@@ -297,3 +297,47 @@ missing-unlock fault, whose non-recursive pthread lock blocked until30s timeout;
 acquiring either native mutex, so the bad variant reaches runtime assertion on
 both hosts. Fatal warnings and timeout limits remain unchanged. This is a fixture
 control repair, not production lock-policy evidence or a passing old-head rerun.
+
+## Original guest events
+
+Stage0229 selects guest_event.c/.h through0229 after0227 (0228 was source-only).
+It replaces the legacy KeInitializeEvent bridge body with the original
+guest_kernel_event_init.inc. Type0 notification stays signalled through waits;
+Type1 synchronization consumes exactly one signal. The16-byte codec writes
+Size4 guest words, normalized0/1 state, and empty list links at address+8. The
+old bridge wrote Size16 and zero links. Interface facts agree with the pinned
+[public Xbox header](https://github.com/XboxDev/nxdk/blob/8d8438186c5dcf1187672b686a91c4603be9e111/lib/xboxkrnl/xboxkrnl.h)
+and [event size reference](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded-legacy/blob/96aabe72e238674a22a61695fb6f5295259edf62/src/core/kernel/exports/EmuKrnlKe.cpp#L875).
+Only interface facts are used; no external implementation body is incorporated.
+
+Constructor validates aligned guest address, type/full range and writable16-byte
+mapping before host event creation or guest writes. It snapshots the BOOLEAN byte
+argument; invalid input/failed host creation preserves guest bytes. Existing
+transitional shadow registration consumes the new host handle; its capacity,
+replacement/close and wait scheduling remain legacy dependencies, not newly
+claimed ownership/APC functionality. Ordinal108 still consumes12 argument bytes.
+
+Event views borrow full stable writable mappings, validate type/word-size/aligned
+signal/state, never follow guest list pointers and confer no ownership authority.
+Caller retains actual lifetime pins and serializes header mutation. Set/reset
+atomically preserve malformed state rather than overwriting it. Shared full-barrier
+atomics publish preceding IOSB writes; actual wake scheduling remains the caller's
+job. Device embedded-event pins now reuse these primitives, preserving parent
+lease/finalization lifetime. No mutex/guest callback runs in event primitives.
+
+Maintained test_guest_event checks literal bytes, limits, all256 operation tags,
+unaligned codec versus aligned atomic views, malformed states and bridge failure
+preservation. Eight native waiters prove one synchronization consumer and all
+notification waiters observing preceding IOSB writes. Six codec/atomic and two
+bridge faults compile before runtime rejection. Existing device/finalization/
+native-host regressions retain their checks. The adopted Windows completion
+pipeline now validates/signals actual guest event state before the real host event,
+while retaining IOSB ordering and metadata-only caller-packet disposal.
+
+The latest ec2e4b25 Mac CI rejected only an adoption mutant's missing parentheses
+under Wlogical-op-parentheses. Its replacement expression is now parenthesized;
+fatal warnings remain enabled. The scheduler pthread fault repair passed that run.
+New-source CI and native Mac title acceptance remain separate. Kernel I/O routing,
+completion target pinning/thread/APC/key/cancel/storage backend and the transitional
+shadow/wait engine remain unfinished; this stage retires only the initializer
+bridge body, not the entire event/I/O manager or a new native export.

@@ -32601,3 +32601,57 @@ agree; all26 protected save/settings/fixture files across both checkouts retain
 hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
 input/movie-skipped run; not physical input/listening/full campaign or native Mac
 title evidence. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0229 original guest events and initializer bridge
+
+Started cleanec2e4b25290cfcbb497642805a95607bdd6b2616 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed progress, not full independence. Prior ec2 launcher40948607657
+passed; runtime40948607708 failed Mac job123710580173 only on adoption mutant3:
+Clang rejected unparenthesized && inside || under Wlogical-op-parentheses/Werror.
+2017 passed,312 skipped,18 subtests passed283.45s. Scheduler pthread fault repair
+passed that run. Parenthesizing the mutant fixes its syntax without relaxing
+warnings/timeouts or treating an old-head retry as new-source evidence.
+
+Original guest_event.c/.h now serializes16-byte events and supplies shared atomic
+state/set/reset/try-wait primitives. Notification remains signalled; synchronization
+has one consumer. Malformed state is preserved on rejection. Device embedded-event
+pins reuse these methods rather than duplicate signal operations. Original
+KeInitializeEvent bridge code validates full mapping/type/range, snapshots BOOLEAN
+byte input, constructs header before host allocation/guest mutation and replaces
+the legacy bridge body through0229. Size is4 words and links point to the empty
+head; old code used Size16/zero links. Pinned public header/event-size interface
+references are linked in transfer-completion.md; no external algorithm is copied.
+The existing shadow registry consumes the host handle and remains transitional,
+as do wait/pulse scheduling, target pinning/thread/APC delivery and I/O routes.
+This retires the initializer bridge body, not the entire event/I/O manager or a
+new native export. Full toolkit replacement remains unfinished; PR406 stays draft.
+
+Candidate event10cases passed4.17s, including six codec/atomic and two bridge faults
+that compile before runtime rejection. Literal bytes/range/unaligned validation,
+BOOLEAN width, invalid state preservation and eight native waiters cover one auto
+consumer and all notification waiters observing prior IOSB writes. Existing device/
+finalization/Windows-host/adoption67cases passed41.25s (overlap final suite). The
+adopted Windows completion pipeline now validates/signals actual guest event state
+before the real host event, preserving IOSB order and metadata-only caller storage
+cleanup. Complete native/request/device/event/title/header suite258passed132.71s;
+four fresh/historical upgrade models plus context/backlog25passed148.36s, distinct
+from258. Upgrades assert one original initializer include and no old bridge body.
+
+Release/built-ins/matching crash symbols passed. Archive selects23 device/I/O/event
+providers once, including six event API symbols; kernel_ob and nine previously
+retired exports absent. Original initializer include is selected once. All22
+generated files unchanged/current fingerprint. Actual build: dirtyec2e4b25 with
+exact source/patch inputs recorded in ignored logs/guest-event-build.json.
+Executable SHA256
+e861853ace2f4c53f2cd6daed81cb23501ba805ceb69ad6e491a04fe3dfa3a8d.
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.176244/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.581s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree;26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.

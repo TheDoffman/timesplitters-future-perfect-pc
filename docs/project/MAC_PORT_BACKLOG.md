@@ -7617,3 +7617,18 @@ assertion now replaces blocking that probe, with warning/timeout limits retained
 New-head Mac CI and native Mac title execution pending. Kernel routes and actual
 event/APC/storage/key/cancel backend still need integration. Keep MAC-118 Awaiting
 validation. STATUS stage0228 records exact host, hashes and scope.
+
+
+MAC-118 stage0229 follow-up (PR#406): common guest_event.c/.h supplies event bytes
+and atomic notification/synchronization semantics, reused by device event pins.
+Original guest_kernel_event_init.inc replaces the legacy initializer bridge with
+full mapping/type/range validation, BOOLEAN byte capture and correct dispatcher
+word-size/self-list fields. Existing host shadow/wait scheduling remains
+transitional; no OS adapter duplication is introduced. Windows258 native/request/
+device/event/title/header and25 upgrades/context checks, Release/built-ins/symbols
+and isolated Story movement/fire/pause/resume passed. Prior ec2 Mac CI rejected
+only a compound adoption mutant expression; parentheses now preserve fatal-warning
+checks and the existing scheduler pthread repair passed. New-head Mac CI and native
+Mac title execution pending. Completion target lifetime, thread/APC/backend/key/
+cancel policies and remaining I/O routes still need integration. Keep MAC-118
+Awaiting validation; STATUS stage0229 records exact host/hashes and limitations.
