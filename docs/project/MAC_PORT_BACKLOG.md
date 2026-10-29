@@ -7216,7 +7216,7 @@ No production source, built executable or prior gameplay evidence changed.
 ### MAC-121 - High-FPS interaction input (#357)
 
 - **Status:** Awaiting validation
-- **Source/PR:** Uncommitted, issue #357 branch.
+- **Source/PR:** `61fa18b6`, PR #404.
 - PC behavior: admits the original interaction selector on advancing native
   game intervals, so a raw-tick press is not lost to a zero game-tick gate.
 - Shared implementation: `src/gameplay/pc_native_numeric.h`, exact US compare

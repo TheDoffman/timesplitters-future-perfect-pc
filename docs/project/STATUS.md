@@ -31744,7 +31744,7 @@ the actual CI screen constraint. A fresh required CI run validates the repair.
 
 ## Scotland the Brave interaction input (#357, 2026-10-29)
 
-Local uncommitted issue branch based on main `b2a7ffe8` changes only US A0DE8
+Issue branch `61fa18b6` (PR #404), based on main `b2a7ffe8`, changes only US A0DE8
 in the shared native numeric policy. Original interaction A0D90 otherwise
 rejects a pressed raw-tick edge on zero-whole game frames after pause offsets.
 The selected comparison now admits positive game time without altering clocks,
@@ -31762,5 +31762,5 @@ verified US XBE. Mac execution remains unrun here (MAC-121).
 
 Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
 including the normal isolated build tests; patch verification passed first.
-Log: ignored `logs/issue357-build.log`. This is the local uncommitted candidate,
+Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
 not a published release or live portcullis verification.
