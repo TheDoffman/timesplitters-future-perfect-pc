@@ -32,3 +32,11 @@ in `IconBuilder.cs` at 16/24/32/48/64/128/256 pixels. Both the normal game resou
 build and `bundle_online.bundle_icon` generate it; packages copy it beside the
 companion. It requires no private artwork or additional Python libraries. The
 header now reads “Find your friends. Start a match.” without the extra tagline.
+
+
+PR #399 CI exposed clipped directory fields at 150/200% scaling on a 1280x768
+Windows runner. `scrollable_panel` now serves the Play tab, Directory tab and
+invitation popup, including focus-driven scrolling. The real-widget checks cap
+the reported screen size to that runner geometry even on large developer
+monitors and verify that the certificate field and popup Return action can be
+brought into view. The original assertions remain in place.

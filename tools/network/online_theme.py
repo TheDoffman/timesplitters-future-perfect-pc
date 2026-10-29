@@ -227,9 +227,66 @@ def fit_window(window, width, height):
 
 def wrapped_label(parent, text=None, variable=None, style='Muted.TLabel', **kwargs):
     label = ttk.Label(parent, text=text, textvariable=variable, style=style, wraplength=300, width=1, **kwargs)
-    parent.bind('<Configure>', lambda event: label.configure(
-        wraplength=max(100, event.width - 40)), add='+')
+    def wrap(event):
+        width = max(100, event.width - 40)
+        if int(label.cget('wraplength')) != width:
+            label.configure(wraplength=width)
+            # A canvas fixes its child's allocated height, so changing wrapped
+            # text can change the requested height without a Configure event.
+            label.after_idle(lambda: label.winfo_toplevel().event_generate('<<OnlineContentChanged>>'))
+    parent.bind('<Configure>', wrap, add='+')
     return label
+
+
+def scrollable_panel(window, parent, padding, min_width):
+    """Keep every form reachable on small displays and with enlarged fonts."""
+    viewport = ttk.Frame(parent)
+    viewport.columnconfigure(0, weight=1)
+    viewport.rowconfigure(0, weight=1)
+    canvas = tk.Canvas(viewport, highlightthickness=0, borderwidth=0)
+    canvas.grid(row=0, column=0, sticky='nsew')
+    vertical = ttk.Scrollbar(viewport, orient='vertical', command=canvas.yview)
+    horizontal = ttk.Scrollbar(viewport, orient='horizontal', command=canvas.xview)
+    canvas.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+    content = ttk.Frame(canvas, padding=padding)
+    content_id = canvas.create_window(0, 0, window=content, anchor='nw')
+    def layout_viewport(event=None):
+        # Wrapped label requests retain the previous viewport width. Do not
+        # feed those requests back into the canvas after maximize/restore.
+        scale = max(1.0, float(window.tk.call('tk', 'scaling')) / (96 / 72))
+        width = max(canvas.winfo_width(), round(min_width * scale))
+        height = max(canvas.winfo_height(), content.winfo_reqheight())
+        canvas.itemconfigure(content_id, width=width, height=height)
+        canvas.configure(scrollregion=(0, 0, width, height),
+                         background=ttk.Style(window).lookup('TFrame', 'background'))
+        if height > canvas.winfo_height():
+            vertical.grid(row=0, column=1, sticky='ns')
+        else:
+            vertical.grid_remove()
+        if width > canvas.winfo_width():
+            horizontal.grid(row=1, column=0, sticky='ew')
+        else:
+            horizontal.grid_remove()
+    canvas.bind('<Configure>', layout_viewport)
+    content.bind('<Configure>', layout_viewport)
+    canvas.bind('<<ThemeChanged>>', layout_viewport)
+    window.bind('<<OnlineContentChanged>>', layout_viewport, add='+')
+    # Keyboard traversal also reveals controls on small screens or at high DPI.
+    def reveal(event):
+        widget = event.widget
+        if not str(widget).startswith(str(content) + '.'):
+            return
+        y = widget.winfo_rooty() - content.winfo_rooty()
+        top = canvas.canvasy(0)
+        bottom = top + canvas.winfo_height()
+        if y < top or y + widget.winfo_height() > bottom:
+            canvas.yview_moveto(max(0, y - 12) / max(1, content.winfo_height()))
+        x = widget.winfo_rootx() - content.winfo_rootx()
+        left = canvas.canvasx(0)
+        if x < left or x + widget.winfo_width() > left + canvas.winfo_width():
+            canvas.xview_moveto(max(0, x - 12) / max(1, content.winfo_width()))
+    window.bind('<FocusIn>', reveal, add='+')
+    return viewport, content
 
 
 def build_browser(window, values, actions):
@@ -247,54 +304,10 @@ def build_browser(window, values, actions):
 
     tabs = ttk.Notebook(shell)
     tabs.grid(row=1, column=0, sticky='nsew')
-    viewport = ttk.Frame(tabs)
-    viewport.columnconfigure(0, weight=1)
-    viewport.rowconfigure(0, weight=1)
-    canvas = tk.Canvas(viewport, highlightthickness=0, borderwidth=0)
-    canvas.grid(row=0, column=0, sticky='nsew')
-    vertical = ttk.Scrollbar(viewport, orient='vertical', command=canvas.yview)
-    horizontal = ttk.Scrollbar(viewport, orient='horizontal', command=canvas.xview)
-    canvas.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
-    play = ttk.Frame(canvas, padding=(0, 16, 0, 0))
-    content_id = canvas.create_window(0, 0, window=play, anchor='nw')
-    def layout_viewport(event=None):
-        # Wrapped label requests retain the previous viewport width. Do not
-        # feed those requests back into the canvas after maximize/restore.
-        scale = max(1.0, float(window.tk.call('tk', 'scaling')) / (96 / 72))
-        width = max(canvas.winfo_width(), round(950 * scale))
-        height = max(canvas.winfo_height(), play.winfo_reqheight())
-        canvas.itemconfigure(content_id, width=width, height=height)
-        canvas.configure(scrollregion=(0, 0, width, height),
-                         background=ttk.Style(window).lookup('TFrame', 'background'))
-        if height > canvas.winfo_height():
-            vertical.grid(row=0, column=1, sticky='ns')
-        else:
-            vertical.grid_remove()
-        if width > canvas.winfo_width():
-            horizontal.grid(row=1, column=0, sticky='ew')
-        else:
-            horizontal.grid_remove()
-    canvas.bind('<Configure>', layout_viewport)
-    play.bind('<Configure>', layout_viewport)
-    canvas.bind('<<ThemeChanged>>', layout_viewport)
-    # Keyboard traversal also reveals controls on small screens or at high DPI.
-    def reveal(event):
-        widget = event.widget
-        if not str(widget).startswith(str(play) + '.'):
-            return
-        y = widget.winfo_rooty() - play.winfo_rooty()
-        top = canvas.canvasy(0)
-        bottom = top + canvas.winfo_height()
-        if y < top or y + widget.winfo_height() > bottom:
-            canvas.yview_moveto(max(0, y - 12) / max(1, play.winfo_height()))
-        x = widget.winfo_rootx() - play.winfo_rootx()
-        left = canvas.canvasx(0)
-        if x < left or x + widget.winfo_width() > left + canvas.winfo_width():
-            canvas.xview_moveto(max(0, x - 12) / max(1, play.winfo_width()))
-    window.bind('<FocusIn>', reveal, add='+')
-    directory = ttk.Frame(tabs, padding=20)
+    viewport, play = scrollable_panel(window, tabs, (0, 16, 0, 0), 950)
+    directory_viewport, directory = scrollable_panel(window, tabs, 20, 480)
     tabs.add(viewport, text='Play online')
-    tabs.add(directory, text='Directory settings')
+    tabs.add(directory_viewport, text='Directory settings')
     play.columnconfigure(0, weight=3, uniform='panels')
     play.columnconfigure(1, weight=2, uniform='panels')
     play.rowconfigure(0, weight=1)
@@ -388,8 +401,8 @@ def build_browser(window, values, actions):
 
 def build_invitation(window, invitation_text, code, port):
     fit_window(window, 720, 400)
-    content = ttk.Frame(window, padding=24)
-    content.pack(fill='both', expand=True)
+    viewport, content = scrollable_panel(window, window, 24, 500)
+    viewport.pack(fill='both', expand=True)
     ttk.Label(content, text='ONLINE  /  LOBBY READY', style='Eyebrow.TLabel').pack(anchor='w')
     ttk.Label(content, text='Bring your friends.', style='Title.TLabel').pack(anchor='w', pady=(6, 10))
     wrapped_label(content, 'Share this invitation. Your friends can paste it into Invitation / lobby code.').pack(fill='x')

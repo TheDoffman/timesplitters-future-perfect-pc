@@ -100,6 +100,9 @@ def _check_browser_layout_and_commands(scale, branded):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/network'))
     from online_theme import OnlineTheme, build_browser, build_invitation
     root = tk.Tk()
+    # Reproduce the hosted Windows runner's small display on large developer monitors.
+    root.winfo_screenwidth = lambda: 1280
+    root.winfo_screenheight = lambda: 768
     root.tk.call('tk', 'scaling', scale * 96 / 72)
     theme = OnlineTheme(root, lambda: branded)
     values = {key: tk.StringVar(master=root, value=value) for key, value in dict(
@@ -163,15 +166,35 @@ def _check_browser_layout_and_commands(scale, branded):
         canvas = next(w for w in children(root) if isinstance(w, tk.Canvas))
         assert canvas.winfo_rooty() <= host_button.winfo_rooty()
         assert host_button.winfo_rooty() + host_button.winfo_height() <= canvas.winfo_rooty() + canvas.winfo_height()
+        tabs.select(1)
+        check_bounds()
+        directory_view = root.nametowidget(tabs.tabs()[1])
+        certificate = [w for w in children(directory_view) if isinstance(w, ttk.Entry)][-1]
+        certificate.focus_force()
+        root.update()
+        directory_canvas = next(w for w in children(directory_view) if isinstance(w, tk.Canvas))
+        assert directory_canvas.winfo_rooty() <= certificate.winfo_rooty()
+        assert certificate.winfo_rooty() + certificate.winfo_height() <= directory_canvas.winfo_rooty() + directory_canvas.winfo_height()
         popup = tk.Toplevel(root)
+        popup.winfo_screenwidth = lambda: 1280
+        popup.winfo_screenheight = lambda: 768
         theme.track(popup)
         build_invitation(popup, 'Example invitation', 'EXAMPLE', 30821)
         root.update()
         # Popup descendants are checked separately because Toplevel positions
         # are screen-relative, not relative to their logical owner.
         for child in children(popup):
+            if isinstance(child, ttk.Scrollbar) and not child.winfo_ismapped():
+                continue
             assert child.winfo_ismapped()
-            assert child.winfo_y() + child.winfo_height() <= child.master.winfo_height() + 2
+            if not isinstance(child.master, tk.Canvas):
+                assert child.winfo_y() + child.winfo_height() <= child.master.winfo_height() + 2
+        return_button = next(w for w in children(popup) if isinstance(w, ttk.Button) and w.cget('text') == 'Return to game')
+        return_button.focus_force()
+        root.update()
+        popup_canvas = next(w for w in children(popup) if isinstance(w, tk.Canvas))
+        assert popup_canvas.winfo_rooty() <= return_button.winfo_rooty()
+        assert return_button.winfo_rooty() + return_button.winfo_height() <= popup_canvas.winfo_rooty() + popup_canvas.winfo_height()
         popup.destroy()
     finally:
         root.destroy()

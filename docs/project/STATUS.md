@@ -31653,3 +31653,13 @@ The game-icon/resource, Online layout/identity and launcher-scope suites passed
 icon/Tk HWND check passed after replacing an unsupported Windows ICO getter
 assertion with real window icon handles (28 passing tests in total). Existing
 game icon resource linking passed; no Mac host or real network match was tested.
+
+
+PR #399 validation found directory-field clipping at 150/200% text scaling on
+the hosted Windows runner's smaller display (1775 other runtime checks passed).
+The shared scrolling panel now covers Directory settings and the invitation
+popup as well as Play online; wrapped-text changes refresh the scroll extent
+after geometry settles. All seven real-widget checks pass with a simulated
+1280x768 screen, including focus visibility for the certificate and popup Return
+controls. The fix retains the original bounds assertions and adds coverage for
+the actual CI screen constraint. A fresh required CI run validates the repair.
