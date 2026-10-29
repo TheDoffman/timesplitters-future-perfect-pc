@@ -278,3 +278,8 @@ resolve providers from src/runtime; ignored experiments are not shipped tests.
 Stage0219 extends the mapped compiler-patch suffix before the final repository
 layout patch. [Device contracts](kernel-devices.md) identify maintained providers,
 source/test routes, actual-header probes and the pending build/game boundary.
+
+
+The indexed patch-order contract now includes0220 after0219 and before2090;
+keep the fixed expected tail synchronized when adding reviewed independent stages.
+Sharing contracts: [kernel-sharing](kernel-sharing.md).

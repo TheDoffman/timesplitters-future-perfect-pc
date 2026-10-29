@@ -937,3 +937,6 @@ Impact sparks: see [native spark timing](native-impact-sparks.md).
 
 
 [Devices](kernel-devices.md).
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).

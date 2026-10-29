@@ -857,3 +857,6 @@ Request allocation/ownership through0218: [contracts](kernel-objects.md#original
 
 See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
 original predicate hooks and isolated validation routes.
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).

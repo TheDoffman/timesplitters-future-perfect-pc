@@ -113,3 +113,9 @@ functions. Reference the compiled scenario entry points from main without runnin
 unselected cases. Warning flags and all baseline/mutation assertions stay intact.
 Windows runtime, both-host patch upgrades and launcher CI passed; Mac runtime
 must pass on the repaired head before stage0219 is accepted on both CI hosts.
+
+
+Exact a0e36a91 Mac native and patch-upgrade CI passed after fixture repair.
+Windows Release and fresh isolated Story at latest main68408d4d also passed;
+source/archive/generated/game hash audit and all26 protected files match.
+Windows native/final CI and local migration are still pending; see STATUS.

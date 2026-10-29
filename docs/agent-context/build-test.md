@@ -933,3 +933,6 @@ contract and actual-header probe. The Windows real-host binding fixture skips on
 that skip does not replace native Mac compilation or title gameplay.
 
 [Unlock migrations](unlock-content.md).
+
+
+Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).

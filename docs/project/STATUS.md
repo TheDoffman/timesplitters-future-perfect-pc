@@ -31964,3 +31964,65 @@ main interaction/audio/release-speed changes. Merged plan/repository and device
 fixture checks passed172 plus29subtests in36.96s. Node contracts passed23 in12.82s;
 local LF normalization keeps the unchanged context bounds valid. Windows Release
 regeneration/build is in progress; prior86a960df game evidence is historical.
+
+
+### Device CI repair and latest-main Windows regression (2026-10-29)
+
+Pushed a0e36a91 includes the warning-clean isolated device fixture and main68408d4d.
+Windows Release regeneration/build/built-in checks and matching crash symbols
+passed. All ten device/name providers remain selected once, kernel_ob.c excluded,
+nine retired native symbols absent and generator inputs current. Four of the22
+recorded generated files differ from the historical pre-main baseline as expected
+for the combined main hooks. Executable SHA256:
+`a7fd543f620525bb7025fef33293adfcc3073db40ca6144b0b70371deae630d3`.
+Fresh isolated Story scene4/mission1 passed movement11.195015 forward/6.184892
+backward, firing8to6,40 frozen pause samples and60 advancing resume samples;
+last checkpoint104.532s within240s cap. Start/pause/resume captures reviewed.
+Installed source/archive/executable/generated/game hashes agree and all26
+protected files retain hash,size and mtime. Minimized synthetic-input Classic,
+movie-skipped Windows regression; no physical/audio listening/campaign/Mac title
+claim. Plan/device172checks plus29subtests and Node23 passed locally.
+
+Exact a0e36a91 runtime CI40878529221 now passes Mac native, both patch upgrades
+and both launchers; Windows native/final gates remain in progress. Mac CI proves
+its selected asset-free contracts, not native Mac game behavior. Local merged
+migration66031 is still running; prior0f1189ec migration52 passed28m03s.
+
+
+Exact a0e36a91 runtime40878529221 completed success on both hosts and all final
+gates. Windows native1960passed247skipped18subtests435.07s; release172passed
+3subtests7.31s. Mac native1878passed294skipped18subtests228.97s; release169passed
+3skipped3subtests2.50s. Both launcher hosts/final passed. Local fresh merged
+snapshot/migration66031 passed59 in675.65s. This accepts stage0219 CI, not full
+native Mac title gameplay or all-runtime independence.
+
+Stage0220 original sharing replacement is now being installed. Candidate policy,
+actual-adapter/header checks passed11 in4.83s. Added an actual ordinal80 cleanup
+fault control for maintained execution. The first patch application failed
+before writing runtime files because0220 lacked a loader dependency override;
+added its explicit order after0219. Production build/game/new-head CI pending.
+
+
+Stage0220 Windows local acceptance: maintained sharing/actual-header/actual
+cleanup plus request/packet/context/backlog checks passed141 in18.40s. The first
+run passed140 but the fixed expected patch-order tail still omitted0220; updated
+that reviewed tail and owning investigation guide, then reran all141 successfully.
+Node23 passed21.54s; path/crash-symbol4 passed0.17s. Windows Release and built-in
+checks passed, with matching crash symbols. Generated kernel project selects
+original guest_io_share.c once and the archive exports all three new providers;
+previous device selection/retired-export checks still pass. All22 generated files
+are unchanged from the latest-main build and the generator fingerprint is current.
+Executable SHA256:
+`0b045f29781125378aad66c45fc014b4f607efbfaa25f6dfa473846f0ab1cc45`.
+Actual build provenance is dirty a0e36a91 with recorded source/patch hashes.
+
+Fresh isolated Story scene4/mission1 passed forward11.128969/backward6.184891,
+firing ammo8to6,40 frozen paused samples and60 advancing resume samples; final
+checkpoint120.795s within240s cap. Start/pause/resume images reviewed. Exact
+source/archive/generated/executable/game hashes agree, no run lock/partitions/
+dumps remain, and all26 protected files retain hash,size,mtime. This is minimized
+synthetic-input Classic/movie-skipped Windows coverage, not physical input,
+audio listening, full campaign or Mac title acceptance. The game does not directly
+import these three share APIs; native contracts establish their new behavior.
+Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
+also pass. Source/toolkit independence remains incomplete.
