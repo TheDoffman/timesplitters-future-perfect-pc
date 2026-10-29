@@ -1,3 +1,69 @@
+## Vehicle-gunner test build (#385) - 2026-10-29
+
+Local candidate on `fix/385-vehicle-mouse`, based on `863c2b61`, with the shared
+mode-0x400 gunner routing change. The user confirmed Past Cortez was operating
+the gun only, not driving. The precise mission mode/seat and reported inversion
+remain unobserved; do not claim driver controls explain that report.
+
+The shared Windows/SDL helper resolves the occupied vehicle seat and its gun,
+validates reverse links, and applies mouse displacement directly to gun angles
+for seat types 3/4. Driver/passenger types keep the previous route. Vehicle
+locked states and limit semantics follow original `17A440`. The earlier
+mode-0x80 repair remains in place. No global pitch reversal was introduced.
+
+All 16 focused mounted/terminal tests pass, including actual Windows/SDL adapter
+bodies, malformed bindings, seat changes, normal/inverted pitch, authored limits
+and 60/120/180/240 interval checks. The optional supported-XBE test executes
+D2470/17A0A0/17A440: the old-route mutation fails, corrected mouse aim survives
+the vehicle update, and controller aiming remains active. Original gun-camera
+math 151650/152090 confirms mouse-down produces a downward direction for this
+route. Render/transform setup, services and polling remain controlled boundaries.
+
+Windows 11 build 26300 x64 / MSVC 19.44.35224 / SDK 10.0.26100 / Python 3.12.14 /
+D3D11: full patch application and generation pass; Release Build and its native
+checks pass. Executable SHA-256:
+`73659d48f7bfcb26531806c5cceb223d6fe70de38de37d3d8af9683d8e4914f6`.
+A bounded 120-second launch rendered the main menu at Original60. This is startup
+acceptance, not a new mission/turret gameplay acceptance result.
+
+The local manual launcher under `private/test-saves/vehicle-review` uses the
+unlocked Test Lab fixture with isolated, persistent test saves and settings;
+physical keyboard/mouse input, capped logs, and disposal of scratch partitions
+on exit. It shares existing game assets and the single worktree Release build.
+Past/Future Machine Wars and Scotland truck aiming, both pitch directions,
+firing and dismount still need in-game confirmation. No release was published;
+#385 remains open. Physical Mac acceptance remains pending (MAC-001).
+
+## Vehicle-gunner mouse investigation (#385) - 2026-10-29
+
+Source baseline `863c2b61` plus the earlier bounded live-validation notes,
+branch `fix/385-vehicle-mouse`. No new input behavior change or live game run.
+The prior Scotland result used the stationary road gun, not the reported
+truck-mounted gun. Neither Machine Wars tank section has live acceptance.
+
+Supported US XBE checksum verified. Original boarding routines `17CE00` and
+`17CF30` select player mode `0x400`; the mouse helper handles only `0x80`.
+Original `D2470`/`17A0A0`/`17A440` were translated into an ignored local C
+investigation fixture and executed on Windows/MSVC. For seat types 3 and 4,
+production mouse fallback first changed player yaw/pitch to -10/-2 degrees.
+The original vehicle update then reset both to zero and left gun yaw/pitch
+unchanged. Controller-axis input in the same setup changed both gun angles.
+This reproduces a concrete missing vehicle-gunner mouse route, independently
+of mission names and the earlier mode-0x80 ownership repair.
+
+Rendering, transforms, input polling, FOV lookup, math-library conversion,
+handle lookup and vehicle dispatch boundaries were controlled. Original
+seat-type lookup, controller packet construction, player-angle overwrites,
+turret-angle updates and limits executed from the supported XBE. This is a
+code-path reproduction, not an in-game or physical-device test. Local scripts
+and output are under ignored `logs/vehicle-repro*` and `logs/run-vehicle-repro.py`.
+
+The mode-0x400 seat type for each reported encounter still needs observation.
+Past Cortez's vertical inversion is not yet reproduced or attributed to a
+specific sign conversion. Do not infer that both tank sections share a seat,
+apply a global pitch reversal, or claim #385 resolved. Windows/SDL currently
+share this missing route; no new Mac gameplay validation was performed.
+
 ## Mars Prison high-refresh material flicker (#398) - 2026-10-29
 
 Based on main `3b4e679b` plus rule commit `1bed1e71`, with the shared cache fix

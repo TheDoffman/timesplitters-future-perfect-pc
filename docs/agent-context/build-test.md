@@ -916,3 +916,9 @@ contract and actual-header probe. The Windows real-host binding fixture skips on
 that skip does not replace native Mac compilation or title gameplay.
 
 [Unlock migrations](unlock-content.md).
+
+Vehicle mouse coverage: `tests/gameplay/test_mounted_mouse.py` exercises shared
+mode `0x400` seat ownership and both host adapter bodies. Its optional supported-XBE
+fixture (`vehicle_mouse_guest.c`) runs original seat dispatch, gun update and camera
+math, and rejects the old mouse route. This is separate from live mission acceptance;
+see [mounted and vehicle mouse contracts](mounted-mouse.md).

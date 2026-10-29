@@ -119,3 +119,52 @@ def test_original_mounted_binding(tmp_path):
         assert 'PASS: original mount/dismount' in result.stdout
     finally:
         vars(config).update(previous)
+
+@pytest.mark.parametrize('legacy', [False, True], ids=['vehicle-mouse', 'old-route-reproduction'])
+def test_original_vehicle_mouse(tmp_path, legacy):
+    import hashlib
+    import struct
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for original vehicle update')
+    from test_recomp_float_joins import config, FunctionTranslator
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous = dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions = {a: dict(name=f'sub_{a:08X}', end=end) for a, end in
+                     ((0xd2470, 0xd2b7e), (0x17a440, 0x17aa1a), (0x17a0a0, 0x17a111),
+                      (0x151650, 0x15178f), (0x152090, 0x15211d))}
+        translator = FunctionTranslator(image, functions)
+        code = '\n'.join(translator.translate_function(a, f) for a, f in functions.items())
+        fixture = (ROOT / 'tests/gameplay/vehicle_mouse_guest.c').read_text()
+        implemented = set(re.findall(r'void (sub_[0-9A-F]+)\(void\)', fixture + code))
+        calls = set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)', code))
+        stubs = '\n'.join(f'void {n}(void){{assert(!"unexpected {n}");}}' for n in sorted(calls-implemented))
+        constants = '\n'.join(f'MEM32(0x{a:X})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:X};'
+                              for a in sorted(set(int(x,16) for x in re.findall(r'0x([0-9A-Fa-f]+)',code + fixture)))
+                              if 0x470000 <= a < 0x490000)
+        helper = (ROOT / 'src/input/pc_mounted.h').read_text()
+        if legacy:
+            helper = helper.replace('mode!=0x80 && mode!=0x400', 'mode!=0x80')
+        source = tmp_path / 'vehicle_mouse.c'
+        source.write_text(fixture.replace('/* GENERATED_ROUTINES */', code).replace('/* UNREACHED */', stubs)
+                          .replace('/* CONSTANTS */', constants).replace('/* MOUSE_IMPLEMENTATION */', helper))
+        compiler, environment = native_compiler(tmp_path)
+        exe = tmp_path / ('vehicle_mouse.exe' if os.name == 'nt' else 'vehicle_mouse')
+        includes = [ROOT / 'src', ROOT / 'external/ts3FPrecomp/templates/runtime']
+        sources = [str(source), str(ROOT / 'src/input/pc_input.c')]
+        command = ([compiler, '/nologo', '/O2', *['/I'+str(p) for p in includes], *sources, '/Fe:'+str(exe)]
+                   if os.name == 'nt' else [compiler, '-std=c11', '-O2', *['-I'+str(p) for p in includes],
+                                           *sources, '-lm', '-o', str(exe)])
+        result = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=60)
+        assert result.returncode == 0, result.stdout + result.stderr
+        result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+        if legacy:
+            assert result.returncode != 0 and 'handled==1' in result.stderr.replace(' ', ''), result.stdout + result.stderr
+        else:
+            assert result.returncode == 0, result.stdout + result.stderr
+            assert 'PASS: original vehicle gunner' in result.stdout
+    finally:
+        vars(config).update(previous)

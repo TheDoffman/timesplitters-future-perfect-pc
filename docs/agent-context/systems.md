@@ -942,3 +942,9 @@ Impact sparks: see [native spark timing](native-impact-sparks.md).
 
 
 [Devices](kernel-devices.md).
+
+Vehicle gunner mouse uses shared `src/input/pc_mounted.h` for mode `0x400`,
+resolving the occupied seat and its gun on every update. Driver/passenger seats
+retain their existing route. Vehicle limits and locked states differ from mode
+`0x80`; see [mounted and vehicle mouse contracts](mounted-mouse.md). Both Windows
+and SDL adapters consume this helper. Exact mission validation remains separate.
