@@ -1,5 +1,12 @@
 # Build, run and validation map
 
+Windows builds pass `config/build/windows-game.manifest` as
+`TSFP_GAME_MANIFEST`; patch 2130 attaches it only to the game target. CMake
+merges system DPI awareness with UAC/common-controls before network identity
+sealing. `test_window_theme.py` builds isolated manifest/no-manifest probes,
+checks embedded XML and asks Windows for the actual process awareness. These
+tests already run in both-host runtime CI (Windows-only cases skip on Mac).
+
 [Build/test speed and timing alerts](release-speed.md).
 
 Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
