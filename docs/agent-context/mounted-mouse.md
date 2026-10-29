@@ -42,6 +42,12 @@ jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
 handoff and untouched player angles. Old-clock/batch mutations must fail.
 These controlled-field tests do not certify live turret rendering/input.
 Consult STATUS for current build hashes, not historical candidate paths.
+
+Live acceptance distinguishes control modes. The Scotland road gun above the
+coastal ruins was observed using mode `0x40`: ordinary player angles drove its
+mounted view and gun angles, and mouse replay, firing and dismount passed on
+merged source `3b4e679b`. That is not evidence for the repaired `0x80` route or
+the second Machine Wars tank. See STATUS for the bounded run and remaining gaps.
 `mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
 one query for either address order, forward page spans, split/read-only/inaccessible
 FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered

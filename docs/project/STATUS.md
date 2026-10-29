@@ -35,6 +35,35 @@ This verifies the reported scene/cache contract, not every map/material or a
 campaign. Physical Mac scene acceptance remains pending (MAC-122). Issue #398
 must remain open until a published release containing the fix is linked.
 
+## Mounted-gun live validation (#385) — 2026-10-29
+
+Built merged source `3b4e679b107bbe9000a592cde917d751871a17a4` in an isolated
+checkout on Windows 11 build 26300 x64, MSVC 19.44.35224, SDK 10.0.26100,
+Python 3.12.14 and D3D11. Complete generation, patch validation, Release Build
+and its native regression checks passed. Executable SHA-256:
+`a23cb7a1e1e8de8aa5292c11445dbd0205c3acf9920327f8c9570961f04a01b1`.
+The supported US XBE hash was verified before generation and both game runs.
+
+Scotland the Brave, Easy, Original60: reached the road gun above the coastal
+ruins, mounted it, aimed horizontally and vertically, fired visibly and
+dismounted. Application replay input of -300/+100 mouse counts changed player
+yaw by +30 degrees and pitch by -10 degrees, with corresponding gun yaw +30
+and pitch +10; the rendered mounted view changed accordingly. Dismount restored
+mode `0x2` and cleared the player's gun link. This particular gun uses mode
+`0x40`, authored name `0xffffffff`, operator `+0xD8` matching the player and
+AI target `+0x68` zero. It exercises the existing ordinary-angle path, so this
+pass does **not** establish acceptance of the repaired mode-`0x80` path.
+
+Machine Wars loaded and ordinary movement/aim/firing worked in the opening
+ruins, but the 600-second session ended before either tank was reached. The
+reported second tank remains **unverified**. No physical mouse-device delivery
+or Mac acceptance is claimed: inputs used the game's existing replay interface,
+while window captures and read-only guest fields established the live result.
+Both runs used separate disposable Test Lab copies, capped logs and bounded
+captures; their virtual disks were recycled. Personal saves/settings and the
+concurrent audio checkout were preserved. Local evidence is under ignored
+`private/test-saves/mounted-live` and `private/test-saves/machine-live`.
+
 ## Mounted-gun operator and instance names (#385) — 2026-10-29
 
 Branch `fix/385-mounted-mouse`, based on main `68408d4d`. The shared helper
