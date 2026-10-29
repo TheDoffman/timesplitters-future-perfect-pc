@@ -587,7 +587,7 @@ int tsfp_native_input_test(void) {
             /* The same live-rate selection must reach mounted gun routing. */
             TU(0x10114)=0x80;TU(0x10014)=0x21000;TU(0x2107c)=0x22000;
             TU(0x22c14)=0x30000;TU(0x3007c)=0x31000;
-            TU(0x31000)=0x30000;TU(0x31004)=0x4147554e;TU(0x31010)=4;TU(0x31068)=0x21000;
+            TU(0x31000)=0x30000;TU(0x31004)=0x4147554e;TU(0x31010)=4;TU(0x310d8)=0x21000;
             TF(0x31034)=-90;TF(0x31038)=90;TF(0x3103c)=-179;TF(0x31040)=179;
             ok &= setenv("TSFP_NATIVE_FPS","144",1)==0;
             for(int step=0;step<5;++step) {

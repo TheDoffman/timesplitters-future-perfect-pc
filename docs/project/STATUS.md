@@ -1,3 +1,33 @@
+## Mounted-gun operator and instance names (#385) — 2026-10-29
+
+Branch `fix/385-mounted-mouse`, based on main `68408d4d`. The shared helper
+previously mistook gun data `+0x68` (AI target) for the controlling player and
+required the authored name `AGUN`. The original US `B76B0`/`B7830` routines and
+CCTV entries `373E10`/`3756E0` instead use `+0xD8` for the operator; constructor
+`245990` copies the per-instance name to `+4`. Mouse aim now checks the real
+operator and entity backpointer, independent of those two unrelated fields.
+The read guard covers the operator through `0xDC`; original angle limits,
+pause/capture/local-slot rules and input consumption remain intact.
+
+Windows x64 / MSVC x64, Python 3.12.14: the corrected ownership fixture failed
+against the old helper on its first mouse update. After repair, all **20**
+mounted/terminal/Auto Lookahead/backlog checks pass, including original guest
+mount/dismount execution from the SHA-256-verified supported US XBE. Four
+instance names, repeated mounting, independent AI targets, native/Original60
+time and both host adapter bodies are covered. Inaccessible operator tails,
+wrong operators and broken backpointers reject movement without replay.
+All 20 repository-context tests and the base-aware context check also pass.
+
+The complete patch stack validated/applied to an isolated runtime (158 files).
+The real Windows input adapter and all input/config source dependencies were
+rebuilt in the isolated worktree and its `tsfp_pc_controls_test` passed, using a
+disposable controls copy. This focused build reused the pinned local SDL static
+library and generated diagnostic header; it is not a new game executable.
+No personal saves/settings or concurrent audio work were changed. No graphics
+backend was exercised. Machine Wars' second tank, Scotland's turret and physical
+Mac gameplay remain unverified; no release or main merge is claimed. Both hosts
+already consume the shared helper; see MAC-001 for native acceptance.
+
 ## Suite performance regression monitor (2026-10-28)
 
 Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based

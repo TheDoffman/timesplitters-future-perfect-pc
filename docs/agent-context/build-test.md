@@ -664,30 +664,10 @@ not omit the patch from fresh/current-stack or renderer regression tests.
 ## Mounted gun input regression
 
 `python -m pytest tests/gameplay/test_mounted_mouse.py tests/input/test_terminal_mouse.py -q`
-compiles guarded host-memory C fixtures on Windows/macOS. Mounted tests cover
-AGUN ownership/local port, single-consumption relative motion, gun-specific
-pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
-paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
-both tests. Physical turret aiming/firing and native host delivery remain
-separate gameplay checks; see #182 in STATUS and MAC-001.
-`native_mounted_mouse.c` checks 60/120/144 with 125/1000/8000 Hz packets,
-jitter, quarter speed, fresh/integrated displacement, pause/invalid clocks,
-handoff and untouched player angles. Old-clock/batch mutations must fail.
-These controlled-field tests do not certify live turret rendering/input.
-Consult STATUS for current build hashes, not historical candidate paths.
-`mouse_region.c` checks actual Windows/SDL mouse bodies with controlled maps:
-one query for either address order, forward page spans, split/read-only/inaccessible
-FOV maps, expiry, terminal routing and bounds. Persistent/uncached/unordered
-mutations must fail. `camera_region_host.c` validates real OS protection changes
-on Windows/macOS. Mocked locks/events are not physical input. `auto_look_region.c`
-checks the pre-guest auto-look scope: one same-map query, split/read-only maps,
-expiry and bit restoration. Its mutations run in registered `test_auto_look.py`.
-`tests/input/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
-mode through the actual adapters, changing the native rate without recreating
-input capture. The focused Windows `tsfp_pc_controls_test` target passes with
-the isolated fixture config and scratch directory. SDL physical-host execution
-is still pending. The portable packet fixture explicitly includes `<stddef.h>`
-for `ptrdiff_t`; Mac Clang does not supply it through `<stdlib.h>` as MSVC did.
+runs the existing CI-selected suite. See [mounted ownership and validation](mounted-mouse.md)
+for original guest mount/dismount execution, host-memory/adapter tests, timing
+mutations, and physical Windows/Mac acceptance limits. #385 adds instance-name,
+operator-versus-AI-target and inaccessible-operator regression cases.
 
 ## Launcher stalled-network regression
 

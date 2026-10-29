@@ -807,6 +807,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **#385 mounted-gun operator (2026-10-29, commit carrying this entry):**
+  Shared `src/input/pc_mounted.h` now checks the original `+D8` operator,
+  independently of the AI target and authored gun name. Both Windows and SDL
+  already use this helper; no new Mac adapter is needed. SDL self-test data uses
+  the corrected layout. Windows fixtures, original guest mount/dismount and a
+  rebuilt Win32 input adapter pass; native Mac build/physical input and the
+  reported Machine Wars/Scotland scenes remain **Awaiting validation**. See
+  [the #385 evidence](STATUS.md#mounted-gun-operator-and-instance-names-385--2026-10-29).
+
 Release 0.3.6 preparation found a stale SDL menu self-test expectation: after
 leaving the menu while unfocused, the existing adapter restores the pending
 gameplay capture request on focus regain. The test now checks that behavior
