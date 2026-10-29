@@ -7563,7 +7563,7 @@ pending. Keep MAC-118 Awaiting validation. Evidence/host/limits in STATUS's
 stage0224 entry; contracts in transfer-completion.md.
 
 
-MAC-118 stage0225 follow-up (PR#406): shared guest_io_startio.c/.h provides
+MAC-118 stage0225 follow-up (source fd793423, PR#406): shared guest_io_startio.c/.h provides
 allowlisted void stdcall(Device,Request) without consuming another stack slot,
 with independent forward callback ownership and pre-entry rollback/nonlocal
 cleanup. No OS adapter is needed for this core; real kernel queue/device mirrors,
@@ -7571,6 +7571,6 @@ cancel/key policy and backend routing remain unfinished. Portable17 scenarios,
 six compiled faults and a separate real Windows driver->StartIo metadata-unmap
 case are included in189 passing native/device/title tests. Windows25 upgrade/
 context checks, Release/built-ins/symbols and isolated Story movement/fire/pause/
-resume passed. Prior e467 native Mac CI passed but Windows native gate is still
-live; new-source CI and Mac title execution pending. Keep MAC-118 Awaiting
+resume passed. Prior e467 Windows/Mac native and launcher CI both passed; new-source CI and
+Mac title execution pending. Keep MAC-118 Awaiting
 validation. STATUS stage0225 records host, exact binary hashes and limits.

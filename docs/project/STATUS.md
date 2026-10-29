@@ -32395,10 +32395,11 @@ new-head evidence. See transfer-completion.md and MAC-118.
 Started clean e467b0510ee66e3db3e1dda3fd00bf7f8e795b67 on
 feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
 progress (committed/pushed0224 plus local acceptance), not whole-goal completion.
-Prior e467 CI launcher40938793360 passed. Runtime40938793349 remains live:
-both upgrades, native Mac and final launcher artifact checks passed; Windows
-native suite pending. It has not been restarted or counted as a pass. Wait for
-that job before pushing0225, since the branch workflow cancels older runs.
+Prior e467 CI launcher40938793360 and runtime40938793349 both completed/success,
+including Windows/Mac native suites, both upgrades and final launcher artifact
+checks. The still-live Windows job was allowed to finish before the next push;
+no cancelled/retried job is counted as this pass. Original0225 source is committed
+asfd793423 (PR406); new-source CI remains a separate pending check.
 
 Original guest_io_startio.c/.h selects DriverStartIo at driver+0, validates a
 pinned device/full driver table and invokes only an allowlisted translated/manual
