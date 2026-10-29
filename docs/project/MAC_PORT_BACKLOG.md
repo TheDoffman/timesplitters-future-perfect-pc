@@ -7644,3 +7644,18 @@ checks and the existing scheduler pthread repair passed. New-head Mac CI and nat
 Mac title execution pending. Completion target lifetime, thread/APC/backend/key/
 cancel policies and remaining I/O routes still need integration. Keep MAC-118
 Awaiting validation; STATUS stage0229 records exact host/hashes and limitations.
+
+
+MAC-118 stage0231 follow-up (PR#406): shared guest_io_targets.c/.h captures
+real object references and persistent delivery leases for trusted IOSB/event
+regions. Generation/kind/base/full writable span and overlap validation precede
+completion admission. Actual wake follows event publication; native unwind or
+release/wake failure retains quarantined resources without retry. The same
+provider is selected by kernel CMake on both hosts; no OS API is added to shared
+production source. test_io_targets runs portable ownership/fault/coordinator
+contracts on both CI hosts and actual VirtualAlloc/Free/native event checks on
+Windows. Native Mac title gameplay and new-source CI are pending. Existing I/O
+bridges, thread-stack pins/APC/file/locked-buffer/key/cancel/storage/no-event policy
+still need integration; this stage alone does not retire those implementations.
+Keep MAC-118 Awaiting validation; local evidence is in STATUS stage0231 and
+[contracts](../agent-context/transfer-completion.md#owned-completion-target-spans).

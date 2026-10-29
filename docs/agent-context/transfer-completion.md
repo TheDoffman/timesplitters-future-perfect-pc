@@ -341,3 +341,48 @@ New-source CI and native Mac title acceptance remain separate. Kernel I/O routin
 completion target pinning/thread/APC/key/cancel/storage backend and the transitional
 shadow/wait engine remain unfinished; this stage retires only the initializer
 bridge body, not the entire event/I/O manager or a new native export.
+
+
+## Owned completion target spans
+
+Stage0231 selects original guest_io_targets.c/.h through0231 after0229. Trusted
+host region descriptors identify already-owned object generations and their full
+storage spans. Init captures independent object references before pending work;
+closing original handles/references cannot destroy delivery storage. These are
+real object-backed ownership pins, not inferred authority from guest addresses.
+The host adapter must establish that each declared dispatcher owns its whole
+region until references/leases drain. Raw thread-stack mappings still need a
+separate lifetime adapter; mapping alone is insufficient.
+
+Prepare matches the owned request and captured IOSB/event addresses, acquires
+persistent generation/kind/base-checked leases, resolves complete writable8/16
+byte spans, validates event header/alignment/state and rejects guest/host overlap.
+Only one prepare wins; failure preserves output and bytes. Ref/lease disposal,
+mapping and actual wake callbacks run outside target metadata locks. Metadata,
+callbacks and captured regions outlive pending or quarantined work.
+
+Signal publishes preceding IOSB bytes through the shared event atomic before
+actual wake. A native manual/auto event must reside at its owner's base and match
+the event type; only these owners supply a native handle to the wake adapter.
+Embedded raw events pass no native handle. DONE requires acknowledged wake;
+PRIVATE can roll back only before signal. Failed wake/nonlocal abandonment or
+failed lease release quarantines persistent pins without retry. Close releases
+captured references only from bound/delivered states; partial initialization
+rollback leaves closed or quarantined accounting. No event cannot claim successful
+signal: its backend must choose another validated route before admission.
+
+Maintained test_io_targets uses actual allocation disposal (VirtualAlloc/Free on
+Windows), original object refs/leases and the completion coordinator. It drops
+all original handles/refs before delivery, checks full-span/address/generation/
+kind/base/type/alias rejection, private rollback, real Windows event wake after
+IOSB publication, reentrant inspection, native C-stack abandonment, failed-release
+accounting and explicit fixture-only recovery. Eight compiled bad variants must
+fail at runtime. Shared CI selects these contracts on Windows and Mac; native Mac
+title gameplay remains separate.
+
+This provider is a completion-backend prerequisite, not new kernel I/O routing.
+Existing legacy completion bridges stay selected. APC/thread/file/locked-buffer,
+key/cancel/storage and no-event status-polling policy still need integration.
+Bytewise coordinator IOSB writes are published by the event; no atomic status-only
+polling guarantee is claimed. Registry retirement and aggregate parent metadata
+remain backend responsibilities; quarantined parent storage must not be freed.

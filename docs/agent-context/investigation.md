@@ -44,7 +44,7 @@ Call-frame replacement follows dispatch and guest ABI in effective patch order.
 
 After remote main contains a completed task, remove its local task branch using
 safe deletion after switching away and checking for unique or uncommitted work.
-Root AGENTS.md owns this repository-wide rule; retain other chatsâ€™ unmerged work
+Root AGENTS.md owns this repository-wide rule; retain other chatsÃ¢â‚¬â„¢ unmerged work
 and ignored data. Other checkouts must pull and reread it.
 
 Build commands now live under `tools/build/`; the evidence broker allows that
@@ -309,3 +309,6 @@ Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer
 Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
 
 Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-completion.md#original-guest-events).
+
+Stage0231 context regression asserts the real33-patch late compiler tail, with
+0231 after0229 before2090. Main2130 DPI remains earlier by actual loader order.

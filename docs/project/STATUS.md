@@ -32691,3 +32691,60 @@ agree;26 protected save/settings/fixture files across both checkouts retain
 hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
 input/movie-skipped run; not physical input/listening/full campaign or native Mac
 title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+### Stage0231 - owned completion target spans (2026-10-29)
+
+PR#406, feature/guest-share-access. Prior source5bfbf759 CI passed: runtime
+40952692096 and launcher40952692018. Fetched main92dcca30 and safely merged as
+f07e5feb; preserved ongoing work and the new Windows DPI manifest. Current stage
+is built from dirtyf07e5feb, with exact source/patch inputs recorded in ignored
+logs/io-targets-build.json. No merge into main or publication performed.
+
+Original guest_io_targets.c/.h captures object refs before pending delivery,
+validates generation/kind/base/exact writable IOSB/event spans and overlap, keeps
+persistent delivery leases, and publishes the event before actual wake. PRIVATE
+rollback, acknowledged DONE and failed/native-unwind quarantine are explicit.
+This is a backend prerequisite: legacy I/O completion routes, actual arbitrary
+thread-stack pins, APC/file/locked-buffer/key/cancel/storage/no-event polling
+policy and aggregate registry retirement still need integration. It does not
+establish full ts3FPrecomp replacement or arbitrary guest-address ownership.
+
+Nine target contract cases passed6.88s, including eight compiled bad variants
+rejected at runtime. Baseline uses actual object ownership and allocation disposal,
+VirtualAlloc/Free/native Windows manual and auto events, original-handle closure
+before delivery, full-span/generation/kind/base/alias rejection, private rollback,
+real completion-coordinator IOSB-before-event delivery, reentrancy and actual
+native C-stack abandonment with persistent quarantine. Controlled lease failure
+attempts both independent releases, retaining failed pins with no automatic retry.
+Fixture-only recovery is explicitly distinguished from production cleanup.
+Selected target/event/request/completion/adoption/scheduler/queue/device/title and
+merged DPI checks:254passed128.94s (includes the9 target cases). Context regression
+initially caught its stale32-patch expected tail; corrected exact33-patch loader
+assertion then20passed7.87s. Four fresh/historical upgrades passed151.14s; final
+provider-selection assertions and backlog integrity are checked separately below.
+
+Release, built-in host checks and matching crash symbols passed. Kernel archive
+selects24 device/I/O/event providers exactly once, including all6 target APIs;
+old kernel_ob and nine previously retired native exports remain absent. All22
+generated guest files unchanged; fingerprint current. Supported US XBE SHA256
+validated. Executable SHA256:
+d4d01c74f69e957729a43f532c9dbe6f5663b7e62338199cff53df98b031bd75.
+
+Isolated bounded Story run reached scene4/mission1; forward11.196721/back6.184893,
+ammo8to6,40 frozen pause and60 advancing resume samples, last checkpoint95.566s
+within240s cap. Runner/controller exit0; fresh start/fire/paused captures reviewed.
+Profiles unchanged, signatures valid, canonical fixture preserved; no runlock,
+dumps or partition images. Source/archive/executable/generated/game hashes agree.
+All26 protected save/settings/fixture files across both checkouts retain hash,
+size and modification time. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic input/movie-skipped run; not physical input, listening,
+full-campaign or native Mac title acceptance. New-source CI pending. MAC-118
+remains Awaiting validation; contracts: transfer-completion.md.
+
+Stage0231 final acceptance: unique patch0231 avoids existing controls slot0230.
+Full rebuild/built-ins/crash symbols passed after rename; the relink changed the
+executable hash, so the bounded isolated gameplay run above was repeated against
+that final binary. Final numbered-stack fresh/historical upgrades, context and
+backlog25passed155.43s (includes20context and1backlog; not additional to those
+counts). Original provider source and generated guest code remain unchanged.

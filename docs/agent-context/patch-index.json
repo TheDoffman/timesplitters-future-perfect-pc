@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b1511453991768e3a7cd3a6cda1c9d472ffc72172c127ee2258eff6bbb927976",
+  "loaderSha256": "a367fd1b759127453d22b5cf98ed7a0c2501dd1859ce93353443e86ecdb81fb7",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2428,6 +2428,14 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0231-original-completion-targets.patch",
+      "path": "patches/compiler/0231-original-completion-targets.patch",
+      "sha256": "9761c0769fd5e60e35cb31da0a726b6d63e4aad1b4eeb0ad133fa22cf01e0b06",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
       ]
     },
     {

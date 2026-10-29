@@ -959,4 +959,4 @@ Stages0224-0227: [FIFO ownership, StartIo, mirrors and persistent device queues]
 
 Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
 
-Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-completion.md#original-guest-events).
+Stages0229/0231: [events](transfer-completion.md#original-guest-events), [owned completion targets](transfer-completion.md#owned-completion-target-spans).
