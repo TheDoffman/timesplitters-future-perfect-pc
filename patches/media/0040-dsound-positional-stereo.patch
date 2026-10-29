@@ -1,0 +1,187 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -26,6 +26,9 @@
+ void recomp_audio_output_initialize(void);
+ void recomp_audio_output_shutdown(void);
+ void recomp_audio_output_reset_voice(uint32_t slot);
++/* Only 3D voices enable this. It changes routing, never source PCM/cursor units.
++ * pan is -1 left, +1 right; disabled restores ordinary mono/stereo output. */
++void recomp_audio_output_set_spatial(uint32_t slot, float pan, int enabled);
+ 
+ /* Copies PCM before returning; never retains a guest-memory pointer.
+    Slots: 0..255 for buffers, 256..271 for streams, 272
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -50,6 +50,7 @@
+ #include "dsound_buffer_model.h"
+ #include "xbox_adpcm.h"
+ #include "audio_output.h"
++#include "gameplay/pc_spatial_audio.h"
+ 
+ void hle_dsound_stream_tick(uint64_t now);   /* hle_dsound_stream.c */
+ 
+@@ -90,6 +91,8 @@
+     uint64_t play_us;
+     int      fed;
+     int32_t  level;              /* the volume last sent, hundredths of a dB */
++    float pan;
++    int spatial;
+ } Buffer;
+ 
+ static Buffer g_buffers[SLOTS];
+@@ -485,6 +488,7 @@
+     if (b->fed && recomp_audio_output_position(slot_of(b), NULL, &queued) && queued == 0u)
+         g_stat.underruns++;
+     b->level = buffer_level(b, &is3d);
++    recomp_audio_output_set_spatial(slot_of(b),b->pan,b->spatial);
+     if (!recomp_audio_output_submit(slot_of(b), pcm, bytes, out->sample_rate,
+                                     channels, bits, b->level))
+         return;
+@@ -1466,6 +1470,34 @@
+     HLE_MEM32(params) = 0u;
+     HLE_MEM32(params + 0x7Cu) = 0u;
+     HLE_MEM32(vdata) = 0u;
++    /* US Calculate3D (0040897B): source/listener positions are +8 and
++       listener front/up are +20/+2C. Read those inputs: the selected 2D XDK
++       helper only writes X/Z of its cached relative vector at params+5C.
++       Distance/cone attenuation still comes from the original calculator. */
++    {
++        float relative[3],front[3],up[3];
++        unsigned mode=HLE_MEM32(params+0x40u);
++        memcpy(relative,HLE_PTR(params+8u),sizeof relative);
++        if(mode!=1) {
++            float listener[3];memcpy(listener,HLE_PTR(ds+0x38u),sizeof listener);
++            for(unsigned axis=0;axis<3;axis++)relative[axis]-=listener[axis];
++        }
++        memcpy(front,HLE_PTR(ds+0x50u),sizeof front);
++        memcpy(up,HLE_PTR(ds+0x5Cu),sizeof up);
++        float pan=recomp_spatial_pan(relative,front,up,mode);
++        lock();
++        for(unsigned i=0;i<SLOTS;i++) {
++            Buffer *b=&g_buffers[i];
++            if(b->iface && guest_readable(b->iface-0xCu,4u) &&
++               HLE_MEM32(b->iface-0xCu)==settings) {
++                b->pan=pan;b->spatial=mode<2;
++                recomp_audio_output_set_spatial(i,pan,b->spatial);
++            }
++        }
++        unlock();
++        extern void hle_dsound_stream_spatial(uint32_t,float,int);
++        hle_dsound_stream_spatial(settings,pan,mode<2);
++    }
+     commit_note(client, settings, params, vdata);
+     g_stat.commits_3d++;
+ }
+--- a/src/hle/hle_dsound_stream.c
++++ b/src/hle/hle_dsound_stream.c
+@@ -105,6 +105,8 @@
+     uint32_t callback, context;      /* LPFNXMEDIAOBJECTCALLBACK, its context */
+     int      output;                 /* the host can play this format */
+     int32_t  volume;
++    float pan;
++    int spatial;
+     int      paused;
+     Packet   packets[MAX_PACKETS];
+     int      head, count;
+@@ -497,6 +499,7 @@
+           * stepping over the refusal would delete that sound from the stream
+           * and leave everything after it late by its length. */
+         s->level = stream_level(s);
++        recomp_audio_output_set_spatial(slot_of(s),s->pan,s->spatial);
+         if (!recomp_audio_output_submit(slot_of(s), pcm, bytes, play_rate(s), s->channels,
+                                         out_bits(s), s->level))
+             break;
+@@ -530,6 +533,19 @@
+         if (level != s->level && recomp_audio_output_set_volume(slot_of(s), level))
+             s->level = level;
+     }
++}
++
++void hle_dsound_stream_spatial(uint32_t settings,float pan,int enabled)
++{
++    lock();
++    for(unsigned i=0;i<MAX_STREAMS;i++) {
++        Stream *s=&g_streams[i];
++        if(s->object && guest_readable(s->object+0x14u,4u) && HLE_MEM32(s->object+0x14u)==settings) {
++            s->pan=pan;s->spatial=enabled;
++            recomp_audio_output_set_spatial(slot_of(s),pan,enabled);
++        }
++    }
++    unlock();
+ }
+ 
+ void hle_dsound_stream_tick(uint64_t now)
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -6,6 +6,7 @@
+  * RECOMP_AUDIO_GAIN uses the shared output headroom here rather than muted.
+  */
+ #include "audio_output.h"
++#include "gameplay/pc_spatial_audio.h"
+ 
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+@@ -41,6 +42,7 @@
+     PcmBuffer buffers[kQueueSize];
+     uint32_t sample_rate, channels, bits_per_sample;
+     uint32_t front, queued;
++    float original_matrix[4];
+ };
+ 
+ std::atomic<HRESULT> critical_error{S_OK};
+@@ -58,6 +60,20 @@
+ IXAudio2 *engine;
+ IXAudio2MasteringVoice *master;
+ OutputVoice voices[kVoiceCount];
++struct Spatial { float pan; int enabled; } spatial[kVoiceCount];
++void routeVoice(uint32_t slot)
++{
++    OutputVoice &voice=voices[slot];
++    if(!voice.source)return;
++    float matrix[4];
++    std::memcpy(matrix,voice.original_matrix,sizeof matrix);
++    if(spatial[slot].enabled) {
++        float left,right;recomp_spatial_gains(spatial[slot].pan,&left,&right);
++        if(voice.channels==1) {matrix[0]=left;matrix[1]=right;}
++        else {matrix[0]*=left;matrix[1]*=left;matrix[2]*=right;matrix[3]*=right;}
++    }
++    voice.source->SetOutputMatrix(master,voice.channels,2,matrix);
++}
+ bool reported_nonzero[kVoiceCount];
+ bool attempted, com_initialized, callback_registered, summary_printed;
+ unsigned long long submitted_buffers, submitted_bytes, nonzero_buffers;
+@@ -171,7 +187,7 @@
+         return;
+     }
+     callback_registered = true;
+-    error = engine->CreateMasteringVoice(&master);
++    error = engine->CreateMasteringVoice(&master, 2);
+     if (FAILED(error)) {
+         disableOutput("CreateMasteringVoice", error);
+         return;
+@@ -212,7 +228,15 @@
+ extern "C" void recomp_audio_output_reset_voice(uint32_t slot)
+ {
+     checkCriticalError();
+-    if (slot < kVoiceCount) destroyVoice(voices[slot]);
++    if (slot < kVoiceCount) { destroyVoice(voices[slot]);spatial[slot]={}; }
++}
++
++extern "C" void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled)
++{
++    if(slot>=kVoiceCount)return;
++    pan=std::isfinite(pan)?std::fmax(-1.f,std::fmin(1.f,pan)):0.f;
++    if(spatial[slot].pan==pan && spatial[slot].enabled==!!enabled)return;
++    spatial[slot]={pan,!!enabled};routeVoice(slot);
+ }
+ 
+ extern "C" int recomp_audio_output_position(uint32_t slot, uint64_t *played_bytes,
+@@ -322,6 +346,8 @@
+         voice.sample_rate = sample_rate;
+         voice.channels = channels;
+         voice.bits_per_sample = bits_per_sample;
++        voice.source->GetOutputMatrix(master,channels,2,voice.original_matrix);
++        routeVoice(slot);
+         error = voice.source->Start();
+         if (FAILED(error)) {
+             dropBuffer(slot, "start-voice");

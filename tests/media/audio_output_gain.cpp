@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cstdint>
 #include "hle/audio_output.h"
+#include "gameplay/pc_spatial_audio.h"
 using HRESULT=long;
 #define FAILED(value) ((value)<0)
 enum { COINIT_MULTITHREADED, XAUDIO2_DEFAULT_PROCESSOR };
@@ -14,9 +15,17 @@ static int callback,opened;
 static float heard_gain=-1;
 struct Master { HRESULT SetVolume(float gain) {heard_gain=gain;return 0;} } device;
 static Master *master;
+static constexpr unsigned kVoiceCount=4;
+struct Source {
+    float matrix[4];
+    void SetOutputMatrix(Master *,unsigned src,unsigned dst,const float *m)
+    {assert(dst==2);memcpy(matrix,m,src*dst*sizeof(float));}
+} source;
+struct OutputVoice {Source *source;unsigned channels;float original_matrix[4];} voices[kVoiceCount];
+struct Spatial {float pan;int enabled;} spatial[kVoiceCount];
 struct Engine {
     HRESULT RegisterForCallbacks(int *) {return 0;}
-    HRESULT CreateMasteringVoice(Master **out) {++opened;*out=&device;return 0;}
+    HRESULT CreateMasteringVoice(Master **out,unsigned channels) {assert(channels==2);++opened;*out=&device;return 0;}
 } instance;
 static Engine *engine;
 static void checkCriticalError() {}
@@ -37,6 +46,16 @@ int main(int argc,char **argv)
         assert(std::fabs(gainOf(-2000)-0.1f)<0.00001f);
         assert(gainOf(-10000)==0.f);
         recomp_audio_output_initialize();assert(opened==1);
+        voices[0]={&source,1,{1,1,0,0}};
+        recomp_audio_output_set_spatial(0,-1,1);
+        assert(source.matrix[0]==1 && source.matrix[1]==0);
+        recomp_audio_output_set_spatial(0,1,1);
+        assert(source.matrix[0]==0 && source.matrix[1]==1);
+        recomp_audio_output_set_spatial(0,0,1);
+        assert(std::fabs(source.matrix[0]-0.70710678f)<0.00001f);
+        recomp_audio_output_set_spatial(0,0,0);
+        assert(source.matrix[0]==1 && source.matrix[1]==1);
+        recomp_audio_output_set_spatial(99,1,1); /* reject invalid slots */
     }
     puts("PASS: actual XAudio master initialization and voice attenuation");
 }

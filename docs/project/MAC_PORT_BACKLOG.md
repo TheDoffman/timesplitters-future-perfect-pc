@@ -269,6 +269,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-117 | Retired compatibility memory APIs | Awaiting validation |
 | MAC-118 | Independent kernel object lifetime | Awaiting validation |
 | MAC-119 | Profile-scoped Unlock Content | Awaiting validation |
+| MAC-120 | Enhanced Audio beta | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7122,3 +7123,28 @@ No production source, built executable or prior gameplay evidence changed.
   standard Back input and save callback.
   See [STATUS](STATUS.md#profile-scoped-unlock-content-2026-10-28) for live evidence
   and [implementation](../agent-context/unlock-content.md) for contracts.
+
+### MAC-120 - Enhanced Audio beta
+
+- **Status:** Awaiting validation
+- **Source/PR:** `32a5774`, PR #397.
+- **Mac support present:** Shared code is implemented; native Mac execution/listening is pending.
+- Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
+  provide directional buffers/streams, near-field centering, longer gunfire
+  range, wall/portal filtering and metadata-driven ambience mixing. Both
+  backends consume shared DSP; SDL changes apply to newly queued PCM.
+- Setting: common Audio Options builder exposes **Enhanced Audio (Beta)**,
+  defaults OFF, and uses the shared `pc_audio_settings.h` implementation to
+  atomically save `pc-audio.ini` beside the host's display/input configuration.
+  The launcher's shared C# Audio tab reads/writes the same sidecar, including
+  draft/conflict/rollback handling and both `LauncherPlatform` path maps.
+  No OS-specific feature model or second persistence schema is required.
+- Acceptance: verify launcher Audio-tab/game-menu round trips on Mac; verify
+  toggle visibility, live ON/OFF and restart persistence in
+  frontend/pause; verify rotation, centered weapons, distant gunfire, roof/wall
+  filtering and ambience on several maps. Check music/dialogue and queue delay.
+  Split-screen acoustics and full tunnel reverberation remain outside acceptance.
+- Windows: Release builds; 30 selected media/menu tests pass, with two native
+  Mac compile checks skipped. User confirms selector visibility/persistence and
+  earlier range/centering/helicopter behavior; these are not Mac hardware results.
+  See [audio contracts](../development/positional-audio.md).

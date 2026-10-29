@@ -44,6 +44,21 @@ when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
 
+## Enhanced Audio beta preference
+
+`GameSettings.EnhancedAudio` and the shared `SettingsPage` Audio tab expose
+**Enhanced Audio (Beta)** on Windows/WPF and Mac/Avalonia. The sixth entry in
+`LauncherPlatform.Settings` is `pc-audio.ini` in the same directory as display
+settings (`config/` for a development checkout, `Settings/` when installed).
+It uses the game's `TSFP_AUDIO_V1 0|1` sidecar, defaults OFF, and participates
+in normal dirty-state comparison, concurrent-edit protection and six-file save
+rollback. There is no duplicate launcher JSON or environment-only preference.
+The launcher follows its normal save-before-launch policy; the in-game toggle
+still updates playback live. Earlier games may ignore this optional sidecar.
+Shared C# UI tests cover opt-in, game-menu round trips, draft state, invalid/
+concurrent inputs and rollback after an audio-file write failure. Windows build
+and tests passed locally; native Mac UI/build execution remains pending MAC-120.
+
 ## Saved settings button
 
 `SettingsPage` snapshots its deferred draft after a successful save and disables

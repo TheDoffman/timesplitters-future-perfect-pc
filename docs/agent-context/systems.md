@@ -45,7 +45,7 @@ texture hooks; offline tooling `tools/textures/`. Sanitized replacements now liv
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 private source art and original assets stay local. Networking: `src/network/`, runtime HLE/kernel patches and `tools/network/online.py`. Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
-Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
+Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their

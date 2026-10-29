@@ -106,6 +106,38 @@ Executable SHA-256:
 The executable matches runner/game provenance, and 23 project-source plus six
 installed-runtime hashes match the recorded build inputs.
 
+## Enhanced Audio beta candidate (2026-10-28)
+
+Local `positional-stereo-audio`, based on main `2e678ac`, adds shared stereo
+projection and original-world-coordinate room/portal acoustics for positional
+buffers and streams. First-person sounds stay centered and gunfire retains
+its tested longer range. Metadata-driven stereo ambience receives a quieter,
+softer background mix across maps, with extra filtering for outdoor beds
+beneath cover. User listening confirms gunfire range/centering and the Vietnam
+helicopter roof/entrance correction. Broader ambience listening remains pending.
+
+Audio Options now has a native **Enhanced Audio (Beta)** OFF/ON selector in its
+shared frontend/pause builder. Default OFF restores ordinary routing; the
+atomic `pc-audio.ini` preference applies live and survives restart. User confirmed
+that the corrected row is visible and retains its choice; the isolated save
+contains `TSFP_AUDIO_V1 1`. The first layout had a zero-height row; the corrected
+version inherits Audio's explicit height and uses a smaller caption.
+
+Windows Release target builds and 30 selected media/menu tests pass; two native
+Mac compile checks are skipped on this host. Shared SDL processing, source byte
+clocks, refusal/history/reset and settings failure handling are covered by
+fixtures. Full tunnel reverberation, split-screen acoustics and native Mac
+hardware/UI/listening are unverified (MAC-120). See the
+[audio contracts](../development/positional-audio.md).
+The shared launcher now exposes the same beta preference under Settings ->
+Audio, using the game sidecar with default OFF and conflict/rollback handling.
+Windows launcher build/tests passed, including all three new UI cases; portable
+launcher/Mac-adapter checks passed 31 tests and 26 subtests. Native Mac launcher
+execution remains pending.
+Audio is committed on `positional-stereo-audio` (`32a5774`), PR #397.
+CI caught a CRLF working-copy hash in the generated audio patch index;
+normalizing the patch to LF and refreshing the index corrects clean-checkout validation.
+
 ## Retired compatibility memory APIs (2026-10-28)
 
 Working tree based on `f0633f99`, after all 17 prerequisite CI checks passed.

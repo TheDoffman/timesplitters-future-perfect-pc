@@ -16,6 +16,9 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
+static int enhanced_audio,audio_save_ok=1;
+int pc_audio_enhanced_enabled(void) {return enhanced_audio;}
+int pc_audio_set_enhanced(int enabled) {if(!audio_save_ok)return 0;enhanced_audio=!!enabled;return 1;}
 static unsigned built_rows, built_row_count, built_ids[32],separators;
 static char runtime_path[MAX_PATH];
 static int requested_rate=-1;
@@ -181,11 +184,12 @@ static void call(uint32_t address,int selected,unsigned buttons)
     void (*fn)(void)=pc_display_menu_lookup(address); CHECK(fn);fn();
     CHECK(g_esp==0x700004 && g_esi==0xABC && g_ebx==0xDEF && g_fp_top==3);
 }
-static uint32_t observed_builder_flags,observed_row_flags;
+static uint32_t observed_builder_flags,observed_row_flags,observed_beta_height;
 static uint32_t observed_callbacks[3],observed_callback_count;
 static void button_probe(void)
 {
     if(observed_callback_count<3)observed_callbacks[observed_callback_count++]=WORD_AT(g_esp+20);
+    if(WORD_AT(g_esp+8)==15)observed_beta_height=WORD_AT(g_esp+16);
     observed_builder_flags=WORD_AT(0x500028);
     observed_row_flags=WORD_AT(g_esp+12);
     g_eax=0x510000;g_esp+=4;
@@ -381,9 +385,14 @@ int main(int argc,char **argv)
         CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
         CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
     }
-    g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;
+    g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;WORD_AT(g_esp+16)=bits(54.f);
     pc_display_menu_button(button_probe);
     CHECK((observed_row_flags&0x21)==0x21 && WORD_AT(0x70000c)==0x20000 && g_esp==0x700004);
+    CHECK(audio_beta_row==0x510000 && observed_beta_height==bits(54.f));
+    WORD_AT(audio_beta_row+0xc8)=1;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==1);
+    audio_save_ok=0;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);
+    CHECK(enhanced_audio==1 && WORD_AT(audio_beta_row+0xc8)==1);
+    audio_save_ok=1;WORD_AT(audio_beta_row+0xc8)=0;call(AUDIO_BETA_CHANGE,0,0);CHECK(enhanced_audio==0);
     /* Drives use alphabetical letters/names, independent of the active drive,
        and keep host IDs away from the console device table. */
     {
