@@ -6,6 +6,8 @@ merges system DPI awareness with UAC/common-controls before network identity
 sealing. `test_window_theme.py` builds isolated manifest/no-manifest probes,
 checks embedded XML and asks Windows for the actual process awareness. These
 tests already run in both-host runtime CI (Windows-only cases skip on Mac).
+The native CI dependency selection includes the shared `pefile` pin because
+these probes inspect the executable's PE resources before checking process DPI.
 
 [Build/test speed and timing alerts](release-speed.md).
 
