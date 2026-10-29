@@ -918,6 +918,8 @@ Native GL implements the same texture-region transfer in
 state. The map geometry and gameplay controls remain guest-owned; this adapter
 only transfers the image that the game already drew.
 
+Temporary UV matrices: [render epoch and arena lifetime](render-matrix-cache.md).
+
 ## Forced and damped material scrolling
 
 `pc_native_material.h` splits127500 velocity/travel in raw game time:

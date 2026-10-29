@@ -21,6 +21,9 @@ Setup: [snapshot](runtime.md). [Wind](native-wind.md).
 
 Sampler, trace/thread/idle and state-slot tests: [runtime](runtime.md).
 
+Material-cache/arena checks run in the existing native timing suite; see
+[render matrix lifetime](render-matrix-cache.md).
+
 Shader upload tests: [RHI fixture](vsh-constants.md).
 
 Opening replay: [intro versus gameplay](native-opening-checks.md).

@@ -4,6 +4,11 @@ Root AGENTS.md and the PR template require a short user-facing Change and Cause
 and fix description. Keep technical evidence in the existing project records;
 the simpler opening description does not remove testing or platform obligations.
 
+Keep fixed issues open until a published version includes the fix. Use non-closing
+PR references (`Refs #123`), mark publication pending, and verify/link the release
+before closing. The 2026-10-29 root AGENTS rule overrides older template closing
+instructions; merge-time resolution comments do not establish publication.
+
 Kernel stages: [object ownership, boot and validation](kernel-objects.md).
 Generate the patch index from LF patch bytes matching Git; CRLF working copies
 can produce different hashes and target names despite local checks passing.

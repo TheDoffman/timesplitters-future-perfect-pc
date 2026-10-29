@@ -180,10 +180,11 @@ def test_original_scripted_yaw_callback(tmp_path):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c', 'native_material_motion.c', 'native_character_trace.c', 'native_walk_trace.c', 'native_walk_policy.c', 'native_surface_interval.c', 'native_surface_mode.c', 'native_surface_native.c', 'native_surface_render_guest.c', 'native_surface_runtime.c', 'native_surface_gpu_owner.c', 'native_surface_gpu_cache.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
+        'native_render_cache.c', 'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_contact_trace.c', 'native_surface_trace.c', 'native_surface_capture.c', 'native_surface_precision.c', 'native_surface_coupled.c', 'native_surface_basis.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh'),
-     ('native_surface_interval.c', 'reset-phase')])
+     ('native_surface_interval.c', 'reset-phase'),
+     ('native_render_cache.c', 'console-cache-epoch')])
 def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
@@ -198,6 +199,20 @@ def test_native_timing(source, mutation, tmp_path):
         (tmp_path / 'graphics/surface_interval.h').write_text(adapter.replace(needle, needle+' phase=0;'))
         source_path = tmp_path / source
         source_path.write_text((repo_file(ROOT, 'tests', source)).read_text())
+    elif mutation == 'console-cache-epoch':
+        adapter = (ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text()
+        line = 'NT_WORD(0x7497ACu)=NT_WORD(0x7497B8u);'
+        assert adapter.count(line) == 2
+        adapter_path = tmp_path/'render_clock.inc'
+        adapter_path.write_text(adapter.replace(line, '(void)0;'))
+        baseline = (ROOT/'tests/gameplay/native_timing_guest.c').read_text()
+        baseline = baseline.replace('"../src/gameplay/pc_native_timing_guest.inc"',
+                                    '"'+adapter_path.as_posix()+'"')
+        baseline_path = tmp_path/'clock_fixture.c'
+        baseline_path.write_text(baseline)
+        source_path = tmp_path/source
+        source_path.write_text((ROOT/'tests/gameplay'/source).read_text().replace(
+            '"native_timing_guest.c"', '"'+baseline_path.as_posix()+'"'))
     elif mutation:
         # Reject changing network clock units to rendered-frame counts. Keep
         # production files intact; mutate only this disposable translation unit.
@@ -291,7 +306,8 @@ def test_native_timing(source, mutation, tmp_path):
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
         assert result.returncode != 0
-        expected = ('p->begins_tick' if mutation == 'reset-phase' else
+        expected = ('c->matrix' if mutation == 'console-cache-epoch' else
+                    'p->begins_tick' if mutation == 'reset-phase' else
                     'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40')
         assert expected in result.stderr, result.stdout + result.stderr
 
@@ -542,6 +558,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                   (0x153600,0x153650),(0x153650,0x1536a0),(0x153270,0x1533e0)]),
     ('native_character_effects.c', [(0x1260c0,0x126236),(0x11fec0,0x120102),
                                     (0x151650,0x15178f),(0x151e80,0x151f1c)]),
+    ('native_render_matrix_original.c', [(0x948b0,0x949a3),(0x3e930,0x3e962),(0x3e970,0x3e992)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -686,12 +703,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_impact_sparks.c','native_npc_aim.c'):
+        if harness_name in ('native_render_matrix_original.c','native_walk_contact.c','native_locomotion.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_character_effects.c','native_character_scale.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_impact_sparks.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
             from capstone import Cs, CS_ARCH_X86, CS_MODE_32
-            addresses=set(range(0x1163f8,0x116408,4) if harness_name=='native_light_preview.c'
+            addresses=set(range(0x949a4,0x949b4,4) if harness_name=='native_render_matrix_original.c'
+                          else range(0x1163f8,0x116408,4) if harness_name=='native_light_preview.c'
                           else range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'

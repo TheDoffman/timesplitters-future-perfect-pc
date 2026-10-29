@@ -1,3 +1,40 @@
+## Mars Prison high-refresh material flicker (#398) - 2026-10-29
+
+Based on main `3b4e679b` plus rule commit `1bed1e71`, with the shared cache fix
+uncommitted during validation. The temporary material matrix cache now uses
+render serial `7497B8`, in both timing paths, instead of a 60 Hz ISR stamp.
+No console/gameplay clock is accelerated; see [contract](../agent-context/render-matrix-cache.md).
+
+Windows x64 / MSVC19.44 / Python3.14.5 / common D3D11: patch validation and
+Release Build/built-in checks pass. All **113 native timing tests** pass; the
+refined new regressions separately pass **3 tests**. Restoring the console stamp
+compiles and fails on stale matrix bytes. The checksum-verified US XBE fixture
+executes original cache948B0 and alternating allocator3E930/3E970: old stamps
+fail at144/180/240, per-render stamps pass at60/120/144/180/240. Matrix production
+and arena overwrites are controlled boundaries. The real-clock fixture covers
+pause, live rate/mode switches, same-render sharing and serial wrap.
+
+Autonomous isolated Test Lab runs reached bot-free Mars Prison at1280x720.
+The pre-fix240 capture has herringbone cloud corruption; its next frame is
+normal. Texture bytes, geometry and bindings match. Replacing only vertex
+constants160..163 removes the defect offline. The production build produced
+**24 clean GPU samples each** at Original60/native120/native180/native240;
+clouds animate and nearby terrain/buildings remain stable. Capture cadence61
+avoids aliasing with native frame phases. Native120/180 traces measured about
+118.8/177.2 guest updates/s over seconds70..105, not monitor scanout.
+
+Tested executable SHA-256:
+`4183f0c8260600d629b7f2d2e501a7b6c16654eb529912850903a7feffc0dd2f`.
+A source-header comment was clarified afterward without changing behavior.
+Diagnostic instrumentation was removed before fixed-build scene runs. Saves,
+controls and displays are isolated; the canonical fixture and personal data
+are preserved. An unrelated game in another checkout was left untouched.
+Selected local evidence stays ignored in `private/captures/issue398`.
+
+This verifies the reported scene/cache contract, not every map/material or a
+campaign. Physical Mac scene acceptance remains pending (MAC-122). Issue #398
+must remain open until a published release containing the fix is linked.
+
 ## Mounted-gun operator and instance names (#385) — 2026-10-29
 
 Branch `fix/385-mounted-mouse`, based on main `68408d4d`. The shared helper
