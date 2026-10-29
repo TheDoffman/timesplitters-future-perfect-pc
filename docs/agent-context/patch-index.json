@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "b253271c524d6415049509ea1b1042ff80344e1a0ab04fff359ffdd18aa75d9d",
+  "loaderSha256": "b265d7534b6e932e19e1e8725b0a95e631bfdc3194b45e318563de0294357a7d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2401,6 +2401,14 @@
       "name": "0226-original-device-queue-mirrors.patch",
       "path": "patches/compiler/0226-original-device-queue-mirrors.patch",
       "sha256": "8ba2017d1012dc1b6d3b6bb4985ae17d8e21971b22acc8cd88c27578f73b60da",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0227-original-device-queue-lifetime.patch",
+      "path": "patches/compiler/0227-original-device-queue-lifetime.patch",
+      "sha256": "348b0ac5f6ebf1cba57a003b81c06cd40dd394ad978dedd9d137adf736fb193d",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

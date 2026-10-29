@@ -303,3 +303,5 @@ Stage0224: [queue ownership and native acceptance routes](transfer-completion.md
 Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
 
 Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
+
+Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).

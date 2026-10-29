@@ -32488,3 +32488,57 @@ agree. All26 protected save/settings/fixture files across both local checkouts
 retain hash/size/mtime. Windows NT10.0.26300 x64, minimized synthetic-input,
 movie-skipped test; not physical input/listening/full campaign or native Mac
 execution evidence. New-source CI pending; see transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0227 persistent device queue lifetime
+
+Started clean42788f14c376b782379b209c3ffc0a8a92dd3b77 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior42788 runtime
+40942569236 and launcher40942569242 both completed/success, including both native
+hosts/upgrades and final launcher gates. Previous turn was committed/pushed source
+progress, not full-goal completion. PR406 remains draft/open/unmerged.
+
+Original guest_io_scheduler.c/.h adds bounded persistent records/entry storage,
+real device leases and generation-checked, noncopyable API tickets. A preparation
+reservation is not exposed as a usable queue. Device pin/final release occur
+outside metadata locks. Submit pins matching request-owned device bindings before
+admission, so drained pending operations retain independent device lifetime.
+Close/global stop commit admission closure under the shared metadata lock before
+waiter drain. Current requests/API callbacks keep the record/device alive until
+explicit next and scope drain. Failed final lease release quarantines accounting
+without retry/reuse. Scoped StartIo handles actual native unwind without retaining
+C-stack contexts in persistent records. Kernel imports remain legacy; caller-owned
+adoption, keyed/cancel policy and storage/event/APC/backend routing remain required.
+No additional legacy function or full toolkit dependency is claimed retired.
+
+Candidate9 baseline/fault tests passed10.86s. They cover real device heap ownership,
+inline deletion/completion while the outer API still pins the device, actual
+native longjmp, closed waiters retaining pending request/device references,
+lookup rejection, capacity/generation exhaustion, malformed preparation and stop
+while preparing. A controlled release failure keeps the actual lease quarantined;
+only explicit fixture recovery releases that known retained test resource. A close
+fault initially survived because drain closed admission later; an unlock-boundary
+submission probe now tests close/global-stop linearization before drain. All eight
+bad variants must compile and fail at runtime, with fatal warnings retained.
+
+Final affected native/request/device/title/header suite225passed112.58s, including
+those9 scheduler cases. Four fresh/historical upgrade models and context/backlog
+checks25passed149.11s, distinct from225. Release/built-in checks and matching crash
+symbols passed. Archive selects22 device/I/O providers once, including11 scheduler/
+scope API symbols; kernel_ob and nine previously retired native exports absent.
+All22 generated files unchanged/current fingerprint. Context guide size enforcement
+caught systems.md crossing65536 bytes before writing; its0224-0227 links are now
+consolidated into the detailed owning guide rather than dropping contract content.
+
+Actual build: dirty42788f14 with exact source/patch inputs recorded in ignored
+logs/io-scheduler-build.json. Executable SHA256
+278d7cfe023bec821592e79a15c9fc8a3dcfcbc3c131c69161b794946f31fb3e.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174539/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.802s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.

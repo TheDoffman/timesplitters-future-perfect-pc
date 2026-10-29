@@ -196,3 +196,50 @@ its portable17 scenarios. Shared CI selects both suites on Windows/Mac. This is
 not yet a persistent per-device registry/lease lifecycle, keyed scheduling,
 cancellation, kernel import route or full storage/event/APC backend. Existing
 kernel queue bridges remain selected until those adapters are integrated.
+
+## Persistent device queue lifetime
+
+Stage0227 selects guest_io_scheduler.c/.h through0227 after0226. A bounded
+caller-owned record/entry array hosts persistent queues, mirrors and real device
+leases. One metadata lock protects registry and queues, ordered before request
+locks. PREPARING reserves capacity without exposing a half-built queue; competing
+preparation rejects rather than claiming success. Pinning and final lease release
+run outside metadata locks. Slot generations never wrap/reuse exhausted values.
+
+Each noncopyable API ticket owns a separate record reference and validates slot
+state/generation before use. The registry's device lease survives idle/current/
+waiting work until explicit close, empty queue and all API refs drain. Device
+pointers cannot be reused while that lease is held. Call close for deletion,
+even when idle; callers must own legal device use and coordinate factory teardown.
+Closed live records remain accessible with create=0 to retire a known current.
+Submit pins matching request-owned device bindings before admission, independently
+protecting pending operations after queue drain. Failed admission may retain this
+pin in the request attachment until final disposal; it never invents completion.
+
+Close marks record and queue admission closed under one lock, then drains waiters
+outside locks while retaining current and active API refs. Global stop closes all
+admission in its initial locked sweep, including preparing creators, before drain.
+Reference exhaustion can prevent a complete drain; ownership remains accounted
+and caller shutdown must join users and complete/cancel pending work. Final device
+lease release runs outside locks; failure quarantines the record and lease without
+retry/reuse. Normal object-provider cleanup uncertainty remains accounted by that
+provider. Manager/context/storage outlive every pending/quarantined resource.
+
+Thread-affine queue scopes release API tickets before native C-stack abandonment.
+Scheduler StartIo consumes the selected caller ref and uses the matching factory,
+request device binding, live record and shared callback composer; it holds no
+metadata locks over guest execution. Inline complete/next may empty a closed
+queue, but its device lease remains until the outer API scope returns/unwinds.
+Normal end remains required; callbacks and guest mutations are externally serialized.
+
+Maintained test_io_scheduler covers real device heap ownership, scoped inline
+completion/deletion, actual native longjmp, closed waiters retaining pending
+operation/device references, rejected lookup, capacity/generation guards, bad-body
+preparation, stop-during-preparation and submission at the close/stop interleaving.
+A controlled lease-release failure preserves/quarantines the actual lease; no
+manager retry occurs. Only fixture recovery releases the deliberately retained
+lease after checking accounting. Eight compiled bad variants must fail at runtime.
+Both native CI hosts select it; host contracts do not establish Mac title gameplay.
+Kernel import routing, caller-owned request adoption, keyed/cancel policies and
+actual synchronous/async storage/event/APC backend integration remain unfinished.
+Existing kernel queue bridges still use legacy implementations.

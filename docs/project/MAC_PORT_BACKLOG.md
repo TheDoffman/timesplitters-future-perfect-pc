@@ -7588,3 +7588,17 @@ Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
 Prior0368 Windows/Mac runtime and launcher CI passed; new-source CI and native Mac
 title acceptance pending. Keep MAC-118 Awaiting validation. STATUS stage0226
 records hashes, host and scope; transfer-completion.md describes contracts.
+
+
+MAC-118 stage0227 follow-up (PR#406): shared guest_io_scheduler.c/.h owns bounded
+persistent device queue records, real device leases and generation-checked API
+refs. Scoped cleanup handles nonlocal exits; close/global stop reject new work
+before draining waiters, retaining current/pending/callback lifetime independently.
+Final failed lease release quarantines without automatic retry. No OS adapter is
+needed for this common layer. Windows225 native/request/device/title/header tests
+include9 scheduler cases;25 upgrades/context checks, Release/built-ins/symbols and
+isolated Story movement/fire/pause/resume passed. Prior42788 Windows/Mac runtime
+and launcher CI passed; new-source CI and native Mac title execution pending.
+Kernel import routing, caller-owned adoption, keyed/cancel/backend policies still
+need integration. Keep MAC-118 Awaiting validation. STATUS stage0227 records exact
+hashes, host and scope; transfer-completion.md describes lifecycle contracts.
