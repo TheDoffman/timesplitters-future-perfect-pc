@@ -27,20 +27,32 @@ const tsfp_guest_object_lease *tsfp_guest_scope_borrow_key(tsfp_guest_object_sco
     if(!tsfp_guest_objects_acquire_key(frame->store,key,&frame->leases[i])) return NULL;
     frame->tokens[i]=alias;++frame->count;return &frame->leases[i];
 }
+int tsfp_guest_scope_on_leave(tsfp_guest_object_scopes *stack,tsfp_guest_object_scope *frame,
+    int (*cleanup)(void *,int),void *context) {
+    if(!stack || !frame || stack->current!=frame || !cleanup || frame->cleanup)return 0;
+    frame->cleanup=cleanup;frame->cleanup_context=context;return 1;
+}
 int tsfp_guest_scope_leave(tsfp_guest_object_scopes *stack,tsfp_guest_object_scope *frame) {
-    int ok=1;
+    int ok=1,abandoned;int (*cleanup)(void *,int);void *context;
     if(!stack || !frame || stack->current!=frame) return 0;
     stack->current=frame->previous;frame->previous=NULL;
     while(frame->count) {
         --frame->count;
         if(!tsfp_guest_objects_release(&frame->leases[frame->count])) ok=0;
     }
-    frame->store=NULL;return ok;
+    frame->store=NULL;
+    cleanup=frame->cleanup;context=frame->cleanup_context;abandoned=(int)frame->abandoned;
+    frame->cleanup=NULL;frame->cleanup_context=NULL;
+    if(cleanup && !cleanup(context,abandoned))ok=0;
+    return ok;
 }
 int tsfp_guest_scope_abort(tsfp_guest_object_scopes *stack) {
     int ok=1;
     if(!stack) return 0;
-    while(stack->current) if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;
+    while(stack->current) {
+        stack->current->abandoned=1;
+        if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;
+    }
     return ok;
 }
 uint64_t tsfp_guest_scope_mark(const tsfp_guest_object_scopes *stack) {
@@ -53,7 +65,9 @@ int tsfp_guest_scope_unwind(tsfp_guest_object_scopes *stack,uint64_t mark) {
         for(p=stack->current;p && p->serial!=mark;p=p->previous) { }
         if(!p) return 0;
     }
-    while(stack->current && stack->current->serial!=mark)
+    while(stack->current && stack->current->serial!=mark) {
+        stack->current->abandoned=1;
         if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;
+    }
     return ok;
 }

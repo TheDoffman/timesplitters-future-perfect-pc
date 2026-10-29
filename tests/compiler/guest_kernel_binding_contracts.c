@@ -135,6 +135,10 @@ static HANDLE create_thread(LPSECURITY_ATTRIBUTES attributes,SIZE_T stack,
     if(fail_host_create) return NULL;
     return CreateThread(attributes,stack,entry,context,flags,id);
 }
+static int bridge_device_free_body(uint32_t body,uint32_t kind,uint32_t flags) {
+    /* Device execution is covered by the separate complete host fixture. */
+    (void)body;(void)kind;(void)flags;CHECK(0);return -1;
+}
 #include "guest_kernel_objects.inc"
 static void *create_descriptor(size_t count,size_t bytes) {
     return fail_descriptor?NULL:calloc(count,bytes);

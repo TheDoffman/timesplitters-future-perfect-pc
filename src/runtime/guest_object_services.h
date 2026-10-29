@@ -6,7 +6,7 @@
 enum tsfp_guest_object_kind {
     TSFP_KIND_UNKNOWN, TSFP_KIND_THREAD, TSFP_KIND_EVENT_MANUAL,
     TSFP_KIND_EVENT_AUTO, TSFP_KIND_MUTANT, TSFP_KIND_SEMAPHORE,
-    TSFP_KIND_TIMER, TSFP_KIND_FILE, TSFP_KIND_PROCESS, TSFP_KIND_COUNT
+    TSFP_KIND_TIMER, TSFP_KIND_FILE, TSFP_KIND_PROCESS, TSFP_KIND_DEVICE, TSFP_KIND_COUNT
 };
 #define TSFP_OBJECT_SUCCESS UINT32_C(0)
 #define TSFP_OBJECT_BAD_ADDRESS UINT32_C(0xc0000005)
@@ -51,4 +51,8 @@ uint32_t tsfp_guest_object_close(tsfp_guest_object_services *,uint32_t handle);
  * entry; this function does not model permissions or cross-process transfers. */
 uint32_t tsfp_guest_object_duplicate(tsfp_guest_object_services *,uint32_t source,
     uint32_t options,uint32_t output_address);
+/* A key is host-side identity, never a guest pointer. The caller retains it
+ * throughout this call. Success gives the guest its own object reference. */
+uint32_t tsfp_guest_object_reference_key(tsfp_guest_object_services *,uint64_t key,
+    uint32_t expected_type,uint32_t output_address);
 #endif

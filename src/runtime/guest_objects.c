@@ -106,6 +106,24 @@ int tsfp_guest_objects_adopt(tsfp_guest_objects *s,uintptr_t host,uint32_t kind,
     }
     leave(s);return 0;
 }
+int tsfp_guest_objects_adopt_body(tsfp_guest_objects *s,uint32_t body,
+    uint32_t kind,uint32_t flags,uint64_t *key) {
+    size_t i;
+    if(!s || !body || !key || !s->free_dispatcher)return 0;
+    enter(s);
+    for(i=0;i<s->capacity;++i)if(s->objects[i].state && s->objects[i].dispatcher==body) {
+        leave(s);return 0;
+    }
+    for(i=0;i<s->capacity;++i) {
+        tsfp_guest_object_record *o=&s->objects[i];
+        if(!o->state && o->generation!=UINT32_MAX) {
+            ++o->generation;o->state=TSFP_OBJECT_OPEN;o->host=0;
+            o->kind=kind;o->flags=flags;o->dispatcher=body;o->refs=1;
+            *key=object_key(s,o);leave(s);return 1;
+        }
+    }
+    leave(s);return 0;
+}
 int tsfp_guest_objects_prepare(tsfp_guest_objects *s,uint32_t kind,uint32_t flags,uint32_t *ticket) {
     tsfp_guest_handle_record *h;size_t i;
     if(!s || !ticket) return 0;

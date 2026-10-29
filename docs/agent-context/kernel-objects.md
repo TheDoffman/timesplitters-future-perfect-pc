@@ -130,4 +130,152 @@ fixture repair does not implement that legacy routine or change production code.
 The real-header probe keeps strict warnings on the original source, but marks
 the inherited kernel-header directory as a system dependency: its old nested
 comment otherwise fails Clang -Wcomment. Compiler/type errors remain errors.
-Mac execution still needs current CI.
+Boot CI completed atfd63094f; subsequent37f9042d also passed all16 checks.
+New request-stage CI remains pending.
+
+
+## Guest next-packet ABI prerequisite
+
+`patches/compiler/0217-guest-next-packet-abi.patch` corrects ordinal81 to one
+32-bit guest argument and four cleanup bytes. The transitional native stub
+still has a second desktop-style argument; the bridge passes a constant false
+instead of reading a nonexistent guest argument. Six call sites in the
+SHA-256-verified supported US executable, decoded from mapped function entries,
+push only DeviceObject and immediately restore caller registers after return.
+The prior eight-byte cleanup consumed that saved caller state. Public interface:
+[Xbox nxdk declaration](https://github.com/XboxDev/nxdk/blob/master/lib/xboxkrnl/xboxkrnl.h).
+No executable bytes/instructions are included in the synthetic fixture.
+
+`tests/compiler/test_io_packet_abi.py` compiles the installed bridge adapter and
+actual ordinal-cleanup function with a synthetic caller stack, checking register
+restoration and that only one guest argument is read. Both compiled fault
+controls must fail behavior. CI selects this test on Windows and native Mac.
+This is a prerequisite repair for original device/request dispatch, not a full
+queue implementation: IoStartNextPacket still invokes the transitional host
+stub. Request storage was subsequently promoted through0218; the verified-disc
+and event-body prototypes remain uninstalled.
+Windows Release and built-in checks passed. Isolated Story acceptance reached
+scene4/mission1, moved11.175 forward and6.185 backward, fired ammo8to6,
+paused40 samples and resumed60, with captures reviewed. Last checkpoint99.207s
+within240s cap; all26 protected files unchanged. Executable SHA-256
+`21c2ba6bbfbc05eb78594d3b79d75099dcd7bf05025c0dc7d1d2099b8b5f55da`.
+All22 generated files unchanged. Minimized synthetic-input Classic/movie-skipped
+run; ordinal81 execution frequency, physical input, audio and Mac title gameplay
+are not established. Compiled ABI/context/backlog24 checks and tracking16 checks
+passed; full snapshot/migration and new-head Mac CI remain pending.
+
+
+## Original request storage and initialization
+
+`src/runtime/guest_io_request.c`, `guest_io_owner.c`, `guest_io_registry.c` and
+`guest_io_pool.c` now supply request storage/lifetime through
+`patches/compiler/0218-independent-kernel-requests.patch`. The original
+`guest_kernel_requests.inc` replaces guest IoAllocateIrp59, IoFreeIrp72 and
+IoInitializeIrp73; the old native initializer body/declaration are removed.
+Startup initializes the pool once before guest threads. The actual guest heap,
+full writable-span resolver, metadata allocator and two host critical sections
+are adapters to the shared providers. No new OS policy is duplicated.
+
+Guest request header0x68 and stack24 use explicit little-endian bytes; type6,
+stack count/current location and current stack address initialize before
+publication. The stack codec preserves64-bit offsets and unaligned spans.
+Allocation validates count0..127 and bounds, owns one registry reference and
+returns a guest address. Host phases/refcounts never come from mutable guest
+bytes. Lookup retains under the registry lock; removal detaches before releasing
+outside locks. Dispatch and pending operations own internal references, so
+inline completion cannot destroy storage still used by a dispatch callback.
+One completion publishes status/information before notifying. Final disposal
+may reclaim the owner control block; no provider accesses it afterward.
+
+The pool bounds live/in-flight/failed-cleanup metadata. Failures roll back;
+definitely retained frees permit one explicit retry, uncertain frees remain
+accounted without blind retry. Production heap-release failure is uncertain.
+IoFreeIrp accepts only registered requests. Registered initialization accepts
+only READY packets and cannot exceed their original allocation; caller-owned
+storage validates the entire writable span. Reset/dispatch serialize on the
+owner lock. Caller-owned memory/mappings remain stable during calls. Shutdown
+admission/drain is a component API: workers/API callers must be joined and
+pending operations completed before pool storage can be destroyed. The kernel
+adapter currently lives for the guest-memory/process lifetime, with no full
+worker shutdown or live reinitialization claim.
+
+Xbox IoAllocateIrp consumes one argument/four cleanup bytes. IoStartPacket83
+consumes three arguments/twelve bytes: a mapped supported-title caller agrees
+with the public nxdk declaration. Its transitional host stub receives NULL for
+its obsolete fourth compatibility argument. Actual bridge/cleanup fixtures
+check caller preservation, both NULL/non-NULL optional keys and compiled faults.
+The supported title does not directly import59/72/73; absence of direct imports
+does not establish every possible callback path. New allocation/reset behavior
+is verified through native contracts, separately from bounded title gameplay.
+
+Maintained contracts: test_io_stack.py, test_io_request.py, test_io_owner.py,
+test_io_registry.py, test_io_pool.py, test_io_pool_windows.py and
+test_kernel_requests.py in tests/compiler. They include literal byte oracles,
+compiled faults, actual project heap, reclaimable Windows metadata mappings,
+four Windows workers1004 allocations/releases, pending lifetime across stop,
+reentrant callbacks and actual runtime-header compilation. Portable contracts
+are selected on both CI hosts; actual Windows fixtures skip on Mac. Windows maintained-path36 checks, Release/built-in checks and fresh isolated
+Story acceptance passed. New-head Mac compilation/execution remains pending.
+
+Remaining work: device creation/body/type/namespace ownership, queued StartIo
+and next-packet dispatch, guest callbacks and nonlocal-exit scopes, full request
+completion/cancellation/thread association, synchronous builders and actual
+supported-disc configuration. IoBuildSynchronousFsdRequest still uses the
+transitional native route and returns NULL. The verified-disc and explicit
+object-body event prototypes remain uninstalled. They are not proof of a working
+driver stack, full request ABI, Mac gameplay or complete toolkit independence.
+
+
+Stage0218 Windows acceptance: all36 request/packet ABI checks and21 context/
+backlog checks passed; package/path/symbol checks7passed plus2subtests. Release
+build and built-in checks passed; generated project selects all five providers
+once and the kernel archive has no native xbox_IoInitializeIrp symbol. All22
+generated files are unchanged. Fresh isolated Story acceptance reached
+scene4/mission1, moved11.175 forward/6.185 backward, fired ammo8to6, froze40
+pause samples and advanced60 resume samples. Captures reviewed; final checkpoint
+100.457s within240s cap. Executable SHA-256
+`d260852719f82abe650bc26a4f8df7e53af7790a46e6364163548776417bf0a9`.
+All26 protected files unchanged. Minimized synthetic-input Classic/movie-skipped
+run; no physical input/audio/campaign/Mac title claim. Direct supported imports
+do not exercise59/72/73, so native contracts establish their new behavior while
+this game test establishes bounded regression coverage. Full new-stage local
+snapshot/migration and new-head CI remain pending. No full independence claim.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.
+
+
+CI merge follow-up: main6780f3bd added49 bytes to build-test.md; merged PR
+2fbd6807 had65569 bytes and failed the unchanged65536-byte context cap before
+native jobs. Integrated main into this feature branch and moved the intact CI/
+host-validation subsection to runtime-ci.md, retaining its overview anchor and
+commands. Local plan-equivalent and merged-tree checks must pass before push.
+No runtime/build/game source changed.
+
+
+Merged-main CI repair verification (Windows): the exact lightweight Python plan
+passed 121 tests and 26 subtests in 5.48s. The build/test guide is below the
+unchanged 65536-byte cap with its detailed CI contracts linked separately.
+Runtime source, generated files and executable remain unchanged; fresh remote
+CI is required. This documentation repair does not establish Mac gameplay.
+
+Node repository contracts also passed all 23 tests in 13.61s. Context/link/index
+check passed against origin/main. Installed source/archive/executable/generated/
+game hash verification passed, and all 26 protected files retained hash, size
+and mtime. No game rebuild was required for this documentation-only change.
+
+
+Request-stage3b11d5b1 completed CI on both hosts after retrying Mac runner-capacity
+cancellations. Stage0219 device/name integration now extends object adoption,
+key references and operation-scope cleanup; see [devices](kernel-devices.md).
+Its source is committed in f17859d7. Windows Release and bounded Story checks passed;
+full migration passed52 tests and new-head CI remains pending.

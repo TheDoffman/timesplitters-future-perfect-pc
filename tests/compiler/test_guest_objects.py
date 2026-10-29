@@ -87,8 +87,8 @@ def test_nested_operation_scopes_and_explicit_thread_exit(tmp_path):
     ('stack->current=frame->previous;frame->previous=NULL;',
      'stack->current=NULL;frame->previous=NULL;'),
     ('while(frame->count) {','while(frame->count>1) {'),
-    ('while(stack->current) if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;',
-     'if(stack->current) if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;'),
+    ('while(stack->current) {\n        stack->current->abandoned=1;\n        if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0;\n    }',
+     'if(stack->current) { stack->current->abandoned=1; if(!tsfp_guest_scope_leave(stack,stack->current)) ok=0; }'),
     ('frame->count==TSFP_GUEST_SCOPE_HANDLES','frame->count==TSFP_GUEST_SCOPE_HANDLES-1'),
     ('frame->tokens[i]==alias && frame->leases[i].key==key','frame->tokens[i]==alias'),
 ])
