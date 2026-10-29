@@ -942,3 +942,6 @@ Driver fault controls must compile under Clang/Werror before runtime rejection:
 target expected-pointer weakening retains the expected operand; separate wrong
 rollback location/pointer controls retain put. See test_io_target/test_io_call;
 unused-mutant compiler errors are fixture failures, never passing fault evidence.
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).

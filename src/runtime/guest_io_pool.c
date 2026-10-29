@@ -33,7 +33,8 @@ int tsfp_io_pool_init(tsfp_io_pool *p,tsfp_io_registry_entry *entries,size_t cou
     if(!tsfp_io_registry_init(&candidate.registry,entries,count,ops->context,ops->registry_lock,ops->registry_unlock))return 0;
     *p=candidate;return 1;
 }
-uint32_t tsfp_io_pool_allocate(tsfp_io_pool *p,uint32_t stacks) {
+uint32_t tsfp_io_pool_construct(tsfp_io_pool *p,uint32_t stacks,
+    int (*prepare)(void *,tsfp_io_owner *),void *context) {
     tsfp_io_pool_node *n;tsfp_io_owner_ops ops;uint32_t bytes,address;void *mapping;
     if(!p || stacks>TSFP_IO_MAX_STACKS)return 0;
     bytes=TSFP_IO_REQUEST_BYTES+stacks*TSFP_IO_STACK_BYTES;
@@ -52,12 +53,18 @@ uint32_t tsfp_io_pool_allocate(tsfp_io_pool *p,uint32_t stacks) {
     if(!mapping || !tsfp_io_owner_init(&n->owner,&ops,mapping,bytes,address,bytes,stacks,TSFP_IO_REQUEST_KIND)) {
         (void)cleanup(n);return 0;
     }
+    if(prepare && !prepare(context,&n->owner)) {
+        tsfp_io_owner_release(&n->owner);return 0;
+    }
     if(!tsfp_io_registry_publish(&p->registry,&n->owner)) {
         tsfp_io_owner_release(&n->owner);return 0;
     }
     /* Retain the creator until registration completes. This release can dispose
      * metadata if a concurrent stop already detached the registry reference. */
     tsfp_io_owner_release(&n->owner);return address;
+}
+uint32_t tsfp_io_pool_allocate(tsfp_io_pool *p,uint32_t stacks) {
+    return tsfp_io_pool_construct(p,stacks,NULL,NULL);
 }
 void tsfp_io_pool_stop(tsfp_io_pool *p) {
     if(!p)return;

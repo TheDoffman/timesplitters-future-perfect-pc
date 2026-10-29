@@ -1,0 +1,12 @@
+--- a/src/kernel/CMakeLists.txt
++++ b/src/kernel/CMakeLists.txt
+@@ -32,6 +32,9 @@
+ add_library(xbox_kernel STATIC ${KERNEL_SOURCES})
+ 
+ target_sources(xbox_kernel PRIVATE
++    "${TSFP_SHARED_SOURCE}/runtime/guest_io_transfer.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_io_build.c"
++    "${TSFP_SHARED_SOURCE}/runtime/guest_io_complete.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_call.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_target.c"
+     "${TSFP_SHARED_SOURCE}/runtime/guest_io_scope.c"

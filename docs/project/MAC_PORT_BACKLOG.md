@@ -7453,6 +7453,18 @@ behavior. Product code/binary is unchanged; new-head CI pending. The supported-U
 title audit also confirms device+20 and transfer4/8/12 fields despite the public
 header's omissions; see driver-call.md for corrected evidence and remaining scope.
 
+MAC-118 stage0223 follow-up (uncommitted, PR#406): common transfer and packet
+construction, preparation-before-publication in the request pool, and scoped
+completion/IOSB delivery coordination are shared C providers. No OS-specific
+policy fork; backends supply actual pinning, event/APC/thread delivery and cleanup.
+Native guest routing/queues/caller-owned packets/backend acceptance remain needed.
+Portable contracts and the Windows real-event/metadata-unmap pipeline are selected
+in CI; private title instruction evidence requires the local supported US XBE.
+Windows141 native/title and42 selected upgrade/context/fixture-recheck cases
+passed (17 overlap); Release/archive audit and isolated Story movement/firing/
+pause/resume passed, with26 protected files unchanged. New-stage CI and native
+Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts](../agent-context/transfer-completion.md).
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation

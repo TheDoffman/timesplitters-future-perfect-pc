@@ -8,8 +8,8 @@ complete upgrades assert the two new providers appear once.
 
 These are original maintained replacement components, not installed kernel
 IofCallDriver/CompleteRequest routes. Native legacy bridges remain selected.
-Completion/status/event/APC/thread routing, caller-owned packet adoption,
-StartIo/next queues, cancellation, synchronous builders and backend acceptance
+Kernel status/event/APC/thread routing, caller-owned packet adoption,
+StartIo/next queues, cancellation, synchronous-builder adapters and backend acceptance
 are still needed before that bridge replacement is complete. No toolkit
 independence or native Mac title-gameplay claim follows from this stage.
 
@@ -81,3 +81,6 @@ actual-header and callback checks remain required. The three new suites are
 selected explicitly on both CI hosts. Build/archive selection and title regression
 are separate from these service fixtures; measured results belong in STATUS and
 the MAC-118 follow-up.
+
+
+Stage0223 adds [transfer/constructor/completion components](transfer-completion.md); actual kernel routing remains unfinished.

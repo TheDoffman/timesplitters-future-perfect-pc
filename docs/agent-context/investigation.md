@@ -289,3 +289,6 @@ Next driver stage: [request lifetime and unresolved Xbox slot evidence](request-
 
 
 The0222 [driver-call map](driver-call.md) supersedes the uninstalled-composer note; kernel routing remains unfinished.
+
+
+Request prefix: [0223 contracts and Thread+50 evidence](transfer-completion.md).

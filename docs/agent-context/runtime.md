@@ -866,3 +866,6 @@ Original request lifetime/callback prerequisites: [contracts and ABI boundary](r
 
 
 Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
+
+
+Stage0223: [private request construction and completion delivery](transfer-completion.md).

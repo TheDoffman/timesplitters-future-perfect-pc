@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "969c862beeb4effc617418e5981876463358b5f861c7b1aae67fa69a7a61958e",
+  "loaderSha256": "275609bcb9fc631c2c862e37f3aecec599d1e3502d11b18c8b8b0295566d99ad",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2369,6 +2369,14 @@
       "name": "0222-original-driver-call-composer.patch",
       "path": "patches/compiler/0222-original-driver-call-composer.patch",
       "sha256": "3d83c27fd4fc9f2074a19972bc6e98b86621df7b3dce41e87059cdf680aaf2eb",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0223-original-transfer-completion.patch",
+      "path": "patches/compiler/0223-original-transfer-completion.patch",
+      "sha256": "d829e2cf3e32b3bd2a1cd820d37cf19180a7a23ab952f1a9ad38f0715844dcd0",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

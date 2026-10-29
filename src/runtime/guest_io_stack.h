@@ -4,8 +4,9 @@
 #include <stddef.h>
 enum {TSFP_IO_STACK_BYTES=24};
 /* Only the four-byte dispatch prefix is interpreted. The rest includes guest
- * alignment/operation-specific storage and stays opaque until each operation's
- * Xbox ABI is established. There is no established DeviceObject member here.
+ * operation-specific storage and stays opaque in this generic view. The
+ * separate supported-US transfer view interprets its established device/buffer
+ * fields; guest values never establish host object ownership.
  * Host structure layout is never serialized. */
 typedef struct {
     unsigned char major,minor,flags,control;

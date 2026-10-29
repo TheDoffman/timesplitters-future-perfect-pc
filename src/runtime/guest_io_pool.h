@@ -29,6 +29,13 @@ int tsfp_io_pool_init(tsfp_io_pool *,tsfp_io_registry_entry *,size_t,const tsfp_
 /* Registry owns allocated packets until remove/stop. Returns zero on failure.
  * Capacity includes in-flight allocations and failed cleanup, bounding growth. */
 uint32_t tsfp_io_pool_allocate(tsfp_io_pool *,uint32_t stacks);
+/* Optional trusted initializer runs before registry publication, without locks.
+ * It returns normally, executes no guest code, preserves owner/control refs and
+ * READY phase, and may construct guest bytes or transfer one owned attachment.
+ * On failure the pool disposes that owner/attachment; no request is published.
+ * Success still rolls back if concurrent stop prevents publication. */
+uint32_t tsfp_io_pool_construct(tsfp_io_pool *,uint32_t stacks,
+    int (*prepare)(void *,tsfp_io_owner *),void *context);
 /* Stop closes admission and detaches registry entries. In-flight allocations
  * roll back; borrowed and pending requests retain their storage. Caller joins
  * API callers/workers and completes/cancels requests before destroying pool.

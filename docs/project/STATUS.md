@@ -32265,3 +32265,45 @@ current-minus-one-slot retains that parameter while still introducing the wrong
 restored pointer. Both wrong-pointer and wrong-location controls compile and
 are rejected at runtime. Product source/executable remains the tested181e2ded
 build. New-head Mac/Windows CI remains pending; no retry is counted as a pass.
+
+
+## 2026-10-29 - Stage0223 request construction and completion components
+
+Starting9e3e659b on feature/guest-share-access; initial tree clean, fetched main
+unchanged3b4e679b, protected26 files unchanged. Prior repaired runtime40930532886
+passed all native/upgrade/final gates. Standalone launcher40930532872 initially
+hit its5-minute final artifact-verification limit after both builds passed;
+retrying that job and its dependent gate succeeded without workflow/source changes.
+This is evidence for9e3e659b, not the new stage.
+
+Original transfer/build/completion providers and pool private preparation now
+live in maintained shared source through0223. Kernel imports still use existing
+bridges; no full I/O/toolkit replacement claim. Thread+50 follows the public
+five-word DriverContext layout, consistent with title queue links+54. No private
+title bytes or foreign implementation bodies are shipped.
+
+Candidates: transfer10pass, literal constructor7pass4.11s after strengthening
+its high-device-byte oracle, private construction4pass3.20s, completion10pass7.25s,
+Windows end-to-end real event/metadata unmap1pass2.47s; title field evidence12pass.
+Maintained native/title141passed53.81s. Affected historical/fresh upgrades,
+context/backlog and17 fixture rechecks passed42tests205.49s; those17 rechecks
+overlap the native run. Host-structure byte-preservation oracles copy their full
+representation with memcpy rather than depending on padding in struct assignment.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+18 device/I/O component providers once and all request pool/owner/registry/stack
+providers once, including new transfer/build/result/completion/construct symbols.
+kernel_ob and nine retired exports remain absent; no additional legacy import
+retirement is claimed. All22 generated files are unchanged/current fingerprint.
+Actual build: dirty9e3e659b with exact recorded source/patch inputs; executable
+SHA2561fbdae4d830ad7480a76185b61df7c3e2faaa506ff46417035dd9492400b7918.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174544 and
+back6.193569, ammo8to6,40 frozen pause/60 advancing resume samples, last checkpoint
+92.257s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files retain
+original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized
+synthetic-input Classic/movie-skipped test. No physical-input/listening/campaign
+or native Mac title claim. New-stage CI pending; kernel import routing, queues,
+caller-owned packets and full backend delivery remain unfinished. See
+transfer-completion.md and MAC-118 for scope.
