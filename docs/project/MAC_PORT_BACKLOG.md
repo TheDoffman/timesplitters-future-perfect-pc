@@ -2889,6 +2889,12 @@ validation. This version bump alone is not publication evidence.
   or the Avalonia launcher. Future Mac acceptance must preserve session/bridge
   lifetime, invitations, accessibility, clipboard and layout across scaling.
 
+  Follow-up `fix/multiplayer-control-artifacts` (2026-10-29) removes opaque
+  control-corner mattes, replaces inherited scrollbar graphics and supplies
+  256px taskbar/system-sized caption icons to the Windows wrapper. This stays
+  within the Windows Online adapter; Mac Online remains queued. Future Mac
+  acceptance also needs crisp icons and controls at native display scaling.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/interface/pc_menu_theme.h`, `src/interface/pc_dialog_theme.h`, `src/interface/pc_settings.c` and
