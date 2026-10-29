@@ -95,3 +95,36 @@ validation; absence skips, a wrong revision does not substitute. It ships no XBE
 All six suites are selected on both native CI hosts; the Windows OS-event case
 and private title presence remain distinct from portable contracts and Mac title
 execution. Measured build/archive/game/CI acceptance belongs in STATUS and MAC-118.
+
+## Host-owned request queue
+
+Stage0224 adds guest_io_queue.c/.h through0224-original-request-queue.patch,
+selected once after0223. This is an original portable FIFO component, not yet
+an IoStartPacket/StartNext bridge or guest StartIo implementation. Existing kernel
+imports remain selected. Key ordering, cancellation, device lifecycle, guest
+CurrentIrp/Busy/list mirrors and callback entry adapters still need integration.
+
+A queue owns a separate client ref per waiting/current request. Push borrows a
+caller ref and accepts ACTIVE/PENDING operations only. Duplicate host identities,
+closed admission, capacity exhaustion and retain overflow reject without transfer.
+Next compares the expected current identity, atomically advances FIFO state and
+returns an additional caller-owned ref. Output must be disjoint host storage.
+Completed packets may remain queued; selecting one does not authorize guest entry.
+Callers serialize cancellation/selection policy and supply independent callback
+scopes, device leases and allowlisted guest dispatch before execution.
+
+Storage is bounded caller-owned host memory, not authority derived from guest
+links. Locks order queue then owner; disposal runs outside both locks and may
+reenter the queue. Stop closes admission and drains waiting refs outside the lock,
+retaining current until explicit next(expected). It never fabricates cancellation
+or completion: pending/uncertain operation refs remain independently accounted.
+Callers join users before destroying queue/storage. Helpers return normally and
+execute no guest code; no queue metadata may reside on an abandoned guest C stack.
+
+The maintained test_io_queue fixture covers FIFO wrap, identity mismatch, duplicate
+admission, close/drain, retain overflow, completed waiting owners, reentrant
+cleanup and a separately pinned callback surviving inline completion and next.
+Eight native host threads submit distinct owners; each is selected exactly once.
+Seven deliberate bad variants must compile, then fail their runtime contracts.
+Shared CI runs the fixture on both native hosts; Windows acceptance does not prove
+Mac title gameplay or a completed queue/backend adapter. Evidence is in STATUS.

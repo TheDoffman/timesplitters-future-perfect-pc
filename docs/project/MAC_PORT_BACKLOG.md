@@ -7548,3 +7548,16 @@ Mac title acceptance pending; retain MAC-118 Awaiting validation. See [contracts
   multiple views and map transitions. Physical Mac execution is unverified.
 - [Evidence/limits](STATUS.md#mars-prison-high-refresh-material-flicker-398---2026-10-29),
   [cache contract](../agent-context/render-matrix-cache.md).
+
+
+MAC-118 stage0224 follow-up (PR#406): shared original guest_io_queue.c/.h and
+0224 select bounded host-owned FIFO state with independently retained waiting,
+current and caller refs. No OS-specific adapter is needed for this core; the
+maintained fixture uses native Windows/pthread locks and eight producers. Actual
+StartIo/kernel routing, guest queue mirrors, keyed ordering, cancellation and
+device lifetime/backend adapters remain unfinished. Windows8 queue cases are
+included in233 passing native/title/timing cases;25 repository/upgrade checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior5cc89668 both-host CI passed; new-source CI and native Mac title acceptance
+pending. Keep MAC-118 Awaiting validation. Evidence/host/limits in STATUS's
+stage0224 entry; contracts in transfer-completion.md.

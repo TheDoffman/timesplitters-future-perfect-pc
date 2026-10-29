@@ -32344,3 +32344,47 @@ synthetic-input Classic/movie-skipped test. No physical-input/listening/campaign
 or native Mac title claim. New-stage CI pending; kernel import routing, queues,
 caller-owned packets and full backend delivery remain unfinished. See
 transfer-completion.md and MAC-118 for scope.
+
+
+## 2026-10-29 - Stage0224 original host-owned request FIFO
+
+Verified prior5cc89668 CI: runtime40936467095 and launcher40936466889 both
+completed/success, including both native hosts, upgrades and final launcher gates.
+Fetched and safely merged main863c2b61 into feature/guest-share-access as611684b2;
+no resets, lost changes or main merge. PR406 remains draft/open/unmerged.
+
+Original guest_io_queue.c/.h adds bounded FIFO host ownership through0224 after
+0223. Each waiting/current entry owns a client ref; next compares current identity
+and returns a separate client ref. Stop closes admission/drains waiting refs
+outside locks, retaining current until explicit next and retaining pending/unknown
+operations independently. No guest list pointers confer authority. The library
+selects this component; existing kernel StartPacket/StartNext/StartIo routing,
+device/wire mirrors, keyed order and cancellation/backend integration remain.
+This does not retire another imported kernel implementation or finish the goal.
+
+Eight baseline/fault cases passed3.95s, including eight concurrent host producers,
+FIFO wrap, duplicate/identity guards, retain overflow, reentrant disposal and an
+independent callback pin surviving inline completion and queue advance. Initial
+fault controls exposed weak oracles masked by a full queue/READY owner and a
+zero wrapped index; new cases exercise those independently. The identity control
+keeps its parameter used; every bad variant must compile before runtime rejection.
+Affected native/title/timing suites passed233tests164.85s. Four fresh/historical
+upgrade models plus repository context/backlog passed25tests144.31s. Eight queue
+cases are included in233, not additional unique tests. Release/built-in checks
+and matching crash symbols passed. Archive selects19 device/I/O providers once,
+including four queue API symbols; kernel_ob and nine retired native exports remain
+absent. All22 generated files unchanged; generation fingerprint current.
+
+Build provenance: dirty611684b2934a39042debbd6ec5ed347cbe17cab5 plus exact recorded
+source/patch hashes in ignored logs/io-queue-build.json. Executable SHA256
+9778bc9657f6cea641c2e00ebd001cbc8f46743fb4cf8ccffcc1ec27064cba9e.
+Supported US XBE hash validated. Isolated Classic Story replay: scene4/mission1,
+forward11.176244/back6.391055, ammo8to6,40 frozen pause and60 advancing resume
+samples, final95.824s within240s cap. Fresh start/fire/pause captures reviewed;
+runner/controller exited0; profiles unchanged/signatures valid/fixture preserved,
+no dumps/runlock/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected settings/save/fixture files retain hash/size/mtime across
+both local checkouts. Windows NT10.0.26300 x64, VS2022/MSVC14.44; synthetic input,
+minimized movie-skipped test, not physical input/listening/full campaign acceptance.
+New-source CI and native Mac title gameplay remain pending; prior-head CI is not
+new-head evidence. See transfer-completion.md and MAC-118.

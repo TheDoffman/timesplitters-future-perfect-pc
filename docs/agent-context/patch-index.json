@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "275609bcb9fc631c2c862e37f3aecec599d1e3502d11b18c8b8b0295566d99ad",
+  "loaderSha256": "4d74a578c4016e12815ad0e417a07fa7a66f1025ee86f00f375c5ae3a9fef779",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2377,6 +2377,14 @@
       "name": "0223-original-transfer-completion.patch",
       "path": "patches/compiler/0223-original-transfer-completion.patch",
       "sha256": "d829e2cf3e32b3bd2a1cd820d37cf19180a7a23ab952f1a9ad38f0715844dcd0",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0224-original-request-queue.patch",
+      "path": "patches/compiler/0224-original-request-queue.patch",
+      "sha256": "d1f57c183af6ae2218df6a6d00e0656b3abfb4fbc304d2b8a773b884527a939f",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

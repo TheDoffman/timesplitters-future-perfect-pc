@@ -954,3 +954,5 @@ Stage0222: [original driver-call composition and opaque stack payload](driver-ca
 
 
 Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [queue ownership and native acceptance routes](transfer-completion.md#host-owned-request-queue); the maintained patch map includes the new FIFO provider.

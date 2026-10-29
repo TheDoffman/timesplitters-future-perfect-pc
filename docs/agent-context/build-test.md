@@ -948,3 +948,5 @@ unused-mutant compiler errors are fixture failures, never passing fault evidence
 
 
 Stage0223: [private request construction and completion delivery](transfer-completion.md).
+
+Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
