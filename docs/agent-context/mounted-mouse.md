@@ -55,4 +55,3 @@ input capture. The focused Windows `tsfp_pc_controls_test` target passes with
 the isolated fixture config and scratch directory. SDL physical-host execution
 is still pending. The portable packet fixture explicitly includes `<stddef.h>`
 for `ptrdiff_t`; Mac Clang does not supply it through `<stdlib.h>` as MSVC did.
-
