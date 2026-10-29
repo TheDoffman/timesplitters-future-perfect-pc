@@ -31958,6 +31958,27 @@ including the normal isolated build tests; patch verification passed first.
 Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
 not a published release or live portcullis verification.
 
+## Multiplayer control and taskbar icon cleanup — 2026-10-29
+
+Local implementation on `fix/multiplayer-control-artifacts`, based on
+`68408d4d`, Windows x64 with CPython 3.12.14 / Tk 8.6. Rounded image corners
+previously contained a dark matte; transparent corners and parent-matched
+control backgrounds now remove the visible wedges. Vertical and horizontal
+scrollbars use flat, centered image elements with scale-sized arrow targets.
+Tk iconbitmap was measured supplying 32x32 HICONs for both window roles despite
+the ICO containing seven sizes. The wrapper now receives the 256px taskbar icon
+and a separate system-sized caption icon, restored on re-show and freed on exit.
+
+The theme and Windows icon/resource suites pass **16 tests**. Coverage includes
+100/150/200% Tk scaling, actual arrow click callbacks in both orientations,
+control backgrounds in idle/hover/pressed/disabled/focus states, real native
+icon bitmap dimensions, popup/re-show behavior, high-contrast fallback and
+small-screen layout. Desktop preview review confirms clean control corners and
+aligned arrows. Physical high-DPI monitor/taskbar rendering and native Mac
+Online are not verified; the latter remains queued in the existing backlog.
+No network, personal settings, saves or running game were used. This is source
+and an offline preview; it requires a matching game package for player use.
+
 
 Device CI repair integrated main68408d4d in cb975f48, preserving both device and
 main interaction/audio/release-speed changes. Merged plan/repository and device
