@@ -31957,3 +31957,10 @@ Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
 including the normal isolated build tests; patch verification passed first.
 Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
 not a published release or live portcullis verification.
+
+
+Device CI repair integrated main68408d4d in cb975f48, preserving both device and
+main interaction/audio/release-speed changes. Merged plan/repository and device
+fixture checks passed172 plus29subtests in36.96s. Node contracts passed23 in12.82s;
+local LF normalization keeps the unchanged context bounds valid. Windows Release
+regeneration/build is in progress; prior86a960df game evidence is historical.
