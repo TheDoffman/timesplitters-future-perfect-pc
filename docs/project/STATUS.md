@@ -32074,3 +32074,22 @@ Four simultaneous independent three-peer loopback runs also passed (5.93-6.10s
 each), keeping the original4second telemetry deadline. Installed source/archive/
 generation/executable/game hash verification and context/whitespace checks pass.
 No gameplay rebuild is required for this test-only synchronization change.
+
+
+### Stage0220 complete CI acceptance at118d21fd (2026-10-29)
+
+Exact118d21fdf6b7b9316cb29093495e8875aef0aa1a runtime workflow40914362747 and
+launcher40914362778 completed success. Windows native1975passed248skipped/
+18subtests386.53s and release172passed3subtests6.47s. Mac native1890passed/
+295skipped18subtests220.72s and release169passed3skipped3subtests2.68s. Patch
+upgrades Windows59passed289.62s; Mac57passed2skipped84.67s. Both host launchers
+and all final PR/runtime gates passed. Historical model exclusions and Online
+wait-condition repairs passed the complete suites without removing assertions,
+extending the telemetry deadline, changing dependencies or relaxing warnings.
+
+The product source/patch/binary hashes are unchanged from recorded0b045f29
+Windows Release and bounded isolated Story acceptance. This establishes both-host
+CI for stage0220, not native Mac title gameplay or complete toolkit independence.
+Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirement
+remain unfinished. The next callback ownership/target/rollback/prepared-frame
+candidate is still uninstalled and is not included in this CI acceptance.

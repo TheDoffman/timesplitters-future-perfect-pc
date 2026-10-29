@@ -52,3 +52,10 @@ omit0220 together with its0219 prerequisite while constructing historical inputs
 Each complete upgrade explicitly asserts the original sharing include/provider
 and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
 patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
+
+
+Exact118d21fd CI completed successfully: runtime40914362747, launcher40914362778,
+both native hosts/patch-upgrade jobs and all final gates. Windows migration59
+passed; Mac57passed2skipped. Product source/binary remains the tested0b045f29
+build. STATUS/MAC-118 retain full counts and Windows game evidence. Native Mac
+title gameplay and full I/O/toolkit replacement remain unverified/incomplete.
