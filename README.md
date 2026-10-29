@@ -127,27 +127,6 @@ Development source also enables continuous water updates with the high-refresh
 beta presets on the common renderer. **60 FPS (Original)** remains the recovery
 option; full-game and native Mac high-refresh validation remain incomplete.
 
-## Controls and settings
-
-Set bindings and graphics before playing in the launcher's **Game settings**.
-Use **F2** in-game for keyboard and mouse settings, and **Settings → Video
-Options** for resolution, aspect ratio, FOV and frame rate.
-
-| Action | Default control |
-| --- | --- |
-| Move / look | WASD / mouse |
-| Fire / aim | Left / right mouse button |
-| Use / confirm | E, Space or Enter |
-| Reload / crouch | R / Ctrl or C |
-| Change weapon | Mouse wheel or left/right arrows |
-| Pause / release mouse | Escape |
-| Keyboard and mouse settings | F2 |
-| Fullscreen | Alt+Enter (Windows), F11 (Mac) |
-
-The original game has no jump action. For all bindings and platform-specific
-settings, see [Windows controls](docs/players/windows-settings.md) or
-[Mac controls](docs/players/macos.md). On Mac, use **Fn** with function keys if needed.
-
 ## Multiplayer
 
 On Windows, choose **Online / System Link → Online** to host or join a match,
