@@ -36,7 +36,7 @@ POLICY_FILES = {
     'config/pc-discord.default.ini', 'src/interface/pc_display_modes.inc',
     'tests/launcher/test_native_mac_launcher.py', 'AGENTS.md',
     # Tests formerly owned by runtime-patches.yml now run with the launcher.
-    'tools/build/build-game-icon.ps1', 'tests/repository/test_game_icon.py',
+    'tools/build/build-game-icon.ps1', 'tools/build/build-online-icon.ps1', 'tests/repository/test_game_icon.py',
     'patches/platform/1150-game-icon.patch',
     'tests/support/native_compiler.py',
     'tests/launcher/package_launcher.py', 'tools/release/package-release.py',

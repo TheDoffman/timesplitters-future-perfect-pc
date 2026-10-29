@@ -31699,3 +31699,44 @@ with host diagnostics, and the probe marks inherited headers as dependencies.
 Strict warnings and undefined-behavior instrumentation remain on original code.
 Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
 No production source, built executable or prior gameplay evidence changed.
+
+## Multiplayer launcher theme — 2026-10-28
+
+Implementation on `ui/multiplayer-launcher-theme`, initially based on
+`6e657518` (Windows x64, workspace CPython 3.12/Tk 8.6). The separate Online
+browser/invitation windows use the launcher's navy, silver and blue palette,
+clear Join/Host panels, advanced Directory settings and native high-contrast
+fallback. Existing session and persistence callbacks are unchanged. Real-widget
+checks cover scaling, layout bounds, callbacks, caption recreation, theme changes
+and short-window focus scrolling. The focused theme, Online client, hosting and
+identity suites passed: 26 passed, 1 skipped (optional live test). The Windows preview was captured after using a distinct local interpreter
+filename to avoid a computer-use Python app identity mismatch. Resize review
+found wrap-width feedback after maximize/restore; the bounded canvas width and
+label minimum-width fix passed all seven theme/layout checks. No
+in-game or real-internet match validation, new package or release is claimed.
+Native Mac Online remains deferred; see the existing Windows appearance entry
+in MAC_PORT_BACKLOG.md.
+
+
+### Multiplayer icon and header follow-up
+
+The same local branch now gives Online a two-player icon using the shared
+launcher/game portal rim and silver/blue palette. Seven transparent sizes
+(16–256 px) are generated from tracked vector code; the normal Windows resource
+build and release packager generate/copy the ICO. Windows preview review confirms
+the new title-bar icon and removal of “It's time to split” from the header.
+The game-icon/resource, Online layout/identity and launcher-scope suites passed
+27 tests plus 27 subtests, with one optional live test skipped; the new packaged
+icon/Tk HWND check passed after replacing an unsupported Windows ICO getter
+assertion with real window icon handles (28 passing tests in total). Existing
+game icon resource linking passed; no Mac host or real network match was tested.
+
+
+PR #399 validation found directory-field clipping at 150/200% text scaling on
+the hosted Windows runner's smaller display (1775 other runtime checks passed).
+The shared scrolling panel now covers Directory settings and the invitation
+popup as well as Play online; wrapped-text changes refresh the scroll extent
+after geometry settles. All seven real-widget checks pass with a simulated
+1280x768 screen, including focus visibility for the certificate and popup Return
+controls. The fix retains the original bounds assertions and adds coverage for
+the actual CI screen constraint. A fresh required CI run validates the repair.
