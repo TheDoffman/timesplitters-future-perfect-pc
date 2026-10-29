@@ -76,6 +76,11 @@ SDL tests accept Confirm E/Space and reject the third fixture slot Return
 (shared two-slot cap). Run `tools/build/build-native-mac.py --test` on Mac; this
 synthetic check neither changes bindings nor certifies physical keyboard input.
 
+The SDL menu self-test also checks focus recovery after a pending gameplay
+capture request, plus the inverse case: explicitly released capture stays off
+across focus loss/regain. These match the existing adapter policy; synthetic
+events do not establish physical mouse delivery.
+
 CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
 Native/patch-upgrade jobs allow 30 minutes. Required check names remain.
 `test_ci_pr_gate.py` rejects missing/failed/skipped results;

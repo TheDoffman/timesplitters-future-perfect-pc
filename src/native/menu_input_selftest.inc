@@ -35,7 +35,13 @@ static int native_test_menu_input(SDL_Window *window) {
     p=pc_controls_menu_pointer();ok &= !p.valid && !p.left && !p.wheel && !captured;
     pc_controls_menu_mode(0);tsfp_native_input_frame(window);ok &= !captured;
     e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
-    ok &= !captured; /* focus recovery must not steal the cursor */
+    /* Leaving the menu requested gameplay capture while unfocused; restore it. */
+    ok &= captured && SDL_GetWindowRelativeMouseMode(window);
+    /* An explicitly released cursor must stay released across focus changes. */
+    set_capture(window,0);
+    e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,window);
+    e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
+    ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
     pc_controls_menu_mode(1);tsfp_native_input_frame(window);
     e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_MOTION;e.motion.x=-1;e.motion.y=120;
     tsfp_native_input_event(&e,window);ok &= !pc_controls_menu_pointer().valid;

@@ -30,6 +30,8 @@ as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
 focus changes only when gameplay capture was requested.
+The SDL menu self-test covers both a pending gameplay request made while
+unfocused and an explicitly released cursor, which must remain uncaptured.
 Windows gameplay confinement now uses the tiny center rectangle from
 `pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
 still drive aim; absolute pointer drift cannot reach the border. Initial capture,
