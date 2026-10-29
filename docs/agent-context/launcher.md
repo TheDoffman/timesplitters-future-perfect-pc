@@ -48,6 +48,21 @@ when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
 
+## Enhanced Audio beta preference
+
+`GameSettings.EnhancedAudio` and the shared `SettingsPage` Audio tab expose
+**Enhanced Audio (Beta)** on Windows/WPF and Mac/Avalonia. The sixth entry in
+`LauncherPlatform.Settings` is `pc-audio.ini` in the same directory as display
+settings (`config/` for a development checkout, `Settings/` when installed).
+It uses the game's `TSFP_AUDIO_V1 0|1` sidecar, defaults OFF, and participates
+in normal dirty-state comparison, concurrent-edit protection and six-file save
+rollback. There is no duplicate launcher JSON or environment-only preference.
+The launcher follows its normal save-before-launch policy; the in-game toggle
+still updates playback live. Earlier games may ignore this optional sidecar.
+Shared C# UI tests cover opt-in, game-menu round trips, draft state, invalid/
+concurrent inputs and rollback after an audio-file write failure. Windows build
+and tests passed locally; native Mac UI/build execution remains pending MAC-120.
+
 ## Saved settings button
 
 `SettingsPage` snapshots its deferred draft after a successful save and disables
@@ -217,6 +232,12 @@ Issue forms: `.github/ISSUE_TEMPLATE/`; normalization/labels/version options:
 `tools/ci/issue-forms.py` and issue workflows under
 `.github/workflows/`. PR resolution notes: `tools/ci/issue-resolution.py`,
 `.github/pull_request_template.md` and `issue-resolution-comments.yml`.
+New PR descriptions contain only Change and Cause and fix in plain language;
+release-reference PRs follow the same format. Resolution notes already accept
+Cause and fix without Validation; older PRs with Validation remain supported.
+The compatibility worker requests a short explanation for its repair PR, with
+validation in STATUS.md and platform follow-up in MAC_PORT_BACKLOG.md. Existing
+check selection and merge gates are unchanged.
 Use live GitHub issue/release metadata for a request that requires current data.
 Local Git history and stale advisory files do not replace a live issue body.
 Publishing a fix, merging, releasing and creating issues are different actions;

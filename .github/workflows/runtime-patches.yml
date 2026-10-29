@@ -227,7 +227,7 @@ jobs:
             tests/compiler/test_c_source_scan.py tests/compiler/test_generation_output.py
             tests/compiler/test_function_evidence.py tests/compiler/test_function_categories.py tests/compiler/test_function_catalog.py
             tests/support/test_native_compiler.py tests/support/test_guest_constants.py tests/support/test_parallel_groups.py tests/support/test_suite_timing.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
-            tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py
+            tests/gameplay/test_frame_clock.py tests/gameplay/test_native_frame_stats.py tests/gameplay/test_native_timing.py tests/gameplay/test_native_wind.py tests/gameplay/test_native_vehicle_timing.py tests/gameplay/test_native_entity_trace.py tests/storage/test_profile_accept.py tests/storage/test_unlock_content.py
             tests/gameplay/test_native_demo_timing.py tests/gameplay/test_reload_keys.py
             tests/gameplay/test_native_local_trace.py tests/graphics/test_state_layout_slots.py
             tests/graphics/test_vsh_constant_dirty.py

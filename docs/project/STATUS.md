@@ -75,6 +75,76 @@ personal saves/settings, release versions or published assets changed. Native
 Mac execution and a full end-to-end game release are unverified; shared patch
 validation retains both-host CI coverage.
 
+## Profile-scoped Unlock Content (2026-10-28)
+
+Implementation commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`. Extras now
+provides nine independent early-unlock categories stored in the active profile.
+Turning a category Off restores earned access without rolling back progress.
+Cheats moved from Settings to Extras and retains its original controls.
+
+The full patch stack installs; Windows Release build, built-in checks and crash
+symbol generation pass. Seven focused storage/menu tests pass, including actual
+US predicates across 150 character records and 48 events, independent profiles,
+progress preservation and save routing. Backlog/patch tracking checks pass (17), as do context checks (20).
+The executable SHA-256 is
+`6758f50b7a1c40b16c2a43d2a9664fbb975c705154ef032c52f776d329c8905b`.
+The final isolated Windows menu/save/reload route passes in 183.618 seconds.
+Reviewed captures show all nine readable toggles, original Cheats without an
+unlock switch, all Movies while enabled, and Cheats hidden/Movies locked after
+reset. Cheats-only (128), all (511) and reset (0) flags save with valid signatures;
+On and Off survive separate process restarts. All original profile bytes remain
+unchanged (excluding the existing save nonce); no earned progress is rewritten.
+The canonical fixture is preserved, all three game processes exit cleanly, and
+owned run locks/BMPs are removed. Evidence is retained locally under
+`private/test-saves/unlock-content` (`verification.json`, reports and PNGs).
+The run uses synthetic keyboard input; physical controller/mouse operation and
+native Mac execution remain unverified. Shared implementation awaits native
+validation under MAC-119.
+See [contracts](../agent-context/unlock-content.md).
+
+Layout follow-up: widened Unlock Content from 45% to 65% of the native menu
+width to separate category labels from their selectors. Windows Release rebuild
+and its built-in checks pass, as do the three unlock tests. Reviewed Off and On
+captures at 640x480 (4:3) and 1280x720 (16:9): all nine labels, selectors, Back
+and help text fit without overlap. Both isolated runs exit cleanly with fixture
+and signed profile bytes unchanged. Evidence: `private/test-saves/unlock-layout-640`
+and `unlock-layout-1280`. Updated executable SHA-256:
+`b3c33e977ce28235080e980a4cb3ee6e2ba0e54d7851a33bc7bec982a697106c`.
+Native Mac visual validation remains pending.
+
+The category-only follow-up removes the Back row and explanatory help text at
+the user's request. The standard Back input retains the signed-save/return
+callback. The existing menu fixture now expects exactly nine category rows;
+all three unlock tests pass. Windows Release rebuild, built-in checks and crash
+symbols pass; the interactive build was relaunched on user approval. Executable
+SHA-256: `008e7842548dbb6e0af55e5c165e5b0717b0d3c260195b93069ca0000ea767e8`.
+No new automated visual/gameplay claim is added for this row removal.
+
+PR #395 CI follow-up: the historical pre-display upgrade fixture attempted
+patch 2070 before its frontend wrapper context existed. It now defers that
+patch until full migration, then explicitly requires all four unlock hooks.
+The targeted Windows migration test passes in 45.46 seconds. Production source
+and the interactive executable are unchanged. At `c2acc615`, Mac CI passed
+1,710 runtime checks (274 skips, 18 subtests), GPU checks, 148 release checks,
+and 50 patch-upgrade checks (2 skips); Windows patch upgrades passed all 52.
+The Windows runtime job found four missing unlock dependencies in the separate
+FOV harness. Fail-if-called stubs now retain that harness's display-only scope;
+seven affected display/unlock/input checks pass locally (two Mac-only skips).
+Main's PR-description changes were merged with both STATUS entries preserved;
+85 documentation/tooling checks passed (3 skips, 47 subtests). Updated combined
+CI remains pending; these fixture/documentation fixes do not change the game.
+
+## Plain-language PR descriptions (2026-10-28)
+
+Branch `docs/plain-language-pr`, based on `2e678ac1`, updates the opening PR
+template, contributor rules and automatic version-reference/repair descriptions.
+Descriptions use Change and Cause and fix; technical evidence stays in project
+records. No runtime behavior, platform adapters or merge gates change.
+Windows offline unittest runs: issue forms 24 passed, issue resolution 16 passed,
+compatibility worker 25 passed and 3 platform-specific tests skipped. Context
+check against the base and `git diff --check` passed. No game rebuild was needed;
+native Mac execution and remote CI were not run locally.
+
 ## Independent kernel object lifetime (2026-10-28)
 
 Stage0215 (`1692ed4f`, PR #393) adds original handle/object ownership, operation scopes,
@@ -112,6 +182,38 @@ Executable SHA-256:
 `f56e26ad5ab7cc515539ceb72edc506884f2085dea527eb90db7d095d658b7e4`.
 The executable matches runner/game provenance, and 23 project-source plus six
 installed-runtime hashes match the recorded build inputs.
+
+## Enhanced Audio beta candidate (2026-10-28)
+
+Local `positional-stereo-audio`, based on main `2e678ac`, adds shared stereo
+projection and original-world-coordinate room/portal acoustics for positional
+buffers and streams. First-person sounds stay centered and gunfire retains
+its tested longer range. Metadata-driven stereo ambience receives a quieter,
+softer background mix across maps, with extra filtering for outdoor beds
+beneath cover. User listening confirms gunfire range/centering and the Vietnam
+helicopter roof/entrance correction. Broader ambience listening remains pending.
+
+Audio Options now has a native **Enhanced Audio (Beta)** OFF/ON selector in its
+shared frontend/pause builder. Default OFF restores ordinary routing; the
+atomic `pc-audio.ini` preference applies live and survives restart. User confirmed
+that the corrected row is visible and retains its choice; the isolated save
+contains `TSFP_AUDIO_V1 1`. The first layout had a zero-height row; the corrected
+version inherits Audio's explicit height and uses a smaller caption.
+
+Windows Release target builds and 30 selected media/menu tests pass; two native
+Mac compile checks are skipped on this host. Shared SDL processing, source byte
+clocks, refusal/history/reset and settings failure handling are covered by
+fixtures. Full tunnel reverberation, split-screen acoustics and native Mac
+hardware/UI/listening are unverified (MAC-120). See the
+[audio contracts](../development/positional-audio.md).
+The shared launcher now exposes the same beta preference under Settings ->
+Audio, using the game sidecar with default OFF and conflict/rollback handling.
+Windows launcher build/tests passed, including all three new UI cases; portable
+launcher/Mac-adapter checks passed 31 tests and 26 subtests. Native Mac launcher
+execution remains pending.
+Audio is committed on `positional-stereo-audio` (`32a5774`), PR #397.
+CI caught a CRLF working-copy hash in the generated audio patch index;
+normalizing the patch to LF and refreshing the index corrects clean-checkout validation.
 
 ## Retired compatibility memory APIs (2026-10-28)
 

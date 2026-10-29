@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
         TextBlock textureStatus, textureDetails;
         Border textureBadge;
         Button textureCheck, textureInstall, textureVerify;
-        CheckBox textureUpdates;
+        CheckBox textureUpdates, enhancedAudio;
         TextureRelease textureAvailable;
         long textureDownloadBytes;
         bool textureBusy;
@@ -262,8 +262,15 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep Discord open with activity sharing enabled. Applies on your next launch with a compatible game build.",12));
             PageTheme.Details(presence,"Set up Discord activity",discordHelp).Name="DiscordSetupDetails";
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
+            var audioPanel=new StackPanel();
+            var audio=PageTheme.Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
+            enhancedAudio=Check("Enhanced Audio (Beta)",model.EnhancedAudio);enhancedAudio.Name="EnhancedAudio";audio.Children.Add(enhancedAudio);
+            var audioHint=Text("Beta: directional world effects, wall filtering and a softer background ambience mix. Requires a game build with Enhanced Audio support.",12);
+            audioHint.Name="EnhancedAudioBetaNote";audioHint.Foreground=Muted;audio.Children.Add(audioHint);
+            audio.Children.Add(Text("Defaults OFF. Shares the in-game Audio Options preference. Save before launch; you can also switch it live from the game's audio menu.",12));
+            tabs.Items.Add(new TabItem {Header="Audio",Content=Scroll(audioPanel)});
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,discordEnabled,enhancedTextures,enhancedAudio})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
         }
@@ -271,7 +278,7 @@ namespace TimeSplitters.Launcher
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
                 enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,
-                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,
+                skipSplashes.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 device.SelectedIndex,scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,
                 (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -417,6 +424,7 @@ namespace TimeSplitters.Launcher
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
                 model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
                 model.EnhancedTextures=enhancedTextures.IsChecked==true;
+                model.EnhancedAudio=enhancedAudio.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);

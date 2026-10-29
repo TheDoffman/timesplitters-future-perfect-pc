@@ -45,3 +45,9 @@ xbox_kernel.log
 /Backups/
 *.tsfpsave
 *.tsfpsave.partial
+
+# Per-player beta audio preference
+/config/pc-audio.ini
+/config/pc-audio.ini.tmp
+
+/config/pc-audio.ini.bak

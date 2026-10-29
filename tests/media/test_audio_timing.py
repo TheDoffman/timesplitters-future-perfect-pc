@@ -18,10 +18,10 @@ def compile_audio(kind, tmp_path_factory):
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
     source = ROOT / f'tests/media/audio_{kind}_timing.c'
     if Path(compiler).stem.lower() == 'cl':
-        command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'),
+        command = [compiler, '/nologo', '/std:c11', '/O2', '/I' + str(RUNTIME / 'src'), '/I' + str(ROOT / 'src'),
                    str(source), '/Fe:' + str(exe), '/Fo:' + str(directory / 'audio.obj')]
     else:
-        command = [compiler, '-std=c11', '-O2', '-I', str(RUNTIME / 'src'), str(source),
+        command = [compiler, '-std=c11', '-O2', '-I', str(RUNTIME / 'src'), '-I', str(ROOT / 'src'), str(source),
                    '-I', str(ROOT / 'src/runtime'), str(RUNTIME / 'src/platform/win32_compat.c'),
                    *[str(ROOT / 'src/runtime' / name) for name in
                      ('shared_views.c', 'owned_arena.c', 'mmio_views.c', 'guest_arena_service.c')],
@@ -61,4 +61,10 @@ def test_buffer_backpressure(buffer_test, looping):
 def test_stream_headroom(buffer_test):
     result = subprocess.run([str(buffer_test), 'headroom'], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS:' in result.stdout
+
+
+def test_acoustic_guest_state(buffer_test):
+    result=subprocess.run([str(buffer_test),'acoustics'],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
     assert 'PASS:' in result.stdout

@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -252,7 +253,7 @@ class RepairTests(unittest.TestCase):
                 # implicit text newline translation (CRLF on Windows).
                 (snapshot / 'src/fix.c').write_bytes(b'fixed\n')
                 Path(argv[argv.index('-o') + 1]).write_text(
-                    'Shared adapter corrected. Portable fixture passed; Windows CI pending.', encoding='utf-8')
+                    'The game could not open its settings. The repair lets it read them again.', encoding='utf-8')
                 return b'model result'
             return real(argv, **kwargs)
         self.runner = mock.Mock(side_effect=run)
@@ -273,6 +274,9 @@ class RepairTests(unittest.TestCase):
         self.assertEqual(self.git('-C', str(self.repo), 'show', branch + ':src/fix.c'), 'fixed\n')
         self.assertEqual(self.published[0]['base'], 'feature')
         self.assertNotEqual(self.published[0]['base'], 'main')
+        self.assertEqual(re.findall(r'^## (.+)$', self.published[0]['body'], re.M),
+                         ['Change', 'Cause and fix'])
+        self.assertIn('The repair lets it read them again.', self.published[0]['body'])
         self.assertEqual(self.worker.poll()['status'], 'idle')
         self.assertEqual(len([c for c in self.runner.call_args_list if c.args[0][0] == 'fake-codex']), 1)
         self.assertFalse(list(self.work.glob('repair-*')))

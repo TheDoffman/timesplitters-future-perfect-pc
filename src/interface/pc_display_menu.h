@@ -6,6 +6,10 @@ void pc_display_menu_finish(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));
 void pc_network_bots_menu(void (*original)(void));
 void pc_profile_accept(void (*original)(void));
+void pc_unlock_requirement(void (*original)(void));
+void pc_unlock_event(void (*original)(void));
+void pc_unlock_movie(void (*original)(void));
+void pc_unlock_profile_init(void (*original)(void));
 uint32_t pc_network_bots_revive(unsigned slot);
 void pc_network_bots_entity_refresh(uint32_t entity);
 #include "pc_network_bots_state.h"

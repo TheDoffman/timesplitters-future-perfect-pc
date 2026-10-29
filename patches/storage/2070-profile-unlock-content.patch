@@ -1,0 +1,51 @@
+diff --git a/titles/futureperfect/src/recomp_manual.c b/titles/futureperfect/src/recomp_manual.c
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1267,6 +1267,47 @@
+ void sub_0001D3E0(void) { pc_ghost_billboard_begin(sub_0001D3E0_gen); }
+ extern void sub_0001D380_gen(void);
+ void sub_0001D380(void) { pc_ghost_billboard_end(sub_0001D380_gen); }
++
++/* Profile-scoped early access; original progress and save ABI are retained. */
++extern void sub_001CD3E0_gen(void);
++void sub_001CD3E0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_unlock_requirement(sub_001CD3E0_gen);
++#else
++    sub_001CD3E0_gen();
++#endif
++}
++
++extern void sub_001CDA70_gen(void);
++void sub_001CDA70(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_unlock_event(sub_001CDA70_gen);
++#else
++    sub_001CDA70_gen();
++#endif
++}
++
++extern void sub_001CD560_gen(void);
++void sub_001CD560(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_unlock_movie(sub_001CD560_gen);
++#else
++    sub_001CD560_gen();
++#endif
++}
++
++extern void sub_00069D90_gen(void);
++void sub_00069D90(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_unlock_profile_init(sub_00069D90_gen);
++#else
++    sub_00069D90_gen();
++#endif
++}
+ 
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
+ {
