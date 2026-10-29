@@ -1,3 +1,33 @@
+## Mounted-gun operator and instance names (#385) — 2026-10-29
+
+Branch `fix/385-mounted-mouse`, based on main `68408d4d`. The shared helper
+previously mistook gun data `+0x68` (AI target) for the controlling player and
+required the authored name `AGUN`. The original US `B76B0`/`B7830` routines and
+CCTV entries `373E10`/`3756E0` instead use `+0xD8` for the operator; constructor
+`245990` copies the per-instance name to `+4`. Mouse aim now checks the real
+operator and entity backpointer, independent of those two unrelated fields.
+The read guard covers the operator through `0xDC`; original angle limits,
+pause/capture/local-slot rules and input consumption remain intact.
+
+Windows x64 / MSVC x64, Python 3.12.14: the corrected ownership fixture failed
+against the old helper on its first mouse update. After repair, all **20**
+mounted/terminal/Auto Lookahead/backlog checks pass, including original guest
+mount/dismount execution from the SHA-256-verified supported US XBE. Four
+instance names, repeated mounting, independent AI targets, native/Original60
+time and both host adapter bodies are covered. Inaccessible operator tails,
+wrong operators and broken backpointers reject movement without replay.
+All 20 repository-context tests and the base-aware context check also pass.
+
+The complete patch stack validated/applied to an isolated runtime (158 files).
+The real Windows input adapter and all input/config source dependencies were
+rebuilt in the isolated worktree and its `tsfp_pc_controls_test` passed, using a
+disposable controls copy. This focused build reused the pinned local SDL static
+library and generated diagnostic header; it is not a new game executable.
+No personal saves/settings or concurrent audio work were changed. No graphics
+backend was exercised. Machine Wars' second tank, Scotland's turret and physical
+Mac gameplay remain unverified; no release or main merge is claimed. Both hosts
+already consume the shared helper; see MAC-001 for native acceptance.
+
 ## Suite performance regression monitor (2026-10-28)
 
 Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based
@@ -31957,6 +31987,27 @@ Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
 including the normal isolated build tests; patch verification passed first.
 Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
 not a published release or live portcullis verification.
+
+## Multiplayer control and taskbar icon cleanup — 2026-10-29
+
+Local implementation on `fix/multiplayer-control-artifacts`, based on
+`68408d4d`, Windows x64 with CPython 3.12.14 / Tk 8.6. Rounded image corners
+previously contained a dark matte; transparent corners and parent-matched
+control backgrounds now remove the visible wedges. Vertical and horizontal
+scrollbars use flat, centered image elements with scale-sized arrow targets.
+Tk iconbitmap was measured supplying 32x32 HICONs for both window roles despite
+the ICO containing seven sizes. The wrapper now receives the 256px taskbar icon
+and a separate system-sized caption icon, restored on re-show and freed on exit.
+
+The theme and Windows icon/resource suites pass **16 tests**. Coverage includes
+100/150/200% Tk scaling, actual arrow click callbacks in both orientations,
+control backgrounds in idle/hover/pressed/disabled/focus states, real native
+icon bitmap dimensions, popup/re-show behavior, high-contrast fallback and
+small-screen layout. Desktop preview review confirms clean control corners and
+aligned arrows. Physical high-DPI monitor/taskbar rendering and native Mac
+Online are not verified; the latter remains queued in the existing backlog.
+No network, personal settings, saves or running game were used. This is source
+and an offline preview; it requires a matching game package for player use.
 
 
 Device CI repair integrated main68408d4d in cb975f48, preserving both device and

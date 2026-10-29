@@ -490,13 +490,13 @@ STRETCH tag `0x00137010`. Shared RHI `d3d8_GetScissor` and legacy GL
 clips, other tags and partial rectangles remain unchanged. The title helper
 scope supplies the tag only for complete single-player non-4:3 views.
 
-## Mounted and CCTV gun mouse aim (#182)
+## Mounted and CCTV gun mouse aim (#182, #385)
 
 `src/input/pc_mounted.h` handles guest player mode `0x80` before ordinary player
 camera updates in both `pc_controls.c` and `native/input_sdl.c`. The US guest
-`sub_0025D520`/`sub_00258A20` aim an AGUN through player entity data `+0xC14`;
-ordinary player yaw/pitch do not turn it. The shared helper validates its AGUN
-tag and reverse owner link, uses local input port zero (not guest player ID),
+`sub_0025D520`/`sub_00258A20` aim a mounted gun through player entity data `+0xC14`;
+ordinary player yaw/pitch do not turn it. The shared helper validates its entity
+backpointer and reverse operator link at gun data `+0xD8`, uses local input port zero (not guest player ID),
 and updates gun pitch/yaw with authored limits, sensitivity, inversion, FOV and
 optional gun speed. Mouse displacement is consumed once without frame-time
 multiplication. Invalid ownership, pause, focus loss and stale motion consume
@@ -510,7 +510,10 @@ Native mode accepts finite positive game-float time at `4E794C`; Original60
 retains its whole-time gate at `4E7944`. Both consume/rebase mouse batches with
 `pc_input_consume_motion`, preventing fresh packets from expiring against a
 previous batch timestamp. Paused/invalid native time consumes without aiming.
-The helper still handles only AGUN mode `0x80`, not vehicle-seat mode `0x8000`.
+The helper still handles only mounted-gun mode `0x80`, not vehicle-seat mode `0x8000`.
+For #385 field provenance, bounded access and original-code regression coverage,
+see [mounted-gun ownership](mounted-mouse.md). The AI target and instance name
+must not authorize or exclude player mouse aim.
 Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
 in Windows and SDL, with zero-whole positive time, paused stale whole time,
 live return to Original60 and return to on-foot controls. Windows execution

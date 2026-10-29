@@ -21,10 +21,12 @@ static inline float pc_mounted_limit(double angle,float minimum,float maximum)
 }
 
 /* -1 leaves ordinary look/terminal handling alone; 0/1 consumes gun-mode
- * motion without/with movement. Mode 0x80 covers directly mounted AGUNs and
+ * motion without/with movement. Mode 0x80 covers directly mounted guns and
  * CCTV-controlled guns. Their player angles are not their aiming angles.
  * Follow the same C14 gun link and limits as sub_0025D520/sub_00258A20,
- * checking the reverse owner link so stale or AI-controlled guns stay intact. */
+ * checking the reverse operator link so stale or AI-controlled guns stay intact.
+ * US B76B0/373E10/3756E0 set the operator at +D8. +68 is an AI target;
+ * +4 is an authored instance name (AGUN is only one name), not a type tag. */
 static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float sensitivity,
                                    int invert,uint32_t player,uint32_t fov_object,
                                    ptrdiff_t offset,int native_timing,PcGuestRegion *region)
@@ -55,10 +57,10 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
     gun_address=*(const uint32_t*)(extra+0xc14);
     gun=pc_mounted_read(gun_address,offset,0x80,region);
     if(!gun)return 0;
-    data=pc_mounted_read(*(const uint32_t*)(gun+0x7c),offset,0x6c,region);
+    data=pc_mounted_read(*(const uint32_t*)(gun+0x7c),offset,0xdc,region);
     if(!data || !pc_guest_memory_in_span(region,data,0x6c,1) ||
-       *(const uint32_t*)data!=gun_address || *(const uint32_t*)(data+4)!=0x4147554e ||
-       *(const uint32_t*)(data+0x68)!=owner)return 0;
+       *(const uint32_t*)data!=gun_address ||
+       *(const uint32_t*)(data+0xd8)!=owner)return 0;
     state=*(const uint32_t*)(data+0x10);
     if(state==1 || state==9)return 0; /* original locked/inactive aim states */
     f=pc_mounted_read(fov_object,offset,0x388,region);

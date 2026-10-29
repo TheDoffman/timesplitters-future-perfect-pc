@@ -52,6 +52,52 @@ def _check_online_theme_switch_and_close(original_theme):
     assert theme.timer is None
 
 
+@pytest.mark.skipif(sys.platform != 'win32', reason='Windows Online adapter')
+@pytest.mark.parametrize('scale', [1, 1.5, 2])
+def test_control_corners_and_scrollbar_input(scale):
+    run_tk_check('_check_control_corners_and_scrollbar_input', scale)
+
+
+def _check_control_corners_and_scrollbar_input(scale):
+    import tkinter as tk
+    from tkinter import ttk
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/network'))
+    from online_theme import OnlineTheme
+    root = tk.Tk()
+    root.tk.call('tk', 'scaling', scale * 96 / 72)
+    theme = OnlineTheme(root, lambda: True)
+    try:
+        surface = theme.surface('#101e2d', '#3b5268')
+        assert surface.transparency_get(0, 0)
+        assert not surface.transparency_get(20, 15)
+        for style, background in [('TEntry', '#0b1420'), ('TButton', '#0b1420'),
+                ('Primary.TButton', '#0b1420'), ('Card.TEntry', '#152a3d'),
+                ('Card.TButton', '#152a3d'), ('Card.Primary.TButton', '#152a3d')]:
+            for state in ((), ('active',), ('pressed',), ('disabled',), ('focus',)):
+                assert theme.style.lookup(style, 'background', state) == background
+        for orientation in ('vertical', 'horizontal'):
+            calls = []
+            bar = ttk.Scrollbar(root, orient=orientation, command=lambda *args: calls.append(args))
+            bar.pack(fill='y' if orientation == 'vertical' else 'x')
+            bar.set(.25, .5)
+            root.update()
+            width, height = bar.winfo_width(), bar.winfo_height()
+            size = width if orientation == 'vertical' else height
+            assert size >= round(18 * scale) - 1
+            for delta, direction in [(-1, 'up' if orientation == 'vertical' else 'left'),
+                                     (1, 'down' if orientation == 'vertical' else 'right')]:
+                x = width//2 if orientation == 'vertical' else (size//2 if delta < 0 else width-size//2)
+                y = height//2 if orientation == 'horizontal' else (size//2 if delta < 0 else height-size//2)
+                assert bar.identify(x, y).endswith(direction+'arrow')
+                bar.event_generate('<ButtonPress-1>', x=x, y=y)
+                bar.event_generate('<ButtonRelease-1>', x=x, y=y)
+                root.update()
+                assert calls[-1] == ('scroll', str(delta), 'units')
+            bar.destroy()
+    finally:
+        root.destroy()
+
+
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows DWM adapter')
 def test_caption_after_map_reshow_and_native_reset():
     run_tk_check('_check_caption_after_map_reshow_and_native_reset')

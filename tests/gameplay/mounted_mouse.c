@@ -15,7 +15,7 @@ int main(void)
     pc_input_focus(&input,1);pc_input_capture(&input,1);
     U(0x10000)=15;U(0x10004)=0;U(0x10114)=0x80;U(0x10014)=0x20000;
     U(0x2007c)=0x21000;U(0x21c14)=0x30000;U(0x3007c)=0x31000;
-    U(0x31000)=0x30000;U(0x31004)=0x4147554e;U(0x31010)=4;U(0x31068)=0x20000;
+    U(0x31000)=0x30000;U(0x31004)=0x4147554e;U(0x31010)=4;U(0x310d8)=0x20000;
     U(0x4e7944)=1;F(0x40384)=55;
     F(0x10100)=34;F(0x10104)=-12;
     F(0x3101c)=30;F(0x31024)=0;
@@ -38,8 +38,12 @@ int main(void)
     MOVE(-20,100);CHECK(APPLY()==1);
     CHECK(fabsf(F(0x31024)+179)<.001f && F(0x3101c)==15);
     /* A mode/owner mismatch must not move an AI gun or the hidden player. */
-    U(0x31068)=0;MOVE(10,10);CHECK(APPLY()==0 && !input.dx);U(0x31068)=0x20000;
-    U(0x31004)=0;MOVE(10,10);CHECK(APPLY()==0);U(0x31004)=0x4147554e;
+    /* +68 is the AI target, not the operator. Targeting the player must not
+     * grant mouse control; only the reciprocal +D8 operator link does. */
+    U(0x31068)=0x20000;U(0x310d8)=0;MOVE(10,10);CHECK(APPLY()==0 && !input.dx);
+    U(0x310d8)=0x22000;MOVE(10,10);CHECK(APPLY()==0);
+    U(0x310d8)=0x20000;U(0x31068)=0;
+    U(0x31000)=0x32000;MOVE(10,10);CHECK(APPLY()==0);U(0x31000)=0x30000;
     U(0x31010)=1;MOVE(10,10);CHECK(APPLY()==0);
     U(0x31010)=9;MOVE(10,10);CHECK(APPLY()==0);U(0x31010)=4;
     U(0x10004)=1;MOVE(10,10);CHECK(APPLY()==0);U(0x10004)=0;
@@ -51,6 +55,13 @@ int main(void)
     F(0x40384)=NAN;MOVE(10,10);CHECK(APPLY()==0);F(0x40384)=55;
     input.dx=INFINITY;CHECK(APPLY()==0 && !input.dx);
     CHECK(F(0x10100)==34 && F(0x10104)==-12 && F(0x31024)==-179);
+    /* +4 is an authored instance name, not a gun class. A second gun with
+     * another name must work after dismount/re-entry without cached ownership. */
+    U(0x10114)=2;CHECK(APPLY()==-1);
+    U(0x10114)=0x80;U(0x31004)=0x54414e4b;
+    F(0x31034)=0;F(0x31038)=60;F(0x3101c)=30;F(0x31024)=0;
+    MOVE(10,20);CHECK(APPLY()==1);
+    CHECK(fabsf(F(0x31024)+1)<.001f && fabsf(F(0x3101c)-32)<.001f);
     /* Ordinary look and console pointers keep their input; exiting a gun
      * never replays rejected/paused motion into the on-foot camera. */
     U(0x10114)=2;CHECK(APPLY()==-1 && !input.dx && !input.dy);

@@ -43,6 +43,8 @@ class OnlineTheme:
         self.style = ttk.Style(window)
         self.original = self.style.theme_use()
         self.images = []
+        self.icon_handles = {}
+        self.icon_path = None
         if 'TSFPOnlineDark' not in self.style.theme_names():
             self.style.theme_create('TSFPOnlineDark', parent='clam')
             self.build_controls()
@@ -56,17 +58,24 @@ class OnlineTheme:
         """Small scalable UI elements; keep native ttk layout/input behavior."""
         image = tk.PhotoImage(master=self.root, width=width, height=height)
         colors = lambda value: tuple(int(value[i:i+2], 16) for i in (1, 3, 5))
-        fill_rgb, edge_rgb, outside = colors(fill), colors(border), colors('#0b1420')
+        fill_rgb, edge_rgb = colors(fill), colors(border)
         rows = []
+        transparent = []
         for y in range(height):
             row = []
             for x in range(width):
                 dx=abs(x-(width-1)/2)-(width/2-radius)
                 dy=abs(y-(height-1)/2)-(height/2-radius)
                 distance=math.hypot(max(dx,0),max(dy,0))+min(max(dx,dy),0)-radius
-                if distance > 0: rgb=outside
-                elif distance > -1: rgb=tuple(round(edge_rgb[i]*(-distance)+outside[i]*(1+distance)) for i in range(3))
-                elif distance > -2: rgb=edge_rgb
+                # Corners must reveal the actual parent (card or page), not a
+                # baked-in navy matte that leaves dark triangles on cards.
+                if distance > 0:
+                    transparent.append((x, y))
+                    rgb=edge_rgb
+                elif distance > -1: rgb=edge_rgb
+                elif distance > -2:
+                    coverage=-distance-1
+                    rgb=tuple(round(fill_rgb[i]*coverage+edge_rgb[i]*(1-coverage)) for i in range(3))
                 else: rgb=fill_rgb
                 if checked:
                     # Rounded blue square with an anti-aliased white tick.
@@ -76,7 +85,10 @@ class OnlineTheme:
                         if math.hypot(x-(ax+t*vx),y-(ay+t*vy))<1.1: rgb=(255,255,255)
                 row.append('#%02x%02x%02x'%rgb)
             rows.append('{'+ ' '.join(row)+'}')
-        image.put(' '.join(rows));self.images.append(image)
+        image.put(' '.join(rows))
+        for x, y in transparent:
+            image.transparency_set(x, y, True)
+        self.images.append(image)
         return image
 
     def build_controls(self):
@@ -91,7 +103,6 @@ class OnlineTheme:
         def indicator(fill,edge,checked=False):
             box=self.surface(fill,edge,18,18,4,checked)
             padded=tk.PhotoImage(master=self.root,width=24,height=18)
-            padded.put('#0b1420',to=(0,0,24,18))
             padded.tk.call(str(padded),'copy',str(box),'-to',0,0)
             self.images.append(padded)
             return padded
@@ -121,7 +132,50 @@ class OnlineTheme:
         self.style.map('Primary.TButton',foreground=[('disabled','#7f97ae')])
         self.style.configure('TButton',padding=(12,6))
         self.style.configure('TCheckbutton',padding=(0,3))
+        self.build_scrollbars()
         self.style.theme_use(previous)
+
+    def build_scrollbars(self):
+        """Flat, centered controls; retain ttk's native scrolling bindings."""
+        size = max(18, round(18 * float(self.root.tk.call('tk', 'scaling')) / (96 / 72)))
+        for orientation, directions, sides in (
+                ('Vertical', ('up', 'down'), ('top', 'bottom')),
+                ('Horizontal', ('left', 'right'), ('left', 'right'))):
+            prefix = f'TSFP.{orientation}.Scrollbar'
+            for direction in directions:
+                variants = []
+                for background, foreground in (('#101e2d', '#b4c7d8'),
+                        ('#27445f', '#e4edf5'), ('#1d3a55', '#86cdff'),
+                        ('#101e2d', '#536b80')):
+                    arrow = tk.PhotoImage(master=self.root, width=size, height=size)
+                    arrow.put(background, to=(0, 0, size, size))
+                    center = (size - 1) / 2
+                    radius = max(3, round(size / 5))
+                    for y in range(size):
+                        for x in range(size):
+                            across, along = x-center, y-center
+                            if direction in ('left', 'right'):
+                                across, along = along, across
+                            if direction in ('down', 'right'):
+                                along = -along
+                            if -radius/2 <= along <= radius/2 and abs(across) <= along+radius/2:
+                                arrow.put(foreground, (x, y))
+                    self.images.append(arrow)
+                    variants.append(arrow)
+                self.style.element_create(prefix+'.'+direction+'arrow', 'image', variants[0],
+                    ('disabled', variants[3]), ('pressed', variants[2]), ('active', variants[1]))
+            trough = self.surface('#101e2d', '#101e2d', size, size, 0)
+            thumb = self.surface('#3b5268', '#3b5268', size, size, 0)
+            hot = self.surface('#5983a5', '#5983a5', size, size, 0)
+            pressed = self.surface('#86cdff', '#86cdff', size, size, 0)
+            self.style.element_create(prefix+'.trough', 'image', trough, border=0, sticky='nswe')
+            self.style.element_create(prefix+'.thumb', 'image', thumb, ('pressed', pressed),
+                                      ('active', hot), border=2, sticky='nswe')
+            self.style.layout(orientation+'.TScrollbar', [(prefix+'.trough', {
+                'sticky': 'nswe', 'children': [
+                    (prefix+'.'+direction+'arrow', {'side': side, 'sticky': ''})
+                    for direction, side in zip(directions, sides)
+                ] + [(prefix+'.thumb', {'sticky': 'nswe', 'expand': '1'})]})])
 
     def track(self, window):
         self.windows.add(window)
@@ -131,12 +185,35 @@ class OnlineTheme:
         if not icon.is_file():
             icon = _layout_root / 'build/online-icon/multiplayer.ico'
         if icon.is_file():
+            self.icon_path = icon
             window.iconbitmap(str(icon))
             if window is self.root:
                 window.iconbitmap(default=str(icon))
         window.bind('<Map>', lambda event: window.after_idle(lambda: self.caption(window))
                     if event.widget == window else None, add='+')
         window.after_idle(lambda: self.caption(window))
+
+    def apply_window_icons(self, handle):
+        if self.icon_path is None:
+            return
+        user = ctypes.windll.user32
+        user.LoadImageW.argtypes = [wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+                                   ctypes.c_int, ctypes.c_int, wintypes.UINT]
+        user.LoadImageW.restype = wintypes.HANDLE
+        user.SendMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        user.SendMessageW.restype = wintypes.LPARAM
+        # Tk's iconbitmap supplies the same 32px bitmap for both roles. The
+        # shell then enlarges it on high-DPI taskbars. Give it the full 256px
+        # artwork, while loading the small caption icon at the system's size.
+        for role, size in ((1, 256), (0, user.GetSystemMetrics(49))):
+            if size not in self.icon_handles:
+                icon = user.LoadImageW(None, str(self.icon_path), 1, size, size, 0x10)
+                if not icon:
+                    continue  # Keep Tk's fallback if the native load fails.
+                self.icon_handles[size] = icon
+            icon = self.icon_handles[size]
+            if user.SendMessageW(handle, 0x7f, role, 0) != icon:
+                user.SendMessageW(handle, 0x80, role, icon)
 
     def caption(self, window):
         if not window.winfo_exists() or not window.winfo_viewable():
@@ -150,6 +227,7 @@ class OnlineTheme:
             handle = get_root(window.winfo_id(), 2)
             if not handle:
                 return
+            self.apply_window_icons(handle)
             getter = ctypes.windll.dwmapi.DwmGetWindowAttribute
             getter.argtypes = [wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD]
             actual = ctypes.c_int(-1)
@@ -174,10 +252,13 @@ class OnlineTheme:
                                      fieldbackground='#152a3d', bordercolor='#3b5268',
                                      lightcolor='#2c4258', darkcolor='#0b1420', insertcolor='#e4edf5')
                 self.style.configure('Treeview', background='#0b1420', fieldbackground='#0b1420', foreground='#e4edf5')
-                self.style.configure('TEntry', fieldbackground='#152a3d', foreground='#e4edf5', insertcolor='#e4edf5')
-                self.style.configure('TButton', background='#152a3d')
-                self.style.map('TButton', background=[('active', '#27445f')], foreground=[('disabled', '#7f97ae')])
-                self.style.map('TEntry', fieldbackground=[('readonly', '#152a3d')], foreground=[('readonly', '#e4edf5')])
+                self.style.configure('TEntry', background='#0b1420', fieldbackground='#101e2d', foreground='#e4edf5', insertcolor='#e4edf5')
+                self.style.configure('TButton', background='#0b1420')
+                self.style.map('TButton', background=[('', '#0b1420')], foreground=[('disabled', '#7f97ae')])
+                self.style.map('TEntry', fieldbackground=[('readonly', '#101e2d')], foreground=[('readonly', '#e4edf5')])
+                for control in ('TEntry', 'TButton', 'Primary.TButton'):
+                    self.style.configure('Card.'+control, background='#152a3d')
+                    self.style.map('Card.'+control, background=[('', '#152a3d')])
                 self.style.map('Treeview', background=[('selected', '#1d3a55')], foreground=[('selected', '#ffffff')])
                 self.style.map('TCheckbutton', background=[('active', '#152a3d')], foreground=[('disabled', '#7f97ae')])
                 self.style.configure('Treeview.Heading', background='#152a3d', foreground='#b4c7d8', font=('Segoe UI',10,'bold'), padding=(10,8))
@@ -211,9 +292,15 @@ class OnlineTheme:
         self.timer = self.root.after(1000, self.refresh)
 
     def closed(self, event):
-        if event.widget == self.root and self.timer:
-            self.root.after_cancel(self.timer)
-            self.timer = None
+        if event.widget == self.root:
+            if self.timer:
+                self.root.after_cancel(self.timer)
+                self.timer = None
+            destroy = ctypes.windll.user32.DestroyIcon
+            destroy.argtypes = [wintypes.HICON]
+            for icon in self.icon_handles.values():
+                destroy(icon)
+            self.icon_handles.clear()
 
 
 def fit_window(window, width, height):
@@ -320,10 +407,10 @@ def build_browser(window, values, actions):
     wrapped_label(join, 'Paste the full invitation your host shared with you.',
                   style='CardMuted.TLabel').grid(row=1, column=0, sticky='ew', pady=(6, 14))
     ttk.Label(join, text='Invitation / lobby code', style='Card.TLabel').grid(row=2, column=0, sticky='w')
-    code = ttk.Entry(join, textvariable=values['code'])
+    code = ttk.Entry(join, textvariable=values['code'], style='Card.TEntry')
     code.grid(row=3, column=0, sticky='ew', pady=(6, 8))
     code.bind('<Return>', lambda event: actions['join_code']())
-    ttk.Button(join, text='Join by code', style='Primary.TButton', command=actions['join_code']).grid(
+    ttk.Button(join, text='Join by code', style='Card.Primary.TButton', command=actions['join_code']).grid(
         row=4, column=0, sticky='ew')
     ttk.Label(join, text='PUBLIC LOBBIES', style='CardMuted.TLabel').grid(row=5, column=0, sticky='w', pady=(24, 8))
     listing = ttk.Frame(join)
@@ -341,8 +428,8 @@ def build_browser(window, values, actions):
     browser.bind('<Return>', lambda event: actions['join_selected']())
     buttons = ttk.Frame(join, style='Surface.TFrame')
     buttons.grid(row=7, column=0, sticky='ew', pady=(10, 0))
-    ttk.Button(buttons, text='Refresh', command=actions['refresh']).pack(side='left')
-    ttk.Button(buttons, text='Join selected', command=actions['join_selected']).pack(side='right')
+    ttk.Button(buttons, text='Refresh', style='Card.TButton', command=actions['refresh']).pack(side='left')
+    ttk.Button(buttons, text='Join selected', style='Card.TButton', command=actions['join_selected']).pack(side='right')
     wrapped_label(join, 'Public lobbies use the address in Directory settings. Refresh to find matches.',
                   style='CardMuted.TLabel').grid(row=8, column=0, sticky='ew', pady=(10, 0))
 
@@ -353,11 +440,11 @@ def build_browser(window, values, actions):
     wrapped_label(host, 'Create a lobby and share an invitation.', style='CardMuted.TLabel').grid(
         row=1, column=0, sticky='ew', pady=(6, 14))
     ttk.Label(host, text='Lobby name', style='Card.TLabel').grid(row=2, column=0, sticky='w')
-    ttk.Entry(host, textvariable=values['name']).grid(row=3, column=0, sticky='ew', pady=(6, 12))
+    ttk.Entry(host, textvariable=values['name'], style='Card.TEntry').grid(row=3, column=0, sticky='ew', pady=(6, 12))
     options = ttk.Frame(host, style='Surface.TFrame')
     options.grid(row=4, column=0, sticky='ew')
     ttk.Label(options, text='UDP port', style='Card.TLabel').pack(side='left', padx=(0, 8))
-    ttk.Entry(options, textvariable=values['port'], width=7).pack(side='left')
+    ttk.Entry(options, textvariable=values['port'], width=7, style='Card.TEntry').pack(side='left')
     ttk.Checkbutton(options, text='List publicly', variable=values['listed']).pack(side='right')
     ttk.Checkbutton(host, text='Start directory automatically', variable=values['automatic']).grid(
         row=5, column=0, sticky='w', pady=(12, 0))
@@ -368,12 +455,12 @@ def build_browser(window, values, actions):
     ip_row = ttk.Frame(host, style='Surface.TFrame')
     ip_row.grid(row=8, column=0, sticky='ew')
     ip_row.columnconfigure(0, weight=1)
-    ttk.Entry(ip_row, textvariable=values['public_ip'], width=14).grid(row=0, column=0, sticky='ew')
-    ttk.Button(ip_row, text='Detect', command=actions['detect']).grid(row=0, column=1, padx=(8, 0))
+    ttk.Entry(ip_row, textvariable=values['public_ip'], width=14, style='Card.TEntry').grid(row=0, column=0, sticky='ew')
+    ttk.Button(ip_row, text='Detect', style='Card.TButton', command=actions['detect']).grid(row=0, column=1, padx=(8, 0))
     wrapped_label(host, 'First time hosting? Forward TCP 30820 and your UDP port to this PC. Guests need no port forwarding.',
                   style='CardMuted.TLabel').grid(row=9, column=0, sticky='ew', pady=(10, 8))
     host.rowconfigure(10, weight=1)
-    ttk.Button(host, text='Start New Match', style='Primary.TButton', command=actions['host']).grid(
+    ttk.Button(host, text='Start New Match', style='Card.Primary.TButton', command=actions['host']).grid(
         row=11, column=0, sticky='ew')
 
     directory.columnconfigure(0, weight=1)

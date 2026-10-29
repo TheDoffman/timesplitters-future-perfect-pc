@@ -807,6 +807,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **#385 mounted-gun operator (2026-10-29, commit carrying this entry):**
+  Shared `src/input/pc_mounted.h` now checks the original `+D8` operator,
+  independently of the AI target and authored gun name. Both Windows and SDL
+  already use this helper; no new Mac adapter is needed. SDL self-test data uses
+  the corrected layout. Windows fixtures, original guest mount/dismount and a
+  rebuilt Win32 input adapter pass; native Mac build/physical input and the
+  reported Machine Wars/Scotland scenes remain **Awaiting validation**. See
+  [the #385 evidence](STATUS.md#mounted-gun-operator-and-instance-names-385--2026-10-29).
+
 Release 0.3.6 preparation found a stale SDL menu self-test expectation: after
 leaving the menu while unfocused, the existing adapter restores the pending
 gameplay capture request on focus regain. The test now checks that behavior
@@ -2879,6 +2888,12 @@ validation. This version bump alone is not publication evidence.
   **queued** with the existing adapter work; this does not modify Cocoa menus
   or the Avalonia launcher. Future Mac acceptance must preserve session/bridge
   lifetime, invitations, accessibility, clipboard and layout across scaling.
+
+  Follow-up `fix/multiplayer-control-artifacts` (2026-10-29) removes opaque
+  control-corner mattes, replaces inherited scrollbar graphics and supplies
+  256px taskbar/system-sized caption icons to the Windows wrapper. This stays
+  within the Windows Online adapter; Mac Online remains queued. Future Mac
+  acceptance also needs crisp icons and controls at native display scaling.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**

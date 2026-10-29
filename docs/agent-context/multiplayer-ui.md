@@ -33,6 +33,22 @@ build and `bundle_online.bundle_icon` generate it; packages copy it beside the
 companion. It requires no private artwork or additional Python libraries. The
 header now reads “Find your friends. Start a match.” without the extra tagline.
 
+The native wrapper also receives explicit `WM_SETICON` handles: the shell gets
+the full 256px artwork, while the caption gets the system small-icon size.
+`iconbitmap` alone supplied 32px for both roles on Windows Tk 8.6. Handles are
+cached, restored after wrapper recreation and released when the root closes.
+The packaged-icon test checks actual HICON bitmap dimensions for both windows,
+including withdraw/show; icon-file resolution alone is insufficient evidence.
+
+Rounded control images use transparent corners instead of a navy matte. Card
+entries/buttons use background styles matching their parent in all states;
+page/popup controls retain the page background. Both scrollbar orientations
+use centered, scale-sized image arrows and flat thumb/trough elements, retaining
+ttk's scrolling bindings. Tests cover corner transparency, state backgrounds,
+arrow hit targets and real unit-scroll callbacks at 100/150/200% Tk scaling.
+The custom elements stay inside the branded theme; high contrast uses the
+original native theme and its controls.
+
 
 PR #399 CI exposed clipped directory fields at 150/200% scaling on a 1280x768
 Windows runner. `scrollable_panel` now serves the Play tab, Directory tab and
