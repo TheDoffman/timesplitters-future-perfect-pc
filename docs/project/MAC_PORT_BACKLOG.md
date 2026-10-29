@@ -301,6 +301,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-119 | Profile-scoped Unlock Content | Awaiting validation |
 | MAC-120 | Enhanced Audio beta | Awaiting validation |
 | MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
+| MAC-122 | Temporary material matrix cache epoch (#398) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7387,7 +7388,7 @@ Mac title acceptance is implied.
 ### MAC-122 - Temporary material matrix cache epoch (#398)
 
 - **Status:** Awaiting validation
-- **Source/PR:** Uncommitted at validation, on this task branch.
+- **Source/PR:** `b3a81ca0`, PR pending.
 - PC behavior: removes Mars Prison high-refresh material/sky flicker by matching
   temporary UV matrix cache lifetime to the existing render serial.
 - Shared: `src/gameplay/pc_native_timing_guest.inc`, both Original/native clock
