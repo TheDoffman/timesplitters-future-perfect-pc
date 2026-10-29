@@ -137,13 +137,16 @@ providers, perform handoffs or limit themselves to advisory work.
   logs/counts, file lists, implementation reports and platform checklists.
   Mention remaining limits only when they affect what users can expect.
   Keep the description current as the change evolves.
-- Link resolved issues with GitHub closing references (for example, `Closes #128`)
-  and fill in `## Cause and fix`. After merging into main, the Issue resolution
-  notes workflow copies that explanation
-  to each linked issue in this repository. Do not post a duplicate manual
-  resolution comment. If the workflow fails because the explanation is missing,
-  correct the PR description and rerun the failed workflow; reruns update the
-  existing bot comment. Merging source is not evidence of a published release.
+- Keep fixed issues open until the version containing the fix is live/published
+  (user instruction, 2026-10-29). A merged PR or local test build is not a
+  published fix. Use non-closing issue references such as `Refs #128` in PRs;
+  do not use `Closes`, `Fixes`, `Resolves`, or automatic-closing Development
+  links before publication. This rule overrides older template instructions.
+  Explain the cause and fix and identify that publication is pending. Before
+  closing an issue, verify that the published version actually includes its fix
+  and link that release in the issue. Preserve the existing resolution-note
+  workflow's explanation requirements; if it needs support for non-closing
+  references, update and test that workflow before relying on automatic notes.
 - Use `.github/pull_request_template.md` for the user-facing explanation. Keep
   test results and unrun checks in `docs/project/STATUS.md`, and platform work
   and supporting links in `docs/project/MAC_PORT_BACKLOG.md` when applicable.
