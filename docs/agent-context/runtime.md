@@ -1,5 +1,7 @@
 # Runtime and patch navigation
 
+Unchanged patch stacks reuse content validation: [cache contract](release-speed.md).
+
 `0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds
 shared stereo projection with XAudio2/SDL output adapters; see
 [positional audio](../development/positional-audio.md) for field provenance,

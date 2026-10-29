@@ -2,6 +2,7 @@
  * the original feedback draws in the SAME deferred command stream. Readback
  * synchronizes the GPU; never use captured runs as frame-time measurements. */
 #include "pc_surface_capture.h"
+#include "pc_surface_bias.h"
 #if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
 #include "graphics/surface_gpu.h"
 /* A bounded integration probe, not the final persistent runtime owner. Create
@@ -15,7 +16,7 @@ static int pc_surface_capture_gpu(const PcSurfaceCapture *sample,RhiView **views
     double coefficients[4];
     for(unsigned i=0;i<4;i++) {
         if(!isfinite(authored[i]))return 0;
-        coefficients[i]=(int32_t)(fminf(1.f,fmaxf(0.f,authored[i]))*255.f)/255.;
+        coefficients[i]=pc_surface_coefficient_byte(authored[i])/255.;
     }
     PcSurfaceGpuConfig config={128,coefficients[1],coefficients[2],coefficients[3],coefficients[0],128./255.};
     char errors[1024]={0};PcSurfaceGpu *owner=pc_surface_gpu_create(&config,errors,sizeof errors);

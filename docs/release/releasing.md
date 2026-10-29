@@ -89,6 +89,11 @@ name is fixed; `-ChannelName` customizes named feature tracks only.
 
 ## Build, inspect and publish
 
+The complete regression suite uses up to four workers and reuses successful
+compiler environment setup. No cases are omitted. Use `-TestWorkers 1` for a
+serial diagnostic run, or `-TestWorkers N` to set the worker count. Any test or
+worker failure still stops packaging. See [measured timings and safeguards](../development/release-performance.md).
+
 Use the existing checkout, pinned upstream/dependencies and supported US Xbox
 data. Validate its executable before generation/game validation. Keep personal
 saves and settings intact. Check free space before a full build/package.

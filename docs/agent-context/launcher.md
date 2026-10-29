@@ -1,5 +1,9 @@
 # Launcher internals
 
+Windows build/test receipts: [release validation reuse](release-speed.md).
+Launcher CI retains the cache regression in its startup/package test step;
+the step indentation is corrected with the suite scheduling maintenance.
+
 Build/release/CI helpers now live under their matching `tools/` folders.
 Launcher implementation stays under `tools/launcher/`; installed package paths
 remain separate from repository source locations.

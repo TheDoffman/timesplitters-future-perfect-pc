@@ -51,6 +51,53 @@ def commit(project, message):
     git(project, 'commit', '-qm', message)
 
 
+def test_validated_patch_content_skips_only_repeated_unwind_apply(fixture, monkeypatch):
+    _, runtime, patches = fixture
+    installer.apply_patches(runtime, patches)
+    original_git = installer.git
+    def no_apply(tree, *args):
+        assert args[0] not in ('apply', 'init'), 'Unchanged content was revalidated'
+        return original_git(tree, *args)
+    monkeypatch.setattr(installer, 'git', no_apply)
+    assert installer.apply_patches(runtime, patches) == []
+
+
+@pytest.mark.parametrize('changed', ['source', 'patch', 'validator', 'git', 'receipt', 'forced'])
+def test_patch_receipt_invalidation_runs_full_validation(fixture, monkeypatch, changed):
+    _, runtime, patches = fixture
+    installer.apply_patches(runtime, patches)
+    installer.apply_patches(runtime, patches)
+    original_git = installer.git
+    applies = []
+    def count_apply(tree, *args):
+        result = original_git(tree, *args)
+        if args[0] == 'apply': applies.append(args)
+        if args[0] == '--version' and changed == 'git': result.stdout += ' changed'
+        return result
+    monkeypatch.setattr(installer, 'git', count_apply)
+    if changed == 'source':
+        path = runtime/'src/sample.c'
+        stamp = path.stat()
+        path.write_text(path.read_text().replace('alpha=1', 'alpha=9'))
+        import os
+        os.utime(path, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+    elif changed == 'patch':
+        patch(patches, 'base.patch', BASE, BASE.replace('alpha=0', 'alpha=2'))
+    elif changed == 'validator':
+        path = runtime/'validator.py'; path.write_bytes(Path(installer.__file__).read_bytes()+b'\n# new policy\n')
+        monkeypatch.setattr(installer, '__file__', str(path))
+    elif changed == 'receipt':
+        installer.state_path(runtime).with_name('tsfp-patches-validated.sha256').write_bytes(b'\xff')
+    if changed == 'source':
+        for _ in range(2):
+            with pytest.raises(RuntimeError, match='conflicts'):
+                installer.apply_patches(runtime, patches)
+        assert not installer.state_path(runtime).with_name('tsfp-patches-validated.sha256').exists()
+    else:
+        installer.apply_patches(runtime, patches, force=changed == 'forced')
+    assert applies
+
+
 def test_responsibility_folders_preserve_order_ledger_and_rollback(fixture):
     _, runtime, patches = fixture
     first = BASE.replace('alpha=0', 'alpha=1')

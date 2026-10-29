@@ -7,6 +7,7 @@ import struct
 import sys
 
 import pytest
+from guest_constants import absolute_data_words
 
 from test_cutscene_letterbox import ROOT, RUNTIME, compile_and_run
 
@@ -167,11 +168,13 @@ def test_original_projection_output(tmp_path, mutation):
         config.configure_from_xbe(str(xbe))
         info = {'end': 0x151D92, 'name': 'sub_00151CF0_gen'}
         routine = FunctionTranslator(image, {0x151CF0: info}).translate_function(0x151CF0, info)
-        addresses = sorted({int(a, 16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)', routine)})
+        addresses = absolute_data_words(image, [(0x151CF0, info['end'])], config.va_to_file_offset)
         constants = '\n'.join(f'MEM32(0x{a:X})=0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08X};' for a in addresses)
         if mutation == 'missing-output-store':
-            store = 'MEMF(eax + 0x3C) = xmm0.f[0];'
-            assert store in routine
+            # Remove only the last output write from the current scalar-SIMD lowering.
+            store = ('uint32_t _simd_dest = (uint32_t)(eax + 0x3C);\n'
+                     '    MEM32(_simd_dest + 0u) = _simd_b.u[0];')
+            assert routine.count(store) == 1
             routine = routine.replace(store, '')
         source = (ROOT/'tests/graphics/projection_output.c').read_text()
         source = source.replace('/* ORIGINAL_ROUTINE */', routine).replace('/* ORIGINAL_CONSTANTS */', constants)
