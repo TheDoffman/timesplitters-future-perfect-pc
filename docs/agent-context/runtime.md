@@ -863,3 +863,8 @@ Request allocation/ownership through0218: [contracts](kernel-objects.md#original
 
 See [Unlock Content](unlock-content.md) for the shared menu, profile extension,
 original predicate hooks and isolated validation routes.
+
+`2080-tank-driver-controls.patch` wraps 1730E0 through shared
+`pc_tank_guest.inc`. The local keyboard/mouse scope selects signed track input
+and restores actor links after the original call; controller behavior retains
+the original camera-relative branch. See [scope guards](mounted-mouse.md).

@@ -25,7 +25,7 @@ void sub_001665C0(void) {g_esp+=4;}
 void sub_00088CA0(void) {g_eax=0;g_esp+=4;}
 void sub_00088430(void) {g_eax=0;g_esp+=4;}
 void sub_000888A0(void) {g_eax=0;g_esp+=4;}
-static int legacy_gate,legacy_count;
+static int legacy_gate,legacy_count,pitch_probe;
 static unsigned advanced;
 #undef RECOMP_LOAD_GLOBAL_U32
 #define RECOMP_LOAD_GLOBAL_U32(site,address,value) \
@@ -59,7 +59,8 @@ static void step(float dt,unsigned whole) {
     unsigned before=advanced;
     sub_000CA040();
     assert(g_esp==STACK+4 && MEM32(STACK)==0x12345678 && g_fp_top==0);
-    assert(g_ebx==0x1234 && g_esi==0x5678 && g_edi==0x9abc && g_ebp==0xdef0);
+    if(!pitch_probe)assert(g_ebx==0x1234 && g_esi==0x5678 && g_edi==0x9abc && g_ebp==0xdef0);
+    else assert(g_esi==0x5678); /* Original CA040 only saves ESI; its pitch branch uses other registers. */
     if(g_tsfp_native_timing_active)assert(advanced==before+(dt>0));
     assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==dt);
     for(unsigned i=0;i<3;i++)assert(isfinite(MEMF(CAMERA+0x27c+4*i)));
@@ -102,6 +103,15 @@ int main(int argc,char **argv) {
       unsigned char paused[0x1000];memcpy(paused,memory+CAMERA,sizeof paused);
       step(0,mode?3:0);assert(!memcmp(paused,memory+CAMERA,sizeof paused));
     }
+    /* Driver mouse elevation uses the original negative camera target. */
+    float pitch_y[2];pitch_probe=1;
+    for(int pitch=-28;pitch<=-4;pitch+=24) {
+        reset();g_tsfp_native_timing_active=0;MEMF(CAMERA+0xfdc)=MEMF(CAMERA+0xfe4)=(float)pitch;
+        for(int n=0;n<180;n++)step(1,1);
+        pitch_y[pitch==-4]=MEMF(CAMERA+0x338);
+        printf("pitch target=%d forward_y=%f smooth=%f\n",pitch,MEMF(CAMERA+0x338),MEMF(CAMERA+0xfe4));
+    }
+    assert(pitch_y[0]>pitch_y[1]); /* More negative target looks higher. */
     g_tsfp_native_timing_active=0;
     assert(pc_native_global_load(0xca040,0x4e7944,3)==3);
     assert(pc_native_global_load(0xca424,0x4e7944,0)==0);
