@@ -102,6 +102,18 @@ int main(void)
         }
         CHECK(pc_network_bot_motion_sample(&motion,.12,&out) && near(out.position[0],1));
     }
+    {
+        memset(&motion,0,sizeof motion);memset(&state,0,sizeof state);
+        state.body_present=1;state.health=1;state.entity_flags=1;state.camo.flags=0x10;
+        state.camo.fade_phase=2;state.camo.fade_values[2]=.5f;
+        state.camo.fade_values[0]=.1f;pc_network_bot_motion_push(&motion,&state,2.);
+        state.camo.fade_values[0]=.2f;pc_network_bot_motion_push(&motion,&state,2.05);
+        CHECK(pc_network_bot_motion_sample(&motion,2.075,&out) && near(out.camo.fade_values[0],.15f));
+        state.camo.fade_phase=1;state.camo.fade_values[0]=0;pc_network_bot_motion_push(&motion,&state,2.1);
+        CHECK(pc_network_bot_motion_sample(&motion,2.125,&out) && out.camo.fade_phase==1 && out.camo.fade_values[0]==0);
+        state.camo.flags=0;pc_network_bot_motion_push(&motion,&state,2.15);
+        CHECK(pc_network_bot_motion_sample(&motion,2.175,&out) && !out.camo.flags);
+    }
     puts("PASS: 20 Hz snapshots to continuous 60 Hz transforms, jitter, loss, angles, authority and lifecycle");
     return 0;
 }

@@ -51,6 +51,13 @@ static int pc_network_bot_motion_sample(const PcNetworkBotMotion *motion,
     if(motion->from.next_clip==motion->target.next_clip && motion->from.next_cycle==motion->target.next_cycle) {
         out->next_channels[0]=motion->from.next_channels[0]+t*(motion->target.next_channels[0]-motion->from.next_channels[0]);
     }
+    /* Smooth only elapsed fade time within one host phase. Never blend an
+       on/off transition, a restarted timer or the random shimmer state. */
+    const PcCharacterCamo *from=&motion->from.camo,*to=&motion->target.camo;
+    if((from->flags&0x10u) && (to->flags&0x10u) && from->fade_phase==to->fade_phase &&
+       to->fade_phase!=1u && from->cycle_phase==to->cycle_phase &&
+       from->fade_values[2]==to->fade_values[2] && to->fade_values[0]>=from->fade_values[0])
+        out->camo.fade_values[0]=from->fade_values[0]+t*(to->fade_values[0]-from->fade_values[0]);
 #undef BOT_MOTION_VECTOR
     return 1;
 }

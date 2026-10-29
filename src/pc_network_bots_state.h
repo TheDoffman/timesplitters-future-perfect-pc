@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <math.h>
 #include "pc_character_pose.h"
+#include "pc_character_effects.h"
 /* Wire values only: no guest pointers, controller records or animation handles. */
 typedef struct PcNetworkBotShot {
     uint32_t serial,tick,spawn,hand,mode,flags,target_slot;
@@ -45,6 +46,7 @@ typedef struct PcNetworkBotState {
        Human-vs-human score columns remain owned by the stock protocol. */
     int16_t killed_by[16];
     uint32_t primary_room; /* numeric scene room, not a peer-local portal handle */
+    PcCharacterCamo camo;
 } PcNetworkBotState;
 static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned humans,unsigned bots)
 {
@@ -52,6 +54,7 @@ static int pc_network_bot_state_valid(const PcNetworkBotState *state,unsigned hu
     if(!humans || !bots || bots>10 || humans+bots>16 ||
        state->slot<humans || state->slot>=humans+bots) return 0;
     if(state->animation>=70u) return 0; /* equipped weapon enum */
+    if(!pc_character_camo_valid(&state->camo)) return 0;
     if(state->body_present>1u || state->primary_room>213u) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->position[i]) || fabsf(state->position[i])>1000000.f) return 0;
     for(i=0;i<3;i++) if(!isfinite(state->bounds_center[i]) || fabsf(state->bounds_center[i])>10000.f ||

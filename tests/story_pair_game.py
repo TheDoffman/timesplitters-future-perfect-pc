@@ -77,7 +77,7 @@ def main():
     identity=read_json(ROOT/'build/windows/generated/network-identity.json')
     assert identity and identity['compatibility']==seal['compatibility']
     for name,digest in identity['files']:
-        if name.startswith(('src/pc_story','src/pc_network','src/pc_online','src/pc_display_menu','src/pc_character_pose.h')) or name=='tools/online.py':
+        if name.startswith(('src/pc_story','src/pc_network','src/pc_online','src/pc_display_menu','src/pc_character_pose.h','src/pc_character_effects.h')) or name=='tools/online.py':
             assert hashlib.sha256((ROOT/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()==digest, 'Rebuild required: '+name
     evidence_root=ROOT/'private/network-validation'/('story-four' if args.players==4 else 'story-load-pair' if args.load_probe else 'story-pair')
     evidence_root.mkdir(parents=True,exist_ok=True)

@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stddef.h>
 #include "pc_character_pose.h"
+#include "pc_character_effects.h"
 void pc_character_pose_present(uint32_t entity,const PcCharacterPose *pose);
 extern void sub_000DAC30(void),sub_000D7550(void),sub_000A9070(void);
 extern void sub_0015BCA0(void),sub_0015BCC0(void),sub_002402B0(void),sub_00353A90(void);
@@ -22,12 +23,12 @@ typedef struct StoryNpcSpawn {
     float position[3],angles[3],heading,health,armor,max_health;
     float bounds_center[3],bounds_radius[3];
     uint32_t cloak_flags,cloak_phase;float cloak_values[3];
-    uint32_t primary_room,pose_present;PcCharacterPose pose;
+    uint32_t primary_room,pose_present;PcCharacterCamo camo;PcCharacterPose pose;
 } StoryNpcSpawn;
-_Static_assert(sizeof(StoryNpcSpawn)==396,"Story spawn wire layout");
-#define STORY_NPC_MAGIC 0x34504E53u
-#define STORY_NPC_POSE_MAGIC 0x34505053u
-#define STORY_NPC_BASE_BYTES 180u
+_Static_assert(sizeof(StoryNpcSpawn)==452,"Story spawn wire layout");
+#define STORY_NPC_MAGIC 0x35504E53u
+#define STORY_NPC_POSE_MAGIC 0x35505053u
+#define STORY_NPC_BASE_BYTES 236u
 /* Original353990 copies into a256-byte guest stack buffer. Never enlarge it. */
 typedef struct StoryNpcBaseMessage {uint8_t state[STORY_NPC_BASE_BYTES];uint32_t checksum;} StoryNpcBaseMessage;
 typedef struct StoryNpcPoseMessage {uint32_t magic,match,slot,serial,checksum;PcCharacterPose pose;} StoryNpcPoseMessage;
@@ -101,6 +102,7 @@ static int story_npc_valid(const StoryNpcSpawn *s)
     for(unsigned i=0;i<3u;i++)
         if(!isfinite(s->bounds_center[i]) || fabsf(s->bounds_center[i])>10000.f ||
            !isfinite(s->bounds_radius[i]) || s->bounds_radius[i]<0.f || s->bounds_radius[i]>10000.f) return 0;
+    if(!pc_character_camo_valid(&s->camo)) return 0;
     if((s->cloak_flags&~0x200004u) || s->cloak_phase>2u) return 0;
     for(unsigned i=0;i<3u;i++) if(!isfinite(s->cloak_values[i]) || fabsf(s->cloak_values[i])>1000000.f) return 0;
     return isfinite(s->heading) && fabsf(s->heading)<=100000.f &&
@@ -186,6 +188,7 @@ static void story_npc_publish(uint32_t actor,uint32_t frame)
        numeric phase/fade slice. Effect objects and sound handles stay local. */
     s.cloak_flags=WORD_AT(actor+0xc6cu)&0x200004u;s.cloak_phase=WORD_AT(actor+0xde4u);
     memcpy(s.cloak_values,(const void *)((uintptr_t)(actor+0xde8u)+g_xbox_mem_offset),sizeof s.cloak_values);
+    pc_character_camo_capture(&s.camo,(const uint8_t *)((uintptr_t)actor+g_xbox_mem_offset));
     const uint32_t entity=WORD_AT(actor);
     if(entity && guest_writable(entity,0x25cu) && !(WORD_AT(entity+0x28u)&0x80000000u)) {
         s.present=1;s.spawn=WORD_AT(entity+0x258u);s.network_id=WORD_AT(entity+0x230u);
@@ -347,6 +350,7 @@ static int story_npc_apply(const StoryNpcSpawn *s)
         WORD_AT(actor+0xc6cu)=(WORD_AT(actor+0xc6cu)&~0x200004u)|s->cloak_flags;
         WORD_AT(actor+0xde4u)=s->cloak_phase;
         memcpy((void *)((uintptr_t)(actor+0xde8u)+g_xbox_mem_offset),s->cloak_values,sizeof s->cloak_values);
+        pc_character_camo_apply((uint8_t *)((uintptr_t)actor+g_xbox_mem_offset),&s->camo);
         guest_call(sub_000D7550,2,actor,s->team);
         memcpy((void *)((uintptr_t)(entity+0x64u)+g_xbox_mem_offset),s->position,12u);
         memcpy((void *)((uintptr_t)(actor+0x30u)+g_xbox_mem_offset),s->position,12u);

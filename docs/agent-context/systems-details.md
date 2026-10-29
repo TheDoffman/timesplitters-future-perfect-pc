@@ -1,5 +1,62 @@
 # Subsystem contracts and diagnostics
 
+Splitter camouflage (2026-10-28): repeat capture has host kind78 slot7/8
+actor+C6C=01000010, phase+C88=1 and numeric fade/cycle state through+CB8; the
+guest has zero flags/state. Existing cloak200000/phaseDE4 is a different effect
+and stayed zero on both peers. Original11F780 reads bit10 and phase20/time24/
+duration2C relative to actor+C68: recorded host opacity0 versus guest opacity1.
+Original11F7E0 advances fade/flicker and uses11D510/11D400 to select local body/
+weapon models; guest NPC authority skips the15EAE0 effect dispatcher.
+
+Shared pc_character_effects.h carries56 numeric bytes (flags01000010 plus
+C88..CB8), excluding actor/model pointers, sounds and other effect ownership.
+Inactive snapshots canonicalize to zero. Validators reject unrelated flags,
+phases above2, nonfinite/unbounded values and zero fading denominators. Story
+SNP5/SPP5 assembles452 bytes from a236-byte physical prefix and216-byte pose;
+physical/checksum/stock header totals244 bytes, within the stock256-byte limit.
+Checksums, host/match/sequence checks and atomic assembly remain. Existing room,
+power-up cloak and corpse/drop contracts are retained.
+
+Online bot snapshots use the same numeric state and validation. Their existing
+length and outer compatibility checks reject prior layouts. Only elapsed fade
+time interpolates within the same phase/duration and monotonically increasing
+timer; discrete transitions and random shimmer values stay atomic.
+
+After frozen skeleton/weapon preparation, pc_character_camo_present runs only
+original11F7E0 for validated guest NPCs. It temporarily disables independent
+cycle bit01000000, then restores every host numeric field/flag and guest registers.
+The original material selector keeps all local body/weapon ownership. Cosmetic
+shimmer RNG remains local; no AI, health, Story event or global clock is invoked
+or changed. Ending camouflage restores full-opacity material127 once for the
+same body generation; unrelated inactive actors are untouched. No new runtime
+patch/wrapper is required. The user confirmed first-mission camouflage fixed;
+native Online validation remains separate.
+
+The barrel retest rejected the BC670-only attempt. Recorded mesh1341/script50435833
+has damage callback218650 at entity+19C. That callback removes the prop and calls
+EFBD0 at2186FD/218722 with radius-only kinds47/40, retaining the guest weapon and
+attacker. These table rows have no particle assets. Kind4 capture now recognizes
+these exact sites and presents the standard kind1 barrel fireball on the guest;
+the host retains the original kind47/40 damage/radius and shooter credit.
+Stock35AF40 rejects remote human sources even on the host, so deferred EFF90
+radius hits fail35C870 after the incoming-shot scope has ended. The EFF90 wrapper
+scopes the effect's original10C source;35AF40 accepts that same human only during
+this first-mission host barrel update. The original hit serializer/broadcast and
+NPC health routines still execute. Scope restores after every update, including
+nested updates; other shots, guest simulation and other scenes retain ownership.
+No additional guest damage/world/script pass is enabled.
+
+Shared StoryEffect kind4 also retains BC670's standard EFBD0 kind1/weapon23
+path. Original constructor ABI is owners5/6, delay7 and sound-enable8. Guest
+playback uses originalEFBD0 kind1 with null direction, no peer-local owners and
+weaponUINT_MAX. Scoped EDD40 marks effect+C bits20001 before initialization:
+EDBE0's Story event and EFF90's later damage are suppressed;186480 navigation
+mutation is skipped. Original kind1 particles/audio/camera remain. Reliable host/
+match validation, bounded replay window and duplicate rejection prevent repeats.
+This is first-mission Story only. Ordinary Online retains its original paths;
+no speculative global explosion policy. Native Online remains MAC-013, with
+the user confirming the first-mission barrel issue fixed.
+
 The 2026-10-28 visibility-boundary capture showed living posed kind75 actors
 with host primary room5 but guest primary27, despite local overlap list[5,27].
 Original9FBE0 keeps the old primary while bounds still overlap it. OriginalA1EA0

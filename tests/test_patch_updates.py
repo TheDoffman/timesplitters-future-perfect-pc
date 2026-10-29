@@ -67,6 +67,10 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert 'pc_network_ammo_pickup(sub_001BA220_gen)' in manual
     assert 'pc_story_network_replica_clip(sub_000A2430_gen)' in manual
     assert 'pc_story_network_drop_replay(sub_000C2090_gen)' in manual
+    assert 'pc_story_network_blast_start(sub_000EDD40_gen)' in manual
+    assert 'pc_story_network_blast_cells(sub_00186480_gen)' in manual
+    assert 'pc_story_network_blast_update(sub_000EFF90_gen)' in manual
+    assert 'pc_story_network_blast_source(sub_0035AF40_gen)' in manual
     assert 'pc_story_network_blood_decal(sub_001128C0_gen)' in manual
     wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
     assert all(count == 1 for count in wrappers.values()), wrappers
@@ -252,7 +256,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch','-story-character-roster.patch','-story-intro-transition.patch','-story-cinematic-ready.patch','-story-authored-records.patch','-story-npc-lifecycle-trace.patch','-story-npc-creation.patch','-story-extra-starts.patch','-story-extra-loadout.patch','-story-handoff-authority.patch','-story-human-teams.patch','-story-level-restart.patch','-story-team-initialization.patch','-story-checkpoints.patch','-story-world-effects.patch','-network-player-payload-lifetime.patch','-story-opening-world-body.patch','-story-dialogue.patch','-story-result-controls.patch','-story-replica-room-clip.patch','-story-drop-replay.patch')):
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch') and not patch.name.endswith(('-story-failure-trace.patch','-story-lobby-details.patch','-story-spawn-pad.patch','-story-script-trace.patch','-story-context-spawn-trace.patch','-story-character-roster.patch','-story-intro-transition.patch','-story-cinematic-ready.patch','-story-authored-records.patch','-story-npc-lifecycle-trace.patch','-story-npc-creation.patch','-story-extra-starts.patch','-story-extra-loadout.patch','-story-handoff-authority.patch','-story-human-teams.patch','-story-level-restart.patch','-story-team-initialization.patch','-story-checkpoints.patch','-story-world-effects.patch','-network-player-payload-lifetime.patch','-story-opening-world-body.patch','-story-dialogue.patch','-story-result-controls.patch','-story-replica-room-clip.patch','-story-drop-replay.patch','-story-barrel-cosmetics.patch')):
             shutil.copyfile(patch, old_patches / patch.name)
     # The trace depends on network wrapper context; like the network patches,
     # it belongs to the full migration, not the historical Mac-only fixture.

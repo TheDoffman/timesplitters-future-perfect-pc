@@ -1,8 +1,8 @@
 # Subsystem entry points
 
-Story primary-room replication, pickups, corpses, clipping, remote pads,
-ammo pickup and visual/lifetime contracts are in [systems-details](systems-details.md).
-See STATUS for scene acceptance and MAC-013 for native Online limits.
+Story NPC/Online bot camouflage, barrels, room replication, pickups and corpses:
+[contracts and diagnostics](systems-details.md). Camouflage uses original guest
+material presentation with host numeric state; native Online remains MAC-013.
 
 Story preview1 HANDLE FIRST adapters now cover interleaved NPC assembly,
 loaded-mesh reconstruction, cloak/speech/lip state, inset cameras, prop identities,

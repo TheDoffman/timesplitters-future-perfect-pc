@@ -1,11 +1,9 @@
 # Build, run and validation map
 
-Primary-room, pickup-state and original corpse/room fixtures: see [build-test-details](build-test-details.md).
-
-Story original room-scissor, remote-pad, dormant-body and ammo fixtures are in
-[build-test-details](build-test-details.md). Two/four-peer combat probes retain
-aligned host/guest world observations; failed target searches remain failures.
-See STATUS for measured scene acceptance versus adapter-only checks.
+Story/Online camouflage, barrel damage, room, pickup and corpse fixtures:
+[build-test-details](build-test-details.md). Camouflage tests execute original
+opacity/material routines. Engine checks and rendered scene acceptance remain
+separate; STATUS records results and limits.
 
 The bounded Story pair now passes its controller PID to each child runner.
 `testing_profile.unrelated_game_pids` permits only game processes with that live

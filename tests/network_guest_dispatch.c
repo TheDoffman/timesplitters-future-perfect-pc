@@ -87,6 +87,7 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot);
 void pc_network_bots_request_hit(uint32_t context);
 int pc_network_bots_kill_notice(unsigned victim,unsigned killer);
 #endif
+void pc_character_camo_present(uint32_t entity){(void)entity;}
 #include "../src/pc_network_bots_guest.inc"
 #ifdef _WIN32
 #undef getenv
@@ -462,9 +463,11 @@ int main(void)
         CHECK(pc_network_bot_shots[2].serial==2);
         memcpy((uint8_t *)memory+0x71cc,&health,4);memcpy(actor+0x18,&life,4);
         memory[(0x7000+0x34)/4]=5;
+        memory[(0x1000+2*0xea0+0xc6c)/4]=0x01000010;
+        memory[(0x1000+2*0xea0+0xc88)/4]=1;
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);
-        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5);
+        CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5 && last_bot.camo.flags==0x01000010 && last_bot.camo.fade_phase==1);
         memory[(0x7000+0x28)/4]=0;life=2;memcpy(actor+0x18,&life,4);
         memory[0x7de318/4]+=3;g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(!(memory[(0x7000+0x28)/4]&1));
@@ -480,6 +483,7 @@ int main(void)
         g_esp=16;pc_network_bots_guest_frame(original);
         CHECK(bot_host_ip==0x0200007fu && memory[(0x7000+0x34)/4]==last_bot.primary_room);
         CHECK(memory[(0x1000+2*0xea0+0x2c)/4]==(last_bot.flags[2]|0x10));
+        CHECK(memory[(0x1000+2*0xea0+0xc6c)/4]==last_bot.camo.flags && memory[(0x1000+2*0xea0+0xc88)/4]==1);
         /* Received poses evaluate at the normal frame boundary, without
            advancing the host's clock; humans and host retain their path. */
         memory[5]=0x7000;memory[6]=1;g_esp=16;

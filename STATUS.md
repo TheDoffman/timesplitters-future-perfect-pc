@@ -1,3 +1,115 @@
+## Splitter camouflage repair - 2026-10-28
+
+User confirms the barrel issue fixed. Repeat read-only camouflage evidence:
+logs/story-camo-observation-20261028-repeat-1 (71 samples per peer/21.25 seconds,
+host screenshots); earlier recording has guest screenshots. Kind78 slot7/8 has
+host effect flags01000010 with phase1 and fade/cycle fields; the guest has zero.
+The old replicated cloak200000 effect was not this Splitter appearance.
+Shared numeric replication now carries the actual56-byte body effect for Story
+and Online bots. Story physical packets remain244 bytes within stock256; SNP5/
+SPP5 assembles452-byte snapshots. Guest frozen-pose preparation calls original
+material presentation, disabling a second random cloak cycle and retaining host
+numbers, local model/sound ownership and registers. Camouflage clear restores
+full opacity. Online bot fade time smooths within a phase; phase changes stay atomic.
+Original-US opacity/material fixture passes: recorded guest opacity1 becomes
+host opacity0, original shimmer material commands execute and clear restores127.
+Windows11 AMD64/D3D11, supported US executable SHA256 verified and403.3 GiB
+free before build. All62 affected fixture/context/backlog/tracking checks pass
+in41.26 seconds: logs/story-camo-verified-checks.log. Official Windows build/native
+checks pass with exit0: logs/story-camo-fix-build.log. Full source/build verification
+passes, including the new header. Compatibility:
+`3acf03e7bed170f779e022e73a9467e4533d6fb1dcd07e0ab66501d717cdc9e5`.
+Executable SHA256:
+`6d88e691e0d818318245478736c92ff253609e28794053f1937d026c7f5184f0`.
+The existing barrel patch stack is unchanged since its21 upgrade/application checks
+passed; no additional runtime wrapper is introduced by this camouflage repair.
+Bounded exact-build two-player intro-skip loading/movement/firing passes:
+logs/story-camo-fix-live.log, both child runners exit0. Both owned pistols have
+112 reserve/13 loaded after firing; guest capture reviewed. No active pair locks
+or disposable partition images remain. These fixes and their validation are included in this commit.
+User confirms Splitter camouflage is fixed. No mission completion or reward-menu
+changes are included. Native Mac Online remains queued MAC-013.
+
+User acceptance (2026-10-28): barrel explosion issue confirmed fixed after the
+latest build. Splitter camouflage was also confirmed fixed after its repair.
+
+## Story barrel retest follow-up - 2026-10-28
+
+The user rejected the previous barrel attempt: guest effects and enemy damage
+still failed. The previous constructor/opening checks did not exercise the recorded
+prop's actual callback. Decoded capture+19C identifies218650, which removes the
+prop and creates radius-only47/40 explosions, rather than the previously handled
+BC670 kind1. Guest capture now sends canonical kind1 fireball presentation from
+those exact sites while preserving original47/40 host damage and guest credit.
+Stock remote-source ownership also rejects deferred host blast hits; a scoped
+EFF90/35AF40 adapter permits only this authoritative barrel source through the
+original reliable serializer and NPC health routines. Guest replay stays cosmetic.
+The regression executes actual218650/35C870/35AF40/BB6C0/BB490/BA230: baseline
+remote-credit hit leaves NPC HP30; fixed host hit broadcasts and reduces it to20;
+ordinary unscoped shots, guest role and non-Story sessions remain unchanged.
+Windows 11 AMD64/D3D11: 61 affected checks pass (188.40 s), including prior
+corpse/drop/room fixtures; expanded original35BE90 host routing passes (38.89 s).
+Final supported Windows build/native checks pass with exit0:
+logs/story-barrel-authority-sealed-build.log. Source/build verification passes.
+Compatibility: `ef019ff4d6085f355d12d67e0039cb057a1e59e5ffb30628f20671d1b9ff5f11`.
+Executable SHA256: `342a2a8cb125c3a33dfe1824d2e403e446287b672c6aed4473809fe911b40b9a`.
+403.8 GiB free before building. Normal-intro two-player loading,
+movement and firing pass: logs/story-barrel-authority-live.log. Both child
+runners exit0, owned pistols have112 reserve/13 loaded after firing, and the
+guest firing image was reviewed. That pair used2d582fdc/b0f215b8; subsequent
+header-only declaration grouping is sealed above, with unchanged gameplay code.
+The sealed-build shorter intro-skip pair also passes loading/movement/firing:
+logs/story-barrel-authority-sealed-live.log, both runners exit0 and both pistols
+112 reserve/13 loaded. Final guest firing capture reviewed. Neither test run
+left active locks or disposable partition images.
+Read-only first-mission particle table check confirms both peers have matching
+entries (kind3 disabled, kind8 enabled); this is not rendered barrel evidence.
+All21 full patch application/upgrade checks pass in677.89 s:
+logs/story-barrel-authority-patch-checks.log. The user confirmed the rendered
+barrel effect and gameplay issue fixed. No mission completion is attempted. Native Mac Online is
+queued under MAC-013. These fixes are included in this commit.
+
+## Story barrel explosion replay - initial attempt, superseded after retest - 2026-10-28
+
+Local/uncommitted after946b8d94 on `online-story-coop`. User-guided read-only
+capture records guest shooting prop1341/script50435833 at(-56.13,-11.21,-90.5),
+host health2->0.5 and removal on both peers at frame16. Capture evidence lives
+in logs/story-barrel-observation-20261028 (414 snapshots per peer,134seconds).
+Removal/hit delivery already works for that capture; sparse images alone do not
+establish that every brief effect was absent.
+
+OriginalBC670 invokes barrel EFBD0(1,23,center,NULL,attacker,source,0,1) outside
+the existing ambience-only capture. The old validator also accepted only type39
+ambience, required a direction and treated source arg6 as time (actual time7).
+A bounded reliable kind4 event now republishes that original barrel call. Guests
+retain its original particles/audio/camera feedback at the exact center, with
+no peer-local owner pointers or second source-object Story notification. New EDD40
+and186480 wrappers mark replay cosmetic before its initial Story-event gate,
+skip its later BB850 damage and omit navigation-cell mutation. Host simulation,
+ordinary Online and other levels retain their original paths.
+
+Windows11 AMD64/D3D11; supported US executable SHA256 verified;403.8GiB free
+before build.60 fixture/context/backlog/patch-tracking checks pass in41.11seconds:
+logs/story-barrel-fix-checks.log. Original EFBD0/EDD40/EDBE0/EFF90 regression
+retains two barrel particle emissions and one audio emission in baseline/replay;
+baseline executes three later damage passes and one cell pass, replay none.
+Production Story tests cover unscoped capture, numeric message, owner stripping,
+duplicate rejection and invalid type/delay. Expanded original-engine host/non-Story
+scope check also passes (logs/story-barrel-scope-checks.log). The supported
+Windows build and native checks pass: logs/story-barrel-fix-build.log, exit0.
+Source/build seal verification passes. Executable SHA256:
+`d5e945342fdf98d2044fd19aeb55f4e3f63cb2503a1fa36b80cfd8fbd8fa6ccb`.
+Compatibility:
+`4904dfa56328781f5d4cd024dc1d24077453add9e263f6b3cd9b74aedf9ee000`.
+Exact-build normal-intro two-player loading, movement and firing pass:
+logs/story-barrel-fix-live.log, both child runners0, both pistols14 have112 reserve/
+13 loaded after firing. Guest firing capture reviewed; no pair locks or disposable
+partition images remain. All21 complete patch-stack application/upgrade checks
+pass in761.26seconds: logs/story-barrel-patch-checks.log.
+Rendered barrel acceptance remains a user retest; native Online
+transport/gameplay remains queued under MAC-013. Other revised HANDLE FIRST bugs
+and HANDLE LATER work are outside this barrel-only change. No commit/push/release.
+
 ## Story visibility-boundary repair - 2026-10-28
 
 Local/uncommitted after8ed77577 on `online-story-coop`. The user confirms the

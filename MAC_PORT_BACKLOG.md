@@ -2098,6 +2098,34 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+Splitter camouflage (included in this change): shared numeric body-fade state and original
+material presentation are reused for Story NPCs and Online bots. Source:
+src/pc_character_effects.h, pc_story_npc.inc, pc_network_bots_guest.inc,
+pc_network_bots_state.h, pc_network_bot_motion.h and pc_display_menu.c. No new
+OS adapter is needed within the existing transport; native Online remains queued.
+Mac acceptance must show host/guest Splitter fade/shimmer and uncloaking, retained
+weapon/room/corpse behavior and Online bot fade transitions without guest AI.
+Windows fixture/build evidence is separate from native Mac gameplay validation.
+
+
+Barrel follow-up (included in this change): shared Story source now recognizes the recorded
+218650 blast and scopes host ownership for its remote credited source, preserving
+original hit broadcasts and NPC health dispatch. New EFF90/35AF40 wrappers join
+the cosmetic guards in the common patch stack; no OS-specific policy is added.
+Native Online remains queued; Mac acceptance must include guest-shot barrel
+fireball visibility and authoritative enemy blast damage without duplicates.
+
+
+- **Barrel explosion cosmetics (2026-10-28, uncommitted):** Shared
+  `src/pc_story_effects.inc` and `*-story-barrel-cosmetics.patch` replay the
+  original first-mission barrel particles/audio/camera feedback while suppressing
+  duplicate damage/Story events/navigation mutation. Original-engine and
+  native-fallback fixtures cover the adapter boundary; native Online still
+  requires this entry's transport adapter. Acceptance: native/mixed-peer host
+  and guest shots, one visible/audible blast, host-only damage/removal and no
+  repeated chain reactions. Windows evidence does not establish native play.
+
+
 - First-mission NPC/objective/pause repairs (uncommitted, 2026-10-26): shared
   `pc_story_npc.inc` constructs replicas in their host room coordinates, uses
   resolved variants, rebuilds reused generations and publishes every simulation

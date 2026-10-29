@@ -143,6 +143,7 @@ static void pc_network_bots_guest_pose(void (*original)(void))
         original();
         *advance=saved;
         pc_network_bots_pose_weapons(entity);
+        pc_character_camo_present(entity);
         return;
     }
 #endif
@@ -446,6 +447,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             }
             /* 0x10 is the original damage-acceptance bit, separate from hit
                collision. It must also follow death/respawn on the host. */
+            pc_character_camo_capture(&state.camo,actor);
             state.entity_flags=flags&0x71u;
             memcpy(&state.primary_room,body+0x34,4);
             memcpy(state.flags,actor+0x24,12);memcpy(state.life,actor+0x10,16);
@@ -492,6 +494,7 @@ static void pc_network_bots_guest_frame(void (*original)(void))
             memcpy(pc_network_bot_bounds[index].radius,state.bounds_radius,12);
             memcpy(body+0x1a8,state.bounds_center,12);
             memcpy(body+0x1c0,state.bounds_radius,12);
+            pc_character_camo_apply(actor,&state.camo);
             pc_network_bots_present(entity,&state);
             pc_network_bots_entity_refresh(entity);
             pc_network_bots_entity_room(entity,state.primary_room);

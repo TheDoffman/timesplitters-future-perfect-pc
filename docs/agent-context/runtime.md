@@ -1,5 +1,23 @@
 # Runtime and patch navigation
 
+Splitter camouflage uses shared source and existing snapshot/pose hooks only;
+no additional runtime patch or generated-code edit. SNP5/SPP5 adds the bounded
+numeric body-fade block; original11F7E0/11D510 material writes run only during
+guest NPC presentation, with host state restored afterward. See systems-details.
+
+Barrel follow-up adds EFF90 and35AF40 wrappers to the shared cosmetic
+patch. Recorded218650 creates kinds47/40, not BC670's kind1. Capture recognizes
+its two call sites; guest presentation uses canonical kind1 particles. Deferred
+host radius damage scopes remote shooter ownership while retaining the original
+serializer, credit and NPC damage dispatch. See systems-details for scope.
+
+The separate `*-story-barrel-cosmetics.patch` wraps EDD40 startup and186480
+navigation-cell mutation. First-mission guest barrel events retain original
+particles/audio/camera feedback but mark the original effect as cosmetic before
+its initial and later damage gates. Existing EFBD0 capture recognizes the bounded
+BC670 call separately from ambience; no generated C is edited. Full patch stack
+and regeneration are required. See systems-details and the original-blast fixture.
+
 The room-boundary repair changes shared source/protocols only: SNP4/SPP4 and
 Online bot snapshots carry the host primary room used by originalA1EA0 render
 lists. No new wrapper, runtime patch or generated function is required. Existing

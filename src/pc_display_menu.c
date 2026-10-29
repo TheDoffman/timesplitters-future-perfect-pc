@@ -516,6 +516,44 @@ void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
     (void)entity;(void)state;
 #endif
 }
+/* Replica body effects need their original material pass even while AI is
+   frozen. Keep the host's fade/cycle numbers; only local model bindings change. */
+void pc_character_camo_present(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_0011F7E0(void),sub_0011D510(void);
+    static uint32_t bodies[32],spawns[32];static unsigned char active[32];
+    if(WORD_AT(0x0076b140u)!=2u || !guest_writable(entity,0x25cu)) return;
+    const uint32_t actor=WORD_AT(entity+0x7cu);
+    if(!guest_writable(actor,0xea0u) || WORD_AT(actor)!=entity) return;
+    const unsigned slot=WORD_AT(actor+8u);if(slot>=32u) return;
+    const uint32_t spawn=WORD_AT(entity+0x258u);
+    if(bodies[slot]!=entity || spawns[slot]!=spawn) {
+        bodies[slot]=entity;spawns[slot]=spawn;active[slot]=0;
+    }
+    PcCharacterCamo state;
+    pc_character_camo_capture(&state,(const uint8_t *)((uintptr_t)actor+g_xbox_mem_offset));
+    if(!pc_character_camo_valid(&state)) return;
+    const int enabled=(state.flags&0x10u)!=0;
+    if(!enabled && !active[slot]) return;
+    GuestRegisters saved;save_registers(&saved);
+    if(enabled) {
+        /* Disable the guest's independent random cloak cycle. The original
+           cosmetic pass may advance temporary fade values for this frame;
+           restore all authoritative numbers and flags after its model writes. */
+        WORD_AT(actor+0xc6cu)&=~0x01000000u;g_esi=actor+0xc68u;
+        guest_call(sub_0011F7E0,0u);
+        pc_character_camo_apply((uint8_t *)((uintptr_t)actor+g_xbox_mem_offset),&state);
+    } else {
+        /* Original fade endpoint:127 is full opacity. Resolve model handles
+           through the original actor effect selector; never copy host models. */
+        guest_call(sub_0011D510,5u,actor+0xc68u,3u,15u,4u,127u);
+    }
+    active[slot]=(unsigned char)enabled;restore_registers(&saved);
+#else
+    (void)entity;
+#endif
+}
 void pc_network_bots_pose_weapons(uint32_t entity)
 {
 #ifdef _WIN32

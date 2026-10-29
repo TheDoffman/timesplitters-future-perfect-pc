@@ -1265,6 +1265,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-story-barrel-cosmetics.patch",
+      "sha256": "2d02c085a2785d7fd6d3fcc0cf1824fe24756bdccf27f6b3f2fd91301c5cf6e5",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-144-fps.patch",
       "sha256": "713619cbaedc4ce9656d1d72c17a2b682e87e9b72a8e62cf8afc8dae39206a00",
       "targets": [

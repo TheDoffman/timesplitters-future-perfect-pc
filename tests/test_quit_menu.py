@@ -84,6 +84,109 @@ def test_story_original_us_entry_contract():
 
 
 
+def test_story_original_splitter_camo(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={a:dict(name=f'sub_{a:08X}',end=b) for a,b in (
+            (0x11f780,0x11f7df),(0x11f7e0,0x11faf2),(0x11d510,0x11d566),(0x11d400,0x11d4c8))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)',code)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/story_camo.c').read_text().replace('/* ORIGINAL_CAMO */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    production=(ROOT/'src/pc_display_menu.c').read_text()
+    start=production.index('/* Replica body effects need')
+    end=production.index('void pc_network_bots_pose_weapons(',start)
+    source=source.replace('/* PRODUCTION_CAMO_PRESENT */',production[start:end])
+    source=source.replace('/* CAMO_HEADER */',(ROOT/'src/pc_character_effects.h').read_text())
+    source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_barrel_blast(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0xefbd0,0xeff3b),(0xedd40,0xefb15),(0xedbe0,0xedca3),(0xeff90,0xf042c))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)',code)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        constants.update(range(0x4db490,0x4db490+49*24,4))
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    code=code.replace('void sub_000EDD40(void)\n{','void sub_000EDD40_gen(void)\n{')
+    source=(ROOT/'tests/story_barrel_blast.c').read_text().replace('/* ORIGINAL_BLAST */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+(?:_gen)?)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    production=(ROOT/'src/pc_story_effects.inc').read_text()
+    source=source.replace('/* PRODUCTION_BLAST_GATES */',production[production.index('/* EDD40 creates'):])
+    source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_barrel_authority(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    from tools.recomp import config
+    from tools.recomp.translator import FunctionTranslator
+    import re
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={start:dict(name=f'sub_{start:08X}',end=end) for start,end in (
+            (0x218650,0x218736),(0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba230,0xba306),(0x35c870,0x35cb79),(0x35af40,0x35afa7),(0x355ec0,0x355f02),(0x35be90,0x35beec))}
+        translator=FunctionTranslator(image,functions)
+        code='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants={int(a,16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)',code)}
+        constants={a for a in constants if 0x470000<=a<0x500000}
+        constants.update(range(0x4db490,0x4db490+49*24,4))
+        seeds='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in sorted(constants))
+    finally:
+        vars(config).update(previous)
+    code=code.replace('void sub_0035AF40(void)\n{','void sub_0035AF40_gen(void)\n{')
+    source=(ROOT/'tests/story_barrel_authority.c').read_text().replace('/* ORIGINAL_BLAST */',code)
+    defined=set(re.findall(r'void (sub_[0-9A-F]+(?:_gen)?)\(void\)',source))
+    missing=set(re.findall(r'\b(sub_[0-9A-F]+(?:_gen)?)\b',code))-defined
+    source=source.replace('/* UNREACHED */','\n'.join('void '+name+'(void){assert(!"unexpected '+name+'");}' for name in sorted(missing)))
+    production=(ROOT/'src/pc_story_effects.inc').read_text()
+    source=source.replace('/* PRODUCTION_BLAST_GATES */',production[production.index('/* Story host owns'):])
+    source=source.replace('/* ORIGINAL_CONSTANTS */',seeds)
+    assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
 def test_story_original_drop_constructor(tmp_path):
     import re
     from test_recomp_float_joins import compile_and_run

@@ -1,5 +1,40 @@
 # Validation fixtures and Story probes
 
+test_story_original_splitter_camo translates original11F780/11F7E0/11D510/
+11D400 from the verified US executable. Captured host01000010/phase1 changes
+original opacity from the guest's1 to0. The production presentation helper also
+executes an original material shimmer band, restores full opacity on clear,
+retains host fade/cycle fields, actor/sound handles and registers, and leaves
+host/inactive paths alone. Random cycle activation helpers remain unreachable;
+original cosmetic noise/material RNG is allowed. Allocation/world/AI services
+are not run. This bounded engine fixture does not establish rendered fidelity.
+Story fixture checks SNP5/SPP5 size/assembly, numeric camo and power-up cloak
+coexistence/clear. Online fixture checks host capture and guest application;
+state validators reject malformed camo. Motion fixture checks smooth elapsed
+fade within a phase and atomic cloak/off changes. Both are in existing CI suites.
+No full first-mission completion is attempted.
+
+`test_story_original_barrel_authority` starts with the recorded218650 death
+callback and translates BB6C0/BB490/BA230/35C870/35AF40/355EC0/35BE90 from the verified US
+XBE. Controlled spatial selection feeds a nearby NPC into those original routines.
+Without scope the remote source produces no broadcast and HP stays30; production
+host scope broadcasts once and original BA230 subtracts10 HP. Following unscoped
+shots, guest role and non-Story sessions remain rejected. Allocation/presentation
+remain separate in the original-blast fixture; production Story fixture now also
+checks the real218702 kind47/weapon35/non-null-direction call becomes one kind4
+fireball event. This is bounded engine/dispatch evidence, not a rendered scene.
+
+`test_story_original_barrel_blast` translates originalEFBD0/EDD40/EDBE0/EFF90
+from the verified US executable and compiles the production cosmetic guards.
+Controlled allocation, particle/audio services retain both original barrel
+particle indices3/8 and one sound in baseline/replay. Baseline executes three
+later BB850 damage passes and one186480 cell pass; guarded replay executes none.
+Original Story-event/owner fields and exact center are checked. The production
+Story fixture covers unscoped BC70C capture with both source pointers, kind4
+receive/replay, no owner transfer, duplicate rejection and invalid type/delay.
+This Python suite already runs in runtime CI. Constructor/dispatch evidence is
+separate from a rendered barrel retest and native Online acceptance.
+
 `test_network_original_primary_room` translates originalA1EA0/9E430/A79B0
 from the checksum-verified US executable. Captured primary27/overlaps[5,27]
 omits the actor from visible room5 even with full scissor/forced masks; the

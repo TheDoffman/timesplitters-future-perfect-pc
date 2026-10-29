@@ -14,7 +14,7 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 #ifdef _WIN32
-static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx,g_ecx,g_edx;
+static uint32_t memory[0x800000/4],g_esp,g_eax,g_ebx,g_ecx,g_edx,g_esi;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
 typedef struct GuestRegisters {uint32_t sp,ax,bx,cx,dx;} GuestRegisters;
@@ -73,6 +73,8 @@ static unsigned blood_decals;
 static unsigned ammo_loaded,world_removed;
 static unsigned dialogue_plays,dialogue_lips;
 static unsigned cine_begins,cine_ends;
+static int story_barrel_scope(void);
+static unsigned effect_barrels;
 static unsigned effect_emitters,effect_blasts,effect_trails,effect_moves,effect_deletes;
 static void checkpoint_restore_original(void)
 {CHECK(WORD_AT(0x7b0c7c)==WORD_AT(0x7b0c48));++checkpoint_restores;g_esp+=4;}
@@ -163,6 +165,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     if(fn==sub_000FFE40) {CHECK(count==2 && args[0]==0x150000);WORD_AT(0x150098)=args[1];return 0;}
     if(fn==sub_000EFBD0) {
+        if(args[0]==1) {
+            CHECK(count==8 && args[1]==UINT32_MAX && !args[3] && !args[4] && !args[5] && !args[6] && args[7]==1);
+            CHECK(story_barrel_scope());++effect_barrels;return 0;
+        }
         CHECK(count==8 && args[0]==39 && args[1]==UINT32_MAX && !args[4] && !args[5] && !args[6] && args[7]==1);
         ++effect_blasts;return 0;
     }
@@ -199,10 +205,10 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     if(fn==sub_001BA130) {CHECK(count==2 && (args[1]==25 || args[1]==32));++loadout_selections;return 0;}
     if(fn==sub_00353A90) {
         CHECK(count==5 && args[0]==0x30000 && args[1]==0x1e && args[3]<=256u);
-        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x34504e53u || WORD_AT(args[2]+4)==0x34505053u);
+        CHECK(args[4]==1 || WORD_AT(args[2]+4)==0x35504e53u || WORD_AT(args[2]+4)==0x35505053u);
         ++npc_send_calls;npc_sent_size=args[3];memcpy(npc_sent,(uint8_t *)memory+args[2],args[3]);
-        if(WORD_AT(args[2]+4)==0x34504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
-        if(WORD_AT(args[2]+4)==0x34505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x35504e53u){npc_base_size=args[3];memcpy(npc_sent_base,npc_sent,args[3]);}
+        if(WORD_AT(args[2]+4)==0x35505053u){npc_pose_size=args[3];memcpy(npc_sent_pose,npc_sent,args[3]);}
         return 0;
     }
     if(fn==sub_000B3630) {
@@ -453,6 +459,7 @@ static void call(uint32_t address)
     void (*fn)(void)=story_lobby_lookup(address);CHECK(fn);
     fn();CHECK(g_esp==0x1004);
 }
+static int story_barrel_scope(void){return story_effect_barrel_replay!=0;}
 static unsigned effect_decisions;
 static void effect_factory_original(void){g_eax=0x150000;WORD_AT(0x150098)=0;g_esp+=4;}
 static void effect_decision_original(void)
@@ -968,11 +975,17 @@ int main(void)
         CHECK(story_npc_fresh[2] && story_npc_pending[2].serial==10);
         WORD_AT(0x76b1a4)=15;story_npc_pending_frame();CHECK(story_npc_seen_serial[2]==10);
         npc_deliver(&newer,1);CHECK(story_npc_seen_serial[2]==11);
+        newer.camo.flags=0x01000010;newer.camo.fade_phase=1;
+        newer.camo.fade_values[2]=.5f;newer.camo.cycle_phase=1;
+        newer.camo.cycle_values[0]=4.f;newer.camo.cycle_values[1]=.25f;
         newer.serial=12;newer.cloak_flags=0x200000;newer.cloak_phase=2;
         newer.cloak_values[0]=.25f;newer.cloak_values[1]=.75f;newer.cloak_values[2]=2.f;
         WORD_AT(actor+0xc6c)=0x100;npc_deliver(&newer,3);
-        CHECK(WORD_AT(actor+0xc6c)==0x200100 && WORD_AT(actor+0xde4)==2 && WORD_AT(actor+0xde8)==0x3e800000);
-        newer.serial=13;newer.cloak_flags=0;npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
+        CHECK(WORD_AT(actor+0xc6c)==0x01200110 && WORD_AT(actor+0xde4)==2 && WORD_AT(actor+0xde8)==0x3e800000);
+        CHECK(WORD_AT(actor+0xc6c)==0x01200110 && WORD_AT(actor+0xc88)==1);
+        CHECK(WORD_AT(actor+0xca8)==1 && WORD_AT(actor+0xcac)==0x40800000);
+        newer.serial=13;newer.cloak_flags=0;memset(&newer.camo,0,sizeof newer.camo);
+        npc_deliver(&newer,3);CHECK(WORD_AT(actor+0xc6c)==0x100);
         /* A mesh loaded by this scene needs no earlier guest NPC instance.
            An unknown/unloaded kind remains queued; a retired recorded body is
            rebuilt without calling a destructor on reused local storage. */
@@ -1432,6 +1445,33 @@ int main(void)
         memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
         CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_blasts==2);
+        /* Captured physical barrel path, outside the ambience decision scope.
+           Both owner arguments are nonzero local entities; time is arg7. */
+        story_effect_reset();WORD_AT(0x76b140)=1;g_esp=0x1800;
+        WORD_AT(g_esp)=0xbc70c;WORD_AT(g_esp+4)=1;WORD_AT(g_esp+8)=23;
+        WORD_AT(g_esp+12)=0x170000;WORD_AT(g_esp+16)=0;
+        WORD_AT(g_esp+20)=0x72000;WORD_AT(g_esp+24)=0x73000;
+        WORD_AT(g_esp+28)=0;WORD_AT(g_esp+32)=1;
+        const unsigned sends=npc_send_calls;
+        pc_story_network_effect_create(effect_factory_original,1);
+        CHECK(npc_send_calls==sends+1 && g_esp==0x1804);
+        memcpy(&s,npc_sent+4,sizeof s);CHECK(s.kind==4 && s.a==1 && s.b==23 && s.value==0 && s.position[0]==12.f);
+        WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();
+        CHECK(effect_barrels==1 && !story_effect_barrel_replay && !story_effect_cosmetic_depth);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_barrels==1);
+        s.serial++;s.a=2;CHECK(!story_effect_valid(&s));s.a=1;s.value=1;CHECK(!story_effect_valid(&s));
+        /* Actual recorded mesh1341 callback218650 produces radius-only47,
+           using the guest weapon class and a non-null hit direction. */
+        story_effect_reset();WORD_AT(0x76b140)=1;g_esp=0x1800;
+        WORD_AT(g_esp)=0x218702;WORD_AT(g_esp+4)=47;WORD_AT(g_esp+8)=35;
+        WORD_AT(g_esp+12)=0x170000;WORD_AT(g_esp+16)=0x170010;
+        WORD_AT(g_esp+20)=0x72000;WORD_AT(g_esp+24)=0;
+        WORD_AT(g_esp+28)=0;WORD_AT(g_esp+32)=1;
+        pc_story_network_effect_create(effect_factory_original,1);
+        memcpy(&s,npc_sent+4,sizeof s);CHECK(s.kind==4 && s.a==1 && s.b==23);
+        WORD_AT(0x76b140)=2;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_effect_receive(0x31000,0x32000,0x1e,sizeof s));story_effect_frame();CHECK(effect_barrels==2);
         story_effect_reset();
     }
     {

@@ -43,6 +43,7 @@ def test_bot_motion_mutations_fail(tmp_path,mutation,diagnostic):
     (tmp_path/'tests').mkdir()
     shutil.copyfile(ROOT/'src/pc_network_bots_state.h',tmp_path/'src/pc_network_bots_state.h')
     shutil.copyfile(ROOT/'src/pc_character_pose.h',tmp_path/'src/pc_character_pose.h')
+    shutil.copyfile(ROOT/'src/pc_character_effects.h',tmp_path/'src/pc_character_effects.h')
     header=(ROOT/'src/pc_network_bot_motion.h').read_text()
     if mutation=='no_interpolation':
         needle='motion->duration=continuous?.05:0.;'
