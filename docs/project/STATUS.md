@@ -1,3 +1,39 @@
+## Windows game DPI awareness - 2026-10-29
+
+Branch `fix/game-dpi-awareness`, based on main `863c2b61`.
+The Windows game now embeds `config/build/windows-game.manifest` via title
+patch 2130 and the supported `tsfp.ps1` build. System DPI awareness matches
+the existing working local compatibility override, avoiding Windows bitmap
+scaling and virtualized windowed Auto dimensions. Linker-generated asInvoker
+and common-controls v6 declarations remain present. No registry changes,
+installed-release replacement, personal settings or save edits were made.
+
+Windows 11 x64 (10.0.26300), MSVC 19.42.34435, Python 3.14.5:
+supported US XBE SHA-256 verified; complete patch application and Release
+Build/built-in checks pass. The actual game executable's embedded resource
+contains both `dpiAware=true` and `dpiAwareness=System`, alongside UAC and
+common-controls. All **5** window-theme tests pass, including newly compiled
+CMake probes that report DPI-unaware without the manifest and system-aware
+with it, using unique paths and no inherited compatibility-layer override.
+The probes use Release for both target compilation and CMake compiler checks;
+sandboxed Debug compiler checks hit the host PDB-manager mismatch before the
+probe compiled. Repository-context validation passes.
+
+Game rendering/dialog visual acceptance at 150%, mixed-DPI monitor movement
+and native Mac execution were not rerun. The Windows-only manifest target
+does not alter native Mac DPI/pixel sizing; no Mac adapter is needed. The
+published v0.3.6 installation still contains the previous executable.
+
+PR #409's first CI run failed only the two Windows manifest cases because the
+native job omitted the pinned `pefile` dependency; 1,965 other native tests
+passed. Both patch-upgrade jobs passed. The transition and PR gates then
+correctly rejected the failed native result. The follow-up adds the existing
+shared `pefile==2024.8.26` pin to the native job's dependency selection; it
+does not change the game or loosen any gate.
+Windows follow-up validation: all **99** window-theme, CI-scope and PR-gate
+tests pass; the native dependency selection resolves the shared pefile pin,
+and repository-context/diff checks pass. Hosted rerun results remain pending.
+
 ## Mars Prison high-refresh material flicker (#398) - 2026-10-29
 
 Based on main `3b4e679b` plus rule commit `1bed1e71`, with the shared cache fix
