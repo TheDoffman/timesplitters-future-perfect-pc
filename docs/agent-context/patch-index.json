@@ -1428,6 +1428,14 @@
       ]
     },
     {
+      "name": "2130-game-dpi-awareness.patch",
+      "path": "patches/platform/2130-game-dpi-awareness.patch",
+      "sha256": "3819fa4aeb499ddec8226db9b78e508d6eb56ec00a5cf7b6b026ddadfdc5949f",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
       "name": "independent-condition-fixture.patch",
       "path": "patches/compiler/independent-condition-fixture.patch",
       "sha256": "7ebd67fa46d6b62a3338814e55cf6ec339a5ece456b9ad095854c42429e416eb",

@@ -1,5 +1,11 @@
 # Runtime and patch navigation
 
+`2130-game-dpi-awareness.patch` attaches the Windows game manifest supplied by
+`tsfp.ps1` to the title executable. Its system DPI declaration prevents Windows
+bitmap scaling and virtualized windowed Auto dimensions without a path-specific
+compatibility override. It preserves linker-generated UAC/common-controls and
+does not change native Mac targets; see the build/test guide for probe coverage.
+
 Unchanged patch stacks reuse content validation: [cache contract](release-speed.md).
 
 `0040-dsound-positional-stereo.patch` keeps XDK distance attenuation and adds

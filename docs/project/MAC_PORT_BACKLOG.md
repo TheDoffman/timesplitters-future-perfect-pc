@@ -29,6 +29,18 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
+Windows game DPI declaration (2026-10-29, branch
+`fix/game-dpi-awareness`): `config/build/windows-game.manifest`, `tsfp.ps1` and
+`patches/platform/2130-game-dpi-awareness.patch` embed system DPI awareness in
+the Windows game executable. This replaces reliance on local Windows
+compatibility entries for sharp windows and physical windowed Auto dimensions.
+**Not applicable** to native Mac: Win32 DPI virtualization is an OS dependency;
+the existing SDL pixel-size adapter and native dialogs retain their behavior.
+No Mac adapter work is needed. Acceptance covers merged executable resources,
+actual Windows process awareness and the supported Windows build; physical
+mixed-DPI monitor behavior and native Mac execution are unverified. See
+[validation](STATUS.md#windows-game-dpi-awareness-2026-10-29).
+
 Suite timing monitor (2026-10-28, local commit `c43b3139` on `perf/suite-regression-monitor`):
 `tools/testing/suite_timing.py` provides the same advisory history and coverage
 guards on Windows and Mac. No platform adapter or gameplay policy changes are
