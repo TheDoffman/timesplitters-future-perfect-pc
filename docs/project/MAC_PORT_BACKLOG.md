@@ -7383,3 +7383,21 @@ Mac title acceptance is implied.
   test Scotland the Brave levers at 60/120/180/240, after pause/resume, using
   keyboard and controller. Retain obstruction, distance and pause behavior.
   Shared tests are not native Mac gameplay/listening evidence.
+
+### MAC-122 - Temporary material matrix cache epoch (#398)
+
+- **Status:** Awaiting validation
+- **Source/PR:** Uncommitted at validation, on this task branch.
+- PC behavior: removes Mars Prison high-refresh material/sky flicker by matching
+  temporary UV matrix cache lifetime to the existing render serial.
+- Shared: `src/gameplay/pc_native_timing_guest.inc`, both Original/native clock
+  paths. No OS-specific renderer, adapter or save-format change is needed.
+- Windows: Release/built-in checks and113 timing tests pass; original US cache/
+  allocator and production-clock mutation are covered. Twenty-four clean Mars
+  samples each at Original60/native120/native180/native240 are Windows evidence.
+- Native Mac acceptance: run `test_native_timing.py`; its original-code case
+  needs the verified XBE, while the clock mutation runs without assets. Inspect
+  Mars Prison sky/ground at60/120/180/240, live rate switches, pause/resume,
+  multiple views and map transitions. Physical Mac execution is unverified.
+- [Evidence/limits](STATUS.md#mars-prison-high-refresh-material-flicker-398---2026-10-29),
+  [cache contract](../agent-context/render-matrix-cache.md).
