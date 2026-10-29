@@ -1,3 +1,80 @@
+## Suite performance regression monitor (2026-10-28)
+
+Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based
+on the unmerged speed/shader work through `d71137ac`, adds advisory timing history
+to release runs and separate Windows/Mac CI profiles. Three successful comparable
+runs establish a fixed median; three consecutive eligible runs over 125% warn.
+Missing tests and newly skipped/non-passing outcomes warn immediately. Failed,
+filtered and incomplete runs cannot train the baseline; all acceptance gates,
+four-worker release scheduling and successful compiler-setup reuse remain.
+
+Three unchanged full Windows runs each passed **2,447 cases and 109 subtests**,
+with **36 unchanged skips**, in **9m19s, 8m14s and 7m54s**. The monitor learned
+**494.439 s (8m14s)**, with a sustained-warning threshold above **618.049 s
+(10m18s)** for this machine/environment. Every previous 2,460 case ID/outcome is
+retained, 23 monitoring/selection cases pass, and all 246 input hashes match.
+An initial full attempt hit an existing vehicle mutation's 15-second timeout;
+the monitor retained its failure and correctly excluded it from calibration.
+That case passed in isolation and in all three complete reruns without changing
+its timeout or assertions. The cause of the one-off timeout is unproven.
+
+Focused monitoring/grouping/publisher/CI-scope validation passed 248 cases in
+5.75 s, including real serial/two-worker pytest runs and a simulated sustained
+slowdown warning that preserves exit status. Workflow YAML, context/ownership,
+backlog and whitespace checks pass. Shared code is registered on both CI hosts;
+physical Mac execution and actual hosted cache/artifact persistence remain
+unverified. These are local commits, not a pushed change or published game.
+See [policy and measured evidence](../development/release-performance.md#monitor-calibration-2026-10-28).
+
+## Shader coefficient release blockers resolved (2026-10-28)
+
+Local commit `08ccb2ed` on `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
+24 shader failures exposed by the optimized suite. The supported US uploader uses
+rounded `CVTSS2SI`, while three shared coefficient paths still used truncating C
+casts. One shared conversion now follows the current translator's host rounding
+mode. Original shader thresholds, negative controls and release gates remain.
+
+The final full four-worker Windows run passed **2,424 cases and 109 subtests**,
+with **36 unchanged prerequisite skips**, in **468.403 s (7 min 48 s)**. Every
+previous 2,457-case test ID was retained; all 24 failures now pass, along with
+three new rounding-oracle/mutation cases. All 246 input hashes match the baseline.
+An initial full attempt had one unrelated Windows access-denied error during a
+temporary runtime-directory rename; the isolated check and complete unchanged
+rerun passed. No skip, retry plugin or weaker assertion was added to bypass it.
+Explicit full patch revalidation also passed. See
+[the measured evidence and limits](../development/release-performance.md#shader-correctness-follow-up-2026-10-28)
+and [the shared conversion contract](../agent-context/surface-coefficients.md).
+
+This validates the local suite, not a published release or complete game visual
+parity. Native Mac execution and a fresh game release build remain unverified.
+
+## Full regression suite performance (2026-10-28)
+
+Local commit `e3a50ed7` on `perf/release-speed` continues the build/release work
+from `9a32375f`.
+Measured validation time fell from 42 min 20 s to 9 min 44 s
+(77.0% reduction), with every original case retained and 34 added cases.
+The full release suite uses up to four workers, preserves shared fixtures, and
+reuses successful Windows compiler setup within each worker. Both-host CI uses
+two workers. No existing test case or acceptance gate is removed. The run also
+exposed stale original-image fixtures and pre-existing shader coefficient failures;
+the former were repaired without changing their assertions, while the shader
+failures required the separate correctness fix recorded above. See the exact Windows coverage,
+timings and limitations in [release performance](../development/release-performance.md).
+No game was compiled for release, packaged, uploaded or published. Native Mac
+execution and end-to-end release duration remain unverified.
+
+## Build and release validation reuse (2026-10-28)
+
+Local branch `perf/release-speed`, based on `2e678ac1`, removes duplicate release
+patch validation, caches successfully validated patch/launcher inputs by content,
+and avoids repeated ZIP decompression while retaining checksum and stage checks.
+Windows regressions and measured stage timings are recorded in
+[release performance](../development/release-performance.md). No gameplay source,
+personal saves/settings, release versions or published assets changed. Native
+Mac execution and a full end-to-end game release are unverified; shared patch
+validation retains both-host CI coverage.
+
 ## Profile-scoped Unlock Content (2026-10-28)
 
 Implementation commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`. Extras now

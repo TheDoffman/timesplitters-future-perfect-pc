@@ -8,13 +8,20 @@ included in supported Windows 10/11 installations. -Test runs isolated updater
 regressions, without downloading a game or accessing personal saves/settings.
 #>
 [CmdletBinding()]
-param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork, [string]$BackdropPath)
+param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork, [string]$BackdropPath, [switch]$Rebuild)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (!$Output) { $Output = Join-Path $project 'build\launcher' }
 $Output = [IO.Path]::GetFullPath($Output)
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $Output 'Bin'),(Join-Path $Output 'Support\Launcher') -Force | Out-Null
+$buildTimer = [Diagnostics.Stopwatch]::StartNew()
+$buildOutcome = 'failed'
+# Hold the output lock through reuse, compilation, tests and receipt publication.
+$outputLock = [IO.File]::Open((Join-Path $Output '.build.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+try {
+. (Join-Path $PSScriptRoot 'launcher-cache.ps1')
+$receipt = Join-Path $Output '.validated-build.json'
 $framework = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $compiler = Join-Path $framework 'csc.exe'
 if (!(Test-Path -LiteralPath $compiler)) { throw '.NET Framework 4.x x64 compiler is missing.' }
@@ -72,14 +79,41 @@ if (Test-Path -LiteralPath $BackdropPath -PathType Leaf) {
     if ($RequireArtwork) { throw 'Release launcher artwork is required: backdrop missing. Supply -BackdropPath or restore private/launcher-art.' }
     Write-Host 'Private launcher backdrop not present; using the built-in gradient behind the original artwork.'
 }
+$references = @('System.dll','System.Core.dll','System.Web.Extensions.dll','System.Net.Http.dll',
+    'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','System.Xaml.dll',
+    'System.Windows.Forms.dll','System.Management.dll')
+$version = [regex]::Match([IO.File]::ReadAllText((Join-Path $source 'LauncherVersion.cs')), 'Value = "([^"]+)"').Groups[1].Value
+if (!$version) { throw 'Launcher version was not found.' }
+$assetName = "TimeSplitters-Launcher-v$version-windows-x64.zip"
+$cachedFiles = @('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe', 'Support/Launcher/manifest.json',
+    'launcher-tests.exe', 'launcher.ico', 'icon-preview.png', 'launcher-update.json', $assetName, ($assetName + '.sha256'))
+$cacheInputs = @($PSCommandPath, (Join-Path $PSScriptRoot 'launcher-cache.ps1'),
+    (Join-Path $project 'tools/release/ImportGame.cs'), (Join-Path $project 'config/pc-controls.default.json'),
+    (Join-Path $project 'src/interface/pc_display_modes.inc'), (Join-Path $project 'config/build/launcher-artwork.json'))
+$cacheInputs += @(Get-ChildItem -LiteralPath $source -File | ForEach-Object { $_.FullName })
+$cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tests/launcher') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
+foreach ($name in ($references + @('csc.exe', 'csc.exe.config', 'clr.dll', 'mscorlib.dll', 'System.Drawing.dll', 'System.Xml.dll', 'System.Configuration.dll',
+    'WPF/PresentationCore.dll', 'WPF/PresentationFramework.dll', 'WPF/WindowsBase.dll'))) {
+    $cacheInputs += Join-Path $framework $name
+}
+foreach ($path in @($BannerPath, $LogoPath, $BackdropPath)) {
+    if (Test-Path -LiteralPath $path -PathType Leaf) { $cacheInputs += $path }
+}
+$cacheOptions = "launcher-v1|test=$Test|art=$RequireArtwork|banner=$BannerPath|logo=$LogoPath|backdrop=$BackdropPath|os=$([Environment]::OSVersion.VersionString)|ps=$($PSVersionTable.PSVersion)|culture=$([Globalization.CultureInfo]::CurrentCulture.Name)"
+$fingerprint = Get-LauncherFingerprint -Paths $cacheInputs -Options $cacheOptions
+if ($Test -and !$Rebuild -and (Test-LauncherReceipt -Receipt $receipt -Fingerprint $fingerprint -Output $Output -Files $cachedFiles)) {
+    $buildOutcome = 'reused verified build and tests'
+    Write-Host 'Launcher inputs and output hashes match the successful build/test receipt.'
+    Get-Item -LiteralPath (Join-Path $Output 'TimeSplitters Launcher.exe') | Select-Object FullName,Length
+    return
+}
+# A failed/untested rebuild must never inherit a previous successful receipt.
+if (Test-Path -LiteralPath $receipt) { Remove-Item -LiteralPath $receipt }
 if (!('LauncherIconBuilder' -as [type])) {
     Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 [LauncherIconBuilder]::Write((Join-Path $Output 'launcher.ico'))
 [LauncherIconBuilder]::Preview((Join-Path $Output 'icon-preview.png'))
-$references = @('System.dll','System.Core.dll','System.Web.Extensions.dll','System.Net.Http.dll',
-    'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','System.Xaml.dll',
-    'System.Windows.Forms.dll','System.Management.dll')
 $commonArguments = @('/nologo','/target:winexe','/platform:x64','/optimize+','/utf8output',
     ('/win32manifest:' + (Join-Path $source 'launcher.manifest')),
     ('/win32icon:' + (Join-Path $Output 'launcher.ico')),
@@ -110,8 +144,6 @@ $arguments += $settingsSources + @($defaultControls)
 & $compiler @arguments
 if ($LASTEXITCODE -ne 0) { throw 'Launcher compilation failed.' }
 # Publishable launcher-only assets. This never includes a game binary or data.
-$version = [regex]::Match([IO.File]::ReadAllText((Join-Path $source 'LauncherVersion.cs')), 'Value = "([^"]+)"').Groups[1].Value
-if (!$version) { throw 'Launcher version was not found.' }
 $files = [ordered]@{}
 foreach ($name in @('TimeSplitters Launcher.exe','Bin/TimeSplitters.App.exe')) {
     $files[$name] = (Get-FileHash -LiteralPath (Join-Path $Output $name) -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -121,7 +153,6 @@ $encoding = New-Object Text.UTF8Encoding $false
 [IO.File]::WriteAllText((Join-Path $Output 'Support\Launcher\manifest.json'), (($manifest | ConvertTo-Json -Depth 4) + "`n"), $encoding)
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$assetName = "TimeSplitters-Launcher-v$version-windows-x64.zip"
 $archivePath = Join-Path $Output $assetName
 $archiveStream = New-Object IO.FileStream $archivePath,([IO.FileMode]::Create)
 $archive = New-Object IO.Compression.ZipArchive $archiveStream,([IO.Compression.ZipArchiveMode]::Create)
@@ -174,3 +205,15 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Launcher maintenance tests failed.' }
 }
 Get-Item -LiteralPath (Join-Path $Output 'TimeSplitters Launcher.exe') | Select-Object FullName,Length
+if ($Test) {
+    if ($fingerprint -ne (Get-LauncherFingerprint -Paths $cacheInputs -Options $cacheOptions)) {
+        throw 'Launcher inputs changed during validation; retry the build.'
+    }
+    Save-LauncherReceipt -Receipt $receipt -Fingerprint $fingerprint -Output $Output -Files $cachedFiles
+}
+$buildOutcome = 'passed'
+} finally {
+    $outputLock.Dispose()
+    $buildTimer.Stop()
+    Write-Host ('[launcher timing] {0}: {1:N2}s' -f $buildOutcome, $buildTimer.Elapsed.TotalSeconds)
+}

@@ -614,15 +614,15 @@ boundaries separately from the walking drain's active-game-update budget.
 ## Experimental water coefficient precision
 
 `pc_surface_coefficients` in `pc_surface_bias.h` preserves the current guest
-uploader's clamped/truncated byte anchors, then scales acceleration/displacement
+uploader's clamped/rounded byte anchors, then scales acceleration/displacement
 and exponentiates damping without repacking fractional values. The existing
 bias+float+fractional opt-in gates enable it. `pc_native_surface_guest.h` copies
 original parameters into the HLE state before temporary guest scaling; whole
 steps retain original uploads. The HLE path copies bank 0 stages 3/5/7 and bank
 1 stage 6 into ordered commands only for shader 0x4BBF10, caching duplicates and
 clearing on scope exit. Defaults and original/catch-up behavior stay unchanged.
-The constant-uploader fixture documents the current lifter's truncation; this
-change does not claim original Xbox MXCSR rounding fidelity or full wave parity.
+Shared rounded conversion and finite-input guards:
+[coefficient contracts](surface-coefficients.md). Xbox MXCSR/wave parity is unverified.
 
 The opt-in precision policy now selects full-float format 0x4B for registered
 feedback intermediates. Final byte textures, guest headers, rate gating and

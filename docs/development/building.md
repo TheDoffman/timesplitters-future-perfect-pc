@@ -8,6 +8,10 @@ For native Apple Silicon, start with the [Mac guide](../players/macos.md). Run c
 
 ## Build on Windows
 
+Build and release commands automatically reuse matching successful patch and
+launcher checks. See [release performance](release-performance.md) for measured
+scope, invalidation rules and commands to force fresh validation.
+
 For a fresh checkout, install Git with Git LFS, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
 

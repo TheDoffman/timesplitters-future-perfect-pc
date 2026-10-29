@@ -233,6 +233,7 @@ def launcher_release_path(path):
     """Launcher payload/build inputs, excluding game runtime and housekeeping."""
     return path.startswith('tools/launcher/') or path in {
         'tools/build/build-launcher.ps1', 'tools/build/build-mac-launcher.py',
+        'tools/build/launcher-cache.ps1',
         'tools/build/fetch-launcher-art.ps1', 'config/build/launcher-artwork.json',
         'config/build/mac-launcher-sdk.json', 'config/pc-controls.default.json'}
 
