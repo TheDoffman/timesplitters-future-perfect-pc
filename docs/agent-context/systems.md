@@ -103,12 +103,8 @@ placement changes and restores its enclosing placement. Other panel callers,
 4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
 the UI fixture tests both callers and guards, while Mac scenes remain unverified.
 
-Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
-weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
-Input edges follow raw ticks; pause can offset those from game ticks,
-so the old gate dropped a valid press. Eligibility, binding lookup, animation and
-ammo checks remain original; zero-time pause and Original60 remain unchanged.
-The generic CMP hook is documented in runtime.md. No host-specific adapter.
+Reload #337 and interaction #357 use advancing-time admission at their exact
+US compare sites; see [input consumers and validation](interaction-input.md).
 Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
 `PcInput`, and US state snapshots in `pc_reload_guest.h`. Win32 and SDL publish
 press/release events under input locks, including collapsed down/up events.

@@ -532,6 +532,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
+    ('native_interaction_input.c', [(0xa0d90,0xa144b),(0x18ff70,0x190334),
+                                    (0x426e0,0x4270d),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
     ('native_walk_contact.c', [(0xc54a0,0xc5a4a)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
@@ -649,11 +651,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_analog_input.c','native_reload_input.c'):
+        if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                                 for address in addresses)
+        if harness_name=='native_interaction_input.c':
+            import struct
+            constants+='\n'+'\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                                      for a in (0x475d0c,0x475c78,0x475d5c,0x4785e4,0x47d010))
         if harness_name=='native_network_correction.c':
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -889,7 +895,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(repo_file(ROOT, 'tests', harness_name)).read_text()
-    if harness_name in ('native_analog_input.c','native_reload_input.c'):
+    if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
         wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
@@ -994,6 +1000,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 mutated=mutated.replace(needle,'RECOMP_F32_MUL_AT(0xFFFFFFFF,')
             with pytest.raises(AssertionError,match='forced_surface'):
                 compile_and_run(tmp_path,mutated)
+    if harness_name=='native_interaction_input.c':
+        needle='RECOMP_LOAD_GLOBAL_U32(0xA0DE8, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError,match='interaction edge lost'):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
+        print(output)
     if harness_name=='native_reload_input.c':
         assert 'reload_sweep trials=864 presses=1728' in output,output
         needle='RECOMP_LOAD_GLOBAL_U32(0x1C2F09, 0x4E7944, MEM32(0x4E7944))'
