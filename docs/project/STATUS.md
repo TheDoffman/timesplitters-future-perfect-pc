@@ -32388,3 +32388,53 @@ both local checkouts. Windows NT10.0.26300 x64, VS2022/MSVC14.44; synthetic inpu
 minimized movie-skipped test, not physical input/listening/full campaign acceptance.
 New-source CI and native Mac title gameplay remain pending; prior-head CI is not
 new-head evidence. See transfer-completion.md and MAC-118.
+
+
+## 2026-10-29 - Stage0225 original StartIo callback composer
+
+Started clean e467b0510ee66e3db3e1dda3fd00bf7f8e795b67 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+progress (committed/pushed0224 plus local acceptance), not whole-goal completion.
+Prior e467 CI launcher40938793360 passed. Runtime40938793349 remains live:
+both upgrades, native Mac and final launcher artifact checks passed; Windows
+native suite pending. It has not been restarted or counted as a pass. Wait for
+that job before pushing0225, since the branch workflow cancels older runs.
+
+Original guest_io_startio.c/.h selects DriverStartIo at driver+0, validates a
+pinned device/full driver table and invokes only an allowlisted translated/manual
+entry as void stdcall(Device,Request). It consumes one caller-held client ref and
+adds an independent forward callback pin to an existing ACTIVE/PENDING operation;
+no request stack advance or packet payload write. Pre-entry rejection rolls back
+only the callback pin, including concurrent completion. Malformed/native exits
+retain ownership and unwind nested scopes. Existing kernel queue imports are
+still legacy: CurrentIrp/Busy/list/device lifetime/cancel/key/backend adapters and
+actual kernel routing remain necessary. Library components are not proof of full
+I/O or toolkit independence.
+
+Portable fixture covers17 scenarios including active/pending/READY/completed,
+null ops/device and preflight rejection, completion during admission, changed
+stack before publication, inline-complete/next, malformed return, child scopes and
+actual native longjmp. Six compiled bad variants fail at runtime. A separate
+Windows fixture composes driver -> StartIo -> inline completion, then actually
+VirtualFree's request/binding metadata before outer return; VirtualQuery proves
+both unmapped. Eight StartIo cases passed7.55s before expanded preflight checks;
+final affected native/device/title suite189passed93.03s, including all8 cases.
+Four fresh/historical upgrades and context/backlog passed25tests146.34s (distinct
+from189). Windows VS2022/MSVC14.44 retains fatal warnings; no local Clang claim.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+20 device/I/O providers once, including tsfp_io_startio; kernel_ob and nine
+previously retired exports absent. All22 generated files unchanged/fingerprint
+current. No additional legacy import is claimed retired.
+
+Actual build: dirtye467b051 with recorded exact source/patch hashes in ignored
+logs/io-startio-build.json; executable SHA256
+42ed99849f87c7487b22abedc54e78cfbdff521dd2eee16e8d80c5e9485d062f.
+Supported US XBE hash validated. Isolated Classic Story regression: scene4/mission1,
+forward11.174549/back6.184891, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.335s within240s cap. Fresh start/fire/pause captures reviewed; controller
+and runner exit0, no dumps/locks/partition images. Profiles unchanged/signatures
+valid/fixture preserved. Source/archive/executable/generated/game hashes agree;
+all26 protected files across both local checkouts retain hash/size/mtime.
+Windows NT10.0.26300 x64, minimized synthetic-input/movie-skipped run, not physical
+input/listening/full campaign or native Mac title acceptance. New-source CI remains
+pending. Contracts: transfer-completion.md; Mac handoff: MAC-118.

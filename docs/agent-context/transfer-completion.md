@@ -128,3 +128,33 @@ Eight native host threads submit distinct owners; each is selected exactly once.
 Seven deliberate bad variants must compile, then fail their runtime contracts.
 Shared CI runs the fixture on both native hosts; Windows acceptance does not prove
 Mac title gameplay or a completed queue/backend adapter. Evidence is in STATUS.
+
+## StartIo callback composition
+
+Stage0225 selects guest_io_startio.c/.h through0225 after0224. tsfp_io_startio
+consumes one caller-held client ref, pins the request-owned device, validates its
+full72-byte body and driver68-byte table, then selects DriverStartIo at offset0.
+Only an allowlisted translated/manual entry is permitted. Its void stdcall gets
+(Device,Request); guest EAX is ignored. No stack location or packet payload is
+advanced or written. A forward scope adds exactly one callback pin to an existing
+ACTIVE/PENDING operation; READY/COMPLETE/UNCERTAIN admission rejects. Prepared
+pre-entry rejection rolls back only that callback ref, preserving concurrent
+completion. Normal returns restore guest architecture. Malformed/native-abandoned
+execution unwinds child scopes and retains pending operation ownership.
+
+Queue selection and publication of CurrentIrp/Busy/list state remain the backend
+adapter's responsibility. The composer performs no queue transition, supplies no
+key/cancel policy and does not itself install kernel StartPacket/Next routes.
+Caller owns queue/device serialization and stable mappings, with no host metadata
+locks held across guest entry. Factory/ops/scopes outlive callbacks and cleanup.
+
+The portable test_io_startio case exercises17 active/pending/READY/completed,
+preflight/admission rejection, complete-during-admission, inline-complete/next,
+malformed return, child scope and actual native longjmp scenarios with real FIFO,
+request-owned device leases and metadata disposal. Six fault variants compile
+before runtime rejection (wrong routine/argument order, initial instead of forward
+scope, lost client ref, missing abandonment and accidental slot advance).
+The separate Windows case runs translated driver -> StartIo -> inline completion,
+then VirtualFree's both request and binding metadata before the outer call returns;
+VirtualQuery confirms both pages are unmapped. This is real host lifetime evidence,
+not installed guest queue/event/APC/backend or native Mac title acceptance.

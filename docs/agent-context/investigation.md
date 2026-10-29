@@ -299,3 +299,5 @@ The0222 [driver-call map](driver-call.md) supersedes the uninstalled-composer no
 Request prefix: [0223 contracts and Thread+50 evidence](transfer-completion.md).
 
 Stage0224: [queue ownership and native acceptance routes](transfer-completion.md#host-owned-request-queue); the maintained patch map includes the new FIFO provider.
+
+Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
