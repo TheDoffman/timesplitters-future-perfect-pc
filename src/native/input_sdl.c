@@ -655,8 +655,9 @@ int tsfp_native_input_test(void) {
         e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
         ok &= captured && SDL_GetWindowRelativeMouseMode(window);
         tsfp_native_mouse_config(0,0.1,0);
+        tsfp_native_input_frame(window); /* Configuration is applied on the frame thread. */
         e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
-        tsfp_native_input_event(&e,window);ok &= !captured;
+        tsfp_native_input_event(&e,window);ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
         tsfp_native_mouse_config(1,0.1,0);tsfp_native_input_event(&e,window);ok &= captured;
         tsfp_native_mouse_config(0,0.1,0);tsfp_native_input_frame(window);
         ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
