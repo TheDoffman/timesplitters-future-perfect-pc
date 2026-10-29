@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "5530a6a955d228eca49d131e9cdba0c43a2126271fe4c51e4521d5b553a7350d",
+  "loaderSha256": "b253271c524d6415049509ea1b1042ff80344e1a0ab04fff359ffdd18aa75d9d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2393,6 +2393,14 @@
       "name": "0225-original-startio-callback.patch",
       "path": "patches/compiler/0225-original-startio-callback.patch",
       "sha256": "c06839485fb796498aa40170e70c4fdafd08017cb452d9045237360537dd2be3",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0226-original-device-queue-mirrors.patch",
+      "path": "patches/compiler/0226-original-device-queue-mirrors.patch",
+      "sha256": "8ba2017d1012dc1b6d3b6bb4985ae17d8e21971b22acc8cd88c27578f73b60da",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

@@ -10,7 +10,7 @@ sys.path.insert(0,str(HERE))
 from test_translation_product import _compile
 @pytest.mark.parametrize('mutation',[None,
     ('q->current==owner','0'),
-    ('q->entries[index_at(q,i)]==owner','0'),
+    ('tsfp_io_owner_queue_claim(owner,q)','tsfp_io_owner_retain(owner)'),
     ('q->current!=expected','q->current!=expected && !expected'),
     ('q->closed || q->count==q->capacity','q->count==q->capacity'),
     ('offset-remaining','0'),

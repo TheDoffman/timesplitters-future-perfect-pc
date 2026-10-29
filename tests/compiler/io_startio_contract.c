@@ -4,10 +4,12 @@
 #undef main
 #include "guest_io_startio.h"
 #include "guest_io_queue.h"
+#include "guest_io_queue_wire.h"
 #include "guest_lifetime.h"
 ptrdiff_t g_xbox_mem_offset;
 static tsfp_io_owner owner;static tsfp_io_devices binding;static tsfp_io_device_entry device_entries[2];
 static tsfp_io_queue queue;static tsfp_io_owner *entries[2];
+static tsfp_io_queue_wire wire;
 static tsfp_guest_object_scopes scopes;static tsfp_guest_object_scope outer,extra;
 static unsigned request_depth,queue_depth,retired_count,disposed,callbacks,mode,armed,extra_released,escaped;
 static uint32_t body;static unsigned char before_packet[256];
@@ -36,12 +38,15 @@ static void start_entry(void) {
     CHECK(MEM32(sp+4)==body && MEM32(sp+8)==0x1000);
     CHECK(!memcmp(ram+0x1000,before_packet,sizeof(before_packet)));
     CHECK(owner.clients==2 && owner.internal==2 && queue.current==&owner);++callbacks;
+    CHECK(value(ram+body+0x10)==owner.address && ram[body+0x2b]==1);
+    CHECK(value(ram+body+0x2c)==body+0x2c && value(ram+body+0x30)==body+0x2c);
     CHECK(tsfp_device_factory_delete(&factory,body));CHECK(!tsfp_guest_objects_collect(&objects) && !frees);
     g_ebx=0x9999;g_eax=0xfeedface; /* StartIo is void: EAX is not a status. */
     if(mode==3) {(void)recomp_guest_longjmp(0x500,7);CHECK(0);}
     if(mode==1) {
         CHECK(tsfp_io_owner_complete(&owner,0,17,NULL,NULL));
         CHECK(tsfp_io_queue_next(&queue,&owner,&selected) && !selected);
+        CHECK(!value(ram+body+0x10) && !ram[body+0x2b]);
         CHECK(!disposed && !frees && owner.internal==1 && owner.clients==1);
     } else if(mode==14)CHECK(tsfp_io_owner_phase(&owner)==TSFP_IO_PENDING);
     else CHECK(tsfp_io_owner_pending(&owner));
@@ -70,6 +75,7 @@ static void scenario(unsigned which) {
     g_xbox_mem_offset=(ptrdiff_t)ram;g_esp=0x9007;g_seh_ebp=0x1234;g_eax=0x1111;g_ebx=0x2222;
     CHECK(tsfp_io_queue_init(&queue,entries,2,&queue,queue_lock,queue_unlock));
     CHECK(create(0,0)==TSFP_DEVICE_OK);body=value(ram+0x801);memset(ram+0x201,0,68);put(ram+0x201,0x4444);
+    CHECK(tsfp_io_queue_wire_init(&wire,&queue,ram+body,72,body));
     CHECK(tsfp_io_owner_init(&owner,&owner_ops,ram+0x1000,256,0x1000,256,2,6));
     CHECK(tsfp_io_devices_init(&binding,&owner,&factory,device_entries,2,retired,&owner));
     CHECK(tsfp_io_request_advance(owner.bytes,owner.span,owner.address,&slot) && slot==0x1080);

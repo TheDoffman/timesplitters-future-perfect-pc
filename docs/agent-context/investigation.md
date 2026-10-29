@@ -301,3 +301,5 @@ Request prefix: [0223 contracts and Thread+50 evidence](transfer-completion.md).
 Stage0224: [queue ownership and native acceptance routes](transfer-completion.md#host-owned-request-queue); the maintained patch map includes the new FIFO provider.
 
 Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).

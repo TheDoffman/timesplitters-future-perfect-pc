@@ -158,3 +158,41 @@ The separate Windows case runs translated driver -> StartIo -> inline completion
 then VirtualFree's both request and binding metadata before the outer call returns;
 VirtualQuery confirms both pages are unmapped. This is real host lifetime evidence,
 not installed guest queue/event/APC/backend or native Mac title acceptance.
+
+## Device queue mirrors
+
+Stage0226 selects guest_io_queue_wire.c/.h through0226 after0225. Queue admission
+now claims an exclusive host waiting_queue tag and one client ref under the owner
+lock. A packet may be current above and queued below, but never waiting in two
+lists. Taking an entry clears Inserted before releasing membership under the same
+owner lock. Publishers must never touch detached/current entry bytes: a lower
+queue may already own them. Metadata lock ordering remains queue -> owner.
+
+Atomic submit either starts an idle empty queue (separate current and returned
+caller refs) or appends behind current. READY, duplicate, closed, full, membership
+or ref-overflow rejection preserves output/state. Idle waiting work created by
+push must be selected with next(NULL) before submit; it cannot be overtaken.
+Stop/next release queue clients outside locks. Failed matching-tag detach retains
+accounted waiting refs; private host metadata must remain intact. Completion/cancel
+policy and shutdown joining remain external responsibilities.
+
+A quiescent empty queue may bind a caller-pinned72-byte device body to a trusted,
+non-failing publisher. It validates DeviceObject/queue header/ranges before any
+write and reconstructs CurrentIrp+10hex, Busy+2b, head links+2c/+30 from host state.
+IRP queue entry links+3c/+40 and Inserted+48 are established by the pinned public
+Xbox declaration (five DriverContext words, Thread+50). It never follows guest
+links, and preserves SortKey+44, fifth context word+4c, Thread+50, payload and
+other device bytes. List-entry addresses are host-owned request.address+3c.
+Publisher runs under queue lock, touches only retained waiting entries/device
+bytes, takes no other locks and executes no guest code. Stable disjoint mappings,
+real device leases and publisher/context lifetime are caller contracts.
+
+The maintained test_io_queue_wire suite covers atomic start/FIFO wrap, unaligned
+literal links, corrupt guest links, byte preservation, exclusive membership and
+upper-current/lower-waiting transfer without an old publisher clobbering new links.
+Eight compiled bad variants must fail at runtime. test_io_startio now binds these
+actual mirrors and checks them before callback/after inline complete-next across
+its portable17 scenarios. Shared CI selects both suites on Windows/Mac. This is
+not yet a persistent per-device registry/lease lifecycle, keyed scheduling,
+cancellation, kernel import route or full storage/event/APC backend. Existing
+kernel queue bridges remain selected until those adapters are integrated.

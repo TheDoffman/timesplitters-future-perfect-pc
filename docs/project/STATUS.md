@@ -32439,3 +32439,52 @@ all26 protected files across both local checkouts retain hash/size/mtime.
 Windows NT10.0.26300 x64, minimized synthetic-input/movie-skipped run, not physical
 input/listening/full campaign or native Mac title acceptance. New-source CI remains
 pending. Contracts: transfer-completion.md; Mac handoff: MAC-118.
+
+
+## 2026-10-29 - Stage0226 original queue/device mirrors and membership
+
+Started clean0368ca59eeb8b2d7b7a3d968dff10703db50fab4 on
+feature/guest-share-access; fetched main unchanged863c2b61. Prior0368 runtime
+40940409081 and launcher40940409129 both completed/success, including both native
+hosts/upgrades and final launcher gates. Prior turn was verified source progress;
+full runtime/toolkit independence remains incomplete. PR406 stays draft/unmerged.
+
+Original queue-wire provider now binds a caller-pinned device to host-authoritative
+CurrentIrp/Busy/list mirrors. Queue admission owns an exclusive waiting tag plus a
+client under owner lock; immediate submit atomically takes current and returned
+caller refs, while pending submit appends FIFO. No request can wait in two lists.
+An upper current can wait below. Taking clears Inserted before releasing the tag;
+publishers never write detached/current entry bytes. Review caught and removed an
+earlier ordering race that could clear a lower queue's Inserted after transfer.
+Only retained waiting entries/device bytes are published under queue lock, with
+no guest traversal, guest execution or additional locks. SortKey/fifth context/
+Thread/payload/unrelated device bytes are preserved. This is library integration
+and real StartIo contract acceptance; persistent per-device lease/index lifecycle,
+key/cancel policy, kernel StartPacket/Next routing and the full backend remain.
+No additional legacy kernel implementation is claimed retired.
+
+New mirror suite9passed4.81s, including eight compiled fault controls, literal
+unaligned links, FIFO wrap, corrupt-link resistance, membership/overflow rejection,
+opaque-byte preservation and upper-current/lower-waiting transfer without old
+publisher clobbering. Portable StartIo now binds these mirrors and checks them
+before callback and after inline completion/next across17 scenarios. Final affected
+native/request/device/title/header suite216passed102.52s; all9 mirror and8 StartIo
+cases are included, not additional unique tests. Four fresh/historical upgrades
+and context/backlog checks25passed146.07s, distinct from216. Release/built-in checks
+and matching crash symbols passed. Archive selects21 device/I/O providers once,
+including wire init, atomic submit and three membership API symbols; kernel_ob
+and nine previously retired native exports absent. All22 generated files unchanged
+and fingerprint current. Windows VS2022/MSVC14.44 fatal-warning checks retained.
+
+Actual build: dirty0368ca59 with exact source/patch inputs recorded in ignored
+logs/io-queue-wire-build.json. Executable SHA256
+c0511e031b64ccac3c43209c66e073678368b59bf92557e5720982281f8bf50a.
+Supported US XBE hash validated. Isolated Classic Story replay passed scene4/
+mission1, forward11.176239/back6.184892, ammo8to6,40 frozen pause/60 advancing resume
+samples, final95.688s within240s cap. Three fresh captures reviewed; runner and
+controller exited0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree. All26 protected save/settings/fixture files across both local checkouts
+retain hash/size/mtime. Windows NT10.0.26300 x64, minimized synthetic-input,
+movie-skipped test; not physical input/listening/full campaign or native Mac
+execution evidence. New-source CI pending; see transfer-completion.md and MAC-118.

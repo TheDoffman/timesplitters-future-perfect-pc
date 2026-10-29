@@ -7574,3 +7574,17 @@ context checks, Release/built-ins/symbols and isolated Story movement/fire/pause
 resume passed. Prior e467 Windows/Mac native and launcher CI both passed; new-source CI and
 Mac title execution pending. Keep MAC-118 Awaiting
 validation. STATUS stage0225 records host, exact binary hashes and limits.
+
+
+MAC-118 stage0226 follow-up (PR#406): shared guest_io_queue_wire.c/.h binds
+CurrentIrp/Busy/list mirrors to host FIFO ownership. Owner-level waiting tags
+exclude two waiting lists, while upper current/lower waiting remains legal;
+Inserted clears under owner lock before membership release. Atomic submit starts
+idle work or appends FIFO. Persistent device generation/lease/index lifecycle,
+key/cancel policy, kernel routing and full backend remain unfinished. No OS adapter
+is needed for these common components. Windows216 native/request/device/title/
+header checks include9 mirror and8 StartIo cases;25 upgrades/context checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior0368 Windows/Mac runtime and launcher CI passed; new-source CI and native Mac
+title acceptance pending. Keep MAC-118 Awaiting validation. STATUS stage0226
+records hashes, host and scope; transfer-completion.md describes contracts.

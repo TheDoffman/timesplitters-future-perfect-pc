@@ -17,7 +17,7 @@ from test_translation_product import _compile
     ('if(!tsfp_io_forward_scope_begin','owner->bytes[0x19]-=1;\n    if(!tsfp_io_forward_scope_begin'),
 ])
 def test_original_startio_from_owned_fifo(tmp_path,mutation):
-    providers=('guest_io_startio','guest_io_queue','guest_io_owner','guest_io_request','guest_io_scope','guest_io_devices','guest_callback_call','guest_objects','guest_object_names','guest_device_factory','guest_device_body','guest_device_callback','guest_object_scope','guest_allocation','guest_state','guest_nonlocal_jump')
+    providers=('guest_io_startio','guest_io_queue_wire','guest_io_queue','guest_io_owner','guest_io_request','guest_io_scope','guest_io_devices','guest_callback_call','guest_objects','guest_object_names','guest_device_factory','guest_device_body','guest_device_callback','guest_object_scope','guest_allocation','guest_state','guest_nonlocal_jump')
     headers=['guest_io_call.h','guest_io_target.h','guest_io_stack.h','guest_object_services.h','recomp_types.h','guest_lifetime.h']+[f'{p}.h' for p in providers if p not in ('guest_state','guest_nonlocal_jump')]
     for name in [f'{p}.c' for p in providers]+headers+['io_startio_contract.c','guest_device_contract.c']:
         p=HERE/name

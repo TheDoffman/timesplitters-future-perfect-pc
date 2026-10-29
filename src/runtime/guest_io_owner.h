@@ -19,6 +19,7 @@ struct tsfp_io_owner {
     tsfp_io_phase phase;
     void *attachment;void (*release_attachment)(void *);
     unsigned dispatch_abandoned;
+    void *waiting_queue;
 };
 /* Caller owns a fresh, quiescent control block and stable lock context. The
  * transferred mapping remains valid until dispose, which runs outside the lock.
@@ -34,6 +35,20 @@ int tsfp_io_owner_init(tsfp_io_owner *,const tsfp_io_owner_ops *,void *,size_t,
     uint32_t address,uint32_t bytes,uint32_t stacks,uint16_t type);
 int tsfp_io_owner_retain(tsfp_io_owner *);
 int tsfp_io_owner_release(tsfp_io_owner *);
+/* Queue -> owner lock order. Claim adds one queue client and exclusively owns
+ * the packet's embedded waiting-list entry. Start adds two clients (current and
+ * returned caller) without claiming a list entry. Both require ACTIVE/PENDING,
+ * no waiting membership and bounded ref counts. The caller already holds a
+ * valid client ref. Take clears exactly the matching waiting identity without
+ * dropping its queue client. It clears Inserted before releasing membership;
+ * old queues must not touch the detached entry afterward. Queue code releases
+ * that ref outside queue locks. Start clears Inserted under the same owner lock.
+ * A request may be current at an upper device while waiting at a lower device;
+ * it can never be in two waiting lists. Tags are persistent host identities.
+ */
+int tsfp_io_owner_queue_claim(tsfp_io_owner *,void *queue);
+int tsfp_io_owner_queue_take(tsfp_io_owner *,void *queue);
+int tsfp_io_owner_queue_start(tsfp_io_owner *);
 typedef struct {tsfp_io_owner *owner;unsigned kind;} tsfp_io_ticket;
 /* Zero, non-copyable host ticket; end once. Dispatch owns a separate callback
  * pin and operation pin. Abandoning dispatch drops only the callback pin and

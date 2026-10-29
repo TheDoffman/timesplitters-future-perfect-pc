@@ -47,6 +47,24 @@ int tsfp_io_owner_release(tsfp_io_owner *o) {
     if(o->clients) {--o->clients;ok=1;p=detach(o);}
     o->ops.unlock(o->ops.context);dispose(o,p);return ok;
 }
+static int queue_acquire(tsfp_io_owner *o,void *queue,uint32_t references) {
+    int ok=0;if(!o)return 0;
+    o->ops.lock(o->ops.context);
+    if((o->phase==TSFP_IO_ACTIVE || o->phase==TSFP_IO_PENDING) &&
+       !o->waiting_queue && o->clients<=UINT32_MAX-2-references) {
+        if(!queue)o->bytes[0x48]=0;
+        o->clients+=references;o->waiting_queue=queue;ok=1;
+    }
+    o->ops.unlock(o->ops.context);return ok;
+}
+int tsfp_io_owner_queue_claim(tsfp_io_owner *o,void *queue) {return queue?queue_acquire(o,queue,1):0;}
+int tsfp_io_owner_queue_start(tsfp_io_owner *o) {return queue_acquire(o,NULL,2);}
+int tsfp_io_owner_queue_take(tsfp_io_owner *o,void *queue) {
+    int ok=0;if(!o || !queue)return 0;
+    o->ops.lock(o->ops.context);
+    if(o->waiting_queue==queue) {o->bytes[0x48]=0;o->waiting_queue=NULL;ok=1;}
+    o->ops.unlock(o->ops.context);return ok;
+}
 int tsfp_io_owner_dispatch_begin(tsfp_io_owner *o,tsfp_io_ticket *ticket) {
     if(!o || !ticket || ticket->owner || ticket->kind)return 0;
     o->ops.lock(o->ops.context);

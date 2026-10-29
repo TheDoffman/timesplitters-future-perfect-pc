@@ -952,3 +952,5 @@ Stage0223: [private request construction and completion delivery](transfer-compl
 Stage0224: [host-owned FIFO request scheduling](transfer-completion.md#host-owned-request-queue).
 
 Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#startio-callback-composition); maintained maps include the new provider.
+
+Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
