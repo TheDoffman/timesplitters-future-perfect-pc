@@ -179,8 +179,9 @@ are adapters to the shared providers. No new OS policy is duplicated.
 Guest request header0x68 and stack24 use explicit little-endian bytes; type6,
 stack count/current location and current stack address initialize before
 publication. Stage0222 corrects the stack view to a four-byte dispatch prefix
-plus20 opaque bytes, preserving unaligned spans; earlier length/key/offset/device
-interpretations were not established Xbox ABI. See [driver calls](driver-call.md).
+plus20 opaque bytes, preserving unaligned spans. Subsequent title inspection
+confirms transfer/device fields; see [driver calls](driver-call.md) for the exact
+evidence and remaining kernel-routing boundary.
 Allocation validates count0..127 and bounds, owns one registry reference and
 returns a guest address. Host phases/refcounts never come from mutable guest
 bytes. Lookup retains under the registry lock; removal detaches before releasing

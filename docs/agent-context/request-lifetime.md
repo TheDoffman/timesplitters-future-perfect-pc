@@ -47,7 +47,9 @@ only on balanced return. Native continuation deliberately bypasses restoration.
 
 Stage0221 installs the ABI-independent lifetime/callback prerequisites. Stage0222
 now selects the [original call composer and target decoder](driver-call.md) in
-the library, after removing the unsupported+20 device tag. Its stack codec keeps
+the library, preserving the payload instead of stamping a device word. Later
+title evidence confirms that+20 is device storage; the earlier incomplete public
+declaration was insufficient to establish that. The generic stack codec keeps
 the remaining20 bytes opaque. Actual kernel bridge/completion/queue integration
 remains unfinished; neither a library selection nor a byte round-trip test proves
 the detailed per-operation Xbox parameter layout.

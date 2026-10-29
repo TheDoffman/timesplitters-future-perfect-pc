@@ -15,18 +15,29 @@ independence or native Mac title-gameplay claim follows from this stage.
 
 ## Byte layout and target selection
 
-The former codec assigned length/key/offset/device meanings to all24 slot bytes
-without sufficient Xbox ABI evidence. It now interprets only the four-byte
-major/minor/flags/control prefix and round-trips the remaining20 bytes verbatim.
-There is no DeviceObject write at+20. Those bytes can include alignment and
-operation parameters; their detailed Xbox packing remains unverified. Dispatch
-only needs the first operation byte and the established24-byte slot stride.
+The generic codec interprets only the four-byte major/minor/flags/control prefix
+and round-trips the remaining20 bytes verbatim. Dispatch consumes the operation
+byte and24-byte slot stride without assigning per-operation fields or stamping
+DeviceObject. This is the composer's preservation contract, not proof of every
+Xbox IofCallDriver side effect.
+
+Subsequent supported-US title evidence supersedes the initial uncertainty about
+the+20 field. Original instruction46F080 obtains CurrentStackLocation from IRP+5c;
+46F0AA writes the device address to slot+14(hex). Read/write routine46EEE1 uses
+length+4, buffer word+8, and byte-offset low/high words+c/+10(hex), with flags+2
+bit80 selecting direct versus UserBuffer-relative buffer interpretation. Thus
+the device field exists in this title's ABI. Earlier descriptions calling it
+invented were too strong. Kernel dispatch assignment semantics and the complete
+transfer/build/completion pipeline still require integration acceptance.
+These facts come from the supported US XBE hash in AGENTS, not a Windows layout;
+no title implementation bytes or instruction listings are shipped.
 
 Reference declarations:
 [Xbox public driver/device/IRP types](https://github.com/XboxDev/nxdk/blob/8d8438186c5dcf1187672b686a91c4603be9e111/lib/xboxkrnl/xboxkrnl.h),
 [Xbox emulator slot declaration](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded-legacy/blob/96aabe72e238674a22a61695fb6f5295259edf62/src/core/kernel/common/types.h).
-The latter asserts24 bytes and declares no device/completion fields; its union
-offset comments must not substitute for verified Xbox parameter packing.
+The latter asserts24 bytes but omits the device field observed in the title;
+its incomplete fields/comments must not override title evidence. No per-stack
+completion-routine field has been established.
 No external implementation bodies are copied.
 
 Target selection validates full72-byte device and68-byte driver spans, device

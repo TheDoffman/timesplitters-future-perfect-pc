@@ -32232,3 +32232,36 @@ retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
 minimized synthetic-input Classic/movie-skipped run. Not physical input,
 listening, campaign completion or native Mac title verification. New-stage CI
 pending. No old IofCallDriver/CompleteRequest bridge retirement is claimed.
+
+
+Stage0222 evidence correction, after source30c0ef32: the supported-US import
+audit confirms15 I/O imports including62/65/67/69/71/74/76/81/83/84/85/86/87/91/359.
+These driver/synchronous services cannot be classified as unimported merely
+because a bounded boot passes. Call sites62/86 are4367CC/4367E8; StartPacket83
+is46E5B1. Title46F080 reads IRP.CurrentStackLocation+5c and46F0AA writes device
+to slot+14hex. Title46EEE1 reads transfer length+4, buffer word+8, byte offset
+low/high+c/+10hex, with flags bit80 choosing direct versus UserBuffer-relative
+buffer interpretation. The public slot declaration was incomplete; calling+20
+invented was too strong. The generic opaque codec is still appropriate and the
+composer's preservation contract is explicit, but Xbox IofCallDriver assignment
+semantics and complete request routing remain unverified. No executable/source
+change accompanies this evidence correction, and no private title code is shipped.
+
+
+Stage0222 first-head CI30c0ef32: launcher40928510742 completed successfully.
+Runtime40928510622 Windows native and both patch-upgrade jobs passed; Mac native
+reported1941passed296skipped18subtests and2 failed compiled fault controls.
+The target pointer-check mutant dropped the only use of expected; the rollback
+mutant dropped the only use of static put. Clang/Werror therefore rejected those
+mutants before runtime. Provider baselines passed. Tests now retain meaningful
+uses while weakening the expected-pointer check, and split rollback into wrong
+location/wrong pointer controls, preserving compilation and runtime rejection.
+No warnings, provider code, patch bytes, installed executable or acceptance
+assertions are relaxed. Exact new-head both-host CI remains required.
+
+Local repair acceptance: all13 target/call cases passed8.30s. The first additional
+wrong-pointer control also exposed unused current under MSVC/WX; using
+current-minus-one-slot retains that parameter while still introducing the wrong
+restored pointer. Both wrong-pointer and wrong-location controls compile and
+are rejected at runtime. Product source/executable remains the tested181e2ded
+build. New-head Mac/Windows CI remains pending; no retry is counted as a pass.

@@ -16,7 +16,8 @@ def source_file(name):
 @pytest.mark.parametrize('mutation',[None,
  ('g->owner=NULL;return owner?tsfp_io_owner_release(owner):1;','g->owner=NULL;(void)owner;return 1;'),
  ('if(!ok)frame.scope.abandoned=1;','if(!ok)frame.scope.abandoned=0;'),
- ('p[0x19]=(unsigned char)location;put(p+0x5c,current);','(void)location;(void)current;'),
+ ('p[0x19]=(unsigned char)location;put(p+0x5c,current);','p[0x19]=(unsigned char)(location-1);put(p+0x5c,current);'),
+ ('p[0x19]=(unsigned char)location;put(p+0x5c,current);','p[0x19]=(unsigned char)location;put(p+0x5c,current-TSFP_IO_STACK_BYTES);'),
  ('if(result==TSFP_IO_CALL_RETURNED)*status=value;','if(result==TSFP_IO_CALL_RETURNED)*status=value+1;'),
 ])
 def test_original_initial_driver_call(tmp_path,mutation):

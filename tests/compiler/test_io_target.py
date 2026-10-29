@@ -17,7 +17,7 @@ def source_file(name):
  ('guest_io_target.c','table+12+4*candidate.major','table+8+4*candidate.major'),
  ('guest_io_target.c','candidate.major>=14','candidate.major>=13'),
  ('guest_io_target.c','word(d+8)!=address','word(d+8)==0'),
- ('guest_io_request.c','if(current!=expected)return 0;','if(current==0)return 0;'),
+ ('guest_io_request.c','if(current!=expected)return 0;','if(current!=expected && current==0)return 0;'),
  ('guest_io_request.c','current-=TSFP_IO_STACK_BYTES;','current+=TSFP_IO_STACK_BYTES;'),
 ])
 def test_readonly_driver_target(tmp_path,mutation):

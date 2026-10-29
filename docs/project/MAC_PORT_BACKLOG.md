@@ -7446,6 +7446,13 @@ Release/archive selection and isolated Story movement/firing/pause/resume passed
 with all26 protected files intact. New-stage CI/Mac title checks pending;
 keep MAC-118 Awaiting validation. See [contracts](../agent-context/driver-call.md).
 
+MAC-118 stage0222 CI repair: first30c0ef32 Mac suite rejected2 fault mutants
+under unchanged Clang/Werror for unused expected/put; provider baselines passed.
+Tests now keep those references while introducing real wrong-pointer/location
+behavior. Product code/binary is unchanged; new-head CI pending. The supported-US
+title audit also confirms device+20 and transfer4/8/12 fields despite the public
+header's omissions; see driver-call.md for corrected evidence and remaining scope.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation
