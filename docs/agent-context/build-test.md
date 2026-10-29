@@ -178,7 +178,7 @@ exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
-[Online UI checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
+[Online UI/icon/scrollbar checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
 checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
 the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
