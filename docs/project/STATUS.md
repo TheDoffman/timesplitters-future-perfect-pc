@@ -32056,3 +32056,21 @@ new-head full both-host CI is still required. Source/archive/generated/executabl
 game hash audit passed and all26 protected files unchanged. This fixture/docs
 repair needs no product rebuild or replacement gameplay evidence; the recorded
 0b045f29 executable and bounded Story results remain authoritative.
+
+
+Stage0220 f7b0c3b6 CI: both patch-upgrade jobs passed after the historical model
+repair. Windows native failed one existing Online loopback assertion: host peer
+latency count1 versus expected2;1974passed248skipped18subtests398.57s. Its old
+wait ended as soon as all sessions had one reply, before the host necessarily
+received the second. Wait now includes the exact existing host count requirement,
+retaining the same four-second deadline and all assertions. No production code,
+source/patch/executable/game hashes change. Mac native remains queued at the
+latest observation; the complete repaired-head CI result is still required.
+
+
+Online synchronization repair verified locally: all4 Online contracts passed
+in6.15s, including authenticated nonce/expiry and relay/forgery/replay assertions.
+Four simultaneous independent three-peer loopback runs also passed (5.93-6.10s
+each), keeping the original4second telemetry deadline. Installed source/archive/
+generation/executable/game hash verification and context/whitespace checks pass.
+No gameplay rebuild is required for this test-only synchronization change.

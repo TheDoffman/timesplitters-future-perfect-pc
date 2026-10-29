@@ -103,7 +103,10 @@ def test_directory_handshake_and_three_pc_relay():
             for session in sessions:
                 games.append(game_socket(session.bridge, 1000))
             deadline = time.monotonic()+4
-            while any(session.bridge.latency_snapshot()[1] == 0 for session in sessions) and time.monotonic()<deadline:
+            # Each guest seeing the host does not mean the host has received
+            # both authenticated replies yet. Wait for the condition below.
+            while (host.bridge.latency_snapshot()[1] < 2 or
+                   any(session.bridge.latency_snapshot()[1] == 0 for session in sessions)) and time.monotonic()<deadline:
                 time.sleep(.01)
             assert all(session.bridge.latency_snapshot()[0] >= 0 for session in sessions)
             assert host.bridge.latency_snapshot()[1] == 2

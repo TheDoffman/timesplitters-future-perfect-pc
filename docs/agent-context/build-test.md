@@ -943,3 +943,10 @@ omit0220 together with its0219 prerequisite while constructing historical inputs
 Each complete upgrade explicitly asserts the original sharing include/provider
 and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
 patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
+
+
+Online loopback CI synchronization: test_online.py's three-peer handshake waits
+for the host's two authenticated latency replies as well as each guest's first
+reply, matching its existing assertions. The same four-second deadline, nonce/
+credential/replay checks and relay assertions remain. A partial host roster must
+not end that wait. This test-only fix changes no transport or runtime behavior.
