@@ -105,3 +105,11 @@ snapshot/tracking/patch-upgrade models. Combined local build/game/migration
 acceptance is complete. The newest pushed-head CI result remains required;
 previous3b11d5b1 workflows both concluded success. No full independence or native
 Mac title acceptance is implied.
+
+
+Mac CI repair (2026-10-29): exact0f1189ec native Mac compiled32 isolated device
+fixture cases with -Wall/-Wextra/-Werror and rejected unused scenario helper
+functions. Reference the compiled scenario entry points from main without running
+unselected cases. Warning flags and all baseline/mutation assertions stay intact.
+Windows runtime, both-host patch upgrades and launcher CI passed; Mac runtime
+must pass on the repaired head before stage0219 is accepted on both CI hosts.

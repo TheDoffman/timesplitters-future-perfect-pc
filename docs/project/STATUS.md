@@ -31769,3 +31769,17 @@ snapshot/tracking/patch-upgrade models. Combined local build/game/migration
 acceptance is complete. The newest pushed-head CI result remains required;
 previous3b11d5b1 workflows both concluded success. No full independence or native
 Mac title acceptance is implied.
+
+
+### Device-stage Mac CI fixture repair (2026-10-29)
+
+Exact0f1189ec runtime40789860110 failed on Mac before32 isolated device cases
+could run: Clang -Werror rejected unreferenced static scenario helpers. Other
+Mac tests passed1802 with293 skips/18subtests; Windows native and both patch
+upgrade jobs passed, and launcher40789860207 passed. References in the fixture
+main retain those compiled helpers without executing unselected scenarios.
+No warning flags, mutation assertions, runtime source or binaries are changed.
+Fresh repaired-head Mac CI is required; this is not yet full CI acceptance.
+
+Repaired fixture Windows checks:45 passed in84.20s. Current exact Mac compiler
+result remains pending; no local Clang is installed.

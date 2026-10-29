@@ -524,6 +524,16 @@ static void final_event_cases(void) {
 }
 #endif
 int main(void) {
+    /* Each build selects one isolated scenario. Keep the other compiled helper
+     * entry points referenced without running them or muting Clang warnings. */
+    (void)failures;(void)named_lifetime;
+    (void)collision_rebind_capacity;(void)stopping_and_cleanup;
+#if defined(TSFP_DEVICE_CALLBACK_SCOPE) || defined(TSFP_DEVICE_DISPATCH)
+    (void)callback_scope_cases;
+#endif
+#ifdef TSFP_DEVICE_DISPATCH
+    (void)dispatch_cases;(void)dispatch_exit_case;
+#endif
 #ifdef TSFP_DEVICE_BRIDGE
     abi_cases();
 #endif
