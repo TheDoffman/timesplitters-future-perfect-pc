@@ -811,6 +811,8 @@ leaving the menu while unfocused, the existing adapter restores the pending
 gameplay capture request on focus regain. The test now checks that behavior
 and separately checks that explicitly released capture stays off. This changes
 test coverage only; physical Mac mouse/gameplay validation remains separate.
+The disabled-mouse assertion also advances the frame-thread configuration step
+before checking release, matching the existing asynchronous settings contract.
 
 - **#381 Windows cursor confinement (2026-10-27, v0.3.5 hotfix):**
   `src/input/pc_mouse_capture.h` and `src/input/pc_controls.c` pin the hidden gameplay pointer

@@ -72,9 +72,9 @@ center bounds too. `test_mounted_mouse.py` covers split-screen mouse
 adapters; live gameplay remains unverified.
 <!-- packet:end -->
 
-SDL tests accept Confirm E/Space and reject third-slot Return (two-slot cap).
-`tools/build/build-native-mac.py --test` checks requested focus capture and explicit
-release too. Synthetic checks preserve bindings; physical input remains unverified.
+SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
+cap, requested capture, release and frame-applied mouse disable. They preserve
+bindings; physical input remains unverified.
 
 CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
 Native/patch-upgrade jobs allow 30 minutes. Required check names remain.
