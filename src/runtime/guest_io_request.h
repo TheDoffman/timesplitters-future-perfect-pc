@@ -12,4 +12,7 @@ int tsfp_io_request_initialize(void *,size_t span,uint32_t guest_address,
  * Host output pointer must not overlap the raw request bytes. Caller ensures
  * stable memory, synchronization, genuine ownership and valid dispatch policy. */
 int tsfp_io_request_advance(void *,size_t span,uint32_t guest_address,uint32_t *stack_address);
+/* Inspect the same next slot without changing any guest bytes. Output must not
+ * alias guest storage; caller holds ownership and serialization throughout. */
+int tsfp_io_request_peek(const void *,size_t,uint32_t,uint32_t *);
 #endif

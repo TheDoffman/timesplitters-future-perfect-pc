@@ -32195,3 +32195,40 @@ path/symbol run passed128checks908.73s. All local build/game/test processes exit
 no game session remains active. Source and private-data hashes were rechecked.
 This documentation follow-up changes no product source or built executable;
 its own hosted workflow status must be distinguished from codeab70f7b6's green CI.
+
+
+## 2026-10-29 - Stage0222 original driver composition
+
+Starting6cca3879 on feature/guest-share-access; prior codeab70f7b6 had both CI
+workflows green, while its documentation-head CI is tracked separately. Initial
+tree clean; fetched main unchanged3b4e679b; protected26 files unchanged. Exact
+6cca3879 runtime40925947708 and launcher40925947683 subsequently completed
+successfully, including both native hosts/upgrade jobs and all final gates.
+Original target/call composer and read-only request peek are now maintained shared
+source, with0222 selecting the two new providers in the kernel library. This does
+not reroute inherited kernel IofCallDriver/CompleteRequest or complete the toolkit
+replacement. The stack codec now preserves20 opaque bytes instead of inventing
+length/key/offset/device fields; no guest DeviceObject tag is written. Detailed
+per-operation Xbox parameter packing remains unverified. Public declarations and
+the maintained service boundaries are documented in driver-call.md.
+
+Corrected opaque-payload candidate19cases passed12.75s, including nested pending,
+native unwind, invalidation/private rollback and real Windows metadata unmap.
+Initial maintained opaque codec/request/lifetime44cases passed17.63s. New-stage maintained85passed36.19s; four affected historical/fresh upgrade and
+context/backlog25passed153.18s; callback/packet ABI/path/symbol15passed6.93s.
+Release/built-in checks and matching crash symbols passed. Archive audit selects
+15 device/sharing/lifetime/driver providers once and contains call/target/peek
+symbols; kernel_ob/nine retired exports remain absent. All22 generated files are
+unchanged with a current fingerprint. Actual build was dirty6cca3879 with exact
+source/patch inputs recorded; executableSHA256
+181e2ded43d5e217fb15ad64224957a79ee901aae0b71cd3e89598bcd02f3ef9.
+
+Fresh isolated Story regression passed: scene4/mission1, forward11.174549 and
+back6.391054, ammo8to6,40 frozen pause/60 advancing resume samples; final checkpoint
+95.432s within240s cap. Three fresh captures reviewed; runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Source/archive/executable/generated/game hashes agree; all26 protected files
+retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44,
+minimized synthetic-input Classic/movie-skipped run. Not physical input,
+listening, campaign completion or native Mac title verification. New-stage CI
+pending. No old IofCallDriver/CompleteRequest bridge retirement is claimed.

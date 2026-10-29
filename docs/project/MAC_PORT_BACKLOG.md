@@ -7434,6 +7434,18 @@ Complete local historical-upgrade/context/path/symbol run:128passed908.73s.
 No native Mac title or full driver replacement claim.
 See STATUS and [contracts](../agent-context/request-lifetime.md).
 
+MAC-118 stage0222 follow-up (PR#406; source commit recorded in Git history): shared original target/call
+composer selected through0222; four-byte stack prefix plus20 opaque bytes replaces
+unverified operation/device fields. Both hosts use the same source/lock/mapping/
+callback contracts; no new OS adapter or duplicate implementation. Native bridge,
+completion/queues/APCs and caller-owned packet adoption remain unfinished.
+Acceptance: maintained stack/request/target/call/forward/lifetime/pool/header
+contracts, real Windows metadata-unmapping test, patch upgrades, Release/archive
+audit and isolated Story regression. Windows125 selected native/upgrade/context/path/symbol checks passed;
+Release/archive selection and isolated Story movement/firing/pause/resume passed,
+with all26 protected files intact. New-stage CI/Mac title checks pending;
+keep MAC-118 Awaiting validation. See [contracts](../agent-context/driver-call.md).
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation

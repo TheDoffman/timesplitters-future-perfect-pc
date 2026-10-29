@@ -933,3 +933,6 @@ not end that wait. This test-only fix changes no transport or runtime behavior.
 
 
 Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).

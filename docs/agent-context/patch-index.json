@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "62a7703cf2a8db65639f1bfc5f54bafa2c61614cf8422e70a7171bc42a7286bb",
+  "loaderSha256": "969c862beeb4effc617418e5981876463358b5f861c7b1aae67fa69a7a61958e",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2361,6 +2361,14 @@
       "name": "0221-independent-request-lifetime.patch",
       "path": "patches/compiler/0221-independent-request-lifetime.patch",
       "sha256": "841bf140c104df681393a732017f8e24f684271bcb1c9db16265614bf035a7ef",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0222-original-driver-call-composer.patch",
+      "path": "patches/compiler/0222-original-driver-call-composer.patch",
+      "sha256": "3d83c27fd4fc9f2074a19972bc6e98b86621df7b3dce41e87059cdf680aaf2eb",
       "targets": [
         "src/kernel/CMakeLists.txt"
       ]

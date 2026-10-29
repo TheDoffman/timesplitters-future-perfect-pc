@@ -45,15 +45,12 @@ only on balanced return. Native continuation deliberately bypasses restoration.
 
 ## ABI boundary and validation
 
-Only these ABI-independent lifetime/callback prerequisites are installed. The
-ignored call composer/target codec remain experimental. The public
-[Xbox emulator declaration](https://github.com/Cxbx-Reloaded/Cxbx-Reloaded-legacy/blob/96aabe72e238674a22a61695fb6f5295259edf62/src/core/kernel/common/types.h)
-asserts a24-byte IO_STACK_LOCATION but declares no DeviceObject/completion member.
-It does not establish the prototype's proposed device word at+20. Desktop Windows
-driver documentation cannot establish Xbox offsets. Resolve that discrepancy with
-independent Xbox ABI evidence before installing the composer or completion chain;
-do not treat self-authored byte fixtures as an external ABI oracle.
-The production stack codec is unchanged by0221.
+Stage0221 installs the ABI-independent lifetime/callback prerequisites. Stage0222
+now selects the [original call composer and target decoder](driver-call.md) in
+the library, after removing the unsupported+20 device tag. Its stack codec keeps
+the remaining20 bytes opaque. Actual kernel bridge/completion/queue integration
+remains unfinished; neither a library selection nor a byte round-trip test proves
+the detailed per-operation Xbox parameter layout.
 
 `tests/compiler/test_io_lifetime.py` runs strict compiled baselines and executable
 fault controls for actual native guest jumps, inline completion, private rollback,

@@ -946,3 +946,6 @@ Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sh
 
 
 Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).
+
+
+Stage0222: [original driver-call composition and opaque stack payload](driver-call.md).
