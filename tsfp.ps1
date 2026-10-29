@@ -183,7 +183,8 @@ try {
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/storage/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
-                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
+                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource",
+                        "-DTSFP_GAME_MANIFEST=$projectRoot/config/build/windows-game.manifest")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
                         '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/graphics/ghost_targets.py'),
