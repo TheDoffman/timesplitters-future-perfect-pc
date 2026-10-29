@@ -8,6 +8,9 @@ typedef struct tsfp_guest_object_scope {
     tsfp_guest_objects *store;
     uint64_t serial;
     size_t count;
+    int (*cleanup)(void *,int abandoned);
+    void *cleanup_context;
+    unsigned abandoned;
     uint32_t tokens[TSFP_GUEST_SCOPE_HANDLES];
     tsfp_guest_object_lease leases[TSFP_GUEST_SCOPE_HANDLES];
 } tsfp_guest_object_scope;
@@ -22,6 +25,12 @@ const tsfp_guest_object_lease *tsfp_guest_scope_borrow(tsfp_guest_object_scopes 
 /* Pin a retained identity behind a pseudo handle. Cache includes both alias
  * and key, so rebinding the current identity cannot reuse the previous lease. */
 const tsfp_guest_object_lease *tsfp_guest_scope_borrow_key(tsfp_guest_object_scopes *,uint32_t alias,uint64_t key);
+/* One non-guest cleanup callback per frame, installed only on the current
+ * active frame. Cleanup executes once after leases release and after detaching
+ * the frame. It must return normally, may free its context, and must not change
+ * this scope stack or execute guest code. abandoned distinguishes unwind/abort
+ * from ordinary leave. Context must outlive leave or pre-longjmp unwinding. */
+int tsfp_guest_scope_on_leave(tsfp_guest_object_scopes *,tsfp_guest_object_scope *,int (*)(void *,int),void *);
 int tsfp_guest_scope_leave(tsfp_guest_object_scopes *,tsfp_guest_object_scope *);
 /* Explicitly call before a host thread exits or abandons its C stack. */
 int tsfp_guest_scope_abort(tsfp_guest_object_scopes *);
