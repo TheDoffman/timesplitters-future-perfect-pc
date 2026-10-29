@@ -7659,3 +7659,16 @@ bridges, thread-stack pins/APC/file/locked-buffer/key/cancel/storage/no-event po
 still need integration; this stage alone does not retire those implementations.
 Keep MAC-118 Awaiting validation; local evidence is in STATUS stage0231 and
 [contracts](../agent-context/transfer-completion.md#owned-completion-target-spans).
+
+
+MAC-118 stage0232 follow-up (PR#406): shared original guest_symlinks and kernel
+namespace providers replace the legacy symbolic-link table/create/delete/lookup.
+Guest create/delete validates complete counted strings; kernel path translation
+uses a copied snapshot, preserving the existing static-rule fallback. Both hosts
+select the same C sources and native worker/fault tests in runtime CI; no new
+platform production adapter is needed. Windows built-in path validation resolves
+an actual project namespace drive link into the isolated save root. Mac title
+validation and new-source CI remain pending. This does not replace the rest of
+kernel_path/VFS or remaining request completion/backend policy. Keep MAC-118
+Awaiting validation; evidence in STATUS stage0232 and
+[symbolic-link contracts](../agent-context/symbolic-links.md).

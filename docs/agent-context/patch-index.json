@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "a367fd1b759127453d22b5cf98ed7a0c2501dd1859ce93353443e86ecdb81fb7",
+  "loaderSha256": "6d7ce004144e606d23af421ad2dd62ccad3857ac7143be5f9244d300ba3173d6",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2436,6 +2436,18 @@
       "sha256": "9761c0769fd5e60e35cb31da0a726b6d63e4aad1b4eeb0ad133fa22cf01e0b06",
       "targets": [
         "src/kernel/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "0232-original-symbolic-links.patch",
+      "path": "patches/compiler/0232-original-symbolic-links.patch",
+      "sha256": "269d3d8b7a74f3b88a768a5f75983d64ea623f2dac1bc44f346ab183b77f26ff",
+      "targets": [
+        "src/kernel/CMakeLists.txt",
+        "src/kernel/kernel.h",
+        "src/kernel/kernel_bridge.c",
+        "src/kernel/kernel_io.c",
+        "src/kernel/kernel_path.c"
       ]
     },
     {

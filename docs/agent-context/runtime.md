@@ -886,4 +886,4 @@ Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer
 
 Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).
 
-Stages0229/0231: [events](transfer-completion.md#original-guest-events), [owned completion targets](transfer-completion.md#owned-completion-target-spans).
+Stages0229/0231: [events and targets](transfer-completion.md). Stage0232: [symbolic links](symbolic-links.md).

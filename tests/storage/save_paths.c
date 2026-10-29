@@ -30,6 +30,14 @@ int main(int argc, char **argv)
     snprintf(saveA, sizeof saveA, "%s\\save-a", argv[1]);
     snprintf(saveB, sizeof saveB, "%s\\save-b", argv[1]);
     xbox_path_init(game, saveA);
+    {
+        const char link[]="\\??\\Z:",target[]="\\Device\\Harddisk0\\Partition1\\UDATA";
+        if(tsfp_kernel_symlink_create(link,sizeof(link)-1,target,sizeof(target)-1)!=TSFP_SYMLINK_OK)return 1;
+        failures += expect("z:\\45410066\\profile",saveA,"UserData\\45410066\\profile");
+        failures += expect("\\??\\Z:\\45410066\\profile",saveA,"UserData\\45410066\\profile");
+        if(tsfp_kernel_symlink_remove(link,sizeof(link)-1)!=TSFP_SYMLINK_OK)return 1;
+        if(tsfp_kernel_symlink_remove(link,sizeof(link)-1)!=TSFP_SYMLINK_MISSING)return 1;
+    }
     failures += expect("\\Device\\Harddisk0\\partition1\\UDATA", saveA, "UserData");
     failures += expect("\\Device\\Harddisk0\\partition1\\UDATA\\45410066\\profile", saveA, "UserData\\45410066\\profile");
     failures += expect("\\Device\\Harddisk0\\partition1\\TDATA\\45410066\\cache", saveA, "TitleData\\45410066\\cache");
@@ -52,6 +60,6 @@ int main(int argc, char **argv)
     if(!xbox_set_profile_root_utf8(""))return 1;
     failures += expect("U:\\45410066\\profile",saveB,"UserData\\45410066\\profile");
     if (failures) return 1;
-    puts("PASS: ten save/asset routes, component boundaries, case folding, and save-directory switching");
+    puts("PASS: save/asset routes, copied symbolic-link drive remapping, component boundaries, case folding, and save-directory switching");
     return 0;
 }

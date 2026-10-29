@@ -312,3 +312,6 @@ Stage0229: [original event bytes/atomics and KeInitializeEvent bridge](transfer-
 
 Stage0231 context regression asserts the real33-patch late compiler tail, with
 0231 after0229 before2090. Main2130 DPI remains earlier by actual loader order.
+
+Stage0232 context regression extends the exact late compiler tail to34 patches,
+0232 follows0231 before2090; the main DPI patch stays earlier by loader order.

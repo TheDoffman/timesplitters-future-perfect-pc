@@ -32748,3 +32748,53 @@ executable hash, so the bounded isolated gameplay run above was repeated against
 that final binary. Final numbered-stack fresh/historical upgrades, context and
 backlog25passed155.43s (includes20context and1backlog; not additional to those
 counts). Original provider source and generated guest code remain unchanged.
+
+
+### Stage0232 - original symbolic-link namespace (2026-10-29)
+
+PR#406, feature/guest-share-access, built from dirty42a806d6; exact original-source,
+patch, archive and executable inputs recorded in ignored logs/symlinks-build.json.
+Prior42a806d6 runtime40957016619 and launcher40957016595 CI both passed. Stage0232
+replaces the legacy symbolic-link table/native create/delete/borrowed lookup and
+both guest bridge implementations with original shared providers. Kernel path
+translation uses a private copied snapshot from the same32-binding namespace.
+No merge into main/publication performed; full upstream replacement is incomplete.
+
+Full16-bit counted names/targets are copied without the old63/127-byte truncation.
+Lookup bytes survive concurrent delete/rebind. Namespace publication/removal/stop
+serialize under one lock, allocator/disposal callbacks run outside it, and failed
+lookups preserve caller output/length. Guest adapters validate full8-byte headers,
+nonwrapping complete readable spans and Length<=MaximumLength. Exact-case matching
+and the old count limit remain; path translation retains conservative static-rule
+fallback and rejects NUL/overlong targets instead of truncating. Empty/unreadable
+targets now reject as invalid. No full NT directory/case-table, symlink recursion,
+VFS replacement or completion-backend functionality is claimed.
+
+New contract suite11passed5.76s, including six core and three guest-adapter bad
+variants that compile then fail at runtime. Fault controls retain variable uses
+and parentheses for fatal MSVC/Clang warnings. Contracts cover160/65535-byte
+payloads, distinct long suffixes, opaque bytes, snapshot preservation, duplicate/
+capacity/allocation failures, reentrant disposal, stop during allocation and1000
+iterations on four native workers. Actual mapped guest descriptors drive the
+original kernel namespace in adapter cases. Combined namespace/object/device/
+event/target regressions166passed75.60s (includes the11 new cases). Fresh and
+historical upgrades plus exact34-patch loader order/context/backlog25passed162.17s.
+
+Release, built-in host checks and matching crash symbols passed. Built-in save
+paths now create/remove an actual namespace drive link and resolve lowercase and
+object-prefix drive paths into an isolated save root through the real kernel
+translator. Archive selects26 device/I/O/event/namespace providers once, including
+eight namespace APIs; kernel_ob and twelve previously retired/native symbolic-link
+exports absent. All22 generated guest files unchanged; fingerprint current.
+Supported US XBE SHA256 verified. Final executable SHA256:
+42aa8f032d47c8737d96db4de7f887c318dd8e618f23cbcaf29e56b4fc81ce01.
+
+Bounded isolated Story reached scene4/mission1; forward11.195015/back6.184889,
+ammo8to6,40 frozen pause and60 advancing resume samples, last95.812s within240s
+cap. Runner/controller exit0. Fresh start/fire/paused captures reviewed; profiles
+unchanged/signatures valid/fixture preserved, no runlock/dumps/partition images.
+Source/archive/executable/generated/game hashes agree. All26 protected settings,
+saves and fixtures across both checkouts retain hash/size/mtime. Windows
+NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic input/movie-skipped run;
+not physical input, listening, full campaign or native Mac title acceptance.
+New-stage CI pending; MAC-118 remains Awaiting validation. Contract: symbolic-links.md.
