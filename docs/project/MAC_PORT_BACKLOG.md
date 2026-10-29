@@ -2828,6 +2828,19 @@ validation. This version bump alone is not publication evidence.
   does not use this Win32 adapter, so no Mac implementation change is required;
   these Windows tests do not establish native Mac UI validation.
 
+- **Multiplayer launcher theme (2026-10-28, implemented on
+  `ui/multiplayer-launcher-theme`):** `tools/network/online_theme.py` now owns
+  the launcher-colored Join/Host layout, advanced Directory tab, invitation
+  popup, high-contrast fallback and focus-aware overflow scrolling. The companion
+  also uses the shared IconBuilder portal with a two-player mark, generated in
+  seven sizes and loaded by both Tk windows. Mac Online icon assignment remains
+  part of the queued adapter; existing launcher icons are unchanged. `online.py`
+  reuses existing callbacks and saved fields. Windows real-widget checks pass;
+  the Windows preview was captured after resolving the desktop helper identity mismatch. Native Mac Online remains
+  **queued** with the existing adapter work; this does not modify Cocoa menus
+  or the Avalonia launcher. Future Mac acceptance must preserve session/bridge
+  lifetime, invitations, accessibility, clipboard and layout across scaling.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/interface/pc_menu_theme.h`, `src/interface/pc_dialog_theme.h`, `src/interface/pc_settings.c` and

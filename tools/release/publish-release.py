@@ -96,7 +96,7 @@ def game_release_path(path):
     """Game source/runtime inputs, excluding launcher and release housekeeping."""
     return (path.startswith(('src/', 'patches/', 'config/', 'assets/textures/'))
             or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt',
-                        'tools/build/build-game-icon.ps1', 'tools/launcher/IconBuilder.cs',
+                        'tools/build/build-game-icon.ps1', 'tools/build/build-online-icon.ps1', 'tools/launcher/IconBuilder.cs',
                         'tools/launcher/GameMonogram.cs')
             or path in {
                 'tools/build/build-native-mac.py',

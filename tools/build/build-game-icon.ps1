@@ -36,4 +36,6 @@ if ($LogoPath) {
     $record.logo_sha256 = (Get-FileHash -LiteralPath $LogoPath -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 [IO.File]::WriteAllText((Join-Path $Output 'game-icon-build.json'), (($record | ConvertTo-Json -Depth 4) + "`n"), $encoding)
+# The game opens Online in a separate Python/Tk process.
+& (Join-Path $PSScriptRoot 'build-online-icon.ps1') | Out-Null
 Write-Output $resource

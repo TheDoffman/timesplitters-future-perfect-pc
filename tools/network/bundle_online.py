@@ -17,6 +17,7 @@ else:
 
 from pathlib import Path
 import hashlib
+import os
 import json
 import shutil
 import subprocess
@@ -43,6 +44,16 @@ def bundle_standard_library(base, runtime, version):
     shutil.copy2(library_root/'ssl.py', runtime/'ssl.py')
     for path in sorted(library_root.glob('*.pem')):
         shutil.copy2(path, runtime/path.name)
+
+
+def bundle_icon(root, copy):
+    """Regenerate cosmetic resources from source, including when packaging an existing build."""
+    output = root/'build/online-icon'
+    shell = Path(os.environ['WINDIR'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
+    subprocess.run([str(shell), '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+                    str(root/'tools/build/build-online-icon.ps1'), '-Output', str(output)],
+                   check=True, capture_output=True, text=True, timeout=30)
+    copy(output/'multiplayer.ico', 'Support/Online/multiplayer.ico')
 
 
 def bundle(root, stage, copy):
@@ -84,6 +95,7 @@ def bundle(root, stage, copy):
                     raise RuntimeError('Invalid dependency wheel path')
             archive.extractall(runtime/'site-packages')
         wheels.append(dict(file=wheel.name, sha256=hashlib.sha256(wheel.read_bytes()).hexdigest()))
+    bundle_icon(root, copy)
     for name in COMPANION:
         copy(repo_file(root, 'tools', name), 'Support/Online/'+name)
     manifest = json.loads((root/'build/windows/generated/network-identity.json').read_text())

@@ -161,3 +161,45 @@ def test_real_cmake_rc_build_embeds_every_icon_frame_in_a_unicode_path(tmp_path)
             assert user.DestroyIcon(icon)
     finally:
         assert kernel.FreeLibrary(module)
+
+
+def test_multiplayer_icon_is_packaged_and_used_by_both_windows(tmp_path):
+    import sys
+    sys.path.insert(0, str(ROOT/'tools/network'))
+    from bundle_online import bundle_icon
+    copied = {}
+    def copy(source, destination):
+        target = tmp_path/destination
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        copied[destination] = target
+    bundle_icon(ROOT, copy)
+    icon = copied['Support/Online/multiplayer.ico']
+    variants = frames(icon)
+    assert len(set(variants.values())) == len(SIZES)
+    # Exercise the packaged lookup in its own Tcl interpreter. No game data,
+    # settings, network operations or global desktop preferences are involved.
+    for name in ('online_theme.py',):
+        shutil.copy2(ROOT/'tools/network'/name, icon.parent/name)
+    probe = tmp_path/'probe.py'
+    probe.write_text(
+        'import sys, tkinter as tk\n'
+        'sys.path.insert(0,sys.argv[1])\n'
+        'from online_theme import OnlineTheme\n'
+        'import ctypes\n'
+        'from ctypes import wintypes as w\n'
+        'user=ctypes.windll.user32\n'
+        'user.GetAncestor.argtypes=[w.HWND,w.UINT];user.GetAncestor.restype=w.HWND\n'
+        'user.SendMessageW.argtypes=[w.HWND,w.UINT,w.WPARAM,w.LPARAM];user.SendMessageW.restype=w.LPARAM\n'
+        'def icon(window):\n'
+        '    window.update()\n'
+        '    return user.SendMessageW(user.GetAncestor(window.winfo_id(),2),0x7f,1,0)\n'
+        'root=tk.Tk();original=icon(root)\n'
+        'theme=OnlineTheme(root,lambda:True)\n'
+        'assert icon(root) and icon(root)!=original\n'
+        'popup=tk.Toplevel(root);theme.track(popup)\n'
+        'assert icon(popup)\n'
+        'root.destroy()\n', encoding='utf-8')
+    result = subprocess.run([sys.executable, str(probe), str(icon.parent), str(icon)],
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
