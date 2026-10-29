@@ -31740,3 +31740,27 @@ after geometry settles. All seven real-widget checks pass with a simulated
 1280x768 screen, including focus visibility for the certificate and popup Return
 controls. The fix retains the original bounds assertions and adds coverage for
 the actual CI screen constraint. A fresh required CI run validates the repair.
+
+
+## Scotland the Brave interaction input (#357, 2026-10-29)
+
+Local uncommitted issue branch based on main `b2a7ffe8` changes only US A0DE8
+in the shared native numeric policy. Original interaction A0D90 otherwise
+rejects a pressed raw-tick edge on zero-whole game frames after pause offsets.
+The selected comparison now admits positive game time without altering clocks,
+input polling, bindings, target tests or the authored repeat path.
+
+Windows original-code selector/decoder/getter fixture passes 72 schedules and
+483 activations at Original60 and native60/120/144/180/240. Restoring only the
+original comparison compiles and fails with an interaction-edge loss. Geometry,
+activation and audio services are controlled boundaries; actual portcullis level
+scripting and physical keyboard/controller play are not yet verified.
+Nine selected interaction/reload/analogue/gate cases pass, including the
+asset-free pause/Original/unrelated-address scope checks; 21 repository
+context/backlog checks pass. The complete original-code fixture requires the
+verified US XBE. Mac execution remains unrun here (MAC-121).
+
+Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
+including the normal isolated build tests; patch verification passed first.
+Log: ignored `logs/issue357-build.log`. This is the local uncommitted candidate,
+not a published release or live portcullis verification.
