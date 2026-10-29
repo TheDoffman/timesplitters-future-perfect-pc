@@ -1,5 +1,6 @@
 /* US 45410066 sub_001538C0, from the verified original disassembly. The
- * original path remains available verbatim when native_fps is absent/zero.
+ * original gameplay clock remains active when native_fps is absent/zero;
+ * temporary render-cache stamps use the render serial in either mode.
  * Float deltas run every native frame; whole ticks retain console units.
  * The ISR-owned counter at 0x563918 and kernel/audio clocks are untouched. */
 #include "platform/xbox_winnt.h"
@@ -130,6 +131,10 @@ static void pc_native_timing_guest(void (*original)(void))
             fprintf(stderr,"[NATIVE-TIMING] 60 FPS original clock applied live\n");
         }
         original();
+        /* Material matrices live in the per-render temporary arena. Use the
+         * same render epoch at Original/native rates, including live switches;
+         * a console tick can span several arena resets at native rates. */
+        NT_WORD(0x7497ACu)=NT_WORD(0x7497B8u);
         /* Native physics consumes live elapsed time, rather than this old
          * fifteen-frame average. On return to Original 60, seed the history
          * with its first advancing interval so native-sized samples cannot
@@ -191,6 +196,7 @@ static void pc_native_timing_guest(void (*original)(void))
     NT_WORD(0x4E7940u) = step.raw_ticks;
     NT_FLOAT(0x4E7948u) = step.raw_delta;
     NT_WORD(0x7497B8u)++;
+    NT_WORD(0x7497ACu)=NT_WORD(0x7497B8u); /* Render-cache lifetime, not ISR time. */
     if (step.raw_ticks > 1) NT_WORD(0x7497BCu)++;
     if (pause > 0 && NT_FLOAT(0x4E794Cu) > 0) pc_native_call(sub_000455B0);
     NT_WORD(0x4E7944u) = step.game_ticks;
