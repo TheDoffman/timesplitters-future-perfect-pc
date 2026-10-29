@@ -1412,6 +1412,14 @@
       ]
     },
     {
+      "name": "2080-tank-driver-controls.patch",
+      "path": "patches/input/2080-tank-driver-controls.patch",
+      "sha256": "ff46e179b06550d6865a400b34f29226d81492adf8ec550b0e65877312faf404",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2080-vsh-constant-dirty.patch",
       "path": "patches/graphics/rendering/2080-vsh-constant-dirty.patch",
       "sha256": "aa5b1cd394783ce75ff00c12bca4eac794ace785f72ccf692091a849269bdaba",

@@ -21,7 +21,8 @@ static inline float pc_mounted_limit(double angle,float minimum,float maximum)
 }
 
 /* US 17A120/17A190: vehicle seats have their own gun table, not C14.
- * -1 preserves driver/passenger look; 0 rejects an invalid binding; 1 is a
+ * -1 preserves other driver/passenger look; 0 rejects a binding; 2 is a
+ * tracked driver camera and 1 is a
  * gunner. Never cache these links across a seat change or scripted reboarding. */
 static inline int pc_vehicle_gun(uintptr_t p,ptrdiff_t offset,PcGuestRegion *region,
                                  uintptr_t *data,uint32_t *gun_address)
@@ -50,6 +51,7 @@ static inline int pc_vehicle_gun(uintptr_t p,ptrdiff_t offset,PcGuestRegion *reg
     }
     if(!seat)return 0;
     uint32_t type=*(const uint32_t*)(seat+0x30);
+    if(type==0 && (*(const uint32_t*)(vdata+0x58)&1))return 2; /* tracked driver camera */
     if(type<=2)return -1;
     if(type!=3 && type!=4)return 0;
     uint32_t index=*(const uint32_t*)(seat+0x2c),guns=*(const uint32_t*)(vdata+0x164);
@@ -118,6 +120,26 @@ static inline int pc_mounted_mouse_in_region(PcInput *input,uint64_t now,float s
         if(!data || !pc_guest_memory_in_span(region,data,0x6c,1) ||
            *(const uint32_t*)data!=gun_address ||
            *(const uint32_t*)(data+0xd8)!=owner)return 0;
+    }
+    if(vehicle_binding==2) {
+        f=pc_mounted_read(fov_object,offset,0xfe8,region);
+        if(!f || *(uint32_t*)(p+8)!=fov_object ||
+           !pc_guest_memory_in_span(region,p+0x100,8,1) ||
+           !pc_guest_memory_in_span(region,f+0xfdc,4,1) ||
+           !pc_guest_memory_in_span(region,f+0xfe4,4,1))return 0;
+        fov=*(const float*)(f+0x384);
+        pitch=*(const float*)(p+0x104);yaw=*(const float*)(p+0x100);
+        if(!isfinite(fov) || fov<1 || fov>120 || !isfinite(pitch) || !isfinite(yaw))return 0;
+        scale=sensitivity*(fov<55?fov/55:1);
+        if(!isfinite(dx*scale) || !isfinite(dy*scale))return 0;
+        /* D2470 tracked camera uses negative elevation, opposite to on-foot
+         * pitch. Keep its original -28..-4 degree orbit limits. */
+        *(float*)(p+0x100)=(float)remainder(yaw-dx*scale,360.0);
+        *(float*)(p+0x104)=(float)fmax(-28,fmin(-4,pitch+dy*scale*(invert?-1:1)));
+        /* Raw mouse displacement updates the camera elevation immediately;
+         * the original spring can otherwise retain an old target at rest. */
+        *(float*)(f+0xfdc)=*(float*)(f+0xfe4)=*(float*)(p+0x104);
+        return 1;
     }
     if(!pc_guest_memory_in_span(region,data,0x6c,1))return 0;
     state=*(const uint32_t*)(data+0x10);

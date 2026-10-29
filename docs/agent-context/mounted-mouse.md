@@ -103,3 +103,29 @@ executes original D2470/17A0A0/17A440 and gun-camera matrix 151650/152090 with
 controlled surrounding services. The old-route mutation must fail. Positive
 gun pitch produces a downward direction in that original matrix; this does
 not identify which control path the reported Past Cortez scene was using.
+
+Tracked tank driver follow-up: a live first Machine Wars snapshot showed local
+seat type 0, vehicle flags 0x1F and gun index 0; the companion occupied type 3.
+Do not infer seat type from character name or narrative role. The shared mouse
+helper recognizes type 0 only with tracked flag bit 1, uses the driver's negative
+-28..-4 camera elevation (mouse-up decreases it), and preserves the original
+17A440 driver camera-ray aim and authored gun limits. Gunner types still use
+their gun-angle route. Other drivers/passengers retain their existing behavior.
+
+`pc_tank.h` and `pc_tank_guest.inc` wrap original 1730E0 only for the local active
+keyboard/mouse driver. Signed left/right track input replaces camera-relative
+heading selection: W/S feed both tracks and A/D oppose them, normalized for
+diagonals. The synchronous scope temporarily selects the original non-player
+track-input branch through actor+150, updates the camera pitch target normally
+written by the skipped branch, and restores the link using fresh permissions,
+actor handle and player backpointer checks. It does not retain mappings across
+the guest call. The original force, wheel and wake/callback code still runs.
+Controller input uses the original player branch. The 2080 tank patch registers
+the wrapper; generated code is not edited. Vehicle mouse fixtures now execute
+original 1730E0, with controlled wake/model services; camera tests separately
+exercise original nonzero negative elevation, whose custom ABI only saves ESI.
+
+First-tank user acceptance reported improved driving/aim but reversed A/D.
+The signed-track mix now uses `(forward + steer, forward - steer)` to reverse
+steering only; forward/reverse and mouse elevation stay as tested. The original
+driver fixture checks both steering signs at four camera headings.

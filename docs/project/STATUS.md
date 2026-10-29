@@ -1,3 +1,34 @@
+## Tank driver controls and steering feedback (#385) - 2026-10-29
+
+The first Machine Wars live snapshot established local driver seat 0, tracked
+flags 0x1F, primary gun 0, and companion gunner seat 3. Shared driver controls
+now feed signed tracks for hull-relative WASD and use the original driver
+camera-ray weapon aiming path. Mouse pitch uses negative camera elevation,
+with immediate target/smoothed elevation updates and the original -28..-4 limits.
+The user tested the driver candidate and reported it was much better but A/D
+were reversed. The follow-up swaps the steering contribution between the two
+tracks; W/S and mouse behavior are retained. This feedback establishes improvement,
+not full mission completion or final crosshair/shot alignment acceptance.
+
+17 focused mounted/terminal tests pass, including original tracked driver
+1730E0, four camera headings, forward/reverse, both steering signs, link
+restoration, driver inversion, gunner behavior and compiled old-route/old-driver
+failures. Original CA040 tests confirm negative elevation direction, and all
+11 UI layout tests pass. An earlier combined run of vehicle/input/UI coverage
+passed 46 tests; the subsequent added driver mutation passes separately.
+The original camera probe holds collision services controlled and distinguishes
+its custom pitch-branch ABI from the zero-pitch branch's untouched registers.
+
+Full generation and the Windows Release build/native checks passed for the
+driver candidate. A bounded in-game run rendered Machine Wars opening gameplay
+at 60 FPS but did not establish tank shot alignment. Computer Use was stopped
+by the user's Escape key. The isolated user's manual test profile is preserved;
+no normal saves/settings were used. The steering follow-up also passes the Release build and native checks
+through the same supported MSVC x64 / D3D11 workflow; its final local executable
+hash is recorded in private/test-saves/vehicle-review/build-info.json.
+Physical Mac and final tank crosshair/shot acceptance remain unverified.
+No release has been published; issue #385 remains open.
+
 ## Vehicle-gunner test build (#385) - 2026-10-29
 
 Local candidate on `fix/385-vehicle-mouse`, based on `863c2b61`, with the shared

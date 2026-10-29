@@ -7411,3 +7411,9 @@ Mac title acceptance is implied.
   multiple views and map transitions. Physical Mac execution is unverified.
 - [Evidence/limits](STATUS.md#mars-prison-high-refresh-material-flicker-398---2026-10-29),
   [cache contract](../agent-context/render-matrix-cache.md).
+
+MAC-001 follow-up (#385): tracked driver input and negative camera pitch now
+share `src/input/pc_tank.h`, `pc_mounted.h`, and `pc_tank_guest.inc` through the
+common manual wrapper patch (local tank-driver candidate; see STATUS). No separate host adaptation is
+required. Windows candidate validation is in STATUS; physical Mac vehicle,
+mouse and mixed-controller acceptance remains pending.

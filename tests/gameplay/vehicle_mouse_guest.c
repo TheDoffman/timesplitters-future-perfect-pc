@@ -27,22 +27,42 @@ void sub_000427B0(void){g_eax=0;g_esp+=4;}
 void sub_00042760(void){g_eax=0;g_esp+=4;}
 void sub_0017A000(void){g_eax=0;g_esp+=4;}
 void sub_00238510(void){g_esp+=4;}
+void sub_003C8501(void){g_fp_top=(g_fp_top+7)&7;g_fp_stack[g_fp_top]=floor(MEMD(g_esp+4));g_esp+=4;}
+void sub_00167880(void){g_esp+=4;}
+void sub_003C9CC4(void){g_fp_stack[g_fp_top]=acos(g_fp_stack[g_fp_top]);g_esp+=4;}
 void sub_0017AA20(void){g_esp+=4;} /* Camera/render boundary; no angle writes here. */
 void sub_00177950(void){g_eax=MEM32(VDATA+0x58);g_esp+=4;}
 void sub_0017A440(void);
+/* MOUSE_IMPLEMENTATION */
+#include "pc_tank.h"
+void sub_00153440(void);
+void sub_001730E0(void);
+static float tracks[2];
 void sub_0017DA00(void){
+ if(MEM32(SEAT+0x30)==0){
+  uint32_t saved=g_esp,packet=MEM32(g_esp+8);g_eax=packet;g_edx=VEHICLE;
+  PcGuestRegion r={0};PcTankDriverScope scope=pc_tank_driver_input(g_eax,g_edx,PLAYER,g_xbox_mem_offset,&r);assert(scope.actor_link);
+  sub_001730E0();pc_tank_driver_restore(scope);assert(MEM32(ENTITY+0x150)==PLAYER);tracks[0]=MEMF(packet+4);tracks[1]=MEMF(packet+12);g_esp=saved+4;return;
+ }
+
  uint32_t saved=g_esp, packet=MEM32(g_esp+8);g_eax=SEAT;
  g_esp-=12;MEM32(g_esp)=0;MEM32(g_esp+4)=VEHICLE;MEM32(g_esp+8)=packet;
  sub_0017A440();g_esp=saved+4;
 }
 void sub_003C848C(void){g_eax=(int32_t)g_fp_stack[g_fp_top];g_fp_top=(g_fp_top+1)&7;g_esp+=4;}
+#undef RECOMP_ICALL_SAFE_AT
+#define RECOMP_ICALL_SAFE_AT(target,stack,site) assert(!"Unexpected callback")
 /* UNREACHED */
 void sub_0017A0A0(void);
 /* GENERATED_ROUTINES */
-/* MOUSE_IMPLEMENTATION */
+
 static void step(void){g_esp=STACK;MEM32(STACK)=0;sub_000D2470();assert(g_esp==STACK+4);}
 int main(void){
  setvbuf(stdout,NULL,_IONBF,0);
+#ifdef _WIN32
+ /* Mutations deliberately assert; avoid Windows crash-reporting delays. */
+ _set_abort_behavior(0,_CALL_REPORTFAULT);
+#endif
  unsigned char *memory=calloc(1,0x800000);assert(memory);g_xbox_mem_offset=(ptrdiff_t)memory;
  /* CONSTANTS */
  for(int i=0;i<2048;i++)MEMF(0x7a38a0+4*i)=sinf(i*6.283185307179586/2048);
@@ -77,6 +97,30 @@ int main(void){
   MEMF(DATA+0x24)=MEMF(DATA+0x1c)=0;
   axis[3]=.5f;axis[4]=.25f;step();assert(MEMF(DATA+0x24)!=0 && MEMF(DATA+0x1c)!=0);
   axis[3]=axis[4]=0;
+ }
+ MEM32(SEAT+0x30)=0;MEM32(VDATA+0x58)=1;MEM32(VDATA+0x50)=DEF;
+ MEM32(PLAYER+8)=FOV;MEM32(0x74c458)=MATRIX;MEM32(VEHICLE+0x80)=0;
+ MEMF(MATRIX+0x20)=0;MEMF(MATRIX+0x28)=1;
+ MEMF(0x4e7900)=MEMF(0x4e7914)=MEMF(0x4e7928)=MEMF(0x4e793c)=1;
+ MEMF(DEF+0x34)=1;MEM32(DEF+0x9c)=0;
+ for(int view=0;view<4;view++) {
+  MEMF(FOV+0x334)=sinf(view*1.57079632679f);MEMF(FOV+0x33c)=cosf(view*1.57079632679f);
+  for(int direction=-1;direction<=1;direction+=2){
+   axis[1]=0;axis[2]=(float)direction;step();
+   printf("tracks view=%d direction=%d: %f %f\n",view,direction,tracks[0],tracks[1]);
+   assert(fabsf(tracks[0]-tracks[1])<.001f && tracks[0]*direction>.9f);
+  }
+  axis[2]=0;axis[1]=1;step();assert(tracks[0]>.9f && tracks[1]<-.9f);
+  axis[1]=-1;step();assert(tracks[0]<-.9f && tracks[1]>.9f);axis[1]=0;
+ }
+ for(int invert=0;invert<=1;invert++) {
+  MEMF(PLAYER+0x100)=0;MEMF(PLAYER+0x104)=-16;
+  PcInput mouse={0};pc_input_focus(&mouse,1);pc_input_capture(&mouse,1);pc_input_motion(&mouse,20,20,1000);
+  assert(pc_mounted_mouse(&mouse,1001,.1f,invert,PLAYER,FOV,g_xbox_mem_offset,0)==1);
+  assert(fabsf(MEMF(PLAYER+0x100)+2)<.001f);
+  assert(fabsf(MEMF(PLAYER+0x104)-(invert?-18:-14))<.001f);
+  assert(MEMF(FOV+0xfe4)==MEMF(PLAYER+0x104));
+  step();assert(MEMF(FOV+0xfdc)==MEMF(PLAYER+0x104));
  }
  puts("PASS: original vehicle gunner update preserves mouse aim and controller input");free(memory);return 0;
 }

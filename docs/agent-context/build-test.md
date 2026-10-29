@@ -922,3 +922,9 @@ mode `0x400` seat ownership and both host adapter bodies. Its optional supported
 fixture (`vehicle_mouse_guest.c`) runs original seat dispatch, gun update and camera
 math, and rejects the old mouse route. This is separate from live mission acceptance;
 see [mounted and vehicle mouse contracts](mounted-mouse.md).
+
+The mounted original-vehicle fixture additionally runs 1730E0 track output and
+link restoration across camera headings, forward/reverse and steering. Original
+CA040 camera coverage now includes nonzero driver pitch; its original custom
+ABI saves ESI, while the pitch branch uses other registers as scratch. Existing
+zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md).
