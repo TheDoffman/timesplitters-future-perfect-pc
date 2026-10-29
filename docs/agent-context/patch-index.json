@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "4f980b163e8cfd82d57c93aaebd53fbbf0e0ba0d3a3693ebf1f5a784bc1b90b6",
+  "loaderSha256": "62a7703cf2a8db65639f1bfc5f54bafa2c61614cf8422e70a7171bc42a7286bb",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2355,6 +2355,14 @@
       "targets": [
         "src/kernel/CMakeLists.txt",
         "src/kernel/kernel_bridge.c"
+      ]
+    },
+    {
+      "name": "0221-independent-request-lifetime.patch",
+      "path": "patches/compiler/0221-independent-request-lifetime.patch",
+      "sha256": "841bf140c104df681393a732017f8e24f684271bcb1c9db16265614bf035a7ef",
+      "targets": [
+        "src/kernel/CMakeLists.txt"
       ]
     },
     {

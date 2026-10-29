@@ -860,3 +860,6 @@ original predicate hooks and isolated validation routes.
 
 
 Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).

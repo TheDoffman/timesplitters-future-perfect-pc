@@ -32144,3 +32144,32 @@ CI for stage0220, not native Mac title gameplay or complete toolkit independence
 Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirement
 remain unfinished. The next callback ownership/target/rollback/prepared-frame
 candidate is still uninstalled and is not included in this CI acceptance.
+
+
+## 2026-10-29 - Stage0221 request lifetime groundwork
+
+Prior exact cead9d23 runtime40917186209 and launcher40917186212 both completed
+successfully, rechecked before this change. Integrated latest main3b4e679b into
+the feature branch as3d74126b without resetting work or merging into main.
+Original split-phase owner tickets, scoped nonlocal cleanup, persistent bounded
+device leases and prepared0..4word callbacks are now maintained shared source.
+Full driver bridge replacement remains unfinished. The call composer is still
+ignored/uninstalled because public Xbox slot declarations do not establish its
+proposed DeviceObject word; no desktop layout assumption is being promoted.
+
+Local build/game/new-head CI acceptance pending. First maintained test promotion
+found fixture-only duplication of a source-including device helper and mutation
+anchors shared by both callback APIs; corrected fixture selection/anchors while
+preserving all executable fault controls and fatal warnings. Existing data and
+settings preservation baseline remains the original26 files.
+
+Windows0221 local acceptance so far: Release/built-in checks passed; matching
+crash symbols written. All66 lifetime/owner/pool/concurrency/callback/header and
+registry checks passed27.29s; adapter/sharing/packet/mounted-input/theme57
+passed33.91s. Path/backlog/symbol5passed0.26s. Build audit selects13 device/
+sharing/lifetime providers once, retains required new archive symbols, excludes
+kernel_ob and nine retired exports, and confirms22 generated files unchanged
+with a current fingerprint. Actual build base3d74126b had the recorded dirty
+source inputs; executable8a75a99a41d3c1638fafce0b93e5b51d8f90eb6a22c8f69fe7c7dbfd57cf9a06.
+Gameplay not yet run: a separate Issue358 checkout game(PID31544) blocks the
+runner. No foreign play session was closed. All26 protected files remain intact.

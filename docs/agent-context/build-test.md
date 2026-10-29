@@ -930,3 +930,6 @@ for the host's two authenticated latency replies as well as each guest's first
 reply, matching its existing assertions. The same four-second deadline, nonce/
 credential/replay checks and relay assertions remain. A partial host roster must
 not end that wait. This test-only fix changes no transport or runtime behavior.
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).

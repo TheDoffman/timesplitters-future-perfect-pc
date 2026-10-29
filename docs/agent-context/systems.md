@@ -943,3 +943,6 @@ Impact sparks: see [native spark timing](native-impact-sparks.md).
 
 
 Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Original request lifetime/callback prerequisites: [contracts and ABI boundary](request-lifetime.md).

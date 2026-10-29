@@ -283,3 +283,6 @@ source/test routes, actual-header probes and the pending build/game boundary.
 The indexed patch-order contract now includes0220 after0219 and before2090;
 keep the fixed expected tail synchronized when adding reviewed independent stages.
 Sharing contracts: [kernel-sharing](kernel-sharing.md).
+
+
+Next driver stage: [request lifetime and unresolved Xbox slot evidence](request-lifetime.md).

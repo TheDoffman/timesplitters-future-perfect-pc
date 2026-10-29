@@ -7411,6 +7411,22 @@ Driver callback/queue/synchronous I/O and broader kernel/runtime/tooling retirem
 remain unfinished. The next callback ownership/target/rollback/prepared-frame
 candidate is still uninstalled and is not included in this CI acceptance.
 
+MAC-118 stage0221 request callback lifetime follow-up: shared implementation;
+new-stage host validation pending. Existing MAC-118 status remains applicable.
+
+Stage0221 extends original request ownership/prepared callbacks and adds scoped
+nonlocal cleanup and request-owned device leases in shared src/runtime source.
+No host-specific feature fork or new adapter is needed; it uses the existing
+lock, mapping, guest-entry and object-scope contracts on both hosts. This is a
+prerequisite for driver replacement, not completed CallDriver/CompleteRequest,
+queues, cancellation, synchronous builders or backend support. The ignored call
+composer's Xbox device-slot assumption is unresolved and is not installed.
+
+Acceptance: strict test_io_lifetime/owner/pool/registry/callback suites, patch
+migrations, source/archive selection, Release and isolated Windows Story checks;
+both native CI hosts and native Mac title gameplay remain pending for this change.
+PR #406; source uncommitted at initial entry. See STATUS and request-lifetime.md.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation
