@@ -32542,3 +32542,62 @@ agree. All26 protected save/settings/fixture files across both checkouts retain
 hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
 input/movie-skipped run; not physical input/listening/full campaign or native Mac
 title acceptance. New-source CI pending. Contracts: transfer-completion.md; MAC-118.
+
+
+## 2026-10-29 - Stage0228 caller-owned request adoption and CI fault repair
+
+Started clean952b7f3c47d804bc62095fee337e672ded2d16f3 on
+feature/guest-share-access; fetched main unchanged863c2b61. Previous turn was
+committed/pushed source progress, not full independence. Prior952b launcher
+40945392939 passed; runtime40945393065 failed Mac job123699436629 only on the
+scheduler missing-unlock fault: pthread blocked before its depth assertion and
+hit30s timeout.2009 passed,311 skipped,18 subtests passed; Windows native and both
+upgrade hosts passed. The fixture now uses thread-local depth and checks before
+acquiring either mutex. Local scheduler9cases passed10.81s. No fatal-warning or
+timeout relaxation, cancelled-job pass or old-head rerun; new Mac CI remains needed.
+
+Original request_validate/owner_adopt/pool_adopt now register initialized caller
+storage read-only with fresh READY host control. Metadata preparation precedes
+publication; disposal/rollback drops metadata/attachments without freeing caller
+storage. An all-node range ledger blocks overlap with registered, detached pending
+and failed-cleanup packets before candidate reads. Owned allocations share the
+ledger. The original four-worker Windows test caught an allocator handoff race:
+actual freed guest storage could be reused before old metadata unlink, causing
+spurious allocation failure. New allocator-owned claims may cross that owned
+cleanup window, relying on unique allocator authority; borrowed claims still wait.
+A deterministic callback handoff regression covers both sides. Known retry and
+uncertain no-retry accounting remain. Caller mappings stay stable until callbacks
+and refs drain; this API is not a guest-memory pin. Existing providers already
+compile these changes, so no new patch/CMake entry or patch-index change is needed.
+Existing IoInitialize/CallDriver/Complete kernel routes remain unchanged until
+full bridge/backend integration. No extra legacy implementation is claimed retired.
+
+Candidate adoption9cases plus native four-worker1004-allocation test passed10cases
+5.71s. Adoption covers all128 stack counts/8256 locations, unaligned packet/output/
+control preservation, invalid shapes, advanced guest state without inferred host
+operation, metadata-only cleanup, duplicate/overlap-before-read, detached pending
+ownership, private prepare/stop rollback and retained owned cleanup. Seven bad
+variants compile before runtime rejection. The real Windows pipeline adopts
+caller-built bytes, runs nested translated drivers, publishes IOSB before a real
+event, retires registry and unmaps both metadata pages while caller heap/data
+remain intact until explicit caller free.
+
+Final native/request/device/title/header suite235passed115.79s, including adoption,
+native concurrency and repaired scheduler cases. Four fresh/historical upgrade
+models and context/backlog25passed145.03s, distinct from235. Release/built-in checks
+and matching crash symbols passed. Same22 device/I/O providers selected once,
+including three new adoption/validation symbols; kernel_ob and nine previously
+retired exports absent. All22 generated files unchanged/current fingerprint.
+Actual build: dirty952b7f3c with exact source/patch inputs recorded in ignored
+logs/io-adoption-build.json. Executable SHA256
+f596fd90e95ab270df704846bc0fe7d4d5b6a0a7fc5b31bcf4a73a261b56788b.
+
+Supported US XBE hash validated. Isolated Classic Story: scene4/mission1,
+forward11.174544/back6.184892, ammo8to6,40 frozen pause/60 advancing resume samples,
+last95.641s within240s cap. Fresh start/fire/pause captures reviewed; runner and
+controller exit0, profiles unchanged/signatures valid/fixture preserved, no
+runlock/dumps/partition images. Source/archive/executable/generated/game hashes
+agree; all26 protected save/settings/fixture files across both checkouts retain
+hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44, minimized synthetic
+input/movie-skipped run; not physical input/listening/full campaign or native Mac
+title evidence. New-source CI pending. Contracts: transfer-completion.md; MAC-118.

@@ -956,3 +956,5 @@ Stage0222: [original driver-call composition and opaque stack payload](driver-ca
 Stage0223: [private request construction and completion delivery](transfer-completion.md).
 
 Stages0224-0227: [FIFO ownership, StartIo, mirrors and persistent device queues](transfer-completion.md).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).

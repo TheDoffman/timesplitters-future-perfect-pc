@@ -7,14 +7,16 @@
 #ifdef _WIN32
 #include <windows.h>
 static CRITICAL_SECTION manager_mutex;
+static __declspec(thread) unsigned manager_depth;
 #else
 #include <pthread.h>
 static pthread_mutex_t manager_mutex;
+static _Thread_local unsigned manager_depth;
 #endif
 ptrdiff_t g_xbox_mem_offset;
 static tsfp_io_scheduler manager;static tsfp_io_schedule_record queues[2];static tsfp_io_owner *waiting[4];
 typedef struct {tsfp_io_owner owner;tsfp_io_devices binding;tsfp_io_device_entry entry[1];unsigned retired,disposed;} packet;
-static packet packets[3];static unsigned manager_depth,request_depth,mode,called,stop_preparing,deleted,escaped,expected_frees,submit_while_closing;
+static packet packets[3];static unsigned request_depth,mode,called,stop_preparing,deleted,escaped,expected_frees,submit_while_closing;
 static uint32_t body;static tsfp_guest_object_scopes scopes;static tsfp_guest_object_scope outer;
 static tsfp_io_queue_scope api;
 static unsigned fail_release,release_attempts;
@@ -26,7 +28,7 @@ int tsfp_guest_objects_release(tsfp_guest_object_lease *lease) {
     return tsfp_guest_objects_release_actual(lease);
 }
 static void manager_enter(void *c) {
-    CHECK(c==&manager);
+    CHECK(c==&manager && !manager_depth);
 #ifdef _WIN32
     EnterCriticalSection(&manager_mutex);
 #else

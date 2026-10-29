@@ -2,6 +2,11 @@
 #define TSFP_GUEST_IO_REQUEST_H
 #include "guest_io_stack.h"
 enum {TSFP_IO_REQUEST_BYTES=0x68,TSFP_IO_MAX_STACKS=127};
+typedef struct {uint32_t bytes,stacks,location,current;} tsfp_io_request_layout;
+/* Read-only complete shape validation, including a consumed final slot. Caller
+ * owns stable bytes; disjoint host output is preserved on rejection. Type is an
+ * expected interface tag, not evidence of ownership or an active operation. */
+int tsfp_io_request_validate(const void *,size_t,uint32_t address,uint16_t type,tsfp_io_request_layout *);
 /* Candidate supported-layout codecs, not ownership validation or kernel APIs.
  * Type tag is caller-supplied pending complete object-type ABI acceptance.
  * Target span may be unaligned; invalid arguments leave all outputs unchanged.

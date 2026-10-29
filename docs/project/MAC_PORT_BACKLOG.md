@@ -7602,3 +7602,18 @@ and launcher CI passed; new-source CI and native Mac title execution pending.
 Kernel import routing, caller-owned adoption, keyed/cancel/backend policies still
 need integration. Keep MAC-118 Awaiting validation. STATUS stage0227 records exact
 hashes, host and scope; transfer-completion.md describes lifecycle contracts.
+
+
+MAC-118 stage0228 follow-up (PR#406): existing shared request/owner/pool providers
+now validate/adopt caller-owned packets read-only, track ranges through detached
+pending/cleanup lifetime and free only host metadata for borrowed packets. Unique
+allocator-owned handoff avoids false range conflicts; borrowed overlap still
+rejects before reads. No OS adapter is needed for these C components. Windows235
+native/request/device/title/header tests include adoption/real-event/unmap,1004
+concurrent allocations and repaired scheduler faults;25 upgrades/context checks,
+Release/built-ins/symbols and isolated Story movement/fire/pause/resume passed.
+Prior952b Mac CI failed only the missing-unlock fault timeout; thread-local prelock
+assertion now replaces blocking that probe, with warning/timeout limits retained.
+New-head Mac CI and native Mac title execution pending. Kernel routes and actual
+event/APC/storage/key/cancel backend still need integration. Keep MAC-118 Awaiting
+validation. STATUS stage0228 records exact host, hashes and scope.

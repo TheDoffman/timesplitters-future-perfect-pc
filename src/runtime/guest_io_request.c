@@ -12,6 +12,15 @@ static int bounds(uint32_t address,uint32_t bytes,uint32_t stacks) {
         bytes>=TSFP_IO_REQUEST_BYTES+stacks*TSFP_IO_STACK_BYTES &&
         (uint64_t)address+bytes-1<=UINT32_MAX && end<=UINT32_MAX;
 }
+int tsfp_io_request_validate(const void *target,size_t span,uint32_t address,uint16_t type,tsfp_io_request_layout *out) {
+    const unsigned char *p=target;tsfp_io_request_layout value;uint32_t expected;
+    if(!p || !out || span<TSFP_IO_REQUEST_BYTES || ((uint32_t)p[0]|((uint32_t)p[1]<<8))!=type)return 0;
+    value.bytes=(uint32_t)p[2]|((uint32_t)p[3]<<8);value.stacks=p[0x18];value.location=p[0x19];value.current=get(p+0x5c);
+    if(!bounds(address,value.bytes,value.stacks) || span<value.bytes || !value.location || value.location>value.stacks+1)return 0;
+    expected=address+TSFP_IO_REQUEST_BYTES+(value.location-1)*TSFP_IO_STACK_BYTES;
+    if(value.current!=expected)return 0;
+    *out=value;return 1;
+}
 int tsfp_io_request_initialize(void *target,size_t span,uint32_t address,
     uint32_t bytes,uint32_t stacks,uint16_t type) {
     unsigned char *p=(unsigned char *)target;

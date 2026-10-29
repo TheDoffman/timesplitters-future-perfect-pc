@@ -243,3 +243,57 @@ Both native CI hosts select it; host contracts do not establish Mac title gamepl
 Kernel import routing, caller-owned request adoption, keyed/cancel policies and
 actual synchronous/async storage/event/APC backend integration remain unfinished.
 Existing kernel queue bridges still use legacy implementations.
+
+## Caller-owned request adoption
+
+Stage0228 extends the already selected request/owner/pool providers, so no new
+runtime patch or CMake source is needed. request_validate reads the complete
+initialized layout (including final consumed slot), expected type/size/count/
+location/current-pointer bounds, preserving all bytes/output on rejection.
+owner_adopt creates fresh READY host control around exact caller storage without
+initializing/changing that storage or inferring an operation from guest status.
+Caller owns stable, quiescent mappings until every host ref/callback drains.
+
+pool_adopt reserves bounded metadata, claims the exact range before resolving or
+reading candidate bytes, validates type6 and exact declared size, optionally
+prepares host metadata before registry publication, then releases the creator ref.
+Preparation returns normally, executes no guest code, preserves packet/control
+state and may transfer an attachment. Failure/removal/stop releases attachment and
+metadata only; caller guest storage is never sent to the pool guest deallocator.
+This is not a guest virtual-memory pin; callers must not free/reuse pending storage.
+
+A protected all-node range ledger covers owned and borrowed packets, including
+detached pending owners and retained/uncertain cleanup. It blocks duplicate or
+partial-overlap adoption even after the registry entry disappears. Owned allocation
+uses the same ledger. A unique allocator can reuse actually consumed owned storage
+while an old deallocate callback has not yet returned/unlinked metadata; only a
+new allocator-owned node can claim through that owned cleanup window. Borrowed
+adoption still waits for final claim retirement. Failed cleanup keeps its claim;
+known retry semantics and unknown no-retry accounting remain unchanged. Registry
+-> owner/pool lock ordering is preserved; allocator/metadata callbacks run outside
+locks. Range retirement removes the exact node rather than resetting the ledger.
+
+Maintained test_io_adopt covers128 stack counts/all8256 locations, literal unaligned
+packet preservation, invalid output/control preservation, READY admission despite
+advanced guest state, duplicate/overlap rejection before reads, detached/pending
+lifetime, failed preparation/stop, retained owned cleanup and actual Windows host
+metadata unmapping while caller storage remains. A deterministic deallocation
+handoff verifies owned reuse without permitting premature borrowed adoption.
+The existing Windows four-worker1004-allocation regression must continue to pass.
+Seven bad variants compile before runtime rejection. Its Windows pipeline adopts
+caller-built bytes, runs nested translated drivers, delivers IOSB before a real
+event, removes registration and unmaps request/binding metadata while leaving
+caller heap ownership/data intact until the caller explicitly frees it.
+
+Shared CI selects adoption contracts on both hosts (Windows event/unmap remains a
+separate host case). This does not yet install IoInitialize/CallDriver/Complete
+kernel routing or implement event/APC/storage/key/cancel backend policy. Existing
+IoInitialize caller-storage behavior remains unchanged until full bridge integration.
+
+
+Stage0227 Mac CI follow-up:952b7f3c runtime40945393065 failed only the deliberate
+missing-unlock fault, whose non-recursive pthread lock blocked until30s timeout;
+2009 other checks passed. The fixture now checks thread-local lock depth before
+acquiring either native mutex, so the bad variant reaches runtime assertion on
+both hosts. Fatal warnings and timeout limits remain unchanged. This is a fixture
+control repair, not production lock-policy evidence or a passing old-head rerun.

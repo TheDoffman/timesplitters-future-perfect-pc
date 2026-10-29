@@ -877,3 +877,5 @@ Stage0225: [StartIo callback composition and acceptance](transfer-completion.md#
 Stage0226: [exclusive waiting membership and device queue mirrors](transfer-completion.md#device-queue-mirrors).
 
 Stage0227: [persistent device queue lifetime and scoped scheduler APIs](transfer-completion.md#persistent-device-queue-lifetime).
+
+Stage0228: [read-only caller-owned request adoption and range lifetime](transfer-completion.md#caller-owned-request-adoption).

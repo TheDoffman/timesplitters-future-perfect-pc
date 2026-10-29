@@ -35,6 +35,14 @@ int tsfp_io_owner_init(tsfp_io_owner *o,const tsfp_io_owner_ops *ops,
     candidate.bytes=(unsigned char *)target;candidate.span=span;candidate.address=address;
     candidate.clients=1;candidate.phase=TSFP_IO_READY;*o=candidate;return 1;
 }
+int tsfp_io_owner_adopt(tsfp_io_owner *o,const tsfp_io_owner_ops *ops,
+    void *target,size_t span,uint32_t address,uint32_t bytes,uint16_t type) {
+    tsfp_io_owner value;tsfp_io_request_layout layout;
+    if(!o || !ops || !ops->lock || !ops->unlock || !ops->dispose ||
+       !tsfp_io_request_validate(target,span,address,type,&layout) || layout.bytes!=bytes)return 0;
+    memset(&value,0,sizeof(value));value.ops=*ops;value.bytes=target;value.span=bytes;
+    value.address=address;value.clients=1;value.phase=TSFP_IO_READY;*o=value;return 1;
+}
 int tsfp_io_owner_retain(tsfp_io_owner *o) {
     int ok=0;if(!o)return 0;
     o->ops.lock(o->ops.context);

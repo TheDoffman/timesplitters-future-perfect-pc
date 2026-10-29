@@ -33,6 +33,15 @@ struct tsfp_io_owner {
  * failure changes neither the control block nor the caller's mapping. */
 int tsfp_io_owner_init(tsfp_io_owner *,const tsfp_io_owner_ops *,void *,size_t,
     uint32_t address,uint32_t bytes,uint32_t stacks,uint16_t type);
+/* Attach fresh READY host ownership to an already initialized, caller-owned
+ * packet without modifying it. Validates exact declared bytes/type/layout.
+ * Caller guarantees a new quiescent packet and stable mapping until disposal;
+ * guest fields cannot establish that guarantee. dispose releases host metadata
+ * and borrowed mapping pins ONLY, never this caller-owned packet storage.
+ * Rejection preserves both control block and packet. No operation is inferred
+ * from an advanced guest stack location or status/pending field. */
+int tsfp_io_owner_adopt(tsfp_io_owner *,const tsfp_io_owner_ops *,void *,size_t,
+    uint32_t address,uint32_t bytes,uint16_t type);
 int tsfp_io_owner_retain(tsfp_io_owner *);
 int tsfp_io_owner_release(tsfp_io_owner *);
 /* Queue -> owner lock order. Claim adds one queue client and exclusively owns
