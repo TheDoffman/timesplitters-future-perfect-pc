@@ -32034,3 +32034,25 @@ Preserved cf581fc3 on focused feature/guest-share-access and integrated66bcb20f
 without source changes. Old branch/work remains preserved. Sharing receives a
 separate review/CI; no agent merge into main was performed. Current source/
 archive/executable/game hashes remain identical after this history integration.
+
+
+Stage0220 dfb54cf2 CI: both native runtime jobs and both launchers passed;
+Windows/Mac patch-upgrade jobs failed the same three historical fixtures as local
+migration15171 (56passed/3failed559.84s). Those old subsets excluded0219 but
+accidentally retained its dependent0220. Added0220 to the same three historical
+exclusion lists, retaining the complete-stack upgrade and adding explicit final
+sharing-provider/ordinal80 assertions in each. Production source, patch bytes,
+compiled executable and existing gameplay result remain unchanged. Repaired
+fixture checks and fresh exact-head CI remain required.
+
+
+Stage0220 historical-fixture repair: all three affected upgrade routes passed
+in86.07s, preserving historical setup and complete-stack provider/cleanup checks.
+Exact dfb54cf2 native CI had passed Windows1972 tests/247skips/18subtests303.25s,
+release172/3subtests4.43s; Mac1890/294skips/18subtests217.97s and release169/
+3skips/3subtests4.49s. Both patch-upgrade jobs failed only the same three now
+repaired historical models. All56 other local migration checks passed previously;
+new-head full both-host CI is still required. Source/archive/generated/executable/
+game hash audit passed and all26 protected files unchanged. This fixture/docs
+repair needs no product rebuild or replacement gameplay evidence; the recorded
+0b045f29 executable and bounded Story results remain authoritative.

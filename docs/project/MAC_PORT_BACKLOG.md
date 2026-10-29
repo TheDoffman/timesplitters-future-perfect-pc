@@ -7363,6 +7363,19 @@ import these three share APIs; native contracts establish their new behavior.
 Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
 also pass. Source/toolkit independence remains incomplete.
 
+
+
+Stage0220 historical-fixture repair: all three affected upgrade routes passed
+in86.07s, preserving historical setup and complete-stack provider/cleanup checks.
+Exact dfb54cf2 native CI had passed Windows1972 tests/247skips/18subtests303.25s,
+release172/3subtests4.43s; Mac1890/294skips/18subtests217.97s and release169/
+3skips/3subtests4.49s. Both patch-upgrade jobs failed only the same three now
+repaired historical models. All56 other local migration checks passed previously;
+new-head full both-host CI is still required. Source/archive/generated/executable/
+game hash audit passed and all26 protected files unchanged. This fixture/docs
+repair needs no product rebuild or replacement gameplay evidence; the recorded
+0b045f29 executable and bounded Story results remain authoritative.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation

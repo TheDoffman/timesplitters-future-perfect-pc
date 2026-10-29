@@ -936,3 +936,10 @@ that skip does not replace native Mac compilation or title gameplay.
 
 
 Original sharing bridges and ordinal80 cleanup: [contracts and checks](kernel-sharing.md).
+
+
+Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
+omit0220 together with its0219 prerequisite while constructing historical inputs.
+Each complete upgrade explicitly asserts the original sharing include/provider
+and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
+patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.

@@ -45,3 +45,10 @@ movement/firing/pause/resume passed. Selection/archive audit includes all three
 sharing symbols and generated22 files unchanged. All26 protected files unchanged.
 Actual dirty-a0e36a91 source hashes retained; current-stage migration/new-head CI
 remain pending. See STATUS/MAC-118; no native Mac title or independence claim.
+
+
+Stage0220 migration models: native-checkpoint, old-controls and old-Mac fixtures
+omit0220 together with its0219 prerequisite while constructing historical inputs.
+Each complete upgrade explicitly asserts the original sharing include/provider
+and ordinal80/16byte cleanup. Full current stacks still include0220. No loader,
+patch bytes, runtime behavior, strict warnings or final upgrade checks are weakened.
