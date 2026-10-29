@@ -29,6 +29,36 @@ No feature-specific backlog ID is added for this path-only maintenance.
 
 ## Integration and ID reconciliation (2026-10-19)
 
+Suite timing monitor (2026-10-28, local commit `c43b3139` on `perf/suite-regression-monitor`):
+`tools/testing/suite_timing.py` provides the same advisory history and coverage
+guards on Windows and Mac. No platform adapter or gameplay policy changes are
+needed. Publisher and both-host CI entry points enable distinct timing profiles;
+Mac learns its own baseline and never adopts a Windows target. Windows focused
+tests and three complete calibration runs pass. The local Windows baseline is
+8m14s; physical Mac execution and hosted CI persistence remain unverified.
+See [the policy](../agent-context/release-speed.md#advisory-performance-history)
+and STATUS for measured validation. No feature-specific ID is added for this
+build/test maintenance.
+
+Full-suite scheduling maintenance (2026-10-28, local commit `e3a50ed7` on
+`perf/release-speed`) uses the
+same pytest grouping policy on Windows and Mac. CI retains both hosts and every
+existing acceptance gate. Successful MSVC environment discovery is cached only
+on Windows; POSIX compiler selection needs no adapter change. Original-image
+fixture constant extraction is shared. Windows measurements and baseline failures
+are recorded in [release performance](../development/release-performance.md);
+native Mac execution of these changes remains unverified. No gameplay feature or
+platform policy is changed, so no new feature-specific backlog ID is introduced.
+
+Build/release maintenance (2026-10-28, local `perf/release-speed`): patch-validation
+receipts use the shared Python installer on both hosts; no Mac gameplay or
+launcher-policy adapter is needed. Launcher build receipts cover the Windows
+PowerShell builder only; the native Mac builder keeps its existing behavior.
+Windows patch/cache and release regression results are recorded in
+[release performance](../development/release-performance.md). Native Mac execution
+of the shared patch receipt remains unverified; both-host patch CI is retained.
+
+
 The integration branch `codex/shared-platform-baseline` combines main `5131d29`
 with the unmerged native stack ending at `f562e14`. Historical checks below
 apply to their stated revisions. The merged native build, regression suite and
@@ -269,6 +299,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-117 | Retired compatibility memory APIs | Awaiting validation |
 | MAC-118 | Independent kernel object lifetime | Awaiting validation |
 | MAC-119 | Profile-scoped Unlock Content | Awaiting validation |
+| MAC-120 | Enhanced Audio beta | Awaiting validation |
+| MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -774,6 +806,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 
 ### MAC-001 — Direct-camera mouse look
+
+Release 0.3.6 preparation found a stale SDL menu self-test expectation: after
+leaving the menu while unfocused, the existing adapter restores the pending
+gameplay capture request on focus regain. The test now checks that behavior
+and separately checks that explicitly released capture stays off. This changes
+test coverage only; physical Mac mouse/gameplay validation remains separate.
+The disabled-mouse assertion also advances the frame-thread configuration step
+before checking release, matching the existing asynchronous settings contract.
 
 - **#381 Windows cursor confinement (2026-10-27, v0.3.5 hotfix):**
   `src/input/pc_mouse_capture.h` and `src/input/pc_controls.c` pin the hidden gameplay pointer
@@ -2826,6 +2866,19 @@ validation. This version bump alone is not publication evidence.
   command mnemonics, separators, reordered items and disabled choices. Cocoa
   does not use this Win32 adapter, so no Mac implementation change is required;
   these Windows tests do not establish native Mac UI validation.
+
+- **Multiplayer launcher theme (2026-10-28, implemented on
+  `ui/multiplayer-launcher-theme`):** `tools/network/online_theme.py` now owns
+  the launcher-colored Join/Host layout, advanced Directory tab, invitation
+  popup, high-contrast fallback and focus-aware overflow scrolling. The companion
+  also uses the shared IconBuilder portal with a two-player mark, generated in
+  seven sizes and loaded by both Tk windows. Mac Online icon assignment remains
+  part of the queued adapter; existing launcher icons are unchanged. `online.py`
+  reuses existing callbacks and saved fields. Windows real-widget checks pass;
+  the Windows preview was captured after resolving the desktop helper identity mismatch. Native Mac Online remains
+  **queued** with the existing adapter work; this does not modify Cocoa menus
+  or the Avalonia launcher. Future Mac acceptance must preserve session/bridge
+  lifetime, invitations, accessibility, clipboard and layout across scaling.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
@@ -4949,6 +5002,17 @@ See STATUS for exact measurements and the corrected reference scope.
   full spatial dynamics and native Mac GPU/scene behavior remain awaiting
   validation. The shared historical-upgrade fixture now excludes the new
   coefficient patch when constructing old stacks lacking its prerequisite.
+
+- **Water coefficient conversion follow-up (2026-10-28, local commit `08ccb2ed` on
+  `fix/shader-coefficient-regressions`):** The current SSE translator rounds
+  `CVTSS2SI`; the shared water helpers still truncated, causing 24 original-shader
+  checks to fail. One shared byte conversion now serves precision overrides,
+  capture and the native GPU adapter. All original numerical thresholds and
+  negative controls remain; host rounding-mode oracles and finite-input guards
+  cover the fix. No new Mac adapter is needed. Windows focused WARP/native checks
+  and the full optimized suite pass (2,424 cases, 36 unchanged skips, 109 subtests,
+  468.403 s); native Mac GPU/scene execution remains unverified. See STATUS and
+  [the conversion contract](../agent-context/surface-coefficients.md).
 
 - **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
   policy and HLE patch extend the existing disabled experiment; no new host
@@ -7262,3 +7326,45 @@ Mac title acceptance is implied.
   standard Back input and save callback.
   See [STATUS](STATUS.md#profile-scoped-unlock-content-2026-10-28) for live evidence
   and [implementation](../agent-context/unlock-content.md) for contracts.
+
+### MAC-120 - Enhanced Audio beta
+
+- **Status:** Awaiting validation
+- **Source/PR:** `32a5774`, PR #397.
+- **Mac support present:** Shared code is implemented; native Mac execution/listening is pending.
+- Shared: patches 0040/0045/0050 and `pc_spatial_audio.h`, `pc_acoustic_*`
+  provide directional buffers/streams, near-field centering, longer gunfire
+  range, wall/portal filtering and metadata-driven ambience mixing. Both
+  backends consume shared DSP; SDL changes apply to newly queued PCM.
+- Setting: common Audio Options builder exposes **Enhanced Audio (Beta)**,
+  defaults OFF, and uses the shared `pc_audio_settings.h` implementation to
+  atomically save `pc-audio.ini` beside the host's display/input configuration.
+  The launcher's shared C# Audio tab reads/writes the same sidecar, including
+  draft/conflict/rollback handling and both `LauncherPlatform` path maps.
+  No OS-specific feature model or second persistence schema is required.
+- Acceptance: verify launcher Audio-tab/game-menu round trips on Mac; verify
+  toggle visibility, live ON/OFF and restart persistence in
+  frontend/pause; verify rotation, centered weapons, distant gunfire, roof/wall
+  filtering and ambience on several maps. Check music/dialogue and queue delay.
+  Split-screen acoustics and full tunnel reverberation remain outside acceptance.
+- Windows: Release builds; 30 selected media/menu tests pass, with two native
+  Mac compile checks skipped. User confirms selector visibility/persistence and
+  earlier range/centering/helicopter behavior; these are not Mac hardware results.
+  See [audio contracts](../development/positional-audio.md).
+
+
+### MAC-121 - High-FPS interaction input (#357)
+
+- **Status:** Awaiting validation
+- **Source/PR:** `61fa18b6`, PR #404.
+- PC behavior: admits the original interaction selector on advancing native
+  game intervals, so a raw-tick press is not lost to a zero game-tick gate.
+- Shared implementation: `src/gameplay/pc_native_numeric.h`, exact US compare
+  A0DE8 in A0D90. No OS adapter or binding schema change is needed.
+- Windows original-code fixture passes 72 schedules through 240 FPS, including
+  pause offsets. Restoring the old compare fails. Geometry/audio boundaries
+  are controlled; actual portcullis gameplay remains pending.
+- Native Mac acceptance: run the selected `test_native_timing.py` checks, then
+  test Scotland the Brave levers at 60/120/180/240, after pause/resume, using
+  keyboard and controller. Retain obstruction, distance and pause behavior.
+  Shared tests are not native Mac gameplay/listening evidence.

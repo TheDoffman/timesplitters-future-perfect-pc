@@ -1,5 +1,9 @@
 # Launcher internals
 
+Windows build/test receipts: [release validation reuse](release-speed.md).
+Launcher CI retains the cache regression in its startup/package test step;
+the step indentation is corrected with the suite scheduling maintenance.
+
 Build/release/CI helpers now live under their matching `tools/` folders.
 Launcher implementation stays under `tools/launcher/`; installed package paths
 remain separate from repository source locations.
@@ -43,6 +47,21 @@ PR checks: `runtime-patches.yml` now calls the existing `launcher-build.yml`
 when `launcher-compatibility.py scope` selects launcher inputs, then includes
 that result in the candidate `PR validation` gate. The separate launcher
 compatibility required check stays active until the branch ruleset migrates.
+
+## Enhanced Audio beta preference
+
+`GameSettings.EnhancedAudio` and the shared `SettingsPage` Audio tab expose
+**Enhanced Audio (Beta)** on Windows/WPF and Mac/Avalonia. The sixth entry in
+`LauncherPlatform.Settings` is `pc-audio.ini` in the same directory as display
+settings (`config/` for a development checkout, `Settings/` when installed).
+It uses the game's `TSFP_AUDIO_V1 0|1` sidecar, defaults OFF, and participates
+in normal dirty-state comparison, concurrent-edit protection and six-file save
+rollback. There is no duplicate launcher JSON or environment-only preference.
+The launcher follows its normal save-before-launch policy; the in-game toggle
+still updates playback live. Earlier games may ignore this optional sidecar.
+Shared C# UI tests cover opt-in, game-menu round trips, draft state, invalid/
+concurrent inputs and rollback after an audio-file write failure. Windows build
+and tests passed locally; native Mac UI/build execution remains pending MAC-120.
 
 ## Saved settings button
 
@@ -440,3 +459,14 @@ preview series policy is unchanged. Maintenance branches still need a Stable
 ancestor. Launcher tags, drafts, future versions and nonancestor previews are
 excluded. tests/launcher/test_publish_release.py verifies baseline selection and generated
 notes payload/range through the existing release test route. No host adapters change.
+
+## Online companion icon
+
+`IconBuilder.WriteMultiplayer` reuses the launcher/game aperture and supplies a
+compact two-player mark in seven transparent icon sizes. Existing launcher/game
+render paths are unchanged. `tools/build/build-online-icon.ps1` writes ignored
+`build/online-icon` resources; the game icon build invokes it and Online packaging
+regenerates/copies `Support/Online/multiplayer.ico`. OnlineTheme applies it to the
+browser and invitation popup. No new Mac launcher resource or artwork is needed;
+native Mac Online remains deferred. Icon frames, package placement and real Tk
+window assignment are checked in `tests/repository/test_game_icon.py`.

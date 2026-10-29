@@ -71,6 +71,8 @@ int main(void)
                 float position[3];memcpy(position,parameters+0x1c,12);
                 check(parameters[0x28]==1 && position[0]==1 && position[1]==2 && position[2]==3,
                       "positional sound parameters");
+                float range;memcpy(&range,parameters+0x2c,4);
+                check(range==50,"original gunfire range field");
             }
             before=sounds;call(1,1,0,0);
             check(sounds==before+1 && sound_id==0x123 && parameters[0x28]==0,"non-positional sound");

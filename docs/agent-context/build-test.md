@@ -1,11 +1,13 @@
 # Build, run and validation map
 
+[Build/test speed and timing alerts](release-speed.md).
+
 Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
 
 Memory: [retired APIs](retired-memory-compatibility.md).
 
 Grouped paths: [layout](../development/repository-layout.md).
-Python/CI imports use `tools/project_paths.py`; fixtures use `tests/conftest.py`.
+Imports: `tools/project_paths.py`, `tests/conftest.py`. [Interaction tests](interaction-input.md).
 
 Patch discovery/migration: [folder rules](../../patches/README.md).
 
@@ -70,9 +72,9 @@ center bounds too. `test_mounted_mouse.py` covers split-screen mouse
 adapters; live gameplay remains unverified.
 <!-- packet:end -->
 
-SDL tests accept Confirm E/Space and reject the third fixture slot Return
-(shared two-slot cap). Run `tools/build/build-native-mac.py --test` on Mac; this
-synthetic check neither changes bindings nor certifies physical keyboard input.
+SDL tests (`tools/build/build-native-mac.py --test`) cover the two-slot E/Space
+cap, requested capture, release and frame-applied mouse disable. They preserve
+bindings; physical input remains unverified.
 
 CI: `runtime-patches.yml` selects work; `ci-pr-gate.py` requires both hosts.
 Native jobs allow 45 minutes on Windows and 30 on Mac; patch upgrades allow 30.
@@ -177,7 +179,7 @@ exact decoded pictures/timestamps/PCM and duration. Controlled
 and Windows clocks; private-data skips, mocked GPU/audio output. Surface-trace
 fixtures use240/180/Original60/120, matching the strict live-cycle validator.
 
-`test_online_theme.py` isolates Tk lifecycles. `test_framebuffer_sampling.py`
+[Online UI checks](multiplayer-ui.md). `test_framebuffer_sampling.py`
 checks refresh/stale copies and first-entry/any-framebuffer alias lookup against
 the original searches, including wrong-first/last mutations (Mac GL/RHI, Windows RHI).
 `test_trace_filter.py` compiles real trace dispatch: quiet calls, explicit
@@ -715,13 +717,13 @@ power of the original packed one-tick damping must retain the 60-step result.
 This needs the local supported XBE; hosted skips are not GPU acceptance. It
 proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
 
-The damping case first executes all of `sub_003D9520` through the current lifter
-and passes its packed bytes to the GPU fixture. Do not substitute hand-rounded
-constants: the current recompiled conversion truncates. `surface_coefficient_upload.c`
-checks the stack/callee-saved-register boundary and supplies sufficient command
-space; no generated game code is checked in. `test_ordered_combiner_constants`
-also covers the production coefficient setter/clear/cache path. The GPU scalar
-case now uses the shared coefficient helper for its corrected values.
+The damping case executes `sub_003D9520` through the current lifter and passes
+its packed bytes to the GPU fixture. Keep actual uploads as the reference;
+[water conversion checks](surface-coefficients.md) cover rounded CVTSS2SI.
+`surface_coefficient_upload.c` checks stack/callee-saved registers and command
+space; generated game code stays local. `test_ordered_combiner_constants` covers
+production coefficient setter/clear/cache behavior. GPU scalar checks use the
+same shared coefficient helper.
 
 The coefficient integration was exercised with the existing bounded Scotland
 route at 60/120/144 and `--trace-surface-images`. Use the image validator for

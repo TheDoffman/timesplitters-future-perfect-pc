@@ -55,7 +55,7 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test startup preferences, packaging and Windows game icons
-        run: python -m pytest tests/launcher/test_launcher_startup.py tests/launcher/package_launcher.py tests/repository/test_game_icon.py -q --tb=short
+        run: python -m pytest tests/launcher/test_launcher_startup.py tests/launcher/package_launcher.py tests/launcher/test_launcher_cache.py tests/repository/test_game_icon.py -q --tb=short
       - name: Recover checksum-pinned original artwork
         shell: powershell
         run: ./tools/build/fetch-launcher-art.ps1

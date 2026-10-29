@@ -37,6 +37,9 @@ int xbox_bridge_signal_event(uint32_t token)
 }
 int xbox_EnvSwitch(const char *name, int default_on) { return default_on; }
 int32_t hle_dsound_stream_adjust(uint32_t object, int *is3d) { return 0; }
+void recomp_audio_output_set_ambience(uint32_t slot,int enabled) {}
+void recomp_audio_output_set_acoustics(uint32_t slot,float obstruction,float room) {}
+void recomp_audio_output_set_spatial(uint32_t slot,float pan,int enabled) { }
 void recomp_audio_output_reset_voice(uint32_t slot) { memset(&host, 0, sizeof host); }
 int recomp_audio_output_position(uint32_t slot, uint64_t *played, uint32_t *queued)
 {

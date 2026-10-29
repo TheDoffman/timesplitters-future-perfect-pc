@@ -34,7 +34,18 @@ void rhi_set_blend_state(RhiBlendState *s,const float f[4],uint32_t mask){(void)
 void rhi_set_depth_state(RhiDepthState *s,uint32_t r){(void)s;(void)r;assert(0);}
 void rhi_set_raster_state(RhiRasterState *s){(void)s;assert(0);}
 void rhi_draw(uint32_t n,uint32_t first){(void)n;(void)first;assert(0);}
+#include "graphics/surface_gpu_cache.h"
+static unsigned coefficient_checks;
+static PcSurfaceGpu *checked_coefficient_config(PcSurfaceGpuCache *cache,uint32_t resource,
+    uint64_t generation,const PcSurfaceGpuConfig *config,RhiImage *const images[4],char *errors,size_t capacity) {
+    assert(config->a==27./255. && config->b==166./255. && config->d==250./255.);
+    assert(config->k==43./255. && config->center==128./255.);
+    coefficient_checks++;
+    return pc_surface_gpu_cache_acquire(cache,resource,generation,config,images,errors,capacity);
+}
+#define pc_surface_gpu_cache_acquire checked_coefficient_config
 #include "pc_surface_native_hle.inc"
+#undef pc_surface_gpu_cache_acquire
 int main(void) {
     hle_d3d8_surface_native_reset();assert(!texture_binds && !attempt);
     D3D8Texture textures[4];PcSurfaceNativeSample sample={0};sample.feedback.resource=100;
@@ -49,7 +60,12 @@ int main(void) {
         uint32_t *id=i<3?sample.feedback.textures[i]:sample.final_texture;
         memcpy(id,&g_textures[i].va,16);
     }
-    unsigned original_live=live;fail_at=attempt+1;
+    unsigned original_live=live,original_attempts=attempt;
+    float invalid=NAN;memcpy(sample.feedback.coefficient_bits,&invalid,sizeof invalid);
+    hle_d3d8_surface_native_prepare(&sample);
+    assert(!coefficient_checks && attempt==original_attempts && !pc_surface_native_failed);
+    memcpy(sample.feedback.coefficient_bits,coefficients,16);
+    fail_at=attempt+1;
     hle_d3d8_surface_native_prepare(&sample);
     assert(pc_surface_native_failed && cleanup && live==original_live && !texture_binds);
     unsigned attempts=attempt;fail_at=0;
@@ -62,6 +78,7 @@ int main(void) {
     unsigned bindings=texture_binds;fail_at=attempt+1;
     hle_d3d8_surface_native_prepare(&sample);
     assert(pc_surface_native_failed && attempt==attempts+1 && texture_binds==bindings);
+    assert(coefficient_checks==2);
     cleanup();
     for(unsigned i=0;i<4;i++){rhi_view_destroy(textures[i].srv);rhi_image_destroy(textures[i].image);}
     assert(!live);

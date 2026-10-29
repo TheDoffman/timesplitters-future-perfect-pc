@@ -3,10 +3,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
-/* Anchor to the current recompiled uploader (US 3D9520): clamp then
- * truncate to a byte. Do not change the established 60-FPS coefficient. */
+/* Match US 3D9520's clamp, binary32 MULSS and rounded CVTSS2SI. The current
+ * translator uses the host FP rounding mode; a C cast would instead truncate.
+ * This follows that contract without claiming a separate guest MXCSR model. */
+static inline uint32_t pc_surface_coefficient_byte(float value)
+{
+    float scaled=fminf(1.f,fmaxf(0.f,value))*255.f;
+    return (uint32_t)nearbyint((double)scaled);
+}
 static inline float pc_surface_packed_coefficient(float value)
-{ return (float)(int32_t)(fminf(1.f,fmaxf(0.f,value))*255.f)/255.f; }
+{ return pc_surface_coefficient_byte(value)/255.f; }
 static inline void pc_surface_coefficients(float delta,const float authored[3],float out[3])
 {
     out[0]=pc_surface_packed_coefficient(authored[0])*delta;

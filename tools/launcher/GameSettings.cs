@@ -32,6 +32,7 @@ namespace TimeSplitters.Launcher
         public double Sensitivity = .10;
         public bool DiscordEnabled;
         public bool EnhancedTextures;
+        public bool EnhancedAudio;
         public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
@@ -132,6 +133,12 @@ namespace TimeSplitters.Launcher
                 Core.Require(match.Success, "Frame-rate settings are invalid. No settings were changed.");
                 model.NativeFps = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 if(model.NativeFps==144)model.NativeFps=120; // Previous preset; load without rewriting.
+            }
+            string audio = Text(model.originals[Files[5]]);
+            if(audio.Length>0) {
+                var match=Regex.Match(audio,@"\ATSFP_AUDIO_V1\s+([01])\s*\z");
+                Core.Require(match.Success,"Enhanced Audio settings are invalid. No settings were changed.");
+                model.EnhancedAudio=match.Groups[1].Value=="1";
             }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
@@ -324,7 +331,8 @@ namespace TimeSplitters.Launcher
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
-                "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n" };
+                "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
+                "TSFP_AUDIO_V1 " + (EnhancedAudio ? "1" : "0") + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

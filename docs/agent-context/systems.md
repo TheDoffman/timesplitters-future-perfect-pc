@@ -29,7 +29,7 @@ For movement regressions, compare player-position displacement in game as well
 as sampled stick values: the title attenuates diagonals after the binding
 sampler. Windows mouse confinement is owned by `pc_controls.c`; native SDL
 relative mode is owned by `src/native/input_sdl.c` and should recover from
-focus changes only when gameplay capture was requested.
+focus for pending capture; frame-applied mouse disable releases it (SDL self-test).
 Windows gameplay confinement now uses the tiny center rectangle from
 `pc_mouse_capture.h`, rather than the entire client. Relative WM_INPUT counts
 still drive aim; absolute pointer drift cannot reach the border. Initial capture,
@@ -43,9 +43,10 @@ authoritative place to implement portable behavior.
 Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
-private source art and original assets stay local. Networking: `src/network/`, runtime HLE/kernel patches and `tools/network/online.py`. Crash capture:
+Private art stays local. Networking: `src/network/`, HLE/kernel patches and
+`tools/network/online.py`; [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
-Audio/movie timing is runtime `src/hle/hle_dsound*`, `hle_xmv*`, not launcher code.
+Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their
@@ -102,12 +103,8 @@ placement changes and restores its enclosing placement. Other panel callers,
 4:3 and split-screen retain their prior path. Shared Windows/native Mac code;
 the UI fixture tests both callers and guards, while Mac scenes remain unverified.
 
-Reload input (#337): `pc_native_numeric.h` admits the original `1C2E80` reload/
-weapon-mode dispatcher at compare site `1C2F09` whenever native game time advances.
-Input edges follow raw ticks; pause can offset those from game ticks,
-so the old gate dropped a valid press. Eligibility, binding lookup, animation and
-ammo checks remain original; zero-time pause and Original60 remain unchanged.
-The generic CMP hook is documented in runtime.md. No host-specific adapter.
+Reload #337 and interaction #357 use advancing-time admission at their exact
+US compare sites; see [input consumers and validation](interaction-input.md).
 Keyboard reload buffering additionally uses `pc_reload_input.h`, owned by
 `PcInput`, and US state snapshots in `pc_reload_guest.h`. Win32 and SDL publish
 press/release events under input locks, including collapsed down/up events.
@@ -598,15 +595,15 @@ boundaries separately from the walking drain's active-game-update budget.
 ## Experimental water coefficient precision
 
 `pc_surface_coefficients` in `pc_surface_bias.h` preserves the current guest
-uploader's clamped/truncated byte anchors, then scales acceleration/displacement
+uploader's clamped/rounded byte anchors, then scales acceleration/displacement
 and exponentiates damping without repacking fractional values. The existing
 bias+float+fractional opt-in gates enable it. `pc_native_surface_guest.h` copies
 original parameters into the HLE state before temporary guest scaling; whole
 steps retain original uploads. The HLE path copies bank 0 stages 3/5/7 and bank
 1 stage 6 into ordered commands only for shader 0x4BBF10, caching duplicates and
 clearing on scope exit. Defaults and original/catch-up behavior stay unchanged.
-The constant-uploader fixture documents the current lifter's truncation; this
-change does not claim original Xbox MXCSR rounding fidelity or full wave parity.
+Shared rounded conversion and finite-input guards:
+[coefficient contracts](surface-coefficients.md). Xbox MXCSR/wave parity is unverified.
 
 The opt-in precision policy now selects full-float format 0x4B for registered
 feedback intermediates. Final byte textures, guest headers, rate gating and

@@ -11,6 +11,7 @@ import sys
 
 import pytest
 from native_compiler import native_compiler
+from guest_constants import absolute_data_words
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
@@ -102,8 +103,9 @@ def test_original_us_cutscene_routines(tmp_path):
         routines = '\n'.join(FunctionTranslator(image, functions).translate_function(start, info)
                              for start, info in functions.items() if 'end' in info)
         assert 'sub_0001EFB0_gen' not in routines, 'Lifted callers must use the wrapper'
-        addresses = sorted({int(a, 16) for a in re.findall(r'MEMF\(0x([0-9A-Fa-f]+)\)', routines)
-                            if 0x470000 <= int(a, 16) < 0x490000})
+        addresses = absolute_data_words(image,
+            [(start, info['end']) for start, info in functions.items() if 'end' in info],
+            config.va_to_file_offset)
         addresses = sorted(set(addresses) | set(range(0x50D408, 0x50D458, 4)))
         constants = '\n'.join(f'MEM32(0x{a:X}) = 0x{struct.unpack_from("<I", image, config.va_to_file_offset(a))[0]:08X};'
                               for a in addresses)

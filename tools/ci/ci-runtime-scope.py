@@ -30,6 +30,8 @@ spec.loader.exec_module(launcher)
 SUITES = ('transitions', 'native', 'gpu', 'release')
 FULL_INPUTS = {
     'tools/project_paths.py', 'tests/conftest.py',
+    'tests/support/parallel_groups.py', 'tests/support/test_parallel_groups.py',
+    'tools/testing/suite_timing.py', 'tests/support/test_suite_timing.py',
     '.gitattributes',
     '.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
     'tools/ci/ci-runtime-scope.py', 'tests/repository/test_ci_runtime_scope.py',
@@ -39,6 +41,7 @@ FULL_INPUTS = {
     'tests/fixtures/renderer-patch-stacks.json',
 }
 RELEASE_INPUTS = {
+    'tools/build/benchmark-patches.py', 'tools/release/benchmark-verification.py',
     'tools/release/publish-release.py', 'tests/launcher/test_publish_release.py',
     'tools/release/release_channels.py', 'tools/release/release-version.py',
     'tools/release/crash-symbols.py', 'tests/diagnostics/test_crash_symbols.py',

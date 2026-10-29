@@ -1,3 +1,80 @@
+## Suite performance regression monitor (2026-10-28)
+
+Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based
+on the unmerged speed/shader work through `d71137ac`, adds advisory timing history
+to release runs and separate Windows/Mac CI profiles. Three successful comparable
+runs establish a fixed median; three consecutive eligible runs over 125% warn.
+Missing tests and newly skipped/non-passing outcomes warn immediately. Failed,
+filtered and incomplete runs cannot train the baseline; all acceptance gates,
+four-worker release scheduling and successful compiler-setup reuse remain.
+
+Three unchanged full Windows runs each passed **2,447 cases and 109 subtests**,
+with **36 unchanged skips**, in **9m19s, 8m14s and 7m54s**. The monitor learned
+**494.439 s (8m14s)**, with a sustained-warning threshold above **618.049 s
+(10m18s)** for this machine/environment. Every previous 2,460 case ID/outcome is
+retained, 23 monitoring/selection cases pass, and all 246 input hashes match.
+An initial full attempt hit an existing vehicle mutation's 15-second timeout;
+the monitor retained its failure and correctly excluded it from calibration.
+That case passed in isolation and in all three complete reruns without changing
+its timeout or assertions. The cause of the one-off timeout is unproven.
+
+Focused monitoring/grouping/publisher/CI-scope validation passed 248 cases in
+5.75 s, including real serial/two-worker pytest runs and a simulated sustained
+slowdown warning that preserves exit status. Workflow YAML, context/ownership,
+backlog and whitespace checks pass. Shared code is registered on both CI hosts;
+physical Mac execution and actual hosted cache/artifact persistence remain
+unverified. These are local commits, not a pushed change or published game.
+See [policy and measured evidence](../development/release-performance.md#monitor-calibration-2026-10-28).
+
+## Shader coefficient release blockers resolved (2026-10-28)
+
+Local commit `08ccb2ed` on `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
+24 shader failures exposed by the optimized suite. The supported US uploader uses
+rounded `CVTSS2SI`, while three shared coefficient paths still used truncating C
+casts. One shared conversion now follows the current translator's host rounding
+mode. Original shader thresholds, negative controls and release gates remain.
+
+The final full four-worker Windows run passed **2,424 cases and 109 subtests**,
+with **36 unchanged prerequisite skips**, in **468.403 s (7 min 48 s)**. Every
+previous 2,457-case test ID was retained; all 24 failures now pass, along with
+three new rounding-oracle/mutation cases. All 246 input hashes match the baseline.
+An initial full attempt had one unrelated Windows access-denied error during a
+temporary runtime-directory rename; the isolated check and complete unchanged
+rerun passed. No skip, retry plugin or weaker assertion was added to bypass it.
+Explicit full patch revalidation also passed. See
+[the measured evidence and limits](../development/release-performance.md#shader-correctness-follow-up-2026-10-28)
+and [the shared conversion contract](../agent-context/surface-coefficients.md).
+
+This validates the local suite, not a published release or complete game visual
+parity. Native Mac execution and a fresh game release build remain unverified.
+
+## Full regression suite performance (2026-10-28)
+
+Local commit `e3a50ed7` on `perf/release-speed` continues the build/release work
+from `9a32375f`.
+Measured validation time fell from 42 min 20 s to 9 min 44 s
+(77.0% reduction), with every original case retained and 34 added cases.
+The full release suite uses up to four workers, preserves shared fixtures, and
+reuses successful Windows compiler setup within each worker. Both-host CI uses
+two workers. No existing test case or acceptance gate is removed. The run also
+exposed stale original-image fixtures and pre-existing shader coefficient failures;
+the former were repaired without changing their assertions, while the shader
+failures required the separate correctness fix recorded above. See the exact Windows coverage,
+timings and limitations in [release performance](../development/release-performance.md).
+No game was compiled for release, packaged, uploaded or published. Native Mac
+execution and end-to-end release duration remain unverified.
+
+## Build and release validation reuse (2026-10-28)
+
+Local branch `perf/release-speed`, based on `2e678ac1`, removes duplicate release
+patch validation, caches successfully validated patch/launcher inputs by content,
+and avoids repeated ZIP decompression while retaining checksum and stage checks.
+Windows regressions and measured stage timings are recorded in
+[release performance](../development/release-performance.md). No gameplay source,
+personal saves/settings, release versions or published assets changed. Native
+Mac execution and a full end-to-end game release are unverified; shared patch
+validation retains both-host CI coverage.
+
 ## Profile-scoped Unlock Content (2026-10-28)
 
 Implementation commit `86eccfca` on `feature/unlock-content`, based on `2e678ac1`. Extras now
@@ -105,6 +182,38 @@ Executable SHA-256:
 `f56e26ad5ab7cc515539ceb72edc506884f2085dea527eb90db7d095d658b7e4`.
 The executable matches runner/game provenance, and 23 project-source plus six
 installed-runtime hashes match the recorded build inputs.
+
+## Enhanced Audio beta candidate (2026-10-28)
+
+Local `positional-stereo-audio`, based on main `2e678ac`, adds shared stereo
+projection and original-world-coordinate room/portal acoustics for positional
+buffers and streams. First-person sounds stay centered and gunfire retains
+its tested longer range. Metadata-driven stereo ambience receives a quieter,
+softer background mix across maps, with extra filtering for outdoor beds
+beneath cover. User listening confirms gunfire range/centering and the Vietnam
+helicopter roof/entrance correction. Broader ambience listening remains pending.
+
+Audio Options now has a native **Enhanced Audio (Beta)** OFF/ON selector in its
+shared frontend/pause builder. Default OFF restores ordinary routing; the
+atomic `pc-audio.ini` preference applies live and survives restart. User confirmed
+that the corrected row is visible and retains its choice; the isolated save
+contains `TSFP_AUDIO_V1 1`. The first layout had a zero-height row; the corrected
+version inherits Audio's explicit height and uses a smaller caption.
+
+Windows Release target builds and 30 selected media/menu tests pass; two native
+Mac compile checks are skipped on this host. Shared SDL processing, source byte
+clocks, refusal/history/reset and settings failure handling are covered by
+fixtures. Full tunnel reverberation, split-screen acoustics and native Mac
+hardware/UI/listening are unverified (MAC-120). See the
+[audio contracts](../development/positional-audio.md).
+The shared launcher now exposes the same beta preference under Settings ->
+Audio, using the game sidecar with default OFF and conflict/rollback handling.
+Windows launcher build/tests passed, including all three new UI cases; portable
+launcher/Mac-adapter checks passed 31 tests and 26 subtests. Native Mac launcher
+execution remains pending.
+Audio is committed on `positional-stereo-audio` (`32a5774`), PR #397.
+CI caught a CRLF working-copy hash in the generated audio patch index;
+normalizing the patch to LF and refreshing the index corrects clean-checkout validation.
 
 ## Retired compatibility memory APIs (2026-10-28)
 
@@ -31783,3 +31892,68 @@ Fresh repaired-head Mac CI is required; this is not yet full CI acceptance.
 
 Repaired fixture Windows checks:45 passed in84.20s. Current exact Mac compiler
 result remains pending; no local Clang is installed.
+
+## Multiplayer launcher theme — 2026-10-28
+
+Implementation on `ui/multiplayer-launcher-theme`, initially based on
+`6e657518` (Windows x64, workspace CPython 3.12/Tk 8.6). The separate Online
+browser/invitation windows use the launcher's navy, silver and blue palette,
+clear Join/Host panels, advanced Directory settings and native high-contrast
+fallback. Existing session and persistence callbacks are unchanged. Real-widget
+checks cover scaling, layout bounds, callbacks, caption recreation, theme changes
+and short-window focus scrolling. The focused theme, Online client, hosting and
+identity suites passed: 26 passed, 1 skipped (optional live test). The Windows preview was captured after using a distinct local interpreter
+filename to avoid a computer-use Python app identity mismatch. Resize review
+found wrap-width feedback after maximize/restore; the bounded canvas width and
+label minimum-width fix passed all seven theme/layout checks. No
+in-game or real-internet match validation, new package or release is claimed.
+Native Mac Online remains deferred; see the existing Windows appearance entry
+in MAC_PORT_BACKLOG.md.
+
+
+### Multiplayer icon and header follow-up
+
+The same local branch now gives Online a two-player icon using the shared
+launcher/game portal rim and silver/blue palette. Seven transparent sizes
+(16–256 px) are generated from tracked vector code; the normal Windows resource
+build and release packager generate/copy the ICO. Windows preview review confirms
+the new title-bar icon and removal of “It's time to split” from the header.
+The game-icon/resource, Online layout/identity and launcher-scope suites passed
+27 tests plus 27 subtests, with one optional live test skipped; the new packaged
+icon/Tk HWND check passed after replacing an unsupported Windows ICO getter
+assertion with real window icon handles (28 passing tests in total). Existing
+game icon resource linking passed; no Mac host or real network match was tested.
+
+
+PR #399 validation found directory-field clipping at 150/200% text scaling on
+the hosted Windows runner's smaller display (1775 other runtime checks passed).
+The shared scrolling panel now covers Directory settings and the invitation
+popup as well as Play online; wrapped-text changes refresh the scroll extent
+after geometry settles. All seven real-widget checks pass with a simulated
+1280x768 screen, including focus visibility for the certificate and popup Return
+controls. The fix retains the original bounds assertions and adds coverage for
+the actual CI screen constraint. A fresh required CI run validates the repair.
+
+
+## Scotland the Brave interaction input (#357, 2026-10-29)
+
+Issue branch `61fa18b6` (PR #404), based on main `b2a7ffe8`, changes only US A0DE8
+in the shared native numeric policy. Original interaction A0D90 otherwise
+rejects a pressed raw-tick edge on zero-whole game frames after pause offsets.
+The selected comparison now admits positive game time without altering clocks,
+input polling, bindings, target tests or the authored repeat path.
+
+Windows original-code selector/decoder/getter fixture passes 72 schedules and
+483 activations at Original60 and native60/120/144/180/240. Restoring only the
+original comparison compiles and fails with an interaction-edge loss. Geometry,
+activation and audio services are controlled boundaries; actual portcullis level
+scripting and physical keyboard/controller play are not yet verified.
+Nine selected interaction/reload/analogue/gate cases pass, including the
+asset-free pause/Original/unrelated-address scope checks; 21 repository
+context/backlog checks pass. The complete original-code fixture requires the
+verified US XBE. Mac execution remains unrun here (MAC-121).
+
+Windows Release rebuilt successfully through `tsfp.ps1 -Action Build`,
+including the normal isolated build tests; patch verification passed first.
+Log: ignored `logs/issue357-build.log`. This is the PR #404 candidate,
+not a published release or live portcullis verification.

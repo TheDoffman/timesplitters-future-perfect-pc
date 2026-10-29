@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "6f65f120b43f04e00818434819f1497bea0453d778e03588a5ff1bb87dfc652d",
+  "loaderSha256": "eaada1e88e028b5ba8a04c4d179cbc7a679f0c670790a4081f969a9962bde945",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -29,6 +29,17 @@
       ]
     },
     {
+      "name": "0040-dsound-positional-stereo.patch",
+      "path": "patches/media/0040-dsound-positional-stereo.patch",
+      "sha256": "77326608831b5672bdd6dc2f16a29c9781b1daa9d38d5fa10397748c0eca63f7",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
+      ]
+    },
+    {
       "name": "0040-gpu-pfb-flush-ack.patch",
       "path": "patches/graphics/rendering/0040-gpu-pfb-flush-ack.patch",
       "sha256": "57e2b78f8c7735ecc0d08f25e8c0f6c8b5bd4172243bdab4d5dac3970a79d7df",
@@ -39,6 +50,25 @@
         "src/platform/win32_compat.h",
         "templates/runtime/recomp_types.h",
         "tools/recomp/lifter.py"
+      ]
+    },
+    {
+      "name": "0045-weapon-sound-range.patch",
+      "path": "patches/media/0045-weapon-sound-range.patch",
+      "sha256": "4a7fc3250c4f86a1fd0ced6cc47a705951edfc79f19df76ebfca6564d18b2270",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "0050-environmental-acoustics.patch",
+      "path": "patches/media/0050-environmental-acoustics.patch",
+      "sha256": "30e0a915d66cd149c80004647e503868d18fc8d5c21d05e1cb0e0cbf2236835a",
+      "targets": [
+        "src/hle/audio_output.h",
+        "src/hle/audio_output_xaudio2.cpp",
+        "src/hle/hle_dsound.c",
+        "src/hle/hle_dsound_stream.c"
       ]
     },
     {
