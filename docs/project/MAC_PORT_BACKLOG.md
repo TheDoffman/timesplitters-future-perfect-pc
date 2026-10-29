@@ -300,6 +300,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-118 | Independent kernel object lifetime | Awaiting validation |
 | MAC-119 | Profile-scoped Unlock Content | Awaiting validation |
 | MAC-120 | Enhanced Audio beta | Awaiting validation |
+| MAC-121 | High-FPS interaction input (#357) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -7210,3 +7211,20 @@ No production source, built executable or prior gameplay evidence changed.
   Mac compile checks skipped. User confirms selector visibility/persistence and
   earlier range/centering/helicopter behavior; these are not Mac hardware results.
   See [audio contracts](../development/positional-audio.md).
+
+
+### MAC-121 - High-FPS interaction input (#357)
+
+- **Status:** Awaiting validation
+- **Source/PR:** `61fa18b6`, PR #404.
+- PC behavior: admits the original interaction selector on advancing native
+  game intervals, so a raw-tick press is not lost to a zero game-tick gate.
+- Shared implementation: `src/gameplay/pc_native_numeric.h`, exact US compare
+  A0DE8 in A0D90. No OS adapter or binding schema change is needed.
+- Windows original-code fixture passes 72 schedules through 240 FPS, including
+  pause offsets. Restoring the old compare fails. Geometry/audio boundaries
+  are controlled; actual portcullis gameplay remains pending.
+- Native Mac acceptance: run the selected `test_native_timing.py` checks, then
+  test Scotland the Brave levers at 60/120/180/240, after pause/resume, using
+  keyboard and controller. Retain obstruction, distance and pause behavior.
+  Shared tests are not native Mac gameplay/listening evidence.

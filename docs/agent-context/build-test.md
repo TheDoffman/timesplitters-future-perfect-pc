@@ -7,7 +7,7 @@ Kernel boot dependency/fixture policy: [contracts](kernel-objects.md).
 Memory: [retired APIs](retired-memory-compatibility.md).
 
 Grouped paths: [layout](../development/repository-layout.md).
-Imports: `tools/project_paths.py`, `tests/conftest.py`. Audio tests cover saves.
+Imports: `tools/project_paths.py`, `tests/conftest.py`. [Interaction tests](interaction-input.md).
 
 Patch discovery/migration: [folder rules](../../patches/README.md).
 
