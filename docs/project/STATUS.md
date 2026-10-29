@@ -32157,7 +32157,7 @@ Full driver bridge replacement remains unfinished. The call composer is still
 ignored/uninstalled because public Xbox slot declarations do not establish its
 proposed DeviceObject word; no desktop layout assumption is being promoted.
 
-Local build/game/new-head CI acceptance pending. First maintained test promotion
+Full local migration acceptance passed. First maintained test promotion
 found fixture-only duplication of a source-including device helper and mutation
 anchors shared by both callback APIs; corrected fixture selection/anchors while
 preserving all executable fault controls and fatal warnings. Existing data and
@@ -32171,5 +32171,27 @@ sharing/lifetime providers once, retains required new archive symbols, excludes
 kernel_ob and nine retired exports, and confirms22 generated files unchanged
 with a current fingerprint. Actual build base3d74126b had the recorded dirty
 source inputs; executable8a75a99a41d3c1638fafce0b93e5b51d8f90eb6a22c8f69fe7c7dbfd57cf9a06.
-Gameplay not yet run: a separate Issue358 checkout game(PID31544) blocks the
-runner. No foreign play session was closed. All26 protected files remain intact.
+After the separate Issue358 play session exited, fresh isolated Story acceptance
+passed on the rebuilt executable: scene4/mission1, forward11.174544/back6.184892,
+ammo8to6,40 frozen pause samples and60 advancing resume samples, last checkpoint
+95.242s within240s cap. Three fresh captures reviewed. Runner/controller exited0,
+profile signatures valid, fixture preserved, no dumps/locks/partition images left.
+Current source/archive/executable/generated/game hashes agree. All26 protected
+files retain original hash/size/mtime. Windows NT10.0.26300 x64, VS2022/MSVC14.44;
+minimized synthetic-input Classic/movie-skipped regression, not physical input,
+listening, campaign completion or native Mac title verification. Both packaging
+entry points resolve with --help; no new game ZIP was assembled or published.
+Node context6checks passed. Product source commitab70f7b6 is pushed in draft
+PR#406. Exactab70f7b6 runtime40923947215 and launcher40923947191 completed
+successfully with all final gates. Windows native2008passed248skipped plus18
+subtests439.35s; release172passed plus3subtests16.21s. Mac native1923passed
+295skipped plus18subtests261.50s; release169passed3skipped plus3subtests3.45s.
+Patch upgrades: Windows59passed265.67s, Mac57passed2skipped133.68s. Both launcher
+hosts and dual-platform release gates passed. This verifies the selected shared
+contracts and hosted checks; native Mac title gameplay remains unverified.
+The uninstalled ABI-dependent composer and complete toolkit retirement remain
+unfinished. The complete local historical-upgrade/context/CI-selection/backlog/
+path/symbol run passed128checks908.73s. All local build/game/test processes exited;
+no game session remains active. Source and private-data hashes were rechecked.
+This documentation follow-up changes no product source or built executable;
+its own hosted workflow status must be distinguished from codeab70f7b6's green CI.

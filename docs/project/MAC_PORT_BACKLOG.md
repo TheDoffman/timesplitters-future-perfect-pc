@@ -7412,7 +7412,8 @@ remain unfinished. The next callback ownership/target/rollback/prepared-frame
 candidate is still uninstalled and is not included in this CI acceptance.
 
 MAC-118 stage0221 request callback lifetime follow-up: shared implementation;
-new-stage host validation pending. Existing MAC-118 status remains applicable.
+Windows Release/isolated Story and both-host sourceCI acceptance passed;
+native Mac title validation pending. Existing MAC-118 status remains applicable.
 
 Stage0221 extends original request ownership/prepared callbacks and adds scoped
 nonlocal cleanup and request-owned device leases in shared src/runtime source.
@@ -7424,8 +7425,14 @@ composer's Xbox device-slot assumption is unresolved and is not installed.
 
 Acceptance: strict test_io_lifetime/owner/pool/registry/callback suites, patch
 migrations, source/archive selection, Release and isolated Windows Story checks;
-both native CI hosts and native Mac title gameplay remain pending for this change.
-PR #406; source uncommitted at initial entry. See STATUS and request-lifetime.md.
+both native CI hosts passed forab70f7b6; native Mac title gameplay remains pending.
+PR #406, source ab70f7b6. Windows66 focused and57 adapter/input tests pass;
+Story movement/firing/pause/resume and13-provider/archive/hash audit pass.
+Exactab70f7b6 runtime40923947215/launcher40923947191 both passed, including
+native Windows2008pass/Mac1923pass and patch Windows59pass/Mac57pass2skip.
+Complete local historical-upgrade/context/path/symbol run:128passed908.73s.
+No native Mac title or full driver replacement claim.
+See STATUS and [contracts](../agent-context/request-lifetime.md).
 
 ### MAC-119 - Profile-scoped Unlock Content
 
