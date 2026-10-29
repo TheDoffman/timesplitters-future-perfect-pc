@@ -32026,3 +32026,11 @@ audio listening, full campaign or Mac title acceptance. The game does not direct
 import these three share APIs; native contracts establish their new behavior.
 Stage0220 local snapshot/migration15171 remains running; new pushed-head CI must
 also pass. Source/toolkit independence remains incomplete.
+
+
+Concurrent integration: PR394 was externally merged at66bcb20f while sharing
+work was underway. Its merged head is a0e36a91, not the later sharing commit.
+Preserved cf581fc3 on focused feature/guest-share-access and integrated66bcb20f
+without source changes. Old branch/work remains preserved. Sharing receives a
+separate review/CI; no agent merge into main was performed. Current source/
+archive/executable/game hashes remain identical after this history integration.

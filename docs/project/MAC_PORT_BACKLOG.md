@@ -7329,7 +7329,7 @@ its selected asset-free contracts, not native Mac game behavior. Local merged
 migration66031 is still running; prior0f1189ec migration52 passed28m03s.
 
 
-MAC-118 stage0220 sharing follow-up (feature/guest-io-manager, PR #394): shared original byte-sharing
+MAC-118 stage0220 sharing follow-up (feature/guest-share-access, commit cf581fc3): shared original byte-sharing
 provider/adapters and additive compiler patch replace bridges63/78/80; ordinal80
 now consumes4args/16bytes, matching nxdk and repository export map. Same C source
 selected on both hosts; native ownership/ABI/header tests selected in both CI
