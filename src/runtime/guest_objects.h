@@ -48,6 +48,15 @@ int tsfp_guest_objects_init(tsfp_guest_objects *, tsfp_guest_handle_record *,
  * No raw-pointer deduplication. Call only for a separately owned reference. */
 int tsfp_guest_objects_adopt(tsfp_guest_objects *, uintptr_t, uint32_t kind,
     uint32_t flags, uint32_t *token);
+/* Adopt caller-owned guest storage without a native host resource or handle.
+ * Success consumes the body and returns one owned reference; failure preserves
+ * caller ownership/output. Body must be unique across all live/retired cleanup
+ * records and have a configured disposal callback. Caller initializes and pins
+ * the complete guest mapping before publishing. Body lifetime is then governed
+ * by refs/leases/optional opened handles; cleanup never invokes close_host for
+ * this object. Guest serialization/type/namespace policy belongs to adapters. */
+int tsfp_guest_objects_adopt_body(tsfp_guest_objects *,uint32_t body,
+    uint32_t kind,uint32_t flags,uint64_t *key);
 /* Reserve both capacities before an OS creation with observable side effects.
  * Tickets are not resolvable handles until commit; cancellation advances the
  * token generation. Commit consumes one host reference only on success. */

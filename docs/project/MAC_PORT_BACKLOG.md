@@ -7170,6 +7170,146 @@ Strict warnings and undefined-behavior instrumentation remain on original code.
 Windows boot/context/backlog33 checks passed; new Mac CI remains pending.
 No production source, built executable or prior gameplay evidence changed.
 
+
+MAC-118 next-packet prerequisite (feature/guest-io-manager): shared
+0217-guest-next-packet-abi.patch corrects Xbox ordinal81's single DeviceObject
+argument and four-byte cleanup; transitional host stub's second parameter is a
+constant false. Same bridge on both hosts, no new OS adapter. Original synthetic
+actual-bridge/cleanup test_io_packet_abi.py is selected for Windows/native Mac CI.
+Windows Release/built-in checks and isolated Story acceptance passed (STATUS);
+compiled ABI/context/backlog24 and tracking16 passed. New-head Mac contracts
+remain pending. Full request/queue
+replacement is still outstanding. Boot predecessor fd63094f all16CI checks
+succeeded, including native Mac contracts, without proving native Mac gameplay.
+
+
+MAC-118 request allocation follow-up (feature/guest-io-manager,
+PR #394): original src/runtime/guest_io_* providers and guest_kernel_requests.inc
+through0218 replace request allocation/free/initialization; inherited native
+initializer removed, packet83 ABI corrected. Shared policy uses existing thin
+heap/mapping/metadata/critical-section adapters on both hosts. New portable
+contracts and actual-header probe are selected in CI; Windows-only native lock/
+heap fixtures skip on Mac. Windows maintained36 request/ABI tests,21 context/
+backlog,7 package/path checks plus2subtests and fresh Release/Story checks passed
+(STATUS); full new-stage migration and new-head Mac CI remain pending. Device queues/driver integration/full shutdown remain unfinished.
+Predecessor37f9042d all16CI checks succeeded, including native Mac contracts;
+this is not new-stage Mac or title gameplay evidence. Status remains Awaiting validation.
+
+
+Request-stage CI capacity repair: exactfb4aeb2a Windows native job123069441536
+was cancelled at the30-minute job boundary while the native suite continued to
+advance near its end, with no assertion failure reported. GitHub annotated
+maximum execution time30m0s; dependent final gates failed because the selected
+host job was cancelled. Mac native and both patch-upgrade jobs succeeded.
+The native matrix now grants Windows45 minutes while Mac retains30. Every test,
+per-test timeout, assertion, dependency pin and final gate remains selected.
+No runtime source/build/game input changed; the tested d2608527 executable and
+its existing Windows gameplay evidence remain the current product evidence.
+New-head complete Windows CI remains required; this is not a passing result.
+
+
+Merged-main CI repair verification (Windows): the exact lightweight Python plan
+passed 121 tests and 26 subtests in 5.48s. The build/test guide is below the
+unchanged 65536-byte cap with its detailed CI contracts linked separately.
+Runtime source, generated files and executable remain unchanged; fresh remote
+CI is required. This documentation repair does not establish Mac gameplay.
+
+
+## Device/name replacement preparation (stage0219, uncommitted)
+
+Working from3b11d5b1: predecessor request-stage CI is now green on Windows and
+Mac, including final gates, after retrying hosted Mac runner-capacity cancellations.
+The exact Windows native job passed1804 tests,244 skips,18subtests in1715.21s;
+release checks passed151 tests and3subtests. These results accept the predecessor,
+not the new device source. Launcher checks also succeeded on both hosts.
+
+Original device/name/operation-scope providers and synthetic fixtures are now in
+maintained paths with a shared selection patch. Prototype host wrappers passed13
+checks in42.21s, including real locks/heap/header binding and native multi-wait
+unwind. Earlier combined58 and additional actual-cleanup4 results describe the
+prototype inputs at their recorded revisions; maintained acceptance is pending.
+Build, archive selection, current-stage full migration, fresh isolated gameplay
+and new-head CI have not yet been verified. No main merge was performed.
+See docs/agent-context/kernel-devices.md for contracts and remaining work.
+
+
+## Device/name Windows build and gameplay acceptance (stage0219, uncommitted)
+
+Windows PowerShell5 Release rebuild, built-in host/graphics/settings checks and
+matching crash-symbol generation passed. Patched actual-header/adapter checks
+passed29 in53.44s. Repository/CI routing checks passed112 in5.21s; package/path/
+crash-symbol checks passed19 in0.31s. First maintained native run passed155 with
+three pre-compilation mutation-anchor failures; narrowed those controls to their
+intended paths and both affected families passed12 in19.23s. A clean full native
+rerun against the selected patched runtime is in progress, not yet acceptance.
+
+Generated kernel project selects all ten new providers once and excludes
+kernel_ob.c; rebuilt archive has all expected original provider symbols and none
+of the nine retired native object/device exports. All22 generated guest files
+remain unchanged. Executable SHA256:
+`d78d740af8433c204ba1863236462b07adda2f6bcadf2e1f0b7e41ae0f67c8a3`.
+The build is the dirty3b11d5b1 source base, not a clean committed revision.
+
+Fresh isolated Story passed scene4/mission1, forward11.174544 and backward6.184892,
+firing ammo8to6,40 paused samples with frozen ticks and60 resumed samples with
+advancing ticks. Last checkpoint98.534s within240s cap. Start/pause/resume PNGs
+were reviewed. Exact executable provenance agrees; run lock/partitions/dumps are
+absent. All26 protected files retained hash,size and mtime. This minimized,
+synthetic-input Classic/movie-skipped run is bounded Windows regression evidence,
+not physical input/audio listening/full campaign or native Mac title acceptance.
+Initial automation used the wrong manual-start flag and a retry read a stale
+report. Corrected the local runner invocation/report freshness, kept gameplay
+assertions unchanged, and completed the fresh run against the same binary.
+
+Full current-stage snapshot/tracking/patch migration remains running, and no
+new-stage commit/push/CI result is claimed. Shared portable implementation and
+both-host CI selection are present; MAC-118 remains Awaiting validation for the
+new source and native Mac title behavior. Driver queues/synchronous builders,
+verified CdRom binding and complete runtime/tooling replacement remain unfinished.
+
+Clean maintained native acceptance against the applied runtime:158 passed in
+232.22s, terminal exit0. Repository Node contracts also passed23 in12.79s.
+The full snapshot/tracking/patch migration is the only remaining local job.
+Source/build/game hashes remain matched; new source is still uncommitted.
+
+Full current-stage snapshot/tracking/patch migration completed:52 passed in
+1037.38s (17m17s), terminal exit0. All local stage0219 acceptance is complete;
+new committed-head remote CI remains required. Build record keeps its actual
+dirty3b11d5b1 provenance and matching runtime/source/executable/game hashes.
+
+
+
+MAC-118 merged-main Windows verification (2026-10-28):
+
+Device/name source is committed in f17859d7; main6e657518 (Unlock Content)
+was integrated into the feature branch in2406e457, with context-size repair
+96eb84a1. No merge into main or independent-toolkit completion is claimed.
+Windows Release regeneration/build and built-in checks passed at96eb84a1.
+The generator fingerprint is current; three of the22 generated files changed
+for the merged Unlock hooks. All ten original providers are selected once,
+kernel_ob.c is excluded and the nine retired native exports are absent.
+Executable SHA256:
+`86a960df397bdf7cd0d2b177b98a74848e9908918cbfa843c6f44fcb34c6e0a4`.
+
+Fresh isolated Story passed at this executable: scene4/mission1, forward11.174544,
+backward6.287973, firing ammo8to6,40 frozen pause samples and60 advancing resume
+samples. Last checkpoint98.396s within240s cap. Start/pause/resume captures were
+reviewed. Installed source/archive/generation/game hashes agree; all26 protected
+files retained hash,size and mtime. This is minimized synthetic-input Windows
+Classic/movie-skipped coverage, not physical input/audio/full campaign or Mac
+title acceptance. Main-integration storage/repository/context checks passed115
+in8.21s. The fresh merged snapshot/migration suite is still running; new-head CI
+has not started. Prior3b11d5b1 CI passed both hosts after runner-capacity retry.
+
+
+
+Merged device-stage migration completed on Windows:52 passed in1683.86s
+(28m03s), terminal exit0. This rerun includes main Unlock patch2070 and current
+snapshot/tracking/patch-upgrade models. Combined local build/game/migration
+acceptance is complete. The newest pushed-head CI result remains required;
+previous3b11d5b1 workflows both concluded success. No full independence or native
+Mac title acceptance is implied.
+
 ### MAC-119 - Profile-scoped Unlock Content
 
 - **Status:** Awaiting validation
