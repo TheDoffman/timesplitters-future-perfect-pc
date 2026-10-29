@@ -26,6 +26,8 @@ better speed comparison. Added passing tests join the coverage guard while the
 time budget remains fixed. Review intentional test growth before adopting a new
 versioned profile; retain the old history as evidence. Monitoring cannot detect
 every weakened assertion, so existing mutation controls and code review remain.
+For publisher/CI recalibration, change the profile name in the tracked command
+after reviewing the growth; a manual diagnostic profile does not reset theirs.
 
 For a measured manual full run, use the same four-worker policy:
 
@@ -277,3 +279,54 @@ Evidence remains local in `logs/shader-focused.*`, `logs/shader-adapter.log`,
 `logs/suite-shader-final.*` and `logs/shader-suite-comparison.json`. No private
 assets or generated code are committed. Native Mac GPU/gameplay, complete scene
 parity, a fresh game build, packaging and publication remain unverified.
+
+## Monitor calibration (2026-10-28)
+
+Implementation: local commit `c43b3139` on `perf/suite-regression-monitor`, based
+on the unmerged performance/shader fixes through `d71137ac`. The source remained
+unchanged throughout calibration. The release profile ran the entire suite with
+four workers, `loadgroup`, zero worker restarts and no selection filters.
+
+| Successful sample | Full invocation | Monitor session | Results |
+| --- | ---: | ---: | --- |
+| 1 | 559.164 s (9m19s) | 558.887 s | 2447 passed, 36 skipped, 109 passing subtests |
+| 2 | 494.623 s (8m14s) | 494.439 s | Same |
+| 3 | 474.894 s (7m54s) | 474.727 s | Same |
+
+The automatically learned fixed median is **494.439 s (8m14s)**. A sustained
+warning requires three consecutive eligible runs above **618.049 s (10m18s)**.
+These observations support a local comparison, not a guarantee under changing
+machine load. The invocation profiler starts before `pytest.main`; the monitor
+starts during pytest configuration. Both include collection and test-fixture
+setup/teardown. Neither measures a complete game release. No additional speedup
+is attributed to the monitor.
+
+Host: Windows AMD64, Intel i7-13700K, 24 logical CPUs, Python 3.12.14,
+pytest 9.1.1 and pytest-xdist 3.8.0. The stable test-ID comparison retained every
+previous 2,460 ID with identical outcomes, including the same 36 prerequisite
+skips, and added 23 passing monitor/CI-selection cases. All 246 baseline input
+hashes still match. Existing assertion thresholds, mutation controls, timeouts,
+compiler-cache protections and release failure propagation are unchanged.
+
+An earlier full attempt took 773.794 s and recorded 2,446 passes, 36 skips,
+109 passing subtests and one failure: `native_vehicle_actor_impact`'s
+`open-gate-only` mutation exceeded its existing 15-second timeout. The monitor
+retained the complete failed record and did not create a calibration sample.
+The exact case passed in isolation (7.45 s for the complete selected test) and
+in all three unchanged full reruns. No timeout, exclusion, assertion or retry
+plugin was changed. The cause of the one-off timeout is not established.
+
+Focused tests passed 248 cases in 5.75 s, covering calibration and warning
+boundaries, immutable baselines, missing/newly skipped cases, added-case guards,
+history retention, platform/worker separation, locks/corruption, subtests,
+teardown failures, real serial/parallel/filter/failure runs and CI/release wiring.
+A simulated sustained slowdown prints a warning while pytest still exits zero;
+a real failing fixture still exits nonzero. Context/backlog, workflow YAML and
+whitespace checks pass. Actual hosted CI history/cache/artifact execution and
+native Mac execution are not verified locally.
+
+Evidence: `logs/suite-monitor-{1,2,3,4}.*`, `logs/monitor-vehicle-diagnosis.log`,
+`logs/suite-monitor-focused-r2.log`, `logs/suite-monitor-comparison.json` and
+the local `build/test-performance/release-full/` history. Only code, tests and
+documentation are committed. Other checkouts or machines need their own history;
+the CI workflows learn independently after integration.

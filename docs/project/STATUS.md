@@ -1,3 +1,31 @@
+## Suite performance regression monitor (2026-10-28)
+
+Local implementation commit `c43b3139` on `perf/suite-regression-monitor`, based
+on the unmerged speed/shader work through `d71137ac`, adds advisory timing history
+to release runs and separate Windows/Mac CI profiles. Three successful comparable
+runs establish a fixed median; three consecutive eligible runs over 125% warn.
+Missing tests and newly skipped/non-passing outcomes warn immediately. Failed,
+filtered and incomplete runs cannot train the baseline; all acceptance gates,
+four-worker release scheduling and successful compiler-setup reuse remain.
+
+Three unchanged full Windows runs each passed **2,447 cases and 109 subtests**,
+with **36 unchanged skips**, in **9m19s, 8m14s and 7m54s**. The monitor learned
+**494.439 s (8m14s)**, with a sustained-warning threshold above **618.049 s
+(10m18s)** for this machine/environment. Every previous 2,460 case ID/outcome is
+retained, 23 monitoring/selection cases pass, and all 246 input hashes match.
+An initial full attempt hit an existing vehicle mutation's 15-second timeout;
+the monitor retained its failure and correctly excluded it from calibration.
+That case passed in isolation and in all three complete reruns without changing
+its timeout or assertions. The cause of the one-off timeout is unproven.
+
+Focused monitoring/grouping/publisher/CI-scope validation passed 248 cases in
+5.75 s, including real serial/two-worker pytest runs and a simulated sustained
+slowdown warning that preserves exit status. Workflow YAML, context/ownership,
+backlog and whitespace checks pass. Shared code is registered on both CI hosts;
+physical Mac execution and actual hosted cache/artifact persistence remain
+unverified. These are local commits, not a pushed change or published game.
+See [policy and measured evidence](../development/release-performance.md#monitor-calibration-2026-10-28).
+
 ## Shader coefficient release blockers resolved (2026-10-28)
 
 Local commit `08ccb2ed` on `fix/shader-coefficient-regressions`, based on `d1226d25`, fixes all
